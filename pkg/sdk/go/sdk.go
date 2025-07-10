@@ -59,9 +59,6 @@ var (
 
 	// ErrCertsRemove indicates failure while cleaning up from the Certs service.
 	ErrCertsRemove = errors.New("failed to remove certificate")
-
-	// ErrMemberAdd failed to add member to a group.
-	ErrMemberAdd = errors.New("failed to add member to group")
 )
 
 // ContentType represents all possible content types.
@@ -132,8 +129,8 @@ type Org struct {
 	UpdatedAt   time.Time              `json:"updated_at,omitempty"`
 }
 
-// OrgMember represents mainflux Org Member.
-type OrgMember struct {
+// OrgMembership represents mainflux Org Membership.
+type OrgMembership struct {
 	MemberID  string    `json:"member_id,omitempty"`
 	OrgID     string    `json:"org_id,omitempty"`
 	Role      string    `json:"role,omitempty"`
@@ -142,11 +139,11 @@ type OrgMember struct {
 	Email     string    `json:"email,omitempty"`
 }
 
-// GroupMember represents mainflux Group Member.
-type GroupMember struct {
-	ID    string `json:"id,omitempty"`
-	Role  string `json:"role,omitempty"`
-	Email string `json:"email,omitempty"`
+// GroupMembership represents mainflux Group Membership.
+type GroupMembership struct {
+	MemberID string `json:"member_id,omitempty"`
+	Role     string `json:"role,omitempty"`
+	Email    string `json:"email,omitempty"`
 }
 
 // Webhook represents mainflux Webhook.
@@ -193,10 +190,10 @@ type SDK interface {
 	UpdatePassword(oldPass, newPass, token string) error
 
 	// CreateThing registers new thing and returns its id.
-	CreateThing(thing Thing, groupID, token string) (string, error)
+	CreateThing(thing Thing, profileID, token string) (string, error)
 
 	// CreateThings registers new things and returns their ids.
-	CreateThings(things []Thing, groupID, token string) ([]Thing, error)
+	CreateThings(things []Thing, profileID, token string) ([]Thing, error)
 
 	// ListThings returns page of things.
 	ListThings(pm PageMetadata, token string) (ThingsPage, error)
@@ -279,17 +276,17 @@ type SDK interface {
 	// GetGroupByProfile retrieves a group that the specified profile is a member of.
 	GetGroupByProfile(profileID, token string) (Group, error)
 
-	// CreateGroupMembers creates group members.
-	CreateGroupMembers(members []GroupMember, groupID, token string) error
+	// CreateGroupMemberships creates memberships to the specified group.
+	CreateGroupMemberships(gms []GroupMembership, groupID, token string) error
 
-	// UpdateGroupMembers updates existing group members.
-	UpdateGroupMembers(members []GroupMember, groupID, token string) error
+	// UpdateGroupMemberships updates existing memberships.
+	UpdateGroupMemberships(gms []GroupMembership, groupID, token string) error
 
-	// RemoveGroupMembers removes existing group members.
-	RemoveGroupMembers(ids []string, groupID, token string) error
+	// RemoveGroupMemberships removes memberships from the specified group.
+	RemoveGroupMemberships(ids []string, groupID, token string) error
 
-	// ListGroupMembers lists members that are specified for a certain group.
-	ListGroupMembers(groupID string, pm PageMetadata, token string) (GroupMembersPage, error)
+	// ListGroupMemberships lists memberships created for a specified group.
+	ListGroupMemberships(groupID string, pm PageMetadata, token string) (GroupMembershipsPage, error)
 
 	// CreateOrg registers a new Org and returns its ID.
 	CreateOrg(org Org, token string) (string, error)
@@ -306,20 +303,20 @@ type SDK interface {
 	// ListOrgs returns page of orgs.
 	ListOrgs(meta PageMetadata, token string) (OrgsPage, error)
 
-	// GetMember retrieves a member belonging to the specified org.
-	GetMember(memberID, orgID, token string) (Member, error)
+	// CreateOrgMemberships creates memberships to the specified org.
+	CreateOrgMemberships(oms []OrgMembership, orgID, token string) error
 
-	// AssignMembers assigns a members to the specified org.
-	AssignMembers(om []OrgMember, orgID, token string) error
+	// GetOrgMembership retrieves a membership for the specified org and member.
+	GetOrgMembership(memberID, orgID, token string) (OrgMembership, error)
 
-	// UnassignMembers unassigns a members from the specified org.
-	UnassignMembers(memberIDs []string, orgID, token string) error
+	// ListOrgMemberships lists memberships created for a specified org.
+	ListOrgMemberships(orgID string, meta PageMetadata, token string) (OrgMembershipsPage, error)
 
-	// UpdateMembers updates existing member.
-	UpdateMembers(members []OrgMember, orgID, token string) error
+	// UpdateOrgMemberships updates existing memberships.
+	UpdateOrgMemberships(oms []OrgMembership, orgID, token string) error
 
-	// ListMembersByOrg lists members who belong to a specified org.
-	ListMembersByOrg(orgID string, meta PageMetadata, token string) (MembersPage, error)
+	// RemoveOrgMemberships removes memberships from the specified org.
+	RemoveOrgMemberships(memberIDs []string, orgID, token string) error
 
 	// CreateWebhooks creates new webhooks.
 	CreateWebhooks(whs []Webhook, groupID, token string) ([]Webhook, error)

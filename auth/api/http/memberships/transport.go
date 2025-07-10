@@ -1,4 +1,4 @@
-package members
+package memberships
 
 import (
 	"context"
@@ -27,37 +27,37 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
 
+	mux.Post("/orgs/:id/memberships", kithttp.NewServer(
+		kitot.TraceServer(tracer, "create_org_memberships")(createOrgMembershipsEndpoint(svc)),
+		decodeOrgMembershipsRequest,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Get("/orgs/:orgID/members/:memberID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_member")(viewMemberEndpoint(svc)),
-		decodeMemberRequest,
+		kitot.TraceServer(tracer, "view_org_membership")(viewOrgMembershipEndpoint(svc)),
+		decodeOrgMembershipRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Post("/orgs/:id/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "assign_members")(assignMembersEndpoint(svc)),
-		decodeMembersRequest,
+	mux.Get("/orgs/:id/memberships", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_org_memberships")(listOrgMembershipsEndpoint(svc)),
+		decodeListOrgMemberships,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Patch("/orgs/:id/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "unassign_members")(unassignMembersEndpoint(svc)),
-		decodeUnassignMembers,
+	mux.Put("/orgs/:id/memberships", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_org_memberships")(updateOrgMembershipsEndpoint(svc)),
+		decodeOrgMembershipsRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Put("/orgs/:id/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_members")(updateMembersEndpoint(svc)),
-		decodeMembersRequest,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Get("/orgs/:id/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_members_by_org")(listMembersByOrgEndpoint(svc)),
-		decodeListMembersByOrg,
+	mux.Patch("/orgs/:id/memberships", kithttp.NewServer(
+		kitot.TraceServer(tracer, "remove_org_memberships")(removeOrgMembershipsEndpoint(svc)),
+		decodeRemoveOrgMemberships,
 		encodeResponse,
 		opts...,
 	))
@@ -65,7 +65,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	return mux
 }
 
-func decodeListMembersByOrg(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListOrgMemberships(_ context.Context, r *http.Request) (interface{}, error) {
 	o, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
 	if err != nil {
 		return nil, err
@@ -87,9 +87,9 @@ func decodeListMembersByOrg(_ context.Context, r *http.Request) (interface{}, er
 		return nil, err
 	}
 
-	req := listMembersByOrgReq{
+	req := listOrgMembershipsReq{
 		token:  apiutil.ExtractBearerToken(r),
-		id:     bone.GetValue(r, apiutil.IDKey),
+		orgID:  bone.GetValue(r, apiutil.IDKey),
 		email:  e,
 		offset: o,
 		limit:  l,
@@ -99,8 +99,8 @@ func decodeListMembersByOrg(_ context.Context, r *http.Request) (interface{}, er
 	return req, nil
 }
 
-func decodeMembersRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := membersReq{
+func decodeOrgMembershipsRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := orgMembershipsReq{
 		token: apiutil.ExtractBearerToken(r),
 		orgID: bone.GetValue(r, apiutil.IDKey),
 	}
@@ -109,12 +109,12 @@ func decodeMembersRequest(_ context.Context, r *http.Request) (interface{}, erro
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	for i := range req.OrgMembers {
-		if req.OrgMembers[i].Role == "" {
-			req.OrgMembers[i].Role = auth.Viewer
+	for i := range req.OrgMemberships {
+		if req.OrgMemberships[i].Role == "" {
+			req.OrgMemberships[i].Role = auth.Viewer
 		}
 
-		if req.OrgMembers[i].Role == auth.Owner {
+		if req.OrgMemberships[i].Role == auth.Owner {
 			return nil, apiutil.ErrMalformedEntity
 		}
 	}
@@ -122,8 +122,8 @@ func decodeMembersRequest(_ context.Context, r *http.Request) (interface{}, erro
 	return req, nil
 }
 
-func decodeMemberRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := memberReq{
+func decodeOrgMembershipRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := orgMembershipReq{
 		token:    apiutil.ExtractBearerToken(r),
 		orgID:    bone.GetValue(r, orgIDKey),
 		memberID: bone.GetValue(r, memberKey),
@@ -132,8 +132,8 @@ func decodeMemberRequest(_ context.Context, r *http.Request) (interface{}, error
 	return req, nil
 }
 
-func decodeUnassignMembers(_ context.Context, r *http.Request) (interface{}, error) {
-	req := unassignMembersReq{
+func decodeRemoveOrgMemberships(_ context.Context, r *http.Request) (interface{}, error) {
+	req := removeOrgMembershipsReq{
 		token: apiutil.ExtractBearerToken(r),
 		orgID: bone.GetValue(r, apiutil.IDKey),
 	}
@@ -176,7 +176,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusBadRequest)
 	case err == apiutil.ErrBearerToken:
 		w.WriteHeader(http.StatusUnauthorized)
-	case errors.Contains(err, auth.ErrOrgMemberAlreadyAssigned):
+	case errors.Contains(err, auth.ErrOrgMembershipExists):
 		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)

@@ -5,7 +5,7 @@ package things
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/things/api/http/members"
+	"github.com/MainfluxLabs/mainflux/things/api/http/memberships"
 )
 
 const (
@@ -14,17 +14,16 @@ const (
 )
 
 type createThingReq struct {
-	ProfileID string                 `json:"profile_id"`
-	Name      string                 `json:"name,omitempty"`
-	Key       string                 `json:"key,omitempty"`
-	ID        string                 `json:"id,omitempty"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+	Name     string                 `json:"name,omitempty"`
+	Key      string                 `json:"key,omitempty"`
+	ID       string                 `json:"id,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type createThingsReq struct {
-	token   string
-	groupID string
-	Things  []createThingReq
+	token     string
+	profileID string
+	Things    []createThingReq
 }
 
 func (req createThingsReq) validate() error {
@@ -32,8 +31,8 @@ func (req createThingsReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.groupID == "" {
-		return apiutil.ErrMissingGroupID
+	if req.profileID == "" {
+		return apiutil.ErrMissingProfileID
 	}
 
 	if len(req.Things) <= 0 {
@@ -41,9 +40,6 @@ func (req createThingsReq) validate() error {
 	}
 
 	for _, thing := range req.Things {
-		if thing.ProfileID == "" {
-			return apiutil.ErrMissingProfileID
-		}
 		if thing.ID != "" {
 			if err := apiutil.ValidateUUID(thing.ID); err != nil {
 				return err
@@ -264,11 +260,11 @@ func (req backupReq) validate() error {
 }
 
 type restoreReq struct {
-	token        string
-	Things       []viewThingRes                    `json:"things"`
-	Profiles     []backupProfile                   `json:"profiles"`
-	Groups       []backupGroup                     `json:"groups"`
-	GroupMembers []members.ViewGroupMembershipsRes `json:"group_memberships"`
+	token            string
+	Things           []viewThingRes                        `json:"things"`
+	Profiles         []backupProfile                       `json:"profiles"`
+	Groups           []backupGroup                         `json:"groups"`
+	GroupMemberships []memberships.ViewGroupMembershipsRes `json:"group_memberships"`
 }
 
 func (req restoreReq) validate() error {

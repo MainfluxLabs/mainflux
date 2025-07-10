@@ -49,7 +49,6 @@ const (
 	orgID2         = "374106f7-030e-4881-8ab0-151195c29f93"
 	prefix         = "fe6b4e92-cc98-425e-b0aa-"
 	n              = 101
-	noLimit        = -1
 )
 
 var (
@@ -106,14 +105,14 @@ func newService() things.Service {
 	auth := mocks.NewAuthService(admin.ID, usersList, orgsList)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
-	groupMembersRepo := thmocks.NewGroupMembersRepository()
-	groupsRepo := thmocks.NewGroupRepository(groupMembersRepo)
+	groupMembershipsRepo := thmocks.NewGroupMembershipsRepository()
+	groupsRepo := thmocks.NewGroupRepository(groupMembershipsRepo)
 	profileCache := thmocks.NewProfileCache()
 	thingCache := thmocks.NewThingCache()
 	groupCache := thmocks.NewGroupCache()
 	idProvider := uuid.NewMock()
 
-	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, groupMembersRepo, profileCache, thingCache, groupCache, idProvider)
+	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider)
 }
 
 func newServer(svc things.Service) *httptest.Server {
@@ -141,12 +140,10 @@ func TestCreateThings(t *testing.T) {
 	profile1.GroupID = grID1
 	prs, err := svc.CreateProfiles(context.Background(), token, profile, profile1)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	prID, prID1 := prs[0].ID, prs[1].ID
+	prID := prs[0].ID
 
 	data := fmt.Sprintf(`[{"name": "1", "key": "1","profile_id":"%s"}, {"name": "2", "key": "2","profile_id":"%s"}]`, prID, prID)
 	invalidNameData := fmt.Sprintf(`[{"name": "%s", "key": "10","profile_id":"%s"}]`, invalidName, prID)
-	invalidProfileData := `[{"name": "test", "key": "1"}]`
-	invalidGroupData := fmt.Sprintf(`[{"name": "test", "key": "10","profile_id":"%s"}]`, prID1)
 
 	cases := []struct {
 		desc        string
@@ -186,22 +183,6 @@ func TestCreateThings(t *testing.T) {
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
-			response:    emptyValue,
-		},
-		{
-			desc:        "create thing without profile id",
-			data:        invalidProfileData,
-			contentType: contentType,
-			auth:        token,
-			status:      http.StatusBadRequest,
-			response:    emptyValue,
-		},
-		{
-			desc:        "create thing with profile from different group",
-			data:        invalidGroupData,
-			contentType: contentType,
-			auth:        token,
-			status:      http.StatusForbidden,
 			response:    emptyValue,
 		},
 		{
@@ -250,7 +231,7 @@ func TestCreateThings(t *testing.T) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/groups/%s/things", ts.URL, grID),
+			url:         fmt.Sprintf("%s/profiles/%s/things", ts.URL, prID),
 			contentType: tc.contentType,
 			token:       tc.auth,
 			body:        strings.NewReader(tc.data),
@@ -278,7 +259,7 @@ func TestUpdateThing(t *testing.T) {
 	profile.GroupID = grID
 	prs, err := svc.CreateProfiles(context.Background(), token, profile, profile1)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	prID, prID1 := prs[0].ID, prs[1].ID
+	prID := prs[0].ID
 
 	thing.GroupID = grID
 	thing.ProfileID = prID
@@ -289,7 +270,6 @@ func TestUpdateThing(t *testing.T) {
 	data := fmt.Sprintf(`{"name":"test","profile_id":"%s"}`, prID)
 	invalidNameData := fmt.Sprintf(`{"name": "%s","profile_id":"%s"}`, invalidName, prID)
 	invalidProfileData := `{"name": "test"}`
-	invalidGroupData := fmt.Sprintf(`{"name":"test","profile_id":"%s"}`, prID1)
 
 	cases := []struct {
 		desc        string
@@ -385,14 +365,6 @@ func TestUpdateThing(t *testing.T) {
 			contentType: contentType,
 			auth:        token,
 			status:      http.StatusBadRequest,
-		},
-		{
-			desc:        "update thing with profile from different group",
-			req:         invalidGroupData,
-			id:          th.ID,
-			contentType: contentType,
-			auth:        token,
-			status:      http.StatusForbidden,
 		},
 	}
 
@@ -1167,13 +1139,6 @@ func TestListThingsByProfile(t *testing.T) {
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, pr.ID, 0, 5),
 			res:    data[0:5],
-		},
-		{
-			desc:   "get a list of things by profile with no limit",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/things?limit=%d", thingURL, pr.ID, noLimit),
-			res:    data,
 		},
 		{
 			desc:   "get a list of things by profile with invalid token",

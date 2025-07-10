@@ -1,7 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package members
+package memberships
 
 import (
 	"context"
@@ -30,16 +30,16 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
 
-	mux.Post("/groups/:id/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_group_members")(createGroupMembersEndpoint(svc)),
-		decodeGroupMembers,
+	mux.Post("/groups/:id/memberships", kithttp.NewServer(
+		kitot.TraceServer(tracer, "create_group_memberships")(createGroupMembershipsEndpoint(svc)),
+		decodeGroupMemberships,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Get("/groups/:id/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_group_members")(listGroupMembersEndpoint(svc)),
-		decodeListByGroup,
+	mux.Get("/groups/:id/memberships", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_group_memberships")(listGroupMembershipsEndpoint(svc)),
+		decodeListGroupMemberships,
 		encodeResponse,
 		opts...,
 	))
@@ -51,16 +51,16 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		opts...,
 	))
 
-	mux.Put("/groups/:id/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_group_members")(updateGroupMembersEndpoint(svc)),
-		decodeGroupMembers,
+	mux.Put("/groups/:id/memberships", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_group_memberships")(updateGroupMembershipsEndpoint(svc)),
+		decodeGroupMemberships,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Patch("/groups/:id/members", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_group_members")(removeGroupMembersEndpoint(svc)),
-		decodeRemoveGroupMembers,
+	mux.Patch("/groups/:id/memberships", kithttp.NewServer(
+		kitot.TraceServer(tracer, "remove_group_memberships")(removeGroupMembershipsEndpoint(svc)),
+		decodeRemoveGroupMemberships,
 		encodeResponse,
 		opts...,
 	))
@@ -68,7 +68,7 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 	return mux
 }
 
-func decodeListByGroup(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListGroupMemberships(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -81,21 +81,21 @@ func decodeListByGroup(_ context.Context, r *http.Request) (interface{}, error) 
 
 	pm.Email = e
 
-	req := listByGroupReq{
+	req := listGroupMembershipsReq{
 		token:        apiutil.ExtractBearerToken(r),
-		id:           bone.GetValue(r, apiutil.IDKey),
+		groupID:      bone.GetValue(r, apiutil.IDKey),
 		pageMetadata: pm,
 	}
 
 	return req, nil
 }
 
-func decodeGroupMembers(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeGroupMemberships(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := groupMembersReq{
+	req := groupMembershipsReq{
 		token:   apiutil.ExtractBearerToken(r),
 		groupID: bone.GetValue(r, apiutil.IDKey),
 	}
@@ -107,12 +107,12 @@ func decodeGroupMembers(_ context.Context, r *http.Request) (interface{}, error)
 	return req, nil
 }
 
-func decodeRemoveGroupMembers(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRemoveGroupMemberships(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := removeGroupMembersReq{
+	req := removeGroupMembershipsReq{
 		token:   apiutil.ExtractBearerToken(r),
 		groupID: bone.GetValue(r, apiutil.IDKey),
 	}

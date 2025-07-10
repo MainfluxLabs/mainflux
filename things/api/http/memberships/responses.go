@@ -1,7 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package members
+package memberships
 
 import (
 	"net/http"
@@ -11,9 +11,9 @@ import (
 
 var (
 	_ apiutil.Response = (*removeRes)(nil)
-	_ apiutil.Response = (*listGroupMembersRes)(nil)
-	_ apiutil.Response = (*updateGroupMembersRes)(nil)
-	_ apiutil.Response = (*createGroupMembersRes)(nil)
+	_ apiutil.Response = (*listGroupMembershipsRes)(nil)
+	_ apiutil.Response = (*updateGroupMembershipsRes)(nil)
+	_ apiutil.Response = (*createGroupMembershipsRes)(nil)
 )
 
 type removeRes struct{}
@@ -36,10 +36,10 @@ type pageRes struct {
 	Limit  uint64 `json:"limit"`
 }
 
-type groupMember struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
-	Role  string `json:"role"`
+type groupMembership struct {
+	MemberID string `json:"member_id"`
+	Email    string `json:"email"`
+	Role     string `json:"role"`
 }
 
 type ViewGroupMembershipsRes struct {
@@ -49,48 +49,48 @@ type ViewGroupMembershipsRes struct {
 	Role     string `json:"role"`
 }
 
-type createGroupMembersRes struct{}
+type createGroupMembershipsRes struct{}
 
-func (res createGroupMembersRes) Code() int {
+func (res createGroupMembershipsRes) Code() int {
 	return http.StatusCreated
 }
 
-func (res createGroupMembersRes) Headers() map[string]string {
+func (res createGroupMembershipsRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res createGroupMembersRes) Empty() bool {
+func (res createGroupMembershipsRes) Empty() bool {
 	return true
 }
 
-type updateGroupMembersRes struct{}
+type updateGroupMembershipsRes struct{}
 
-func (res updateGroupMembersRes) Code() int {
+func (res updateGroupMembershipsRes) Code() int {
 	return http.StatusOK
 }
 
-func (res updateGroupMembersRes) Headers() map[string]string {
+func (res updateGroupMembershipsRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res updateGroupMembersRes) Empty() bool {
+func (res updateGroupMembershipsRes) Empty() bool {
 	return true
 }
 
-type listGroupMembersRes struct {
+type listGroupMembershipsRes struct {
 	pageRes
-	GroupMembers []groupMember `json:"group_members"`
+	GroupMemberships []groupMembership `json:"group_memberships"`
 }
 
-func (res listGroupMembersRes) Code() int {
+func (res listGroupMembershipsRes) Code() int {
 	return http.StatusOK
 }
 
-func (res listGroupMembersRes) Headers() map[string]string {
+func (res listGroupMembershipsRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res listGroupMembersRes) Empty() bool {
+func (res listGroupMembershipsRes) Empty() bool {
 	return false
 }
 

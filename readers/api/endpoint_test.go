@@ -142,12 +142,10 @@ func TestListAllMessages(t *testing.T) {
 	thSvc := thmocks.NewThingsServiceClient(nil, nil, nil)
 	authSvc := newAuthService()
 
-	tok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
 	require.Nil(t, err, fmt.Sprintf("issue token for user got unexpected error: %s", err))
 	adminTok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
 	require.Nil(t, err, fmt.Sprintf("issue token for admin got unexpected error: %s", err))
 
-	userToken := tok.GetValue()
 	adminToken := adminTok.GetValue()
 
 	repo := rmocks.NewMessageRepository("", fromSenml(messages))
@@ -163,23 +161,6 @@ func TestListAllMessages(t *testing.T) {
 		status int
 		res    pageRes
 	}{
-		{
-			desc:   "read all messages page as admin",
-			url:    fmt.Sprintf("%s/messages?limit=-1", ts.URL),
-			token:  adminToken,
-			status: http.StatusOK,
-			res: pageRes{
-				Total:    uint64(len(messages)),
-				Messages: messages,
-			},
-		},
-		{
-			desc:   "read all messages page as user",
-			url:    fmt.Sprintf("%s/messages?limit=-1", ts.URL),
-			token:  userToken,
-			status: http.StatusForbidden,
-			res:    pageRes{},
-		},
 		{
 			desc:   "read page with valid offset and limit",
 			url:    fmt.Sprintf("%s/messages?offset=0&limit=10", ts.URL),
