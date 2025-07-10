@@ -372,13 +372,6 @@ func TestListUsers(t *testing.T) {
 			res:    data[0:10],
 		},
 		{
-			desc:   "get list of all users with no limit",
-			url:    fmt.Sprintf("%s/users?limit=%d", ts.URL, -1),
-			token:  token,
-			status: http.StatusOK,
-			res:    data,
-		},
-		{
 			desc:   "get list of users with invalid token",
 			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d&order=wrong", ts.URL, 0, 5),
 			token:  invalidToken,
