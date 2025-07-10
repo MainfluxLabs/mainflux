@@ -16,20 +16,20 @@ import (
 var _ auth.OrgRepository = (*orgRepositoryMock)(nil)
 
 type orgRepositoryMock struct {
-	mu      sync.Mutex
-	orgs    map[string]auth.Org
-	members auth.MembersRepository
+	mu          sync.Mutex
+	orgs        map[string]auth.Org
+	memberships auth.OrgMembershipsRepository
 }
 
 // NewOrgRepository returns mock of org repository
-func NewOrgRepository(mr auth.MembersRepository) auth.OrgRepository {
+func NewOrgRepository(mr auth.OrgMembershipsRepository) auth.OrgRepository {
 	return &orgRepositoryMock{
-		orgs:    make(map[string]auth.Org),
-		members: mr,
+		orgs:        make(map[string]auth.Org),
+		memberships: mr,
 	}
 }
 
-func (orm *orgRepositoryMock) Save(ctx context.Context, orgs ...auth.Org) error {
+func (orm *orgRepositoryMock) Save(_ context.Context, orgs ...auth.Org) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
@@ -44,7 +44,7 @@ func (orm *orgRepositoryMock) Save(ctx context.Context, orgs ...auth.Org) error 
 	return nil
 }
 
-func (orm *orgRepositoryMock) Update(ctx context.Context, org auth.Org) error {
+func (orm *orgRepositoryMock) Update(_ context.Context, org auth.Org) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
@@ -57,7 +57,7 @@ func (orm *orgRepositoryMock) Update(ctx context.Context, org auth.Org) error {
 	return nil
 }
 
-func (orm *orgRepositoryMock) Remove(ctx context.Context, owner, id string) error {
+func (orm *orgRepositoryMock) Remove(_ context.Context, owner, id string) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
@@ -69,7 +69,7 @@ func (orm *orgRepositoryMock) Remove(ctx context.Context, owner, id string) erro
 	return nil
 }
 
-func (orm *orgRepositoryMock) RetrieveByID(ctx context.Context, id string) (auth.Org, error) {
+func (orm *orgRepositoryMock) RetrieveByID(_ context.Context, id string) (auth.Org, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
@@ -81,7 +81,7 @@ func (orm *orgRepositoryMock) RetrieveByID(ctx context.Context, id string) (auth
 	return org, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveByOwner(ctx context.Context, ownerID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
+func (orm *orgRepositoryMock) RetrieveByOwner(_ context.Context, ownerID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 	keys := sortOrgsByID(orm.orgs)
@@ -111,7 +111,7 @@ func (orm *orgRepositoryMock) RetrieveByMemberID(ctx context.Context, memberID s
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
-	members, _ := orm.members.RetrieveAll(ctx)
+	members, _ := orm.memberships.RetrieveAll(ctx)
 	orgs := []auth.Org{}
 
 	first := uint64(pm.Offset) + 1
@@ -151,7 +151,7 @@ func (orm *orgRepositoryMock) RetrieveByMemberID(ctx context.Context, memberID s
 	}, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
+func (orm *orgRepositoryMock) RetrieveAll(_ context.Context) ([]auth.Org, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
@@ -163,7 +163,7 @@ func (orm *orgRepositoryMock) RetrieveAll(ctx context.Context) ([]auth.Org, erro
 	return orgs, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
+func (orm *orgRepositoryMock) RetrieveByAdmin(_ context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 

@@ -66,7 +66,7 @@ paths:
       tags:
         - auth
       requestBody:
-        $ref: "#/components/requestBodies/OrgCreateReq"
+        $ref: "#/components/requestBodies/OrgReq"
       responses:
         '201':
           description: Organization created.
@@ -126,7 +126,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/OrgId"
       requestBody:
-        $ref: "#/components/requestBodies/OrgUpdateReq"
+        $ref: "#/components/requestBodies/OrgReq"
       responses:
         '200':
           description: Organization updated.
@@ -161,9 +161,9 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /orgs/{orgId}/members/{memberId}:
     get:
-      summary: Retrieves organization member details.
+      summary: Retrieves organization membership details.
       description: |
-        Retrieves organization member details for the given organization ID and member ID.
+        Retrieves membership details for the given organization ID and member ID.
       tags:
         - auth
       parameters:
@@ -171,7 +171,7 @@ paths:
         - $ref: "#/components/parameters/MemberId"
       responses:
         '200':
-          $ref: "#/components/responses/OrgMemberRes"
+          $ref: "#/components/responses/OrgMembershipRes"
         '400':
           description: Failed due to malformed query parameters.
         '401':
@@ -180,20 +180,20 @@ paths:
           description: Organization or member does not exist.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /orgs/{orgId}/members:
+  /orgs/{orgId}/memberships:
     post:
-      summary: Assigns members to organization.
+      summary: Creates memberships for organization.
       description: |
-        Assigns new members to organization identified by the given IDs.
+        Creates new memberships for organization identified by the given ID.
       tags:
         - auth
       parameters:
         - $ref: "#/components/parameters/OrgId"
       requestBody:
-        $ref: "#/components/requestBodies/OrgMembersReq"
+        $ref: "#/components/requestBodies/OrgMembershipsReq"
       responses:
         '200':
-          description: Members assigned to organization.
+          description: Memberships created for organization.
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -205,9 +205,9 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
     get:
-      summary: Retrieves all members of organization.
+      summary: Retrieves all memberships of organization.
       description: |
-        Retrieves all members of organization identified by the given ID.
+        Retrieves all memberships of organization identified by the given ID.
       tags:
         - auth
       parameters:
@@ -217,7 +217,7 @@ paths:
         - $ref: "#/components/parameters/Metadata"
       responses:
         '200':
-          $ref: "#/components/responses/OrgMembersRes"
+          $ref: "#/components/responses/OrgMembershipsRes"
         '400':
           description: Failed due to malformed query parameters.
         '401':
@@ -227,18 +227,18 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
     patch:
-      summary: Unassigns members from organization.
+      summary: Removes memberships from organization.
       description: |
-        Unassigns members from organization identified by the given IDs.
+        Removes memberships from organization identified by the given ID.
       tags:
         - auth
       parameters:
         - $ref: "#/components/parameters/OrgId"
       requestBody:
-        $ref: "#/components/requestBodies/UnassignMembersReq"
+        $ref: "#/components/requestBodies/RemoveOrgMembershipsReq"
       responses:
         '204':
-          description: Members unassigned from organization.
+          description: Memberships removed from organization.
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -246,18 +246,18 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
     put:
-      summary: Updates members of organization.
+      summary: Updates memberships of organization.
       description: |
-        Updates members role of organization identified by the given IDs.
+        Updates members role of organization identified by the given ID.
       tags:
         - auth
       parameters:
         - $ref: "#/components/parameters/OrgId"
       requestBody:
-        $ref: "#/components/requestBodies/OrgMembersReq"
+        $ref: "#/components/requestBodies/OrgMembershipsReq"
       responses:
         '200':
-          description: Members role updated.
+          description: Membership updated.
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -266,38 +266,12 @@ paths:
           description: Failed due to non existing organization.
         '500':
           $ref: "#/components/responses/ServiceError"
-
-  /members/{memberId}/orgs:
-    get:
-      summary: Retrieves all organizations of member.
-      description: |
-        Retrieves all organizations of member.
-      tags:
-        - auth
-      parameters:
-        - $ref: "#/components/parameters/MemberId"
-        - $ref: "#/components/parameters/Offset"
-        - $ref: "#/components/parameters/Limit"
-        - $ref: "#/components/parameters/Metadata"
-      responses:
-        '200':
-           $ref: "#/components/responses/OrgsPageRes"
-        '400':
-          description: Failed due to malformed query parameters.
-        '401':
-          description: Missing or invalid access token provided.
-        '404':
-          description: Failed due to non existing member.
-        '415':
-          description: Missing or invalid content type.
-        '500':
-          $ref: "#/components/responses/ServiceError"
   /backup:
     get:
       summary: Retrieves backup of orgs service.
       description: |
         Retrieves backup of the orgs service. Backup is a JSON file that contains
-        all orgs, org members and org groups.
+        all orgs, org memberships and org groups.
       tags:
         - auth
       responses:
@@ -312,7 +286,7 @@ paths:
       summary: Restores org service from backup.
       description: |
         Restores org service from backup. Backup is a JSON file that contains
-        all orgs, org members and org groups.
+        all orgs, org memberships and org groups.
       tags:
         - auth
       requestBody:
@@ -436,10 +410,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/OrgResSchema"
-    OrgMember:
+    OrgMembership:
       type: object
       properties:
-        id:
+        member_id:
           type: string
           format: uuid
         email:
@@ -450,7 +424,7 @@ components:
           type: string
           example: "viewer"
           description: Organization member role.
-    OrgMemberPageSchema:
+    OrgMembershipPageSchema:
       type: object
       properties:
           limit:
@@ -464,21 +438,21 @@ components:
             description: Total number of members.
           name:
             type: string
-          members:
+          org_memberships:
             type: array
             minItems: 1
             uniqueItems: true
             items:
-              $ref: "#/components/schemas/OrgMember"
-    OrgMembersSchema:
+              $ref: "#/components/schemas/OrgMembership"
+    OrgMembershipsSchema:
       type: object
       properties:
-        members:
+        org_memberships:
           type: array
           minItems: 1
           uniqueItems: true
           items:
-            $ref: "#/components/schemas/OrgMember"
+            $ref: "#/components/schemas/OrgMembership"
     OrgMemberIDsSchema:
       type: object
       properties:
@@ -490,10 +464,10 @@ components:
           items:
             type: string
             format: uuid
-    OrgMembersResSchema:
+    OrgMembershipsResSchema:
       type: object
       properties:
-        id:
+        member_id:
           type: string
           format: uuid
           description: Unique member identifier generated by the service
@@ -587,12 +561,12 @@ components:
           uniqueItems: true
           items:
             $ref: "#/components/schemas/OrgResSchema"
-        org_members:
+        org_memberships:
           type: array
           minItems: 1
           uniqueItems: true
           items:
-            $ref: "#/components/schemas/OrgMembersResSchema"
+            $ref: "#/components/schemas/OrgMembershipsResSchema"
         org_groups:
           type: array
           minItems: 1
@@ -601,7 +575,7 @@ components:
             $ref: "#/components/schemas/GroupRelationSchema"
       required:
         - orgs
-        - org_members
+        - org_memberships
         - org_groups
 
   parameters:
@@ -682,29 +656,22 @@ components:
                 format: integer
                 example: 23456
                 description: Number of seconds issued token is valid for.
-    OrgCreateReq:
-      description: JSON-formatted document describing org create request.
+    OrgReq:
+      description: JSON-formatted document describing a request to create and update organizations.
       required: true
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/OrgSchema"
-    OrgUpdateReq:
-      description: JSON-formatted document describing org update request.
+    OrgMembershipsReq:
+      description: JSON-formatted document describing a request to create and update memberships.
       required: true
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/OrgSchema"
-    OrgMembersReq:
-      description: JSON-formatted document describing adding and updating members request.
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/OrgMembersSchema"
-    UnassignMembersReq:
-      description: JSON-formatted document describing unassigning members request.
+            $ref: "#/components/schemas/OrgMembershipsSchema"
+    RemoveOrgMembershipsReq:
+      description: JSON-formatted document describing a membership removal request.
       required: true
       content:
         application/json:
@@ -738,18 +705,18 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/OrgResSchema"
-    OrgMembersRes:
+    OrgMembershipsRes:
       description: Data retrieved.
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/OrgMemberPageSchema"
-    OrgMemberRes:
+            $ref: "#/components/schemas/OrgMembershipPageSchema"
+    OrgMembershipRes:
       description: Data retrieved.
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/OrgMember"
+            $ref: "#/components/schemas/OrgMembership"
     HealthRes:
       description: Service Health Check.
       content:

@@ -124,22 +124,22 @@ type Service interface {
 	// GetProfileIDByThingID returns a thing's profile ID for given thing ID.
 	GetProfileIDByThingID(ctx context.Context, thingID string) (string, error)
 
-	// Backup retrieves all things, profiles, groups, and groups members for all users. Only accessible by admin.
+	// Backup retrieves all things, profiles, groups, and groups memberships for all users. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
-	// Restore adds things, profiles, groups, and groups members from a backup. Only accessible by admin.
+	// Restore adds things, profiles, groups, and groups memberships from a backup. Only accessible by admin.
 	Restore(ctx context.Context, token string, backup Backup) error
 
 	Groups
 
-	GroupMembers
+	GroupMemberships
 }
 
 type Backup struct {
-	Things       []Thing
-	Profiles     []Profile
-	Groups       []Group
-	GroupMembers []GroupMember
+	Things           []Thing
+	Profiles         []Profile
+	Groups           []Group
+	GroupMemberships []GroupMembership
 }
 
 type UserAccessReq struct {
@@ -161,31 +161,31 @@ type PubConfInfo struct {
 var _ Service = (*thingsService)(nil)
 
 type thingsService struct {
-	auth         protomfx.AuthServiceClient
-	users        protomfx.UsersServiceClient
-	things       ThingRepository
-	profiles     ProfileRepository
-	groups       GroupRepository
-	groupMembers GroupMembersRepository
-	profileCache ProfileCache
-	thingCache   ThingCache
-	groupCache   GroupCache
-	idProvider   uuid.IDProvider
+	auth             protomfx.AuthServiceClient
+	users            protomfx.UsersServiceClient
+	things           ThingRepository
+	profiles         ProfileRepository
+	groups           GroupRepository
+	groupMemberships GroupMembershipsRepository
+	profileCache     ProfileCache
+	thingCache       ThingCache
+	groupCache       GroupCache
+	idProvider       uuid.IDProvider
 }
 
 // New instantiates the things service implementation.
-func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, things ThingRepository, profiles ProfileRepository, groups GroupRepository, groupMembers GroupMembersRepository, pcache ProfileCache, tcache ThingCache, gcache GroupCache, idp uuid.IDProvider) Service {
+func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, things ThingRepository, profiles ProfileRepository, groups GroupRepository, groupMemberships GroupMembershipsRepository, pcache ProfileCache, tcache ThingCache, gcache GroupCache, idp uuid.IDProvider) Service {
 	return &thingsService{
-		auth:         auth,
-		users:        users,
-		things:       things,
-		profiles:     profiles,
-		groups:       groups,
-		groupMembers: groupMembers,
-		profileCache: pcache,
-		thingCache:   tcache,
-		groupCache:   gcache,
-		idProvider:   idp,
+		auth:             auth,
+		users:            users,
+		things:           things,
+		profiles:         profiles,
+		groups:           groups,
+		groupMemberships: groupMemberships,
+		profileCache:     pcache,
+		thingCache:       tcache,
+		groupCache:       gcache,
+		idProvider:       idp,
 	}
 }
 
@@ -385,7 +385,7 @@ func (ts *thingsService) ListThingsByOrg(ctx context.Context, token string, orgI
 		return ThingsPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	grIDs, err := ts.groups.RetrieveIDsByOrgMember(ctx, orgID, user.GetId())
+	grIDs, err := ts.groups.RetrieveIDsByOrgMembership(ctx, orgID, user.GetId())
 	if err != nil {
 		return ThingsPage{}, err
 	}
@@ -545,7 +545,7 @@ func (ts *thingsService) ListProfilesByOrg(ctx context.Context, token string, or
 		return ProfilesPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	grIDs, err := ts.groups.RetrieveIDsByOrgMember(ctx, orgID, user.GetId())
+	grIDs, err := ts.groups.RetrieveIDsByOrgMembership(ctx, orgID, user.GetId())
 	if err != nil {
 		return ProfilesPage{}, err
 	}
@@ -706,7 +706,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	groupMembers, err := ts.groupMembers.RetrieveAll(ctx)
+	groupMemberships, err := ts.groupMemberships.RetrieveAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
@@ -722,10 +722,10 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 	}
 
 	return Backup{
-		Things:       things,
-		Profiles:     profiles,
-		Groups:       groups,
-		GroupMembers: groupMembers,
+		Things:           things,
+		Profiles:         profiles,
+		Groups:           groups,
+		GroupMemberships: groupMemberships,
 	}, nil
 }
 
@@ -748,14 +748,14 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 		return err
 	}
 
-	for _, g := range backup.GroupMembers {
-		gm := GroupMember{
+	for _, g := range backup.GroupMemberships {
+		gm := GroupMembership{
 			MemberID: g.MemberID,
 			GroupID:  g.GroupID,
 			Role:     g.Role,
 		}
 
-		if err := ts.groupMembers.Save(ctx, gm); err != nil {
+		if err := ts.groupMemberships.Save(ctx, gm); err != nil {
 			return err
 		}
 	}
@@ -856,9 +856,9 @@ func (ts *thingsService) getGroupIDByProfileID(ctx context.Context, prID string)
 }
 
 func (ts *thingsService) getGroupIDsByMemberID(ctx context.Context, memberID string) ([]string, error) {
-	grIDs, err := ts.groupCache.GroupMemberships(ctx, memberID)
+	grIDs, err := ts.groupCache.RetrieveGroupIDsByMember(ctx, memberID)
 	if err != nil {
-		grIDs, err = ts.groupMembers.RetrieveGroupIDsByMember(ctx, memberID)
+		grIDs, err = ts.groupMemberships.RetrieveGroupIDsByMember(ctx, memberID)
 		if err != nil {
 			return []string{}, err
 		}

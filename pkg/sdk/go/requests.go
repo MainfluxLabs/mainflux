@@ -29,17 +29,12 @@ type deleteWebhooksReq struct {
 	WebhookIDs []string `json:"webhook_ids"`
 }
 
-// assignMembersReq contains org members to be assigned
-type assignMembersReq struct {
-	OrgMembers []OrgMember `json:"org_members"`
+// orgMembershipsReq contains org memberships to be created or updated
+type orgMembershipsReq struct {
+	OrgMemberships []OrgMembership `json:"org_memberships"`
 }
 
-// unassignMembersReq contains IDs of members to be unassigned
-type unassignMemberReq struct {
+// removeMembershipsReq contains IDs of members to be removed
+type removeMembershipsReq struct {
 	MemberIDs []string `json:"member_ids"`
-}
-
-// updateMemberReq contains members to be updated
-type updateMemberReq struct {
-	OrgMembers []OrgMember `json:"org_members"`
 }

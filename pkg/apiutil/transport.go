@@ -167,12 +167,8 @@ func ReadLimitQuery(r *http.Request, key string, def uint64) (uint64, error) {
 		return 0, ErrInvalidQueryParams
 	}
 
-	if val < -1 || val == 0 {
+	if val <= 0 {
 		return 0, ErrInvalidQueryParams
-	}
-
-	if val == -1 {
-		val = 0
 	}
 
 	return uint64(val), nil

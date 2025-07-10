@@ -302,13 +302,6 @@ func TestListWebhooksByGroup(t *testing.T) {
 			res:    data[0:5],
 		},
 		{
-			desc:   "get a list of webhooks by group with no limit",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/groups/%s/webhooks?limit=%d", ts.URL, groupID, -1),
-			res:    data,
-		},
-		{
 			desc:   "get a list of webhooks by group with negative offset",
 			auth:   token,
 			status: http.StatusBadRequest,
