@@ -38,4 +38,17 @@ CREATE TABLE users_roles (
     user_id    UUID NOT NULL,
     CONSTRAINT users_roles_pkey PRIMARY KEY (user_id),
 );
+
+CREATE TABLE IF NOT EXISTS invites (
+    id UUID NOT NULL,
+    invitee_id UUID NOT NULL,
+    inviter_id UUID NOT NULL,
+    org_id UUID NOT NULL,
+    invitee_role VARCHAR(12) NOT NULL,
+    created_at TIMESTAMPTZ,
+    expires_at TIMESTAMPTZ,
+    FOREIGN KEY (org_id) REFERENCES orgs (id) ON DELETE CASCADE,
+    PRIMARY KEY (id),
+    UNIQUE (invitee_id, org_id)
+);
 ```
