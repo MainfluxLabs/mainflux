@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	saveKey     = "save_key"
-	retrieveKey = "retrieve_key_by_id"
-	removeKey   = "remove_key"
+	saveKey         = "save_key"
+	retrieveKeyByID = "retrieve_key_by_id"
+	removeKey       = "remove_key"
 )
 
 var _ auth.KeyRepository = (*keyRepositoryMiddleware)(nil)
@@ -45,7 +45,7 @@ func (krm keyRepositoryMiddleware) Save(ctx context.Context, key auth.Key) (stri
 }
 
 func (krm keyRepositoryMiddleware) Retrieve(ctx context.Context, owner, id string) (auth.Key, error) {
-	span := createSpan(ctx, krm.tracer, retrieveKey)
+	span := createSpan(ctx, krm.tracer, retrieveKeyByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
