@@ -130,7 +130,7 @@ func (mrm *orgMembershipsRepositoryMock) RetrieveByOrgID(_ context.Context, orgI
 	}, nil
 }
 
-func (mrm *orgMembershipsRepositoryMock) RetrieveAll(_ context.Context) ([]auth.OrgMembership, error) {
+func (mrm *orgMembershipsRepositoryMock) BackupAll(_ context.Context) ([]auth.OrgMembership, error) {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 

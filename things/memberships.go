@@ -31,8 +31,8 @@ type GroupMembershipsRepository interface {
 	// RetrieveByGroup retrieves a paginated list of group memberships by group ID.
 	RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (GroupMembershipsPage, error)
 
-	// RetrieveAll retrieves all group memberships. Used for backup.
-	RetrieveAll(ctx context.Context) ([]GroupMembership, error)
+	// BackupAll retrieves all group memberships. Used for backup.
+	BackupAll(ctx context.Context) ([]GroupMembership, error)
 
 	// RetrieveGroupIDsByMember retrieves IDs of groups where the member belongs.
 	RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error)

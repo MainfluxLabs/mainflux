@@ -204,7 +204,7 @@ func (omr orgMembershipsRepository) Update(ctx context.Context, oms ...auth.OrgM
 	return nil
 }
 
-func (omr orgMembershipsRepository) RetrieveAll(ctx context.Context) ([]auth.OrgMembership, error) {
+func (omr orgMembershipsRepository) BackupAll(ctx context.Context) ([]auth.OrgMembership, error) {
 	q := `SELECT org_id, member_id, role, created_at, updated_at FROM org_memberships;`
 
 	rows, err := omr.db.NamedQueryContext(ctx, q, map[string]interface{}{})

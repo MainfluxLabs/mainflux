@@ -56,8 +56,8 @@ type OrgMembershipsRepository interface {
 	// RetrieveByOrgID retrieves org memberships identified by orgID.
 	RetrieveByOrgID(ctx context.Context, orgID string, pm apiutil.PageMetadata) (OrgMembershipsPage, error)
 
-	// RetrieveAll retrieves all memberships.
-	RetrieveAll(ctx context.Context) ([]OrgMembership, error)
+	// BackupAll retrieves all memberships.
+	BackupAll(ctx context.Context) ([]OrgMembership, error)
 
 	// BackupByOrg retrieves all memberships by org ID.
 	BackupByOrg(ctx context.Context, orgID string) ([]OrgMembership, error)

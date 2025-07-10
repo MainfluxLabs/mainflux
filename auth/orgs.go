@@ -87,11 +87,11 @@ type OrgRepository interface {
 	// RetrieveByID retrieves org by its id
 	RetrieveByID(ctx context.Context, id string) (Org, error)
 
-	// RetrieveAll retrieves all orgs.
-	RetrieveAll(ctx context.Context) ([]Org, error)
+	// BackupAll retrieves all orgs.
+	BackupAll(ctx context.Context) ([]Org, error)
 
-	// RetrieveByAdmin retrieves all orgs with pagination.
-	RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (OrgsPage, error)
+	// RetrieveAll retrieves all orgs with pagination.
+	RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (OrgsPage, error)
 
 	// RetrieveByMemberID list of orgs that member belongs to
 	RetrieveByMemberID(ctx context.Context, memberID string, pm apiutil.PageMetadata) (OrgsPage, error)
@@ -141,7 +141,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, err
 
 func (svc service) ListOrgs(ctx context.Context, token string, pm apiutil.PageMetadata) (OrgsPage, error) {
 	if err := svc.isAdmin(ctx, token); err == nil {
-		return svc.orgs.RetrieveByAdmin(ctx, pm)
+		return svc.orgs.RetrieveAll(ctx, pm)
 	}
 
 	user, err := svc.Identify(ctx, token)

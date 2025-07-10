@@ -440,7 +440,7 @@ func TestRemoveProfile(t *testing.T) {
 	}
 }
 
-func TestRetrieveAllProfiles(t *testing.T) {
+func TestBackupAllProfiles(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	profileRepo := postgres.NewProfileRepository(dbMiddleware)
 
@@ -484,7 +484,7 @@ func TestRetrieveAllProfiles(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		profiles, err := profileRepo.RetrieveAll(context.Background())
+		profiles, err := profileRepo.BackupAll(context.Background())
 		size := uint64(len(profiles))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
