@@ -358,10 +358,10 @@ func buildThingsResponse(tp things.ThingsPage) ThingsPageRes {
 
 func buildBackupResponse(backup things.Backup) backupRes {
 	res := backupRes{
-		Things:       []viewThingRes{},
-		Profiles:     []backupProfile{},
-		Groups:       []backupGroup{},
-		GroupMembers: []backupGroupMember{},
+		Things:           []viewThingRes{},
+		Profiles:         []backupProfile{},
+		Groups:           []backupGroup{},
+		GroupMemberships: []backupGroupMembership{},
 	}
 
 	for _, thing := range backup.Things {
@@ -400,14 +400,14 @@ func buildBackupResponse(backup things.Backup) backupRes {
 		res.Groups = append(res.Groups, view)
 	}
 
-	for _, member := range backup.GroupMembers {
-		view := backupGroupMember{
-			MemberID: member.MemberID,
-			GroupID:  member.GroupID,
-			Email:    member.Email,
-			Role:     member.Role,
+	for _, membership := range backup.GroupMemberships {
+		view := backupGroupMembership{
+			MemberID: membership.MemberID,
+			GroupID:  membership.GroupID,
+			Email:    membership.Email,
+			Role:     membership.Role,
 		}
-		res.GroupMembers = append(res.GroupMembers, view)
+		res.GroupMemberships = append(res.GroupMemberships, view)
 	}
 
 	return res
@@ -450,14 +450,14 @@ func buildBackup(req restoreReq) (backup things.Backup) {
 		backup.Groups = append(backup.Groups, gr)
 	}
 
-	for _, member := range req.GroupMembers {
-		mb := things.GroupMember{
-			GroupID:  member.GroupID,
-			MemberID: member.MemberID,
-			Email:    member.Email,
-			Role:     member.Role,
+	for _, membership := range req.GroupMemberships {
+		gm := things.GroupMembership{
+			GroupID:  membership.GroupID,
+			MemberID: membership.MemberID,
+			Email:    membership.Email,
+			Role:     membership.Role,
 		}
-		backup.GroupMembers = append(backup.GroupMembers, mb)
+		backup.GroupMemberships = append(backup.GroupMemberships, gm)
 	}
 
 	return backup
