@@ -8,6 +8,9 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
+// ErrGroupMembershipExists indicates that membership already exists.
+var ErrGroupMembershipExists = errors.New("group membership already exists")
+
 type GroupMembership struct {
 	GroupID  string
 	MemberID string

@@ -150,6 +150,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrOffsetSize,
 		err == apiutil.ErrInvalidRole:
 		w.WriteHeader(http.StatusBadRequest)
+	case errors.Contains(err, things.ErrGroupMembershipExists):
+		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, uuid.ErrGeneratingID):
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
