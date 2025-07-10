@@ -6,9 +6,11 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/jackc/pgerrcode"
@@ -111,6 +113,65 @@ func (ir invitesRepository) Remove(ctx context.Context, inviteID string) error {
 	}
 
 	return nil
+}
+
+func (ir invitesRepository) RetrieveByInviteeID(ctx context.Context, inviteeID string, pm apiutil.PageMetadata) (auth.InvitesPage, error) {
+	query := `
+		SELECT id, inviter_id, org_id, invitee_role, created_at, expires_at
+		FROM invites
+		WHERE invitee_id = :invitee_id
+	`
+
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	query = fmt.Sprintf("%s %s", query, olq)
+
+	params := map[string]any{
+		"invitee_id": inviteeID,
+		"limit":      pm.Limit,
+		"offset":     pm.Offset,
+	}
+
+	rows, err := ir.db.NamedQueryContext(ctx, query, params)
+	if err != nil {
+		// TODO: wrap this in a nicer error
+		return auth.InvitesPage{}, err
+	}
+	defer rows.Close()
+
+	var invites []auth.Invite
+
+	for rows.Next() {
+		dbInv := dbInvite{
+			InviteeID: inviteeID,
+		}
+
+		if err := rows.StructScan(&dbInv); err != nil {
+			// TODO wrap this in a nicer error
+			return auth.InvitesPage{}, err
+		}
+
+		inv := toInvite(dbInv)
+		invites = append(invites, inv)
+	}
+
+	queryCount := `SELECT COUNT(*) FROM invites WHERE invitee_id = :invitee_id`
+
+	total, err := dbutil.Total(ctx, ir.db, queryCount, params)
+	if err != nil {
+		// TODO: wrap this in a nicer error
+		return auth.InvitesPage{}, err
+	}
+
+	page := auth.InvitesPage{
+		Invites: invites,
+		PageMetadata: apiutil.PageMetadata{
+			Total:  total,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+		},
+	}
+
+	return page, nil
 }
 
 func toDBInvite(invite auth.Invite) dbInvite {

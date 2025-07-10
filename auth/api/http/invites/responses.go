@@ -1,18 +1,21 @@
 package invites
 
-import "net/http"
+import (
+	"net/http"
+	"time"
+)
 
-type inviteRes struct{}
+type createInviteRes struct{}
 
-func (res inviteRes) Code() int {
+func (res createInviteRes) Code() int {
 	return http.StatusCreated
 }
 
-func (res inviteRes) Headers() map[string]string {
+func (res createInviteRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res inviteRes) Empty() bool {
+func (res createInviteRes) Empty() bool {
 	return true
 }
 
@@ -42,4 +45,37 @@ func (res respondInviteRes) Headers() map[string]string {
 
 func (res respondInviteRes) Empty() bool {
 	return true
+}
+
+type inviteRes struct {
+	ID          string    `json:"id"`
+	InviteeID   string    `json:"invitee_id"`
+	InviterID   string    `json:"inviter_id"`
+	OrgID       string    `json:"org_id"`
+	InviteeRole string    `json:"invitee_role"`
+	CreatedAt   time.Time `json:"created_at"`
+	ExpiresAt   time.Time `json:"expires_at"`
+}
+
+type pageRes struct {
+	Limit  uint64 `json:"limit"`
+	Offset uint64 `json:"offset"`
+	Total  uint64 `json:"total"`
+}
+
+type invitePageRes struct {
+	pageRes
+	Invites []inviteRes `json:"invites"`
+}
+
+func (res invitePageRes) Code() int {
+	return http.StatusOK
+}
+
+func (res invitePageRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res invitePageRes) Empty() bool {
+	return false
 }

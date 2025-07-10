@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
@@ -18,6 +19,11 @@ var (
 	// ErrInviteExpired indicates that the Invite has expired and cannot be responded to
 	ErrInviteExpired = errors.New("invite has expired")
 )
+
+type InvitesPage struct {
+	Invites []Invite
+	apiutil.PageMetadata
+}
 
 type Invite struct {
 	ID          string
@@ -42,6 +48,10 @@ type Invites interface {
 	// is assigned as a member of the appropriate Org), or declining it. In both cases the existing
 	// pending Invite is removed.
 	InviteRespond(ctx context.Context, token string, inviteID string, accept bool) error
+
+	// ListInvitesByInviteeID retrieves a list of all pending Invites directed towards
+	// a particular User, denoted by their User ID.
+	ListInvitesByInviteeID(ctx context.Context, token string, userID string, pm apiutil.PageMetadata) (InvitesPage, error)
 }
 
 type InvitesRepository interface {
@@ -53,6 +63,10 @@ type InvitesRepository interface {
 
 	// Remove removes a specific pending Invite
 	Remove(ctx context.Context, inviteID string) error
+
+	// RetrieveByInviteeID retrieves a list of all pending invites directed towards a particular User,
+	// denoted by their User ID.
+	RetrieveByInviteeID(ctx context.Context, inviteeID string, pm apiutil.PageMetadata) (InvitesPage, error)
 }
 
 func (svc service) InviteMembers(ctx context.Context, token string, orgID string, oms ...OrgMember) error {
@@ -199,4 +213,31 @@ func (svc service) InviteRespond(ctx context.Context, token string, inviteID str
 	}
 
 	return nil
+}
+
+func (svc service) ListInvitesByInviteeID(ctx context.Context, token string, userID string, pm apiutil.PageMetadata) (InvitesPage, error) {
+	// A specific User's list of pending Invites can only be retrieved by the platform Root Admin
+	// or by that specific User themselves:
+	if err := svc.isAdmin(ctx, token); err != nil {
+		if err != errors.ErrAuthorization {
+			return InvitesPage{}, err
+		}
+
+		// Current User is not Root Admin - must be the User whose Invites are being requested
+		currentUser, err := svc.identify(ctx, token)
+		if err != nil {
+			return InvitesPage{}, err
+		}
+
+		if currentUser.ID != userID {
+			return InvitesPage{}, errors.ErrAuthorization
+		}
+	}
+
+	invitesPage, err := svc.invites.RetrieveByInviteeID(ctx, userID, pm)
+	if err != nil {
+		return InvitesPage{}, err
+	}
+
+	return invitesPage, nil
 }

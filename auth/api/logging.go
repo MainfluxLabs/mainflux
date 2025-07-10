@@ -315,6 +315,7 @@ func (lm *loggingMiddleware) RevokeInvite(ctx context.Context, token string, inv
 
 	return lm.svc.RevokeInvite(ctx, token, inviteID)
 }
+
 func (lm *loggingMiddleware) InviteRespond(ctx context.Context, token string, inviteID string, accept bool) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method invite_respond took %s to complete", time.Since(begin))
@@ -327,4 +328,18 @@ func (lm *loggingMiddleware) InviteRespond(ctx context.Context, token string, in
 	}(time.Now())
 
 	return lm.svc.InviteRespond(ctx, token, inviteID, accept)
+}
+
+func (lm *loggingMiddleware) ListInvitesByInviteeID(ctx context.Context, token string, userID string, pm apiutil.PageMetadata) (invPage auth.InvitesPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_invites_by_invitee_id took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListInvitesByInviteeID(ctx, token, userID, pm)
 }

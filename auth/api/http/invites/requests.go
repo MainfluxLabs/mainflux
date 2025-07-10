@@ -5,6 +5,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
+const maxLimitSize = 100
+
 type invitesReq struct {
 	token      string
 	orgID      string
@@ -73,6 +75,29 @@ func (req inviteResponseReq) validate() error {
 
 	if req.inviteID == "" {
 		return apiutil.ErrMissingInviteID
+	}
+
+	return nil
+}
+
+type listInvitesByUserReq struct {
+	token  string
+	userID string
+	offset uint64
+	limit  uint64
+}
+
+func (req listInvitesByUserReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.userID == "" {
+		return apiutil.ErrMissingUserID
+	}
+
+	if req.limit > maxLimitSize {
+		return apiutil.ErrLimitSize
 	}
 
 	return nil

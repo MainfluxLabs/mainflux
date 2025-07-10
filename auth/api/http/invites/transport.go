@@ -17,6 +17,7 @@ import (
 
 const (
 	orgIDKey             = "orgID"
+	userIDKey            = "userID"
 	inviteIDKey          = "inviteID"
 	inviteReponseVerbKey = "responseVerb"
 )
@@ -41,8 +42,15 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	))
 
 	mux.Post("/orgs/:orgID/invites/:inviteID/:responseVerb", kithttp.NewServer(
-		kitot.TraceServer(tracer, "revoke_invite")(respondInviteEndpoint(svc)),
+		kitot.TraceServer(tracer, "respond_invite")(respondInviteEndpoint(svc)),
 		decodeInviteResponseRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Get("/users/:userID/invites", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_invites_by_user")(listInvitesByUserEndpoint(svc)),
+		decodeListInvitesByUserRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -99,6 +107,28 @@ func decodeInviteResponseRequest(_ context.Context, r *http.Request) (any, error
 	default:
 		return inviteResponseReq{}, apiutil.ErrInvalidInviteResponse
 	}
+
+	return req, nil
+}
+
+func decodeListInvitesByUserRequest(_ context.Context, r *http.Request) (any, error) {
+	req := listInvitesByUserReq{
+		token:  apiutil.ExtractBearerToken(r),
+		userID: bone.GetValue(r, userIDKey),
+	}
+
+	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
+	if err != nil {
+		return nil, err
+	}
+
+	limit, err := apiutil.ReadUintQuery(r, apiutil.LimitKey, apiutil.DefLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	req.offset = offset
+	req.limit = limit
 
 	return req, nil
 }
