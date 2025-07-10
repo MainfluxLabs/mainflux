@@ -13,11 +13,11 @@ import (
 )
 
 const (
-	createOrgMemberships      = "create_org_memberships"
-	removeOrgMemberships      = "remove_org_memberships"
-	updateOrgMemberships      = "update_org_memberships"
-	retrieveOrgMemberships    = "retrieve_org_memberships"
-	retrieveAllOrgMemberships = "retrieve_all_org_memberships"
+	createOrgMemberships    = "create_org_memberships"
+	removeOrgMemberships    = "remove_org_memberships"
+	updateOrgMemberships    = "update_org_memberships"
+	retrieveOrgMemberships  = "retrieve_org_memberships"
+	backupAllOrgMemberships = "backup_all_org_memberships"
 )
 
 var _ auth.OrgMembershipsRepository = (*orgMembershipsRepositoryMiddleware)(nil)
@@ -75,10 +75,10 @@ func (orm orgMembershipsRepositoryMiddleware) RetrieveByOrgID(ctx context.Contex
 	return orm.repo.RetrieveByOrgID(ctx, orgID, pm)
 }
 
-func (orm orgMembershipsRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]auth.OrgMembership, error) {
-	span := createSpan(ctx, orm.tracer, retrieveAllOrgMemberships)
+func (orm orgMembershipsRepositoryMiddleware) BackupAll(ctx context.Context) ([]auth.OrgMembership, error) {
+	span := createSpan(ctx, orm.tracer, backupAllOrgMemberships)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RetrieveAll(ctx)
+	return orm.repo.BackupAll(ctx)
 }
