@@ -133,8 +133,7 @@ func (ir invitesRepository) RetrieveByInviteeID(ctx context.Context, inviteeID s
 
 	rows, err := ir.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		// TODO: wrap this in a nicer error
-		return auth.InvitesPage{}, err
+		return auth.InvitesPage{}, errors.Wrap(auth.ErrRetrieveInvitesByInvitee, err)
 	}
 	defer rows.Close()
 
@@ -146,8 +145,7 @@ func (ir invitesRepository) RetrieveByInviteeID(ctx context.Context, inviteeID s
 		}
 
 		if err := rows.StructScan(&dbInv); err != nil {
-			// TODO wrap this in a nicer error
-			return auth.InvitesPage{}, err
+			return auth.InvitesPage{}, errors.Wrap(auth.ErrRetrieveInvitesByInvitee, err)
 		}
 
 		inv := toInvite(dbInv)
@@ -158,8 +156,7 @@ func (ir invitesRepository) RetrieveByInviteeID(ctx context.Context, inviteeID s
 
 	total, err := dbutil.Total(ctx, ir.db, queryCount, params)
 	if err != nil {
-		// TODO: wrap this in a nicer error
-		return auth.InvitesPage{}, err
+		return auth.InvitesPage{}, errors.Wrap(auth.ErrRetrieveInvitesByInvitee, err)
 	}
 
 	page := auth.InvitesPage{
