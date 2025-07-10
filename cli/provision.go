@@ -39,15 +39,15 @@ const (
 	profileID = iota
 	profileName
 	profileGroupID
-	profileConfContentType
-	profileConfWrite
-	profileConfWebhook
-	profileConfTransformerDataFilters
-	profileConfTransformerDataField
-	profileConfTransformerTimeField
-	profileConfTransformerTimeFormat
-	profileConfTransformerTimeLocation
-	profileConfSMTPID
+	contentType
+	confWrite
+	confWebhook
+	confTransformerDataFilters
+	confTransformerDataField
+	confTransformerTimeField
+	confTransformerTimeFormat
+	confTransformerTimeLocation
+	confSMTPID
 )
 
 var cmdProvision = []cobra.Command{
@@ -324,30 +324,30 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 
 			// Populate profile's config object
 			profile.Config = make(map[string]any)
-			profile.Config["content_type"] = record[profileConfContentType]
+			profile.Config["content_type"] = record[contentType]
 
-			writeBool, err := strconv.ParseBool(record[profileConfWrite])
+			writeBool, err := strconv.ParseBool(record[confWrite])
 			if err != nil {
 				return []mfxsdk.Profile{}, err
 			}
 			profile.Config["write"] = writeBool
 
-			webhookBool, err := strconv.ParseBool(record[profileConfWebhook])
+			webhookBool, err := strconv.ParseBool(record[confWebhook])
 			if err != nil {
 				return []mfxsdk.Profile{}, err
 			}
 			profile.Config["webhook"] = webhookBool
 
-			profile.Config["smtp_id"] = record[profileConfSMTPID]
+			profile.Config["smtp_id"] = record[confSMTPID]
 
 			profile.Config["transformer"] = map[string]any{}
 			transformer := profile.Config["transformer"].(map[string]any)
 
-			transformer["data_field"] = record[profileConfTransformerDataField]
-			transformer["time_field"] = record[profileConfTransformerTimeField]
-			transformer["time_location"] = record[profileConfTransformerTimeLocation]
-			transformer["time_format"] = record[profileConfTransformerTimeFormat]
-			transformer["data_filters"] = strings.Split(record[profileConfTransformerDataFilters], ",")
+			transformer["data_field"] = record[confTransformerDataField]
+			transformer["time_field"] = record[confTransformerTimeField]
+			transformer["time_location"] = record[confTransformerTimeLocation]
+			transformer["time_format"] = record[confTransformerTimeFormat]
+			transformer["data_filters"] = strings.Split(record[confTransformerDataFilters], ",")
 
 			recordMetadata := record[csvProfilesFieldCount:]
 
