@@ -41,7 +41,7 @@ type Invite struct {
 type Invites interface {
 	// InviteMembers creates pending invitations on behalf of the User authenticated by `token`,
 	// towards all members in `oms`, to join the Org identified by `orgID` with an appropriate role.
-	InviteMembers(ctx context.Context, token string, orgID string, oms ...OrgMember) error
+	InviteMembers(ctx context.Context, token string, orgID string, oms ...OrgMember) ([]Invite, error)
 
 	// RevokeInvite revokes a specific pending Invite. An existing pending Invite can only be revoked
 	// by its original inviter (creator).
@@ -72,16 +72,16 @@ type InvitesRepository interface {
 	RetrieveByInviteeID(ctx context.Context, inviteeID string, pm apiutil.PageMetadata) (InvitesPage, error)
 }
 
-func (svc service) InviteMembers(ctx context.Context, token string, orgID string, oms ...OrgMember) error {
+func (svc service) InviteMembers(ctx context.Context, token string, orgID string, oms ...OrgMember) ([]Invite, error) {
 	// Check if currently authenticated User has "admin" privileges within Org (required to make invitations)
 	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Get userID of inviter
 	inviterIdentity, err := svc.identify(ctx, token)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	inviterUserID := inviterIdentity.ID
@@ -95,7 +95,7 @@ func (svc service) InviteMembers(ctx context.Context, token string, orgID string
 	muReq := protomfx.UsersByEmailsReq{Emails: memberEmails}
 	users, err := svc.users.GetUsersByEmails(ctx, &muReq)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Map user emails to user IDs
@@ -112,7 +112,7 @@ func (svc service) InviteMembers(ctx context.Context, token string, orgID string
 	for _, orgMember := range oms {
 		inviteId, err := svc.idProvider.ID()
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		invite := Invite{
@@ -129,10 +129,10 @@ func (svc service) InviteMembers(ctx context.Context, token string, orgID string
 	}
 
 	if err := svc.invites.Save(ctx, invites...); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return invites, nil
 }
 
 func (svc service) RevokeInvite(ctx context.Context, token string, inviteID string) error {
