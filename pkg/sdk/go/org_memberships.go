@@ -35,7 +35,7 @@ func (sdk mfSDK) CreateOrgMemberships(om []OrgMembership, orgID string, token st
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Wrap(ErrMemberAdd, errors.New(resp.Status))
+		return errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
 	}
 
 	return nil

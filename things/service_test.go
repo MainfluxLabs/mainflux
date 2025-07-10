@@ -59,7 +59,7 @@ var (
 		editorEmail: {ID: editor.ID, Email: editor.Email}}
 	usersByIDs = map[string]users.User{user.ID: {ID: user.ID, Email: userEmail}, otherUser.ID: {ID: otherUser.ID, Email: otherUserEmail}, viewer.ID: {ID: viewer.ID, Email: viewerEmail},
 		editor.ID: {ID: editor.ID, Email: editorEmail}}
-	members = []things.GroupMember{
+	memberships = []things.GroupMembership{
 		{MemberID: otherUser.ID, Email: otherUser.Email, Role: things.Admin},
 		{MemberID: viewer.ID, Email: viewer.Email, Role: things.Viewer},
 		{MemberID: editor.ID, Email: editor.Email, Role: things.Editor},
@@ -74,14 +74,14 @@ func newService() things.Service {
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
 	thingsRepo := mocks.NewThingRepository()
 	profilesRepo := mocks.NewProfileRepository(thingsRepo)
-	groupMembersRepo := mocks.NewGroupMembersRepository()
-	groupsRepo := mocks.NewGroupRepository(groupMembersRepo)
+	groupMembershipsRepo := mocks.NewGroupMembershipsRepository()
+	groupsRepo := mocks.NewGroupRepository(groupMembershipsRepo)
 	profileCache := mocks.NewProfileCache()
 	thingCache := mocks.NewThingCache()
 	groupCache := mocks.NewGroupCache()
 	idProvider := uuid.NewMock()
 
-	return things.New(auth, uc, thingsRepo, profilesRepo, groupsRepo, groupMembersRepo, profileCache, thingCache, groupCache, idProvider)
+	return things.New(auth, uc, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider)
 }
 
 func TestInit(t *testing.T) {
@@ -1868,10 +1868,10 @@ func TestRemoveGroup(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	grID := grs[0].ID
 
-	for i := range members {
-		members[i].GroupID = grID
+	for i := range memberships {
+		memberships[i].GroupID = grID
 	}
-	err = svc.CreateGroupMembers(context.Background(), token, members...)
+	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := []struct {
@@ -1949,10 +1949,10 @@ func TestUpdateGroup(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	grID := grs[0].ID
 
-	for i := range members {
-		members[i].GroupID = grID
+	for i := range memberships {
+		memberships[i].GroupID = grID
 	}
-	err = svc.CreateGroupMembers(context.Background(), token, members...)
+	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	ug := things.Group{
@@ -2025,10 +2025,10 @@ func TestViewGroup(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	gr := grs[0]
 
-	for i := range members {
-		members[i].GroupID = gr.ID
+	for i := range memberships {
+		memberships[i].GroupID = gr.ID
 	}
-	err = svc.CreateGroupMembers(context.Background(), token, members...)
+	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	grRes := things.Group{
@@ -2301,86 +2301,86 @@ func TestViewGroupByProfile(t *testing.T) {
 	}
 }
 
-func TestCreateGroupMembers(t *testing.T) {
+func TestCreateGroupMemberships(t *testing.T) {
 	svc := newService()
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	for i := range members {
-		members[i].GroupID = gr.ID
+	for i := range memberships {
+		memberships[i].GroupID = gr.ID
 	}
-	mbs := []things.GroupMember{members[1], members[2]}
-	mb := things.GroupMember{MemberID: "1", GroupID: gr.ID, Email: "member@gmail.com", Role: things.Viewer}
+	gms := []things.GroupMembership{memberships[1], memberships[2]}
+	gm := things.GroupMembership{MemberID: "1", GroupID: gr.ID, Email: "member@gmail.com", Role: things.Viewer}
 
 	cases := []struct {
-		desc   string
-		token  string
-		member []things.GroupMember
-		err    error
+		desc        string
+		token       string
+		memberships []things.GroupMembership
+		err         error
 	}{
 		{
-			desc:   "create group members as owner",
-			token:  token,
-			member: []things.GroupMember{{MemberID: otherUser.ID, GroupID: gr.ID, Email: otherUserEmail, Role: things.Admin}},
-			err:    nil,
+			desc:        "create group memberships as owner",
+			token:       token,
+			memberships: []things.GroupMembership{{MemberID: otherUser.ID, GroupID: gr.ID, Email: otherUserEmail, Role: things.Admin}},
+			err:         nil,
 		},
 		{
-			desc:   "create group members as admin",
-			token:  otherToken,
-			member: mbs,
-			err:    nil,
+			desc:        "create group memberships as admin",
+			token:       otherToken,
+			memberships: gms,
+			err:         nil,
 		},
 		{
-			desc:   "create group members as editor",
-			token:  editorToken,
-			member: []things.GroupMember{mb},
-			err:    errors.ErrAuthorization,
+			desc:        "create group memberships as editor",
+			token:       editorToken,
+			memberships: []things.GroupMembership{gm},
+			err:         errors.ErrAuthorization,
 		},
 		{
-			desc:   "create group members as viewer",
-			token:  viewerToken,
-			member: []things.GroupMember{mb},
-			err:    errors.ErrAuthorization,
+			desc:        "create group memberships as viewer",
+			token:       viewerToken,
+			memberships: []things.GroupMembership{gm},
+			err:         errors.ErrAuthorization,
 		},
 		{
-			desc:   "create group members with wrong credentials",
-			token:  wrongValue,
-			member: []things.GroupMember{mb},
-			err:    errors.ErrAuthentication,
+			desc:        "create group memberships with wrong credentials",
+			token:       wrongValue,
+			memberships: []things.GroupMembership{gm},
+			err:         errors.ErrAuthentication,
 		},
 		{
-			desc:   "create group members without credentials",
-			token:  emptyValue,
-			member: []things.GroupMember{mb},
-			err:    errors.ErrAuthentication,
+			desc:        "create group memberships without credentials",
+			token:       emptyValue,
+			memberships: []things.GroupMembership{gm},
+			err:         errors.ErrAuthentication,
 		},
 		{
-			desc:   "create group members without group id",
-			token:  token,
-			member: []things.GroupMember{{MemberID: "2", Email: "member2@gmail.com", Role: things.Viewer}},
-			err:    errors.ErrNotFound,
+			desc:        "create group memberships without group id",
+			token:       token,
+			memberships: []things.GroupMembership{{MemberID: "2", Email: "member2@gmail.com", Role: things.Viewer}},
+			err:         errors.ErrNotFound,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.CreateGroupMembers(context.Background(), tc.token, tc.member...)
+		err := svc.CreateGroupMemberships(context.Background(), tc.token, tc.memberships...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestListGroupMembers(t *testing.T) {
+func TestListGroupMemberships(t *testing.T) {
 	svc := newService()
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	for i := range members {
-		members[i].GroupID = gr.ID
+	for i := range memberships {
+		memberships[i].GroupID = gr.ID
 	}
-	err = svc.CreateGroupMembers(context.Background(), token, members...)
+	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	var n uint64 = 4
 
@@ -2393,7 +2393,7 @@ func TestListGroupMembers(t *testing.T) {
 		err     error
 	}{
 		{
-			desc:    "list group members as owner",
+			desc:    "list group memberships as owner",
 			token:   token,
 			groupID: gr.ID,
 			meta: apiutil.PageMetadata{
@@ -2404,7 +2404,7 @@ func TestListGroupMembers(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:    "list group members as admin",
+			desc:    "list group memberships as admin",
 			token:   adminToken,
 			groupID: gr.ID,
 			meta: apiutil.PageMetadata{
@@ -2415,7 +2415,7 @@ func TestListGroupMembers(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:    "list group members as editor",
+			desc:    "list group memberships as editor",
 			token:   editorToken,
 			groupID: gr.ID,
 			meta: apiutil.PageMetadata{
@@ -2426,7 +2426,7 @@ func TestListGroupMembers(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:    "list group members as viewer",
+			desc:    "list group memberships as viewer",
 			token:   viewerToken,
 			groupID: gr.ID,
 			meta: apiutil.PageMetadata{
@@ -2437,7 +2437,7 @@ func TestListGroupMembers(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:    "list group members as system admin",
+			desc:    "list group memberships as system admin",
 			token:   adminToken,
 			groupID: gr.ID,
 			meta: apiutil.PageMetadata{
@@ -2448,7 +2448,7 @@ func TestListGroupMembers(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:    "list half group members",
+			desc:    "list half group memberships",
 			token:   token,
 			groupID: gr.ID,
 			meta: apiutil.PageMetadata{
@@ -2459,7 +2459,7 @@ func TestListGroupMembers(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:    "list last group member",
+			desc:    "list last group membership",
 			token:   token,
 			groupID: gr.ID,
 			meta: apiutil.PageMetadata{
@@ -2470,7 +2470,7 @@ func TestListGroupMembers(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:    "list group members with wrong credentials",
+			desc:    "list group memberships with wrong credentials",
 			token:   wrongValue,
 			groupID: gr.ID,
 			meta:    apiutil.PageMetadata{},
@@ -2478,7 +2478,7 @@ func TestListGroupMembers(t *testing.T) {
 			err:     errors.ErrAuthentication,
 		},
 		{
-			desc:    "list group members without credentials",
+			desc:    "list group memberships without credentials",
 			token:   emptyValue,
 			groupID: gr.ID,
 			meta:    apiutil.PageMetadata{},
@@ -2486,7 +2486,7 @@ func TestListGroupMembers(t *testing.T) {
 			err:     errors.ErrAuthentication,
 		},
 		{
-			desc:    "list members from non-existing group",
+			desc:    "list memberships from non-existing group",
 			token:   token,
 			groupID: wrongValue,
 			meta:    apiutil.PageMetadata{},
@@ -2496,107 +2496,107 @@ func TestListGroupMembers(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		page, err := svc.ListGroupMembers(context.Background(), tc.token, tc.groupID, tc.meta)
-		size := uint64(len(page.GroupMembers))
+		page, err := svc.ListGroupMemberships(context.Background(), tc.token, tc.groupID, tc.meta)
+		size := uint64(len(page.GroupMemberships))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestUpdateMembers(t *testing.T) {
+func TestUpdateMemberships(t *testing.T) {
 	svc := newService()
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	for i := range members {
-		members[i].GroupID = gr.ID
+	for i := range memberships {
+		memberships[i].GroupID = gr.ID
 	}
-	err = svc.CreateGroupMembers(context.Background(), token, members...)
+	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	grOwner := things.GroupMember{GroupID: gr.ID, MemberID: user.ID, Email: user.Email, Role: things.Owner}
+	gm := things.GroupMembership{GroupID: gr.ID, MemberID: user.ID, Email: user.Email, Role: things.Owner}
 
 	cases := []struct {
-		desc   string
-		token  string
-		member things.GroupMember
-		err    error
+		desc       string
+		token      string
+		membership things.GroupMembership
+		err        error
 	}{
 		{
-			desc:   "update group member role as viewer",
-			token:  viewerToken,
-			member: members[1],
-			err:    errors.ErrAuthorization,
+			desc:       "update group membership as viewer",
+			token:      viewerToken,
+			membership: memberships[1],
+			err:        errors.ErrAuthorization,
 		},
 		{
-			desc:   "update group member role as editor",
-			token:  editorToken,
-			member: members[2],
-			err:    errors.ErrAuthorization,
+			desc:       "update group membership as editor",
+			token:      editorToken,
+			membership: memberships[2],
+			err:        errors.ErrAuthorization,
 		},
 		{
-			desc:   "update group member role as admin",
-			token:  otherToken,
-			member: members[2],
-			err:    nil,
+			desc:       "update group membership as admin",
+			token:      otherToken,
+			membership: memberships[2],
+			err:        nil,
 		},
 		{
-			desc:   "update group member role as owner",
-			token:  token,
-			member: members[1],
-			err:    nil,
+			desc:       "update group membership as owner",
+			token:      token,
+			membership: memberships[1],
+			err:        nil,
 		},
 		{
-			desc:   "update group owner role as owner",
-			token:  token,
-			member: grOwner,
-			err:    errors.ErrAuthorization,
+			desc:       "update group owner role as owner",
+			token:      token,
+			membership: gm,
+			err:        errors.ErrAuthorization,
 		},
 		{
-			desc:   "update group owner role as admin",
-			token:  otherToken,
-			member: grOwner,
-			err:    errors.ErrAuthorization,
+			desc:       "update group owner role as admin",
+			token:      otherToken,
+			membership: gm,
+			err:        errors.ErrAuthorization,
 		},
 		{
-			desc:   "update group member role with wrong credentials",
-			token:  wrongValue,
-			member: members[1],
-			err:    errors.ErrAuthentication,
+			desc:       "update group membership with wrong credentials",
+			token:      wrongValue,
+			membership: memberships[1],
+			err:        errors.ErrAuthentication,
 		},
 		{
-			desc:   "update group member role without credentials",
-			token:  emptyValue,
-			member: members[1],
-			err:    errors.ErrAuthentication,
+			desc:       "update group membership without credentials",
+			token:      emptyValue,
+			membership: memberships[1],
+			err:        errors.ErrAuthentication,
 		},
 		{
-			desc:   "update group member role with non-existing group",
-			token:  token,
-			member: things.GroupMember{MemberID: editor.ID, GroupID: wrongValue, Email: editor.Email, Role: things.Editor},
-			err:    errors.ErrNotFound,
+			desc:       "update group membership with non-existing group",
+			token:      token,
+			membership: things.GroupMembership{MemberID: editor.ID, GroupID: wrongValue, Email: editor.Email, Role: things.Editor},
+			err:        errors.ErrNotFound,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.UpdateGroupMembers(context.Background(), tc.token, tc.member)
+		err := svc.UpdateGroupMemberships(context.Background(), tc.token, tc.membership)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestRemoveGroupMembers(t *testing.T) {
+func TestRemoveGroupMemberships(t *testing.T) {
 	svc := newService()
 
 	grs, err := svc.CreateGroups(context.Background(), token, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	for i := range members {
-		members[i].GroupID = gr.ID
+	for i := range memberships {
+		memberships[i].GroupID = gr.ID
 	}
-	err = svc.CreateGroupMembers(context.Background(), token, members...)
+	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := []struct {
@@ -2607,21 +2607,21 @@ func TestRemoveGroupMembers(t *testing.T) {
 		err      error
 	}{
 		{
-			desc:     "remove member from group as viewer",
+			desc:     "remove membership from group as viewer",
 			token:    viewerToken,
 			groupID:  gr.ID,
 			memberID: editor.ID,
 			err:      errors.ErrAuthorization,
 		},
 		{
-			desc:     "remove member from group as editor",
+			desc:     "remove membership from group as editor",
 			token:    editorToken,
 			groupID:  gr.ID,
 			memberID: viewer.ID,
 			err:      errors.ErrAuthorization,
 		},
 		{
-			desc:     "remove member from group as admin",
+			desc:     "remove membership from group as admin",
 			token:    otherToken,
 			groupID:  gr.ID,
 			memberID: viewer.ID,
@@ -2635,28 +2635,28 @@ func TestRemoveGroupMembers(t *testing.T) {
 			err:      errors.ErrAuthorization,
 		},
 		{
-			desc:     "remove member from group as owner",
+			desc:     "remove membership from group as owner",
 			token:    token,
 			groupID:  gr.ID,
 			memberID: editor.ID,
 			err:      nil,
 		},
 		{
-			desc:     "remove member with wrong credentials",
+			desc:     "remove membership with wrong credentials",
 			token:    wrongValue,
 			groupID:  gr.ID,
 			memberID: editor.ID,
 			err:      errors.ErrAuthentication,
 		},
 		{
-			desc:     "remove member without credentials",
+			desc:     "remove membership without credentials",
 			token:    emptyValue,
 			groupID:  gr.ID,
 			memberID: editor.ID,
 			err:      errors.ErrAuthentication,
 		},
 		{
-			desc:     "remove member from non-existing group",
+			desc:     "remove membership from non-existing group",
 			token:    token,
 			groupID:  wrongValue,
 			memberID: editor.ID,
@@ -2665,7 +2665,7 @@ func TestRemoveGroupMembers(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.RemoveGroupMembers(context.Background(), tc.token, tc.groupID, tc.memberID)
+		err := svc.RemoveGroupMemberships(context.Background(), tc.token, tc.groupID, tc.memberID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

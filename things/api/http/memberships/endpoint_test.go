@@ -1,4 +1,4 @@
-package members_test
+package memberships_test
 
 import (
 	"context"
@@ -57,7 +57,7 @@ var (
 		editorEmail: {ID: editor.ID, Email: editor.Email}}
 	usersByIDs = map[string]users.User{user.ID: {ID: user.ID, Email: user.Email}, otherUser.ID: {ID: otherUser.ID, Email: otherUser.Email}, viewer.ID: {ID: viewer.ID, Email: viewer.Email},
 		editor.ID: {ID: editor.ID, Email: editor.Email}}
-	members = []things.GroupMember{
+	memberships = []things.GroupMembership{
 		{MemberID: otherUser.ID, Email: otherUser.Email, Role: things.Admin},
 		{MemberID: viewer.ID, Email: viewer.Email, Role: things.Viewer},
 		{MemberID: editor.ID, Email: editor.Email, Role: things.Editor},
@@ -98,14 +98,14 @@ func newService() things.Service {
 	uc := thmocks.NewUsersService(usersByIDs, usersByEmails)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
-	groupMembersRepo := thmocks.NewGroupMembersRepository()
-	groupsRepo := thmocks.NewGroupRepository(groupMembersRepo)
+	groupMembershipsRepo := thmocks.NewGroupMembershipsRepository()
+	groupsRepo := thmocks.NewGroupRepository(groupMembershipsRepo)
 	profileCache := thmocks.NewProfileCache()
 	thingCache := thmocks.NewThingCache()
 	groupCache := thmocks.NewGroupCache()
 	idProvider := uuid.NewMock()
 
-	return things.New(auth, uc, thingsRepo, profilesRepo, groupsRepo, groupMembersRepo, profileCache, thingCache, groupCache, idProvider)
+	return things.New(auth, uc, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider)
 }
 
 func newServer(svc things.Service) *httptest.Server {
@@ -119,7 +119,7 @@ func toJSON(data interface{}) string {
 	return string(jsonData)
 }
 
-func TestCreateGroupMembers(t *testing.T) {
+func TestCreateGroupMemberships(t *testing.T) {
 	svc := newService()
 
 	ts := newServer(svc)
@@ -130,12 +130,12 @@ func TestCreateGroupMembers(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	gm := groupMember{ID: editor.ID, Email: editor.Email, Role: things.Editor}
-	invalidMember := gm
-	invalidMember.Role = wrongValue
+	gm := groupMembership{MemberID: editor.ID, Email: editor.Email, Role: things.Editor}
+	invalidMembership := gm
+	invalidMembership.Role = wrongValue
 
-	data := toJSON(membersReq{GroupMembers: []groupMember{gm}})
-	invalidData := toJSON(membersReq{GroupMembers: []groupMember{invalidMember}})
+	data := toJSON(membershipsReq{GroupMemberships: []groupMembership{gm}})
+	invalidData := toJSON(membershipsReq{GroupMemberships: []groupMembership{invalidMembership}})
 
 	cases := []struct {
 		desc   string
@@ -145,49 +145,49 @@ func TestCreateGroupMembers(t *testing.T) {
 		status int
 	}{
 		{
-			desc:   "create group member",
+			desc:   "create group memberships",
 			token:  token,
 			id:     gr.ID,
 			req:    data,
 			status: http.StatusCreated,
 		},
 		{
-			desc:   "create group member with invalid member role",
+			desc:   "create group memberships with invalid member role",
 			token:  token,
 			id:     gr.ID,
 			req:    invalidData,
 			status: http.StatusBadRequest,
 		},
 		{
-			desc:   "create group member with invalid auth token",
+			desc:   "create group memberships with invalid auth token",
 			token:  wrongValue,
 			id:     gr.ID,
 			req:    data,
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "create group member with empty token",
+			desc:   "create group memberships with empty token",
 			token:  emptyValue,
 			id:     gr.ID,
 			req:    data,
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "create group member without group id",
+			desc:   "create group memberships without group id",
 			token:  token,
 			id:     emptyValue,
 			req:    data,
 			status: http.StatusBadRequest,
 		},
 		{
-			desc:   "create group member with invalid request body",
+			desc:   "create group memberships with invalid request body",
 			token:  token,
 			id:     gr.ID,
 			req:    "{",
 			status: http.StatusBadRequest,
 		},
 		{
-			desc:   "create group member without request body",
+			desc:   "create group memberships without request body",
 			token:  token,
 			id:     gr.ID,
 			req:    emptyValue,
@@ -199,7 +199,7 @@ func TestCreateGroupMembers(t *testing.T) {
 		req := testRequest{
 			client:      client,
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/groups/%s/members", ts.URL, tc.id),
+			url:         fmt.Sprintf("%s/groups/%s/memberships", ts.URL, tc.id),
 			contentType: contentType,
 			token:       tc.token,
 			body:        strings.NewReader(tc.req),
@@ -211,7 +211,7 @@ func TestCreateGroupMembers(t *testing.T) {
 	}
 }
 
-func TestRemoveGroupMembers(t *testing.T) {
+func TestRemoveGroupMemberships(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
@@ -221,14 +221,14 @@ func TestRemoveGroupMembers(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	for i := range members {
-		members[i].GroupID = gr.ID
+	for i := range memberships {
+		memberships[i].GroupID = gr.ID
 	}
 
-	err = svc.CreateGroupMembers(context.Background(), token, members...)
+	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	data := toJSON(removeMembersReq{MemberIDs: []string{members[1].MemberID, members[2].MemberID}})
+	data := toJSON(removeMembershipsReq{MemberIDs: []string{memberships[1].MemberID, memberships[2].MemberID}})
 
 	cases := []struct {
 		desc   string
@@ -238,49 +238,49 @@ func TestRemoveGroupMembers(t *testing.T) {
 		status int
 	}{
 		{
-			desc:   "remove members from group",
+			desc:   "remove memberships from group",
 			token:  token,
 			id:     gr.ID,
 			req:    data,
 			status: http.StatusNoContent,
 		},
 		{
-			desc:   "remove members from group with invalid auth token",
+			desc:   "remove memberships from group with invalid auth token",
 			token:  wrongValue,
 			id:     gr.ID,
 			req:    data,
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "remove members from group with empty token",
+			desc:   "remove memberships from group with empty token",
 			token:  emptyValue,
 			id:     gr.ID,
 			req:    data,
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "remove members from non-existing group",
+			desc:   "remove memberships from non-existing group",
 			token:  token,
 			id:     wrongValue,
 			req:    data,
 			status: http.StatusNotFound,
 		},
 		{
-			desc:   "remove members from group without group id",
+			desc:   "remove memberships from group without group id",
 			token:  token,
 			id:     emptyValue,
 			req:    data,
 			status: http.StatusBadRequest,
 		},
 		{
-			desc:   "remove members from group with invalid request body",
+			desc:   "remove memberships from group with invalid request body",
 			token:  token,
 			id:     gr.ID,
 			req:    "{",
 			status: http.StatusBadRequest,
 		},
 		{
-			desc:   "remove members from group without request body",
+			desc:   "remove memberships from group without request body",
 			token:  token,
 			id:     gr.ID,
 			req:    emptyValue,
@@ -292,7 +292,7 @@ func TestRemoveGroupMembers(t *testing.T) {
 		req := testRequest{
 			client:      client,
 			method:      http.MethodPatch,
-			url:         fmt.Sprintf("%s/groups/%s/members", ts.URL, tc.id),
+			url:         fmt.Sprintf("%s/groups/%s/memberships", ts.URL, tc.id),
 			contentType: contentType,
 			token:       tc.token,
 			body:        strings.NewReader(tc.req),
@@ -304,7 +304,7 @@ func TestRemoveGroupMembers(t *testing.T) {
 	}
 }
 
-func TestUpdateMembers(t *testing.T) {
+func TestUpdateMemberships(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
@@ -314,22 +314,22 @@ func TestUpdateMembers(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	for i := range members {
-		members[i].GroupID = gr.ID
+	for i := range memberships {
+		memberships[i].GroupID = gr.ID
 	}
 
-	err = svc.CreateGroupMembers(context.Background(), token, members...)
+	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	viewerMember := groupMember{ID: viewer.ID, Email: viewer.Email, Role: things.Viewer}
-	updtToEditor := viewerMember
-	updtToEditor.Role = auth.Editor
+	gm := groupMembership{MemberID: viewer.ID, Email: viewer.Email, Role: things.Viewer}
+	editor := gm
+	editor.Role = auth.Editor
 
-	updtToOwner := viewerMember
-	updtToOwner.Role = auth.Owner
+	owner := gm
+	owner.Role = auth.Owner
 
-	viewerRoleData := toJSON(membersReq{GroupMembers: []groupMember{updtToEditor}})
-	ownerRoleData := toJSON(membersReq{GroupMembers: []groupMember{updtToOwner}})
+	viewerData := toJSON(membershipsReq{GroupMemberships: []groupMembership{editor}})
+	ownerData := toJSON(membershipsReq{GroupMemberships: []groupMembership{owner}})
 
 	cases := []struct {
 		desc   string
@@ -339,59 +339,59 @@ func TestUpdateMembers(t *testing.T) {
 		status int
 	}{
 		{
-			desc:   "update group member role",
+			desc:   "update group membership",
 			token:  token,
 			id:     gr.ID,
-			req:    viewerRoleData,
+			req:    viewerData,
 			status: http.StatusOK,
 		},
 		{
-			desc:   "update group member role with invalid auth token",
+			desc:   "update group membership with invalid auth token",
 			token:  wrongValue,
 			id:     gr.ID,
-			req:    viewerRoleData,
+			req:    viewerData,
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "update group member role with empty token",
+			desc:   "update group membership with empty token",
 			token:  emptyValue,
 			id:     gr.ID,
-			req:    viewerRoleData,
+			req:    viewerData,
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "update group member role with non-existing group",
+			desc:   "update group membership with non-existing group",
 			token:  token,
 			id:     wrongValue,
-			req:    viewerRoleData,
+			req:    viewerData,
 			status: http.StatusNotFound,
 		},
 		{
-			desc:   "update group member role without group id",
+			desc:   "update group membership without group id",
 			token:  token,
 			id:     emptyValue,
-			req:    viewerRoleData,
+			req:    viewerData,
 			status: http.StatusBadRequest,
 		},
 		{
-			desc:   "update group member role with invalid request body",
+			desc:   "update group membership with invalid request body",
 			token:  token,
 			id:     gr.ID,
 			req:    "{",
 			status: http.StatusBadRequest,
 		},
 		{
-			desc:   "update group member role without request body",
+			desc:   "update group membership without request body",
 			token:  token,
 			id:     gr.ID,
 			req:    emptyValue,
 			status: http.StatusBadRequest,
 		},
 		{
-			desc:   "update group member role to owner",
+			desc:   "update group membership role to owner",
 			token:  token,
 			id:     gr.ID,
-			req:    ownerRoleData,
+			req:    ownerData,
 			status: http.StatusBadRequest,
 		},
 	}
@@ -400,7 +400,7 @@ func TestUpdateMembers(t *testing.T) {
 		req := testRequest{
 			client:      client,
 			method:      http.MethodPut,
-			url:         fmt.Sprintf("%s/groups/%s/members", ts.URL, tc.id),
+			url:         fmt.Sprintf("%s/groups/%s/memberships", ts.URL, tc.id),
 			contentType: contentType,
 			token:       tc.token,
 			body:        strings.NewReader(tc.req),
@@ -412,7 +412,7 @@ func TestUpdateMembers(t *testing.T) {
 	}
 }
 
-func TestListGroupMembers(t *testing.T) {
+func TestListGroupMemberships(t *testing.T) {
 	svc := newService()
 
 	ts := newServer(svc)
@@ -423,51 +423,51 @@ func TestListGroupMembers(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	for i := range members {
-		members[i].GroupID = gr.ID
+	for i := range memberships {
+		memberships[i].GroupID = gr.ID
 	}
 
-	err = svc.CreateGroupMembers(context.Background(), token, members...)
+	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	var data []groupMember
-	for _, m := range members {
-		data = append(data, groupMember{
-			ID:    m.MemberID,
-			Email: m.Email,
-			Role:  m.Role,
+	var data []groupMembership
+	for _, m := range memberships {
+		data = append(data, groupMembership{
+			MemberID: m.MemberID,
+			Email:    m.Email,
+			Role:     m.Role,
 		})
 	}
 
-	owner := groupMember{
-		ID:    user.ID,
-		Email: userEmail,
-		Role:  auth.Owner,
+	owner := groupMembership{
+		MemberID: user.ID,
+		Email:    userEmail,
+		Role:     auth.Owner,
 	}
 	data = append(data, owner)
 
-	dataByEmailAsc := make([]groupMember, len(data))
+	dataByEmailAsc := make([]groupMembership, len(data))
 	copy(dataByEmailAsc, data)
 	sort.Slice(dataByEmailAsc, func(i, j int) bool {
 		return dataByEmailAsc[i].Email < dataByEmailAsc[j].Email
 	})
 
-	dataByEmailDesc := make([]groupMember, len(data))
+	dataByEmailDesc := make([]groupMembership, len(data))
 	copy(dataByEmailDesc, data)
 	sort.Slice(dataByEmailDesc, func(i, j int) bool {
 		return dataByEmailDesc[i].Email > dataByEmailDesc[j].Email
 	})
 
-	dataByIDAsc := make([]groupMember, len(data))
+	dataByIDAsc := make([]groupMembership, len(data))
 	copy(dataByIDAsc, data)
 	sort.Slice(dataByIDAsc, func(i, j int) bool {
-		return dataByIDAsc[i].ID < dataByIDAsc[j].ID
+		return dataByIDAsc[i].MemberID < dataByIDAsc[j].MemberID
 	})
 
-	dataByIDDesc := make([]groupMember, len(data))
+	dataByIDDesc := make([]groupMembership, len(data))
 	copy(dataByIDDesc, data)
 	sort.Slice(dataByIDDesc, func(i, j int) bool {
-		return dataByIDDesc[i].ID > dataByIDDesc[j].ID
+		return dataByIDDesc[i].MemberID > dataByIDDesc[j].MemberID
 	})
 
 	cases := []struct {
@@ -475,137 +475,137 @@ func TestListGroupMembers(t *testing.T) {
 		token  string
 		url    string
 		status int
-		res    []groupMember
+		res    []groupMembership
 	}{
 		{
-			desc:   "list group members",
+			desc:   "list group memberships",
 			token:  token,
-			url:    fmt.Sprintf("%s/groups/%s/members?limit=%d&offset=%d", ts.URL, gr.ID, n, 0),
+			url:    fmt.Sprintf("%s/groups/%s/memberships?limit=%d&offset=%d", ts.URL, gr.ID, n, 0),
 			status: http.StatusOK,
 			res:    data,
 		},
 		{
-			desc:   "list group members with invalid auth token",
+			desc:   "list group memberships with invalid auth token",
 			token:  wrongValue,
-			url:    fmt.Sprintf("%s/groups/%s/members?limit=%d&offset=%d", ts.URL, gr.ID, n, 0),
+			url:    fmt.Sprintf("%s/groups/%s/memberships?limit=%d&offset=%d", ts.URL, gr.ID, n, 0),
 			status: http.StatusUnauthorized,
 			res:    nil,
 		},
 		{
-			desc:   "list group members without auth token",
+			desc:   "list group memberships without auth token",
 			token:  emptyValue,
-			url:    fmt.Sprintf("%s/groups/%s/members?limit=%d&offset=%d", ts.URL, gr.ID, n, 0),
+			url:    fmt.Sprintf("%s/groups/%s/memberships?limit=%d&offset=%d", ts.URL, gr.ID, n, 0),
 			status: http.StatusUnauthorized,
 			res:    nil,
 		},
 		{
-			desc:   "list group members without group id",
+			desc:   "list group memberships without group id",
 			token:  token,
-			url:    fmt.Sprintf("%s/groups/%s/members?limit=%d&offset=%d", ts.URL, emptyValue, n, 0),
+			url:    fmt.Sprintf("%s/groups/%s/memberships?limit=%d&offset=%d", ts.URL, emptyValue, n, 0),
 			status: http.StatusBadRequest,
 			res:    nil,
 		},
 		{
-			desc:   "list group members with invalid group id",
+			desc:   "list group memberships with invalid group id",
 			token:  token,
-			url:    fmt.Sprintf("%s/groups/%s/members?limit=%d&offset=%d", ts.URL, wrongValue, n, 0),
+			url:    fmt.Sprintf("%s/groups/%s/memberships?limit=%d&offset=%d", ts.URL, wrongValue, n, 0),
 			status: http.StatusNotFound,
 			res:    nil,
 		},
 		{
-			desc:   "list group members with negative offset",
+			desc:   "list group memberships with negative offset",
 			token:  token,
-			url:    fmt.Sprintf("%s/groups/%s/members?limit=%d&offset=%d", ts.URL, gr.ID, n, -5),
+			url:    fmt.Sprintf("%s/groups/%s/memberships?limit=%d&offset=%d", ts.URL, gr.ID, n, -5),
 			status: http.StatusBadRequest,
 			res:    nil,
 		},
 		{
-			desc:   "list group members with negative limit",
+			desc:   "list group memberships with negative limit",
 			token:  token,
-			url:    fmt.Sprintf("%s/groups/%s/members?limit=%d&offset=%d", ts.URL, gr.ID, -5, 0),
+			url:    fmt.Sprintf("%s/groups/%s/memberships?limit=%d&offset=%d", ts.URL, gr.ID, -5, 0),
 			status: http.StatusBadRequest,
 			res:    nil,
 		},
 		{
-			desc:   "list group members with invalid offset",
+			desc:   "list group memberships with invalid offset",
 			token:  token,
-			url:    fmt.Sprintf("%s/groups/%s/members?limit=%d&offset=%s", ts.URL, gr.ID, n, "i"),
+			url:    fmt.Sprintf("%s/groups/%s/memberships?limit=%d&offset=%s", ts.URL, gr.ID, n, "i"),
 			status: http.StatusBadRequest,
 			res:    nil,
 		},
 		{
-			desc:   "list group members with invalid limit",
+			desc:   "list group memberships with invalid limit",
 			token:  token,
-			url:    fmt.Sprintf("%s/groups/%s/members?limit=%s&offset=%d", ts.URL, gr.ID, "i", 0),
+			url:    fmt.Sprintf("%s/groups/%s/memberships?limit=%s&offset=%d", ts.URL, gr.ID, "i", 0),
 			status: http.StatusBadRequest,
 			res:    nil,
 		},
 		{
-			desc:   "list group members without limit",
+			desc:   "list group memberships without limit",
 			token:  token,
-			url:    fmt.Sprintf("%s/groups/%s/members?offset=%d", ts.URL, gr.ID, 0),
+			url:    fmt.Sprintf("%s/groups/%s/memberships?offset=%d", ts.URL, gr.ID, 0),
 			status: http.StatusOK,
 			res:    data,
 		},
 		{
-			desc:   "list group members without offset",
+			desc:   "list group memberships without offset",
 			token:  token,
-			url:    fmt.Sprintf("%s/groups/%s/members?limit=%d", ts.URL, gr.ID, n),
+			url:    fmt.Sprintf("%s/groups/%s/memberships?limit=%d", ts.URL, gr.ID, n),
 			status: http.StatusOK,
 			res:    data,
 		},
 		{
-			desc:   "list group members with default URL",
+			desc:   "list group memberships with default URL",
 			token:  token,
-			url:    fmt.Sprintf("%s/groups/%s/members", ts.URL, gr.ID),
+			url:    fmt.Sprintf("%s/groups/%s/memberships", ts.URL, gr.ID),
 			status: http.StatusOK,
 			res:    data,
 		},
 		{
-			desc:   "list group members filtered by email",
+			desc:   "list group memberships filtered by email",
 			token:  token,
 			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/groups/%s/members?email=%s", ts.URL, gr.ID, viewerEmail),
-			res: []groupMember{
+			url:    fmt.Sprintf("%s/groups/%s/memberships?email=%s", ts.URL, gr.ID, viewerEmail),
+			res: []groupMembership{
 				{
-					ID:    viewer.ID,
-					Email: viewer.Email,
-					Role:  things.Viewer,
+					MemberID: viewer.ID,
+					Email:    viewer.Email,
+					Role:     things.Viewer,
 				},
 			},
 		},
 		{
-			desc:   "list group members filtered by email that doesn't match",
+			desc:   "list group memberships filtered by email that doesn't match",
 			token:  token,
 			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/groups/%s/members?email=%s", ts.URL, gr.ID, wrongValue),
-			res:    []groupMember{},
+			url:    fmt.Sprintf("%s/groups/%s/memberships?email=%s", ts.URL, gr.ID, wrongValue),
+			res:    []groupMembership{},
 		},
 		{
-			desc:   "list group members sorted by email ascendant",
+			desc:   "list group memberships sorted by email ascendant",
 			token:  token,
-			url:    fmt.Sprintf("%s/groups/%s/members?order=%s&dir=%s", ts.URL, gr.ID, emailKey, ascKey),
+			url:    fmt.Sprintf("%s/groups/%s/memberships?order=%s&dir=%s", ts.URL, gr.ID, emailKey, ascKey),
 			status: http.StatusOK,
 			res:    dataByEmailAsc,
 		},
 		{
-			desc:   "list group members sorted by email descendent",
+			desc:   "list group memberships sorted by email descendent",
 			token:  token,
-			url:    fmt.Sprintf("%s/groups/%s/members?order=%s&dir=%s", ts.URL, gr.ID, emailKey, descKey),
+			url:    fmt.Sprintf("%s/groups/%s/memberships?order=%s&dir=%s", ts.URL, gr.ID, emailKey, descKey),
 			status: http.StatusOK,
 			res:    dataByEmailDesc,
 		},
 		{
-			desc:   "list group members sorted by id ascendant",
+			desc:   "list group memberships sorted by id ascendant",
 			token:  token,
-			url:    fmt.Sprintf("%s/groups/%s/members?order=%s&dir=%s", ts.URL, gr.ID, idKey, ascKey),
+			url:    fmt.Sprintf("%s/groups/%s/memberships?order=%s&dir=%s", ts.URL, gr.ID, idKey, ascKey),
 			status: http.StatusOK,
 			res:    dataByIDAsc,
 		},
 		{
-			desc:   "list group members sorted by id descendent",
+			desc:   "list group memberships sorted by id descendent",
 			token:  token,
-			url:    fmt.Sprintf("%s/groups/%s/members?order=%s&dir=%s", ts.URL, gr.ID, idKey, descKey),
+			url:    fmt.Sprintf("%s/groups/%s/memberships?order=%s&dir=%s", ts.URL, gr.ID, idKey, descKey),
 			status: http.StatusOK,
 			res:    dataByIDDesc,
 		},
@@ -621,10 +621,10 @@ func TestListGroupMembers(t *testing.T) {
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		var data memberPageRes
+		var data membershipPageRes
 		err = json.NewDecoder(res.Body).Decode(&data)
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		assert.ElementsMatch(t, tc.res, data.Members, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data.Members))
+		assert.ElementsMatch(t, tc.res, data.GroupMemberships, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data.GroupMemberships))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 	}
 }
@@ -635,21 +635,21 @@ type pageRes struct {
 	Total  uint64 `json:"total"`
 }
 
-type groupMember struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
-	Role  string `json:"role"`
+type groupMembership struct {
+	MemberID string `json:"member_id"`
+	Email    string `json:"email"`
+	Role     string `json:"role"`
 }
 
-type membersReq struct {
-	GroupMembers []groupMember `json:"group_members"`
+type membershipsReq struct {
+	GroupMemberships []groupMembership `json:"group_memberships"`
 }
 
-type removeMembersReq struct {
+type removeMembershipsReq struct {
 	MemberIDs []string `json:"member_ids"`
 }
 
-type memberPageRes struct {
+type membershipPageRes struct {
 	pageRes
-	Members []groupMember `json:"group_members"`
+	GroupMemberships []groupMembership `json:"group_memberships"`
 }

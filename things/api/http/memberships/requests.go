@@ -1,7 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package members
+package memberships
 
 import (
 	"github.com/MainfluxLabs/mainflux/auth"
@@ -11,18 +11,18 @@ import (
 
 const maxLimitSize = 100
 
-type listByGroupReq struct {
+type listGroupMembershipsReq struct {
 	token        string
-	id           string
+	groupID      string
 	pageMetadata apiutil.PageMetadata
 }
 
-func (req listByGroupReq) validate() error {
+func (req listGroupMembershipsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.id == "" {
+	if req.groupID == "" {
 		return apiutil.ErrMissingGroupID
 	}
 
@@ -33,13 +33,13 @@ func (req listByGroupReq) validate() error {
 	return nil
 }
 
-type groupMembersReq struct {
-	token        string
-	groupID      string
-	GroupMembers []groupMember `json:"group_members"`
+type groupMembershipsReq struct {
+	token            string
+	groupID          string
+	GroupMemberships []groupMembership `json:"group_memberships"`
 }
 
-func (req groupMembersReq) validate() error {
+func (req groupMembershipsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -48,16 +48,16 @@ func (req groupMembersReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	if len(req.GroupMembers) == 0 {
+	if len(req.GroupMemberships) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
-	for _, gm := range req.GroupMembers {
+	for _, gm := range req.GroupMemberships {
 		if gm.Role != auth.Admin && gm.Role != things.Viewer && gm.Role != things.Editor {
 			return apiutil.ErrInvalidRole
 		}
 
-		if gm.ID == "" {
+		if gm.MemberID == "" {
 			return apiutil.ErrMissingMemberID
 		}
 	}
@@ -65,13 +65,13 @@ func (req groupMembersReq) validate() error {
 	return nil
 }
 
-type removeGroupMembersReq struct {
+type removeGroupMembershipsReq struct {
 	token     string
 	groupID   string
 	MemberIDs []string `json:"member_ids"`
 }
 
-func (req removeGroupMembersReq) validate() error {
+func (req removeGroupMembershipsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
