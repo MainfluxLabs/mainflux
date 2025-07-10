@@ -352,7 +352,7 @@ func (ts *thingsService) ViewMetadataByKey(ctx context.Context, thingKey string)
 
 func (ts *thingsService) ListThings(ctx context.Context, token string, pm apiutil.PageMetadata) (ThingsPage, error) {
 	if err := ts.isAdmin(ctx, token); err == nil {
-		return ts.things.RetrieveByAdmin(ctx, pm)
+		return ts.things.RetrieveAll(ctx, pm)
 	}
 
 	res, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
@@ -512,7 +512,7 @@ func (ts *thingsService) ViewProfile(ctx context.Context, token, id string) (Pro
 
 func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm apiutil.PageMetadata) (ProfilesPage, error) {
 	if err := ts.isAdmin(ctx, token); err == nil {
-		return ts.profiles.RetrieveByAdmin(ctx, pm)
+		return ts.profiles.RetrieveAll(ctx, pm)
 	}
 
 	res, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
@@ -701,22 +701,22 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	groups, err := ts.groups.RetrieveAll(ctx)
+	groups, err := ts.groups.BackupAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
-	groupMemberships, err := ts.groupMemberships.RetrieveAll(ctx)
+	groupMemberships, err := ts.groupMemberships.BackupAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
-	things, err := ts.things.RetrieveAll(ctx)
+	things, err := ts.things.BackupAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
-	profiles, err := ts.profiles.RetrieveAll(ctx)
+	profiles, err := ts.profiles.BackupAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}

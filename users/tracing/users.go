@@ -13,14 +13,15 @@ import (
 )
 
 const (
-	saveOp            = "save"
-	updateOp          = "update"
-	retrieveByEmailOp = "retrieve_by_email"
-	retrieveByIDOp    = "retrieve_by_id"
-	retrieveByIDsOp   = "retrieve_by_ids"
-	retrieveAllOp     = "retrieve_all"
-	updatePasswordOp  = "update_password"
-	changeStatusOp    = "change_status"
+	saveUser            = "save_user"
+	updateUser          = "update_user"
+	retrieveUserByEmail = "retrieve_user_by_email"
+	retrieveUserByID    = "retrieve_user_by_id"
+	retrieveUsersByIDs  = "retrieve_users_by_ids"
+	retrieveAllUsers    = "retrieve_all_users"
+	backupAllUsers      = "backup_all_users"
+	updateUserPassword  = "update_user_password"
+	changeUserStatus    = "change_user_status"
 )
 
 var _ users.UserRepository = (*userRepositoryMiddleware)(nil)
@@ -40,7 +41,7 @@ func UserRepositoryMiddleware(repo users.UserRepository, tracer opentracing.Trac
 }
 
 func (urm userRepositoryMiddleware) Save(ctx context.Context, user users.User) (string, error) {
-	span := createSpan(ctx, urm.tracer, saveOp)
+	span := createSpan(ctx, urm.tracer, saveUser)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -48,7 +49,7 @@ func (urm userRepositoryMiddleware) Save(ctx context.Context, user users.User) (
 }
 
 func (urm userRepositoryMiddleware) UpdateUser(ctx context.Context, user users.User) error {
-	span := createSpan(ctx, urm.tracer, updateOp)
+	span := createSpan(ctx, urm.tracer, updateUser)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -56,7 +57,7 @@ func (urm userRepositoryMiddleware) UpdateUser(ctx context.Context, user users.U
 }
 
 func (urm userRepositoryMiddleware) RetrieveByEmail(ctx context.Context, email string) (users.User, error) {
-	span := createSpan(ctx, urm.tracer, retrieveByEmailOp)
+	span := createSpan(ctx, urm.tracer, retrieveUserByEmail)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -64,7 +65,7 @@ func (urm userRepositoryMiddleware) RetrieveByEmail(ctx context.Context, email s
 }
 
 func (urm userRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (users.User, error) {
-	span := createSpan(ctx, urm.tracer, retrieveByIDOp)
+	span := createSpan(ctx, urm.tracer, retrieveUserByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -72,7 +73,7 @@ func (urm userRepositoryMiddleware) RetrieveByID(ctx context.Context, id string)
 }
 
 func (urm userRepositoryMiddleware) UpdatePassword(ctx context.Context, email, password string) error {
-	span := createSpan(ctx, urm.tracer, updatePasswordOp)
+	span := createSpan(ctx, urm.tracer, updateUserPassword)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -80,23 +81,23 @@ func (urm userRepositoryMiddleware) UpdatePassword(ctx context.Context, email, p
 }
 
 func (urm userRepositoryMiddleware) RetrieveByIDs(ctx context.Context, ids []string, pm users.PageMetadata) (users.UserPage, error) {
-	span := createSpan(ctx, urm.tracer, retrieveByIDsOp)
+	span := createSpan(ctx, urm.tracer, retrieveUsersByIDs)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return urm.repo.RetrieveByIDs(ctx, ids, pm)
 }
 
-func (urm userRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]users.User, error) {
-	span := createSpan(ctx, urm.tracer, retrieveAllOp)
+func (urm userRepositoryMiddleware) BackupAll(ctx context.Context) ([]users.User, error) {
+	span := createSpan(ctx, urm.tracer, backupAllUsers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return urm.repo.RetrieveAll(ctx)
+	return urm.repo.BackupAll(ctx)
 }
 
 func (urm userRepositoryMiddleware) ChangeStatus(ctx context.Context, id, status string) error {
-	span := createSpan(ctx, urm.tracer, changeStatusOp)
+	span := createSpan(ctx, urm.tracer, changeUserStatus)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

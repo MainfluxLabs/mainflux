@@ -9,12 +9,12 @@ import (
 )
 
 const (
-	saveRuleOp          = "save_rule"
-	retrieveByIDOp      = "retrieve_by_id"
-	retrieveByProfileOp = "retrieve_by_profile"
-	retrieveByGroupOp   = "retrieve_by_group"
-	updateRuleOp        = "update_rule"
-	removeRuleOp        = "remove_rule"
+	saveRule              = "save_rule"
+	retrieveRuleByID      = "retrieve_rule_by_id"
+	retrieveRuleByProfile = "retrieve_rule_by_profile"
+	retrieveRuleByGroup   = "retrieve_rule_by_group"
+	updateRule            = "update_rule"
+	removeRule            = "remove_rule"
 )
 
 var (
@@ -35,7 +35,7 @@ func RuleRepositoryMiddleware(tracer opentracing.Tracer, repo rules.RuleReposito
 }
 
 func (rpm ruleRepositoryMiddleware) Save(ctx context.Context, rules ...rules.Rule) ([]rules.Rule, error) {
-	span := createSpan(ctx, rpm.tracer, saveRuleOp)
+	span := createSpan(ctx, rpm.tracer, saveRule)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -43,7 +43,7 @@ func (rpm ruleRepositoryMiddleware) Save(ctx context.Context, rules ...rules.Rul
 }
 
 func (rpm ruleRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (rules.Rule, error) {
-	span := createSpan(ctx, rpm.tracer, retrieveByIDOp)
+	span := createSpan(ctx, rpm.tracer, retrieveRuleByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -51,7 +51,7 @@ func (rpm ruleRepositoryMiddleware) RetrieveByID(ctx context.Context, id string)
 }
 
 func (rpm ruleRepositoryMiddleware) RetrieveByProfile(ctx context.Context, profileID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
-	span := createSpan(ctx, rpm.tracer, retrieveByProfileOp)
+	span := createSpan(ctx, rpm.tracer, retrieveRuleByProfile)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -59,7 +59,7 @@ func (rpm ruleRepositoryMiddleware) RetrieveByProfile(ctx context.Context, profi
 }
 
 func (rpm ruleRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
-	span := createSpan(ctx, rpm.tracer, retrieveByGroupOp)
+	span := createSpan(ctx, rpm.tracer, retrieveRuleByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -67,7 +67,7 @@ func (rpm ruleRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID
 }
 
 func (rpm ruleRepositoryMiddleware) Update(ctx context.Context, rule rules.Rule) error {
-	span := createSpan(ctx, rpm.tracer, updateRuleOp)
+	span := createSpan(ctx, rpm.tracer, updateRule)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -75,7 +75,7 @@ func (rpm ruleRepositoryMiddleware) Update(ctx context.Context, rule rules.Rule)
 }
 
 func (rpm ruleRepositoryMiddleware) Remove(ctx context.Context, ids ...string) error {
-	span := createSpan(ctx, rpm.tracer, removeRuleOp)
+	span := createSpan(ctx, rpm.tracer, removeRule)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
