@@ -129,7 +129,7 @@ func TestRetrieveByIDs(t *testing.T) {
 	for i := uint64(0); i < nUsers; i++ {
 		uid, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		email := fmt.Sprintf("TestRetrieveAll%d@example.com", i)
+		email := fmt.Sprintf("TestBackupAll%d@example.com", i)
 		user := users.User{
 			ID:       uid,
 			Email:    email,
@@ -283,7 +283,7 @@ func TestRetrieveByIDs(t *testing.T) {
 	}
 }
 
-func TestRetrieveAll(t *testing.T) {
+func TestBackupAll(t *testing.T) {
 	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", usersTable))
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
@@ -300,7 +300,7 @@ func TestRetrieveAll(t *testing.T) {
 	for i := uint64(0); i < nUsers; i++ {
 		uid, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		email := fmt.Sprintf("TestRetrieveAll%d@example.com", i)
+		email := fmt.Sprintf("TestBackupAll%d@example.com", i)
 		user := users.User{
 			ID:       uid,
 			Email:    email,
@@ -323,7 +323,7 @@ func TestRetrieveAll(t *testing.T) {
 		},
 	}
 	for desc, tc := range cases {
-		users, err := userRepo.RetrieveAll(context.Background())
+		users, err := userRepo.BackupAll(context.Background())
 		size := uint64(len(users))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))

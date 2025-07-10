@@ -210,7 +210,7 @@ func (tr thingRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []str
 	return tr.retrieve(ctx, query, cquery, params)
 }
 
-func (tr thingRepository) RetrieveAll(ctx context.Context) ([]things.Thing, error) {
+func (tr thingRepository) BackupAll(ctx context.Context) ([]things.Thing, error) {
 	query := "SELECT id, group_id, profile_id, name, key, metadata FROM things"
 
 	var items []dbThing
@@ -232,7 +232,7 @@ func (tr thingRepository) RetrieveAll(ctx context.Context) ([]things.Thing, erro
 	return ths, nil
 }
 
-func (tr thingRepository) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+func (tr thingRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)

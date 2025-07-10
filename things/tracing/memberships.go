@@ -16,10 +16,8 @@ const (
 	saveGroupMemberships           = "save_group_memberships"
 	updateGroupMemberships         = "update_group_memberships"
 	removeGroupMemberships         = "remove_group_memberships"
-	retrieveRole                   = "retrieve_role"
 	retrieveGroupMemberships       = "retrieve_group_memberships"
-	retrieveGroupIDsByMember       = "retrieve_group_ids_by_member"
-	retrieveAllGroupMemberships    = "retrieve_all_group_memberships"
+	backupAllGroupMemberships      = "backup_all_group_memberships"
 	backupGroupMemberhipsByGroupID = "backup_group_memberhips_by_group_id"
 )
 
@@ -70,12 +68,12 @@ func (gmr groupMembershipsRepositoryMiddleware) RetrieveGroupIDsByMember(ctx con
 	return gmr.repo.RetrieveGroupIDsByMember(ctx, memberID)
 }
 
-func (gmr groupMembershipsRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.GroupMembership, error) {
-	span := createSpan(ctx, gmr.tracer, retrieveAllGroupMemberships)
+func (gmr groupMembershipsRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.GroupMembership, error) {
+	span := createSpan(ctx, gmr.tracer, backupAllGroupMemberships)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return gmr.repo.RetrieveAll(ctx)
+	return gmr.repo.BackupAll(ctx)
 }
 
 func (gmr groupMembershipsRepositoryMiddleware) BackupByGroup(ctx context.Context, groupID string) ([]things.GroupMembership, error) {

@@ -8,6 +8,14 @@ import (
 	"github.com/opentracing/opentracing-go"
 )
 
+const (
+	saveAlarms            = "save_alarms"
+	retrieveAlarmsByGroup = "retrieve_alarms_by_group"
+	retrieveAlarmsByThing = "retrieve_alarms_by_thing"
+	retrieveAlarmByID     = "retrieve_alarm_by_id"
+	removeAlarms          = "remove_alarms"
+)
+
 var (
 	_ alarms.AlarmRepository = (*alarmRepositoryMiddleware)(nil)
 )
@@ -27,7 +35,7 @@ func AlarmRepositoryMiddleware(tracer opentracing.Tracer, repo alarms.AlarmRepos
 }
 
 func (arm alarmRepositoryMiddleware) Save(ctx context.Context, ams ...alarms.Alarm) error {
-	span := createSpan(ctx, arm.tracer, "save_alarms")
+	span := createSpan(ctx, arm.tracer, saveAlarms)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -35,7 +43,7 @@ func (arm alarmRepositoryMiddleware) Save(ctx context.Context, ams ...alarms.Ala
 }
 
 func (arm alarmRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
-	span := createSpan(ctx, arm.tracer, "retrieve_by_group")
+	span := createSpan(ctx, arm.tracer, retrieveAlarmsByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -43,7 +51,7 @@ func (arm alarmRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupI
 }
 
 func (arm alarmRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
-	span := createSpan(ctx, arm.tracer, "retrieve_by_thing")
+	span := createSpan(ctx, arm.tracer, retrieveAlarmsByThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -51,7 +59,7 @@ func (arm alarmRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingI
 }
 
 func (arm alarmRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (alarms.Alarm, error) {
-	span := createSpan(ctx, arm.tracer, "retrieve_alarm_by_id")
+	span := createSpan(ctx, arm.tracer, retrieveAlarmByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -59,7 +67,7 @@ func (arm alarmRepositoryMiddleware) RetrieveByID(ctx context.Context, id string
 }
 
 func (arm alarmRepositoryMiddleware) Remove(ctx context.Context, ids ...string) error {
-	span := createSpan(ctx, arm.tracer, "remove_alarms")
+	span := createSpan(ctx, arm.tracer, removeAlarms)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
