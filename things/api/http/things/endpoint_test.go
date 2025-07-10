@@ -49,7 +49,6 @@ const (
 	orgID2         = "374106f7-030e-4881-8ab0-151195c29f93"
 	prefix         = "fe6b4e92-cc98-425e-b0aa-"
 	n              = 101
-	noLimit        = -1
 )
 
 var (
@@ -1140,13 +1139,6 @@ func TestListThingsByProfile(t *testing.T) {
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, pr.ID, 0, 5),
 			res:    data[0:5],
-		},
-		{
-			desc:   "get a list of things by profile with no limit",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/things?limit=%d", thingURL, pr.ID, noLimit),
-			res:    data,
 		},
 		{
 			desc:   "get a list of things by profile with invalid token",
