@@ -41,13 +41,11 @@ const (
 	profileGroupID
 	contentType
 	confWrite
-	confWebhook
 	confTransformerDataFilters
 	confTransformerDataField
 	confTransformerTimeField
 	confTransformerTimeFormat
 	confTransformerTimeLocation
-	confSMTPID
 )
 
 var cmdProvision = []cobra.Command{
@@ -331,14 +329,6 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 				return []mfxsdk.Profile{}, err
 			}
 			profile.Config["write"] = writeBool
-
-			webhookBool, err := strconv.ParseBool(record[confWebhook])
-			if err != nil {
-				return []mfxsdk.Profile{}, err
-			}
-			profile.Config["webhook"] = webhookBool
-
-			profile.Config["smtp_id"] = record[confSMTPID]
 
 			profile.Config["transformer"] = map[string]any{}
 			transformer := profile.Config["transformer"].(map[string]any)
