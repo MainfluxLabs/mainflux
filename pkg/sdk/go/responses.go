@@ -66,9 +66,9 @@ type OrgsPage struct {
 	pageRes
 }
 
-// GroupMembersPage contains a list of roles for a certain group with proper metadata.
-type GroupMembersPage struct {
-	GroupMembers []GroupMember `json:"group_members"`
+// GroupMembershipsPage contains a list of memberships for a certain group with proper metadata.
+type GroupMembershipsPage struct {
+	GroupMemberships []GroupMembership `json:"group_memberships"`
 	pageRes
 }
 

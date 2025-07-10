@@ -259,11 +259,11 @@ func (req backupReq) validate() error {
 }
 
 type restoreReq struct {
-	token        string
-	Things       []viewThingRes      `json:"things"`
-	Profiles     []backupProfile     `json:"profiles"`
-	Groups       []backupGroup       `json:"groups"`
-	GroupMembers []backupGroupMember `json:"group_members"`
+	token            string
+	Things           []viewThingRes          `json:"things"`
+	Profiles         []backupProfile         `json:"profiles"`
+	Groups           []backupGroup           `json:"groups"`
+	GroupMemberships []backupGroupMembership `json:"group_memberships"`
 }
 
 func (req restoreReq) validate() error {

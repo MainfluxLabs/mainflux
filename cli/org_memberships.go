@@ -10,8 +10,8 @@ import (
 var cmdOrgMemberships = []cobra.Command{
 	{
 		Use:   "create <JSON_memberships> <org_id> <user_token>",
-		Short: "Create org membership",
-		Long:  `Create membership for a specific user by assigning a role in org`,
+		Short: "Create org memberships",
+		Long:  `Create memberships for users by assigning a roles in the org`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 3 {
 				logUsage(cmd.Use)
@@ -70,7 +70,7 @@ var cmdOrgMemberships = []cobra.Command{
 	{
 		Use:   "update <JSON_memberships> <org_id> <user_token>",
 		Short: "Update org memberships",
-		Long:  `Update membership by changing member role`,
+		Long:  `Update memberships by changing member roles`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 3 {
 				logUsage(cmd.Use)
@@ -92,9 +92,9 @@ var cmdOrgMemberships = []cobra.Command{
 		},
 	},
 	{
-		Use:   "remove <JSON_memberships> <org_id> <user_token>",
-		Short: "Remove a membership from org",
-		Long:  `Remove a membership from org`,
+		Use:   "delete <JSON_memberships> <org_id> <user_token>",
+		Short: "Delete memberships from org",
+		Long:  `Delete memberships from org`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 3 {
 				logUsage(cmd.Use)
@@ -120,9 +120,9 @@ var cmdOrgMemberships = []cobra.Command{
 // NewOrgMembershipsCmd returns users command.
 func NewOrgMembershipsCmd() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "org_memberships [create | get | update | remove]",
+		Use:   "org_memberships [create | get | update | delete]",
 		Short: "Org memberships management",
-		Long:  `Org memberships management: create, remove, get or update org memberships"`,
+		Long:  `Org memberships management: create, delete, get or update org memberships"`,
 	}
 
 	for i := range cmdOrgMemberships {

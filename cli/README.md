@@ -196,6 +196,26 @@ mainfluxlabs-cli groups profiles <group_id> <user_token>
 mainfluxlabs-cli groups profile <profile_id> <user_token>
 ```
 
+#### Create Group Membership
+```bash
+mainfluxlabs-cli group_memberships create '[{"member_id":"<member_id>","email":"<email>","role":"<role>"}]' <group_id> <user_token>
+```
+
+#### Remove Group Membership
+```bash
+mainfluxlabs-cli group_memberships delete '["<member_id>"]' <group_id> <user_token>
+```
+
+#### Update Group Membership
+```bash
+mainfluxlabs-cli group_memberships update '[{"member_id":"<member_id>","role":"<new_role>"}]' <group_id> <user_token>
+```
+
+#### List Group Memberships
+```bash
+mainfluxlabs-cli group_memberships get <group_id> <user_token>
+```
+
 ### Orgs
 #### Create Org
 ```bash
@@ -229,7 +249,7 @@ mainfluxlabs-cli org_memberships create '[{"member_id":"<member_id>","email":"<e
 
 #### Remove Org Membership
 ```bash
-mainfluxlabs-cli org_memberships remove '["<member_id>"]' <org_id> <user_token>
+mainfluxlabs-cli org_memberships delete '["<member_id>"]' <org_id> <user_token>
 ```
 
 #### Get Org Membership

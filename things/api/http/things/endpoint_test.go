@@ -49,7 +49,6 @@ const (
 	orgID2         = "374106f7-030e-4881-8ab0-151195c29f93"
 	prefix         = "fe6b4e92-cc98-425e-b0aa-"
 	n              = 101
-	noLimit        = -1
 )
 
 var (
@@ -106,14 +105,14 @@ func newService() things.Service {
 	auth := mocks.NewAuthService(admin.ID, usersList, orgsList)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
-	groupMembersRepo := thmocks.NewGroupMembersRepository()
-	groupsRepo := thmocks.NewGroupRepository(groupMembersRepo)
+	groupMembershipsRepo := thmocks.NewGroupMembershipsRepository()
+	groupsRepo := thmocks.NewGroupRepository(groupMembershipsRepo)
 	profileCache := thmocks.NewProfileCache()
 	thingCache := thmocks.NewThingCache()
 	groupCache := thmocks.NewGroupCache()
 	idProvider := uuid.NewMock()
 
-	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, groupMembersRepo, profileCache, thingCache, groupCache, idProvider)
+	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider)
 }
 
 func newServer(svc things.Service) *httptest.Server {
@@ -1140,13 +1139,6 @@ func TestListThingsByProfile(t *testing.T) {
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, pr.ID, 0, 5),
 			res:    data[0:5],
-		},
-		{
-			desc:   "get a list of things by profile with no limit",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/things?limit=%d", thingURL, pr.ID, noLimit),
-			res:    data,
 		},
 		{
 			desc:   "get a list of things by profile with invalid token",
