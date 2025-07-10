@@ -46,7 +46,7 @@ func (mr groupMembershipsRepository) Save(ctx context.Context, gms ...things.Gro
 				case pgerrcode.ForeignKeyViolation:
 					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
 				case pgerrcode.UniqueViolation:
-					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
+					return errors.Wrap(things.ErrGroupMembershipExists, errors.New(pgErr.Detail))
 				}
 			}
 			return errors.Wrap(errors.ErrCreateEntity, err)

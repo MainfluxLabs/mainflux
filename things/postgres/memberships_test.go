@@ -81,6 +81,11 @@ func TestSave(t *testing.T) {
 			err:  nil,
 		},
 		{
+			desc: "save existing group memberships",
+			gms:  gms,
+			err:  things.ErrGroupMembershipExists,
+		},
+		{
 			desc: "save group memberships without group ids",
 			gms:  gmsWithoutGroupIDs,
 			err:  errors.ErrMalformedEntity,
@@ -89,11 +94,6 @@ func TestSave(t *testing.T) {
 			desc: "save group memberships without member id",
 			gms:  gmsWithoutMemberIDs,
 			err:  errors.ErrMalformedEntity,
-		},
-		{
-			desc: "save existing group memberships",
-			gms:  gms,
-			err:  errors.ErrConflict,
 		},
 	}
 
