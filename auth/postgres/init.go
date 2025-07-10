@@ -87,6 +87,15 @@ func migrateDB(db *sqlx.DB) error {
 					`DROP TABLE IF EXISTS member_relations`,
 				},
 			},
+			{
+				Id: "auth_2",
+				Up: []string{
+					`ALTER TABLE member_relations RENAME TO org_memberships`,
+					`ALTER TABLE org_memberships RENAME CONSTRAINT member_relations_org_id_fkey TO org_memberships_org_id_fkey`,
+					`ALTER TABLE org_memberships RENAME CONSTRAINT member_relations_pkey TO org_memberships_pkey`,
+				},
+				Down: []string{},
+			},
 		},
 	}
 
