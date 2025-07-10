@@ -299,8 +299,8 @@ func TestListAllMessagesSenML(t *testing.T) {
 				To:    messages[20].Time,
 			},
 			page: readers.MessagesPage{
-				Total:    uint64(len(messages[21:])),
-				Messages: fromSenml(messages[21:]),
+				Total:    uint64(len(messages[20:])),
+				Messages: fromSenml(messages[20:]),
 			},
 		},
 		"read messages with from/to": {
@@ -310,8 +310,8 @@ func TestListAllMessagesSenML(t *testing.T) {
 				To:    messages[0].Time,
 			},
 			page: readers.MessagesPage{
-				Total:    5,
-				Messages: fromSenml(messages[1:6]),
+				Total:    6,
+				Messages: fromSenml(messages[0:6]),
 			},
 		},
 	}
