@@ -141,3 +141,19 @@ func (mrm *orgMembershipsRepositoryMock) BackupAll(_ context.Context) ([]auth.Or
 
 	return oms, nil
 }
+
+func (mrm *orgMembershipsRepositoryMock) BackupByOrg(ctx context.Context, orgID string) ([]auth.OrgMembership, error) {
+	mrm.mu.Lock()
+	defer mrm.mu.Unlock()
+
+	var oms []auth.OrgMembership
+	for _, membership := range mrm.memberships {
+		for _, mb := range membership {
+			if mb.OrgID == orgID {
+				oms = append(oms, mb)
+			}
+		}
+	}
+
+	return oms, nil
+}

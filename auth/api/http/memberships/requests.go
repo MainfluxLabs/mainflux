@@ -104,3 +104,18 @@ func (req removeOrgMembershipsReq) validate() error {
 
 	return nil
 }
+
+type backupReq struct {
+	token string
+	id    string
+}
+
+func (req backupReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if req.id == "" {
+		return apiutil.ErrMissingOrgID
+	}
+	return nil
+}

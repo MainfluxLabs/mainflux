@@ -34,6 +34,13 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
+	mux.Get("/orgs/:id/memberships/backup", kithttp.NewServer(
+		kitot.TraceServer(tracer, "backup_org_memberships")(backupOrgMembershipsEndpoint(svc)),
+		decodeBackup,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Get("/orgs/:orgID/members/:memberID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_org_membership")(viewOrgMembershipEndpoint(svc)),
 		decodeOrgMembershipRequest,
@@ -77,6 +84,10 @@ func decodeListOrgMemberships(_ context.Context, r *http.Request) (interface{}, 
 	}
 
 	e, err := apiutil.ReadStringQuery(r, emailKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	or, err := apiutil.ReadStringQuery(r, apiutil.OrderKey, apiutil.IDOrder)
 	if err != nil {
 		return nil, err
@@ -142,6 +153,14 @@ func decodeRemoveOrgMemberships(_ context.Context, r *http.Request) (interface{}
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
+	return req, nil
+}
+
+func decodeBackup(_ context.Context, r *http.Request) (interface{}, error) {
+	req := backupReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, apiutil.IDKey),
+	}
 	return req, nil
 }
 

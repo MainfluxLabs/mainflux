@@ -111,11 +111,83 @@ paths:
         '200':
           $ref: "#/components/responses/ThingsPageRes"
         '400':
-          description: Failed due to malformed query parameters.
+          description: Failed due to malformed request body.
         '401':
           description: Missing or invalid access token provided.
         '404':
           description: A non-existent entity request.
+        '422':
+          description: Unprocessable Entity
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /profiles/{profileId}/things/search:
+    post:
+      summary: Search and retrieve things by profile.
+      description: |
+        Retrieves a list of things associated with a specific profile, with optional name and metadata filtering, and supports pagination (offset, limit) and sorting (order, dir).
+      tags:
+        - things
+      parameters:
+        - $ref: "#/components/parameters/ProfileId"
+      requestBody:
+        $ref: "#/components/requestBodies/SearchThingsReq"
+      responses:
+        '200':
+          $ref: "#/components/responses/ThingsPageRes"
+        '400':
+          description: Failed due to malformed request body.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Failed due to non existing profile or related entities.
+        '422':
+          description: Unprocessable Entity
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /groups/{groupId}/things/search:
+    post:
+      summary: Search and retrieve things by group.
+      description: |
+        Retrieves a list of things associated with a specific group, with optional name and metadata filtering, and supports pagination (offset, limit) and sorting (order, dir).
+      tags:
+        - things
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/SearchThingsReq"
+      responses:
+        '200':
+          $ref: "#/components/responses/ThingsPageRes"
+        '400':
+          description: Failed due to malformed request body.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Failed due to non existing group or related entities.
+        '422':
+          description: Unprocessable Entity
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /orgs/{orgId}/things/search:
+    post:
+      summary: Search and retrieve things by organization.
+      description: |
+        Retrieves a list of things associated with a specific organization, with optional name and metadata filtering, and supports pagination (offset, limit) and sorting (order, dir).
+      tags:
+        - things
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      requestBody:
+        $ref: "#/components/requestBodies/SearchThingsReq"
+      responses:
+        '200':
+          $ref: "#/components/responses/ThingsPageRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Failed due to non existing organization or related entities.
         '422':
           description: Unprocessable Entity
         '500':
@@ -350,6 +422,74 @@ paths:
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /profiles/search:
+    post:
+      summary: Search and retrieve profiles.
+      description: |
+        Retrieves a list of profiles with optional name and metadata filtering, and supports pagination (offset, limit) and sorting (order, dir).
+      tags:
+        - profiles
+      requestBody:
+        $ref: "#/components/requestBodies/SearchProfilesReq"
+      responses:
+        '200':
+          $ref: "#/components/responses/ProfilesPageRes"
+        '400':
+          description: Failed due to malformed request body.
+        '401':
+          description: Missing or invalid access token provided.
+        '422':
+          description: Unprocessable Entity
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /groups/{groupId}/profiles/search:
+    post:
+      summary: Search and retrieve profiles by group.
+      description: |
+        Retrieves a list of profiles associated with a specific group, with optional name and metadata filtering, and supports pagination (offset, limit) and sorting (order, dir).
+      tags:
+        - profiles
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/SearchProfilesReq"
+      responses:
+        '200':
+          $ref: "#/components/responses/ProfilesPageRes"
+        '400':
+          description: Failed due to malformed request body.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Failed due to non existing group or related entities.
+        '422':
+          description: Unprocessable Entity
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /orgs/{orgId}/profiles/search:
+    post:
+      summary: Search and retrieve profiles by organization.
+      description: |
+        Retrieves a list of profiles associated with a specific organization, with optional name and metadata filtering, and supports pagination (offset, limit) and sorting (order, dir).
+      tags:
+        - profiles
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      requestBody:
+        $ref: "#/components/requestBodies/SearchProfilesReq"
+      responses:
+        '200':
+          $ref: "#/components/responses/ProfilesPageRes"
+        '400':
+          description: Failed due to malformed request body.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Failed due to non existing organization or related entities.
+        '422':
+          description: Unprocessable Entity
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /profiles/{profileId}:
     get:
       summary: Retrieves profile info
@@ -576,6 +716,50 @@ paths:
           description: Failed due to malformed JSON.
         '401':
           description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /groups/search:
+    post:
+      summary: Search and retrieve groups.
+      description: |
+        Retrieves a list of groups with optional name and metadata filtering, and supports pagination (offset, limit) and sorting (order, dir).
+      tags:
+        - groups
+      requestBody:
+        $ref: "#/components/requestBodies/SearchGroupsReq"
+      responses:
+        '200':
+          $ref: "#/components/responses/GroupsPageRes"
+        '400':
+          description: Failed due to malformed request body.
+        '401':
+          description: Missing or invalid access token provided.
+        '422':
+          description: Unprocessable Entity
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /orgs/{orgId}/groups/search:
+    post:
+      summary: Search and retrieve groups by organization.
+      description: |
+        Retrieves a list of groups associated with a specific organization, with optional name and metadata filtering, and supports pagination (offset, limit) and sorting (order, dir).
+      tags:
+        - groups
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      requestBody:
+        $ref: "#/components/requestBodies/SearchGroupsReq"
+      responses:
+        '200':
+          $ref: "#/components/responses/GroupsPageRes"
+        '400':
+          description: Failed due to malformed request body.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Failed due to non existing organization or related entities.
+        '422':
+          description: Unprocessable Entity
         '500':
           $ref: "#/components/responses/ServiceError"
   /groups/{groupId}:
@@ -820,7 +1004,7 @@ components:
         metadata:
           type: object
           description: Arbitrary, object-encoded thing's data.
-    ThingsReqSchema:
+    SearchThingsReqSchema:
       type: object
       properties:
         name:
@@ -829,9 +1013,6 @@ components:
         metadata:
           type: object
           description: Metadata filter. Filtering is performed matching the parameter with metadata on top level. Parameter is json.
-        total:
-          type: integer
-          description: Total number of items.
         offset:
           type: integer
           description: Number of items to skip during retrieval.
@@ -938,6 +1119,40 @@ components:
         metadata:
           type: object
           description: Arbitrary, object-encoded profile's data.
+    SearchProfilesReqSchema:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name filter. Filtering is performed as a case-insensitive partial match.
+        metadata:
+          type: object
+          description: Metadata filter. Filtering is performed by matching the parameter with metadata on top level. Parameter is JSON.
+        offset:
+          type: integer
+          description: Number of items to skip during retrieval.
+          default: 0
+          minimum: 0
+        limit:
+          type: integer
+          description: Size of the subset to retrieve.
+          default: 10
+          maximum: 100
+          minimum: 1
+        order:
+          type: string
+          description: Order type.
+          default: id
+          enum:
+            - name
+            - id
+        dir:
+          type: string
+          description: Order direction.
+          default: desc
+          enum:
+            - asc
+            - desc
     ProfileResSchema:
       type: object
       properties:
@@ -1054,6 +1269,40 @@ components:
             $ref: "#/components/schemas/ThingResSchema"
       required:
         - things
+    SearchGroupsReqSchema:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name filter. Filtering is performed as a case-insensitive partial match.
+        metadata:
+          type: object
+          description: Metadata filter. Filtering is performed by matching the parameter with metadata on top level. Parameter is JSON.
+        offset:
+          type: integer
+          description: Number of items to skip during retrieval.
+          default: 0
+          minimum: 0
+        limit:
+          type: integer
+          description: Size of the subset to retrieve.
+          default: 10
+          maximum: 100
+          minimum: 1
+        order:
+          type: string
+          description: Order type.
+          default: id
+          enum:
+            - name
+            - id
+        dir:
+          type: string
+          description: Order direction.
+          default: desc
+          enum:
+            - asc
+            - desc
     GroupResSchema:
       type: object
       properties:
@@ -1368,11 +1617,11 @@ components:
                 format: uuid
     SearchThingsReq:
       description: JSON-formatted document describing search parameters.
-      required: true
+      required: false
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ThingsReqSchema"
+            $ref: "#/components/schemas/SearchThingsReqSchema"
     RemoveThingReq:
       description: JSON-formatted document describing the identifiers of things for deleting.
       required: true
@@ -1417,6 +1666,13 @@ components:
                 type: array
                 items:
                   $ref: "#/components/schemas/ProfileReqSchema"
+    SearchProfilesReq:
+      description: JSON-formatted document describing profile search parameters.
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SearchProfilesReqSchema"
     RemoveProfileReq:
       description: JSON-formatted document describing the identifiers of profiles for deleting.
       required: true
@@ -1451,6 +1707,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/GroupsReqSchema"
+    SearchGroupsReq:
+      description: JSON-formatted document describing group search parameters.
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SearchGroupsReqSchema"
     UpdateGroupReq:
       description: JSON-formatted document describing group create request.
       required: true

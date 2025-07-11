@@ -2,6 +2,7 @@ package memberships
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
@@ -80,4 +81,29 @@ func (res removeRes) Headers() map[string]string {
 
 func (res removeRes) Empty() bool {
 	return true
+}
+
+type viewOrgMembershipsRes struct {
+	MemberID  string    `json:"member_id"`
+	OrgID     string    `json:"org_id"`
+	Email     string    `json:"email"`
+	Role      string    `json:"role"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type backupOrgMembershipsRes struct {
+	OrgMemberships []viewOrgMembershipsRes `json:"org_memberships"`
+}
+
+func (res backupOrgMembershipsRes) Code() int {
+	return http.StatusOK
+}
+
+func (res backupOrgMembershipsRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res backupOrgMembershipsRes) Empty() bool {
+	return false
 }
