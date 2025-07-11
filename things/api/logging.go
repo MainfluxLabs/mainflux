@@ -392,7 +392,7 @@ func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (bk thing
 
 func (lm *loggingMiddleware) BackupGroupsByOrg(ctx context.Context, token string, orgID string) (bk things.BackupGroupsByOrg, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method backup groups by organization took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method backup_groups_by_org by organization took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

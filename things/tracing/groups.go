@@ -14,7 +14,7 @@ const (
 	removeGroup                     = "remove_group"
 	retrieveAllGroups               = "retrieve_all_groups"
 	backupAllGroups                 = "backup_all_groups"
-	backupGroupsByOrg               = "backup_all_groups_by_org"
+	backupGroupsByOrg               = "backup_groups_by_org"
 	retrieveGroupByID               = "retrieve_group_by_id"
 	retrieveGroupByIDs              = "retrieve_group_by_ids"
 	retrieveGroupIDsByOrg           = "retrieve_group_ids_by_org"
