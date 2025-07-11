@@ -27,21 +27,35 @@ import (
 )
 
 const (
-	secret        = "secret"
-	contentType   = "application/json"
-	id            = "123e4567-e89b-12d3-a456-000000000022"
-	adminID       = "adminID"
-	editorID      = "editorID"
-	viewerID      = "viewerID"
-	email         = "user@example.com"
-	adminEmail    = "admin@example.com"
-	editorEmail   = "editor@example.com"
-	viewerEmail   = "viewer@example.com"
-	wrongValue    = "wrong_value"
-	name          = "testName"
-	description   = "testDesc"
-	n             = 10
-	loginDuration = 30 * time.Minute
+	secret           = "secret"
+	contentType      = "application/json"
+	id               = "123e4567-e89b-12d3-a456-000000000022"
+	adminID          = "adminID"
+	editorID         = "editorID"
+	viewerID         = "viewerID"
+	email            = "user@example.com"
+	adminEmail       = "admin@example.com"
+	editorEmail      = "editor@example.com"
+	viewerEmail      = "viewer@example.com"
+	wrongValue       = "wrong_value"
+	name             = "testName"
+	description      = "testDesc"
+	n                = 10
+	loginDuration    = 30 * time.Minute
+	maxNameSize      = 1024
+	nameKey          = "name"
+	ascKey           = "asc"
+	descKey          = "desc"
+	emptyValue       = ""
+	emptyJson        = "{}"
+	validData        = `{"limit":5,"offset":0}`
+	descData         = `{"limit":5,"offset":0,"dir":"desc","order":"name"}`
+	ascData          = `{"limit":5,"offset":0,"dir":"asc","order":"name"}`
+	invalidOrderData = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
+	zeroLimitData    = `{"limit":0,"offset":0}`
+	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
+	limitMaxData     = `{"limit":110,"offset":0}`
+	invalidData      = `{"limit": "invalid"}`
 )
 
 var (
@@ -50,12 +64,14 @@ var (
 		Description: description,
 		Metadata:    map[string]interface{}{"key": "value"},
 	}
-	idProvider    = uuid.New()
-	viewer        = auth.OrgMembership{MemberID: viewerID, Email: viewerEmail, Role: auth.Viewer}
-	editor        = auth.OrgMembership{MemberID: editorID, Email: editorEmail, Role: auth.Editor}
-	admin         = auth.OrgMembership{MemberID: adminID, Email: adminEmail, Role: auth.Admin}
-	usersByEmails = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, email: {ID: id, Email: email}}
-	usersByIDs    = map[string]users.User{adminID: {ID: adminID, Email: adminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, id: {ID: id, Email: email}}
+	idProvider      = uuid.New()
+	viewer          = auth.OrgMembership{MemberID: viewerID, Email: viewerEmail, Role: auth.Viewer}
+	editor          = auth.OrgMembership{MemberID: editorID, Email: editorEmail, Role: auth.Editor}
+	admin           = auth.OrgMembership{MemberID: adminID, Email: adminEmail, Role: auth.Admin}
+	usersByEmails   = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, email: {ID: id, Email: email}}
+	usersByIDs      = map[string]users.User{adminID: {ID: adminID, Email: adminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, id: {ID: id, Email: email}}
+	metadata        = map[string]interface{}{"test": "data"}
+	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, strings.Repeat("m", maxNameSize+1))
 )
 
 type testRequest struct {
@@ -596,6 +612,151 @@ func TestListOrgs(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.ElementsMatch(t, tc.res, data.Orgs, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data.Orgs))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestSearchOrgs(t *testing.T) {
+	svc := newService()
+	_, token, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	ts := newServer(svc)
+	defer ts.Close()
+
+	orgs := []orgRes{}
+	for i := 0; i < n; i++ {
+		name := fmt.Sprintf("org_%03d", i+1)
+		description := fmt.Sprintf("description for %s", name)
+		org := auth.Org{Name: name, Description: description, Metadata: metadata}
+
+		or, err := svc.CreateOrg(context.Background(), token, org)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+		orgs = append(orgs, orgRes{
+			ID:          or.ID,
+			OwnerID:     or.OwnerID,
+			Name:        or.Name,
+			Description: or.Description,
+			Metadata:    or.Metadata,
+		})
+	}
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		req    string
+		res    []orgRes
+	}{
+		{
+			desc:   "search orgs",
+			auth:   token,
+			status: http.StatusOK,
+			req:    validData,
+			res:    orgs[0:5],
+		},
+		{
+			desc:   "search orgs ordered by name asc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    ascData,
+			res:    orgs[0:5],
+		},
+		{
+			desc:   "search orgs ordered by name desc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    descData,
+			res:    orgs[0:5],
+		},
+		{
+			desc:   "search orgs with invalid order",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidOrderData,
+			res:    nil,
+		},
+		{
+			desc:   "search orgs with invalid dir",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidDirData,
+			res:    nil,
+		},
+		{
+			desc:   "search orgs with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search orgs with invalid data",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidData,
+			res:    nil,
+		},
+		{
+			desc:   "search orgs with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search orgs with zero limit",
+			auth:   token,
+			status: http.StatusOK,
+			req:    zeroLimitData,
+			res:    orgs[0:10],
+		},
+		{
+			desc:   "search orgs with limit greater than max",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    limitMaxData,
+			res:    nil,
+		},
+		{
+			desc:   "search orgs filtering with invalid name",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidNameData,
+			res:    nil,
+		},
+		{
+			desc:   "search orgs with empty JSON body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyJson,
+			res:    orgs[0:10],
+		},
+		{
+			desc:   "search orgs with no body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyValue,
+			res:    orgs[0:10],
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/orgs/search", ts.URL),
+			token:  tc.auth,
+			body:   strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
+		var body orgsPageRes
+		_ = json.NewDecoder(res.Body).Decode(&body)
+
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, body.Orgs, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body.Orgs))
 	}
 }
 

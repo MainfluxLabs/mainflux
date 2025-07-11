@@ -31,19 +31,31 @@ import (
 )
 
 const (
-	contentType  = "application/json"
-	validEmail   = "user@example.com"
-	adminEmail   = "admin@example.com"
-	invalidEmail = "userexample.com"
-	validPass    = "password"
-	invalidToken = "invalid"
-	invalidPass  = "wrong"
-	prefix       = "fe6b4e92-cc98-425e-b0aa-"
-	userNum      = 101
-	emailKey     = "email"
-	idKey        = "id"
-	ascKey       = "asc"
-	descKey      = "desc"
+	contentType      = "application/json"
+	validEmail       = "user@example.com"
+	adminEmail       = "admin@example.com"
+	invalidEmail     = "userexample.com"
+	validPass        = "password"
+	invalidToken     = "invalid"
+	invalidPass      = "wrong"
+	prefix           = "fe6b4e92-cc98-425e-b0aa-"
+	userNum          = 101
+	emailKey         = "email"
+	idKey            = "id"
+	ascKey           = "asc"
+	descKey          = "desc"
+	wrongValue       = "wrong_value"
+	maxEmailSize     = 1024
+	emptyValue       = ""
+	emptyJson        = "{}"
+	validData        = `{"limit":5,"offset":0}`
+	descData         = `{"limit":5,"offset":0,"dir":"desc","order":"email"}`
+	ascData          = `{"limit":5,"offset":0,"dir":"asc","order":"email"}`
+	invalidOrderData = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
+	zeroLimitData    = `{"limit":0,"offset":0}`
+	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
+	limitMaxData     = `{"limit":110,"offset":0}`
+	invalidData      = `{"limit": "invalid"}`
 )
 
 var (
@@ -64,6 +76,7 @@ var (
 	invalidCurrentPassRes = toJSON(apiutil.ErrorRes{Err: errors.ErrInvalidPassword.Error()})
 	idProvider            = uuid.New()
 	passRegex             = regexp.MustCompile(`^\S{8,}$`)
+	invalidEmailData      = fmt.Sprintf(`{"limit":5,"offset":0,"email":"%s"}`, strings.Repeat("a", maxEmailSize+1)+"@example.com")
 )
 
 type testRequest struct {
@@ -373,7 +386,7 @@ func TestListUsers(t *testing.T) {
 		},
 		{
 			desc:   "get list of users with invalid token",
-			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d&order=wrong", ts.URL, 0, 5),
+			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d", ts.URL, 0, 5),
 			token:  invalidToken,
 			status: http.StatusUnauthorized,
 			res:    nil,
@@ -493,6 +506,164 @@ func TestListUsers(t *testing.T) {
 		assert.ElementsMatch(t, tc.res, data.Users, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, data.Users))
 	}
 
+}
+
+func TestSearchUsers(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	token, err := svc.Login(context.Background(), admin)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	var data []viewUserRes
+	data = append(data, viewUserRes{admin.ID, admin.Email}, viewUserRes{user.ID, user.Email})
+	for i := 1; i < userNum; i++ {
+		id := fmt.Sprintf("%s%012d", prefix, i)
+		email := fmt.Sprintf("users%d@example.com", i)
+		user := users.User{
+			ID:       id,
+			Email:    email,
+			Password: "password",
+			Status:   "enabled",
+		}
+		usersList, err := svc.Register(context.Background(), token, user)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+		data = append(data, viewUserRes{usersList, email})
+	}
+
+	sort.Slice(data, func(i, j int) bool {
+		return data[i].ID > data[j].ID
+	})
+
+	dataByEmailAsc := make([]viewUserRes, len(data))
+	copy(dataByEmailAsc, data)
+	sort.Slice(dataByEmailAsc, func(i, j int) bool {
+		return dataByEmailAsc[i].Email < dataByEmailAsc[j].Email
+	})
+
+	dataByEmailDesc := make([]viewUserRes, len(data))
+	copy(dataByEmailDesc, data)
+	sort.Slice(dataByEmailDesc, func(i, j int) bool {
+		return dataByEmailDesc[i].Email > dataByEmailDesc[j].Email
+	})
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		req    string
+		res    []viewUserRes
+	}{
+		{
+			desc:   "search users",
+			auth:   token,
+			status: http.StatusOK,
+			req:    validData,
+			res:    data[0:5],
+		},
+		{
+			desc:   "search users ordered by email ascendant",
+			auth:   token,
+			status: http.StatusOK,
+			req:    ascData,
+			res:    dataByEmailAsc[0:5],
+		},
+		{
+			desc:   "search users ordered by email descendent",
+			auth:   token,
+			status: http.StatusOK,
+			req:    descData,
+			res:    dataByEmailDesc[0:5],
+		},
+		{
+			desc:   "search users with invalid order",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidOrderData,
+			res:    nil,
+		},
+		{
+			desc:   "search users with invalid dir",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidDirData,
+			res:    nil,
+		},
+		{
+			desc:   "search users with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search users with invalid email filter",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidEmailData,
+			res:    nil,
+		},
+		{
+			desc:   "search users with invalid data",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidData,
+			res:    nil,
+		},
+		{
+			desc:   "search users with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search users with zero limit",
+			auth:   token,
+			status: http.StatusOK,
+			req:    zeroLimitData,
+			res:    data[0:10],
+		},
+		{
+			desc:   "search users with limit greater than max",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    limitMaxData,
+			res:    nil,
+		},
+		{
+			desc:   "search users with empty JSON body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyJson,
+			res:    data[0:10],
+		},
+		{
+			desc:   "search users with no body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyValue,
+			res:    data[0:10],
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/users/search", ts.URL),
+			token:  tc.auth,
+			body:   strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		var out userRes
+		json.NewDecoder(res.Body).Decode(&out)
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, out.Users, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, out.Users))
+	}
 }
 
 func TestUpdateUser(t *testing.T) {

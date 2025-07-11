@@ -51,6 +51,10 @@ func (req listNotifiersReq) validate() error {
 		return apiutil.ErrLimitSize
 	}
 
+	if len(req.pageMetadata.Name) > maxNameSize {
+		return apiutil.ErrNameSize
+	}
+
 	if req.pageMetadata.Order != "" &&
 		req.pageMetadata.Order != apiutil.NameOrder && req.pageMetadata.Order != apiutil.IDOrder {
 		return apiutil.ErrInvalidOrder
