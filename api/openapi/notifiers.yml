@@ -1,0 +1,371 @@
+openapi: 3.0.1
+info:
+  title: Mainflux notifiers service
+  description: HTTP API for managing platform notifiers.
+  version: 1.0.0
+
+paths:
+  /group/{groupId}/notifiers:
+    post:
+      summary: Adds new notifiers
+      description: |
+        Adds new notifiers to the list of notifiers for certain group identified by the provided ID
+      tags:
+        - notifiers
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateNotifiersReq"
+      responses:
+        '201':
+          $ref: "#/components/responses/CreateNotifiersRes"
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    get:
+      summary: Retrieves notifiers by group
+      description: Retrieves list of notifiers related to a certain group identified by the provided ID.
+      tags:
+        - notifiers
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListNotifiersRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /groups/{groupId}/notifiers/search:
+    post:
+      summary: Search and retrieve notifiers by group.
+      description: |
+        Retrieves a list of notifiers associated with a specific group, with optional filtering by name and metadata, and supports pagination (offset, limit) and sorting (order, dir).
+      tags:
+        - notifiers
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        $ref: "#/components/requestBodies/SearchNotifiersReq"
+      responses:
+        '200':
+          $ref: "#/components/responses/NotifiersPageRes"
+        '400':
+          description: Failed due to malformed request body.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Failed due to non existing group or related entities.
+        '422':
+          description: Unprocessable Entity
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /notifiers/{notifierId}:
+    get:
+      summary: Retrieves notifier info
+      tags:
+        - notifiers
+      parameters:
+        - $ref: "#/components/parameters/NotifierId"
+      responses:
+        '200':
+          $ref: "#/components/responses/NotifierRes"
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Notifier does not exist.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    put:
+      summary: Updates notifier info
+      description: |
+        Update is performed by replacing the current resource data with values
+        provided in a request payload. Note that the notifier's ID cannot be changed.
+      tags:
+        - notifiers
+      parameters:
+        - $ref: "#/components/parameters/NotifierId"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateNotifierReq"
+      responses:
+        '200':
+          description: Notifier updated.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Notifier does not exist.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /notifiers:
+    patch:
+      summary: Removes notifiers
+      description: Removes notifiers with provided identifiers
+      tags:
+        - notifiers
+      requestBody:
+        $ref: "#/components/requestBodies/RemoveNotifierReq"
+      responses:
+        '204':
+          description: Notifier removed.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+components:
+  schemas:
+    NotifierReqSchema:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of notifier.
+        contacts:
+          type: array
+          description: Contact methods for the notifier.
+          items:
+            type: string
+          example:
+            - "email@example.com"
+            - "+1234567890"
+        metadata:
+          type: object
+          example: { "key": "value" }
+          description: Arbitrary, object-encoded thing's data.
+      required:
+        - name
+        - contacts
+    SearchNotifiersReqSchema:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name filter. Filtering is performed as a case-insensitive partial match.
+        metadata:
+          type: object
+          description: Metadata filter. Filtering is performed by matching the parameter with metadata on top level. Parameter is JSON.
+        offset:
+          type: integer
+          description: Number of items to skip during retrieval.
+          default: 0
+          minimum: 0
+        limit:
+          type: integer
+          description: Size of the subset to retrieve.
+          default: 10
+          maximum: 100
+          minimum: 1
+        order:
+          type: string
+          description: Order type.
+          default: id
+          enum:
+            - name
+            - id
+        dir:
+          type: string
+          description: Order direction.
+          default: desc
+          enum:
+            - asc
+            - desc
+    NotifierResSchema:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique notifier identifier generated by the service.
+        group_id:
+          type: string
+          format: uuid
+          description: The group identifier refers to the group for which the notifier was created.
+        name:
+          type: string
+          description: Name of notifier.
+          example: "Test Notifier"
+        contacts:
+          type: array
+          description: Contact methods for the notifier.
+          items:
+            type: string
+          example:
+            - "email@example.com"
+            - "+1234567890"
+        metadata:
+          type: object
+          example: { "key": "value" }
+          description: Arbitrary, object-encoded thing's data.
+      required:
+        - id
+        - group_id
+        - name
+        - contacts
+    NotifiersPage:
+      type: object
+      properties:
+        notifiers:
+          type: array
+          minItems: 0
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/NotifierResSchema"
+        total:
+          type: integer
+          description: Total number of items.
+        offset:
+          type: integer
+          description: Number of items to skip during retrieval.
+        limit:
+          type: integer
+          description: Maximum number of items to return in one page.
+      required:
+        - notifiers
+  parameters:
+    NotifierId:
+      name: notifierId
+      description: Unique notifier identifier.
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+    GroupId:
+      name: groupId
+      description: Group identifier refers to the group for which the notifier is being created.
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+
+  requestBodies:
+    CreateNotifiersReq:
+      description: JSON-formatted document describing the new notifiers.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              notifiers:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NotifierReqSchema"
+    SearchNotifiersReq:
+      description: JSON-formatted document describing notifier search parameters.
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SearchNotifiersReqSchema"
+    UpdateNotifierReq:
+      description: JSON-formatted document describing the updated notifier info.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Name of notifier.
+              contacts:
+                type: array
+                description: Contact methods for the notifier.
+                items:
+                  type: string
+            required:
+              - name
+              - contacts
+    RemoveNotifierReq:
+      description: JSON-formatted document describing the identifiers of notifiers for deleting.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              notifier_ids:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+
+  responses:
+    CreateNotifiersRes:
+      description: Notifiers created.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/NotifierResSchema"
+    NotifierRes:
+      description: Data retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NotifierResSchema"
+    NotifiersPageRes:
+      description: Data retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NotifiersPage"
+    ListNotifiersRes:
+      description: Notifiers retrieved.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              notifiers:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NotifierResSchema"
+            required:
+              - notifiers
+    ServiceError:
+      description: Unexpected server-side error occurred.
+      content:
+        application/json:
+          schema:
+            type: string
+            format: byte
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        * Users access: "Authorization: Bearer <user_token>"
+
+security:
+  - bearerAuth: [ ]
