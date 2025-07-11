@@ -18,7 +18,7 @@ const (
 	updateOrgMemberships    = "update_org_memberships"
 	retrieveOrgMemberships  = "retrieve_org_memberships"
 	backupAllOrgMemberships = "backup_all_org_memberships"
-	backupMembershipsByOrg  = "backup_memberships_by_org"
+	backupOrgMemberships    = "backup_org_memberships"
 )
 
 var _ auth.OrgMembershipsRepository = (*orgMembershipsRepositoryMiddleware)(nil)
@@ -85,7 +85,7 @@ func (orm orgMembershipsRepositoryMiddleware) BackupAll(ctx context.Context) ([]
 }
 
 func (orm orgMembershipsRepositoryMiddleware) BackupByOrg(ctx context.Context, orgID string) ([]auth.OrgMembership, error) {
-	span := createSpan(ctx, orm.tracer, backupMembershipsByOrg)
+	span := createSpan(ctx, orm.tracer, backupOrgMemberships)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
