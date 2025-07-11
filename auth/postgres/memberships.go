@@ -226,6 +226,30 @@ func (omr orgMembershipsRepository) BackupAll(ctx context.Context) ([]auth.OrgMe
 	return oms, nil
 }
 
+func (omr orgMembershipsRepository) BackupByOrg(ctx context.Context, orgID string) ([]auth.OrgMembership, error) {
+	q := `SELECT org_id, member_id, role, created_at, updated_at FROM org_memberships WHERE org_id = :org_id;`
+
+	rows, err := omr.db.NamedQueryContext(ctx, q, map[string]interface{}{
+		"org_id": orgID,
+	})
+	if err != nil {
+		return []auth.OrgMembership{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	var oms []auth.OrgMembership
+	for rows.Next() {
+		dbom := dbOrgMembership{}
+		if err := rows.StructScan(&dbom); err != nil {
+			return []auth.OrgMembership{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		oms = append(oms, toOrgMembership(dbom))
+	}
+
+	return oms, nil
+}
+
 type dbOrgMembership struct {
 	MemberID  string    `db:"member_id"`
 	OrgID     string    `db:"org_id"`

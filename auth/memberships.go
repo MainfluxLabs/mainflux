@@ -36,6 +36,10 @@ type OrgMembershipsPage struct {
 	OrgMemberships []OrgMembership
 }
 
+type BackupOrgMemberships struct {
+	OrgMemberships []OrgMembership
+}
+
 type OrgMembershipsRepository interface {
 	// Save saves memberships.
 	Save(ctx context.Context, oms ...OrgMembership) error
@@ -54,6 +58,9 @@ type OrgMembershipsRepository interface {
 
 	// BackupAll retrieves all memberships.
 	BackupAll(ctx context.Context) ([]OrgMembership, error)
+
+	// BackupByOrg retrieves all memberships by org ID.
+	BackupByOrg(ctx context.Context, orgID string) ([]OrgMembership, error)
 }
 
 // OrgMemberships specify an API that must be fulfilled by the domain service
@@ -73,6 +80,9 @@ type OrgMemberships interface {
 
 	// ViewOrgMembership retrieves membership identified by memberID and orgID.
 	ViewOrgMembership(ctx context.Context, token, orgID, memberID string) (OrgMembership, error)
+
+	// BackupOrgMemberships retrieves all org memberships for given org ID.
+	BackupOrgMemberships(ctx context.Context, token string, orgID string) (BackupOrgMemberships, error)
 }
 
 func (svc service) CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...OrgMembership) error {
@@ -263,4 +273,34 @@ func (svc service) canRemoveMemberships(ctx context.Context, token, orgID string
 	}
 
 	return nil
+}
+
+func (svc service) BackupOrgMemberships(ctx context.Context, token string, orgID string) (BackupOrgMemberships, error) {
+	orgMembers, err := svc.memberships.BackupByOrg(ctx, orgID)
+	if err != nil {
+		return BackupOrgMemberships{}, err
+	}
+
+	var memberIDs []string
+	for _, gm := range orgMembers {
+		memberIDs = append(memberIDs, gm.MemberID)
+	}
+
+	usersResp, err := svc.users.GetUsersByIDs(ctx, &protomfx.UsersByIDsReq{Ids: memberIDs})
+	if err != nil {
+		return BackupOrgMemberships{}, err
+	}
+
+	emailMap := make(map[string]string)
+	for _, user := range usersResp.Users {
+		emailMap[user.Id] = user.Email
+	}
+
+	for i := range orgMembers {
+		orgMembers[i].Email = emailMap[orgMembers[i].MemberID]
+	}
+
+	return BackupOrgMemberships{
+		OrgMemberships: orgMembers,
+	}, nil
 }

@@ -100,6 +100,20 @@ func removeOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func backupOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(backupReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+		backup, err := svc.BackupOrgMemberships(ctx, req.token, req.id)
+		if err != nil {
+			return nil, err
+		}
+		return buildBackupResponse(backup), nil
+	}
+}
+
 func buildOrgMembershipsResponse(omp auth.OrgMembershipsPage) orgMembershipPageRes {
 	res := orgMembershipPageRes{
 		pageRes: pageRes{
@@ -119,5 +133,23 @@ func buildOrgMembershipsResponse(omp auth.OrgMembershipsPage) orgMembershipPageR
 		res.OrgMemberships = append(res.OrgMemberships, m)
 	}
 
+	return res
+}
+
+func buildBackupResponse(b auth.BackupOrgMemberships) backupOrgMembershipsRes {
+	res := backupOrgMembershipsRes{
+		OrgMemberships: []viewOrgMembershipsRes{},
+	}
+	for _, member := range b.OrgMemberships {
+		view := viewOrgMembershipsRes{
+			MemberID:  member.MemberID,
+			OrgID:     member.OrgID,
+			Email:     member.Email,
+			Role:      member.Role,
+			CreatedAt: member.CreatedAt,
+			UpdatedAt: member.UpdatedAt,
+		}
+		res.OrgMemberships = append(res.OrgMemberships, view)
+	}
 	return res
 }
