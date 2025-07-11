@@ -101,7 +101,7 @@ paths:
     post:
       summary: Search and retrieve organizations.
       description: |
-        Retrieves a list of organizations with optional name and metadata filtering.
+        Retrieves a list of organizations with optional name and metadata filtering, and supports pagination (offset, limit) and sorting (order, dir).
       tags:
         - auth
       requestBody:

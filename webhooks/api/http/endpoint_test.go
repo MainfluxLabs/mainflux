@@ -56,8 +56,7 @@ var (
 	webhook         = webhooks.Webhook{ThingID: thingID, GroupID: groupID, Name: "test-webhook", Url: "https://test.webhook.com", Headers: headers, Metadata: map[string]interface{}{"test": "data"}}
 	invalidIDRes    = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingWebhookID.Error()})
 	missingTokRes   = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
-	invalidName     = strings.Repeat("m", maxNameSize+1)
-	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, invalidName)
+	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, strings.Repeat("m", maxNameSize+1))
 )
 
 func newHTTPServer(svc webhooks.Service) *httptest.Server {

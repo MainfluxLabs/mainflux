@@ -74,7 +74,7 @@ paths:
     post:
       summary: Search and retrieve webhooks by thing.
       description: |
-        Retrieves a list of webhooks associated with a specific thing, with optional filtering by name and metadata.
+        Retrieves a list of webhooks associated with a specific thing, with optional filtering by name and metadata, and supports pagination (offset, limit) and sorting (order, dir).
       tags:
         - webhooks
       parameters:
@@ -102,7 +102,7 @@ paths:
     post:
       summary: Search and retrieve webhooks by group.
       description: |
-        Retrieves a list of webhooks associated with a specific group, with optional filtering by name and metadata.
+        Retrieves a list of webhooks associated with a specific group, with optional filtering by name and metadata, and supports pagination (offset, limit) and sorting (order, dir).
       tags:
         - webhooks
       parameters:

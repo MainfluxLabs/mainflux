@@ -81,7 +81,7 @@ paths:
     post:
       summary: Search and retrieve users.
       description: |
-        Retrieves a list of users with optional email and metadata filtering.
+        Retrieves a list of users with optional email, status and metadata filtering, and supports pagination (offset, limit) and sorting (order, dir).
       tags:
         - users
       requestBody:

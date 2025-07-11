@@ -60,8 +60,7 @@ var (
 	metadata        = map[string]interface{}{"test": "data"}
 	missingIDRes    = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingNotifierID.Error()})
 	missingTokenRes = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
-	invalidName     = strings.Repeat("m", maxNameSize+1)
-	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, invalidName)
+	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, strings.Repeat("m", maxNameSize+1))
 )
 
 func newHTTPServer(svc notifiers.Service) *httptest.Server {

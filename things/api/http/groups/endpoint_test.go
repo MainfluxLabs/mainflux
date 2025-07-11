@@ -61,8 +61,7 @@ var (
 	usersList       = []users.User{admin, user, otherUser}
 	orgsList        = []auth.Org{{ID: orgID, OwnerID: user.ID}}
 	metadata        = map[string]interface{}{"test": "data"}
-	invalidName     = strings.Repeat("m", maxNameSize+1)
-	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, invalidName)
+	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, strings.Repeat("m", maxNameSize+1))
 )
 
 type testRequest struct {

@@ -76,8 +76,7 @@ var (
 	invalidCurrentPassRes = toJSON(apiutil.ErrorRes{Err: errors.ErrInvalidPassword.Error()})
 	idProvider            = uuid.New()
 	passRegex             = regexp.MustCompile(`^\S{8,}$`)
-	invalidEmailSize      = strings.Repeat("a", maxEmailSize+1) + "@example.com"
-	invalidEmailData      = fmt.Sprintf(`{"limit":5,"offset":0,"email":"%s"}`, invalidEmailSize)
+	invalidEmailData      = fmt.Sprintf(`{"limit":5,"offset":0,"email":"%s"}`, strings.Repeat("a", maxEmailSize+1)+"@example.com")
 )
 
 type testRequest struct {
