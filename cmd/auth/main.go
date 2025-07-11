@@ -12,6 +12,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	api "github.com/MainfluxLabs/mainflux/auth/api"
 	httpapi "github.com/MainfluxLabs/mainflux/auth/api/http"
+	"github.com/MainfluxLabs/mainflux/auth/emailer"
 	"github.com/MainfluxLabs/mainflux/auth/jwt"
 	"github.com/MainfluxLabs/mainflux/auth/postgres"
 	"github.com/MainfluxLabs/mainflux/auth/tracing"
@@ -19,6 +20,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/email"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -65,6 +67,14 @@ const (
 	defUsersClientTLS  = "false"
 	defUsersGRPCURL    = "localhost:8184"
 
+	defEmailHost        = "localhost"
+	defEmailPort        = "25"
+	defEmailUsername    = "root"
+	defEmailPassword    = ""
+	defEmailFromAddress = ""
+	defEmailFromName    = ""
+	defEmailTemplate    = "email.tmpl"
+
 	envLogLevel        = "MF_AUTH_LOG_LEVEL"
 	envDBHost          = "MF_AUTH_DB_HOST"
 	envDBPort          = "MF_AUTH_DB_PORT"
@@ -90,6 +100,14 @@ const (
 	envUsersGRPCURL    = "MF_USERS_GRPC_URL"
 	envUsersCACerts    = "MF_USERS_CA_CERTS"
 	envUsersClientTLS  = "MF_USERS_CLIENT_TLS"
+
+	envEmailHost        = "MF_EMAIL_HOST"
+	envEmailPort        = "MF_EMAIL_PORT"
+	envEmailUsername    = "MF_EMAIL_USERNAME"
+	envEmailPassword    = "MF_EMAIL_PASSWORD"
+	envEmailFromAddress = "MF_EMAIL_FROM_ADDRESS"
+	envEmailFromName    = "MF_EMAIL_FROM_NAME"
+	envEmailTemplate    = "MF_EMAIL_TEMPLATE"
 )
 
 type config struct {
@@ -99,6 +117,7 @@ type config struct {
 	grpcConfig    servers.Config
 	thingsConfig  clients.Config
 	usersConfig   clients.Config
+	emailConfig   email.Config
 	secret        string
 	jaegerURL     string
 	loginDuration time.Duration
@@ -143,7 +162,7 @@ func main() {
 
 	tc := thingsapi.NewClient(thConn, thingsTracer, cfg.timeout)
 
-	svc := newService(db, tc, uc, dbTracer, cfg.secret, logger, cfg.loginDuration)
+	svc := newService(db, tc, uc, dbTracer, &cfg.emailConfig, cfg.secret, logger, cfg.loginDuration)
 
 	g.Go(func() error {
 		return servershttp.Start(ctx, httpapi.MakeHandler(svc, authHttpTracer, logger), cfg.httpConfig, logger)
@@ -217,6 +236,16 @@ func loadConfig() config {
 		ClientName: clients.Users,
 	}
 
+	emailConfig := email.Config{
+		FromAddress: mainflux.Env(envEmailFromAddress, defEmailFromAddress),
+		FromName:    mainflux.Env(envEmailFromName, defEmailFromName),
+		Host:        mainflux.Env(envEmailHost, defEmailHost),
+		Port:        mainflux.Env(envEmailPort, defEmailPort),
+		Username:    mainflux.Env(envEmailUsername, defEmailUsername),
+		Password:    mainflux.Env(envEmailPassword, defEmailPassword),
+		Template:    mainflux.Env(envEmailTemplate, defEmailTemplate),
+	}
+
 	loginDuration, err := time.ParseDuration(mainflux.Env(envLoginDuration, defLoginDuration))
 	if err != nil {
 		log.Fatal(err)
@@ -234,6 +263,7 @@ func loadConfig() config {
 		grpcConfig:    grpcConfig,
 		thingsConfig:  thingsConfig,
 		usersConfig:   usersConfig,
+		emailConfig:   emailConfig,
 		secret:        mainflux.Env(envSecret, defSecret),
 		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
 		loginDuration: loginDuration,
@@ -253,7 +283,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersServiceClient, tracer opentracing.Tracer, secret string, logger logger.Logger, duration time.Duration) auth.Service {
+func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersServiceClient, tracer opentracing.Tracer, emailConfig *email.Config, secret string, logger logger.Logger, duration time.Duration) auth.Service {
 	orgsRepo := postgres.NewOrgRepo(db)
 	orgsRepo = tracing.OrgRepositoryMiddleware(tracer, orgsRepo)
 
@@ -272,7 +302,12 @@ func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersS
 	idProvider := uuid.New()
 	t := jwt.New(secret)
 
-	svc := auth.New(orgsRepo, tc, uc, keysRepo, rolesRepo, membsRepo, invitesRepo, idProvider, t, duration)
+	authEmailer, err := emailer.New(emailConfig)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to configure e-mailing util: %s", err.Error()))
+	}
+
+	svc := auth.New(orgsRepo, tc, uc, keysRepo, rolesRepo, membsRepo, invitesRepo, authEmailer, idProvider, t, duration)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

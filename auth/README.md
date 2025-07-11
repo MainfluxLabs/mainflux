@@ -74,6 +74,13 @@ default values.
 | MF_AUTH_SECRET                | String used for signing tokens                                           | auth           |
 | MF_AUTH_LOGIN_TOKEN_DURATION  | The login token expiration period                                        | 10h            |
 | MF_JAEGER_URL                 | Jaeger server URL                                                        | localhost:6831 |
+| MF_EMAIL_HOST                 | Mail server host                                                         | localhost      |
+| MF_EMAIL_PORT                 | Mail server port                                                         | 25             |
+| MF_EMAIL_USERNAME             | Mail server username                                                     |                |
+| MF_EMAIL_PASSWORD             | Mail server password                                                     |                |
+| MF_EMAIL_FROM_ADDRESS         | Email "from" address                                                     |                |
+| MF_EMAIL_FROM_NAME            | Email "from" name                                                        |                |
+| MF_EMAIL_TEMPLATE             | Email template for sending emails with password reset link               | email.tmpl     |
 
 ## Deployment
 
