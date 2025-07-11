@@ -268,6 +268,13 @@ func TestListAllMessages(t *testing.T) {
 			},
 		},
 		{
+			desc:   "read page with aggregation as non-admin",
+			url:    fmt.Sprintf("%s/messages?agg_type=count", ts.URL),
+			token:  userToken,
+			status: http.StatusForbidden,
+			res:    pageRes{},
+		},
+		{
 			desc:   "read page with subtopic",
 			url:    fmt.Sprintf("%s/messages?subtopic=%s&protocol=%s", ts.URL, subtopic, httpProt),
 			token:  adminToken,
