@@ -23,7 +23,6 @@ func main() {
 		UsersURL:        fmt.Sprintf("%s/svcusers", defURL),
 		ReaderURL:       fmt.Sprintf("%s/reader", defURL),
 		HTTPAdapterURL:  fmt.Sprintf("%s/http", defURL),
-		BootstrapURL:    defURL,
 		CertsURL:        defURL,
 		MsgContentType:  sdk.ContentType(msgContentType),
 		TLSVerification: false,

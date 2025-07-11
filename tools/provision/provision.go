@@ -64,7 +64,6 @@ func Provision(conf Config) {
 		UsersURL:        conf.Host,
 		ReaderURL:       defReaderURL,
 		HTTPAdapterURL:  fmt.Sprintf("%s/http", conf.Host),
-		BootstrapURL:    conf.Host,
 		CertsURL:        conf.Host,
 		MsgContentType:  sdk.ContentType(msgContentType),
 		TLSVerification: false,
