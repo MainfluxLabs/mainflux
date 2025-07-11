@@ -113,8 +113,8 @@ func (es eventStore) Backup(ctx context.Context, token string) (things.Backup, e
 	return es.svc.Backup(ctx, token)
 }
 
-func (es eventStore) BackupOrgGroups(ctx context.Context, token string, orgID string) (things.BackupOrgGroups, error) {
-	return es.svc.BackupOrgGroups(ctx, token, orgID)
+func (es eventStore) BackupGroupsByOrg(ctx context.Context, token string, orgID string) (things.BackupGroupsByOrg, error) {
+	return es.svc.BackupGroupsByOrg(ctx, token, orgID)
 }
 
 func (es eventStore) Restore(ctx context.Context, token string, backup things.Backup) error {

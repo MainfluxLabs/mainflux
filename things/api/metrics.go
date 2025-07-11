@@ -282,13 +282,13 @@ func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (bk thing
 	return ms.svc.Backup(ctx, token)
 }
 
-func (ms *metricsMiddleware) BackupOrgGroups(ctx context.Context, token string, orgID string) (bk things.BackupOrgGroups, err error) {
+func (ms *metricsMiddleware) BackupGroupsByOrg(ctx context.Context, token string, orgID string) (bk things.BackupGroupsByOrg, err error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "backup_org_groups").Add(1)
-		ms.latency.With("method", "backup_org_groups").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "backup_groups_by_org").Add(1)
+		ms.latency.With("method", "backup_groups_by_org").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.BackupOrgGroups(ctx, token, orgID)
+	return ms.svc.BackupGroupsByOrg(ctx, token, orgID)
 }
 
 func (ms *metricsMiddleware) Restore(ctx context.Context, token string, backup things.Backup) error {

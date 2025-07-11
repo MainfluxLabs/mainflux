@@ -108,18 +108,18 @@ func (res groupPageRes) Empty() bool {
 	return false
 }
 
-type backupOrgGroupsRes struct {
+type backupGroupsByOrgRes struct {
 	Groups []viewGroupRes `json:"groups"`
 }
 
-func (res backupOrgGroupsRes) Code() int {
+func (res backupGroupsByOrgRes) Code() int {
 	return http.StatusOK
 }
 
-func (res backupOrgGroupsRes) Headers() map[string]string {
+func (res backupGroupsByOrgRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res backupOrgGroupsRes) Empty() bool {
+func (res backupGroupsByOrgRes) Empty() bool {
 	return false
 }
