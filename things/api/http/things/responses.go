@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/things/api/http/memberships"
 )
 
 var (
@@ -135,18 +136,11 @@ type backupGroup struct {
 	UpdatedAt   time.Time              `json:"updated_at"`
 }
 
-type backupGroupMembership struct {
-	MemberID string `json:"member_id"`
-	GroupID  string `json:"group_id"`
-	Email    string `json:"email"`
-	Role     string `json:"role"`
-}
-
 type backupRes struct {
-	Things           []viewThingRes          `json:"things"`
-	Profiles         []backupProfile         `json:"profiles"`
-	Groups           []backupGroup           `json:"groups"`
-	GroupMemberships []backupGroupMembership `json:"group_memberships"`
+	Things           []viewThingRes                        `json:"things"`
+	Profiles         []backupProfile                       `json:"profiles"`
+	Groups           []backupGroup                         `json:"groups"`
+	GroupMemberships []memberships.ViewGroupMembershipsRes `json:"group_memberships"`
 }
 
 func (res backupRes) Code() int {

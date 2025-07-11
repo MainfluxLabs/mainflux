@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/things"
+	"github.com/MainfluxLabs/mainflux/things/api/http/memberships"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -361,7 +362,7 @@ func buildBackupResponse(backup things.Backup) backupRes {
 		Things:           []viewThingRes{},
 		Profiles:         []backupProfile{},
 		Groups:           []backupGroup{},
-		GroupMemberships: []backupGroupMembership{},
+		GroupMemberships: []memberships.ViewGroupMembershipsRes{},
 	}
 
 	for _, thing := range backup.Things {
@@ -401,7 +402,7 @@ func buildBackupResponse(backup things.Backup) backupRes {
 	}
 
 	for _, membership := range backup.GroupMemberships {
-		view := backupGroupMembership{
+		view := memberships.ViewGroupMembershipsRes{
 			MemberID: membership.MemberID,
 			GroupID:  membership.GroupID,
 			Email:    membership.Email,

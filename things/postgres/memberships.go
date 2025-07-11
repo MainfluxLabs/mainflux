@@ -145,6 +145,31 @@ func (mr groupMembershipsRepository) BackupAll(ctx context.Context) ([]things.Gr
 	return items, nil
 }
 
+func (mr groupMembershipsRepository) BackupByGroup(ctx context.Context, groupID string) ([]things.GroupMembership, error) {
+	q := `SELECT member_id, group_id, role FROM group_memberships WHERE group_id = :group_id;`
+
+	rows, err := mr.db.NamedQueryContext(ctx, q, map[string]interface{}{
+		"group_id": groupID,
+	})
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	var items []things.GroupMembership
+	for rows.Next() {
+		dbgm := dbGroupMembership{}
+		if err := rows.StructScan(&dbgm); err != nil {
+			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		gm := toGroupMemberships(dbgm)
+		items = append(items, gm)
+	}
+
+	return items, nil
+}
+
 func (mr groupMembershipsRepository) RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error) {
 	var groupIDs []string
 
