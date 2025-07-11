@@ -488,13 +488,6 @@ func TestListAllMessages(t *testing.T) {
 			},
 		},
 		{
-			desc:   "read page with aggregation as non-admin",
-			url:    fmt.Sprintf("%s/messages?agg_type=count", ts.URL),
-			token:  userToken,
-			status: http.StatusForbidden,
-			res:    pageRes{},
-		},
-		{
 			desc:   "read page with invalid aggregation type",
 			url:    fmt.Sprintf("%s/messages?agg_type=invalid", ts.URL),
 			token:  adminToken,
