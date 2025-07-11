@@ -148,7 +148,6 @@ func TestListAllMessages(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("issue token for admin got unexpected error: %s", err))
 
 	adminToken := adminTok.GetValue()
-	userToken := tok.GetValue()
 
 	repo := rmocks.NewMessageRepository("", fromSenml(messages))
 	ts := newServer(repo, thSvc, authSvc)
