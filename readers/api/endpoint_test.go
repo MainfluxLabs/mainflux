@@ -458,7 +458,7 @@ func TestListAllMessages(t *testing.T) {
 
 		{
 			desc:   "read page with count aggregation",
-			url:    fmt.Sprintf("%s/messages?aggregation=count", ts.URL),
+			url:    fmt.Sprintf("%s/messages?agg_type=count", ts.URL),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -468,7 +468,7 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with count aggregation and limit",
-			url:    fmt.Sprintf("%s/messages?aggregation=count&limit=-1", ts.URL),
+			url:    fmt.Sprintf("%s/messages?agg_type=count&limit=-1", ts.URL),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -478,7 +478,7 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with min aggregation",
-			url:    fmt.Sprintf("%s/messages?aggregation=min&name=%s&limit=-1", ts.URL, msgName),
+			url:    fmt.Sprintf("%s/messages?agg_type=min&name=%s&limit=-1", ts.URL, msgName),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -488,7 +488,7 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with max aggregation",
-			url:    fmt.Sprintf("%s/messages?aggregation=max&name=%s&limit=-1", ts.URL, msgName),
+			url:    fmt.Sprintf("%s/messages?agg_type=max&name=%s&limit=-1", ts.URL, msgName),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -498,7 +498,7 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with avg aggregation on sum field",
-			url:    fmt.Sprintf("%s/messages?aggregation=avg&aggregate_field=sum&name=%s&limit=-1", ts.URL, msgName),
+			url:    fmt.Sprintf("%s/messages?agg_type=avg&agg_field=sum&name=%s&limit=-1", ts.URL, msgName),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -508,21 +508,21 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with aggregation as non-admin",
-			url:    fmt.Sprintf("%s/messages?aggregation=count", ts.URL),
+			url:    fmt.Sprintf("%s/messages?agg_type=count", ts.URL),
 			token:  userToken,
 			status: http.StatusForbidden,
 			res:    pageRes{},
 		},
 		{
 			desc:   "read page with invalid aggregation type",
-			url:    fmt.Sprintf("%s/messages?aggregation=invalid", ts.URL),
+			url:    fmt.Sprintf("%s/messages?agg_type=invalid", ts.URL),
 			token:  adminToken,
 			status: http.StatusBadRequest,
 			res:    pageRes{},
 		},
 		{
 			desc:   "read page with aggregation and pagination",
-			url:    fmt.Sprintf("%s/messages?aggregation=count&offset=10&limit=5", ts.URL),
+			url:    fmt.Sprintf("%s/messages?agg_type=count&offset=10&limit=5", ts.URL),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{

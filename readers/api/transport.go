@@ -32,11 +32,11 @@ const (
 	boolValueKey           = "vb"
 	comparatorKey          = "comparator"
 	fromKey                = "from"
-	intervalKey            = "interval"
+	intervalKey            = "agg_interval"
 	toKey                  = "to"
 	defFormat              = "messages"
-	aggregationKey         = "aggregation"
-	aggregationFieldKey    = "aggregation_field"
+	aggTypeKey             = "agg_type"
+	aggFieldKey            = "agg_field"
 	publisherID            = "publisherID"
 )
 
@@ -152,12 +152,12 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 		return nil, err
 	}
 
-	aggregation, err := apiutil.ReadStringQuery(r, aggregationKey, "")
+	aggType, err := apiutil.ReadStringQuery(r, aggTypeKey, "")
 	if err != nil {
 		return nil, err
 	}
 
-	aggregationField, err := apiutil.ReadStringQuery(r, aggregationFieldKey, "")
+	aggField, err := apiutil.ReadStringQuery(r, aggFieldKey, "")
 	if err != nil {
 		return nil, err
 	}
@@ -166,21 +166,21 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 		token: apiutil.ExtractBearerToken(r),
 		key:   apiutil.ExtractThingKey(r),
 		pageMeta: readers.PageMetadata{
-			Offset:         offset,
-			Limit:          limit,
-			Format:         format,
-			Subtopic:       subtopic,
-			Protocol:       protocol,
-			Name:           name,
-			Value:          v,
-			Comparator:     comparator,
-			StringValue:    vs,
-			DataValue:      vd,
-			From:           from,
-			To:             to,
-			Interval:       i,
-			Aggregation:    aggregation,
-			AggregationField: aggregationField,
+			Offset:      offset,
+			Limit:       limit,
+			Format:      format,
+			Subtopic:    subtopic,
+			Protocol:    protocol,
+			Name:        name,
+			Value:       v,
+			Comparator:  comparator,
+			StringValue: vs,
+			DataValue:   vd,
+			From:        from,
+			To:          to,
+			AggInterval: i,
+			AggType:     aggType,
+			AggField:    aggField,
 		},
 	}
 

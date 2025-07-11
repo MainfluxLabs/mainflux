@@ -162,7 +162,7 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 	}
 	page.Total = total
 
-	if rpm.Aggregation != "" {
+	if rpm.AggType != "" {
 		aggregation, err := tr.readAggregation(rpm, format, order, params)
 		if err != nil {
 			return page, err
@@ -218,7 +218,7 @@ func (tr postgresRepository) readAggregation(rpm readers.PageMetadata, format, o
 	}
 	defer rows.Close()
 
-	aggregationType := AggregationType(rpm.Aggregation)
+	aggregationType := AggregationType(rpm.AggType)
 	var result interface{}
 	var count uint64
 
@@ -258,7 +258,7 @@ func (tr postgresRepository) executeQuery(query string, params map[string]interf
 
 func (tr postgresRepository) buildRegularQuery(rpm readers.PageMetadata, format, order string) string {
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
-	interval := rpm.Interval
+	interval := rpm.AggInterval
 	condition := fmtCondition(rpm, format)
 
 	if interval != "" {
@@ -287,7 +287,7 @@ func (tr postgresRepository) buildRegularQuery(rpm readers.PageMetadata, format,
 }
 
 func (tr postgresRepository) buildCountQuery(rpm readers.PageMetadata, format, order string) string {
-	interval := rpm.Interval
+	interval := rpm.AggInterval
 	condition := fmtCondition(rpm, format)
 
 	if interval != "" {
@@ -314,7 +314,7 @@ func (tr postgresRepository) buildCountQuery(rpm readers.PageMetadata, format, o
 
 func (tr postgresRepository) buildAggregationQuery(rpm readers.PageMetadata, format, order string) string {
 	aggregateField := tr.getAggregateField(rpm, format)
-	aggFunc := tr.buildAggregationFunction(rpm.Aggregation, aggregateField)
+	aggFunc := tr.buildAggregationFunction(rpm.AggType, aggregateField)
 	subQuery := tr.buildSubQuery(rpm, format, order)
 
 	return fmt.Sprintf(`SELECT %s as result, COUNT(*) as count FROM (%s) as paginated_results;`, aggFunc, subQuery)
@@ -322,7 +322,7 @@ func (tr postgresRepository) buildAggregationQuery(rpm readers.PageMetadata, for
 
 func (tr postgresRepository) buildSubQuery(rpm readers.PageMetadata, format, order string) string {
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
-	interval := rpm.Interval
+	interval := rpm.AggInterval
 	condition := fmtCondition(rpm, format)
 
 	if interval != "" {
@@ -440,7 +440,7 @@ func fmtCondition(rpm readers.PageMetadata, table string) string {
 			condition = fmt.Sprintf(`%s %s %s >= :from`, condition, op, timeColumn)
 			op = "AND"
 		case "to":
-			condition = fmt.Sprintf(`%s %s %s < :to`, condition, op, timeColumn)
+			condition = fmt.Sprintf(`%s %s %s <= :to`, condition, op, timeColumn)
 			op = "AND"
 		}
 	}
@@ -459,7 +459,7 @@ func (tr postgresRepository) getFormatAndOrder(rpm readers.PageMetadata) (format
 }
 
 func (tr postgresRepository) getAggregateField(rpm readers.PageMetadata, format string) string {
-	switch rpm.AggregationField {
+	switch rpm.AggField {
 	case "":
 		if format == jsonTable {
 			return "created"
@@ -467,7 +467,7 @@ func (tr postgresRepository) getAggregateField(rpm readers.PageMetadata, format 
 			return "value"
 		}
 	default:
-		return rpm.AggregationField
+		return rpm.AggField
 	}
 }
 

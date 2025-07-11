@@ -61,23 +61,23 @@ type MessagesPage struct {
 
 // PageMetadata represents the parameters used to create database queries
 type PageMetadata struct {
-	Offset         uint64  `json:"offset"`
-	Limit          uint64  `json:"limit"`
-	Subtopic       string  `json:"subtopic,omitempty"`
-	Publisher      string  `json:"publisher,omitempty"`
-	Protocol       string  `json:"protocol,omitempty"`
-	Name           string  `json:"name,omitempty"`
-	Value          float64 `json:"v,omitempty"`
-	Comparator     string  `json:"comparator,omitempty"`
-	BoolValue      bool    `json:"vb,omitempty"`
-	StringValue    string  `json:"vs,omitempty"`
-	DataValue      string  `json:"vd,omitempty"`
-	From           float64 `json:"from,omitempty"`
-	To             float64 `json:"to,omitempty"`
-	Format         string  `json:"format,omitempty"`
-	Interval       string  `json:"interval,omitempty"`
-	Aggregation    string  `json:"aggregation,omitempty"`
-	AggregationField string  `json:"aggregation_field,omitempty"`
+	Offset      uint64  `json:"offset"`
+	Limit       uint64  `json:"limit"`
+	Subtopic    string  `json:"subtopic,omitempty"`
+	Publisher   string  `json:"publisher,omitempty"`
+	Protocol    string  `json:"protocol,omitempty"`
+	Name        string  `json:"name,omitempty"`
+	Value       float64 `json:"v,omitempty"`
+	Comparator  string  `json:"comparator,omitempty"`
+	BoolValue   bool    `json:"vb,omitempty"`
+	StringValue string  `json:"vs,omitempty"`
+	DataValue   string  `json:"vd,omitempty"`
+	From        float64 `json:"from,omitempty"`
+	To          float64 `json:"to,omitempty"`
+	Format      string  `json:"format,omitempty"`
+	AggInterval string  `json:"agg_interval,omitempty"`
+	AggType     string  `json:"agg_type,omitempty"`
+	AggField    string  `json:"agg_field,omitempty"`
 }
 
 // ParseValueComparator convert comparison operator keys into mathematic anotation

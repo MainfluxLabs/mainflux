@@ -39,8 +39,8 @@ func (req listAllMessagesReq) validate() error {
 		return apiutil.ErrInvalidComparator
 	}
 
-	if req.pageMeta.Aggregation != "" {
-		switch req.pageMeta.Aggregation {
+	if req.pageMeta.AggType != "" {
+		switch req.pageMeta.AggType {
 		case "min", "max", "avg", "count":
 		default:
 			return apiutil.ErrInvalidQueryParams
