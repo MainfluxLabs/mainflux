@@ -17,16 +17,14 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type AggregationType string
-
 const (
-	defTable                         = "messages"
-	jsonTable                        = "json"
-	AggregationNone  AggregationType = ""
-	AggregationMin   AggregationType = "min"
-	AggregationMax   AggregationType = "max"
-	AggregationAvg   AggregationType = "avg"
-	AggregationCount AggregationType = "count"
+	defTable         = "messages"
+	jsonTable        = "json"
+	AggregationNone  = ""
+	AggregationMin   = "min"
+	AggregationMax   = "max"
+	AggregationAvg   = "avg"
+	AggregationCount = "count"
 )
 
 var _ readers.MessageRepository = (*postgresRepository)(nil)
@@ -218,7 +216,7 @@ func (tr postgresRepository) readAggregation(rpm readers.PageMetadata, format, o
 	}
 	defer rows.Close()
 
-	aggregationType := AggregationType(rpm.AggType)
+	aggregationType := rpm.AggType
 	var result interface{}
 	var count uint64
 
@@ -358,7 +356,7 @@ func (tr postgresRepository) buildIntervalSubQuery(interval, format, order, cond
 func (tr postgresRepository) buildAggregationFunction(aggregationType, aggregateField string) string {
 	var aggFunc string
 
-	switch AggregationType(aggregationType) {
+	switch aggregationType {
 	case AggregationMin:
 		aggFunc = fmt.Sprintf("MIN(%s)", aggregateField)
 	case AggregationMax:
