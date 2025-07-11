@@ -142,8 +142,6 @@ func TestListAllMessages(t *testing.T) {
 	thSvc := thmocks.NewThingsServiceClient(nil, nil, nil)
 	authSvc := newAuthService()
 
-	tok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
-	require.Nil(t, err, fmt.Sprintf("issue token for user got unexpected error: %s", err))
 	adminTok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
 	require.Nil(t, err, fmt.Sprintf("issue token for admin got unexpected error: %s", err))
 
