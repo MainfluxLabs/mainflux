@@ -276,6 +276,10 @@ func (svc service) canRemoveMemberships(ctx context.Context, token, orgID string
 }
 
 func (svc service) BackupOrgMemberships(ctx context.Context, token string, orgID string) (BackupOrgMemberships, error) {
+	if err := svc.canAccessOrg(ctx, token, orgID, Owner); err != nil {
+		return BackupOrgMemberships{}, err
+	}
+
 	orgMembers, err := svc.memberships.BackupByOrg(ctx, orgID)
 	if err != nil {
 		return BackupOrgMemberships{}, err

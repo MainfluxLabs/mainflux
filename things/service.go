@@ -737,6 +737,10 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 }
 
 func (ts *thingsService) BackupGroupsByOrg(ctx context.Context, token string, orgID string) (BackupGroupsByOrg, error) {
+	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Owner); err != nil {
+		return BackupGroupsByOrg{}, err
+	}
+
 	groups, err := ts.groups.BackupByOrg(ctx, orgID)
 	if err != nil {
 		return BackupGroupsByOrg{}, err
