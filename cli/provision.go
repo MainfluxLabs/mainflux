@@ -32,7 +32,7 @@ const (
 	thingProfileID
 )
 
-const csvProfilesFieldCount = 12
+const csvProfilesFieldCount = 10
 
 // These constants define the order of the CSV columns (fields) of records containing Profiles to be provisioned
 const (
