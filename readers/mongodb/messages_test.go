@@ -80,7 +80,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 		msg := senml.Message{
 			Publisher: pubID,
 			Protocol:  mqttProt,
-			Time:      float64(now - int64(i)),
+			Time:      int64(now - int64(i)),
 		}
 
 		count := i % valueFields

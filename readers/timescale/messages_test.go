@@ -64,11 +64,11 @@ func TestListAllMessagesSenML(t *testing.T) {
 	dataMsgs := []senml.Message{}
 	queryMsgs := []senml.Message{}
 
-	now := float64(time.Now().Unix())
+	now := int64(time.Now().Unix())
 	for i := 0; i < msgsNum; i++ {
 		// Mix possible values as well as value sum.
 		msg := m
-		msg.Time = now - float64(i)
+		msg.Time = now - int64(i)
 
 		count := i % valueFields
 		switch count {
