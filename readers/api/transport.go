@@ -32,9 +32,11 @@ const (
 	boolValueKey           = "vb"
 	comparatorKey          = "comparator"
 	fromKey                = "from"
-	intervalKey            = "interval"
+	intervalKey            = "agg_interval"
 	toKey                  = "to"
 	defFormat              = "messages"
+	aggTypeKey             = "agg_type"
+	aggFieldKey            = "agg_field"
 	publisherID            = "publisherID"
 )
 
@@ -150,6 +152,16 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 		return nil, err
 	}
 
+	aggType, err := apiutil.ReadStringQuery(r, aggTypeKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	aggField, err := apiutil.ReadStringQuery(r, aggFieldKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	req := listAllMessagesReq{
 		token: apiutil.ExtractBearerToken(r),
 		key:   apiutil.ExtractThingKey(r),
@@ -166,7 +178,9 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 			DataValue:   vd,
 			From:        from,
 			To:          to,
-			Interval:    i,
+			AggInterval: i,
+			AggType:     aggType,
+			AggField:    aggField,
 		},
 	}
 

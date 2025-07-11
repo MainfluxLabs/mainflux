@@ -315,6 +315,50 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Messages: fromSenml(messages[0:6]),
 			},
 		},
+		"count aggregation": {
+			pageMeta: readers.PageMetadata{
+				Limit:   noLimit,
+				AggType: "count",
+			},
+			page: readers.MessagesPage{
+				Total:    msgsNum,
+				Messages: fromSenml(messages),
+			},
+		},
+		"min aggregation with name filter": {
+			pageMeta: readers.PageMetadata{
+				Limit:       noLimit,
+				Name:        msgName,
+				AggType: "min",
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(queryMsgs)),
+				Messages: fromSenml(queryMsgs),
+			},
+		},
+		"max aggregation with name filter": {
+			pageMeta: readers.PageMetadata{
+				Limit:       noLimit,
+				Name:        msgName,
+				AggType: "max",
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(queryMsgs)),
+				Messages: fromSenml(queryMsgs),
+			},
+		},
+		"avg aggregation on sum field": {
+			pageMeta: readers.PageMetadata{
+				Limit:    noLimit,
+				Name:     msgName,
+				AggType:  "avg",
+				AggField: "sum",
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(queryMsgs)),
+				Messages: fromSenml(queryMsgs),
+			},
+		},
 	}
 
 	for desc, tc := range cases {
@@ -437,7 +481,6 @@ func TestListAllMessagesJSON(t *testing.T) {
 	}
 }
 
-
 func TestDeleteMessagesSenML(t *testing.T) {
 	reader := preader.New(db)
 	writer := pwriter.New(db)
@@ -548,7 +591,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 				From:      messages[20].Time,
 				To:        now + 1,
 			},
-			expectedCount: 17, 
+			expectedCount: 17,
 			description:   "should delete messages from specific time",
 		},
 		"delete messages with time range to": {
@@ -566,7 +609,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 				From:      messages[50].Time,
 				To:        messages[20].Time,
 			},
-			expectedCount: 25, 
+			expectedCount: 25,
 			description:   "should delete messages within time range",
 		},
 		"delete all messages for publisher": {
@@ -575,7 +618,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 				From:      0,
 				To:        now + 1,
 			},
-			expectedCount: uint64(msgsNum - len(queryMsgs)), 
+			expectedCount: uint64(msgsNum - len(queryMsgs)),
 			description:   "should delete all messages for specific publisher",
 		},
 	}

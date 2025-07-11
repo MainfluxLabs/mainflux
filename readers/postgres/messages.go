@@ -1,6 +1,5 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
-
 package postgres
 
 import (
@@ -10,6 +9,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/jackc/pgerrcode"
@@ -18,8 +18,13 @@ import (
 )
 
 const (
-	defTable  = "messages"
-	jsonTable = "json"
+	defTable         = "messages"
+	jsonTable        = "json"
+	AggregationNone  = ""
+	AggregationMin   = "min"
+	AggregationMax   = "max"
+	AggregationAvg   = "avg"
+	AggregationCount = "count"
 )
 
 var _ readers.MessageRepository = (*postgresRepository)(nil)
@@ -71,19 +76,7 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.Pag
 
 		condition := fmtCondition(rpm, table)
 		q := fmt.Sprintf("DELETE FROM %s %s", table, condition)
-
-		params := map[string]interface{}{
-			"subtopic":     rpm.Subtopic,
-			"publisher":    rpm.Publisher,
-			"name":         rpm.Name,
-			"protocol":     rpm.Protocol,
-			"value":        rpm.Value,
-			"bool_value":   rpm.BoolValue,
-			"string_value": rpm.StringValue,
-			"data_value":   rpm.DataValue,
-			"from":         rpm.From,
-			"to":           rpm.To,
-		}
+		params := tr.buildDeleteQueryParams(rpm)
 
 		_, err := tx.NamedExecContext(ctx, q, params)
 		if err != nil {
@@ -132,7 +125,8 @@ func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Mess
 	}()
 
 	for _, msg := range messages {
-		m := senmlMessage{Message: msg}
+		m := msg
+
 		if _, err := tx.NamedExec(q, m); err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok && pgErr.Code == pgerrcode.InvalidTextRepresentation {
@@ -146,23 +140,129 @@ func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Mess
 }
 
 func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	order := "time"
-	format := defTable
-	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
-	interval := rpm.Interval
+	format, order := tr.getFormatAndOrder(rpm)
+	params := tr.buildQueryParams(rpm)
 
-	if rpm.Format == jsonTable {
-		order = "created"
-		format = rpm.Format
+	page := readers.MessagesPage{
+		PageMetadata: rpm,
+		Messages:     []readers.Message{},
 	}
 
-	var q string
+	messages, err := tr.readMessages(rpm, format, order, params)
+	if err != nil {
+		return page, err
+	}
+	page.Messages = messages
+
+	total, err := tr.readCount(rpm, format, order, params)
+	if err != nil {
+		return page, err
+	}
+	page.Total = total
+
+	if rpm.AggType != "" {
+		aggregation, err := tr.readAggregation(rpm, format, order, params)
+		if err != nil {
+			return page, err
+		}
+		page.Aggregation = aggregation
+	}
+
+	return page, nil
+}
+
+func (tr postgresRepository) readMessages(rpm readers.PageMetadata, format, order string, params map[string]interface{}) ([]readers.Message, error) {
+	query := tr.buildRegularQuery(rpm, format, order)
+	rows, err := tr.executeQuery(query, params)
+	if err != nil {
+		return nil, err
+	}
+	if rows == nil {
+		return []readers.Message{}, nil
+	}
+	defer rows.Close()
+
+	return tr.scanMessages(rows, format)
+}
+
+func (tr postgresRepository) readCount(rpm readers.PageMetadata, format, order string, params map[string]interface{}) (uint64, error) {
+	query := tr.buildCountQuery(rpm, format, order)
+	rows, err := tr.executeQuery(query, params)
+	if err != nil {
+		return 0, err
+	}
+	if rows == nil {
+		return 0, nil
+	}
+	defer rows.Close()
+
+	var total uint64
+	if rows.Next() {
+		if err := rows.Scan(&total); err != nil {
+			return 0, err
+		}
+	}
+	return total, nil
+}
+
+func (tr postgresRepository) readAggregation(rpm readers.PageMetadata, format, order string, params map[string]interface{}) (readers.Aggregation, error) {
+	query := tr.buildAggregationQuery(rpm, format, order)
+	rows, err := tr.executeQuery(query, params)
+	if err != nil {
+		return readers.Aggregation{}, err
+	}
+	if rows == nil {
+		return readers.Aggregation{}, nil
+	}
+	defer rows.Close()
+
+	aggregationType := rpm.AggType
+	var result interface{}
+	var count uint64
+
+	if rows.Next() {
+		if aggregationType == AggregationCount {
+			if err := rows.Scan(&count, &count); err != nil {
+				return readers.Aggregation{}, errors.Wrap(readers.ErrReadMessages, err)
+			}
+			result = count
+		} else {
+			if err := rows.Scan(&result, &count); err != nil {
+				return readers.Aggregation{}, errors.Wrap(readers.ErrReadMessages, err)
+			}
+		}
+	}
+
+	aggregateField := tr.getAggregateField(rpm, format)
+	return readers.Aggregation{
+		Field: aggregateField,
+		Value: result,
+		Count: count,
+	}, nil
+}
+
+func (tr postgresRepository) executeQuery(query string, params map[string]interface{}) (*sqlx.Rows, error) {
+	rows, err := tr.db.NamedQuery(query, params)
+	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok {
+			if pgErr.Code == pgerrcode.UndefinedTable {
+				return nil, nil
+			}
+		}
+		return nil, errors.Wrap(readers.ErrReadMessages, err)
+	}
+	return rows, nil
+}
+
+func (tr postgresRepository) buildRegularQuery(rpm readers.PageMetadata, format, order string) string {
+	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
+	interval := rpm.AggInterval
 	condition := fmtCondition(rpm, format)
 
 	if interval != "" {
 		switch format {
 		case defTable:
-			q = fmt.Sprintf(`
+			return fmt.Sprintf(`
 				SELECT * FROM (
 					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(%[2]s))) *
 					FROM %[3]s %[4]s
@@ -171,7 +271,7 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 				%[5]s;`, interval, order, format, condition, olq)
 
 		case jsonTable:
-			q = fmt.Sprintf(`
+			return fmt.Sprintf(`
 				SELECT * FROM (
 					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(created / 1000000000))) *
 					FROM %[2]s %[3]s
@@ -179,101 +279,125 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 				) sub
 				%[4]s;`, interval, format, condition, olq)
 		}
-	} else {
-		q = fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s;`, format, condition, order, olq)
 	}
 
-	params := map[string]interface{}{
-		"limit":        rpm.Limit,
-		"offset":       rpm.Offset,
-		"subtopic":     rpm.Subtopic,
-		"publisher":    rpm.Publisher,
-		"name":         rpm.Name,
-		"protocol":     rpm.Protocol,
-		"value":        rpm.Value,
-		"bool_value":   rpm.BoolValue,
-		"string_value": rpm.StringValue,
-		"data_value":   rpm.DataValue,
-		"from":         rpm.From,
-		"to":           rpm.To,
-	}
+	return fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s;`, format, condition, order, olq)
+}
 
-	rows, err := tr.db.NamedQuery(q, params)
-	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok {
-			if pgErr.Code == pgerrcode.UndefinedTable {
-				return readers.MessagesPage{}, nil
-			}
-		}
-		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-	}
-	defer rows.Close()
+func (tr postgresRepository) buildCountQuery(rpm readers.PageMetadata, format, order string) string {
+	interval := rpm.AggInterval
+	condition := fmtCondition(rpm, format)
 
-	page := readers.MessagesPage{
-		PageMetadata: rpm,
-		Messages:     []readers.Message{},
-	}
-
-	switch format {
-	case defTable:
-		for rows.Next() {
-			msg := senmlMessage{Message: senml.Message{}}
-			if err := rows.StructScan(&msg); err != nil {
-				return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-			}
-			page.Messages = append(page.Messages, msg.Message)
-		}
-	default:
-		for rows.Next() {
-			msg := jsonMessage{}
-			if err := rows.StructScan(&msg); err != nil {
-				return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-			}
-			m, err := msg.toMap()
-			if err != nil {
-				return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-			}
-			page.Messages = append(page.Messages, m)
-		}
-	}
-
-	// Count total for pagination
 	if interval != "" {
 		switch format {
 		case defTable:
-			q = fmt.Sprintf(`
+			return fmt.Sprintf(`
 				SELECT COUNT(*) FROM (
 					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(%[2]s))) *
 					FROM %[3]s %[4]s
 					ORDER BY date_trunc('%[1]s', to_timestamp(%[2]s)), %[2]s DESC
 				) sub;`, interval, order, format, condition)
 		case jsonTable:
-			q = fmt.Sprintf(`
+			return fmt.Sprintf(`
 				SELECT COUNT(*) FROM (
 					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(created / 1000000000))) *
 					FROM %[2]s %[3]s
 					ORDER BY date_trunc('%[1]s', to_timestamp(created / 1000000000)), created DESC
 				) sub;`, interval, format, condition)
 		}
-	} else {
-		q = fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, format, condition)
 	}
 
-	rows, err = tr.db.NamedQuery(q, params)
-	if err != nil {
-		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-	}
-	defer rows.Close()
+	return fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, format, condition)
+}
 
-	total := uint64(0)
-	if rows.Next() {
-		if err := rows.Scan(&total); err != nil {
-			return page, err
+func (tr postgresRepository) buildAggregationQuery(rpm readers.PageMetadata, format, order string) string {
+	aggregateField := tr.getAggregateField(rpm, format)
+	aggFunc := tr.buildAggregationFunction(rpm.AggType, aggregateField)
+	subQuery := tr.buildSubQuery(rpm, format, order)
+
+	return fmt.Sprintf(`SELECT %s as result, COUNT(*) as count FROM (%s) as paginated_results;`, aggFunc, subQuery)
+}
+
+func (tr postgresRepository) buildSubQuery(rpm readers.PageMetadata, format, order string) string {
+	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
+	interval := rpm.AggInterval
+	condition := fmtCondition(rpm, format)
+
+	if interval != "" {
+		return tr.buildIntervalSubQuery(interval, format, order, condition, olq)
+	}
+	return fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s`, format, condition, order, olq)
+}
+
+func (tr postgresRepository) buildIntervalSubQuery(interval, format, order, condition, olq string) string {
+	switch format {
+	case defTable:
+		return fmt.Sprintf(`
+				SELECT * FROM (
+					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(%[2]s))) *
+					FROM %[3]s %[4]s
+					ORDER BY date_trunc('%[1]s', to_timestamp(%[2]s)), %[2]s DESC
+				) sub
+				%[5]s`, interval, order, format, condition, olq)
+
+	case jsonTable:
+		return fmt.Sprintf(`
+				SELECT * FROM (
+					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(created / 1000000000))) *
+					FROM %[2]s %[3]s
+					ORDER BY date_trunc('%[1]s', to_timestamp(created / 1000000000)), created DESC
+				) sub
+				%[4]s`, interval, format, condition, olq)
+	default:
+		return ""
+	}
+}
+
+func (tr postgresRepository) buildAggregationFunction(aggregationType, aggregateField string) string {
+	var aggFunc string
+
+	switch aggregationType {
+	case AggregationMin:
+		aggFunc = fmt.Sprintf("MIN(%s)", aggregateField)
+	case AggregationMax:
+		aggFunc = fmt.Sprintf("MAX(%s)", aggregateField)
+	case AggregationAvg:
+		aggFunc = fmt.Sprintf("AVG(%s)", aggregateField)
+	case AggregationCount:
+		aggFunc = "COUNT(*)"
+	}
+
+	return aggFunc
+}
+
+func (tr postgresRepository) scanMessages(rows *sqlx.Rows, format string) ([]readers.Message, error) {
+	var messages []readers.Message
+
+	switch format {
+	case defTable:
+		for rows.Next() {
+			msg := senml.Message{}
+			if err := rows.StructScan(&msg); err != nil {
+				return nil, errors.Wrap(readers.ErrReadMessages, err)
+			}
+			messages = append(messages, msg)
+		}
+	default:
+		for rows.Next() {
+			msg := mfjson.Message{}
+			if err := rows.StructScan(&msg); err != nil {
+				return nil, errors.Wrap(readers.ErrReadMessages, err)
+			}
+
+			m, err := msg.ToMap()
+			if err != nil {
+				return nil, errors.Wrap(readers.ErrReadMessages, err)
+			}
+			messages = append(messages, m)
 		}
 	}
-	page.Total = total
 
-	return page, nil
+	return messages, nil
 }
 
 func fmtCondition(rpm readers.PageMetadata, table string) string {
@@ -321,30 +445,58 @@ func fmtCondition(rpm readers.PageMetadata, table string) string {
 	return condition
 }
 
-type senmlMessage struct {
-	senml.Message
+func (tr postgresRepository) getFormatAndOrder(rpm readers.PageMetadata) (format, order string) {
+	format = defTable
+	order = "time"
+
+	if rpm.Format == jsonTable {
+		format = jsonTable
+		order = "created"
+	}
+	return format, order
 }
 
-type jsonMessage struct {
-	Created   int64  `db:"created"`
-	Subtopic  string `db:"subtopic"`
-	Publisher string `db:"publisher"`
-	Protocol  string `db:"protocol"`
-	Payload   []byte `db:"payload"`
+func (tr postgresRepository) getAggregateField(rpm readers.PageMetadata, format string) string {
+	switch rpm.AggField {
+	case "":
+		if format == jsonTable {
+			return "created"
+		} else {
+			return "value"
+		}
+	default:
+		return rpm.AggField
+	}
 }
 
-func (msg jsonMessage) toMap() (map[string]interface{}, error) {
-	ret := map[string]interface{}{
-		"created":   msg.Created,
-		"subtopic":  msg.Subtopic,
-		"publisher": msg.Publisher,
-		"protocol":  msg.Protocol,
-		"payload":   map[string]interface{}{},
+func (tr postgresRepository) buildQueryParams(rpm readers.PageMetadata) map[string]interface{} {
+	return map[string]interface{}{
+		"limit":        rpm.Limit,
+		"offset":       rpm.Offset,
+		"subtopic":     rpm.Subtopic,
+		"publisher":    rpm.Publisher,
+		"name":         rpm.Name,
+		"protocol":     rpm.Protocol,
+		"value":        rpm.Value,
+		"bool_value":   rpm.BoolValue,
+		"string_value": rpm.StringValue,
+		"data_value":   rpm.DataValue,
+		"from":         rpm.From,
+		"to":           rpm.To,
 	}
-	pld := make(map[string]interface{})
-	if err := json.Unmarshal(msg.Payload, &pld); err != nil {
-		return nil, err
+}
+
+func (tr postgresRepository) buildDeleteQueryParams(rpm readers.PageMetadata) map[string]interface{} {
+	return map[string]interface{}{
+		"subtopic":     rpm.Subtopic,
+		"publisher":    rpm.Publisher,
+		"name":         rpm.Name,
+		"protocol":     rpm.Protocol,
+		"value":        rpm.Value,
+		"bool_value":   rpm.BoolValue,
+		"string_value": rpm.StringValue,
+		"data_value":   rpm.DataValue,
+		"from":         rpm.From,
+		"to":           rpm.To,
 	}
-	ret["payload"] = pld
-	return ret, nil
 }
