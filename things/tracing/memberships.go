@@ -13,12 +13,12 @@ import (
 )
 
 const (
-	saveGroupMemberships           = "save_group_memberships"
-	updateGroupMemberships         = "update_group_memberships"
-	removeGroupMemberships         = "remove_group_memberships"
-	retrieveMembershipsByGroup     = "retrieve_memberships_by_group"
-	backupAllGroupMemberships      = "backup_all_group_memberships"
-	backupGroupMemberhipsByGroupID = "backup_group_memberhips_by_group_id"
+	saveGroupMemberships       = "save_group_memberships"
+	updateGroupMemberships     = "update_group_memberships"
+	removeGroupMemberships     = "remove_group_memberships"
+	retrieveMembershipsByGroup = "retrieve_memberships_by_group"
+	backupAllGroupMemberships  = "backup_all_group_memberships"
+	backupGroupMemberhips      = "backup_group_memberhips"
 )
 
 var _ things.GroupMembershipsRepository = (*groupMembershipsRepositoryMiddleware)(nil)
@@ -77,7 +77,7 @@ func (gmr groupMembershipsRepositoryMiddleware) BackupAll(ctx context.Context) (
 }
 
 func (gmr groupMembershipsRepositoryMiddleware) BackupByGroup(ctx context.Context, groupID string) ([]things.GroupMembership, error) {
-	span := createSpan(ctx, gmr.tracer, backupGroupMemberhipsByGroupID)
+	span := createSpan(ctx, gmr.tracer, backupGroupMemberhips)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
