@@ -17,17 +17,17 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/CreateNotifiersReq"
       responses:
-        '201':
+        "201":
           $ref: "#/components/responses/CreateNotifiersRes"
-        '400':
+        "400":
           description: Failed due to malformed JSON.
-        '401':
+        "401":
           description: Missing or invalid access token provided.
-        '403':
+        "403":
           description: Failed to perform authorization over the entity
-        '415':
+        "415":
           description: Missing or invalid content type.
-        '500':
+        "500":
           $ref: "#/components/responses/ServiceError"
     get:
       summary: Retrieves notifiers by group
@@ -37,17 +37,17 @@ paths:
       parameters:
         - $ref: "#/components/parameters/GroupId"
       responses:
-        '200':
+        "200":
           $ref: "#/components/responses/ListNotifiersRes"
-        '400':
+        "400":
           description: Failed due to malformed query parameters.
-        '401':
+        "401":
           description: Missing or invalid access token provided.
-        '403':
+        "403":
           description: Failed to perform authorization over the entity
-        '422':
+        "422":
           description: Database can't process request.
-        '500':
+        "500":
           $ref: "#/components/responses/ServiceError"
   /groups/{groupId}/notifiers/search:
     post:
@@ -65,17 +65,17 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/SearchNotifiersReq"
       responses:
-        '200':
+        "200":
           $ref: "#/components/responses/NotifiersPageRes"
-        '400':
+        "400":
           description: Failed due to malformed request body.
-        '401':
+        "401":
           description: Missing or invalid access token provided.
-        '404':
+        "404":
           description: Failed due to non existing group or related entities.
-        '422':
+        "422":
           description: Unprocessable Entity
-        '500':
+        "500":
           $ref: "#/components/responses/ServiceError"
   /notifiers/{notifierId}:
     get:
@@ -85,15 +85,15 @@ paths:
       parameters:
         - $ref: "#/components/parameters/NotifierId"
       responses:
-        '200':
+        "200":
           $ref: "#/components/responses/NotifierRes"
-        '401':
+        "401":
           description: Missing or invalid access token provided.
-        '404':
+        "404":
           description: Notifier does not exist.
-        '422':
+        "422":
           description: Database can't process request.
-        '500':
+        "500":
           $ref: "#/components/responses/ServiceError"
     put:
       summary: Updates notifier info
@@ -107,17 +107,17 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/UpdateNotifierReq"
       responses:
-        '200':
+        "200":
           description: Notifier updated.
-        '400':
+        "400":
           description: Failed due to malformed JSON.
-        '401':
+        "401":
           description: Missing or invalid access token provided.
-        '404':
+        "404":
           description: Notifier does not exist.
-        '415':
+        "415":
           description: Missing or invalid content type.
-        '500':
+        "500":
           $ref: "#/components/responses/ServiceError"
   /notifiers:
     patch:
@@ -128,13 +128,13 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/RemoveNotifierReq"
       responses:
-        '204':
+        "204":
           description: Notifier removed.
-        '400':
+        "400":
           description: Failed due to malformed JSON.
-        '401':
+        "401":
           description: Missing or invalid access token provided.
-        '500':
+        "500":
           $ref: "#/components/responses/ServiceError"
 
 components:
@@ -368,4 +368,4 @@ components:
         * Users access: "Authorization: Bearer <user_token>"
 
 security:
-  - bearerAuth: [ ]
+  - bearerAuth: []
