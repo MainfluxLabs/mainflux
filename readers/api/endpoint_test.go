@@ -142,11 +142,13 @@ func TestListAllMessages(t *testing.T) {
 	thSvc := thmocks.NewThingsServiceClient(nil, nil, nil)
 	authSvc := newAuthService()
 
+	tok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
 	require.Nil(t, err, fmt.Sprintf("issue token for user got unexpected error: %s", err))
 	adminTok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
 	require.Nil(t, err, fmt.Sprintf("issue token for admin got unexpected error: %s", err))
 
 	adminToken := adminTok.GetValue()
+	userToken := tok.GetValue()
 
 	repo := rmocks.NewMessageRepository("", fromSenml(messages))
 	ts := newServer(repo, thSvc, authSvc)
@@ -444,7 +446,7 @@ func TestListAllMessages(t *testing.T) {
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(messages)),
-				Messages: messages[0:10], 
+				Messages: messages[0:10],
 			},
 		},
 		{
@@ -454,7 +456,7 @@ func TestListAllMessages(t *testing.T) {
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(messages)),
-				Messages: messages, 
+				Messages: messages,
 			},
 		},
 		{
@@ -464,7 +466,7 @@ func TestListAllMessages(t *testing.T) {
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(queryMsgs)),
-				Messages: queryMsgs, 
+				Messages: queryMsgs,
 			},
 		},
 		{
@@ -474,7 +476,7 @@ func TestListAllMessages(t *testing.T) {
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(queryMsgs)),
-				Messages: queryMsgs, 
+				Messages: queryMsgs,
 			},
 		},
 		{
@@ -484,7 +486,7 @@ func TestListAllMessages(t *testing.T) {
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(queryMsgs)),
-				Messages: queryMsgs, 
+				Messages: queryMsgs,
 			},
 		},
 		{
@@ -508,7 +510,7 @@ func TestListAllMessages(t *testing.T) {
 			status: http.StatusOK,
 			res: pageRes{
 				Total:    uint64(len(messages)),
-				Messages: messages[10:15], 
+				Messages: messages[10:15],
 			},
 		},
 	}
