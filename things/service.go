@@ -737,6 +737,15 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 }
 
 func (ts *thingsService) BackupGroupMemberships(ctx context.Context, token string, groupID string) (BackupGroupMemberships, error) {
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     groupID,
+		Action: Owner,
+	}
+	if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
+		return BackupGroupMemberships{}, err
+	}
+
 	groupMemberships, err := ts.groupMemberships.BackupByGroup(ctx, groupID)
 	if err != nil {
 		return BackupGroupMemberships{}, err
