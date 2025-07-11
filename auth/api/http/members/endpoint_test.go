@@ -93,13 +93,14 @@ func newService() auth.Service {
 	membsRepo := mocks.NewMembersRepository()
 	orgsRepo := mocks.NewOrgRepository(membsRepo)
 	rolesRepo := mocks.NewRolesRepository()
+	invitesRepo := mocks.NewInvitesRepository()
 
 	idProvider := uuid.NewMock()
 	t := jwt.New(secret)
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
 	tc := thmocks.NewThingsServiceClient(nil, nil, nil)
 
-	return auth.New(orgsRepo, tc, uc, nil, rolesRepo, membsRepo, idProvider, t, loginDuration)
+	return auth.New(orgsRepo, tc, uc, nil, rolesRepo, membsRepo, invitesRepo, idProvider, t, loginDuration)
 }
 
 func newServer(svc auth.Service) *httptest.Server {
