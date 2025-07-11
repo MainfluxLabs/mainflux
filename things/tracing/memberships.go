@@ -16,7 +16,7 @@ const (
 	saveGroupMemberships           = "save_group_memberships"
 	updateGroupMemberships         = "update_group_memberships"
 	removeGroupMemberships         = "remove_group_memberships"
-	retrieveGroupMemberships       = "retrieve_group_memberships"
+	retrieveMembershipsByGroup     = "retrieve_memberships_by_group"
 	backupAllGroupMemberships      = "backup_all_group_memberships"
 	backupGroupMemberhipsByGroupID = "backup_group_memberhips_by_group_id"
 )
@@ -53,7 +53,7 @@ func (gmr groupMembershipsRepositoryMiddleware) RetrieveRole(ctx context.Context
 }
 
 func (gmr groupMembershipsRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (things.GroupMembershipsPage, error) {
-	span := createSpan(ctx, gmr.tracer, retrieveGroupMemberships)
+	span := createSpan(ctx, gmr.tracer, retrieveMembershipsByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
