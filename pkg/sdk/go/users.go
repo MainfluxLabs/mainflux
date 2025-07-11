@@ -19,7 +19,6 @@ const (
 	registrationEndpoint = "register"
 	tokensEndpoint       = "tokens"
 	passwordEndpoint     = "password"
-	membersEndpoint      = "members"
 )
 
 func (sdk mfSDK) CreateUser(u User, token string) (string, error) {

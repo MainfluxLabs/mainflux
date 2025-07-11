@@ -126,49 +126,49 @@ func (ms *metricsMiddleware) GetOwnerIDByOrgID(ctx context.Context, orgID string
 	return ms.svc.GetOwnerIDByOrgID(ctx, orgID)
 }
 
-func (ms *metricsMiddleware) AssignMembers(ctx context.Context, token, orgID string, oms ...auth.OrgMember) error {
+func (ms *metricsMiddleware) CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...auth.OrgMembership) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "assign_members").Add(1)
-		ms.latency.With("method", "assign_members").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "create_org_memberships").Add(1)
+		ms.latency.With("method", "create_org_memberships").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.AssignMembers(ctx, token, orgID, oms...)
+	return ms.svc.CreateOrgMemberships(ctx, token, orgID, oms...)
 }
 
-func (ms *metricsMiddleware) UnassignMembers(ctx context.Context, token, orgID string, memberIDs ...string) error {
+func (ms *metricsMiddleware) ViewOrgMembership(ctx context.Context, token, orgID, memberID string) (auth.OrgMembership, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "unassign_members").Add(1)
-		ms.latency.With("method", "unassign_members").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "view_org_membership").Add(1)
+		ms.latency.With("method", "view_org_membership").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.UnassignMembers(ctx, token, orgID, memberIDs...)
+	return ms.svc.ViewOrgMembership(ctx, token, orgID, memberID)
 }
 
-func (ms *metricsMiddleware) UpdateMembers(ctx context.Context, token, orgID string, oms ...auth.OrgMember) error {
+func (ms *metricsMiddleware) ListOrgMemberships(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (auth.OrgMembershipsPage, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "update_members").Add(1)
-		ms.latency.With("method", "update_members").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "list_org_memberships").Add(1)
+		ms.latency.With("method", "list_org_memberships").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.UpdateMembers(ctx, token, orgID, oms...)
+	return ms.svc.ListOrgMemberships(ctx, token, orgID, pm)
 }
 
-func (ms *metricsMiddleware) ViewMember(ctx context.Context, token, orgID, memberID string) (auth.OrgMember, error) {
+func (ms *metricsMiddleware) UpdateOrgMemberships(ctx context.Context, token, orgID string, oms ...auth.OrgMembership) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "view_member").Add(1)
-		ms.latency.With("method", "view_member").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "update_org_memberships").Add(1)
+		ms.latency.With("method", "update_org_memberships").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ViewMember(ctx, token, orgID, memberID)
+	return ms.svc.UpdateOrgMemberships(ctx, token, orgID, oms...)
 }
 
-func (ms *metricsMiddleware) ListMembersByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (auth.OrgMembersPage, error) {
+func (ms *metricsMiddleware) RemoveOrgMemberships(ctx context.Context, token, orgID string, memberIDs ...string) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "list_members_by_org").Add(1)
-		ms.latency.With("method", "list_members_by_org").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "remove_org_memberships").Add(1)
+		ms.latency.With("method", "remove_org_memberships").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListMembersByOrg(ctx, token, orgID, pm)
+	return ms.svc.RemoveOrgMemberships(ctx, token, orgID, memberIDs...)
 }
 
 func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (auth.Backup, error) {
@@ -178,6 +178,15 @@ func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (auth.Bac
 	}(time.Now())
 
 	return ms.svc.Backup(ctx, token)
+}
+
+func (ms *metricsMiddleware) BackupOrgMemberships(ctx context.Context, token string, orgID string) (auth.BackupOrgMemberships, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "backup_org_memberships").Add(1)
+		ms.latency.With("method", "backup_org_memberships").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.BackupOrgMemberships(ctx, token, orgID)
 }
 
 func (ms *metricsMiddleware) Restore(ctx context.Context, token string, backup auth.Backup) error {

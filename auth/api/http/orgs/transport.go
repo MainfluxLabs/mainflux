@@ -57,6 +57,13 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
+	mux.Post("/orgs/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_orgs")(listOrgsEndpoint(svc)),
+		decodeSearchOrgs,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Get("/backup", kithttp.NewServer(
 		kitot.TraceServer(tracer, "backup")(backupEndpoint(svc)),
 		decodeBackup,
@@ -76,6 +83,20 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 
 func decodeListOrgs(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listOrgsReq{
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm,
+	}
+
+	return req, nil
+}
+
+func decodeSearchOrgs(_ context.Context, r *http.Request) (interface{}, error) {
+	pm, err := apiutil.BuildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
 	}

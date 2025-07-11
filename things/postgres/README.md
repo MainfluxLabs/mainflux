@@ -1,13 +1,13 @@
 # Things - DB Schema
 
 ```sql
-CREATE TABLE group_roles (
+CREATE TABLE group_memberships (
     group_id   UUID NOT NULL,
     member_id  UUID NOT NULL,
     role       VARCHAR(15),
 
-    CONSTRAINT group_policies_pkey PRIMARY KEY (group_id, member_id),
-    CONSTRAINT group_policies_group_id_fkey FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
+    CONSTRAINT group_memberships_pkey PRIMARY KEY (group_id, member_id),
+    CONSTRAINT group_memberships_group_id_fkey FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
 );
 
 CREATE TABLE groups (

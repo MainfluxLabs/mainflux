@@ -343,7 +343,7 @@ func (svc usersService) Backup(ctx context.Context, token string) (User, []User,
 		return User{}, []User{}, err
 	}
 
-	users, err := svc.users.RetrieveAll(ctx)
+	users, err := svc.users.BackupAll(ctx)
 	if err != nil {
 		return User{}, []User{}, err
 	}

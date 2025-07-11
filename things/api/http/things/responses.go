@@ -135,7 +135,7 @@ type backupGroup struct {
 	UpdatedAt   time.Time              `json:"updated_at"`
 }
 
-type backupGroupMember struct {
+type backupGroupMembership struct {
 	MemberID string `json:"member_id"`
 	GroupID  string `json:"group_id"`
 	Email    string `json:"email"`
@@ -143,10 +143,10 @@ type backupGroupMember struct {
 }
 
 type backupRes struct {
-	Things       []viewThingRes      `json:"things"`
-	Profiles     []backupProfile     `json:"profiles"`
-	Groups       []backupGroup       `json:"groups"`
-	GroupMembers []backupGroupMember `json:"group_members"`
+	Things           []viewThingRes          `json:"things"`
+	Profiles         []backupProfile         `json:"profiles"`
+	Groups           []backupGroup           `json:"groups"`
+	GroupMemberships []backupGroupMembership `json:"group_memberships"`
 }
 
 func (res backupRes) Code() int {

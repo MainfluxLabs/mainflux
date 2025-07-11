@@ -214,7 +214,7 @@ func (trm *thingRepositoryMock) RetrieveByKey(_ context.Context, key string) (st
 	return "", errors.ErrNotFound
 }
 
-func (trm *thingRepositoryMock) RetrieveAll(_ context.Context) ([]things.Thing, error) {
+func (trm *thingRepositoryMock) BackupAll(_ context.Context) ([]things.Thing, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 	var ths []things.Thing
@@ -226,7 +226,7 @@ func (trm *thingRepositoryMock) RetrieveAll(_ context.Context) ([]things.Thing, 
 	return ths, nil
 }
 
-func (trm *thingRepositoryMock) RetrieveByAdmin(_ context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+func (trm *thingRepositoryMock) RetrieveAll(_ context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 

@@ -300,8 +300,8 @@ func TestListAllMessagesSenML(t *testing.T) {
 				To:    messages[20].Time,
 			},
 			page: readers.MessagesPage{
-				Total:    uint64(len(messages[21:])),
-				Messages: fromSenml(messages[21:]),
+				Total:    uint64(len(messages[20:])),
+				Messages: fromSenml(messages[20:]),
 			},
 		},
 		"read messages with from/to": {
@@ -311,8 +311,8 @@ func TestListAllMessagesSenML(t *testing.T) {
 				To:    messages[0].Time,
 			},
 			page: readers.MessagesPage{
-				Total:    5,
-				Messages: fromSenml(messages[1:6]),
+				Total:    6,
+				Messages: fromSenml(messages[0:6]),
 			},
 		},
 		"count aggregation": {
@@ -600,7 +600,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 				From:      0,
 				To:        messages[20].Time,
 			},
-			expectedCount: 64,
+			expectedCount: 65, 
 			description:   "should delete messages to specific time",
 		},
 		"delete messages with time range from/to": {
@@ -609,7 +609,8 @@ func TestDeleteMessagesSenML(t *testing.T) {
 				From:      messages[50].Time,
 				To:        messages[20].Time,
 			},
-			expectedCount: 24,
+
+			expectedCount: 25, 
 			description:   "should delete messages within time range",
 		},
 		"delete all messages for publisher": {
@@ -627,12 +628,12 @@ func TestDeleteMessagesSenML(t *testing.T) {
 		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
 			Publisher: pubID,
 			From:      0,
-			To:        now + 1,
+			To:        now,
 		})
 		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
 			Publisher: pubID2,
 			From:      0,
-			To:        now + 1,
+			To:        now,
 		})
 
 		for _, m := range messages {
@@ -816,7 +817,7 @@ func TestDeleteMessagesJSON(t *testing.T) {
 				From:      float64(created + 20),
 				To:        float64(created + 50),
 			},
-			expectedCount: 30,
+			expectedCount: 31,
 			description:   "should delete JSON messages within time range",
 		},
 	}

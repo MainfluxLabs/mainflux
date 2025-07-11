@@ -218,7 +218,7 @@ func fmtCondition(rpm readers.PageMetadata) string {
 			condition = fmt.Sprintf(`%s %s time >= :from`, condition, op)
 			op = "AND"
 		case "to":
-			condition = fmt.Sprintf(`%s %s time < :to`, condition, op)
+			condition = fmt.Sprintf(`%s %s time <= :to`, condition, op)
 			op = "AND"
 		}
 	}

@@ -10,7 +10,7 @@ import (
 	log "github.com/MainfluxLabs/mainflux/logger"
 	svcthings "github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/api/http/groups"
-	"github.com/MainfluxLabs/mainflux/things/api/http/members"
+	"github.com/MainfluxLabs/mainflux/things/api/http/memberships"
 	"github.com/MainfluxLabs/mainflux/things/api/http/profiles"
 	"github.com/MainfluxLabs/mainflux/things/api/http/things"
 	"github.com/go-zoo/bone"
@@ -25,7 +25,7 @@ func MakeHandler(svc svcthings.Service, tracer opentracing.Tracer, logger log.Lo
 	mux = things.MakeHandler(svc, mux, tracer, logger)
 	mux = profiles.MakeHandler(svc, mux, tracer, logger)
 	mux = groups.MakeHandler(svc, mux, tracer, logger)
-	mux = members.MakeHandler(svc, mux, tracer, logger)
+	mux = memberships.MakeHandler(svc, mux, tracer, logger)
 	mux.GetFunc("/health", mainflux.Health("things"))
 	mux.Handle("/metrics", promhttp.Handler())
 	return mux

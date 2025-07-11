@@ -441,7 +441,7 @@ func TestRetrieveByIDs(t *testing.T) {
 	}
 }
 
-func TestRetrieveAllGroups(t *testing.T) {
+func TestBackupAllGroups(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 
 	err := cleanTestTable(context.Background(), "groups", dbMiddleware)
@@ -484,7 +484,7 @@ func TestRetrieveAllGroups(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		gr, err := groupRepo.RetrieveAll(context.Background())
+		gr, err := groupRepo.BackupAll(context.Background())
 		size := len(gr)
 		assert.Equal(t, tc.Size, uint64(size), fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.Size, size))
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
