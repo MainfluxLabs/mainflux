@@ -118,7 +118,7 @@ func (svc *mainfluxThings) Backup(context.Context, string) (things.Backup, error
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) BackupGroups(context.Context, string, string) (things.BackupGroups, error) {
+func (svc *mainfluxThings) BackupOrgGroups(context.Context, string, string) (things.BackupOrgGroups, error) {
 	panic("not implemented")
 }
 
