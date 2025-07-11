@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	createOrgMemberships    = "create_org_memberships"
+	saveOrgMemberships      = "save_org_memberships"
 	removeOrgMemberships    = "remove_org_memberships"
 	updateOrgMemberships    = "update_org_memberships"
 	retrieveOrgMemberships  = "retrieve_org_memberships"
@@ -37,7 +37,7 @@ func OrgMembershipsRepositoryMiddleware(tracer opentracing.Tracer, gr auth.OrgMe
 }
 
 func (orm orgMembershipsRepositoryMiddleware) Save(ctx context.Context, oms ...auth.OrgMembership) error {
-	span := createSpan(ctx, orm.tracer, createOrgMemberships)
+	span := createSpan(ctx, orm.tracer, saveOrgMemberships)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

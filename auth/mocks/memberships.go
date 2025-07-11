@@ -147,8 +147,8 @@ func (mrm *orgMembershipsRepositoryMock) BackupByOrg(ctx context.Context, orgID 
 	defer mrm.mu.Unlock()
 
 	var oms []auth.OrgMembership
-	for _, members := range mrm.memberships {
-		for _, mb := range members {
+	for _, membership := range mrm.memberships {
+		for _, mb := range membership {
 			if mb.OrgID == orgID {
 				oms = append(oms, mb)
 			}

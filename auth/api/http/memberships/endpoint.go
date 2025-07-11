@@ -100,7 +100,7 @@ func removeOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func backupMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
+func backupOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(backupReq)
 		if err := req.validate(); err != nil {
