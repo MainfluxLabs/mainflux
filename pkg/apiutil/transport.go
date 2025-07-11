@@ -167,12 +167,8 @@ func ReadLimitQuery(r *http.Request, key string, def uint64) (uint64, error) {
 		return 0, ErrInvalidQueryParams
 	}
 
-	if val < -1 || val == 0 {
+	if val <= 0 {
 		return 0, ErrInvalidQueryParams
-	}
-
-	if val == -1 {
-		val = 0
 	}
 
 	return uint64(val), nil
@@ -302,6 +298,40 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 		Email:    e,
 		Payload:  p,
 	}, nil
+}
+
+func BuildPageMetadataFromBody(r *http.Request) (PageMetadata, error) {
+	if r.Body == nil || r.ContentLength == 0 {
+		return PageMetadata{
+			Offset: DefOffset,
+			Limit:  DefLimit,
+			Order:  IDOrder,
+			Dir:    DescDir,
+		}, nil
+	}
+
+	var pm PageMetadata
+	if err := json.NewDecoder(r.Body).Decode(&pm); err != nil {
+		return PageMetadata{}, errors.Wrap(ErrMalformedEntity, err)
+	}
+
+	if pm.Limit == 0 {
+		pm.Limit = DefLimit
+	}
+
+	if pm.Offset == 0 {
+		pm.Offset = DefOffset
+	}
+
+	if pm.Order == "" {
+		pm.Order = IDOrder
+	}
+
+	if pm.Dir == "" {
+		pm.Dir = DescDir
+	}
+
+	return pm, nil
 }
 
 func ValidatePageMetadata(pm PageMetadata, maxLimitSize, maxNameSize int) error {

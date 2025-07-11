@@ -149,7 +149,7 @@ func (urm *userRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string, 
 	return up, nil
 }
 
-func (urm *userRepositoryMock) RetrieveAll(ctx context.Context) ([]users.User, error) {
+func (urm *userRepositoryMock) BackupAll(ctx context.Context) ([]users.User, error) {
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 

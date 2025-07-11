@@ -77,6 +77,26 @@ paths:
           description: Missing or invalid access token provided.
         '500':
          $ref: "#/components/responses/ServiceError"
+  /users/search:
+    post:
+      summary: Search and retrieve users.
+      description: |
+        Retrieves a list of users with optional email, status and metadata filtering, and supports pagination (offset, limit) and sorting (order, dir).
+      tags:
+        - users
+      requestBody:
+        $ref: "#/components/requestBodies/SearchUsersReq"
+      responses:
+        '200':
+          $ref: "#/components/responses/UsersPageRes"
+        '400':
+          description: Failed due to malformed request body.
+        '401':
+          description: Missing or invalid access token provided.
+        '422':
+          description: Unprocessable Entity
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /users/profile:
      get:
       summary: Gets info on currently logged in user.
@@ -372,6 +392,45 @@ components:
             $ref: "#/components/schemas/User"
       required:
         - users
+    SearchUsersReqSchema:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Filter users by status ("enabled", "disabled", "all").
+        email:
+          type: string
+          description: Email filter. Filtering is performed as a case-insensitive partial match.
+        metadata:
+          type: object
+          description: Metadata filter. Filtering is performed by matching the parameter with metadata on top level. Parameter is JSON.
+        offset:
+          type: integer
+          description: Number of items to skip during retrieval.
+          default: 0
+          minimum: 0
+        limit:
+          type: integer
+          description: Size of the subset to retrieve.
+          default: 10
+          maximum: 100
+          minimum: 1
+        order:
+          type: string
+          description: Order type.
+          default: id
+          enum:
+            - name
+            - id
+            - email
+            - status
+        dir:
+          type: string
+          description: Order direction.
+          default: desc
+          enum:
+            - asc
+            - desc
     UsersPage:
       type: object
       properties:
@@ -464,6 +523,13 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/UserReqObj'
+    SearchUsersReq:
+      description: JSON-formatted document describing user search parameters.
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SearchUsersReqSchema"
     UserUpdateReq:
       description: JSON-formated document describing the metadata of user to be update
       required: true

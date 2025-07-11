@@ -1,4 +1,4 @@
-package members
+package memberships
 
 import (
 	"github.com/MainfluxLabs/mainflux/auth"
@@ -7,9 +7,9 @@ import (
 
 const maxLimitSize = 100
 
-type listMembersByOrgReq struct {
+type listOrgMembershipsReq struct {
 	token  string
-	id     string
+	orgID  string
 	offset uint64
 	limit  uint64
 	email  string
@@ -17,12 +17,12 @@ type listMembersByOrgReq struct {
 	dir    string
 }
 
-func (req listMembersByOrgReq) validate() error {
+func (req listOrgMembershipsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.id == "" {
+	if req.orgID == "" {
 		return apiutil.ErrMissingOrgID
 	}
 
@@ -33,13 +33,13 @@ func (req listMembersByOrgReq) validate() error {
 	return nil
 }
 
-type memberReq struct {
+type orgMembershipReq struct {
 	token    string
 	orgID    string
 	memberID string
 }
 
-func (req memberReq) validate() error {
+func (req orgMembershipReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -55,13 +55,13 @@ func (req memberReq) validate() error {
 	return nil
 }
 
-type membersReq struct {
-	token      string
-	orgID      string
-	OrgMembers []auth.OrgMember `json:"org_members"`
+type orgMembershipsReq struct {
+	token          string
+	orgID          string
+	OrgMemberships []auth.OrgMembership `json:"org_memberships"`
 }
 
-func (req membersReq) validate() error {
+func (req orgMembershipsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -70,11 +70,11 @@ func (req membersReq) validate() error {
 		return apiutil.ErrMissingOrgID
 	}
 
-	if len(req.OrgMembers) == 0 {
+	if len(req.OrgMemberships) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
-	for _, m := range req.OrgMembers {
+	for _, m := range req.OrgMemberships {
 		if m.Role != auth.Admin && m.Role != auth.Viewer && m.Role != auth.Editor {
 			return apiutil.ErrInvalidRole
 		}
@@ -83,13 +83,13 @@ func (req membersReq) validate() error {
 	return nil
 }
 
-type unassignMembersReq struct {
+type removeOrgMembershipsReq struct {
 	token     string
 	orgID     string
 	MemberIDs []string `json:"member_ids"`
 }
 
-func (req unassignMembersReq) validate() error {
+func (req removeOrgMembershipsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -102,5 +102,20 @@ func (req unassignMembersReq) validate() error {
 		return apiutil.ErrEmptyList
 	}
 
+	return nil
+}
+
+type backupReq struct {
+	token string
+	id    string
+}
+
+func (req backupReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if req.id == "" {
+		return apiutil.ErrMissingOrgID
+	}
 	return nil
 }

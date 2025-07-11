@@ -600,7 +600,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 				From:      0,
 				To:        messages[20].Time,
 			},
-			expectedCount: 65,
+			expectedCount: 65, 
 			description:   "should delete messages to specific time",
 		},
 		"delete messages with time range from/to": {

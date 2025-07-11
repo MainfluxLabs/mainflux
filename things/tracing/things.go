@@ -12,20 +12,21 @@ import (
 )
 
 const (
-	saveThingOp                = "save_thing"
-	saveThingsOp               = "save_things"
-	updateThingOp              = "update_thing"
-	updateThingKeyOp           = "update_thing_by_key"
-	retrieveThingByIDOp        = "retrieve_thing_by_id"
-	retrieveThingByKeyOp       = "retrieve_thing_by_key"
-	retrieveThingsByProfileOp  = "retrieve_things_by_profile"
-	retrieveThingsByGroupIDsOp = "retrieve_things_by_group_ids"
-	removeThingOp              = "remove_thing"
-	retrieveThingIDByKeyOp     = "retrieve_id_by_key"
-	retrieveAllThingsOp        = "retrieve_all_things"
-	saveGroupIDByThingIDOp     = "save_group_id_by_thing_id"
-	retrieveGroupIDByThingIDOp = "retrieve_group_id_by_thing_id"
-	removeGroupIDByThingIDOp   = "remove_group_id_by_thing_id"
+	saveThing                = "save_thing"
+	saveThings               = "save_things"
+	updateThing              = "update_thing"
+	updateThingKey           = "update_thing_by_key"
+	retrieveThingByID        = "retrieve_thing_by_id"
+	retrieveThingByKey       = "retrieve_thing_by_key"
+	retrieveThingsByProfile  = "retrieve_things_by_profile"
+	retrieveThingsByGroupIDs = "retrieve_things_by_group_ids"
+	removeThing              = "remove_thing"
+	retrieveThingIDByKey     = "retrieve_id_by_key"
+	retrieveAllThings        = "retrieve_all_things"
+	backupAllThings          = "backup_all_things"
+	saveGroupIDByThingID     = "save_group_id_by_thing_id"
+	retrieveGroupIDByThingID = "retrieve_group_id_by_thing_id"
+	removeGroupIDByThingID   = "remove_group_id_by_thing_id"
 )
 
 var (
@@ -48,7 +49,7 @@ func ThingRepositoryMiddleware(tracer opentracing.Tracer, repo things.ThingRepos
 }
 
 func (trm thingRepositoryMiddleware) Save(ctx context.Context, ths ...things.Thing) ([]things.Thing, error) {
-	span := createSpan(ctx, trm.tracer, saveThingsOp)
+	span := createSpan(ctx, trm.tracer, saveThings)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -56,7 +57,7 @@ func (trm thingRepositoryMiddleware) Save(ctx context.Context, ths ...things.Thi
 }
 
 func (trm thingRepositoryMiddleware) Update(ctx context.Context, th things.Thing) error {
-	span := createSpan(ctx, trm.tracer, updateThingOp)
+	span := createSpan(ctx, trm.tracer, updateThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -64,7 +65,7 @@ func (trm thingRepositoryMiddleware) Update(ctx context.Context, th things.Thing
 }
 
 func (trm thingRepositoryMiddleware) UpdateKey(ctx context.Context, id, key string) error {
-	span := createSpan(ctx, trm.tracer, updateThingKeyOp)
+	span := createSpan(ctx, trm.tracer, updateThingKey)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -72,7 +73,7 @@ func (trm thingRepositoryMiddleware) UpdateKey(ctx context.Context, id, key stri
 }
 
 func (trm thingRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (things.Thing, error) {
-	span := createSpan(ctx, trm.tracer, retrieveThingByIDOp)
+	span := createSpan(ctx, trm.tracer, retrieveThingByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -80,7 +81,7 @@ func (trm thingRepositoryMiddleware) RetrieveByID(ctx context.Context, id string
 }
 
 func (trm thingRepositoryMiddleware) RetrieveByKey(ctx context.Context, key string) (string, error) {
-	span := createSpan(ctx, trm.tracer, retrieveThingByKeyOp)
+	span := createSpan(ctx, trm.tracer, retrieveThingByKey)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -88,7 +89,7 @@ func (trm thingRepositoryMiddleware) RetrieveByKey(ctx context.Context, key stri
 }
 
 func (trm thingRepositoryMiddleware) RetrieveByGroupIDs(ctx context.Context, ids []string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
-	span := createSpan(ctx, trm.tracer, retrieveThingsByGroupIDsOp)
+	span := createSpan(ctx, trm.tracer, retrieveThingsByGroupIDs)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -96,7 +97,7 @@ func (trm thingRepositoryMiddleware) RetrieveByGroupIDs(ctx context.Context, ids
 }
 
 func (trm thingRepositoryMiddleware) RetrieveByProfile(ctx context.Context, chID string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
-	span := createSpan(ctx, trm.tracer, retrieveThingsByProfileOp)
+	span := createSpan(ctx, trm.tracer, retrieveThingsByProfile)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -104,27 +105,27 @@ func (trm thingRepositoryMiddleware) RetrieveByProfile(ctx context.Context, chID
 }
 
 func (trm thingRepositoryMiddleware) Remove(ctx context.Context, ids ...string) error {
-	span := createSpan(ctx, trm.tracer, removeThingOp)
+	span := createSpan(ctx, trm.tracer, removeThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return trm.repo.Remove(ctx, ids...)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]things.Thing, error) {
-	span := createSpan(ctx, trm.tracer, retrieveAllThingsOp)
+func (trm thingRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.Thing, error) {
+	span := createSpan(ctx, trm.tracer, backupAllThings)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.RetrieveAll(ctx)
+	return trm.repo.BackupAll(ctx)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
-	span := createSpan(ctx, trm.tracer, retrieveAllThingsOp)
+func (trm thingRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+	span := createSpan(ctx, trm.tracer, retrieveAllThings)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.RetrieveByAdmin(ctx, pm)
+	return trm.repo.RetrieveAll(ctx, pm)
 }
 
 type thingCacheMiddleware struct {
@@ -142,7 +143,7 @@ func ThingCacheMiddleware(tracer opentracing.Tracer, cache things.ThingCache) th
 }
 
 func (tcm thingCacheMiddleware) Save(ctx context.Context, thingKey string, thingID string) error {
-	span := createSpan(ctx, tcm.tracer, saveThingOp)
+	span := createSpan(ctx, tcm.tracer, saveThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -150,7 +151,7 @@ func (tcm thingCacheMiddleware) Save(ctx context.Context, thingKey string, thing
 }
 
 func (tcm thingCacheMiddleware) ID(ctx context.Context, thingKey string) (string, error) {
-	span := createSpan(ctx, tcm.tracer, retrieveThingIDByKeyOp)
+	span := createSpan(ctx, tcm.tracer, retrieveThingIDByKey)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -158,7 +159,7 @@ func (tcm thingCacheMiddleware) ID(ctx context.Context, thingKey string) (string
 }
 
 func (tcm thingCacheMiddleware) Remove(ctx context.Context, thingID string) error {
-	span := createSpan(ctx, tcm.tracer, removeThingOp)
+	span := createSpan(ctx, tcm.tracer, removeThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -166,7 +167,7 @@ func (tcm thingCacheMiddleware) Remove(ctx context.Context, thingID string) erro
 }
 
 func (tcm thingCacheMiddleware) SaveGroup(ctx context.Context, thingID string, groupID string) error {
-	span := createSpan(ctx, tcm.tracer, saveGroupIDByThingIDOp)
+	span := createSpan(ctx, tcm.tracer, saveGroupIDByThingID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -174,7 +175,7 @@ func (tcm thingCacheMiddleware) SaveGroup(ctx context.Context, thingID string, g
 }
 
 func (tcm thingCacheMiddleware) ViewGroup(ctx context.Context, thingID string) (string, error) {
-	span := createSpan(ctx, tcm.tracer, retrieveGroupIDByThingIDOp)
+	span := createSpan(ctx, tcm.tracer, retrieveGroupIDByThingID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -182,7 +183,7 @@ func (tcm thingCacheMiddleware) ViewGroup(ctx context.Context, thingID string) (
 }
 
 func (tcm thingCacheMiddleware) RemoveGroup(ctx context.Context, thingID string) error {
-	span := createSpan(ctx, tcm.tracer, removeGroupIDByThingIDOp)
+	span := createSpan(ctx, tcm.tracer, removeGroupIDByThingID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

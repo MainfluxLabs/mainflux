@@ -64,7 +64,6 @@ func Provision(conf Config) {
 		UsersURL:        conf.Host,
 		ReaderURL:       defReaderURL,
 		HTTPAdapterURL:  fmt.Sprintf("%s/http", conf.Host),
-		BootstrapURL:    conf.Host,
 		CertsURL:        conf.Host,
 		MsgContentType:  sdk.ContentType(msgContentType),
 		TLSVerification: false,
@@ -138,22 +137,22 @@ func Provision(conf Config) {
 		gID = profiles[i].GroupID
 	}
 
-	things, err = s.CreateThings(things, gID, token)
-	if err != nil {
-		log.Fatalf("Failed to create the things: %s", err.Error())
-	}
-
 	profiles, err = s.CreateProfiles(profiles, gID, token)
 	if err != nil {
-		log.Fatalf("Failed to create the chennels: %s", err.Error())
-	}
-
-	for _, t := range things {
-		tIDs = append(tIDs, t.ID)
+		log.Fatalf("Failed to create the profiles: %s", err.Error())
 	}
 
 	for _, c := range profiles {
 		cIDs = append(cIDs, c.ID)
+	}
+
+	things, err = s.CreateThings(things, cIDs[0], token)
+	if err != nil {
+		log.Fatalf("Failed to create the things: %s", err.Error())
+	}
+
+	for _, t := range things {
+		tIDs = append(tIDs, t.ID)
 	}
 
 	for i := 0; i < conf.Num; i++ {
