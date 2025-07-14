@@ -91,6 +91,20 @@ func removeGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func backupGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(backupReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+		backup, err := svc.BackupGroupMemberships(ctx, req.token, req.id)
+		if err != nil {
+			return nil, err
+		}
+		return buildBackupResponse(backup), nil
+	}
+}
+
 func buildGroupMembershipsResponse(gpp things.GroupMembershipsPage) listGroupMembershipsRes {
 	res := listGroupMembershipsRes{
 		pageRes: pageRes{
@@ -110,5 +124,21 @@ func buildGroupMembershipsResponse(gpp things.GroupMembershipsPage) listGroupMem
 		res.GroupMemberships = append(res.GroupMemberships, gp)
 	}
 
+	return res
+}
+
+func buildBackupResponse(b things.BackupGroupMemberships) backupGroupMembershipsRes {
+	res := backupGroupMembershipsRes{
+		BackupGroupMemberships: []ViewGroupMembershipsRes{},
+	}
+	for _, member := range b.BackupGroupMemberships {
+		view := ViewGroupMembershipsRes{
+			MemberID: member.MemberID,
+			GroupID:  member.GroupID,
+			Email:    member.Email,
+			Role:     member.Role,
+		}
+		res.BackupGroupMemberships = append(res.BackupGroupMemberships, view)
+	}
 	return res
 }

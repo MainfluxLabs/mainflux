@@ -107,6 +107,22 @@ func (gmr *groupMembershipsRepositoryMock) BackupAll(_ context.Context) ([]thing
 	return gms, nil
 }
 
+func (mrm *groupMembershipsRepositoryMock) BackupByGroup(_ context.Context, groupID string) ([]things.GroupMembership, error) {
+	mrm.mu.Lock()
+	defer mrm.mu.Unlock()
+
+	var mbrs []things.GroupMembership
+	for _, groupMbs := range mrm.groupMemberships {
+		for _, mb := range groupMbs {
+			if mb.GroupID == groupID {
+				mbrs = append(mbrs, mb)
+			}
+		}
+	}
+
+	return mbrs, nil
+}
+
 func (gmr *groupMembershipsRepositoryMock) Update(_ context.Context, gms ...things.GroupMembership) error {
 	gmr.mu.Lock()
 	defer gmr.mu.Unlock()

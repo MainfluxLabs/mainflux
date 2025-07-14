@@ -130,6 +130,9 @@ type Service interface {
 	// BackupGroupsByOrg retrieves all groups for given org ID.
 	BackupGroupsByOrg(ctx context.Context, token string, orgID string) (BackupGroupsByOrg, error)
 
+	// BackupGroupMemberships retrieves all group memberships for given group ID.
+	BackupGroupMemberships(ctx context.Context, token string, groupID string) (BackupGroupMemberships, error)
+
 	// Restore adds things, profiles, groups, and groups memberships from a backup. Only accessible by admin.
 	Restore(ctx context.Context, token string, backup Backup) error
 
@@ -147,6 +150,10 @@ type Backup struct {
 
 type BackupGroupsByOrg struct {
 	Groups []Group
+}
+
+type BackupGroupMemberships struct {
+	BackupGroupMemberships []GroupMembership
 }
 
 type UserAccessReq struct {
@@ -748,6 +755,45 @@ func (ts *thingsService) BackupGroupsByOrg(ctx context.Context, token string, or
 
 	return BackupGroupsByOrg{
 		Groups: groups,
+	}, nil
+}
+
+func (ts *thingsService) BackupGroupMemberships(ctx context.Context, token string, groupID string) (BackupGroupMemberships, error) {
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     groupID,
+		Action: Owner,
+	}
+	if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
+		return BackupGroupMemberships{}, err
+	}
+
+	groupMemberships, err := ts.groupMemberships.BackupByGroup(ctx, groupID)
+	if err != nil {
+		return BackupGroupMemberships{}, err
+	}
+
+	var memberIDs []string
+	for _, gm := range groupMemberships {
+		memberIDs = append(memberIDs, gm.MemberID)
+	}
+
+	usersResp, err := ts.users.GetUsersByIDs(ctx, &protomfx.UsersByIDsReq{Ids: memberIDs})
+	if err != nil {
+		return BackupGroupMemberships{}, err
+	}
+
+	emailMap := make(map[string]string)
+	for _, user := range usersResp.Users {
+		emailMap[user.Id] = user.Email
+	}
+
+	for i := range groupMemberships {
+		groupMemberships[i].Email = emailMap[groupMemberships[i].MemberID]
+	}
+
+	return BackupGroupMemberships{
+		BackupGroupMemberships: groupMemberships,
 	}, nil
 }
 

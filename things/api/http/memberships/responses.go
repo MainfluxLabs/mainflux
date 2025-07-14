@@ -42,6 +42,13 @@ type groupMembership struct {
 	Role     string `json:"role"`
 }
 
+type ViewGroupMembershipsRes struct {
+	MemberID string `json:"member_id"`
+	GroupID  string `json:"group_id"`
+	Email    string `json:"email"`
+	Role     string `json:"role"`
+}
+
 type createGroupMembershipsRes struct{}
 
 func (res createGroupMembershipsRes) Code() int {
@@ -84,5 +91,19 @@ func (res listGroupMembershipsRes) Headers() map[string]string {
 }
 
 func (res listGroupMembershipsRes) Empty() bool {
+	return false
+}
+
+type backupGroupMembershipsRes struct {
+	BackupGroupMemberships []ViewGroupMembershipsRes `json:"group_memberships"`
+}
+
+func (res backupGroupMembershipsRes) Code() int {
+	return http.StatusOK
+}
+func (res backupGroupMembershipsRes) Headers() map[string]string {
+	return map[string]string{}
+}
+func (res backupGroupMembershipsRes) Empty() bool {
 	return false
 }
