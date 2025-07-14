@@ -98,8 +98,7 @@ paths:
     put:
       summary: Updates notifier info
       description: |
-        Update is performed by replacing the current resource data with values
-        provided in a request payload. Note that the notifier's ID cannot be changed.
+        Update is performed by replacing the current resource data with value provided in a request payload. Note that the notifier's ID cannot be changed.
       tags:
         - notifiers
       parameters:
@@ -168,7 +167,7 @@ components:
           description: Name filter. Filtering is performed as a case-insensitive partial match.
         metadata:
           type: object
-          description: Metadata filter. Filtering is performed by matching the parameter with metadata on top level. Parameter is JSON.
+          description: Metadata filter. Filtering is performed by matching the parameter with metadata on top level by matching JSON parameter.
         offset:
           type: integer
           description: Number of items to skip during retrieval.
