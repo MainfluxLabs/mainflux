@@ -12,11 +12,11 @@ import (
 )
 
 const (
-	saveNotifiers              = "save_notifiers"
-	retrieveNotifiersByGroupID = "retrieve_notifiers_by_group_id"
-	retrieveNotifierByID       = "retrieve_notifier_by_id"
-	updateNotifier             = "upate_notifier"
-	removeNotifiers            = "remove_Notifiers"
+	saveNotifiers            = "save_notifiers"
+	retrieveNotifiersByGroup = "retrieve_notifiers_by_group"
+	retrieveNotifierByID     = "retrieve_notifier_by_id"
+	updateNotifier           = "update_notifier"
+	removeNotifiers          = "remove_notifiers"
 )
 
 var (
@@ -45,12 +45,12 @@ func (n notifierRepositoryMiddleware) Save(ctx context.Context, nfs ...notifiers
 	return n.repo.Save(ctx, nfs...)
 }
 
-func (n notifierRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, groupID string, pm apiutil.PageMetadata) (notifiers.NotifiersPage, error) {
-	span := createSpan(ctx, n.tracer, retrieveNotifiersByGroupID)
+func (n notifierRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (notifiers.NotifiersPage, error) {
+	span := createSpan(ctx, n.tracer, retrieveNotifiersByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return n.repo.RetrieveByGroupID(ctx, groupID, pm)
+	return n.repo.RetrieveByGroup(ctx, groupID, pm)
 }
 
 func (n notifierRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (notifiers.Notifier, error) {
