@@ -53,8 +53,8 @@ type OrgMembershipsRepository interface {
 	// RetrieveRole retrieves role of membership specified by memberID and orgID.
 	RetrieveRole(ctx context.Context, memberID, orgID string) (string, error)
 
-	// RetrieveByOrgID retrieves org memberships identified by orgID.
-	RetrieveByOrgID(ctx context.Context, orgID string, pm apiutil.PageMetadata) (OrgMembershipsPage, error)
+	// RetrieveByOrg retrieves org memberships identified by orgID.
+	RetrieveByOrg(ctx context.Context, orgID string, pm apiutil.PageMetadata) (OrgMembershipsPage, error)
 
 	// BackupAll retrieves all memberships.
 	BackupAll(ctx context.Context) ([]OrgMembership, error)
@@ -154,7 +154,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 		return OrgMembershipsPage{}, err
 	}
 
-	omp, err := svc.memberships.RetrieveByOrgID(ctx, orgID, pm)
+	omp, err := svc.memberships.RetrieveByOrg(ctx, orgID, pm)
 	if err != nil {
 		return OrgMembershipsPage{}, errors.Wrap(ErrRetrieveMembershipsByOrg, err)
 	}
