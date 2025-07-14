@@ -88,10 +88,7 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			if err != nil {
 				return nil, errors.Wrap(errors.ErrAuthentication, err)
 			}
-
-			if pc.PublisherID != req.pageMeta.Publisher {
-				return nil, errors.ErrAuthentication
-			}
+			req.pageMeta.Publisher = pc.PublisherID
 		case req.token != "":
 			if err := isAdmin(ctx, req.token); err != nil {
 				return nil, err

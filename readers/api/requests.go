@@ -69,10 +69,5 @@ func (req deleteMessagesReq) validate() error {
 	if req.token == "" && req.key == "" {
 		return apiutil.ErrBearerToken
 	}
-
-	if req.pageMeta.Publisher == "" {
-		return apiutil.ErrMissingPublisherID
-	}
-
 	return nil
 }
