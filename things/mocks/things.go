@@ -102,7 +102,7 @@ func (trm *thingRepositoryMock) RetrieveByID(_ context.Context, id string) (thin
 	return things.Thing{}, errors.ErrNotFound
 }
 
-func (trm *thingRepositoryMock) RetrieveByGroupIDs(_ context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+func (trm *thingRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 

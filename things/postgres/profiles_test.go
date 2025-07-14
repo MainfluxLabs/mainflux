@@ -306,7 +306,7 @@ func TestRetrieveProfilesByGroupIDs(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		page, err := profileRepo.RetrieveByGroupIDs(context.Background(), []string{group.ID}, tc.pageMetadata)
+		page, err := profileRepo.RetrieveByGroups(context.Background(), []string{group.ID}, tc.pageMetadata)
 		size := uint64(len(page.Profiles))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))

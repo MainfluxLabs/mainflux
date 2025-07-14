@@ -73,7 +73,7 @@ func (crm *profileRepositoryMock) RetrieveByID(_ context.Context, id string) (th
 	return things.Profile{}, errors.ErrNotFound
 }
 
-func (crm *profileRepositoryMock) RetrieveByGroupIDs(_ context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+func (crm *profileRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
 

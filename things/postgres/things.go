@@ -183,7 +183,7 @@ func (tr thingRepository) RetrieveByKey(ctx context.Context, key string) (string
 	return id, nil
 }
 
-func (tr thingRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+func (tr thingRepository) RetrieveByGroups(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	if len(groupIDs) == 0 {
 		return things.ThingsPage{}, nil
 	}

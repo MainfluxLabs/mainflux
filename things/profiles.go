@@ -68,8 +68,8 @@ type ProfileRepository interface {
 	// RetrieveAll retrieves all profiles for all users with pagination.
 	RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (ProfilesPage, error)
 
-	// RetrieveByGroupIDs retrieves the subset of profiles specified by given group ids.
-	RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (ProfilesPage, error)
+	// RetrieveByGroups retrieves the subset of profiles specified by given group ids.
+	RetrieveByGroups(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (ProfilesPage, error)
 }
 
 // ProfileCache contains profile caching interface.
