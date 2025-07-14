@@ -280,13 +280,13 @@ func (svc service) BackupOrgMemberships(ctx context.Context, token string, orgID
 		return BackupOrgMemberships{}, err
 	}
 
-	orgMembers, err := svc.memberships.BackupByOrg(ctx, orgID)
+	memberships, err := svc.memberships.BackupByOrg(ctx, orgID)
 	if err != nil {
 		return BackupOrgMemberships{}, err
 	}
 
 	var memberIDs []string
-	for _, gm := range orgMembers {
+	for _, gm := range memberships {
 		memberIDs = append(memberIDs, gm.MemberID)
 	}
 
@@ -300,11 +300,11 @@ func (svc service) BackupOrgMemberships(ctx context.Context, token string, orgID
 		emailMap[user.Id] = user.Email
 	}
 
-	for i := range orgMembers {
-		orgMembers[i].Email = emailMap[orgMembers[i].MemberID]
+	for i := range memberships {
+		memberships[i].Email = emailMap[memberships[i].MemberID]
 	}
 
 	return BackupOrgMemberships{
-		OrgMemberships: orgMembers,
+		OrgMemberships: memberships,
 	}, nil
 }
