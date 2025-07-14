@@ -133,6 +133,9 @@ type Service interface {
 	// BackupGroupMemberships retrieves all group memberships for given group ID.
 	BackupGroupMemberships(ctx context.Context, token string, groupID string) (BackupGroupMemberships, error)
 
+	// BackupProfilesByOrg retrieves all profiles for given org ID.
+	BackupProfilesByOrg(ctx context.Context, token string, orgID string) (ProfilesBackup, error)
+
 	// Restore adds things, profiles, groups, and groups memberships from a backup. Only accessible by admin.
 	Restore(ctx context.Context, token string, backup Backup) error
 
@@ -154,6 +157,10 @@ type BackupGroupsByOrg struct {
 
 type BackupGroupMemberships struct {
 	BackupGroupMemberships []GroupMembership
+}
+
+type ProfilesBackup struct {
+	Profiles []Profile
 }
 
 type UserAccessReq struct {
@@ -794,6 +801,26 @@ func (ts *thingsService) BackupGroupMemberships(ctx context.Context, token strin
 
 	return BackupGroupMemberships{
 		BackupGroupMemberships: groupMemberships,
+	}, nil
+}
+
+func (ts *thingsService) BackupProfilesByOrg(ctx context.Context, token string, orgID string) (ProfilesBackup, error) {
+	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Owner); err != nil {
+		return ProfilesBackup{}, err
+	}
+
+	grIDs, err := ts.groups.RetrieveIDsByOrg(ctx, orgID)
+	if err != nil {
+		return ProfilesBackup{}, err
+	}
+
+	profiles, err := ts.profiles.BackupByGroups(ctx, grIDs)
+	if err != nil {
+		return ProfilesBackup{}, err
+	}
+
+	return ProfilesBackup{
+		Profiles: profiles,
 	}, nil
 }
 

@@ -22,6 +22,7 @@ const (
 	removeGroupIDByProfileID   = "remove_group_id_by_profile_id"
 	retrieveAllProfiles        = "retrieve_all_profiles"
 	backupAllProfiles          = "backup_all_profiles"
+	backupProfilesByGroups     = "backup_profiles_by_groups"
 	retrieveGroupIDByProfileID = "retrieve_group_id_by_profile_id"
 )
 
@@ -98,6 +99,14 @@ func (crm profileRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return crm.repo.BackupAll(ctx)
+}
+
+func (grm profileRepositoryMiddleware) BackupByGroups(ctx context.Context, groupIDs []string) ([]things.Profile, error) {
+	span := createSpan(ctx, grm.tracer, backupProfilesByGroups)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.BackupByGroups(ctx, groupIDs)
 }
 
 func (crm profileRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {

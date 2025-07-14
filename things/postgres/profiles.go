@@ -139,6 +139,29 @@ func (cr profileRepository) BackupAll(ctx context.Context) ([]things.Profile, er
 	return profiles, nil
 }
 
+func (cr profileRepository) BackupByGroups(ctx context.Context, groupIDs []string) ([]things.Profile, error) {
+	if len(groupIDs) == 0 {
+		return []things.Profile{}, nil
+	}
+
+	giq := getGroupIDsQuery(groupIDs)
+	whereClause := dbutil.BuildWhereClause(giq)
+	query := fmt.Sprintf("SELECT id, group_id, name, metadata, config FROM profiles %s", whereClause)
+
+	var items []dbProfile
+	err := cr.db.SelectContext(ctx, &items, query)
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	var profiles []things.Profile
+	for _, i := range items {
+		profiles = append(profiles, toProfile(i))
+	}
+
+	return profiles, nil
+}
+
 func (cr profileRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)

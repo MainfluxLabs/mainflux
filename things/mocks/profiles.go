@@ -188,3 +188,19 @@ func (crm *profileRepositoryMock) BackupAll(_ context.Context) ([]things.Profile
 
 	return prs, nil
 }
+
+func (crm *profileRepositoryMock) BackupByGroups(_ context.Context, groupIDs []string) ([]things.Profile, error) {
+	crm.mu.Lock()
+	defer crm.mu.Unlock()
+
+	var prs []things.Profile
+	for _, grID := range groupIDs {
+		for _, v := range crm.profiles {
+			if v.GroupID == grID {
+				prs = append(prs, v)
+			}
+		}
+	}
+
+	return prs, nil
+}
