@@ -107,7 +107,7 @@ func (orm *orgRepositoryMock) RetrieveByOwner(_ context.Context, ownerID string,
 	}, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveByMemberID(ctx context.Context, memberID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
+func (orm *orgRepositoryMock) RetrieveByMember(ctx context.Context, memberID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 

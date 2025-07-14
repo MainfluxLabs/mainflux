@@ -93,8 +93,8 @@ type OrgRepository interface {
 	// RetrieveAll retrieves all orgs with pagination.
 	RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (OrgsPage, error)
 
-	// RetrieveByMemberID list of orgs that member belongs to
-	RetrieveByMemberID(ctx context.Context, memberID string, pm apiutil.PageMetadata) (OrgsPage, error)
+	// RetrieveByMember list of orgs that member belongs to
+	RetrieveByMember(ctx context.Context, memberID string, pm apiutil.PageMetadata) (OrgsPage, error)
 }
 
 func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, error) {
@@ -149,7 +149,7 @@ func (svc service) ListOrgs(ctx context.Context, token string, pm apiutil.PageMe
 		return OrgsPage{}, err
 	}
 
-	return svc.orgs.RetrieveByMemberID(ctx, user.ID, pm)
+	return svc.orgs.RetrieveByMember(ctx, user.ID, pm)
 }
 
 func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
