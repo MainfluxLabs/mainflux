@@ -67,7 +67,7 @@ func (wr webhookRepository) Save(ctx context.Context, whs ...webhooks.Webhook) (
 	return whs, nil
 }
 
-func (wr webhookRepository) RetrieveByGroupID(ctx context.Context, groupID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
+func (wr webhookRepository) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
 	if _, err := uuid.FromString(groupID); err != nil {
 		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrNotFound, err)
 	}
@@ -97,7 +97,7 @@ func (wr webhookRepository) RetrieveByGroupID(ctx context.Context, groupID strin
 	return wr.retrieve(ctx, q, qc, params)
 }
 
-func (wr webhookRepository) RetrieveByThingID(ctx context.Context, thingID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
+func (wr webhookRepository) RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
 	if _, err := uuid.FromString(thingID); err != nil {
 		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrNotFound, err)
 	}
