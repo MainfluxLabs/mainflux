@@ -372,13 +372,13 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm apiuti
 		return ThingsPage{}, err
 	}
 
-	return ts.things.RetrieveByGroupIDs(ctx, grIDs, pm)
+	return ts.things.RetrieveByGroups(ctx, grIDs, pm)
 }
 
 func (ts *thingsService) ListThingsByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (ThingsPage, error) {
 	if err := ts.isAdmin(ctx, token); err == nil {
 		if grIDs, err := ts.groups.RetrieveIDsByOrg(ctx, orgID); err == nil {
-			return ts.things.RetrieveByGroupIDs(ctx, grIDs, pm)
+			return ts.things.RetrieveByGroups(ctx, grIDs, pm)
 		}
 		return ThingsPage{}, err
 	}
@@ -397,7 +397,7 @@ func (ts *thingsService) ListThingsByOrg(ctx context.Context, token string, orgI
 		return ThingsPage{}, err
 	}
 
-	return ts.things.RetrieveByGroupIDs(ctx, grIDs, pm)
+	return ts.things.RetrieveByGroups(ctx, grIDs, pm)
 }
 
 func (ts *thingsService) ListThingsByProfile(ctx context.Context, token, prID string, pm apiutil.PageMetadata) (ThingsPage, error) {
@@ -823,7 +823,7 @@ func (ts *thingsService) ListThingsByGroup(ctx context.Context, token string, gr
 		return ThingsPage{}, err
 	}
 
-	return ts.things.RetrieveByGroupIDs(ctx, []string{groupID}, pm)
+	return ts.things.RetrieveByGroups(ctx, []string{groupID}, pm)
 }
 
 func (ts *thingsService) ListProfilesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (ProfilesPage, error) {

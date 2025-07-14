@@ -53,8 +53,8 @@ type ThingRepository interface {
 	// RetrieveByKey returns thing ID for given thing key.
 	RetrieveByKey(ctx context.Context, key string) (string, error)
 
-	// RetrieveByGroupIDs retrieves the subset of things specified by given group ids.
-	RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (ThingsPage, error)
+	// RetrieveByGroups retrieves the subset of things specified by given group ids.
+	RetrieveByGroups(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (ThingsPage, error)
 
 	// RetrieveByProfile retrieves the subset of things assigned to the specified profile.
 	RetrieveByProfile(ctx context.Context, prID string, pm apiutil.PageMetadata) (ThingsPage, error)
