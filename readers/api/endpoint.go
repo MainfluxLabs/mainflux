@@ -46,6 +46,7 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 				return nil, err
 			}
 			req.pageMeta.Publisher = pc.PublisherID
+			pc.ProfileConfig.GetContentType()
 
 			p, err := svc.ListAllMessages(req.pageMeta)
 			if err != nil {
@@ -89,6 +90,16 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 				return nil, errors.Wrap(errors.ErrAuthentication, err)
 			}
 			req.pageMeta.Publisher = pc.PublisherID
+
+			switch pc.ProfileConfig.GetContentType() {
+			case "application/senml+json":
+				req.pageMeta.Format = "senml"
+			case "application/json":
+				req.pageMeta.Format = "json"
+			default:
+				req.pageMeta.Format = "senml"
+			}
+
 		case req.token != "":
 			if err := isAdmin(ctx, req.token); err != nil {
 				return nil, err
