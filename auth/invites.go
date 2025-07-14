@@ -56,6 +56,9 @@ type Invites interface {
 	// ListInvitesByInviteeID retrieves a list of all pending Invites directed towards
 	// a particular User, denoted by their User ID.
 	ListInvitesByInviteeID(ctx context.Context, token string, userID string, pm apiutil.PageMetadata) (InvitesPage, error)
+
+	// SendOrgInviteEmail sends an e-mail representing a certain Invite to a corresponding end User.
+	SendOrgInviteEmail(ctx context.Context, invite Invite, orgName string) error
 }
 
 type InvitesRepository interface {
@@ -86,6 +89,11 @@ func (svc service) InviteMembers(ctx context.Context, token string, orgID string
 	}
 
 	inviterUserID := inviterIdentity.ID
+
+	org, err := svc.ViewOrg(ctx, token, orgID)
+	if err != nil {
+		return nil, err
+	}
 
 	// Obtain user IDs of all invited members
 	var memberEmails []string
@@ -132,6 +140,11 @@ func (svc service) InviteMembers(ctx context.Context, token string, orgID string
 
 	if err := svc.invites.Save(ctx, invites...); err != nil {
 		return nil, err
+	}
+
+	for _, invite := range invites {
+		// TODO: How do we handle errors here?
+		svc.SendOrgInviteEmail(ctx, invite, org.Name)
 	}
 
 	return invites, nil
@@ -245,4 +258,9 @@ func (svc service) ListInvitesByInviteeID(ctx context.Context, token string, use
 	}
 
 	return invitesPage, nil
+}
+
+func (svc service) SendOrgInviteEmail(ctx context.Context, invite Invite, orgName string) error {
+	to := []string{invite.InviteeEmail}
+	return svc.email.SendOrgInvite(to, invite.ID, orgName, "http://localhost:80", "/FRONTEND_INVITE_ENDPOINT")
 }

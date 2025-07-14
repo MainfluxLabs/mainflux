@@ -343,3 +343,17 @@ func (lm *loggingMiddleware) ListInvitesByInviteeID(ctx context.Context, token s
 
 	return lm.svc.ListInvitesByInviteeID(ctx, token, userID, pm)
 }
+
+func (lm *loggingMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth.Invite, orgName string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method send_org_invite_email took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.SendOrgInviteEmail(ctx, invite, orgName)
+}

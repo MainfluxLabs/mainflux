@@ -242,3 +242,12 @@ func (ms *metricsMiddleware) ListInvitesByInviteeID(ctx context.Context, token s
 
 	return ms.svc.ListInvitesByInviteeID(ctx, token, userID, pm)
 }
+
+func (ms *metricsMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth.Invite, orgName string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "send_org_invite_email").Add(1)
+		ms.latency.With("method", "send_org_invite_email").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.SendOrgInviteEmail(ctx, invite, orgName)
+}

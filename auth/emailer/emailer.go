@@ -23,8 +23,10 @@ func New(emailConfig *email.Config) (auth.Emailer, error) {
 	}, err
 }
 
-func (e *emailer) SendOrgInvite(inv auth.Invite, orgName string, uiHost string, uiInvitePath string) error {
-	uiInviteViewURL := fmt.Sprintf("%s%s/%s", uiHost, uiInvitePath, inv.ID)
+// TODO: I don't think it's appropriate for this function to accept the last two parameters - they should
+// probably be set once when the Emailer instance is created.
+func (e *emailer) SendOrgInvite(To []string, inviteID, orgName, uiHost, uiInvitePath string) error {
+	uiInviteViewURL := fmt.Sprintf("%s%s/%s", uiHost, uiInvitePath, inviteID)
 	emailContent := fmt.Sprintf(`
 		Hello,
 
@@ -34,7 +36,5 @@ func (e *emailer) SendOrgInvite(inv auth.Invite, orgName string, uiHost string, 
 		%s
 	`, orgName, uiInviteViewURL)
 
-	to := []string{inv.InviteeEmail}
-
-	return e.agent.Send(to, "", subjectOrgInvite, "", emailContent, "")
+	return e.agent.Send(To, "", subjectOrgInvite, "", emailContent, "")
 }

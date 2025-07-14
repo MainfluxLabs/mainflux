@@ -1,5 +1,5 @@
 package auth
 
 type Emailer interface {
-	SendOrgInvite(invite Invite, orgName string, uiHost string, uiInvitePath string) error
+	SendOrgInvite(To []string, inviteID, orgName, uiHost, uiInvitePath string) error
 }
