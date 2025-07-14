@@ -77,6 +77,17 @@ func GetOffsetLimitQuery(limit uint64) string {
 	return ""
 }
 
+func GetDeleteTable(format string) string {
+	switch format {
+	case "json":
+		return "json"
+	case "senml":
+		return "messages"
+	default:
+		return "messages"
+	}
+}
+
 func Total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {
 	rows, err := db.NamedQueryContext(ctx, query, params)
 	if err != nil {
