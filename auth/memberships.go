@@ -276,13 +276,17 @@ func (svc service) canRemoveMemberships(ctx context.Context, token, orgID string
 }
 
 func (svc service) BackupOrgMemberships(ctx context.Context, token string, orgID string) (BackupOrgMemberships, error) {
-	orgMembers, err := svc.memberships.BackupByOrg(ctx, orgID)
+	if err := svc.canAccessOrg(ctx, token, orgID, Owner); err != nil {
+		return BackupOrgMemberships{}, err
+	}
+
+	memberships, err := svc.memberships.BackupByOrg(ctx, orgID)
 	if err != nil {
 		return BackupOrgMemberships{}, err
 	}
 
 	var memberIDs []string
-	for _, gm := range orgMembers {
+	for _, gm := range memberships {
 		memberIDs = append(memberIDs, gm.MemberID)
 	}
 
@@ -296,11 +300,11 @@ func (svc service) BackupOrgMemberships(ctx context.Context, token string, orgID
 		emailMap[user.Id] = user.Email
 	}
 
-	for i := range orgMembers {
-		orgMembers[i].Email = emailMap[orgMembers[i].MemberID]
+	for i := range memberships {
+		memberships[i].Email = emailMap[memberships[i].MemberID]
 	}
 
 	return BackupOrgMemberships{
-		OrgMemberships: orgMembers,
+		OrgMemberships: memberships,
 	}, nil
 }
