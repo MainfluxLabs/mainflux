@@ -46,7 +46,6 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 				return nil, err
 			}
 			req.pageMeta.Publisher = pc.PublisherID
-			pc.ProfileConfig.GetContentType()
 
 			p, err := svc.ListAllMessages(req.pageMeta)
 			if err != nil {
