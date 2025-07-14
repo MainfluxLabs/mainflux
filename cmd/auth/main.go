@@ -107,7 +107,7 @@ const (
 	envEmailPassword    = "MF_EMAIL_PASSWORD"
 	envEmailFromAddress = "MF_EMAIL_FROM_ADDRESS"
 	envEmailFromName    = "MF_EMAIL_FROM_NAME"
-	envEmailTemplate    = "MF_EMAIL_TEMPLATE"
+	envEmailTemplate    = "MF_AUTH_EMAIL_TEMPLATE"
 )
 
 type config struct {
