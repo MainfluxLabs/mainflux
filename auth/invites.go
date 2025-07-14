@@ -29,13 +29,14 @@ type InvitesPage struct {
 }
 
 type Invite struct {
-	ID          string
-	InviteeID   string
-	InviterID   string
-	OrgID       string
-	InviteeRole string
-	CreatedAt   time.Time
-	ExpiresAt   time.Time
+	ID           string
+	InviteeID    string
+	InviteeEmail string
+	InviterID    string
+	OrgID        string
+	InviteeRole  string
+	CreatedAt    time.Time
+	ExpiresAt    time.Time
 }
 
 type Invites interface {
@@ -116,13 +117,14 @@ func (svc service) InviteMembers(ctx context.Context, token string, orgID string
 		}
 
 		invite := Invite{
-			ID:          inviteId,
-			InviteeID:   userEmailID[orgMember.Email],
-			InviterID:   inviterUserID,
-			OrgID:       orgID,
-			InviteeRole: orgMember.Role,
-			CreatedAt:   createdAt,
-			ExpiresAt:   createdAt.Add(7 * 24 * time.Hour),
+			ID:           inviteId,
+			InviteeID:    userEmailID[orgMember.Email],
+			InviteeEmail: orgMember.Email,
+			InviterID:    inviterUserID,
+			OrgID:        orgID,
+			InviteeRole:  orgMember.Role,
+			CreatedAt:    createdAt,
+			ExpiresAt:    createdAt.Add(7 * 24 * time.Hour),
 		}
 
 		invites = append(invites, invite)

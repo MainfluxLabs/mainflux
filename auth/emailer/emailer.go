@@ -23,7 +23,7 @@ func New(emailConfig *email.Config) (auth.Emailer, error) {
 	}, err
 }
 
-func (e *emailer) SendOrgInvite(To []string, inv auth.Invite, orgName string, uiHost string, uiInvitePath string) error {
+func (e *emailer) SendOrgInvite(inv auth.Invite, orgName string, uiHost string, uiInvitePath string) error {
 	uiInviteViewURL := fmt.Sprintf("%s%s/%s", uiHost, uiInvitePath, inv.ID)
 	emailContent := fmt.Sprintf(`
 		Hello,
@@ -34,5 +34,7 @@ func (e *emailer) SendOrgInvite(To []string, inv auth.Invite, orgName string, ui
 		%s
 	`, orgName, uiInviteViewURL)
 
-	return e.agent.Send(To, "", subjectOrgInvite, "", emailContent, "")
+	to := []string{inv.InviteeEmail}
+
+	return e.agent.Send(to, "", subjectOrgInvite, "", emailContent, "")
 }
