@@ -131,6 +131,8 @@ services:
       - ${MF_AUTH_GRPC_PORT}:${MF_AUTH_GRPC_PORT}
     networks:
       - mainfluxlabs-base-net
+    volumes:
+      - ./templates/${MF_AUTH_EMAIL_TEMPLATE}:/${MF_AUTH_EMAIL_TEMPLATE}
 
   users-db:
     image: postgres:13.3-alpine
