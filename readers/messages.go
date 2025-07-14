@@ -47,7 +47,7 @@ type Message interface{}
 type Aggregation struct {
 	Field string      `json:"field"`
 	Value interface{} `json:"value"`
-	Count uint64      `json:"count, omitempty`
+	Count uint64      `json:"count, omitempty"`
 }
 
 // MessagesPage contains page related metadata as well as list of messages that
@@ -56,7 +56,7 @@ type MessagesPage struct {
 	PageMetadata
 	Total       uint64
 	Messages    []Message
-	Aggregation Aggregation `json:"aggregation,omitempty`
+	Aggregation Aggregation `json:"aggregation,omitempty"`
 }
 
 // PageMetadata represents the parameters used to create database queries
