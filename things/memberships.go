@@ -37,6 +37,9 @@ type GroupMembershipsRepository interface {
 	// BackupAll retrieves all group memberships. Used for backup.
 	BackupAll(ctx context.Context) ([]GroupMembership, error)
 
+	// BackupByGroup retrieves all group memberships by group ID. This is used for backup.
+	BackupByGroup(ctx context.Context, groupID string) ([]GroupMembership, error)
+
 	// RetrieveGroupIDsByMember retrieves IDs of groups where the member belongs.
 	RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error)
 
