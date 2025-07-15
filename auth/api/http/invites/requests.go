@@ -37,17 +37,12 @@ func (req invitesReq) validate() error {
 
 type inviteRevokeReq struct {
 	token    string
-	orgID    string
 	inviteID string
 }
 
 func (req inviteRevokeReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
-	}
-
-	if req.orgID == "" {
-		return apiutil.ErrMissingOrgID
 	}
 
 	if req.inviteID == "" {
@@ -59,7 +54,6 @@ func (req inviteRevokeReq) validate() error {
 
 type inviteResponseReq struct {
 	token          string
-	orgID          string
 	inviteID       string
 	inviteAccepted bool
 }
@@ -67,10 +61,6 @@ type inviteResponseReq struct {
 func (req inviteResponseReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
-	}
-
-	if req.orgID == "" {
-		return apiutil.ErrMissingOrgID
 	}
 
 	if req.inviteID == "" {

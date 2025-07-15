@@ -41,16 +41,14 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
-	// TODO: this shouldn't require the /orgs prefix or the orgID parameter
-	mux.Delete("/orgs/:orgID/invites/:inviteID", kithttp.NewServer(
+	mux.Delete("/invites/:inviteID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "revoke_invite")(revokeInviteEndpoint(svc)),
 		decodeInviteRevokeRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	// TODO: this shouldn't require the /orgs prefix or the orgID parameter
-	mux.Post("/orgs/:orgID/invites/:inviteID/:responseVerb", kithttp.NewServer(
+	mux.Post("/invites/:inviteID/:responseVerb", kithttp.NewServer(
 		kitot.TraceServer(tracer, "respond_invite")(respondInviteEndpoint(svc)),
 		decodeInviteResponseRequest,
 		encodeResponse,
@@ -93,7 +91,6 @@ func decodeInviteRequest(_ context.Context, r *http.Request) (any, error) {
 func decodeInviteRevokeRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	req := inviteRevokeReq{
 		token:    apiutil.ExtractBearerToken(r),
-		orgID:    bone.GetValue(r, orgIDKey),
 		inviteID: bone.GetValue(r, inviteIDKey),
 	}
 
@@ -103,7 +100,6 @@ func decodeInviteRevokeRequest(_ context.Context, r *http.Request) (interface{},
 func decodeInviteResponseRequest(_ context.Context, r *http.Request) (any, error) {
 	req := inviteResponseReq{
 		token:    apiutil.ExtractBearerToken(r),
-		orgID:    bone.GetValue(r, orgIDKey),
 		inviteID: bone.GetValue(r, inviteIDKey),
 	}
 
