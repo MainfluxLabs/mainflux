@@ -585,12 +585,12 @@ func TestDeleteMessagesSenML(t *testing.T) {
 			Publisher: pubID,
 			From:      0,
 			To:        now,
-		})
+		}, "messages")
 		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
 			Publisher: pubID2,
 			From:      0,
 			To:        now,
-		})
+		}, "messages")
 
 		for _, m := range messages {
 			pyd := senml.Message{
@@ -631,7 +631,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 		require.Nil(t, err)
 		beforeCount := beforePage.Total
 
-		err = reader.DeleteMessages(context.Background(), tc.pageMeta)
+		err = reader.DeleteMessages(context.Background(), tc.pageMeta, "senml")
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
 		afterPage, err := reader.ListAllMessages(readers.PageMetadata{
@@ -784,13 +784,13 @@ func TestDeleteMessagesJSON(t *testing.T) {
 			Publisher: id1,
 			From:      0,
 			To:        float64(created + int64(msgsNum)),
-		})
+		}, "json")
 		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
 			Format:    jsonFormat,
 			Publisher: id2,
 			From:      0,
 			To:        float64(created + int64(msgsNum)),
-		})
+		}, "json")
 
 		for _, m := range messages {
 			err := writer.Consume(m)
@@ -809,7 +809,7 @@ func TestDeleteMessagesJSON(t *testing.T) {
 		require.Nil(t, err)
 		beforeCount := beforePage.Total
 
-		err = reader.DeleteMessages(context.Background(), tc.pageMeta)
+		err = reader.DeleteMessages(context.Background(), tc.pageMeta, "json")
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
 		afterPage, err := reader.ListAllMessages(readers.PageMetadata{
