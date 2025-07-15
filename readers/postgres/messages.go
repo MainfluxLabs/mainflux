@@ -47,7 +47,7 @@ func (tr postgresRepository) Backup(rpm readers.PageMetadata) (readers.MessagesP
 	return tr.readAll(rpm)
 }
 
-func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) error {
+func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata, table string) error {
 	tx, err := tr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(errors.ErrSaveMessages, err)
@@ -65,8 +65,6 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.Pag
 			err = errors.Wrap(errors.ErrDeleteMessages, err)
 		}
 	}()
-
-	table := dbutil.GetTableName(rpm.Format)
 
 	condition := fmtCondition(rpm, table)
 	q := fmt.Sprintf("DELETE FROM %s %s", table, condition)
