@@ -9,6 +9,7 @@ import (
 	"encoding/csv"
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -82,6 +83,8 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, err
 		}
 
+		var table string
+
 		switch {
 		case req.key != "":
 			pc, err := getPubConfByKey(ctx, req.key)
@@ -89,9 +92,9 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 				return nil, errors.Wrap(errors.ErrAuthentication, err)
 			}
 
-			if pc.PublisherID != req.pageMeta.Publisher {
-				return nil, errors.ErrAuthentication
-			}
+			req.pageMeta.Publisher = pc.PublisherID
+			table = dbutil.GetTableName(pc.ProfileConfig.GetContentType())
+
 		case req.token != "":
 			if err := isAdmin(ctx, req.token); err != nil {
 				return nil, err
@@ -100,7 +103,7 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, errors.ErrAuthentication
 		}
 
-		err :=  svc.DeleteMessages(ctx, req.pageMeta)
+		err :=  svc.DeleteMessages(ctx, req.pageMeta, table)
 		if err != nil {
 			return nil, err
 		}
