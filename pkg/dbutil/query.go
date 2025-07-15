@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
 var errCreateMetadataQuery = errors.New("failed to create query for metadata")
@@ -79,9 +80,9 @@ func GetOffsetLimitQuery(limit uint64) string {
 
 func GetDeleteTable(format string) string {
 	switch format {
-	case "json":
+	case messaging.JSONFormat:
 		return "json"
-	case "senml":
+	case messaging.SenMLFormat:
 		return "messages"
 	default:
 		return "messages"
