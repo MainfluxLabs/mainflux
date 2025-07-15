@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/go-kit/kit/endpoint"
@@ -89,15 +90,7 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 				return nil, errors.Wrap(errors.ErrAuthentication, err)
 			}
 			req.pageMeta.Publisher = pc.PublisherID
-
-			switch pc.ProfileConfig.GetContentType() {
-			case "application/senml+json":
-				req.pageMeta.Format = "senml"
-			case "application/json":
-				req.pageMeta.Format = "json"
-			default:
-				req.pageMeta.Format = "senml"
-			}
+			req.pageMeta.Format = nats.GetFormat(pc.ProfileConfig.GetContentType())
 
 		case req.token != "":
 			if err := isAdmin(ctx, req.token); err != nil {

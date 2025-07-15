@@ -60,7 +60,7 @@ func GetSubjects(pc *protomfx.Config, subtopic string) []string {
 	subjects := []string{subjectWebhook}
 
 	if pc.GetWrite() {
-		format := getFormat(pc.ContentType)
+		format := GetFormat(pc.ContentType)
 		subject := fmt.Sprintf("%s.%s", format, messagesSuffix)
 		if subtopic != "" {
 			subject = fmt.Sprintf("%s.%s", subject, subtopic)
@@ -71,7 +71,7 @@ func GetSubjects(pc *protomfx.Config, subtopic string) []string {
 	return subjects
 }
 
-func getFormat(ct string) string {
+func GetFormat(ct string) string {
 	switch ct {
 	case messaging.JSONContentType:
 		return messaging.JSONFormat
