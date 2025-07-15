@@ -16,7 +16,6 @@ import (
 )
 
 const (
-	orgIDKey             = "orgID"
 	userIDKey            = "userID"
 	inviteIDKey          = "inviteID"
 	inviteReponseVerbKey = "responseVerb"
