@@ -195,8 +195,8 @@ func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, erro
 		token: apiutil.ExtractBearerToken(r),
 		key:   apiutil.ExtractThingKey(r),
 		pageMeta: readers.PageMetadata{
-			From:        from,
-			To:          to,
+			From: from,
+			To:   to,
 		},
 	}
 
