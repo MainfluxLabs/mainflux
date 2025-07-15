@@ -23,6 +23,30 @@ func inviteMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func viewInviteEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(viewInviteReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		invite, err := svc.ViewInvite(ctx, req.token, req.inviteID)
+		if err != nil {
+			return nil, err
+		}
+
+		return inviteRes{
+			ID:          invite.ID,
+			InviteeID:   invite.InviteeID,
+			OrgID:       invite.OrgID,
+			InviterID:   invite.InviterID,
+			InviteeRole: invite.InviteeRole,
+			CreatedAt:   invite.CreatedAt,
+			ExpiresAt:   invite.ExpiresAt,
+		}, nil
+	}
+}
+
 func revokeInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(inviteRevokeReq)

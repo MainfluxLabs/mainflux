@@ -102,3 +102,20 @@ func (req listInvitesByUserReq) validate() error {
 
 	return nil
 }
+
+type viewInviteReq struct {
+	token    string
+	inviteID string
+}
+
+func (req viewInviteReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.inviteID == "" {
+		return apiutil.ErrMissingInviteID
+	}
+
+	return nil
+}

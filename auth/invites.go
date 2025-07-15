@@ -53,6 +53,9 @@ type Invites interface {
 	// pending Invite is removed.
 	InviteRespond(ctx context.Context, token string, inviteID string, accept bool) error
 
+	// ViewInvite retrieves a single Invite denoted by its ID.
+	ViewInvite(ctx context.Context, token string, inviteID string) (Invite, error)
+
 	// ListInvitesByInviteeID retrieves a list of all pending Invites directed towards
 	// a particular User, denoted by their User ID.
 	ListInvitesByInviteeID(ctx context.Context, token string, userID string, pm apiutil.PageMetadata) (InvitesPage, error)
@@ -175,6 +178,33 @@ func (svc service) RevokeInvite(ctx context.Context, token string, inviteID stri
 	}
 
 	return nil
+}
+
+func (svc service) ViewInvite(ctx context.Context, token string, inviteID string) (Invite, error) {
+	invite, err := svc.invites.RetrieveByID(ctx, inviteID)
+	if err != nil {
+		return Invite{}, err
+	}
+
+	// A specific Invite can only be retrieved by the platform Root Admin or the Invitee towards who
+	// the Invite is directed
+	if err := svc.isAdmin(ctx, token); err != nil {
+		if err != errors.ErrAuthorization {
+			return Invite{}, err
+		}
+
+		// Current User is not Root Admin - must be the Invitee
+		currentUser, err := svc.identify(ctx, token)
+		if err != nil {
+			return Invite{}, err
+		}
+
+		if currentUser.ID != invite.InviteeID {
+			return Invite{}, errors.ErrAuthorization
+		}
+	}
+
+	return invite, nil
 }
 
 func (svc service) InviteRespond(ctx context.Context, token string, inviteID string, accept bool) error {

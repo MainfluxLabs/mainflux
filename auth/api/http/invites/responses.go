@@ -57,6 +57,18 @@ type inviteRes struct {
 	ExpiresAt   time.Time `json:"expires_at"`
 }
 
+func (res inviteRes) Code() int {
+	return http.StatusOK
+}
+
+func (res inviteRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res inviteRes) Empty() bool {
+	return false
+}
+
 type pageRes struct {
 	Limit  uint64 `json:"limit"`
 	Offset uint64 `json:"offset"`

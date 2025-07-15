@@ -34,6 +34,14 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
+	mux.Get("/invites/:inviteID", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_invite")(viewInviteEndpoint(svc)),
+		decodeViewInviteRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	// TODO: this shouldn't require the /orgs prefix or the orgID parameter
 	mux.Delete("/orgs/:orgID/invites/:inviteID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "revoke_invite")(revokeInviteEndpoint(svc)),
 		decodeInviteRevokeRequest,
@@ -41,6 +49,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
+	// TODO: this shouldn't require the /orgs prefix or the orgID parameter
 	mux.Post("/orgs/:orgID/invites/:inviteID/:responseVerb", kithttp.NewServer(
 		kitot.TraceServer(tracer, "respond_invite")(respondInviteEndpoint(svc)),
 		decodeInviteResponseRequest,
@@ -129,6 +138,15 @@ func decodeListInvitesByUserRequest(_ context.Context, r *http.Request) (any, er
 
 	req.offset = offset
 	req.limit = limit
+
+	return req, nil
+}
+
+func decodeViewInviteRequest(_ context.Context, r *http.Request) (any, error) {
+	req := viewInviteReq{
+		token:    apiutil.ExtractBearerToken(r),
+		inviteID: bone.GetValue(r, inviteIDKey),
+	}
 
 	return req, nil
 }
