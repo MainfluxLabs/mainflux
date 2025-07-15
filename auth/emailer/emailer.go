@@ -25,12 +25,12 @@ func New(emailConfig *email.Config) (auth.Emailer, error) {
 
 // TODO: I don't think it's appropriate for this function to accept the last two parameters - they should
 // probably be set once when the Emailer instance is created.
-func (e *emailer) SendOrgInvite(To []string, inviteID, orgName, uiHost, uiInvitePath string) error {
+func (e *emailer) SendOrgInvite(To []string, inviteID, orgName, roleName, uiHost, uiInvitePath string) error {
 	uiInviteViewURL := fmt.Sprintf("%s%s/%s", uiHost, uiInvitePath, inviteID)
 	emailContent := fmt.Sprintf(`
 		Hello,
 
-		You've been invited to join the %s Organization.
+		You've been invited to join the %s Organization with role: %s.
 
 		Use the following URL to view the invite:
 		%s

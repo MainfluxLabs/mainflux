@@ -262,5 +262,5 @@ func (svc service) ListInvitesByInviteeID(ctx context.Context, token string, use
 
 func (svc service) SendOrgInviteEmail(ctx context.Context, invite Invite, orgName string) error {
 	to := []string{invite.InviteeEmail}
-	return svc.email.SendOrgInvite(to, invite.ID, orgName, "http://localhost:80", "/FRONTEND_INVITE_ENDPOINT")
+	return svc.email.SendOrgInvite(to, invite.ID, orgName, invite.InviteeRole, "http://localhost:80", "/FRONTEND_INVITE_ENDPOINT")
 }
