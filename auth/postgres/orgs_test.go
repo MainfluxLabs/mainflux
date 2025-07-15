@@ -472,7 +472,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		page, err := repoOrg.RetrieveByMemberID(context.Background(), tc.memberID, tc.pageMetadata)
+		page, err := repoOrg.RetrieveByMember(context.Background(), tc.memberID, tc.pageMetadata)
 		size := len(page.Orgs)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %d got %d\n", desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))

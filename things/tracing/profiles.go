@@ -17,7 +17,7 @@ const (
 	updateProfile              = "update_profile"
 	retrieveProfileByID        = "retrieve_profile_by_id"
 	retrieveProfileByThing     = "retrieve_profile_by_thing"
-	retrieveProfilesByGroupIDs = "retrieve_profiles_by_group_ids"
+	retrieveProfilesByGroups   = "retrieve_profiles_by_groups"
 	removeProfile              = "remove_profile"
 	removeGroupIDByProfileID   = "remove_group_id_by_profile_id"
 	retrieveAllProfiles        = "retrieve_all_profiles"
@@ -69,12 +69,12 @@ func (prm profileRepositoryMiddleware) RetrieveByID(ctx context.Context, id stri
 	return prm.repo.RetrieveByID(ctx, id)
 }
 
-func (prm profileRepositoryMiddleware) RetrieveByGroupIDs(ctx context.Context, ids []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
-	span := createSpan(ctx, prm.tracer, retrieveProfilesByGroupIDs)
+func (prm profileRepositoryMiddleware) RetrieveByGroups(ctx context.Context, ids []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+	span := createSpan(ctx, prm.tracer, retrieveProfilesByGroups)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return prm.repo.RetrieveByGroupIDs(ctx, ids, pm)
+	return prm.repo.RetrieveByGroups(ctx, ids, pm)
 }
 
 func (prm profileRepositoryMiddleware) RetrieveByThing(ctx context.Context, thID string) (things.Profile, error) {

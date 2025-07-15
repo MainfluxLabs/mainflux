@@ -238,7 +238,7 @@ func (pr profileRepository) Remove(ctx context.Context, ids ...string) error {
 	return nil
 }
 
-func (pr profileRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+func (pr profileRepository) RetrieveByGroups(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	if len(groupIDs) == 0 {
 		return things.ProfilesPage{}, nil
 	}

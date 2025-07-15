@@ -101,7 +101,7 @@ func (mrm *orgMembershipsRepositoryMock) RetrieveRole(_ context.Context, memberI
 	return "", errors.ErrNotFound
 }
 
-func (mrm *orgMembershipsRepositoryMock) RetrieveByOrgID(_ context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembershipsPage, error) {
+func (mrm *orgMembershipsRepositoryMock) RetrieveByOrg(_ context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembershipsPage, error) {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
