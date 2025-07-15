@@ -1312,7 +1312,7 @@ func TestBackupProfilesByOrg(t *testing.T) {
 		})
 	}
 
-	backupURL := fmt.Sprintf("%s/orgs/%s/profiles/backup", ts.URL, orgID)
+	profileURL := fmt.Sprintf("%s/orgs", ts.URL)
 
 	cases := []struct {
 		desc   string
@@ -1325,30 +1325,42 @@ func TestBackupProfilesByOrg(t *testing.T) {
 			desc:   "backup profiles by org as org owner",
 			auth:   token,
 			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/profiles/backup", profileURL, orgID),
 			res:    data,
 		},
 		{
 			desc:   "backup profiles by org the user belongs to",
 			auth:   otherToken,
 			status: http.StatusForbidden,
+			url:    fmt.Sprintf("%s/%s/profiles/backup", profileURL, orgID),
 			res:    nil,
 		},
 		{
 			desc:   "backup profiles by org as admin",
 			auth:   adminToken,
 			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/profiles/backup", profileURL, orgID),
 			res:    data,
+		},
+		{
+			desc:   "backup profiles by org without org id",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/profiles/backup", profileURL, emptyValue),
+			res:    nil,
 		},
 		{
 			desc:   "get a list of profiles by org with invalid token",
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/%s/profiles/backup", profileURL, orgID),
 			res:    nil,
 		},
 		{
 			desc:   "get a list of profiles by org with empty token",
 			auth:   emptyValue,
 			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/%s/profiles/backup", profileURL, orgID),
 			res:    nil,
 		},
 	}
@@ -1357,7 +1369,7 @@ func TestBackupProfilesByOrg(t *testing.T) {
 		req := testRequest{
 			client: ts.Client(),
 			method: http.MethodGet,
-			url:    backupURL,
+			url:    tc.url,
 			token:  tc.auth,
 		}
 		res, err := req.make()
