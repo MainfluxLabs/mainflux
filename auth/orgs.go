@@ -41,8 +41,8 @@ type User struct {
 }
 
 type Backup struct {
-	Orgs       []Org
-	OrgMembers []OrgMember
+	Orgs           []Org
+	OrgMemberships []OrgMembership
 }
 
 // Orgs specifies an API that must be fullfiled by the domain service
@@ -66,10 +66,10 @@ type Orgs interface {
 	// GetOwnerIDByOrgID returns an owner ID for a given org ID.
 	GetOwnerIDByOrgID(ctx context.Context, orgID string) (string, error)
 
-	// Backup retrieves all orgs and org members. Only accessible by admin.
+	// Backup retrieves all orgs and org memberships. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
-	// Restore adds orgs and org members from a backup. Only accessible by admin.
+	// Restore adds orgs and org memberships from a backup. Only accessible by admin.
 	Restore(ctx context.Context, token string, backup Backup) error
 }
 
@@ -87,14 +87,14 @@ type OrgRepository interface {
 	// RetrieveByID retrieves org by its id
 	RetrieveByID(ctx context.Context, id string) (Org, error)
 
-	// RetrieveAll retrieves all orgs.
-	RetrieveAll(ctx context.Context) ([]Org, error)
+	// BackupAll retrieves all orgs.
+	BackupAll(ctx context.Context) ([]Org, error)
 
-	// RetrieveByAdmin retrieves all orgs with pagination.
-	RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (OrgsPage, error)
+	// RetrieveAll retrieves all orgs with pagination.
+	RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (OrgsPage, error)
 
-	// RetrieveByMemberID list of orgs that member belongs to
-	RetrieveByMemberID(ctx context.Context, memberID string, pm apiutil.PageMetadata) (OrgsPage, error)
+	// RetrieveByMember list of orgs that member belongs to
+	RetrieveByMember(ctx context.Context, memberID string, pm apiutil.PageMetadata) (OrgsPage, error)
 }
 
 func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, error) {
@@ -124,7 +124,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, err
 		return Org{}, err
 	}
 
-	om := OrgMember{
+	om := OrgMembership{
 		OrgID:     id,
 		MemberID:  user.ID,
 		Role:      Owner,
@@ -132,7 +132,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, err
 		UpdatedAt: timestamp,
 	}
 
-	if err := svc.members.Save(ctx, om); err != nil {
+	if err := svc.memberships.Save(ctx, om); err != nil {
 		return Org{}, err
 	}
 
@@ -141,7 +141,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, err
 
 func (svc service) ListOrgs(ctx context.Context, token string, pm apiutil.PageMetadata) (OrgsPage, error) {
 	if err := svc.isAdmin(ctx, token); err == nil {
-		return svc.orgs.RetrieveByAdmin(ctx, pm)
+		return svc.orgs.RetrieveAll(ctx, pm)
 	}
 
 	user, err := svc.Identify(ctx, token)
@@ -149,7 +149,7 @@ func (svc service) ListOrgs(ctx context.Context, token string, pm apiutil.PageMe
 		return OrgsPage{}, err
 	}
 
-	return svc.orgs.RetrieveByMemberID(ctx, user.ID, pm)
+	return svc.orgs.RetrieveByMember(ctx, user.ID, pm)
 }
 
 func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
@@ -223,7 +223,7 @@ func (svc service) canAccessOrg(ctx context.Context, token, orgID, action string
 		return err
 	}
 
-	role, err := svc.members.RetrieveRole(ctx, user.ID, orgID)
+	role, err := svc.memberships.RetrieveRole(ctx, user.ID, orgID)
 	if err != nil {
 		return err
 	}

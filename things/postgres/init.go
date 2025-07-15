@@ -180,6 +180,14 @@ func migrateDB(db *sqlx.DB) error {
 						FOREIGN KEY (profile_id) REFERENCES profiles (id) ON DELETE RESTRICT ON UPDATE CASCADE;`,
 				},
 			},
+			{
+				Id: "things_8",
+				Up: []string{
+					`ALTER TABLE group_roles RENAME TO group_memberships`,
+					`ALTER TABLE group_memberships RENAME CONSTRAINT group_policies_pkey TO group_memberships_pkey`,
+					`ALTER TABLE group_memberships RENAME CONSTRAINT group_policies_group_id_fkey TO group_memberships_group_id_fkey`,
+				},
+			},
 		},
 	}
 

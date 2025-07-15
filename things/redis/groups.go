@@ -75,7 +75,7 @@ func (gc *groupCache) RemoveGroupEntities(ctx context.Context, groupID string) e
 	return nil
 }
 
-func (gc *groupCache) SaveGroupMember(ctx context.Context, groupID, memberID, role string) error {
+func (gc *groupCache) SaveGroupMembership(ctx context.Context, groupID, memberID, role string) error {
 	gk := groupsByMemberIDKey(memberID)
 	if err := gc.client.HSet(ctx, gk, groupID, role).Err(); err != nil {
 		return errors.Wrap(errors.ErrCreateEntity, err)
@@ -102,7 +102,7 @@ func (gc *groupCache) ViewRole(ctx context.Context, groupID, memberID string) (s
 	return role, nil
 }
 
-func (gc *groupCache) RemoveGroupMember(ctx context.Context, groupID, memberID string) error {
+func (gc *groupCache) RemoveGroupMembership(ctx context.Context, groupID, memberID string) error {
 	gk := groupsByMemberIDKey(memberID)
 	if _, err := gc.client.HDel(ctx, gk, groupID).Result(); err != nil {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
@@ -116,7 +116,7 @@ func (gc *groupCache) RemoveGroupMember(ctx context.Context, groupID, memberID s
 	return nil
 }
 
-func (gc *groupCache) GroupMemberships(ctx context.Context, memberID string) ([]string, error) {
+func (gc *groupCache) RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error) {
 	gk := groupsByMemberIDKey(memberID)
 	groups, err := gc.client.HKeys(ctx, gk).Result()
 	if err != nil {

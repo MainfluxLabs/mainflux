@@ -63,6 +63,6 @@ type UserRepository interface {
 	// ChangeStatus changes users status to enabled or disabled
 	ChangeStatus(ctx context.Context, id, status string) error
 
-	// RetrieveAll retrieves all users.
-	RetrieveAll(ctx context.Context) ([]User, error)
+	// BackupAll retrieves all users.
+	BackupAll(ctx context.Context) ([]User, error)
 }

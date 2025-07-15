@@ -23,11 +23,11 @@ const (
 )
 
 var (
-	// ErrRetrieveMembersByOrg failed to retrieve members by org.
-	ErrRetrieveMembersByOrg = errors.New("failed to retrieve members by org")
+	// ErrRetrieveMembershipsByOrg indicates that retrieving memberships by org failed.
+	ErrRetrieveMembershipsByOrg = errors.New("failed to retrieve memberships by org")
 
-	// ErrRetrieveOrgsByMember failed to retrieve orgs by member
-	ErrRetrieveOrgsByMember = errors.New("failed to retrieve orgs by member")
+	// ErrRetrieveOrgsByMembership indicates that retrieving orgs by membership failed.
+	ErrRetrieveOrgsByMembership = errors.New("failed to retrieve orgs by membership")
 
 	errIssueUser      = errors.New("failed to issue new login key")
 	errIssueTmp       = errors.New("failed to issue new temporary key")
@@ -71,7 +71,7 @@ type Service interface {
 	Authz
 	Roles
 	Orgs
-	Members
+	OrgMemberships
 	Invites
 	Keys
 }
@@ -84,7 +84,7 @@ type service struct {
 	things         protomfx.ThingsServiceClient
 	keys           KeyRepository
 	roles          RolesRepository
-	members        MembersRepository
+	memberships   OrgMembershipsRepository
 	invites        InvitesRepository
 	email          Emailer
 	idProvider     uuid.IDProvider
@@ -95,7 +95,7 @@ type service struct {
 
 // New instantiates the auth service implementation.
 func New(orgs OrgRepository, tc protomfx.ThingsServiceClient, uc protomfx.UsersServiceClient, keys KeyRepository, roles RolesRepository,
-	members MembersRepository, invites InvitesRepository, emailer Emailer, idp uuid.IDProvider, tokenizer Tokenizer, loginDuration time.Duration, inviteDuration time.Duration) Service {
+	memberships OrgMembershipsRepository, invites InvitesRepository, emailer Emailer, idp uuid.IDProvider, tokenizer Tokenizer, loginDuration time.Duration, inviteDuration time.Duration) Service {
 	return &service{
 		tokenizer:      tokenizer,
 		things:         tc,
@@ -103,7 +103,7 @@ func New(orgs OrgRepository, tc protomfx.ThingsServiceClient, uc protomfx.UsersS
 		users:          uc,
 		keys:           keys,
 		roles:          roles,
-		members:        members,
+		memberships:   memberships,
 		invites:        invites,
 		email:          emailer,
 		idProvider:     idp,
@@ -183,19 +183,19 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 		return Backup{}, err
 	}
 
-	orgs, err := svc.orgs.RetrieveAll(ctx)
+	orgs, err := svc.orgs.BackupAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
-	mrs, err := svc.members.RetrieveAll(ctx)
+	mrs, err := svc.memberships.BackupAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
 	backup := Backup{
-		Orgs:       orgs,
-		OrgMembers: mrs,
+		Orgs:           orgs,
+		OrgMemberships: mrs,
 	}
 
 	return backup, nil
@@ -210,7 +210,7 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 		return err
 	}
 
-	if err := svc.members.Save(ctx, backup.OrgMembers...); err != nil {
+	if err := svc.memberships.Save(ctx, backup.OrgMemberships...); err != nil {
 		return err
 	}
 

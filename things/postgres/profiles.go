@@ -122,7 +122,7 @@ func (cr profileRepository) RetrieveByID(ctx context.Context, id string) (things
 	return toProfile(dbpr), nil
 }
 
-func (cr profileRepository) RetrieveAll(ctx context.Context) ([]things.Profile, error) {
+func (cr profileRepository) BackupAll(ctx context.Context) ([]things.Profile, error) {
 	query := "SELECT id, group_id, name, metadata, config FROM profiles"
 
 	var items []dbProfile
@@ -139,7 +139,7 @@ func (cr profileRepository) RetrieveAll(ctx context.Context) ([]things.Profile, 
 	return profiles, nil
 }
 
-func (cr profileRepository) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+func (cr profileRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
@@ -215,7 +215,7 @@ func (cr profileRepository) Remove(ctx context.Context, ids ...string) error {
 	return nil
 }
 
-func (cr profileRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+func (cr profileRepository) RetrieveByGroups(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	if len(groupIDs) == 0 {
 		return things.ProfilesPage{}, nil
 	}

@@ -67,7 +67,7 @@ func (nr notifierRepository) Save(ctx context.Context, nfs ...notifiers.Notifier
 	return nfs, nil
 }
 
-func (nr notifierRepository) RetrieveByGroupID(ctx context.Context, groupID string, pm apiutil.PageMetadata) (notifiers.NotifiersPage, error) {
+func (nr notifierRepository) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (notifiers.NotifiersPage, error) {
 	if _, err := uuid.FromString(groupID); err != nil {
 		return notifiers.NotifiersPage{}, errors.Wrap(errors.ErrNotFound, err)
 	}
@@ -76,9 +76,13 @@ func (nr notifierRepository) RetrieveByGroupID(ctx context.Context, groupID stri
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
+	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
+	if err != nil {
+		return notifiers.NotifiersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
 
 	groupFilter := "group_id = :group_id"
-	whereClause := dbutil.BuildWhereClause(groupFilter, nq)
+	whereClause := dbutil.BuildWhereClause(groupFilter, nq, mq)
 
 	q := fmt.Sprintf(`SELECT id, group_id, name, contacts, metadata FROM notifiers %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM notifiers %s;`, whereClause)
@@ -88,6 +92,7 @@ func (nr notifierRepository) RetrieveByGroupID(ctx context.Context, groupID stri
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
 		"name":     name,
+		"metadata": m,
 	}
 
 	rows, err := nr.db.NamedQueryContext(ctx, q, params)

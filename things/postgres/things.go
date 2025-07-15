@@ -183,7 +183,7 @@ func (tr thingRepository) RetrieveByKey(ctx context.Context, key string) (string
 	return id, nil
 }
 
-func (tr thingRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+func (tr thingRepository) RetrieveByGroups(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	if len(groupIDs) == 0 {
 		return things.ThingsPage{}, nil
 	}
@@ -210,7 +210,7 @@ func (tr thingRepository) RetrieveByGroupIDs(ctx context.Context, groupIDs []str
 	return tr.retrieve(ctx, query, cquery, params)
 }
 
-func (tr thingRepository) RetrieveAll(ctx context.Context) ([]things.Thing, error) {
+func (tr thingRepository) BackupAll(ctx context.Context) ([]things.Thing, error) {
 	query := "SELECT id, group_id, profile_id, name, key, metadata FROM things"
 
 	var items []dbThing
@@ -232,7 +232,7 @@ func (tr thingRepository) RetrieveAll(ctx context.Context) ([]things.Thing, erro
 	return ths, nil
 }
 
-func (tr thingRepository) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+func (tr thingRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
@@ -262,12 +262,19 @@ func (tr thingRepository) RetrieveByProfile(ctx context.Context, prID string, pm
 		return things.ThingsPage{}, errors.Wrap(errors.ErrNotFound, err)
 	}
 
-	query := fmt.Sprintf(`SELECT id, group_id, name, key, metadata FROM things 
-				WHERE profile_id = :profile_id ORDER BY %s %s %s;`, pm.Order, strings.ToUpper(pm.Dir), olq)
-	cquery := `SELECT COUNT(*) FROM things WHERE profile_id = :profile_id;`
+	baseCondition := "profile_id = :profile_id"
+	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
+	if err != nil {
+		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	whereClause := dbutil.BuildWhereClause(baseCondition, mq)
+	query := fmt.Sprintf(`SELECT id, group_id, name, key, metadata FROM things %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
+	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
 
 	params := map[string]interface{}{
 		"profile_id": prID,
+		"metadata":   m,
 		"limit":      pm.Limit,
 		"offset":     pm.Offset,
 	}

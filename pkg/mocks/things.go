@@ -118,6 +118,14 @@ func (svc *mainfluxThings) Backup(context.Context, string) (things.Backup, error
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) BackupGroupsByOrg(context.Context, string, string) (things.BackupGroupsByOrg, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) BackupGroupMemberships(context.Context, string, string) (things.BackupGroupMemberships, error) {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) Restore(context.Context, string, things.Backup) error {
 	panic("not implemented")
 }
@@ -231,18 +239,18 @@ func (svc *mainfluxThings) ListProfilesByGroup(_ context.Context, token, groupID
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CreateGroupMembers(_ context.Context, token string, gms ...things.GroupMember) error {
+func (svc *mainfluxThings) CreateGroupMemberships(_ context.Context, token string, gms ...things.GroupMembership) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListGroupMembers(_ context.Context, token, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
+func (svc *mainfluxThings) ListGroupMemberships(_ context.Context, token, groupID string, pm apiutil.PageMetadata) (things.GroupMembershipsPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) UpdateGroupMembers(_ context.Context, token string, gms ...things.GroupMember) error {
+func (svc *mainfluxThings) UpdateGroupMemberships(_ context.Context, token string, gms ...things.GroupMembership) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) RemoveGroupMembers(_ context.Context, token, groupID string, memberIDs ...string) error {
+func (svc *mainfluxThings) RemoveGroupMemberships(_ context.Context, token, groupID string, memberIDs ...string) error {
 	panic("not implemented")
 }

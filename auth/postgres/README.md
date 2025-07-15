@@ -11,14 +11,14 @@ CREATE TABLE keys (
     CONSTRAINT keys_pkey PRIMARY KEY (id, issuer_id)
 );
 
-CREATE TABLE member_relations (
+CREATE TABLE org_memberships (
     member_id  UUID NOT NULL,
     org_id     UUID NOT NULL,
     role       VARCHAR(10) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TOME ZONE,
-    CONSTRAINT member_relations_pkey PRIMARY KEY (member_id, org_id),
-    CONSTRAINT member_relations_org_id_fkey FOREIGN KEY (org_id) REFERENCES orgs(id) ON DELETE CASCADE
+    CONSTRAINT org_memberships_pkey PRIMARY KEY (member_id, org_id),
+    CONSTRAINT org_memberships_org_id_fkey FOREIGN KEY (org_id) REFERENCES orgs(id) ON DELETE CASCADE
 );
 
 CREATE TABLE orgs (

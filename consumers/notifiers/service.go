@@ -143,7 +143,7 @@ func (ns *notifierService) ListNotifiersByGroup(ctx context.Context, token strin
 		return NotifiersPage{}, err
 	}
 
-	notifiers, err := ns.notifierRepo.RetrieveByGroupID(ctx, groupID, pm)
+	notifiers, err := ns.notifierRepo.RetrieveByGroup(ctx, groupID, pm)
 	if err != nil {
 		return NotifiersPage{}, err
 	}
