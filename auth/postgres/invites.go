@@ -58,7 +58,7 @@ func (ir invitesRepository) Save(ctx context.Context, invites ...auth.Invite) er
 	}
 
 	if err = tx.Commit(); err != nil {
-		return errors.Wrap(auth.ErrAssignMember, err)
+		return errors.Wrap(auth.ErrCreateOrgMembership, err)
 	}
 
 	return nil

@@ -42,7 +42,7 @@ type Invite struct {
 type Invites interface {
 	// InviteMembers creates pending invitations on behalf of the User authenticated by `token`,
 	// towards all members in `oms`, to join the Org identified by `orgID` with an appropriate role.
-	InviteMembers(ctx context.Context, token string, orgID string, oms ...OrgMember) ([]Invite, error)
+	InviteMembers(ctx context.Context, token string, orgID string, oms ...OrgMembership) ([]Invite, error)
 
 	// RevokeInvite revokes a specific pending Invite. An existing pending Invite can only be revoked
 	// by its original inviter (creator).
@@ -76,7 +76,7 @@ type InvitesRepository interface {
 	RetrieveByInviteeID(ctx context.Context, inviteeID string, pm apiutil.PageMetadata) (InvitesPage, error)
 }
 
-func (svc service) InviteMembers(ctx context.Context, token string, orgID string, oms ...OrgMember) ([]Invite, error) {
+func (svc service) InviteMembers(ctx context.Context, token string, orgID string, oms ...OrgMembership) ([]Invite, error) {
 	// Check if currently authenticated User has "admin" privileges within Org (required to make invitations)
 	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
 		return nil, err
@@ -212,7 +212,7 @@ func (svc service) InviteRespond(ctx context.Context, token string, inviteID str
 		// with the appropriate role
 		ts := getTimestmap()
 
-		newOrgMember := OrgMember{
+		newOrgMember := OrgMembership{
 			MemberID:  currentUserID,
 			OrgID:     invite.OrgID,
 			Role:      invite.InviteeRole,
@@ -220,7 +220,7 @@ func (svc service) InviteRespond(ctx context.Context, token string, inviteID str
 			UpdatedAt: ts,
 		}
 
-		if err := svc.members.Save(ctx, newOrgMember); err != nil {
+		if err := svc.memberships.Save(ctx, newOrgMember); err != nil {
 			return err
 		}
 	}

@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	save   = "save"
-	remove = "remove"
+	save         = "save"
+	remove       = "remove"
+	retrieveByID = "retrieve_by_id"
 )
 
 var _ auth.InvitesRepository = (*invitesRepositoryMiddleware)(nil)

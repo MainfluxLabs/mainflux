@@ -10,7 +10,7 @@ const maxLimitSize = 100
 type invitesReq struct {
 	token      string
 	orgID      string
-	OrgMembers []auth.OrgMember `json:"org_members"`
+	OrgMembers []auth.OrgMembership `json:"org_members"`
 }
 
 func (req invitesReq) validate() error {

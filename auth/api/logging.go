@@ -301,7 +301,7 @@ func (lm *loggingMiddleware) RetrieveRole(ctx context.Context, id string) (role 
 	return lm.svc.RetrieveRole(ctx, id)
 }
 
-func (lm *loggingMiddleware) InviteMembers(ctx context.Context, token string, orgID string, oms ...auth.OrgMember) (invites []auth.Invite, err error) {
+func (lm *loggingMiddleware) InviteMembers(ctx context.Context, token string, orgID string, oms ...auth.OrgMembership) (invites []auth.Invite, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method invite_members took %s to complete", time.Since(begin))
 		if err != nil {
