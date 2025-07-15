@@ -1283,6 +1283,92 @@ func TestSearchProfilesByOrg(t *testing.T) {
 	}
 }
 
+func TestBackupProfilesByOrg(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	grs, err := svc.CreateGroups(context.Background(), otherToken, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	data := []profileRes{}
+	for i := 0; i < n; i++ {
+		suffix := i + 1
+		name := "name_" + fmt.Sprintf("%03d", suffix)
+		id := fmt.Sprintf("%s%012d", prefix, suffix)
+		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: metadata}
+
+		prs, err := svc.CreateProfiles(context.Background(), adminToken, pr)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		profile := prs[0]
+
+		data = append(data, profileRes{
+			ID:       profile.ID,
+			Name:     profile.Name,
+			Metadata: profile.Metadata,
+			GroupID:  profile.GroupID,
+			Config:   profile.Config,
+		})
+	}
+
+	backupURL := fmt.Sprintf("%s/orgs/%s/profiles/backup", ts.URL, orgID)
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		url    string
+		res    []profileRes
+	}{
+		{
+			desc:   "backup profiles by org as org owner",
+			auth:   token,
+			status: http.StatusOK,
+			res:    data,
+		},
+		{
+			desc:   "backup profiles by org the user belongs to",
+			auth:   otherToken,
+			status: http.StatusForbidden,
+			res:    nil,
+		},
+		{
+			desc:   "backup profiles by org as admin",
+			auth:   adminToken,
+			status: http.StatusOK,
+			res:    data,
+		},
+		{
+			desc:   "get a list of profiles by org with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			res:    nil,
+		},
+		{
+			desc:   "get a list of profiles by org with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			res:    nil,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodGet,
+			url:    backupURL,
+			token:  tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		var body profilesPageRes
+		json.NewDecoder(res.Body).Decode(&body)
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, body.Profiles, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body.Profiles))
+	}
+}
+
 func TestViewProfileByThing(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
