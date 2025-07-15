@@ -90,7 +90,7 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 	))
 
 	mux.Get("/orgs/:id/profiles/backup", kithttp.NewServer(
-		kitot.TraceServer(tracer, "backup_profiles_by_org")(backupProfliesByOrgEndpoint(svc)),
+		kitot.TraceServer(tracer, "backup_profiles_by_org")(backupProfilesByOrgEndpoint(svc)),
 		decodeBackup,
 		encodeResponse,
 		opts...,
