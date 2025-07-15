@@ -9,8 +9,8 @@ import (
 	"encoding/csv"
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/go-kit/kit/endpoint"
@@ -83,14 +83,17 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, err
 		}
 
+		var table string
+
 		switch {
 		case req.key != "":
 			pc, err := getPubConfByKey(ctx, req.key)
 			if err != nil {
 				return nil, errors.Wrap(errors.ErrAuthentication, err)
 			}
+
 			req.pageMeta.Publisher = pc.PublisherID
-			req.pageMeta.Format = nats.GetFormat(pc.ProfileConfig.GetContentType())
+			table = dbutil.GetTableName(pc.ProfileConfig.GetContentType())
 
 		case req.token != "":
 			if err := isAdmin(ctx, req.token); err != nil {
@@ -100,7 +103,7 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, errors.ErrAuthentication
 		}
 
-		err :=  svc.DeleteMessages(ctx, req.pageMeta)
+		err :=  svc.DeleteMessages(ctx, req.pageMeta, table)
 		if err != nil {
 			return nil, err
 		}
