@@ -155,7 +155,7 @@ components:
         metadata:
           type: object
           example: { "key": "value" }
-          description: Arbitrary, object-encoded thing's data.
+          description: Arbitrary, object-encoded notifier's data.
       required:
         - name
         - contacts
@@ -219,7 +219,7 @@ components:
         metadata:
           type: object
           example: { "key": "value" }
-          description: Arbitrary, object-encoded thing's data.
+          description: Arbitrary, object-encoded notifier's data.
       required:
         - id
         - group_id
