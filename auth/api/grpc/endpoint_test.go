@@ -24,11 +24,12 @@ import (
 )
 
 const (
-	port          = 8081
-	secret        = "secret"
-	email         = "test@example.com"
-	id            = "testID"
-	loginDuration = 30 * time.Minute
+	port           = 8081
+	secret         = "secret"
+	email          = "test@example.com"
+	id             = "testID"
+	loginDuration  = 30 * time.Minute
+	inviteDuration = 7 * 24 * time.Hour
 )
 
 var svc auth.Service
@@ -38,7 +39,7 @@ func newService() auth.Service {
 	idProvider := uuid.NewMock()
 	t := jwt.New(secret)
 
-	return auth.New(nil, nil, nil, repo, nil, nil, nil, nil, idProvider, t, loginDuration)
+	return auth.New(nil, nil, nil, repo, nil, nil, nil, nil, idProvider, t, loginDuration, inviteDuration)
 }
 
 func startGRPCServer(svc auth.Service, port int) {

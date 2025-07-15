@@ -58,6 +58,7 @@ const (
 	defServerKey       = ""
 	defJaegerURL       = ""
 	defLoginDuration   = "10h"
+	defInviteDuration  = "168h"
 	defAdminEmail      = ""
 	defTimeout         = "1s"
 	defThingsGRPCURL   = "localhost:8183"
@@ -93,6 +94,7 @@ const (
 	envServerKey       = "MF_AUTH_SERVER_KEY"
 	envJaegerURL       = "MF_JAEGER_URL"
 	envLoginDuration   = "MF_AUTH_LOGIN_TOKEN_DURATION"
+	envInviteDuration  = "MF_AUTH_INVITE_DURATION"
 	envAdminEmail      = "MF_USERS_ADMIN_EMAIL"
 	envThingsGRPCURL   = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsCACerts   = "MF_THINGS_CA_CERTS"
@@ -111,18 +113,19 @@ const (
 )
 
 type config struct {
-	logLevel      string
-	dbConfig      postgres.Config
-	httpConfig    servers.Config
-	grpcConfig    servers.Config
-	thingsConfig  clients.Config
-	usersConfig   clients.Config
-	emailConfig   email.Config
-	secret        string
-	jaegerURL     string
-	loginDuration time.Duration
-	timeout       time.Duration
-	adminEmail    string
+	logLevel       string
+	dbConfig       postgres.Config
+	httpConfig     servers.Config
+	grpcConfig     servers.Config
+	thingsConfig   clients.Config
+	usersConfig    clients.Config
+	emailConfig    email.Config
+	secret         string
+	jaegerURL      string
+	loginDuration  time.Duration
+	inviteDuration time.Duration
+	timeout        time.Duration
+	adminEmail     string
 }
 
 func main() {
@@ -162,7 +165,7 @@ func main() {
 
 	tc := thingsapi.NewClient(thConn, thingsTracer, cfg.timeout)
 
-	svc := newService(db, tc, uc, dbTracer, &cfg.emailConfig, cfg.secret, logger, cfg.loginDuration)
+	svc := newService(db, tc, uc, dbTracer, &cfg.emailConfig, cfg.secret, logger, cfg.loginDuration, cfg.inviteDuration)
 
 	g.Go(func() error {
 		return servershttp.Start(ctx, httpapi.MakeHandler(svc, authHttpTracer, logger), cfg.httpConfig, logger)
@@ -256,19 +259,25 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envTimeout, err.Error())
 	}
 
+	inviteDuration, err := time.ParseDuration(mainflux.Env(envInviteDuration, defInviteDuration))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return config{
-		logLevel:      mainflux.Env(envLogLevel, defLogLevel),
-		dbConfig:      dbConfig,
-		httpConfig:    httpConfig,
-		grpcConfig:    grpcConfig,
-		thingsConfig:  thingsConfig,
-		usersConfig:   usersConfig,
-		emailConfig:   emailConfig,
-		secret:        mainflux.Env(envSecret, defSecret),
-		jaegerURL:     mainflux.Env(envJaegerURL, defJaegerURL),
-		loginDuration: loginDuration,
-		timeout:       timeout,
-		adminEmail:    mainflux.Env(envAdminEmail, defAdminEmail),
+		logLevel:       mainflux.Env(envLogLevel, defLogLevel),
+		dbConfig:       dbConfig,
+		httpConfig:     httpConfig,
+		grpcConfig:     grpcConfig,
+		thingsConfig:   thingsConfig,
+		usersConfig:    usersConfig,
+		emailConfig:    emailConfig,
+		secret:         mainflux.Env(envSecret, defSecret),
+		jaegerURL:      mainflux.Env(envJaegerURL, defJaegerURL),
+		loginDuration:  loginDuration,
+		inviteDuration: inviteDuration,
+		timeout:        timeout,
+		adminEmail:     mainflux.Env(envAdminEmail, defAdminEmail),
 	}
 
 }
@@ -283,7 +292,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersServiceClient, tracer opentracing.Tracer, emailConfig *email.Config, secret string, logger logger.Logger, duration time.Duration) auth.Service {
+func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersServiceClient, tracer opentracing.Tracer, emailConfig *email.Config, secret string, logger logger.Logger, loginDuration time.Duration, inviteDuration time.Duration) auth.Service {
 	orgsRepo := postgres.NewOrgRepo(db)
 	orgsRepo = tracing.OrgRepositoryMiddleware(tracer, orgsRepo)
 
@@ -307,7 +316,7 @@ func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersS
 		logger.Error(fmt.Sprintf("Failed to configure e-mailing util: %s", err.Error()))
 	}
 
-	svc := auth.New(orgsRepo, tc, uc, keysRepo, rolesRepo, membsRepo, invitesRepo, authEmailer, idProvider, t, duration)
+	svc := auth.New(orgsRepo, tc, uc, keysRepo, rolesRepo, membsRepo, invitesRepo, authEmailer, idProvider, t, loginDuration, inviteDuration)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

@@ -132,7 +132,7 @@ func (svc service) InviteMembers(ctx context.Context, token string, orgID string
 			OrgID:        orgID,
 			InviteeRole:  orgMember.Role,
 			CreatedAt:    createdAt,
-			ExpiresAt:    createdAt.Add(7 * 24 * time.Hour),
+			ExpiresAt:    createdAt.Add(svc.inviteDuration),
 		}
 
 		invites = append(invites, invite)

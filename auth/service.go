@@ -79,34 +79,36 @@ type Service interface {
 var _ Service = (*service)(nil)
 
 type service struct {
-	orgs          OrgRepository
-	users         protomfx.UsersServiceClient
-	things        protomfx.ThingsServiceClient
-	keys          KeyRepository
-	roles         RolesRepository
-	members       MembersRepository
-	invites       InvitesRepository
-	email         Emailer
-	idProvider    uuid.IDProvider
-	tokenizer     Tokenizer
-	loginDuration time.Duration
+	orgs           OrgRepository
+	users          protomfx.UsersServiceClient
+	things         protomfx.ThingsServiceClient
+	keys           KeyRepository
+	roles          RolesRepository
+	members        MembersRepository
+	invites        InvitesRepository
+	email          Emailer
+	idProvider     uuid.IDProvider
+	tokenizer      Tokenizer
+	loginDuration  time.Duration
+	inviteDuration time.Duration
 }
 
 // New instantiates the auth service implementation.
 func New(orgs OrgRepository, tc protomfx.ThingsServiceClient, uc protomfx.UsersServiceClient, keys KeyRepository, roles RolesRepository,
-	members MembersRepository, invites InvitesRepository, emailer Emailer, idp uuid.IDProvider, tokenizer Tokenizer, duration time.Duration) Service {
+	members MembersRepository, invites InvitesRepository, emailer Emailer, idp uuid.IDProvider, tokenizer Tokenizer, loginDuration time.Duration, inviteDuration time.Duration) Service {
 	return &service{
-		tokenizer:     tokenizer,
-		things:        tc,
-		orgs:          orgs,
-		users:         uc,
-		keys:          keys,
-		roles:         roles,
-		members:       members,
-		invites:       invites,
-		email:         emailer,
-		idProvider:    idp,
-		loginDuration: duration,
+		tokenizer:      tokenizer,
+		things:         tc,
+		orgs:           orgs,
+		users:          uc,
+		keys:           keys,
+		roles:          roles,
+		members:        members,
+		invites:        invites,
+		email:          emailer,
+		idProvider:     idp,
+		loginDuration:  loginDuration,
+		inviteDuration: inviteDuration,
 	}
 }
 

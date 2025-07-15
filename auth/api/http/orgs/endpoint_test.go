@@ -27,21 +27,22 @@ import (
 )
 
 const (
-	secret        = "secret"
-	contentType   = "application/json"
-	id            = "123e4567-e89b-12d3-a456-000000000022"
-	adminID       = "adminID"
-	editorID      = "editorID"
-	viewerID      = "viewerID"
-	email         = "user@example.com"
-	adminEmail    = "admin@example.com"
-	editorEmail   = "editor@example.com"
-	viewerEmail   = "viewer@example.com"
-	wrongValue    = "wrong_value"
-	name          = "testName"
-	description   = "testDesc"
-	n             = 10
-	loginDuration = 30 * time.Minute
+	secret         = "secret"
+	contentType    = "application/json"
+	id             = "123e4567-e89b-12d3-a456-000000000022"
+	adminID        = "adminID"
+	editorID       = "editorID"
+	viewerID       = "viewerID"
+	email          = "user@example.com"
+	adminEmail     = "admin@example.com"
+	editorEmail    = "editor@example.com"
+	viewerEmail    = "viewer@example.com"
+	wrongValue     = "wrong_value"
+	name           = "testName"
+	description    = "testDesc"
+	n              = 10
+	loginDuration  = 30 * time.Minute
+	inviteDuration = 7 * 24 * time.Hour
 )
 
 var (
@@ -96,7 +97,7 @@ func newService() auth.Service {
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
 	tc := thmocks.NewThingsServiceClient(nil, nil, nil)
 
-	return auth.New(orgsRepo, tc, uc, nil, rolesRepo, membsRepo, invitesRepo, nil, idProvider, t, loginDuration)
+	return auth.New(orgsRepo, tc, uc, nil, rolesRepo, membsRepo, invitesRepo, nil, idProvider, t, loginDuration, inviteDuration)
 }
 
 func newServer(svc auth.Service) *httptest.Server {
