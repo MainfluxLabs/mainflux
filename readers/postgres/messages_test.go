@@ -631,7 +631,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 		require.Nil(t, err)
 		beforeCount := beforePage.Total
 
-		err = reader.DeleteMessages(context.Background(), tc.pageMeta, "senml")
+		err = reader.DeleteMessages(context.Background(), tc.pageMeta, "messages")
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
 		afterPage, err := reader.ListAllMessages(readers.PageMetadata{
