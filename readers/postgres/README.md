@@ -2,6 +2,33 @@
 
 Postgres reader provides message repository implementation for Postgres.
 
+## Readers - DB Schema
+
+```sql
+CREATE TABLE json (
+    created   BIGINT,
+    subtopic  VARCHAR(254),
+    publisher VARCHAR(254),
+    protocol  TEXT,
+    payload   JSONB
+);
+
+CREATE TABLE messages (
+    subtopic     VARCHAR(254) NOT NULL,
+    publisher    UUID NOT NULL,
+    protocol     TEXT,
+    name         TEXT NOT NULL,
+    unit         TEXT,
+    value        DOUBLE PRECISION,
+    string_value TEXT,
+    bool_value   BOOLEAN,
+    data_value   TEXT,
+    sum          DOUBLE PRECISION,
+    time         DOUBLE PRECISION NOT NULL,
+    update_time  DOUBLE PRECISION
+);
+```
+
 ## Configuration
 
 The service is configured using the environment variables presented in the

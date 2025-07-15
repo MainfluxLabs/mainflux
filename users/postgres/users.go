@@ -224,7 +224,7 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 	return page, nil
 }
 
-func (ur userRepository) RetrieveAll(ctx context.Context) ([]users.User, error) {
+func (ur userRepository) BackupAll(ctx context.Context) ([]users.User, error) {
 	q := `SELECT id, email, password, metadata, status FROM users;`
 
 	rows, err := ur.db.NamedQueryContext(ctx, q, map[string]interface{}{})

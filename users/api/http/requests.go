@@ -14,6 +14,10 @@ import (
 const (
 	maxLimitSize = 100
 	maxEmailSize = 1024
+	EmailOrder   = "email"
+	IDOrder      = "id"
+	AscDir       = "asc"
+	DescDir      = "desc"
 )
 
 var userPasswordRegex *regexp.Regexp
@@ -81,6 +85,15 @@ func (req listUsersReq) validate() error {
 	if len(req.email) > maxEmailSize {
 		return apiutil.ErrEmailSize
 	}
+
+	if req.order != "" && req.order != EmailOrder && req.order != IDOrder {
+		return apiutil.ErrInvalidOrder
+	}
+
+	if req.dir != "" && req.dir != AscDir && req.dir != DescDir {
+		return apiutil.ErrInvalidDirection
+	}
+
 	if req.status != users.AllStatusKey &&
 		req.status != users.EnabledStatusKey &&
 		req.status != users.DisabledStatusKey {

@@ -117,7 +117,7 @@ func (or orgRepository) Remove(ctx context.Context, owner, orgID string) error {
 				return errors.Wrap(errors.ErrMalformedEntity, err)
 			case pgerrcode.ForeignKeyViolation:
 				switch pqErr.ConstraintName {
-				case membersIDFkey:
+				case membershipsIDFkey:
 					return errors.Wrap(auth.ErrOrgNotEmpty, err)
 				}
 				return errors.Wrap(errors.ErrConflict, err)
@@ -153,7 +153,7 @@ func (or orgRepository) RetrieveByID(ctx context.Context, id string) (auth.Org, 
 	return toOrg(dbo)
 }
 
-func (or orgRepository) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
+func (or orgRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
@@ -175,7 +175,7 @@ func (or orgRepository) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMeta
 	return or.retrieve(ctx, query, cquery, params)
 }
 
-func (or orgRepository) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
+func (or orgRepository) BackupAll(ctx context.Context) ([]auth.Org, error) {
 	query := "SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs"
 
 	var items []dbOrg
@@ -197,24 +197,24 @@ func (or orgRepository) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
 	return orgs, nil
 }
 
-func (or orgRepository) RetrieveByMemberID(ctx context.Context, memberID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
+func (or orgRepository) RetrieveByMember(ctx context.Context, memberID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	meta, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(auth.ErrRetrieveOrgsByMember, err)
+		return auth.OrgsPage{}, errors.Wrap(auth.ErrRetrieveOrgsByMembership, err)
 	}
 
 	if mq != "" {
 		mq = "o." + mq
 	}
 
-	moq, miq := "mr.org_id = o.id", "mr.member_id = :member_id"
+	moq, miq := "om.org_id = o.id", "om.member_id = :member_id"
 	whereClause := dbutil.BuildWhereClause(moq, miq, nq, mq)
 
 	query := fmt.Sprintf(`SELECT o.id, o.owner_id, o.name, o.description, o.metadata, o.created_at, o.updated_at
-				FROM member_relations mr, orgs o %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
-	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM member_relations mr, orgs o %s`, whereClause)
+				FROM org_memberships om, orgs o %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
+	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM org_memberships om, orgs o %s`, whereClause)
 
 	params := map[string]interface{}{
 		"member_id": memberID,

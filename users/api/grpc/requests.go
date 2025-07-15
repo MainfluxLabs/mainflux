@@ -7,6 +7,7 @@ import "github.com/MainfluxLabs/mainflux/pkg/apiutil"
 
 type getUsersByIDsReq struct {
 	ids   []string
+	email string
 	order string
 	dir   string
 }

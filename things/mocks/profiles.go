@@ -73,7 +73,7 @@ func (crm *profileRepositoryMock) RetrieveByID(_ context.Context, id string) (th
 	return things.Profile{}, errors.ErrNotFound
 }
 
-func (crm *profileRepositoryMock) RetrieveByGroupIDs(_ context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+func (crm *profileRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
 
@@ -123,7 +123,7 @@ func (crm *profileRepositoryMock) RetrieveByGroupIDs(_ context.Context, groupIDs
 	return page, nil
 }
 
-func (crm *profileRepositoryMock) RetrieveByAdmin(_ context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+func (crm *profileRepositoryMock) RetrieveAll(_ context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
 
@@ -177,7 +177,7 @@ func (crm *profileRepositoryMock) Remove(_ context.Context, ids ...string) error
 	return nil
 }
 
-func (crm *profileRepositoryMock) RetrieveAll(_ context.Context) ([]things.Profile, error) {
+func (crm *profileRepositoryMock) BackupAll(_ context.Context) ([]things.Profile, error) {
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
 

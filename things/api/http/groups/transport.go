@@ -68,6 +68,27 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		opts...,
 	))
 
+	mux.Get("/orgs/:id/groups/backup", kithttp.NewServer(
+		kitot.TraceServer(tracer, "backup_groups_by_org")(backupGroupsByOrgEndpoint(svc)),
+		decodeBackup,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/groups/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_groups")(listGroupsEndpoint(svc)),
+		decodeSearch,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/orgs/:id/groups/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_groups_by_org")(listGroupsByOrgEndpoint(svc)),
+		decodeSearchByOrg,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Put("/groups/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_group")(updateGroupEndpoint(svc)),
 		decodeUpdateGroup,
@@ -164,6 +185,35 @@ func decodeListByOrg(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
+func decodeSearch(_ context.Context, r *http.Request) (interface{}, error) {
+	pm, err := apiutil.BuildPageMetadataFromBody(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listReq{
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm,
+	}
+
+	return req, nil
+}
+
+func decodeSearchByOrg(_ context.Context, r *http.Request) (interface{}, error) {
+	pm, err := apiutil.BuildPageMetadataFromBody(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listByOrgReq{
+		id:           bone.GetValue(r, apiutil.IDKey),
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm,
+	}
+
+	return req, nil
+}
+
 func decodeUpdateGroup(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
@@ -212,6 +262,15 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	}
 
 	return json.NewEncoder(w).Encode(response)
+}
+
+func decodeBackup(_ context.Context, r *http.Request) (interface{}, error) {
+	req := backupReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, apiutil.IDKey),
+	}
+
+	return req, nil
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {

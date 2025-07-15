@@ -113,6 +113,14 @@ func (es eventStore) Backup(ctx context.Context, token string) (things.Backup, e
 	return es.svc.Backup(ctx, token)
 }
 
+func (es eventStore) BackupGroupsByOrg(ctx context.Context, token string, orgID string) (things.BackupGroupsByOrg, error) {
+	return es.svc.BackupGroupsByOrg(ctx, token, orgID)
+}
+
+func (es eventStore) BackupGroupMemberships(ctx context.Context, token string, groupID string) (things.BackupGroupMemberships, error) {
+	return es.svc.BackupGroupMemberships(ctx, token, groupID)
+}
+
 func (es eventStore) Restore(ctx context.Context, token string, backup things.Backup) error {
 	return es.svc.Restore(ctx, token, backup)
 }
@@ -298,18 +306,18 @@ func (es eventStore) ViewGroupByProfile(ctx context.Context, token string, profi
 	return es.svc.ViewGroupByProfile(ctx, token, profileID)
 }
 
-func (es eventStore) CreateGroupMembers(ctx context.Context, token string, gms ...things.GroupMember) error {
-	return es.svc.CreateGroupMembers(ctx, token, gms...)
+func (es eventStore) CreateGroupMemberships(ctx context.Context, token string, gms ...things.GroupMembership) error {
+	return es.svc.CreateGroupMemberships(ctx, token, gms...)
 }
 
-func (es eventStore) ListGroupMembers(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.GroupMembersPage, error) {
-	return es.svc.ListGroupMembers(ctx, token, groupID, pm)
+func (es eventStore) ListGroupMemberships(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.GroupMembershipsPage, error) {
+	return es.svc.ListGroupMemberships(ctx, token, groupID, pm)
 }
 
-func (es eventStore) UpdateGroupMembers(ctx context.Context, token string, gms ...things.GroupMember) error {
-	return es.svc.UpdateGroupMembers(ctx, token, gms...)
+func (es eventStore) UpdateGroupMemberships(ctx context.Context, token string, gms ...things.GroupMembership) error {
+	return es.svc.UpdateGroupMemberships(ctx, token, gms...)
 }
 
-func (es eventStore) RemoveGroupMembers(ctx context.Context, token, groupID string, memberIDs ...string) error {
-	return es.svc.RemoveGroupMembers(ctx, token, groupID, memberIDs...)
+func (es eventStore) RemoveGroupMemberships(ctx context.Context, token, groupID string, memberIDs ...string) error {
+	return es.svc.RemoveGroupMemberships(ctx, token, groupID, memberIDs...)
 }
