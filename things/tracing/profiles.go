@@ -45,76 +45,76 @@ func ProfileRepositoryMiddleware(tracer opentracing.Tracer, repo things.ProfileR
 	}
 }
 
-func (crm profileRepositoryMiddleware) Save(ctx context.Context, profiles ...things.Profile) ([]things.Profile, error) {
-	span := createSpan(ctx, crm.tracer, saveProfiles)
+func (prm profileRepositoryMiddleware) Save(ctx context.Context, profiles ...things.Profile) ([]things.Profile, error) {
+	span := createSpan(ctx, prm.tracer, saveProfiles)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.Save(ctx, profiles...)
+	return prm.repo.Save(ctx, profiles...)
 }
 
-func (crm profileRepositoryMiddleware) Update(ctx context.Context, pr things.Profile) error {
-	span := createSpan(ctx, crm.tracer, updateProfile)
+func (prm profileRepositoryMiddleware) Update(ctx context.Context, pr things.Profile) error {
+	span := createSpan(ctx, prm.tracer, updateProfile)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.Update(ctx, pr)
+	return prm.repo.Update(ctx, pr)
 }
 
-func (crm profileRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (things.Profile, error) {
-	span := createSpan(ctx, crm.tracer, retrieveProfileByID)
+func (prm profileRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (things.Profile, error) {
+	span := createSpan(ctx, prm.tracer, retrieveProfileByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.RetrieveByID(ctx, id)
+	return prm.repo.RetrieveByID(ctx, id)
 }
 
-func (crm profileRepositoryMiddleware) RetrieveByGroupIDs(ctx context.Context, ids []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
-	span := createSpan(ctx, crm.tracer, retrieveProfilesByGroupIDs)
+func (prm profileRepositoryMiddleware) RetrieveByGroupIDs(ctx context.Context, ids []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+	span := createSpan(ctx, prm.tracer, retrieveProfilesByGroupIDs)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.RetrieveByGroupIDs(ctx, ids, pm)
+	return prm.repo.RetrieveByGroupIDs(ctx, ids, pm)
 }
 
-func (crm profileRepositoryMiddleware) RetrieveByThing(ctx context.Context, thID string) (things.Profile, error) {
-	span := createSpan(ctx, crm.tracer, retrieveProfileByThing)
+func (prm profileRepositoryMiddleware) RetrieveByThing(ctx context.Context, thID string) (things.Profile, error) {
+	span := createSpan(ctx, prm.tracer, retrieveProfileByThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.RetrieveByThing(ctx, thID)
+	return prm.repo.RetrieveByThing(ctx, thID)
 }
 
-func (crm profileRepositoryMiddleware) Remove(ctx context.Context, ids ...string) error {
-	span := createSpan(ctx, crm.tracer, removeProfile)
+func (prm profileRepositoryMiddleware) Remove(ctx context.Context, ids ...string) error {
+	span := createSpan(ctx, prm.tracer, removeProfile)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.Remove(ctx, ids...)
+	return prm.repo.Remove(ctx, ids...)
 }
 
-func (crm profileRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.Profile, error) {
-	span := createSpan(ctx, crm.tracer, backupAllProfiles)
+func (prm profileRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.Profile, error) {
+	span := createSpan(ctx, prm.tracer, backupAllProfiles)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.BackupAll(ctx)
+	return prm.repo.BackupAll(ctx)
 }
 
-func (grm profileRepositoryMiddleware) BackupByGroups(ctx context.Context, groupIDs []string) ([]things.Profile, error) {
-	span := createSpan(ctx, grm.tracer, backupProfilesByGroups)
+func (prm profileRepositoryMiddleware) BackupByGroups(ctx context.Context, groupIDs []string) ([]things.Profile, error) {
+	span := createSpan(ctx, prm.tracer, backupProfilesByGroups)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return grm.repo.BackupByGroups(ctx, groupIDs)
+	return prm.repo.BackupByGroups(ctx, groupIDs)
 }
 
-func (crm profileRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
-	span := createSpan(ctx, crm.tracer, retrieveAllProfiles)
+func (prm profileRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+	span := createSpan(ctx, prm.tracer, retrieveAllProfiles)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.RetrieveAll(ctx, pm)
+	return prm.repo.RetrieveAll(ctx, pm)
 }
 
 type profileCacheMiddleware struct {
@@ -131,26 +131,26 @@ func ProfileCacheMiddleware(tracer opentracing.Tracer, cache things.ProfileCache
 	}
 }
 
-func (ccm profileCacheMiddleware) SaveGroup(ctx context.Context, profileID, groupID string) error {
-	span := createSpan(ctx, ccm.tracer, saveGroupIDByProfileID)
+func (pcm profileCacheMiddleware) SaveGroup(ctx context.Context, profileID, groupID string) error {
+	span := createSpan(ctx, pcm.tracer, saveGroupIDByProfileID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return ccm.cache.SaveGroup(ctx, profileID, groupID)
+	return pcm.cache.SaveGroup(ctx, profileID, groupID)
 }
 
-func (ccm profileCacheMiddleware) ViewGroup(ctx context.Context, profileID string) (string, error) {
-	span := createSpan(ctx, ccm.tracer, retrieveGroupIDByProfileID)
+func (pcm profileCacheMiddleware) ViewGroup(ctx context.Context, profileID string) (string, error) {
+	span := createSpan(ctx, pcm.tracer, retrieveGroupIDByProfileID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return ccm.cache.ViewGroup(ctx, profileID)
+	return pcm.cache.ViewGroup(ctx, profileID)
 }
 
-func (ccm profileCacheMiddleware) RemoveGroup(ctx context.Context, profileID string) error {
-	span := createSpan(ctx, ccm.tracer, removeGroupIDByProfileID)
+func (pcm profileCacheMiddleware) RemoveGroup(ctx context.Context, profileID string) error {
+	span := createSpan(ctx, pcm.tracer, removeGroupIDByProfileID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return ccm.cache.RemoveGroup(ctx, profileID)
+	return pcm.cache.RemoveGroup(ctx, profileID)
 }
