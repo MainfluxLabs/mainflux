@@ -66,7 +66,7 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.Pag
 		}
 	}()
 
-	table := dbutil.GetDeleteTable(rpm.Format)
+	table := dbutil.GetTableName(rpm.Format)
 
 	condition := fmtCondition(rpm, table)
 	q := fmt.Sprintf("DELETE FROM %s %s", table, condition)
