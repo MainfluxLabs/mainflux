@@ -34,7 +34,7 @@ func (e *emailer) SendOrgInvite(To []string, inviteID, orgName, roleName, uiHost
 
 		Use the following URL to view the invite:
 		%s
-	`, orgName, uiInviteViewURL)
+	`, orgName, roleName, uiInviteViewURL)
 
 	return e.agent.Send(To, "", subjectOrgInvite, "", emailContent, "")
 }
