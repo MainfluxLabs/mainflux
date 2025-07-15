@@ -78,7 +78,7 @@ func GetOffsetLimitQuery(limit uint64) string {
 	return ""
 }
 
-func GetDeleteTable(format string) string {
+func GetTableName(format string) string {
 	switch format {
 	case messaging.JSONFormat:
 		return "json"
