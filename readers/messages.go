@@ -65,8 +65,8 @@ type PageMetadata struct {
 	BoolValue   bool    `json:"vb,omitempty"`
 	StringValue string  `json:"vs,omitempty"`
 	DataValue   string  `json:"vd,omitempty"`
-	From        int64 `json:"from,omitempty"`
-	To          int64 `json:"to,omitempty"`
+	From        int64   `json:"from,omitempty"`
+	To          int64   `json:"to,omitempty"`
 	Format      string  `json:"format,omitempty"`
 	Interval    string  `json:"interval,omitempty"`
 }
