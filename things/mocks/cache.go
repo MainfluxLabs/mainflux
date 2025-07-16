@@ -102,19 +102,19 @@ func NewProfileCache() things.ProfileCache {
 	}
 }
 
-func (ccm *profileCacheMock) SaveGroup(_ context.Context, profileID string, groupID string) error {
-	ccm.mu.Lock()
-	defer ccm.mu.Unlock()
+func (pcm *profileCacheMock) SaveGroup(_ context.Context, profileID string, groupID string) error {
+	pcm.mu.Lock()
+	defer pcm.mu.Unlock()
 
-	ccm.groups[profileID] = groupID
+	pcm.groups[profileID] = groupID
 	return nil
 }
 
-func (ccm *profileCacheMock) ViewGroup(_ context.Context, profileID string) (string, error) {
-	ccm.mu.Lock()
-	defer ccm.mu.Unlock()
+func (pcm *profileCacheMock) ViewGroup(_ context.Context, profileID string) (string, error) {
+	pcm.mu.Lock()
+	defer pcm.mu.Unlock()
 
-	groupID, ok := ccm.groups[profileID]
+	groupID, ok := pcm.groups[profileID]
 	if !ok {
 		return "", errors.ErrNotFound
 	}
@@ -122,11 +122,11 @@ func (ccm *profileCacheMock) ViewGroup(_ context.Context, profileID string) (str
 	return groupID, nil
 }
 
-func (ccm *profileCacheMock) RemoveGroup(_ context.Context, profileID string) error {
-	ccm.mu.Lock()
-	defer ccm.mu.Unlock()
+func (pcm *profileCacheMock) RemoveGroup(_ context.Context, profileID string) error {
+	pcm.mu.Lock()
+	defer pcm.mu.Unlock()
 
-	delete(ccm.groups, profileID)
+	delete(pcm.groups, profileID)
 	return nil
 }
 
