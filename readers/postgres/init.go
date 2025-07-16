@@ -41,6 +41,7 @@ func Connect(cfg Config) (*sqlx.DB, error) {
 
 	return db, nil
 }
+
 func migrateDB(db *sqlx.DB) error {
 	migrations := &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{
@@ -97,6 +98,7 @@ func migrateDB(db *sqlx.DB) error {
 			},
 		},
 	}
+
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)
 	return err
 }
