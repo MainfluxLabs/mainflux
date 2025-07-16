@@ -186,8 +186,8 @@ func (svc service) ViewInvite(ctx context.Context, token string, inviteID string
 		return Invite{}, err
 	}
 
-	// A specific Invite can only be retrieved by the platform Root Admin or the Invitee towards who
-	// the Invite is directed
+	// A specific Invite can only be retrieved by the platform Root Admin, the Invitee towards who
+	// the Invite is directed, or the original Inviter (sender)
 	if err := svc.isAdmin(ctx, token); err != nil {
 		if err != errors.ErrAuthorization {
 			return Invite{}, err
@@ -199,7 +199,7 @@ func (svc service) ViewInvite(ctx context.Context, token string, inviteID string
 			return Invite{}, err
 		}
 
-		if currentUser.ID != invite.InviteeID {
+		if currentUser.ID != invite.InviteeID && currentUser.ID != invite.InviterID {
 			return Invite{}, errors.ErrAuthorization
 		}
 	}
