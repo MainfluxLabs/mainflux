@@ -180,14 +180,10 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 		}
 
 		for _, m := range omp.OrgMemberships {
-			email, ok := userEmailByID[m.MemberID]
-			if !ok {
-				continue
-			}
 			om := OrgMembership{
 				MemberID:  m.MemberID,
 				OrgID:     orgID,
-				Email:     email,
+				Email:     userEmailByID[m.MemberID],
 				Role:      m.Role,
 				CreatedAt: m.CreatedAt,
 				UpdatedAt: m.UpdatedAt,
