@@ -302,7 +302,7 @@ func TestProfiles(t *testing.T) {
 			desc:     "get a list of profiles with limit greater than max",
 			token:    token,
 			offset:   offset,
-			limit:    110,
+			limit:    210,
 			err:      createError(sdk.ErrFailedFetch, http.StatusBadRequest),
 			response: nil,
 			metadata: make(map[string]interface{}),

@@ -367,7 +367,7 @@ func TestListWebhooksByGroup(t *testing.T) {
 			desc:   "get a list of webhooks by group with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/groups/%s/webhooks?offset=%d&limit=%d", ts.URL, groupID, 0, 101),
+			url:    fmt.Sprintf("%s/groups/%s/webhooks?offset=%d&limit=%d", ts.URL, groupID, 0, 201),
 			res:    nil,
 		},
 		{

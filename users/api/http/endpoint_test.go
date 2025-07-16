@@ -435,7 +435,7 @@ func TestListUsers(t *testing.T) {
 		},
 		{
 			desc:   "get list of users with limit greater than max",
-			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d", ts.URL, 0, 110),
+			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d", ts.URL, 0, 210),
 			token:  token,
 			status: http.StatusBadRequest,
 			res:    nil,

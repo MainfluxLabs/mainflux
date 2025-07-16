@@ -801,7 +801,7 @@ func TestListThings(t *testing.T) {
 			desc:   "get a list of things with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s?offset=%d&limit=%d", thingURL, 0, 110),
+			url:    fmt.Sprintf("%s?offset=%d&limit=%d", thingURL, 0, 210),
 			res:    nil,
 		},
 		{
@@ -1637,7 +1637,7 @@ func TestListThingsByProfile(t *testing.T) {
 			desc:   "get a list of things by profile with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, pr.ID, 0, 110),
+			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, pr.ID, 0, 210),
 			res:    nil,
 		},
 		{
@@ -1863,7 +1863,7 @@ func TestListThingsByOrg(t *testing.T) {
 			desc:   "get a list of things by org with limit greater than max",
 			auth:   adminToken,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, orgID, 0, 110),
+			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, orgID, 0, 210),
 			res:    nil,
 		},
 		{

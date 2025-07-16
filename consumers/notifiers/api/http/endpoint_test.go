@@ -372,7 +372,7 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			desc:   "get a list of notifiers by group with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/groups/%s/notifiers?offset=%d&limit=%d", ts.URL, groupID, 0, 101),
+			url:    fmt.Sprintf("%s/groups/%s/notifiers?offset=%d&limit=%d", ts.URL, groupID, 0, 201),
 			res:    nil,
 		},
 		{

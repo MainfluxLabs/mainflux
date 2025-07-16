@@ -548,7 +548,7 @@ func TestListProfiles(t *testing.T) {
 			desc:   "get a list of profiles with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s?offset=%d&limit=%d", profileURL, 0, 110),
+			url:    fmt.Sprintf("%s?offset=%d&limit=%d", profileURL, 0, 210),
 			res:    nil,
 		},
 		{
@@ -765,7 +765,7 @@ func TestListProfilesByOrg(t *testing.T) {
 			desc:   "get a list of profiles by org with limit greater than max",
 			auth:   adminToken,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d", profileURL, orgID, 0, 110),
+			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d", profileURL, orgID, 0, 210),
 			res:    nil,
 		},
 		{
