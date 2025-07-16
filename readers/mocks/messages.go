@@ -90,7 +90,7 @@ func (repo *messageRepositoryMock) readAll(profileID string, rpm readers.PageMet
 	}, nil
 }
 
-func (repo *messageRepositoryMock) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) error {
+func (repo *messageRepositoryMock) DeleteMessages(ctx context.Context, rpm readers.PageMetadata, table string) error {
 	repo.mutex.Lock()
 	defer repo.mutex.Unlock()
 
