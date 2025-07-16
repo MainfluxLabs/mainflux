@@ -111,7 +111,7 @@ func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token, group
 		return WebhooksPage{}, err
 	}
 
-	webhooks, err := ws.webhooks.RetrieveByGroupID(ctx, groupID, pm)
+	webhooks, err := ws.webhooks.RetrieveByGroup(ctx, groupID, pm)
 	if err != nil {
 		return WebhooksPage{}, err
 	}
@@ -125,7 +125,7 @@ func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token, thing
 		return WebhooksPage{}, err
 	}
 
-	webhooks, err := ws.webhooks.RetrieveByThingID(ctx, thingID, pm)
+	webhooks, err := ws.webhooks.RetrieveByThing(ctx, thingID, pm)
 	if err != nil {
 		return WebhooksPage{}, err
 	}
@@ -185,7 +185,7 @@ func (ws *webhooksService) Consume(message interface{}) error {
 		return errors.ErrMessage
 	}
 
-	whs, err := ws.webhooks.RetrieveByThingID(ctx, msg.Publisher, apiutil.PageMetadata{})
+	whs, err := ws.webhooks.RetrieveByThing(ctx, msg.Publisher, apiutil.PageMetadata{})
 	if err != nil {
 		return err
 	}

@@ -163,6 +163,22 @@ func listGroupsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func backupGroupsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(backupReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		backup, err := svc.BackupGroupsByOrg(ctx, req.token, req.id)
+		if err != nil {
+			return nil, err
+		}
+
+		return buildBackupResponse(backup), nil
+	}
+}
+
 func updateGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(updateGroupReq)
@@ -232,6 +248,27 @@ func buildGroupsResponse(gp things.GroupPage) groupPageRes {
 			ID:          group.ID,
 			OrgID:       group.OrgID,
 			Name:        group.Name,
+			Description: group.Description,
+			Metadata:    group.Metadata,
+			CreatedAt:   group.CreatedAt,
+			UpdatedAt:   group.UpdatedAt,
+		}
+		res.Groups = append(res.Groups, view)
+	}
+
+	return res
+}
+
+func buildBackupResponse(b things.BackupGroupsByOrg) backupGroupsByOrgRes {
+	res := backupGroupsByOrgRes{
+		Groups: []viewGroupRes{},
+	}
+
+	for _, group := range b.Groups {
+		view := viewGroupRes{
+			ID:          group.ID,
+			Name:        group.Name,
+			OrgID:       group.OrgID,
 			Description: group.Description,
 			Metadata:    group.Metadata,
 			CreatedAt:   group.CreatedAt,

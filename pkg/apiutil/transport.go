@@ -24,6 +24,7 @@ const (
 	DirKey      = "dir"
 	MetadataKey = "metadata"
 	IDKey       = "id"
+	EmailKey    = "email"
 	PayloadKey  = "payload"
 
 	NameOrder       = "name"
@@ -45,6 +46,7 @@ type PageMetadata struct {
 	Order    string                 `json:"order,omitempty"`
 	Dir      string                 `json:"dir,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Email    string                 `json:"email,omitempty"`
 	Payload  map[string]interface{} `json:"payload,omitempty"`
 }
 
@@ -184,12 +186,8 @@ func ReadLimitQuery(r *http.Request, key string, def uint64) (uint64, error) {
 		return 0, ErrInvalidQueryParams
 	}
 
-	if val < -1 || val == 0 {
+	if val <= 0 {
 		return 0, ErrInvalidQueryParams
-	}
-
-	if val == -1 {
-		val = 0
 	}
 
 	return uint64(val), nil
@@ -299,6 +297,11 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 		return PageMetadata{}, err
 	}
 
+	e, err := ReadStringQuery(r, EmailKey, "")
+	if err != nil {
+		return PageMetadata{}, err
+	}
+
 	p, err := ReadMetadataQuery(r, PayloadKey, nil)
 	if err != nil {
 		return PageMetadata{}, err
@@ -311,8 +314,43 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 		Order:    or,
 		Dir:      d,
 		Metadata: m,
+		Email:    e,
 		Payload:  p,
 	}, nil
+}
+
+func BuildPageMetadataFromBody(r *http.Request) (PageMetadata, error) {
+	if r.Body == nil || r.ContentLength == 0 {
+		return PageMetadata{
+			Offset: DefOffset,
+			Limit:  DefLimit,
+			Order:  IDOrder,
+			Dir:    DescDir,
+		}, nil
+	}
+
+	var pm PageMetadata
+	if err := json.NewDecoder(r.Body).Decode(&pm); err != nil {
+		return PageMetadata{}, errors.Wrap(ErrMalformedEntity, err)
+	}
+
+	if pm.Limit == 0 {
+		pm.Limit = DefLimit
+	}
+
+	if pm.Offset == 0 {
+		pm.Offset = DefOffset
+	}
+
+	if pm.Order == "" {
+		pm.Order = IDOrder
+	}
+
+	if pm.Dir == "" {
+		pm.Dir = DescDir
+	}
+
+	return pm, nil
 }
 
 func ValidatePageMetadata(pm PageMetadata, maxLimitSize, maxNameSize int) error {

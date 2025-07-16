@@ -73,6 +73,13 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 		opts...,
 	))
 
+	mux.Post("/users/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_users")(listUsersEndpoint(svc)),
+		decodeSearchUsers,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Put("/users", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_user")(updateUserEndpoint(svc)),
 		decodeUpdateUser,
@@ -203,6 +210,51 @@ func decodeListUsers(_ context.Context, r *http.Request) (interface{}, error) {
 		order:    or,
 		dir:      d,
 	}
+	return req, nil
+}
+
+func decodeSearchUsers(_ context.Context, r *http.Request) (interface{}, error) {
+	req := listUsersReq{
+		token:  apiutil.ExtractBearerToken(r),
+		status: users.EnabledStatusKey,
+		offset: apiutil.DefOffset,
+		limit:  apiutil.DefLimit,
+		order:  apiutil.IDOrder,
+		dir:    apiutil.DescDir,
+	}
+
+	if r.Body == nil || r.ContentLength == 0 {
+		return req, nil
+	}
+
+	var pm users.PageMetadata
+	if err := json.NewDecoder(r.Body).Decode(&pm); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	if pm.Offset > 0 {
+		req.offset = pm.Offset
+	}
+
+	if pm.Limit > 0 {
+		req.limit = pm.Limit
+	}
+
+	if pm.Order != "" {
+		req.order = pm.Order
+	}
+
+	if pm.Dir != "" {
+		req.dir = pm.Dir
+	}
+
+	if pm.Status != "" {
+		req.status = pm.Status
+	}
+
+	req.email = pm.Email
+	req.metadata = pm.Metadata
+
 	return req, nil
 }
 
@@ -358,6 +410,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrMissingUserID,
 		err == apiutil.ErrLimitSize,
 		err == apiutil.ErrOffsetSize,
+		err == apiutil.ErrInvalidOrder,
+		err == apiutil.ErrInvalidDirection,
 		err == apiutil.ErrEmailSize,
 		err == apiutil.ErrInvalidResetPass,
 		err == apiutil.ErrInvalidStatus,

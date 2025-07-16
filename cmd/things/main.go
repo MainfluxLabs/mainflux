@@ -351,10 +351,10 @@ func newService(ac protomfx.AuthServiceClient, uc protomfx.UsersServiceClient, d
 	groupCache = tracing.GroupCacheMiddleware(cacheTracer, groupCache)
 	idProvider := uuid.New()
 
-	groupMembersRepo := postgres.NewGroupMembersRepository(db)
-	groupMembersRepo = tracing.GroupMembersRepositoryMiddleware(dbTracer, groupMembersRepo)
+	groupMembershipsRepo := postgres.NewGroupMembershipsRepository(db)
+	groupMembershipsRepo = tracing.GroupMembershipsRepositoryMiddleware(dbTracer, groupMembershipsRepo)
 
-	svc := things.New(ac, uc, thingsRepo, profilesRepo, groupsRepo, groupMembersRepo, profileCache, thingCache, groupCache, idProvider)
+	svc := things.New(ac, uc, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider)
 	svc = rediscache.NewEventStoreMiddleware(svc, esClient)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(

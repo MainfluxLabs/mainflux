@@ -26,19 +26,30 @@ import (
 )
 
 const (
-	token        = "admin@example.com"
-	wrongValue   = "wrong-value"
-	contentType  = "application/json"
-	emptyValue   = ""
-	groupID      = "50e6b371-60ff-45cf-bb52-8200e7cde536"
-	prefixID     = "fe6b4e92-cc98-425e-b0aa-"
-	prefixName   = "test-notifier-"
-	notifierName = "notifier-test"
-	svcSmtp      = "smtp-notifier"
-	svcSmpp      = "smpp-notifier"
-	nameKey      = "name"
-	ascKey       = "asc"
-	descKey      = "desc"
+	token            = "admin@example.com"
+	wrongValue       = "wrong-value"
+	contentType      = "application/json"
+	emptyValue       = ""
+	groupID          = "50e6b371-60ff-45cf-bb52-8200e7cde536"
+	prefixID         = "fe6b4e92-cc98-425e-b0aa-"
+	prefixName       = "test-notifier-"
+	notifierName     = "notifier-test"
+	svcSmtp          = "smtp-notifier"
+	svcSmpp          = "smpp-notifier"
+	nameKey          = "name"
+	ascKey           = "asc"
+	descKey          = "desc"
+	n                = 101
+	maxNameSize      = 254
+	emptyJson        = "{}"
+	validData        = `{"limit":5,"offset":0}`
+	descData         = `{"limit":5,"offset":0,"dir":"desc","order":"name"}`
+	ascData          = `{"limit":5,"offset":0,"dir":"asc","order":"name"}`
+	invalidOrderData = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
+	zeroLimitData    = `{"limit":0,"offset":0}`
+	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
+	limitMaxData     = `{"limit":110,"offset":0}`
+	invalidData      = `{"limit": "invalid"}`
 )
 
 var (
@@ -49,6 +60,7 @@ var (
 	metadata        = map[string]interface{}{"test": "data"}
 	missingIDRes    = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingNotifierID.Error()})
 	missingTokenRes = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
+	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, strings.Repeat("m", maxNameSize+1))
 )
 
 func newHTTPServer(svc notifiers.Service) *httptest.Server {
@@ -294,13 +306,6 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			res:    data[0:5],
 		},
 		{
-			desc:   "get a list of notifiers by group with no limit",
-			auth:   token,
-			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/groups/%s/notifiers?limit=%d", ts.URL, groupID, -1),
-			res:    data,
-		},
-		{
 			desc:   "get a list of notifiers by group with negative offset",
 			auth:   token,
 			status: http.StatusBadRequest,
@@ -456,6 +461,163 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 		assert.ElementsMatch(t, tc.res, data.Notifiers, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, data.Notifiers))
 
+	}
+}
+
+func TestSearchNotifiersByGroup(t *testing.T) {
+	runSearchNotifiersByGroupTest(t, validEmails)
+	runSearchNotifiersByGroupTest(t, validPhones)
+}
+
+func runSearchNotifiersByGroupTest(t *testing.T, validContacts []string) {
+	t.Helper()
+	svc := newService()
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	var data []notifierRes
+	notifier := notifiers.Notifier{GroupID: groupID, Name: "test-notifier", Contacts: validContacts, Metadata: metadata}
+
+	for i := 0; i < n; i++ {
+		id := fmt.Sprintf("%s%012d", prefixID, i+1)
+		name := fmt.Sprintf("%s%012d", prefixName, i+1)
+		notifier1 := notifier
+		notifier1.ID = id
+		notifier1.Name = name
+
+		nfs, err := svc.CreateNotifiers(context.Background(), token, notifier1)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		n := nfs[0]
+		nfRes := notifierRes{
+			ID:       n.ID,
+			GroupID:  n.GroupID,
+			Name:     n.Name,
+			Contacts: n.Contacts,
+			Metadata: n.Metadata,
+		}
+		data = append(data, nfRes)
+	}
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		req    string
+		res    []notifierRes
+	}{
+		{
+			desc:   "search notifiers by group",
+			auth:   token,
+			status: http.StatusOK,
+			req:    validData,
+			res:    data[0:5],
+		},
+		{
+			desc:   "search notifiers by group ordered by name asc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    ascData,
+			res:    data[0:5],
+		},
+		{
+			desc:   "search notifiers by group ordered by name desc",
+			auth:   token,
+			status: http.StatusOK,
+			req:    descData,
+			res:    data[0:5],
+		},
+		{
+			desc:   "search notifiers by group with invalid order",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidOrderData,
+			res:    nil,
+		},
+		{
+			desc:   "search notifiers by group with zero limit",
+			auth:   token,
+			status: http.StatusOK,
+			req:    zeroLimitData,
+			res:    data[0:10],
+		},
+		{
+			desc:   "search notifiers by group with limit greater than max",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    limitMaxData,
+			res:    nil,
+		},
+		{
+			desc:   "search notifiers by group filtering by invalid name",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidNameData,
+			res:    nil,
+		},
+		{
+			desc:   "search notifiers by group with invalid dir",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidDirData,
+			res:    nil,
+		},
+		{
+			desc:   "search notifiers by group with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search notifiers by group with invalid data",
+			auth:   token,
+			status: http.StatusBadRequest,
+			req:    invalidData,
+			res:    nil,
+		},
+		{
+			desc:   "search notifiers by group with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			req:    validData,
+			res:    nil,
+		},
+		{
+			desc:   "search notifiers by group with empty JSON body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyJson,
+			res:    data[0:10],
+		},
+		{
+			desc:   "search notifiers by group with no body",
+			auth:   token,
+			status: http.StatusOK,
+			req:    emptyValue,
+			res:    data[0:10],
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.desc, func(t *testing.T) {
+			req := testRequest{
+				client: ts.Client(),
+				method: http.MethodPost,
+				url:    fmt.Sprintf("%s/groups/%s/notifiers/search", ts.URL, groupID),
+				token:  tc.auth,
+				body:   strings.NewReader(tc.req),
+			}
+
+			res, err := req.make()
+			assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
+			var body notifiersPageRes
+			err = json.NewDecoder(res.Body).Decode(&body)
+			assert.Nil(t, err, fmt.Sprintf("%s: failed decoding body: %s", tc.desc, err))
+
+			assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d, got %d", tc.desc, tc.status, res.StatusCode))
+			assert.ElementsMatch(t, tc.res, body.Notifiers, fmt.Sprintf("%s: expected response %v, got %v", tc.desc, tc.res, body.Notifiers))
+		})
 	}
 }
 

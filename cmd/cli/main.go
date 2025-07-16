@@ -23,7 +23,6 @@ func main() {
 		UsersURL:        fmt.Sprintf("%s/svcusers", defURL),
 		ReaderURL:       fmt.Sprintf("%s/reader", defURL),
 		HTTPAdapterURL:  fmt.Sprintf("%s/http", defURL),
-		BootstrapURL:    defURL,
 		CertsURL:        defURL,
 		MsgContentType:  sdk.ContentType(msgContentType),
 		TLSVerification: false,
@@ -47,8 +46,8 @@ func main() {
 	profilesCmd := cli.NewProfilesCmd()
 	webhooksCmd := cli.NewWebhooksCmd()
 	orgsCmd := cli.NewOrgsCmd()
-	groupMembersCmd := cli.NewGroupMembersCmd()
-	orgMembersCmd := cli.NewOrgMembersCmd()
+	orgMembershipsCmd := cli.NewOrgMembershipsCmd()
+	groupMembershipsCmd := cli.NewGroupMembershipsCmd()
 	messagesCmd := cli.NewMessagesCmd()
 	provisionCmd := cli.NewProvisionCmd()
 	certsCmd := cli.NewCertsCmd()
@@ -62,8 +61,8 @@ func main() {
 	rootCmd.AddCommand(profilesCmd)
 	rootCmd.AddCommand(webhooksCmd)
 	rootCmd.AddCommand(orgsCmd)
-	rootCmd.AddCommand(groupMembersCmd)
-	rootCmd.AddCommand(orgMembersCmd)
+	rootCmd.AddCommand(orgMembershipsCmd)
+	rootCmd.AddCommand(groupMembershipsCmd)
 	rootCmd.AddCommand(messagesCmd)
 	rootCmd.AddCommand(provisionCmd)
 	rootCmd.AddCommand(certsCmd)

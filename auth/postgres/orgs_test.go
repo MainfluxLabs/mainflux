@@ -290,7 +290,7 @@ func TestRetrieveByID(t *testing.T) {
 	}
 }
 
-func TestRetrieveAll(t *testing.T) {
+func TestBackupAll(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewOrgRepo(dbMiddleware)
 
@@ -329,7 +329,7 @@ func TestRetrieveAll(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		orgs, err := repo.RetrieveAll(context.Background())
+		orgs, err := repo.BackupAll(context.Background())
 		size := len(orgs)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %d got %d\n", desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
@@ -339,7 +339,7 @@ func TestRetrieveAll(t *testing.T) {
 func TestRetrieveOrgsByMember(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	repoOrg := postgres.NewOrgRepo(dbMiddleware)
-	repoMembs := postgres.NewMembersRepo(dbMiddleware)
+	repoMembs := postgres.NewOrgMembershipsRepo(dbMiddleware)
 
 	ownerID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -363,7 +363,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 		err = repoOrg.Save(context.Background(), org)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		orgMember := auth.OrgMember{
+		orgMembership := auth.OrgMembership{
 			OrgID:     orgID,
 			MemberID:  memberID,
 			Role:      auth.Editor,
@@ -371,7 +371,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 			UpdatedAt: time.Now(),
 		}
 
-		err = repoMembs.Save(context.Background(), orgMember)
+		err = repoMembs.Save(context.Background(), orgMembership)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	}
 
@@ -472,7 +472,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		page, err := repoOrg.RetrieveByMemberID(context.Background(), tc.memberID, tc.pageMetadata)
+		page, err := repoOrg.RetrieveByMember(context.Background(), tc.memberID, tc.pageMetadata)
 		size := len(page.Orgs)
 		assert.Equal(t, tc.size, uint64(size), fmt.Sprintf("%v: expected size %d got %d\n", desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))

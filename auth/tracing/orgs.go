@@ -9,18 +9,17 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 )
 
 const (
-	saveOrg                 = "save_org"
-	deleteOrg               = "delete_org"
-	updateOrg               = "update_org"
-	retrieveByID            = "retrieve_by_id"
-	retrieveByOwner         = "retrieve_by_owner"
-	retrieveOrgsByMember    = "retrieve_orgs_by_member"
-	retrieveAll             = "retrieve_all_orgs"
-	retrieveAllMembersByOrg = "retrieve_all_members_by_org"
+	saveOrg              = "save_org"
+	deleteOrg            = "delete_org"
+	updateOrg            = "update_org"
+	retrieveOrgByID      = "retrieve_org_by_id"
+	retrieveOrgsByMember = "retrieve_orgs_by_member"
+	retrieveAllOrgs      = "retrieve_all_orgs"
+	backupAllOrgs        = "backup_all_orgs"
 )
 
 var _ auth.OrgRepository = (*orgRepositoryMiddleware)(nil)
@@ -63,33 +62,33 @@ func (orm orgRepositoryMiddleware) Remove(ctx context.Context, owner, orgID stri
 }
 
 func (orm orgRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (auth.Org, error) {
-	span := createSpan(ctx, orm.tracer, retrieveByID)
+	span := createSpan(ctx, orm.tracer, retrieveOrgByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return orm.repo.RetrieveByID(ctx, id)
 }
 
-func (orm orgRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]auth.Org, error) {
-	span := createSpan(ctx, orm.tracer, retrieveAll)
+func (orm orgRepositoryMiddleware) BackupAll(ctx context.Context) ([]auth.Org, error) {
+	span := createSpan(ctx, orm.tracer, backupAllOrgs)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RetrieveAll(ctx)
+	return orm.repo.BackupAll(ctx)
 }
 
-func (orm orgRepositoryMiddleware) RetrieveByAdmin(ctx context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
-	span := createSpan(ctx, orm.tracer, retrieveAll)
+func (orm orgRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
+	span := createSpan(ctx, orm.tracer, retrieveAllOrgs)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RetrieveByAdmin(ctx, pm)
+	return orm.repo.RetrieveAll(ctx, pm)
 }
 
-func (orm orgRepositoryMiddleware) RetrieveByMemberID(ctx context.Context, memberID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
+func (orm orgRepositoryMiddleware) RetrieveByMember(ctx context.Context, memberID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
 	span := createSpan(ctx, orm.tracer, retrieveOrgsByMember)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RetrieveByMemberID(ctx, memberID, pm)
+	return orm.repo.RetrieveByMember(ctx, memberID, pm)
 }

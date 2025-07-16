@@ -11,6 +11,14 @@ import (
 	"github.com/opentracing/opentracing-go"
 )
 
+const (
+	saveNotifiers            = "save_notifiers"
+	retrieveNotifiersByGroup = "retrieve_notifiers_by_group"
+	retrieveNotifierByID     = "retrieve_notifier_by_id"
+	updateNotifier           = "update_notifier"
+	removeNotifiers          = "remove_notifiers"
+)
+
 var (
 	_ notifiers.NotifierRepository = (*notifierRepositoryMiddleware)(nil)
 )
@@ -30,23 +38,23 @@ func NotifierRepositoryMiddleware(tracer opentracing.Tracer, repo notifiers.Noti
 }
 
 func (n notifierRepositoryMiddleware) Save(ctx context.Context, nfs ...notifiers.Notifier) ([]notifiers.Notifier, error) {
-	span := createSpan(ctx, n.tracer, "save_notifiers")
+	span := createSpan(ctx, n.tracer, saveNotifiers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return n.repo.Save(ctx, nfs...)
 }
 
-func (n notifierRepositoryMiddleware) RetrieveByGroupID(ctx context.Context, groupID string, pm apiutil.PageMetadata) (notifiers.NotifiersPage, error) {
-	span := createSpan(ctx, n.tracer, "retrieve_by_group_id")
+func (n notifierRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (notifiers.NotifiersPage, error) {
+	span := createSpan(ctx, n.tracer, retrieveNotifiersByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return n.repo.RetrieveByGroupID(ctx, groupID, pm)
+	return n.repo.RetrieveByGroup(ctx, groupID, pm)
 }
 
 func (n notifierRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (notifiers.Notifier, error) {
-	span := createSpan(ctx, n.tracer, "retrieve_notifier_by_id")
+	span := createSpan(ctx, n.tracer, retrieveNotifierByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -54,7 +62,7 @@ func (n notifierRepositoryMiddleware) RetrieveByID(ctx context.Context, id strin
 }
 
 func (n notifierRepositoryMiddleware) Update(ctx context.Context, ntf notifiers.Notifier) error {
-	span := createSpan(ctx, n.tracer, "update_notifier")
+	span := createSpan(ctx, n.tracer, updateNotifier)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -62,7 +70,7 @@ func (n notifierRepositoryMiddleware) Update(ctx context.Context, ntf notifiers.
 }
 
 func (n notifierRepositoryMiddleware) Remove(ctx context.Context, ids ...string) error {
-	span := createSpan(ctx, n.tracer, "remove_notifiers")
+	span := createSpan(ctx, n.tracer, removeNotifiers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

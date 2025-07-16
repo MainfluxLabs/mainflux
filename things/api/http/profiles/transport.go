@@ -68,6 +68,27 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		opts...,
 	))
 
+	mux.Post("/profiles/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_profiles")(listProfilesEndpoint(svc)),
+		decodeSearch,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/groups/:id/profiles/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_profiles_by_group")(listProfilesByGroupEndpoint(svc)),
+		decodeSearchByGroup,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/orgs/:id/profiles/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_profiles_by_org")(listProfilesByOrgEndpoint(svc)),
+		decodeSearchByOrg,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Put("/profiles/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_profile")(updateProfileEndpoint(svc)),
 		decodeUpdateProfile,
@@ -189,6 +210,50 @@ func decodeListByGroup(_ context.Context, r *http.Request) (interface{}, error) 
 
 func decodeListByOrg(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listByOrgReq{
+		id:           bone.GetValue(r, apiutil.IDKey),
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm,
+	}
+
+	return req, nil
+}
+
+func decodeSearch(_ context.Context, r *http.Request) (interface{}, error) {
+	pm, err := apiutil.BuildPageMetadataFromBody(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listReq{
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm,
+	}
+
+	return req, nil
+}
+
+func decodeSearchByGroup(_ context.Context, r *http.Request) (interface{}, error) {
+	pm, err := apiutil.BuildPageMetadataFromBody(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listByGroupReq{
+		id:           bone.GetValue(r, apiutil.IDKey),
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm,
+	}
+
+	return req, nil
+}
+
+func decodeSearchByOrg(_ context.Context, r *http.Request) (interface{}, error) {
+	pm, err := apiutil.BuildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
 	}

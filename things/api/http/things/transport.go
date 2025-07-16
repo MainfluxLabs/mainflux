@@ -28,7 +28,7 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
 
-	mux.Post("/groups/:id/things", kithttp.NewServer(
+	mux.Post("/profiles/:id/things", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_things")(createThingsEndpoint(svc)),
 		decodeCreateThings,
 		encodeResponse,
@@ -79,7 +79,28 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 
 	mux.Post("/things/search", kithttp.NewServer(
 		kitot.TraceServer(tracer, "search_things")(listThingsEndpoint(svc)),
-		decodeListByMetadata,
+		decodeSearch,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/profiles/:id/things/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_things_by_profile")(listThingsByProfileEndpoint(svc)),
+		decodeSearchByProfile,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/groups/:id/things/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_things_by_group")(listThingsByGroupEndpoint(svc)),
+		decodeSearchByGroup,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/orgs/:id/things/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_things_by_org")(listThingsByOrgEndpoint(svc)),
+		decodeSearchByOrg,
 		encodeResponse,
 		opts...,
 	))
@@ -152,9 +173,10 @@ func decodeCreateThings(_ context.Context, r *http.Request) (interface{}, error)
 	}
 
 	req := createThingsReq{
-		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, apiutil.IDKey),
+		token:     apiutil.ExtractBearerToken(r),
+		profileID: bone.GetValue(r, apiutil.IDKey),
 	}
+
 	if err := json.NewDecoder(r.Body).Decode(&req.Things); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
@@ -225,15 +247,6 @@ func decodeList(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeListByMetadata(_ context.Context, r *http.Request) (interface{}, error) {
-	req := listReq{token: apiutil.ExtractBearerToken(r)}
-	if err := json.NewDecoder(r.Body).Decode(&req.pageMetadata); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
 func decodeListByProfile(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
@@ -266,6 +279,65 @@ func decodeListByGroup(_ context.Context, r *http.Request) (interface{}, error) 
 
 func decodeListByOrg(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listByOrgReq{
+		id:           bone.GetValue(r, apiutil.IDKey),
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm,
+	}
+
+	return req, nil
+}
+
+func decodeSearch(_ context.Context, r *http.Request) (interface{}, error) {
+	pm, err := apiutil.BuildPageMetadataFromBody(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listReq{
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm,
+	}
+
+	return req, nil
+}
+
+func decodeSearchByProfile(_ context.Context, r *http.Request) (interface{}, error) {
+	pm, err := apiutil.BuildPageMetadataFromBody(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listByProfileReq{
+		id:           bone.GetValue(r, apiutil.IDKey),
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm,
+	}
+
+	return req, nil
+}
+
+func decodeSearchByGroup(_ context.Context, r *http.Request) (interface{}, error) {
+	pm, err := apiutil.BuildPageMetadataFromBody(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listByGroupReq{
+		id:           bone.GetValue(r, apiutil.IDKey),
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm,
+	}
+
+	return req, nil
+}
+
+func decodeSearchByOrg(_ context.Context, r *http.Request) (interface{}, error) {
+	pm, err := apiutil.BuildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
 	}

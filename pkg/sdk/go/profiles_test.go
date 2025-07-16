@@ -348,15 +348,15 @@ func TestViewProfileByThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	pr := sdk.Profile{Name: name}
-	pid, err := mainfluxSDK.CreateProfile(pr, grID, token)
+	prID, err := mainfluxSDK.CreateProfile(pr, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	th := sdk.Thing{Name: name, ProfileID: pid}
-	tid, err := mainfluxSDK.CreateThing(th, grID, token)
+	th := sdk.Thing{Name: name, ProfileID: prID}
+	thID, err := mainfluxSDK.CreateThing(th, prID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	resProfile := sdk.Profile{
-		ID:      pid,
+		ID:      prID,
 		GroupID: grID,
 		Name:    name,
 	}
@@ -370,21 +370,21 @@ func TestViewProfileByThing(t *testing.T) {
 	}{
 		{
 			desc:     "view profile by thing",
-			thing:    tid,
+			thing:    thID,
 			token:    token,
 			err:      nil,
 			response: resProfile,
 		},
 		{
 			desc:     "view profile by thing with invalid token",
-			thing:    tid,
+			thing:    thID,
 			token:    wrongValue,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: sdk.Profile{},
 		},
 		{
 			desc:     "view profile by thing with empty token",
-			thing:    tid,
+			thing:    thID,
 			token:    emptyValue,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: sdk.Profile{},
