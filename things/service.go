@@ -136,6 +136,9 @@ type Service interface {
 	// BackupProfilesByOrg retrieves all profiles for given org ID.
 	BackupProfilesByOrg(ctx context.Context, token string, orgID string) (ProfilesBackup, error)
 
+	// BackupProfilesByGroup retrieves all profiles for given group ID.
+	BackupProfilesByGroup(ctx context.Context, token string, groupID string) (ProfilesBackup, error)
+
 	// Restore adds things, profiles, groups, and groups memberships from a backup. Only accessible by admin.
 	Restore(ctx context.Context, token string, backup Backup) error
 
@@ -815,6 +818,21 @@ func (ts *thingsService) BackupProfilesByOrg(ctx context.Context, token string, 
 	}
 
 	profiles, err := ts.profiles.BackupByGroups(ctx, grIDs)
+	if err != nil {
+		return ProfilesBackup{}, err
+	}
+
+	return ProfilesBackup{
+		Profiles: profiles,
+	}, nil
+}
+
+func (ts *thingsService) BackupProfilesByGroup(ctx context.Context, token string, groupID string) (ProfilesBackup, error) {
+	if err := ts.canAccessGroup(ctx, token, groupID, Owner); err != nil {
+		return ProfilesBackup{}, err
+	}
+
+	profiles, err := ts.profiles.BackupByGroups(ctx, []string{groupID})
 	if err != nil {
 		return ProfilesBackup{}, err
 	}

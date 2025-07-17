@@ -96,6 +96,13 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		opts...,
 	))
 
+	mux.Get("/groups/:id/profiles/backup", kithttp.NewServer(
+		kitot.TraceServer(tracer, "backup_profiles_by_group")(backupProfilesByGroupEndpoint(svc)),
+		decodeBackup,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Put("/profiles/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_profile")(updateProfileEndpoint(svc)),
 		decodeUpdateProfile,
