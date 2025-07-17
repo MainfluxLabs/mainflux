@@ -21,6 +21,14 @@ const (
 	GreaterThanKey = "gt"
 	// GreaterThanEqualKey represents the greater-than-or-equal comparison operator key.
 	GreaterThanEqualKey = "ge"
+	// AggregationMin represents the minimum aggregation key.
+	AggregationMin = "min"
+	// AggregationMax represents the maximum aggregation key.
+	AggregationMax = "max"
+	// AggregationAvg represents the average aggregation key.
+	AggregationAvg = "avg"
+	// AggregationCount represents the count aggregation key.
+	AggregationCount = "count"
 )
 
 // ErrReadMessages indicates failure occurred while reading messages from database.
@@ -44,12 +52,19 @@ type MessageRepository interface {
 // Message represents any message format.
 type Message interface{}
 
+type Aggregation struct {
+	Field string      `json:"field"`
+	Value interface{} `json:"value"`
+	Count uint64      `json:"count, omitempty"`
+}
+
 // MessagesPage contains page related metadata as well as list of messages that
 // belong to this page.
 type MessagesPage struct {
 	PageMetadata
-	Total    uint64
-	Messages []Message
+	Total       uint64
+	Messages    []Message
+	Aggregation Aggregation `json:"aggregation,omitempty"`
 }
 
 // PageMetadata represents the parameters used to create database queries
@@ -68,7 +83,9 @@ type PageMetadata struct {
 	From        int64   `json:"from,omitempty"`
 	To          int64   `json:"to,omitempty"`
 	Format      string  `json:"format,omitempty"`
-	Interval    string  `json:"interval,omitempty"`
+	AggInterval string  `json:"agg_interval,omitempty"`
+	AggType     string  `json:"agg_type,omitempty"`
+	AggField    string  `json:"agg_field,omitempty"`
 }
 
 // ParseValueComparator convert comparison operator keys into mathematic anotation
