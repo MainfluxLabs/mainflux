@@ -56,7 +56,7 @@ const (
 	invalidOrderData = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
 	zeroLimitData    = `{"limit":0,"offset":0}`
 	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
-	limitMaxData     = `{"limit":210,"offset":0}`
+	invalidLimitData = `{"limit":210,"offset":0}`
 	invalidData      = `{"limit": "invalid"}`
 )
 
@@ -944,7 +944,7 @@ func TestSearchProfiles(t *testing.T) {
 			desc:   "search profiles with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			req:    limitMaxData,
+			req:    invalidLimitData,
 			res:    nil,
 		},
 		{
@@ -1091,7 +1091,7 @@ func TestSearchProfilesByGroup(t *testing.T) {
 			desc:   "search profiles by group with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			req:    limitMaxData,
+			req:    invalidLimitData,
 			res:    nil,
 		},
 		{
@@ -1238,7 +1238,7 @@ func TestSearchProfilesByOrg(t *testing.T) {
 			desc:   "search profiles by org with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			req:    limitMaxData,
+			req:    invalidLimitData,
 			res:    nil,
 		},
 		{
