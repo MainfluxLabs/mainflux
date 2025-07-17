@@ -154,22 +154,23 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 		return OrgMembershipsPage{}, err
 	}
 
-	omp, err := svc.memberships.RetrieveByOrg(ctx, orgID, pm)
+	omp, err := svc.memberships.BackupByOrg(ctx, orgID)
 	if err != nil {
 		return OrgMembershipsPage{}, errors.Wrap(ErrRetrieveMembershipsByOrg, err)
 	}
 
 	var oms []OrgMembership
 	var page *protomfx.UsersRes
-	if len(omp.OrgMemberships) > 0 {
+	var total uint64
+	if len(omp) > 0 {
 		var memberIDs []string
 		var roleByMemberID = make(map[string]string)
-		for _, m := range omp.OrgMemberships {
+		for _, m := range omp {
 			roleByMemberID[m.MemberID] = m.Role
 			memberIDs = append(memberIDs, m.MemberID)
 		}
 
-		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs, Email: pm.Email, Order: pm.Order, Dir: pm.Dir}
+		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs, Email: pm.Email, Order: pm.Order, Dir: pm.Dir, Limit: pm.Limit, Offset: pm.Offset}
 		page, err = svc.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
 			return OrgMembershipsPage{}, err
@@ -183,15 +184,17 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 			}
 			oms = append(oms, om)
 		}
+
+		total = page.Total
 	}
 
 	mpg := OrgMembershipsPage{
 		OrgMemberships: oms,
 		PageMetadata: apiutil.PageMetadata{
-			Total:  omp.Total,
-			Offset: omp.Offset,
-			Limit:  omp.Limit,
-			Email:  omp.Email,
+			Total:  total,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+			Email:  pm.Email,
 		},
 	}
 

@@ -99,21 +99,22 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 		return GroupMembershipsPage{}, err
 	}
 
-	gmp, err := ts.groupMemberships.RetrieveByGroup(ctx, groupID, pm)
+	gmp, err := ts.groupMemberships.BackupByGroup(ctx, groupID)
 	if err != nil {
 		return GroupMembershipsPage{}, err
 	}
 
 	var memberIDs []string
 	roles := make(map[string]string)
-	for _, gm := range gmp.GroupMemberships {
+	for _, gm := range gmp {
 		memberIDs = append(memberIDs, gm.MemberID)
 		roles[gm.MemberID] = gm.Role
 	}
 
 	var gms []GroupMembership
-	if len(gmp.GroupMemberships) > 0 {
-		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs, Email: pm.Email, Order: pm.Order, Dir: pm.Dir}
+	var total uint64
+	if len(gmp) > 0 {
+		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs, Email: pm.Email, Order: pm.Order, Dir: pm.Dir, Limit: pm.Limit, Offset: pm.Offset}
 		up, err := ts.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
 			return GroupMembershipsPage{}, err
@@ -133,14 +134,15 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 
 			gms = append(gms, gm)
 		}
+		total = up.Total
 	}
 
 	page := GroupMembershipsPage{
 		GroupMemberships: gms,
 		PageMetadata: apiutil.PageMetadata{
-			Total:  gmp.Total,
-			Offset: gmp.Offset,
-			Limit:  gmp.Limit,
+			Total:  total,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
 		},
 	}
 

@@ -52,7 +52,7 @@ func (clent grpcClient) GetUsersByIDs(ctx context.Context, req *protomfx.UsersBy
 	ctx, close := context.WithTimeout(ctx, clent.timeout)
 	defer close()
 
-	res, err := clent.getUsersByIDs(ctx, getUsersByIDsReq{ids: req.GetIds(), email: req.GetEmail(), order: req.GetOrder(), dir: req.GetDir()})
+	res, err := clent.getUsersByIDs(ctx, getUsersByIDsReq{ids: req.GetIds(), email: req.GetEmail(), order: req.GetOrder(), dir: req.GetDir(), limit: req.GetLimit(), offset: req.GetOffset()})
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (clent grpcClient) GetUsersByEmails(ctx context.Context, req *protomfx.User
 
 func encodeGetUsersByIDsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(getUsersByIDsReq)
-	return &protomfx.UsersByIDsReq{Ids: req.ids, Email: req.email, Order: req.order, Dir: req.dir}, nil
+	return &protomfx.UsersByIDsReq{Ids: req.ids, Email: req.email, Order: req.order, Dir: req.dir, Limit: req.limit, Offset: req.offset}, nil
 }
 
 func encodeGetUsersByEmailsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
