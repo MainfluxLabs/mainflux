@@ -108,6 +108,20 @@ func (grm *groupRepositoryMock) BackupAll(_ context.Context) ([]things.Group, er
 	return items, nil
 }
 
+func (grm *groupRepositoryMock) BackupByOrg(_ context.Context, orgID string) ([]things.Group, error) {
+	grm.mu.Lock()
+	defer grm.mu.Unlock()
+
+	var items []things.Group
+	for _, g := range grm.groups {
+		if g.OrgID == orgID {
+			items = append(items, g)
+		}
+	}
+
+	return items, nil
+}
+
 func (grm *groupRepositoryMock) RetrieveIDsByOrgMembership(ctx context.Context, orgID, memberID string) ([]string, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()

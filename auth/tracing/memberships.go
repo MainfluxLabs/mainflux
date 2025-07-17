@@ -68,12 +68,12 @@ func (orm orgMembershipsRepositoryMiddleware) RetrieveRole(ctx context.Context, 
 	return orm.repo.RetrieveRole(ctx, orgID, memberID)
 }
 
-func (orm orgMembershipsRepositoryMiddleware) RetrieveByOrgID(ctx context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembershipsPage, error) {
+func (orm orgMembershipsRepositoryMiddleware) RetrieveByOrg(ctx context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembershipsPage, error) {
 	span := createSpan(ctx, orm.tracer, retrieveOrgMemberships)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return orm.repo.RetrieveByOrgID(ctx, orgID, pm)
+	return orm.repo.RetrieveByOrg(ctx, orgID, pm)
 }
 
 func (orm orgMembershipsRepositoryMiddleware) BackupAll(ctx context.Context) ([]auth.OrgMembership, error) {

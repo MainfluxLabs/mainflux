@@ -61,7 +61,7 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 		encodeResponse,
 		opts...,
 	))
-	mux.Delete("/messages/:publisherID", kithttp.NewServer(
+	mux.Delete("/messages", kithttp.NewServer(
 		deleteMessagesEndpoint(svc),
 		decodeDeleteMessages,
 		encodeResponse,
@@ -137,12 +137,12 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 		return nil, err
 	}
 
-	from, err := apiutil.ReadFloatQuery(r, fromKey, 0)
+	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	to, err := apiutil.ReadFloatQuery(r, toKey, 0)
+	to, err := apiutil.ReadIntQuery(r, toKey, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -196,14 +196,12 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 }
 
 func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, error) {
-	publisherID := bone.GetValue(r, publisherID)
-
-	from, err := apiutil.ReadFloatQuery(r, fromKey, 0)
+	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	to, err := apiutil.ReadFloatQuery(r, toKey, 0)
+	to, err := apiutil.ReadIntQuery(r, toKey, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -212,9 +210,8 @@ func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, erro
 		token: apiutil.ExtractBearerToken(r),
 		key:   apiutil.ExtractThingKey(r),
 		pageMeta: readers.PageMetadata{
-			Publisher: publisherID,
-			From:      from,
-			To:        to,
+			From: from,
+			To:   to,
 		},
 	}
 

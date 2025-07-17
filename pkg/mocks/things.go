@@ -118,7 +118,15 @@ func (svc *mainfluxThings) Backup(context.Context, string) (things.Backup, error
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) BackupGroupsByOrg(context.Context, string, string) (things.BackupGroupsByOrg, error) {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) BackupGroupMemberships(context.Context, string, string) (things.BackupGroupMemberships, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) BackupProfilesByOrg(context.Context, string, string) (things.ProfilesBackup, error) {
 	panic("not implemented")
 }
 

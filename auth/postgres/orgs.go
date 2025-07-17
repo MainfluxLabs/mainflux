@@ -197,7 +197,7 @@ func (or orgRepository) BackupAll(ctx context.Context) ([]auth.Org, error) {
 	return orgs, nil
 }
 
-func (or orgRepository) RetrieveByMemberID(ctx context.Context, memberID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
+func (or orgRepository) RetrieveByMember(ctx context.Context, memberID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	meta, mq, err := dbutil.GetMetadataQuery(pm.Metadata)

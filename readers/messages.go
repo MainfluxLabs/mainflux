@@ -38,7 +38,7 @@ type MessageRepository interface {
 	Backup(rpm PageMetadata) (MessagesPage, error)
 
 	// Deletes messages for a specific publisher within a time range.
-	DeleteMessages(ctx context.Context, rpm PageMetadata) error
+	DeleteMessages(ctx context.Context, rpm PageMetadata, table string) error
 }
 
 // Message represents any message format.
@@ -72,8 +72,8 @@ type PageMetadata struct {
 	BoolValue   bool    `json:"vb,omitempty"`
 	StringValue string  `json:"vs,omitempty"`
 	DataValue   string  `json:"vd,omitempty"`
-	From        float64 `json:"from,omitempty"`
-	To          float64 `json:"to,omitempty"`
+	From        int64   `json:"from,omitempty"`
+	To          int64   `json:"to,omitempty"`
 	Format      string  `json:"format,omitempty"`
 	AggInterval string  `json:"agg_interval,omitempty"`
 	AggType     string  `json:"agg_type,omitempty"`

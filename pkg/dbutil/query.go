@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
 var errCreateMetadataQuery = errors.New("failed to create query for metadata")
@@ -86,6 +87,17 @@ func GetOffsetLimitQuery(limit uint64) string {
 	}
 
 	return ""
+}
+
+func GetTableName(format string) string {
+	switch format {
+	case messaging.JSONContentType:
+		return "json"
+	case messaging.SenMLContentType:
+		return "messages"
+	default:
+		return "messages"
+	}
 }
 
 func Total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {

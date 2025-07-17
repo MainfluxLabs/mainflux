@@ -8,7 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 	retrieveThingByID        = "retrieve_thing_by_id"
 	retrieveThingByKey       = "retrieve_thing_by_key"
 	retrieveThingsByProfile  = "retrieve_things_by_profile"
-	retrieveThingsByGroupIDs = "retrieve_things_by_group_ids"
+	retrieveThingsByGroups   = "retrieve_things_by_groups"
 	removeThing              = "remove_thing"
 	retrieveThingIDByKey     = "retrieve_id_by_key"
 	retrieveAllThings        = "retrieve_all_things"
@@ -88,12 +88,12 @@ func (trm thingRepositoryMiddleware) RetrieveByKey(ctx context.Context, key stri
 	return trm.repo.RetrieveByKey(ctx, key)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveByGroupIDs(ctx context.Context, ids []string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
-	span := createSpan(ctx, trm.tracer, retrieveThingsByGroupIDs)
+func (trm thingRepositoryMiddleware) RetrieveByGroups(ctx context.Context, ids []string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+	span := createSpan(ctx, trm.tracer, retrieveThingsByGroups)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.RetrieveByGroupIDs(ctx, ids, pm)
+	return trm.repo.RetrieveByGroups(ctx, ids, pm)
 }
 
 func (trm thingRepositoryMiddleware) RetrieveByProfile(ctx context.Context, chID string, pm apiutil.PageMetadata) (things.ThingsPage, error) {

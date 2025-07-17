@@ -52,7 +52,7 @@ func (tr postgresRepository) Backup(rpm readers.PageMetadata) (readers.MessagesP
 	return tr.readAll(rpm)
 }
 
-func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) error {
+func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata, table string) error {
 	tx, err := tr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(errors.ErrSaveMessages, err)
@@ -71,28 +71,24 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.Pag
 		}
 	}()
 
-	tables := []string{defTable, jsonTable}
-	for _, table := range tables {
+	condition := fmtCondition(rpm, table)
+	q := fmt.Sprintf("DELETE FROM %s %s", table, condition)
+	params := tr.buildDeleteQueryParams(rpm)
 
-		condition := fmtCondition(rpm, table)
-		q := fmt.Sprintf("DELETE FROM %s %s", table, condition)
-		params := tr.buildDeleteQueryParams(rpm)
-
-		_, err := tx.NamedExecContext(ctx, q, params)
-		if err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.UndefinedTable:
-					return errors.Wrap(errors.ErrDeleteMessages, err)
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrDeleteMessages, errInvalidMessage)
-				default:
-					return errors.Wrap(errors.ErrDeleteMessages, err)
-				}
+	_, err = tx.NamedExecContext(ctx, q, params)
+	if err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.UndefinedTable:
+				return errors.Wrap(errors.ErrDeleteMessages, err)
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(errors.ErrDeleteMessages, errInvalidMessage)
+			default:
+				return errors.Wrap(errors.ErrDeleteMessages, err)
 			}
-			return errors.Wrap(errors.ErrDeleteMessages, err)
 		}
+		return errors.Wrap(errors.ErrDeleteMessages, err)
 	}
 
 	return nil

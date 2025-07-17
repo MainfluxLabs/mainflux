@@ -53,8 +53,8 @@ type OrgMembershipsRepository interface {
 	// RetrieveRole retrieves role of membership specified by memberID and orgID.
 	RetrieveRole(ctx context.Context, memberID, orgID string) (string, error)
 
-	// RetrieveByOrgID retrieves org memberships identified by orgID.
-	RetrieveByOrgID(ctx context.Context, orgID string, pm apiutil.PageMetadata) (OrgMembershipsPage, error)
+	// RetrieveByOrg retrieves org memberships identified by orgID.
+	RetrieveByOrg(ctx context.Context, orgID string, pm apiutil.PageMetadata) (OrgMembershipsPage, error)
 
 	// BackupAll retrieves all memberships.
 	BackupAll(ctx context.Context) ([]OrgMembership, error)
@@ -154,7 +154,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 		return OrgMembershipsPage{}, err
 	}
 
-	omp, err := svc.memberships.RetrieveByOrgID(ctx, orgID, pm)
+	omp, err := svc.memberships.RetrieveByOrg(ctx, orgID, pm)
 	if err != nil {
 		return OrgMembershipsPage{}, errors.Wrap(ErrRetrieveMembershipsByOrg, err)
 	}
@@ -276,13 +276,17 @@ func (svc service) canRemoveMemberships(ctx context.Context, token, orgID string
 }
 
 func (svc service) BackupOrgMemberships(ctx context.Context, token string, orgID string) (BackupOrgMemberships, error) {
-	orgMembers, err := svc.memberships.BackupByOrg(ctx, orgID)
+	if err := svc.canAccessOrg(ctx, token, orgID, Owner); err != nil {
+		return BackupOrgMemberships{}, err
+	}
+
+	memberships, err := svc.memberships.BackupByOrg(ctx, orgID)
 	if err != nil {
 		return BackupOrgMemberships{}, err
 	}
 
 	var memberIDs []string
-	for _, gm := range orgMembers {
+	for _, gm := range memberships {
 		memberIDs = append(memberIDs, gm.MemberID)
 	}
 
@@ -296,11 +300,11 @@ func (svc service) BackupOrgMemberships(ctx context.Context, token string, orgID
 		emailMap[user.Id] = user.Email
 	}
 
-	for i := range orgMembers {
-		orgMembers[i].Email = emailMap[orgMembers[i].MemberID]
+	for i := range memberships {
+		memberships[i].Email = emailMap[memberships[i].MemberID]
 	}
 
 	return BackupOrgMemberships{
-		OrgMemberships: orgMembers,
+		OrgMemberships: memberships,
 	}, nil
 }
