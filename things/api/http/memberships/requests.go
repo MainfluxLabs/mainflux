@@ -9,7 +9,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
-const maxLimitSize = 100
+const maxLimitSize = 200
 
 type listGroupMembershipsReq struct {
 	token        string
