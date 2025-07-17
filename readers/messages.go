@@ -21,6 +21,14 @@ const (
 	GreaterThanKey = "gt"
 	// GreaterThanEqualKey represents the greater-than-or-equal comparison operator key.
 	GreaterThanEqualKey = "ge"
+	// AggregationMin represents the minimum aggregation key.
+	AggregationMin = "min"
+	// AggregationMax represents the maximum aggregation key.
+	AggregationMax = "max"
+	// AggregationAvg represents the average aggregation key.
+	AggregationAvg = "avg"
+	// AggregationCount represents the count aggregation key.
+	AggregationCount = "count"
 )
 
 // ErrReadMessages indicates failure occurred while reading messages from database.

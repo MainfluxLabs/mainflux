@@ -18,13 +18,8 @@ import (
 )
 
 const (
-	defTable         = "messages"
-	jsonTable        = "json"
-	AggregationNone  = ""
-	AggregationMin   = "min"
-	AggregationMax   = "max"
-	AggregationAvg   = "avg"
-	AggregationCount = "count"
+	defTable  = "messages"
+	jsonTable = "json"
 )
 
 var _ readers.MessageRepository = (*postgresRepository)(nil)
@@ -217,7 +212,7 @@ func (tr postgresRepository) readAggregation(rpm readers.PageMetadata, format, o
 	var count uint64
 
 	if rows.Next() {
-		if aggregationType == AggregationCount {
+		if aggregationType == readers.AggregationCount {
 			if err := rows.Scan(&count, &count); err != nil {
 				return readers.Aggregation{}, errors.Wrap(readers.ErrReadMessages, err)
 			}
@@ -307,8 +302,8 @@ func (tr postgresRepository) buildCountQuery(rpm readers.PageMetadata, format, o
 }
 
 func (tr postgresRepository) buildAggregationQuery(rpm readers.PageMetadata, format, order string) string {
-	aggregateField := tr.getAggregateField(rpm, format)
-	aggFunc := tr.buildAggregationFunction(rpm.AggType, aggregateField)
+	aggField := tr.getAggregateField(rpm, format)
+	aggFunc := tr.buildAggregationFunction(rpm.AggType, aggField)
 	subQuery := tr.buildSubQuery(rpm, format, order)
 
 	return fmt.Sprintf(`SELECT %s as result, COUNT(*) as count FROM (%s) as paginated_results;`, aggFunc, subQuery)
@@ -353,13 +348,13 @@ func (tr postgresRepository) buildAggregationFunction(aggregationType, aggregate
 	var aggFunc string
 
 	switch aggregationType {
-	case AggregationMin:
+	case readers.AggregationMin:
 		aggFunc = fmt.Sprintf("MIN(%s)", aggregateField)
-	case AggregationMax:
+	case readers.AggregationMax:
 		aggFunc = fmt.Sprintf("MAX(%s)", aggregateField)
-	case AggregationAvg:
+	case readers.AggregationAvg:
 		aggFunc = fmt.Sprintf("AVG(%s)", aggregateField)
-	case AggregationCount:
+	case readers.AggregationCount:
 		aggFunc = "COUNT(*)"
 	}
 

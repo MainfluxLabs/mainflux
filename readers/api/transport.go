@@ -32,7 +32,7 @@ const (
 	boolValueKey           = "vb"
 	comparatorKey          = "comparator"
 	fromKey                = "from"
-	intervalKey            = "agg_interval"
+	aggIntervalKey         = "agg_interval"
 	toKey                  = "to"
 	defFormat              = "messages"
 	aggTypeKey             = "agg_type"
@@ -147,7 +147,7 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 		return nil, err
 	}
 
-	i, err := apiutil.ReadStringQuery(r, intervalKey, "")
+	i, err := apiutil.ReadStringQuery(r, aggIntervalKey, "")
 	if err != nil {
 		return nil, err
 	}
