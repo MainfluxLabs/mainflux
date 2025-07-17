@@ -163,9 +163,8 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 	var page *protomfx.UsersRes
 	if len(omp.OrgMemberships) > 0 {
 		var memberIDs []string
-		var roleByMemberID = make(map[string]string)
+
 		for _, m := range omp.OrgMemberships {
-			roleByMemberID[m.MemberID] = m.Role
 			memberIDs = append(memberIDs, m.MemberID)
 		}
 
@@ -175,11 +174,24 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 			return OrgMembershipsPage{}, err
 		}
 
-		for _, user := range page.Users {
+		userEmailByID := make(map[string]string, len(page.Users))
+		for _, u := range page.Users {
+			userEmailByID[u.Id] = u.Email
+		}
+
+		for _, m := range omp.OrgMemberships {
+			email, ok := userEmailByID[m.MemberID]
+			if !ok {
+				continue
+			}
+
 			om := OrgMembership{
-				MemberID: user.Id,
-				Email:    user.Email,
-				Role:     roleByMemberID[user.Id],
+				MemberID:  m.MemberID,
+				OrgID:     orgID,
+				Email:     email,
+				Role:      m.Role,
+				CreatedAt: m.CreatedAt,
+				UpdatedAt: m.UpdatedAt,
 			}
 			oms = append(oms, om)
 		}

@@ -126,9 +126,12 @@ func buildOrgMembershipsResponse(omp auth.OrgMembershipsPage) orgMembershipPageR
 
 	for _, om := range omp.OrgMemberships {
 		m := viewOrgMembershipRes{
-			MemberID: om.MemberID,
-			Email:    om.Email,
-			Role:     om.Role,
+			MemberID:  om.MemberID,
+			OrgID:     om.OrgID,
+			Email:     om.Email,
+			Role:      om.Role,
+			CreatedAt: om.CreatedAt,
+			UpdatedAt: om.UpdatedAt,
 		}
 		res.OrgMemberships = append(res.OrgMemberships, m)
 	}
@@ -138,10 +141,10 @@ func buildOrgMembershipsResponse(omp auth.OrgMembershipsPage) orgMembershipPageR
 
 func buildBackupResponse(b auth.BackupOrgMemberships) backupOrgMembershipsRes {
 	res := backupOrgMembershipsRes{
-		OrgMemberships: []viewOrgMembershipsRes{},
+		OrgMemberships: []viewOrgMembershipRes{},
 	}
 	for _, member := range b.OrgMemberships {
-		view := viewOrgMembershipsRes{
+		view := viewOrgMembershipRes{
 			MemberID:  member.MemberID,
 			OrgID:     member.OrgID,
 			Email:     member.Email,

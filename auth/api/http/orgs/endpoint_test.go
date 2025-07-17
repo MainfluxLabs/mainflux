@@ -791,7 +791,7 @@ func TestBackup(t *testing.T) {
 		},
 	}
 
-	m := []viewOrgMemberships{
+	m := []viewOrgMembership{
 		{
 			MemberID: id,
 			OrgID:    o.ID,
@@ -897,7 +897,7 @@ func TestRestore(t *testing.T) {
 		},
 	}
 
-	m := []viewOrgMemberships{
+	m := []viewOrgMembership{
 		{
 			MemberID: viewerID,
 			OrgID:    orgID,
@@ -999,12 +999,12 @@ type pageRes struct {
 	Name   string `json:"name"`
 }
 
-type viewOrgMemberships struct {
+type viewOrgMembership struct {
 	MemberID string `json:"member_id"`
 	OrgID    string `json:"org_id"`
 	Role     string `json:"role"`
 }
 type backup struct {
-	Orgs           []orgRes             `json:"orgs"`
-	OrgMemberships []viewOrgMemberships `json:"org_memberships"`
+	Orgs           []orgRes            `json:"orgs"`
+	OrgMemberships []viewOrgMembership `json:"org_memberships"`
 }

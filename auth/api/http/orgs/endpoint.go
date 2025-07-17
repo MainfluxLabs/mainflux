@@ -172,7 +172,7 @@ func buildOrgsResponse(op auth.OrgsPage) orgsPageRes {
 func buildBackupResponse(b auth.Backup) backupRes {
 	res := backupRes{
 		Orgs:           []viewOrgRes{},
-		OrgMemberships: []viewOrgMemberships{},
+		OrgMemberships: []viewOrgMembership{},
 	}
 
 	for _, org := range b.Orgs {
@@ -189,7 +189,7 @@ func buildBackupResponse(b auth.Backup) backupRes {
 	}
 
 	for _, om := range b.OrgMemberships {
-		view := viewOrgMemberships{
+		view := viewOrgMembership{
 			OrgID:     om.OrgID,
 			MemberID:  om.MemberID,
 			Role:      om.Role,
