@@ -1940,6 +1940,112 @@ func TestListThingsByOrg(t *testing.T) {
 	}
 }
 
+func TestBackupThingsByOrg(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	profile.GroupID = gr.ID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	pr := prs[0]
+
+	data := []thingRes{}
+
+	for i := 0; i < n; i++ {
+		id := fmt.Sprintf("%s%012d", prefix, i+1)
+		thing1 := thing
+		thing1.ID = id
+		thing1.GroupID = gr.ID
+		thing1.ProfileID = pr.ID
+
+		ths, err := svc.CreateThings(context.Background(), token, thing1)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		th := ths[0]
+
+		data = append(data, thingRes{
+			ID:        th.ID,
+			GroupID:   th.GroupID,
+			ProfileID: th.ProfileID,
+			Name:      th.Name,
+			Key:       th.Key,
+			Metadata:  th.Metadata,
+		})
+	}
+
+	thingURL := fmt.Sprintf("%s/orgs", ts.URL)
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		url    string
+		res    []thingRes
+	}{
+		{
+			desc:   "backup things by org as org owner",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
+			res:    data,
+		},
+		{
+			desc:   "backup things by org the user belongs to",
+			auth:   otherToken,
+			status: http.StatusForbidden,
+			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
+			res:    nil,
+		},
+		{
+			desc:   "backup things by org as admin",
+			auth:   adminToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
+			res:    data,
+		},
+		{
+			desc:   "backup things by org without org id",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, emptyValue),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of things by org with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
+			res:    nil,
+		},
+		{
+			desc:   "get a list of things by org with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
+			res:    nil,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodGet,
+			url:    tc.url,
+			token:  tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		var body thingsPageRes
+		json.NewDecoder(res.Body).Decode(&body)
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, body.Things, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body.Things))
+	}
+}
+
 func TestRemoveThing(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)

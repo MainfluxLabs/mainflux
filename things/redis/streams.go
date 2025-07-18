@@ -274,6 +274,10 @@ func (es eventStore) ListThingsByGroup(ctx context.Context, token, groupID strin
 	return es.svc.ListThingsByGroup(ctx, token, groupID, pm)
 }
 
+func (es eventStore) BackupThingsByOrg(ctx context.Context, token string, orgID string) (things.ThingsBackup, error) {
+	return es.svc.BackupThingsByOrg(ctx, token, orgID)
+}
+
 func (es eventStore) ListProfilesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	return es.svc.ListProfilesByGroup(ctx, token, groupID, pm)
 }

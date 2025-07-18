@@ -250,3 +250,19 @@ func (trm *thingRepositoryMock) RetrieveAll(_ context.Context, pm apiutil.PageMe
 
 	return page, nil
 }
+
+func (trm *thingRepositoryMock) BackupByGroups(_ context.Context, groupIDs []string) ([]things.Thing, error) {
+	trm.mu.Lock()
+	defer trm.mu.Unlock()
+
+	var ths []things.Thing
+	for _, grID := range groupIDs {
+		for _, v := range trm.things {
+			if v.GroupID == grID {
+				ths = append(ths, v)
+			}
+		}
+	}
+
+	return ths, nil
+}
