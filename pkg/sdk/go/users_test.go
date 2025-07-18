@@ -43,13 +43,14 @@ var (
 
 func newUserService() users.Service {
 	usersRepo := usmocks.NewUserRepository(usersList)
+	verificationsRepo := usmocks.NewEmailVerificationRepository(nil)
 	hasher := usmocks.NewHasher()
 	idProvider := uuid.New()
 	admin.ID, _ = idProvider.ID()
 	auth := mocks.NewAuthService(admin.ID, usersList, orgsList)
 	emailer := usmocks.NewEmailer()
 
-	return users.New(usersRepo, hasher, auth, emailer, idProvider)
+	return users.New(usersRepo, verificationsRepo, hasher, auth, emailer, idProvider)
 }
 
 func newUserServer(svc users.Service) *httptest.Server {

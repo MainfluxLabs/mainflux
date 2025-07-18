@@ -6,6 +6,7 @@ package users
 import (
 	"context"
 	"regexp"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/email"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -26,6 +27,13 @@ type User struct {
 	Role     string
 }
 
+type EmailVerification struct {
+	User      User
+	Token     string
+	CreatedAt time.Time
+	ExpiresAt time.Time
+}
+
 // Validate returns an error if user representation is invalid.
 func (u User) Validate(passRegex *regexp.Regexp) error {
 	if !email.IsEmail(u.Email) {
@@ -37,6 +45,17 @@ func (u User) Validate(passRegex *regexp.Regexp) error {
 	}
 
 	return nil
+}
+
+type EmailVerificationRepository interface {
+	// Save persists the EmailVerification.
+	Save(ctx context.Context, verification EmailVerification) (string, error)
+
+	// RetrieveByToken retrieves an EmailVerification based on its token.
+	RetrieveByToken(ctx context.Context, token string) (EmailVerification, error)
+
+	// Remove removes an EmailVerification from the database.
+	Remove(ctx context.Context, token string) error
 }
 
 // UserRepository specifies an account persistence API.
