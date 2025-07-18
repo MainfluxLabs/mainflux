@@ -41,7 +41,8 @@ const (
 	invalid         = "invalid"
 	n               = 10
 
-	loginDuration = 30 * time.Minute
+	loginDuration  = 30 * time.Minute
+	inviteDuration = 7 * 24 * time.Hour
 )
 
 var (
@@ -58,10 +59,12 @@ func newService() auth.Service {
 	membsRepo := mocks.NewOrgMembershipsRepository()
 	orgRepo := mocks.NewOrgRepository(membsRepo)
 	roleRepo := mocks.NewRolesRepository()
+	invitesRepo := mocks.NewInvitesRepository()
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
 	tc := thmocks.NewThingsServiceClient(nil, nil, createGroups())
 	t := jwt.New(secret)
-	return auth.New(orgRepo, tc, uc, keyRepo, roleRepo, membsRepo, idMockProvider, t, loginDuration)
+
+	return auth.New(orgRepo, tc, uc, keyRepo, roleRepo, membsRepo, invitesRepo, nil, idMockProvider, t, loginDuration, inviteDuration)
 }
 
 func createGroups() map[string]things.Group {
