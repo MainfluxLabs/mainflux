@@ -112,15 +112,15 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 	}
 
 	var gms []GroupMembership
-	var up *protomfx.UsersRes
+	var page *protomfx.UsersRes
 	if len(groupMemberships) > 0 {
 		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs, Email: pm.Email, Order: pm.Order, Dir: pm.Dir, Limit: pm.Limit, Offset: pm.Offset}
-		up, err = ts.users.GetUsersByIDs(ctx, &usrReq)
+		page, err = ts.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
 			return GroupMembershipsPage{}, err
 		}
 
-		for _, user := range up.Users {
+		for _, user := range page.Users {
 			role, ok := roles[user.Id]
 			if !ok {
 				continue
@@ -136,16 +136,16 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 		}
 	}
 
-	page := GroupMembershipsPage{
+	gmp := GroupMembershipsPage{
 		GroupMemberships: gms,
 		PageMetadata: apiutil.PageMetadata{
-			Total:  up.Total,
-			Offset: up.Offset,
-			Limit:  up.Limit,
+			Total:  page.Total,
+			Offset: page.Offset,
+			Limit:  page.Limit,
 		},
 	}
 
-	return page, nil
+	return gmp, nil
 }
 
 func (ts *thingsService) UpdateGroupMemberships(ctx context.Context, token string, gms ...GroupMembership) error {

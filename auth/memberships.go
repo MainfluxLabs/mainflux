@@ -186,7 +186,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 
 	}
 
-	mpg := OrgMembershipsPage{
+	omp := OrgMembershipsPage{
 		OrgMemberships: oms,
 		PageMetadata: apiutil.PageMetadata{
 			Total:  page.Total,
@@ -196,7 +196,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 		},
 	}
 
-	return mpg, nil
+	return omp, nil
 }
 
 func (svc service) UpdateOrgMemberships(ctx context.Context, token, orgID string, members ...OrgMembership) error {
