@@ -123,21 +123,23 @@ type UserPage struct {
 var _ Service = (*usersService)(nil)
 
 type usersService struct {
-	users      UserRepository
-	hasher     Hasher
-	email      Emailer
-	auth       protomfx.AuthServiceClient
-	idProvider uuid.IDProvider
+	users              UserRepository
+	emailVerifications EmailVerificationRepository
+	hasher             Hasher
+	email              Emailer
+	auth               protomfx.AuthServiceClient
+	idProvider         uuid.IDProvider
 }
 
 // New instantiates the users service implementation
-func New(users UserRepository, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider) Service {
+func New(users UserRepository, verifications EmailVerificationRepository, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider) Service {
 	return &usersService{
-		users:      users,
-		hasher:     hasher,
-		auth:       auth,
-		email:      e,
-		idProvider: idp,
+		users:              users,
+		emailVerifications: verifications,
+		hasher:             hasher,
+		auth:               auth,
+		email:              e,
+		idProvider:         idp,
 	}
 }
 
