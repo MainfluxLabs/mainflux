@@ -34,7 +34,7 @@ func listUsersByIDsEndpoint(svc users.Service) endpoint.Endpoint {
 			mu = append(mu, &user)
 		}
 
-		return getUsersRes{users: mu, total: up.Total}, nil
+		return getUsersRes{users: mu, total: up.Total, limit: up.Limit, offset: up.Offset}, nil
 	}
 }
 

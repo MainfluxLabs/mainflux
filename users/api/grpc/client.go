@@ -59,7 +59,7 @@ func (clent grpcClient) GetUsersByIDs(ctx context.Context, req *protomfx.UsersBy
 
 	ir := res.(getUsersRes)
 
-	return &protomfx.UsersRes{Users: ir.users}, nil
+	return &protomfx.UsersRes{Users: ir.users, Total: ir.total, Limit: ir.limit, Offset: ir.offset}, nil
 
 }
 
@@ -90,5 +90,5 @@ func encodeGetUsersByEmailsRequest(_ context.Context, grpcReq interface{}) (inte
 
 func decodeGetUsersResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(*protomfx.UsersRes)
-	return getUsersRes{users: res.GetUsers()}, nil
+	return getUsersRes{users: res.GetUsers(), total: res.GetTotal(), limit: res.GetLimit(), offset: res.GetOffset()}, nil
 }

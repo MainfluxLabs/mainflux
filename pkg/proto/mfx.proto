@@ -157,6 +157,8 @@ message UsersByIDsReq {
 message UsersRes {
     repeated User users = 1;
     uint64 total = 2;
+    uint64 limit = 3;
+    uint64 offset = 4;
 }
 
 message AssignRoleReq {
