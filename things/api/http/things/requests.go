@@ -247,6 +247,21 @@ func (req removeThingsReq) validate() error {
 	return nil
 }
 
+type backupThingsReq struct {
+	token string
+	id    string
+}
+
+func (req backupThingsReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if req.id == "" {
+		return apiutil.ErrMissingGroupID
+	}
+	return nil
+}
+
 type backupReq struct {
 	token string
 }
