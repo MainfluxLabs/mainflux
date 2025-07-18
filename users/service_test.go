@@ -82,7 +82,7 @@ func TestSelfRegister(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_, err := svc.SelfRegister(context.Background(), tc.user)
+		_, err := svc.SelfRegister(context.Background(), tc.user, "")
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -223,7 +223,7 @@ func TestListUsers(t *testing.T) {
 			Email:    email,
 			Password: "passpass",
 		}
-		_, err := svc.SelfRegister(context.Background(), user)
+		_, err := svc.SelfRegister(context.Background(), user, "")
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 	totUser = totUser + nUsers

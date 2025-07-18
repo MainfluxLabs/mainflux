@@ -5,6 +5,7 @@ package users
 
 import (
 	"context"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -32,15 +33,25 @@ var (
 
 	// ErrAlreadyDisabledUser indicates the user is already disabled.
 	ErrAlreadyDisabledUser = errors.New("the user is already disabled")
+
+	// ErrEmailVerificationExpired indicates that the e-mail verification token has expired.
+	ErrEmailVerificationExpired = errors.New("e-mail verification token expired")
 )
 
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
-	// Register creates new user account. In case of the failed registration, a
-	// non-nil error value is returned. The user registration is only allowed
-	// for admin.
-	SelfRegister(ctx context.Context, user User) (string, error)
+	// SelfRegister carries out the first stage of own account registration: it
+	// creates a pending e-mail verification entity and sends the user an e-mail
+	// with a URL containing a token used to verify the e-mail address and complete
+	// registration.
+	SelfRegister(ctx context.Context, user User, uiHost string) (string, error)
+
+	// VerifyEmail completes the self-registration process by matching the provided
+	// email verification token against the database. If the token is valid and not expired, the e-mail
+	// is considered verified a new User is fully registered.
+	// Returns the ID of the newly-registered User upon success.
+	VerifyEmail(ctx context.Context, token string) (string, error)
 
 	// Register creates new user account. In case of the failed registration, a
 	// non-nil error value is returned. The user registration is only allowed
@@ -143,26 +154,84 @@ func New(users UserRepository, verifications EmailVerificationRepository, hasher
 	}
 }
 
-func (svc usersService) SelfRegister(ctx context.Context, user User) (string, error) {
-	uid, err := svc.idProvider.ID()
-	if err != nil {
+func (svc usersService) SelfRegister(ctx context.Context, user User, uiHost string) (string, error) {
+	_, err := svc.users.RetrieveByEmail(ctx, user.Email)
+	if err != nil && !errors.Contains(err, errors.ErrNotFound) {
 		return "", err
 	}
-	user.ID = uid
+
+	if err == nil {
+		return "", errors.ErrConflict
+	}
 
 	hash, err := svc.hasher.Hash(user.Password)
 	if err != nil {
 		return "", errors.Wrap(errors.ErrMalformedEntity, err)
 	}
+
 	user.Password = hash
 
-	user.Status = EnabledStatusKey
-
-	uid, err = svc.users.Save(ctx, user)
+	verificationToken, err := svc.idProvider.ID()
 	if err != nil {
 		return "", err
 	}
-	return uid, nil
+
+	now := time.Now()
+
+	verification := EmailVerification{
+		User:      user,
+		Token:     verificationToken,
+		CreatedAt: now,
+		ExpiresAt: now.Add(1 * time.Hour),
+	}
+
+	if _, err := svc.emailVerifications.Save(ctx, verification); err != nil {
+		return "", err
+	}
+
+	// TODO: do we want to invalidate/remove the created verification if the user never got it in mail? probably yes?
+	if err := svc.email.SendEmailVerification([]string{user.Email}, uiHost, verificationToken); err != nil {
+		return "", nil
+	}
+
+	return verificationToken, nil
+}
+
+func (svc usersService) VerifyEmail(ctx context.Context, token string) (string, error) {
+	verification, err := svc.emailVerifications.RetrieveByToken(ctx, token)
+	if err != nil {
+		if errors.Contains(err, errors.ErrNotFound) {
+			return "", errors.Wrap(errors.ErrAuthentication, err)
+		}
+
+		return "", err
+	}
+
+	if time.Now().After(verification.ExpiresAt) {
+		if err := svc.emailVerifications.Remove(ctx, token); err != nil {
+			return "", err
+		}
+
+		return "", ErrEmailVerificationExpired
+	}
+
+	userId, err := svc.idProvider.ID()
+	if err != nil {
+		return "", err
+	}
+
+	verification.User.ID = userId
+	verification.User.Status = EnabledStatusKey
+
+	if _, err := svc.users.Save(ctx, verification.User); err != nil {
+		return "", err
+	}
+
+	if err := svc.emailVerifications.Remove(ctx, token); err != nil {
+		return "", err
+	}
+
+	return userId, nil
 }
 
 func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {

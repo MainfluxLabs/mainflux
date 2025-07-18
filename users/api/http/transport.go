@@ -24,8 +24,9 @@ import (
 )
 
 const (
-	emailKey  = "email"
-	statusKey = "status"
+	emailKey      = "email"
+	statusKey     = "status"
+	emailTokenKey = "token"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -48,6 +49,13 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 	mux.Post("/register", kithttp.NewServer(
 		kitot.TraceServer(tracer, "self_register")(selfRegistrationEndpoint(svc)),
 		decodeSelfRegisterUser,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/register/verify", kithttp.NewServer(
+		kitot.TraceServer(tracer, "verify_email")(verifyEmailEndpoint(svc)),
+		decodeVerifyEmail,
 		encodeResponse,
 		opts...,
 	))
@@ -309,7 +317,25 @@ func decodeSelfRegisterUser(_ context.Context, r *http.Request) (interface{}, er
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	return selfRegisterUserReq{user: user}, nil
+	req := selfRegisterUserReq{
+		user:   user,
+		uiHost: r.Header.Get("Referer"),
+	}
+
+	return req, nil
+}
+
+func decodeVerifyEmail(_ context.Context, r *http.Request) (any, error) {
+	token, err := apiutil.ReadStringQuery(r, emailTokenKey, "")
+	if err != nil {
+		return verifyEmailReq{}, err
+	}
+
+	req := verifyEmailReq{
+		emailToken: token,
+	}
+
+	return req, nil
 }
 
 func decodePasswordResetRequest(_ context.Context, r *http.Request) (interface{}, error) {

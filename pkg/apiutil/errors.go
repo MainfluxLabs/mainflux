@@ -105,6 +105,9 @@ var (
 	// ErrMissingEmail indicates missing email.
 	ErrMissingEmail = errors.New("missing email")
 
+	// ErrMissingEmailToken indicates a missing e-mail verification token.
+	ErrMissingEmailToken = errors.New("missing e-mail verification token")
+
 	// ErrMissingHost indicates missing host.
 	ErrMissingHost = errors.New("missing host")
 

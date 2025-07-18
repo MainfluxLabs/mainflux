@@ -64,7 +64,7 @@ func (evr emailVerificationRepository) RetrieveByToken(ctx context.Context, toke
 	`
 
 	dbv := dbEmailVerification{
-		token: token,
+		Token: token,
 	}
 
 	if err := evr.db.QueryRowxContext(ctx, q, token).StructScan(&dbv); err != nil {
@@ -102,30 +102,30 @@ func (evr emailVerificationRepository) Remove(ctx context.Context, token string)
 
 func toDBVerification(v users.EmailVerification) dbEmailVerification {
 	return dbEmailVerification{
-		email:     v.User.Email,
-		password:  v.User.Password,
-		token:     v.Token,
-		createdAt: v.CreatedAt,
-		expiresAt: v.ExpiresAt,
+		Email:     v.User.Email,
+		Password:  v.User.Password,
+		Token:     v.Token,
+		CreatedAt: v.CreatedAt,
+		ExpiresAt: v.ExpiresAt,
 	}
 }
 
 func toVerification(dbv dbEmailVerification) users.EmailVerification {
 	return users.EmailVerification{
 		User: users.User{
-			Email:    dbv.email,
-			Password: dbv.password,
+			Email:    dbv.Email,
+			Password: dbv.Password,
 		},
-		Token:     dbv.token,
-		CreatedAt: dbv.createdAt,
-		ExpiresAt: dbv.expiresAt,
+		Token:     dbv.Token,
+		CreatedAt: dbv.CreatedAt,
+		ExpiresAt: dbv.ExpiresAt,
 	}
 }
 
 type dbEmailVerification struct {
-	email     string    `db:"email"`
-	password  string    `db:"password"`
-	token     string    `db:"token"`
-	createdAt time.Time `db:"created_at"`
-	expiresAt time.Time `db:"expires_at"`
+	Email     string    `db:"email"`
+	Password  string    `db:"password"`
+	Token     string    `db:"token"`
+	CreatedAt time.Time `db:"created_at"`
+	ExpiresAt time.Time `db:"expires_at"`
 }
