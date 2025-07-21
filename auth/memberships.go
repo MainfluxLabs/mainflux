@@ -159,44 +159,37 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 		return OrgMembershipsPage{}, errors.Wrap(ErrRetrieveMembershipsByOrg, err)
 	}
 
+	var memberIDs []string
+	membershipByMemberID := make(map[string]OrgMembership, len(orgMemberships))
+	for _, m := range orgMemberships {
+		membershipByMemberID[m.MemberID] = m
+		memberIDs = append(memberIDs, m.MemberID)
+	}
+
 	var oms []OrgMembership
 	var page *protomfx.UsersRes
 	if len(orgMemberships) > 0 {
-		var memberIDs []string
-		var roleByMemberID = make(map[string]string)
-		for _, m := range orgMemberships {
-			roleByMemberID[m.MemberID] = m.Role
-			memberIDs = append(memberIDs, m.MemberID)
-		}
-
 		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs, Email: pm.Email, Order: pm.Order, Dir: pm.Dir, Limit: pm.Limit, Offset: pm.Offset}
 		page, err = svc.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
 			return OrgMembershipsPage{}, err
 		}
 
-		userEmailByID := make(map[string]string, len(page.Users))
 		for _, u := range page.Users {
-			userEmailByID[u.Id] = u.Email
-		}
-
-		for _, m := range omp.OrgMemberships {
-			email, ok := userEmailByID[m.MemberID]
+			m, ok := membershipByMemberID[u.Id]
 			if !ok {
 				continue
 			}
 
-			om := OrgMembership{
+			oms = append(oms, OrgMembership{
 				MemberID:  m.MemberID,
-				OrgID:     orgID,
-				Email:     email,
+				OrgID:     m.OrgID,
+				Email:     u.Email,
 				Role:      m.Role,
 				CreatedAt: m.CreatedAt,
 				UpdatedAt: m.UpdatedAt,
-			}
-			oms = append(oms, om)
+			})
 		}
-
 	}
 
 	omp := OrgMembershipsPage{
