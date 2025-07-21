@@ -86,7 +86,7 @@ func (evr emailVerificationRepository) Remove(ctx context.Context, token string)
 		WHERE token = :token	
 	`
 
-	_, err := evr.db.NamedExecContext(ctx, q, map[string]any{"token": token})
+	res, err := evr.db.NamedExecContext(ctx, q, map[string]any{"token": token})
 	if err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
@@ -96,6 +96,15 @@ func (evr emailVerificationRepository) Remove(ctx context.Context, token string)
 			}
 		}
 
+		return errors.Wrap(errors.ErrRemoveEntity, err)
+	}
+
+	rowsDeleted, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsDeleted != 1 {
 		return errors.Wrap(errors.ErrRemoveEntity, err)
 	}
 
