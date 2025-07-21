@@ -39,6 +39,8 @@ func (evr emailVerificationRepository) Save(ctx context.Context, verification us
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
 				return "", errors.Wrap(errors.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return "", errors.Wrap(errors.ErrConflict, err)
 			}
 		}
 
