@@ -444,7 +444,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrInvalidStatus,
 		err == errors.ErrInvalidPassword:
 		w.WriteHeader(http.StatusBadRequest)
-	case err == apiutil.ErrBearerToken:
+	case errors.Contains(err, errors.ErrAuthentication),
+		err == apiutil.ErrBearerToken:
 		w.WriteHeader(http.StatusUnauthorized)
 	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)
