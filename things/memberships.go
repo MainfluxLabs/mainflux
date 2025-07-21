@@ -8,8 +8,13 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
-// ErrGroupMembershipExists indicates that membership already exists.
-var ErrGroupMembershipExists = errors.New("group membership already exists")
+var (
+	// ErrGroupMembershipExists indicates that membership already exists.
+	ErrGroupMembershipExists = errors.New("group membership already exists")
+
+	// ErrMissingUserMembership indicates that required user membership was not found.
+	ErrMissingUserMembership = errors.New("user membership not found")
+)
 
 type GroupMembership struct {
 	GroupID  string
@@ -105,10 +110,10 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 	}
 
 	var memberIDs []string
-	roles := make(map[string]string)
+	membershipByMemberID := make(map[string]GroupMembership, len(groupMemberships))
 	for _, gm := range groupMemberships {
 		memberIDs = append(memberIDs, gm.MemberID)
-		roles[gm.MemberID] = gm.Role
+		membershipByMemberID[gm.MemberID] = gm
 	}
 
 	var gms []GroupMembership
@@ -120,16 +125,16 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 			return GroupMembershipsPage{}, err
 		}
 
-		for _, user := range page.Users {
-			role, ok := roles[user.Id]
+		for _, u := range page.Users {
+			m, ok := membershipByMemberID[u.Id]
 			if !ok {
-				continue
+				return GroupMembershipsPage{}, ErrMissingUserMembership
 			}
 
 			gm := GroupMembership{
-				MemberID: user.Id,
-				Email:    user.Email,
-				Role:     role,
+				MemberID: m.MemberID,
+				Email:    u.Email,
+				Role:     m.Role,
 			}
 
 			gms = append(gms, gm)

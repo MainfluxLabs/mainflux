@@ -18,6 +18,9 @@ var (
 
 	// ErrOrgMembershipExists indicates that membership already exists.
 	ErrOrgMembershipExists = errors.New("org membership already exists")
+
+	// ErrMissingUserMembership indicates that required user membership was not found.
+	ErrMissingUserMembership = errors.New("user membership not found")
 )
 
 type OrgMembership struct {
@@ -178,7 +181,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 		for _, u := range page.Users {
 			m, ok := membershipByMemberID[u.Id]
 			if !ok {
-				continue
+				return OrgMembershipsPage{}, ErrMissingUserMembership
 			}
 
 			oms = append(oms, OrgMembership{
