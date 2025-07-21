@@ -90,6 +90,12 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_pkey`,
 				},
 			},
+			{
+				Id: "messages_4",
+				Up: []string{
+					`ALTER TABLE messages ALTER COLUMN time TYPE BIGINT USING CAST(time AS BIGINT);`,
+				},
+			},
 		},
 	}
 

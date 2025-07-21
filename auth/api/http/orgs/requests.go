@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	maxLimitSize = 100
+	maxLimitSize = 200
 	maxNameSize  = 254
 )
 

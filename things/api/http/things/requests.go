@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	maxLimitSize = 100
+	maxLimitSize = 200
 	maxNameSize  = 1024
 )
 
@@ -244,6 +244,21 @@ func (req removeThingsReq) validate() error {
 		}
 	}
 
+	return nil
+}
+
+type backupByOrgReq struct {
+	id    string
+	token string
+}
+
+func (req backupByOrgReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if req.id == "" {
+		return apiutil.ErrMissingOrgID
+	}
 	return nil
 }
 

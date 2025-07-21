@@ -54,7 +54,7 @@ const (
 	invalidOrderData = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
 	zeroLimitData    = `{"limit":0,"offset":0}`
 	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
-	limitMaxData     = `{"limit":110,"offset":0}`
+	invalidLimitData = `{"limit":210,"offset":0}`
 	invalidData      = `{"limit": "invalid"}`
 )
 
@@ -715,7 +715,7 @@ func TestSearchOrgs(t *testing.T) {
 			desc:   "search orgs with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			req:    limitMaxData,
+			req:    invalidLimitData,
 			res:    nil,
 		},
 		{

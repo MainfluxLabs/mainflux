@@ -61,7 +61,7 @@ func (s *grpcServer) GetUsersByEmails(ctx context.Context, req *protomfx.UsersBy
 
 func decodeGetUsersByIDsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*protomfx.UsersByIDsReq)
-	return getUsersByIDsReq{ids: req.GetIds(), email: req.GetEmail(), order: req.Order, dir: req.Dir}, nil
+	return getUsersByIDsReq{ids: req.GetIds(), email: req.GetEmail(), order: req.Order, dir: req.Dir, limit: req.Limit, offset: req.Offset}, nil
 }
 
 func decodeGetUsersByEmailsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
@@ -71,7 +71,7 @@ func decodeGetUsersByEmailsRequest(_ context.Context, grpcReq interface{}) (inte
 
 func encodeGetUsersResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(getUsersRes)
-	return &protomfx.UsersRes{Users: res.users}, nil
+	return &protomfx.UsersRes{Users: res.users, Total: res.total, Limit: res.limit, Offset: res.offset}, nil
 }
 
 func encodeError(err error) error {

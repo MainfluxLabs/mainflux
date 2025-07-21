@@ -8,7 +8,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
-const maxLimitSize = 100
+const maxLimitSize = 200
 
 type apiReq interface {
 	validate() error

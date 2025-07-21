@@ -54,7 +54,7 @@ const (
 	invalidOrderData = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
 	zeroLimitData    = `{"limit":0,"offset":0}`
 	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
-	limitMaxData     = `{"limit":110,"offset":0}`
+	invalidLimitData = `{"limit":210,"offset":0}`
 	invalidData      = `{"limit": "invalid"}`
 )
 
@@ -435,7 +435,7 @@ func TestListUsers(t *testing.T) {
 		},
 		{
 			desc:   "get list of users with limit greater than max",
-			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d", ts.URL, 0, 110),
+			url:    fmt.Sprintf("%s/users?offset=%d&limit=%d", ts.URL, 0, 210),
 			token:  token,
 			status: http.StatusBadRequest,
 			res:    nil,
@@ -630,7 +630,7 @@ func TestSearchUsers(t *testing.T) {
 			desc:   "search users with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			req:    limitMaxData,
+			req:    invalidLimitData,
 			res:    nil,
 		},
 		{

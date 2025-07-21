@@ -413,7 +413,7 @@ components:
           type: integer
           description: Size of the subset to retrieve.
           default: 10
-          maximum: 100
+          maximum: 200
           minimum: 1
         order:
           type: string
@@ -495,7 +495,7 @@ components:
       schema:
         type: integer
         default: 10
-        maximum: 100
+        maximum: 200
         minimum: 1
       required: false
     Offset:
