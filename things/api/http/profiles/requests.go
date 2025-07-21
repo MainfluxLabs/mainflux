@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	maxLimitSize = 100
+	maxLimitSize = 200
 	maxNameSize  = 1024
 )
 
@@ -180,5 +180,20 @@ func (req removeProfilesReq) validate() error {
 		}
 	}
 
+	return nil
+}
+
+type backupReq struct {
+	token string
+	id    string
+}
+
+func (req backupReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if req.id == "" {
+		return apiutil.ErrMissingGroupID
+	}
 	return nil
 }

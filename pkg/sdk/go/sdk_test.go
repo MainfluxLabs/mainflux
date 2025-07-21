@@ -11,9 +11,10 @@ import (
 )
 
 var (
-	limit  uint64 = 5
-	offset uint64 = 0
-	total  uint64 = 200
+	limit        uint64 = 5
+	offset       uint64 = 0
+	total        uint64 = 200
+	invalidLimit uint64 = 210
 )
 
 func createError(e error, statusCode int) error {

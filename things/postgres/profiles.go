@@ -34,8 +34,8 @@ func NewProfileRepository(db dbutil.Database) things.ProfileRepository {
 	}
 }
 
-func (cr profileRepository) Save(ctx context.Context, profiles ...things.Profile) ([]things.Profile, error) {
-	tx, err := cr.db.BeginTxx(ctx, nil)
+func (pr profileRepository) Save(ctx context.Context, profiles ...things.Profile) ([]things.Profile, error) {
+	tx, err := pr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrap(errors.ErrCreateEntity, err)
 	}
@@ -71,12 +71,12 @@ func (cr profileRepository) Save(ctx context.Context, profiles ...things.Profile
 	return profiles, nil
 }
 
-func (cr profileRepository) Update(ctx context.Context, profile things.Profile) error {
+func (pr profileRepository) Update(ctx context.Context, profile things.Profile) error {
 	q := `UPDATE profiles SET name = :name, metadata = :metadata, config = :config WHERE id = :id;`
 
 	dbpr := toDBProfile(profile)
 
-	res, err := cr.db.NamedExecContext(ctx, q, dbpr)
+	res, err := pr.db.NamedExecContext(ctx, q, dbpr)
 	if err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
@@ -103,14 +103,14 @@ func (cr profileRepository) Update(ctx context.Context, profile things.Profile) 
 	return nil
 }
 
-func (cr profileRepository) RetrieveByID(ctx context.Context, id string) (things.Profile, error) {
+func (pr profileRepository) RetrieveByID(ctx context.Context, id string) (things.Profile, error) {
 	q := `SELECT group_id, name, metadata, config FROM profiles WHERE id = $1;`
 
 	dbpr := dbProfile{
 		ID: id,
 	}
 
-	if err := cr.db.QueryRowxContext(ctx, q, id).StructScan(&dbpr); err != nil {
+	if err := pr.db.QueryRowxContext(ctx, q, id).StructScan(&dbpr); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		//  If there is no result or ID is in an invalid format, return ErrNotFound.
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
@@ -122,11 +122,11 @@ func (cr profileRepository) RetrieveByID(ctx context.Context, id string) (things
 	return toProfile(dbpr), nil
 }
 
-func (cr profileRepository) BackupAll(ctx context.Context) ([]things.Profile, error) {
+func (pr profileRepository) BackupAll(ctx context.Context) ([]things.Profile, error) {
 	query := "SELECT id, group_id, name, metadata, config FROM profiles"
 
 	var items []dbProfile
-	err := cr.db.SelectContext(ctx, &items, query)
+	err := pr.db.SelectContext(ctx, &items, query)
 	if err != nil {
 		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -139,7 +139,30 @@ func (cr profileRepository) BackupAll(ctx context.Context) ([]things.Profile, er
 	return profiles, nil
 }
 
-func (cr profileRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+func (pr profileRepository) BackupByGroups(ctx context.Context, groupIDs []string) ([]things.Profile, error) {
+	if len(groupIDs) == 0 {
+		return []things.Profile{}, nil
+	}
+
+	giq := getGroupIDsQuery(groupIDs)
+	whereClause := dbutil.BuildWhereClause(giq)
+	query := fmt.Sprintf("SELECT id, group_id, name, metadata, config FROM profiles %s", whereClause)
+
+	var items []dbProfile
+	err := pr.db.SelectContext(ctx, &items, query)
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	var profiles []things.Profile
+	for _, i := range items {
+		profiles = append(profiles, toProfile(i))
+	}
+
+	return profiles, nil
+}
+
+func (pr profileRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
@@ -158,10 +181,10 @@ func (cr profileRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMeta
 		"offset":   pm.Offset,
 	}
 
-	return cr.retrieve(ctx, query, cquery, params)
+	return pr.retrieve(ctx, query, cquery, params)
 }
 
-func (cr profileRepository) RetrieveByThing(ctx context.Context, thID string) (things.Profile, error) {
+func (pr profileRepository) RetrieveByThing(ctx context.Context, thID string) (things.Profile, error) {
 	// Verify if UUID format is valid to avoid internal Postgres error
 	if _, err := uuid.FromString(thID); err != nil {
 		return things.Profile{}, errors.Wrap(errors.ErrNotFound, err)
@@ -174,7 +197,7 @@ func (cr profileRepository) RetrieveByThing(ctx context.Context, thID string) (t
 		"thing": thID,
 	}
 
-	rows, err := cr.db.NamedQueryContext(ctx, q, params)
+	rows, err := pr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		return things.Profile{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -193,13 +216,13 @@ func (cr profileRepository) RetrieveByThing(ctx context.Context, thID string) (t
 	return item, nil
 }
 
-func (cr profileRepository) Remove(ctx context.Context, ids ...string) error {
+func (pr profileRepository) Remove(ctx context.Context, ids ...string) error {
 	for _, id := range ids {
 		dbpr := dbProfile{
 			ID: id,
 		}
 		q := `DELETE FROM profiles WHERE id = :id`
-		_, err := cr.db.NamedExecContext(ctx, q, dbpr)
+		_, err := pr.db.NamedExecContext(ctx, q, dbpr)
 		if err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
@@ -215,7 +238,7 @@ func (cr profileRepository) Remove(ctx context.Context, ids ...string) error {
 	return nil
 }
 
-func (cr profileRepository) RetrieveByGroups(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+func (pr profileRepository) RetrieveByGroups(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	if len(groupIDs) == 0 {
 		return things.ProfilesPage{}, nil
 	}
@@ -239,11 +262,11 @@ func (cr profileRepository) RetrieveByGroups(ctx context.Context, groupIDs []str
 		"offset":   pm.Offset,
 	}
 
-	return cr.retrieve(ctx, query, cquery, params)
+	return pr.retrieve(ctx, query, cquery, params)
 }
 
-func (cr profileRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (things.ProfilesPage, error) {
-	rows, err := cr.db.NamedQueryContext(ctx, query, params)
+func (pr profileRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (things.ProfilesPage, error) {
+	rows, err := pr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
@@ -260,7 +283,7 @@ func (cr profileRepository) retrieve(ctx context.Context, query, cquery string, 
 		items = append(items, pr)
 	}
 
-	total, err := dbutil.Total(ctx, cr.db, cquery, params)
+	total, err := dbutil.Total(ctx, pr.db, cquery, params)
 	if err != nil {
 		return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}

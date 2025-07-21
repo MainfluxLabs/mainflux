@@ -154,6 +154,20 @@ func listProfilesByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func backupProfilesByOrgEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(backupReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+		backup, err := svc.BackupProfilesByOrg(ctx, req.token, req.id)
+		if err != nil {
+			return nil, err
+		}
+		return buildBackupResponse(backup), nil
+	}
+}
+
 func updateProfileEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(updateProfileReq)
@@ -236,5 +250,22 @@ func buildProfilesResponse(pp things.ProfilesPage) profilesPageRes {
 		res.Profiles = append(res.Profiles, c)
 	}
 
+	return res
+}
+
+func buildBackupResponse(pb things.ProfilesBackup) backupProfilesRes {
+	res := backupProfilesRes{
+		Profiles: []viewProfileRes{},
+	}
+	for _, profile := range pb.Profiles {
+		view := viewProfileRes{
+			ID:       profile.ID,
+			GroupID:  profile.GroupID,
+			Name:     profile.Name,
+			Metadata: profile.Metadata,
+			Config:   profile.Config,
+		}
+		res.Profiles = append(res.Profiles, view)
+	}
 	return res
 }

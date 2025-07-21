@@ -416,6 +416,19 @@ func (lm *loggingMiddleware) BackupGroupMemberships(ctx context.Context, token s
 	return lm.svc.BackupGroupMemberships(ctx, token, groupID)
 }
 
+func (lm *loggingMiddleware) BackupProfilesByOrg(ctx context.Context, token string, orgID string) (pb things.ProfilesBackup, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method backup_profiles_by_org took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.BackupProfilesByOrg(ctx, token, orgID)
+}
+
 func (lm *loggingMiddleware) Restore(ctx context.Context, token string, backup things.Backup) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method restore took %s to complete", time.Since(begin))

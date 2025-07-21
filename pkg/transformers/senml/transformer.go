@@ -48,10 +48,12 @@ func TransformPayload(msg *protomfx.Message) error {
 	payloads := make([]Message, len(normalized.Records))
 	for i, v := range normalized.Records {
 		// Use reception timestamp if SenML message Time is missing
-		t := v.Time
-		if t == 0 {
-			// Convert the Unix timestamp in nanoseconds to float64
-			t = float64(msg.Created) / 1e9
+		var t int64
+		switch v.Time {
+		case 0:
+			t = msg.Created
+		default:
+			t = int64(v.Time * 1e9)
 		}
 
 		payloads[i] = Message{

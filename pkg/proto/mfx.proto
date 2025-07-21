@@ -150,10 +150,15 @@ message UsersByIDsReq {
     string email = 2;
     string order = 3;
     string dir = 4;
+    uint64 limit = 5;
+    uint64 offset = 6;
 }
 
 message UsersRes {
     repeated User users = 1;
+    uint64 total = 2;
+    uint64 limit = 3;
+    uint64 offset = 4;
 }
 
 message AssignRoleReq {

@@ -490,6 +490,26 @@ paths:
           description: Unprocessable Entity
         '500':
           $ref: "#/components/responses/ServiceError"
+  /orgs/{orgId}/profiles/backup:
+    get:
+      summary: Retrieves profile backup by organization.
+      description: |
+        Retrieves a backup of all profiles associated with the specified organization. The response is a JSON object containing all related profiles. 
+      tags:
+        - profiles
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      responses:
+        '200':
+          $ref: "#/components/responses/ProfilesBackupRes"
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Failed due to non existing organization or related entities.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /profiles/{profileId}:
     get:
       summary: Retrieves profile info
@@ -1022,7 +1042,7 @@ components:
           type: integer
           description: Size of the subset to retrieve.
           default: 10
-          maximum: 100
+          maximum: 200
           minimum: 1
         order:
           type: string
@@ -1137,7 +1157,7 @@ components:
           type: integer
           description: Size of the subset to retrieve.
           default: 10
-          maximum: 100
+          maximum: 200
           minimum: 1
         order:
           type: string
@@ -1287,7 +1307,7 @@ components:
           type: integer
           description: Size of the subset to retrieve.
           default: 10
-          maximum: 100
+          maximum: 200
           minimum: 1
         order:
           type: string
@@ -1536,7 +1556,7 @@ components:
       schema:
         type: integer
         default: 10
-        maximum: 100
+        maximum: 200
         minimum: 1
       required: false
     Offset:
@@ -1817,6 +1837,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ProfilesPage"
+    ProfilesBackupRes:
+      description: Successfully retrieved profile backup.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ProfilesResSchema"
     IdentityRes:
       description: Thing ID returned.
       content:

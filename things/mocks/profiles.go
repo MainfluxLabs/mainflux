@@ -32,39 +32,39 @@ func NewProfileRepository(repo things.ThingRepository) things.ProfileRepository 
 	}
 }
 
-func (crm *profileRepositoryMock) Save(_ context.Context, profiles ...things.Profile) ([]things.Profile, error) {
-	crm.mu.Lock()
-	defer crm.mu.Unlock()
+func (prm *profileRepositoryMock) Save(_ context.Context, profiles ...things.Profile) ([]things.Profile, error) {
+	prm.mu.Lock()
+	defer prm.mu.Unlock()
 
 	for i := range profiles {
-		crm.counter++
+		prm.counter++
 		if profiles[i].ID == "" {
-			profiles[i].ID = fmt.Sprintf("%03d", crm.counter)
+			profiles[i].ID = fmt.Sprintf("%03d", prm.counter)
 		}
-		crm.profiles[profiles[i].ID] = profiles[i]
+		prm.profiles[profiles[i].ID] = profiles[i]
 	}
 
 	return profiles, nil
 }
 
-func (crm *profileRepositoryMock) Update(_ context.Context, profile things.Profile) error {
-	crm.mu.Lock()
-	defer crm.mu.Unlock()
+func (prm *profileRepositoryMock) Update(_ context.Context, profile things.Profile) error {
+	prm.mu.Lock()
+	defer prm.mu.Unlock()
 
-	if _, ok := crm.profiles[profile.ID]; !ok {
+	if _, ok := prm.profiles[profile.ID]; !ok {
 		return errors.ErrNotFound
 	}
-	profile.GroupID = crm.profiles[profile.ID].GroupID
+	profile.GroupID = prm.profiles[profile.ID].GroupID
 
-	crm.profiles[profile.ID] = profile
+	prm.profiles[profile.ID] = profile
 	return nil
 }
 
-func (crm *profileRepositoryMock) RetrieveByID(_ context.Context, id string) (things.Profile, error) {
-	crm.mu.Lock()
-	defer crm.mu.Unlock()
+func (prm *profileRepositoryMock) RetrieveByID(_ context.Context, id string) (things.Profile, error) {
+	prm.mu.Lock()
+	defer prm.mu.Unlock()
 
-	for _, pr := range crm.profiles {
+	for _, pr := range prm.profiles {
 		if pr.ID == id {
 			return pr, nil
 		}
@@ -73,9 +73,9 @@ func (crm *profileRepositoryMock) RetrieveByID(_ context.Context, id string) (th
 	return things.Profile{}, errors.ErrNotFound
 }
 
-func (crm *profileRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
-	crm.mu.Lock()
-	defer crm.mu.Unlock()
+func (prm *profileRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+	prm.mu.Lock()
+	defer prm.mu.Unlock()
 
 	items := make([]things.Profile, 0)
 	filteredItems := make([]things.Profile, 0)
@@ -88,7 +88,7 @@ func (crm *profileRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs [
 	last := first + pm.Limit
 
 	for _, grID := range groupIDs {
-		for _, v := range crm.profiles {
+		for _, v := range prm.profiles {
 			if v.GroupID == grID {
 				id := uuid.ParseID(v.ID)
 				if id >= first && id < last {
@@ -114,7 +114,7 @@ func (crm *profileRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs [
 	page := things.ProfilesPage{
 		Profiles: items,
 		PageMetadata: apiutil.PageMetadata{
-			Total:  crm.counter,
+			Total:  prm.counter,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
 		},
@@ -123,13 +123,13 @@ func (crm *profileRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs [
 	return page, nil
 }
 
-func (crm *profileRepositoryMock) RetrieveAll(_ context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
-	crm.mu.Lock()
-	defer crm.mu.Unlock()
+func (prm *profileRepositoryMock) RetrieveAll(_ context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+	prm.mu.Lock()
+	defer prm.mu.Unlock()
 
 	i := uint64(0)
 	var prs []things.Profile
-	for _, pr := range crm.profiles {
+	for _, pr := range prm.profiles {
 		if i >= pm.Offset && i < pm.Offset+pm.Limit {
 			prs = append(prs, pr)
 		}
@@ -139,7 +139,7 @@ func (crm *profileRepositoryMock) RetrieveAll(_ context.Context, pm apiutil.Page
 	page := things.ProfilesPage{
 		Profiles: prs,
 		PageMetadata: apiutil.PageMetadata{
-			Total:  crm.counter,
+			Total:  prm.counter,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
 		},
@@ -148,12 +148,12 @@ func (crm *profileRepositoryMock) RetrieveAll(_ context.Context, pm apiutil.Page
 	return page, nil
 }
 
-func (crm *profileRepositoryMock) RetrieveByThing(_ context.Context, thID string) (things.Profile, error) {
-	crm.mu.Lock()
-	defer crm.mu.Unlock()
+func (prm *profileRepositoryMock) RetrieveByThing(_ context.Context, thID string) (things.Profile, error) {
+	prm.mu.Lock()
+	defer prm.mu.Unlock()
 
-	thing, _ := crm.things.RetrieveByID(context.Background(), thID)
-	for _, pr := range crm.profiles {
+	thing, _ := prm.things.RetrieveByID(context.Background(), thID)
+	for _, pr := range prm.profiles {
 		if pr.ID == thing.ProfileID {
 			return pr, nil
 		}
@@ -162,28 +162,44 @@ func (crm *profileRepositoryMock) RetrieveByThing(_ context.Context, thID string
 	return things.Profile{}, errors.ErrNotFound
 }
 
-func (crm *profileRepositoryMock) Remove(_ context.Context, ids ...string) error {
-	crm.mu.Lock()
-	defer crm.mu.Unlock()
+func (prm *profileRepositoryMock) Remove(_ context.Context, ids ...string) error {
+	prm.mu.Lock()
+	defer prm.mu.Unlock()
 
 	for _, id := range ids {
-		if _, ok := crm.profiles[id]; !ok {
+		if _, ok := prm.profiles[id]; !ok {
 			return errors.ErrNotFound
 		}
 
-		delete(crm.profiles, id)
+		delete(prm.profiles, id)
 	}
 
 	return nil
 }
 
-func (crm *profileRepositoryMock) BackupAll(_ context.Context) ([]things.Profile, error) {
-	crm.mu.Lock()
-	defer crm.mu.Unlock()
+func (prm *profileRepositoryMock) BackupAll(_ context.Context) ([]things.Profile, error) {
+	prm.mu.Lock()
+	defer prm.mu.Unlock()
 
 	var prs []things.Profile
-	for _, v := range crm.profiles {
+	for _, v := range prm.profiles {
 		prs = append(prs, v)
+	}
+
+	return prs, nil
+}
+
+func (prm *profileRepositoryMock) BackupByGroups(_ context.Context, groupIDs []string) ([]things.Profile, error) {
+	prm.mu.Lock()
+	defer prm.mu.Unlock()
+
+	var prs []things.Profile
+	for _, grID := range groupIDs {
+		for _, v := range prm.profiles {
+			if v.GroupID == grID {
+				prs = append(prs, v)
+			}
+		}
 	}
 
 	return prs, nil
