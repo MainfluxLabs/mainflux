@@ -429,6 +429,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		errors.Contains(err, apiutil.ErrMalformedEntity),
 		errors.Contains(err, users.ErrPasswordFormat),
 		errors.Contains(err, errors.ErrInvalidPassword),
+		errors.Contains(err, users.ErrEmailVerificationExpired),
 		err == apiutil.ErrMissingEmail,
 		err == apiutil.ErrMissingHost,
 		err == apiutil.ErrMissingPass,
