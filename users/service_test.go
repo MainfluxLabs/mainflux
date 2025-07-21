@@ -120,7 +120,7 @@ func TestVerifyEmail(t *testing.T) {
 			err:          nil,
 		},
 		{
-			desc:         "confirm verification with already registered e-amil",
+			desc:         "confirm verification with already registered e-mail",
 			verification: duplicateVerification,
 			err:          errors.ErrConflict,
 		},
