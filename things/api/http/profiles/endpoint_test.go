@@ -1350,14 +1350,14 @@ func TestBackupProfilesByOrg(t *testing.T) {
 			res:    nil,
 		},
 		{
-			desc:   "get a list of profiles by org with invalid token",
+			desc:   "backup profiles by org with invalid token",
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
 			url:    fmt.Sprintf("%s/%s/profiles/backup", profileURL, orgID),
 			res:    nil,
 		},
 		{
-			desc:   "get a list of profiles by org with empty token",
+			desc:   "backup profiles by org with empty token",
 			auth:   emptyValue,
 			status: http.StatusUnauthorized,
 			url:    fmt.Sprintf("%s/%s/profiles/backup", profileURL, orgID),
@@ -1448,14 +1448,14 @@ func TestBackupProfilesByGroup(t *testing.T) {
 			res:    nil,
 		},
 		{
-			desc:   "get a list of profiles by group with invalid token",
+			desc:   "backup profiles by group with invalid token",
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
 			url:    fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
 			res:    nil,
 		},
 		{
-			desc:   "get a list of profiles by group with empty token",
+			desc:   "backup profiles by group with empty token",
 			auth:   emptyValue,
 			status: http.StatusUnauthorized,
 			url:    fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
