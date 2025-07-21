@@ -133,6 +133,7 @@ func TestSelfRegister(t *testing.T) {
 	invalidData := toJSON(users.User{Email: invalidEmail, Password: validPass})
 	invalidPasswordData := toJSON(users.User{Email: validEmail, Password: invalidPass})
 	invalidFieldData := fmt.Sprintf(`{"email": "%s", "pass": "%s"}`, user.Email, user.Password)
+	existingUserData := toJSON(user)
 
 	cases := []struct {
 		desc        string
@@ -142,7 +143,8 @@ func TestSelfRegister(t *testing.T) {
 		token       string
 	}{
 		{"register new user", data, contentType, http.StatusCreated, ""},
-		{"register existing user", data, contentType, http.StatusConflict, ""},
+		{"register user with pending e-mail confirmation", data, contentType, http.StatusCreated, ""},
+		{"register existing user", existingUserData, contentType, http.StatusConflict, ""},
 		{"register user with invalid email address", invalidData, contentType, http.StatusBadRequest, ""},
 		{"register user with weak password", invalidPasswordData, contentType, http.StatusBadRequest, ""},
 		{"register user with invalid request format", "{", contentType, http.StatusBadRequest, ""},
