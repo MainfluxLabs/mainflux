@@ -63,18 +63,13 @@ func TestSelfRegister(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc: "self register existing user",
+			desc: "self register user with pending e-mail confirmation",
 			user: selfRegister,
-			err:  errors.ErrConflict,
+			err:  nil,
 		},
+
 		{
-			desc:  "register new user",
-			user:  nonExistingUser,
-			token: admin.Email,
-			err:   nil,
-		},
-		{
-			desc:  "register existing user",
+			desc:  "self register existing user",
 			user:  registerUser,
 			token: admin.Email,
 			err:   errors.ErrConflict,
