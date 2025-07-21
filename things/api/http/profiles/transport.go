@@ -91,14 +91,14 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 
 	mux.Get("/orgs/:id/profiles/backup", kithttp.NewServer(
 		kitot.TraceServer(tracer, "backup_profiles_by_org")(backupProfilesByOrgEndpoint(svc)),
-		decodeBackup,
+		decodeBackupByOrg,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/groups/:id/profiles/backup", kithttp.NewServer(
 		kitot.TraceServer(tracer, "backup_profiles_by_group")(backupProfilesByGroupEndpoint(svc)),
-		decodeBackup,
+		decodeBackupByGroup,
 		encodeResponse,
 		opts...,
 	))
@@ -281,8 +281,16 @@ func decodeSearchByOrg(_ context.Context, r *http.Request) (interface{}, error) 
 	return req, nil
 }
 
-func decodeBackup(_ context.Context, r *http.Request) (interface{}, error) {
-	req := backupReq{
+func decodeBackupByGroup(_ context.Context, r *http.Request) (interface{}, error) {
+	req := backupByGroupReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, apiutil.IDKey),
+	}
+	return req, nil
+}
+
+func decodeBackupByOrg(_ context.Context, r *http.Request) (interface{}, error) {
+	req := backupByOrgReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
