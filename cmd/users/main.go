@@ -107,8 +107,7 @@ const (
 	envEmailFromName    = "MF_EMAIL_FROM_NAME"
 	envEmailTemplate    = "MF_EMAIL_TEMPLATE"
 
-	envEmailVerifyEndpoint = "MF_EMAIL_VERIFY_ENDPOINT"
-	envTokenResetEndpoint  = "MF_TOKEN_RESET_ENDPOINT"
+	envTokenResetEndpoint = "MF_TOKEN_RESET_ENDPOINT"
 
 	envAuthTLS         = "MF_AUTH_CLIENT_TLS"
 	envAuthCACerts     = "MF_AUTH_CA_CERTS"
@@ -128,7 +127,6 @@ type config struct {
 	authConfig      clients.Config
 	jaegerURL       string
 	resetURL        string
-	emailVerifyURL  string
 	authGRPCTimeout time.Duration
 	adminEmail      string
 	adminPassword   string
@@ -263,7 +261,6 @@ func loadConfig() config {
 		authConfig:      authConfig,
 		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
 		resetURL:        mainflux.Env(envTokenResetEndpoint, defTokenResetEndpoint),
-		emailVerifyURL:  mainflux.Env(envEmailVerifyEndpoint, defEmailVerifyEndpoint),
 		authGRPCTimeout: authGRPCTimeout,
 		adminEmail:      mainflux.Env(envAdminEmail, defAdminEmail),
 		adminPassword:   mainflux.Env(envAdminPassword, defAdminPassword),
@@ -288,7 +285,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceC
 	userRepo := tracing.UserRepositoryMiddleware(postgres.NewUserRepo(database), tracer)
 	verificationRepo := tracing.VerificationRepositoryMiddleware(postgres.NewEmailVerificationRepo(database), tracer)
 
-	emailer, err := emailer.New(c.resetURL, c.emailVerifyURL, &c.emailConf)
+	emailer, err := emailer.New(c.resetURL, defEmailVerifyEndpoint, &c.emailConf)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to configure e-mailing util: %s", err.Error()))
 	}
