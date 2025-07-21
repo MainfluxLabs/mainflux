@@ -2015,14 +2015,14 @@ func TestBackupThingsByOrg(t *testing.T) {
 			res:    nil,
 		},
 		{
-			desc:   "get a list of things by org with invalid token",
+			desc:   "backup things by org with invalid token",
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
 			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
 			res:    nil,
 		},
 		{
-			desc:   "get a list of things by org with empty token",
+			desc:   "backup things by org with empty token",
 			auth:   emptyValue,
 			status: http.StatusUnauthorized,
 			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
