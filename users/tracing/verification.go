@@ -35,18 +35,18 @@ func (evrm verificationRepositoryMiddleware) Save(ctx context.Context, verificat
 	return evrm.repo.Save(ctx, verification)
 }
 
-func (evrm verificationRepositoryMiddleware) RetrieveByToken(ctx context.Context, token string) (users.EmailVerification, error) {
+func (evrm verificationRepositoryMiddleware) RetrieveByToken(ctx context.Context, confirmationToken string) (users.EmailVerification, error) {
 	span := createSpan(ctx, evrm.tracer, retrieveVerificationByToken)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return evrm.repo.RetrieveByToken(ctx, token)
+	return evrm.repo.RetrieveByToken(ctx, confirmationToken)
 }
 
-func (evrm verificationRepositoryMiddleware) Remove(ctx context.Context, token string) error {
+func (evrm verificationRepositoryMiddleware) Remove(ctx context.Context, confirmationToken string) error {
 	span := createSpan(ctx, evrm.tracer, removeVerification)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return evrm.repo.Remove(ctx, token)
+	return evrm.repo.Remove(ctx, confirmationToken)
 }

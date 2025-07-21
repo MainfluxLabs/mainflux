@@ -40,9 +40,9 @@ func (lm *loggingMiddleware) SelfRegister(ctx context.Context, user users.User, 
 	return lm.svc.SelfRegister(ctx, user, uiHost)
 }
 
-func (lm *loggingMiddleware) VerifyEmail(ctx context.Context, token string) (userId string, err error) {
+func (lm *loggingMiddleware) VerifyEmail(ctx context.Context, confirmationToken string) (userId string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method verify_email for token %s took %s to complete", token, time.Since(begin))
+		message := fmt.Sprintf("Method verify_email for token %s took %s to complete", confirmationToken, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -51,7 +51,7 @@ func (lm *loggingMiddleware) VerifyEmail(ctx context.Context, token string) (use
 
 	}(time.Now())
 
-	return lm.svc.VerifyEmail(ctx, token)
+	return lm.svc.VerifyEmail(ctx, confirmationToken)
 }
 
 func (lm *loggingMiddleware) RegisterAdmin(ctx context.Context, user users.User) (err error) {

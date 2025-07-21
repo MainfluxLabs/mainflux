@@ -51,7 +51,7 @@ type Service interface {
 	// email verification token against the database. If the token is valid and not expired, the e-mail
 	// is considered verified a new User is fully registered.
 	// Returns the ID of the newly-registered User upon success.
-	VerifyEmail(ctx context.Context, token string) (string, error)
+	VerifyEmail(ctx context.Context, confirmationToken string) (string, error)
 
 	// Register creates new user account. In case of the failed registration, a
 	// non-nil error value is returned. The user registration is only allowed
@@ -197,8 +197,8 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, uiHost stri
 	return verificationToken, nil
 }
 
-func (svc usersService) VerifyEmail(ctx context.Context, token string) (string, error) {
-	verification, err := svc.emailVerifications.RetrieveByToken(ctx, token)
+func (svc usersService) VerifyEmail(ctx context.Context, confirmationToken string) (string, error) {
+	verification, err := svc.emailVerifications.RetrieveByToken(ctx, confirmationToken)
 	if err != nil {
 		if errors.Contains(err, errors.ErrNotFound) {
 			return "", errors.Wrap(errors.ErrAuthentication, err)
@@ -208,7 +208,7 @@ func (svc usersService) VerifyEmail(ctx context.Context, token string) (string, 
 	}
 
 	if time.Now().After(verification.ExpiresAt) {
-		if err := svc.emailVerifications.Remove(ctx, token); err != nil {
+		if err := svc.emailVerifications.Remove(ctx, confirmationToken); err != nil {
 			return "", err
 		}
 
@@ -227,7 +227,7 @@ func (svc usersService) VerifyEmail(ctx context.Context, token string) (string, 
 		return "", err
 	}
 
-	if err := svc.emailVerifications.Remove(ctx, token); err != nil {
+	if err := svc.emailVerifications.Remove(ctx, confirmationToken); err != nil {
 		return "", err
 	}
 

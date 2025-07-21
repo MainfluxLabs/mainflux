@@ -58,7 +58,7 @@ func (evr emailVerificationRepository) Save(ctx context.Context, verification us
 	return token, nil
 }
 
-func (evr emailVerificationRepository) RetrieveByToken(ctx context.Context, token string) (users.EmailVerification, error) {
+func (evr emailVerificationRepository) RetrieveByToken(ctx context.Context, confirmationToken string) (users.EmailVerification, error) {
 	q := `
 		SELECT token, email, password, created_at, expires_at
 		FROM verifications	
@@ -66,10 +66,10 @@ func (evr emailVerificationRepository) RetrieveByToken(ctx context.Context, toke
 	`
 
 	dbv := dbEmailVerification{
-		Token: token,
+		Token: confirmationToken,
 	}
 
-	if err := evr.db.QueryRowxContext(ctx, q, token).StructScan(&dbv); err != nil {
+	if err := evr.db.QueryRowxContext(ctx, q, confirmationToken).StructScan(&dbv); err != nil {
 		if err == sql.ErrNoRows {
 			return users.EmailVerification{}, errors.Wrap(errors.ErrNotFound, err)
 		}
@@ -80,13 +80,13 @@ func (evr emailVerificationRepository) RetrieveByToken(ctx context.Context, toke
 	return toVerification(dbv), nil
 }
 
-func (evr emailVerificationRepository) Remove(ctx context.Context, token string) error {
+func (evr emailVerificationRepository) Remove(ctx context.Context, confirmationToken string) error {
 	q := `
 		DELETE FROM verifications
 		WHERE token = :token	
 	`
 
-	res, err := evr.db.NamedExecContext(ctx, q, map[string]any{"token": token})
+	res, err := evr.db.NamedExecContext(ctx, q, map[string]any{"token": confirmationToken})
 	if err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if ok {

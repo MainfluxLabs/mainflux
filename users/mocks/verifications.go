@@ -39,11 +39,11 @@ func (vrm *emailVerificationsRepositoryMock) Save(ctx context.Context, verificat
 	return verification.Token, nil
 }
 
-func (vrm *emailVerificationsRepositoryMock) RetrieveByToken(ctx context.Context, token string) (users.EmailVerification, error) {
+func (vrm *emailVerificationsRepositoryMock) RetrieveByToken(ctx context.Context, confirmationToken string) (users.EmailVerification, error) {
 	vrm.mu.Lock()
 	defer vrm.mu.Unlock()
 
-	v, ok := vrm.verificationsByToken[token]
+	v, ok := vrm.verificationsByToken[confirmationToken]
 	if !ok {
 		return users.EmailVerification{}, errors.ErrNotFound
 	}
@@ -51,15 +51,15 @@ func (vrm *emailVerificationsRepositoryMock) RetrieveByToken(ctx context.Context
 	return v, nil
 }
 
-func (vrm *emailVerificationsRepositoryMock) Remove(ctx context.Context, token string) error {
+func (vrm *emailVerificationsRepositoryMock) Remove(ctx context.Context, confirmationToken string) error {
 	vrm.mu.Lock()
 	defer vrm.mu.Unlock()
 
-	if _, ok := vrm.verificationsByToken[token]; !ok {
+	if _, ok := vrm.verificationsByToken[confirmationToken]; !ok {
 		return errors.ErrNotFound
 	}
 
-	delete(vrm.verificationsByToken, token)
+	delete(vrm.verificationsByToken, confirmationToken)
 
 	return nil
 }
