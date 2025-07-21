@@ -155,8 +155,13 @@ func TestRegisterUser(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc: "register existing user",
+			desc: "register user with pending e-mail confirmation",
 			user: sdkUser,
+			err:  nil,
+		},
+		{
+			desc: "register existing user",
+			user: sdk.User{Email: user.Email, Password: user.Password},
 			err:  createError(sdk.ErrFailedCreation, http.StatusConflict),
 		},
 		{
