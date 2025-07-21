@@ -30,7 +30,7 @@ type pageRes struct {
 type selfRegisterRes struct{}
 
 func (res selfRegisterRes) Code() int {
-	return http.StatusOK
+	return http.StatusCreated
 }
 
 func (res selfRegisterRes) Headers() map[string]string {
