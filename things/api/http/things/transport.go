@@ -107,7 +107,7 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 
 	mux.Get("/orgs/:id/things/backup", kithttp.NewServer(
 		kitot.TraceServer(tracer, "backup_things_by_org")(backupThingsByOrgEndpoint(svc)),
-		decodeBackupThings,
+		decodeBackupThingsByOrg,
 		encodeResponse,
 		opts...,
 	))
@@ -396,10 +396,10 @@ func decodeBackup(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeBackupThings(_ context.Context, r *http.Request) (interface{}, error) {
-	req := backupThingsReq{
-		token: apiutil.ExtractBearerToken(r),
+func decodeBackupThingsByOrg(_ context.Context, r *http.Request) (interface{}, error) {
+	req := backupByOrgReq{
 		id:    bone.GetValue(r, apiutil.IDKey),
+		token: apiutil.ExtractBearerToken(r),
 	}
 	return req, nil
 }

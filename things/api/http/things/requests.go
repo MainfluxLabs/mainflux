@@ -247,17 +247,17 @@ func (req removeThingsReq) validate() error {
 	return nil
 }
 
-type backupThingsReq struct {
-	token string
+type backupByOrgReq struct {
 	id    string
+	token string
 }
 
-func (req backupThingsReq) validate() error {
+func (req backupByOrgReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 	if req.id == "" {
-		return apiutil.ErrMissingGroupID
+		return apiutil.ErrMissingOrgID
 	}
 	return nil
 }

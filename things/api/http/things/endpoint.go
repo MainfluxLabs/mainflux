@@ -177,7 +177,7 @@ func listThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 
 func backupThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(backupThingsReq)
+		req := request.(backupByOrgReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
