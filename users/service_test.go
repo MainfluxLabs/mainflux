@@ -218,7 +218,7 @@ func TestListUsers(t *testing.T) {
 			Email:    email,
 			Password: "passpass",
 		}
-		_, err := svc.SelfRegister(context.Background(), user, "")
+		_, err := svc.Register(context.Background(), token, user)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 	totUser = totUser + nUsers
