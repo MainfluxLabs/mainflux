@@ -189,9 +189,14 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, uiHost stri
 		return "", err
 	}
 
-	// TODO: do we want to invalidate/remove the created verification if the user never got it in mail? probably yes?
+	// If an error occurs while attempting to send the e-mail including confirmation token to the user,
+	// abort the process i.e. remove the pending Verification from the database.
 	if err := svc.email.SendEmailVerification([]string{user.Email}, uiHost, verificationToken); err != nil {
-		return "", nil
+		if err := svc.emailVerifications.Remove(ctx, verificationToken); err != nil {
+			return "", err
+		}
+
+		return "", err
 	}
 
 	return verificationToken, nil
