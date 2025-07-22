@@ -497,7 +497,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 func encodeFileResponse(_ context.Context, w http.ResponseWriter, response interface{}) (err error) {
 	w.Header().Set("Content-Type", apiutil.ContentTypeOctetStream)
 
-	if fr, ok := response.(backupThingsRes); ok {
+	if fr, ok := response.(viewFileRes); ok {
 		for k, v := range fr.Headers() {
 			w.Header().Set(k, v)
 		}

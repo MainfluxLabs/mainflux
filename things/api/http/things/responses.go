@@ -85,20 +85,20 @@ func (res viewThingRes) Empty() bool {
 	return false
 }
 
-type backupThingsRes struct {
+type viewFileRes struct {
 	File     []byte
 	FileName string
 }
 
-func (res backupThingsRes) Code() int {
+func (res viewFileRes) Code() int {
 	return http.StatusOK
 }
 
-func (res backupThingsRes) Headers() map[string]string {
+func (res viewFileRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res backupThingsRes) Empty() bool {
+func (res viewFileRes) Empty() bool {
 	return len(res.File) == 0
 }
 

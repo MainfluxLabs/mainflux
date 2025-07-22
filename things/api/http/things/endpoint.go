@@ -408,7 +408,7 @@ func buildThingsResponse(tp things.ThingsPage) ThingsPageRes {
 	return res
 }
 
-func buildBackupThingsResponse(tb things.ThingsBackup, fileName string) (backupThingsRes, error) {
+func buildBackupThingsResponse(tb things.ThingsBackup, fileName string) (viewFileRes, error) {
 	views := make([]viewThingRes, 0, len(tb.Things))
 	for _, thing := range tb.Things {
 		views = append(views, viewThingRes{
@@ -423,10 +423,10 @@ func buildBackupThingsResponse(tb things.ThingsBackup, fileName string) (backupT
 
 	data, err := json.MarshalIndent(views, "", "  ")
 	if err != nil {
-		return backupThingsRes{}, err
+		return viewFileRes{}, err
 	}
 
-	return backupThingsRes{
+	return viewFileRes{
 		File:     data,
 		FileName: fileName,
 	}, nil
