@@ -52,19 +52,12 @@ type MessageRepository interface {
 // Message represents any message format.
 type Message interface{}
 
-type Aggregation struct {
-	Field string      `json:"field"`
-	Value interface{} `json:"value"`
-	Count uint64      `json:"count, omitempty"`
-}
-
 // MessagesPage contains page related metadata as well as list of messages that
 // belong to this page.
 type MessagesPage struct {
 	PageMetadata
-	Total       uint64
-	Messages    []Message
-	Aggregation Aggregation `json:"aggregation,omitempty"`
+	Total    uint64
+	Messages []Message
 }
 
 // PageMetadata represents the parameters used to create database queries
