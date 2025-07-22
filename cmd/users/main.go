@@ -69,7 +69,8 @@ const (
 	defAdminPassword    = ""
 	defPassRegex        = `^\S{8,}$`
 
-	defTokenResetEndpoint = "/reset-request" // URL where user lands after click on the reset link from email
+	defTokenResetEndpoint  = "/reset-request" // URL where user lands after click on the reset link from email
+	defEmailVerifyEndpoint = "/verify-email"
 
 	defAuthTLS         = "false"
 	defAuthCACerts     = ""
@@ -282,15 +283,16 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceC
 	database := dbutil.NewDatabase(db)
 	hasher := bcrypt.New()
 	userRepo := tracing.UserRepositoryMiddleware(postgres.NewUserRepo(database), tracer)
+	verificationRepo := tracing.VerificationRepositoryMiddleware(postgres.NewEmailVerificationRepo(database), tracer)
 
-	emailer, err := emailer.New(c.resetURL, &c.emailConf)
+	emailer, err := emailer.New(c.resetURL, defEmailVerifyEndpoint, &c.emailConf)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to configure e-mailing util: %s", err.Error()))
 	}
 
 	idProvider := uuid.New()
 
-	svc := users.New(userRepo, hasher, ac, emailer, idProvider)
+	svc := users.New(userRepo, verificationRepo, hasher, ac, emailer, idProvider)
 	svc = httpapi.LoggingMiddleware(svc, logger)
 	svc = httpapi.MetricsMiddleware(
 		svc,
