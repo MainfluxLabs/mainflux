@@ -27,11 +27,12 @@ const (
 	EmailKey    = "email"
 	PayloadKey  = "payload"
 
-	NameOrder       = "name"
-	IDOrder         = "id"
-	AscDir          = "asc"
-	DescDir         = "desc"
-	ContentTypeJSON = "application/json"
+	NameOrder              = "name"
+	IDOrder                = "id"
+	AscDir                 = "asc"
+	DescDir                = "desc"
+	ContentTypeJSON        = "application/json"
+	ContentTypeOctetStream = "application/octet-stream"
 
 	DefOffset = 0
 	DefLimit  = 10
@@ -155,7 +156,7 @@ func ReadIntQuery(r *http.Request, key string, def int64) (int64, error) {
 	if len(vals) > 1 {
 		return 0, ErrInvalidQueryParams
 	}
-	
+
 	if len(vals) == 0 {
 		return def, nil
 	}

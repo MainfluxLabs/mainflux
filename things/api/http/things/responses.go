@@ -86,7 +86,8 @@ func (res viewThingRes) Empty() bool {
 }
 
 type backupThingsRes struct {
-	Things []viewThingRes `json:"things"`
+	File     []byte
+	FileName string
 }
 
 func (res backupThingsRes) Code() int {
@@ -98,7 +99,7 @@ func (res backupThingsRes) Headers() map[string]string {
 }
 
 func (res backupThingsRes) Empty() bool {
-	return len(res.Things) == 0
+	return len(res.File) == 0
 }
 
 type viewMetadataRes struct {

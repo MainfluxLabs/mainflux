@@ -5,6 +5,8 @@ package things
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/api/http/memberships"
@@ -185,7 +187,9 @@ func backupThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		return buildBackupThingsResponse(backup), nil
+
+		fileName := fmt.Sprintf("things-backup-by-group-%s.json", req.id)
+		return buildBackupThingsResponse(backup, fileName)
 	}
 }
 
@@ -199,7 +203,9 @@ func backupThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		return buildBackupThingsResponse(backup), nil
+
+		fileName := fmt.Sprintf("things-backup-by-org-%s.json", req.id)
+		return buildBackupThingsResponse(backup, fileName)
 	}
 }
 
@@ -385,22 +391,28 @@ func buildThingsResponse(tp things.ThingsPage) ThingsPageRes {
 	return res
 }
 
-func buildBackupThingsResponse(tb things.ThingsBackup) backupThingsRes {
-	res := backupThingsRes{
-		Things: []viewThingRes{},
-	}
+func buildBackupThingsResponse(tb things.ThingsBackup, fileName string) (backupThingsRes, error) {
+	views := make([]viewThingRes, 0, len(tb.Things))
 	for _, thing := range tb.Things {
-		view := viewThingRes{
+		views = append(views, viewThingRes{
 			ID:        thing.ID,
 			GroupID:   thing.GroupID,
 			ProfileID: thing.ProfileID,
 			Name:      thing.Name,
 			Key:       thing.Key,
 			Metadata:  thing.Metadata,
-		}
-		res.Things = append(res.Things, view)
+		})
 	}
-	return res
+
+	data, err := json.MarshalIndent(views, "", "  ")
+	if err != nil {
+		return backupThingsRes{}, err
+	}
+
+	return backupThingsRes{
+		File:     data,
+		FileName: fileName,
+	}, nil
 }
 
 func buildBackupResponse(backup things.Backup) backupRes {
