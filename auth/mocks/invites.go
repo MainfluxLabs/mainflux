@@ -32,6 +32,12 @@ func (irm *invitesRepositoryMock) Save(ctx context.Context, invites ...auth.Invi
 			return errors.ErrConflict
 		}
 
+		for _, iInv := range irm.invites {
+			if iInv.InviteeID == invite.InviteeID && iInv.OrgID == invite.OrgID {
+				return errors.ErrConflict
+			}
+		}
+
 		irm.invites[invite.ID] = invite
 	}
 
