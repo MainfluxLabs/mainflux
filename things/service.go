@@ -59,6 +59,9 @@ type Service interface {
 	// the provided key.
 	ListThingsByProfile(ctx context.Context, token, prID string, pm apiutil.PageMetadata) (ThingsPage, error)
 
+	// BackupThingsByGroup retrieves all things for given group ID.
+	BackupThingsByGroup(ctx context.Context, token string, groupID string) (ThingsBackup, error)
+
 	// BackupThingsByOrg retrieves all things for given org ID.
 	BackupThingsByOrg(ctx context.Context, token string, orgID string) (ThingsBackup, error)
 
@@ -440,6 +443,21 @@ func (ts *thingsService) ListThingsByProfile(ctx context.Context, token, prID st
 	}
 
 	return tp, nil
+}
+
+func (ts *thingsService) BackupThingsByGroup(ctx context.Context, token string, groupID string) (ThingsBackup, error) {
+	if err := ts.canAccessGroup(ctx, token, groupID, Owner); err != nil {
+		return ThingsBackup{}, err
+	}
+
+	things, err := ts.things.BackupByGroups(ctx, []string{groupID})
+	if err != nil {
+		return ThingsBackup{}, err
+	}
+
+	return ThingsBackup{
+		Things: things,
+	}, nil
 }
 
 func (ts *thingsService) BackupThingsByOrg(ctx context.Context, token string, orgID string) (ThingsBackup, error) {

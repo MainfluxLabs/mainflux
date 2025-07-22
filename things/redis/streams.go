@@ -278,6 +278,10 @@ func (es eventStore) ListThingsByGroup(ctx context.Context, token, groupID strin
 	return es.svc.ListThingsByGroup(ctx, token, groupID, pm)
 }
 
+func (es eventStore) BackupThingsByGroup(ctx context.Context, token string, groupID string) (things.ThingsBackup, error) {
+	return es.svc.BackupThingsByGroup(ctx, token, groupID)
+}
+
 func (es eventStore) BackupThingsByOrg(ctx context.Context, token string, orgID string) (things.ThingsBackup, error) {
 	return es.svc.BackupThingsByOrg(ctx, token, orgID)
 }

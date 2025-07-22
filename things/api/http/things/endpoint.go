@@ -175,6 +175,20 @@ func listThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func backupThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(backupByGroupReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+		backup, err := svc.BackupThingsByGroup(ctx, req.token, req.id)
+		if err != nil {
+			return nil, err
+		}
+		return buildBackupThingsResponse(backup), nil
+	}
+}
+
 func backupThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(backupByOrgReq)
