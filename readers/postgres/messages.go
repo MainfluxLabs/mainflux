@@ -30,12 +30,14 @@ var (
 )
 
 type postgresRepository struct {
-	db *sqlx.DB
+	db         *sqlx.DB
+	aggregator *aggregationService
 }
 
 func New(db *sqlx.DB) readers.MessageRepository {
 	return &postgresRepository{
-		db: db,
+		db:         db,
+		aggregator: newAggregationService(db),
 	}
 }
 
@@ -66,24 +68,13 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.Pag
 		}
 	}()
 
-	condition := fmtCondition(rpm, table)
+	condition := tr.fmtCondition(rpm, table)
 	q := fmt.Sprintf("DELETE FROM %s %s", table, condition)
 	params := tr.buildDeleteQueryParams(rpm)
 
 	_, err = tx.NamedExecContext(ctx, q, params)
 	if err != nil {
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pgErr.Code {
-			case pgerrcode.UndefinedTable:
-				return errors.Wrap(errors.ErrDeleteMessages, err)
-			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrDeleteMessages, errInvalidMessage)
-			default:
-				return errors.Wrap(errors.ErrDeleteMessages, err)
-			}
-		}
-		return errors.Wrap(errors.ErrDeleteMessages, err)
+		return tr.handlePgError(err, errors.ErrDeleteMessages)
 	}
 
 	return nil
@@ -97,7 +88,7 @@ func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Mess
           :value, :string_value, :bool_value, :data_value, :sum,
           :time, :update_time);`
 
-	tx, err := tr.db.BeginTxx(context.Background(), nil)
+	tx, err := tr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
@@ -116,27 +107,36 @@ func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Mess
 	}()
 
 	for _, msg := range messages {
-		m := msg
-
-		if _, err := tx.NamedExec(q, m); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok && pgErr.Code == pgerrcode.InvalidTextRepresentation {
-				return errors.Wrap(errors.ErrSaveMessages, errInvalidMessage)
-			}
-			return errors.Wrap(errors.ErrSaveMessages, err)
+		if _, err := tx.NamedExec(q, msg); err != nil {
+			return tr.handlePgError(err, errors.ErrSaveMessages)
 		}
 	}
 
-	return err
+	return nil
 }
 
 func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	format, order := tr.getFormatAndOrder(rpm)
-	params := tr.buildQueryParams(rpm)
-
 	page := readers.MessagesPage{
 		PageMetadata: rpm,
 		Messages:     []readers.Message{},
+	}
+
+	format, order := tr.getFormatAndOrder(rpm)
+	params := tr.buildQueryParams(rpm)
+
+	if rpm.AggType != "" && rpm.AggInterval != "" {
+		messages, err := tr.aggregator.readAggregatedMessages(rpm)
+		if err != nil {
+			return page, err
+		}
+		page.Messages = messages
+
+		total, err := tr.readCount(rpm, format, order, params)
+		if err != nil {
+			return page, err
+		}
+		page.Total = total
+		return page, nil
 	}
 
 	messages, err := tr.readMessages(rpm, format, order, params)
@@ -150,14 +150,6 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 		return page, err
 	}
 	page.Total = total
-
-	if rpm.AggType != "" {
-		aggregation, err := tr.readAggregation(rpm, format, order, params)
-		if err != nil {
-			return page, err
-		}
-		page.Aggregation = aggregation
-	}
 
 	return page, nil
 }
@@ -196,49 +188,11 @@ func (tr postgresRepository) readCount(rpm readers.PageMetadata, format, order s
 	return total, nil
 }
 
-func (tr postgresRepository) readAggregation(rpm readers.PageMetadata, format, order string, params map[string]interface{}) (readers.Aggregation, error) {
-	query := tr.buildAggregationQuery(rpm, format, order)
-	rows, err := tr.executeQuery(query, params)
-	if err != nil {
-		return readers.Aggregation{}, err
-	}
-	if rows == nil {
-		return readers.Aggregation{}, nil
-	}
-	defer rows.Close()
-
-	aggregationType := rpm.AggType
-	var result interface{}
-	var count uint64
-
-	if rows.Next() {
-		if aggregationType == readers.AggregationCount {
-			if err := rows.Scan(&count, &count); err != nil {
-				return readers.Aggregation{}, errors.Wrap(readers.ErrReadMessages, err)
-			}
-			result = count
-		} else {
-			if err := rows.Scan(&result, &count); err != nil {
-				return readers.Aggregation{}, errors.Wrap(readers.ErrReadMessages, err)
-			}
-		}
-	}
-
-	aggregateField := tr.getAggregateField(rpm, format)
-	return readers.Aggregation{
-		Field: aggregateField,
-		Value: result,
-		Count: count,
-	}, nil
-}
-
 func (tr postgresRepository) executeQuery(query string, params map[string]interface{}) (*sqlx.Rows, error) {
 	rows, err := tr.db.NamedQuery(query, params)
 	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok {
-			if pgErr.Code == pgerrcode.UndefinedTable {
-				return nil, nil
-			}
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
+			return nil, nil
 		}
 		return nil, errors.Wrap(readers.ErrReadMessages, err)
 	}
@@ -248,7 +202,7 @@ func (tr postgresRepository) executeQuery(query string, params map[string]interf
 func (tr postgresRepository) buildRegularQuery(rpm readers.PageMetadata, format, order string) string {
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 	interval := rpm.AggInterval
-	condition := fmtCondition(rpm, format)
+	condition := tr.fmtCondition(rpm, format)
 
 	if interval != "" {
 		switch format {
@@ -277,16 +231,16 @@ func (tr postgresRepository) buildRegularQuery(rpm readers.PageMetadata, format,
 
 func (tr postgresRepository) buildCountQuery(rpm readers.PageMetadata, format, order string) string {
 	interval := rpm.AggInterval
-	condition := fmtCondition(rpm, format)
+	condition := tr.fmtCondition(rpm, format)
 
 	if interval != "" {
 		switch format {
 		case defTable:
 			return fmt.Sprintf(`
 				SELECT COUNT(*) FROM (
-					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(%[2]s))) *
+					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(%[2]s / 1000000000))) *
 					FROM %[3]s %[4]s
-					ORDER BY date_trunc('%[1]s', to_timestamp(%[2]s)), %[2]s DESC
+					ORDER BY date_trunc('%[1]s', to_timestamp(%[2]s / 1000000000)), %[2]s DESC
 				) sub;`, interval, order, format, condition)
 		case jsonTable:
 			return fmt.Sprintf(`
@@ -299,66 +253,6 @@ func (tr postgresRepository) buildCountQuery(rpm readers.PageMetadata, format, o
 	}
 
 	return fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, format, condition)
-}
-
-func (tr postgresRepository) buildAggregationQuery(rpm readers.PageMetadata, format, order string) string {
-	aggField := tr.getAggregateField(rpm, format)
-	aggFunc := tr.buildAggregationFunction(rpm.AggType, aggField)
-	subQuery := tr.buildSubQuery(rpm, format, order)
-
-	return fmt.Sprintf(`SELECT %s as result, COUNT(*) as count FROM (%s) as paginated_results;`, aggFunc, subQuery)
-}
-
-func (tr postgresRepository) buildSubQuery(rpm readers.PageMetadata, format, order string) string {
-	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
-	interval := rpm.AggInterval
-	condition := fmtCondition(rpm, format)
-
-	if interval != "" {
-		return tr.buildIntervalSubQuery(interval, format, order, condition, olq)
-	}
-	return fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s`, format, condition, order, olq)
-}
-
-func (tr postgresRepository) buildIntervalSubQuery(interval, format, order, condition, olq string) string {
-	switch format {
-	case defTable:
-		return fmt.Sprintf(`
-				SELECT * FROM (
-					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(%[2]s))) *
-					FROM %[3]s %[4]s
-					ORDER BY date_trunc('%[1]s', to_timestamp(%[2]s)), %[2]s DESC
-				) sub
-				%[5]s`, interval, order, format, condition, olq)
-
-	case jsonTable:
-		return fmt.Sprintf(`
-				SELECT * FROM (
-					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(created / 1000000000))) *
-					FROM %[2]s %[3]s
-					ORDER BY date_trunc('%[1]s', to_timestamp(created / 1000000000)), created DESC
-				) sub
-				%[4]s`, interval, format, condition, olq)
-	default:
-		return ""
-	}
-}
-
-func (tr postgresRepository) buildAggregationFunction(aggregationType, aggregateField string) string {
-	var aggFunc string
-
-	switch aggregationType {
-	case readers.AggregationMin:
-		aggFunc = fmt.Sprintf("MIN(%s)", aggregateField)
-	case readers.AggregationMax:
-		aggFunc = fmt.Sprintf("MAX(%s)", aggregateField)
-	case readers.AggregationAvg:
-		aggFunc = fmt.Sprintf("AVG(%s)", aggregateField)
-	case readers.AggregationCount:
-		aggFunc = "COUNT(*)"
-	}
-
-	return aggFunc
 }
 
 func (tr postgresRepository) scanMessages(rows *sqlx.Rows, format string) ([]readers.Message, error) {
@@ -391,7 +285,7 @@ func (tr postgresRepository) scanMessages(rows *sqlx.Rows, format string) ([]rea
 	return messages, nil
 }
 
-func fmtCondition(rpm readers.PageMetadata, table string) string {
+func (tr postgresRepository) fmtCondition(rpm readers.PageMetadata, table string) string {
 	var query map[string]interface{}
 	meta, err := json.Marshal(rpm)
 	if err != nil {
@@ -401,11 +295,7 @@ func fmtCondition(rpm readers.PageMetadata, table string) string {
 
 	condition := ""
 	op := "WHERE"
-	timeColumn := "time"
-
-	if table != "" && table == jsonTable {
-		timeColumn = "created"
-	}
+	timeColumn := tr.getTimeColumn(table)
 
 	for name := range query {
 		switch name {
@@ -444,20 +334,15 @@ func (tr postgresRepository) getFormatAndOrder(rpm readers.PageMetadata) (format
 		format = jsonTable
 		order = "created"
 	}
+
 	return format, order
 }
 
-func (tr postgresRepository) getAggregateField(rpm readers.PageMetadata, format string) string {
-	switch rpm.AggField {
-	case "":
-		if format == jsonTable {
-			return "created"
-		} else {
-			return "value"
-		}
-	default:
-		return rpm.AggField
+func (tr postgresRepository) getTimeColumn(table string) string {
+	if table == jsonTable {
+		return "created"
 	}
+	return "time"
 }
 
 func (tr postgresRepository) buildQueryParams(rpm readers.PageMetadata) map[string]interface{} {
@@ -490,4 +375,19 @@ func (tr postgresRepository) buildDeleteQueryParams(rpm readers.PageMetadata) ma
 		"from":         rpm.From,
 		"to":           rpm.To,
 	}
+}
+
+func (tr postgresRepository) handlePgError(err error, wrapErr error) error {
+	pgErr, ok := err.(*pgconn.PgError)
+	if ok {
+		switch pgErr.Code {
+		case pgerrcode.UndefinedTable:
+			return errors.Wrap(wrapErr, err)
+		case pgerrcode.InvalidTextRepresentation:
+			return errors.Wrap(wrapErr, errInvalidMessage)
+		default:
+			return errors.Wrap(wrapErr, err)
+		}
+	}
+	return errors.Wrap(wrapErr, err)
 }
