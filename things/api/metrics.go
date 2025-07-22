@@ -309,6 +309,15 @@ func (ms *metricsMiddleware) BackupProfilesByOrg(ctx context.Context, token stri
 	return ms.svc.BackupProfilesByOrg(ctx, token, orgID)
 }
 
+func (ms *metricsMiddleware) BackupProfilesByGroup(ctx context.Context, token string, groupID string) (pb things.ProfilesBackup, err error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "backup_profiles_by_group").Add(1)
+		ms.latency.With("method", "backup_profiles_by_group").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.BackupProfilesByGroup(ctx, token, groupID)
+}
+
 func (ms *metricsMiddleware) BackupThingsByGroup(ctx context.Context, token string, groupID string) (tb things.ThingsBackup, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "backup_things_by_group").Add(1)

@@ -183,17 +183,32 @@ func (req removeProfilesReq) validate() error {
 	return nil
 }
 
-type backupReq struct {
+type backupByGroupReq struct {
 	token string
 	id    string
 }
 
-func (req backupReq) validate() error {
+func (req backupByGroupReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 	if req.id == "" {
 		return apiutil.ErrMissingGroupID
+	}
+	return nil
+}
+
+type backupByOrgReq struct {
+	token string
+	id    string
+}
+
+func (req backupByOrgReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if req.id == "" {
+		return apiutil.ErrMissingOrgID
 	}
 	return nil
 }
