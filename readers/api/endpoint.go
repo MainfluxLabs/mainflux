@@ -72,7 +72,6 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			PageMetadata: page.PageMetadata,
 			Total:        page.Total,
 			Messages:     page.Messages,
-			Aggregation:  page.Aggregation,
 		}, nil
 	}
 }
@@ -104,7 +103,7 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, errors.ErrAuthentication
 		}
 
-		err :=  svc.DeleteMessages(ctx, req.pageMeta, table)
+		err := svc.DeleteMessages(ctx, req.pageMeta, table)
 		if err != nil {
 			return nil, err
 		}
