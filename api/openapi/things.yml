@@ -524,8 +524,32 @@ paths:
           $ref: "#/components/responses/ProfilesBackupRes"
         '401':
           description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
         '404':
           description: Failed due to non existing organization or related entities.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /groups/{groupId}/profiles/backup:
+    get:
+      summary: Retrieves profile backup by group.
+      description: |
+        Retrieves a backup of all profiles associated with the specified group. The response is a JSON object containing all related profiles. 
+      tags:
+        - profiles
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      responses:
+        '200':
+          $ref: "#/components/responses/ProfilesBackupRes"
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Failed due to non existing group or related entities.
         '422':
           description: Database can't process request.
         '500':
