@@ -74,7 +74,8 @@ func (as *aggregationService) buildAggregationQuery(rpm readers.PageMetadata, fo
 }
 
 func (as *aggregationService) buildMinMaxQuery(format, timeColumn, aggField, condition, conditionForJoin, interval string, limit uint64, aggFunc string) string {
-	if format == defTable {
+	switch format {
+	case defTable:
 		return fmt.Sprintf(`
 			WITH time_intervals AS (
 				SELECT generate_series(
@@ -104,7 +105,7 @@ func (as *aggregationService) buildMinMaxQuery(format, timeColumn, aggField, con
 			interval, limit, interval, interval, interval, limit,
 			aggFunc, aggField, format, interval, timeColumn, conditionForJoin,
 			aggFunc, aggField, format, interval, timeColumn, aggField, condition, timeColumn)
-	} else {
+	default:
 		return fmt.Sprintf(`
 			WITH time_intervals AS (
 				SELECT generate_series(
