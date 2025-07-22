@@ -209,6 +209,23 @@ func backupThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func restoreThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(restoreThingsByOrgReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		thingsBackup := buildThingsBackup(req)
+
+		if err := svc.RestoreThingsByOrg(ctx, req.token, req.id, thingsBackup); err != nil {
+			return nil, err
+		}
+
+		return restoreRes{}, nil
+	}
+}
+
 func updateThingEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(updateThingReq)
@@ -413,6 +430,21 @@ func buildBackupThingsResponse(tb things.ThingsBackup, fileName string) (backupT
 		File:     data,
 		FileName: fileName,
 	}, nil
+}
+
+func buildThingsBackup(req restoreThingsByOrgReq) (backup things.ThingsBackup) {
+	for _, thing := range req.Things {
+		th := things.Thing{
+			ID:        thing.ID,
+			GroupID:   thing.GroupID,
+			ProfileID: thing.ProfileID,
+			Name:      thing.Name,
+			Key:       thing.Key,
+			Metadata:  thing.Metadata,
+		}
+		backup.Things = append(backup.Things, th)
+	}
+	return backup
 }
 
 func buildBackupResponse(backup things.Backup) backupRes {

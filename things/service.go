@@ -65,6 +65,9 @@ type Service interface {
 	// BackupThingsByOrg retrieves all things for given org ID.
 	BackupThingsByOrg(ctx context.Context, token string, orgID string) (ThingsBackup, error)
 
+	// Restore adds all things for a given org ID from a backup.
+	RestoreThingsByOrg(ctx context.Context, token string, orgID string, backup ThingsBackup) error
+
 	// RemoveThings removes the things identified with the provided IDs, that
 	// belongs to the user identified by the provided key.
 	RemoveThings(ctx context.Context, token string, id ...string) error
@@ -478,6 +481,18 @@ func (ts *thingsService) BackupThingsByOrg(ctx context.Context, token string, or
 	return ThingsBackup{
 		Things: things,
 	}, nil
+}
+
+func (ts *thingsService) RestoreThingsByOrg(ctx context.Context, token string, orgID string, backup ThingsBackup) error {
+	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Owner); err != nil {
+		return err
+	}
+
+	if _, err := ts.things.Save(ctx, backup.Things...); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...string) error {

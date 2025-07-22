@@ -172,6 +172,19 @@ func (lm *loggingMiddleware) BackupThingsByOrg(ctx context.Context, token string
 	return lm.svc.BackupThingsByOrg(ctx, token, orgID)
 }
 
+func (lm *loggingMiddleware) RestoreThingsByOrg(ctx context.Context, token string, orgID string, backup things.ThingsBackup) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method restore_things_by_org took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RestoreThingsByOrg(ctx, token, orgID, backup)
+}
+
 func (lm *loggingMiddleware) RemoveThings(ctx context.Context, token string, ids ...string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method remove_things took %s to complete", time.Since(begin))

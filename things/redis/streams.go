@@ -286,6 +286,10 @@ func (es eventStore) BackupThingsByOrg(ctx context.Context, token string, orgID 
 	return es.svc.BackupThingsByOrg(ctx, token, orgID)
 }
 
+func (es eventStore) RestoreThingsByOrg(ctx context.Context, token string, orgID string, backup things.ThingsBackup) error {
+	return es.svc.RestoreThingsByOrg(ctx, token, orgID, backup)
+}
+
 func (es eventStore) ListProfilesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	return es.svc.ListProfilesByGroup(ctx, token, groupID, pm)
 }

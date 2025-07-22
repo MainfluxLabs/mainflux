@@ -142,6 +142,10 @@ func (svc *mainfluxThings) BackupThingsByOrg(context.Context, string, string) (t
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) RestoreThingsByOrg(context.Context, string, string, things.ThingsBackup) error {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) Restore(context.Context, string, things.Backup) error {
 	panic("not implemented")
 }
