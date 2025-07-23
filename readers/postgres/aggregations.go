@@ -151,17 +151,17 @@ func (as *aggregationService) buildMinMaxQuery(format, timeColumn, aggField, con
 			interval_aggs AS (
 				SELECT 
 					ti.interval_time,
-					%s((m.payload->>'v')::float) as agg_value
+					%s(CAST(m.payload->>'v' AS float)) as agg_value
 				FROM time_intervals ti
 				LEFT JOIN %s m ON date_trunc('%s', to_timestamp(m.created / 1000000000)) = ti.interval_time
 					%s
 				GROUP BY ti.interval_time
-				HAVING %s((m.payload->>'v')::float) IS NOT NULL
+				HAVING %s(CAST(m.payload->>'v' AS float)) IS NOT NULL
 			)
 			SELECT DISTINCT ON (ia.interval_time) m.*
 			FROM %s m
 			JOIN interval_aggs ia ON date_trunc('%s', to_timestamp(m.created / 1000000000)) = ia.interval_time
-				AND (m.payload->>'v')::float = ia.agg_value
+				AND CAST(m.payload->>'v' as FLOAT) = ia.agg_value
 			%s
 			ORDER BY ia.interval_time DESC, m.created DESC;`,
 			interval, format, condition, limit, interval,
@@ -223,13 +223,13 @@ func (as *aggregationService) buildAvgQuery(format, timeColumn, aggField, condit
 			interval_aggs AS (
 				SELECT 
 					ti.interval_time,
-					AVG((m.payload->>'v')::float) as avg_value,
+					AVG(CAST(m.payload->>'v' AS float)) as avg_value,
 					MAX(m.created) as max_time  
 				FROM time_intervals ti
 				LEFT JOIN %s m ON date_trunc('%s', to_timestamp(m.created / 1000000000)) = ti.interval_time
 					%s
 				GROUP BY ti.interval_time
-				HAVING AVG((m.payload->>'v')::float) IS NOT NULL
+				HAVING AVG(CAST(m.payload->>'v' AS float)) IS NOT NULL
 			)
 			SELECT DISTINCT ON (ia.interval_time) 
 				m.created, m.subtopic, m.publisher, m.protocol,
@@ -301,13 +301,13 @@ func (as *aggregationService) buildCountQuery(format, timeColumn, aggField, cond
 			interval_aggs AS (
 				SELECT 
 					ti.interval_time,
-					SUM((m.payload->>'v')::float) as sum_value,
+					SUM(CAST(m.payload->>'v' AS float)) as sum_value,
 					MAX(m.created) as max_time  
 				FROM time_intervals ti
 				LEFT JOIN %s m ON date_trunc('%s', to_timestamp(m.created / 1000000000)) = ti.interval_time
 					%s
 				GROUP BY ti.interval_time
-				HAVING SUM((m.payload->>'v')::float) IS NOT NULL
+				HAVING SUM(CAST(m.payload->>'v' AS float)) IS NOT NULL
 			)
 			SELECT DISTINCT ON (ia.interval_time) 
 				m.created, m.subtopic, m.publisher, m.protocol,
