@@ -1954,7 +1954,7 @@ func TestBackupThingsByGroup(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	pr := prs[0]
 
-	data := []thingRes{}
+	data := []viewThingRes{}
 
 	for i := 0; i < n; i++ {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
@@ -1967,7 +1967,7 @@ func TestBackupThingsByGroup(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := ths[0]
 
-		data = append(data, thingRes{
+		data = append(data, viewThingRes{
 			ID:        th.ID,
 			GroupID:   th.GroupID,
 			ProfileID: th.ProfileID,
@@ -1984,7 +1984,7 @@ func TestBackupThingsByGroup(t *testing.T) {
 		auth   string
 		status int
 		url    string
-		res    []thingRes
+		res    []viewThingRes
 	}{
 		{
 			desc:   "backup things by group as group owner",
@@ -2039,10 +2039,10 @@ func TestBackupThingsByGroup(t *testing.T) {
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		var body thingsPageRes
+		var body []viewThingRes
 		json.NewDecoder(res.Body).Decode(&body)
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
-		assert.ElementsMatch(t, tc.res, body.Things, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body.Things))
+		assert.ElementsMatch(t, tc.res, body, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body))
 	}
 }
 
@@ -2060,7 +2060,7 @@ func TestBackupThingsByOrg(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	pr := prs[0]
 
-	data := []thingRes{}
+	data := []viewThingRes{}
 
 	for i := 0; i < n; i++ {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
@@ -2073,7 +2073,7 @@ func TestBackupThingsByOrg(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := ths[0]
 
-		data = append(data, thingRes{
+		data = append(data, viewThingRes{
 			ID:        th.ID,
 			GroupID:   th.GroupID,
 			ProfileID: th.ProfileID,
@@ -2090,7 +2090,7 @@ func TestBackupThingsByOrg(t *testing.T) {
 		auth   string
 		status int
 		url    string
-		res    []thingRes
+		res    []viewThingRes
 	}{
 		{
 			desc:   "backup things by org as org owner",
@@ -2145,10 +2145,12 @@ func TestBackupThingsByOrg(t *testing.T) {
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		var body thingsPageRes
+
+		defer res.Body.Close()
+		var body []viewThingRes
 		json.NewDecoder(res.Body).Decode(&body)
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
-		assert.ElementsMatch(t, tc.res, body.Things, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body.Things))
+		assert.ElementsMatch(t, tc.res, body, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body))
 	}
 }
 
@@ -2375,9 +2377,9 @@ func TestBackup(t *testing.T) {
 		ths = append(ths, th)
 	}
 
-	var thingsRes []backupThingRes
+	var thingsRes []viewThingRes
 	for _, th := range ths {
-		thingsRes = append(thingsRes, backupThingRes{
+		thingsRes = append(thingsRes, viewThingRes{
 			ID:        th.ID,
 			GroupID:   th.GroupID,
 			ProfileID: th.ProfileID,
@@ -2699,9 +2701,9 @@ type thingsPageRes struct {
 	Limit  uint64     `json:"limit"`
 }
 
-type backupThingRes struct {
+type viewThingRes struct {
 	ID        string                 `json:"id"`
-	GroupID   string                 `json:"group_id"`
+	GroupID   string                 `json:"group_id,omitempty"`
 	ProfileID string                 `json:"profile_id"`
 	Name      string                 `json:"name,omitempty"`
 	Key       string                 `json:"key"`
@@ -2724,7 +2726,7 @@ type viewGroupRes struct {
 }
 
 type backupRes struct {
-	Things   []backupThingRes   `json:"things"`
+	Things   []viewThingRes     `json:"things"`
 	Profiles []backupProfileRes `json:"profiles"`
 	Groups   []viewGroupRes     `json:"groups"`
 }
