@@ -326,10 +326,10 @@ func (as *aggregationService) getTimeColumn(table string) string {
 func (as *aggregationService) getAggregateField(rpm readers.PageMetadata, format string) string {
 	switch rpm.AggField {
 	case "":
-		if format == jsonTable {
-			return "created"
-		} else {
+		if format == defTable {
 			return "value"
+		} else {
+			return "created"
 		}
 	default:
 		return rpm.AggField
