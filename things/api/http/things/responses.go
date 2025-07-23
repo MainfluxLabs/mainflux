@@ -86,8 +86,7 @@ func (res viewThingRes) Empty() bool {
 }
 
 type viewFileRes struct {
-	File     []byte
-	FileName string
+	File []byte
 }
 
 func (res viewFileRes) Code() int {
