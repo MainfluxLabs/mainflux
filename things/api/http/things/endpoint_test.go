@@ -2047,6 +2047,114 @@ func TestBackupThingsByGroup(t *testing.T) {
 	}
 }
 
+func TestRestoreThingsByGroup(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+	idProvider := uuid.New()
+
+	data := []viewThingRes{}
+
+	grs, err := svc.CreateGroups(context.Background(), otherToken, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	prID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	for i := 0; i < n; i++ {
+		thId, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+		thKey, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		data = append(data, viewThingRes{
+			ID:        thId,
+			GroupID:   gr.ID,
+			ProfileID: prID,
+			Name:      fmt.Sprintf("thing_%d", i),
+			Key:       thKey,
+			Metadata:  metadata,
+		})
+	}
+
+	dataBytes, err := json.Marshal(data)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	dataString := string(dataBytes)
+
+	thingURL := fmt.Sprintf("%s/groups", ts.URL)
+
+	cases := []struct {
+		desc        string
+		auth        string
+		contentType string
+		data        string
+		status      int
+		url         string
+		res         string
+	}{
+		{
+			desc:        "restore things by group as group owner",
+			auth:        token,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusCreated,
+			url:         fmt.Sprintf("%s/%s/things/backup", thingURL, gr.ID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore things by group the user belongs to",
+			auth:        otherToken,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusForbidden,
+			url:         fmt.Sprintf("%s/%s/things/backup", thingURL, gr.ID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore things by group without group id",
+			auth:        token,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusBadRequest,
+			url:         fmt.Sprintf("%s/%s/things/backup", thingURL, emptyValue),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore things by group with invalid token",
+			auth:        wrongValue,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusUnauthorized,
+			url:         fmt.Sprintf("%s/%s/things/backup", thingURL, gr.ID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore things by group with empty token",
+			auth:        emptyValue,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusUnauthorized,
+			url:         fmt.Sprintf("%s/%s/things/backup", thingURL, gr.ID),
+			res:         emptyValue,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPost,
+			url:         tc.url,
+			contentType: tc.contentType,
+			token:       tc.auth,
+			body:        strings.NewReader(tc.data),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
 func TestBackupThingsByOrg(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)

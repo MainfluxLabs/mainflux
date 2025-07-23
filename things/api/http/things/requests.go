@@ -289,6 +289,26 @@ func (req backupReq) validate() error {
 	return nil
 }
 
+type restoreThingsByGroupReq struct {
+	id     string
+	token  string
+	Things []viewThingRes
+}
+
+func (req restoreThingsByGroupReq) validate() error {
+	if req.id == "" {
+		return apiutil.ErrMissingGroupID
+	}
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if len(req.Things) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	return nil
+}
+
 type restoreThingsByOrgReq struct {
 	id     string
 	token  string

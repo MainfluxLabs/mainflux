@@ -114,6 +114,13 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		opts...,
 	))
 
+	mux.Post("/groups/:id/things/backup", kithttp.NewServer(
+		kitot.TraceServer(tracer, "restore_things_by_group")(restoreThingsByGroupEndpoint(svc)),
+		decodeRestoreThingsByGroup,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Get("/orgs/:id/things/backup", kithttp.NewServer(
 		kitot.TraceServer(tracer, "backup_things_by_org")(backupThingsByOrgEndpoint(svc)),
 		decodeBackupThingsByOrg,
@@ -425,6 +432,28 @@ func decodeBackupThingsByOrg(_ context.Context, r *http.Request) (interface{}, e
 		id:    bone.GetValue(r, apiutil.IDKey),
 		token: apiutil.ExtractBearerToken(r),
 	}
+	return req, nil
+}
+
+func decodeRestoreThingsByGroup(ctx context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeOctetStream) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := restoreThingsByGroupReq{
+		id:    bone.GetValue(r, apiutil.IDKey),
+		token: apiutil.ExtractBearerToken(r),
+	}
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	if err := json.Unmarshal(data, &req.Things); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
 	return req, nil
 }
 

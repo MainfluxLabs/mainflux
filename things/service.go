@@ -62,10 +62,13 @@ type Service interface {
 	// BackupThingsByGroup retrieves all things for given group ID.
 	BackupThingsByGroup(ctx context.Context, token string, groupID string) (ThingsBackup, error)
 
+	// RestoreThingsByGroup adds all things for a given group ID from a backup.
+	RestoreThingsByGroup(ctx context.Context, token string, groupID string, backup ThingsBackup) error
+
 	// BackupThingsByOrg retrieves all things for given org ID.
 	BackupThingsByOrg(ctx context.Context, token string, orgID string) (ThingsBackup, error)
 
-	// Restore adds all things for a given org ID from a backup.
+	// RestoreThingsByOrg adds all things for a given org ID from a backup.
 	RestoreThingsByOrg(ctx context.Context, token string, orgID string, backup ThingsBackup) error
 
 	// RemoveThings removes the things identified with the provided IDs, that
@@ -461,6 +464,18 @@ func (ts *thingsService) BackupThingsByGroup(ctx context.Context, token string, 
 	return ThingsBackup{
 		Things: things,
 	}, nil
+}
+
+func (ts *thingsService) RestoreThingsByGroup(ctx context.Context, token string, groupID string, backup ThingsBackup) error {
+	if err := ts.canAccessGroup(ctx, token, groupID, Owner); err != nil {
+		return err
+	}
+
+	if _, err := ts.things.Save(ctx, backup.Things...); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (ts *thingsService) BackupThingsByOrg(ctx context.Context, token string, orgID string) (ThingsBackup, error) {

@@ -193,6 +193,23 @@ func backupThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func restoreThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(restoreThingsByGroupReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		thingsBackup := buildThingsBackup(req.Things)
+
+		if err := svc.RestoreThingsByGroup(ctx, req.token, req.id, thingsBackup); err != nil {
+			return nil, err
+		}
+
+		return restoreRes{}, nil
+	}
+}
+
 func backupThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(backupByOrgReq)
@@ -216,7 +233,7 @@ func restoreThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		thingsBackup := buildThingsBackup(req)
+		thingsBackup := buildThingsBackup(req.Things)
 
 		if err := svc.RestoreThingsByOrg(ctx, req.token, req.id, thingsBackup); err != nil {
 			return nil, err
@@ -432,8 +449,8 @@ func buildBackupThingsResponse(tb things.ThingsBackup, fileName string) (viewFil
 	}, nil
 }
 
-func buildThingsBackup(req restoreThingsByOrgReq) (backup things.ThingsBackup) {
-	for _, thing := range req.Things {
+func buildThingsBackup(ths []viewThingRes) (backup things.ThingsBackup) {
+	for _, thing := range ths {
 		th := things.Thing{
 			ID:        thing.ID,
 			GroupID:   thing.GroupID,
