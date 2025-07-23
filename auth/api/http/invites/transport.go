@@ -180,6 +180,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrMissingInviteID,
 		err == apiutil.ErrMissingMemberID,
 		err == apiutil.ErrEmptyList,
+		err == apiutil.ErrInvalidInviteResponse,
 		err == apiutil.ErrInvalidRole:
 		w.WriteHeader(http.StatusBadRequest)
 	case err == apiutil.ErrBearerToken:
