@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	maxLimitSize = 100
+	maxLimitSize = 200
 	maxEmailSize = 1024
 	EmailOrder   = "email"
 	IDOrder      = "id"

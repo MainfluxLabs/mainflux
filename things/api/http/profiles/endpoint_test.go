@@ -56,7 +56,7 @@ const (
 	invalidOrderData = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
 	zeroLimitData    = `{"limit":0,"offset":0}`
 	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
-	limitMaxData     = `{"limit":110,"offset":0}`
+	invalidLimitData = `{"limit":210,"offset":0}`
 	invalidData      = `{"limit": "invalid"}`
 )
 
@@ -548,7 +548,7 @@ func TestListProfiles(t *testing.T) {
 			desc:   "get a list of profiles with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s?offset=%d&limit=%d", profileURL, 0, 110),
+			url:    fmt.Sprintf("%s?offset=%d&limit=%d", profileURL, 0, 210),
 			res:    nil,
 		},
 		{
@@ -765,7 +765,7 @@ func TestListProfilesByOrg(t *testing.T) {
 			desc:   "get a list of profiles by org with limit greater than max",
 			auth:   adminToken,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d", profileURL, orgID, 0, 110),
+			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d", profileURL, orgID, 0, 210),
 			res:    nil,
 		},
 		{
@@ -944,7 +944,7 @@ func TestSearchProfiles(t *testing.T) {
 			desc:   "search profiles with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			req:    limitMaxData,
+			req:    invalidLimitData,
 			res:    nil,
 		},
 		{
@@ -1091,7 +1091,7 @@ func TestSearchProfilesByGroup(t *testing.T) {
 			desc:   "search profiles by group with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			req:    limitMaxData,
+			req:    invalidLimitData,
 			res:    nil,
 		},
 		{
@@ -1238,7 +1238,7 @@ func TestSearchProfilesByOrg(t *testing.T) {
 			desc:   "search profiles by org with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			req:    limitMaxData,
+			req:    invalidLimitData,
 			res:    nil,
 		},
 		{
@@ -1350,17 +1350,115 @@ func TestBackupProfilesByOrg(t *testing.T) {
 			res:    nil,
 		},
 		{
-			desc:   "get a list of profiles by org with invalid token",
+			desc:   "backup profiles by org with invalid token",
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
 			url:    fmt.Sprintf("%s/%s/profiles/backup", profileURL, orgID),
 			res:    nil,
 		},
 		{
-			desc:   "get a list of profiles by org with empty token",
+			desc:   "backup profiles by org with empty token",
 			auth:   emptyValue,
 			status: http.StatusUnauthorized,
 			url:    fmt.Sprintf("%s/%s/profiles/backup", profileURL, orgID),
+			res:    nil,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodGet,
+			url:    tc.url,
+			token:  tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		var body profilesPageRes
+		json.NewDecoder(res.Body).Decode(&body)
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, body.Profiles, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body.Profiles))
+	}
+}
+
+func TestBackupProfilesByGroup(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	grs, err := svc.CreateGroups(context.Background(), otherToken, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	data := []profileRes{}
+	for i := 0; i < n; i++ {
+		suffix := i + 1
+		name := "name_" + fmt.Sprintf("%03d", suffix)
+		id := fmt.Sprintf("%s%012d", prefix, suffix)
+		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: metadata}
+
+		prs, err := svc.CreateProfiles(context.Background(), adminToken, pr)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		profile := prs[0]
+
+		data = append(data, profileRes{
+			ID:       profile.ID,
+			Name:     profile.Name,
+			Metadata: profile.Metadata,
+			GroupID:  profile.GroupID,
+			Config:   profile.Config,
+		})
+	}
+
+	profileURL := fmt.Sprintf("%s/groups", ts.URL)
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		url    string
+		res    []profileRes
+	}{
+		{
+			desc:   "backup profiles by group as group owner",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
+			res:    data,
+		},
+		{
+			desc:   "backup profiles by group the user belongs to",
+			auth:   otherToken,
+			status: http.StatusForbidden,
+			url:    fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
+			res:    nil,
+		},
+		{
+			desc:   "backup profiles by group as admin",
+			auth:   adminToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
+			res:    data,
+		},
+		{
+			desc:   "backup profiles by group without group id",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/profiles/backup", profileURL, emptyValue),
+			res:    nil,
+		},
+		{
+			desc:   "backup profiles by group with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
+			res:    nil,
+		},
+		{
+			desc:   "backup profiles by group with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
 			res:    nil,
 		},
 	}

@@ -10,7 +10,7 @@ import (
 
 const (
 	minLen       = 1
-	maxLimitSize = 100
+	maxLimitSize = 200
 	maxNameSize  = 254
 )
 

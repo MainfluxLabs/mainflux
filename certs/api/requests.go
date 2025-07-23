@@ -5,7 +5,7 @@ package api
 
 import "github.com/MainfluxLabs/mainflux/pkg/apiutil"
 
-const maxLimitSize = 100
+const maxLimitSize = 200
 
 type addCertsReq struct {
 	token   string

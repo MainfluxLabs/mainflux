@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	maxLimitSize = 100
+	maxLimitSize = 200
 	maxNameSize  = 1024
 )
 
@@ -247,6 +247,36 @@ func (req removeThingsReq) validate() error {
 	return nil
 }
 
+type backupByGroupReq struct {
+	id    string
+	token string
+}
+
+func (req backupByGroupReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if req.id == "" {
+		return apiutil.ErrMissingGroupID
+	}
+	return nil
+}
+
+type backupByOrgReq struct {
+	id    string
+	token string
+}
+
+func (req backupByOrgReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if req.id == "" {
+		return apiutil.ErrMissingOrgID
+	}
+	return nil
+}
+
 type backupReq struct {
 	token string
 }
@@ -261,10 +291,10 @@ func (req backupReq) validate() error {
 
 type restoreReq struct {
 	token            string
-	Things           []viewThingRes                        `json:"things"`
-	Profiles         []backupProfile                       `json:"profiles"`
-	Groups           []backupGroup                         `json:"groups"`
-	GroupMemberships []memberships.ViewGroupMembershipsRes `json:"group_memberships"`
+	Things           []viewThingRes                       `json:"things"`
+	Profiles         []backupProfile                      `json:"profiles"`
+	Groups           []backupGroup                        `json:"groups"`
+	GroupMemberships []memberships.ViewGroupMembershipRes `json:"group_memberships"`
 }
 
 func (req restoreReq) validate() error {

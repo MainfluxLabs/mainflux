@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	maxLimitSize = 100
+	maxLimitSize = 200
 	maxNameSize  = 254
 )
 
@@ -109,8 +109,8 @@ func (req backupReq) validate() error {
 
 type restoreReq struct {
 	token          string
-	Orgs           []viewOrgRes         `json:"orgs"`
-	OrgMemberships []viewOrgMemberships `json:"org_memberships"`
+	Orgs           []viewOrgRes        `json:"orgs"`
+	OrgMemberships []viewOrgMembership `json:"org_memberships"`
 }
 
 func (req restoreReq) validate() error {

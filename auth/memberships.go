@@ -18,6 +18,9 @@ var (
 
 	// ErrOrgMembershipExists indicates that membership already exists.
 	ErrOrgMembershipExists = errors.New("org membership already exists")
+
+	// ErrMissingUserMembership indicates that required user membership was not found.
+	ErrMissingUserMembership = errors.New("user membership not found")
 )
 
 type OrgMembership struct {
@@ -154,48 +157,55 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 		return OrgMembershipsPage{}, err
 	}
 
-	omp, err := svc.memberships.RetrieveByOrg(ctx, orgID, pm)
+	orgMemberships, err := svc.memberships.BackupByOrg(ctx, orgID)
 	if err != nil {
 		return OrgMembershipsPage{}, errors.Wrap(ErrRetrieveMembershipsByOrg, err)
 	}
 
+	var memberIDs []string
+	membershipByMemberID := make(map[string]OrgMembership, len(orgMemberships))
+	for _, m := range orgMemberships {
+		membershipByMemberID[m.MemberID] = m
+		memberIDs = append(memberIDs, m.MemberID)
+	}
+
 	var oms []OrgMembership
 	var page *protomfx.UsersRes
-	if len(omp.OrgMemberships) > 0 {
-		var memberIDs []string
-		var roleByMemberID = make(map[string]string)
-		for _, m := range omp.OrgMemberships {
-			roleByMemberID[m.MemberID] = m.Role
-			memberIDs = append(memberIDs, m.MemberID)
-		}
-
-		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs, Email: pm.Email, Order: pm.Order, Dir: pm.Dir}
+	if len(orgMemberships) > 0 {
+		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs, Email: pm.Email, Order: pm.Order, Dir: pm.Dir, Limit: pm.Limit, Offset: pm.Offset}
 		page, err = svc.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
 			return OrgMembershipsPage{}, err
 		}
 
-		for _, user := range page.Users {
-			om := OrgMembership{
-				MemberID: user.Id,
-				Email:    user.Email,
-				Role:     roleByMemberID[user.Id],
+		for _, u := range page.Users {
+			m, ok := membershipByMemberID[u.Id]
+			if !ok {
+				return OrgMembershipsPage{}, ErrMissingUserMembership
 			}
-			oms = append(oms, om)
+
+			oms = append(oms, OrgMembership{
+				MemberID:  m.MemberID,
+				OrgID:     m.OrgID,
+				Email:     u.Email,
+				Role:      m.Role,
+				CreatedAt: m.CreatedAt,
+				UpdatedAt: m.UpdatedAt,
+			})
 		}
 	}
 
-	mpg := OrgMembershipsPage{
+	omp := OrgMembershipsPage{
 		OrgMemberships: oms,
 		PageMetadata: apiutil.PageMetadata{
-			Total:  omp.Total,
-			Offset: omp.Offset,
-			Limit:  omp.Limit,
-			Email:  omp.Email,
+			Total:  page.Total,
+			Offset: page.Offset,
+			Limit:  page.Limit,
+			Email:  pm.Email,
 		},
 	}
 
-	return mpg, nil
+	return omp, nil
 }
 
 func (svc service) UpdateOrgMemberships(ctx context.Context, token, orgID string, members ...OrgMembership) error {

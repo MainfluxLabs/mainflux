@@ -156,11 +156,25 @@ func listProfilesByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 
 func backupProfilesByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(backupReq)
+		req := request.(backupByOrgReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 		backup, err := svc.BackupProfilesByOrg(ctx, req.token, req.id)
+		if err != nil {
+			return nil, err
+		}
+		return buildBackupResponse(backup), nil
+	}
+}
+
+func backupProfilesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(backupByGroupReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+		backup, err := svc.BackupProfilesByGroup(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}

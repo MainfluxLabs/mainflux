@@ -105,6 +105,20 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		opts...,
 	))
 
+	mux.Get("/groups/:id/things/backup", kithttp.NewServer(
+		kitot.TraceServer(tracer, "backup_things_by_group")(backupThingsByGroupEndpoint(svc)),
+		decodeBackupThingsByGroup,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Get("/orgs/:id/things/backup", kithttp.NewServer(
+		kitot.TraceServer(tracer, "backup_things_by_org")(backupThingsByOrgEndpoint(svc)),
+		decodeBackupThingsByOrg,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Put("/things/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_thing")(updateThingEndpoint(svc)),
 		decodeUpdateThing,
@@ -386,6 +400,22 @@ func decodeUpdateThingsMetadata(_ context.Context, r *http.Request) (interface{}
 func decodeBackup(_ context.Context, r *http.Request) (interface{}, error) {
 	req := backupReq{token: apiutil.ExtractBearerToken(r)}
 
+	return req, nil
+}
+
+func decodeBackupThingsByGroup(_ context.Context, r *http.Request) (interface{}, error) {
+	req := backupByGroupReq{
+		id:    bone.GetValue(r, apiutil.IDKey),
+		token: apiutil.ExtractBearerToken(r),
+	}
+	return req, nil
+}
+
+func decodeBackupThingsByOrg(_ context.Context, r *http.Request) (interface{}, error) {
+	req := backupByOrgReq{
+		id:    bone.GetValue(r, apiutil.IDKey),
+		token: apiutil.ExtractBearerToken(r),
+	}
 	return req, nil
 }
 

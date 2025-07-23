@@ -192,6 +192,48 @@ paths:
           description: Unprocessable Entity
         '500':
           $ref: "#/components/responses/ServiceError"
+  /orgs/{orgId}/things/backup:
+    get:
+      summary: Retrieves thing backup by organization.
+      description: |
+        Retrieves a backup of all things associated with the specified organization. The response is a JSON object containing all related things. 
+      tags:
+        - things
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      responses:
+        '200':
+          $ref: "#/components/responses/ThingsBackupRes"
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Failed due to non existing organization or related entities.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /groups/{groupId}/things/backup:
+    get:
+      summary: Retrieves thing backup by group.
+      description: |
+        Retrieves a backup of all things associated with the specified group. The response is a JSON object containing all related things. 
+      tags:
+        - things
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      responses:
+        '200':
+          $ref: "#/components/responses/ThingsBackupRes"
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Failed due to non existing group or related entities.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /things/{thingId}:
     get:
       summary: Retrieves thing info
@@ -504,8 +546,32 @@ paths:
           $ref: "#/components/responses/ProfilesBackupRes"
         '401':
           description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
         '404':
           description: Failed due to non existing organization or related entities.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /groups/{groupId}/profiles/backup:
+    get:
+      summary: Retrieves profile backup by group.
+      description: |
+        Retrieves a backup of all profiles associated with the specified group. The response is a JSON object containing all related profiles. 
+      tags:
+        - profiles
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      responses:
+        '200':
+          $ref: "#/components/responses/ProfilesBackupRes"
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Failed due to non existing group or related entities.
         '422':
           description: Database can't process request.
         '500':
@@ -1042,7 +1108,7 @@ components:
           type: integer
           description: Size of the subset to retrieve.
           default: 10
-          maximum: 100
+          maximum: 200
           minimum: 1
         order:
           type: string
@@ -1157,7 +1223,7 @@ components:
           type: integer
           description: Size of the subset to retrieve.
           default: 10
-          maximum: 100
+          maximum: 200
           minimum: 1
         order:
           type: string
@@ -1307,7 +1373,7 @@ components:
           type: integer
           description: Size of the subset to retrieve.
           default: 10
-          maximum: 100
+          maximum: 200
           minimum: 1
         order:
           type: string
@@ -1556,7 +1622,7 @@ components:
       schema:
         type: integer
         default: 10
-        maximum: 100
+        maximum: 200
         minimum: 1
       required: false
     Offset:
@@ -1811,6 +1877,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ThingsPage"
+    ThingsBackupRes:
+      description: Successfully retrieved thing backup.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ThingsResSchema"
     MetadataRes:
       description: Thing metadata retrieved.
       content:

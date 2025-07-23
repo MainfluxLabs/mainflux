@@ -59,6 +59,12 @@ type Service interface {
 	// the provided key.
 	ListThingsByProfile(ctx context.Context, token, prID string, pm apiutil.PageMetadata) (ThingsPage, error)
 
+	// BackupThingsByGroup retrieves all things for given group ID.
+	BackupThingsByGroup(ctx context.Context, token string, groupID string) (ThingsBackup, error)
+
+	// BackupThingsByOrg retrieves all things for given org ID.
+	BackupThingsByOrg(ctx context.Context, token string, orgID string) (ThingsBackup, error)
+
 	// RemoveThings removes the things identified with the provided IDs, that
 	// belongs to the user identified by the provided key.
 	RemoveThings(ctx context.Context, token string, id ...string) error
@@ -136,6 +142,9 @@ type Service interface {
 	// BackupProfilesByOrg retrieves all profiles for given org ID.
 	BackupProfilesByOrg(ctx context.Context, token string, orgID string) (ProfilesBackup, error)
 
+	// BackupProfilesByGroup retrieves all profiles for given group ID.
+	BackupProfilesByGroup(ctx context.Context, token string, groupID string) (ProfilesBackup, error)
+
 	// Restore adds things, profiles, groups, and groups memberships from a backup. Only accessible by admin.
 	Restore(ctx context.Context, token string, backup Backup) error
 
@@ -161,6 +170,10 @@ type BackupGroupMemberships struct {
 
 type ProfilesBackup struct {
 	Profiles []Profile
+}
+
+type ThingsBackup struct {
+	Things []Thing
 }
 
 type UserAccessReq struct {
@@ -430,6 +443,41 @@ func (ts *thingsService) ListThingsByProfile(ctx context.Context, token, prID st
 	}
 
 	return tp, nil
+}
+
+func (ts *thingsService) BackupThingsByGroup(ctx context.Context, token string, groupID string) (ThingsBackup, error) {
+	if err := ts.canAccessGroup(ctx, token, groupID, Owner); err != nil {
+		return ThingsBackup{}, err
+	}
+
+	things, err := ts.things.BackupByGroups(ctx, []string{groupID})
+	if err != nil {
+		return ThingsBackup{}, err
+	}
+
+	return ThingsBackup{
+		Things: things,
+	}, nil
+}
+
+func (ts *thingsService) BackupThingsByOrg(ctx context.Context, token string, orgID string) (ThingsBackup, error) {
+	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Owner); err != nil {
+		return ThingsBackup{}, err
+	}
+
+	grIDs, err := ts.groups.RetrieveIDsByOrg(ctx, orgID)
+	if err != nil {
+		return ThingsBackup{}, err
+	}
+
+	things, err := ts.things.BackupByGroups(ctx, grIDs)
+	if err != nil {
+		return ThingsBackup{}, err
+	}
+
+	return ThingsBackup{
+		Things: things,
+	}, nil
 }
 
 func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...string) error {
@@ -815,6 +863,21 @@ func (ts *thingsService) BackupProfilesByOrg(ctx context.Context, token string, 
 	}
 
 	profiles, err := ts.profiles.BackupByGroups(ctx, grIDs)
+	if err != nil {
+		return ProfilesBackup{}, err
+	}
+
+	return ProfilesBackup{
+		Profiles: profiles,
+	}, nil
+}
+
+func (ts *thingsService) BackupProfilesByGroup(ctx context.Context, token string, groupID string) (ProfilesBackup, error) {
+	if err := ts.canAccessGroup(ctx, token, groupID, Owner); err != nil {
+		return ProfilesBackup{}, err
+	}
+
+	profiles, err := ts.profiles.BackupByGroups(ctx, []string{groupID})
 	if err != nil {
 		return ProfilesBackup{}, err
 	}

@@ -85,6 +85,22 @@ func (res viewThingRes) Empty() bool {
 	return false
 }
 
+type backupThingsRes struct {
+	Things []viewThingRes `json:"things"`
+}
+
+func (res backupThingsRes) Code() int {
+	return http.StatusOK
+}
+
+func (res backupThingsRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res backupThingsRes) Empty() bool {
+	return len(res.Things) == 0
+}
+
 type viewMetadataRes struct {
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
@@ -137,10 +153,10 @@ type backupGroup struct {
 }
 
 type backupRes struct {
-	Things           []viewThingRes                        `json:"things"`
-	Profiles         []backupProfile                       `json:"profiles"`
-	Groups           []backupGroup                         `json:"groups"`
-	GroupMemberships []memberships.ViewGroupMembershipsRes `json:"group_memberships"`
+	Things           []viewThingRes                       `json:"things"`
+	Profiles         []backupProfile                      `json:"profiles"`
+	Groups           []backupGroup                        `json:"groups"`
+	GroupMemberships []memberships.ViewGroupMembershipRes `json:"group_memberships"`
 }
 
 func (res backupRes) Code() int {
