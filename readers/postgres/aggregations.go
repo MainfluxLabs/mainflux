@@ -224,7 +224,7 @@ func (as *aggregationService) buildAvgQuery(format, timeColumn, aggField, condit
 				SELECT 
 					ti.interval_time,
 					AVG((m.payload->>'v')::float) as avg_value,
-					MAX(m.created) as max_time  -- Use latest message in interval
+					MAX(m.created) as max_time  
 				FROM time_intervals ti
 				LEFT JOIN %s m ON date_trunc('%s', to_timestamp(m.created / 1000000000)) = ti.interval_time
 					%s
@@ -235,7 +235,7 @@ func (as *aggregationService) buildAvgQuery(format, timeColumn, aggField, condit
 				m.created, m.subtopic, m.publisher, m.protocol,
 				jsonb_build_object(
 					'n', m.payload->>'n',
-					'v', ia.avg_value  -- Replace v with computed average
+					'v', ia.avg_value  
 				) as payload
 			FROM %s m
 			JOIN interval_aggs ia ON date_trunc('%s', to_timestamp(m.created / 1000000000)) = ia.interval_time
@@ -266,7 +266,7 @@ func (as *aggregationService) buildCountQuery(format, timeColumn, aggField, cond
 				SELECT 
 					ti.interval_time,
 					SUM(m.%s) as sum_value,
-					MAX(m.%s) as max_time  -- Use latest message in interval
+					MAX(m.%s) as max_time  
 				FROM time_intervals ti
 				LEFT JOIN %s m ON date_trunc('%s', to_timestamp(m.%s / 1000000000)) = ti.interval_time
 					%s
@@ -275,7 +275,7 @@ func (as *aggregationService) buildCountQuery(format, timeColumn, aggField, cond
 			)
 			SELECT DISTINCT ON (ia.interval_time) 
 				m.subtopic, m.publisher, m.protocol, m.name, m.unit,
-				ia.sum_value as value, -- Replace value with computed sum
+				ia.sum_value as value, 
 				m.string_value, m.bool_value, m.data_value, m.sum,
 				m.time, m.update_time
 			FROM %s m
@@ -302,7 +302,7 @@ func (as *aggregationService) buildCountQuery(format, timeColumn, aggField, cond
 				SELECT 
 					ti.interval_time,
 					SUM((m.payload->>'v')::float) as sum_value,
-					MAX(m.created) as max_time  -- Use latest message in interval
+					MAX(m.created) as max_time  
 				FROM time_intervals ti
 				LEFT JOIN %s m ON date_trunc('%s', to_timestamp(m.created / 1000000000)) = ti.interval_time
 					%s
@@ -313,7 +313,7 @@ func (as *aggregationService) buildCountQuery(format, timeColumn, aggField, cond
 				m.created, m.subtopic, m.publisher, m.protocol,
 				jsonb_build_object(
 					'n', m.payload->>'n',
-					'v', ia.sum_value  -- Replace v with computed sum
+					'v', ia.sum_value  
 				) as payload
 			FROM %s m
 			JOIN interval_aggs ia ON date_trunc('%s', to_timestamp(m.created / 1000000000)) = ia.interval_time
