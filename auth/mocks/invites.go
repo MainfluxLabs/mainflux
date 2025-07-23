@@ -80,7 +80,12 @@ func (irm *invitesRepositoryMock) RetrieveByInviteeID(ctx context.Context, invit
 	sort.Strings(keys)
 
 	invites := make([]auth.Invite, 0)
-	for _, key := range keys[pm.Offset : pm.Offset+pm.Limit] {
+	idxEnd := pm.Offset + pm.Limit
+	if idxEnd > uint64(len(keys)) {
+		idxEnd = uint64(len(keys))
+	}
+
+	for _, key := range keys[pm.Offset:idxEnd] {
 		if irm.invites[key].InviteeID == inviteeID {
 			invites = append(invites, irm.invites[key])
 		}
