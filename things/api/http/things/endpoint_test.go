@@ -30,35 +30,36 @@ import (
 )
 
 const (
-	contentType      = "application/json"
-	email            = "user@example.com"
-	adminEmail       = "admin@example.com"
-	otherUserEmail   = "other_user@example.com"
-	token            = email
-	otherToken       = otherUserEmail
-	adminToken       = adminEmail
-	wrongValue       = "wrong_value"
-	emptyValue       = ""
-	emptyJson        = "{}"
-	wrongID          = 0
-	password         = "password"
-	maxNameSize      = 1024
-	nameKey          = "name"
-	ascKey           = "asc"
-	descKey          = "desc"
-	orgID            = "374106f7-030e-4881-8ab0-151195c29f92"
-	orgID2           = "374106f7-030e-4881-8ab0-151195c29f93"
-	prefix           = "fe6b4e92-cc98-425e-b0aa-"
-	n                = 101
-	noLimit          = -1
-	validData        = `{"limit":5,"offset":0}`
-	descData         = `{"limit":5,"offset":0,"dir":"desc","order":"name"}`
-	ascData          = `{"limit":5,"offset":0,"dir":"asc","order":"name"}`
-	invalidOrderData = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
-	zeroLimitData    = `{"limit":0,"offset":0}`
-	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
-	invalidLimitData = `{"limit":210,"offset":0}`
-	invalidData      = `{"limit": "invalid"}`
+	contentTypeJson        = "application/json"
+	contentTypeOctetStream = "application/octet-stream"
+	email                  = "user@example.com"
+	adminEmail             = "admin@example.com"
+	otherUserEmail         = "other_user@example.com"
+	token                  = email
+	otherToken             = otherUserEmail
+	adminToken             = adminEmail
+	wrongValue             = "wrong_value"
+	emptyValue             = ""
+	emptyJson              = "{}"
+	wrongID                = 0
+	password               = "password"
+	maxNameSize            = 1024
+	nameKey                = "name"
+	ascKey                 = "asc"
+	descKey                = "desc"
+	orgID                  = "374106f7-030e-4881-8ab0-151195c29f92"
+	orgID2                 = "374106f7-030e-4881-8ab0-151195c29f93"
+	prefix                 = "fe6b4e92-cc98-425e-b0aa-"
+	n                      = 101
+	noLimit                = -1
+	validData              = `{"limit":5,"offset":0}`
+	descData               = `{"limit":5,"offset":0,"dir":"desc","order":"name"}`
+	ascData                = `{"limit":5,"offset":0,"dir":"asc","order":"name"}`
+	invalidOrderData       = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
+	zeroLimitData          = `{"limit":0,"offset":0}`
+	invalidDirData         = `{"limit":5,"offset":0,"dir":"wrong"}`
+	invalidLimitData       = `{"limit":210,"offset":0}`
+	invalidData            = `{"limit": "invalid"}`
 )
 
 var (
@@ -164,7 +165,7 @@ func TestCreateThings(t *testing.T) {
 		{
 			desc:        "create valid things",
 			data:        data,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusCreated,
 			response:    emptyValue,
@@ -172,7 +173,7 @@ func TestCreateThings(t *testing.T) {
 		{
 			desc:        "create things with empty request",
 			data:        emptyValue,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusBadRequest,
 			response:    emptyValue,
@@ -180,7 +181,7 @@ func TestCreateThings(t *testing.T) {
 		{
 			desc:        "create thing with invalid request format",
 			data:        "}",
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusBadRequest,
 			response:    emptyValue,
@@ -188,7 +189,7 @@ func TestCreateThings(t *testing.T) {
 		{
 			desc:        "create thing with invalid name",
 			data:        invalidNameData,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusBadRequest,
 			response:    emptyValue,
@@ -196,7 +197,7 @@ func TestCreateThings(t *testing.T) {
 		{
 			desc:        "create things with empty JSON array",
 			data:        "[]",
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusBadRequest,
 			response:    emptyValue,
@@ -204,7 +205,7 @@ func TestCreateThings(t *testing.T) {
 		{
 			desc:        "create thing with existing key",
 			data:        data,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusConflict,
 			response:    emptyValue,
@@ -212,7 +213,7 @@ func TestCreateThings(t *testing.T) {
 		{
 			desc:        "create thing with invalid auth token",
 			data:        data,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        wrongValue,
 			status:      http.StatusUnauthorized,
 			response:    emptyValue,
@@ -220,7 +221,7 @@ func TestCreateThings(t *testing.T) {
 		{
 			desc:        "create thing with empty auth token",
 			data:        data,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        emptyValue,
 			status:      http.StatusUnauthorized,
 			response:    emptyValue,
@@ -291,7 +292,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:        "update existing thing",
 			req:         data,
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusOK,
 		},
@@ -299,7 +300,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:        "update thing with empty JSON request",
 			req:         "{}",
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
@@ -307,7 +308,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:        "update non-existent thing",
 			req:         data,
 			id:          wrongValue,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusNotFound,
 		},
@@ -315,7 +316,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:        "update thing with invalid id",
 			req:         data,
 			id:          wrongValue,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusNotFound,
 		},
@@ -323,7 +324,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:        "update thing with invalid user token",
 			req:         data,
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        wrongValue,
 			status:      http.StatusUnauthorized,
 		},
@@ -331,7 +332,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:        "update thing with empty user token",
 			req:         data,
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        emptyValue,
 			status:      http.StatusUnauthorized,
 		},
@@ -339,7 +340,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:        "update thing with invalid data format",
 			req:         "{",
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
@@ -347,7 +348,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:        "update thing with empty request",
 			req:         emptyValue,
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
@@ -362,7 +363,7 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc:        "update thing with invalid name",
 			req:         invalidNameData,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
@@ -370,7 +371,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:        "update thing without profile id",
 			req:         invalidProfileData,
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
@@ -431,7 +432,7 @@ func TestUpdateKey(t *testing.T) {
 			desc:        "update key for an existing thing",
 			req:         data,
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusOK,
 		},
@@ -439,7 +440,7 @@ func TestUpdateKey(t *testing.T) {
 			desc:        "update thing with conflicting key",
 			req:         data,
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusConflict,
 		},
@@ -447,7 +448,7 @@ func TestUpdateKey(t *testing.T) {
 			desc:        "update key with empty JSON request",
 			req:         "{}",
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusUnauthorized,
 		},
@@ -455,7 +456,7 @@ func TestUpdateKey(t *testing.T) {
 			desc:        "update key of non-existent thing",
 			req:         dummyData,
 			id:          strconv.FormatUint(wrongID, 10),
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusNotFound,
 		},
@@ -463,7 +464,7 @@ func TestUpdateKey(t *testing.T) {
 			desc:        "update thing with invalid id",
 			req:         dummyData,
 			id:          wrongValue,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusNotFound,
 		},
@@ -471,7 +472,7 @@ func TestUpdateKey(t *testing.T) {
 			desc:        "update thing with invalid user token",
 			req:         data,
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        wrongValue,
 			status:      http.StatusUnauthorized,
 		},
@@ -479,7 +480,7 @@ func TestUpdateKey(t *testing.T) {
 			desc:        "update thing with empty user token",
 			req:         data,
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        emptyValue,
 			status:      http.StatusUnauthorized,
 		},
@@ -487,7 +488,7 @@ func TestUpdateKey(t *testing.T) {
 			desc:        "update thing with invalid data format",
 			req:         "{",
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
@@ -495,7 +496,7 @@ func TestUpdateKey(t *testing.T) {
 			desc:        "update thing with empty request",
 			req:         emptyValue,
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
@@ -2154,6 +2155,112 @@ func TestBackupThingsByOrg(t *testing.T) {
 	}
 }
 
+func TestRestoreThingsByOrg(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+	idProvider := uuid.New()
+
+	data := []viewThingRes{}
+
+	grID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	prID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	for i := 0; i < n; i++ {
+		thId, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+		thKey, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		data = append(data, viewThingRes{
+			ID:        thId,
+			GroupID:   grID,
+			ProfileID: prID,
+			Name:      fmt.Sprintf("thing_%d", i),
+			Key:       thKey,
+			Metadata:  metadata,
+		})
+	}
+
+	dataBytes, err := json.Marshal(data)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	dataString := string(dataBytes)
+
+	thingURL := fmt.Sprintf("%s/orgs", ts.URL)
+
+	cases := []struct {
+		desc        string
+		auth        string
+		contentType string
+		data        string
+		status      int
+		url         string
+		res         string
+	}{
+		{
+			desc:        "restore things by org as org owner",
+			auth:        token,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusCreated,
+			url:         fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore things by org the user belongs to",
+			auth:        otherToken,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusForbidden,
+			url:         fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore things by org without org id",
+			auth:        token,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusBadRequest,
+			url:         fmt.Sprintf("%s/%s/things/backup", thingURL, emptyValue),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore things by org with invalid token",
+			auth:        wrongValue,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusUnauthorized,
+			url:         fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore things by org with empty token",
+			auth:        emptyValue,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusUnauthorized,
+			url:         fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
+			res:         emptyValue,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPost,
+			url:         tc.url,
+			contentType: tc.contentType,
+			token:       tc.auth,
+			body:        strings.NewReader(tc.data),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
 func TestRemoveThing(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
@@ -2254,14 +2361,14 @@ func TestRemoveThings(t *testing.T) {
 			desc:        "remove things with invalid token",
 			data:        thingIDs,
 			auth:        wrongValue,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			status:      http.StatusUnauthorized,
 		},
 		{
 			desc:        "remove things with empty token",
 			data:        thingIDs,
 			auth:        emptyValue,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			status:      http.StatusUnauthorized,
 		},
 		{
@@ -2275,28 +2382,28 @@ func TestRemoveThings(t *testing.T) {
 			desc:        "remove existing things",
 			data:        thingIDs,
 			auth:        token,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			status:      http.StatusNoContent,
 		},
 		{
 			desc:        "remove non-existent things",
 			data:        []string{wrongValue},
 			auth:        token,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			status:      http.StatusNotFound,
 		},
 		{
 			desc:        "remove things with empty thing ids",
 			data:        []string{emptyValue},
 			auth:        token,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "remove profiles without profile ids",
 			data:        []string{},
 			auth:        token,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			status:      http.StatusBadRequest,
 		},
 	}
@@ -2562,7 +2669,7 @@ func TestRestore(t *testing.T) {
 			status:      http.StatusCreated,
 			url:         restoreURL,
 			req:         data,
-			contentType: contentType,
+			contentType: contentTypeJson,
 		},
 		{
 			desc:        "restore with invalid token",
@@ -2570,7 +2677,7 @@ func TestRestore(t *testing.T) {
 			status:      http.StatusUnauthorized,
 			url:         restoreURL,
 			req:         data,
-			contentType: contentType,
+			contentType: contentTypeJson,
 		},
 		{
 			desc:        "restore with empty token",
@@ -2578,7 +2685,7 @@ func TestRestore(t *testing.T) {
 			status:      http.StatusUnauthorized,
 			url:         restoreURL,
 			req:         data,
-			contentType: contentType,
+			contentType: contentTypeJson,
 		},
 		{
 			desc:        "restore with invalid request",
@@ -2586,7 +2693,7 @@ func TestRestore(t *testing.T) {
 			status:      http.StatusBadRequest,
 			url:         restoreURL,
 			req:         invalidData,
-			contentType: contentType,
+			contentType: contentTypeJson,
 		},
 	}
 
@@ -2637,12 +2744,12 @@ func TestIdentify(t *testing.T) {
 		status      int
 	}{
 		"identify existing thing": {
-			contentType: contentType,
+			contentType: contentTypeJson,
 			req:         data,
 			status:      http.StatusOK,
 		},
 		"identify non-existent thing": {
-			contentType: contentType,
+			contentType: contentTypeJson,
 			req:         nonexistentData,
 			status:      http.StatusNotFound,
 		},
@@ -2652,12 +2759,12 @@ func TestIdentify(t *testing.T) {
 			status:      http.StatusUnsupportedMediaType,
 		},
 		"identify with empty JSON request": {
-			contentType: contentType,
+			contentType: contentTypeJson,
 			req:         "{}",
 			status:      http.StatusUnauthorized,
 		},
 		"identify with invalid JSON request": {
-			contentType: contentType,
+			contentType: contentTypeJson,
 			req:         emptyValue,
 			status:      http.StatusBadRequest,
 		},
