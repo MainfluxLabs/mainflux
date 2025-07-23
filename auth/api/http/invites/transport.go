@@ -70,8 +70,12 @@ func decodeInviteRequest(_ context.Context, r *http.Request) (any, error) {
 		orgID: bone.GetValue(r, apiutil.IDKey),
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req.OrgMembers); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	if len(req.OrgMembers) == 0 {
+		return nil, apiutil.ErrMalformedEntity
 	}
 
 	for i := range req.OrgMembers {
