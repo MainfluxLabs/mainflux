@@ -497,6 +497,55 @@ func TestListInvitesByInvitee(t *testing.T) {
 			status: http.StatusOK,
 			res:    invites,
 		},
+		{
+			desc:   "list invites with invalid auth token",
+			url:    fmt.Sprintf("%s/users/%s/invites", ts.URL, viewerID),
+			token:  "invalid",
+			status: http.StatusUnauthorized,
+			res:    nil,
+		},
+		{
+			desc:   "list invites with empty auth token",
+			url:    fmt.Sprintf("%s/users/%s/invites", ts.URL, viewerID),
+			token:  "",
+			status: http.StatusUnauthorized,
+			res:    nil,
+		},
+		{
+			desc:   "list invites with negative offset",
+			url:    fmt.Sprintf("%s/users/%s/invites?offset=%d", ts.URL, viewerID, -1),
+			token:  "",
+			status: http.StatusBadRequest,
+			res:    nil,
+		},
+		{
+			desc:   "list invites with negative limit",
+			url:    fmt.Sprintf("%s/users/%s/invites?offset=%d&limit=%d", ts.URL, viewerID, 0, -1),
+			token:  "",
+			status: http.StatusBadRequest,
+			res:    nil,
+		},
+		{
+			desc:   "list invites without offset",
+			url:    fmt.Sprintf("%s/users/%s/invites?limit=%d", ts.URL, viewerID, 2),
+			token:  viewerToken,
+			status: http.StatusOK,
+			res:    invites[:2],
+		},
+		{
+			desc:   "list invites without limit",
+			url:    fmt.Sprintf("%s/users/%s/invites?offset=%d", ts.URL, viewerID, 0),
+			token:  viewerToken,
+			status: http.StatusOK,
+			res:    invites,
+		},
+		{
+			desc:   "list invites with invalid limit",
+			url:    fmt.Sprintf("%s/users/%s/invites?offset=%d&limit=%s", ts.URL, viewerID, 0, "l"),
+			token:  viewerToken,
+			status: http.StatusBadRequest,
+			res:    nil,
+		},
 	}
 
 	for _, tc := range cases {
