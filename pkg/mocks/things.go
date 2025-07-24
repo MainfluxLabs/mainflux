@@ -130,7 +130,15 @@ func (svc *mainfluxThings) BackupProfilesByOrg(context.Context, string, string) 
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) RestoreProfilesByOrg(context.Context, string, string, things.ProfilesBackup) error {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) BackupProfilesByGroup(context.Context, string, string) (things.ProfilesBackup, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) RestoreProfilesByGroup(context.Context, string, string, things.ProfilesBackup) error {
 	panic("not implemented")
 }
 

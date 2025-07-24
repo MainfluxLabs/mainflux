@@ -148,8 +148,14 @@ type Service interface {
 	// BackupProfilesByOrg retrieves all profiles for given org ID.
 	BackupProfilesByOrg(ctx context.Context, token string, orgID string) (ProfilesBackup, error)
 
+	// RestoreProfilesByOrg adds all profiles for given org ID from a backup.
+	RestoreProfilesByOrg(ctx context.Context, token string, orgID string, backup ProfilesBackup) error
+
 	// BackupProfilesByGroup retrieves all profiles for given group ID.
 	BackupProfilesByGroup(ctx context.Context, token string, groupID string) (ProfilesBackup, error)
+
+	// RestoreProfilesByGroup adds all profiles for given group ID from a backup.
+	RestoreProfilesByGroup(ctx context.Context, token string, groupID string, backup ProfilesBackup) error
 
 	// Restore adds things, profiles, groups, and groups memberships from a backup. Only accessible by admin.
 	Restore(ctx context.Context, token string, backup Backup) error
@@ -902,6 +908,18 @@ func (ts *thingsService) BackupProfilesByOrg(ctx context.Context, token string, 
 	}, nil
 }
 
+func (ts *thingsService) RestoreProfilesByOrg(ctx context.Context, token string, orgID string, backup ProfilesBackup) error {
+	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Owner); err != nil {
+		return err
+	}
+
+	if _, err := ts.profiles.Save(ctx, backup.Profiles...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (ts *thingsService) BackupProfilesByGroup(ctx context.Context, token string, groupID string) (ProfilesBackup, error) {
 	if err := ts.canAccessGroup(ctx, token, groupID, Owner); err != nil {
 		return ProfilesBackup{}, err
@@ -915,6 +933,18 @@ func (ts *thingsService) BackupProfilesByGroup(ctx context.Context, token string
 	return ProfilesBackup{
 		Profiles: profiles,
 	}, nil
+}
+
+func (ts *thingsService) RestoreProfilesByGroup(ctx context.Context, token string, groupID string, backup ProfilesBackup) error {
+	if err := ts.canAccessGroup(ctx, token, groupID, Owner); err != nil {
+		return err
+	}
+
+	if _, err := ts.profiles.Save(ctx, backup.Profiles...); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (ts *thingsService) Restore(ctx context.Context, token string, backup Backup) error {

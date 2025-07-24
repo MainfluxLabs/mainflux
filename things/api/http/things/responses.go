@@ -85,22 +85,6 @@ func (res viewThingRes) Empty() bool {
 	return false
 }
 
-type viewFileRes struct {
-	File []byte
-}
-
-func (res viewFileRes) Code() int {
-	return http.StatusOK
-}
-
-func (res viewFileRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res viewFileRes) Empty() bool {
-	return len(res.File) == 0
-}
-
 type viewMetadataRes struct {
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
@@ -192,6 +176,22 @@ type pageRes struct {
 	Order  string `json:"order,omitempty"`
 	Dir    string `json:"direction,omitempty"`
 	Name   string `json:"name,omitempty"`
+}
+
+type viewFileRes struct {
+	File []byte
+}
+
+func (res viewFileRes) Code() int {
+	return http.StatusOK
+}
+
+func (res viewFileRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res viewFileRes) Empty() bool {
+	return len(res.File) == 0
 }
 
 type ThingsPageRes struct {

@@ -29,35 +29,36 @@ import (
 )
 
 const (
-	contentType      = "application/json"
-	email            = "user@example.com"
-	adminEmail       = "admin@example.com"
-	otherUserEmail   = "other_user@example.com"
-	token            = email
-	otherToken       = otherUserEmail
-	adminToken       = adminEmail
-	wrongValue       = "wrong_value"
-	emptyValue       = ""
-	emptyJson        = "{}"
-	wrongID          = 0
-	password         = "password"
-	maxNameSize      = 1024
-	nameKey          = "name"
-	ascKey           = "asc"
-	descKey          = "desc"
-	orgID            = "374106f7-030e-4881-8ab0-151195c29f92"
-	orgID2           = "374106f7-030e-4881-8ab0-151195c29f93"
-	prefix           = "fe6b4e92-cc98-425e-b0aa-"
-	n                = 101
-	noLimit          = -1
-	validData        = `{"limit":5,"offset":0}`
-	descData         = `{"limit":5,"offset":0,"dir":"desc","order":"name"}`
-	ascData          = `{"limit":5,"offset":0,"dir":"asc","order":"name"}`
-	invalidOrderData = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
-	zeroLimitData    = `{"limit":0,"offset":0}`
-	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
-	invalidLimitData = `{"limit":210,"offset":0}`
-	invalidData      = `{"limit": "invalid"}`
+	contentType            = "application/json"
+	contentTypeOctetStream = "application/octet-stream"
+	email                  = "user@example.com"
+	adminEmail             = "admin@example.com"
+	otherUserEmail         = "other_user@example.com"
+	token                  = email
+	otherToken             = otherUserEmail
+	adminToken             = adminEmail
+	wrongValue             = "wrong_value"
+	emptyValue             = ""
+	emptyJson              = "{}"
+	wrongID                = 0
+	password               = "password"
+	maxNameSize            = 1024
+	nameKey                = "name"
+	ascKey                 = "asc"
+	descKey                = "desc"
+	orgID                  = "374106f7-030e-4881-8ab0-151195c29f92"
+	orgID2                 = "374106f7-030e-4881-8ab0-151195c29f93"
+	prefix                 = "fe6b4e92-cc98-425e-b0aa-"
+	n                      = 101
+	noLimit                = -1
+	validData              = `{"limit":5,"offset":0}`
+	descData               = `{"limit":5,"offset":0,"dir":"desc","order":"name"}`
+	ascData                = `{"limit":5,"offset":0,"dir":"asc","order":"name"}`
+	invalidOrderData       = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
+	zeroLimitData          = `{"limit":0,"offset":0}`
+	invalidDirData         = `{"limit":5,"offset":0,"dir":"wrong"}`
+	invalidLimitData       = `{"limit":210,"offset":0}`
+	invalidData            = `{"limit": "invalid"}`
 )
 
 var (
@@ -1374,10 +1375,116 @@ func TestBackupProfilesByOrg(t *testing.T) {
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		var body profilesPageRes
+		var body []profileRes
 		json.NewDecoder(res.Body).Decode(&body)
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
-		assert.ElementsMatch(t, tc.res, body.Profiles, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body.Profiles))
+		assert.ElementsMatch(t, tc.res, body, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body))
+	}
+}
+
+func TestRestoreProfilesByOrg(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	grs, err := svc.CreateGroups(context.Background(), otherToken, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	data := []profileRes{}
+	for i := 0; i < n; i++ {
+		suffix := i + 1
+		name := "name_" + fmt.Sprintf("%03d", suffix)
+		id := fmt.Sprintf("%s%012d", prefix, suffix)
+		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: metadata}
+
+		prs, err := svc.CreateProfiles(context.Background(), adminToken, pr)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		profile := prs[0]
+
+		data = append(data, profileRes{
+			ID:       profile.ID,
+			Name:     profile.Name,
+			Metadata: profile.Metadata,
+			GroupID:  profile.GroupID,
+			Config:   profile.Config,
+		})
+	}
+
+	dataBytes, err := json.Marshal(data)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	dataString := string(dataBytes)
+
+	profileURL := fmt.Sprintf("%s/orgs", ts.URL)
+
+	cases := []struct {
+		desc        string
+		auth        string
+		contentType string
+		data        string
+		status      int
+		url         string
+		res         string
+	}{
+		{
+			desc:        "restore profiles by org as org owner",
+			auth:        token,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusCreated,
+			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore profiles by org the user belongs to",
+			auth:        otherToken,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusForbidden,
+			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore profiles by org without org id",
+			auth:        token,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusBadRequest,
+			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, emptyValue),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore profiles by org with invalid token",
+			auth:        wrongValue,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusUnauthorized,
+			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore profiles by org with empty token",
+			auth:        emptyValue,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusUnauthorized,
+			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
+			res:         emptyValue,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPost,
+			url:         tc.url,
+			contentType: tc.contentType,
+			token:       tc.auth,
+			body:        strings.NewReader(tc.data),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 	}
 }
 
@@ -1472,10 +1579,116 @@ func TestBackupProfilesByGroup(t *testing.T) {
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		var body profilesPageRes
+		var body []profileRes
 		json.NewDecoder(res.Body).Decode(&body)
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
-		assert.ElementsMatch(t, tc.res, body.Profiles, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body.Profiles))
+		assert.ElementsMatch(t, tc.res, body, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body))
+	}
+}
+
+func TestRestoreProfilesByGroup(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	grs, err := svc.CreateGroups(context.Background(), otherToken, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	data := []profileRes{}
+	for i := 0; i < n; i++ {
+		suffix := i + 1
+		name := "name_" + fmt.Sprintf("%03d", suffix)
+		id := fmt.Sprintf("%s%012d", prefix, suffix)
+		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: metadata}
+
+		prs, err := svc.CreateProfiles(context.Background(), adminToken, pr)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		profile := prs[0]
+
+		data = append(data, profileRes{
+			ID:       profile.ID,
+			Name:     profile.Name,
+			Metadata: profile.Metadata,
+			GroupID:  profile.GroupID,
+			Config:   profile.Config,
+		})
+	}
+
+	dataBytes, err := json.Marshal(data)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	dataString := string(dataBytes)
+
+	profileURL := fmt.Sprintf("%s/groups", ts.URL)
+
+	cases := []struct {
+		desc        string
+		auth        string
+		contentType string
+		data        string
+		status      int
+		url         string
+		res         string
+	}{
+		{
+			desc:        "restore profiles by group as group owner",
+			auth:        token,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusCreated,
+			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore profiles by group the user belongs to",
+			auth:        otherToken,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusForbidden,
+			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore profiles by group without group id",
+			auth:        token,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusBadRequest,
+			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, emptyValue),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore profiles by group with invalid token",
+			auth:        wrongValue,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusUnauthorized,
+			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore profiles by group with empty token",
+			auth:        emptyValue,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusUnauthorized,
+			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
+			res:         emptyValue,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPost,
+			url:         tc.url,
+			contentType: tc.contentType,
+			token:       tc.auth,
+			body:        strings.NewReader(tc.data),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 	}
 }
 
