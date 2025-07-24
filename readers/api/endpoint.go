@@ -103,7 +103,7 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, errors.ErrAuthentication
 		}
 
-		err :=  svc.DeleteMessages(ctx, req.pageMeta, table)
+		err := svc.DeleteMessages(ctx, req.pageMeta, table)
 		if err != nil {
 			return nil, err
 		}
