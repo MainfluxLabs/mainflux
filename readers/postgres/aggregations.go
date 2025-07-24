@@ -51,7 +51,7 @@ func (as *aggregationService) buildAggregationQuery(rpm readers.PageMetadata, fo
 	timeColumn := as.getTimeColumn(format)
 	limit := rpm.Limit
 
-	baseCondition := as.buildCondition(rpm, format)
+	baseCondition := as.buildBaseCondition(rpm, format)
 	nameCondition := as.buildNameCondition(rpm, format)
 	fullCondition := as.combineConditions(baseCondition, nameCondition)
 
@@ -81,6 +81,7 @@ func (as *aggregationService) buildNameCondition(rpm readers.PageMetadata, forma
 	if rpm.Name == "" {
 		return ""
 	}
+
 	switch format {
 	case defTable:
 		return "WHERE name = :name"
@@ -327,7 +328,7 @@ func (as *aggregationService) buildCountQuery(format, timeColumn, aggField, cond
 	}
 }
 
-func (as *aggregationService) buildCondition(rpm readers.PageMetadata, table string) string {
+func (as *aggregationService) buildBaseCondition(rpm readers.PageMetadata, table string) string {
 	condition := ""
 	op := "WHERE"
 	timeColumn := as.getTimeColumn(table)
