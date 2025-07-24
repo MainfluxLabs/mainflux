@@ -49,11 +49,11 @@ func (as *aggregationService) buildAggregationQuery(rpm readers.PageMetadata, fo
 	interval := rpm.AggInterval
 	aggField := as.getAggregateField(rpm, format)
 	timeColumn := as.getTimeColumn(format)
-	condition := as.buildCondition(rpm, format)
 	limit := rpm.Limit
 
+	baseCondition := as.buildCondition(rpm, format)
 	nameCondition := as.buildNameCondition(rpm, format)
-	fullCondition := as.combineConditions(condition, nameCondition)
+	fullCondition := as.combineConditions(baseCondition, nameCondition)
 
 	conditionForJoin := strings.Replace(fullCondition, "WHERE", "AND", 1)
 	if fullCondition == "" {
