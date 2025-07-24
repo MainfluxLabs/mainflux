@@ -73,8 +73,7 @@ func (req inviteResponseReq) validate() error {
 type listInvitesByUserReq struct {
 	token  string
 	userID string
-	offset uint64
-	limit  uint64
+	pm     apiutil.PageMetadata
 }
 
 func (req listInvitesByUserReq) validate() error {
@@ -86,8 +85,8 @@ func (req listInvitesByUserReq) validate() error {
 		return apiutil.ErrMissingUserID
 	}
 
-	if req.limit > maxLimitSize {
-		return apiutil.ErrLimitSize
+	if err := apiutil.ValidatePageMetadata(req.pm, 200, 254); err != nil {
+		return err
 	}
 
 	return nil

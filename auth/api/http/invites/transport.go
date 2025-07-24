@@ -130,18 +130,12 @@ func decodeListInvitesByUserRequest(_ context.Context, r *http.Request) (any, er
 		userID: bone.GetValue(r, userIDKey),
 	}
 
-	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
+	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
 
-	limit, err := apiutil.ReadUintQuery(r, apiutil.LimitKey, apiutil.DefLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	req.offset = offset
-	req.limit = limit
+	req.pm = pm
 
 	return req, nil
 }
@@ -181,6 +175,12 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrMissingMemberID,
 		err == apiutil.ErrEmptyList,
 		err == apiutil.ErrInvalidInviteResponse,
+		err == apiutil.ErrNameSize,
+		err == apiutil.ErrLimitSize,
+		err == apiutil.ErrOffsetSize,
+		err == apiutil.ErrInvalidOrder,
+		err == apiutil.ErrInvalidDirection,
+		err == apiutil.ErrInvalidQueryParams,
 		err == apiutil.ErrInvalidRole:
 		w.WriteHeader(http.StatusBadRequest)
 	case err == apiutil.ErrBearerToken:

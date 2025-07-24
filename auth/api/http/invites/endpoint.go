@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -86,12 +85,7 @@ func listInvitesByUserEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		pm := apiutil.PageMetadata{
-			Offset: req.offset,
-			Limit:  req.limit,
-		}
-
-		page, err := svc.ListInvitesByInviteeID(ctx, req.token, req.userID, pm)
+		page, err := svc.ListInvitesByInviteeID(ctx, req.token, req.userID, req.pm)
 		if err != nil {
 			return nil, err
 		}
