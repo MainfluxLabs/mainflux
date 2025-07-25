@@ -47,6 +47,7 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 				return nil, err
 			}
 			req.pageMeta.Publisher = pc.PublisherID
+			req.pageMeta.Format = dbutil.GetTableName(pc.ProfileConfig.GetContentType())
 
 			p, err := svc.ListAllMessages(req.pageMeta)
 			if err != nil {
@@ -103,7 +104,7 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, errors.ErrAuthentication
 		}
 
-		err :=  svc.DeleteMessages(ctx, req.pageMeta, table)
+		err := svc.DeleteMessages(ctx, req.pageMeta, table)
 		if err != nil {
 			return nil, err
 		}
