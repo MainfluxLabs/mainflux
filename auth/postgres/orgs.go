@@ -9,7 +9,6 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
@@ -154,6 +153,8 @@ func (or orgRepository) RetrieveByID(ctx context.Context, id string) (auth.Org, 
 }
 
 func (or orgRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
@@ -162,7 +163,7 @@ func (or orgRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata
 	}
 
 	whereClause := dbutil.BuildWhereClause(nq, mq)
-	query := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
+	query := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM orgs %s`, whereClause)
 
 	params := map[string]interface{}{
@@ -198,6 +199,8 @@ func (or orgRepository) BackupAll(ctx context.Context) ([]auth.Org, error) {
 }
 
 func (or orgRepository) RetrieveByMember(ctx context.Context, memberID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	meta, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
@@ -213,7 +216,7 @@ func (or orgRepository) RetrieveByMember(ctx context.Context, memberID string, p
 	whereClause := dbutil.BuildWhereClause(moq, miq, nq, mq)
 
 	query := fmt.Sprintf(`SELECT o.id, o.owner_id, o.name, o.description, o.metadata, o.created_at, o.updated_at
-				FROM org_memberships om, orgs o %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
+				FROM org_memberships om, orgs o %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM org_memberships om, orgs o %s`, whereClause)
 
 	params := map[string]interface{}{

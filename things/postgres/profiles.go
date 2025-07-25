@@ -163,6 +163,8 @@ func (pr profileRepository) BackupByGroups(ctx context.Context, groupIDs []strin
 }
 
 func (pr profileRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
@@ -171,7 +173,7 @@ func (pr profileRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMeta
 	}
 
 	whereClause := dbutil.BuildWhereClause(nq, mq)
-	query := fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM profiles %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
+	query := fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM profiles %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM profiles %s;`, whereClause)
 
 	params := map[string]interface{}{
@@ -243,6 +245,8 @@ func (pr profileRepository) RetrieveByGroups(ctx context.Context, groupIDs []str
 		return things.ProfilesPage{}, nil
 	}
 
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	giq := getGroupIDsQuery(groupIDs)
 	nq, name := dbutil.GetNameQuery(pm.Name)
@@ -252,7 +256,7 @@ func (pr profileRepository) RetrieveByGroups(ctx context.Context, groupIDs []str
 	}
 
 	whereClause := dbutil.BuildWhereClause(giq, nq, mq)
-	query := fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM profiles %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
+	query := fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM profiles %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM profiles %s;`, whereClause)
 
 	params := map[string]interface{}{

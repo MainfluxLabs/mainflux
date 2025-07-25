@@ -64,9 +64,9 @@ func GetPayloadQuery(m map[string]interface{}) (mb []byte, mq string, err error)
 func GetOrderQuery(order string) string {
 	switch order {
 	case "name":
-		return "name"
+		return "LOWER(name)"
 	case "email":
-		return "email"
+		return "LOWER(email)"
 	default:
 		return "id"
 	}

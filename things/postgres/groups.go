@@ -7,7 +7,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -229,6 +228,8 @@ func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string, 
 		return things.GroupPage{}, nil
 	}
 
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	iq := getIDsQuery(groupIDs)
 	nq, name := dbutil.GetNameQuery(pm.Name)
@@ -237,7 +238,7 @@ func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string, 
 		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	whereClause := dbutil.BuildWhereClause(iq, nq, mq)
-	query := fmt.Sprintf(`SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
+	query := fmt.Sprintf(`SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM groups %s;`, whereClause)
 
 	params := map[string]interface{}{
@@ -251,6 +252,8 @@ func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string, 
 }
 
 func (gr groupRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.GroupPage, error) {
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
@@ -259,7 +262,7 @@ func (gr groupRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetada
 	}
 
 	whereClause := dbutil.BuildWhereClause(nq, mq)
-	query := fmt.Sprintf(`SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
+	query := fmt.Sprintf(`SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM groups %s;`, whereClause)
 
 	params := map[string]interface{}{
