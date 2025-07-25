@@ -49,7 +49,12 @@ func (ir invitesRepository) Save(ctx context.Context, invites ...auth.Invite) er
 				case pgerrcode.InvalidTextRepresentation:
 					return errors.Wrap(errors.ErrMalformedEntity, err)
 				case pgerrcode.UniqueViolation:
-					return errors.Wrap(auth.ErrUserAlreadyInvited, errors.New(pgErr.Detail))
+					var e error = errors.ErrConflict
+					if pgErr.ConstraintName == "invites_invitee_id_org_id_key" {
+						e = auth.ErrUserAlreadyInvited
+					}
+
+					return errors.Wrap(e, errors.New(pgErr.Detail))
 				}
 			}
 
