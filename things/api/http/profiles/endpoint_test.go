@@ -1398,16 +1398,12 @@ func TestRestoreProfilesByOrg(t *testing.T) {
 		id := fmt.Sprintf("%s%012d", prefix, suffix)
 		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: metadata}
 
-		prs, err := svc.CreateProfiles(context.Background(), adminToken, pr)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		profile := prs[0]
-
 		data = append(data, profileRes{
-			ID:       profile.ID,
-			Name:     profile.Name,
-			Metadata: profile.Metadata,
-			GroupID:  profile.GroupID,
-			Config:   profile.Config,
+			ID:       pr.ID,
+			Name:     pr.Name,
+			Metadata: pr.Metadata,
+			GroupID:  pr.GroupID,
+			Config:   pr.Config,
 		})
 	}
 
@@ -1432,7 +1428,7 @@ func TestRestoreProfilesByOrg(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusCreated,
-			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
+			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, orgID),
 			res:         emptyValue,
 		},
 		{
@@ -1441,7 +1437,7 @@ func TestRestoreProfilesByOrg(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusForbidden,
-			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
+			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, orgID),
 			res:         emptyValue,
 		},
 		{
@@ -1459,7 +1455,7 @@ func TestRestoreProfilesByOrg(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusUnauthorized,
-			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
+			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, orgID),
 			res:         emptyValue,
 		},
 		{
@@ -1468,7 +1464,7 @@ func TestRestoreProfilesByOrg(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusUnauthorized,
-			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
+			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, orgID),
 			res:         emptyValue,
 		},
 	}
@@ -1602,16 +1598,12 @@ func TestRestoreProfilesByGroup(t *testing.T) {
 		id := fmt.Sprintf("%s%012d", prefix, suffix)
 		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: metadata}
 
-		prs, err := svc.CreateProfiles(context.Background(), adminToken, pr)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		profile := prs[0]
-
 		data = append(data, profileRes{
-			ID:       profile.ID,
-			Name:     profile.Name,
-			Metadata: profile.Metadata,
-			GroupID:  profile.GroupID,
-			Config:   profile.Config,
+			ID:       pr.ID,
+			Name:     pr.Name,
+			Metadata: pr.Metadata,
+			GroupID:  pr.GroupID,
+			Config:   pr.Config,
 		})
 	}
 

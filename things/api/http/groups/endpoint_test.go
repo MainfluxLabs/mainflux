@@ -26,31 +26,34 @@ import (
 )
 
 const (
-	contentType      = "application/json"
-	userEmail        = "user@example.com"
-	adminEmail       = "admin@example.com"
-	otherUserEmail   = "other_user@example.com"
-	token            = userEmail
-	wrongValue       = "wrong_value"
-	emptyValue       = ""
-	password         = "password"
-	orgID            = "374106f7-030e-4881-8ab0-151195c29f92"
-	prefix           = "fe6b4e92-cc98-425e-b0aa-"
-	n                = 101
-	noLimit          = -1
-	emptyJson        = "{}"
-	maxNameSize      = 1024
-	nameKey          = "name"
-	ascKey           = "asc"
-	descKey          = "desc"
-	validData        = `{"limit":5,"offset":0}`
-	descData         = `{"limit":5,"offset":0,"dir":"desc","order":"name"}`
-	ascData          = `{"limit":5,"offset":0,"dir":"asc","order":"name"}`
-	invalidOrderData = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
-	zeroLimitData    = `{"limit":0,"offset":0}`
-	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
-	invalidLimitData = `{"limit":210,"offset":0}`
-	invalidData      = `{"limit": "invalid"}`
+	contentTypeJson        = "application/json"
+	contentTypeOctetStream = "application/octet-stream"
+	userEmail              = "user@example.com"
+	adminEmail             = "admin@example.com"
+	otherUserEmail         = "other_user@example.com"
+	token                  = userEmail
+	otherToken             = otherUserEmail
+	adminToken             = adminEmail
+	wrongValue             = "wrong_value"
+	emptyValue             = ""
+	password               = "password"
+	orgID                  = "374106f7-030e-4881-8ab0-151195c29f92"
+	prefix                 = "fe6b4e92-cc98-425e-b0aa-"
+	n                      = 101
+	noLimit                = -1
+	emptyJson              = "{}"
+	maxNameSize            = 1024
+	nameKey                = "name"
+	ascKey                 = "asc"
+	descKey                = "desc"
+	validData              = `{"limit":5,"offset":0}`
+	descData               = `{"limit":5,"offset":0,"dir":"desc","order":"name"}`
+	ascData                = `{"limit":5,"offset":0,"dir":"asc","order":"name"}`
+	invalidOrderData       = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
+	zeroLimitData          = `{"limit":0,"offset":0}`
+	invalidDirData         = `{"limit":5,"offset":0,"dir":"wrong"}`
+	invalidLimitData       = `{"limit":210,"offset":0}`
+	invalidData            = `{"limit": "invalid"}`
 )
 
 var (
@@ -135,7 +138,7 @@ func TestCreateGroups(t *testing.T) {
 		{
 			desc:   "create groups",
 			req:    data,
-			ct:     contentType,
+			ct:     contentTypeJson,
 			orgID:  orgID,
 			token:  token,
 			status: http.StatusCreated,
@@ -143,7 +146,7 @@ func TestCreateGroups(t *testing.T) {
 		{
 			desc:   "create groups with invalid auth token",
 			req:    data,
-			ct:     contentType,
+			ct:     contentTypeJson,
 			orgID:  orgID,
 			token:  wrongValue,
 			status: http.StatusUnauthorized,
@@ -151,7 +154,7 @@ func TestCreateGroups(t *testing.T) {
 		{
 			desc:   "create groups with empty auth token",
 			req:    data,
-			ct:     contentType,
+			ct:     contentTypeJson,
 			orgID:  orgID,
 			token:  emptyValue,
 			status: http.StatusUnauthorized,
@@ -159,7 +162,7 @@ func TestCreateGroups(t *testing.T) {
 		{
 			desc:   "create groups without org",
 			req:    data,
-			ct:     contentType,
+			ct:     contentTypeJson,
 			orgID:  emptyValue,
 			token:  token,
 			status: http.StatusBadRequest,
@@ -167,7 +170,7 @@ func TestCreateGroups(t *testing.T) {
 		{
 			desc:   "create groups with empty request",
 			req:    emptyValue,
-			ct:     contentType,
+			ct:     contentTypeJson,
 			orgID:  orgID,
 			token:  token,
 			status: http.StatusBadRequest,
@@ -175,7 +178,7 @@ func TestCreateGroups(t *testing.T) {
 		{
 			desc:   "create groups with empty JSON array",
 			req:    "[]",
-			ct:     contentType,
+			ct:     contentTypeJson,
 			orgID:  orgID,
 			token:  token,
 			status: http.StatusBadRequest,
@@ -183,7 +186,7 @@ func TestCreateGroups(t *testing.T) {
 		{
 			desc:   "create groups with invalid request format",
 			req:    "{",
-			ct:     contentType,
+			ct:     contentTypeJson,
 			orgID:  orgID,
 			token:  token,
 			status: http.StatusBadRequest,
@@ -497,7 +500,7 @@ func TestUpdateGroup(t *testing.T) {
 			desc:   "update group",
 			req:    data,
 			id:     ug.ID,
-			ct:     contentType,
+			ct:     contentTypeJson,
 			token:  token,
 			status: http.StatusOK,
 		},
@@ -505,7 +508,7 @@ func TestUpdateGroup(t *testing.T) {
 			desc:   "update group with invalid auth token",
 			req:    data,
 			id:     ug.ID,
-			ct:     contentType,
+			ct:     contentTypeJson,
 			token:  wrongValue,
 			status: http.StatusUnauthorized,
 		},
@@ -513,7 +516,7 @@ func TestUpdateGroup(t *testing.T) {
 			desc:   "update group with empty auth token",
 			req:    data,
 			id:     ug.ID,
-			ct:     contentType,
+			ct:     contentTypeJson,
 			token:  emptyValue,
 			status: http.StatusUnauthorized,
 		},
@@ -521,7 +524,7 @@ func TestUpdateGroup(t *testing.T) {
 			desc:   "update group with invalid group id",
 			req:    data,
 			id:     wrongValue,
-			ct:     contentType,
+			ct:     contentTypeJson,
 			token:  token,
 			status: http.StatusNotFound,
 		},
@@ -529,7 +532,7 @@ func TestUpdateGroup(t *testing.T) {
 			desc:   "update group without group id",
 			req:    data,
 			id:     emptyValue,
-			ct:     contentType,
+			ct:     contentTypeJson,
 			token:  token,
 			status: http.StatusBadRequest,
 		},
@@ -537,7 +540,7 @@ func TestUpdateGroup(t *testing.T) {
 			desc:   "update group with invalid request format",
 			req:    "{",
 			id:     ug.ID,
-			ct:     contentType,
+			ct:     contentTypeJson,
 			token:  token,
 			status: http.StatusBadRequest,
 		},
@@ -545,7 +548,7 @@ func TestUpdateGroup(t *testing.T) {
 			desc:   "update group with empty request",
 			req:    emptyValue,
 			id:     ug.ID,
-			ct:     contentType,
+			ct:     contentTypeJson,
 			token:  token,
 			status: http.StatusBadRequest,
 		},
@@ -1135,6 +1138,196 @@ func TestSearchGroupsByOrg(t *testing.T) {
 	}
 }
 
+func TestBackupGroupsByOrg(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	data := []groupRes{}
+	for i := 0; i < n; i++ {
+		name := fmt.Sprintf("group_%03d", i+1)
+		id := fmt.Sprintf("%s%012d", prefix, i+1)
+		gr := things.Group{ID: id, OrgID: orgID, Name: name, Description: "desc", Metadata: metadata}
+
+		grs, err := svc.CreateGroups(context.Background(), token, gr)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		group := grs[0]
+
+		data = append(data, groupRes{
+			ID:          group.ID,
+			Name:        group.Name,
+			Description: group.Description,
+			Metadata:    group.Metadata,
+			OrgID:       group.OrgID,
+		})
+	}
+
+	groupURL := fmt.Sprintf("%s/orgs", ts.URL)
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		url    string
+		res    []groupRes
+	}{
+		{
+			desc:   "backup groups by org as org owner",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/groups/backup", groupURL, orgID),
+			res:    data,
+		},
+		{
+			desc:   "backup groups by org the user belongs to",
+			auth:   otherToken,
+			status: http.StatusForbidden,
+			url:    fmt.Sprintf("%s/%s/groups/backup", groupURL, orgID),
+			res:    nil,
+		},
+		{
+			desc:   "backup groups by org as admin",
+			auth:   adminToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/groups/backup", groupURL, orgID),
+			res:    data,
+		},
+		{
+			desc:   "backup groups by org without org id",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/groups/backup", groupURL, emptyValue),
+			res:    nil,
+		},
+		{
+			desc:   "backup groups by org with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/%s/groups/backup", groupURL, orgID),
+			res:    nil,
+		},
+		{
+			desc:   "backup groups by org with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/%s/groups/backup", groupURL, orgID),
+			res:    nil,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodGet,
+			url:    tc.url,
+			token:  tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		var body []groupRes
+		json.NewDecoder(res.Body).Decode(&body)
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, body, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body))
+	}
+}
+
+func TestRestoreGroupsByOrg(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	data := []groupRes{}
+	for i := 0; i < n; i++ {
+		name := fmt.Sprintf("group_%03d", i+1)
+		id := fmt.Sprintf("%s%012d", prefix, i+1)
+		group := things.Group{ID: id, OrgID: orgID, Name: name, Description: "desc", Metadata: metadata}
+
+		data = append(data, groupRes{
+			ID:          group.ID,
+			Name:        group.Name,
+			Description: group.Description,
+			Metadata:    group.Metadata,
+			OrgID:       group.OrgID,
+		})
+	}
+
+	dataBytes, err := json.Marshal(data)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	dataString := string(dataBytes)
+
+	groupURL := fmt.Sprintf("%s/orgs", ts.URL)
+
+	cases := []struct {
+		desc        string
+		auth        string
+		contentType string
+		data        string
+		status      int
+		url         string
+		res         string
+	}{
+		{
+			desc:        "restore groups by org as org owner",
+			auth:        token,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusCreated,
+			url:         fmt.Sprintf("%s/%s/groups/backup", groupURL, orgID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore groups by org the user belongs to",
+			auth:        otherToken,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusForbidden,
+			url:         fmt.Sprintf("%s/%s/groups/backup", groupURL, orgID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore groups by org without org id",
+			auth:        token,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusBadRequest,
+			url:         fmt.Sprintf("%s/%s/groups/backup", groupURL, emptyValue),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore groups by org with invalid token",
+			auth:        wrongValue,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusUnauthorized,
+			url:         fmt.Sprintf("%s/%s/groups/backup", groupURL, orgID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore groups by org with empty token",
+			auth:        emptyValue,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusUnauthorized,
+			url:         fmt.Sprintf("%s/%s/groups/backup", groupURL, orgID),
+			res:         emptyValue,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPost,
+			url:         tc.url,
+			contentType: tc.contentType,
+			token:       tc.auth,
+			body:        strings.NewReader(tc.data),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
 func TestRemoveGroups(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
@@ -1165,42 +1358,42 @@ func TestRemoveGroups(t *testing.T) {
 			desc:        "remove existing groups",
 			data:        groupIDs[:5],
 			auth:        token,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			status:      http.StatusNoContent,
 		},
 		{
 			desc:        "remove non-existent groups",
 			data:        []string{wrongValue},
 			auth:        token,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			status:      http.StatusNotFound,
 		},
 		{
 			desc:        "remove groups with invalid token",
 			data:        groupIDs[len(groupIDs)-5:],
 			auth:        wrongValue,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			status:      http.StatusUnauthorized,
 		},
 		{
 			desc:        "remove groups without group ids",
 			data:        []string{},
 			auth:        token,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "remove groups with empty group ids",
 			data:        []string{emptyValue},
 			auth:        token,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "remove groups with empty token",
 			data:        groupIDs,
 			auth:        emptyValue,
-			contentType: contentType,
+			contentType: contentTypeJson,
 			status:      http.StatusUnauthorized,
 		},
 		{
