@@ -140,7 +140,10 @@ type Service interface {
 	Backup(ctx context.Context, token string) (Backup, error)
 
 	// BackupGroupsByOrg retrieves all groups for given org ID.
-	BackupGroupsByOrg(ctx context.Context, token string, orgID string) (BackupGroupsByOrg, error)
+	BackupGroupsByOrg(ctx context.Context, token string, orgID string) (GroupsBackup, error)
+
+	// RestoreGroupsByOrg adds all groups for given org ID from a backup.
+	RestoreGroupsByOrg(ctx context.Context, token string, orgID string, backup GroupsBackup) error
 
 	// BackupGroupMemberships retrieves all group memberships for given group ID.
 	BackupGroupMemberships(ctx context.Context, token string, groupID string) (BackupGroupMemberships, error)
@@ -172,7 +175,7 @@ type Backup struct {
 	GroupMemberships []GroupMembership
 }
 
-type BackupGroupsByOrg struct {
+type GroupsBackup struct {
 	Groups []Group
 }
 
@@ -834,19 +837,33 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 	}, nil
 }
 
-func (ts *thingsService) BackupGroupsByOrg(ctx context.Context, token string, orgID string) (BackupGroupsByOrg, error) {
+func (ts *thingsService) BackupGroupsByOrg(ctx context.Context, token string, orgID string) (GroupsBackup, error) {
 	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Owner); err != nil {
-		return BackupGroupsByOrg{}, err
+		return GroupsBackup{}, err
 	}
 
 	groups, err := ts.groups.BackupByOrg(ctx, orgID)
 	if err != nil {
-		return BackupGroupsByOrg{}, err
+		return GroupsBackup{}, err
 	}
 
-	return BackupGroupsByOrg{
+	return GroupsBackup{
 		Groups: groups,
 	}, nil
+}
+
+func (ts *thingsService) RestoreGroupsByOrg(ctx context.Context, token string, orgID string, backup GroupsBackup) error {
+	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Owner); err != nil {
+		return err
+	}
+
+	for _, group := range backup.Groups {
+		if _, err := ts.groups.Save(ctx, group); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (ts *thingsService) BackupGroupMemberships(ctx context.Context, token string, groupID string) (BackupGroupMemberships, error) {
