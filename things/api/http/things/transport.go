@@ -6,6 +6,7 @@ package things
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 
@@ -108,6 +109,13 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 	mux.Get("/groups/:id/things/backup", kithttp.NewServer(
 		kitot.TraceServer(tracer, "backup_things_by_group")(backupThingsByGroupEndpoint(svc)),
 		decodeBackupThingsByGroup,
+		encodeFileResponse,
+		opts...,
+	))
+
+	mux.Post("/groups/:id/things/backup", kithttp.NewServer(
+		kitot.TraceServer(tracer, "restore_things_by_group")(restoreThingsByGroupEndpoint(svc)),
+		decodeRestoreThingsByGroup,
 		encodeResponse,
 		opts...,
 	))
@@ -115,6 +123,13 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 	mux.Get("/orgs/:id/things/backup", kithttp.NewServer(
 		kitot.TraceServer(tracer, "backup_things_by_org")(backupThingsByOrgEndpoint(svc)),
 		decodeBackupThingsByOrg,
+		encodeFileResponse,
+		opts...,
+	))
+
+	mux.Post("/orgs/:id/things/backup", kithttp.NewServer(
+		kitot.TraceServer(tracer, "restore_things_by_org")(restoreThingsByOrgEndpoint(svc)),
+		decodeRestoreThingsByOrg,
 		encodeResponse,
 		opts...,
 	))
@@ -419,6 +434,50 @@ func decodeBackupThingsByOrg(_ context.Context, r *http.Request) (interface{}, e
 	return req, nil
 }
 
+func decodeRestoreThingsByGroup(ctx context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeOctetStream) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := restoreThingsByGroupReq{
+		id:    bone.GetValue(r, apiutil.IDKey),
+		token: apiutil.ExtractBearerToken(r),
+	}
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	if err := json.Unmarshal(data, &req.Things); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeRestoreThingsByOrg(ctx context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeOctetStream) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := restoreThingsByOrgReq{
+		id:    bone.GetValue(r, apiutil.IDKey),
+		token: apiutil.ExtractBearerToken(r),
+	}
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	if err := json.Unmarshal(data, &req.Things); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
 func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
@@ -461,6 +520,29 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	}
 
 	return json.NewEncoder(w).Encode(response)
+}
+
+func encodeFileResponse(_ context.Context, w http.ResponseWriter, response interface{}) (err error) {
+	w.Header().Set("Content-Type", apiutil.ContentTypeOctetStream)
+
+	if fr, ok := response.(viewFileRes); ok {
+		for k, v := range fr.Headers() {
+			w.Header().Set(k, v)
+		}
+
+		w.Header().Set("Content-Disposition", "attachment")
+
+		w.WriteHeader(fr.Code())
+
+		if fr.Empty() {
+			return nil
+		}
+
+		_, err := w.Write(fr.File)
+		return err
+	}
+
+	return nil
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
