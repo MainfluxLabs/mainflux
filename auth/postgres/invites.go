@@ -79,9 +79,16 @@ func (ir invitesRepository) RetrieveByID(ctx context.Context, inviteID string) (
 	dbI := dbInvite{ID: inviteID}
 
 	if err := ir.db.QueryRowxContext(ctx, q, inviteID).StructScan(&dbI); err != nil {
-		pgErr, ok := err.(*pgconn.PgError)
-		if err == sql.ErrNoRows || ok && pgErr.Code == pgerrcode.InvalidTextRepresentation {
+		if err == sql.ErrNoRows {
 			return auth.Invite{}, errors.Wrap(errors.ErrNotFound, err)
+		}
+
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return auth.Invite{}, errors.Wrap(errors.ErrMalformedEntity, err)
+			}
 		}
 
 		return auth.Invite{}, errors.Wrap(errors.ErrRetrieveEntity, err)
@@ -138,7 +145,7 @@ func (ir invitesRepository) RetrieveByInviteeID(ctx context.Context, inviteeID s
 
 	rows, err := ir.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return auth.InvitesPage{}, errors.Wrap(auth.ErrRetrieveInvitesByInvitee, err)
+		return auth.InvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -150,7 +157,7 @@ func (ir invitesRepository) RetrieveByInviteeID(ctx context.Context, inviteeID s
 		}
 
 		if err := rows.StructScan(&dbInv); err != nil {
-			return auth.InvitesPage{}, errors.Wrap(auth.ErrRetrieveInvitesByInvitee, err)
+			return auth.InvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 		}
 
 		inv := toInvite(dbInv)
@@ -161,7 +168,7 @@ func (ir invitesRepository) RetrieveByInviteeID(ctx context.Context, inviteeID s
 
 	total, err := dbutil.Total(ctx, ir.db, queryCount, params)
 	if err != nil {
-		return auth.InvitesPage{}, errors.Wrap(auth.ErrRetrieveInvitesByInvitee, err)
+		return auth.InvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	page := auth.InvitesPage{

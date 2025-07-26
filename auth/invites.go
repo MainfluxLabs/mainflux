@@ -13,9 +13,6 @@ var (
 	// ErrCreateInvite indicates failure to create a new Invite
 	ErrCreateInvite = errors.New("error creating invite")
 
-	// ErrRetrieveInvitesByInvitee indicates failure to retrieve Invites by invitee
-	ErrRetrieveInvitesByInvitee = errors.New("failed to retreieve invits by invitee")
-
 	// ErrUserAlreadyInvited indicates that the invitee already has a pending invitation to join the same Org
 	ErrUserAlreadyInvited = errors.New("user already has pending invite to org")
 
