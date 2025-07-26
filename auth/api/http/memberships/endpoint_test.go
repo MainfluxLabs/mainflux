@@ -27,24 +27,25 @@ import (
 )
 
 const (
-	secret        = "secret"
-	id            = "123e4567-e89b-12d3-a456-000000000022"
-	adminID       = "adminID"
-	editorID      = "editorID"
-	viewerID      = "viewerID"
-	email         = "user@example.com"
-	adminEmail    = "admin@example.com"
-	editorEmail   = "editor@example.com"
-	viewerEmail   = "viewer@example.com"
-	wrongValue    = "wrong_value"
-	name          = "testName"
-	description   = "testDesc"
-	n             = 10
-	loginDuration = 30 * time.Minute
-	emailKey      = "email"
-	idKey         = "id"
-	ascKey        = "asc"
-	descKey       = "desc"
+	secret         = "secret"
+	id             = "123e4567-e89b-12d3-a456-000000000022"
+	adminID        = "adminID"
+	editorID       = "editorID"
+	viewerID       = "viewerID"
+	email          = "user@example.com"
+	adminEmail     = "admin@example.com"
+	editorEmail    = "editor@example.com"
+	viewerEmail    = "viewer@example.com"
+	wrongValue     = "wrong_value"
+	name           = "testName"
+	description    = "testDesc"
+	n              = 10
+	loginDuration  = 30 * time.Minute
+	inviteDuration = 7 * 24 * time.Hour
+	emailKey       = "email"
+	idKey          = "id"
+	ascKey         = "asc"
+	descKey        = "desc"
 )
 
 var (
@@ -91,13 +92,14 @@ func newService() auth.Service {
 	membershipsRepo := mocks.NewOrgMembershipsRepository()
 	orgsRepo := mocks.NewOrgRepository(membershipsRepo)
 	rolesRepo := mocks.NewRolesRepository()
+	invitesRepo := mocks.NewInvitesRepository()
 
 	idProvider := uuid.NewMock()
 	t := jwt.New(secret)
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
 	tc := thmocks.NewThingsServiceClient(nil, nil, nil)
 
-	return auth.New(orgsRepo, tc, uc, nil, rolesRepo, membershipsRepo, idProvider, t, loginDuration)
+	return auth.New(orgsRepo, tc, uc, nil, rolesRepo, membershipsRepo, invitesRepo, nil, idProvider, t, loginDuration, inviteDuration)
 }
 
 func newServer(svc auth.Service) *httptest.Server {
