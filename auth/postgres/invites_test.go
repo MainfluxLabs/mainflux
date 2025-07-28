@@ -17,6 +17,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const inviteExpiryTime = 24 * 7 * time.Hour
+
 func TestSaveInvite(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	repoInvites := postgres.NewInvitesRepo(dbMiddleware)
@@ -332,7 +334,7 @@ func TestListInivtesByInvitee(t *testing.T) {
 			OrgID:        org.ID,
 			InviteeRole:  auth.Viewer,
 			CreatedAt:    time.Now(),
-			ExpiresAt:    time.Now(),
+			ExpiresAt:    time.Now().Add(inviteExpiryTime),
 		})
 	}
 
