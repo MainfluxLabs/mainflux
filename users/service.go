@@ -136,6 +136,7 @@ var _ Service = (*usersService)(nil)
 type usersService struct {
 	users              UserRepository
 	emailVerifications EmailVerificationRepository
+	requireEmailVerify bool
 	hasher             Hasher
 	email              Emailer
 	auth               protomfx.AuthServiceClient
@@ -143,10 +144,11 @@ type usersService struct {
 }
 
 // New instantiates the users service implementation
-func New(users UserRepository, verifications EmailVerificationRepository, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider) Service {
+func New(users UserRepository, verifications EmailVerificationRepository, requireEmailVerify bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider) Service {
 	return &usersService{
 		users:              users,
 		emailVerifications: verifications,
+		requireEmailVerify: requireEmailVerify,
 		hasher:             hasher,
 		auth:               auth,
 		email:              e,
@@ -170,6 +172,22 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, uiHost stri
 	}
 
 	user.Password = hash
+
+	if !svc.requireEmailVerify {
+		userId, err := svc.idProvider.ID()
+		if err != nil {
+			return "", err
+		}
+
+		user.ID = userId
+		user.Status = EnabledStatusKey
+
+		if _, err := svc.users.Save(ctx, user); err != nil {
+			return "", err
+		}
+
+		return user.ID, nil
+	}
 
 	verificationToken, err := svc.idProvider.ID()
 	if err != nil {

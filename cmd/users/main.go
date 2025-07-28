@@ -78,7 +78,8 @@ const (
 	defAuthGRPCTimeout = "1s"
 	defGRPCPort        = "8184"
 
-	defSelfRegister = "true" // By default, everybody can create a user. Otherwise, only admin can create a user.
+	defSelfRegister       = "true" // By default, everybody can create a user. Otherwise, only admin can create a user.
+	defRequireEmailVerify = "true"
 
 	envLogLevel      = "MF_USERS_LOG_LEVEL"
 	envDBHost        = "MF_USERS_DB_HOST"
@@ -115,23 +116,25 @@ const (
 	envauthGRPCTimeout = "MF_AUTH_GRPC_TIMEOUT"
 	envGRPCPort        = "MF_USERS_GRPC_PORT"
 
-	envSelfRegister = "MF_USERS_ALLOW_SELF_REGISTER"
+	envSelfRegister       = "MF_USERS_ALLOW_SELF_REGISTER"
+	envRequireEmailVerify = "MF_REQUIRE_EMAIL_VERIFICATION"
 )
 
 type config struct {
-	logLevel        string
-	dbConfig        postgres.Config
-	httpConfig      servers.Config
-	grpcConfig      servers.Config
-	emailConf       email.Config
-	authConfig      clients.Config
-	jaegerURL       string
-	resetURL        string
-	authGRPCTimeout time.Duration
-	adminEmail      string
-	adminPassword   string
-	passRegex       *regexp.Regexp
-	selfRegister    bool
+	logLevel           string
+	dbConfig           postgres.Config
+	httpConfig         servers.Config
+	grpcConfig         servers.Config
+	emailConf          email.Config
+	authConfig         clients.Config
+	jaegerURL          string
+	resetURL           string
+	authGRPCTimeout    time.Duration
+	adminEmail         string
+	adminPassword      string
+	passRegex          *regexp.Regexp
+	selfRegister       bool
+	requireEmailVerify bool
 }
 
 func main() {
@@ -207,6 +210,11 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envSelfRegister, err.Error())
 	}
 
+	requireEmailVerification, err := strconv.ParseBool(mainflux.Env(envRequireEmailVerify, defRequireEmailVerify))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envRequireEmailVerify, err.Error())
+	}
+
 	dbConfig := postgres.Config{
 		Host:        mainflux.Env(envDBHost, defDBHost),
 		Port:        mainflux.Env(envDBPort, defDBPort),
@@ -253,19 +261,20 @@ func loadConfig() config {
 	}
 
 	return config{
-		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
-		dbConfig:        dbConfig,
-		httpConfig:      httpConfig,
-		grpcConfig:      grpcConfig,
-		emailConf:       emailConf,
-		authConfig:      authConfig,
-		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
-		resetURL:        mainflux.Env(envTokenResetEndpoint, defTokenResetEndpoint),
-		authGRPCTimeout: authGRPCTimeout,
-		adminEmail:      mainflux.Env(envAdminEmail, defAdminEmail),
-		adminPassword:   mainflux.Env(envAdminPassword, defAdminPassword),
-		passRegex:       passRegex,
-		selfRegister:    selfRegister,
+		logLevel:           mainflux.Env(envLogLevel, defLogLevel),
+		dbConfig:           dbConfig,
+		httpConfig:         httpConfig,
+		grpcConfig:         grpcConfig,
+		emailConf:          emailConf,
+		authConfig:         authConfig,
+		jaegerURL:          mainflux.Env(envJaegerURL, defJaegerURL),
+		resetURL:           mainflux.Env(envTokenResetEndpoint, defTokenResetEndpoint),
+		authGRPCTimeout:    authGRPCTimeout,
+		adminEmail:         mainflux.Env(envAdminEmail, defAdminEmail),
+		adminPassword:      mainflux.Env(envAdminPassword, defAdminPassword),
+		passRegex:          passRegex,
+		selfRegister:       selfRegister,
+		requireEmailVerify: requireEmailVerification,
 	}
 
 }
@@ -292,7 +301,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceC
 
 	idProvider := uuid.New()
 
-	svc := users.New(userRepo, verificationRepo, hasher, ac, emailer, idProvider)
+	svc := users.New(userRepo, verificationRepo, c.requireEmailVerify, hasher, ac, emailer, idProvider)
 	svc = httpapi.LoggingMiddleware(svc, logger)
 	svc = httpapi.MetricsMiddleware(
 		svc,
