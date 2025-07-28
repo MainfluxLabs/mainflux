@@ -131,7 +131,7 @@ func (ir invitesRepository) RetrieveByInviteeID(ctx context.Context, inviteeID s
 	query := `
 		SELECT id, inviter_id, org_id, invitee_role, created_at, expires_at
 		FROM invites
-		WHERE invitee_id = :invitee_id
+		WHERE invitee_id = :invitee_id AND expires_at > NOW()
 	`
 
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
@@ -164,7 +164,7 @@ func (ir invitesRepository) RetrieveByInviteeID(ctx context.Context, inviteeID s
 		invites = append(invites, inv)
 	}
 
-	queryCount := `SELECT COUNT(*) FROM invites WHERE invitee_id = :invitee_id`
+	queryCount := `SELECT COUNT(*) FROM invites WHERE invitee_id = :invitee_id AND expires_at > NOW()`
 
 	total, err := dbutil.Total(ctx, ir.db, queryCount, params)
 	if err != nil {
