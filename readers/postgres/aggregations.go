@@ -4,7 +4,9 @@ package postgres
 
 import (
 	"fmt"
+	"log"
 	"strings"
+	"text/template"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
@@ -15,8 +17,321 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+type QueryConfig struct {
+	Format           string
+	TimeColumn       string
+	AggField         string
+	Interval         string
+	Condition        string
+	ConditionForJoin string
+	Limit            uint64
+	AggType          string
+}
+
+type AggStrategy interface {
+	BuildQuery(config QueryConfig) string
+	GetSelectedFields(config QueryConfig) string
+	GetAggregateExpression(config QueryConfig) string
+}
+
 type aggregationService struct {
 	db *sqlx.DB
+}
+
+type MaxStrategy struct{}
+
+func (maxStrt MaxStrategy) BuildQuery(config QueryConfig) string {
+	tmpl := `
+		WITH time_intervals AS (
+			{{.TimeIntervals}}
+		),
+		interval_aggs AS (
+			SELECT 
+				ti.interval_time,
+				{{.AggExpression}} as agg_value
+			FROM time_intervals ti
+			LEFT JOIN {{.Format}} m ON {{.TimeJoinCondition}}
+				{{.ConditionForJoin}}
+			GROUP BY ti.interval_time
+			HAVING {{.AggExpression}} IS NOT NULL
+		)
+		SELECT DISTINCT ON (ia.interval_time) {{.SelectedFields}}
+		FROM {{.Format}} m
+		JOIN interval_aggs ia ON {{.TimeJoinConditionIA}}
+			AND {{.ValueCondition}}
+		{{.Condition}}
+		ORDER BY ia.interval_time DESC, {{.TimeColumn}} DESC;`
+
+	return maxStrt.renderTemplate(tmpl, config)
+}
+
+func (maxStrt MaxStrategy) renderTemplate(templateStr string, config QueryConfig) string {
+	data := map[string]string{
+		"TimeIntervals":       buildTimeIntervals(config),
+		"AggExpression":       maxStrt.GetAggregateExpression(config),
+		"Format":              config.Format,
+		"TimeJoinCondition":   buildTimeJoinCondition(config),
+		"TimeJoinConditionIA": buildTimeJoinConditionIA(config),
+		"ConditionForJoin":    config.ConditionForJoin,
+		"SelectedFields":      maxStrt.GetSelectedFields(config),
+		"ValueCondition":      buildValueCondition(config),
+		"Condition":           config.Condition,
+		"TimeColumn":          config.TimeColumn,
+	}
+
+	tmpl := template.Must(template.New("query").Parse(templateStr))
+	var result strings.Builder
+	tmpl.Execute(&result, data)
+	return result.String()
+}
+
+func (maxStrt MaxStrategy) GetSelectedFields(config QueryConfig) string {
+	return "m.*"
+}
+
+func (maxStrt MaxStrategy) GetAggregateExpression(config QueryConfig) string {
+	switch config.Format {
+	case defTable:
+		return fmt.Sprintf("MAX(m.%s)", config.AggField)
+	default:
+		return fmt.Sprintf("MAX(CAST(m.payload->>'v' AS float))")
+	}
+}
+
+type MinStrategy struct{}
+
+func (minStrt MinStrategy) BuildQuery(config QueryConfig) string {
+	tmpl := `
+		WITH time_intervals AS (
+			{{.TimeIntervals}}
+		),
+		interval_aggs AS (
+			SELECT 
+				ti.interval_time,
+				{{.AggExpression}} as agg_value
+			FROM time_intervals ti
+			LEFT JOIN {{.Format}} m ON {{.TimeJoinCondition}}
+				{{.ConditionForJoin}}
+			GROUP BY ti.interval_time
+			HAVING {{.AggExpression}} IS NOT NULL
+		)
+		SELECT DISTINCT ON (ia.interval_time) {{.SelectedFields}}
+		FROM {{.Format}} m
+		JOIN interval_aggs ia ON {{.TimeJoinConditionIA}}
+			AND {{.ValueCondition}}
+		{{.Condition}}
+		ORDER BY ia.interval_time DESC, {{.TimeColumn}} DESC;`
+
+	return minStrt.renderTemplate(tmpl, config)
+}
+
+func (minStrt MinStrategy) renderTemplate(templateStr string, config QueryConfig) string {
+	data := map[string]string{
+		"TimeIntervals":       buildTimeIntervals(config),
+		"AggExpression":       minStrt.GetAggregateExpression(config),
+		"Format":              config.Format,
+		"TimeJoinCondition":   buildTimeJoinCondition(config),
+		"TimeJoinConditionIA": buildTimeJoinConditionIA(config),
+		"ConditionForJoin":    config.ConditionForJoin,
+		"SelectedFields":      minStrt.GetSelectedFields(config),
+		"ValueCondition":      buildValueCondition(config),
+		"Condition":           config.Condition,
+		"TimeColumn":          config.TimeColumn,
+	}
+
+	tmpl := template.Must(template.New("query").Parse(templateStr))
+	var result strings.Builder
+	tmpl.Execute(&result, data)
+	return result.String()
+}
+
+func (minStrt MinStrategy) GetSelectedFields(config QueryConfig) string {
+	return "m.*"
+}
+
+func (minStrt MinStrategy) GetAggregateExpression(config QueryConfig) string {
+	switch config.Format {
+	case defTable:
+		return fmt.Sprintf("MIN(m.%s)", config.AggField)
+	default:
+		return fmt.Sprintf("MIN(CAST(m.payload->>'v' AS float))")
+	}
+}
+
+type AvgStrategy struct{}
+
+func (avgStrt AvgStrategy) BuildQuery(config QueryConfig) string {
+	tmpl := `
+		WITH time_intervals AS (
+			{{.TimeIntervals}}
+		),
+		interval_aggs AS (
+			SELECT 
+				ti.interval_time,
+				{{.AggExpression}} as avg_value,
+				MAX(m.{{.TimeColumn}}) as max_time  
+			FROM time_intervals ti
+			LEFT JOIN {{.Format}} m ON {{.TimeJoinCondition}}
+				{{.ConditionForJoin}}
+			GROUP BY ti.interval_time
+			HAVING {{.AggExpression}} IS NOT NULL
+		)
+		SELECT DISTINCT ON (ia.interval_time) {{.SelectedFields}}
+		FROM {{.Format}} m
+		JOIN interval_aggs ia ON {{.TimeJoinConditionIA}}
+			AND m.{{.TimeColumn}} = ia.max_time
+		{{.Condition}}
+		ORDER BY ia.interval_time DESC, m.{{.TimeColumn}} DESC;`
+
+	return avgStrt.renderTemplate(tmpl, config)
+}
+
+func (avgStrt AvgStrategy) renderTemplate(templateStr string, config QueryConfig) string {
+	data := map[string]string{
+		"TimeIntervals":       buildTimeIntervals(config),
+		"AggExpression":       avgStrt.GetAggregateExpression(config),
+		"Format":              config.Format,
+		"TimeJoinCondition":   buildTimeJoinCondition(config),
+		"TimeJoinConditionIA": buildTimeJoinConditionIA(config),
+		"ConditionForJoin":    config.ConditionForJoin,
+		"SelectedFields":      avgStrt.GetSelectedFields(config),
+		"Condition":           config.Condition,
+		"TimeColumn":          config.TimeColumn,
+	}
+
+	tmpl := template.Must(template.New("query").Parse(templateStr))
+	var result strings.Builder
+	tmpl.Execute(&result, data)
+	return result.String()
+}
+
+func (avgStrt AvgStrategy) GetSelectedFields(config QueryConfig) string {
+	switch config.Format {
+	case defTable:
+		return `m.subtopic, m.publisher, m.protocol, m.name, m.unit,
+				ia.avg_value as value, 
+				m.string_value, m.bool_value, m.data_value, m.sum,
+				m.time, m.update_time`
+	default:
+		return `m.created, m.subtopic, m.publisher, m.protocol,
+				jsonb_build_object(
+					'n', m.payload->>'n',
+					'v', ia.avg_value  
+				) as payload`
+	}
+}
+
+func (avgStrt AvgStrategy) GetAggregateExpression(config QueryConfig) string {
+	switch config.Format {
+	case defTable:
+		return fmt.Sprintf("AVG(m.%s)", config.AggField)
+	default:
+		return fmt.Sprintf("AVG(CAST(m.payload->>'v' AS float))")
+	}
+}
+
+type CountStrategy struct{}
+
+func (countStrt CountStrategy) BuildQuery(config QueryConfig) string {
+	tmpl := `
+		WITH time_intervals AS (
+			{{.TimeIntervals}}
+		),
+		interval_aggs AS (
+			SELECT 
+				ti.interval_time,
+				{{.AggExpression}} as sum_value,
+				MAX(m.{{.TimeColumn}}) as max_time  
+			FROM time_intervals ti
+			LEFT JOIN {{.Format}} m ON {{.TimeJoinCondition}}
+				{{.ConditionForJoin}}
+			GROUP BY ti.interval_time
+			HAVING {{.AggExpression}} IS NOT NULL
+		)
+		SELECT DISTINCT ON (ia.interval_time) {{.SelectedFields}}
+		FROM {{.Format}} m
+		JOIN interval_aggs ia ON {{.TimeJoinConditionIA}}
+			AND m.{{.TimeColumn}} = ia.max_time
+		{{.Condition}}
+		ORDER BY ia.interval_time DESC, m.{{.TimeColumn}} DESC;`
+
+	return countStrt.renderTemplate(tmpl, config)
+}
+
+func (countStrt CountStrategy) renderTemplate(templateStr string, config QueryConfig) string {
+	data := map[string]string{
+		"TimeIntervals":       buildTimeIntervals(config),
+		"AggExpression":       countStrt.GetAggregateExpression(config),
+		"Format":              config.Format,
+		"TimeJoinCondition":   buildTimeJoinCondition(config),
+		"TimeJoinConditionIA": buildTimeJoinConditionIA(config),
+		"ConditionForJoin":    config.ConditionForJoin,
+		"SelectedFields":      countStrt.GetSelectedFields(config),
+		"Condition":           config.Condition,
+		"TimeColumn":          config.TimeColumn,
+	}
+
+	tmpl := template.Must(template.New("query").Parse(templateStr))
+	var result strings.Builder
+	tmpl.Execute(&result, data)
+	return result.String()
+}
+
+func (countStrt CountStrategy) GetSelectedFields(config QueryConfig) string {
+	switch config.Format {
+	case defTable:
+		return `m.subtopic, m.publisher, m.protocol, m.name, m.unit,
+				ia.sum_value as value, 
+				m.string_value, m.bool_value, m.data_value, m.sum,
+				m.time, m.update_time`
+	default:
+		return `m.created, m.subtopic, m.publisher, m.protocol,
+				jsonb_build_object(
+					'n', m.payload->>'n',
+					'v', ia.sum_value  
+				) as payload`
+	}
+}
+
+func (countStrt CountStrategy) GetAggregateExpression(config QueryConfig) string {
+	switch config.Format {
+	case defTable:
+		return fmt.Sprintf("SUM(m.%s)", config.AggField)
+	default:
+		return fmt.Sprintf("SUM(CAST(m.payload->>'v' AS float))")
+	}
+}
+
+func buildTimeIntervals(config QueryConfig) string {
+	return fmt.Sprintf(`
+		SELECT generate_series(
+			date_trunc('%s', (SELECT MAX(to_timestamp(%s / 1000000000)) FROM %s %s) - interval '%d %s'),
+			date_trunc('%s', (SELECT MAX(to_timestamp(%s / 1000000000)) FROM %s %s)),
+			interval '1 %s'
+		) as interval_time
+		ORDER BY interval_time DESC
+		LIMIT %d`,
+		config.Interval, config.TimeColumn, config.Format, config.Condition, config.Limit, config.Interval,
+		config.Interval, config.TimeColumn, config.Format, config.Condition, config.Interval, config.Limit)
+}
+
+func buildTimeJoinCondition(config QueryConfig) string {
+	return fmt.Sprintf("date_trunc('%s', to_timestamp(m.%s / 1000000000)) = ti.interval_time",
+		config.Interval, config.TimeColumn)
+}
+
+func buildTimeJoinConditionIA(config QueryConfig) string {
+	return fmt.Sprintf("date_trunc('%s', to_timestamp(m.%s / 1000000000)) = ia.interval_time",
+		config.Interval, config.TimeColumn)
+}
+
+func buildValueCondition(config QueryConfig) string {
+	switch config.Format {
+	case defTable:
+		return fmt.Sprintf("m.%s = ia.agg_value", config.AggField)
+	default:
+		return "CAST(m.payload->>'v' as FLOAT) = ia.agg_value"
+	}
 }
 
 func newAggregationService(db *sqlx.DB) *aggregationService {
@@ -27,7 +342,31 @@ func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata) (
 	format, _ := as.getFormatAndOrder(rpm)
 	params := as.buildQueryParams(rpm)
 
-	query := as.buildAggregationQuery(rpm, format)
+	config := QueryConfig{
+		Format:     format,
+		TimeColumn: as.getTimeColumn(format),
+		AggField:   as.getAggregateField(rpm, format),
+		Interval:   rpm.AggInterval,
+		Limit:      rpm.Limit,
+		AggType:    rpm.AggType,
+	}
+
+	baseCondition := as.buildBaseCondition(rpm, format)
+	nameCondition := as.buildNameCondition(rpm, format)
+	config.Condition = as.combineConditions(baseCondition, nameCondition)
+	config.ConditionForJoin = strings.Replace(config.Condition, "WHERE", "AND", 1)
+
+	if config.Condition == "" {
+		config.ConditionForJoin = ""
+	}
+
+	strategy := as.getAggregateStrategy(rpm.AggType)
+	if strategy == nil {
+		return []readers.Message{}, nil
+	}
+
+	query := strategy.BuildQuery(config)
+	log.Print(query)
 	rows, err := as.executeQuery(query, params)
 	if err != nil {
 		return nil, err
@@ -45,36 +384,19 @@ func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata) (
 	return messages, nil
 }
 
-func (as *aggregationService) buildAggregationQuery(rpm readers.PageMetadata, format string) string {
-	interval := rpm.AggInterval
-	aggField := as.getAggregateField(rpm, format)
-	timeColumn := as.getTimeColumn(format)
-	limit := rpm.Limit
-
-	baseCondition := as.buildBaseCondition(rpm, format)
-	nameCondition := as.buildNameCondition(rpm, format)
-	fullCondition := as.combineConditions(baseCondition, nameCondition)
-
-	conditionForJoin := strings.Replace(fullCondition, "WHERE", "AND", 1)
-	if fullCondition == "" {
-		conditionForJoin = ""
-	}
-
-	switch rpm.AggType {
+func (as aggregationService) getAggregateStrategy(aggType string) AggStrategy {
+	switch aggType {
 	case readers.AggregationMax:
-		return as.buildMinMaxQuery(format, timeColumn, aggField, fullCondition, conditionForJoin, interval, limit, "MAX")
-
+		return MaxStrategy{}
 	case readers.AggregationMin:
-		return as.buildMinMaxQuery(format, timeColumn, aggField, fullCondition, conditionForJoin, interval, limit, "MIN")
-
+		return MinStrategy{}
 	case readers.AggregationAvg:
-		return as.buildAvgQuery(format, timeColumn, aggField, fullCondition, conditionForJoin, interval, limit)
-
+		return AvgStrategy{}
 	case readers.AggregationCount:
-		return as.buildCountQuery(format, timeColumn, aggField, fullCondition, conditionForJoin, interval, limit)
+		return CountStrategy{}
+	default:
+		return nil
 	}
-
-	return ""
 }
 
 func (as *aggregationService) buildNameCondition(rpm readers.PageMetadata, format string) string {
@@ -103,229 +425,6 @@ func (as *aggregationService) combineConditions(condition1, condition2 string) s
 
 	condition2 = strings.Replace(condition2, "WHERE", "AND", 1)
 	return condition1 + " " + condition2
-}
-
-func (as *aggregationService) buildMinMaxQuery(format, timeColumn, aggField, condition, conditionForJoin, interval string, limit uint64, aggFunc string) string {
-	switch format {
-	case defTable:
-		return fmt.Sprintf(`
-			WITH time_intervals AS (
-				SELECT generate_series(
-					date_trunc('%s', (SELECT MAX(to_timestamp(%s / 1000000000)) FROM %s %s) - interval '%d %s'),
-					date_trunc('%s', (SELECT MAX(to_timestamp(%s / 1000000000)) FROM %s %s)),
-					interval '1 %s'
-				) as interval_time
-				ORDER BY interval_time DESC
-				LIMIT %d
-			),
-			interval_aggs AS (
-				SELECT 
-					ti.interval_time,
-					%s(m.%s) as agg_value
-				FROM time_intervals ti
-				LEFT JOIN %s m ON date_trunc('%s', to_timestamp(m.%s / 1000000000)) = ti.interval_time
-					%s
-				GROUP BY ti.interval_time
-				HAVING %s(m.%s) IS NOT NULL
-			)
-			SELECT DISTINCT ON (ia.interval_time) m.*
-			FROM %s m
-			JOIN interval_aggs ia ON date_trunc('%s', to_timestamp(m.%s / 1000000000)) = ia.interval_time
-				AND m.%s = ia.agg_value
-			%s
-			ORDER BY ia.interval_time DESC, m.%s DESC;`,
-			interval, timeColumn, format, condition, limit, interval,
-			interval, timeColumn, format, condition, interval, limit,
-			aggFunc, aggField, format, interval, timeColumn, conditionForJoin,
-			aggFunc, aggField, format, interval, timeColumn, aggField, condition, timeColumn)
-	default:
-		return fmt.Sprintf(`
-			WITH time_intervals AS (
-				SELECT generate_series(
-					date_trunc('%s', (SELECT MAX(to_timestamp(created / 1000000000)) FROM %s %s) - interval '%d %s'),
-					date_trunc('%s', (SELECT MAX(to_timestamp(created / 1000000000)) FROM %s %s)),
-					interval '1 %s'
-				) as interval_time
-				ORDER BY interval_time DESC
-				LIMIT %d
-			),
-			interval_aggs AS (
-				SELECT 
-					ti.interval_time,
-					%s(CAST(m.payload->>'v' AS float)) as agg_value
-				FROM time_intervals ti
-				LEFT JOIN %s m ON date_trunc('%s', to_timestamp(m.created / 1000000000)) = ti.interval_time
-					%s
-				GROUP BY ti.interval_time
-				HAVING %s(CAST(m.payload->>'v' AS float)) IS NOT NULL
-			)
-			SELECT DISTINCT ON (ia.interval_time) m.*
-			FROM %s m
-			JOIN interval_aggs ia ON date_trunc('%s', to_timestamp(m.created / 1000000000)) = ia.interval_time
-				AND CAST(m.payload->>'v' as FLOAT) = ia.agg_value
-			%s
-			ORDER BY ia.interval_time DESC, m.created DESC;`,
-			interval, format, condition, limit, interval,
-			interval, format, condition, interval, limit,
-			aggFunc, format, interval, conditionForJoin,
-			aggFunc, format, interval, condition)
-	}
-}
-
-func (as *aggregationService) buildAvgQuery(format, timeColumn, aggField, condition, conditionForJoin, interval string, limit uint64) string {
-	switch format {
-	case defTable:
-		return fmt.Sprintf(`
-			WITH time_intervals AS (
-				SELECT generate_series(
-					date_trunc('%s', (SELECT MAX(to_timestamp(%s / 1000000000)) FROM %s %s) - interval '%d %s'),
-					date_trunc('%s', (SELECT MAX(to_timestamp(%s / 1000000000)) FROM %s %s)),
-					interval '1 %s'
-				) as interval_time
-				ORDER BY interval_time DESC
-				LIMIT %d
-			),
-			interval_aggs AS (
-				SELECT 
-					ti.interval_time,
-					AVG(m.%s) as avg_value,
-					MAX(m.%s) as max_time  
-				FROM time_intervals ti
-				LEFT JOIN %s m ON date_trunc('%s', to_timestamp(m.%s / 1000000000)) = ti.interval_time
-					%s
-				GROUP BY ti.interval_time
-				HAVING AVG(m.%s) IS NOT NULL
-			)
-			SELECT DISTINCT ON (ia.interval_time) 
-				m.subtopic, m.publisher, m.protocol, m.name, m.unit,
-				ia.avg_value as value, 
-				m.string_value, m.bool_value, m.data_value, m.sum,
-				m.time, m.update_time
-			FROM %s m
-			JOIN interval_aggs ia ON date_trunc('%s', to_timestamp(m.%s / 1000000000)) = ia.interval_time
-				AND m.%s = ia.max_time
-			%s
-			ORDER BY ia.interval_time DESC, m.%s DESC;`,
-			interval, timeColumn, format, condition, limit, interval,
-			interval, timeColumn, format, condition, interval, limit,
-			aggField, timeColumn, format, interval, timeColumn, conditionForJoin,
-			aggField, format, interval, timeColumn, timeColumn, condition, timeColumn)
-	default:
-		return fmt.Sprintf(`
-			WITH time_intervals AS (
-				SELECT generate_series(
-					date_trunc('%s', (SELECT MAX(to_timestamp(created / 1000000000)) FROM %s %s) - interval '%d %s'),
-					date_trunc('%s', (SELECT MAX(to_timestamp(created / 1000000000)) FROM %s %s)),
-					interval '1 %s'
-				) as interval_time
-				ORDER BY interval_time DESC
-				LIMIT %d
-			),
-			interval_aggs AS (
-				SELECT 
-					ti.interval_time,
-					AVG(CAST(m.payload->>'v' AS float)) as avg_value,
-					MAX(m.created) as max_time  
-				FROM time_intervals ti
-				LEFT JOIN %s m ON date_trunc('%s', to_timestamp(m.created / 1000000000)) = ti.interval_time
-					%s
-				GROUP BY ti.interval_time
-				HAVING AVG(CAST(m.payload->>'v' AS float)) IS NOT NULL
-			)
-			SELECT DISTINCT ON (ia.interval_time) 
-				m.created, m.subtopic, m.publisher, m.protocol,
-				jsonb_build_object(
-					'n', m.payload->>'n',
-					'v', ia.avg_value  
-				) as payload
-			FROM %s m
-			JOIN interval_aggs ia ON date_trunc('%s', to_timestamp(m.created / 1000000000)) = ia.interval_time
-				AND m.created = ia.max_time
-			%s
-			ORDER BY ia.interval_time DESC, m.created DESC;`,
-			interval, format, condition, limit, interval,
-			interval, format, condition, interval, limit,
-			format, interval, conditionForJoin,
-			format, interval, condition)
-	}
-}
-
-func (as *aggregationService) buildCountQuery(format, timeColumn, aggField, condition, conditionForJoin, interval string, limit uint64) string {
-	switch format {
-	case defTable:
-		return fmt.Sprintf(`
-			WITH time_intervals AS (
-				SELECT generate_series(
-					date_trunc('%s', (SELECT MAX(to_timestamp(%s / 1000000000)) FROM %s %s) - interval '%d %s'),
-					date_trunc('%s', (SELECT MAX(to_timestamp(%s / 1000000000)) FROM %s %s)),
-					interval '1 %s'
-				) as interval_time
-				ORDER BY interval_time DESC
-				LIMIT %d
-			),
-			interval_aggs AS (
-				SELECT 
-					ti.interval_time,
-					SUM(m.%s) as sum_value,
-					MAX(m.%s) as max_time  
-				FROM time_intervals ti
-				LEFT JOIN %s m ON date_trunc('%s', to_timestamp(m.%s / 1000000000)) = ti.interval_time
-					%s
-				GROUP BY ti.interval_time
-				HAVING SUM(m.%s) IS NOT NULL
-			)
-			SELECT DISTINCT ON (ia.interval_time) 
-				m.subtopic, m.publisher, m.protocol, m.name, m.unit,
-				ia.sum_value as value, 
-				m.string_value, m.bool_value, m.data_value, m.sum,
-				m.time, m.update_time
-			FROM %s m
-			JOIN interval_aggs ia ON date_trunc('%s', to_timestamp(m.%s / 1000000000)) = ia.interval_time
-				AND m.%s = ia.max_time
-			%s
-			ORDER BY ia.interval_time DESC, m.%s DESC;`,
-			interval, timeColumn, format, condition, limit, interval,
-			interval, timeColumn, format, condition, interval, limit,
-			aggField, timeColumn, format, interval, timeColumn, conditionForJoin,
-			aggField, format, interval, timeColumn, timeColumn, condition, timeColumn)
-	default:
-		return fmt.Sprintf(`
-			WITH time_intervals AS (
-				SELECT generate_series(
-					date_trunc('%s', (SELECT MAX(to_timestamp(created / 1000000000)) FROM %s %s) - interval '%d %s'),
-					date_trunc('%s', (SELECT MAX(to_timestamp(created / 1000000000)) FROM %s %s)),
-					interval '1 %s'
-				) as interval_time
-				ORDER BY interval_time DESC
-				LIMIT %d
-			),
-			interval_aggs AS (
-				SELECT 
-					ti.interval_time,
-					SUM(CAST(m.payload->>'v' AS float)) as sum_value,
-					MAX(m.created) as max_time  
-				FROM time_intervals ti
-				LEFT JOIN %s m ON date_trunc('%s', to_timestamp(m.created / 1000000000)) = ti.interval_time
-					%s
-				GROUP BY ti.interval_time
-				HAVING SUM(CAST(m.payload->>'v' AS float)) IS NOT NULL
-			)
-			SELECT DISTINCT ON (ia.interval_time) 
-				m.created, m.subtopic, m.publisher, m.protocol,
-				jsonb_build_object(
-					'n', m.payload->>'n',
-					'v', ia.sum_value  
-				) as payload
-			FROM %s m
-			JOIN interval_aggs ia ON date_trunc('%s', to_timestamp(m.created / 1000000000)) = ia.interval_time
-				AND m.created = ia.max_time
-			%s
-			ORDER BY ia.interval_time DESC, m.created DESC;`,
-			interval, format, condition, limit, interval,
-			interval, format, condition, interval, limit,
-			format, interval, conditionForJoin,
-			format, interval, condition)
-	}
 }
 
 func (as *aggregationService) buildBaseCondition(rpm readers.PageMetadata, table string) string {
