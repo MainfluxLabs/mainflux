@@ -29,13 +29,83 @@ type QueryConfig struct {
 }
 
 type AggStrategy interface {
+	// Function that builds the query for aggregation.
 	BuildQuery(config QueryConfig) string
+
+	// Function that returns selected strings.
 	GetSelectedFields(config QueryConfig) string
+
+	//Function containing aggregation expression.
 	GetAggregateExpression(config QueryConfig) string
 }
 
 type aggregationService struct {
 	db *sqlx.DB
+}
+
+func newAggregationService(db *sqlx.DB) *aggregationService {
+	return &aggregationService{db: db}
+}
+
+func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata) ([]readers.Message, error) {
+	format, _ := as.getFormatAndOrder(rpm)
+	params := as.buildQueryParams(rpm)
+
+	config := QueryConfig{
+		Format:     format,
+		TimeColumn: as.getTimeColumn(format),
+		AggField:   as.getAggregateField(rpm, format),
+		Interval:   rpm.AggInterval,
+		Limit:      rpm.Limit,
+		AggType:    rpm.AggType,
+	}
+
+	baseCondition := as.buildBaseCondition(rpm, format)
+	nameCondition := as.buildNameCondition(rpm, format)
+	config.Condition = as.combineConditions(baseCondition, nameCondition)
+	config.ConditionForJoin = strings.Replace(config.Condition, "WHERE", "AND", 1)
+
+	if config.Condition == "" {
+		config.ConditionForJoin = ""
+	}
+
+	strategy := as.getAggregateStrategy(rpm.AggType)
+	if strategy == nil {
+		return []readers.Message{}, nil
+	}
+
+	query := strategy.BuildQuery(config)
+	log.Print(query)
+	rows, err := as.executeQuery(query, params)
+	if err != nil {
+		return nil, err
+	}
+	if rows == nil {
+		return []readers.Message{}, nil
+	}
+	defer rows.Close()
+
+	messages, err := as.scanAggregatedMessages(rows, format)
+	if err != nil {
+		return nil, err
+	}
+
+	return messages, nil
+}
+
+func (as aggregationService) getAggregateStrategy(aggType string) AggStrategy {
+	switch aggType {
+	case readers.AggregationMax:
+		return MaxStrategy{}
+	case readers.AggregationMin:
+		return MinStrategy{}
+	case readers.AggregationAvg:
+		return AvgStrategy{}
+	case readers.AggregationCount:
+		return CountStrategy{}
+	default:
+		return nil
+	}
 }
 
 type MaxStrategy struct{}
@@ -331,71 +401,6 @@ func buildValueCondition(config QueryConfig) string {
 		return fmt.Sprintf("m.%s = ia.agg_value", config.AggField)
 	default:
 		return "CAST(m.payload->>'v' as FLOAT) = ia.agg_value"
-	}
-}
-
-func newAggregationService(db *sqlx.DB) *aggregationService {
-	return &aggregationService{db: db}
-}
-
-func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata) ([]readers.Message, error) {
-	format, _ := as.getFormatAndOrder(rpm)
-	params := as.buildQueryParams(rpm)
-
-	config := QueryConfig{
-		Format:     format,
-		TimeColumn: as.getTimeColumn(format),
-		AggField:   as.getAggregateField(rpm, format),
-		Interval:   rpm.AggInterval,
-		Limit:      rpm.Limit,
-		AggType:    rpm.AggType,
-	}
-
-	baseCondition := as.buildBaseCondition(rpm, format)
-	nameCondition := as.buildNameCondition(rpm, format)
-	config.Condition = as.combineConditions(baseCondition, nameCondition)
-	config.ConditionForJoin = strings.Replace(config.Condition, "WHERE", "AND", 1)
-
-	if config.Condition == "" {
-		config.ConditionForJoin = ""
-	}
-
-	strategy := as.getAggregateStrategy(rpm.AggType)
-	if strategy == nil {
-		return []readers.Message{}, nil
-	}
-
-	query := strategy.BuildQuery(config)
-	log.Print(query)
-	rows, err := as.executeQuery(query, params)
-	if err != nil {
-		return nil, err
-	}
-	if rows == nil {
-		return []readers.Message{}, nil
-	}
-	defer rows.Close()
-
-	messages, err := as.scanAggregatedMessages(rows, format)
-	if err != nil {
-		return nil, err
-	}
-
-	return messages, nil
-}
-
-func (as aggregationService) getAggregateStrategy(aggType string) AggStrategy {
-	switch aggType {
-	case readers.AggregationMax:
-		return MaxStrategy{}
-	case readers.AggregationMin:
-		return MinStrategy{}
-	case readers.AggregationAvg:
-		return AvgStrategy{}
-	case readers.AggregationCount:
-		return CountStrategy{}
-	default:
-		return nil
 	}
 }
 
