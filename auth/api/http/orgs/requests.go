@@ -95,6 +95,29 @@ func (req orgReq) validate() error {
 	return nil
 }
 
+type deleteOrgsReq struct {
+	token  string
+	OrgIDs []string `json:"org_ids,omitempty"`
+}
+
+func (req deleteOrgsReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if len(req.OrgIDs) < 1 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, orgID := range req.OrgIDs {
+		if orgID == "" {
+			return apiutil.ErrMissingOrgID
+		}
+	}
+
+	return nil
+}
+
 type backupReq struct {
 	token string
 }
