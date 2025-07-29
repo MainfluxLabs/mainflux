@@ -12,21 +12,21 @@ const (
 )
 
 type emailer struct {
-	agent *email.Agent
+	uiInviteURL string
+	agent       *email.Agent
 }
 
-func New(emailConfig *email.Config) (auth.Emailer, error) {
-	agent, err := email.New(emailConfig)
+func New(uiInviteURL string, config *email.Config) (auth.Emailer, error) {
+	agent, err := email.New(config)
 
 	return &emailer{
-		agent: agent,
+		uiInviteURL: uiInviteURL,
+		agent:       agent,
 	}, err
 }
 
-// TODO: I don't think it's appropriate for this function to accept the last two parameters - they should
-// probably be set once when the Emailer instance is created.
-func (e *emailer) SendOrgInvite(To []string, inviteID, orgName, roleName, uiHost, uiInvitePath string) error {
-	uiInviteViewURL := fmt.Sprintf("%s%s/%s", uiHost, uiInvitePath, inviteID)
+func (e *emailer) SendOrgInvite(To []string, inviteID, orgName, roleName, uiHost string) error {
+	uiInviteViewURL := fmt.Sprintf("%s%s/%s", uiHost, e.uiInviteURL, inviteID)
 	emailContent := fmt.Sprintf(`
 		Hello,
 

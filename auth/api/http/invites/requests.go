@@ -9,6 +9,7 @@ const maxLimitSize = 100
 
 type invitesReq struct {
 	token      string
+	uiHost     string
 	orgID      string
 	OrgMembers []auth.OrgMembership `json:"org_members"`
 }

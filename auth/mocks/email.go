@@ -17,6 +17,6 @@ func (e *emailerMock) SendPasswordReset([]string, string, string) error {
 	return nil
 }
 
-func (e *emailerMock) SendOrgInvite(To []string, inviteID, orgName, roleName, uiHost, uiInvitePath string) error {
+func (e *emailerMock) SendOrgInvite(To []string, inviteID, orgName, roleName, uiHost string) error {
 	return nil
 }

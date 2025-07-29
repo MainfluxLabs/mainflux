@@ -76,6 +76,8 @@ const (
 	defEmailFromName    = ""
 	defEmailTemplate    = "email.tmpl"
 
+	defInviteEndpoint = "/invite"
+
 	envLogLevel        = "MF_AUTH_LOG_LEVEL"
 	envDBHost          = "MF_AUTH_DB_HOST"
 	envDBPort          = "MF_AUTH_DB_PORT"
@@ -311,7 +313,7 @@ func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersS
 	idProvider := uuid.New()
 	t := jwt.New(secret)
 
-	authEmailer, err := emailer.New(emailConfig)
+	authEmailer, err := emailer.New(defInviteEndpoint, emailConfig)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to configure e-mailing util: %s", err.Error()))
 	}

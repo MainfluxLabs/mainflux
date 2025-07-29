@@ -71,8 +71,9 @@ func decodeInviteRequest(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	req := invitesReq{
-		token: apiutil.ExtractBearerToken(r),
-		orgID: bone.GetValue(r, apiutil.IDKey),
+		token:  apiutil.ExtractBearerToken(r),
+		orgID:  bone.GetValue(r, apiutil.IDKey),
+		uiHost: r.Header.Get("Referer"),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req.OrgMembers); err != nil {

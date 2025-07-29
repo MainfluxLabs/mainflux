@@ -25,6 +25,7 @@ import (
 )
 
 const (
+	uiHost      = "http://localhost"
 	secret      = "secret"
 	contentType = "application/json"
 	id          = "123e4567-e89b-12d3-a456-000000000022"
@@ -226,7 +227,7 @@ func TestViewInvite(t *testing.T) {
 	org, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 
-	invites, err := svc.InviteMembers(context.Background(), ownerToken, org.ID, viewer)
+	invites, err := svc.InviteMembers(context.Background(), ownerToken, org.ID, uiHost, viewer)
 	assert.Nil(t, err, fmt.Sprintf("Inviting member expected to succeed: %s", err))
 
 	inviteID := invites[0].ID
@@ -292,7 +293,7 @@ func TestRevokeInvite(t *testing.T) {
 	org, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 
-	invites, err := svc.InviteMembers(context.Background(), ownerToken, org.ID, viewer)
+	invites, err := svc.InviteMembers(context.Background(), ownerToken, org.ID, uiHost, viewer)
 	assert.Nil(t, err, fmt.Sprintf("Inviting member expected to succeed: %s", err))
 
 	inviteID := invites[0].ID
@@ -367,7 +368,7 @@ func TestRespondInvite(t *testing.T) {
 	_, adminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	invites, err := svc.InviteMembers(context.Background(), ownerToken, org.ID, viewer, editor, admin)
+	invites, err := svc.InviteMembers(context.Background(), ownerToken, org.ID, uiHost, viewer, editor, admin)
 	assert.Nil(t, err, fmt.Sprintf("Inviting members expected to succeed: %s", err))
 
 	ts := newServer(svc)
@@ -466,7 +467,7 @@ func TestListInvitesByInvitee(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 		orgIDs = append(orgIDs, org.ID)
 
-		invs, err := svc.InviteMembers(context.Background(), ownerToken, org.ID, auth.OrgMembership{
+		invs, err := svc.InviteMembers(context.Background(), ownerToken, org.ID, uiHost, auth.OrgMembership{
 			Email: viewerEmail,
 			Role:  auth.Viewer,
 		})
