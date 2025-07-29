@@ -97,12 +97,12 @@ func (or orgRepository) Update(ctx context.Context, org auth.Org) error {
 	return nil
 }
 
-func (or orgRepository) Remove(ctx context.Context, owner string, orgIDs ...string) error {
+func (or orgRepository) Remove(ctx context.Context, ownerID string, orgIDs ...string) error {
 	qd := `DELETE FROM orgs WHERE id = :id AND owner_id = :owner_id;`
 	for _, orgID := range orgIDs {
 		org := auth.Org{
 			ID:      orgID,
-			OwnerID: owner,
+			OwnerID: ownerID,
 		}
 		dbo, err := toDBOrg(org)
 		if err != nil {

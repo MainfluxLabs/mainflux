@@ -82,7 +82,7 @@ type OrgRepository interface {
 	Update(ctx context.Context, org Org) error
 
 	// Remove orgs
-	Remove(ctx context.Context, owner string, orgIDs ...string) error
+	Remove(ctx context.Context, ownerID string, orgIDs ...string) error
 
 	// RetrieveByID retrieves org by its id
 	RetrieveByID(ctx context.Context, id string) (Org, error)

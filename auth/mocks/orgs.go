@@ -57,12 +57,12 @@ func (orm *orgRepositoryMock) Update(_ context.Context, org auth.Org) error {
 	return nil
 }
 
-func (orm *orgRepositoryMock) Remove(_ context.Context, owner string, ids ...string) error {
+func (orm *orgRepositoryMock) Remove(_ context.Context, ownerID string, ids ...string) error {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
 	for _, id := range ids {
-		if _, ok := orm.orgs[id]; !ok && orm.orgs[id].OwnerID != owner {
+		if _, ok := orm.orgs[id]; !ok && orm.orgs[id].OwnerID != ownerID {
 			return errors.ErrNotFound
 		}
 		delete(orm.orgs, id)
