@@ -4,7 +4,6 @@ package postgres
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"text/template"
 
@@ -75,7 +74,6 @@ func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata) (
 	}
 
 	query := strategy.BuildQuery(config)
-	log.Print(query)
 	rows, err := as.executeQuery(query, params)
 	if err != nil {
 		return nil, err
@@ -375,14 +373,13 @@ func (countStrt CountStrategy) GetAggregateExpression(config QueryConfig) string
 func buildTimeIntervals(config QueryConfig) string {
 	return fmt.Sprintf(`
 		SELECT generate_series(
-			date_trunc('%s', (SELECT MAX(to_timestamp(%s / 1000000000)) FROM %s %s) - interval '%d %s'),
-			date_trunc('%s', (SELECT MAX(to_timestamp(%s / 1000000000)) FROM %s %s)),
+			date_trunc('%s', NOW() - interval '%d %s'),
+			date_trunc('%s', NOW()),
 			interval '1 %s'
 		) as interval_time
 		ORDER BY interval_time DESC
 		LIMIT %d`,
-		config.Interval, config.TimeColumn, config.Format, config.Condition, config.Limit, config.Interval,
-		config.Interval, config.TimeColumn, config.Format, config.Condition, config.Interval, config.Limit)
+		config.Interval, config.Limit, config.Interval, config.Interval, config.Interval, config.Limit)
 }
 
 func buildTimeJoinCondition(config QueryConfig) string {
