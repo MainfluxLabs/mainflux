@@ -97,6 +97,22 @@ paths:
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
+    patch:
+      summary: Removes organizations
+      description: Removes organizations with provided identifiers
+      tags:
+        - auth
+      requestBody:
+        $ref: "#/components/requestBodies/RemoveOrgReq"
+      responses:
+        '204':
+          description: Organizations removed.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"      
   /orgs/search:
     post:
       summary: Search and retrieve organizations.
@@ -724,6 +740,19 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/SearchOrgsReqSchema"
+    RemoveOrgReq:
+      description: JSON-formatted document describing the identifiers of organizations for deleting.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              thing_ids:
+                type: array
+                items:
+                  type: string
+                  format: uuid          
     OrgMembershipsReq:
       description: JSON-formatted document describing a request to create and update memberships.
       required: true
