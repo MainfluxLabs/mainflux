@@ -27,7 +27,7 @@ volumes:
 
 services:
   ui:
-    image: ${MF_RELEASE_PREFIX}/ui:v0.28.3
+    image: ${MF_RELEASE_PREFIX}/ui:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-ui
     restart: on-failure
     ports:
