@@ -459,7 +459,7 @@ func toMap(msg protomfx.Message) (map[string]interface{}, error) {
 	}
 
 	return map[string]interface{}{
-		"created":   msg.Created,
+		"created":   fmt.Sprintf("%d", msg.Created),
 		"subtopic":  msg.Subtopic,
 		"publisher": msg.Publisher,
 		"protocol":  msg.Protocol,
