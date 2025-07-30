@@ -7,7 +7,7 @@ type Message struct {
 	Protocol    string   `json:"protocol,omitempty" db:"protocol" bson:"protocol"`
 	Name        string   `json:"name,omitempty" db:"name" bson:"name,omitempty"`
 	Unit        string   `json:"unit,omitempty" db:"unit" bson:"unit,omitempty"`
-	Time        int64    `json:"time,omitempty" db:"time" bson:"time,omitempty"`
+	Time        int64    `json:"time,omitempty,string" db:"time" bson:"time,omitempty"`
 	UpdateTime  float64  `json:"update_time,omitempty" db:"update_time" bson:"update_time,omitempty"`
 	Value       *float64 `json:"value,omitempty" db:"value" bson:"value,omitempty"`
 	StringValue *string  `json:"string_value,omitempty" db:"string_value" bson:"string_value,omitempty"`
