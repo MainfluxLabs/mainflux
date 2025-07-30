@@ -6,8 +6,8 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
-	"strings"
 
 	"github.com/MainfluxLabs/mainflux"
 	auth "github.com/MainfluxLabs/mainflux/auth"
@@ -204,16 +204,17 @@ func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, erro
 }
 
 func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
+	token := apiutil.ExtractBearerToken(r)
 
-	req := restoreMessagesReq{token: apiutil.ExtractBearerToken(r)}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	csvData, err := io.ReadAll(r.Body)
+	if err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	return req, nil
+	return restoreMessagesReq{
+		token:    token,
+		Messages: csvData,
+	}, nil
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
