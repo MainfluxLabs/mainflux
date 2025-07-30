@@ -94,16 +94,32 @@ func (res listGroupMembershipsRes) Empty() bool {
 	return false
 }
 
-type backupGroupMembershipsRes struct {
-	BackupGroupMemberships []ViewGroupMembershipRes `json:"group_memberships"`
+type viewFileRes struct {
+	File []byte
 }
 
-func (res backupGroupMembershipsRes) Code() int {
+func (res viewFileRes) Code() int {
 	return http.StatusOK
 }
-func (res backupGroupMembershipsRes) Headers() map[string]string {
+
+func (res viewFileRes) Headers() map[string]string {
 	return map[string]string{}
 }
-func (res backupGroupMembershipsRes) Empty() bool {
-	return false
+
+func (res viewFileRes) Empty() bool {
+	return len(res.File) == 0
+}
+
+type restoreRes struct{}
+
+func (res restoreRes) Code() int {
+	return http.StatusCreated
+}
+
+func (res restoreRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res restoreRes) Empty() bool {
+	return true
 }

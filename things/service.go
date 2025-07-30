@@ -146,7 +146,10 @@ type Service interface {
 	RestoreGroupsByOrg(ctx context.Context, token string, orgID string, backup GroupsBackup) error
 
 	// BackupGroupMemberships retrieves all group memberships for given group ID.
-	BackupGroupMemberships(ctx context.Context, token string, groupID string) (BackupGroupMemberships, error)
+	BackupGroupMemberships(ctx context.Context, token string, groupID string) (GroupMembershipsBackup, error)
+
+	// RestoreGroupMemberships adds all group memberships for given group ID from a backup.
+	RestoreGroupMemberships(ctx context.Context, token string, groupID string, backup GroupMembershipsBackup) error
 
 	// BackupProfilesByOrg retrieves all profiles for given org ID.
 	BackupProfilesByOrg(ctx context.Context, token string, orgID string) (ProfilesBackup, error)
@@ -179,8 +182,8 @@ type GroupsBackup struct {
 	Groups []Group
 }
 
-type BackupGroupMemberships struct {
-	BackupGroupMemberships []GroupMembership
+type GroupMembershipsBackup struct {
+	GroupMemberships []GroupMembership
 }
 
 type ProfilesBackup struct {
@@ -866,31 +869,29 @@ func (ts *thingsService) RestoreGroupsByOrg(ctx context.Context, token string, o
 	return nil
 }
 
-func (ts *thingsService) BackupGroupMemberships(ctx context.Context, token string, groupID string) (BackupGroupMemberships, error) {
+func (ts *thingsService) BackupGroupMemberships(ctx context.Context, token string, groupID string) (GroupMembershipsBackup, error) {
 	ar := UserAccessReq{
 		Token:  token,
 		ID:     groupID,
 		Action: Owner,
 	}
 	if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
-		return BackupGroupMemberships{}, err
+		return GroupMembershipsBackup{}, err
 	}
 
 	groupMemberships, err := ts.groupMemberships.BackupByGroup(ctx, groupID)
 	if err != nil {
-		return BackupGroupMemberships{}, err
+		return GroupMembershipsBackup{}, err
 	}
 
 	var memberIDs []string
 	for _, gm := range groupMemberships {
 		memberIDs = append(memberIDs, gm.MemberID)
 	}
-
 	usersResp, err := ts.users.GetUsersByIDs(ctx, &protomfx.UsersByIDsReq{Ids: memberIDs})
 	if err != nil {
-		return BackupGroupMemberships{}, err
+		return GroupMembershipsBackup{}, err
 	}
-
 	emailMap := make(map[string]string)
 	for _, user := range usersResp.Users {
 		emailMap[user.Id] = user.Email
@@ -900,9 +901,21 @@ func (ts *thingsService) BackupGroupMemberships(ctx context.Context, token strin
 		groupMemberships[i].Email = emailMap[groupMemberships[i].MemberID]
 	}
 
-	return BackupGroupMemberships{
-		BackupGroupMemberships: groupMemberships,
+	return GroupMembershipsBackup{
+		GroupMemberships: groupMemberships,
 	}, nil
+}
+
+func (ts *thingsService) RestoreGroupMemberships(ctx context.Context, token string, groupID string, backup GroupMembershipsBackup) error {
+	if err := ts.canAccessGroup(ctx, token, groupID, Owner); err != nil {
+		return err
+	}
+
+	if err := ts.groupMemberships.Save(ctx, backup.GroupMemberships...); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (ts *thingsService) BackupProfilesByOrg(ctx context.Context, token string, orgID string) (ProfilesBackup, error) {

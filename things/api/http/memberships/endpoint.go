@@ -5,6 +5,7 @@ package memberships
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
@@ -93,7 +94,7 @@ func removeGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 
 func backupGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(backupReq)
+		req := request.(backupByGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -101,7 +102,25 @@ func backupGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		return buildBackupResponse(backup), nil
+
+		return buildBackupResponse(backup)
+	}
+}
+
+func restoreGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(restoreByGroupReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		groupMembershipsBackup := buildGroupMembershipsBackup(req.GroupMemberships)
+
+		if err := svc.RestoreGroupMemberships(ctx, req.token, req.id, groupMembershipsBackup); err != nil {
+			return nil, err
+		}
+
+		return restoreRes{}, nil
 	}
 }
 
@@ -127,18 +146,36 @@ func buildGroupMembershipsResponse(gpp things.GroupMembershipsPage) listGroupMem
 	return res
 }
 
-func buildBackupResponse(b things.BackupGroupMemberships) backupGroupMembershipsRes {
-	res := backupGroupMembershipsRes{
-		BackupGroupMemberships: []ViewGroupMembershipRes{},
-	}
-	for _, member := range b.BackupGroupMemberships {
-		view := ViewGroupMembershipRes{
-			MemberID: member.MemberID,
-			GroupID:  member.GroupID,
-			Email:    member.Email,
-			Role:     member.Role,
+func buildGroupMembershipsBackup(groupMemberships []ViewGroupMembershipRes) (backup things.GroupMembershipsBackup) {
+	for _, membership := range groupMemberships {
+		gm := things.GroupMembership{
+			MemberID: membership.MemberID,
+			GroupID:  membership.GroupID,
+			Email:    membership.Email,
+			Role:     membership.Role,
 		}
-		res.BackupGroupMemberships = append(res.BackupGroupMemberships, view)
+		backup.GroupMemberships = append(backup.GroupMemberships, gm)
 	}
-	return res
+	return backup
+}
+
+func buildBackupResponse(b things.GroupMembershipsBackup) (viewFileRes, error) {
+	views := make([]ViewGroupMembershipRes, 0, len(b.GroupMemberships))
+	for _, membership := range b.GroupMemberships {
+		views = append(views, ViewGroupMembershipRes{
+			MemberID: membership.MemberID,
+			GroupID:  membership.GroupID,
+			Email:    membership.Email,
+			Role:     membership.Role,
+		})
+	}
+
+	data, err := json.MarshalIndent(views, "", "  ")
+	if err != nil {
+		return viewFileRes{}, err
+	}
+
+	return viewFileRes{
+		File: data,
+	}, nil
 }

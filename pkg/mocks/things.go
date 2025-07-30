@@ -126,7 +126,11 @@ func (svc *mainfluxThings) RestoreGroupsByOrg(context.Context, string, string, t
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) BackupGroupMemberships(context.Context, string, string) (things.BackupGroupMemberships, error) {
+func (svc *mainfluxThings) BackupGroupMemberships(context.Context, string, string) (things.GroupMembershipsBackup, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) RestoreGroupMemberships(context.Context, string, string, things.GroupMembershipsBackup) error {
 	panic("not implemented")
 }
 

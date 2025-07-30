@@ -121,8 +121,12 @@ func (es eventStore) RestoreGroupsByOrg(ctx context.Context, token string, orgID
 	return es.svc.RestoreGroupsByOrg(ctx, token, orgID, backup)
 }
 
-func (es eventStore) BackupGroupMemberships(ctx context.Context, token string, groupID string) (things.BackupGroupMemberships, error) {
+func (es eventStore) BackupGroupMemberships(ctx context.Context, token string, groupID string) (things.GroupMembershipsBackup, error) {
 	return es.svc.BackupGroupMemberships(ctx, token, groupID)
+}
+
+func (es eventStore) RestoreGroupMemberships(ctx context.Context, token string, groupID string, backup things.GroupMembershipsBackup) error {
+	return es.svc.RestoreGroupMemberships(ctx, token, groupID, backup)
 }
 
 func (es eventStore) BackupProfilesByOrg(ctx context.Context, token string, orgID string) (things.ProfilesBackup, error) {

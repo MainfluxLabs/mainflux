@@ -300,13 +300,22 @@ func (ms *metricsMiddleware) RestoreGroupsByOrg(ctx context.Context, token strin
 	return ms.svc.RestoreGroupsByOrg(ctx, token, orgID, backup)
 }
 
-func (ms *metricsMiddleware) BackupGroupMemberships(ctx context.Context, token string, groupID string) (bk things.BackupGroupMemberships, err error) {
+func (ms *metricsMiddleware) BackupGroupMemberships(ctx context.Context, token string, groupID string) (bk things.GroupMembershipsBackup, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "backup_group_memberships").Add(1)
 		ms.latency.With("method", "backup_group_memberships").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.svc.BackupGroupMemberships(ctx, token, groupID)
+}
+
+func (ms *metricsMiddleware) RestoreGroupMemberships(ctx context.Context, token string, groupID string, backup things.GroupMembershipsBackup) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "restore_group_memberships").Add(1)
+		ms.latency.With("method", "restore_group_memberships").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RestoreGroupMemberships(ctx, token, groupID, backup)
 }
 
 func (ms *metricsMiddleware) BackupProfilesByOrg(ctx context.Context, token string, orgID string) (pb things.ProfilesBackup, err error) {
