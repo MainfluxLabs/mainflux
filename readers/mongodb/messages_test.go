@@ -473,7 +473,7 @@ func fromJSON(msg []map[string]interface{}) []readers.Message {
 
 func toMap(msg protomfx.Message) map[string]interface{} {
 	return map[string]interface{}{
-		"created":   fmt.Sprintf("%d", msg.Created),
+		"created":   msg.Created,
 		"subtopic":  msg.Subtopic,
 		"publisher": msg.Publisher,
 		"protocol":  msg.Protocol,
