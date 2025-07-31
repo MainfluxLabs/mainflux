@@ -331,7 +331,7 @@ type jsonMessage struct {
 
 func (msg jsonMessage) toMap() (map[string]interface{}, error) {
 	ret := map[string]interface{}{
-		"created":   fmt.Sprintf("%d", msg.Created),
+		"created":   msg.Created,
 		"subtopic":  msg.Subtopic,
 		"publisher": msg.Publisher,
 		"protocol":  msg.Protocol,
