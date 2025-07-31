@@ -23,7 +23,6 @@ import (
 
 const (
 	octetStreamContentType = "application/octet-stream"
-	formatKey              = "format"
 	subtopicKey            = "subtopic"
 	protocolKey            = "protocol"
 	valueKey               = "v"
