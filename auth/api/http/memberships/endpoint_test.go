@@ -27,24 +27,26 @@ import (
 )
 
 const (
-	secret        = "secret"
-	id            = "123e4567-e89b-12d3-a456-000000000022"
-	adminID       = "adminID"
-	editorID      = "editorID"
-	viewerID      = "viewerID"
-	email         = "user@example.com"
-	adminEmail    = "admin@example.com"
-	editorEmail   = "editor@example.com"
-	viewerEmail   = "viewer@example.com"
-	wrongValue    = "wrong_value"
-	name          = "testName"
-	description   = "testDesc"
-	n             = 10
-	loginDuration = 30 * time.Minute
-	emailKey      = "email"
-	idKey         = "id"
-	ascKey        = "asc"
-	descKey       = "desc"
+	contentTypeOctetStream = "application/octet-stream"
+	secret                 = "secret"
+	id                     = "123e4567-e89b-12d3-a456-000000000022"
+	adminID                = "adminID"
+	editorID               = "editorID"
+	viewerID               = "viewerID"
+	email                  = "user@example.com"
+	adminEmail             = "admin@example.com"
+	editorEmail            = "editor@example.com"
+	viewerEmail            = "viewer@example.com"
+	wrongValue             = "wrong_value"
+	name                   = "testName"
+	description            = "testDesc"
+	n                      = 10
+	loginDuration          = 30 * time.Minute
+	emailKey               = "email"
+	idKey                  = "id"
+	ascKey                 = "asc"
+	descKey                = "desc"
+	emptyValue             = ""
 )
 
 var (
@@ -418,6 +420,7 @@ func TestListOrgMemberships(t *testing.T) {
 	var data []viewOrgMembershipRes
 	for _, m := range memberships {
 		data = append(data, viewOrgMembershipRes{
+			OrgID:    or.ID,
 			MemberID: m.MemberID,
 			Email:    m.Email,
 			Role:     m.Role,
@@ -425,6 +428,7 @@ func TestListOrgMemberships(t *testing.T) {
 	}
 
 	owner := viewOrgMembershipRes{
+		OrgID:    or.ID,
 		MemberID: id,
 		Email:    email,
 		Role:     auth.Owner,
@@ -554,6 +558,7 @@ func TestListOrgMemberships(t *testing.T) {
 			url:    fmt.Sprintf("%s/orgs/%s/memberships?email=%s", ts.URL, or.ID, viewerEmail),
 			res: []viewOrgMembershipRes{
 				{
+					OrgID:    or.ID,
 					MemberID: viewerID,
 					Email:    viewerEmail,
 					Role:     auth.Viewer,
@@ -614,6 +619,209 @@ func TestListOrgMemberships(t *testing.T) {
 	}
 }
 
+func TestBackupOrgMemberships(t *testing.T) {
+	svc := newService()
+	_, token, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	_, adminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: adminEmail})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	ts := newServer(svc)
+	defer ts.Close()
+	client := ts.Client()
+
+	memberships := []auth.OrgMembership{viewer, editor, admin}
+
+	or, err := svc.CreateOrg(context.Background(), token, org)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	err = svc.CreateOrgMemberships(context.Background(), token, or.ID, memberships...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	var data []viewOrgMembershipRes
+	for _, m := range memberships {
+		data = append(data, viewOrgMembershipRes{
+			OrgID:    or.ID,
+			MemberID: m.MemberID,
+			Email:    m.Email,
+			Role:     m.Role,
+		})
+	}
+
+	owner := viewOrgMembershipRes{
+		OrgID:    or.ID,
+		MemberID: id,
+		Email:    email,
+		Role:     auth.Owner,
+	}
+
+	data = append(data, owner)
+
+	orgMembershipURL := fmt.Sprintf("%s/orgs", ts.URL)
+
+	cases := []struct {
+		desc   string
+		token  string
+		url    string
+		status int
+		res    []viewOrgMembershipRes
+	}{
+		{
+			desc:   "backup org memberships as org owner",
+			token:  token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/memberships/backup", orgMembershipURL, or.ID),
+			res:    data,
+		},
+		{
+			desc:   "backup org memberships as admin",
+			token:  adminToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/memberships/backup", orgMembershipURL, or.ID),
+			res:    data,
+		},
+		{
+			desc:   "backup org memberships without org id",
+			token:  token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/memberships/backup", orgMembershipURL, emptyValue),
+			res:    nil,
+		},
+		{
+			desc:   "backup org memberships with invalid token",
+			token:  wrongValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/%s/memberships/backup", orgMembershipURL, or.ID),
+			res:    nil,
+		},
+		{
+			desc:   "backup org memberships with empty token",
+			token:  emptyValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/%s/memberships/backup", orgMembershipURL, or.ID),
+			res:    nil,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: client,
+			method: http.MethodGet,
+			url:    tc.url,
+			token:  tc.token,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		var body []viewOrgMembershipRes
+		json.NewDecoder(res.Body).Decode(&body)
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, body, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, body))
+	}
+}
+
+func TestRestoreOrgMemberships(t *testing.T) {
+	svc := newService()
+	_, token, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	_, adminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: editorEmail})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	ts := newServer(svc)
+	defer ts.Close()
+	client := ts.Client()
+
+	memberships := []auth.OrgMembership{viewer, editor, admin}
+
+	or, err := svc.CreateOrg(context.Background(), token, org)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	var data []viewOrgMembershipRes
+	for _, m := range memberships {
+		data = append(data, viewOrgMembershipRes{
+			OrgID:    or.ID,
+			MemberID: m.MemberID,
+			Email:    m.Email,
+			Role:     m.Role,
+		})
+	}
+
+	dataBytes, err := json.Marshal(data)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	dataString := string(dataBytes)
+
+	orgMembershipURL := fmt.Sprintf("%s/orgs", ts.URL)
+
+	cases := []struct {
+		desc        string
+		auth        string
+		contentType string
+		data        string
+		status      int
+		url         string
+		res         string
+	}{
+		{
+			desc:        "restore org memberships as org owner",
+			auth:        token,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusCreated,
+			url:         fmt.Sprintf("%s/%s/memberships/backup", orgMembershipURL, or.ID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore org memberships as admin",
+			auth:        adminToken,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusCreated,
+			url:         fmt.Sprintf("%s/%s/memberships/backup", orgMembershipURL, or.ID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore org memberships without org id",
+			auth:        token,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusBadRequest,
+			url:         fmt.Sprintf("%s/%s/memberships/backup", orgMembershipURL, emptyValue),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore org memberships with invalid token",
+			auth:        wrongValue,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusUnauthorized,
+			url:         fmt.Sprintf("%s/%s/memberships/backup", orgMembershipURL, or.ID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore org memberships with empty token",
+			auth:        emptyValue,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusUnauthorized,
+			url:         fmt.Sprintf("%s/%s/memberships/backup", orgMembershipURL, or.ID),
+			res:         emptyValue,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      client,
+			method:      http.MethodPost,
+			url:         tc.url,
+			contentType: tc.contentType,
+			token:       tc.auth,
+			body:        strings.NewReader(tc.data),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
 type pageRes struct {
 	Limit  uint64 `json:"limit"`
 	Offset uint64 `json:"offset"`
@@ -630,6 +838,7 @@ type removeOrgMembershipsReq struct {
 }
 
 type viewOrgMembershipRes struct {
+	OrgID    string `json:"org_id,omitempty"`
 	MemberID string `json:"member_id"`
 	Email    string `json:"email"`
 	Role     string `json:"role"`

@@ -2027,7 +2027,7 @@ components:
           schema:
             $ref: "#/components/schemas/GroupMembershipsSchema"
     RestoreGroupMembershipsReq:
-      description: Binary-encoded JSON file describing restore groups memberships request.
+      description: Binary-encoded JSON file describing restore group memberships request.
       required: true
       content:
         application/octet-stream:

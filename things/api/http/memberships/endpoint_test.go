@@ -682,13 +682,6 @@ func TestBackupGroupMemberships(t *testing.T) {
 			res:    data,
 		},
 		{
-			desc:   "backup group memberships the user belongs to",
-			token:  otherToken,
-			status: http.StatusForbidden,
-			url:    fmt.Sprintf("%s/%s/memberships/backup", groupMembershipURL, gr.ID),
-			res:    nil,
-		},
-		{
 			desc:   "backup group memberships as admin",
 			token:  adminToken,
 			status: http.StatusOK,
@@ -782,7 +775,7 @@ func TestRestoreGroupMemberships(t *testing.T) {
 			res:         emptyValue,
 		},
 		{
-			desc:        "restore group memberships the user belongs to",
+			desc:        "restore group memberships as group admin",
 			auth:        otherToken,
 			data:        dataString,
 			contentType: contentTypeOctetStream,
