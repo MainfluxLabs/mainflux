@@ -14,9 +14,12 @@ var (
 )
 
 type viewOrgMembershipRes struct {
-	MemberID string `json:"member_id"`
-	Email    string `json:"email"`
-	Role     string `json:"role"`
+	MemberID  string    `json:"member_id"`
+	OrgID     string    `json:"org_id"`
+	Email     string    `json:"email"`
+	Role      string    `json:"role"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 func (res viewOrgMembershipRes) Code() int {
@@ -83,17 +86,8 @@ func (res removeRes) Empty() bool {
 	return true
 }
 
-type viewOrgMembershipsRes struct {
-	MemberID  string    `json:"member_id"`
-	OrgID     string    `json:"org_id"`
-	Email     string    `json:"email"`
-	Role      string    `json:"role"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
 type backupOrgMembershipsRes struct {
-	OrgMemberships []viewOrgMembershipsRes `json:"org_memberships"`
+	OrgMemberships []viewOrgMembershipRes `json:"org_memberships"`
 }
 
 func (res backupOrgMembershipsRes) Code() int {

@@ -175,6 +175,34 @@ func listThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func backupThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(backupByGroupReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+		backup, err := svc.BackupThingsByGroup(ctx, req.token, req.id)
+		if err != nil {
+			return nil, err
+		}
+		return buildBackupThingsResponse(backup), nil
+	}
+}
+
+func backupThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(backupByOrgReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+		backup, err := svc.BackupThingsByOrg(ctx, req.token, req.id)
+		if err != nil {
+			return nil, err
+		}
+		return buildBackupThingsResponse(backup), nil
+	}
+}
+
 func updateThingEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(updateThingReq)
@@ -357,12 +385,30 @@ func buildThingsResponse(tp things.ThingsPage) ThingsPageRes {
 	return res
 }
 
+func buildBackupThingsResponse(tb things.ThingsBackup) backupThingsRes {
+	res := backupThingsRes{
+		Things: []viewThingRes{},
+	}
+	for _, thing := range tb.Things {
+		view := viewThingRes{
+			ID:        thing.ID,
+			GroupID:   thing.GroupID,
+			ProfileID: thing.ProfileID,
+			Name:      thing.Name,
+			Key:       thing.Key,
+			Metadata:  thing.Metadata,
+		}
+		res.Things = append(res.Things, view)
+	}
+	return res
+}
+
 func buildBackupResponse(backup things.Backup) backupRes {
 	res := backupRes{
 		Things:           []viewThingRes{},
 		Profiles:         []backupProfile{},
 		Groups:           []backupGroup{},
-		GroupMemberships: []memberships.ViewGroupMembershipsRes{},
+		GroupMemberships: []memberships.ViewGroupMembershipRes{},
 	}
 
 	for _, thing := range backup.Things {
@@ -402,7 +448,7 @@ func buildBackupResponse(backup things.Backup) backupRes {
 	}
 
 	for _, membership := range backup.GroupMemberships {
-		view := memberships.ViewGroupMembershipsRes{
+		view := memberships.ViewGroupMembershipRes{
 			MemberID: membership.MemberID,
 			GroupID:  membership.GroupID,
 			Email:    membership.Email,

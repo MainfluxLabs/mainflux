@@ -102,7 +102,7 @@ func (res deleteRes) Empty() bool {
 	return true
 }
 
-type viewOrgMemberships struct {
+type viewOrgMembership struct {
 	MemberID  string    `json:"member_id"`
 	OrgID     string    `json:"org_id"`
 	Role      string    `json:"role"`
@@ -111,8 +111,8 @@ type viewOrgMemberships struct {
 }
 
 type backupRes struct {
-	Orgs           []viewOrgRes         `json:"orgs"`
-	OrgMemberships []viewOrgMemberships `json:"org_memberships"`
+	Orgs           []viewOrgRes        `json:"orgs"`
+	OrgMemberships []viewOrgMembership `json:"org_memberships"`
 }
 
 func (res backupRes) Code() int {

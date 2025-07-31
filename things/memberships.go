@@ -8,8 +8,13 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
-// ErrGroupMembershipExists indicates that membership already exists.
-var ErrGroupMembershipExists = errors.New("group membership already exists")
+var (
+	// ErrGroupMembershipExists indicates that membership already exists.
+	ErrGroupMembershipExists = errors.New("group membership already exists")
+
+	// ErrMissingUserMembership indicates that required user membership was not found.
+	ErrMissingUserMembership = errors.New("user membership not found")
+)
 
 type GroupMembership struct {
 	GroupID  string
@@ -99,52 +104,53 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 		return GroupMembershipsPage{}, err
 	}
 
-	gmp, err := ts.groupMemberships.RetrieveByGroup(ctx, groupID, pm)
+	groupMemberships, err := ts.groupMemberships.BackupByGroup(ctx, groupID)
 	if err != nil {
 		return GroupMembershipsPage{}, err
 	}
 
 	var memberIDs []string
-	roles := make(map[string]string)
-	for _, gm := range gmp.GroupMemberships {
+	membershipByMemberID := make(map[string]GroupMembership, len(groupMemberships))
+	for _, gm := range groupMemberships {
 		memberIDs = append(memberIDs, gm.MemberID)
-		roles[gm.MemberID] = gm.Role
+		membershipByMemberID[gm.MemberID] = gm
 	}
 
 	var gms []GroupMembership
-	if len(gmp.GroupMemberships) > 0 {
-		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs, Email: pm.Email, Order: pm.Order, Dir: pm.Dir}
-		up, err := ts.users.GetUsersByIDs(ctx, &usrReq)
+	var page *protomfx.UsersRes
+	if len(groupMemberships) > 0 {
+		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs, Email: pm.Email, Order: pm.Order, Dir: pm.Dir, Limit: pm.Limit, Offset: pm.Offset}
+		page, err = ts.users.GetUsersByIDs(ctx, &usrReq)
 		if err != nil {
 			return GroupMembershipsPage{}, err
 		}
 
-		for _, user := range up.Users {
-			role, ok := roles[user.Id]
+		for _, u := range page.Users {
+			m, ok := membershipByMemberID[u.Id]
 			if !ok {
-				continue
+				return GroupMembershipsPage{}, ErrMissingUserMembership
 			}
 
 			gm := GroupMembership{
-				MemberID: user.Id,
-				Email:    user.Email,
-				Role:     role,
+				MemberID: m.MemberID,
+				Email:    u.Email,
+				Role:     m.Role,
 			}
 
 			gms = append(gms, gm)
 		}
 	}
 
-	page := GroupMembershipsPage{
+	gmp := GroupMembershipsPage{
 		GroupMemberships: gms,
 		PageMetadata: apiutil.PageMetadata{
-			Total:  gmp.Total,
-			Offset: gmp.Offset,
-			Limit:  gmp.Limit,
+			Total:  page.Total,
+			Offset: page.Offset,
+			Limit:  page.Limit,
 		},
 	}
 
-	return page, nil
+	return gmp, nil
 }
 
 func (ts *thingsService) UpdateGroupMemberships(ctx context.Context, token string, gms ...GroupMembership) error {
