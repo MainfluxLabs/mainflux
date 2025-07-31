@@ -94,11 +94,6 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 		return nil, err
 	}
 
-	format, err := apiutil.ReadStringQuery(r, formatKey, defFormat)
-	if err != nil {
-		return nil, err
-	}
-
 	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
 	if err != nil {
 		return nil, err
@@ -155,7 +150,6 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 		pageMeta: readers.PageMetadata{
 			Offset:      offset,
 			Limit:       limit,
-			Format:      format,
 			Subtopic:    subtopic,
 			Protocol:    protocol,
 			Name:        name,
