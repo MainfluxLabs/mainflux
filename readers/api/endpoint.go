@@ -192,28 +192,7 @@ func convertCSVToSenML(csvMessages []byte) ([]senml.Message, error) {
 		return nil, err
 	}
 
-	expectedHeader := []string{
-		"profile",
-		"subtopic",
-		"publisher",
-		"protocol",
-		"name",
-		"unit",
-		"value",
-		"string_value",
-		"bool_value",
-		"data_value",
-		"sum",
-		"time",
-		"update_time",
-	}
-
-	if len(header) != len(expectedHeader) {
-		return nil, fmt.Errorf("invalid CSV header: expected %d fields, got %d", len(expectedHeader), len(header))
-	}
-
 	var messages []senml.Message
-
 	for {
 		record, err := reader.Read()
 		if err == io.EOF {
@@ -223,71 +202,51 @@ func convertCSVToSenML(csvMessages []byte) ([]senml.Message, error) {
 			return nil, err
 		}
 
-		if len(record) != len(expectedHeader) {
-			return nil, fmt.Errorf("invalid CSV record length: expected %d, got %d", len(expectedHeader), len(record))
-		}
-
-		msg := senml.Message{
-			Subtopic:  record[1],
-			Publisher: record[2],
-			Protocol:  record[3],
-			Name:      record[4],
-			Unit:      record[5],
-		}
-
-		if v := record[6]; v != "" {
-			val, err := strconv.ParseFloat(v, 64)
-			if err != nil {
-				return nil, fmt.Errorf("invalid value at column 6: %w", err)
+		msg := senml.Message{}
+		for i, value := range record {
+			if value == "" || i >= len(header) {
+				continue
 			}
-			msg.Value = &val
-		}
 
-		if v := record[7]; v != "" {
-			msg.StringValue = &v
-		}
-
-		if v := record[8]; v != "" {
-			val, err := strconv.ParseBool(v)
-			if err != nil {
-				return nil, fmt.Errorf("invalid bool_value at column 8: %w", err)
+			switch header[i] {
+			case "subtopic":
+				msg.Subtopic = value
+			case "publisher":
+				msg.Publisher = value
+			case "protocol":
+				msg.Protocol = value
+			case "name":
+				msg.Name = value
+			case "unit":
+				msg.Unit = value
+			case "time":
+				if v, err := strconv.ParseInt(value, 10, 64); err == nil {
+					msg.Time = v
+				}
+			case "update_time":
+				if v, err := strconv.ParseFloat(value, 64); err == nil {
+					msg.UpdateTime = v
+				}
+			case "value":
+				if v, err := strconv.ParseFloat(value, 64); err == nil {
+					msg.Value = &v
+				}
+			case "string_value":
+				msg.StringValue = &value
+			case "data_value":
+				msg.DataValue = &value
+			case "bool_value":
+				if v, err := strconv.ParseBool(value); err == nil {
+					msg.BoolValue = &v
+				}
+			case "sum":
+				if v, err := strconv.ParseFloat(value, 64); err == nil {
+					msg.Sum = &v
+				}
 			}
-			msg.BoolValue = &val
-		}
-
-		if v := record[9]; v != "" {
-			msg.DataValue = &v
-		}
-
-		if v := record[10]; v != "" {
-			val, err := strconv.ParseFloat(v, 64)
-			if err != nil {
-				return nil, fmt.Errorf("invalid sum at column 10: %w", err)
-			}
-			msg.Sum = &val
-		}
-
-		if v := record[11]; v != "" {
-			val, err := strconv.ParseInt(v, 10, 64)
-			if err != nil {
-				return nil, fmt.Errorf("invalid time at column 11: %w", err)
-			}
-			msg.Time = val
-		}
-
-		if v := record[12]; v != "" {
-			val, err := strconv.ParseFloat(v, 64)
-			if err != nil {
-				return nil, fmt.Errorf("invalid update_time at column 12: %w", err)
-			}
-			msg.UpdateTime = val
 		}
 
 		messages = append(messages, msg)
-	}
-
-	if len(messages) == 0 {
-		return nil, errors.New("no messages found in CSV")
 	}
 
 	return messages, nil
