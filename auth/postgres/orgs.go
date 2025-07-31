@@ -96,42 +96,44 @@ func (or orgRepository) Update(ctx context.Context, org auth.Org) error {
 	return nil
 }
 
-func (or orgRepository) Remove(ctx context.Context, owner, orgID string) error {
+func (or orgRepository) Remove(ctx context.Context, ownerID string, orgIDs ...string) error {
 	qd := `DELETE FROM orgs WHERE id = :id AND owner_id = :owner_id;`
-	org := auth.Org{
-		ID:      orgID,
-		OwnerID: owner,
-	}
-	dbo, err := toDBOrg(org)
-	if err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
-	}
-
-	res, err := or.db.NamedExecContext(ctx, qd, dbo)
-	if err != nil {
-		pqErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pqErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
-			case pgerrcode.ForeignKeyViolation:
-				switch pqErr.ConstraintName {
-				case membershipsIDFkey:
-					return errors.Wrap(auth.ErrOrgNotEmpty, err)
-				}
-				return errors.Wrap(errors.ErrConflict, err)
-			}
+	for _, orgID := range orgIDs {
+		org := auth.Org{
+			ID:      orgID,
+			OwnerID: ownerID,
 		}
-		return errors.Wrap(errors.ErrUpdateEntity, err)
-	}
+		dbo, err := toDBOrg(org)
+		if err != nil {
+			return errors.Wrap(errors.ErrUpdateEntity, err)
+		}
 
-	cnt, err := res.RowsAffected()
-	if err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
-	}
+		res, err := or.db.NamedExecContext(ctx, qd, dbo)
+		if err != nil {
+			pqErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pqErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.ForeignKeyViolation:
+					switch pqErr.ConstraintName {
+					case membershipsIDFkey:
+						return errors.Wrap(auth.ErrOrgNotEmpty, err)
+					}
+					return errors.Wrap(errors.ErrConflict, err)
+				}
+			}
+			return errors.Wrap(errors.ErrUpdateEntity, err)
+		}
 
-	if cnt != 1 {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+		cnt, err := res.RowsAffected()
+		if err != nil {
+			return errors.Wrap(errors.ErrRemoveEntity, err)
+		}
+
+		if cnt != 1 {
+			return errors.Wrap(errors.ErrRemoveEntity, err)
+		}
 	}
 	return nil
 }

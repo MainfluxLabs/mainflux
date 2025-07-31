@@ -60,8 +60,8 @@ type Orgs interface {
 	// ListOrgs retrieves orgs.
 	ListOrgs(ctx context.Context, token string, pm apiutil.PageMetadata) (OrgsPage, error)
 
-	// RemoveOrg removes the org identified with the provided ID.
-	RemoveOrg(ctx context.Context, token, id string) error
+	// RemoveOrgs removes the orgs identified with the provided IDs.
+	RemoveOrgs(ctx context.Context, token string, ids ...string) error
 
 	// GetOwnerIDByOrgID returns an owner ID for a given org ID.
 	GetOwnerIDByOrgID(ctx context.Context, orgID string) (string, error)
@@ -81,8 +81,8 @@ type OrgRepository interface {
 	// Update an org
 	Update(ctx context.Context, org Org) error
 
-	// Remove an org
-	Remove(ctx context.Context, owner, id string) error
+	// Remove orgs
+	Remove(ctx context.Context, ownerID string, orgIDs ...string) error
 
 	// RetrieveByID retrieves org by its id
 	RetrieveByID(ctx context.Context, id string) (Org, error)
@@ -152,17 +152,19 @@ func (svc service) ListOrgs(ctx context.Context, token string, pm apiutil.PageMe
 	return svc.orgs.RetrieveByMember(ctx, user.ID, pm)
 }
 
-func (svc service) RemoveOrg(ctx context.Context, token, id string) error {
+func (svc service) RemoveOrgs(ctx context.Context, token string, ids ...string) error {
 	user, err := svc.Identify(ctx, token)
 	if err != nil {
 		return err
 	}
 
-	if err := svc.canAccessOrg(ctx, token, id, Owner); err != nil {
-		return err
+	for _, id := range ids {
+		if err := svc.canAccessOrg(ctx, token, id, Owner); err != nil {
+			return err
+		}
 	}
 
-	return svc.orgs.Remove(ctx, user.ID, id)
+	return svc.orgs.Remove(ctx, user.ID, ids...)
 }
 
 func (svc service) UpdateOrg(ctx context.Context, token string, o Org) (Org, error) {

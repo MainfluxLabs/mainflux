@@ -91,12 +91,12 @@ func (ms *metricsMiddleware) UpdateOrg(ctx context.Context, token string, org au
 	return ms.svc.UpdateOrg(ctx, token, org)
 }
 
-func (ms *metricsMiddleware) RemoveOrg(ctx context.Context, token string, id string) error {
+func (ms *metricsMiddleware) RemoveOrgs(ctx context.Context, token string, ids ...string) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "remove_org").Add(1)
-		ms.latency.With("method", "remove_org").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "remove_orgs").Add(1)
+		ms.latency.With("method", "remove_orgs").Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return ms.svc.RemoveOrg(ctx, token, id)
+	return ms.svc.RemoveOrgs(ctx, token, ids...)
 }
 
 func (ms *metricsMiddleware) ViewOrg(ctx context.Context, token, id string) (auth.Org, error) {

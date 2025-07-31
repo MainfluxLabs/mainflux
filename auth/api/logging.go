@@ -121,9 +121,9 @@ func (lm *loggingMiddleware) UpdateOrg(ctx context.Context, token string, org au
 	return lm.svc.UpdateOrg(ctx, token, org)
 }
 
-func (lm *loggingMiddleware) RemoveOrg(ctx context.Context, token string, id string) (err error) {
+func (lm *loggingMiddleware) RemoveOrgs(ctx context.Context, token string, ids ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_org for id %s took %s to complete", id, time.Since(begin))
+		message := fmt.Sprintf("Method remove_orgs took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -131,7 +131,7 @@ func (lm *loggingMiddleware) RemoveOrg(ctx context.Context, token string, id str
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.RemoveOrg(ctx, token, id)
+	return lm.svc.RemoveOrgs(ctx, token, ids...)
 }
 
 func (lm *loggingMiddleware) ViewOrg(ctx context.Context, token, id string) (o auth.Org, err error) {
