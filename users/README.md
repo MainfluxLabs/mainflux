@@ -41,7 +41,6 @@ default values.
 | MF_EMAIL_FROM_ADDRESS     | Email "from" address                                                    |                |
 | MF_EMAIL_FROM_NAME        | Email "from" name                                                       |                |
 | MF_EMAIL_TEMPLATE         | Email template for sending emails with password reset link              | email.tmpl     |
-| MF_TOKEN_RESET_ENDPOINT   | Password request reset endpoint, for constructing link                  | /reset-request |
 
 ## Deployment
 
