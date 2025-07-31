@@ -568,7 +568,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 				To:        messages[20].Time,
 			},
 
-			expectedCount: 25, 
+			expectedCount: 25,
 			description:   "should delete messages within time range",
 		},
 		"delete all messages for publisher": {
@@ -593,7 +593,6 @@ func TestDeleteMessagesSenML(t *testing.T) {
 			From:      0,
 			To:        now,
 		}, senmlTable)
-
 
 		for _, m := range messages {
 			pyd := senml.Message{
