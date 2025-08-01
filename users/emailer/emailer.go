@@ -12,23 +12,23 @@ import (
 var _ users.Emailer = (*emailer)(nil)
 
 type emailer struct {
-	uiResetURL       string
-	uiEmailVerifyURL string
-	agent            *email.Agent
+	resetURL       string
+	emailVerifyURL string
+	agent          *email.Agent
 }
 
 // New creates new emailer utility
-func New(uiResetURL, uiEmailVerifyURL string, c *email.Config) (users.Emailer, error) {
+func New(resetURL, emailVerifyURL string, c *email.Config) (users.Emailer, error) {
 	e, err := email.New(c)
 	return &emailer{
-		uiResetURL:       uiResetURL,
-		uiEmailVerifyURL: uiEmailVerifyURL,
-		agent:            e,
+		resetURL:       resetURL,
+		emailVerifyURL: emailVerifyURL,
+		agent:          e,
 	}, err
 }
 
-func (e *emailer) SendPasswordReset(To []string, uiHost string, token string) error {
-	url := fmt.Sprintf("%s%s?token=%s", uiHost, e.uiResetURL, token)
+func (e *emailer) SendPasswordReset(To []string, host string, token string) error {
+	url := fmt.Sprintf("%s%s?token=%s", host, e.resetURL, token)
 	return e.agent.Send(To, "", "Password reset", "", url, "")
 }
 
@@ -40,7 +40,7 @@ func (e *emailer) SendEmailVerification(To []string, uiHost, token string) error
 		%s
 	`
 
-	url := fmt.Sprintf("%s%s?token=%s", uiHost, e.uiEmailVerifyURL, token)
+	url := fmt.Sprintf("%s%s?token=%s", uiHost, e.emailVerifyURL, token)
 
 	content = fmt.Sprintf(content, url)
 
