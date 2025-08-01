@@ -69,8 +69,8 @@ const (
 	defAdminPassword    = ""
 	defPassRegex        = `^\S{8,}$`
 
-	defPassResetEndpoint = "/password-reset" // URL where user lands after navigating to the reset link from email
-	defEmailVerifyEndpoint = "/verify-email"
+	defPassResetEndpoint   = "/password-reset" // URL where user lands after navigating to the reset link from email
+	defEmailVerifyEndpoint = "/email-verify"
 
 	defAuthTLS         = "false"
 	defAuthCACerts     = ""
