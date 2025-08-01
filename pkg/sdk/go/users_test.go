@@ -43,13 +43,14 @@ var (
 
 func newUserService() users.Service {
 	usersRepo := usmocks.NewUserRepository(usersList)
+	verificationsRepo := usmocks.NewEmailVerificationRepository(nil)
 	hasher := usmocks.NewHasher()
 	idProvider := uuid.New()
 	admin.ID, _ = idProvider.ID()
 	auth := mocks.NewAuthService(admin.ID, usersList, orgsList)
 	emailer := usmocks.NewEmailer()
 
-	return users.New(usersRepo, hasher, auth, emailer, idProvider)
+	return users.New(usersRepo, verificationsRepo, true, hasher, auth, emailer, idProvider)
 }
 
 func newUserServer(svc users.Service) *httptest.Server {
@@ -154,8 +155,13 @@ func TestRegisterUser(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc: "register existing user",
+			desc: "register user with pending e-mail confirmation",
 			user: sdkUser,
+			err:  nil,
+		},
+		{
+			desc: "register existing user",
+			user: sdk.User{Email: user.Email, Password: user.Password},
 			err:  createError(sdk.ErrFailedCreation, http.StatusConflict),
 		},
 		{

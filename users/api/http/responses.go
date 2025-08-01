@@ -27,6 +27,20 @@ type pageRes struct {
 	Limit  uint64 `json:"limit"`
 }
 
+type selfRegisterRes struct{}
+
+func (res selfRegisterRes) Code() int {
+	return http.StatusCreated
+}
+
+func (res selfRegisterRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res selfRegisterRes) Empty() bool {
+	return true
+}
+
 type createUserRes struct {
 	ID      string
 	created bool

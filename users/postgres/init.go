@@ -62,6 +62,21 @@ func migrateDB(db *sqlx.DB) error {
 					"DROP TABLE users",
 				},
 			},
+			{
+				Id: "users_2",
+				Up: []string{
+					`CREATE TABLE IF NOT EXISTS verifications (
+						email      VARCHAR(254) NOT NULL,
+						password   CHAR(60) NOT NULL,
+						token      UUID UNIQUE NOT NULL,
+						created_at TIMESTAMPTZ NOT NULL,
+						expires_at TIMESTAMPTZ NOT NULL
+					)`,
+				},
+				Down: []string{
+					`DROP TABLE IF EXISTS verifications`,
+				},
+			},
 		},
 	}
 

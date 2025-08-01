@@ -32,10 +32,27 @@ func (req userReq) validate() error {
 
 type selfRegisterUserReq struct {
 	user users.User
+	host string
 }
 
 func (req selfRegisterUserReq) validate() error {
+	if req.host == "" {
+		return apiutil.ErrMissingHost
+	}
+
 	return req.user.Validate(userPasswordRegex)
+}
+
+type verifyEmailReq struct {
+	emailToken string
+}
+
+func (req verifyEmailReq) validate() error {
+	if req.emailToken == "" {
+		return apiutil.ErrMissingEmailToken
+	}
+
+	return nil
 }
 
 type registerUserReq struct {
