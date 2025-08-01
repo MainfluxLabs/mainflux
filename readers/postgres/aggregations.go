@@ -430,33 +430,32 @@ func (as *aggregationService) combineConditions(condition1, condition2 string) s
 }
 
 func (as *aggregationService) buildBaseCondition(rpm readers.PageMetadata, table string) string {
-	condition := ""
-	op := "WHERE"
+	var conditions []string
 	timeColumn := as.getTimeColumn(table)
 
 	if rpm.Subtopic != "" {
-		condition = fmt.Sprintf(`%s %s subtopic = :subtopic`, condition, op)
-		op = "AND"
+		conditions = append(conditions, "subtopic = :subtopic")
 	}
 	if rpm.Publisher != "" {
-		condition = fmt.Sprintf(`%s %s publisher = :publisher`, condition, op)
-		op = "AND"
+		conditions = append(conditions, "publisher = :publisher")
 	}
 	if rpm.Protocol != "" {
-		condition = fmt.Sprintf(`%s %s protocol = :protocol`, condition, op)
-		op = "AND"
+		conditions = append(conditions, "protocol = :protocol")
 	}
 	if rpm.From != 0 {
-		condition = fmt.Sprintf(`%s %s %s >= :from`, condition, op, timeColumn)
-		op = "AND"
+		conditions = append(conditions, fmt.Sprintf("%s >= :from", timeColumn))
 	}
 	if rpm.To != 0 {
-		condition = fmt.Sprintf(`%s %s %s <= :to`, condition, op, timeColumn)
-		op = "AND"
+		conditions = append(conditions, fmt.Sprintf("%s <= :from", timeColumn))
 	}
 
-	return condition
+	if len(conditions) == 0 {
+		return ""
+	}
+
+	return "WHERE" + strings.Join(conditions, "AND")
 }
+
 func (as *aggregationService) scanAggregatedMessages(rows *sqlx.Rows, format string) ([]readers.Message, error) {
 	var messages []readers.Message
 
@@ -521,9 +520,8 @@ func (as *aggregationService) getAggregateField(rpm readers.PageMetadata, format
 	case "":
 		if format == jsonTable {
 			return "created"
-		} else {
-			return "value"
 		}
+		return "value"
 	default:
 		return rpm.AggField
 	}
