@@ -18,7 +18,7 @@ import (
 )
 
 func TestVerificationSave(t *testing.T) {
-	uid, err := idProvider.ID()
+	id, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -29,7 +29,7 @@ func TestVerificationSave(t *testing.T) {
 		{
 			desc: "save new verification",
 			verification: users.EmailVerification{
-				Token: uid,
+				Token: id,
 				User: users.User{
 					Email:    email,
 					Password: password,
@@ -42,7 +42,7 @@ func TestVerificationSave(t *testing.T) {
 		{
 			desc: "save verification with duplicate token",
 			verification: users.EmailVerification{
-				Token: uid,
+				Token: id,
 				User: users.User{
 					Email:    email,
 					Password: password,
@@ -111,12 +111,12 @@ func TestVerificationRetrieve(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewEmailVerificationRepo(dbMiddleware)
 
-	uid, err := idProvider.ID()
+	id, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	verification := users.EmailVerification{
 		User:      users.User{Email: email, Password: password},
-		Token:     uid,
+		Token:     id,
 		CreatedAt: time.Now().Add(-7 * 24 * time.Hour),
 		ExpiresAt: time.Now().Add(1 * time.Hour),
 	}
@@ -132,7 +132,7 @@ func TestVerificationRetrieve(t *testing.T) {
 		{
 			desc: "retrieve existing verification",
 			verification: users.EmailVerification{
-				Token: uid,
+				Token: id,
 			},
 			err: nil,
 		},

@@ -174,12 +174,12 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, host string
 	user.Password = hash
 
 	if !svc.requireEmailVerify {
-		userId, err := svc.idProvider.ID()
+		userID, err := svc.idProvider.ID()
 		if err != nil {
 			return "", err
 		}
 
-		user.ID = userId
+		user.ID = userID
 		user.Status = EnabledStatusKey
 
 		if _, err := svc.users.Save(ctx, user); err != nil {
@@ -238,12 +238,12 @@ func (svc usersService) VerifyEmail(ctx context.Context, confirmationToken strin
 		return "", ErrEmailVerificationExpired
 	}
 
-	userId, err := svc.idProvider.ID()
+	userID, err := svc.idProvider.ID()
 	if err != nil {
 		return "", err
 	}
 
-	verification.User.ID = userId
+	verification.User.ID = userID
 	verification.User.Status = EnabledStatusKey
 
 	if _, err := svc.users.Save(ctx, verification.User); err != nil {
@@ -254,7 +254,7 @@ func (svc usersService) VerifyEmail(ctx context.Context, confirmationToken strin
 		return "", err
 	}
 
-	return userId, nil
+	return userID, nil
 }
 
 func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
