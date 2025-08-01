@@ -33,12 +33,12 @@ func verifyEmailEndpoint(svc users.Service) endpoint.Endpoint {
 			return createUserRes{}, err
 		}
 
-		userId, err := svc.VerifyEmail(ctx, req.emailToken)
+		userID, err := svc.VerifyEmail(ctx, req.emailToken)
 		if err != nil {
 			return createUserRes{}, err
 		}
 
-		return createUserRes{created: true, ID: userId}, nil
+		return createUserRes{created: true, ID: userID}, nil
 	}
 }
 
