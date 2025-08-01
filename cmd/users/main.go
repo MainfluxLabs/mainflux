@@ -78,8 +78,8 @@ const (
 	defAuthGRPCTimeout = "1s"
 	defGRPCPort        = "8184"
 
-	defSelfRegister       = "true" // By default, everybody can create a user. Otherwise, only admin can create a user.
-	defRequireEmailVerify = "true"
+	defSelfRegisterEnabled = "true" // By default, everybody can create a user. Otherwise, only admin can create a user.
+	defEmailVerifyEnabled  = "true"
 
 	envLogLevel      = "MF_USERS_LOG_LEVEL"
 	envDBHost        = "MF_USERS_DB_HOST"
@@ -202,12 +202,12 @@ func loadConfig() config {
 		log.Fatalf("Invalid password validation rules %s\n", envPassRegex)
 	}
 
-	selfRegister, err := strconv.ParseBool(mainflux.Env(envSelfRegister, defSelfRegister))
+	selfRegister, err := strconv.ParseBool(mainflux.Env(envSelfRegister, defSelfRegisterEnabled))
 	if err != nil {
 		log.Fatalf("Invalid %s value: %s", envSelfRegister, err.Error())
 	}
 
-	requireEmailVerification, err := strconv.ParseBool(mainflux.Env(envRequireEmailVerify, defRequireEmailVerify))
+	requireEmailVerification, err := strconv.ParseBool(mainflux.Env(envRequireEmailVerify, defEmailVerifyEnabled))
 	if err != nil {
 		log.Fatalf("Invalid %s value: %s", envRequireEmailVerify, err.Error())
 	}
