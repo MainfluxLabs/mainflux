@@ -31,12 +31,12 @@ func (req userReq) validate() error {
 }
 
 type selfRegisterUserReq struct {
-	user   users.User
-	uiHost string
+	user users.User
+	host string
 }
 
 func (req selfRegisterUserReq) validate() error {
-	if req.uiHost == "" {
+	if req.host == "" {
 		return apiutil.ErrMissingHost
 	}
 

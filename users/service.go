@@ -45,7 +45,7 @@ type Service interface {
 	// creates a pending e-mail verification entity and sends the user an e-mail
 	// with a URL containing a token used to verify the e-mail address and complete
 	// registration.
-	SelfRegister(ctx context.Context, user User, uiHost string) (string, error)
+	SelfRegister(ctx context.Context, user User, host string) (string, error)
 
 	// VerifyEmail completes the self-registration process by matching the provided
 	// email verification token against the database. If the token is valid and not expired, the e-mail
@@ -156,7 +156,7 @@ func New(users UserRepository, verifications EmailVerificationRepository, requir
 	}
 }
 
-func (svc usersService) SelfRegister(ctx context.Context, user User, uiHost string) (string, error) {
+func (svc usersService) SelfRegister(ctx context.Context, user User, host string) (string, error) {
 	_, err := svc.users.RetrieveByEmail(ctx, user.Email)
 	if err != nil && !errors.Contains(err, errors.ErrNotFound) {
 		return "", err
@@ -209,7 +209,7 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, uiHost stri
 
 	// If an error occurs while attempting to send the e-mail including confirmation token to the user,
 	// abort the process i.e. remove the pending Verification from the database.
-	if err := svc.email.SendEmailVerification([]string{user.Email}, uiHost, verificationToken); err != nil {
+	if err := svc.email.SendEmailVerification([]string{user.Email}, host, verificationToken); err != nil {
 		if err := svc.emailVerifications.Remove(ctx, verificationToken); err != nil {
 			return "", err
 		}

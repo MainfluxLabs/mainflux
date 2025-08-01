@@ -30,13 +30,13 @@ func MetricsMiddleware(svc users.Service, counter metrics.Counter, latency metri
 	}
 }
 
-func (ms *metricsMiddleware) SelfRegister(ctx context.Context, user users.User, uiHost string) (string, error) {
+func (ms *metricsMiddleware) SelfRegister(ctx context.Context, user users.User, host string) (string, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "self_register").Add(1)
 		ms.latency.With("method", "self_register").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.SelfRegister(ctx, user, uiHost)
+	return ms.svc.SelfRegister(ctx, user, host)
 }
 
 func (ms *metricsMiddleware) VerifyEmail(ctx context.Context, token string) (string, error) {

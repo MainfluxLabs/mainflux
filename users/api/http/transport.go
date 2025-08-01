@@ -318,8 +318,8 @@ func decodeSelfRegisterUser(_ context.Context, r *http.Request) (interface{}, er
 	}
 
 	req := selfRegisterUserReq{
-		user:   user,
-		uiHost: r.Header.Get("Referer"),
+		user: user,
+		host: r.Header.Get("Referer"),
 	}
 
 	return req, nil

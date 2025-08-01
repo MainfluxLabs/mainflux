@@ -26,7 +26,7 @@ func LoggingMiddleware(svc users.Service, logger log.Logger) users.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) SelfRegister(ctx context.Context, user users.User, uiHost string) (uid string, err error) {
+func (lm *loggingMiddleware) SelfRegister(ctx context.Context, user users.User, host string) (uid string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method self_register for user %s took %s to complete", user.Email, time.Since(begin))
 		if err != nil {
@@ -37,7 +37,7 @@ func (lm *loggingMiddleware) SelfRegister(ctx context.Context, user users.User, 
 
 	}(time.Now())
 
-	return lm.svc.SelfRegister(ctx, user, uiHost)
+	return lm.svc.SelfRegister(ctx, user, host)
 }
 
 func (lm *loggingMiddleware) VerifyEmail(ctx context.Context, confirmationToken string) (userId string, err error) {

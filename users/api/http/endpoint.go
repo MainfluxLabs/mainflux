@@ -17,7 +17,7 @@ func selfRegistrationEndpoint(svc users.Service) endpoint.Endpoint {
 			return selfRegisterRes{}, err
 		}
 
-		_, err := svc.SelfRegister(ctx, req.user, req.uiHost)
+		_, err := svc.SelfRegister(ctx, req.user, req.host)
 		if err != nil {
 			return selfRegisterRes{}, err
 		}

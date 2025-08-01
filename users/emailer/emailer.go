@@ -32,7 +32,7 @@ func (e *emailer) SendPasswordReset(To []string, host string, token string) erro
 	return e.agent.Send(To, "", "Password reset", "", url, "")
 }
 
-func (e *emailer) SendEmailVerification(To []string, uiHost, token string) error {
+func (e *emailer) SendEmailVerification(To []string, host, token string) error {
 	subject := "Verify your MainfluxLabs e-mail address"
 	content := `
 		Use the following link to verify your e-mail address and complete registration:
@@ -40,7 +40,7 @@ func (e *emailer) SendEmailVerification(To []string, uiHost, token string) error
 		%s
 	`
 
-	url := fmt.Sprintf("%s%s?token=%s", uiHost, e.emailVerifyURL, token)
+	url := fmt.Sprintf("%s%s?token=%s", host, e.emailVerifyURL, token)
 
 	content = fmt.Sprintf(content, url)
 
