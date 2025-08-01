@@ -117,7 +117,7 @@ func (req updateUserReq) validate() error {
 
 type passwResetReq struct {
 	Email string `json:"email"`
-	Host  string `json:"host"`
+	Host  string
 }
 
 func (req passwResetReq) validate() error {
