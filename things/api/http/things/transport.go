@@ -114,7 +114,7 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		opts...,
 	))
 
-	mux.Post("/groups/:id/things/backup", kithttp.NewServer(
+	mux.Post("/groups/:id/things/restore", kithttp.NewServer(
 		kitot.TraceServer(tracer, "restore_things_by_group")(restoreThingsByGroupEndpoint(svc)),
 		decodeRestoreThingsByGroup,
 		encodeResponse,
@@ -128,7 +128,7 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		opts...,
 	))
 
-	mux.Post("/orgs/:id/things/backup", kithttp.NewServer(
+	mux.Post("/orgs/:id/things/restore", kithttp.NewServer(
 		kitot.TraceServer(tracer, "restore_things_by_org")(restoreThingsByOrgEndpoint(svc)),
 		decodeRestoreThingsByOrg,
 		encodeResponse,

@@ -2099,7 +2099,7 @@ func TestRestoreThingsByGroup(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusCreated,
-			url:         fmt.Sprintf("%s/%s/things/backup", thingURL, gr.ID),
+			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, gr.ID),
 			res:         emptyValue,
 		},
 		{
@@ -2108,7 +2108,7 @@ func TestRestoreThingsByGroup(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusForbidden,
-			url:         fmt.Sprintf("%s/%s/things/backup", thingURL, gr.ID),
+			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, gr.ID),
 			res:         emptyValue,
 		},
 		{
@@ -2117,7 +2117,7 @@ func TestRestoreThingsByGroup(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusBadRequest,
-			url:         fmt.Sprintf("%s/%s/things/backup", thingURL, emptyValue),
+			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, emptyValue),
 			res:         emptyValue,
 		},
 		{
@@ -2126,7 +2126,7 @@ func TestRestoreThingsByGroup(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusUnauthorized,
-			url:         fmt.Sprintf("%s/%s/things/backup", thingURL, gr.ID),
+			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, gr.ID),
 			res:         emptyValue,
 		},
 		{
@@ -2135,7 +2135,7 @@ func TestRestoreThingsByGroup(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusUnauthorized,
-			url:         fmt.Sprintf("%s/%s/things/backup", thingURL, gr.ID),
+			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, gr.ID),
 			res:         emptyValue,
 		},
 	}
@@ -2313,7 +2313,7 @@ func TestRestoreThingsByOrg(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusCreated,
-			url:         fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
+			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, orgID),
 			res:         emptyValue,
 		},
 		{
@@ -2322,7 +2322,7 @@ func TestRestoreThingsByOrg(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusForbidden,
-			url:         fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
+			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, orgID),
 			res:         emptyValue,
 		},
 		{
@@ -2331,7 +2331,7 @@ func TestRestoreThingsByOrg(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusBadRequest,
-			url:         fmt.Sprintf("%s/%s/things/backup", thingURL, emptyValue),
+			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, emptyValue),
 			res:         emptyValue,
 		},
 		{
@@ -2340,7 +2340,7 @@ func TestRestoreThingsByOrg(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusUnauthorized,
-			url:         fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
+			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, orgID),
 			res:         emptyValue,
 		},
 		{
@@ -2349,7 +2349,7 @@ func TestRestoreThingsByOrg(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusUnauthorized,
-			url:         fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
+			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, orgID),
 			res:         emptyValue,
 		},
 	}

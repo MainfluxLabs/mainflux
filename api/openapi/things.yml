@@ -212,6 +212,7 @@ paths:
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /orgs/{orgId}/things/restore:
     post:
       summary: Restores thing backup by organization.
       description: |
@@ -255,6 +256,7 @@ paths:
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /groups/{groupId}/things/restore:
     post:
       summary: Restores thing backup by group.
       description: |
@@ -596,6 +598,7 @@ paths:
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /orgs/{orgId}/profiles/restore:
     post:
       summary: Restores profile backup by organization.
       description: |
@@ -639,6 +642,7 @@ paths:
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /groups/{groupId}/profiles/restore:
     post:
       summary: Restores profile backup by group.
       description: |
@@ -954,6 +958,7 @@ paths:
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /orgs/{orgId}/groups/restore:
     post:
       summary: Restores group backup by organization.
       description: |
@@ -1141,6 +1146,7 @@ paths:
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /groups/{groupId}/memberships/restore:
     post:
       summary: Restores group memberships backup.
       description: |

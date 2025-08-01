@@ -766,7 +766,7 @@ func TestRestoreOrgMemberships(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusCreated,
-			url:         fmt.Sprintf("%s/%s/memberships/backup", orgMembershipURL, or.ID),
+			url:         fmt.Sprintf("%s/%s/memberships/restore", orgMembershipURL, or.ID),
 			res:         emptyValue,
 		},
 		{
@@ -775,7 +775,7 @@ func TestRestoreOrgMemberships(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusCreated,
-			url:         fmt.Sprintf("%s/%s/memberships/backup", orgMembershipURL, or.ID),
+			url:         fmt.Sprintf("%s/%s/memberships/restore", orgMembershipURL, or.ID),
 			res:         emptyValue,
 		},
 		{
@@ -784,7 +784,7 @@ func TestRestoreOrgMemberships(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusBadRequest,
-			url:         fmt.Sprintf("%s/%s/memberships/backup", orgMembershipURL, emptyValue),
+			url:         fmt.Sprintf("%s/%s/memberships/restore", orgMembershipURL, emptyValue),
 			res:         emptyValue,
 		},
 		{
@@ -793,7 +793,7 @@ func TestRestoreOrgMemberships(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusUnauthorized,
-			url:         fmt.Sprintf("%s/%s/memberships/backup", orgMembershipURL, or.ID),
+			url:         fmt.Sprintf("%s/%s/memberships/restore", orgMembershipURL, or.ID),
 			res:         emptyValue,
 		},
 		{
@@ -802,7 +802,7 @@ func TestRestoreOrgMemberships(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusUnauthorized,
-			url:         fmt.Sprintf("%s/%s/memberships/backup", orgMembershipURL, or.ID),
+			url:         fmt.Sprintf("%s/%s/memberships/restore", orgMembershipURL, or.ID),
 			res:         emptyValue,
 		},
 	}

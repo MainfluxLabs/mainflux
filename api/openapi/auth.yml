@@ -288,9 +288,9 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /orgs/{orgId}/memberships/backup:
     get:
-      summary: Retrieves org membership backup.
+      summary: Retrieves organization membership backup.
       description: |
-        Retrieves a backup of all org memberships. The response is a JSON object containing all related org memberships. 
+        Retrieves a backup of all organization memberships. The response is a JSON object containing all related organization memberships. 
       tags:
         - auth
       parameters:
@@ -303,15 +303,16 @@ paths:
         '403':
           description: Failed to perform authorization over the entity.
         '404':
-          description: Failed due to non existing org or related entities.
+          description: Failed due to non existing organization or related entities.
         '422':
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /orgs/{orgId}/memberships/restore:
     post:
-      summary: Restores org memberships backup.
+      summary: Restores organization memberships backup.
       description: |
-        Restores org memberships from backup. Backup is a JSON file that contains all org memberships that will be restored.
+        Restores organization memberships from backup. Backup is a JSON file that contains all organization memberships that will be restored.
       tags:
         - auth
       parameters:
@@ -781,7 +782,7 @@ components:
           schema:
             $ref: "#/components/schemas/OrgMembershipsSchema"
     RestoreOrgMembershipsReq:
-      description: Binary-encoded JSON file describing restore org memberships request.
+      description: Binary-encoded JSON file describing restore organization memberships request.
       required: true
       content:
         application/octet-stream:
@@ -835,7 +836,7 @@ components:
           schema:
             $ref: "#/components/schemas/OrgMembership"
     OrgMembershipsBackupRes:
-      description: Successfully retrieved org membership backup.
+      description: Successfully retrieved organization membership backup.
       content:
         application/octet-stream:
           schema:

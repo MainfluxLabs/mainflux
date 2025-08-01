@@ -1428,7 +1428,7 @@ func TestRestoreProfilesByOrg(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusCreated,
-			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, orgID),
+			url:         fmt.Sprintf("%s/%s/profiles/restore", profileURL, orgID),
 			res:         emptyValue,
 		},
 		{
@@ -1437,7 +1437,7 @@ func TestRestoreProfilesByOrg(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusForbidden,
-			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, orgID),
+			url:         fmt.Sprintf("%s/%s/profiles/restore", profileURL, orgID),
 			res:         emptyValue,
 		},
 		{
@@ -1446,7 +1446,7 @@ func TestRestoreProfilesByOrg(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusBadRequest,
-			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, emptyValue),
+			url:         fmt.Sprintf("%s/%s/profiles/restore", profileURL, emptyValue),
 			res:         emptyValue,
 		},
 		{
@@ -1455,7 +1455,7 @@ func TestRestoreProfilesByOrg(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusUnauthorized,
-			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, orgID),
+			url:         fmt.Sprintf("%s/%s/profiles/restore", profileURL, orgID),
 			res:         emptyValue,
 		},
 		{
@@ -1464,7 +1464,7 @@ func TestRestoreProfilesByOrg(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusUnauthorized,
-			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, orgID),
+			url:         fmt.Sprintf("%s/%s/profiles/restore", profileURL, orgID),
 			res:         emptyValue,
 		},
 	}
@@ -1628,7 +1628,7 @@ func TestRestoreProfilesByGroup(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusCreated,
-			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
+			url:         fmt.Sprintf("%s/%s/profiles/restore", profileURL, gr.ID),
 			res:         emptyValue,
 		},
 		{
@@ -1637,7 +1637,7 @@ func TestRestoreProfilesByGroup(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusForbidden,
-			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
+			url:         fmt.Sprintf("%s/%s/profiles/restore", profileURL, gr.ID),
 			res:         emptyValue,
 		},
 		{
@@ -1646,7 +1646,7 @@ func TestRestoreProfilesByGroup(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusBadRequest,
-			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, emptyValue),
+			url:         fmt.Sprintf("%s/%s/profiles/restore", profileURL, emptyValue),
 			res:         emptyValue,
 		},
 		{
@@ -1655,7 +1655,7 @@ func TestRestoreProfilesByGroup(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusUnauthorized,
-			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
+			url:         fmt.Sprintf("%s/%s/profiles/restore", profileURL, gr.ID),
 			res:         emptyValue,
 		},
 		{
@@ -1664,7 +1664,7 @@ func TestRestoreProfilesByGroup(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusUnauthorized,
-			url:         fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
+			url:         fmt.Sprintf("%s/%s/profiles/restore", profileURL, gr.ID),
 			res:         emptyValue,
 		},
 	}

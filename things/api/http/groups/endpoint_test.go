@@ -1272,7 +1272,7 @@ func TestRestoreGroupsByOrg(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusCreated,
-			url:         fmt.Sprintf("%s/%s/groups/backup", groupURL, orgID),
+			url:         fmt.Sprintf("%s/%s/groups/restore", groupURL, orgID),
 			res:         emptyValue,
 		},
 		{
@@ -1281,7 +1281,7 @@ func TestRestoreGroupsByOrg(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusForbidden,
-			url:         fmt.Sprintf("%s/%s/groups/backup", groupURL, orgID),
+			url:         fmt.Sprintf("%s/%s/groups/restore", groupURL, orgID),
 			res:         emptyValue,
 		},
 		{
@@ -1290,7 +1290,7 @@ func TestRestoreGroupsByOrg(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusBadRequest,
-			url:         fmt.Sprintf("%s/%s/groups/backup", groupURL, emptyValue),
+			url:         fmt.Sprintf("%s/%s/groups/restore", groupURL, emptyValue),
 			res:         emptyValue,
 		},
 		{
@@ -1299,7 +1299,7 @@ func TestRestoreGroupsByOrg(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusUnauthorized,
-			url:         fmt.Sprintf("%s/%s/groups/backup", groupURL, orgID),
+			url:         fmt.Sprintf("%s/%s/groups/restore", groupURL, orgID),
 			res:         emptyValue,
 		},
 		{
@@ -1308,7 +1308,7 @@ func TestRestoreGroupsByOrg(t *testing.T) {
 			data:        dataString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusUnauthorized,
-			url:         fmt.Sprintf("%s/%s/groups/backup", groupURL, orgID),
+			url:         fmt.Sprintf("%s/%s/groups/restore", groupURL, orgID),
 			res:         emptyValue,
 		},
 	}

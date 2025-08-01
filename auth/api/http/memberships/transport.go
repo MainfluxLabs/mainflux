@@ -44,7 +44,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
-	mux.Post("/orgs/:id/memberships/backup", kithttp.NewServer(
+	mux.Post("/orgs/:id/memberships/restore", kithttp.NewServer(
 		kitot.TraceServer(tracer, "restore_org_memberships")(restoreOrgMembershipsEndpoint(svc)),
 		decodeRestoreByOrg,
 		encodeResponse,
