@@ -194,13 +194,11 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, host string
 		return "", err
 	}
 
-	now := time.Now()
-
 	verification := EmailVerification{
 		User:      user,
 		Token:     token,
-		CreatedAt: now,
-		ExpiresAt: now.Add(1 * time.Hour),
+		CreatedAt: time.Now(),
+		ExpiresAt: time.Now().Add(1 * time.Hour),
 	}
 
 	if _, err := svc.emailVerifications.Save(ctx, verification); err != nil {
