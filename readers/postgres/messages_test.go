@@ -34,6 +34,10 @@ const (
 	jsonCT      = "application/json"
 	jsonTable   = "json"
 	senmlTable  = "messages"
+	minAgg      = "min"
+	maxAgg      = "min"
+	countAgg    = "count"
+	avgAgg      = "avg"
 )
 
 var (
@@ -320,7 +324,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 		"count aggregation": {
 			pageMeta: readers.PageMetadata{
 				Limit:   noLimit,
-				AggType: "count",
+				AggType: countAgg,
 			},
 			page: readers.MessagesPage{
 				Total:    msgsNum,
@@ -331,7 +335,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Limit:   noLimit,
 				Name:    msgName,
-				AggType: "min",
+				AggType: minAgg,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(queryMsgs)),
@@ -342,7 +346,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Limit:   noLimit,
 				Name:    msgName,
-				AggType: "max",
+				AggType: maxAgg,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(queryMsgs)),
