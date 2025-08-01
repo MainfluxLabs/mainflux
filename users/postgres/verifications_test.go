@@ -17,6 +17,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	nonExistentToken = "12b4ad3d-9563-408a-b9c2-425740823738"
+)
+
 func TestVerificationSave(t *testing.T) {
 	id, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -95,7 +99,7 @@ func TestVerificationRemove(t *testing.T) {
 		{
 			desc: "remove verification with invalid token",
 			verification: users.EmailVerification{
-				Token: "12b4ad3d-9563-408a-b9c2-425740823738",
+				Token: nonExistentToken,
 			},
 			err: errors.ErrRemoveEntity,
 		},
@@ -139,7 +143,7 @@ func TestVerificationRetrieve(t *testing.T) {
 		{
 			desc: "retrieve verification with non-existent token",
 			verification: users.EmailVerification{
-				Token: "12b4ad3d-9563-408a-b9c2-425740823738",
+				Token: nonExistentToken,
 			},
 			err: errors.ErrNotFound,
 		},
