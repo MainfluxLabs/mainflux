@@ -65,8 +65,7 @@ func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 		res := passwResetReqRes{}
-		email := req.Email
-		if err := svc.GenerateResetToken(ctx, email, req.Host); err != nil {
+		if err := svc.GenerateResetToken(ctx, req.Email, req.Host); err != nil {
 			return nil, err
 		}
 		res.Msg = MailSent
