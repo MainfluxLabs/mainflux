@@ -81,7 +81,7 @@ func migrateDB(db *sqlx.DB) error {
 					)`,
 				},
 				Down: []string{
-					"DROP TABLE IF EXISTS users_roles",
+					`DROP TABLE IF EXISTS users_roles`,
 					`DROP TABLE IF EXISTS keys`,
 					`DROP TABLE IF EXISTS orgs`,
 					`DROP TABLE IF EXISTS member_relations`,
@@ -94,7 +94,28 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE org_memberships RENAME CONSTRAINT member_relations_org_id_fkey TO org_memberships_org_id_fkey`,
 					`ALTER TABLE org_memberships RENAME CONSTRAINT member_relations_pkey TO org_memberships_pkey`,
 				},
-				Down: []string{},
+				Down: []string{
+				},
+			},
+			{
+				Id: "auth_3",
+				Up: []string{
+					`CREATE TABLE IF NOT EXISTS invites (
+						id UUID NOT NULL,
+						invitee_id UUID NOT NULL,
+						inviter_id UUID NOT NULL,
+						org_id UUID NOT NULL,
+						invitee_role VARCHAR(12) NOT NULL,
+						created_at TIMESTAMPTZ,
+						expires_at TIMESTAMPTZ,
+						FOREIGN KEY (org_id) REFERENCES orgs (id) ON DELETE CASCADE,
+						PRIMARY KEY (id),
+						UNIQUE (invitee_id, org_id)
+					)`,
+				},
+				Down: []string{
+					`DROP TABLE IF EXISTS invites`,
+				},
 			},
 		},
 	}

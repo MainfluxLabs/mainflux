@@ -72,36 +72,43 @@ type Service interface {
 	Roles
 	Orgs
 	OrgMemberships
+	Invites
 	Keys
 }
 
 var _ Service = (*service)(nil)
 
 type service struct {
-	orgs          OrgRepository
-	users         protomfx.UsersServiceClient
-	things        protomfx.ThingsServiceClient
-	keys          KeyRepository
-	roles         RolesRepository
+	orgs           OrgRepository
+	users          protomfx.UsersServiceClient
+	things         protomfx.ThingsServiceClient
+	keys           KeyRepository
+	roles          RolesRepository
 	memberships   OrgMembershipsRepository
-	idProvider    uuid.IDProvider
-	tokenizer     Tokenizer
-	loginDuration time.Duration
+	invites        InvitesRepository
+	email          Emailer
+	idProvider     uuid.IDProvider
+	tokenizer      Tokenizer
+	loginDuration  time.Duration
+	inviteDuration time.Duration
 }
 
 // New instantiates the auth service implementation.
 func New(orgs OrgRepository, tc protomfx.ThingsServiceClient, uc protomfx.UsersServiceClient, keys KeyRepository, roles RolesRepository,
-	memberships OrgMembershipsRepository, idp uuid.IDProvider, tokenizer Tokenizer, duration time.Duration) Service {
+	memberships OrgMembershipsRepository, invites InvitesRepository, emailer Emailer, idp uuid.IDProvider, tokenizer Tokenizer, loginDuration time.Duration, inviteDuration time.Duration) Service {
 	return &service{
-		tokenizer:     tokenizer,
-		things:        tc,
-		orgs:          orgs,
-		users:         uc,
-		keys:          keys,
-		roles:         roles,
+		tokenizer:      tokenizer,
+		things:         tc,
+		orgs:           orgs,
+		users:          uc,
+		keys:           keys,
+		roles:          roles,
 		memberships:   memberships,
-		idProvider:    idp,
-		loginDuration: duration,
+		invites:        invites,
+		email:          emailer,
+		idProvider:     idp,
+		loginDuration:  loginDuration,
+		inviteDuration: inviteDuration,
 	}
 }
 
