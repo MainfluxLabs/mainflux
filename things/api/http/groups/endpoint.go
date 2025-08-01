@@ -6,6 +6,7 @@ package groups
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
@@ -176,7 +177,8 @@ func backupGroupsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildBackupResponse(backup)
+		fileName := fmt.Sprintf("groups-backup-by-org-%s.json", req.id)
+		return buildBackupResponse(backup, fileName)
 	}
 }
 
@@ -293,7 +295,7 @@ func buildGroupsBackup(groups []viewGroupRes) (backup things.GroupsBackup) {
 	return backup
 }
 
-func buildBackupResponse(b things.GroupsBackup) (viewFileRes, error) {
+func buildBackupResponse(b things.GroupsBackup, fileName string) (viewFileRes, error) {
 	views := make([]viewGroupRes, 0, len(b.Groups))
 
 	for _, group := range b.Groups {
@@ -314,6 +316,7 @@ func buildBackupResponse(b things.GroupsBackup) (viewFileRes, error) {
 	}
 
 	return viewFileRes{
-		File: data,
+		File:     data,
+		FileName: fileName,
 	}, nil
 }

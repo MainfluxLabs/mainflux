@@ -3,6 +3,7 @@ package memberships
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -111,7 +112,9 @@ func backupOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		return buildBackupResponse(backup)
+
+		fileName := fmt.Sprintf("org-memberships-backup-%s.json", req.id)
+		return buildBackupResponse(backup, fileName)
 	}
 }
 
@@ -172,7 +175,7 @@ func buildOrgMembershipsBackup(orgMemberships []viewOrgMembershipRes) (backup au
 	return backup
 }
 
-func buildBackupResponse(b auth.OrgMembershipsBackup) (viewFileRes, error) {
+func buildBackupResponse(b auth.OrgMembershipsBackup, fileName string) (viewFileRes, error) {
 	views := make([]viewOrgMembershipRes, 0, len(b.OrgMemberships))
 	for _, membership := range b.OrgMemberships {
 		views = append(views, viewOrgMembershipRes{
@@ -191,6 +194,7 @@ func buildBackupResponse(b auth.OrgMembershipsBackup) (viewFileRes, error) {
 	}
 
 	return viewFileRes{
-		File: data,
+		File:     data,
+		FileName: fileName,
 	}, nil
 }

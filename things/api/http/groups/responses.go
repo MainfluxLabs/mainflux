@@ -109,7 +109,8 @@ func (res groupPageRes) Empty() bool {
 }
 
 type viewFileRes struct {
-	File []byte
+	File     []byte
+	FileName string
 }
 
 func (res viewFileRes) Code() int {

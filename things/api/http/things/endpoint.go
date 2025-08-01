@@ -6,6 +6,7 @@ package things
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/api/http/memberships"
@@ -187,7 +188,8 @@ func backupThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildBackupThingsResponse(backup)
+		fileName := fmt.Sprintf("things-backup-by-group-%s.json", req.id)
+		return buildBackupThingsResponse(backup, fileName)
 	}
 }
 
@@ -219,7 +221,8 @@ func backupThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildBackupThingsResponse(backup)
+		fileName := fmt.Sprintf("things-backup-by-org-%s.json", req.id)
+		return buildBackupThingsResponse(backup, fileName)
 	}
 }
 
@@ -422,7 +425,7 @@ func buildThingsResponse(tp things.ThingsPage) ThingsPageRes {
 	return res
 }
 
-func buildBackupThingsResponse(tb things.ThingsBackup) (viewFileRes, error) {
+func buildBackupThingsResponse(tb things.ThingsBackup, fileName string) (viewFileRes, error) {
 	views := make([]viewThingRes, 0, len(tb.Things))
 	for _, thing := range tb.Things {
 		views = append(views, viewThingRes{
@@ -441,7 +444,8 @@ func buildBackupThingsResponse(tb things.ThingsBackup) (viewFileRes, error) {
 	}
 
 	return viewFileRes{
-		File: data,
+		File:     data,
+		FileName: fileName,
 	}, nil
 }
 

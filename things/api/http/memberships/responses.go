@@ -95,7 +95,8 @@ func (res listGroupMembershipsRes) Empty() bool {
 }
 
 type viewFileRes struct {
-	File []byte
+	File     []byte
+	FileName string
 }
 
 func (res viewFileRes) Code() int {

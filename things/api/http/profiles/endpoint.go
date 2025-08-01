@@ -6,6 +6,7 @@ package profiles
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
@@ -165,7 +166,9 @@ func backupProfilesByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		return buildBackupResponse(backup)
+
+		fileName := fmt.Sprintf("profiles-backup-by-org-%s.json", req.id)
+		return buildBackupResponse(backup, fileName)
 	}
 }
 
@@ -196,7 +199,9 @@ func backupProfilesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		return buildBackupResponse(backup)
+
+		fileName := fmt.Sprintf("profiles-backup-by-group-%s.json", req.id)
+		return buildBackupResponse(backup, fileName)
 	}
 }
 
@@ -316,7 +321,7 @@ func buildProfilesBackup(profiles []viewProfileRes) (backup things.ProfilesBacku
 	return backup
 }
 
-func buildBackupResponse(pb things.ProfilesBackup) (viewFileRes, error) {
+func buildBackupResponse(pb things.ProfilesBackup, fileName string) (viewFileRes, error) {
 	views := make([]viewProfileRes, 0, len(pb.Profiles))
 	for _, profile := range pb.Profiles {
 		views = append(views, viewProfileRes{
@@ -334,6 +339,7 @@ func buildBackupResponse(pb things.ProfilesBackup) (viewFileRes, error) {
 	}
 
 	return viewFileRes{
-		File: data,
+		File:     data,
+		FileName: fileName,
 	}, nil
 }

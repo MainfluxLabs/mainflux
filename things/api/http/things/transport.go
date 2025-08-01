@@ -6,6 +6,7 @@ package things
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -530,8 +531,7 @@ func encodeFileResponse(_ context.Context, w http.ResponseWriter, response inter
 			w.Header().Set(k, v)
 		}
 
-		w.Header().Set("Content-Disposition", "attachment")
-
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, fr.FileName))
 		w.WriteHeader(fr.Code())
 
 		if fr.Empty() {

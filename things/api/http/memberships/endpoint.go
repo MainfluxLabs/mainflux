@@ -6,6 +6,7 @@ package memberships
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
@@ -103,7 +104,8 @@ func backupGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildBackupResponse(backup)
+		fileName := fmt.Sprintf("group-memberships-backup-%s.json", req.id)
+		return buildBackupResponse(backup, fileName)
 	}
 }
 
@@ -159,7 +161,7 @@ func buildGroupMembershipsBackup(groupMemberships []ViewGroupMembershipRes) (bac
 	return backup
 }
 
-func buildBackupResponse(b things.GroupMembershipsBackup) (viewFileRes, error) {
+func buildBackupResponse(b things.GroupMembershipsBackup, fileName string) (viewFileRes, error) {
 	views := make([]ViewGroupMembershipRes, 0, len(b.GroupMemberships))
 	for _, membership := range b.GroupMemberships {
 		views = append(views, ViewGroupMembershipRes{
@@ -176,6 +178,7 @@ func buildBackupResponse(b things.GroupMembershipsBackup) (viewFileRes, error) {
 	}
 
 	return viewFileRes{
-		File: data,
+		File:     data,
+		FileName: fileName,
 	}, nil
 }
