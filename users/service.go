@@ -136,7 +136,7 @@ var _ Service = (*usersService)(nil)
 type usersService struct {
 	users              UserRepository
 	emailVerifications EmailVerificationRepository
-	requireEmailVerify bool
+	emailVerifyEnabled bool
 	hasher             Hasher
 	email              Emailer
 	auth               protomfx.AuthServiceClient
@@ -148,7 +148,7 @@ func New(users UserRepository, verifications EmailVerificationRepository, requir
 	return &usersService{
 		users:              users,
 		emailVerifications: verifications,
-		requireEmailVerify: requireEmailVerify,
+		emailVerifyEnabled: requireEmailVerify,
 		hasher:             hasher,
 		auth:               auth,
 		email:              e,
@@ -173,7 +173,7 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, host string
 
 	user.Password = hash
 
-	if !svc.requireEmailVerify {
+	if !svc.emailVerifyEnabled {
 		userID, err := svc.idProvider.ID()
 		if err != nil {
 			return "", err
@@ -189,7 +189,7 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, host string
 		return user.ID, nil
 	}
 
-	verificationToken, err := svc.idProvider.ID()
+	token, err := svc.idProvider.ID()
 	if err != nil {
 		return "", err
 	}
@@ -198,7 +198,7 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, host string
 
 	verification := EmailVerification{
 		User:      user,
-		Token:     verificationToken,
+		Token:     token,
 		CreatedAt: now,
 		ExpiresAt: now.Add(1 * time.Hour),
 	}
@@ -209,15 +209,15 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, host string
 
 	// If an error occurs while attempting to send the e-mail including confirmation token to the user,
 	// abort the process i.e. remove the pending Verification from the database.
-	if err := svc.email.SendEmailVerification([]string{user.Email}, host, verificationToken); err != nil {
-		if err := svc.emailVerifications.Remove(ctx, verificationToken); err != nil {
+	if err := svc.email.SendEmailVerification([]string{user.Email}, host, token); err != nil {
+		if err := svc.emailVerifications.Remove(ctx, token); err != nil {
 			return "", err
 		}
 
 		return "", err
 	}
 
-	return verificationToken, nil
+	return token, nil
 }
 
 func (svc usersService) VerifyEmail(ctx context.Context, confirmationToken string) (string, error) {

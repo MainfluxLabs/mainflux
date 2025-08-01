@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS verifications (
     email      VARCHAR(254) NOT NULL,
     password   CHAR(60) NOT NULL,
-    token UUID UNIQUE NOT NULL,
+    token      UUID UNIQUE NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     expires_at TIMESTAMPTZ NOT NULL
 );
