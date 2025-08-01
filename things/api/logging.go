@@ -159,6 +159,19 @@ func (lm *loggingMiddleware) BackupThingsByGroup(ctx context.Context, token stri
 	return lm.svc.BackupThingsByGroup(ctx, token, groupID)
 }
 
+func (lm *loggingMiddleware) RestoreThingsByGroup(ctx context.Context, token string, groupID string, backup things.ThingsBackup) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method restore_things_by_group took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RestoreThingsByGroup(ctx, token, groupID, backup)
+}
+
 func (lm *loggingMiddleware) BackupThingsByOrg(ctx context.Context, token string, orgID string) (tb things.ThingsBackup, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method backup_things_by_org took %s to complete", time.Since(begin))
@@ -170,6 +183,19 @@ func (lm *loggingMiddleware) BackupThingsByOrg(ctx context.Context, token string
 	}(time.Now())
 
 	return lm.svc.BackupThingsByOrg(ctx, token, orgID)
+}
+
+func (lm *loggingMiddleware) RestoreThingsByOrg(ctx context.Context, token string, orgID string, backup things.ThingsBackup) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method restore_things_by_org took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RestoreThingsByOrg(ctx, token, orgID, backup)
 }
 
 func (lm *loggingMiddleware) RemoveThings(ctx context.Context, token string, ids ...string) (err error) {
@@ -416,9 +442,9 @@ func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (bk thing
 	return lm.svc.Backup(ctx, token)
 }
 
-func (lm *loggingMiddleware) BackupGroupsByOrg(ctx context.Context, token string, orgID string) (bk things.BackupGroupsByOrg, err error) {
+func (lm *loggingMiddleware) BackupGroupsByOrg(ctx context.Context, token string, orgID string) (bk things.GroupsBackup, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method backup_groups_by_org by organization took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method backup_groups_by_org took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -429,7 +455,20 @@ func (lm *loggingMiddleware) BackupGroupsByOrg(ctx context.Context, token string
 	return lm.svc.BackupGroupsByOrg(ctx, token, orgID)
 }
 
-func (lm *loggingMiddleware) BackupGroupMemberships(ctx context.Context, token string, groupID string) (bk things.BackupGroupMemberships, err error) {
+func (lm *loggingMiddleware) RestoreGroupsByOrg(ctx context.Context, token string, orgID string, backup things.GroupsBackup) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method restore_groups_by_org took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RestoreGroupsByOrg(ctx, token, orgID, backup)
+}
+
+func (lm *loggingMiddleware) BackupGroupMemberships(ctx context.Context, token string, groupID string) (bk things.GroupMembershipsBackup, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method backup_group_memberships took %s to complete", time.Since(begin))
 		if err != nil {
@@ -440,6 +479,19 @@ func (lm *loggingMiddleware) BackupGroupMemberships(ctx context.Context, token s
 	}(time.Now())
 
 	return lm.svc.BackupGroupMemberships(ctx, token, groupID)
+}
+
+func (lm *loggingMiddleware) RestoreGroupMemberships(ctx context.Context, token string, groupID string, backup things.GroupMembershipsBackup) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method restore_group_memberships took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RestoreGroupMemberships(ctx, token, groupID, backup)
 }
 
 func (lm *loggingMiddleware) BackupProfilesByOrg(ctx context.Context, token string, orgID string) (pb things.ProfilesBackup, err error) {
@@ -455,6 +507,19 @@ func (lm *loggingMiddleware) BackupProfilesByOrg(ctx context.Context, token stri
 	return lm.svc.BackupProfilesByOrg(ctx, token, orgID)
 }
 
+func (lm *loggingMiddleware) RestoreProfilesByOrg(ctx context.Context, token string, orgID string, backup things.ProfilesBackup) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method restore_profiles_by_org took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RestoreProfilesByOrg(ctx, token, orgID, backup)
+}
+
 func (lm *loggingMiddleware) BackupProfilesByGroup(ctx context.Context, token string, groupID string) (pb things.ProfilesBackup, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method backup_profiles_by_group took %s to complete", time.Since(begin))
@@ -466,6 +531,19 @@ func (lm *loggingMiddleware) BackupProfilesByGroup(ctx context.Context, token st
 	}(time.Now())
 
 	return lm.svc.BackupProfilesByGroup(ctx, token, groupID)
+}
+
+func (lm *loggingMiddleware) RestoreProfilesByGroup(ctx context.Context, token string, groupID string, backup things.ProfilesBackup) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method restore_profiles_by_group took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RestoreProfilesByGroup(ctx, token, groupID, backup)
 }
 
 func (lm *loggingMiddleware) Restore(ctx context.Context, token string, backup things.Backup) (err error) {

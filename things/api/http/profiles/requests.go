@@ -212,3 +212,43 @@ func (req backupByOrgReq) validate() error {
 	}
 	return nil
 }
+
+type restoreByGroupReq struct {
+	id       string
+	token    string
+	Profiles []viewProfileRes
+}
+
+func (req restoreByGroupReq) validate() error {
+	if req.id == "" {
+		return apiutil.ErrMissingGroupID
+	}
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if len(req.Profiles) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	return nil
+}
+
+type restoreByOrgReq struct {
+	id       string
+	token    string
+	Profiles []viewProfileRes
+}
+
+func (req restoreByOrgReq) validate() error {
+	if req.id == "" {
+		return apiutil.ErrMissingOrgID
+	}
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if len(req.Profiles) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	return nil
+}

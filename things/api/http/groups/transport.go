@@ -6,6 +6,8 @@ package groups
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -70,7 +72,14 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 
 	mux.Get("/orgs/:id/groups/backup", kithttp.NewServer(
 		kitot.TraceServer(tracer, "backup_groups_by_org")(backupGroupsByOrgEndpoint(svc)),
-		decodeBackup,
+		decodeBackupByOrg,
+		encodeFileResponse,
+		opts...,
+	))
+
+	mux.Post("/orgs/:id/groups/restore", kithttp.NewServer(
+		kitot.TraceServer(tracer, "restore_groups_by_org")(restoreGroupsByOrgEndpoint(svc)),
+		decodeRestoreByOrg,
 		encodeResponse,
 		opts...,
 	))
@@ -246,6 +255,28 @@ func decodeRemoveGroups(_ context.Context, r *http.Request) (interface{}, error)
 	return req, nil
 }
 
+func decodeRestoreByOrg(ctx context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeOctetStream) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := restoreByOrgReq{
+		id:    bone.GetValue(r, apiutil.IDKey),
+		token: apiutil.ExtractBearerToken(r),
+	}
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	if err := json.Unmarshal(data, &req.Groups); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
@@ -264,8 +295,30 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	return json.NewEncoder(w).Encode(response)
 }
 
-func decodeBackup(_ context.Context, r *http.Request) (interface{}, error) {
-	req := backupReq{
+func encodeFileResponse(_ context.Context, w http.ResponseWriter, response interface{}) (err error) {
+	w.Header().Set("Content-Type", apiutil.ContentTypeOctetStream)
+
+	if fr, ok := response.(viewFileRes); ok {
+		for k, v := range fr.Headers() {
+			w.Header().Set(k, v)
+		}
+
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, fr.FileName))
+		w.WriteHeader(fr.Code())
+
+		if fr.Empty() {
+			return nil
+		}
+
+		_, err := w.Write(fr.File)
+		return err
+	}
+
+	return nil
+}
+
+func decodeBackupByOrg(_ context.Context, r *http.Request) (interface{}, error) {
+	req := backupByOrgReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}

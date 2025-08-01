@@ -212,6 +212,28 @@ paths:
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /orgs/{orgId}/things/restore:
+    post:
+      summary: Restores thing backup by organization.
+      description: |
+        Restores things associated with the specified organization from backup. Backup is a JSON file that contains all things that will be restored.
+      tags:
+        - things
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      requestBody:
+        $ref: "#/components/requestBodies/RestoreThingsReq"
+      responses:
+        '201':
+          description: Backup restored.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /groups/{groupId}/things/backup:
     get:
       summary: Retrieves thing backup by group.
@@ -232,6 +254,28 @@ paths:
           description: Failed due to non existing group or related entities.
         '422':
           description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /groups/{groupId}/things/restore:
+    post:
+      summary: Restores thing backup by group.
+      description: |
+        Restores things associated with the specified group from backup. Backup is a JSON file that contains all things that will be restored.
+      tags:
+        - things
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/RestoreThingsReq"
+      responses:
+        '201':
+          description: Backup restored.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '415':
+          description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
   /things/{thingId}:
@@ -554,6 +598,28 @@ paths:
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /orgs/{orgId}/profiles/restore:
+    post:
+      summary: Restores profile backup by organization.
+      description: |
+        Restores profiles associated with the specified organization from backup. Backup is a JSON file that contains all profiles that will be restored.
+      tags:
+        - profiles
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      requestBody:
+        $ref: "#/components/requestBodies/RestoreProfilesReq"
+      responses:
+        '201':
+          description: Backup restored.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /groups/{groupId}/profiles/backup:
     get:
       summary: Retrieves profile backup by group.
@@ -574,6 +640,28 @@ paths:
           description: Failed due to non existing group or related entities.
         '422':
           description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /groups/{groupId}/profiles/restore:
+    post:
+      summary: Restores profile backup by group.
+      description: |
+        Restores profiles associated with the specified group from backup. Backup is a JSON file that contains all profiles that will be restored.
+      tags:
+        - profiles
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/RestoreProfilesReq"
+      responses:
+        '201':
+          description: Backup restored.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '415':
+          description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
   /profiles/{profileId}:
@@ -848,6 +936,50 @@ paths:
           description: Unprocessable Entity
         '500':
           $ref: "#/components/responses/ServiceError"
+  /orgs/{orgId}/groups/backup:
+    get:
+      summary: Retrieves group backup by organization.
+      description: |
+        Retrieves a backup of all groups associated with the specified organization. The response is a JSON object containing all related groups. 
+      tags:
+        - groups
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      responses:
+        '200':
+          $ref: "#/components/responses/GroupsBackupRes"
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Failed due to non existing organization or related entities.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /orgs/{orgId}/groups/restore:
+    post:
+      summary: Restores group backup by organization.
+      description: |
+        Restores groups associated with the specified organization from backup. Backup is a JSON file that contains all groups that will be restored.
+      tags:
+        - groups
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      requestBody:
+        $ref: "#/components/requestBodies/RestoreGroupsReq"
+      responses:
+        '201':
+          description: Backup restored.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /groups/{groupId}:
     get:
       summary: Retrieves group info.
@@ -990,6 +1122,50 @@ paths:
           description: Missing or invalid access token provided.
         '404':
           description: Failed due to non existing organization or group.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /groups/{groupId}/memberships/backup:
+    get:
+      summary: Retrieves group membership backup.
+      description: |
+        Retrieves a backup of all group memberships. The response is a JSON object containing all related group memberships. 
+      tags:
+        - groups
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      responses:
+        '200':
+          $ref: "#/components/responses/GroupMembershipsBackupRes"
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Failed due to non existing group or related entities.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /groups/{groupId}/memberships/restore:
+    post:
+      summary: Restores group memberships backup.
+      description: |
+        Restores group memberships from backup. Backup is a JSON file that contains all group memberships that will be restored.
+      tags:
+        - groups
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/RestoreGroupMembershipsReq"
+      responses:
+        '201':
+          description: Backup restored.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '415':
+          description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
   /identify:
@@ -1155,17 +1331,12 @@ components:
         - id
         - key
         - group_id
-    ThingsResSchema:
-      type: object
-      properties:
-        things:
-          type: array
-          minItems: 1
-          uniqueItems: true
-          items:
-            $ref: "#/components/schemas/ThingResSchema"
-      required:
-        - things
+    BackupAndRestoreThingsSchema:
+      type: array
+      minItems: 0
+      uniqueItems: true
+      items:
+        $ref: "#/components/schemas/ThingResSchema"
     ThingsPage:
       type: object
       properties:
@@ -1269,17 +1440,12 @@ components:
       required:
         - id
         - group_id
-    ProfilesResSchema:
-      type: object
-      properties:
-        profiles:
-          type: array
-          minItems: 1
-          uniqueItems: true
-          items:
-            $ref: "#/components/schemas/ProfileResSchema"
-      required:
-        - profiles
+    BackupAndRestoreProfilesSchema:
+      type: array
+      minItems: 0
+      uniqueItems: true
+      items:
+        $ref: "#/components/schemas/ProfileResSchema"
     ProfilesPage:
       type: object
       properties:
@@ -1428,6 +1594,12 @@ components:
         - description
         - created_at
         - updated_at
+    BackupAndRestoreGroupsSchema:
+      type: array
+      minItems: 0
+      uniqueItems: true
+      items:
+        $ref: "#/components/schemas/GroupResSchema"
     CreateGroupResSchema:
       type: object
       properties:
@@ -1507,6 +1679,22 @@ components:
           items:
             type: string
             format: uuid
+    GroupMembershipResSchema:
+      type: object
+      properties:
+        member_id:
+          type: string
+          format: uuid
+          description: Unique member identifier generated by the service
+        role:
+          type: string
+          description: Member role in the group.
+        email:
+          type: string
+          description: Member's email.
+      required:
+        - id
+        - role
     GroupMembershipsSchema:
       type: object
       properties:
@@ -1515,21 +1703,7 @@ components:
           minItems: 1
           uniqueItems: true
           items:
-            type: object
-            properties:
-              member_id:
-                type: string
-                format: uuid
-                description: Unique member identifier generated by the service
-              role:
-                type: string
-                description: Member role in the group.
-              email:
-                type: string
-                description: Member's email.
-            required:
-              - id
-              - role
+            $ref: "#/components/schemas/GroupMembershipResSchema"
     GroupMembershipsPageSchema:
       type: object
       properties:
@@ -1545,17 +1719,13 @@ components:
         group_memberships:
           type: array
           items:
-            properties:
-              member_id:
-                type: string
-                format: uuid
-                description: Unique member identifier generated by the service
-              email:
-                type: string
-                description: Member email.
-              role:
-                type: string
-                description: Member role in the group.
+            $ref: "#/components/schemas/GroupMembershipResSchema"
+    BackupAndRestoreGroupMembershipsSchema:
+      type: array
+      minItems: 0
+      uniqueItems: true
+      items:
+        $ref: "#/components/schemas/GroupMembershipResSchema"
     BackupAndRestoreSchema:
       type: object
       properties:
@@ -1708,6 +1878,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/SearchThingsReqSchema"
+    RestoreThingsReq:
+      description: Binary-encoded JSON file describing restore things request.
+      required: true
+      content:
+        application/octet-stream:
+          schema:
+            $ref: "#/components/schemas/BackupAndRestoreThingsSchema"
     RemoveThingReq:
       description: JSON-formatted document describing the identifiers of things for deleting.
       required: true
@@ -1759,6 +1936,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/SearchProfilesReqSchema"
+    RestoreProfilesReq:
+      description: Binary-encoded JSON file describing restore profiles request.
+      required: true
+      content:
+        application/octet-stream:
+          schema:
+            $ref: "#/components/schemas/BackupAndRestoreProfilesSchema"
     RemoveProfileReq:
       description: JSON-formatted document describing the identifiers of profiles for deleting.
       required: true
@@ -1800,6 +1984,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/SearchGroupsReqSchema"
+    RestoreGroupsReq:
+      description: Binary-encoded JSON file describing restore groups request.
+      required: true
+      content:
+        application/octet-stream:
+          schema:
+            $ref: "#/components/schemas/BackupAndRestoreGroupsSchema"
     UpdateGroupReq:
       description: JSON-formatted document describing group create request.
       required: true
@@ -1841,6 +2032,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/GroupMembershipsSchema"
+    RestoreGroupMembershipsReq:
+      description: Binary-encoded JSON file describing restore group memberships request.
+      required: true
+      content:
+        application/octet-stream:
+          schema:
+            $ref: "#/components/schemas/BackupAndRestoreGroupMembershipsSchema"
     RemoveGroupMembershipsReq:
       description: JSON-formatted document describing a request to remove group memberships.
       required: true
@@ -1880,9 +2078,9 @@ components:
     ThingsBackupRes:
       description: Successfully retrieved thing backup.
       content:
-        application/json:
+        application/octet-stream:
           schema:
-            $ref: "#/components/schemas/ThingsResSchema"
+            $ref: "#/components/schemas/BackupAndRestoreThingsSchema"
     MetadataRes:
       description: Thing metadata retrieved.
       content:
@@ -1912,9 +2110,9 @@ components:
     ProfilesBackupRes:
       description: Successfully retrieved profile backup.
       content:
-        application/json:
+        application/octet-stream:
           schema:
-            $ref: "#/components/schemas/ProfilesResSchema"
+            $ref: "#/components/schemas/BackupAndRestoreProfilesSchema"
     IdentityRes:
       description: Thing ID returned.
       content:
@@ -1947,12 +2145,24 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/GroupsPage"
+    GroupsBackupRes:
+      description: Successfully retrieved group backup.
+      content:
+        application/octet-stream:
+          schema:
+            $ref: "#/components/schemas/BackupAndRestoreGroupsSchema"
     GroupMembershipsRes:
       description: JSON-formatted document describing group memberships page response.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/GroupMembershipsPageSchema"
+    GroupMembershipsBackupRes:
+      description: Successfully retrieved group membership backup.
+      content:
+        application/octet-stream:
+          schema:
+            $ref: "#/components/schemas/BackupAndRestoreGroupMembershipsSchema"
     BackupRes:
       description: Backup data retrieved.
       content:

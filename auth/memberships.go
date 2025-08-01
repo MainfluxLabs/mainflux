@@ -39,7 +39,7 @@ type OrgMembershipsPage struct {
 	OrgMemberships []OrgMembership
 }
 
-type BackupOrgMemberships struct {
+type OrgMembershipsBackup struct {
 	OrgMemberships []OrgMembership
 }
 
@@ -85,7 +85,10 @@ type OrgMemberships interface {
 	ViewOrgMembership(ctx context.Context, token, orgID, memberID string) (OrgMembership, error)
 
 	// BackupOrgMemberships retrieves all org memberships for given org ID.
-	BackupOrgMemberships(ctx context.Context, token string, orgID string) (BackupOrgMemberships, error)
+	BackupOrgMemberships(ctx context.Context, token string, orgID string) (OrgMembershipsBackup, error)
+
+	// RestoreOrgMemberships adds all org memberships for given org ID from a backup.
+	RestoreOrgMemberships(ctx context.Context, token string, orgID string, backup OrgMembershipsBackup) error
 }
 
 func (svc service) CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...OrgMembership) error {
@@ -285,14 +288,14 @@ func (svc service) canRemoveMemberships(ctx context.Context, token, orgID string
 	return nil
 }
 
-func (svc service) BackupOrgMemberships(ctx context.Context, token string, orgID string) (BackupOrgMemberships, error) {
+func (svc service) BackupOrgMemberships(ctx context.Context, token string, orgID string) (OrgMembershipsBackup, error) {
 	if err := svc.canAccessOrg(ctx, token, orgID, Owner); err != nil {
-		return BackupOrgMemberships{}, err
+		return OrgMembershipsBackup{}, err
 	}
 
 	memberships, err := svc.memberships.BackupByOrg(ctx, orgID)
 	if err != nil {
-		return BackupOrgMemberships{}, err
+		return OrgMembershipsBackup{}, err
 	}
 
 	var memberIDs []string
@@ -302,7 +305,7 @@ func (svc service) BackupOrgMemberships(ctx context.Context, token string, orgID
 
 	usersResp, err := svc.users.GetUsersByIDs(ctx, &protomfx.UsersByIDsReq{Ids: memberIDs})
 	if err != nil {
-		return BackupOrgMemberships{}, err
+		return OrgMembershipsBackup{}, err
 	}
 
 	emailMap := make(map[string]string)
@@ -314,7 +317,19 @@ func (svc service) BackupOrgMemberships(ctx context.Context, token string, orgID
 		memberships[i].Email = emailMap[memberships[i].MemberID]
 	}
 
-	return BackupOrgMemberships{
+	return OrgMembershipsBackup{
 		OrgMemberships: memberships,
 	}, nil
+}
+
+func (svc service) RestoreOrgMemberships(ctx context.Context, token string, orgID string, backup OrgMembershipsBackup) error {
+	if err := svc.canAccessOrg(ctx, token, orgID, Owner); err != nil {
+		return err
+	}
+
+	if err := svc.memberships.Save(ctx, backup.OrgMemberships...); err != nil {
+		return err
+	}
+
+	return nil
 }
