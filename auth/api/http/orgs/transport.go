@@ -50,6 +50,13 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
+	mux.Patch("/orgs", kithttp.NewServer(
+		kitot.TraceServer(tracer, "delete_orgs")(deleteOrgsEndpoint(svc)),
+		decodeDeleteOrgs,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Get("/orgs", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_orgs")(listOrgsEndpoint(svc)),
 		decodeListOrgs,
@@ -142,6 +149,22 @@ func decodeOrgRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	req := orgReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
+	}
+
+	return req, nil
+}
+
+func decodeDeleteOrgs(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := deleteOrgsReq{
+		token: apiutil.ExtractBearerToken(r),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil

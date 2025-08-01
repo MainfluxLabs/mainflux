@@ -9,7 +9,6 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
@@ -97,42 +96,44 @@ func (or orgRepository) Update(ctx context.Context, org auth.Org) error {
 	return nil
 }
 
-func (or orgRepository) Remove(ctx context.Context, owner, orgID string) error {
+func (or orgRepository) Remove(ctx context.Context, ownerID string, orgIDs ...string) error {
 	qd := `DELETE FROM orgs WHERE id = :id AND owner_id = :owner_id;`
-	org := auth.Org{
-		ID:      orgID,
-		OwnerID: owner,
-	}
-	dbo, err := toDBOrg(org)
-	if err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
-	}
-
-	res, err := or.db.NamedExecContext(ctx, qd, dbo)
-	if err != nil {
-		pqErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pqErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
-			case pgerrcode.ForeignKeyViolation:
-				switch pqErr.ConstraintName {
-				case membershipsIDFkey:
-					return errors.Wrap(auth.ErrOrgNotEmpty, err)
-				}
-				return errors.Wrap(errors.ErrConflict, err)
-			}
+	for _, orgID := range orgIDs {
+		org := auth.Org{
+			ID:      orgID,
+			OwnerID: ownerID,
 		}
-		return errors.Wrap(errors.ErrUpdateEntity, err)
-	}
+		dbo, err := toDBOrg(org)
+		if err != nil {
+			return errors.Wrap(errors.ErrUpdateEntity, err)
+		}
 
-	cnt, err := res.RowsAffected()
-	if err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
-	}
+		res, err := or.db.NamedExecContext(ctx, qd, dbo)
+		if err != nil {
+			pqErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pqErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrMalformedEntity, err)
+				case pgerrcode.ForeignKeyViolation:
+					switch pqErr.ConstraintName {
+					case membershipsIDFkey:
+						return errors.Wrap(auth.ErrOrgNotEmpty, err)
+					}
+					return errors.Wrap(errors.ErrConflict, err)
+				}
+			}
+			return errors.Wrap(errors.ErrUpdateEntity, err)
+		}
 
-	if cnt != 1 {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+		cnt, err := res.RowsAffected()
+		if err != nil {
+			return errors.Wrap(errors.ErrRemoveEntity, err)
+		}
+
+		if cnt != 1 {
+			return errors.Wrap(errors.ErrRemoveEntity, err)
+		}
 	}
 	return nil
 }
@@ -154,6 +155,8 @@ func (or orgRepository) RetrieveByID(ctx context.Context, id string) (auth.Org, 
 }
 
 func (or orgRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
@@ -162,7 +165,7 @@ func (or orgRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata
 	}
 
 	whereClause := dbutil.BuildWhereClause(nq, mq)
-	query := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
+	query := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM orgs %s`, whereClause)
 
 	params := map[string]interface{}{
@@ -198,6 +201,8 @@ func (or orgRepository) BackupAll(ctx context.Context) ([]auth.Org, error) {
 }
 
 func (or orgRepository) RetrieveByMember(ctx context.Context, memberID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	meta, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
@@ -213,7 +218,7 @@ func (or orgRepository) RetrieveByMember(ctx context.Context, memberID string, p
 	whereClause := dbutil.BuildWhereClause(moq, miq, nq, mq)
 
 	query := fmt.Sprintf(`SELECT o.id, o.owner_id, o.name, o.description, o.metadata, o.created_at, o.updated_at
-				FROM org_memberships om, orgs o %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
+				FROM org_memberships om, orgs o %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM org_memberships om, orgs o %s`, whereClause)
 
 	params := map[string]interface{}{

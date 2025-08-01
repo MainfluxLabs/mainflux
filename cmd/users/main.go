@@ -69,7 +69,7 @@ const (
 	defAdminPassword    = ""
 	defPassRegex        = `^\S{8,}$`
 
-	defTokenResetEndpoint = "/reset-request" // URL where user lands after click on the reset link from email
+	defPassResetEndpoint = "/password-reset" // URL where user lands after navigating to the reset link from email
 
 	defAuthTLS         = "false"
 	defAuthCACerts     = ""
@@ -106,8 +106,6 @@ const (
 	envEmailFromName    = "MF_EMAIL_FROM_NAME"
 	envEmailTemplate    = "MF_EMAIL_TEMPLATE"
 
-	envTokenResetEndpoint = "MF_TOKEN_RESET_ENDPOINT"
-
 	envAuthTLS         = "MF_AUTH_CLIENT_TLS"
 	envAuthCACerts     = "MF_AUTH_CA_CERTS"
 	envAuthGRPCURL     = "MF_AUTH_GRPC_URL"
@@ -125,7 +123,6 @@ type config struct {
 	emailConf       email.Config
 	authConfig      clients.Config
 	jaegerURL       string
-	resetURL        string
 	authGRPCTimeout time.Duration
 	adminEmail      string
 	adminPassword   string
@@ -259,7 +256,6 @@ func loadConfig() config {
 		emailConf:       emailConf,
 		authConfig:      authConfig,
 		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
-		resetURL:        mainflux.Env(envTokenResetEndpoint, defTokenResetEndpoint),
 		authGRPCTimeout: authGRPCTimeout,
 		adminEmail:      mainflux.Env(envAdminEmail, defAdminEmail),
 		adminPassword:   mainflux.Env(envAdminPassword, defAdminPassword),
@@ -283,7 +279,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceC
 	hasher := bcrypt.New()
 	userRepo := tracing.UserRepositoryMiddleware(postgres.NewUserRepo(database), tracer)
 
-	emailer, err := emailer.New(c.resetURL, &c.emailConf)
+	emailer, err := emailer.New(defPassResetEndpoint, &c.emailConf)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to configure e-mailing util: %s", err.Error()))
 	}

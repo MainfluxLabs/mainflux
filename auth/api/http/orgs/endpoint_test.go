@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -470,6 +471,97 @@ func TestDeleteOrg(t *testing.T) {
 			method: http.MethodDelete,
 			url:    fmt.Sprintf("%s/orgs/%s", ts.URL, tc.id),
 			token:  tc.token,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestDeleteOrgs(t *testing.T) {
+	svc := newService()
+	_, token, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	ts := newServer(svc)
+	defer ts.Close()
+
+	var orgIDs []string
+	for i := uint64(0); i < 10; i++ {
+		num := strconv.FormatUint(i, 10)
+		org := auth.Org{Name: fmt.Sprintf("org-" + num)}
+		o, err := svc.CreateOrg(context.Background(), token, org)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		orgIDs = append(orgIDs, o.ID)
+	}
+
+	cases := []struct {
+		desc        string
+		data        []string
+		auth        string
+		contentType string
+		status      int
+	}{
+		{
+			desc:        "remove orgs with invalid token",
+			data:        orgIDs,
+			auth:        wrongValue,
+			contentType: contentType,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "remove orgs with empty token",
+			data:        orgIDs,
+			auth:        emptyValue,
+			contentType: contentType,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "remove orgs with invalid content type",
+			data:        orgIDs,
+			auth:        token,
+			contentType: wrongValue,
+			status:      http.StatusUnsupportedMediaType,
+		},
+		{
+			desc:        "remove existing orgs",
+			data:        orgIDs,
+			auth:        token,
+			contentType: contentType,
+			status:      http.StatusNoContent,
+		},
+		{
+			desc:        "remove non-existent orgs",
+			data:        []string{wrongValue},
+			auth:        token,
+			contentType: contentType,
+			status:      http.StatusNotFound,
+		},
+		{
+			desc:        "remove orgs with empty org ids",
+			data:        []string{emptyValue},
+			auth:        token,
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+	}
+
+	for _, tc := range cases {
+		data := struct {
+			OrgIDs []string `json:"org_ids"`
+		}{
+			tc.data,
+		}
+
+		body := toJSON(data)
+
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPatch,
+			url:         fmt.Sprintf("%s/orgs", ts.URL),
+			token:       tc.auth,
+			contentType: tc.contentType,
+			body:        strings.NewReader(body),
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
