@@ -162,6 +162,7 @@ func backupProfilesByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
+
 		backup, err := svc.BackupProfilesByOrg(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
@@ -195,6 +196,7 @@ func backupProfilesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
+
 		backup, err := svc.BackupProfilesByGroup(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err

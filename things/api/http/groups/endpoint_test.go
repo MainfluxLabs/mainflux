@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	contentTypeJson        = "application/json"
+	contentTypeJSON        = "application/json"
 	contentTypeOctetStream = "application/octet-stream"
 	userEmail              = "user@example.com"
 	adminEmail             = "admin@example.com"
@@ -138,7 +138,7 @@ func TestCreateGroups(t *testing.T) {
 		{
 			desc:   "create groups",
 			req:    data,
-			ct:     contentTypeJson,
+			ct:     contentTypeJSON,
 			orgID:  orgID,
 			token:  token,
 			status: http.StatusCreated,
@@ -146,7 +146,7 @@ func TestCreateGroups(t *testing.T) {
 		{
 			desc:   "create groups with invalid auth token",
 			req:    data,
-			ct:     contentTypeJson,
+			ct:     contentTypeJSON,
 			orgID:  orgID,
 			token:  wrongValue,
 			status: http.StatusUnauthorized,
@@ -154,7 +154,7 @@ func TestCreateGroups(t *testing.T) {
 		{
 			desc:   "create groups with empty auth token",
 			req:    data,
-			ct:     contentTypeJson,
+			ct:     contentTypeJSON,
 			orgID:  orgID,
 			token:  emptyValue,
 			status: http.StatusUnauthorized,
@@ -162,7 +162,7 @@ func TestCreateGroups(t *testing.T) {
 		{
 			desc:   "create groups without org",
 			req:    data,
-			ct:     contentTypeJson,
+			ct:     contentTypeJSON,
 			orgID:  emptyValue,
 			token:  token,
 			status: http.StatusBadRequest,
@@ -170,7 +170,7 @@ func TestCreateGroups(t *testing.T) {
 		{
 			desc:   "create groups with empty request",
 			req:    emptyValue,
-			ct:     contentTypeJson,
+			ct:     contentTypeJSON,
 			orgID:  orgID,
 			token:  token,
 			status: http.StatusBadRequest,
@@ -178,7 +178,7 @@ func TestCreateGroups(t *testing.T) {
 		{
 			desc:   "create groups with empty JSON array",
 			req:    "[]",
-			ct:     contentTypeJson,
+			ct:     contentTypeJSON,
 			orgID:  orgID,
 			token:  token,
 			status: http.StatusBadRequest,
@@ -186,7 +186,7 @@ func TestCreateGroups(t *testing.T) {
 		{
 			desc:   "create groups with invalid request format",
 			req:    "{",
-			ct:     contentTypeJson,
+			ct:     contentTypeJSON,
 			orgID:  orgID,
 			token:  token,
 			status: http.StatusBadRequest,
@@ -500,7 +500,7 @@ func TestUpdateGroup(t *testing.T) {
 			desc:   "update group",
 			req:    data,
 			id:     ug.ID,
-			ct:     contentTypeJson,
+			ct:     contentTypeJSON,
 			token:  token,
 			status: http.StatusOK,
 		},
@@ -508,7 +508,7 @@ func TestUpdateGroup(t *testing.T) {
 			desc:   "update group with invalid auth token",
 			req:    data,
 			id:     ug.ID,
-			ct:     contentTypeJson,
+			ct:     contentTypeJSON,
 			token:  wrongValue,
 			status: http.StatusUnauthorized,
 		},
@@ -516,7 +516,7 @@ func TestUpdateGroup(t *testing.T) {
 			desc:   "update group with empty auth token",
 			req:    data,
 			id:     ug.ID,
-			ct:     contentTypeJson,
+			ct:     contentTypeJSON,
 			token:  emptyValue,
 			status: http.StatusUnauthorized,
 		},
@@ -524,7 +524,7 @@ func TestUpdateGroup(t *testing.T) {
 			desc:   "update group with invalid group id",
 			req:    data,
 			id:     wrongValue,
-			ct:     contentTypeJson,
+			ct:     contentTypeJSON,
 			token:  token,
 			status: http.StatusNotFound,
 		},
@@ -532,7 +532,7 @@ func TestUpdateGroup(t *testing.T) {
 			desc:   "update group without group id",
 			req:    data,
 			id:     emptyValue,
-			ct:     contentTypeJson,
+			ct:     contentTypeJSON,
 			token:  token,
 			status: http.StatusBadRequest,
 		},
@@ -540,7 +540,7 @@ func TestUpdateGroup(t *testing.T) {
 			desc:   "update group with invalid request format",
 			req:    "{",
 			id:     ug.ID,
-			ct:     contentTypeJson,
+			ct:     contentTypeJSON,
 			token:  token,
 			status: http.StatusBadRequest,
 		},
@@ -548,7 +548,7 @@ func TestUpdateGroup(t *testing.T) {
 			desc:   "update group with empty request",
 			req:    emptyValue,
 			id:     ug.ID,
-			ct:     contentTypeJson,
+			ct:     contentTypeJSON,
 			token:  token,
 			status: http.StatusBadRequest,
 		},
@@ -1358,42 +1358,42 @@ func TestRemoveGroups(t *testing.T) {
 			desc:        "remove existing groups",
 			data:        groupIDs[:5],
 			auth:        token,
-			contentType: contentTypeJson,
+			contentType: contentTypeJSON,
 			status:      http.StatusNoContent,
 		},
 		{
 			desc:        "remove non-existent groups",
 			data:        []string{wrongValue},
 			auth:        token,
-			contentType: contentTypeJson,
+			contentType: contentTypeJSON,
 			status:      http.StatusNotFound,
 		},
 		{
 			desc:        "remove groups with invalid token",
 			data:        groupIDs[len(groupIDs)-5:],
 			auth:        wrongValue,
-			contentType: contentTypeJson,
+			contentType: contentTypeJSON,
 			status:      http.StatusUnauthorized,
 		},
 		{
 			desc:        "remove groups without group ids",
 			data:        []string{},
 			auth:        token,
-			contentType: contentTypeJson,
+			contentType: contentTypeJSON,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "remove groups with empty group ids",
 			data:        []string{emptyValue},
 			auth:        token,
-			contentType: contentTypeJson,
+			contentType: contentTypeJSON,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "remove groups with empty token",
 			data:        groupIDs,
 			auth:        emptyValue,
-			contentType: contentTypeJson,
+			contentType: contentTypeJSON,
 			status:      http.StatusUnauthorized,
 		},
 		{

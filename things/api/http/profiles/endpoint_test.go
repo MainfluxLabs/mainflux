@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	contentType            = "application/json"
+	contentTypeJSON        = "application/json"
 	contentTypeOctetStream = "application/octet-stream"
 	email                  = "user@example.com"
 	adminEmail             = "admin@example.com"
@@ -160,7 +160,7 @@ func TestCreateProfiles(t *testing.T) {
 		{
 			desc:        "create valid profiles",
 			data:        data,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusCreated,
 			response:    emptyValue,
@@ -168,7 +168,7 @@ func TestCreateProfiles(t *testing.T) {
 		{
 			desc:        "create profile with empty request",
 			data:        emptyValue,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
 			response:    emptyValue,
@@ -176,7 +176,7 @@ func TestCreateProfiles(t *testing.T) {
 		{
 			desc:        "create profiles with empty JSON",
 			data:        "[]",
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
 			response:    emptyValue,
@@ -184,7 +184,7 @@ func TestCreateProfiles(t *testing.T) {
 		{
 			desc:        "create profile with invalid auth token",
 			data:        data,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        wrongValue,
 			status:      http.StatusUnauthorized,
 			response:    emptyValue,
@@ -192,7 +192,7 @@ func TestCreateProfiles(t *testing.T) {
 		{
 			desc:        "create profile with empty auth token",
 			data:        data,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        emptyValue,
 			status:      http.StatusUnauthorized,
 			response:    emptyValue,
@@ -215,7 +215,7 @@ func TestCreateProfiles(t *testing.T) {
 		{
 			desc:        "create profile with invalid name",
 			data:        invalidData,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
 			response:    emptyValue,
@@ -273,7 +273,7 @@ func TestUpdateProfile(t *testing.T) {
 			desc:        "update existing profile",
 			req:         updateData,
 			id:          pr.ID,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusOK,
 		},
@@ -281,7 +281,7 @@ func TestUpdateProfile(t *testing.T) {
 			desc:        "update non-existing profile",
 			req:         updateData,
 			id:          strconv.FormatUint(wrongID, 10),
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusNotFound,
 		},
@@ -289,7 +289,7 @@ func TestUpdateProfile(t *testing.T) {
 			desc:        "update profile with invalid id",
 			req:         updateData,
 			id:          wrongValue,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusNotFound,
 		},
@@ -297,7 +297,7 @@ func TestUpdateProfile(t *testing.T) {
 			desc:        "update profile with invalid token",
 			req:         updateData,
 			id:          pr.ID,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        wrongValue,
 			status:      http.StatusUnauthorized,
 		},
@@ -305,7 +305,7 @@ func TestUpdateProfile(t *testing.T) {
 			desc:        "update profile with empty token",
 			req:         updateData,
 			id:          pr.ID,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        emptyValue,
 			status:      http.StatusUnauthorized,
 		},
@@ -313,7 +313,7 @@ func TestUpdateProfile(t *testing.T) {
 			desc:        "update profile with invalid data format",
 			req:         "}",
 			id:          pr.ID,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
@@ -321,7 +321,7 @@ func TestUpdateProfile(t *testing.T) {
 			desc:        "update profile with empty JSON object",
 			req:         "{}",
 			id:          pr.ID,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
@@ -329,7 +329,7 @@ func TestUpdateProfile(t *testing.T) {
 			desc:        "update profile with empty request",
 			req:         emptyValue,
 			id:          pr.ID,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
@@ -344,7 +344,7 @@ func TestUpdateProfile(t *testing.T) {
 		{
 			desc:        "update profile with invalid name",
 			req:         invalidData,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
@@ -1876,14 +1876,14 @@ func TestRemoveProfiles(t *testing.T) {
 			desc:        "remove profiles with invalid token",
 			data:        profileIDs,
 			auth:        wrongValue,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			status:      http.StatusUnauthorized,
 		},
 		{
 			desc:        "remove profiles with empty token",
 			data:        profileIDs,
 			auth:        emptyValue,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			status:      http.StatusUnauthorized,
 		},
 		{
@@ -1897,28 +1897,28 @@ func TestRemoveProfiles(t *testing.T) {
 			desc:        "remove existing profiles",
 			data:        profileIDs,
 			auth:        token,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			status:      http.StatusNoContent,
 		},
 		{
 			desc:        "remove non-existent profiles",
 			data:        profileIDs,
 			auth:        token,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			status:      http.StatusNotFound,
 		},
 		{
 			desc:        "remove profiles with empty profile ids",
 			data:        []string{emptyValue},
 			auth:        token,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "remove profiles without profile ids",
 			data:        []string{},
 			auth:        token,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			status:      http.StatusBadRequest,
 		},
 	}

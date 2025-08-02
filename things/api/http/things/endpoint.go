@@ -183,6 +183,7 @@ func backupThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
+
 		backup, err := svc.BackupThingsByGroup(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
@@ -216,6 +217,7 @@ func backupThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
+
 		backup, err := svc.BackupThingsByOrg(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err

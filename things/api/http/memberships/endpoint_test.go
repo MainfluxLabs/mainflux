@@ -27,7 +27,7 @@ import (
 
 const (
 	emptyValue             = ""
-	contentTypeJson        = "application/json"
+	contentTypeJSON        = "application/json"
 	contentTypeOctetStream = "application/octet-stream"
 	userEmail              = "user@example.com"
 	adminEmail             = "admin@example.com"
@@ -203,7 +203,7 @@ func TestCreateGroupMemberships(t *testing.T) {
 			client:      client,
 			method:      http.MethodPost,
 			url:         fmt.Sprintf("%s/groups/%s/memberships", ts.URL, tc.id),
-			contentType: contentTypeJson,
+			contentType: contentTypeJSON,
 			token:       tc.token,
 			body:        strings.NewReader(tc.req),
 		}
@@ -296,7 +296,7 @@ func TestRemoveGroupMemberships(t *testing.T) {
 			client:      client,
 			method:      http.MethodPatch,
 			url:         fmt.Sprintf("%s/groups/%s/memberships", ts.URL, tc.id),
-			contentType: contentTypeJson,
+			contentType: contentTypeJSON,
 			token:       tc.token,
 			body:        strings.NewReader(tc.req),
 		}
@@ -404,7 +404,7 @@ func TestUpdateMemberships(t *testing.T) {
 			client:      client,
 			method:      http.MethodPut,
 			url:         fmt.Sprintf("%s/groups/%s/memberships", ts.URL, tc.id),
-			contentType: contentTypeJson,
+			contentType: contentTypeJSON,
 			token:       tc.token,
 			body:        strings.NewReader(tc.req),
 		}
@@ -619,7 +619,7 @@ func TestListGroupMemberships(t *testing.T) {
 			client:      client,
 			method:      http.MethodGet,
 			url:         tc.url,
-			contentType: contentTypeJson,
+			contentType: contentTypeJSON,
 			token:       tc.token,
 		}
 		res, err := req.make()

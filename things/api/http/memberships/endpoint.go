@@ -99,6 +99,7 @@ func backupGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
+
 		backup, err := svc.BackupGroupMemberships(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err

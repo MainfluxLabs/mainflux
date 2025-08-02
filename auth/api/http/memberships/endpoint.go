@@ -108,6 +108,7 @@ func backupOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
+
 		backup, err := svc.BackupOrgMemberships(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
