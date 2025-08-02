@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/api/http/memberships"
 	"github.com/go-kit/kit/endpoint"
@@ -427,7 +428,7 @@ func buildThingsResponse(tp things.ThingsPage) ThingsPageRes {
 	return res
 }
 
-func buildBackupThingsResponse(tb things.ThingsBackup, fileName string) (viewFileRes, error) {
+func buildBackupThingsResponse(tb things.ThingsBackup, fileName string) (apiutil.ViewFileRes, error) {
 	views := make([]viewThingRes, 0, len(tb.Things))
 	for _, thing := range tb.Things {
 		views = append(views, viewThingRes{
@@ -442,10 +443,10 @@ func buildBackupThingsResponse(tb things.ThingsBackup, fileName string) (viewFil
 
 	data, err := json.MarshalIndent(views, "", "  ")
 	if err != nil {
-		return viewFileRes{}, err
+		return apiutil.ViewFileRes{}, err
 	}
 
-	return viewFileRes{
+	return apiutil.ViewFileRes{
 		File:     data,
 		FileName: fileName,
 	}, nil

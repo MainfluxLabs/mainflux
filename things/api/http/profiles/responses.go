@@ -93,23 +93,6 @@ type viewProfileRes struct {
 	Config   map[string]interface{} `json:"config,omitempty"`
 }
 
-type viewFileRes struct {
-	File     []byte
-	FileName string
-}
-
-func (res viewFileRes) Code() int {
-	return http.StatusOK
-}
-
-func (res viewFileRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res viewFileRes) Empty() bool {
-	return len(res.File) == 0
-}
-
 type restoreRes struct{}
 
 func (res restoreRes) Code() int {

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -295,7 +296,7 @@ func buildGroupsBackup(groups []viewGroupRes) (backup things.GroupsBackup) {
 	return backup
 }
 
-func buildBackupResponse(b things.GroupsBackup, fileName string) (viewFileRes, error) {
+func buildBackupResponse(b things.GroupsBackup, fileName string) (apiutil.ViewFileRes, error) {
 	views := make([]viewGroupRes, 0, len(b.Groups))
 
 	for _, group := range b.Groups {
@@ -312,10 +313,10 @@ func buildBackupResponse(b things.GroupsBackup, fileName string) (viewFileRes, e
 
 	data, err := json.MarshalIndent(views, "", "  ")
 	if err != nil {
-		return viewFileRes{}, err
+		return apiutil.ViewFileRes{}, err
 	}
 
-	return viewFileRes{
+	return apiutil.ViewFileRes{
 		File:     data,
 		FileName: fileName,
 	}, nil

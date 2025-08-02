@@ -6,6 +6,7 @@ package apiutil
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -129,6 +130,28 @@ func WriteErrorResponse(err error, w http.ResponseWriter) {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 	}
+}
+
+func EncodeFileResponse(_ context.Context, w http.ResponseWriter, response interface{}) (err error) {
+	w.Header().Set("Content-Type", ContentTypeOctetStream)
+
+	if fr, ok := response.(ViewFileRes); ok {
+		for k, v := range fr.Headers() {
+			w.Header().Set(k, v)
+		}
+
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, fr.FileName))
+		w.WriteHeader(fr.Code())
+
+		if fr.Empty() {
+			return nil
+		}
+
+		_, err := w.Write(fr.File)
+		return err
+	}
+
+	return nil
 }
 
 // ReadUintQuery reads the value of uint64 http query parameters for a given key

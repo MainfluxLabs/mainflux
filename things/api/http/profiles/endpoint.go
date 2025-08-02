@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -323,7 +324,7 @@ func buildProfilesBackup(profiles []viewProfileRes) (backup things.ProfilesBacku
 	return backup
 }
 
-func buildBackupResponse(pb things.ProfilesBackup, fileName string) (viewFileRes, error) {
+func buildBackupResponse(pb things.ProfilesBackup, fileName string) (apiutil.ViewFileRes, error) {
 	views := make([]viewProfileRes, 0, len(pb.Profiles))
 	for _, profile := range pb.Profiles {
 		views = append(views, viewProfileRes{
@@ -337,10 +338,10 @@ func buildBackupResponse(pb things.ProfilesBackup, fileName string) (viewFileRes
 
 	data, err := json.MarshalIndent(views, "", "  ")
 	if err != nil {
-		return viewFileRes{}, err
+		return apiutil.ViewFileRes{}, err
 	}
 
-	return viewFileRes{
+	return apiutil.ViewFileRes{
 		File:     data,
 		FileName: fileName,
 	}, nil

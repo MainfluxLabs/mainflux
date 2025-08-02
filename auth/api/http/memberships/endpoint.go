@@ -176,7 +176,7 @@ func buildOrgMembershipsBackup(orgMemberships []viewOrgMembershipRes) (backup au
 	return backup
 }
 
-func buildBackupResponse(b auth.OrgMembershipsBackup, fileName string) (viewFileRes, error) {
+func buildBackupResponse(b auth.OrgMembershipsBackup, fileName string) (apiutil.ViewFileRes, error) {
 	views := make([]viewOrgMembershipRes, 0, len(b.OrgMemberships))
 	for _, membership := range b.OrgMemberships {
 		views = append(views, viewOrgMembershipRes{
@@ -191,10 +191,10 @@ func buildBackupResponse(b auth.OrgMembershipsBackup, fileName string) (viewFile
 
 	data, err := json.MarshalIndent(views, "", "  ")
 	if err != nil {
-		return viewFileRes{}, err
+		return apiutil.ViewFileRes{}, err
 	}
 
-	return viewFileRes{
+	return apiutil.ViewFileRes{
 		File:     data,
 		FileName: fileName,
 	}, nil

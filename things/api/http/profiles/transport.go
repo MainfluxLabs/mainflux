@@ -6,7 +6,6 @@ package profiles
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -94,7 +93,7 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 	mux.Get("/orgs/:id/profiles/backup", kithttp.NewServer(
 		kitot.TraceServer(tracer, "backup_profiles_by_org")(backupProfilesByOrgEndpoint(svc)),
 		decodeBackupByOrg,
-		encodeFileResponse,
+		apiutil.EncodeFileResponse,
 		opts...,
 	))
 
@@ -108,7 +107,7 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 	mux.Get("/groups/:id/profiles/backup", kithttp.NewServer(
 		kitot.TraceServer(tracer, "backup_profiles_by_group")(backupProfilesByGroupEndpoint(svc)),
 		decodeBackupByGroup,
-		encodeFileResponse,
+		apiutil.EncodeFileResponse,
 		opts...,
 	))
 
@@ -373,28 +372,6 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	}
 
 	return json.NewEncoder(w).Encode(response)
-}
-
-func encodeFileResponse(_ context.Context, w http.ResponseWriter, response interface{}) (err error) {
-	w.Header().Set("Content-Type", apiutil.ContentTypeOctetStream)
-
-	if fr, ok := response.(viewFileRes); ok {
-		for k, v := range fr.Headers() {
-			w.Header().Set(k, v)
-		}
-
-		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, fr.FileName))
-		w.WriteHeader(fr.Code())
-
-		if fr.Empty() {
-			return nil
-		}
-
-		_, err := w.Write(fr.File)
-		return err
-	}
-
-	return nil
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {

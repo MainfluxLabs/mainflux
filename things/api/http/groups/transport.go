@@ -6,7 +6,6 @@ package groups
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -73,7 +72,7 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 	mux.Get("/orgs/:id/groups/backup", kithttp.NewServer(
 		kitot.TraceServer(tracer, "backup_groups_by_org")(backupGroupsByOrgEndpoint(svc)),
 		decodeBackupByOrg,
-		encodeFileResponse,
+		apiutil.EncodeFileResponse,
 		opts...,
 	))
 
@@ -293,28 +292,6 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	}
 
 	return json.NewEncoder(w).Encode(response)
-}
-
-func encodeFileResponse(_ context.Context, w http.ResponseWriter, response interface{}) (err error) {
-	w.Header().Set("Content-Type", apiutil.ContentTypeOctetStream)
-
-	if fr, ok := response.(viewFileRes); ok {
-		for k, v := range fr.Headers() {
-			w.Header().Set(k, v)
-		}
-
-		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, fr.FileName))
-		w.WriteHeader(fr.Code())
-
-		if fr.Empty() {
-			return nil
-		}
-
-		_, err := w.Write(fr.File)
-		return err
-	}
-
-	return nil
 }
 
 func decodeBackupByOrg(_ context.Context, r *http.Request) (interface{}, error) {
