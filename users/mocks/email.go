@@ -19,6 +19,6 @@ func (e *emailerMock) SendPasswordReset([]string, string, string) error {
 	return nil
 }
 
-func (e *emailerMock) SendEmailVerification(To []string, host, token string) error {
+func (e *emailerMock) SendEmailVerification(To []string, path, token string) error {
 	return nil
 }

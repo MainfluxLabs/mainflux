@@ -45,7 +45,7 @@ type Service interface {
 	// creates a pending e-mail verification entity and sends the user an e-mail
 	// with a URL containing a token used to verify the e-mail address and complete
 	// registration.
-	SelfRegister(ctx context.Context, user User, host string) (string, error)
+	SelfRegister(ctx context.Context, user User, path string) (string, error)
 
 	// VerifyEmail completes the self-registration process by matching the provided
 	// email verification token against the database. If the token is valid and not expired, the e-mail
@@ -87,8 +87,7 @@ type Service interface {
 	UpdateUser(ctx context.Context, token string, user User) error
 
 	// GenerateResetToken email where mail will be sent.
-	// host is used for generating reset link.
-	GenerateResetToken(ctx context.Context, email, host string) error
+	GenerateResetToken(ctx context.Context, email, path string) error
 
 	// ChangePassword change users password for authenticated user.
 	ChangePassword(ctx context.Context, token, email, password, oldPassword string) error
@@ -98,7 +97,7 @@ type Service interface {
 	ResetPassword(ctx context.Context, resetToken, password string) error
 
 	// SendPasswordReset sends reset password link to email.
-	SendPasswordReset(ctx context.Context, host, email, token string) error
+	SendPasswordReset(ctx context.Context, path, email, token string) error
 
 	// EnableUser logically enableds the user identified with the provided ID
 	EnableUser(ctx context.Context, token, id string) error
@@ -156,7 +155,7 @@ func New(users UserRepository, verifications EmailVerificationRepository, emailV
 	}
 }
 
-func (svc usersService) SelfRegister(ctx context.Context, user User, host string) (string, error) {
+func (svc usersService) SelfRegister(ctx context.Context, user User, path string) (string, error) {
 	_, err := svc.users.RetrieveByEmail(ctx, user.Email)
 	if err != nil && !errors.Contains(err, errors.ErrNotFound) {
 		return "", err
@@ -207,7 +206,7 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, host string
 
 	// If an error occurs while attempting to send the e-mail including confirmation token to the user,
 	// abort the process i.e. remove the pending Verification from the database.
-	if err := svc.email.SendEmailVerification([]string{user.Email}, host, token); err != nil {
+	if err := svc.email.SendEmailVerification([]string{user.Email}, path, token); err != nil {
 		if err := svc.emailVerifications.Remove(ctx, token); err != nil {
 			return "", err
 		}
@@ -491,7 +490,7 @@ func (svc usersService) UpdateUser(ctx context.Context, token string, u User) er
 	return svc.users.UpdateUser(ctx, user)
 }
 
-func (svc usersService) GenerateResetToken(ctx context.Context, email, host string) error {
+func (svc usersService) GenerateResetToken(ctx context.Context, email, path string) error {
 	user, err := svc.users.RetrieveByEmail(ctx, email)
 	if err != nil || user.Email == "" {
 		return errors.ErrNotFound
@@ -500,7 +499,7 @@ func (svc usersService) GenerateResetToken(ctx context.Context, email, host stri
 	if err != nil {
 		return errors.Wrap(ErrRecoveryToken, err)
 	}
-	return svc.SendPasswordReset(ctx, host, email, t)
+	return svc.SendPasswordReset(ctx, path, email, t)
 }
 
 func (svc usersService) ResetPassword(ctx context.Context, resetToken, password string) error {
@@ -562,9 +561,9 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 	return svc.users.UpdatePassword(ctx, userEmail, hashedPassword)
 }
 
-func (svc usersService) SendPasswordReset(_ context.Context, host, email, token string) error {
+func (svc usersService) SendPasswordReset(_ context.Context, path, email, token string) error {
 	to := []string{email}
-	return svc.email.SendPasswordReset(to, host, token)
+	return svc.email.SendPasswordReset(to, path, token)
 }
 
 func (svc usersService) EnableUser(ctx context.Context, token, id string) error {

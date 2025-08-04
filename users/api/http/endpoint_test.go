@@ -33,6 +33,7 @@ import (
 
 const (
 	contentType      = "application/json"
+	path             = "http://localhost"
 	validEmail       = "user@example.com"
 	adminEmail       = "admin@example.com"
 	invalidEmail     = "userexample.com"
@@ -103,6 +104,16 @@ var (
 	verificationsList = []users.EmailVerification{verification, duplicateVerification, expiredVerification}
 )
 
+type selfRegisterReq struct {
+	User users.User `json:"user,omitempty"`
+	Path string     `json:"path,omitempty"`
+}
+
+type passwordResetReq struct {
+	Email string `json:"email,omitempty"`
+	Path  string `json:"path,omitempty"`
+}
+
 type testRequest struct {
 	client      *http.Client
 	method      string
@@ -153,11 +164,27 @@ func TestSelfRegister(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	data := toJSON(newUser)
-	invalidData := toJSON(users.User{Email: invalidEmail, Password: validPass})
-	invalidPasswordData := toJSON(users.User{Email: validEmail, Password: invalidPass})
+	data := toJSON(selfRegisterReq{
+		User: newUser,
+		Path: path,
+	})
+
+	invalidData := toJSON(selfRegisterReq{
+		User: users.User{Email: invalidEmail, Password: validPass},
+		Path: path,
+	})
+
+	invalidPasswordData := toJSON(selfRegisterReq{
+		User: users.User{Email: validEmail, Password: invalidPass},
+		Path: path,
+	})
+
 	invalidFieldData := fmt.Sprintf(`{"email": "%s", "pass": "%s"}`, user.Email, user.Password)
-	existingUserData := toJSON(user)
+
+	existingUserData := toJSON(selfRegisterReq{
+		User: user,
+		Path: path,
+	})
 
 	cases := []struct {
 		desc        string
@@ -786,11 +813,15 @@ func TestPasswordResetRequest(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 	client := ts.Client()
-	data := toJSON(user)
 
-	nonexistentData := toJSON(users.User{
-		Email:    "non-existentuser@example.com",
-		Password: validPass,
+	data := toJSON(passwordResetReq{
+		Email: user.Email,
+		Path:  path,
+	})
+
+	nonexistentData := toJSON(passwordResetReq{
+		Email: "non-existentuser@example.com",
+		Path:  path,
 	})
 
 	expectedExisting := toJSON(struct {

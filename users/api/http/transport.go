@@ -312,14 +312,10 @@ func decodeSelfRegisterUser(_ context.Context, r *http.Request) (interface{}, er
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	var user users.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
+	req := selfRegisterUserReq{}
 
-	req := selfRegisterUserReq{
-		user: user,
-		host: r.Header.Get("Referer"),
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -349,7 +345,6 @@ func decodePasswordResetRequest(_ context.Context, r *http.Request) (interface{}
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	req.host = r.Host
 	return req, nil
 }
 
@@ -442,6 +437,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrEmailSize,
 		err == apiutil.ErrInvalidResetPass,
 		err == apiutil.ErrInvalidStatus,
+		err == apiutil.ErrMissingPath,
 		err == errors.ErrInvalidPassword:
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, errors.ErrAuthentication),

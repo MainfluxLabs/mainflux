@@ -111,6 +111,9 @@ var (
 	// ErrMissingHost indicates missing host.
 	ErrMissingHost = errors.New("missing host")
 
+	// ErrMissingPath indicates missing endpoint path from the frontend.
+	ErrMissingPath = errors.New("missing path")
+
 	// ErrMissingPass indicates missing password.
 	ErrMissingPass = errors.New("missing password")
 

@@ -12,31 +12,29 @@ import (
 var _ users.Emailer = (*emailer)(nil)
 
 type emailer struct {
-	resetURL       string
-	emailVerifyURL string
-	agent          *email.Agent
+	host  string
+	agent *email.Agent
 }
 
 // New creates new emailer utility
-func New(resetURL, emailVerifyURL string, c *email.Config) (users.Emailer, error) {
+func New(host string, c *email.Config) (users.Emailer, error) {
 	e, err := email.New(c)
 	if err != nil {
 		return nil, err
 	}
 
 	return &emailer{
-		resetURL:       resetURL,
-		emailVerifyURL: emailVerifyURL,
-		agent:          e,
+		agent: e,
+		host:  host,
 	}, nil
 }
 
-func (e *emailer) SendPasswordReset(To []string, host string, token string) error {
-	url := fmt.Sprintf("%s%s?token=%s", host, e.resetURL, token)
+func (e *emailer) SendPasswordReset(To []string, path string, token string) error {
+	url := fmt.Sprintf("%s%s?token=%s", e.host, path, token)
 	return e.agent.Send(To, "", "Password reset", "", url, "")
 }
 
-func (e *emailer) SendEmailVerification(To []string, host, token string) error {
+func (e *emailer) SendEmailVerification(To []string, path string, token string) error {
 	subject := "Verify your MainfluxLabs e-mail address"
 	content := `
 		Use the following link to verify your e-mail address and complete registration:
@@ -44,7 +42,7 @@ func (e *emailer) SendEmailVerification(To []string, host, token string) error {
 		%s
 	`
 
-	url := fmt.Sprintf("%s%s?token=%s", host, e.emailVerifyURL, token)
+	url := fmt.Sprintf("%s%s?token=%s", e.host, path, token)
 
 	content = fmt.Sprintf(content, url)
 

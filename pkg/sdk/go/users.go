@@ -58,8 +58,6 @@ func (sdk mfSDK) RegisterUser(u User) (string, error) {
 		return "", err
 	}
 
-	req.Header.Add("Referer", "http://localhost/")
-
 	resp, err := sdk.sendRequest(req, "", string(CTJSON))
 	if err != nil {
 		return "", err
