@@ -114,7 +114,7 @@ const (
 	envauthGRPCTimeout = "MF_AUTH_GRPC_TIMEOUT"
 	envGRPCPort        = "MF_USERS_GRPC_PORT"
 
-	envSelfRegisterEnabled = "MF_USERS_ALLOW_SELF_REGISTER"
+	envSelfRegisterEnabled = "MF_USERS_SELF_REGISTER_ENABLED"
 	envEmailVerifyEnabled  = "MF_REQUIRE_EMAIL_VERIFICATION"
 )
 
