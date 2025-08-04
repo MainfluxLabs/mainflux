@@ -20,11 +20,15 @@ type emailer struct {
 // New creates new emailer utility
 func New(resetURL, emailVerifyURL string, c *email.Config) (users.Emailer, error) {
 	e, err := email.New(c)
+	if err != nil {
+		return nil, err
+	}
+
 	return &emailer{
 		resetURL:       resetURL,
 		emailVerifyURL: emailVerifyURL,
 		agent:          e,
-	}, err
+	}, nil
 }
 
 func (e *emailer) SendPasswordReset(To []string, host string, token string) error {
