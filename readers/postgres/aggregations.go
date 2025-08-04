@@ -47,13 +47,13 @@ func newAggregationService(db *sqlx.DB) *aggregationService {
 }
 
 func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata) ([]readers.Message, error) {
-	format, _ := as.getFormatAndOrder(rpm)
+	format := rpm.Format
 	params := as.buildQueryParams(rpm)
 
 	config := QueryConfig{
 		Format:     format,
 		TimeColumn: as.getTimeColumn(format),
-		AggField:   as.getAggregateField(rpm, format),
+		AggField:   as.getAggregateField(rpm),
 		Interval:   rpm.AggInterval,
 		Limit:      rpm.Limit,
 		AggType:    rpm.AggType,
@@ -453,7 +453,7 @@ func (as *aggregationService) buildBaseCondition(rpm readers.PageMetadata, table
 		return ""
 	}
 
-	return "WHERE" + strings.Join(conditions, "AND")
+	return "WHERE " + strings.Join(conditions, "AND")
 }
 
 func (as *aggregationService) scanAggregatedMessages(rows *sqlx.Rows, format string) ([]readers.Message, error) {
@@ -497,17 +497,6 @@ func (as *aggregationService) executeQuery(query string, params map[string]inter
 	return rows, nil
 }
 
-func (as *aggregationService) getFormatAndOrder(rpm readers.PageMetadata) (format, order string) {
-	format = defTable
-	order = "time"
-
-	if rpm.Format == jsonTable {
-		format = jsonTable
-		order = "created"
-	}
-	return format, order
-}
-
 func (as *aggregationService) getTimeColumn(table string) string {
 	if table == jsonTable {
 		return "created"
@@ -515,12 +504,9 @@ func (as *aggregationService) getTimeColumn(table string) string {
 	return "time"
 }
 
-func (as *aggregationService) getAggregateField(rpm readers.PageMetadata, format string) string {
+func (as *aggregationService) getAggregateField(rpm readers.PageMetadata) string {
 	switch rpm.AggField {
 	case "":
-		if format == jsonTable {
-			return "created"
-		}
 		return "value"
 	default:
 		return rpm.AggField
