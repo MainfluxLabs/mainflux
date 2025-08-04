@@ -323,7 +323,7 @@ func decodePasswordResetRequest(_ context.Context, r *http.Request) (interface{}
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	req.Host = r.Host
+	req.host = r.Host
 	return req, nil
 }
 

@@ -117,7 +117,7 @@ func (req updateUserReq) validate() error {
 
 type passwResetReq struct {
 	Email string `json:"email"`
-	Host  string
+	host  string
 }
 
 func (req passwResetReq) validate() error {
@@ -125,7 +125,7 @@ func (req passwResetReq) validate() error {
 		return apiutil.ErrMissingEmail
 	}
 
-	if req.Host == "" {
+	if req.host == "" {
 		return apiutil.ErrMissingHost
 	}
 
