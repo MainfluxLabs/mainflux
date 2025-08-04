@@ -5,7 +5,10 @@ package groups
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -165,7 +168,7 @@ func listGroupsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 
 func backupGroupsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(backupReq)
+		req := request.(backupByOrgReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -175,7 +178,25 @@ func backupGroupsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildBackupResponse(backup), nil
+		fileName := fmt.Sprintf("groups-backup-by-org-%s.json", req.id)
+		return buildBackupResponse(backup, fileName)
+	}
+}
+
+func restoreGroupsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(restoreByOrgReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		groupsBackup := buildGroupsBackup(req.Groups)
+
+		if err := svc.RestoreGroupsByOrg(ctx, req.token, req.id, groupsBackup); err != nil {
+			return nil, err
+		}
+
+		return restoreRes{}, nil
 	}
 }
 
@@ -259,13 +280,27 @@ func buildGroupsResponse(gp things.GroupPage) groupPageRes {
 	return res
 }
 
-func buildBackupResponse(b things.BackupGroupsByOrg) backupGroupsByOrgRes {
-	res := backupGroupsByOrgRes{
-		Groups: []viewGroupRes{},
+func buildGroupsBackup(groups []viewGroupRes) (backup things.GroupsBackup) {
+	for _, group := range groups {
+		gr := things.Group{
+			ID:          group.ID,
+			OrgID:       group.OrgID,
+			Name:        group.Name,
+			Description: group.Description,
+			Metadata:    group.Metadata,
+			CreatedAt:   group.CreatedAt,
+			UpdatedAt:   group.UpdatedAt,
+		}
+		backup.Groups = append(backup.Groups, gr)
 	}
+	return backup
+}
+
+func buildBackupResponse(b things.GroupsBackup, fileName string) (apiutil.ViewFileRes, error) {
+	views := make([]viewGroupRes, 0, len(b.Groups))
 
 	for _, group := range b.Groups {
-		view := viewGroupRes{
+		views = append(views, viewGroupRes{
 			ID:          group.ID,
 			Name:        group.Name,
 			OrgID:       group.OrgID,
@@ -273,9 +308,16 @@ func buildBackupResponse(b things.BackupGroupsByOrg) backupGroupsByOrgRes {
 			Metadata:    group.Metadata,
 			CreatedAt:   group.CreatedAt,
 			UpdatedAt:   group.UpdatedAt,
-		}
-		res.Groups = append(res.Groups, view)
+		})
 	}
 
-	return res
+	data, err := json.MarshalIndent(views, "", "  ")
+	if err != nil {
+		return apiutil.ViewFileRes{}, err
+	}
+
+	return apiutil.ViewFileRes{
+		File:     data,
+		FileName: fileName,
+	}, nil
 }

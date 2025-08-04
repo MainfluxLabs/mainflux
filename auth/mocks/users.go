@@ -21,6 +21,10 @@ func NewUsersService(usersByID map[string]users.User, usersByEmails map[string]u
 }
 
 func (svc *usersServiceClientMock) GetUsersByIDs(ctx context.Context, in *protomfx.UsersByIDsReq, opts ...grpc.CallOption) (*protomfx.UsersRes, error) {
+	if in.Limit == 0 {
+		in.Limit = uint64(len(in.Ids))
+	}
+
 	var users []*protomfx.User
 	i := uint64(0)
 	for _, id := range in.Ids {

@@ -5,7 +5,10 @@ package things
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/api/http/memberships"
 	"github.com/go-kit/kit/endpoint"
@@ -181,11 +184,31 @@ func backupThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
+
 		backup, err := svc.BackupThingsByGroup(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}
-		return buildBackupThingsResponse(backup), nil
+
+		fileName := fmt.Sprintf("things-backup-by-group-%s.json", req.id)
+		return buildBackupThingsResponse(backup, fileName)
+	}
+}
+
+func restoreThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(restoreThingsByGroupReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		thingsBackup := buildThingsBackup(req.Things)
+
+		if err := svc.RestoreThingsByGroup(ctx, req.token, req.id, thingsBackup); err != nil {
+			return nil, err
+		}
+
+		return restoreRes{}, nil
 	}
 }
 
@@ -195,11 +218,31 @@ func backupThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
+
 		backup, err := svc.BackupThingsByOrg(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}
-		return buildBackupThingsResponse(backup), nil
+
+		fileName := fmt.Sprintf("things-backup-by-org-%s.json", req.id)
+		return buildBackupThingsResponse(backup, fileName)
+	}
+}
+
+func restoreThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(restoreThingsByOrgReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		thingsBackup := buildThingsBackup(req.Things)
+
+		if err := svc.RestoreThingsByOrg(ctx, req.token, req.id, thingsBackup); err != nil {
+			return nil, err
+		}
+
+		return restoreRes{}, nil
 	}
 }
 
@@ -385,12 +428,33 @@ func buildThingsResponse(tp things.ThingsPage) ThingsPageRes {
 	return res
 }
 
-func buildBackupThingsResponse(tb things.ThingsBackup) backupThingsRes {
-	res := backupThingsRes{
-		Things: []viewThingRes{},
-	}
+func buildBackupThingsResponse(tb things.ThingsBackup, fileName string) (apiutil.ViewFileRes, error) {
+	views := make([]viewThingRes, 0, len(tb.Things))
 	for _, thing := range tb.Things {
-		view := viewThingRes{
+		views = append(views, viewThingRes{
+			ID:        thing.ID,
+			GroupID:   thing.GroupID,
+			ProfileID: thing.ProfileID,
+			Name:      thing.Name,
+			Key:       thing.Key,
+			Metadata:  thing.Metadata,
+		})
+	}
+
+	data, err := json.MarshalIndent(views, "", "  ")
+	if err != nil {
+		return apiutil.ViewFileRes{}, err
+	}
+
+	return apiutil.ViewFileRes{
+		File:     data,
+		FileName: fileName,
+	}, nil
+}
+
+func buildThingsBackup(ths []viewThingRes) (backup things.ThingsBackup) {
+	for _, thing := range ths {
+		th := things.Thing{
 			ID:        thing.ID,
 			GroupID:   thing.GroupID,
 			ProfileID: thing.ProfileID,
@@ -398,9 +462,9 @@ func buildBackupThingsResponse(tb things.ThingsBackup) backupThingsRes {
 			Key:       thing.Key,
 			Metadata:  thing.Metadata,
 		}
-		res.Things = append(res.Things, view)
+		backup.Things = append(backup.Things, th)
 	}
-	return res
+	return backup
 }
 
 func buildBackupResponse(backup things.Backup) backupRes {

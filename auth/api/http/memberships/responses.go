@@ -86,18 +86,16 @@ func (res removeRes) Empty() bool {
 	return true
 }
 
-type backupOrgMembershipsRes struct {
-	OrgMemberships []viewOrgMembershipRes `json:"org_memberships"`
+type restoreRes struct{}
+
+func (res restoreRes) Code() int {
+	return http.StatusCreated
 }
 
-func (res backupOrgMembershipsRes) Code() int {
-	return http.StatusOK
-}
-
-func (res backupOrgMembershipsRes) Headers() map[string]string {
+func (res restoreRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res backupOrgMembershipsRes) Empty() bool {
-	return false
+func (res restoreRes) Empty() bool {
+	return true
 }

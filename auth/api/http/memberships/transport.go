@@ -3,7 +3,9 @@ package memberships
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
@@ -36,7 +38,14 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 
 	mux.Get("/orgs/:id/memberships/backup", kithttp.NewServer(
 		kitot.TraceServer(tracer, "backup_org_memberships")(backupOrgMembershipsEndpoint(svc)),
-		decodeBackup,
+		decodeBackupByOrg,
+		apiutil.EncodeFileResponse,
+		opts...,
+	))
+
+	mux.Post("/orgs/:id/memberships/restore", kithttp.NewServer(
+		kitot.TraceServer(tracer, "restore_org_memberships")(restoreOrgMembershipsEndpoint(svc)),
+		decodeRestoreByOrg,
 		encodeResponse,
 		opts...,
 	))
@@ -156,11 +165,33 @@ func decodeRemoveOrgMemberships(_ context.Context, r *http.Request) (interface{}
 	return req, nil
 }
 
-func decodeBackup(_ context.Context, r *http.Request) (interface{}, error) {
-	req := backupReq{
+func decodeBackupByOrg(_ context.Context, r *http.Request) (interface{}, error) {
+	req := backupByOrgReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
+	return req, nil
+}
+
+func decodeRestoreByOrg(ctx context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeOctetStream) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := restoreByOrgReq{
+		id:    bone.GetValue(r, apiutil.IDKey),
+		token: apiutil.ExtractBearerToken(r),
+	}
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	if err := json.Unmarshal(data, &req.OrgMemberships); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
 	return req, nil
 }
 
