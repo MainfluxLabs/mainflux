@@ -130,27 +130,7 @@ func (maxStrt MaxStrategy) BuildQuery(config QueryConfig) string {
 		{{.Condition}}
 		ORDER BY ia.interval_time DESC, {{.TimeColumn}} DESC;`
 
-	return maxStrt.renderTemplate(tmpl, config)
-}
-
-func (maxStrt MaxStrategy) renderTemplate(templateStr string, config QueryConfig) string {
-	data := map[string]string{
-		"TimeIntervals":       buildTimeIntervals(config),
-		"AggExpression":       maxStrt.GetAggregateExpression(config),
-		"Format":              config.Format,
-		"TimeJoinCondition":   buildTimeJoinCondition(config),
-		"TimeJoinConditionIA": buildTimeJoinConditionIA(config),
-		"ConditionForJoin":    config.ConditionForJoin,
-		"SelectedFields":      maxStrt.GetSelectedFields(config),
-		"ValueCondition":      buildValueCondition(config),
-		"Condition":           config.Condition,
-		"TimeColumn":          config.TimeColumn,
-	}
-
-	tmpl := template.Must(template.New("query").Parse(templateStr))
-	var result strings.Builder
-	tmpl.Execute(&result, data)
-	return result.String()
+	return renderTemplate(tmpl, config, maxStrt)
 }
 
 func (maxStrt MaxStrategy) GetSelectedFields(config QueryConfig) string {
@@ -190,27 +170,7 @@ func (minStrt MinStrategy) BuildQuery(config QueryConfig) string {
 		{{.Condition}}
 		ORDER BY ia.interval_time DESC, {{.TimeColumn}} DESC;`
 
-	return minStrt.renderTemplate(tmpl, config)
-}
-
-func (minStrt MinStrategy) renderTemplate(templateStr string, config QueryConfig) string {
-	data := map[string]string{
-		"TimeIntervals":       buildTimeIntervals(config),
-		"AggExpression":       minStrt.GetAggregateExpression(config),
-		"Format":              config.Format,
-		"TimeJoinCondition":   buildTimeJoinCondition(config),
-		"TimeJoinConditionIA": buildTimeJoinConditionIA(config),
-		"ConditionForJoin":    config.ConditionForJoin,
-		"SelectedFields":      minStrt.GetSelectedFields(config),
-		"ValueCondition":      buildValueCondition(config),
-		"Condition":           config.Condition,
-		"TimeColumn":          config.TimeColumn,
-	}
-
-	tmpl := template.Must(template.New("query").Parse(templateStr))
-	var result strings.Builder
-	tmpl.Execute(&result, data)
-	return result.String()
+	return renderTemplate(tmpl, config, minStrt)
 }
 
 func (minStrt MinStrategy) GetSelectedFields(config QueryConfig) string {
@@ -251,26 +211,7 @@ func (avgStrt AvgStrategy) BuildQuery(config QueryConfig) string {
 		{{.Condition}}
 		ORDER BY ia.interval_time DESC, m.{{.TimeColumn}} DESC;`
 
-	return avgStrt.renderTemplate(tmpl, config)
-}
-
-func (avgStrt AvgStrategy) renderTemplate(templateStr string, config QueryConfig) string {
-	data := map[string]string{
-		"TimeIntervals":       buildTimeIntervals(config),
-		"AggExpression":       avgStrt.GetAggregateExpression(config),
-		"Format":              config.Format,
-		"TimeJoinCondition":   buildTimeJoinCondition(config),
-		"TimeJoinConditionIA": buildTimeJoinConditionIA(config),
-		"ConditionForJoin":    config.ConditionForJoin,
-		"SelectedFields":      avgStrt.GetSelectedFields(config),
-		"Condition":           config.Condition,
-		"TimeColumn":          config.TimeColumn,
-	}
-
-	tmpl := template.Must(template.New("query").Parse(templateStr))
-	var result strings.Builder
-	tmpl.Execute(&result, data)
-	return result.String()
+	return renderTemplate(tmpl, config, avgStrt)
 }
 
 func (avgStrt AvgStrategy) GetSelectedFields(config QueryConfig) string {
@@ -323,18 +264,19 @@ func (countStrt CountStrategy) BuildQuery(config QueryConfig) string {
 		{{.Condition}}
 		ORDER BY ia.interval_time DESC, m.{{.TimeColumn}} DESC;`
 
-	return countStrt.renderTemplate(tmpl, config)
+	return renderTemplate(tmpl, config, countStrt)
 }
 
-func (countStrt CountStrategy) renderTemplate(templateStr string, config QueryConfig) string {
+func renderTemplate(templateStr string, config QueryConfig, strategy AggStrategy) string {
 	data := map[string]string{
 		"TimeIntervals":       buildTimeIntervals(config),
-		"AggExpression":       countStrt.GetAggregateExpression(config),
+		"AggExpression":       strategy.GetAggregateExpression(config),
 		"Format":              config.Format,
 		"TimeJoinCondition":   buildTimeJoinCondition(config),
 		"TimeJoinConditionIA": buildTimeJoinConditionIA(config),
 		"ConditionForJoin":    config.ConditionForJoin,
-		"SelectedFields":      countStrt.GetSelectedFields(config),
+		"SelectedFields":      strategy.GetSelectedFields(config),
+		"ValueCondition":      buildValueCondition(config),
 		"Condition":           config.Condition,
 		"TimeColumn":          config.TimeColumn,
 	}
