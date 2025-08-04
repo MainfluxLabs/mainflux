@@ -202,12 +202,12 @@ func loadConfig() config {
 		log.Fatalf("Invalid password validation rules %s\n", envPassRegex)
 	}
 
-	selfRegister, err := strconv.ParseBool(mainflux.Env(envSelfRegisterEnabled, defSelfRegisterEnabled))
+	selfRegisterEnabled, err := strconv.ParseBool(mainflux.Env(envSelfRegisterEnabled, defSelfRegisterEnabled))
 	if err != nil {
 		log.Fatalf("Invalid %s value: %s", envSelfRegisterEnabled, err.Error())
 	}
 
-	requireEmailVerification, err := strconv.ParseBool(mainflux.Env(envEmailVerifyEnabled, defEmailVerifyEnabled))
+	emailVerifyEnabled, err := strconv.ParseBool(mainflux.Env(envEmailVerifyEnabled, defEmailVerifyEnabled))
 	if err != nil {
 		log.Fatalf("Invalid %s value: %s", envEmailVerifyEnabled, err.Error())
 	}
@@ -269,8 +269,8 @@ func loadConfig() config {
 		adminEmail:          mainflux.Env(envAdminEmail, defAdminEmail),
 		adminPassword:       mainflux.Env(envAdminPassword, defAdminPassword),
 		passRegex:           passRegex,
-		selfRegisterEnabled: selfRegister,
-		emailVerifyEnabled:  requireEmailVerification,
+		selfRegisterEnabled: selfRegisterEnabled,
+		emailVerifyEnabled:  emailVerifyEnabled,
 	}
 }
 

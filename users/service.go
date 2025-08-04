@@ -144,11 +144,11 @@ type usersService struct {
 }
 
 // New instantiates the users service implementation
-func New(users UserRepository, verifications EmailVerificationRepository, requireEmailVerify bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider) Service {
+func New(users UserRepository, verifications EmailVerificationRepository, emailVerifyEnabled bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider) Service {
 	return &usersService{
 		users:              users,
 		emailVerifications: verifications,
-		emailVerifyEnabled: requireEmailVerify,
+		emailVerifyEnabled: emailVerifyEnabled,
 		hasher:             hasher,
 		auth:               auth,
 		email:              e,
