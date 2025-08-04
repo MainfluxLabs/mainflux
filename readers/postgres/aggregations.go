@@ -16,6 +16,11 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+const (
+	timeIntervals        = "ti"
+	intervalAggregations = "ia"
+)
+
 type QueryConfig struct {
 	Format           string
 	TimeColumn       string
@@ -272,8 +277,8 @@ func renderTemplate(templateStr string, config QueryConfig, strategy AggStrategy
 		"TimeIntervals":       buildTimeIntervals(config),
 		"AggExpression":       strategy.GetAggregateExpression(config),
 		"Format":              config.Format,
-		"TimeJoinCondition":   buildTimeJoinCondition(config),
-		"TimeJoinConditionIA": buildTimeJoinConditionIA(config),
+		"TimeJoinCondition":   buildTimeJoinCondition(config, timeIntervals),
+		"TimeJoinConditionIA": buildTimeJoinCondition(config, intervalAggregations),
 		"ConditionForJoin":    config.ConditionForJoin,
 		"SelectedFields":      strategy.GetSelectedFields(config),
 		"ValueCondition":      buildValueCondition(config),
@@ -324,14 +329,9 @@ func buildTimeIntervals(config QueryConfig) string {
 		config.Interval, config.Limit, config.Interval, config.Interval, config.Interval, config.Limit)
 }
 
-func buildTimeJoinCondition(config QueryConfig) string {
-	return fmt.Sprintf("date_trunc('%s', to_timestamp(m.%s / 1000000000)) = ti.interval_time",
-		config.Interval, config.TimeColumn)
-}
-
-func buildTimeJoinConditionIA(config QueryConfig) string {
-	return fmt.Sprintf("date_trunc('%s', to_timestamp(m.%s / 1000000000)) = ia.interval_time",
-		config.Interval, config.TimeColumn)
+func buildTimeJoinCondition(config QueryConfig, tableAlias string) string {
+	return fmt.Sprintf("date_trunc('%s', to_timestamp(m.%s / 1000000000)) = %s.interval_time",
+		config.Interval, config.TimeColumn, tableAlias)
 }
 
 func buildValueCondition(config QueryConfig) string {
