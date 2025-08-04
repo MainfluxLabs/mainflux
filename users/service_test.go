@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
@@ -34,6 +35,29 @@ var (
 	usersList       = []users.User{admin, registerUser, user, unauthUser}
 	host            = "example.com"
 
+	verification = users.EmailVerification{
+		User:      users.User{Email: "example@verify.com", Password: "12345678"},
+		Token:     "8a813b28-6f91-4fa5-8a18-783ffd2d27fb",
+		CreatedAt: time.Now().Add(-7 * 24 * time.Hour),
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+	}
+
+	duplicateVerification = users.EmailVerification{
+		User:      user,
+		Token:     "8a813b28-6f91-4fa5-8a18-783ffd2d27fc",
+		CreatedAt: time.Now().Add(-7 * 24 * time.Hour),
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+	}
+
+	expiredVerification = users.EmailVerification{
+		User:      user,
+		Token:     "8a813b28-6f91-4fa5-8a18-783ffd2d27fd",
+		CreatedAt: time.Now().Add(-7 * 24 * time.Hour),
+		ExpiresAt: time.Now().Add(-1 * time.Hour),
+	}
+
+	verificationsList = []users.EmailVerification{verification, duplicateVerification, expiredVerification}
+
 	idProvider = uuid.New()
 	passRegex  = regexp.MustCompile(`^\S{8,}$`)
 )
@@ -41,10 +65,11 @@ var (
 func newService() users.Service {
 	hasher := usmocks.NewHasher()
 	userRepo := usmocks.NewUserRepository(usersList)
+	verificationRepo := usmocks.NewEmailVerificationRepository(verificationsList)
 	authSvc := mocks.NewAuthService(admin.ID, usersList, nil)
 	e := usmocks.NewEmailer()
 
-	return users.New(userRepo, hasher, authSvc, e, idProvider)
+	return users.New(userRepo, verificationRepo, true, hasher, authSvc, e, idProvider)
 }
 
 func TestSelfRegister(t *testing.T) {
@@ -62,18 +87,13 @@ func TestSelfRegister(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc: "self register existing user",
+			desc: "self register user with pending e-mail confirmation",
 			user: selfRegister,
-			err:  errors.ErrConflict,
+			err:  nil,
 		},
+
 		{
-			desc:  "register new user",
-			user:  nonExistingUser,
-			token: admin.Email,
-			err:   nil,
-		},
-		{
-			desc:  "register existing user",
+			desc:  "self register existing user",
 			user:  registerUser,
 			token: admin.Email,
 			err:   errors.ErrConflict,
@@ -81,7 +101,43 @@ func TestSelfRegister(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_, err := svc.SelfRegister(context.Background(), tc.user)
+		_, err := svc.SelfRegister(context.Background(), tc.user, "")
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestVerifyEmail(t *testing.T) {
+	svc := newService()
+
+	cases := []struct {
+		desc         string
+		verification users.EmailVerification
+		err          error
+	}{
+		{
+			desc:         "confirm valid verification",
+			verification: verification,
+			err:          nil,
+		},
+		{
+			desc:         "confirm verification with already registered e-mail",
+			verification: duplicateVerification,
+			err:          errors.ErrConflict,
+		},
+		{
+			desc:         "confirm expired verification",
+			verification: expiredVerification,
+			err:          users.ErrEmailVerificationExpired,
+		},
+		{
+			desc:         "confirm verification with invalid token",
+			verification: users.EmailVerification{Token: "7571b76e-9ce4-4128-a0d7-568f438b0e39", User: user},
+			err:          errors.ErrAuthentication,
+		},
+	}
+
+	for _, tc := range cases {
+		_, err := svc.VerifyEmail(context.Background(), tc.verification.Token)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -222,7 +278,7 @@ func TestListUsers(t *testing.T) {
 			Email:    email,
 			Password: "passpass",
 		}
-		_, err := svc.SelfRegister(context.Background(), user)
+		_, err := svc.Register(context.Background(), token, user)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 	totUser = totUser + nUsers

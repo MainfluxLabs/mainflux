@@ -14,18 +14,31 @@ func selfRegistrationEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(selfRegisterUserReq)
 		if err := req.validate(); err != nil {
+			return selfRegisterRes{}, err
+		}
+
+		_, err := svc.SelfRegister(ctx, req.user, req.host)
+		if err != nil {
+			return selfRegisterRes{}, err
+		}
+
+		return selfRegisterRes{}, nil
+	}
+}
+
+func verifyEmailEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(verifyEmailReq)
+		if err := req.validate(); err != nil {
 			return createUserRes{}, err
 		}
-		uid, err := svc.SelfRegister(ctx, req.user)
+
+		userID, err := svc.VerifyEmail(ctx, req.emailToken)
 		if err != nil {
 			return createUserRes{}, err
 		}
-		ucr := createUserRes{
-			ID:      uid,
-			created: true,
-		}
 
-		return ucr, nil
+		return createUserRes{created: true, ID: userID}, nil
 	}
 }
 
