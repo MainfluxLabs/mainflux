@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -77,6 +78,29 @@ var (
 	idProvider            = uuid.New()
 	passRegex             = regexp.MustCompile(`^\S{8,}$`)
 	invalidEmailData      = fmt.Sprintf(`{"limit":5,"offset":0,"email":"%s"}`, strings.Repeat("a", maxEmailSize+1)+"@example.com")
+
+	verification = users.EmailVerification{
+		User:      users.User{Email: "example@verify.com", Password: "12345678"},
+		Token:     "697463fd-2708-4ca9-bf3f-c4d5d8da18f5",
+		CreatedAt: time.Now().Add(-7 * 24 * time.Hour),
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+	}
+
+	duplicateVerification = users.EmailVerification{
+		User:      user,
+		Token:     "8a813b28-6f91-4fa5-8a18-783ffd2d27fc",
+		CreatedAt: time.Now().Add(-7 * 24 * time.Hour),
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+	}
+
+	expiredVerification = users.EmailVerification{
+		User:      user,
+		Token:     "8a813b28-6f91-4fa5-8a18-783ffd2d27fd",
+		CreatedAt: time.Now().Add(-7 * 24 * time.Hour),
+		ExpiresAt: time.Now().Add(-1 * time.Hour),
+	}
+
+	verificationsList = []users.EmailVerification{verification, duplicateVerification, expiredVerification}
 )
 
 type testRequest struct {
@@ -106,10 +130,11 @@ func (tr testRequest) make() (*http.Response, error) {
 
 func newService() users.Service {
 	usersRepo := usmocks.NewUserRepository(usersList)
+	verificationsRepo := usmocks.NewEmailVerificationRepository(verificationsList)
 	hasher := usmocks.NewHasher()
 	auth := mocks.NewAuthService(admin.ID, usersList, nil)
 	email := usmocks.NewEmailer()
-	return users.New(usersRepo, hasher, auth, email, idProvider)
+	return users.New(usersRepo, verificationsRepo, true, hasher, auth, email, idProvider)
 }
 
 func newServer(svc users.Service) *httptest.Server {
@@ -132,6 +157,7 @@ func TestSelfRegister(t *testing.T) {
 	invalidData := toJSON(users.User{Email: invalidEmail, Password: validPass})
 	invalidPasswordData := toJSON(users.User{Email: validEmail, Password: invalidPass})
 	invalidFieldData := fmt.Sprintf(`{"email": "%s", "pass": "%s"}`, user.Email, user.Password)
+	existingUserData := toJSON(user)
 
 	cases := []struct {
 		desc        string
@@ -141,7 +167,8 @@ func TestSelfRegister(t *testing.T) {
 		token       string
 	}{
 		{"register new user", data, contentType, http.StatusCreated, ""},
-		{"register existing user", data, contentType, http.StatusConflict, ""},
+		{"register user with pending e-mail confirmation", data, contentType, http.StatusCreated, ""},
+		{"register existing user", existingUserData, contentType, http.StatusConflict, ""},
 		{"register user with invalid email address", invalidData, contentType, http.StatusBadRequest, ""},
 		{"register user with weak password", invalidPasswordData, contentType, http.StatusBadRequest, ""},
 		{"register user with invalid request format", "{", contentType, http.StatusBadRequest, ""},
@@ -159,6 +186,34 @@ func TestSelfRegister(t *testing.T) {
 			contentType: tc.contentType,
 			token:       tc.token,
 			body:        strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestVerifyEmail(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+	client := ts.Client()
+
+	cases := []struct {
+		desc              string
+		confirmationToken string
+		status            int
+	}{
+		{"confirm valid verification", verification.Token, http.StatusCreated},
+		{"confirm verification with already registered e-mail", duplicateVerification.Token, http.StatusConflict},
+		{"confirm expired verification", expiredVerification.Token, http.StatusBadRequest},
+		{"confirm verification with invalid token", "5d9f400e-6a5b-49e8-9b99-54f797ce27eb", http.StatusUnauthorized},
+	}
+	for _, tc := range cases {
+		req := testRequest{
+			client: client,
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/register/verify?token=%s", ts.URL, tc.confirmationToken),
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
