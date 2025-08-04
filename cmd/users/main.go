@@ -119,19 +119,19 @@ const (
 )
 
 type config struct {
-	logLevel           string
-	dbConfig           postgres.Config
-	httpConfig         servers.Config
-	grpcConfig         servers.Config
-	emailConf          email.Config
-	authConfig         clients.Config
-	jaegerURL          string
-	authGRPCTimeout    time.Duration
-	adminEmail         string
-	adminPassword      string
-	passRegex          *regexp.Regexp
-	selfRegister       bool
-	requireEmailVerify bool
+	logLevel            string
+	dbConfig            postgres.Config
+	httpConfig          servers.Config
+	grpcConfig          servers.Config
+	emailConf           email.Config
+	authConfig          clients.Config
+	jaegerURL           string
+	authGRPCTimeout     time.Duration
+	adminEmail          string
+	adminPassword       string
+	passRegex           *regexp.Regexp
+	selfRegisterEnabled bool
+	emailVerifyEnabled  bool
 }
 
 func main() {
@@ -258,19 +258,19 @@ func loadConfig() config {
 	}
 
 	return config{
-		logLevel:           mainflux.Env(envLogLevel, defLogLevel),
-		dbConfig:           dbConfig,
-		httpConfig:         httpConfig,
-		grpcConfig:         grpcConfig,
-		emailConf:          emailConf,
-		authConfig:         authConfig,
-		jaegerURL:          mainflux.Env(envJaegerURL, defJaegerURL),
-		authGRPCTimeout:    authGRPCTimeout,
-		adminEmail:         mainflux.Env(envAdminEmail, defAdminEmail),
-		adminPassword:      mainflux.Env(envAdminPassword, defAdminPassword),
-		passRegex:          passRegex,
-		selfRegister:       selfRegister,
-		requireEmailVerify: requireEmailVerification,
+		logLevel:            mainflux.Env(envLogLevel, defLogLevel),
+		dbConfig:            dbConfig,
+		httpConfig:          httpConfig,
+		grpcConfig:          grpcConfig,
+		emailConf:           emailConf,
+		authConfig:          authConfig,
+		jaegerURL:           mainflux.Env(envJaegerURL, defJaegerURL),
+		authGRPCTimeout:     authGRPCTimeout,
+		adminEmail:          mainflux.Env(envAdminEmail, defAdminEmail),
+		adminPassword:       mainflux.Env(envAdminPassword, defAdminPassword),
+		passRegex:           passRegex,
+		selfRegisterEnabled: selfRegister,
+		emailVerifyEnabled:  requireEmailVerification,
 	}
 }
 
@@ -296,7 +296,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceC
 
 	idProvider := uuid.New()
 
-	svc := users.New(userRepo, verificationRepo, c.requireEmailVerify, hasher, ac, emailer, idProvider)
+	svc := users.New(userRepo, verificationRepo, c.emailVerifyEnabled, hasher, ac, emailer, idProvider)
 	svc = httpapi.LoggingMiddleware(svc, logger)
 	svc = httpapi.MetricsMiddleware(
 		svc,
