@@ -166,7 +166,10 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 }
 
 func (tr postgresRepository) readMessages(rpm readers.PageMetadata, format, order string, params map[string]interface{}) ([]readers.Message, error) {
-	query := tr.buildRegularQuery(rpm, format, order)
+	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
+	condition := tr.fmtCondition(rpm, format)
+	query := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s;`, format, condition, order, olq)
+
 	rows, err := tr.executeQuery(query, params)
 	if err != nil {
 		return nil, err
@@ -180,7 +183,9 @@ func (tr postgresRepository) readMessages(rpm readers.PageMetadata, format, orde
 }
 
 func (tr postgresRepository) readCount(rpm readers.PageMetadata, format, order string, params map[string]interface{}) (uint64, error) {
-	query := tr.buildCountQuery(rpm, format, order)
+	condition := tr.fmtCondition(rpm, format)
+	query := fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, format, condition)
+
 	rows, err := tr.executeQuery(query, params)
 	if err != nil {
 		return 0, err
@@ -212,58 +217,8 @@ func (tr postgresRepository) executeQuery(query string, params map[string]interf
 
 func (tr postgresRepository) buildRegularQuery(rpm readers.PageMetadata, format, order string) string {
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
-	interval := rpm.AggInterval
 	condition := tr.fmtCondition(rpm, format)
-
-	if interval != "" {
-		switch format {
-		case defTable:
-			return fmt.Sprintf(`
-				SELECT * FROM (
-					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(%[2]s))) *
-					FROM %[3]s %[4]s
-					ORDER BY date_trunc('%[1]s', to_timestamp(%[2]s)), %[2]s DESC
-				) sub
-				%[5]s;`, interval, order, format, condition, olq)
-
-		case jsonTable:
-			return fmt.Sprintf(`
-				SELECT * FROM (
-					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(created / 1000000000))) *
-					FROM %[2]s %[3]s
-					ORDER BY date_trunc('%[1]s', to_timestamp(created / 1000000000)), created DESC
-				) sub
-				%[4]s;`, interval, format, condition, olq)
-		}
-	}
-
 	return fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s;`, format, condition, order, olq)
-}
-
-func (tr postgresRepository) buildCountQuery(rpm readers.PageMetadata, format, order string) string {
-	interval := rpm.AggInterval
-	condition := tr.fmtCondition(rpm, format)
-
-	if interval != "" {
-		switch format {
-		case defTable:
-			return fmt.Sprintf(`
-				SELECT COUNT(*) FROM (
-					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(%[2]s / 1000000000))) *
-					FROM %[3]s %[4]s
-					ORDER BY date_trunc('%[1]s', to_timestamp(%[2]s / 1000000000)), %[2]s DESC
-				) sub;`, interval, order, format, condition)
-		case jsonTable:
-			return fmt.Sprintf(`
-				SELECT COUNT(*) FROM (
-					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(created / 1000000000))) *
-					FROM %[2]s %[3]s
-					ORDER BY date_trunc('%[1]s', to_timestamp(created / 1000000000)), created DESC
-				) sub;`, interval, format, condition)
-		}
-	}
-
-	return fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, format, condition)
 }
 
 func (tr postgresRepository) scanMessages(rows *sqlx.Rows, format string) ([]readers.Message, error) {
