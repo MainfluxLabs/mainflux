@@ -114,8 +114,8 @@ const (
 	envauthGRPCTimeout = "MF_AUTH_GRPC_TIMEOUT"
 	envGRPCPort        = "MF_USERS_GRPC_PORT"
 
-	envSelfRegister       = "MF_USERS_ALLOW_SELF_REGISTER"
-	envRequireEmailVerify = "MF_REQUIRE_EMAIL_VERIFICATION"
+	envSelfRegisterEnabled = "MF_USERS_ALLOW_SELF_REGISTER"
+	envEmailVerifyEnabled  = "MF_REQUIRE_EMAIL_VERIFICATION"
 )
 
 type config struct {
@@ -202,14 +202,14 @@ func loadConfig() config {
 		log.Fatalf("Invalid password validation rules %s\n", envPassRegex)
 	}
 
-	selfRegister, err := strconv.ParseBool(mainflux.Env(envSelfRegister, defSelfRegisterEnabled))
+	selfRegister, err := strconv.ParseBool(mainflux.Env(envSelfRegisterEnabled, defSelfRegisterEnabled))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envSelfRegister, err.Error())
+		log.Fatalf("Invalid %s value: %s", envSelfRegisterEnabled, err.Error())
 	}
 
-	requireEmailVerification, err := strconv.ParseBool(mainflux.Env(envRequireEmailVerify, defEmailVerifyEnabled))
+	requireEmailVerification, err := strconv.ParseBool(mainflux.Env(envEmailVerifyEnabled, defEmailVerifyEnabled))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envRequireEmailVerify, err.Error())
+		log.Fatalf("Invalid %s value: %s", envEmailVerifyEnabled, err.Error())
 	}
 
 	dbConfig := postgres.Config{
