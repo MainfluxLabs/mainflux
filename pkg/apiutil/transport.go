@@ -85,7 +85,6 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrInvalidTopic),
 			errors.Contains(err, ErrInvalidContact),
 			errors.Contains(err, ErrMissingEmail),
-			errors.Contains(err, ErrMissingHost),
 			errors.Contains(err, ErrMissingPass),
 			errors.Contains(err, ErrMissingConfPass),
 			errors.Contains(err, ErrInvalidResetPass),

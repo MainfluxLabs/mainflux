@@ -108,9 +108,6 @@ var (
 	// ErrMissingEmailToken indicates a missing e-mail verification token.
 	ErrMissingEmailToken = errors.New("missing e-mail verification token")
 
-	// ErrMissingHost indicates missing host.
-	ErrMissingHost = errors.New("missing host")
-
 	// ErrMissingPath indicates missing endpoint path from the frontend.
 	ErrMissingPath = errors.New("missing path")
 
