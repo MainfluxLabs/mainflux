@@ -30,13 +30,13 @@ func MetricsMiddleware(svc users.Service, counter metrics.Counter, latency metri
 	}
 }
 
-func (ms *metricsMiddleware) SelfRegister(ctx context.Context, user users.User, host string) (string, error) {
+func (ms *metricsMiddleware) SelfRegister(ctx context.Context, user users.User, redirectPath string) (string, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "self_register").Add(1)
 		ms.latency.With("method", "self_register").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.SelfRegister(ctx, user, host)
+	return ms.svc.SelfRegister(ctx, user, redirectPath)
 }
 
 func (ms *metricsMiddleware) VerifyEmail(ctx context.Context, token string) (string, error) {
@@ -129,13 +129,13 @@ func (ms *metricsMiddleware) UpdateUser(ctx context.Context, token string, u use
 	return ms.svc.UpdateUser(ctx, token, u)
 }
 
-func (ms *metricsMiddleware) GenerateResetToken(ctx context.Context, email, host string) error {
+func (ms *metricsMiddleware) GenerateResetToken(ctx context.Context, email, redirectPath string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "generate_reset_token").Add(1)
 		ms.latency.With("method", "generate_reset_token").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.GenerateResetToken(ctx, email, host)
+	return ms.svc.GenerateResetToken(ctx, email, redirectPath)
 }
 
 func (ms *metricsMiddleware) ChangePassword(ctx context.Context, token, email, password, oldPassword string) error {
@@ -156,13 +156,13 @@ func (ms *metricsMiddleware) ResetPassword(ctx context.Context, email, password 
 	return ms.svc.ResetPassword(ctx, email, password)
 }
 
-func (ms *metricsMiddleware) SendPasswordReset(ctx context.Context, host, email, token string) error {
+func (ms *metricsMiddleware) SendPasswordReset(ctx context.Context, redirectPath, email, token string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "send_password_reset").Add(1)
 		ms.latency.With("method", "send_password_reset").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.SendPasswordReset(ctx, host, email, token)
+	return ms.svc.SendPasswordReset(ctx, redirectPath, email, token)
 }
 
 func (ms *metricsMiddleware) EnableUser(ctx context.Context, token string, id string) (err error) {

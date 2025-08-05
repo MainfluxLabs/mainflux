@@ -69,8 +69,7 @@ const (
 	defAdminPassword    = ""
 	defPassRegex        = `^\S{8,}$`
 
-	defPassResetEndpoint   = "/auth/password-reset" // URL where user lands after navigating to the reset link from email
-	defEmailVerifyEndpoint = "/email-verify"
+	defHost = "http://localhost"
 
 	defAuthTLS         = "false"
 	defAuthCACerts     = ""
@@ -108,6 +107,8 @@ const (
 	envEmailFromName    = "MF_EMAIL_FROM_NAME"
 	envEmailTemplate    = "MF_EMAIL_TEMPLATE"
 
+	envHost = "MF_HOST"
+
 	envAuthTLS         = "MF_AUTH_CLIENT_TLS"
 	envAuthCACerts     = "MF_AUTH_CA_CERTS"
 	envAuthGRPCURL     = "MF_AUTH_GRPC_URL"
@@ -130,6 +131,7 @@ type config struct {
 	adminEmail          string
 	adminPassword       string
 	passRegex           *regexp.Regexp
+	host                string
 	selfRegisterEnabled bool
 	emailVerifyEnabled  bool
 }
@@ -268,6 +270,7 @@ func loadConfig() config {
 		authGRPCTimeout:     authGRPCTimeout,
 		adminEmail:          mainflux.Env(envAdminEmail, defAdminEmail),
 		adminPassword:       mainflux.Env(envAdminPassword, defAdminPassword),
+		host:                mainflux.Env(envHost, defHost),
 		passRegex:           passRegex,
 		selfRegisterEnabled: selfRegisterEnabled,
 		emailVerifyEnabled:  emailVerifyEnabled,
@@ -289,7 +292,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceC
 	userRepo := tracing.UserRepositoryMiddleware(postgres.NewUserRepo(database), tracer)
 	verificationRepo := tracing.VerificationRepositoryMiddleware(postgres.NewEmailVerificationRepo(database), tracer)
 
-	emailer, err := emailer.New(defPassResetEndpoint, defEmailVerifyEndpoint, &c.emailConf)
+	emailer, err := emailer.New(c.host, &c.emailConf)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to configure e-mailing util: %s", err.Error()))
 	}
