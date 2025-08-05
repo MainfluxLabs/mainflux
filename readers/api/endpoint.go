@@ -8,7 +8,10 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
+	"io"
+	"strconv"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -46,6 +49,7 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 				return nil, err
 			}
 			req.pageMeta.Publisher = pc.PublisherID
+			req.pageMeta.Format = dbutil.GetTableName(pc.ProfileConfig.GetContentType())
 
 			p, err := svc.ListAllMessages(req.pageMeta)
 			if err != nil {
@@ -82,6 +86,8 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, err
 		}
 
+		var table string
+
 		switch {
 		case req.key != "":
 			pc, err := getPubConfByKey(ctx, req.key)
@@ -89,9 +95,9 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 				return nil, errors.Wrap(errors.ErrAuthentication, err)
 			}
 
-			if pc.PublisherID != req.pageMeta.Publisher {
-				return nil, errors.ErrAuthentication
-			}
+			req.pageMeta.Publisher = pc.PublisherID
+			table = dbutil.GetTableName(pc.ProfileConfig.GetContentType())
+
 		case req.token != "":
 			if err := isAdmin(ctx, req.token); err != nil {
 				return nil, err
@@ -100,7 +106,7 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, errors.ErrAuthentication
 		}
 
-		err :=  svc.DeleteMessages(ctx, req.pageMeta)
+		err := svc.DeleteMessages(ctx, req.pageMeta, table)
 		if err != nil {
 			return nil, err
 		}
@@ -146,7 +152,12 @@ func restoreEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.Restore(ctx, req.Messages...); err != nil {
+		messages, err := convertCSVToSenML(req.Messages)
+		if err != nil {
+			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		}
+
+		if err := svc.Restore(ctx, messages...); err != nil {
 			return nil, err
 		}
 
@@ -174,10 +185,79 @@ func generateCSV(page readers.MessagesPage) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+func convertCSVToSenML(csvMessages []byte) ([]senml.Message, error) {
+	reader := csv.NewReader(bytes.NewReader(csvMessages))
+
+	header, err := reader.Read()
+	if err != nil {
+		return nil, err
+	}
+
+	var messages []senml.Message
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		msg := senml.Message{}
+		for i, value := range record {
+			if value == "" || i >= len(header) {
+				continue
+			}
+
+			switch header[i] {
+			case "subtopic":
+				msg.Subtopic = value
+			case "publisher":
+				msg.Publisher = value
+			case "protocol":
+				msg.Protocol = value
+			case "name":
+				msg.Name = value
+			case "unit":
+				msg.Unit = value
+			case "time":
+				if v, err := strconv.ParseInt(value, 10, 64); err == nil {
+					msg.Time = v
+				}
+			case "update_time":
+				if v, err := strconv.ParseFloat(value, 64); err == nil {
+					msg.UpdateTime = v
+				}
+			case "value":
+				if v, err := strconv.ParseFloat(value, 64); err == nil {
+					msg.Value = &v
+				}
+			case "string_value":
+				msg.StringValue = &value
+			case "data_value":
+				msg.DataValue = &value
+			case "bool_value":
+				if v, err := strconv.ParseBool(value); err == nil {
+					msg.BoolValue = &v
+				}
+			case "sum":
+				if v, err := strconv.ParseFloat(value, 64); err == nil {
+					msg.Sum = &v
+				}
+			}
+		}
+
+		messages = append(messages, msg)
+	}
+
+	return messages, nil
+}
+
 func convertSenMLToCSV(page readers.MessagesPage, writer *csv.Writer) error {
 	for _, msg := range page.Messages {
 		if m, ok := msg.(senml.Message); ok {
 			row := []string{
+				"",
 				m.Subtopic,
 				m.Publisher,
 				m.Protocol,

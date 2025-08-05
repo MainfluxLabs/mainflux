@@ -32,6 +32,8 @@ const (
 	msgName     = "temperature"
 	jsonFormat  = "json"
 	jsonCT      = "application/json"
+	jsonTable   = "json"
+	senmlTable  = "messages"
 )
 
 var (
@@ -65,11 +67,11 @@ func TestListAllMessagesSenML(t *testing.T) {
 	dataMsgs := []senml.Message{}
 	queryMsgs := []senml.Message{}
 
-	now := float64(time.Now().Unix())
+	now := int64(time.Now().Unix())
 	for i := 0; i < msgsNum; i++ {
 		// Mix possible values as well as value sum.
 		msg := m
-		msg.Time = now - float64(i)
+		msg.Time = now - int64(i)
 
 		count := i % valueFields
 		switch count {
@@ -437,7 +439,6 @@ func TestListAllMessagesJSON(t *testing.T) {
 	}
 }
 
-
 func TestDeleteMessagesSenML(t *testing.T) {
 	reader := preader.New(db)
 	writer := pwriter.New(db)
@@ -459,10 +460,10 @@ func TestDeleteMessagesSenML(t *testing.T) {
 	dataMsgs := []senml.Message{}
 	queryMsgs := []senml.Message{}
 
-	now := float64(time.Now().Unix())
+	now := int64(time.Now().Unix())
 	for i := 0; i < msgsNum; i++ {
 		msg := m
-		msg.Time = now - float64(i)
+		msg.Time = now - int64(i)
 
 		count := i % valueFields
 		switch count {
@@ -548,7 +549,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 				From:      messages[20].Time,
 				To:        now + 1,
 			},
-			expectedCount: 17, 
+			expectedCount: 17,
 			description:   "should delete messages from specific time",
 		},
 		"delete messages with time range to": {
@@ -557,7 +558,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 				From:      0,
 				To:        messages[20].Time,
 			},
-			expectedCount: 65, 
+			expectedCount: 65,
 			description:   "should delete messages to specific time",
 		},
 		"delete messages with time range from/to": {
@@ -566,7 +567,8 @@ func TestDeleteMessagesSenML(t *testing.T) {
 				From:      messages[50].Time,
 				To:        messages[20].Time,
 			},
-			expectedCount: 25, 
+
+			expectedCount: 25,
 			description:   "should delete messages within time range",
 		},
 		"delete all messages for publisher": {
@@ -575,7 +577,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 				From:      0,
 				To:        now + 1,
 			},
-			expectedCount: uint64(msgsNum - len(queryMsgs)), 
+			expectedCount: uint64(msgsNum - len(queryMsgs)),
 			description:   "should delete all messages for specific publisher",
 		},
 	}
@@ -585,12 +587,12 @@ func TestDeleteMessagesSenML(t *testing.T) {
 			Publisher: pubID,
 			From:      0,
 			To:        now,
-		})
+		}, senmlTable)
 		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
 			Publisher: pubID2,
 			From:      0,
 			To:        now,
-		})
+		}, senmlTable)
 
 		for _, m := range messages {
 			pyd := senml.Message{
@@ -631,7 +633,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 		require.Nil(t, err)
 		beforeCount := beforePage.Total
 
-		err = reader.DeleteMessages(context.Background(), tc.pageMeta)
+		err = reader.DeleteMessages(context.Background(), tc.pageMeta, senmlTable)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
 		afterPage, err := reader.ListAllMessages(readers.PageMetadata{
@@ -729,7 +731,7 @@ func TestDeleteMessagesJSON(t *testing.T) {
 				Format:    jsonFormat,
 				Publisher: id1,
 				From:      0,
-				To:        float64(created + int64(msgsNum)),
+				To:        int64(created + int64(msgsNum)),
 			},
 			expectedCount: uint64(msgsNum),
 			description:   "should delete JSON messages from specific publisher id1",
@@ -739,7 +741,7 @@ func TestDeleteMessagesJSON(t *testing.T) {
 				Format:    jsonFormat,
 				Publisher: id2,
 				From:      0,
-				To:        float64(created + int64(msgsNum)),
+				To:        int64(created + int64(msgsNum)),
 			},
 			expectedCount: uint64(msgsNum),
 			description:   "should delete JSON messages from specific publisher id2",
@@ -750,7 +752,7 @@ func TestDeleteMessagesJSON(t *testing.T) {
 				Publisher: id2,
 				Protocol:  httpProt,
 				From:      0,
-				To:        float64(created + int64(msgsNum)),
+				To:        int64(created + int64(msgsNum)),
 			},
 			expectedCount: uint64(httpMsgCount),
 			description:   "should delete JSON messages with HTTP protocol",
@@ -761,7 +763,7 @@ func TestDeleteMessagesJSON(t *testing.T) {
 				Publisher: id1,
 				Subtopic:  subtopic,
 				From:      0,
-				To:        float64(created + int64(msgsNum)),
+				To:        int64(created + int64(msgsNum)),
 			},
 			expectedCount: uint64(msgsNum),
 			description:   "should delete JSON messages with specific subtopic",
@@ -770,8 +772,8 @@ func TestDeleteMessagesJSON(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Format:    jsonFormat,
 				Publisher: id1,
-				From:      float64(created + 20),
-				To:        float64(created + 50),
+				From:      int64(created + 20),
+				To:        int64(created + 50),
 			},
 			expectedCount: 31,
 			description:   "should delete JSON messages within time range",
@@ -783,14 +785,15 @@ func TestDeleteMessagesJSON(t *testing.T) {
 			Format:    jsonFormat,
 			Publisher: id1,
 			From:      0,
-			To:        float64(created + int64(msgsNum)),
-		})
+			To:        int64(created + int64(msgsNum)),
+		}, jsonTable)
+
 		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
 			Format:    jsonFormat,
 			Publisher: id2,
 			From:      0,
-			To:        float64(created + int64(msgsNum)),
-		})
+			To:        int64(created + int64(msgsNum)),
+		}, jsonTable)
 
 		for _, m := range messages {
 			err := writer.Consume(m)
@@ -809,7 +812,7 @@ func TestDeleteMessagesJSON(t *testing.T) {
 		require.Nil(t, err)
 		beforeCount := beforePage.Total
 
-		err = reader.DeleteMessages(context.Background(), tc.pageMeta)
+		err = reader.DeleteMessages(context.Background(), tc.pageMeta, jsonTable)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
 		afterPage, err := reader.ListAllMessages(readers.PageMetadata{

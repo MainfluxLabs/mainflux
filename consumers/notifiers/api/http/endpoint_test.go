@@ -48,7 +48,7 @@ const (
 	invalidOrderData = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
 	zeroLimitData    = `{"limit":0,"offset":0}`
 	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
-	limitMaxData     = `{"limit":110,"offset":0}`
+	invalidLimitData = `{"limit":210,"offset":0}`
 	invalidData      = `{"limit": "invalid"}`
 )
 
@@ -372,7 +372,7 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			desc:   "get a list of notifiers by group with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/groups/%s/notifiers?offset=%d&limit=%d", ts.URL, groupID, 0, 101),
+			url:    fmt.Sprintf("%s/groups/%s/notifiers?offset=%d&limit=%d", ts.URL, groupID, 0, 201),
 			res:    nil,
 		},
 		{
@@ -544,7 +544,7 @@ func runSearchNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			desc:   "search notifiers by group with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			req:    limitMaxData,
+			req:    invalidLimitData,
 			res:    nil,
 		},
 		{

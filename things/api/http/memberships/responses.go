@@ -42,7 +42,7 @@ type groupMembership struct {
 	Role     string `json:"role"`
 }
 
-type ViewGroupMembershipsRes struct {
+type ViewGroupMembershipRes struct {
 	MemberID string `json:"member_id"`
 	GroupID  string `json:"group_id"`
 	Email    string `json:"email"`
@@ -94,16 +94,16 @@ func (res listGroupMembershipsRes) Empty() bool {
 	return false
 }
 
-type backupGroupMembershipsRes struct {
-	BackupGroupMemberships []ViewGroupMembershipsRes `json:"group_memberships"`
+type restoreRes struct{}
+
+func (res restoreRes) Code() int {
+	return http.StatusCreated
 }
 
-func (res backupGroupMembershipsRes) Code() int {
-	return http.StatusOK
-}
-func (res backupGroupMembershipsRes) Headers() map[string]string {
+func (res restoreRes) Headers() map[string]string {
 	return map[string]string{}
 }
-func (res backupGroupMembershipsRes) Empty() bool {
-	return false
+
+func (res restoreRes) Empty() bool {
+	return true
 }

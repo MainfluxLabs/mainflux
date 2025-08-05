@@ -6,8 +6,8 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
-	"strings"
 
 	"github.com/MainfluxLabs/mainflux"
 	auth "github.com/MainfluxLabs/mainflux/auth"
@@ -23,7 +23,6 @@ import (
 
 const (
 	octetStreamContentType = "application/octet-stream"
-	formatKey              = "format"
 	subtopicKey            = "subtopic"
 	protocolKey            = "protocol"
 	valueKey               = "v"
@@ -35,7 +34,6 @@ const (
 	intervalKey            = "interval"
 	toKey                  = "to"
 	defFormat              = "messages"
-	publisherID            = "publisherID"
 )
 
 var (
@@ -59,7 +57,7 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 		encodeResponse,
 		opts...,
 	))
-	mux.Delete("/messages/:publisherID", kithttp.NewServer(
+	mux.Delete("/messages", kithttp.NewServer(
 		deleteMessagesEndpoint(svc),
 		decodeDeleteMessages,
 		encodeResponse,
@@ -91,11 +89,6 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 	}
 
 	limit, err := apiutil.ReadLimitQuery(r, apiutil.LimitKey, apiutil.DefLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	format, err := apiutil.ReadStringQuery(r, formatKey, defFormat)
 	if err != nil {
 		return nil, err
 	}
@@ -135,12 +128,12 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 		return nil, err
 	}
 
-	from, err := apiutil.ReadFloatQuery(r, fromKey, 0)
+	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	to, err := apiutil.ReadFloatQuery(r, toKey, 0)
+	to, err := apiutil.ReadIntQuery(r, toKey, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +149,6 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 		pageMeta: readers.PageMetadata{
 			Offset:      offset,
 			Limit:       limit,
-			Format:      format,
 			Subtopic:    subtopic,
 			Protocol:    protocol,
 			Name:        name,
@@ -182,14 +174,12 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 }
 
 func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, error) {
-	publisherID := bone.GetValue(r, publisherID)
-
-	from, err := apiutil.ReadFloatQuery(r, fromKey, 0)
+	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	to, err := apiutil.ReadFloatQuery(r, toKey, 0)
+	to, err := apiutil.ReadIntQuery(r, toKey, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -198,9 +188,8 @@ func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, erro
 		token: apiutil.ExtractBearerToken(r),
 		key:   apiutil.ExtractThingKey(r),
 		pageMeta: readers.PageMetadata{
-			Publisher: publisherID,
-			From:      from,
-			To:        to,
+			From: from,
+			To:   to,
 		},
 	}
 
@@ -208,16 +197,17 @@ func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, erro
 }
 
 func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
+	token := apiutil.ExtractBearerToken(r)
 
-	req := restoreMessagesReq{token: apiutil.ExtractBearerToken(r)}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	csvData, err := io.ReadAll(r.Body)
+	if err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	return req, nil
+	return restoreMessagesReq{
+		token:    token,
+		Messages: csvData,
+	}, nil
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {

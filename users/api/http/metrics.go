@@ -30,13 +30,22 @@ func MetricsMiddleware(svc users.Service, counter metrics.Counter, latency metri
 	}
 }
 
-func (ms *metricsMiddleware) SelfRegister(ctx context.Context, user users.User) (string, error) {
+func (ms *metricsMiddleware) SelfRegister(ctx context.Context, user users.User, redirectPath string) (string, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "self_register").Add(1)
 		ms.latency.With("method", "self_register").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.SelfRegister(ctx, user)
+	return ms.svc.SelfRegister(ctx, user, redirectPath)
+}
+
+func (ms *metricsMiddleware) VerifyEmail(ctx context.Context, token string) (string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "verify_email").Add(1)
+		ms.latency.With("method", "verify_email").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.VerifyEmail(ctx, token)
 }
 
 func (ms *metricsMiddleware) RegisterAdmin(ctx context.Context, user users.User) error {
@@ -93,13 +102,13 @@ func (ms *metricsMiddleware) ListUsers(ctx context.Context, token string, pm use
 	return ms.svc.ListUsers(ctx, token, pm)
 }
 
-func (ms *metricsMiddleware) ListUsersByIDs(ctx context.Context, ids []string, email string, order string, dir string) (users.UserPage, error) {
+func (ms *metricsMiddleware) ListUsersByIDs(ctx context.Context, ids []string, email string, order string, dir string, limit uint64, offset uint64) (users.UserPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_users_by_ids").Add(1)
 		ms.latency.With("method", "list_users_by_ids").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListUsersByIDs(ctx, ids, email, order, dir)
+	return ms.svc.ListUsersByIDs(ctx, ids, email, order, dir, limit, offset)
 }
 
 func (ms *metricsMiddleware) ListUsersByEmails(ctx context.Context, emails []string) ([]users.User, error) {
@@ -120,13 +129,13 @@ func (ms *metricsMiddleware) UpdateUser(ctx context.Context, token string, u use
 	return ms.svc.UpdateUser(ctx, token, u)
 }
 
-func (ms *metricsMiddleware) GenerateResetToken(ctx context.Context, email, host string) error {
+func (ms *metricsMiddleware) GenerateResetToken(ctx context.Context, email, redirectPath string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "generate_reset_token").Add(1)
 		ms.latency.With("method", "generate_reset_token").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.GenerateResetToken(ctx, email, host)
+	return ms.svc.GenerateResetToken(ctx, email, redirectPath)
 }
 
 func (ms *metricsMiddleware) ChangePassword(ctx context.Context, token, email, password, oldPassword string) error {
@@ -147,13 +156,13 @@ func (ms *metricsMiddleware) ResetPassword(ctx context.Context, email, password 
 	return ms.svc.ResetPassword(ctx, email, password)
 }
 
-func (ms *metricsMiddleware) SendPasswordReset(ctx context.Context, host, email, token string) error {
+func (ms *metricsMiddleware) SendPasswordReset(ctx context.Context, redirectPath, email, token string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "send_password_reset").Add(1)
 		ms.latency.With("method", "send_password_reset").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.SendPasswordReset(ctx, host, email, token)
+	return ms.svc.SendPasswordReset(ctx, redirectPath, email, token)
 }
 
 func (ms *metricsMiddleware) EnableUser(ctx context.Context, token string, id string) (err error) {

@@ -24,8 +24,9 @@ import (
 )
 
 const (
-	emailKey  = "email"
-	statusKey = "status"
+	emailKey      = "email"
+	statusKey     = "status"
+	emailTokenKey = "token"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -48,6 +49,13 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 	mux.Post("/register", kithttp.NewServer(
 		kitot.TraceServer(tracer, "self_register")(selfRegistrationEndpoint(svc)),
 		decodeSelfRegisterUser,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/register/verify", kithttp.NewServer(
+		kitot.TraceServer(tracer, "verify_email")(verifyEmailEndpoint(svc)),
+		decodeVerifyEmail,
 		encodeResponse,
 		opts...,
 	))
@@ -304,12 +312,26 @@ func decodeSelfRegisterUser(_ context.Context, r *http.Request) (interface{}, er
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	var user users.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+	req := selfRegisterUserReq{}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	return selfRegisterUserReq{user: user}, nil
+	return req, nil
+}
+
+func decodeVerifyEmail(_ context.Context, r *http.Request) (any, error) {
+	token, err := apiutil.ReadStringQuery(r, emailTokenKey, "")
+	if err != nil {
+		return verifyEmailReq{}, err
+	}
+
+	req := verifyEmailReq{
+		emailToken: token,
+	}
+
+	return req, nil
 }
 
 func decodePasswordResetRequest(_ context.Context, r *http.Request) (interface{}, error) {
@@ -323,7 +345,6 @@ func decodePasswordResetRequest(_ context.Context, r *http.Request) (interface{}
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	req.Host = r.Header.Get("Referer")
 	return req, nil
 }
 
@@ -403,8 +424,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		errors.Contains(err, apiutil.ErrMalformedEntity),
 		errors.Contains(err, users.ErrPasswordFormat),
 		errors.Contains(err, errors.ErrInvalidPassword),
+		errors.Contains(err, users.ErrEmailVerificationExpired),
 		err == apiutil.ErrMissingEmail,
-		err == apiutil.ErrMissingHost,
 		err == apiutil.ErrMissingPass,
 		err == apiutil.ErrMissingConfPass,
 		err == apiutil.ErrMissingUserID,
@@ -415,9 +436,11 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrEmailSize,
 		err == apiutil.ErrInvalidResetPass,
 		err == apiutil.ErrInvalidStatus,
+		err == apiutil.ErrMissingRedirectPath,
 		err == errors.ErrInvalidPassword:
 		w.WriteHeader(http.StatusBadRequest)
-	case err == apiutil.ErrBearerToken:
+	case errors.Contains(err, errors.ErrAuthentication),
+		err == apiutil.ErrBearerToken:
 		w.WriteHeader(http.StatusUnauthorized)
 	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)

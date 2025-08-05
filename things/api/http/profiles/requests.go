@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	maxLimitSize = 100
+	maxLimitSize = 200
 	maxNameSize  = 1024
 )
 
@@ -178,6 +178,76 @@ func (req removeProfilesReq) validate() error {
 		if profileID == "" {
 			return apiutil.ErrMissingProfileID
 		}
+	}
+
+	return nil
+}
+
+type backupByGroupReq struct {
+	token string
+	id    string
+}
+
+func (req backupByGroupReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if req.id == "" {
+		return apiutil.ErrMissingGroupID
+	}
+	return nil
+}
+
+type backupByOrgReq struct {
+	token string
+	id    string
+}
+
+func (req backupByOrgReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if req.id == "" {
+		return apiutil.ErrMissingOrgID
+	}
+	return nil
+}
+
+type restoreByGroupReq struct {
+	id       string
+	token    string
+	Profiles []viewProfileRes
+}
+
+func (req restoreByGroupReq) validate() error {
+	if req.id == "" {
+		return apiutil.ErrMissingGroupID
+	}
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if len(req.Profiles) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	return nil
+}
+
+type restoreByOrgReq struct {
+	id       string
+	token    string
+	Profiles []viewProfileRes
+}
+
+func (req restoreByOrgReq) validate() error {
+	if req.id == "" {
+		return apiutil.ErrMissingOrgID
+	}
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if len(req.Profiles) == 0 {
+		return apiutil.ErrEmptyList
 	}
 
 	return nil

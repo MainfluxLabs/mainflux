@@ -5,7 +5,6 @@ package api
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
 )
 
@@ -44,7 +43,7 @@ func (req listAllMessagesReq) validate() error {
 
 type restoreMessagesReq struct {
 	token    string
-	Messages []senml.Message `json:"messages"`
+	Messages []byte
 }
 
 func (req restoreMessagesReq) validate() error {
@@ -69,10 +68,5 @@ func (req deleteMessagesReq) validate() error {
 	if req.token == "" && req.key == "" {
 		return apiutil.ErrBearerToken
 	}
-
-	if req.pageMeta.Publisher == "" {
-		return apiutil.ErrMissingPublisherID
-	}
-
 	return nil
 }

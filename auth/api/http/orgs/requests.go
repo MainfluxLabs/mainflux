@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	maxLimitSize = 100
+	maxLimitSize = 200
 	maxNameSize  = 254
 )
 
@@ -95,6 +95,29 @@ func (req orgReq) validate() error {
 	return nil
 }
 
+type deleteOrgsReq struct {
+	token  string
+	OrgIDs []string `json:"org_ids,omitempty"`
+}
+
+func (req deleteOrgsReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if len(req.OrgIDs) < 1 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, orgID := range req.OrgIDs {
+		if orgID == "" {
+			return apiutil.ErrMissingOrgID
+		}
+	}
+
+	return nil
+}
+
 type backupReq struct {
 	token string
 }
@@ -109,8 +132,8 @@ func (req backupReq) validate() error {
 
 type restoreReq struct {
 	token          string
-	Orgs           []viewOrgRes         `json:"orgs"`
-	OrgMemberships []viewOrgMemberships `json:"org_memberships"`
+	Orgs           []viewOrgRes        `json:"orgs"`
+	OrgMemberships []viewOrgMembership `json:"org_memberships"`
 }
 
 func (req restoreReq) validate() error {

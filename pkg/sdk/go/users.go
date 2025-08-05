@@ -19,6 +19,8 @@ const (
 	registrationEndpoint = "register"
 	tokensEndpoint       = "tokens"
 	passwordEndpoint     = "password"
+
+	registerUserPath = "/auth/email-verify"
 )
 
 func (sdk mfSDK) CreateUser(u User, token string) (string, error) {
@@ -47,7 +49,14 @@ func (sdk mfSDK) CreateUser(u User, token string) (string, error) {
 }
 
 func (sdk mfSDK) RegisterUser(u User) (string, error) {
-	data, err := json.Marshal(u)
+	data, err := json.Marshal(struct {
+		User         User
+		RedirectPath string `json:"redirect_path"`
+	}{
+		u,
+		registerUserPath,
+	})
+
 	if err != nil {
 		return "", err
 	}

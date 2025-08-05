@@ -85,7 +85,22 @@ func deleteOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.RemoveOrg(ctx, req.token, req.id); err != nil {
+		if err := svc.RemoveOrgs(ctx, req.token, req.id); err != nil {
+			return nil, err
+		}
+
+		return deleteRes{}, nil
+	}
+}
+
+func deleteOrgsEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(deleteOrgsReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.RemoveOrgs(ctx, req.token, req.OrgIDs...); err != nil {
 			return nil, err
 		}
 
@@ -172,7 +187,7 @@ func buildOrgsResponse(op auth.OrgsPage) orgsPageRes {
 func buildBackupResponse(b auth.Backup) backupRes {
 	res := backupRes{
 		Orgs:           []viewOrgRes{},
-		OrgMemberships: []viewOrgMemberships{},
+		OrgMemberships: []viewOrgMembership{},
 	}
 
 	for _, org := range b.Orgs {
@@ -189,7 +204,7 @@ func buildBackupResponse(b auth.Backup) backupRes {
 	}
 
 	for _, om := range b.OrgMemberships {
-		view := viewOrgMemberships{
+		view := viewOrgMembership{
 			OrgID:     om.OrgID,
 			MemberID:  om.MemberID,
 			Role:      om.Role,

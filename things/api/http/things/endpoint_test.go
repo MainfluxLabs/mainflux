@@ -30,35 +30,36 @@ import (
 )
 
 const (
-	contentType      = "application/json"
-	email            = "user@example.com"
-	adminEmail       = "admin@example.com"
-	otherUserEmail   = "other_user@example.com"
-	token            = email
-	otherToken       = otherUserEmail
-	adminToken       = adminEmail
-	wrongValue       = "wrong_value"
-	emptyValue       = ""
-	emptyJson        = "{}"
-	wrongID          = 0
-	password         = "password"
-	maxNameSize      = 1024
-	nameKey          = "name"
-	ascKey           = "asc"
-	descKey          = "desc"
-	orgID            = "374106f7-030e-4881-8ab0-151195c29f92"
-	orgID2           = "374106f7-030e-4881-8ab0-151195c29f93"
-	prefix           = "fe6b4e92-cc98-425e-b0aa-"
-	n                = 101
-	noLimit          = -1
-	validData        = `{"limit":5,"offset":0}`
-	descData         = `{"limit":5,"offset":0,"dir":"desc","order":"name"}`
-	ascData          = `{"limit":5,"offset":0,"dir":"asc","order":"name"}`
-	invalidOrderData = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
-	zeroLimitData    = `{"limit":0,"offset":0}`
-	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
-	limitMaxData     = `{"limit":110,"offset":0}`
-	invalidData      = `{"limit": "invalid"}`
+	contentTypeJSON        = "application/json"
+	contentTypeOctetStream = "application/octet-stream"
+	email                  = "user@example.com"
+	adminEmail             = "admin@example.com"
+	otherUserEmail         = "other_user@example.com"
+	token                  = email
+	otherToken             = otherUserEmail
+	adminToken             = adminEmail
+	wrongValue             = "wrong_value"
+	emptyValue             = ""
+	emptyJson              = "{}"
+	wrongID                = 0
+	password               = "password"
+	maxNameSize            = 1024
+	nameKey                = "name"
+	ascKey                 = "asc"
+	descKey                = "desc"
+	orgID                  = "374106f7-030e-4881-8ab0-151195c29f92"
+	orgID2                 = "374106f7-030e-4881-8ab0-151195c29f93"
+	prefix                 = "fe6b4e92-cc98-425e-b0aa-"
+	n                      = 101
+	noLimit                = -1
+	validData              = `{"limit":5,"offset":0}`
+	descData               = `{"limit":5,"offset":0,"dir":"desc","order":"name"}`
+	ascData                = `{"limit":5,"offset":0,"dir":"asc","order":"name"}`
+	invalidOrderData       = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
+	zeroLimitData          = `{"limit":0,"offset":0}`
+	invalidDirData         = `{"limit":5,"offset":0,"dir":"wrong"}`
+	invalidLimitData       = `{"limit":210,"offset":0}`
+	invalidData            = `{"limit": "invalid"}`
 )
 
 var (
@@ -164,7 +165,7 @@ func TestCreateThings(t *testing.T) {
 		{
 			desc:        "create valid things",
 			data:        data,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusCreated,
 			response:    emptyValue,
@@ -172,7 +173,7 @@ func TestCreateThings(t *testing.T) {
 		{
 			desc:        "create things with empty request",
 			data:        emptyValue,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
 			response:    emptyValue,
@@ -180,7 +181,7 @@ func TestCreateThings(t *testing.T) {
 		{
 			desc:        "create thing with invalid request format",
 			data:        "}",
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
 			response:    emptyValue,
@@ -188,7 +189,7 @@ func TestCreateThings(t *testing.T) {
 		{
 			desc:        "create thing with invalid name",
 			data:        invalidNameData,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
 			response:    emptyValue,
@@ -196,7 +197,7 @@ func TestCreateThings(t *testing.T) {
 		{
 			desc:        "create things with empty JSON array",
 			data:        "[]",
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
 			response:    emptyValue,
@@ -204,7 +205,7 @@ func TestCreateThings(t *testing.T) {
 		{
 			desc:        "create thing with existing key",
 			data:        data,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusConflict,
 			response:    emptyValue,
@@ -212,7 +213,7 @@ func TestCreateThings(t *testing.T) {
 		{
 			desc:        "create thing with invalid auth token",
 			data:        data,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        wrongValue,
 			status:      http.StatusUnauthorized,
 			response:    emptyValue,
@@ -220,7 +221,7 @@ func TestCreateThings(t *testing.T) {
 		{
 			desc:        "create thing with empty auth token",
 			data:        data,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        emptyValue,
 			status:      http.StatusUnauthorized,
 			response:    emptyValue,
@@ -291,7 +292,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:        "update existing thing",
 			req:         data,
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusOK,
 		},
@@ -299,7 +300,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:        "update thing with empty JSON request",
 			req:         "{}",
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
@@ -307,7 +308,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:        "update non-existent thing",
 			req:         data,
 			id:          wrongValue,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusNotFound,
 		},
@@ -315,7 +316,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:        "update thing with invalid id",
 			req:         data,
 			id:          wrongValue,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusNotFound,
 		},
@@ -323,7 +324,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:        "update thing with invalid user token",
 			req:         data,
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        wrongValue,
 			status:      http.StatusUnauthorized,
 		},
@@ -331,7 +332,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:        "update thing with empty user token",
 			req:         data,
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        emptyValue,
 			status:      http.StatusUnauthorized,
 		},
@@ -339,7 +340,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:        "update thing with invalid data format",
 			req:         "{",
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
@@ -347,7 +348,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:        "update thing with empty request",
 			req:         emptyValue,
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
@@ -362,7 +363,7 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc:        "update thing with invalid name",
 			req:         invalidNameData,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
@@ -370,7 +371,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:        "update thing without profile id",
 			req:         invalidProfileData,
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
@@ -431,7 +432,7 @@ func TestUpdateKey(t *testing.T) {
 			desc:        "update key for an existing thing",
 			req:         data,
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusOK,
 		},
@@ -439,7 +440,7 @@ func TestUpdateKey(t *testing.T) {
 			desc:        "update thing with conflicting key",
 			req:         data,
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusConflict,
 		},
@@ -447,7 +448,7 @@ func TestUpdateKey(t *testing.T) {
 			desc:        "update key with empty JSON request",
 			req:         "{}",
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusUnauthorized,
 		},
@@ -455,7 +456,7 @@ func TestUpdateKey(t *testing.T) {
 			desc:        "update key of non-existent thing",
 			req:         dummyData,
 			id:          strconv.FormatUint(wrongID, 10),
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusNotFound,
 		},
@@ -463,7 +464,7 @@ func TestUpdateKey(t *testing.T) {
 			desc:        "update thing with invalid id",
 			req:         dummyData,
 			id:          wrongValue,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusNotFound,
 		},
@@ -471,7 +472,7 @@ func TestUpdateKey(t *testing.T) {
 			desc:        "update thing with invalid user token",
 			req:         data,
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        wrongValue,
 			status:      http.StatusUnauthorized,
 		},
@@ -479,7 +480,7 @@ func TestUpdateKey(t *testing.T) {
 			desc:        "update thing with empty user token",
 			req:         data,
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        emptyValue,
 			status:      http.StatusUnauthorized,
 		},
@@ -487,7 +488,7 @@ func TestUpdateKey(t *testing.T) {
 			desc:        "update thing with invalid data format",
 			req:         "{",
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
@@ -495,7 +496,7 @@ func TestUpdateKey(t *testing.T) {
 			desc:        "update thing with empty request",
 			req:         emptyValue,
 			id:          th.ID,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
 		},
@@ -801,7 +802,7 @@ func TestListThings(t *testing.T) {
 			desc:   "get a list of things with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s?offset=%d&limit=%d", thingURL, 0, 110),
+			url:    fmt.Sprintf("%s?offset=%d&limit=%d", thingURL, 0, 210),
 			res:    nil,
 		},
 		{
@@ -1000,7 +1001,7 @@ func TestSearchThings(t *testing.T) {
 			desc:   "search things with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			req:    limitMaxData,
+			req:    invalidLimitData,
 			res:    nil,
 		},
 		{
@@ -1175,7 +1176,7 @@ func TestSearchThingsByProfile(t *testing.T) {
 			desc:   "search things by profile with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			req:    limitMaxData,
+			req:    invalidLimitData,
 			res:    nil,
 		},
 		{
@@ -1328,7 +1329,7 @@ func TestSearchThingsByGroup(t *testing.T) {
 			desc:   "search things by group with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			req:    limitMaxData,
+			req:    invalidLimitData,
 			res:    nil,
 		},
 		{
@@ -1482,7 +1483,7 @@ func TestSearchThingsByOrg(t *testing.T) {
 			desc:   "search things by organization with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			req:    limitMaxData,
+			req:    invalidLimitData,
 			res:    nil,
 		},
 		{
@@ -1637,7 +1638,7 @@ func TestListThingsByProfile(t *testing.T) {
 			desc:   "get a list of things by profile with limit greater than max",
 			auth:   token,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, pr.ID, 0, 110),
+			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, pr.ID, 0, 210),
 			res:    nil,
 		},
 		{
@@ -1863,7 +1864,7 @@ func TestListThingsByOrg(t *testing.T) {
 			desc:   "get a list of things by org with limit greater than max",
 			auth:   adminToken,
 			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, orgID, 0, 110),
+			url:    fmt.Sprintf("%s/%s/things?offset=%d&limit=%d", thingURL, orgID, 0, 210),
 			res:    nil,
 		},
 		{
@@ -1937,6 +1938,434 @@ func TestListThingsByOrg(t *testing.T) {
 		json.NewDecoder(res.Body).Decode(&data)
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 		assert.ElementsMatch(t, tc.res, data.Things, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, data.Things))
+	}
+}
+
+func TestBackupThingsByGroup(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	grs, err := svc.CreateGroups(context.Background(), otherToken, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	profile.GroupID = gr.ID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	pr := prs[0]
+
+	data := []viewThingRes{}
+
+	for i := 0; i < n; i++ {
+		id := fmt.Sprintf("%s%012d", prefix, i+1)
+		thing1 := thing
+		thing1.ID = id
+		thing1.GroupID = gr.ID
+		thing1.ProfileID = pr.ID
+
+		ths, err := svc.CreateThings(context.Background(), token, thing1)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		th := ths[0]
+
+		data = append(data, viewThingRes{
+			ID:        th.ID,
+			GroupID:   th.GroupID,
+			ProfileID: th.ProfileID,
+			Name:      th.Name,
+			Key:       th.Key,
+			Metadata:  th.Metadata,
+		})
+	}
+
+	thingURL := fmt.Sprintf("%s/groups", ts.URL)
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		url    string
+		res    []viewThingRes
+	}{
+		{
+			desc:   "backup things by group as group owner",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, gr.ID),
+			res:    data,
+		},
+		{
+			desc:   "backup things by group the user belongs to",
+			auth:   otherToken,
+			status: http.StatusForbidden,
+			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, gr.ID),
+			res:    nil,
+		},
+		{
+			desc:   "backup things by group as admin",
+			auth:   adminToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, gr.ID),
+			res:    data,
+		},
+		{
+			desc:   "backup things by group without group id",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, emptyValue),
+			res:    nil,
+		},
+		{
+			desc:   "backup things by group with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, gr.ID),
+			res:    nil,
+		},
+		{
+			desc:   "backup things by group with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, gr.ID),
+			res:    nil,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodGet,
+			url:    tc.url,
+			token:  tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		var body []viewThingRes
+		json.NewDecoder(res.Body).Decode(&body)
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, body, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body))
+	}
+}
+
+func TestRestoreThingsByGroup(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+	idProvider := uuid.New()
+
+	data := []viewThingRes{}
+
+	grs, err := svc.CreateGroups(context.Background(), otherToken, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	prID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	for i := 0; i < n; i++ {
+		thId, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+		thKey, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		data = append(data, viewThingRes{
+			ID:        thId,
+			GroupID:   gr.ID,
+			ProfileID: prID,
+			Name:      fmt.Sprintf("thing_%d", i),
+			Key:       thKey,
+			Metadata:  metadata,
+		})
+	}
+
+	dataBytes, err := json.Marshal(data)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	dataString := string(dataBytes)
+
+	thingURL := fmt.Sprintf("%s/groups", ts.URL)
+
+	cases := []struct {
+		desc        string
+		auth        string
+		contentType string
+		data        string
+		status      int
+		url         string
+		res         string
+	}{
+		{
+			desc:        "restore things by group as group owner",
+			auth:        token,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusCreated,
+			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, gr.ID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore things by group the user belongs to",
+			auth:        otherToken,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusForbidden,
+			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, gr.ID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore things by group without group id",
+			auth:        token,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusBadRequest,
+			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, emptyValue),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore things by group with invalid token",
+			auth:        wrongValue,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusUnauthorized,
+			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, gr.ID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore things by group with empty token",
+			auth:        emptyValue,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusUnauthorized,
+			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, gr.ID),
+			res:         emptyValue,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPost,
+			url:         tc.url,
+			contentType: tc.contentType,
+			token:       tc.auth,
+			body:        strings.NewReader(tc.data),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestBackupThingsByOrg(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	profile.GroupID = gr.ID
+	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	pr := prs[0]
+
+	data := []viewThingRes{}
+
+	for i := 0; i < n; i++ {
+		id := fmt.Sprintf("%s%012d", prefix, i+1)
+		thing1 := thing
+		thing1.ID = id
+		thing1.GroupID = gr.ID
+		thing1.ProfileID = pr.ID
+
+		ths, err := svc.CreateThings(context.Background(), token, thing1)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		th := ths[0]
+
+		data = append(data, viewThingRes{
+			ID:        th.ID,
+			GroupID:   th.GroupID,
+			ProfileID: th.ProfileID,
+			Name:      th.Name,
+			Key:       th.Key,
+			Metadata:  th.Metadata,
+		})
+	}
+
+	thingURL := fmt.Sprintf("%s/orgs", ts.URL)
+
+	cases := []struct {
+		desc   string
+		auth   string
+		status int
+		url    string
+		res    []viewThingRes
+	}{
+		{
+			desc:   "backup things by org as org owner",
+			auth:   token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
+			res:    data,
+		},
+		{
+			desc:   "backup things by org the user belongs to",
+			auth:   otherToken,
+			status: http.StatusForbidden,
+			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
+			res:    nil,
+		},
+		{
+			desc:   "backup things by org as admin",
+			auth:   adminToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
+			res:    data,
+		},
+		{
+			desc:   "backup things by org without org id",
+			auth:   token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, emptyValue),
+			res:    nil,
+		},
+		{
+			desc:   "backup things by org with invalid token",
+			auth:   wrongValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
+			res:    nil,
+		},
+		{
+			desc:   "backup things by org with empty token",
+			auth:   emptyValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
+			res:    nil,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodGet,
+			url:    tc.url,
+			token:  tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
+		defer res.Body.Close()
+		var body []viewThingRes
+		json.NewDecoder(res.Body).Decode(&body)
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, body, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body))
+	}
+}
+
+func TestRestoreThingsByOrg(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+	idProvider := uuid.New()
+
+	data := []viewThingRes{}
+
+	grID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	prID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	for i := 0; i < n; i++ {
+		thId, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+		thKey, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		data = append(data, viewThingRes{
+			ID:        thId,
+			GroupID:   grID,
+			ProfileID: prID,
+			Name:      fmt.Sprintf("thing_%d", i),
+			Key:       thKey,
+			Metadata:  metadata,
+		})
+	}
+
+	dataBytes, err := json.Marshal(data)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	dataString := string(dataBytes)
+
+	thingURL := fmt.Sprintf("%s/orgs", ts.URL)
+
+	cases := []struct {
+		desc        string
+		auth        string
+		contentType string
+		data        string
+		status      int
+		url         string
+		res         string
+	}{
+		{
+			desc:        "restore things by org as org owner",
+			auth:        token,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusCreated,
+			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, orgID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore things by org the user belongs to",
+			auth:        otherToken,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusForbidden,
+			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, orgID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore things by org without org id",
+			auth:        token,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusBadRequest,
+			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, emptyValue),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore things by org with invalid token",
+			auth:        wrongValue,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusUnauthorized,
+			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, orgID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore things by org with empty token",
+			auth:        emptyValue,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusUnauthorized,
+			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, orgID),
+			res:         emptyValue,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPost,
+			url:         tc.url,
+			contentType: tc.contentType,
+			token:       tc.auth,
+			body:        strings.NewReader(tc.data),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 	}
 }
 
@@ -2040,14 +2469,14 @@ func TestRemoveThings(t *testing.T) {
 			desc:        "remove things with invalid token",
 			data:        thingIDs,
 			auth:        wrongValue,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			status:      http.StatusUnauthorized,
 		},
 		{
 			desc:        "remove things with empty token",
 			data:        thingIDs,
 			auth:        emptyValue,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			status:      http.StatusUnauthorized,
 		},
 		{
@@ -2061,28 +2490,28 @@ func TestRemoveThings(t *testing.T) {
 			desc:        "remove existing things",
 			data:        thingIDs,
 			auth:        token,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			status:      http.StatusNoContent,
 		},
 		{
 			desc:        "remove non-existent things",
 			data:        []string{wrongValue},
 			auth:        token,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			status:      http.StatusNotFound,
 		},
 		{
 			desc:        "remove things with empty thing ids",
 			data:        []string{emptyValue},
 			auth:        token,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "remove profiles without profile ids",
 			data:        []string{},
 			auth:        token,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			status:      http.StatusBadRequest,
 		},
 	}
@@ -2163,9 +2592,9 @@ func TestBackup(t *testing.T) {
 		ths = append(ths, th)
 	}
 
-	var thingsRes []backupThingRes
+	var thingsRes []viewThingRes
 	for _, th := range ths {
-		thingsRes = append(thingsRes, backupThingRes{
+		thingsRes = append(thingsRes, viewThingRes{
 			ID:        th.ID,
 			GroupID:   th.GroupID,
 			ProfileID: th.ProfileID,
@@ -2348,7 +2777,7 @@ func TestRestore(t *testing.T) {
 			status:      http.StatusCreated,
 			url:         restoreURL,
 			req:         data,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 		},
 		{
 			desc:        "restore with invalid token",
@@ -2356,7 +2785,7 @@ func TestRestore(t *testing.T) {
 			status:      http.StatusUnauthorized,
 			url:         restoreURL,
 			req:         data,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 		},
 		{
 			desc:        "restore with empty token",
@@ -2364,7 +2793,7 @@ func TestRestore(t *testing.T) {
 			status:      http.StatusUnauthorized,
 			url:         restoreURL,
 			req:         data,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 		},
 		{
 			desc:        "restore with invalid request",
@@ -2372,7 +2801,7 @@ func TestRestore(t *testing.T) {
 			status:      http.StatusBadRequest,
 			url:         restoreURL,
 			req:         invalidData,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 		},
 	}
 
@@ -2423,12 +2852,12 @@ func TestIdentify(t *testing.T) {
 		status      int
 	}{
 		"identify existing thing": {
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			req:         data,
 			status:      http.StatusOK,
 		},
 		"identify non-existent thing": {
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			req:         nonexistentData,
 			status:      http.StatusNotFound,
 		},
@@ -2438,12 +2867,12 @@ func TestIdentify(t *testing.T) {
 			status:      http.StatusUnsupportedMediaType,
 		},
 		"identify with empty JSON request": {
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			req:         "{}",
 			status:      http.StatusUnauthorized,
 		},
 		"identify with invalid JSON request": {
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			req:         emptyValue,
 			status:      http.StatusBadRequest,
 		},
@@ -2487,9 +2916,9 @@ type thingsPageRes struct {
 	Limit  uint64     `json:"limit"`
 }
 
-type backupThingRes struct {
+type viewThingRes struct {
 	ID        string                 `json:"id"`
-	GroupID   string                 `json:"group_id"`
+	GroupID   string                 `json:"group_id,omitempty"`
 	ProfileID string                 `json:"profile_id"`
 	Name      string                 `json:"name,omitempty"`
 	Key       string                 `json:"key"`
@@ -2512,7 +2941,7 @@ type viewGroupRes struct {
 }
 
 type backupRes struct {
-	Things   []backupThingRes   `json:"things"`
+	Things   []viewThingRes     `json:"things"`
 	Profiles []backupProfileRes `json:"profiles"`
 	Groups   []viewGroupRes     `json:"groups"`
 }

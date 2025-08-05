@@ -8,7 +8,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -188,6 +187,8 @@ func (tr thingRepository) RetrieveByGroups(ctx context.Context, groupIDs []strin
 		return things.ThingsPage{}, nil
 	}
 
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	giq := getGroupIDsQuery(groupIDs)
 	nq, name := dbutil.GetNameQuery(pm.Name)
@@ -197,7 +198,7 @@ func (tr thingRepository) RetrieveByGroups(ctx context.Context, groupIDs []strin
 	}
 
 	whereClause := dbutil.BuildWhereClause(giq, nq, mq)
-	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
+	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
 
 	params := map[string]interface{}{
@@ -233,6 +234,8 @@ func (tr thingRepository) BackupAll(ctx context.Context) ([]things.Thing, error)
 }
 
 func (tr thingRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
@@ -241,7 +244,7 @@ func (tr thingRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetada
 	}
 
 	whereClause := dbutil.BuildWhereClause(nq, mq)
-	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
+	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
 
 	params := map[string]interface{}{
@@ -255,6 +258,8 @@ func (tr thingRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetada
 }
 
 func (tr thingRepository) RetrieveByProfile(ctx context.Context, prID string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
 	// Verify if UUID format is valid to avoid internal Postgres error
@@ -269,7 +274,7 @@ func (tr thingRepository) RetrieveByProfile(ctx context.Context, prID string, pm
 	}
 
 	whereClause := dbutil.BuildWhereClause(baseCondition, mq)
-	query := fmt.Sprintf(`SELECT id, group_id, name, key, metadata FROM things %s ORDER BY %s %s %s;`, whereClause, pm.Order, strings.ToUpper(pm.Dir), olq)
+	query := fmt.Sprintf(`SELECT id, group_id, name, key, metadata FROM things %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
 
 	params := map[string]interface{}{
@@ -280,6 +285,34 @@ func (tr thingRepository) RetrieveByProfile(ctx context.Context, prID string, pm
 	}
 
 	return tr.retrieve(ctx, query, cquery, params)
+}
+
+func (tr thingRepository) BackupByGroups(ctx context.Context, groupIDs []string) ([]things.Thing, error) {
+	if len(groupIDs) == 0 {
+		return []things.Thing{}, nil
+	}
+
+	giq := getGroupIDsQuery(groupIDs)
+	whereClause := dbutil.BuildWhereClause(giq)
+	query := fmt.Sprintf("SELECT id, group_id, profile_id, name, key, metadata FROM things %s", whereClause)
+
+	var items []dbThing
+	err := tr.db.SelectContext(ctx, &items, query)
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	var ths []things.Thing
+	for _, i := range items {
+		th, err := toThing(i)
+		if err != nil {
+			return []things.Thing{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		ths = append(ths, th)
+	}
+
+	return ths, nil
 }
 
 func (tr thingRepository) Remove(ctx context.Context, ids ...string) error {

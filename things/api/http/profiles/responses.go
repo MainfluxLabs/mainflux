@@ -84,3 +84,25 @@ type pageRes struct {
 	Dir    string `json:"direction,omitempty"`
 	Name   string `json:"name,omitempty"`
 }
+
+type viewProfileRes struct {
+	ID       string                 `json:"id"`
+	GroupID  string                 `json:"group_id"`
+	Name     string                 `json:"name"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Config   map[string]interface{} `json:"config,omitempty"`
+}
+
+type restoreRes struct{}
+
+func (res restoreRes) Code() int {
+	return http.StatusCreated
+}
+
+func (res restoreRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res restoreRes) Empty() bool {
+	return true
+}

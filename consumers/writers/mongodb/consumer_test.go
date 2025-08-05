@@ -62,7 +62,7 @@ func TestSaveSenML(t *testing.T) {
 		msg := senml.Message{
 			Name: "test name",
 			Unit: "km",
-			Time: float64(now + int64(i)),
+			Time: int64(now + int64(i)),
 		}
 		switch i % valueFields {
 		case 0:

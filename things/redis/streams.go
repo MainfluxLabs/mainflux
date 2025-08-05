@@ -113,12 +113,36 @@ func (es eventStore) Backup(ctx context.Context, token string) (things.Backup, e
 	return es.svc.Backup(ctx, token)
 }
 
-func (es eventStore) BackupGroupsByOrg(ctx context.Context, token string, orgID string) (things.BackupGroupsByOrg, error) {
+func (es eventStore) BackupGroupsByOrg(ctx context.Context, token string, orgID string) (things.GroupsBackup, error) {
 	return es.svc.BackupGroupsByOrg(ctx, token, orgID)
 }
 
-func (es eventStore) BackupGroupMemberships(ctx context.Context, token string, groupID string) (things.BackupGroupMemberships, error) {
+func (es eventStore) RestoreGroupsByOrg(ctx context.Context, token string, orgID string, backup things.GroupsBackup) error {
+	return es.svc.RestoreGroupsByOrg(ctx, token, orgID, backup)
+}
+
+func (es eventStore) BackupGroupMemberships(ctx context.Context, token string, groupID string) (things.GroupMembershipsBackup, error) {
 	return es.svc.BackupGroupMemberships(ctx, token, groupID)
+}
+
+func (es eventStore) RestoreGroupMemberships(ctx context.Context, token string, groupID string, backup things.GroupMembershipsBackup) error {
+	return es.svc.RestoreGroupMemberships(ctx, token, groupID, backup)
+}
+
+func (es eventStore) BackupProfilesByOrg(ctx context.Context, token string, orgID string) (things.ProfilesBackup, error) {
+	return es.svc.BackupProfilesByOrg(ctx, token, orgID)
+}
+
+func (es eventStore) RestoreProfilesByOrg(ctx context.Context, token string, orgID string, backup things.ProfilesBackup) error {
+	return es.svc.RestoreProfilesByOrg(ctx, token, orgID, backup)
+}
+
+func (es eventStore) BackupProfilesByGroup(ctx context.Context, token string, groupID string) (things.ProfilesBackup, error) {
+	return es.svc.BackupProfilesByGroup(ctx, token, groupID)
+}
+
+func (es eventStore) RestoreProfilesByGroup(ctx context.Context, token string, groupID string, backup things.ProfilesBackup) error {
+	return es.svc.RestoreProfilesByGroup(ctx, token, groupID, backup)
 }
 
 func (es eventStore) Restore(ctx context.Context, token string, backup things.Backup) error {
@@ -268,6 +292,22 @@ func (es eventStore) GetProfileIDByThingID(ctx context.Context, thingID string) 
 
 func (es eventStore) ListThingsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	return es.svc.ListThingsByGroup(ctx, token, groupID, pm)
+}
+
+func (es eventStore) BackupThingsByGroup(ctx context.Context, token string, groupID string) (things.ThingsBackup, error) {
+	return es.svc.BackupThingsByGroup(ctx, token, groupID)
+}
+
+func (es eventStore) RestoreThingsByGroup(ctx context.Context, token string, groupID string, backup things.ThingsBackup) error {
+	return es.svc.RestoreThingsByGroup(ctx, token, groupID, backup)
+}
+
+func (es eventStore) BackupThingsByOrg(ctx context.Context, token string, orgID string) (things.ThingsBackup, error) {
+	return es.svc.BackupThingsByOrg(ctx, token, orgID)
+}
+
+func (es eventStore) RestoreThingsByOrg(ctx context.Context, token string, orgID string, backup things.ThingsBackup) error {
+	return es.svc.RestoreThingsByOrg(ctx, token, orgID, backup)
 }
 
 func (es eventStore) ListProfilesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {

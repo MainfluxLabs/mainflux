@@ -26,24 +26,27 @@ import (
 )
 
 const (
-	emptyValue     = ""
-	contentType    = "application/json"
-	userEmail      = "user@example.com"
-	adminEmail     = "admin@example.com"
-	viewerEmail    = "viewer@gmail.com"
-	editorEmail    = "editor@gmail.com"
-	otherUserEmail = "other_user@example.com"
-	token          = userEmail
-	viewerToken    = viewerEmail
-	editorToken    = editorEmail
-	wrongValue     = "wrong_value"
-	password       = "password"
-	orgID          = "374106f7-030e-4881-8ab0-151195c29f92"
-	n              = 5
-	emailKey       = "email"
-	idKey          = "id"
-	ascKey         = "asc"
-	descKey        = "desc"
+	emptyValue             = ""
+	contentTypeJSON        = "application/json"
+	contentTypeOctetStream = "application/octet-stream"
+	userEmail              = "user@example.com"
+	adminEmail             = "admin@example.com"
+	viewerEmail            = "viewer@gmail.com"
+	editorEmail            = "editor@gmail.com"
+	otherUserEmail         = "other_user@example.com"
+	token                  = userEmail
+	otherToken             = otherUserEmail
+	adminToken             = adminEmail
+	viewerToken            = viewerEmail
+	editorToken            = editorEmail
+	wrongValue             = "wrong_value"
+	password               = "password"
+	orgID                  = "374106f7-030e-4881-8ab0-151195c29f92"
+	n                      = 5
+	emailKey               = "email"
+	idKey                  = "id"
+	ascKey                 = "asc"
+	descKey                = "desc"
 )
 
 var (
@@ -200,7 +203,7 @@ func TestCreateGroupMemberships(t *testing.T) {
 			client:      client,
 			method:      http.MethodPost,
 			url:         fmt.Sprintf("%s/groups/%s/memberships", ts.URL, tc.id),
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			token:       tc.token,
 			body:        strings.NewReader(tc.req),
 		}
@@ -293,7 +296,7 @@ func TestRemoveGroupMemberships(t *testing.T) {
 			client:      client,
 			method:      http.MethodPatch,
 			url:         fmt.Sprintf("%s/groups/%s/memberships", ts.URL, tc.id),
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			token:       tc.token,
 			body:        strings.NewReader(tc.req),
 		}
@@ -401,7 +404,7 @@ func TestUpdateMemberships(t *testing.T) {
 			client:      client,
 			method:      http.MethodPut,
 			url:         fmt.Sprintf("%s/groups/%s/memberships", ts.URL, tc.id),
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			token:       tc.token,
 			body:        strings.NewReader(tc.req),
 		}
@@ -616,7 +619,7 @@ func TestListGroupMemberships(t *testing.T) {
 			client:      client,
 			method:      http.MethodGet,
 			url:         tc.url,
-			contentType: contentType,
+			contentType: contentTypeJSON,
 			token:       tc.token,
 		}
 		res, err := req.make()
@@ -625,6 +628,201 @@ func TestListGroupMemberships(t *testing.T) {
 		err = json.NewDecoder(res.Body).Decode(&data)
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.ElementsMatch(t, tc.res, data.GroupMemberships, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data.GroupMemberships))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestBackupGroupMemberships(t *testing.T) {
+	svc := newService()
+
+	ts := newServer(svc)
+	defer ts.Close()
+
+	grs, err := svc.CreateGroups(context.Background(), token, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	for i := range memberships {
+		memberships[i].GroupID = gr.ID
+	}
+
+	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	var data []groupMembership
+	for _, m := range memberships {
+		data = append(data, groupMembership{
+			MemberID: m.MemberID,
+			Email:    m.Email,
+			Role:     m.Role,
+		})
+	}
+
+	owner := groupMembership{
+		MemberID: user.ID,
+		Email:    userEmail,
+		Role:     auth.Owner,
+	}
+	data = append(data, owner)
+
+	groupMembershipURL := fmt.Sprintf("%s/groups", ts.URL)
+
+	cases := []struct {
+		desc   string
+		token  string
+		url    string
+		status int
+		res    []groupMembership
+	}{
+		{
+			desc:   "backup group memberships as group owner",
+			token:  token,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/memberships/backup", groupMembershipURL, gr.ID),
+			res:    data,
+		},
+		{
+			desc:   "backup group memberships as admin",
+			token:  adminToken,
+			status: http.StatusOK,
+			url:    fmt.Sprintf("%s/%s/memberships/backup", groupMembershipURL, gr.ID),
+			res:    data,
+		},
+		{
+			desc:   "backup group memberships without group id",
+			token:  token,
+			status: http.StatusBadRequest,
+			url:    fmt.Sprintf("%s/%s/memberships/backup", groupMembershipURL, emptyValue),
+			res:    nil,
+		},
+		{
+			desc:   "backup group memberships with invalid token",
+			token:  wrongValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/%s/memberships/backup", groupMembershipURL, gr.ID),
+			res:    nil,
+		},
+		{
+			desc:   "backup group memberships with empty token",
+			token:  emptyValue,
+			status: http.StatusUnauthorized,
+			url:    fmt.Sprintf("%s/%s/memberships/backup", groupMembershipURL, gr.ID),
+			res:    nil,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodGet,
+			url:    tc.url,
+			token:  tc.token,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		var body []groupMembership
+		json.NewDecoder(res.Body).Decode(&body)
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.res, body, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, body))
+	}
+}
+
+func TestRestoreGroupMemberships(t *testing.T) {
+	svc := newService()
+
+	ts := newServer(svc)
+	defer ts.Close()
+
+	grs, err := svc.CreateGroups(context.Background(), otherToken, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	for i := range memberships {
+		memberships[i].GroupID = gr.ID
+	}
+
+	var data []groupMembership
+	for _, m := range memberships {
+		data = append(data, groupMembership{
+			MemberID: m.MemberID,
+			Email:    m.Email,
+			Role:     m.Role,
+		})
+	}
+
+	dataBytes, err := json.Marshal(data)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	dataString := string(dataBytes)
+
+	groupMembershipURL := fmt.Sprintf("%s/groups", ts.URL)
+
+	cases := []struct {
+		desc        string
+		auth        string
+		contentType string
+		data        string
+		status      int
+		url         string
+		res         string
+	}{
+		{
+			desc:        "restore group memberships as group owner",
+			auth:        token,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusCreated,
+			url:         fmt.Sprintf("%s/%s/memberships/restore", groupMembershipURL, gr.ID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore group memberships as group admin",
+			auth:        otherToken,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusForbidden,
+			url:         fmt.Sprintf("%s/%s/memberships/restore", groupMembershipURL, gr.ID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore group memberships without group id",
+			auth:        token,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusBadRequest,
+			url:         fmt.Sprintf("%s/%s/memberships/restore", groupMembershipURL, emptyValue),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore group memberships with invalid token",
+			auth:        wrongValue,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusUnauthorized,
+			url:         fmt.Sprintf("%s/%s/memberships/restore", groupMembershipURL, gr.ID),
+			res:         emptyValue,
+		},
+		{
+			desc:        "restore group memberships with empty token",
+			auth:        emptyValue,
+			data:        dataString,
+			contentType: contentTypeOctetStream,
+			status:      http.StatusUnauthorized,
+			url:         fmt.Sprintf("%s/%s/memberships/restore", groupMembershipURL, gr.ID),
+			res:         emptyValue,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPost,
+			url:         tc.url,
+			contentType: tc.contentType,
+			token:       tc.auth,
+			body:        strings.NewReader(tc.data),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 	}
 }
