@@ -5,6 +5,6 @@ package users
 
 // Emailer wrapper around the email
 type Emailer interface {
-	SendPasswordReset(To []string, path, token string) error
-	SendEmailVerification(To []string, path, token string) error
+	SendPasswordReset(To []string, redirectPath, token string) error
+	SendEmailVerification(To []string, redirectPath, token string) error
 }

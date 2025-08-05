@@ -65,7 +65,7 @@ func registrationEndpoint(svc users.Service) endpoint.Endpoint {
 // supplying an e-mail address and a "path" string, which is appended to the
 // host of the running service to generate a final password reset link
 // that the users receives in an e-mail message:
-// URL: {MF_HOST}+{"path"}+"?token="+<token>
+// URL: {MF_HOST}+{redirect_path}+"?token="+<token>
 func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(passwResetReq)

@@ -29,12 +29,12 @@ func New(host string, c *email.Config) (users.Emailer, error) {
 	}, nil
 }
 
-func (e *emailer) SendPasswordReset(To []string, path string, token string) error {
-	url := fmt.Sprintf("%s%s?token=%s", e.host, path, token)
+func (e *emailer) SendPasswordReset(To []string, redirectPath string, token string) error {
+	url := fmt.Sprintf("%s%s?token=%s", e.host, redirectPath, token)
 	return e.agent.Send(To, "", "Password reset", "", url, "")
 }
 
-func (e *emailer) SendEmailVerification(To []string, path string, token string) error {
+func (e *emailer) SendEmailVerification(To []string, redirectPath string, token string) error {
 	subject := "Verify your MainfluxLabs e-mail address"
 	content := `
 		Use the following link to verify your e-mail address and complete registration:
@@ -42,7 +42,7 @@ func (e *emailer) SendEmailVerification(To []string, path string, token string) 
 		%s
 	`
 
-	url := fmt.Sprintf("%s%s?token=%s", e.host, path, token)
+	url := fmt.Sprintf("%s%s?token=%s", e.host, redirectPath, token)
 
 	content = fmt.Sprintf(content, url)
 
