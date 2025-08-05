@@ -37,7 +37,7 @@ type selfRegisterUserReq struct {
 
 func (req selfRegisterUserReq) validate() error {
 	if req.RedirectPath == "" {
-		return apiutil.ErrMissingPath
+		return apiutil.ErrMissingRedirectPath
 	}
 
 	return req.User.Validate(userPasswordRegex)
@@ -143,7 +143,7 @@ func (req passwResetReq) validate() error {
 	}
 
 	if req.RedirectPath == "" {
-		return apiutil.ErrMissingPath
+		return apiutil.ErrMissingRedirectPath
 	}
 
 	return nil

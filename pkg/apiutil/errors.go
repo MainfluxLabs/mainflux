@@ -108,8 +108,8 @@ var (
 	// ErrMissingEmailToken indicates a missing e-mail verification token.
 	ErrMissingEmailToken = errors.New("missing e-mail verification token")
 
-	// ErrMissingPath indicates missing endpoint path from the frontend.
-	ErrMissingPath = errors.New("missing path")
+	// ErrMissingRedirectPath indicates missing endpoint path from the frontend.
+	ErrMissingRedirectPath = errors.New("missing redirect path")
 
 	// ErrMissingPass indicates missing password.
 	ErrMissingPass = errors.New("missing password")
