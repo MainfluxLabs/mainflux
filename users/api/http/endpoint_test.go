@@ -105,13 +105,13 @@ var (
 )
 
 type selfRegisterReq struct {
-	User users.User `json:"user,omitempty"`
-	Path string     `json:"path,omitempty"`
+	User         users.User `json:"user,omitempty"`
+	RedirectPath string     `json:"redirectPath,omitempty"`
 }
 
 type passwordResetReq struct {
-	Email string `json:"email,omitempty"`
-	Path  string `json:"path,omitempty"`
+	Email        string `json:"email,omitempty"`
+	RedirectPath string `json:"redirectPath,omitempty"`
 }
 
 type testRequest struct {
@@ -165,25 +165,25 @@ func TestSelfRegister(t *testing.T) {
 	client := ts.Client()
 
 	data := toJSON(selfRegisterReq{
-		User: newUser,
-		Path: path,
+		User:         newUser,
+		RedirectPath: path,
 	})
 
 	invalidData := toJSON(selfRegisterReq{
-		User: users.User{Email: invalidEmail, Password: validPass},
-		Path: path,
+		User:         users.User{Email: invalidEmail, Password: validPass},
+		RedirectPath: path,
 	})
 
 	invalidPasswordData := toJSON(selfRegisterReq{
-		User: users.User{Email: validEmail, Password: invalidPass},
-		Path: path,
+		User:         users.User{Email: validEmail, Password: invalidPass},
+		RedirectPath: path,
 	})
 
 	invalidFieldData := fmt.Sprintf(`{"email": "%s", "pass": "%s"}`, user.Email, user.Password)
 
 	existingUserData := toJSON(selfRegisterReq{
-		User: user,
-		Path: path,
+		User:         user,
+		RedirectPath: path,
 	})
 
 	cases := []struct {
@@ -815,13 +815,13 @@ func TestPasswordResetRequest(t *testing.T) {
 	client := ts.Client()
 
 	data := toJSON(passwordResetReq{
-		Email: user.Email,
-		Path:  path,
+		Email:        user.Email,
+		RedirectPath: path,
 	})
 
 	nonexistentData := toJSON(passwordResetReq{
-		Email: "non-existentuser@example.com",
-		Path:  path,
+		Email:        "non-existentuser@example.com",
+		RedirectPath: path,
 	})
 
 	expectedExisting := toJSON(struct {

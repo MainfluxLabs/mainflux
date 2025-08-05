@@ -17,7 +17,7 @@ func selfRegistrationEndpoint(svc users.Service) endpoint.Endpoint {
 			return selfRegisterRes{}, err
 		}
 
-		_, err := svc.SelfRegister(ctx, req.User, req.Path)
+		_, err := svc.SelfRegister(ctx, req.User, req.RedirectPath)
 		if err != nil {
 			return selfRegisterRes{}, err
 		}
@@ -73,7 +73,7 @@ func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 		res := passwResetReqRes{}
-		if err := svc.GenerateResetToken(ctx, req.Email, req.Path); err != nil {
+		if err := svc.GenerateResetToken(ctx, req.Email, req.RedirectPath); err != nil {
 			return nil, err
 		}
 		res.Msg = MailSent

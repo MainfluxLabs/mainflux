@@ -31,12 +31,12 @@ func (req userReq) validate() error {
 }
 
 type selfRegisterUserReq struct {
-	User users.User `json:"user"`
-	Path string     `json:"path"`
+	User         users.User `json:"user"`
+	RedirectPath string     `json:"redirectPath"`
 }
 
 func (req selfRegisterUserReq) validate() error {
-	if req.Path == "" {
+	if req.RedirectPath == "" {
 		return apiutil.ErrMissingPath
 	}
 
@@ -133,8 +133,8 @@ func (req updateUserReq) validate() error {
 }
 
 type passwResetReq struct {
-	Email string `json:"email"`
-	Path  string `json:"path"`
+	Email        string `json:"email"`
+	RedirectPath string `json:"redirectPath"`
 }
 
 func (req passwResetReq) validate() error {
@@ -142,7 +142,7 @@ func (req passwResetReq) validate() error {
 		return apiutil.ErrMissingEmail
 	}
 
-	if req.Path == "" {
+	if req.RedirectPath == "" {
 		return apiutil.ErrMissingPath
 	}
 

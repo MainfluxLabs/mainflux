@@ -50,8 +50,8 @@ func (sdk mfSDK) CreateUser(u User, token string) (string, error) {
 
 func (sdk mfSDK) RegisterUser(u User) (string, error) {
 	data, err := json.Marshal(struct {
-		User User
-		Path string
+		User         User
+		RedirectPath string `json:"redirectPath"`
 	}{
 		u,
 		registerUserPath,
