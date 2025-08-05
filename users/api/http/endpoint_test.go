@@ -106,12 +106,12 @@ var (
 
 type selfRegisterReq struct {
 	User         users.User `json:"user,omitempty"`
-	RedirectPath string     `json:"redirectPath,omitempty"`
+	RedirectPath string     `json:"redirect_path,omitempty"`
 }
 
 type passwordResetReq struct {
 	Email        string `json:"email,omitempty"`
-	RedirectPath string `json:"redirectPath,omitempty"`
+	RedirectPath string `json:"redirect_path,omitempty"`
 }
 
 type testRequest struct {

@@ -32,7 +32,7 @@ func (req userReq) validate() error {
 
 type selfRegisterUserReq struct {
 	User         users.User `json:"user"`
-	RedirectPath string     `json:"redirectPath"`
+	RedirectPath string     `json:"redirect_path"`
 }
 
 func (req selfRegisterUserReq) validate() error {
@@ -134,7 +134,7 @@ func (req updateUserReq) validate() error {
 
 type passwResetReq struct {
 	Email        string `json:"email"`
-	RedirectPath string `json:"redirectPath"`
+	RedirectPath string `json:"redirect_path"`
 }
 
 func (req passwResetReq) validate() error {
