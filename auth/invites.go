@@ -138,7 +138,17 @@ func (svc service) InviteMember(ctx context.Context, token string, orgID string,
 		inviteeID = users.Users[0].Id
 	}
 
-	fmt.Printf("inviteeID: %+v, inviteeEmail: %+v\n", inviteeID, inviteeEmail)
+	if inviteeID != "" {
+		_, err := svc.ViewOrgMembership(ctx, token, orgID, inviteeID)
+
+		if err == nil {
+			return Invite{}, ErrOrgMembershipExists
+		}
+
+		if err != errors.ErrNotFound {
+			return Invite{}, err
+		}
+	}
 
 	createdAt := getTimestmap()
 	inviteID, err := svc.idProvider.ID()
