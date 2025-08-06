@@ -42,6 +42,7 @@ service AuthService {
     rpc GetOwnerIDByOrgID(OrgID) returns (OwnerID) {}
     rpc AssignRole(AssignRoleReq) returns (google.protobuf.Empty) {}
     rpc RetrieveRole(RetrieveRoleReq) returns (RetrieveRoleRes) {}
+    rpc FlipInactiveInvites(FlipInactiveInvitesReq) returns (Count) {}
 }
 
 service RulesService {
@@ -97,6 +98,15 @@ message OrgID {
 
 message OwnerID {
     string value = 1;
+}
+
+message FlipInactiveInvitesReq {
+    string email = 1;
+    string userID = 2;
+}
+
+message Count {
+    uint32 value = 1;
 }
 
 // If a token is not carrying any information itself, the type

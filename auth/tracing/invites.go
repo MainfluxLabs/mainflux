@@ -63,3 +63,11 @@ func (irm invitesRepositoryMiddleware) RetrieveByInviteeID(ctx context.Context, 
 
 	return irm.repo.RetrieveByInviteeID(ctx, inviteeID, pm)
 }
+
+func (irm invitesRepositoryMiddleware) FlipInactiveInvites(ctx context.Context, email string, inviteeID string) (uint32, error) {
+	span := createSpan(ctx, irm.tracer, remove)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return irm.repo.FlipInactiveInvites(ctx, email, inviteeID)
+}

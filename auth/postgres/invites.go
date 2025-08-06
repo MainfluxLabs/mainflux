@@ -34,8 +34,8 @@ func (ir invitesRepository) Save(ctx context.Context, invites ...auth.Invite) er
 	}
 
 	qIns := `
-		INSERT INTO invites (id, invitee_id, inviter_id, org_id, invitee_role, created_at, expires_at)	
-		VALUES (:id, :invitee_id, :inviter_id, :org_id, :invitee_role, :created_at, :expires_at)
+		INSERT INTO invites (id, invitee_id, invitee_email, inviter_id, org_id, invitee_role, created_at, expires_at)	
+		VALUES (:id, :invitee_id, :invitee_email, :inviter_id, :org_id, :invitee_role, :created_at, :expires_at)
 	`
 
 	for _, invite := range invites {
@@ -49,8 +49,8 @@ func (ir invitesRepository) Save(ctx context.Context, invites ...auth.Invite) er
 				case pgerrcode.InvalidTextRepresentation:
 					return errors.Wrap(errors.ErrMalformedEntity, err)
 				case pgerrcode.UniqueViolation:
-					var e error = errors.ErrConflict
-					if pgErr.ConstraintName == "invites_invitee_id_org_id_key" {
+					var e = errors.ErrConflict
+					if pgErr.ConstraintName == "invites_invitee_id_org_id_key" || pgErr.ConstraintName == "invites_invitee_email_org_id_key" {
 						e = auth.ErrUserAlreadyInvited
 					}
 
@@ -153,7 +153,7 @@ func (ir invitesRepository) RetrieveByInviteeID(ctx context.Context, inviteeID s
 
 	for rows.Next() {
 		dbInv := dbInvite{
-			InviteeID: inviteeID,
+			InviteeID: sql.NullString{String: inviteeID, Valid: true},
 		}
 
 		if err := rows.StructScan(&dbInv); err != nil {
@@ -183,36 +183,80 @@ func (ir invitesRepository) RetrieveByInviteeID(ctx context.Context, inviteeID s
 	return page, nil
 }
 
+func (ir invitesRepository) FlipInactiveInvites(ctx context.Context, email string, inviteeID string) (uint32, error) {
+	query := `
+		UPDATE invites
+		SET invitee_email = NULL, invitee_id = :invitee_id
+		WHERE invitee_email = :email
+	`
+
+	res, err := ir.db.NamedExecContext(ctx, query, map[string]any{
+		"invitee_id": inviteeID,
+		"email":      email,
+	})
+
+	if err != nil {
+		pqErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pqErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return 0, errors.Wrap(errors.ErrMalformedEntity, err)
+			}
+		}
+		return 0, errors.Wrap(errors.ErrUpdateEntity, err)
+	}
+
+	cnt, err := res.RowsAffected()
+	if err != nil {
+		return 0, errors.Wrap(errors.ErrUpdateEntity, err)
+	}
+
+	return uint32(cnt), nil
+}
+
 func toDBInvite(invite auth.Invite) dbInvite {
 	return dbInvite{
-		ID:          invite.ID,
-		InviteeID:   invite.InviteeID,
-		InviterID:   invite.InviterID,
-		OrgID:       invite.OrgID,
-		InviteeRole: invite.InviteeRole,
-		CreatedAt:   invite.CreatedAt,
-		ExpiresAt:   invite.ExpiresAt,
+		ID:           invite.ID,
+		InviteeID:    sql.NullString{String: invite.InviteeID, Valid: len(invite.InviteeID) != 0},
+		InviteeEmail: sql.NullString{String: invite.InviteeEmail, Valid: len(invite.InviteeEmail) != 0},
+		InviterID:    invite.InviterID,
+		OrgID:        invite.OrgID,
+		InviteeRole:  invite.InviteeRole,
+		CreatedAt:    invite.CreatedAt,
+		ExpiresAt:    invite.ExpiresAt,
 	}
 }
 
 func toInvite(dbI dbInvite) auth.Invite {
+	inviteeID := ""
+	if dbI.InviteeID.Valid {
+		inviteeID = dbI.InviteeID.String
+	}
+
+	inviteeEmail := ""
+	if dbI.InviteeEmail.Valid {
+		inviteeEmail = dbI.InviteeEmail.String
+	}
+
 	return auth.Invite{
-		ID:          dbI.ID,
-		InviteeID:   dbI.InviteeID,
-		InviterID:   dbI.InviterID,
-		OrgID:       dbI.OrgID,
-		InviteeRole: dbI.InviteeRole,
-		CreatedAt:   dbI.CreatedAt,
-		ExpiresAt:   dbI.ExpiresAt,
+		ID:           dbI.ID,
+		InviteeID:    inviteeID,
+		InviteeEmail: inviteeEmail,
+		InviterID:    dbI.InviterID,
+		OrgID:        dbI.OrgID,
+		InviteeRole:  dbI.InviteeRole,
+		CreatedAt:    dbI.CreatedAt,
+		ExpiresAt:    dbI.ExpiresAt,
 	}
 }
 
 type dbInvite struct {
-	ID          string    `db:"id"`
-	InviteeID   string    `db:"invitee_id"`
-	InviterID   string    `db:"inviter_id"`
-	OrgID       string    `db:"org_id"`
-	InviteeRole string    `db:"invitee_role"`
-	CreatedAt   time.Time `db:"created_at"`
-	ExpiresAt   time.Time `db:"expires_at"`
+	ID           string         `db:"id"`
+	InviteeID    sql.NullString `db:"invitee_id"`
+	InviteeEmail sql.NullString `db:"invitee_email"`
+	InviterID    string         `db:"inviter_id"`
+	OrgID        string         `db:"org_id"`
+	InviteeRole  string         `db:"invitee_role"`
+	CreatedAt    time.Time      `db:"created_at"`
+	ExpiresAt    time.Time      `db:"expires_at"`
 }

@@ -36,6 +36,10 @@ func (irm *invitesRepositoryMock) Save(ctx context.Context, invites ...auth.Invi
 			if iInv.InviteeID == invite.InviteeID && iInv.OrgID == invite.OrgID {
 				return errors.ErrConflict
 			}
+
+			if iInv.InviteeEmail == invite.InviteeEmail && iInv.OrgID == invite.OrgID {
+				return errors.ErrConflict
+			}
 		}
 
 		irm.invites[invite.ID] = invite
@@ -99,4 +103,24 @@ func (irm *invitesRepositoryMock) RetrieveByInviteeID(ctx context.Context, invit
 			Limit:  pm.Limit,
 		},
 	}, nil
+}
+
+func (irm *invitesRepositoryMock) FlipInactiveInvites(ctx context.Context, email string, inviteeID string) (uint32, error) {
+	irm.mu.Lock()
+	defer irm.mu.Unlock()
+
+	cnt := uint32(0)
+
+	for inviteID, inv := range irm.invites {
+		if inv.InviteeEmail == email {
+			inv.InviteeID = inviteeID
+			inv.InviteeEmail = ""
+
+			irm.invites[inviteID] = inv
+
+			cnt += 1
+		}
+	}
+
+	return cnt, nil
 }

@@ -23,13 +23,14 @@ const (
 var _ protomfx.AuthServiceClient = (*grpcClient)(nil)
 
 type grpcClient struct {
-	issue             endpoint.Endpoint
-	identify          endpoint.Endpoint
-	authorize         endpoint.Endpoint
-	getOwnerIDByOrgID endpoint.Endpoint
-	retrieveRole      endpoint.Endpoint
-	assignRole        endpoint.Endpoint
-	timeout           time.Duration
+	issue               endpoint.Endpoint
+	identify            endpoint.Endpoint
+	authorize           endpoint.Endpoint
+	getOwnerIDByOrgID   endpoint.Endpoint
+	retrieveRole        endpoint.Endpoint
+	assignRole          endpoint.Endpoint
+	flipInactiveInvites endpoint.Endpoint
+	timeout             time.Duration
 }
 
 // NewClient returns new gRPC client instance.
@@ -82,6 +83,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			encodeAssignRoleRequest,
 			decodeEmptyResponse,
 			empty.Empty{},
+		).Endpoint()),
+		flipInactiveInvites: kitot.TraceClient(tracer, "flip_inactive_invites")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"FlipInactiveInvites",
+			encodeFlipInactiveInvitesRequest,
+			decodeCountResponse,
+			protomfx.Count{},
 		).Endpoint()),
 
 		timeout: timeout,
@@ -228,4 +237,32 @@ func decodeRetrieveRoleResponse(_ context.Context, grpcRes interface{}) (interfa
 
 func decodeEmptyResponse(_ context.Context, _ interface{}) (interface{}, error) {
 	return emptyRes{}, nil
+}
+
+func encodeFlipInactiveInvitesRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(flipInactiveInvitesReq)
+	return &protomfx.FlipInactiveInvitesReq{
+		Email:  req.email,
+		UserID: req.userID,
+	}, nil
+}
+
+func decodeCountResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(*protomfx.Count)
+	return countRes{
+		value: res.GetValue(),
+	}, nil
+}
+
+func (client grpcClient) FlipInactiveInvites(ctx context.Context, req *protomfx.FlipInactiveInvitesReq, _ ...grpc.CallOption) (*protomfx.Count, error) {
+	ctx, close := context.WithTimeout(ctx, client.timeout)
+	defer close()
+
+	res, err := client.flipInactiveInvites(ctx, flipInactiveInvitesReq{email: req.GetEmail(), userID: req.GetUserID()})
+	if err != nil {
+		return &protomfx.Count{}, err
+	}
+
+	rr := res.(countRes)
+	return &protomfx.Count{Value: rr.value}, nil
 }

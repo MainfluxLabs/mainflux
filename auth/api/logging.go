@@ -397,3 +397,17 @@ func (lm *loggingMiddleware) ViewInvite(ctx context.Context, token string, invit
 
 	return lm.svc.ViewInvite(ctx, token, inviteID)
 }
+
+func (lm *loggingMiddleware) FlipInactiveInvites(ctx context.Context, email string, inviteeID string) (cnt uint32, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method flip_inactive_invites took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.FlipInactiveInvites(ctx, email, inviteeID)
+}

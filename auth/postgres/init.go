@@ -102,7 +102,7 @@ func migrateDB(db *sqlx.DB) error {
 					`CREATE TABLE IF NOT EXISTS invites (
 						id UUID NOT NULL,
 						invitee_id UUID,
-						email VARCHAR,
+						invitee_email VARCHAR,
 						inviter_id UUID NOT NULL,
 						org_id UUID NOT NULL,
 						invitee_role VARCHAR(12) NOT NULL,
@@ -111,7 +111,7 @@ func migrateDB(db *sqlx.DB) error {
 						FOREIGN KEY (org_id) REFERENCES orgs (id) ON DELETE CASCADE,
 						PRIMARY KEY (id),
 						UNIQUE (invitee_id, org_id),
-						UNIQUE (email, org_id)
+						UNIQUE (invitee_email, org_id)
 					)`,
 				},
 				Down: []string{

@@ -278,3 +278,12 @@ func (ms *metricsMiddleware) ViewInvite(ctx context.Context, token string, invit
 
 	return ms.svc.ViewInvite(ctx, token, inviteID)
 }
+
+func (ms *metricsMiddleware) FlipInactiveInvites(ctx context.Context, email string, inviteeID string) (uint32, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "flip_inactive_invites").Add(1)
+		ms.latency.With("method", "flip_inactive_invites").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.FlipInactiveInvites(ctx, email, inviteeID)
+}
