@@ -357,7 +357,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Limit:    noLimit,
 				Name:     msgName,
-				AggType:  "avg",
+				AggType:  avgAgg,
 				AggField: "sum",
 			},
 			page: readers.MessagesPage{
