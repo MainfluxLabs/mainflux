@@ -39,7 +39,7 @@ type Invite struct {
 type Invites interface {
 	// InviteMembers creates pending invitations on behalf of the User authenticated by `token`,
 	// towards all members in `oms`, to join the Org identified by `orgID` with an appropriate role.
-	InviteMembers(ctx context.Context, token string, orgID string, redirectPath string, oms ...OrgMembership) ([]Invite, error)
+	InviteMember(ctx context.Context, token string, orgID string, redirectPath string, om OrgMembership) (Invite, error)
 
 	// RevokeInvite revokes a specific pending Invite. An existing pending Invite can only be revoked
 	// by its original inviter (creator).
@@ -76,77 +76,57 @@ type InvitesRepository interface {
 	RetrieveByInviteeID(ctx context.Context, inviteeID string, pm apiutil.PageMetadata) (InvitesPage, error)
 }
 
-func (svc service) InviteMembers(ctx context.Context, token string, orgID string, redirectPath string, oms ...OrgMembership) ([]Invite, error) {
+func (svc service) InviteMember(ctx context.Context, token string, orgID string, redirectPath string, om OrgMembership) (Invite, error) {
 	// Check if currently authenticated User has "admin" privileges within Org (required to make invitations)
 	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
-		return nil, err
+		return Invite{}, err
 	}
 
 	// Get userID of inviter
 	inviterIdentity, err := svc.identify(ctx, token)
 	if err != nil {
-		return nil, err
+		return Invite{}, err
 	}
 
 	inviterUserID := inviterIdentity.ID
 
 	org, err := svc.ViewOrg(ctx, token, orgID)
 	if err != nil {
-		return nil, err
+		return Invite{}, err
 	}
 
-	// Obtain user IDs of all invited members
-	var memberEmails []string
-	for _, orgMember := range oms {
-		memberEmails = append(memberEmails, orgMember.Email)
-	}
-
-	muReq := protomfx.UsersByEmailsReq{Emails: memberEmails}
+	muReq := protomfx.UsersByEmailsReq{Emails: []string{om.Email}}
 	users, err := svc.users.GetUsersByEmails(ctx, &muReq)
 	if err != nil {
-		return nil, err
+		return Invite{}, err
 	}
 
-	// Map user emails to user IDs
-	userEmailID := map[string]string{}
-	for _, user := range users.Users {
-		userEmailID[user.Email] = user.Id
-	}
-
-	// Build slice of Invites to save
-	invites := make([]Invite, 0, len(oms))
+	inviteeID := users.Users[0].Id
 
 	createdAt := getTimestmap()
-
-	for _, orgMember := range oms {
-		inviteId, err := svc.idProvider.ID()
-		if err != nil {
-			return nil, err
-		}
-
-		invite := Invite{
-			ID:           inviteId,
-			InviteeID:    userEmailID[orgMember.Email],
-			InviteeEmail: orgMember.Email,
-			InviterID:    inviterUserID,
-			OrgID:        orgID,
-			InviteeRole:  orgMember.Role,
-			CreatedAt:    createdAt,
-			ExpiresAt:    createdAt.Add(svc.inviteDuration),
-		}
-
-		invites = append(invites, invite)
+	inviteID, err := svc.idProvider.ID()
+	if err != nil {
+		return Invite{}, err
 	}
 
-	if err := svc.invites.Save(ctx, invites...); err != nil {
-		return nil, err
+	invite := Invite{
+		ID:           inviteID,
+		InviteeID:    inviteeID,
+		InviteeEmail: om.Email,
+		InviterID:    inviterUserID,
+		OrgID:        orgID,
+		InviteeRole:  om.Role,
+		CreatedAt:    createdAt,
+		ExpiresAt:    createdAt.Add(svc.inviteDuration),
 	}
 
-	for _, invite := range invites {
-		svc.SendOrgInviteEmail(ctx, invite, org.Name, redirectPath)
+	if err := svc.invites.Save(ctx, invite); err != nil {
+		return Invite{}, err
 	}
 
-	return invites, nil
+	svc.SendOrgInviteEmail(ctx, invite, org.Name, redirectPath)
+
+	return invite, nil
 }
 
 func (svc service) RevokeInvite(ctx context.Context, token string, inviteID string) error {

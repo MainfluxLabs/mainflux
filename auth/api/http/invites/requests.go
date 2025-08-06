@@ -10,8 +10,8 @@ const maxLimitSize = 100
 type invitesReq struct {
 	token        string
 	orgID        string
-	OrgMembers   []auth.OrgMembership `json:"org_members,omitempty"`
-	RedirectPath string               `json:"redirect_path,omitempty"`
+	OrgMember    auth.OrgMembership `json:"org_member,omitempty"`
+	RedirectPath string             `json:"redirect_path,omitempty"`
 }
 
 func (req invitesReq) validate() error {
@@ -27,14 +27,12 @@ func (req invitesReq) validate() error {
 		return apiutil.ErrMissingRedirectPath
 	}
 
-	if len(req.OrgMembers) == 0 {
-		return apiutil.ErrEmptyList
+	if req.OrgMember.Email == "" {
+		return apiutil.ErrMissingEmail
 	}
 
-	for _, m := range req.OrgMembers {
-		if m.Role != auth.Admin && m.Role != auth.Viewer && m.Role != auth.Editor {
-			return apiutil.ErrInvalidRole
-		}
+	if req.OrgMember.Role != auth.Admin && req.OrgMember.Role != auth.Viewer && req.OrgMember.Role != auth.Editor {
+		return apiutil.ErrInvalidRole
 	}
 
 	return nil

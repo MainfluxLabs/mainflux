@@ -79,18 +79,12 @@ func decodeInviteRequest(_ context.Context, r *http.Request) (any, error) {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	if len(req.OrgMembers) == 0 {
-		return nil, apiutil.ErrMalformedEntity
+	if req.OrgMember.Role == "" {
+		req.OrgMember.Role = auth.Viewer
 	}
 
-	for i := range req.OrgMembers {
-		if req.OrgMembers[i].Role == "" {
-			req.OrgMembers[i].Role = auth.Viewer
-		}
-
-		if req.OrgMembers[i].Role == auth.Owner {
-			return nil, apiutil.ErrMalformedEntity
-		}
+	if req.OrgMember.Role == auth.Owner {
+		return nil, apiutil.ErrMalformedEntity
 	}
 
 	return req, nil

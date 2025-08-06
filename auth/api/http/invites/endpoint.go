@@ -14,7 +14,7 @@ func inviteMembersEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if _, err := svc.InviteMembers(ctx, req.token, req.orgID, req.RedirectPath, req.OrgMembers...); err != nil {
+		if _, err := svc.InviteMember(ctx, req.token, req.orgID, req.RedirectPath, req.OrgMember); err != nil {
 			return nil, err
 		}
 

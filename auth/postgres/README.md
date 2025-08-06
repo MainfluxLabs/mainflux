@@ -41,7 +41,8 @@ CREATE TABLE users_roles (
 
 CREATE TABLE IF NOT EXISTS invites (
     id UUID NOT NULL,
-    invitee_id UUID NOT NULL,
+    invitee_id UUID,
+    email VARCHAR,
     inviter_id UUID NOT NULL,
     org_id UUID NOT NULL,
     invitee_role VARCHAR(12) NOT NULL,
@@ -49,6 +50,7 @@ CREATE TABLE IF NOT EXISTS invites (
     expires_at TIMESTAMPTZ,
     FOREIGN KEY (org_id) REFERENCES orgs (id) ON DELETE CASCADE,
     PRIMARY KEY (id),
-    UNIQUE (invitee_id, org_id)
+    UNIQUE (invitee_id, org_id),
+    UNIQUE (email, org_id)
 );
 ```
