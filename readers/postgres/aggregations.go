@@ -388,7 +388,7 @@ func (as *aggregationService) buildBaseCondition(rpm readers.PageMetadata, table
 		conditions = append(conditions, fmt.Sprintf("%s >= :from", timeColumn))
 	}
 	if rpm.To != 0 {
-		conditions = append(conditions, fmt.Sprintf("%s <= :from", timeColumn))
+		conditions = append(conditions, fmt.Sprintf("%s <= :to", timeColumn))
 	}
 
 	if len(conditions) == 0 {
