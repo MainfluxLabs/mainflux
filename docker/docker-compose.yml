@@ -22,7 +22,7 @@ volumes:
   mainfluxlabs-smtp-notifier-db-volume:
   mainfluxlabs-smpp-notifier-db-volume:
   mainfluxlabs-downlinks-db-volume:
-  mainfluxlabs-modbus-downlinks-db-volume:
+  mainfluxlabs-modbus-db-volume:
   mainfluxlabs-alarms-db-volume:
   mainfluxlabs-rules-db-volume:
 
@@ -633,43 +633,45 @@ services:
     networks:
       - mainfluxlabs-base-net
 
-  modbus-downlinks-db:
+  modbus-clients-db:
     image: postgres:13.3-alpine
-    container_name: mainfluxlabs-modbus-downlinks-db
+    container_name: mainfluxlabs-modbus-db
     restart: on-failure
     environment:
-      POSTGRES_USER: ${MF_MODBUS_DOWNLINKS_DB_USER}
-      POSTGRES_PASSWORD: ${MF_MODBUS_DOWNLINKS_DB_PASS}
-      POSTGRES_DB: ${MF_MODBUS_DOWNLINKS_DB}
+      POSTGRES_USER: ${MF_MODBUS_CLIENTS_DB_USER}
+      POSTGRES_PASSWORD: ${MF_MODBUS_CLIENTS_DB_PASS}
+      POSTGRES_DB: ${MF_MODBUS_CLIENTS_DB}
     networks:
       - mainfluxlabs-base-net
     volumes:
-      - mainfluxlabs-modbus-downlinks-db-volume:/var/lib/postgresql/data
+      - mainfluxlabs-modbus-db-volume:/var/lib/postgresql/data
 
-  modbus-downlinks:
-    image: ${MF_RELEASE_PREFIX}/modbus_downlinks:${MF_RELEASE_TAG}
-    container_name: mainfluxlabs-modbus-downlinks
+  modbus-clients:
+    image: ${MF_RELEASE_PREFIX}/modbus:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-modbus
     depends_on:
-      - broker
+      - things
+      - rules
+      - modbus-clients-db
     restart: on-failure
     environment:
-      MF_MODBUS_DOWNLINKS_LOG_LEVEL: debug
-      MF_MODBUS_DOWNLINKS_HTTP_PORT: ${MF_MODBUS_DOWNLINKS_HTTP_PORT}
+      MF_MODBUS_CLIENTS_LOG_LEVEL: debug
+      MF_MODBUS_CLIENTS_HTTP_PORT: ${MF_MODBUS_CLIENTS_HTTP_PORT}
       MF_BROKER_URL: ${MF_NATS_URL}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
-      MF_MODBUS_DOWNLINKS_DB_HOST: modbus-downlinks-db
-      MF_MODBUS_DOWNLINKS_DB_PORT: ${MF_MODBUS_DOWNLINKS_DB_PORT}
-      MF_MODBUS_DOWNLINKS_DB_USER: ${MF_MODBUS_DOWNLINKS_DB_USER}
-      MF_MODBUS_DOWNLINKS_DB_PASS: ${MF_MODBUS_DOWNLINKS_DB_PASS}
-      MF_MODBUS_DOWNLINKS_DB: ${MF_MODBUS_DOWNLINKS_DB}
-      MF_MODBUS_DOWNLINKS_SERVER_CERT: ${MF_MODBUS_DOWNLINKS_SERVER_CERT}
-      MF_MODBUS_DOWNLINKS_SERVER_KEY: ${MF_MODBUS_DOWNLINKS_SERVER_KEY}
+      MF_MODBUS_CLIENTS_DB_HOST: modbus-clients-db
+      MF_MODBUS_CLIENTS_DB_PORT: ${MF_MODBUS_CLIENTS_DB_PORT}
+      MF_MODBUS_CLIENTS_DB_USER: ${MF_MODBUS_CLIENTS_DB_USER}
+      MF_MODBUS_CLIENTS_DB_PASS: ${MF_MODBUS_CLIENTS_DB_PASS}
+      MF_MODBUS_CLIENTS_DB: ${MF_MODBUS_CLIENTS_DB}
+      MF_MODBUS_CLIENTS_SERVER_CERT: ${MF_MODBUS_CLIENTS_SERVER_CERT}
+      MF_MODBUS_CLIENTS_SERVER_KEY: ${MF_MODBUS_CLIENTS_SERVER_KEY}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
       MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
       MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
     ports:
-      - ${MF_MODBUS_DOWNLINKS_HTTP_PORT}:${MF_MODBUS_DOWNLINKS_HTTP_PORT}
+      - ${MF_MODBUS_CLIENTS_HTTP_PORT}:${MF_MODBUS_CLIENTS_HTTP_PORT}
     networks:
       - mainfluxlabs-base-net
 
