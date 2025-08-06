@@ -395,7 +395,7 @@ func (as *aggregationService) buildBaseCondition(rpm readers.PageMetadata, table
 		return ""
 	}
 
-	return "WHERE " + strings.Join(conditions, "AND")
+	return "WHERE " + strings.Join(conditions, " AND ")
 }
 
 func (as *aggregationService) scanAggregatedMessages(rows *sqlx.Rows, format string) ([]readers.Message, error) {
