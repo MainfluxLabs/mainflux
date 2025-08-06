@@ -314,7 +314,7 @@ func (lm *loggingMiddleware) RetrieveRole(ctx context.Context, id string) (role 
 	return lm.svc.RetrieveRole(ctx, id)
 }
 
-func (lm *loggingMiddleware) InviteMembers(ctx context.Context, token string, orgID string, uiHost string, oms ...auth.OrgMembership) (invites []auth.Invite, err error) {
+func (lm *loggingMiddleware) InviteMembers(ctx context.Context, token string, orgID string, redirectPath string, oms ...auth.OrgMembership) (invites []auth.Invite, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method invite_members took %s to complete", time.Since(begin))
 		if err != nil {
@@ -325,7 +325,7 @@ func (lm *loggingMiddleware) InviteMembers(ctx context.Context, token string, or
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.InviteMembers(ctx, token, orgID, uiHost, oms...)
+	return lm.svc.InviteMembers(ctx, token, orgID, redirectPath, oms...)
 }
 
 func (lm *loggingMiddleware) RevokeInvite(ctx context.Context, token string, inviteID string) (err error) {
@@ -370,7 +370,7 @@ func (lm *loggingMiddleware) ListInvitesByInviteeID(ctx context.Context, token s
 	return lm.svc.ListInvitesByInviteeID(ctx, token, userID, pm)
 }
 
-func (lm *loggingMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth.Invite, orgName string, uiHost string) (err error) {
+func (lm *loggingMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth.Invite, orgName string, redirectPath string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method send_org_invite_email took %s to complete", time.Since(begin))
 		if err != nil {
@@ -381,7 +381,7 @@ func (lm *loggingMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.SendOrgInviteEmail(ctx, invite, orgName, uiHost)
+	return lm.svc.SendOrgInviteEmail(ctx, invite, orgName, redirectPath)
 }
 
 func (lm *loggingMiddleware) ViewInvite(ctx context.Context, token string, inviteID string) (invite auth.Invite, err error) {

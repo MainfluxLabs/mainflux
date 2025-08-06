@@ -12,21 +12,24 @@ const (
 )
 
 type emailer struct {
-	uiInviteURL string
-	agent       *email.Agent
+	host  string
+	agent *email.Agent
 }
 
-func New(uiInviteURL string, config *email.Config) (auth.Emailer, error) {
+func New(host string, config *email.Config) (auth.Emailer, error) {
 	agent, err := email.New(config)
+	if err != nil {
+		return nil, err
+	}
 
 	return &emailer{
-		uiInviteURL: uiInviteURL,
-		agent:       agent,
-	}, err
+		host:  host,
+		agent: agent,
+	}, nil
 }
 
-func (e *emailer) SendOrgInvite(To []string, inviteID, orgName, roleName, uiHost string) error {
-	uiInviteViewURL := fmt.Sprintf("%s%s/%s", uiHost, e.uiInviteURL, inviteID)
+func (e *emailer) SendOrgInvite(To []string, inviteID, orgName, roleName, redirectPath string) error {
+	uiInviteViewURL := fmt.Sprintf("%s%s/%s", e.host, redirectPath, inviteID)
 	emailContent := fmt.Sprintf(`
 		Hello,
 

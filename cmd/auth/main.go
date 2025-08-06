@@ -76,7 +76,7 @@ const (
 	defEmailFromName    = ""
 	defEmailTemplate    = "email.tmpl"
 
-	defInviteEndpoint = "/invite"
+	defHost = "http://localhost"
 
 	envLogLevel        = "MF_AUTH_LOG_LEVEL"
 	envDBHost          = "MF_AUTH_DB_HOST"
@@ -112,6 +112,8 @@ const (
 	envEmailFromAddress = "MF_EMAIL_FROM_ADDRESS"
 	envEmailFromName    = "MF_EMAIL_FROM_NAME"
 	envEmailTemplate    = "MF_AUTH_EMAIL_TEMPLATE"
+
+	envHost = "MF_HOST"
 )
 
 type config struct {
@@ -128,6 +130,7 @@ type config struct {
 	inviteDuration time.Duration
 	timeout        time.Duration
 	adminEmail     string
+	host           string
 }
 
 func main() {
@@ -167,7 +170,7 @@ func main() {
 
 	tc := thingsapi.NewClient(thConn, thingsTracer, cfg.timeout)
 
-	svc := newService(db, tc, uc, dbTracer, &cfg.emailConfig, cfg.secret, logger, cfg.loginDuration, cfg.inviteDuration)
+	svc := newService(db, tc, uc, dbTracer, &cfg.emailConfig, cfg.secret, logger, cfg.loginDuration, cfg.inviteDuration, cfg.host)
 
 	g.Go(func() error {
 		return servershttp.Start(ctx, httpapi.MakeHandler(svc, authHttpTracer, logger), cfg.httpConfig, logger)
@@ -280,6 +283,7 @@ func loadConfig() config {
 		inviteDuration: inviteDuration,
 		timeout:        timeout,
 		adminEmail:     mainflux.Env(envAdminEmail, defAdminEmail),
+		host:           mainflux.Env(envHost, defHost),
 	}
 
 }
@@ -294,7 +298,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersServiceClient, tracer opentracing.Tracer, emailConfig *email.Config, secret string, logger logger.Logger, loginDuration time.Duration, inviteDuration time.Duration) auth.Service {
+func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersServiceClient, tracer opentracing.Tracer, emailConfig *email.Config, secret string, logger logger.Logger, loginDuration time.Duration, inviteDuration time.Duration, host string) auth.Service {
 	orgsRepo := postgres.NewOrgRepo(db)
 	orgsRepo = tracing.OrgRepositoryMiddleware(tracer, orgsRepo)
 
@@ -313,7 +317,7 @@ func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersS
 	idProvider := uuid.New()
 	t := jwt.New(secret)
 
-	authEmailer, err := emailer.New(defInviteEndpoint, emailConfig)
+	authEmailer, err := emailer.New(host, emailConfig)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to configure e-mailing util: %s", err.Error()))
 	}

@@ -8,10 +8,10 @@ import (
 const maxLimitSize = 100
 
 type invitesReq struct {
-	token      string
-	uiHost     string
-	orgID      string
-	OrgMembers []auth.OrgMembership `json:"org_members"`
+	token        string
+	orgID        string
+	OrgMembers   []auth.OrgMembership `json:"org_members,omitempty"`
+	RedirectPath string               `json:"redirect_path,omitempty"`
 }
 
 func (req invitesReq) validate() error {
@@ -21,6 +21,10 @@ func (req invitesReq) validate() error {
 
 	if req.orgID == "" {
 		return apiutil.ErrMissingOrgID
+	}
+
+	if req.RedirectPath == "" {
+		return apiutil.ErrMissingRedirectPath
 	}
 
 	if len(req.OrgMembers) == 0 {

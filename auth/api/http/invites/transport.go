@@ -71,12 +71,11 @@ func decodeInviteRequest(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	req := invitesReq{
-		token:  apiutil.ExtractBearerToken(r),
-		orgID:  bone.GetValue(r, apiutil.IDKey),
-		uiHost: r.Header.Get("Referer"),
+		token: apiutil.ExtractBearerToken(r),
+		orgID: bone.GetValue(r, apiutil.IDKey),
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&req.OrgMembers); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 

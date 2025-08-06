@@ -39,7 +39,7 @@ type Invite struct {
 type Invites interface {
 	// InviteMembers creates pending invitations on behalf of the User authenticated by `token`,
 	// towards all members in `oms`, to join the Org identified by `orgID` with an appropriate role.
-	InviteMembers(ctx context.Context, token string, orgID string, uiHost string, oms ...OrgMembership) ([]Invite, error)
+	InviteMembers(ctx context.Context, token string, orgID string, redirectPath string, oms ...OrgMembership) ([]Invite, error)
 
 	// RevokeInvite revokes a specific pending Invite. An existing pending Invite can only be revoked
 	// by its original inviter (creator).
@@ -58,7 +58,7 @@ type Invites interface {
 	ListInvitesByInviteeID(ctx context.Context, token string, userID string, pm apiutil.PageMetadata) (InvitesPage, error)
 
 	// SendOrgInviteEmail sends an e-mail representing a certain Invite to a corresponding end User.
-	SendOrgInviteEmail(ctx context.Context, invite Invite, orgName string, uiHost string) error
+	SendOrgInviteEmail(ctx context.Context, invite Invite, orgName string, redirectPath string) error
 }
 
 type InvitesRepository interface {
@@ -76,7 +76,7 @@ type InvitesRepository interface {
 	RetrieveByInviteeID(ctx context.Context, inviteeID string, pm apiutil.PageMetadata) (InvitesPage, error)
 }
 
-func (svc service) InviteMembers(ctx context.Context, token string, orgID string, uiHost string, oms ...OrgMembership) ([]Invite, error) {
+func (svc service) InviteMembers(ctx context.Context, token string, orgID string, redirectPath string, oms ...OrgMembership) ([]Invite, error) {
 	// Check if currently authenticated User has "admin" privileges within Org (required to make invitations)
 	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
 		return nil, err
@@ -143,7 +143,7 @@ func (svc service) InviteMembers(ctx context.Context, token string, orgID string
 	}
 
 	for _, invite := range invites {
-		svc.SendOrgInviteEmail(ctx, invite, org.Name, uiHost)
+		svc.SendOrgInviteEmail(ctx, invite, org.Name, redirectPath)
 	}
 
 	return invites, nil
@@ -286,7 +286,7 @@ func (svc service) ListInvitesByInviteeID(ctx context.Context, token string, use
 	return invitesPage, nil
 }
 
-func (svc service) SendOrgInviteEmail(ctx context.Context, invite Invite, orgName string, uiHost string) error {
+func (svc service) SendOrgInviteEmail(ctx context.Context, invite Invite, orgName string, redirectPath string) error {
 	to := []string{invite.InviteeEmail}
-	return svc.email.SendOrgInvite(to, invite.ID, orgName, invite.InviteeRole, uiHost)
+	return svc.email.SendOrgInvite(to, invite.ID, orgName, invite.InviteeRole, redirectPath)
 }

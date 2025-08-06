@@ -25,21 +25,21 @@ import (
 )
 
 const (
-	uiHost      = "http://localhost"
-	secret      = "secret"
-	contentType = "application/json"
-	id          = "123e4567-e89b-12d3-a456-000000000022"
-	adminID     = "adminID"
-	editorID    = "editorID"
-	viewerID    = "viewerID"
-	email       = "user@example.com"
-	adminEmail  = "admin@example.com"
-	editorEmail = "editor@example.com"
-	viewerEmail = "viewer@example.com"
-	wrongValue  = "wrong_value"
-	name        = "testName"
-	description = "testDesc"
-	n           = 10
+	redirectPath = "http://localhost"
+	secret       = "secret"
+	contentType  = "application/json"
+	id           = "123e4567-e89b-12d3-a456-000000000022"
+	adminID      = "adminID"
+	editorID     = "editorID"
+	viewerID     = "viewerID"
+	email        = "user@example.com"
+	adminEmail   = "admin@example.com"
+	editorEmail  = "editor@example.com"
+	viewerEmail  = "viewer@example.com"
+	wrongValue   = "wrong_value"
+	name         = "testName"
+	description  = "testDesc"
+	n            = 10
 
 	responseAccept  = "accept"
 	responseDecline = "decline"
@@ -73,6 +73,11 @@ type testRequest struct {
 	contentType string
 	token       string
 	body        io.Reader
+}
+
+type invitesReq struct {
+	Oms          []auth.OrgMembership `json:"org_members,omitempty"`
+	RedirectPath string               `json:"redirect_path,omitempty"`
 }
 
 func (tr testRequest) make() (*http.Response, error) {
@@ -142,28 +147,28 @@ func TestInviteMembers(t *testing.T) {
 	}{
 		{
 			desc:   "invite single member",
-			req:    toJSON([]auth.OrgMembership{viewer}),
+			req:    toJSON(invitesReq{Oms: []auth.OrgMembership{viewer}, RedirectPath: redirectPath}),
 			ct:     contentType,
 			token:  ownerToken,
 			status: http.StatusCreated,
 		},
 		{
 			desc:   "invite multiple members",
-			req:    toJSON([]auth.OrgMembership{editor, admin}),
+			req:    toJSON(invitesReq{Oms: []auth.OrgMembership{editor, admin}, RedirectPath: redirectPath}),
 			ct:     contentType,
 			token:  ownerToken,
 			status: http.StatusCreated,
 		},
 		{
 			desc:   "invite member with invalid auth token",
-			req:    toJSON([]auth.OrgMembership{viewer}),
+			req:    toJSON(invitesReq{Oms: []auth.OrgMembership{viewer}, RedirectPath: redirectPath}),
 			ct:     contentType,
 			token:  "invalid-token",
 			status: http.StatusUnauthorized,
 		},
 		{
 			desc:   "invite member with empty auth token",
-			req:    toJSON([]auth.OrgMembership{viewer}),
+			req:    toJSON(invitesReq{Oms: []auth.OrgMembership{viewer}, RedirectPath: redirectPath}),
 			ct:     contentType,
 			token:  "",
 			status: http.StatusUnauthorized,
@@ -191,7 +196,7 @@ func TestInviteMembers(t *testing.T) {
 		},
 		{
 			desc:   "create org without content type",
-			req:    toJSON([]auth.OrgMembership{viewer}),
+			req:    toJSON(invitesReq{Oms: []auth.OrgMembership{viewer}, RedirectPath: redirectPath}),
 			ct:     "",
 			token:  ownerToken,
 			status: http.StatusUnsupportedMediaType,
@@ -227,7 +232,7 @@ func TestViewInvite(t *testing.T) {
 	org, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 
-	invites, err := svc.InviteMembers(context.Background(), ownerToken, org.ID, uiHost, viewer)
+	invites, err := svc.InviteMembers(context.Background(), ownerToken, org.ID, redirectPath, viewer)
 	assert.Nil(t, err, fmt.Sprintf("Inviting member expected to succeed: %s", err))
 
 	inviteID := invites[0].ID
@@ -293,7 +298,7 @@ func TestRevokeInvite(t *testing.T) {
 	org, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 
-	invites, err := svc.InviteMembers(context.Background(), ownerToken, org.ID, uiHost, viewer)
+	invites, err := svc.InviteMembers(context.Background(), ownerToken, org.ID, redirectPath, viewer)
 	assert.Nil(t, err, fmt.Sprintf("Inviting member expected to succeed: %s", err))
 
 	inviteID := invites[0].ID
@@ -368,7 +373,7 @@ func TestRespondInvite(t *testing.T) {
 	_, adminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	invites, err := svc.InviteMembers(context.Background(), ownerToken, org.ID, uiHost, viewer, editor, admin)
+	invites, err := svc.InviteMembers(context.Background(), ownerToken, org.ID, redirectPath, viewer, editor, admin)
 	assert.Nil(t, err, fmt.Sprintf("Inviting members expected to succeed: %s", err))
 
 	ts := newServer(svc)
@@ -467,7 +472,7 @@ func TestListInvitesByInvitee(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 		orgIDs = append(orgIDs, org.ID)
 
-		invs, err := svc.InviteMembers(context.Background(), ownerToken, org.ID, uiHost, auth.OrgMembership{
+		invs, err := svc.InviteMembers(context.Background(), ownerToken, org.ID, redirectPath, auth.OrgMembership{
 			Email: viewerEmail,
 			Role:  auth.Viewer,
 		})

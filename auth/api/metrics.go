@@ -225,13 +225,13 @@ func (ms *metricsMiddleware) RetrieveRole(ctx context.Context, id string) (strin
 	return ms.svc.RetrieveRole(ctx, id)
 }
 
-func (ms *metricsMiddleware) InviteMembers(ctx context.Context, token string, orgID string, uiHost string, oms ...auth.OrgMembership) ([]auth.Invite, error) {
+func (ms *metricsMiddleware) InviteMembers(ctx context.Context, token string, orgID string, redirectPath string, oms ...auth.OrgMembership) ([]auth.Invite, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "invite_members").Add(1)
 		ms.latency.With("method", "invite_members").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.InviteMembers(ctx, token, orgID, uiHost, oms...)
+	return ms.svc.InviteMembers(ctx, token, orgID, redirectPath, oms...)
 }
 
 func (ms *metricsMiddleware) RevokeInvite(ctx context.Context, token string, inviteID string) error {
@@ -261,13 +261,13 @@ func (ms *metricsMiddleware) ListInvitesByInviteeID(ctx context.Context, token s
 	return ms.svc.ListInvitesByInviteeID(ctx, token, userID, pm)
 }
 
-func (ms *metricsMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth.Invite, orgName string, uiHost string) error {
+func (ms *metricsMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth.Invite, orgName string, redirectPath string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "send_org_invite_email").Add(1)
 		ms.latency.With("method", "send_org_invite_email").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.SendOrgInviteEmail(ctx, invite, orgName, uiHost)
+	return ms.svc.SendOrgInviteEmail(ctx, invite, orgName, redirectPath)
 }
 
 func (ms *metricsMiddleware) ViewInvite(ctx context.Context, token string, inviteID string) (auth.Invite, error) {
