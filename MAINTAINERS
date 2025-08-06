@@ -5,10 +5,10 @@
 
 [bdfl]
 	
-	[[drasko]]
-	Name	= "Drasko DRASKOVIC"
-	Email	= "drasko@mainflux.com"
-	GitHub	= "drasko"
+	[[manuel]]
+	Name	= "Manuel IMPERIALE"
+	Email	= "manuel@mainflux.com"
+	GitHub	= "manuio"
 
 # However, this role serves only in dead-lock events, or in a special and very rare cases
 # when BDFL completely disagrees with the decisions made.
@@ -23,24 +23,28 @@
 # ADD YOURSELF HERE IN ALPHABETICAL ORDER
 
 [maintainers]
-
-	[[aleksandar]]
-	Name	= "Aleksandar NOVAKOVIC"
-	Email	= "aleksandar@mainflux.com"
-	GitHub	= "anovakovic01"
  
- 	[[dusan]]
-	Name	= "Dusan BOROVCANIN"
-	Email	= "dusan@mainflux.com"
-	GitHub	= "dusanb94"
+	[[maja]]
+	Name	= "Maja BIRMANCEVIC"
+	Email	= "maja.birmancevic@mainflux.com"
+	GitHub	= "majabirmancevic"
 
-	[[manuel]]
-	Name	= "Manuel IMPERIALE"
-	Email	= "manuel@mainflux.com"
-	GitHub	= "manuIO"
+	[[ana]]
+	Name	= "Ana DOMONJI"
+	Email	= "ana.domonji@mainflux.com"
+	GitHub	= "anna02272"
 
-	[[nikola]]
-	Name	= "Nikola MARCETIC"
-	Email	= "nikola@mainflux.com"
-	GitHub	= "nmarcetic"
+	[[bogdan]]
+	Name     = "Bogdan MITROVIC"
+	Email    = "bogdan.mitrovic@mainflux.com"
+	GitHub   = "bool3max"
 
+	[[dusan]]
+	Name	= "Dusan LECIC"
+	Email	= "dusan.lecic@mainflux.com"
+	GitHub	= "duolok"
+
+	[[nemanja]]
+	Name	= "Nemanja DJORDJEVIC"
+	Email	= "nemanja.djordjevic@mainflux.com"
+	GitHub	= "bracezenith"
