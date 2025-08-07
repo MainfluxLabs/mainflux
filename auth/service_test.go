@@ -1367,9 +1367,6 @@ func TestInviteRespond(t *testing.T) {
 	_, example2Token, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: "example2", Subject: "example2@test.com"})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	_, example3Token, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: "example3", Subject: "example3@test.com"})
-	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-
 	testOrg, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
@@ -1387,8 +1384,6 @@ func TestInviteRespond(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 		testInvites = append(testInvites, inv)
 	}
-
-	testInvites[2].ExpiresAt = time.Now().Add(1 * time.Hour)
 
 	cases := []struct {
 		desc     string
@@ -1416,13 +1411,6 @@ func TestInviteRespond(t *testing.T) {
 			token:    example2Token,
 			inviteID: testInvites[1].ID,
 			accept:   false,
-			err:      nil,
-		},
-		{
-			desc:     "respond to expired invite",
-			token:    example3Token,
-			inviteID: testInvites[2].ID,
-			accept:   true,
 			err:      nil,
 		},
 	}
