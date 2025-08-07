@@ -77,8 +77,9 @@ type testRequest struct {
 }
 
 type invitesReq struct {
-	Om           auth.OrgMembership `json:"org_member,omitempty"`
-	RedirectPath string             `json:"redirect_path,omitempty"`
+	Om                   auth.OrgMembership `json:"org_member,omitempty"`
+	RedirectPathRegister string             `json:"redirect_path_register,omitempty"`
+	RedirectPathInvite   string             `json:"redirect_path_invite,omitempty"`
 }
 
 func (tr testRequest) make() (*http.Response, error) {
@@ -148,21 +149,21 @@ func TestInviteMembers(t *testing.T) {
 	}{
 		{
 			desc:   "invite single member",
-			req:    toJSON(invitesReq{Om: viewer, RedirectPath: redirectPathInvite}),
+			req:    toJSON(invitesReq{Om: viewer, RedirectPathRegister: redirectPathRegister, RedirectPathInvite: redirectPathInvite}),
 			ct:     contentType,
 			token:  ownerToken,
 			status: http.StatusCreated,
 		},
 		{
 			desc:   "invite member with invalid auth token",
-			req:    toJSON(invitesReq{Om: viewer, RedirectPath: redirectPathInvite}),
+			req:    toJSON(invitesReq{Om: viewer, RedirectPathRegister: redirectPathRegister, RedirectPathInvite: redirectPathInvite}),
 			ct:     contentType,
 			token:  "invalid-token",
 			status: http.StatusUnauthorized,
 		},
 		{
 			desc:   "invite member with empty auth token",
-			req:    toJSON(invitesReq{Om: viewer, RedirectPath: redirectPathInvite}),
+			req:    toJSON(invitesReq{Om: viewer, RedirectPathRegister: redirectPathRegister, RedirectPathInvite: redirectPathInvite}),
 			ct:     contentType,
 			token:  "",
 			status: http.StatusUnauthorized,
@@ -190,7 +191,7 @@ func TestInviteMembers(t *testing.T) {
 		},
 		{
 			desc:   "create org without content type",
-			req:    toJSON(invitesReq{Om: viewer, RedirectPath: redirectPathInvite}),
+			req:    toJSON(invitesReq{Om: viewer, RedirectPathRegister: redirectPathRegister, RedirectPathInvite: redirectPathInvite}),
 			ct:     "",
 			token:  ownerToken,
 			status: http.StatusUnsupportedMediaType,
