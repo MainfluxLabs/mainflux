@@ -1292,6 +1292,16 @@ func TestInviteMembers(t *testing.T) {
 			},
 			err: errors.ErrConflict,
 		},
+		{
+			desc:  "invite member who is already a member of org",
+			token: adminToken,
+			orgID: or.ID,
+			membership: auth.OrgMembership{
+				Role:  auth.Viewer,
+				Email: editorEmail,
+			},
+			err: auth.ErrOrgMembershipExists,
+		},
 	}
 
 	for _, tc := range cases {
