@@ -215,12 +215,6 @@ func (tr postgresRepository) executeQuery(query string, params map[string]interf
 	return rows, nil
 }
 
-func (tr postgresRepository) buildRegularQuery(rpm readers.PageMetadata, format, order string) string {
-	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
-	condition := tr.fmtCondition(rpm, format)
-	return fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s;`, format, condition, order, olq)
-}
-
 func (tr postgresRepository) scanMessages(rows *sqlx.Rows, format string) ([]readers.Message, error) {
 	var messages []readers.Message
 
