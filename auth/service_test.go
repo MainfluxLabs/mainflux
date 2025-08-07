@@ -1303,6 +1303,16 @@ func TestInviteMembers(t *testing.T) {
 			},
 			err: auth.ErrOrgMembershipExists,
 		},
+		{
+			desc:  "invite member with unregistered e-mail",
+			token: adminToken,
+			orgID: or.ID,
+			membership: auth.OrgMembership{
+				Role:  auth.Editor,
+				Email: unregisteredEmail,
+			},
+			err: nil,
+		},
 	}
 
 	for _, tc := range cases {
