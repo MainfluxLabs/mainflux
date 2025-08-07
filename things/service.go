@@ -988,11 +988,11 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 		}
 	}
 
-	if _, err := ts.things.Save(ctx, backup.Things...); err != nil {
+	if _, err := ts.profiles.Save(ctx, backup.Profiles...); err != nil {
 		return err
 	}
 
-	if _, err := ts.profiles.Save(ctx, backup.Profiles...); err != nil {
+	if _, err := ts.things.Save(ctx, backup.Things...); err != nil {
 		return err
 	}
 
