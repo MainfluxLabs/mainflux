@@ -23,7 +23,8 @@ import (
 )
 
 const (
-	redirectPath = "http://localhost"
+	redirectPathInvite   = "/view-invite"
+	redirectPathRegister = "/auth/register"
 
 	secret          = "secret"
 	email           = "test@example.com"
@@ -1294,7 +1295,7 @@ func TestInviteMembers(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_, err := svc.InviteMember(context.Background(), tc.token, tc.orgID, redirectPath, tc.membership)
+		_, err := svc.InviteMember(context.Background(), tc.token, tc.orgID, redirectPathInvite, redirectPathRegister, tc.membership)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -1313,7 +1314,7 @@ func TestRevokeInvite(t *testing.T) {
 	testOrg, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	testInvite, err := svc.InviteMember(context.Background(), ownerToken, testOrg.ID, redirectPath, auth.OrgMembership{Email: invitee.Email, Role: auth.Viewer})
+	testInvite, err := svc.InviteMember(context.Background(), ownerToken, testOrg.ID, redirectPathInvite, redirectPathRegister, auth.OrgMembership{Email: invitee.Email, Role: auth.Viewer})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	testInviteID := testInvite.ID
 
@@ -1368,7 +1369,8 @@ func TestInviteRespond(t *testing.T) {
 			context.Background(),
 			ownerToken,
 			testOrg.ID,
-			redirectPath,
+			redirectPathInvite,
+			redirectPathRegister,
 			auth.OrgMembership{Email: fmt.Sprintf("example%d@test.com", i+1), Role: auth.Viewer},
 		)
 
@@ -1456,7 +1458,7 @@ func TestViewInvite(t *testing.T) {
 
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	invite, err := svc.InviteMember(context.Background(), inviterToken, testOrg.ID, redirectPath, auth.OrgMembership{
+	invite, err := svc.InviteMember(context.Background(), inviterToken, testOrg.ID, redirectPathInvite, redirectPathRegister, auth.OrgMembership{
 		Email: invitee.Email,
 		Role:  auth.Viewer,
 	})
@@ -1527,7 +1529,7 @@ func TestListInvitesByInvitee(t *testing.T) {
 
 		assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 
-		_, err = svc.InviteMember(context.Background(), ownerToken, org.ID, redirectPath, auth.OrgMembership{
+		_, err = svc.InviteMember(context.Background(), ownerToken, org.ID, redirectPathInvite, redirectPathRegister, auth.OrgMembership{
 			Role:  auth.Viewer,
 			Email: invitee.Email,
 		})

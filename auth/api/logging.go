@@ -314,7 +314,7 @@ func (lm *loggingMiddleware) RetrieveRole(ctx context.Context, id string) (role 
 	return lm.svc.RetrieveRole(ctx, id)
 }
 
-func (lm *loggingMiddleware) InviteMember(ctx context.Context, token string, orgID string, redirectPath string, om auth.OrgMembership) (invite auth.Invite, err error) {
+func (lm *loggingMiddleware) InviteMember(ctx context.Context, token string, orgID string, invRedirectPath string, registerRedirectPath string, om auth.OrgMembership) (invite auth.Invite, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method invite_members took %s to complete", time.Since(begin))
 		if err != nil {
@@ -325,7 +325,7 @@ func (lm *loggingMiddleware) InviteMember(ctx context.Context, token string, org
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.InviteMember(ctx, token, orgID, redirectPath, om)
+	return lm.svc.InviteMember(ctx, token, orgID, invRedirectPath, registerRedirectPath, om)
 }
 
 func (lm *loggingMiddleware) RevokeInvite(ctx context.Context, token string, inviteID string) (err error) {
@@ -370,7 +370,7 @@ func (lm *loggingMiddleware) ListInvitesByInviteeID(ctx context.Context, token s
 	return lm.svc.ListInvitesByInviteeID(ctx, token, userID, pm)
 }
 
-func (lm *loggingMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth.Invite, orgName string, redirectPath string) (err error) {
+func (lm *loggingMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth.Invite, orgName string, invRedirectPath string, registerRedirectPath string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method send_org_invite_email took %s to complete", time.Since(begin))
 		if err != nil {
@@ -381,7 +381,7 @@ func (lm *loggingMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.SendOrgInviteEmail(ctx, invite, orgName, redirectPath)
+	return lm.svc.SendOrgInviteEmail(ctx, invite, orgName, invRedirectPath, registerRedirectPath)
 }
 
 func (lm *loggingMiddleware) ViewInvite(ctx context.Context, token string, inviteID string) (invite auth.Invite, err error) {

@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -45,7 +44,7 @@ type Invites interface {
 	// To support inviting unregistered users, `om.Email` may belong to a person without a registered acount:
 	// in that case, the created Invite is considered 'inactive', and becomes a proper invite only once
 	// a new user with the that e-mail address is registered.
-	InviteMember(ctx context.Context, token string, orgID string, redirectPath string, om OrgMembership) (Invite, error)
+	InviteMember(ctx context.Context, token string, orgID string, invRedirectPath string, registerRedirectPath string, om OrgMembership) (Invite, error)
 
 	// RevokeInvite revokes a specific pending Invite. An existing pending Invite can only be revoked
 	// by its original inviter (creator).
@@ -69,7 +68,7 @@ type Invites interface {
 	FlipInactiveInvites(ctx context.Context, email string, inviteeID string) (uint32, error)
 
 	// SendOrgInviteEmail sends an e-mail representing a certain Invite to a corresponding end User.
-	SendOrgInviteEmail(ctx context.Context, invite Invite, orgName string, redirectPath string) error
+	SendOrgInviteEmail(ctx context.Context, invite Invite, orgName string, invRedirectPath string, registerRedirectPath string) error
 }
 
 type InvitesRepository interface {
@@ -89,7 +88,7 @@ type InvitesRepository interface {
 	FlipInactiveInvites(ctx context.Context, email string, inviteeID string) (uint32, error)
 }
 
-func (svc service) InviteMember(ctx context.Context, token string, orgID string, redirectPath string, om OrgMembership) (Invite, error) {
+func (svc service) InviteMember(ctx context.Context, token string, orgID string, invRedirectPath string, registerRedirectPath string, om OrgMembership) (Invite, error) {
 	// Check if currently authenticated User has "admin" privileges within Org (required to make invitations)
 	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
 		return Invite{}, err
@@ -171,7 +170,7 @@ func (svc service) InviteMember(ctx context.Context, token string, orgID string,
 		return Invite{}, err
 	}
 
-	svc.SendOrgInviteEmail(ctx, invite, org.Name, redirectPath)
+	svc.SendOrgInviteEmail(ctx, invite, org.Name, invRedirectPath, registerRedirectPath)
 
 	return invite, nil
 }
@@ -322,7 +321,7 @@ func (svc service) FlipInactiveInvites(ctx context.Context, email string, invite
 	return cnt, nil
 }
 
-func (svc service) SendOrgInviteEmail(ctx context.Context, invite Invite, orgName string, redirectPath string) error {
+func (svc service) SendOrgInviteEmail(ctx context.Context, invite Invite, orgName string, invRedirectPath string, registerRedirectPath string) error {
 	to := []string{invite.InviteeEmail}
-	return svc.email.SendOrgInvite(to, invite.ID, orgName, invite.InviteeRole, redirectPath)
+	return svc.email.SendOrgInvite(to, invite, orgName, invRedirectPath, registerRedirectPath)
 }

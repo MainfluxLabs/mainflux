@@ -28,16 +28,24 @@ func New(host string, config *email.Config) (auth.Emailer, error) {
 	}, nil
 }
 
-func (e *emailer) SendOrgInvite(To []string, inviteID, orgName, roleName, redirectPath string) error {
-	uiInviteViewURL := fmt.Sprintf("%s%s/%s", e.host, redirectPath, inviteID)
+func (e *emailer) SendOrgInvite(To []string, inv auth.Invite, orgName string, invRedirectPath string, registerRedirectPath string) error {
+	var redirectURL, instruction string
+	if inv.InviteeID != "" {
+		redirectURL = fmt.Sprintf("%s%s/%s", e.host, invRedirectPath, inv.ID)
+		instruction = "Navigate to the following URL to view the invitation:"
+	} else {
+		redirectURL = fmt.Sprintf("%s/%s", e.host, registerRedirectPath)
+		instruction = "Navigate to the following URL to register a MainfluxLabs user account:"
+	}
+
 	emailContent := fmt.Sprintf(`
 		Hello,
 
 		You've been invited to join the %s Organization with role: %s.
 
-		Use the following URL to view the invite:
+		%s:
 		%s
-	`, orgName, roleName, uiInviteViewURL)
+	`, orgName, inv.InviteeRole, instruction, redirectURL)
 
 	return e.agent.Send(To, "", subjectOrgInvite, "", emailContent, "")
 }

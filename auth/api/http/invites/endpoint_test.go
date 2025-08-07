@@ -25,21 +25,22 @@ import (
 )
 
 const (
-	redirectPath = "http://localhost"
-	secret       = "secret"
-	contentType  = "application/json"
-	id           = "123e4567-e89b-12d3-a456-000000000022"
-	adminID      = "adminID"
-	editorID     = "editorID"
-	viewerID     = "viewerID"
-	email        = "user@example.com"
-	adminEmail   = "admin@example.com"
-	editorEmail  = "editor@example.com"
-	viewerEmail  = "viewer@example.com"
-	wrongValue   = "wrong_value"
-	name         = "testName"
-	description  = "testDesc"
-	n            = 10
+	redirectPathInvite   = "/view-invite"
+	redirectPathRegister = "/auth/register"
+	secret               = "secret"
+	contentType          = "application/json"
+	id                   = "123e4567-e89b-12d3-a456-000000000022"
+	adminID              = "adminID"
+	editorID             = "editorID"
+	viewerID             = "viewerID"
+	email                = "user@example.com"
+	adminEmail           = "admin@example.com"
+	editorEmail          = "editor@example.com"
+	viewerEmail          = "viewer@example.com"
+	wrongValue           = "wrong_value"
+	name                 = "testName"
+	description          = "testDesc"
+	n                    = 10
 
 	responseAccept  = "accept"
 	responseDecline = "decline"
@@ -147,21 +148,21 @@ func TestInviteMembers(t *testing.T) {
 	}{
 		{
 			desc:   "invite single member",
-			req:    toJSON(invitesReq{Om: viewer, RedirectPath: redirectPath}),
+			req:    toJSON(invitesReq{Om: viewer, RedirectPath: redirectPathInvite}),
 			ct:     contentType,
 			token:  ownerToken,
 			status: http.StatusCreated,
 		},
 		{
 			desc:   "invite member with invalid auth token",
-			req:    toJSON(invitesReq{Om: viewer, RedirectPath: redirectPath}),
+			req:    toJSON(invitesReq{Om: viewer, RedirectPath: redirectPathInvite}),
 			ct:     contentType,
 			token:  "invalid-token",
 			status: http.StatusUnauthorized,
 		},
 		{
 			desc:   "invite member with empty auth token",
-			req:    toJSON(invitesReq{Om: viewer, RedirectPath: redirectPath}),
+			req:    toJSON(invitesReq{Om: viewer, RedirectPath: redirectPathInvite}),
 			ct:     contentType,
 			token:  "",
 			status: http.StatusUnauthorized,
@@ -189,7 +190,7 @@ func TestInviteMembers(t *testing.T) {
 		},
 		{
 			desc:   "create org without content type",
-			req:    toJSON(invitesReq{Om: viewer, RedirectPath: redirectPath}),
+			req:    toJSON(invitesReq{Om: viewer, RedirectPath: redirectPathInvite}),
 			ct:     "",
 			token:  ownerToken,
 			status: http.StatusUnsupportedMediaType,
@@ -225,7 +226,7 @@ func TestViewInvite(t *testing.T) {
 	org, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 
-	invite, err := svc.InviteMember(context.Background(), ownerToken, org.ID, redirectPath, viewer)
+	invite, err := svc.InviteMember(context.Background(), ownerToken, org.ID, redirectPathInvite, redirectPathRegister, viewer)
 	assert.Nil(t, err, fmt.Sprintf("Inviting member expected to succeed: %s", err))
 
 	inviteID := invite.ID
@@ -291,7 +292,7 @@ func TestRevokeInvite(t *testing.T) {
 	org, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 
-	invite, err := svc.InviteMember(context.Background(), ownerToken, org.ID, redirectPath, viewer)
+	invite, err := svc.InviteMember(context.Background(), ownerToken, org.ID, redirectPathInvite, redirectPathRegister, viewer)
 	assert.Nil(t, err, fmt.Sprintf("Inviting member expected to succeed: %s", err))
 
 	inviteID := invite.ID
@@ -369,7 +370,7 @@ func TestRespondInvite(t *testing.T) {
 	memberships := []auth.OrgMembership{viewer, editor, admin}
 	invites := []auth.Invite{}
 	for _, membership := range memberships {
-		inv, err := svc.InviteMember(context.Background(), ownerToken, org.ID, redirectPath, membership)
+		inv, err := svc.InviteMember(context.Background(), ownerToken, org.ID, redirectPathInvite, redirectPathRegister, membership)
 		assert.Nil(t, err, fmt.Sprintf("Inviting members expected to succeed: %s", err))
 
 		invites = append(invites, inv)
@@ -471,7 +472,7 @@ func TestListInvitesByInvitee(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 		orgIDs = append(orgIDs, org.ID)
 
-		inv, err := svc.InviteMember(context.Background(), ownerToken, org.ID, redirectPath, auth.OrgMembership{
+		inv, err := svc.InviteMember(context.Background(), ownerToken, org.ID, redirectPathInvite, redirectPathRegister, auth.OrgMembership{
 			Email: viewerEmail,
 			Role:  auth.Viewer,
 		})
