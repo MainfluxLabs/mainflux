@@ -17,9 +17,6 @@ var (
 
 	// ErrUserAlreadyInvited indicates that the invitee already has a pending invitation to join the same Org
 	ErrUserAlreadyInvited = errors.New("user already has pending invite to org")
-
-	// ErrInviteExpired indicates that the Invite has expired and cannot be responded to
-	ErrInviteExpired = errors.New("invite has expired")
 )
 
 type InvitesPage struct {
@@ -208,6 +205,14 @@ func (svc service) ViewInvite(ctx context.Context, token string, inviteID string
 		return Invite{}, err
 	}
 
+	if time.Now().After(invite.ExpiresAt) {
+		if err := svc.invites.Remove(ctx, invite.ID); err != nil {
+			return Invite{}, errors.Wrap(errors.ErrNotFound, err)
+		}
+
+		return Invite{}, errors.ErrNotFound
+	}
+
 	// A specific Invite can only be retrieved by the platform Root Admin, the Invitee towards who
 	// the Invite is directed, or the original Inviter (sender)
 	if err := svc.isAdmin(ctx, token); err != nil {
@@ -244,11 +249,6 @@ func (svc service) InviteRespond(ctx context.Context, token string, inviteID str
 		return err
 	}
 
-	// An Invite can only be responded to by the invitee
-	if currentUserID != invite.InviteeID {
-		return errors.ErrAuthorization
-	}
-
 	// Make sure the Invite hasn't expired
 	if time.Now().After(invite.ExpiresAt) {
 		// If a response to an expired Invite has been attempted, remove it from the database
@@ -256,7 +256,12 @@ func (svc service) InviteRespond(ctx context.Context, token string, inviteID str
 			return err
 		}
 
-		return ErrInviteExpired
+		return errors.ErrNotFound
+	}
+
+	// An Invite can only be responded to by the invitee
+	if currentUserID != invite.InviteeID {
+		return errors.ErrAuthorization
 	}
 
 	if accept {
