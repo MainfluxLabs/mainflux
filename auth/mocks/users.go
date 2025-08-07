@@ -4,9 +4,12 @@ import (
 	"context"
 	"strings"
 
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/users"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var _ protomfx.UsersServiceClient = (*usersServiceClientMock)(nil)
@@ -48,6 +51,8 @@ func (svc *usersServiceClientMock) GetUsersByEmails(ctx context.Context, in *pro
 	for _, email := range in.Emails {
 		if user, ok := svc.usersByEmails[email]; ok {
 			users = append(users, &protomfx.User{Id: user.ID, Email: user.Email})
+		} else {
+			return nil, status.Error(codes.NotFound, errors.ErrNotFound.Error())
 		}
 	}
 

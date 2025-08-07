@@ -26,25 +26,24 @@ const (
 	redirectPathInvite   = "/view-invite"
 	redirectPathRegister = "/auth/register"
 
-	secret          = "secret"
-	email           = "test@example.com"
-	superAdminEmail = "admin@example.com"
-	ownerEmail      = "owner@test.com"
-	viewerEmail     = "viewer@test.com"
-	editorEmail     = "editor@test.com"
-	adminEmail      = "admin@test.com"
-	regularEmail    = "regular@test.com"
-	id              = "testID"
-	ownerID         = "ownerID"
-	adminID         = "adminID"
-	editorID        = "editorID"
-	viewerID        = "viewerID"
-	regularID       = "regularUserID"
-	rootAdminID     = "rootAdminID"
-	description     = "description"
-	name            = "name"
-	invalid         = "invalid"
-	n               = 10
+	secret            = "secret"
+	email             = "test@example.com"
+	superAdminEmail   = "admin@example.com"
+	ownerEmail        = "owner@test.com"
+	viewerEmail       = "viewer@test.com"
+	editorEmail       = "editor@test.com"
+	adminEmail        = "admin@test.com"
+	unregisteredEmail = "unregistered@test.com"
+	id                = "testID"
+	ownerID           = "ownerID"
+	adminID           = "adminID"
+	editorID          = "editorID"
+	viewerID          = "viewerID"
+	rootAdminID       = "rootAdminID"
+	description       = "description"
+	name              = "name"
+	invalid           = "invalid"
+	n                 = 10
 
 	loginDuration  = 30 * time.Minute
 	inviteDuration = 7 * 24 * time.Hour
@@ -800,11 +799,13 @@ func TestCreateOrgMemberships(t *testing.T) {
 
 	mb := []auth.OrgMembership{
 		{
-			MemberID: "member1",
+			MemberID: "example1",
+			Email:    "example1@test.com",
 			Role:     auth.Viewer,
 		},
 		{
-			MemberID: "member2",
+			MemberID: "example2",
+			Email:    "example2@test.com",
 			Role:     auth.Viewer,
 		},
 	}
