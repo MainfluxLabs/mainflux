@@ -24,11 +24,11 @@ const (
 type QueryConfig struct {
 	Format           string
 	TimeColumn       string
-	AggField         string
-	Interval         string
 	Condition        string
 	ConditionForJoin string
 	Limit            uint64
+	AggInterval      string
+	AggField         string
 	AggType          string
 }
 
@@ -56,12 +56,12 @@ func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata) (
 	params := as.buildQueryParams(rpm)
 
 	config := QueryConfig{
-		Format:     format,
-		TimeColumn: as.getTimeColumn(format),
-		AggField:   as.getAggregateField(rpm),
-		Interval:   rpm.AggInterval,
-		Limit:      rpm.Limit,
-		AggType:    rpm.AggType,
+		Format:      format,
+		TimeColumn:  as.getTimeColumn(format),
+		AggField:    as.getAggregateField(rpm),
+		AggInterval: rpm.AggInterval,
+		Limit:       rpm.Limit,
+		AggType:     rpm.AggType,
 	}
 
 	baseCondition := as.buildBaseCondition(rpm, format)
@@ -326,12 +326,12 @@ func buildTimeIntervals(config QueryConfig) string {
 		) as interval_time
 		ORDER BY interval_time DESC
 		LIMIT %d`,
-		config.Interval, config.Limit, config.Interval, config.Interval, config.Interval, config.Limit)
+		config.AggInterval, config.Limit, config.AggInterval, config.AggInterval, config.AggInterval, config.Limit)
 }
 
 func buildTimeJoinCondition(config QueryConfig, tableAlias string) string {
 	return fmt.Sprintf("date_trunc('%s', to_timestamp(m.%s / 1000000000)) = %s.interval_time",
-		config.Interval, config.TimeColumn, tableAlias)
+		config.AggInterval, config.TimeColumn, tableAlias)
 }
 
 func buildValueCondition(config QueryConfig) string {
