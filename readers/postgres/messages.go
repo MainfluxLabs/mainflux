@@ -1,6 +1,5 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
-
 package postgres
 
 import (
@@ -10,6 +9,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/jackc/pgerrcode"
@@ -30,12 +30,14 @@ var (
 )
 
 type postgresRepository struct {
-	db *sqlx.DB
+	db         *sqlx.DB
+	aggregator *aggregationService
 }
 
 func New(db *sqlx.DB) readers.MessageRepository {
 	return &postgresRepository{
-		db: db,
+		db:         db,
+		aggregator: newAggregationService(db),
 	}
 }
 
@@ -66,9 +68,8 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.Pag
 		}
 	}()
 
-	condition := fmtCondition(rpm, table)
+	condition := tr.fmtCondition(rpm, table)
 	q := fmt.Sprintf("DELETE FROM %s %s", table, condition)
-
 	params := map[string]interface{}{
 		"subtopic":     rpm.Subtopic,
 		"publisher":    rpm.Publisher,
@@ -84,18 +85,7 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.Pag
 
 	_, err = tx.NamedExecContext(ctx, q, params)
 	if err != nil {
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pgErr.Code {
-			case pgerrcode.UndefinedTable:
-				return errors.Wrap(errors.ErrDeleteMessages, err)
-			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrDeleteMessages, errInvalidMessage)
-			default:
-				return errors.Wrap(errors.ErrDeleteMessages, err)
-			}
-		}
-		return errors.Wrap(errors.ErrDeleteMessages, err)
+		return tr.handlePgError(err, errors.ErrDeleteMessages)
 	}
 
 	return nil
@@ -109,7 +99,7 @@ func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Mess
           :value, :string_value, :bool_value, :data_value, :sum,
           :time, :update_time);`
 
-	tx, err := tr.db.BeginTxx(context.Background(), nil)
+	tx, err := tr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
@@ -128,151 +118,134 @@ func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Mess
 	}()
 
 	for _, msg := range messages {
-		m := senmlMessage{Message: msg}
-		if _, err := tx.NamedExec(q, m); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok && pgErr.Code == pgerrcode.InvalidTextRepresentation {
-				return errors.Wrap(errors.ErrSaveMessages, errInvalidMessage)
-			}
-			return errors.Wrap(errors.ErrSaveMessages, err)
+		if _, err := tx.NamedExec(q, msg); err != nil {
+			return tr.handlePgError(err, errors.ErrSaveMessages)
 		}
 	}
 
-	return err
+	return nil
 }
 
 func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	order := "time"
-	format := defTable
-	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
-	interval := rpm.Interval
-
-	if rpm.Format == jsonTable {
-		order = "created"
-		format = rpm.Format
-	}
-
-	var q string
-	condition := fmtCondition(rpm, format)
-
-	if interval != "" {
-		switch format {
-		case defTable:
-			q = fmt.Sprintf(`
-				SELECT * FROM (
-					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(%[2]s))) *
-					FROM %[3]s %[4]s
-					ORDER BY date_trunc('%[1]s', to_timestamp(%[2]s)), %[2]s DESC
-				) sub
-				%[5]s;`, interval, order, format, condition, olq)
-
-		case jsonTable:
-			q = fmt.Sprintf(`
-				SELECT * FROM (
-					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(created / 1000000000))) *
-					FROM %[2]s %[3]s
-					ORDER BY date_trunc('%[1]s', to_timestamp(created / 1000000000)), created DESC
-				) sub
-				%[4]s;`, interval, format, condition, olq)
-		}
-	} else {
-		q = fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s;`, format, condition, order, olq)
-	}
-
-	params := map[string]interface{}{
-		"limit":        rpm.Limit,
-		"offset":       rpm.Offset,
-		"subtopic":     rpm.Subtopic,
-		"publisher":    rpm.Publisher,
-		"name":         rpm.Name,
-		"protocol":     rpm.Protocol,
-		"value":        rpm.Value,
-		"bool_value":   rpm.BoolValue,
-		"string_value": rpm.StringValue,
-		"data_value":   rpm.DataValue,
-		"from":         rpm.From,
-		"to":           rpm.To,
-	}
-
-	rows, err := tr.db.NamedQuery(q, params)
-	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok {
-			if pgErr.Code == pgerrcode.UndefinedTable {
-				return readers.MessagesPage{}, nil
-			}
-		}
-		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-	}
-	defer rows.Close()
-
 	page := readers.MessagesPage{
 		PageMetadata: rpm,
 		Messages:     []readers.Message{},
 	}
 
-	switch format {
-	case defTable:
-		for rows.Next() {
-			msg := senmlMessage{Message: senml.Message{}}
-			if err := rows.StructScan(&msg); err != nil {
-				return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-			}
-			page.Messages = append(page.Messages, msg.Message)
-		}
-	default:
-		for rows.Next() {
-			msg := jsonMessage{}
-			if err := rows.StructScan(&msg); err != nil {
-				return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-			}
-			m, err := msg.toMap()
-			if err != nil {
-				return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-			}
-			page.Messages = append(page.Messages, m)
-		}
-	}
+	format, order := tr.getFormatAndOrder(rpm)
+	params := tr.buildQueryParams(rpm)
 
-	// Count total for pagination
-	if interval != "" {
-		switch format {
-		case defTable:
-			q = fmt.Sprintf(`
-				SELECT COUNT(*) FROM (
-					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(%[2]s))) *
-					FROM %[3]s %[4]s
-					ORDER BY date_trunc('%[1]s', to_timestamp(%[2]s)), %[2]s DESC
-				) sub;`, interval, order, format, condition)
-		case jsonTable:
-			q = fmt.Sprintf(`
-				SELECT COUNT(*) FROM (
-					SELECT DISTINCT ON (date_trunc('%[1]s', to_timestamp(created / 1000000000))) *
-					FROM %[2]s %[3]s
-					ORDER BY date_trunc('%[1]s', to_timestamp(created / 1000000000)), created DESC
-				) sub;`, interval, format, condition)
-		}
-	} else {
-		q = fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, format, condition)
-	}
-
-	rows, err = tr.db.NamedQuery(q, params)
-	if err != nil {
-		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-	}
-	defer rows.Close()
-
-	total := uint64(0)
-	if rows.Next() {
-		if err := rows.Scan(&total); err != nil {
+	if rpm.AggType != "" && rpm.AggInterval != "" {
+		messages, err := tr.aggregator.readAggregatedMessages(rpm)
+		if err != nil {
 			return page, err
 		}
+		page.Messages = messages
+
+		total, err := tr.readCount(rpm, format, order, params)
+		if err != nil {
+			return page, err
+		}
+		page.Total = total
+		return page, nil
+	}
+
+	messages, err := tr.readMessages(rpm, format, order, params)
+	if err != nil {
+		return page, err
+	}
+	page.Messages = messages
+
+	total, err := tr.readCount(rpm, format, order, params)
+	if err != nil {
+		return page, err
 	}
 	page.Total = total
 
 	return page, nil
 }
 
-func fmtCondition(rpm readers.PageMetadata, table string) string {
+func (tr postgresRepository) readMessages(rpm readers.PageMetadata, format, order string, params map[string]interface{}) ([]readers.Message, error) {
+	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
+	condition := tr.fmtCondition(rpm, format)
+	query := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s;`, format, condition, order, olq)
+
+	rows, err := tr.executeQuery(query, params)
+	if err != nil {
+		return nil, err
+	}
+	if rows == nil {
+		return []readers.Message{}, nil
+	}
+	defer rows.Close()
+
+	return tr.scanMessages(rows, format)
+}
+
+func (tr postgresRepository) readCount(rpm readers.PageMetadata, format, order string, params map[string]interface{}) (uint64, error) {
+	condition := tr.fmtCondition(rpm, format)
+	query := fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, format, condition)
+
+	rows, err := tr.executeQuery(query, params)
+	if err != nil {
+		return 0, err
+	}
+	if rows == nil {
+		return 0, nil
+	}
+	defer rows.Close()
+
+	var total uint64
+	if rows.Next() {
+		if err := rows.Scan(&total); err != nil {
+			return 0, err
+		}
+	}
+	return total, nil
+}
+
+func (tr postgresRepository) executeQuery(query string, params map[string]interface{}) (*sqlx.Rows, error) {
+	rows, err := tr.db.NamedQuery(query, params)
+	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
+			return nil, nil
+		}
+		return nil, errors.Wrap(readers.ErrReadMessages, err)
+	}
+	return rows, nil
+}
+
+func (tr postgresRepository) scanMessages(rows *sqlx.Rows, format string) ([]readers.Message, error) {
+	var messages []readers.Message
+
+	switch format {
+	case defTable:
+		for rows.Next() {
+			msg := senml.Message{}
+			if err := rows.StructScan(&msg); err != nil {
+				return nil, errors.Wrap(readers.ErrReadMessages, err)
+			}
+			messages = append(messages, msg)
+		}
+	default:
+		for rows.Next() {
+			msg := mfjson.Message{}
+			if err := rows.StructScan(&msg); err != nil {
+				return nil, errors.Wrap(readers.ErrReadMessages, err)
+			}
+
+			m, err := msg.ToMap()
+			if err != nil {
+				return nil, errors.Wrap(readers.ErrReadMessages, err)
+			}
+			messages = append(messages, m)
+		}
+	}
+
+	return messages, nil
+}
+
+func (tr postgresRepository) fmtCondition(rpm readers.PageMetadata, table string) string {
 	var query map[string]interface{}
 	meta, err := json.Marshal(rpm)
 	if err != nil {
@@ -282,17 +255,21 @@ func fmtCondition(rpm readers.PageMetadata, table string) string {
 
 	condition := ""
 	op := "WHERE"
-	timeColumn := "time"
-
-	if table != "" && table == jsonTable {
-		timeColumn = "created"
-	}
+	timeColumn := tr.getTimeColumn(table)
 
 	for name := range query {
 		switch name {
-		case "subtopic", "publisher", "name", "protocol":
+		case "subtopic", "publisher", "protocol":
 			condition = fmt.Sprintf(`%s %s %s = :%s`, condition, op, name, name)
 			op = "AND"
+		case "name":
+			switch table {
+			case jsonTable:
+				condition = fmt.Sprintf(`%s %s payload->>'n' = :name`, condition, op)
+			default:
+				condition = fmt.Sprintf(`%s %s name = :name`, condition, op)
+			}
+
 		case "v":
 			comparator := readers.ParseValueComparator(query)
 			condition = fmt.Sprintf(`%s %s value %s :value`, condition, op, comparator)
@@ -317,30 +294,53 @@ func fmtCondition(rpm readers.PageMetadata, table string) string {
 	return condition
 }
 
-type senmlMessage struct {
-	senml.Message
+func (tr postgresRepository) getFormatAndOrder(rpm readers.PageMetadata) (format, order string) {
+	format = defTable
+	order = "time"
+
+	if rpm.Format == jsonTable {
+		format = jsonTable
+		order = "created"
+	}
+
+	return format, order
 }
 
-type jsonMessage struct {
-	Created   int64  `db:"created"`
-	Subtopic  string `db:"subtopic"`
-	Publisher string `db:"publisher"`
-	Protocol  string `db:"protocol"`
-	Payload   []byte `db:"payload"`
+func (tr postgresRepository) getTimeColumn(table string) string {
+	if table == jsonTable {
+		return "created"
+	}
+	return "time"
 }
 
-func (msg jsonMessage) toMap() (map[string]interface{}, error) {
-	ret := map[string]interface{}{
-		"created":   msg.Created,
-		"subtopic":  msg.Subtopic,
-		"publisher": msg.Publisher,
-		"protocol":  msg.Protocol,
-		"payload":   map[string]interface{}{},
+func (tr postgresRepository) buildQueryParams(rpm readers.PageMetadata) map[string]interface{} {
+	return map[string]interface{}{
+		"limit":        rpm.Limit,
+		"offset":       rpm.Offset,
+		"subtopic":     rpm.Subtopic,
+		"publisher":    rpm.Publisher,
+		"name":         rpm.Name,
+		"protocol":     rpm.Protocol,
+		"value":        rpm.Value,
+		"bool_value":   rpm.BoolValue,
+		"string_value": rpm.StringValue,
+		"data_value":   rpm.DataValue,
+		"from":         rpm.From,
+		"to":           rpm.To,
 	}
-	pld := make(map[string]interface{})
-	if err := json.Unmarshal(msg.Payload, &pld); err != nil {
-		return nil, err
+}
+
+func (tr postgresRepository) handlePgError(err error, wrapErr error) error {
+	pgErr, ok := err.(*pgconn.PgError)
+	if ok {
+		switch pgErr.Code {
+		case pgerrcode.UndefinedTable:
+			return errors.Wrap(wrapErr, err)
+		case pgerrcode.InvalidTextRepresentation:
+			return errors.Wrap(wrapErr, errInvalidMessage)
+		default:
+			return errors.Wrap(wrapErr, err)
+		}
 	}
-	ret["payload"] = pld
-	return ret, nil
+	return errors.Wrap(wrapErr, err)
 }

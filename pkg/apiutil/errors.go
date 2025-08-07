@@ -135,6 +135,9 @@ var (
 	// ErrInvalidQueryParams indicates invalid query parameters
 	ErrInvalidQueryParams = errors.New("invalid query parameters")
 
+	//ErrInvalidAggType indicates invalid aggregation type
+	ErrInvalidAggType = errors.New("invalid aggregation type")
+
 	// ErrNotFoundParam indicates that the parameter was not found in the query
 	ErrNotFoundParam = errors.New("parameter not found in the query")
 
