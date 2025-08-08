@@ -252,13 +252,13 @@ func (ms *metricsMiddleware) InviteRespond(ctx context.Context, token string, in
 	return ms.svc.InviteRespond(ctx, token, inviteID, accept)
 }
 
-func (ms *metricsMiddleware) ListInvitesByInviteeID(ctx context.Context, token string, userID string, pm apiutil.PageMetadata) (auth.InvitesPage, error) {
+func (ms *metricsMiddleware) ListInvitesByUser(ctx context.Context, token string, userType string, userID string, pm apiutil.PageMetadata) (auth.InvitesPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_invites_by_invitee_id").Add(1)
 		ms.latency.With("method", "list_invites_by_invitee_id").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListInvitesByInviteeID(ctx, token, userID, pm)
+	return ms.svc.ListInvitesByUser(ctx, token, userType, userID, pm)
 }
 
 func (ms *metricsMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth.Invite, orgName string, invRedirectPath string, registerRedirectPath string) error {

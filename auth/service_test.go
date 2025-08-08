@@ -1593,7 +1593,7 @@ func TestListInvitesByInvitee(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		invitesPage, err := svc.ListInvitesByInviteeID(context.Background(), tc.token, invitee.ID, tc.pm)
+		invitesPage, err := svc.ListInvitesByUser(context.Background(), tc.token, auth.UserTypeInvitee, invitee.ID, tc.pm)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 
 		invCount := uint64(len(invitesPage.Invites))

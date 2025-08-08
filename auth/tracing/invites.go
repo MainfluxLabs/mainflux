@@ -56,12 +56,12 @@ func (irm invitesRepositoryMiddleware) Remove(ctx context.Context, inviteID stri
 	return irm.repo.Remove(ctx, inviteID)
 }
 
-func (irm invitesRepositoryMiddleware) RetrieveByInviteeID(ctx context.Context, inviteeID string, pm apiutil.PageMetadata) (auth.InvitesPage, error) {
+func (irm invitesRepositoryMiddleware) RetrieveByUserID(ctx context.Context, userType string, userID string, pm apiutil.PageMetadata) (auth.InvitesPage, error) {
 	span := createSpan(ctx, irm.tracer, remove)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return irm.repo.RetrieveByInviteeID(ctx, inviteeID, pm)
+	return irm.repo.RetrieveByUserID(ctx, userType, userID, pm)
 }
 
 func (irm invitesRepositoryMiddleware) FlipInactiveInvites(ctx context.Context, email string, inviteeID string) (uint32, error) {

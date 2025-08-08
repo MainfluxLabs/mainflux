@@ -35,6 +35,11 @@ type Invite struct {
 	ExpiresAt    time.Time
 }
 
+const (
+	UserTypeInvitee = "invitee"
+	UserTypeInviter = "inviter"
+)
+
 type Invites interface {
 	// InviteMembers creates a pending Invite on behalf of the User authenticated by `token`,
 	// towards the user in `om`, to join the Org identified by `orgID` with an appropriate role.
@@ -55,9 +60,10 @@ type Invites interface {
 	// ViewInvite retrieves a single Invite denoted by its ID.
 	ViewInvite(ctx context.Context, token string, inviteID string) (Invite, error)
 
-	// ListInvitesByInviteeID retrieves a list of all pending Invites directed towards
-	// a particular User, denoted by their User ID.
-	ListInvitesByInviteeID(ctx context.Context, token string, userID string, pm apiutil.PageMetadata) (InvitesPage, error)
+	// ListInvitesByUser retrieves a list of all invites either directed towards a specific Invitee,
+	// or sent out by a specific Inviter, depending on the value of the `userType` argument, which
+	// must be either 'invitee' or 'inviter'.
+	ListInvitesByUser(ctx context.Context, token string, userType string, userID string, pm apiutil.PageMetadata) (InvitesPage, error)
 
 	// FlipInactiveInvites 'activates' all existing invites towards an unregistered user with the provided email,
 	// by setting the invitee_email columns to NULL, and the invitee_id columns to the provided `inviteeID`, which indicates
@@ -78,9 +84,9 @@ type InvitesRepository interface {
 	// Remove removes a specific pending Invite
 	Remove(ctx context.Context, inviteID string) error
 
-	// RetrieveByInviteeID retrieves a list of all pending invites directed towards a particular User,
-	// denoted by their User ID.
-	RetrieveByInviteeID(ctx context.Context, inviteeID string, pm apiutil.PageMetadata) (InvitesPage, error)
+	// RetrieveByUserID retrieves a list of invites either directed towards a specific Invitee, or sent out by a
+	// specific Inviter, depending on the value of the `userType` argument, which must be either 'invitee' or 'inviter'.
+	RetrieveByUserID(ctx context.Context, userType string, userID string, pm apiutil.PageMetadata) (InvitesPage, error)
 
 	FlipInactiveInvites(ctx context.Context, email string, inviteeID string) (uint32, error)
 }
@@ -290,7 +296,7 @@ func (svc service) InviteRespond(ctx context.Context, token string, inviteID str
 	return nil
 }
 
-func (svc service) ListInvitesByInviteeID(ctx context.Context, token string, userID string, pm apiutil.PageMetadata) (InvitesPage, error) {
+func (svc service) ListInvitesByUser(ctx context.Context, token string, userType string, userID string, pm apiutil.PageMetadata) (InvitesPage, error) {
 	// A specific User's list of pending Invites can only be retrieved by the platform Root Admin
 	// or by that specific User themselves:
 	if err := svc.isAdmin(ctx, token); err != nil {
@@ -309,7 +315,7 @@ func (svc service) ListInvitesByInviteeID(ctx context.Context, token string, use
 		}
 	}
 
-	invitesPage, err := svc.invites.RetrieveByInviteeID(ctx, userID, pm)
+	invitesPage, err := svc.invites.RetrieveByUserID(ctx, userType, userID, pm)
 	if err != nil {
 		return InvitesPage{}, err
 	}

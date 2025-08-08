@@ -127,20 +127,33 @@ func (ir invitesRepository) Remove(ctx context.Context, inviteID string) error {
 	return nil
 }
 
-func (ir invitesRepository) RetrieveByInviteeID(ctx context.Context, inviteeID string, pm apiutil.PageMetadata) (auth.InvitesPage, error) {
+func (ir invitesRepository) RetrieveByUserID(ctx context.Context, userType string, userID string, pm apiutil.PageMetadata) (auth.InvitesPage, error) {
 	query := `
-		SELECT id, inviter_id, org_id, invitee_role, created_at, expires_at
+		SELECT id, invitee_id, invitee_email, inviter_id, org_id, invitee_role, created_at, expires_at
 		FROM invites
-		WHERE invitee_id = :invitee_id AND expires_at > NOW()
+		WHERE %s = :userID AND expires_at > NOW()
 	`
+
+	queryCount := `SELECT COUNT(*) FROM invites WHERE %s = :userID AND expires_at > NOW()`
+
+	switch userType {
+	case auth.UserTypeInvitee:
+		query = fmt.Sprintf(query, "invitee_id")
+		queryCount = fmt.Sprintf(queryCount, "invitee_id")
+	case auth.UserTypeInviter:
+		query = fmt.Sprintf(query, "inviter_id")
+		queryCount = fmt.Sprintf(queryCount, "inviter_id")
+	default:
+		return auth.InvitesPage{}, errors.New("invalid invite user type")
+	}
 
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	query = fmt.Sprintf("%s %s", query, olq)
 
 	params := map[string]any{
-		"invitee_id": inviteeID,
-		"limit":      pm.Limit,
-		"offset":     pm.Offset,
+		"userID": userID,
+		"limit":  pm.Limit,
+		"offset": pm.Offset,
 	}
 
 	rows, err := ir.db.NamedQueryContext(ctx, query, params)
@@ -152,9 +165,7 @@ func (ir invitesRepository) RetrieveByInviteeID(ctx context.Context, inviteeID s
 	var invites []auth.Invite
 
 	for rows.Next() {
-		dbInv := dbInvite{
-			InviteeID: sql.NullString{String: inviteeID, Valid: true},
-		}
+		dbInv := dbInvite{}
 
 		if err := rows.StructScan(&dbInv); err != nil {
 			return auth.InvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
@@ -163,8 +174,6 @@ func (ir invitesRepository) RetrieveByInviteeID(ctx context.Context, inviteeID s
 		inv := toInvite(dbInv)
 		invites = append(invites, inv)
 	}
-
-	queryCount := `SELECT COUNT(*) FROM invites WHERE invitee_id = :invitee_id AND expires_at > NOW()`
 
 	total, err := dbutil.Total(ctx, ir.db, queryCount, params)
 	if err != nil {

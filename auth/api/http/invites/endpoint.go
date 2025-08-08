@@ -78,14 +78,14 @@ func respondInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func listInvitesByUserEndpoint(svc auth.Service) endpoint.Endpoint {
+func listInvitesByUserEndpoint(svc auth.Service, userType string) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listInvitesByUserReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		page, err := svc.ListInvitesByInviteeID(ctx, req.token, req.userID, req.pm)
+		page, err := svc.ListInvitesByUser(ctx, req.token, userType, req.userID, req.pm)
 		if err != nil {
 			return nil, err
 		}
