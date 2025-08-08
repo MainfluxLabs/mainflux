@@ -49,13 +49,13 @@ func (mm *metricsMiddleware) DeleteMessages(ctx context.Context, rpm readers.Pag
 	return mm.svc.DeleteMessages(ctx, rpm, table)
 }
 
-func (mm *metricsMiddleware) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (mm *metricsMiddleware) Backup(rpm readers.PageMetadata, table string) (readers.MessagesPage, error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "backup").Add(1)
 		mm.latency.With("method", "backup").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.Backup(rpm)
+	return mm.svc.Backup(rpm, table)
 }
 
 func (mm *metricsMiddleware) Restore(ctx context.Context, messages ...senml.Message) error {
