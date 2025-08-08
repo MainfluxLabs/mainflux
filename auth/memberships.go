@@ -18,9 +18,6 @@ var (
 
 	// ErrOrgMembershipExists indicates that membership already exists.
 	ErrOrgMembershipExists = errors.New("org membership already exists")
-
-	// ErrMissingUserMembership indicates that required user membership was not found.
-	ErrMissingUserMembership = errors.New("user membership not found")
 )
 
 type OrgMembership struct {
@@ -160,55 +157,65 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 		return OrgMembershipsPage{}, err
 	}
 
-	orgMemberships, err := svc.memberships.BackupByOrg(ctx, orgID)
+	memberships, err := svc.memberships.BackupByOrg(ctx, orgID)
 	if err != nil {
 		return OrgMembershipsPage{}, errors.Wrap(ErrRetrieveMembershipsByOrg, err)
 	}
 
-	var memberIDs []string
-	membershipByMemberID := make(map[string]OrgMembership, len(orgMemberships))
-	for _, m := range orgMemberships {
-		membershipByMemberID[m.MemberID] = m
+	if len(memberships) == 0 {
+		return OrgMembershipsPage{
+			OrgMemberships: []OrgMembership{},
+			PageMetadata: apiutil.PageMetadata{
+				Total:  0,
+				Offset: pm.Offset,
+				Limit:  pm.Limit,
+				Email:  pm.Email,
+			},
+		}, nil
+	}
+
+	memberIDs := make([]string, 0, len(memberships))
+	membershipByMemberID := make(map[string]OrgMembership, len(memberships))
+	for _, m := range memberships {
 		memberIDs = append(memberIDs, m.MemberID)
+		membershipByMemberID[m.MemberID] = m
+	}
+
+	userReq := &protomfx.UsersByIDsReq{
+		Ids: memberIDs,
+		PageMetadata: &protomfx.PageMetadata{
+			Email:  pm.Email,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
+			Limit:  pm.Limit,
+			Offset: pm.Offset,
+		},
+	}
+
+	page, err := svc.users.GetUsersByIDs(ctx, userReq)
+	if err != nil {
+		return OrgMembershipsPage{}, err
 	}
 
 	var oms []OrgMembership
-	var page *protomfx.UsersRes
-	if len(orgMemberships) > 0 {
-		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs, Email: pm.Email, Order: pm.Order, Dir: pm.Dir, Limit: pm.Limit, Offset: pm.Offset}
-		page, err = svc.users.GetUsersByIDs(ctx, &usrReq)
-		if err != nil {
-			return OrgMembershipsPage{}, err
-		}
-
-		for _, u := range page.Users {
-			m, ok := membershipByMemberID[u.Id]
-			if !ok {
-				return OrgMembershipsPage{}, ErrMissingUserMembership
-			}
-
-			oms = append(oms, OrgMembership{
-				MemberID:  m.MemberID,
-				OrgID:     m.OrgID,
-				Email:     u.Email,
-				Role:      m.Role,
-				CreatedAt: m.CreatedAt,
-				UpdatedAt: m.UpdatedAt,
-			})
+	for _, u := range page.Users {
+		if m, ok := membershipByMemberID[u.Id]; ok {
+			m.Email = u.Email
+			oms = append(oms, m)
 		}
 	}
 
-	omp := OrgMembershipsPage{
+	return OrgMembershipsPage{
 		OrgMemberships: oms,
 		PageMetadata: apiutil.PageMetadata{
 			Total:  page.Total,
 			Offset: page.Offset,
 			Limit:  page.Limit,
 			Email:  pm.Email,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
 		},
-	}
-
-	return omp, nil
+	}, nil
 }
 
 func (svc service) UpdateOrgMemberships(ctx context.Context, token, orgID string, members ...OrgMembership) error {

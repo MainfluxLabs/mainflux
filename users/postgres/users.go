@@ -218,6 +218,8 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 			Total:  total,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
 		},
 	}
 
