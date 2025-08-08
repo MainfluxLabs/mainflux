@@ -72,7 +72,7 @@ func (irm *invitesRepositoryMock) Remove(ctx context.Context, inviteID string) e
 	return nil
 }
 
-func (irm *invitesRepositoryMock) RetrieveByInviteeID(ctx context.Context, inviteeID string, pm apiutil.PageMetadata) (auth.InvitesPage, error) {
+func (irm *invitesRepositoryMock) RetrieveByUserID(ctx context.Context, userType string, userID string, pm apiutil.PageMetadata) (auth.InvitesPage, error) {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 
@@ -90,8 +90,15 @@ func (irm *invitesRepositoryMock) RetrieveByInviteeID(ctx context.Context, invit
 	}
 
 	for _, key := range keys[pm.Offset:idxEnd] {
-		if irm.invites[key].InviteeID == inviteeID {
-			invites = append(invites, irm.invites[key])
+		switch userType {
+		case auth.UserTypeInvitee:
+			if irm.invites[key].InviteeID == userID {
+				invites = append(invites, irm.invites[key])
+			}
+		case auth.UserTypeInviter:
+			if irm.invites[key].InviterID == userID {
+				invites = append(invites, irm.invites[key])
+			}
 		}
 	}
 
