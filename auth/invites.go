@@ -150,7 +150,7 @@ func (svc service) InviteMember(ctx context.Context, token string, orgID string,
 			return Invite{}, ErrOrgMembershipExists
 		}
 
-		if err != errors.ErrNotFound {
+		if !errors.Contains(err, errors.ErrNotFound) {
 			return Invite{}, err
 		}
 	}
