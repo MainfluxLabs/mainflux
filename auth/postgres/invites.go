@@ -196,7 +196,7 @@ func (ir invitesRepository) FlipInactiveInvites(ctx context.Context, email strin
 	query := `
 		UPDATE invites
 		SET invitee_email = NULL, invitee_id = :invitee_id
-		WHERE invitee_email = :email
+		WHERE invitee_email = :email AND expires_at > NOW()
 	`
 
 	res, err := ir.db.NamedExecContext(ctx, query, map[string]any{
