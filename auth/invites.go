@@ -49,28 +49,31 @@ type Invites interface {
 	InviteMember(ctx context.Context, token string, orgID string, invRedirectPath string, registerRedirectPath string, om OrgMembership) (Invite, error)
 
 	// RevokeInvite revokes a specific pending Invite. An existing pending Invite can only be revoked
-	// by its original inviter (creator).
+	// by its original inviter (creator). The method does not check for the expiration time of the Invite:
+	// if a revoke of an expired Invite is attempted, the method simply removes it from the database.
 	RevokeInvite(ctx context.Context, token string, inviteID string) error
 
 	// InviteRespond responds to a specific invite, either accepting it (after which the invitee
 	// is assigned as a member of the appropriate Org), or declining it. In both cases the existing
-	// pending Invite is removed.
+	// pending Invite is removed. If a response to an expired Invite is attempted, the Invite is silently
+	// removed from the database and the method returns errors.ErrNotFound.
 	InviteRespond(ctx context.Context, token string, inviteID string, accept bool) error
 
-	// ViewInvite retrieves a single Invite denoted by its ID.
+	// ViewInvite retrieves a single Invite denoted by its ID. If `inviteID` belongs to an expired Invite,
+	// the Invite is silently removed from the database and the method erturns errors.ErrNotFound.
 	ViewInvite(ctx context.Context, token string, inviteID string) (Invite, error)
 
 	// ListInvitesByUser retrieves a list of all invites either directed towards a specific Invitee,
 	// or sent out by a specific Inviter, depending on the value of the `userType` argument, which
-	// must be either 'invitee' or 'inviter'.
+	// must be either 'invitee' or 'inviter'. The method does not return expired Invites.
 	ListInvitesByUser(ctx context.Context, token string, userType string, userID string, pm apiutil.PageMetadata) (InvitesPage, error)
 
 	// FlipInactiveInvites 'activates' all existing invites towards an unregistered user with the provided email,
 	// by setting the invitee_email columns to NULL, and the invitee_id columns to the provided `inviteeID`, which indicates
-	// an active Invite. Returns the number of activated Invites.
+	// an active Invite. Returns the number of activated Invites. Inactive but _expired_ Invites are not updated, nor deleted.
 	FlipInactiveInvites(ctx context.Context, email string, inviteeID string) (uint32, error)
 
-	// SendOrgInviteEmail sends an e-mail representing a certain Invite to a corresponding end User.
+	// SendOrgInviteEmail sends an e-mail representing a specific Invite to a corresponding end User.
 	SendOrgInviteEmail(ctx context.Context, invite Invite, orgName string, invRedirectPath string, registerRedirectPath string) error
 }
 
