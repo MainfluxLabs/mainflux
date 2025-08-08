@@ -105,3 +105,20 @@ func (req retrieveRoleReq) validate() error {
 
 	return nil
 }
+
+type flipInactiveInvitesReq struct {
+	email  string
+	userID string
+}
+
+func (req flipInactiveInvitesReq) validate() error {
+	if req.email == "" {
+		return apiutil.ErrMissingEmail
+	}
+
+	if req.userID == "" {
+		return apiutil.ErrMissingUserID
+	}
+
+	return nil
+}
