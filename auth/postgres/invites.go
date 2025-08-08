@@ -71,7 +71,7 @@ func (ir invitesRepository) Save(ctx context.Context, invites ...auth.Invite) er
 
 func (ir invitesRepository) RetrieveByID(ctx context.Context, inviteID string) (auth.Invite, error) {
 	q := `
-		SELECT invitee_id, inviter_id, org_id, invitee_role, created_at, expires_at
+		SELECT invitee_id, invitee_email, inviter_id, org_id, invitee_role, created_at, expires_at
 		FROM invites
 		WHERE id = $1
 	`
