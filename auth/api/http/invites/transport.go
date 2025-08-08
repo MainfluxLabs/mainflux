@@ -28,8 +28,8 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	}
 
 	mux.Post("/orgs/:id/invites", kithttp.NewServer(
-		kitot.TraceServer(tracer, "invite_members")(inviteMembersEndpoint(svc)),
-		decodeInviteRequest,
+		kitot.TraceServer(tracer, "create_invite")(createInviteEndpoint(svc)),
+		decodeCreateInviteRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -72,12 +72,12 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	return mux
 }
 
-func decodeInviteRequest(_ context.Context, r *http.Request) (any, error) {
+func decodeCreateInviteRequest(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := invitesReq{
+	req := createInviteReq{
 		token: apiutil.ExtractBearerToken(r),
 		orgID: bone.GetValue(r, apiutil.IDKey),
 	}

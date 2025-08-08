@@ -7,9 +7,9 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-func inviteMembersEndpoint(svc auth.Service) endpoint.Endpoint {
+func createInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(invitesReq)
+		req := request.(createInviteReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}

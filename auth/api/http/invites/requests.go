@@ -7,7 +7,7 @@ import (
 
 const maxLimitSize = 100
 
-type invitesReq struct {
+type createInviteReq struct {
 	token                string
 	orgID                string
 	OrgMember            auth.OrgMembership `json:"org_member,omitempty"`
@@ -15,7 +15,7 @@ type invitesReq struct {
 	RedirectPathInvite   string             `json:"redirect_path_invite,omitempty"`
 }
 
-func (req invitesReq) validate() error {
+func (req createInviteReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
