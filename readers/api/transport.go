@@ -6,8 +6,10 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux"
 	auth "github.com/MainfluxLabs/mainflux/auth"
@@ -33,6 +35,7 @@ const (
 	fromKey                = "from"
 	intervalKey            = "interval"
 	toKey                  = "to"
+	outputKey              = "output"
 	defFormat              = "messages"
 )
 
@@ -63,6 +66,21 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 		encodeResponse,
 		opts...,
 	))
+
+	mux.Get("/messages/senml/backup", kithttp.NewServer(
+		backupSenMLMessagesEndpoint(svc),
+		decodeBackupMessages,
+		encodeBackupFileResponse,
+		opts...,
+	))
+
+	mux.Get("/messages/json/backup", kithttp.NewServer(
+		backupJSONMessagesEndpoint(svc),
+		decodeBackupMessages,
+		encodeBackupFileResponse,
+		opts...,
+	))
+
 	mux.Post("/restore", kithttp.NewServer(
 		restoreEndpoint(svc),
 		decodeRestore,
@@ -226,6 +244,109 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	}
 
 	return json.NewEncoder(w).Encode(response)
+}
+
+func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	outputType, err := apiutil.ReadStringQuery(r, outputKey, "json")
+	if err != nil {
+		return nil, err
+	}
+
+	outputType = strings.ToLower(strings.TrimSpace(outputType))
+
+	if outputType != "json" && outputType != "csv" {
+		return nil, errors.Wrap(apiutil.ErrInvalidQueryParams,
+			fmt.Errorf("invalid format '%s': must be 'json' or 'csv'", outputType))
+	}
+
+	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	limit, err := apiutil.ReadLimitQuery(r, apiutil.LimitKey, 100000)
+	if err != nil {
+		return nil, err
+	}
+
+	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	name, err := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	v, err := apiutil.ReadFloatQuery(r, valueKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	comparator, err := apiutil.ReadStringQuery(r, comparatorKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	vs, err := apiutil.ReadStringQuery(r, stringValueKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	vd, err := apiutil.ReadStringQuery(r, dataValueKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	to, err := apiutil.ReadIntQuery(r, toKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	i, err := apiutil.ReadStringQuery(r, intervalKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	req := backupMessagesReq{
+		token:  apiutil.ExtractBearerToken(r),
+		format: outputType,
+		pageMeta: readers.PageMetadata{
+			Offset:      offset,
+			Limit:       limit,
+			Subtopic:    subtopic,
+			Protocol:    protocol,
+			Name:        name,
+			Value:       v,
+			Comparator:  comparator,
+			StringValue: vs,
+			DataValue:   vd,
+			From:        from,
+			To:          to,
+			Interval:    i,
+		},
+	}
+
+	vb, err := apiutil.ReadBoolQuery(r, boolValueKey, false)
+	if err != nil && err != apiutil.ErrNotFoundParam {
+		return nil, err
+	}
+	if err == nil {
+		req.pageMeta.BoolValue = vb
+	}
+
+	return req, nil
 }
 
 func encodeBackupFileResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
