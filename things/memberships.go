@@ -89,7 +89,12 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token strin
 }
 
 func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (GroupMembershipsPage, error) {
-	ar := UserAccessReq{Token: token, ID: groupID, Action: Viewer}
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     groupID,
+		Action: Viewer,
+	}
+
 	if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
 		return GroupMembershipsPage{}, err
 	}
