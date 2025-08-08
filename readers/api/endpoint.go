@@ -7,9 +7,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -18,7 +20,7 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-var header = []string{
+var senmlHeader = []string{
 	"profile",
 	"subtopic",
 	"publisher",
@@ -33,6 +35,21 @@ var header = []string{
 	"time",
 	"update_time",
 }
+
+var jsonHeader = []string{
+	"created",
+	"subtopic",
+	"publisher",
+	"protocol",
+	"payload",
+}
+
+const (
+	defTable   = "messages"
+	jsonTable  = "json"
+	csvFormat  = "csv"
+	jsonFormat = "json"
+)
 
 func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
@@ -115,6 +132,59 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 	}
 }
 
+func backupJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+	return backupMessagesEndpoint(svc, jsonTable)
+}
+
+func backupSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+	return backupMessagesEndpoint(svc, defTable)
+}
+
+func backupMessagesEndpoint(svc readers.MessageRepository, table string) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(backupMessagesReq)
+
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := isAdmin(ctx, req.token); err != nil {
+			return nil, err
+		}
+
+		page, err := svc.Backup(req.pageMeta, table)
+		if err != nil {
+			return nil, err
+		}
+
+		var data []byte
+		var format string
+
+		requestedOutputFormat := strings.ToLower(strings.TrimSpace(req.format))
+
+		switch requestedOutputFormat {
+		case csvFormat:
+			data, err = generateCSV(page, table)
+			format = csvFormat
+		case jsonFormat:
+			data, err = generateJson(page)
+			format = jsonFormat
+		default:
+			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		}
+
+		if err != nil {
+			return nil, errors.Wrap(errors.ErrCreateEntity, err)
+		}
+
+		return backupFileRes{
+			file:   data,
+			format: format,
+		}, nil
+
+	}
+}
+
 func backupEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listAllMessagesReq)
@@ -126,12 +196,12 @@ func backupEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.Backup(req.pageMeta)
+		page, err := svc.Backup(req.pageMeta, defTable)
 		if err != nil {
 			return nil, err
 		}
 
-		csvData, err := generateCSV(page)
+		csvData, err := generateCSV(page, defTable)
 		if err != nil {
 			return nil, err
 		}
@@ -165,15 +235,27 @@ func restoreEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 	}
 }
 
-func generateCSV(page readers.MessagesPage) ([]byte, error) {
+func generateCSV(page readers.MessagesPage, table string) ([]byte, error) {
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
+
+	header := senmlHeader
+	if table == jsonTable {
+		header = jsonHeader
+	}
 
 	if err := writer.Write(header); err != nil {
 		return nil, err
 	}
 
-	if err := convertSenMLToCSV(page, writer); err != nil {
+	var err error
+	if table == jsonTable {
+		err = convertJSONToCSV(page, writer)
+	} else {
+		err = convertSenMLToCSV(page, writer)
+	}
+
+	if err != nil {
 		return nil, err
 	}
 
@@ -183,6 +265,19 @@ func generateCSV(page readers.MessagesPage) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func generateJson(page readers.MessagesPage) ([]byte, error) {
+	if len(page.Messages) == 0 {
+		return []byte("[]"), nil
+	}
+
+	data, err := json.MarshalIndent(page.Messages, "", "  ")
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrCreateEntity, err)
+	}
+
+	return data, nil
 }
 
 func convertCSVToSenML(csvMessages []byte) ([]senml.Message, error) {
@@ -278,6 +373,49 @@ func convertSenMLToCSV(page readers.MessagesPage, writer *csv.Writer) error {
 		}
 	}
 	return nil
+}
+
+func convertJSONToCSV(page readers.MessagesPage, writer *csv.Writer) error {
+	for _, msg := range page.Messages {
+		if m, ok := msg.(map[string]interface{}); ok {
+			created := ""
+			if v, ok := m["created"].(int64); ok {
+				created = fmt.Sprintf("%v", v)
+			}
+
+			subtopic := getStringValue(m, "subtopic")
+			publisher := getStringValue(m, "publisher")
+			protocol := getStringValue(m, "protocol")
+
+			payload := ""
+			if p, ok := m["payload"]; ok {
+				if payloadBytes, err := json.Marshal(p); err == nil {
+					payload = string(payloadBytes)
+				}
+			}
+
+			row := []string{
+				created,
+				subtopic,
+				publisher,
+				protocol,
+				payload,
+			}
+
+			if err := writer.Write(row); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func getStringValue(m map[string]interface{}, key string) string {
+	if v, ok := m[key].(string); ok {
+		return v
+	}
+	return ""
 }
 
 func getValue(ptr interface{}, defaultValue string) string {
