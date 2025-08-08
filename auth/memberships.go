@@ -192,13 +192,13 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 		},
 	}
 
-	page, err := svc.users.GetUsersByIDs(ctx, userReq)
+	res, err := svc.users.GetUsersByIDs(ctx, userReq)
 	if err != nil {
 		return OrgMembershipsPage{}, err
 	}
 
 	var oms []OrgMembership
-	for _, u := range page.Users {
+	for _, u := range res.Users {
 		if m, ok := membershipByMemberID[u.Id]; ok {
 			m.Email = u.Email
 			oms = append(oms, m)
@@ -208,12 +208,12 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 	return OrgMembershipsPage{
 		OrgMemberships: oms,
 		PageMetadata: apiutil.PageMetadata{
-			Total:  page.Total,
-			Offset: page.Offset,
-			Limit:  page.Limit,
-			Email:  pm.Email,
-			Order:  pm.Order,
-			Dir:    pm.Dir,
+			Total:  res.PageMetadata.Total,
+			Offset: res.PageMetadata.Offset,
+			Limit:  res.PageMetadata.Limit,
+			Email:  res.PageMetadata.Email,
+			Order:  res.PageMetadata.Order,
+			Dir:    res.PageMetadata.Dir,
 		},
 	}, nil
 }

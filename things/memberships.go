@@ -129,13 +129,13 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 		},
 	}
 
-	page, err := ts.users.GetUsersByIDs(ctx, userReq)
+	res, err := ts.users.GetUsersByIDs(ctx, userReq)
 	if err != nil {
 		return GroupMembershipsPage{}, err
 	}
 
 	var gms []GroupMembership
-	for _, u := range page.Users {
+	for _, u := range res.Users {
 		if m, ok := membershipByMemberID[u.Id]; ok {
 			m.Email = u.Email
 			gms = append(gms, m)
@@ -145,12 +145,12 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 	return GroupMembershipsPage{
 		GroupMemberships: gms,
 		PageMetadata: apiutil.PageMetadata{
-			Total:  page.Total,
-			Offset: page.Offset,
-			Limit:  page.Limit,
-			Email:  pm.Email,
-			Order:  pm.Order,
-			Dir:    pm.Dir,
+			Total:  res.PageMetadata.Total,
+			Offset: res.PageMetadata.Offset,
+			Limit:  res.PageMetadata.Limit,
+			Email:  res.PageMetadata.Email,
+			Order:  res.PageMetadata.Order,
+			Dir:    res.PageMetadata.Dir,
 		},
 	}, nil
 }

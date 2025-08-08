@@ -23,7 +23,16 @@ func listUsersByIDsEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		mu := []*protomfx.User{}
+		res := getUsersRes{
+			pageMetadata: &protomfx.PageMetadata{
+				Total:  up.Total,
+				Offset: up.Offset,
+				Limit:  up.Limit,
+				Email:  up.Email,
+				Order:  up.Order,
+				Dir:    up.Dir,
+			},
+		}
 
 		for _, u := range up.Users {
 			user := protomfx.User{
@@ -31,10 +40,10 @@ func listUsersByIDsEndpoint(svc users.Service) endpoint.Endpoint {
 				Email:  u.Email,
 				Status: u.Status,
 			}
-			mu = append(mu, &user)
+			res.users = append(res.users, &user)
 		}
 
-		return getUsersRes{users: mu, total: up.Total, limit: up.Limit, offset: up.Offset}, nil
+		return res, nil
 	}
 }
 

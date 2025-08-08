@@ -20,12 +20,26 @@ func NewUsersService(usersByID map[string]users.User, usersByEmails map[string]u
 	return &usersServiceClientMock{usersByID: usersByID, usersByEmails: usersByEmails}
 }
 
-func (svc *usersServiceClientMock) GetUsersByIDs(ctx context.Context, in *protomfx.UsersByIDsReq, opts ...grpc.CallOption) (*protomfx.UsersRes, error) {
+func (svc *usersServiceClientMock) GetUsersByIDs(_ context.Context, in *protomfx.UsersByIDsReq, _ ...grpc.CallOption) (*protomfx.UsersRes, error) {
+	if in.PageMetadata == nil {
+		in.PageMetadata = &protomfx.PageMetadata{}
+	}
+
 	if in.PageMetadata.Limit == 0 {
 		in.PageMetadata.Limit = uint64(len(in.Ids))
 	}
 
-	var users []*protomfx.User
+	res := &protomfx.UsersRes{
+		PageMetadata: &protomfx.PageMetadata{
+			Limit:  in.PageMetadata.Limit,
+			Offset: in.PageMetadata.Offset,
+			Total:  in.PageMetadata.Total,
+			Email:  in.PageMetadata.Email,
+			Order:  in.PageMetadata.Order,
+			Dir:    in.PageMetadata.Dir,
+		},
+	}
+
 	i := uint64(0)
 	for _, id := range in.Ids {
 		if user, ok := svc.usersByID[id]; ok {
@@ -34,16 +48,19 @@ func (svc *usersServiceClientMock) GetUsersByIDs(ctx context.Context, in *protom
 			}
 
 			if i >= in.PageMetadata.Offset && i < in.PageMetadata.Offset+in.PageMetadata.Limit {
-				users = append(users, &protomfx.User{Id: user.ID, Email: user.Email})
+				res.Users = append(res.Users, &protomfx.User{
+					Id:    user.ID,
+					Email: user.Email,
+				})
 			}
 			i++
 		}
 	}
 
-	return &protomfx.UsersRes{Users: users, Limit: in.PageMetadata.Limit, Offset: in.PageMetadata.Offset, Total: i}, nil
+	return res, nil
 }
 
-func (svc *usersServiceClientMock) GetUsersByEmails(ctx context.Context, in *protomfx.UsersByEmailsReq, opts ...grpc.CallOption) (*protomfx.UsersRes, error) {
+func (svc *usersServiceClientMock) GetUsersByEmails(_ context.Context, in *protomfx.UsersByEmailsReq, _ ...grpc.CallOption) (*protomfx.UsersRes, error) {
 	var users []*protomfx.User
 	for _, email := range in.Emails {
 		if user, ok := svc.usersByEmails[email]; ok {

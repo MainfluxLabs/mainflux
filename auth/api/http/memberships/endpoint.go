@@ -142,6 +142,9 @@ func buildOrgMembershipsResponse(omp auth.OrgMembershipsPage) orgMembershipPageR
 			Total:  omp.Total,
 			Offset: omp.Offset,
 			Limit:  omp.Limit,
+			Email:  omp.Email,
+			Order:  omp.Order,
+			Dir:    omp.Dir,
 		},
 		OrgMemberships: []viewOrgMembershipRes{},
 	}

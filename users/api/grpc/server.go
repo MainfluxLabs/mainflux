@@ -73,7 +73,7 @@ func decodeGetUsersByEmailsRequest(_ context.Context, grpcReq interface{}) (inte
 
 func encodeGetUsersResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(getUsersRes)
-	return &protomfx.UsersRes{Users: res.users, Total: res.total, Limit: res.limit, Offset: res.offset}, nil
+	return &protomfx.UsersRes{Users: res.users, PageMetadata: res.pageMetadata}, nil
 }
 
 func encodeError(err error) error {

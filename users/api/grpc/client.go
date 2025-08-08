@@ -61,7 +61,7 @@ func (client grpcClient) GetUsersByIDs(ctx context.Context, req *protomfx.UsersB
 
 	ir := res.(getUsersRes)
 
-	return &protomfx.UsersRes{Users: ir.users, Total: ir.total, Limit: ir.limit, Offset: ir.offset}, nil
+	return &protomfx.UsersRes{Users: ir.users, PageMetadata: ir.pageMetadata}, nil
 
 }
 
@@ -94,7 +94,7 @@ func encodeGetUsersByEmailsRequest(_ context.Context, grpcReq interface{}) (inte
 
 func decodeGetUsersResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(*protomfx.UsersRes)
-	return getUsersRes{users: res.GetUsers(), total: res.GetTotal(), limit: res.GetLimit(), offset: res.GetOffset()}, nil
+	return getUsersRes{users: res.GetUsers(), pageMetadata: res.GetPageMetadata()}, nil
 }
 
 func toPageMetadata(pm *protomfx.PageMetadata) users.PageMetadata {
