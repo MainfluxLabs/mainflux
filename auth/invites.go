@@ -229,7 +229,7 @@ func (svc service) ViewInvite(ctx context.Context, token string, inviteID string
 			return Invite{}, err
 		}
 
-		// Current User is not Root Admin - must be the Invitee
+		// Current User is not Root Admin - must be either the Invitee or Inviter
 		currentUser, err := svc.identify(ctx, token)
 		if err != nil {
 			return Invite{}, err
@@ -300,14 +300,12 @@ func (svc service) InviteRespond(ctx context.Context, token string, inviteID str
 }
 
 func (svc service) ListInvitesByUser(ctx context.Context, token string, userType string, userID string, pm apiutil.PageMetadata) (InvitesPage, error) {
-	// A specific User's list of pending Invites can only be retrieved by the platform Root Admin
-	// or by that specific User themselves:
 	if err := svc.isAdmin(ctx, token); err != nil {
 		if err != errors.ErrAuthorization {
 			return InvitesPage{}, err
 		}
 
-		// Current User is not Root Admin - must be the User whose Invites are being requested
+		// Current User is not Root Admin - must be either the Invitee or Inviter
 		currentUser, err := svc.identify(ctx, token)
 		if err != nil {
 			return InvitesPage{}, err
