@@ -41,7 +41,7 @@ func (repo *messageRepositoryMock) ListAllMessages(rpm readers.PageMetadata) (re
 	return repo.readAll("", rpm)
 }
 
-func (repo *messageRepositoryMock) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (repo *messageRepositoryMock) Backup(rpm readers.PageMetadata, table string) (readers.MessagesPage, error) {
 	return repo.readAll("", rpm)
 }
 
@@ -173,7 +173,7 @@ func (repo *messageRepositoryMock) checkValueFilter(senmlMsg senml.Message, quer
 		return *senmlMsg.Value >= rpm.Value
 	case readers.EqualKey:
 		return *senmlMsg.Value == rpm.Value
-	default: 
+	default:
 		return *senmlMsg.Value == rpm.Value
 	}
 }

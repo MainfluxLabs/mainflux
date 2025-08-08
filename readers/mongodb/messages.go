@@ -40,7 +40,7 @@ func (repo mongoRepository) ListAllMessages(rpm readers.PageMetadata) (readers.M
 	return repo.readAll("", rpm)
 }
 
-func (repo mongoRepository) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (repo mongoRepository) Backup(rpm readers.PageMetadata, table string) (readers.MessagesPage, error) {
 	return repo.readAll("", rpm)
 }
 

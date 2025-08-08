@@ -49,7 +49,7 @@ func (tr timescaleRepository) DeleteMessages(ctx context.Context, rpm readers.Pa
 	return nil
 }
 
-func (tr timescaleRepository) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (tr timescaleRepository) Backup(rpm readers.PageMetadata, table string) (readers.MessagesPage, error) {
 	return tr.readAll(rpm)
 }
 
