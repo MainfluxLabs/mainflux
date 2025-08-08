@@ -8,6 +8,7 @@ import (
 	"time"
 
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
@@ -48,26 +49,27 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 	}
 }
 
-func (clent grpcClient) GetUsersByIDs(ctx context.Context, req *protomfx.UsersByIDsReq, _ ...grpc.CallOption) (*protomfx.UsersRes, error) {
-	ctx, close := context.WithTimeout(ctx, clent.timeout)
+func (client grpcClient) GetUsersByIDs(ctx context.Context, req *protomfx.UsersByIDsReq, _ ...grpc.CallOption) (*protomfx.UsersRes, error) {
+	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := clent.getUsersByIDs(ctx, getUsersByIDsReq{ids: req.GetIds(), email: req.GetEmail(), order: req.GetOrder(), dir: req.GetDir(), limit: req.GetLimit(), offset: req.GetOffset()})
+	pm := toPageMetadata(req.PageMetadata)
+	res, err := client.getUsersByIDs(ctx, getUsersByIDsReq{ids: req.GetIds(), pageMetadata: pm})
 	if err != nil {
 		return nil, err
 	}
 
 	ir := res.(getUsersRes)
 
-	return &protomfx.UsersRes{Users: ir.users, Total: ir.total, Limit: ir.limit, Offset: ir.offset}, nil
+	return &protomfx.UsersRes{Users: ir.users, PageMetadata: ir.pageMetadata}, nil
 
 }
 
-func (clent grpcClient) GetUsersByEmails(ctx context.Context, req *protomfx.UsersByEmailsReq, _ ...grpc.CallOption) (*protomfx.UsersRes, error) {
-	ctx, close := context.WithTimeout(ctx, clent.timeout)
+func (client grpcClient) GetUsersByEmails(ctx context.Context, req *protomfx.UsersByEmailsReq, _ ...grpc.CallOption) (*protomfx.UsersRes, error) {
+	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := clent.getUsersByEmails(ctx, getUsersByEmailsReq{emails: req.GetEmails()})
+	res, err := client.getUsersByEmails(ctx, getUsersByEmailsReq{emails: req.GetEmails()})
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +82,9 @@ func (clent grpcClient) GetUsersByEmails(ctx context.Context, req *protomfx.User
 
 func encodeGetUsersByIDsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(getUsersByIDsReq)
-	return &protomfx.UsersByIDsReq{Ids: req.ids, Email: req.email, Order: req.order, Dir: req.dir, Limit: req.limit, Offset: req.offset}, nil
+	pm := toProtoPageMetadata(req.pageMetadata)
+
+	return &protomfx.UsersByIDsReq{Ids: req.ids, PageMetadata: &pm}, nil
 }
 
 func encodeGetUsersByEmailsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
@@ -90,5 +94,30 @@ func encodeGetUsersByEmailsRequest(_ context.Context, grpcReq interface{}) (inte
 
 func decodeGetUsersResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(*protomfx.UsersRes)
-	return getUsersRes{users: res.GetUsers(), total: res.GetTotal(), limit: res.GetLimit(), offset: res.GetOffset()}, nil
+	return getUsersRes{users: res.GetUsers(), pageMetadata: res.GetPageMetadata()}, nil
+}
+
+func toPageMetadata(pm *protomfx.PageMetadata) users.PageMetadata {
+	if pm == nil {
+		return users.PageMetadata{}
+	}
+	return users.PageMetadata{
+		Total:  pm.GetTotal(),
+		Offset: pm.GetOffset(),
+		Limit:  pm.GetLimit(),
+		Email:  pm.GetEmail(),
+		Order:  pm.GetOrder(),
+		Dir:    pm.GetDir(),
+	}
+}
+
+func toProtoPageMetadata(pm users.PageMetadata) protomfx.PageMetadata {
+	return protomfx.PageMetadata{
+		Total:  pm.Total,
+		Offset: pm.Offset,
+		Limit:  pm.Limit,
+		Email:  pm.Email,
+		Order:  pm.Order,
+		Dir:    pm.Dir,
+	}
 }

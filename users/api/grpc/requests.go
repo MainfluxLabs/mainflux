@@ -3,15 +3,14 @@
 
 package grpc
 
-import "github.com/MainfluxLabs/mainflux/pkg/apiutil"
+import (
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/users"
+)
 
 type getUsersByIDsReq struct {
-	ids    []string
-	email  string
-	order  string
-	dir    string
-	limit  uint64
-	offset uint64
+	ids          []string
+	pageMetadata users.PageMetadata
 }
 
 func (req getUsersByIDsReq) validate() error {

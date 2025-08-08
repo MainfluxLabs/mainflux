@@ -38,7 +38,7 @@ var (
 	ErrEmailVerificationExpired = errors.New("e-mail verification token expired")
 )
 
-// Service specifies an API that must be fullfiled by the domain service
+// Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
 	// SelfRegister carries out the first stage of own account registration: it
@@ -78,7 +78,7 @@ type Service interface {
 	ListUsers(ctx context.Context, token string, pm PageMetadata) (UserPage, error)
 
 	// ListUsersByIDs retrieves users list for the given IDs.
-	ListUsersByIDs(ctx context.Context, ids []string, email string, order string, dir string, limit uint64, offset uint64) (UserPage, error)
+	ListUsersByIDs(ctx context.Context, ids []string, pm PageMetadata) (UserPage, error)
 
 	// ListUsersByEmails retrieves users list for the given emails.
 	ListUsersByEmails(ctx context.Context, emails []string) ([]User, error)
@@ -99,7 +99,7 @@ type Service interface {
 	// SendPasswordReset sends reset password link to email.
 	SendPasswordReset(ctx context.Context, redirectPath, email, token string) error
 
-	// EnableUser logically enableds the user identified with the provided ID
+	// EnableUser logically enables the user identified with the provided ID
 	EnableUser(ctx context.Context, token, id string) error
 
 	// DisableUser logically disables the user identified with the provided ID
@@ -406,8 +406,8 @@ func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMeta
 	return svc.users.RetrieveByIDs(ctx, nil, pm)
 }
 
-func (svc usersService) ListUsersByIDs(ctx context.Context, ids []string, email string, order string, dir string, limit uint64, offset uint64) (UserPage, error) {
-	pm := PageMetadata{Status: EnabledStatusKey, Email: email, Order: order, Dir: dir, Limit: limit, Offset: offset}
+func (svc usersService) ListUsersByIDs(ctx context.Context, ids []string, pm PageMetadata) (UserPage, error) {
+	pm.Status = EnabledStatusKey
 	return svc.users.RetrieveByIDs(ctx, ids, pm)
 }
 

@@ -141,24 +141,27 @@ message User {
     string status = 3;
 }
 
+message PageMetadata {
+    uint64 total  = 1;
+    uint64 offset = 2;
+    uint64 limit  = 3;
+    string email  = 4;
+    string order  = 5;
+    string dir    = 6;
+}
+
 message UsersByEmailsReq {
     repeated string emails = 1;
 }
 
 message UsersByIDsReq {
-    repeated string ids = 1;
-    string email = 2;
-    string order = 3;
-    string dir = 4;
-    uint64 limit = 5;
-    uint64 offset = 6;
+    repeated string ids       = 1;
+    PageMetadata pageMetadata = 2;
 }
 
 message UsersRes {
-    repeated User users = 1;
-    uint64 total = 2;
-    uint64 limit = 3;
-    uint64 offset = 4;
+    repeated User users       = 1;
+    PageMetadata pageMetadata = 2;
 }
 
 message AssignRoleReq {
@@ -169,6 +172,7 @@ message AssignRoleReq {
 message RetrieveRoleReq {
     string id = 1;
 }
+
 message RetrieveRoleRes {
     string role = 1;
 }
