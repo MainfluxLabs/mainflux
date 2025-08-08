@@ -41,6 +41,20 @@ func (req listAllMessagesReq) validate() error {
 	return nil
 }
 
+type backupMessagesReq struct {
+	token    string
+	format   string
+	pageMeta readers.PageMetadata
+}
+
+func (req backupMessagesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	return nil
+}
+
 type restoreMessagesReq struct {
 	token    string
 	Messages []byte
