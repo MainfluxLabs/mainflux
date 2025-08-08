@@ -5,7 +5,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
-const maxLimitSize = 100
+const maxLimitSize = 200
 
 type createInviteReq struct {
 	token                string
@@ -89,7 +89,7 @@ func (req listInvitesByUserReq) validate() error {
 		return apiutil.ErrMissingUserID
 	}
 
-	if err := apiutil.ValidatePageMetadata(req.pm, 200, 254); err != nil {
+	if err := apiutil.ValidatePageMetadata(req.pm, maxLimitSize, 254); err != nil {
 		return err
 	}
 
