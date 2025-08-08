@@ -146,9 +146,8 @@ message PageMetadata {
     uint64 offset = 2;
     uint64 limit  = 3;
     string email  = 4;
-    string status = 5;
-    string order  = 6;
-    string dir    = 7;
+    string order  = 5;
+    string dir    = 6;
 }
 
 message UsersByEmailsReq {

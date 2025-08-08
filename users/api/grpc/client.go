@@ -106,7 +106,6 @@ func toPageMetadata(pm *protomfx.PageMetadata) users.PageMetadata {
 		Offset: pm.GetOffset(),
 		Limit:  pm.GetLimit(),
 		Email:  pm.GetEmail(),
-		Status: pm.GetStatus(),
 		Order:  pm.GetOrder(),
 		Dir:    pm.GetDir(),
 	}
@@ -118,7 +117,6 @@ func toProtoPageMetadata(pm users.PageMetadata) protomfx.PageMetadata {
 		Offset: pm.Offset,
 		Limit:  pm.Limit,
 		Email:  pm.Email,
-		Status: pm.Status,
 		Order:  pm.Order,
 		Dir:    pm.Dir,
 	}
