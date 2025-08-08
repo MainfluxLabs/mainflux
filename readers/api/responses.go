@@ -48,7 +48,8 @@ func (res restoreMessagesRes) Empty() bool {
 }
 
 type backupFileRes struct {
-	file []byte
+	file   []byte
+	format string
 }
 
 func (res backupFileRes) Code() int {
@@ -60,5 +61,5 @@ func (res backupFileRes) Headers() map[string]string {
 }
 
 func (res backupFileRes) Empty() bool {
-	return false
+	return len(res.file) == 0
 }
