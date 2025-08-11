@@ -65,8 +65,7 @@ func TestSaveInvite(t *testing.T) {
 		})
 	}
 
-	alreadyInvitedInvites := []auth.Invite{}
-	alreadyInvitedInvites = append(alreadyInvitedInvites, invites[0])
+	alreadyInvitedInvites := []auth.Invite{invites[0]}
 	invID, err := idProvider.ID()
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	alreadyInvitedInvites[0].ID = invID
