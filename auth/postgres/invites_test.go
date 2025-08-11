@@ -98,7 +98,7 @@ func TestSaveInvite(t *testing.T) {
 			err:     errors.ErrConflict,
 		},
 		{
-			desc:    "save invite to user with existing pending invite to same org",
+			desc:    "save invite to same invitee by same inviter to same org",
 			invites: alreadyInvitedInvites,
 			err:     auth.ErrUserAlreadyInvited,
 		},
