@@ -110,8 +110,8 @@ func migrateDB(db *sqlx.DB) error {
 						expires_at TIMESTAMPTZ,
 						FOREIGN KEY (org_id) REFERENCES orgs (id) ON DELETE CASCADE,
 						PRIMARY KEY (id),
-						UNIQUE (invitee_id, org_id),
-						UNIQUE (invitee_email, org_id)
+						UNIQUE (invitee_id, inviter_id, org_id),
+						UNIQUE (invitee_email, inviter_id, org_id)
 					)`,
 				},
 				Down: []string{

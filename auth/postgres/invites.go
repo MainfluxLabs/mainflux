@@ -50,7 +50,7 @@ func (ir invitesRepository) Save(ctx context.Context, invites ...auth.Invite) er
 					return errors.Wrap(errors.ErrMalformedEntity, err)
 				case pgerrcode.UniqueViolation:
 					var e = errors.ErrConflict
-					if pgErr.ConstraintName == "invites_invitee_id_org_id_key" || pgErr.ConstraintName == "invites_invitee_email_org_id_key" {
+					if pgErr.ConstraintName == "invites_invitee_email_inviter_id_org_id_key" || pgErr.ConstraintName == "invites_invitee_id_inviter_id_org_id_key" {
 						e = auth.ErrUserAlreadyInvited
 					}
 
