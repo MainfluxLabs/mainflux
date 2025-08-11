@@ -35,7 +35,7 @@ const (
 	jsonTable   = "json"
 	senmlTable  = "messages"
 	minAgg      = "min"
-	maxAgg      = "min"
+	maxAgg      = "max"
 	countAgg    = "count"
 	avgAgg      = "avg"
 )
