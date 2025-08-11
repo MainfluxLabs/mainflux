@@ -61,7 +61,7 @@ func TestSaveInvite(t *testing.T) {
 			OrgID:        org.ID,
 			InviteeRole:  auth.Viewer,
 			CreatedAt:    time.Now(),
-			ExpiresAt:    time.Now(),
+			ExpiresAt:    time.Now().Add(inviteExpiryTime),
 		})
 	}
 
