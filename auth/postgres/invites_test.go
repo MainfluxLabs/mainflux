@@ -65,10 +65,28 @@ func TestSaveInvite(t *testing.T) {
 		})
 	}
 
-	alreadyInvitedInvites := []auth.Invite{invites[0]}
 	invID, err := idProvider.ID()
+	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	inviteeID, err := idProvider.ID()
+	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	inviterID, err := idProvider.ID()
+	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	expiredInvite := auth.Invite{
+		ID:           invID,
+		InviteeID:    inviteeID,
+		InviteeEmail: "",
+		InviterID:    inviterID,
+		OrgID:        org.ID,
+		InviteeRole:  auth.Editor,
+		CreatedAt:    time.Now().Add(-2 * inviteExpiryTime),
+		ExpiresAt:    time.Now().Add(-1 * inviteExpiryTime),
+	}
+	invites = append(invites, expiredInvite)
+
+	alreadyInvitedInvite := invites[0]
+	invID, err = idProvider.ID()
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	alreadyInvitedInvites[0].ID = invID
+	alreadyInvitedInvite.ID = invID
 
 	var invalidOrgIDInvites []auth.Invite
 	for _, inv := range invites {
@@ -81,6 +99,20 @@ func TestSaveInvite(t *testing.T) {
 		inv.OrgID = ""
 		emptyOrgIDInvites = append(emptyOrgIDInvites, inv)
 	}
+
+	invID, err = idProvider.ID()
+	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	reinviteExpiredInvite := auth.Invite{
+		ID:           invID,
+		InviteeID:    expiredInvite.InviteeID,
+		InviteeEmail: expiredInvite.InviteeEmail,
+		InviterID:    expiredInvite.InviterID,
+		OrgID:        expiredInvite.OrgID,
+		InviteeRole:  expiredInvite.InviteeRole,
+		CreatedAt:    time.Now(),
+		ExpiresAt:    time.Now().Add(inviteExpiryTime),
+	}
+	
 
 	cases := []struct {
 		desc    string
@@ -99,7 +131,7 @@ func TestSaveInvite(t *testing.T) {
 		},
 		{
 			desc:    "save invite to same invitee by same inviter to same org",
-			invites: alreadyInvitedInvites,
+			invites: []auth.Invite{alreadyInvitedInvite},
 			err:     auth.ErrUserAlreadyInvited,
 		},
 		{
@@ -111,6 +143,11 @@ func TestSaveInvite(t *testing.T) {
 			desc:    "save invites with empty org id",
 			invites: emptyOrgIDInvites,
 			err:     errors.ErrMalformedEntity,
+		},
+		{
+			desc: "save invite with same properties as existing expired invite",
+			invites: []auth.Invite{reinviteExpiredInvite},
+			err: nil,
 		},
 	}
 

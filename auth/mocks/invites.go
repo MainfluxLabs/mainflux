@@ -4,6 +4,7 @@ import (
 	"context"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -33,11 +34,19 @@ func (irm *invitesRepositoryMock) Save(ctx context.Context, invites ...auth.Invi
 		}
 
 		for _, iInv := range irm.invites {
-			if iInv.InviteeID != "" && iInv.InviteeID == invite.InviteeID && iInv.OrgID == invite.OrgID && iInv.InviterID == invite.InviterID {
+			if iInv.InviteeID != "" &&
+				iInv.InviteeID == invite.InviteeID &&
+				iInv.OrgID == invite.OrgID &&
+				iInv.InviterID == invite.InviterID &&
+				iInv.ExpiresAt.After(time.Now()) {
 				return errors.ErrConflict
 			}
 
-			if iInv.InviteeEmail != "" && iInv.InviteeEmail == invite.InviteeEmail && iInv.OrgID == invite.OrgID && iInv.InviterID == invite.InviterID {
+			if iInv.InviteeEmail != "" &&
+				iInv.InviteeEmail == invite.InviteeEmail &&
+				iInv.OrgID == invite.OrgID &&
+				iInv.InviterID == invite.InviterID &&
+				iInv.ExpiresAt.After(time.Now()) {
 				return errors.ErrConflict
 			}
 		}

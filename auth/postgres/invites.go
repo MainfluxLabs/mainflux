@@ -39,6 +39,11 @@ func (ir invitesRepository) Save(ctx context.Context, invites ...auth.Invite) er
 	`
 
 	for _, invite := range invites {
+		if err := ir.purgeExpiredInvites(ctx, invite); err != nil {
+			tx.Rollback()
+			return err
+		}
+
 		dbInvite := toDBInvite(invite)
 		if _, err := tx.NamedExecContext(ctx, qIns, dbInvite); err != nil {
 			tx.Rollback()
@@ -221,6 +226,32 @@ func (ir invitesRepository) FlipInactiveInvites(ctx context.Context, email strin
 	}
 
 	return uint32(cnt), nil
+}
+
+// Purges all expired invites that would prevent the `invite` from being saved due to the UNIQUE
+// constraints in the 'invites' database table. In other words, removes all expired invites that match
+// the passed `invite`'s (invitee_id, inviter_id, org_id) or (invitee_email, inviter_id, org_id) triplet.
+func (ir invitesRepository) purgeExpiredInvites(ctx context.Context, invite auth.Invite) error {
+	query := `
+		DELETE FROM invites
+		WHERE (:invitee_id = invitee_id OR :invitee_email = invitee_email) AND inviter_id = :inviter_id AND org_id = :org_id AND expires_at < NOW()
+	`
+
+	dbInvite := toDBInvite(invite)
+
+	_, err := ir.db.NamedExecContext(ctx, query, dbInvite)
+	if err != nil {
+		pqErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pqErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(errors.ErrMalformedEntity, err)
+			}
+		}
+		return errors.Wrap(errors.ErrRemoveEntity, err)
+	}
+
+	return nil
 }
 
 func toDBInvite(invite auth.Invite) dbInvite {
