@@ -56,7 +56,7 @@ func TestSaveInvite(t *testing.T) {
 		invites = append(invites, auth.Invite{
 			ID:           invID,
 			InviteeID:    inviteeID,
-			InviteeEmail: fmt.Sprintf("invitee%d@test.com", i),
+			InviteeEmail: "",
 			InviterID:    inviterID,
 			OrgID:        org.ID,
 			InviteeRole:  auth.Viewer,
