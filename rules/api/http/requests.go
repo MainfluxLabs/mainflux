@@ -5,6 +5,7 @@ package http
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/rules"
 )
 
@@ -13,13 +14,38 @@ const (
 	maxLimitSize = 200
 	maxNameSize  = 254
 )
+const (
+	operatorAND = "AND"
+	operatorOR  = "OR"
+)
+
+var (
+	// errMissingConditionField indicates a missing condition field
+	errMissingConditionField = errors.New("missing condition field")
+
+	// errMissingConditionOperator indicates a missing condition operator
+	errMissingConditionOperator = errors.New("missing condition operator")
+
+	// errMissingConditionThreshold indicates a missing condition threshold
+	errMissingConditionThreshold = errors.New("missing condition threshold")
+
+	// errInvalidActionType indicates an invalid action type
+	errInvalidActionType = errors.New("missing or invalid action type")
+
+	// errMissingActionID indicates a missing action id
+	errMissingActionID = errors.New("missing action id")
+
+	// errInvalidOperator indicates an invalid logical operator
+	errInvalidOperator = errors.New("invalid logical operator")
+)
 
 type ruleReq struct {
-	Name        string          `json:"name"`
-	Condition   rules.Condition `json:"condition"`
-	Actions     []rules.Action  `json:"actions"`
-	Description string          `json:"description,omitempty"`
-	ProfileID   string          `json:"profile_id"`
+	ProfileID   string            `json:"profile_id"`
+	Name        string            `json:"name"`
+	Description string            `json:"description,omitempty"`
+	Conditions  []rules.Condition `json:"conditions"`
+	Operator    string            `json:"operator,omitempty"`
+	Actions     []rules.Action    `json:"actions"`
 }
 
 type createRulesReq struct {
@@ -55,16 +81,28 @@ func (req ruleReq) validate() error {
 		return apiutil.ErrNameSize
 	}
 
-	if req.Condition.Field == "" {
-		return apiutil.ErrMissingConditionField
+	if len(req.Conditions) < minLen {
+		return apiutil.ErrEmptyList
 	}
 
-	if req.Condition.Operator == "" {
-		return apiutil.ErrMissingConditionOperator
+	for _, condition := range req.Conditions {
+		if condition.Field == "" {
+			return errMissingConditionField
+		}
+
+		if condition.Operator == "" {
+			return errMissingConditionOperator
+		}
+
+		if condition.Threshold == nil {
+			return errMissingConditionThreshold
+		}
 	}
 
-	if req.Condition.Threshold == nil {
-		return apiutil.ErrMissingConditionThreshold
+	if req.Operator != "" {
+		if req.Operator != operatorAND && req.Operator != operatorOR {
+			return errInvalidOperator
+		}
 	}
 
 	if req.ProfileID == "" {
@@ -77,12 +115,12 @@ func (req ruleReq) validate() error {
 
 	for _, action := range req.Actions {
 		if action.Type != rules.ActionTypeSMTP && action.Type != rules.ActionTypeSMPP && action.Type != rules.ActionTypeAlarm {
-			return apiutil.ErrInvalidActionType
+			return errInvalidActionType
 		}
 
 		if action.Type == rules.ActionTypeSMTP || action.Type == rules.ActionTypeSMPP {
 			if action.ID == "" {
-				return apiutil.ErrMissingActionID
+				return errMissingActionID
 			}
 		}
 	}

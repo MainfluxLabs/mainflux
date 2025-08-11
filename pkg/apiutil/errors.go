@@ -143,22 +143,4 @@ var (
 
 	// ErrInvalidRole indicates an invalid role.
 	ErrInvalidRole = errors.New("invalid role")
-
-	// ErrMissingConditionField indicates a missing condition field
-	ErrMissingConditionField = errors.New("missing condition field")
-
-	// ErrMissingConditionOperator indicates a missing condition operator
-	ErrMissingConditionOperator = errors.New("missing condition operator")
-
-	// ErrMissingConditionThreshold indicates a missing condition threshold
-	ErrMissingConditionThreshold = errors.New("missing condition threshold")
-
-	// ErrInvalidActionType indicates an invalid action type
-	ErrInvalidActionType = errors.New("missing or invalid action type")
-
-	// ErrMissingActionID indicates a missing action id
-	ErrMissingActionID = errors.New("missing action id")
-
-	// ErrMissingPublisherID indicated a missing publisher id
-	ErrMissingPublisherID = errors.New("missing publisher id")
 )

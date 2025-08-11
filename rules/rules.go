@@ -12,7 +12,8 @@ type Rule struct {
 	GroupID     string
 	Name        string
 	Description string
-	Condition   Condition
+	Conditions  []Condition
+	Operator    string
 	Actions     []Action
 }
 

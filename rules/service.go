@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -76,17 +77,16 @@ func New(rules RuleRepository, things protomfx.ThingsServiceClient, publisher me
 func (rs *rulesService) CreateRules(ctx context.Context, token string, rules ...Rule) ([]Rule, error) {
 	var rls []Rule
 	for _, rule := range rules {
-		r, err := rs.createRule(ctx, &rule, token)
+		r, err := rs.createRule(ctx, rule, token)
 		if err != nil {
-			return []Rule{}, err
+			return nil, err
 		}
 		rls = append(rls, r)
 	}
-
 	return rls, nil
 }
 
-func (rs *rulesService) createRule(ctx context.Context, rule *Rule, token string) (Rule, error) {
+func (rs *rulesService) createRule(ctx context.Context, rule Rule, token string) (Rule, error) {
 	_, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.ProfileID, Action: things.Editor})
 	if err != nil {
 		return Rule{}, err
@@ -104,11 +104,10 @@ func (rs *rulesService) createRule(ctx context.Context, rule *Rule, token string
 	}
 	rule.ID = id
 
-	rls, err := rs.rules.Save(ctx, *rule)
+	rls, err := rs.rules.Save(ctx, rule)
 	if err != nil {
 		return Rule{}, err
 	}
-
 	if len(rls) == 0 {
 		return Rule{}, errors.ErrCreateEntity
 	}
@@ -196,11 +195,12 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 	}
 
 	for _, rule := range rp.Rules {
-		isValid, payloads, err := processPayload(message.Payload, rule.Condition, message.ContentType)
+		triggered, payloads, err := processPayload(message.Payload, rule.Conditions, rule.Operator, message.ContentType)
 		if err != nil {
 			return err
 		}
-		if isValid {
+
+		if !triggered {
 			continue
 		}
 
@@ -211,13 +211,13 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 
 				switch action.Type {
 				case ActionTypeSMTP, ActionTypeSMPP:
-					if action.ID != "" {
-						newMsg.Subject = fmt.Sprintf("%s.%s", action.Type, action.ID)
-						if err := rs.publisher.Publish(newMsg); err != nil {
-							return err
-						}
+					if action.ID == "" {
+						return errInvalidActionID
 					}
-					return errInvalidActionID
+					newMsg.Subject = fmt.Sprintf("%s.%s", action.Type, action.ID)
+					if err := rs.publisher.Publish(newMsg); err != nil {
+						return err
+					}
 				case ActionTypeAlarm:
 					newMsg.Subject = subjectAlarm
 					if err := rs.publisher.Publish(newMsg); err != nil {
@@ -233,7 +233,7 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 	return nil
 }
 
-func processPayload(payload []byte, condition Condition, contentType string) (bool, [][]byte, error) {
+func processPayload(payload []byte, conditions []Condition, operator string, contentType string) (bool, [][]byte, error) {
 	var parsedData interface{}
 	if err := json.Unmarshal(payload, &parsedData); err != nil {
 		return false, nil, err
@@ -241,63 +241,94 @@ func processPayload(payload []byte, condition Condition, contentType string) (bo
 
 	switch data := parsedData.(type) {
 	case []interface{}:
-		var invalidPayloads [][]byte
+		var triggerPayloads [][]byte
 		for _, item := range data {
 			obj, ok := item.(map[string]interface{})
 			if !ok {
 				continue
 			}
 
-			isValid, err := validatePayload(obj, condition, contentType)
+			triggered, err := checkConditionsMet(obj, conditions, operator, contentType)
 			if err != nil {
 				return false, nil, err
 			}
 
-			if !isValid {
+			if triggered {
 				extractedPayload, _ := json.Marshal(obj)
-				invalidPayloads = append(invalidPayloads, extractedPayload)
+				triggerPayloads = append(triggerPayloads, extractedPayload)
 			}
 		}
 
-		return len(invalidPayloads) == 0, invalidPayloads, nil
+		return len(triggerPayloads) > 0, triggerPayloads, nil
 	case map[string]interface{}:
-		isValid, err := validatePayload(data, condition, contentType)
+		triggered, err := checkConditionsMet(data, conditions, operator, contentType)
 		if err != nil {
 			return false, nil, err
 		}
 
-		if !isValid {
+		if triggered {
 			extractedPayload, _ := json.Marshal(data)
-			return false, [][]byte{extractedPayload}, nil
+			return true, [][]byte{extractedPayload}, nil
 		}
 
-		return true, nil, nil
+		return false, nil, nil
 	default:
 		return false, nil, errInvalidObject
 	}
 }
 
-func validatePayload(payloadMap map[string]interface{}, condition Condition, contentType string) (bool, error) {
-	value := findPayloadParam(payloadMap, condition.Field, contentType)
-	if value == nil {
-		return true, nil
+func checkConditionsMet(payloadMap map[string]interface{}, conditions []Condition, operator, contentType string) (bool, error) {
+	results := make([]bool, len(conditions))
+
+	for i, condition := range conditions {
+		value := findPayloadParam(payloadMap, condition.Field, contentType)
+		if value == nil {
+			results[i] = false
+			continue
+		}
+
+		var payloadValue float64
+		switch v := value.(type) {
+		case string:
+			val, err := strconv.ParseFloat(v, 64)
+			if err != nil {
+				return false, err
+			}
+			payloadValue = val
+		case float64:
+			payloadValue = v
+		case int:
+			payloadValue = float64(v)
+		case int64:
+			payloadValue = float64(v)
+		case uint:
+			payloadValue = float64(v)
+		case uint64:
+			payloadValue = float64(v)
+		default:
+			results[i] = false
+			continue
+		}
+
+		results[i] = isConditionMet(condition.Operator, payloadValue, *condition.Threshold)
 	}
 
-	var payloadValue float64
-	switch v := value.(type) {
-	case string:
-		val, err := strconv.ParseFloat(v, 64)
-		if err != nil {
-			return false, err
+	if strings.ToUpper(operator) == "OR" {
+		for _, r := range results {
+			if r {
+				return true, nil
+			}
 		}
-		payloadValue = val
-	case float64:
-		payloadValue = v
-	default:
 		return false, nil
 	}
 
-	return !isConditionMet(condition.Operator, payloadValue, *condition.Threshold), nil
+	// AND
+	for _, r := range results {
+		if !r {
+			return false, nil
+		}
+	}
+	return true, nil
 }
 
 func isConditionMet(operator string, val1, val2 float64) bool {
