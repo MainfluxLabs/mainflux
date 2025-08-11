@@ -134,6 +134,9 @@ func buildGroupMembershipsResponse(gpp things.GroupMembershipsPage) listGroupMem
 			Total:  gpp.Total,
 			Limit:  gpp.Limit,
 			Offset: gpp.Offset,
+			Email:  gpp.Email,
+			Order:  gpp.Order,
+			Dir:    gpp.Dir,
 		},
 		GroupMemberships: []groupMembership{},
 	}
