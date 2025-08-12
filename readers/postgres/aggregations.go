@@ -52,20 +52,19 @@ func newAggregationService(db *sqlx.DB) *aggregationService {
 }
 
 func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata) ([]readers.Message, error) {
-	format := rpm.Format
 	params := as.buildQueryParams(rpm)
 
 	config := QueryConfig{
-		Format:      format,
-		TimeColumn:  as.getTimeColumn(format),
+		Format:      rpm.Format,
+		TimeColumn:  as.getTimeColumn(rpm.Format),
 		AggField:    as.getAggregateField(rpm),
 		AggInterval: rpm.AggInterval,
 		Limit:       rpm.Limit,
 		AggType:     rpm.AggType,
 	}
 
-	baseCondition := as.buildBaseCondition(rpm, format)
-	nameCondition := as.buildNameCondition(rpm, format)
+	baseCondition := as.buildBaseCondition(rpm, rpm.Format)
+	nameCondition := as.buildNameCondition(rpm, rpm.Format)
 	config.Condition = as.combineConditions(baseCondition, nameCondition)
 	config.ConditionForJoin = strings.Replace(config.Condition, "WHERE", "AND", 1)
 
@@ -88,7 +87,7 @@ func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata) (
 	}
 	defer rows.Close()
 
-	messages, err := as.scanAggregatedMessages(rows, format)
+	messages, err := as.scanAggregatedMessages(rows, rpm.Format)
 	if err != nil {
 		return nil, err
 	}
