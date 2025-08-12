@@ -35,13 +35,14 @@ func viewInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		return inviteRes{
-			ID:          invite.ID,
-			InviteeID:   invite.InviteeID,
-			OrgID:       invite.OrgID,
-			InviterID:   invite.InviterID,
-			InviteeRole: invite.InviteeRole,
-			CreatedAt:   invite.CreatedAt,
-			ExpiresAt:   invite.ExpiresAt,
+			ID:           invite.ID,
+			InviteeID:    invite.InviteeID,
+			InviteeEmail: invite.InviteeEmail,
+			OrgID:        invite.OrgID,
+			InviterID:    invite.InviterID,
+			InviteeRole:  invite.InviteeRole,
+			CreatedAt:    invite.CreatedAt,
+			ExpiresAt:    invite.ExpiresAt,
 		}, nil
 	}
 }

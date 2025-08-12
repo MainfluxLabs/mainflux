@@ -48,13 +48,14 @@ func (res respondInviteRes) Empty() bool {
 }
 
 type inviteRes struct {
-	ID          string    `json:"id"`
-	InviteeID   string    `json:"invitee_id"`
-	InviterID   string    `json:"inviter_id"`
-	OrgID       string    `json:"org_id"`
-	InviteeRole string    `json:"invitee_role"`
-	CreatedAt   time.Time `json:"created_at"`
-	ExpiresAt   time.Time `json:"expires_at"`
+	ID           string    `json:"id"`
+	InviteeID    string    `json:"invitee_id"`
+	InviteeEmail string    `json:"invitee_email"`
+	InviterID    string    `json:"inviter_id"`
+	OrgID        string    `json:"org_id"`
+	InviteeRole  string    `json:"invitee_role"`
+	CreatedAt    time.Time `json:"created_at"`
+	ExpiresAt    time.Time `json:"expires_at"`
 }
 
 func (res inviteRes) Code() int {
