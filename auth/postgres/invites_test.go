@@ -112,7 +112,6 @@ func TestSaveInvite(t *testing.T) {
 		CreatedAt:    time.Now(),
 		ExpiresAt:    time.Now().Add(inviteExpiryTime),
 	}
-	
 
 	cases := []struct {
 		desc    string
@@ -145,9 +144,9 @@ func TestSaveInvite(t *testing.T) {
 			err:     errors.ErrMalformedEntity,
 		},
 		{
-			desc: "save invite with same properties as existing expired invite",
+			desc:    "save invite with same properties as existing expired invite",
 			invites: []auth.Invite{reinviteExpiredInvite},
-			err: nil,
+			err:     nil,
 		},
 	}
 
@@ -327,7 +326,7 @@ func TestRemoveInvite(t *testing.T) {
 	}
 }
 
-func TestListInivtesByInvitee(t *testing.T) {
+func TestRetrieveByUserID(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	repoInvites := postgres.NewInvitesRepo(dbMiddleware)
 	repoOrgs := postgres.NewOrgRepo(dbMiddleware)
@@ -337,6 +336,9 @@ func TestListInivtesByInvitee(t *testing.T) {
 	var invites []auth.Invite
 
 	inviteeID, err := idProvider.ID()
+	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	inviterID, err := idProvider.ID()
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	for i := range m {
@@ -359,13 +361,10 @@ func TestListInivtesByInvitee(t *testing.T) {
 		invID, err := idProvider.ID()
 		assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-		inviterID, err := idProvider.ID()
-		assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-
 		invites = append(invites, auth.Invite{
 			ID:           invID,
 			InviteeID:    inviteeID,
-			InviteeEmail: fmt.Sprintf("invitee%d@test.com", i),
+			InviteeEmail: "",
 			InviterID:    inviterID,
 			OrgID:        org.ID,
 			InviteeRole:  auth.Viewer,
@@ -378,37 +377,57 @@ func TestListInivtesByInvitee(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := []struct {
-		desc      string
-		pm        apiutil.PageMetadata
-		inviteeID string
-		size      int
-		err       error
+		desc     string
+		pm       apiutil.PageMetadata
+		userType string
+		userID   string
+		size     int
+		err      error
 	}{
 		{
-			desc:      "retrieve all pending invites towards invitee",
-			pm:        apiutil.PageMetadata{},
-			inviteeID: inviteeID,
-			size:      m,
-			err:       nil,
+			desc:     "retrieve all pending invites towards invitee",
+			pm:       apiutil.PageMetadata{},
+			userID:   inviteeID,
+			userType: auth.UserTypeInvitee,
+			size:     m,
+			err:      nil,
 		},
 		{
-			desc:      "retrieve 1 pending invite towards invitee",
-			pm:        apiutil.PageMetadata{Limit: 1},
-			inviteeID: inviteeID,
-			size:      1,
-			err:       nil,
+			desc:     "retrieve 1 pending invite towards invitee",
+			pm:       apiutil.PageMetadata{Limit: 1},
+			userID:   inviteeID,
+			userType: auth.UserTypeInvitee,
+			size:     1,
+			err:      nil,
 		},
 		{
-			desc:      "retrieve pending invites with empty invitee id",
-			pm:        apiutil.PageMetadata{Limit: 1},
-			inviteeID: "",
-			size:      0,
-			err:       errors.ErrRetrieveEntity,
+			desc:     "retrieve pending invites with empty user id",
+			pm:       apiutil.PageMetadata{Limit: 1},
+			userID:   "",
+			userType: auth.UserTypeInvitee,
+			size:     0,
+			err:      errors.ErrRetrieveEntity,
+		},
+		{
+			desc:     "retrieve all sent invites by inviter",
+			pm:       apiutil.PageMetadata{},
+			userID:   inviterID,
+			userType: auth.UserTypeInviter,
+			size:     m,
+			err:      nil,
+		},
+		{
+			desc:     "retrieve 1 sent invite by inviter",
+			pm:       apiutil.PageMetadata{Limit: 1},
+			userID:   inviterID,
+			userType: auth.UserTypeInviter,
+			size:     1,
+			err:      nil,
 		},
 	}
 
 	for _, tc := range cases {
-		invPage, err := repoInvites.RetrieveByUserID(context.Background(), auth.UserTypeInvitee, tc.inviteeID, tc.pm)
+		invPage, err := repoInvites.RetrieveByUserID(context.Background(), tc.userType, tc.userID, tc.pm)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s, got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.size, len(invPage.Invites), fmt.Sprintf("%s: expected size %d got %d\n", tc.desc, tc.size, len(invPage.Invites)))
 	}
