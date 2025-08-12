@@ -84,7 +84,7 @@ type service struct {
 	things         protomfx.ThingsServiceClient
 	keys           KeyRepository
 	roles          RolesRepository
-	memberships   OrgMembershipsRepository
+	memberships    OrgMembershipsRepository
 	invites        InvitesRepository
 	email          Emailer
 	idProvider     uuid.IDProvider
@@ -103,7 +103,7 @@ func New(orgs OrgRepository, tc protomfx.ThingsServiceClient, uc protomfx.UsersS
 		users:          uc,
 		keys:           keys,
 		roles:          roles,
-		memberships:   memberships,
+		memberships:    memberships,
 		invites:        invites,
 		email:          emailer,
 		idProvider:     idp,

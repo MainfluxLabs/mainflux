@@ -42,7 +42,7 @@ const (
 	description            = "testDesc"
 	n                      = 10
 	loginDuration          = 30 * time.Minute
-	inviteDuration = 7 * 24 * time.Hour
+	inviteDuration         = 7 * 24 * time.Hour
 	emailKey               = "email"
 	idKey                  = "id"
 	ascKey                 = "asc"
