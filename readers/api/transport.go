@@ -35,8 +35,10 @@ const (
 	fromKey                = "from"
 	intervalKey            = "interval"
 	toKey                  = "to"
-	outputKey              = "output"
-	defFormat              = "messages"
+	convertKey             = "convert"
+	messageTypeKey         = "messageType"
+	csvFormat              = "csv"
+	jsonFormat             = "json"
 )
 
 var (
@@ -67,30 +69,17 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 		opts...,
 	))
 
-	mux.Get("/messages/senml/backup", kithttp.NewServer(
-		backupSenMLMessagesEndpoint(svc),
+	mux.Get("/messages/:messageType/backup", kithttp.NewServer(
+		backupMessagesEndpoint(svc),
 		decodeBackupMessages,
 		encodeBackupFileResponse,
 		opts...,
 	))
 
-	mux.Get("/messages/json/backup", kithttp.NewServer(
-		backupJSONMessagesEndpoint(svc),
-		decodeBackupMessages,
-		encodeBackupFileResponse,
-		opts...,
-	))
-
-	mux.Post("/restore", kithttp.NewServer(
-		restoreEndpoint(svc),
+	mux.Post("/messages/:messageType/restore", kithttp.NewServer(
+		restoreMessagesEndpoint(svc),
 		decodeRestore,
 		encodeResponse,
-		opts...,
-	))
-	mux.Get("/backup", kithttp.NewServer(
-		backupEndpoint(svc),
-		decodeListAllMessages,
-		encodeBackupFileResponse,
 		opts...,
 	))
 
@@ -217,14 +206,28 @@ func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, erro
 func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
 	token := apiutil.ExtractBearerToken(r)
 
-	csvData, err := io.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
+	var fileType string
+	formatType := r.Header.Get("Content-Type")
+	switch formatType {
+	case apiutil.ContentTypeJSON:
+		fileType = jsonFormat
+	case apiutil.ContentTypeCSV:
+		fileType = csvFormat
+
+	default:
+		return nil, errors.Wrap(apiutil.ErrUnsupportedContentType, err)
+	}
+
 	return restoreMessagesReq{
-		token:    token,
-		Messages: csvData,
+		token:         token,
+		fileType:      fileType,
+		messageFormat: bone.GetValue(r, messageTypeKey),
+		Messages:      data,
 	}, nil
 }
 
@@ -247,16 +250,16 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 }
 
 func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, error) {
-	outputType, err := apiutil.ReadStringQuery(r, outputKey, "json")
+	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, "json")
 	if err != nil {
 		return nil, err
 	}
 
-	outputType = strings.ToLower(strings.TrimSpace(outputType))
+	convertFormat = strings.ToLower(strings.TrimSpace(convertFormat))
 
-	if outputType != "json" && outputType != "csv" {
+	if convertFormat != "json" && convertFormat != "csv" {
 		return nil, errors.Wrap(apiutil.ErrInvalidQueryParams,
-			fmt.Errorf("invalid format '%s': must be 'json' or 'csv'", outputType))
+			fmt.Errorf("invalid format '%s': must be 'json' or 'csv'", convertFormat))
 	}
 
 	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, 0)
@@ -320,8 +323,9 @@ func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, erro
 	}
 
 	req := backupMessagesReq{
-		token:  apiutil.ExtractBearerToken(r),
-		format: outputType,
+		token:         apiutil.ExtractBearerToken(r),
+		messageFormat: bone.GetValue(r, messageTypeKey),
+		convertFormat: convertFormat,
 		pageMeta: readers.PageMetadata{
 			Offset:      offset,
 			Limit:       limit,
