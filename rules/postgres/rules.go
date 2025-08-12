@@ -35,7 +35,7 @@ func (rr ruleRepository) Save(ctx context.Context, rls ...rules.Rule) ([]rules.R
 		return []rules.Rule{}, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	q := `INSERT INTO rules (id, profile_id, group_id, name, description, conditions, operator, actions) VALUES (:id, :profile_id, :group_id, :name, :description, :conditions, operator, :actions);`
+	q := `INSERT INTO rules (id, profile_id, group_id, name, description, conditions, operator, actions) VALUES (:id, :profile_id, :group_id, :name, :description, :conditions, :operator, :actions);`
 
 	for _, rule := range rls {
 		dbr, err := toDBRule(rule)

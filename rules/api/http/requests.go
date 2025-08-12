@@ -32,7 +32,7 @@ var (
 	errMissingActionID = errors.New("missing action id")
 
 	// errInvalidOperator indicates an invalid logical operator
-	errInvalidOperator = errors.New("invalid logical operator")
+	errInvalidOperator = errors.New("missing or invalid logical operator")
 )
 
 type ruleReq struct {
@@ -95,10 +95,9 @@ func (req ruleReq) validate() error {
 		}
 	}
 
-	if req.Operator != "" {
-		if req.Operator != rules.OperatorAND && req.Operator != rules.OperatorOR {
-			return errInvalidOperator
-		}
+	if len(req.Conditions) > minLen &&
+		(req.Operator != rules.OperatorAND && req.Operator != rules.OperatorOR) {
+		return errInvalidOperator
 	}
 
 	if req.ProfileID == "" {
