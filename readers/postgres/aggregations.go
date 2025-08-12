@@ -64,7 +64,7 @@ func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata) (
 	}
 
 	baseCondition := as.buildBaseCondition(rpm)
-	nameCondition := as.buildNameCondition(rpm, rpm.Format)
+	nameCondition := as.buildNameCondition(rpm)
 	config.Condition = as.combineConditions(baseCondition, nameCondition)
 	config.ConditionForJoin = strings.Replace(config.Condition, "WHERE", "AND", 1)
 
@@ -342,12 +342,12 @@ func buildValueCondition(config QueryConfig) string {
 	}
 }
 
-func (as *aggregationService) buildNameCondition(rpm readers.PageMetadata, format string) string {
+func (as *aggregationService) buildNameCondition(rpm readers.PageMetadata) string {
 	if rpm.Name == "" {
 		return ""
 	}
 
-	switch format {
+	switch rpm.Format {
 	case defTable:
 		return "WHERE name = :name"
 	default:
