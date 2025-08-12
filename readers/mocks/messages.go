@@ -45,7 +45,7 @@ func (repo *messageRepositoryMock) Backup(rpm readers.PageMetadata, table string
 	return repo.readAll("", rpm)
 }
 
-func (repo *messageRepositoryMock) Restore(ctx context.Context, messages ...senml.Message) error {
+func (repo *messageRepositoryMock) Restore(ctx context.Context, format string, messages ...readers.Message) error {
 	panic("not implemented")
 }
 
