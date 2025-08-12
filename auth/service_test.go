@@ -1508,7 +1508,7 @@ func TestViewInvite(t *testing.T) {
 
 }
 
-func TestListInvitesByInvitee(t *testing.T) {
+func TestListInvitesByUser(t *testing.T) {
 	svc := newService()
 
 	_, ownerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
@@ -1528,7 +1528,6 @@ func TestListInvitesByInvitee(t *testing.T) {
 	_, unauthToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: "example3", Subject: "example3@test.com"})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	orgIDs := []string{}
 	n := uint64(5)
 
 	for i := uint64(1); i <= n; i++ {
@@ -1544,56 +1543,111 @@ func TestListInvitesByInvitee(t *testing.T) {
 		})
 
 		assert.Nil(t, err, fmt.Sprintf("Unexpected error inviting Org member: %s", err))
-
-		orgIDs = append(orgIDs, org.ID)
 	}
 
 	cases := []struct {
-		desc  string
-		token string
-		pm    apiutil.PageMetadata
-		size  uint64
-		err   error
+		desc     string
+		token    string
+		pm       apiutil.PageMetadata
+		userID   string
+		userType string
+		size     uint64
+		err      error
 	}{
 		{
-			desc:  "list all pending invites as invitee",
-			token: inviteeToken,
-			pm:    apiutil.PageMetadata{Limit: n, Offset: 0},
-			size:  n,
-			err:   nil,
+			desc:     "list all pending invites as invitee",
+			token:    inviteeToken,
+			pm:       apiutil.PageMetadata{Limit: n, Offset: 0},
+			userID:   invitee.ID,
+			userType: auth.UserTypeInvitee,
+			size:     n,
+			err:      nil,
 		},
 		{
-			desc:  "list all pending invites as root admin",
-			token: rootAdminToken,
-			pm:    apiutil.PageMetadata{Limit: n, Offset: 0},
-			size:  n,
-			err:   nil,
+			desc:     "list all pending invites as root admin",
+			token:    rootAdminToken,
+			pm:       apiutil.PageMetadata{Limit: n, Offset: 0},
+			userID:   invitee.ID,
+			userType: auth.UserTypeInvitee,
+			size:     n,
+			err:      nil,
 		},
 		{
-			desc:  "list all pending invites as unauthorized user",
-			token: unauthToken,
-			pm:    apiutil.PageMetadata{Limit: n, Offset: 0},
-			size:  0,
-			err:   errors.ErrAuthorization,
+			desc:     "list all pending invites as unauthorized user",
+			token:    unauthToken,
+			pm:       apiutil.PageMetadata{Limit: n, Offset: 0},
+			userID:   invitee.ID,
+			userType: auth.UserTypeInvitee,
+			size:     0,
+			err:      errors.ErrAuthorization,
 		},
 		{
-			desc:  "list half of pending invites as invitee",
-			token: inviteeToken,
-			pm:    apiutil.PageMetadata{Limit: n / 2, Offset: 0},
-			size:  n / 2,
-			err:   nil,
+			desc:     "list half of pending invites as invitee",
+			token:    inviteeToken,
+			pm:       apiutil.PageMetadata{Limit: n / 2, Offset: 0},
+			userID:   invitee.ID,
+			userType: auth.UserTypeInvitee,
+			size:     n / 2,
+			err:      nil,
 		},
 		{
-			desc:  "list last pending invite as invitee",
-			token: inviteeToken,
-			pm:    apiutil.PageMetadata{Limit: 1, Offset: n - 1},
-			size:  1,
-			err:   nil,
+			desc:     "list last pending invite as invitee",
+			token:    inviteeToken,
+			pm:       apiutil.PageMetadata{Limit: 1, Offset: n - 1},
+			userID:   invitee.ID,
+			userType: auth.UserTypeInvitee,
+			size:     1,
+			err:      nil,
+		},
+		{
+			desc:     "list all sent invites as inviter",
+			token:    ownerToken,
+			pm:       apiutil.PageMetadata{Limit: n, Offset: 0},
+			userID:   ownerID,
+			userType: auth.UserTypeInviter,
+			size:     n,
+			err:      nil,
+		},
+		{
+			desc:     "list all sent invites as root admin",
+			token:    rootAdminToken,
+			pm:       apiutil.PageMetadata{Limit: n, Offset: 0},
+			userID:   ownerID,
+			userType: auth.UserTypeInviter,
+			size:     n,
+			err:      nil,
+		},
+		{
+			desc:     "list all sent invites as unauthorized user",
+			token:    unauthToken,
+			pm:       apiutil.PageMetadata{Limit: n, Offset: 0},
+			userID:   ownerID,
+			userType: auth.UserTypeInviter,
+			size:     0,
+			err:      errors.ErrAuthorization,
+		},
+		{
+			desc:     "list half of sent invites as inviter",
+			token:    ownerToken,
+			pm:       apiutil.PageMetadata{Limit: n / 2, Offset: 0},
+			userID:   ownerID,
+			userType: auth.UserTypeInviter,
+			size:     n / 2,
+			err:      nil,
+		},
+		{
+			desc:     "list last sent invite as inviter",
+			token:    ownerToken,
+			pm:       apiutil.PageMetadata{Limit: 1, Offset: n - 1},
+			userID:   ownerID,
+			userType: auth.UserTypeInviter,
+			size:     1,
+			err:      nil,
 		},
 	}
 
 	for _, tc := range cases {
-		invitesPage, err := svc.ListInvitesByUser(context.Background(), tc.token, auth.UserTypeInvitee, invitee.ID, tc.pm)
+		invitesPage, err := svc.ListInvitesByUser(context.Background(), tc.token, tc.userType, tc.userID, tc.pm)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 
 		invCount := uint64(len(invitesPage.Invites))
