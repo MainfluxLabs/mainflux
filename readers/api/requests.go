@@ -42,9 +42,10 @@ func (req listAllMessagesReq) validate() error {
 }
 
 type backupMessagesReq struct {
-	token    string
-	format   string
-	pageMeta readers.PageMetadata
+	token         string
+	convertFormat string
+	messageFormat string
+	pageMeta      readers.PageMetadata
 }
 
 func (req backupMessagesReq) validate() error {
@@ -56,8 +57,10 @@ func (req backupMessagesReq) validate() error {
 }
 
 type restoreMessagesReq struct {
-	token    string
-	Messages []byte
+	token         string
+	fileType      string
+	messageFormat string
+	Messages      []byte
 }
 
 func (req restoreMessagesReq) validate() error {
