@@ -63,7 +63,7 @@ func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata) (
 		AggType:     rpm.AggType,
 	}
 
-	baseCondition := as.buildBaseCondition(rpm, rpm.Format)
+	baseCondition := as.buildBaseCondition(rpm)
 	nameCondition := as.buildNameCondition(rpm, rpm.Format)
 	config.Condition = as.combineConditions(baseCondition, nameCondition)
 	config.ConditionForJoin = strings.Replace(config.Condition, "WHERE", "AND", 1)
@@ -370,9 +370,9 @@ func (as *aggregationService) combineConditions(condition1, condition2 string) s
 	return condition1 + " " + condition2
 }
 
-func (as *aggregationService) buildBaseCondition(rpm readers.PageMetadata, table string) string {
+func (as *aggregationService) buildBaseCondition(rpm readers.PageMetadata) string {
 	var conditions []string
-	timeColumn := as.getTimeColumn(table)
+	timeColumn := as.getTimeColumn(rpm.Format)
 
 	if rpm.Subtopic != "" {
 		conditions = append(conditions, "subtopic = :subtopic")
