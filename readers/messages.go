@@ -6,8 +6,6 @@ package readers
 import (
 	"context"
 	"errors"
-
-	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 )
 
 const (
@@ -32,7 +30,7 @@ type MessageRepository interface {
 	ListAllMessages(rpm PageMetadata) (MessagesPage, error)
 
 	// Restore restores message database from a backup.
-	Restore(ctx context.Context, messages ...senml.Message) error
+	Restore(ctx context.Context, format string, messages ...Message) error
 
 	// Backup retrieves all messages from database.
 	Backup(rpm PageMetadata, table string) (MessagesPage, error)
