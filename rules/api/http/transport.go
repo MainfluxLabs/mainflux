@@ -187,7 +187,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrInvalidOrder,
 		err == apiutil.ErrInvalidDirection,
 		err == errMissingConditionField,
-		err == errMissingConditionOperator,
+		err == errMissingConditionComparator,
 		err == errMissingConditionThreshold,
 		err == errMissingActionID,
 		err == errInvalidActionType:

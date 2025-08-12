@@ -14,17 +14,13 @@ const (
 	maxLimitSize = 200
 	maxNameSize  = 254
 )
-const (
-	operatorAND = "AND"
-	operatorOR  = "OR"
-)
 
 var (
 	// errMissingConditionField indicates a missing condition field
 	errMissingConditionField = errors.New("missing condition field")
 
-	// errMissingConditionOperator indicates a missing condition operator
-	errMissingConditionOperator = errors.New("missing condition operator")
+	// errMissingConditionComparator indicates a missing condition operator
+	errMissingConditionComparator = errors.New("missing condition comparator")
 
 	// errMissingConditionThreshold indicates a missing condition threshold
 	errMissingConditionThreshold = errors.New("missing condition threshold")
@@ -90,8 +86,8 @@ func (req ruleReq) validate() error {
 			return errMissingConditionField
 		}
 
-		if condition.Operator == "" {
-			return errMissingConditionOperator
+		if condition.Comparator == "" {
+			return errMissingConditionComparator
 		}
 
 		if condition.Threshold == nil {
@@ -100,7 +96,7 @@ func (req ruleReq) validate() error {
 	}
 
 	if req.Operator != "" {
-		if req.Operator != operatorAND && req.Operator != operatorOR {
+		if req.Operator != rules.OperatorAND && req.Operator != rules.OperatorOR {
 			return errInvalidOperator
 		}
 	}

@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -47,6 +46,12 @@ const (
 	ActionTypeSMPP  = "smpp"
 	ActionTypeAlarm = "alarm"
 )
+
+const (
+	OperatorAND = "AND"
+	OperatorOR  = "OR"
+)
+
 const subjectAlarm = "alarms"
 
 var (
@@ -310,10 +315,10 @@ func checkConditionsMet(payloadMap map[string]interface{}, conditions []Conditio
 			continue
 		}
 
-		results[i] = isConditionMet(condition.Operator, payloadValue, *condition.Threshold)
+		results[i] = isConditionMet(condition.Comparator, payloadValue, *condition.Threshold)
 	}
 
-	if strings.ToUpper(operator) == "OR" {
+	if operator == OperatorOR {
 		for _, r := range results {
 			if r {
 				return true, nil
@@ -322,7 +327,6 @@ func checkConditionsMet(payloadMap map[string]interface{}, conditions []Conditio
 		return false, nil
 	}
 
-	// AND
 	for _, r := range results {
 		if !r {
 			return false, nil
@@ -331,8 +335,8 @@ func checkConditionsMet(payloadMap map[string]interface{}, conditions []Conditio
 	return true, nil
 }
 
-func isConditionMet(operator string, val1, val2 float64) bool {
-	switch operator {
+func isConditionMet(comparator string, val1, val2 float64) bool {
+	switch comparator {
 	case "==":
 		return val1 == val2
 	case ">=":
