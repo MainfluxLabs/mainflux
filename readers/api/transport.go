@@ -36,7 +36,7 @@ const (
 	intervalKey            = "interval"
 	toKey                  = "to"
 	convertKey             = "convert"
-	messageTypeKey         = "messageType"
+	formatKey              = "format"
 	csvFormat              = "csv"
 	jsonFormat             = "json"
 )
@@ -69,14 +69,14 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 		opts...,
 	))
 
-	mux.Get("/messages/:messageType/backup", kithttp.NewServer(
+	mux.Get("/messages/:format/backup", kithttp.NewServer(
 		backupMessagesEndpoint(svc),
 		decodeBackupMessages,
 		encodeBackupFileResponse,
 		opts...,
 	))
 
-	mux.Post("/messages/:messageType/restore", kithttp.NewServer(
+	mux.Post("/messages/:format/restore", kithttp.NewServer(
 		restoreMessagesEndpoint(svc),
 		decodeRestore,
 		encodeResponse,
@@ -226,7 +226,7 @@ func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
 	return restoreMessagesReq{
 		token:         token,
 		fileType:      fileType,
-		messageFormat: bone.GetValue(r, messageTypeKey),
+		messageFormat: bone.GetValue(r, formatKey),
 		Messages:      data,
 	}, nil
 }
@@ -324,7 +324,7 @@ func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, erro
 
 	req := backupMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
-		messageFormat: bone.GetValue(r, messageTypeKey),
+		messageFormat: bone.GetValue(r, formatKey),
 		convertFormat: convertFormat,
 		pageMeta: readers.PageMetadata{
 			Offset:      offset,
