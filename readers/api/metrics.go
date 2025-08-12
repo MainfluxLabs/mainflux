@@ -9,7 +9,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/go-kit/kit/metrics"
 )
@@ -58,11 +57,11 @@ func (mm *metricsMiddleware) Backup(rpm readers.PageMetadata, table string) (rea
 	return mm.svc.Backup(rpm, table)
 }
 
-func (mm *metricsMiddleware) Restore(ctx context.Context, messages ...senml.Message) error {
+func (mm *metricsMiddleware) Restore(ctx context.Context, format string, messages ...readers.Message) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "restore").Add(1)
 		mm.latency.With("method", "restore").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.Restore(ctx, messages...)
+	return mm.svc.Restore(ctx, format, messages...)
 }
