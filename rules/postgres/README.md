@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS rules (
     group_id    UUID NOT NULL, 
     name        VARCHAR(254) NOT NULL,
     description VARCHAR(1024),
-    condition   JSONB NOT NULL,
+    conditions  JSONB NOT NULL,
+    operator    VARCHAR(3) NOT NULL DEFAULT 'AND',
     actions     JSONB NOT NULL
 );
 ```
