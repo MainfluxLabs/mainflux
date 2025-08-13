@@ -394,14 +394,14 @@ func TestRespondInvite(t *testing.T) {
 			inviteID: invites[0].ID,
 			response: responseAccept,
 			token:    viewerToken,
-			status:   http.StatusOK,
+			status:   http.StatusCreated,
 		},
 		{
 			desc:     "decline invite",
 			inviteID: invites[1].ID,
 			response: responseDecline,
 			token:    editorToken,
-			status:   http.StatusOK,
+			status:   http.StatusNoContent,
 		},
 		{
 			desc:     "respond to invite with invalid response verb",
