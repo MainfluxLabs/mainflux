@@ -73,8 +73,6 @@ func respondInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		// TODO: perhaps this endpoint should return the ID of the org the user has just been assigned
-		// to or something?
 		return respondInviteRes{accept: req.inviteAccepted}, nil
 	}
 }
