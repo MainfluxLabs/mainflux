@@ -110,8 +110,8 @@ func backupMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, err
 		}
 
-		table := dbutil.GetTableName(req.messageFormat)
-		page, err := svc.Backup(req.pageMeta, table)
+		req.pageMeta.Format = dbutil.GetTableName(req.messageFormat)
+		page, err := svc.Backup(req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -122,7 +122,7 @@ func backupMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 		case jsonFormat:
 			data, err = apiutil.GenerateJSON(page)
 		case csvFormat:
-			data, err = apiutil.GenerateCSV(page, table)
+			data, err = apiutil.GenerateCSV(page, req.pageMeta.Format)
 		default:
 			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 		}
