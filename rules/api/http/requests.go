@@ -5,7 +5,6 @@ package http
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/rules"
 )
 
@@ -13,26 +12,6 @@ const (
 	minLen       = 1
 	maxLimitSize = 200
 	maxNameSize  = 254
-)
-
-var (
-	// errMissingConditionField indicates a missing condition field
-	errMissingConditionField = errors.New("missing condition field")
-
-	// errMissingConditionComparator indicates a missing condition operator
-	errMissingConditionComparator = errors.New("missing condition comparator")
-
-	// errMissingConditionThreshold indicates a missing condition threshold
-	errMissingConditionThreshold = errors.New("missing condition threshold")
-
-	// errInvalidActionType indicates an invalid action type
-	errInvalidActionType = errors.New("missing or invalid action type")
-
-	// errMissingActionID indicates a missing action id
-	errMissingActionID = errors.New("missing action id")
-
-	// errInvalidOperator indicates an invalid logical operator
-	errInvalidOperator = errors.New("missing or invalid logical operator")
 )
 
 type ruleReq struct {
@@ -86,19 +65,19 @@ func (req ruleReq) validate() error {
 	}
 	for _, condition := range req.Conditions {
 		if condition.Field == "" {
-			return errMissingConditionField
+			return apiutil.ErrMissingConditionField
 		}
 		if condition.Comparator == "" {
-			return errMissingConditionComparator
+			return apiutil.ErrMissingConditionComparator
 		}
 		if condition.Threshold == nil {
-			return errMissingConditionThreshold
+			return apiutil.ErrMissingConditionThreshold
 		}
 	}
 
 	if len(req.Conditions) > minLen {
 		if req.Operator != rules.OperatorAND && req.Operator != rules.OperatorOR {
-			return errInvalidOperator
+			return apiutil.ErrInvalidOperator
 		}
 	}
 
@@ -109,11 +88,11 @@ func (req ruleReq) validate() error {
 		switch action.Type {
 		case rules.ActionTypeSMTP, rules.ActionTypeSMPP:
 			if action.ID == "" {
-				return errMissingActionID
+				return apiutil.ErrMissingActionID
 			}
 		case rules.ActionTypeAlarm:
 		default:
-			return errInvalidActionType
+			return apiutil.ErrInvalidActionType
 		}
 	}
 

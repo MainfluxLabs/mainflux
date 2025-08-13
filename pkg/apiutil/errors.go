@@ -143,4 +143,22 @@ var (
 
 	// ErrInvalidRole indicates an invalid role.
 	ErrInvalidRole = errors.New("invalid role")
+
+	// ErrMissingConditionField indicates a missing condition field
+	ErrMissingConditionField = errors.New("missing condition field")
+
+	// ErrMissingConditionComparator indicates a missing condition operator
+	ErrMissingConditionComparator = errors.New("missing condition comparator")
+
+	// ErrMissingConditionThreshold indicates a missing condition threshold
+	ErrMissingConditionThreshold = errors.New("missing condition threshold")
+
+	// ErrInvalidActionType indicates an invalid action type
+	ErrInvalidActionType = errors.New("missing or invalid action type")
+
+	// ErrMissingActionID indicates a missing action id
+	ErrMissingActionID = errors.New("missing action id")
+
+	// ErrInvalidOperator indicates an invalid logical operator
+	ErrInvalidOperator = errors.New("missing or invalid logical operator")
 )

@@ -45,14 +45,12 @@ const (
 	ActionTypeSMTP  = "smtp"
 	ActionTypeSMPP  = "smpp"
 	ActionTypeAlarm = "alarm"
-)
 
-const (
 	OperatorAND = "AND"
 	OperatorOR  = "OR"
-)
 
-const subjectAlarm = "alarms"
+	subjectAlarm = "alarms"
+)
 
 var (
 	errInvalidActionID   = errors.New("invalid action id")
