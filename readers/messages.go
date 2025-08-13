@@ -41,7 +41,7 @@ type MessageRepository interface {
 	Restore(ctx context.Context, format string, messages ...Message) error
 
 	// Backup retrieves all messages from database.
-	Backup(rpm PageMetadata, table string) (MessagesPage, error)
+	Backup(rpm PageMetadata) (MessagesPage, error)
 
 	// Deletes messages for a specific publisher within a time range.
 	DeleteMessages(ctx context.Context, rpm PageMetadata, table string) error
