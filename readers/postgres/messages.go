@@ -45,10 +45,7 @@ func (tr postgresRepository) ListAllMessages(rpm readers.PageMetadata) (readers.
 	return tr.readAll(rpm)
 }
 
-func (tr postgresRepository) Backup(rpm readers.PageMetadata, table string) (readers.MessagesPage, error) {
-	if table == jsonTable {
-		rpm.Format = jsonTable
-	}
+func (tr postgresRepository) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	return tr.readAll(rpm)
 }
 
