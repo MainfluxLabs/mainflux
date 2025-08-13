@@ -26,7 +26,7 @@ func LoggingMiddleware(svc users.Service, logger log.Logger) users.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) SelfRegister(ctx context.Context, user users.User) (uid string, err error) {
+func (lm *loggingMiddleware) SelfRegister(ctx context.Context, user users.User, redirectPath string) (id string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method self_register for user %s took %s to complete", user.Email, time.Since(begin))
 		if err != nil {
@@ -37,7 +37,21 @@ func (lm *loggingMiddleware) SelfRegister(ctx context.Context, user users.User) 
 
 	}(time.Now())
 
-	return lm.svc.SelfRegister(ctx, user)
+	return lm.svc.SelfRegister(ctx, user, redirectPath)
+}
+
+func (lm *loggingMiddleware) VerifyEmail(ctx context.Context, confirmationToken string) (userID string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method verify_email for token %s took %s to complete", confirmationToken, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+
+	}(time.Now())
+
+	return lm.svc.VerifyEmail(ctx, confirmationToken)
 }
 
 func (lm *loggingMiddleware) RegisterAdmin(ctx context.Context, user users.User) (err error) {
@@ -120,9 +134,9 @@ func (lm *loggingMiddleware) ListUsers(ctx context.Context, token string, pm use
 	return lm.svc.ListUsers(ctx, token, pm)
 }
 
-func (lm *loggingMiddleware) ListUsersByIDs(ctx context.Context, ids []string, email string, order string, dir string, limit uint64, offset uint64) (u users.UserPage, err error) {
+func (lm *loggingMiddleware) ListUsersByIDs(ctx context.Context, ids []string, pm users.PageMetadata) (u users.UserPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_users_by_ids for ids %s and email %s took %s to complete", ids, email, time.Since(begin))
+		message := fmt.Sprintf("Method list_users_by_ids for ids %s and email %s took %s to complete", ids, pm.Email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -130,7 +144,7 @@ func (lm *loggingMiddleware) ListUsersByIDs(ctx context.Context, ids []string, e
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListUsersByIDs(ctx, ids, email, order, dir, limit, offset)
+	return lm.svc.ListUsersByIDs(ctx, ids, pm)
 }
 
 func (lm *loggingMiddleware) ListUsersByEmails(ctx context.Context, emails []string) (u []users.User, err error) {
@@ -159,7 +173,7 @@ func (lm *loggingMiddleware) UpdateUser(ctx context.Context, token string, u use
 	return lm.svc.UpdateUser(ctx, token, u)
 }
 
-func (lm *loggingMiddleware) GenerateResetToken(ctx context.Context, email, host string) (err error) {
+func (lm *loggingMiddleware) GenerateResetToken(ctx context.Context, email, redirectPath string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method generate_reset_token for user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
@@ -169,7 +183,7 @@ func (lm *loggingMiddleware) GenerateResetToken(ctx context.Context, email, host
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.GenerateResetToken(ctx, email, host)
+	return lm.svc.GenerateResetToken(ctx, email, redirectPath)
 }
 
 func (lm *loggingMiddleware) ChangePassword(ctx context.Context, token, email, password, oldPassword string) (err error) {
@@ -198,7 +212,7 @@ func (lm *loggingMiddleware) ResetPassword(ctx context.Context, email, password 
 	return lm.svc.ResetPassword(ctx, email, password)
 }
 
-func (lm *loggingMiddleware) SendPasswordReset(ctx context.Context, host, email, token string) (err error) {
+func (lm *loggingMiddleware) SendPasswordReset(ctx context.Context, redirectPath, email, token string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method send_password_reset for user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
@@ -208,7 +222,7 @@ func (lm *loggingMiddleware) SendPasswordReset(ctx context.Context, host, email,
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.SendPasswordReset(ctx, host, email, token)
+	return lm.svc.SendPasswordReset(ctx, redirectPath, email, token)
 }
 
 func (lm *loggingMiddleware) EnableUser(ctx context.Context, token string, id string) (err error) {

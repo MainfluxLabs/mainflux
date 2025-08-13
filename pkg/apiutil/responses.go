@@ -3,6 +3,8 @@
 
 package apiutil
 
+import "net/http"
+
 // Response contains HTTP response specific methods.
 type Response interface {
 	// Code returns HTTP response code.
@@ -18,4 +20,21 @@ type Response interface {
 // ErrorRes represents the HTTP error response body.
 type ErrorRes struct {
 	Err string `json:"error"`
+}
+
+type ViewFileRes struct {
+	File     []byte
+	FileName string
+}
+
+func (res ViewFileRes) Code() int {
+	return http.StatusOK
+}
+
+func (res ViewFileRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res ViewFileRes) Empty() bool {
+	return len(res.File) == 0
 }
