@@ -73,6 +73,10 @@ func (req createRulesReq) validate() error {
 }
 
 func (req ruleReq) validate() error {
+	if req.ProfileID == "" {
+		return apiutil.ErrMissingProfileID
+	}
+
 	if req.Name == "" || len(req.Name) > maxNameSize {
 		return apiutil.ErrNameSize
 	}
@@ -80,43 +84,36 @@ func (req ruleReq) validate() error {
 	if len(req.Conditions) < minLen {
 		return apiutil.ErrEmptyList
 	}
-
 	for _, condition := range req.Conditions {
 		if condition.Field == "" {
 			return errMissingConditionField
 		}
-
 		if condition.Comparator == "" {
 			return errMissingConditionComparator
 		}
-
 		if condition.Threshold == nil {
 			return errMissingConditionThreshold
 		}
 	}
 
-	if len(req.Conditions) > minLen &&
-		(req.Operator != rules.OperatorAND && req.Operator != rules.OperatorOR) {
-		return errInvalidOperator
-	}
-
-	if req.ProfileID == "" {
-		return apiutil.ErrMissingProfileID
+	if len(req.Conditions) > minLen {
+		if req.Operator != rules.OperatorAND && req.Operator != rules.OperatorOR {
+			return errInvalidOperator
+		}
 	}
 
 	if len(req.Actions) < minLen {
 		return apiutil.ErrEmptyList
 	}
-
 	for _, action := range req.Actions {
-		if action.Type != rules.ActionTypeSMTP && action.Type != rules.ActionTypeSMPP && action.Type != rules.ActionTypeAlarm {
-			return errInvalidActionType
-		}
-
-		if action.Type == rules.ActionTypeSMTP || action.Type == rules.ActionTypeSMPP {
+		switch action.Type {
+		case rules.ActionTypeSMTP, rules.ActionTypeSMPP:
 			if action.ID == "" {
 				return errMissingActionID
 			}
+		case rules.ActionTypeAlarm:
+		default:
+			return errInvalidActionType
 		}
 	}
 
