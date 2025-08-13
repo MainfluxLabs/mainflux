@@ -172,7 +172,7 @@ func GenerateJSON(page readers.MessagesPage) ([]byte, error) {
 		return []byte("[]"), nil
 	}
 
-	data, err := json.MarshalIndent(page.Messages, "", "  ")
+	data, err := json.Marshal(page.Messages)
 	if err != nil {
 		return nil, errors.Wrap(errors.ErrCreateEntity, err)
 	}
