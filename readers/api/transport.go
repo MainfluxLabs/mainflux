@@ -6,7 +6,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -219,8 +218,6 @@ func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, erro
 }
 
 func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
-	token := apiutil.ExtractBearerToken(r)
-
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
@@ -239,7 +236,7 @@ func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
 	}
 
 	return restoreMessagesReq{
-		token:         token,
+		token:         apiutil.ExtractBearerToken(r),
 		fileType:      fileType,
 		messageFormat: bone.GetValue(r, formatKey),
 		Messages:      data,
@@ -271,10 +268,8 @@ func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, erro
 	}
 
 	convertFormat = strings.ToLower(strings.TrimSpace(convertFormat))
-
-	if convertFormat != "json" && convertFormat != "csv" {
-		return nil, errors.Wrap(apiutil.ErrInvalidQueryParams,
-			fmt.Errorf("invalid format '%s': must be 'json' or 'csv'", convertFormat))
+	if convertFormat != jsonFormat && convertFormat != csvFormat {
+		return nil, errors.Wrap(apiutil.ErrInvalidQueryParams, err)
 	}
 
 	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, 0)
