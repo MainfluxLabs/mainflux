@@ -130,7 +130,7 @@ paths:
           '200':
             description: Registration request successfull, e-mail verification necessary.
           '201':
-            description: User registered.
+            $ref: "#/components/responses/UserCreateRes"
           '400':
             description: Failed due to malformed JSON.
           '415':
@@ -148,7 +148,7 @@ paths:
         - $ref: "#/components/parameters/VerificationToken"
       responses:
           '201':
-            description: Verification successful, user registered.
+            $ref: "#/components/responses/UserCreateRes"
           '400':
             description: Missing or invalid verification token.
           '415':
