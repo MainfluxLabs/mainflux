@@ -36,7 +36,7 @@ func (res revokeInviteRes) Empty() bool {
 type respondInviteRes struct{}
 
 func (res respondInviteRes) Code() int {
-	return http.StatusOK
+	return http.StatusCreated
 }
 
 func (res respondInviteRes) Headers() map[string]string {
