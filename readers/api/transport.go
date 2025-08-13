@@ -33,12 +33,15 @@ const (
 	boolValueKey           = "vb"
 	comparatorKey          = "comparator"
 	fromKey                = "from"
-	intervalKey            = "interval"
 	toKey                  = "to"
 	convertKey             = "convert"
 	formatKey              = "format"
 	csvFormat              = "csv"
 	jsonFormat             = "json"
+	defFormat              = "messages"
+	aggIntervalKey         = "agg_interval"
+	aggTypeKey             = "agg_type"
+	aggFieldKey            = "agg_field"
 )
 
 var (
@@ -145,7 +148,17 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 		return nil, err
 	}
 
-	i, err := apiutil.ReadStringQuery(r, intervalKey, "")
+	ai, err := apiutil.ReadStringQuery(r, aggIntervalKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	at, err := apiutil.ReadStringQuery(r, aggTypeKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	af, err := apiutil.ReadStringQuery(r, aggFieldKey, "")
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +178,9 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 			DataValue:   vd,
 			From:        from,
 			To:          to,
-			Interval:    i,
+			AggInterval: ai,
+			AggType:     at,
+			AggField:    af,
 		},
 	}
 
@@ -317,11 +332,6 @@ func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, erro
 		return nil, err
 	}
 
-	i, err := apiutil.ReadStringQuery(r, intervalKey, "")
-	if err != nil {
-		return nil, err
-	}
-
 	req := backupMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
 		messageFormat: bone.GetValue(r, formatKey),
@@ -338,7 +348,6 @@ func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, erro
 			DataValue:   vd,
 			From:        from,
 			To:          to,
-			Interval:    i,
 		},
 	}
 

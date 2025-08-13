@@ -30,12 +30,14 @@ var (
 )
 
 type postgresRepository struct {
-	db *sqlx.DB
+	db         *sqlx.DB
+	aggregator *aggregationService
 }
 
 func New(db *sqlx.DB) readers.MessageRepository {
 	return &postgresRepository{
-		db: db,
+		db:         db,
+		aggregator: newAggregationService(db),
 	}
 }
 
@@ -167,6 +169,21 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 
 	format, order := tr.getFormatAndOrder(rpm)
 	params := tr.buildQueryParams(rpm)
+
+	if rpm.AggType != "" && rpm.AggInterval != "" {
+		messages, err := tr.aggregator.readAggregatedMessages(rpm)
+		if err != nil {
+			return page, err
+		}
+		page.Messages = messages
+
+		total, err := tr.readCount(rpm, format, order, params)
+		if err != nil {
+			return page, err
+		}
+		page.Total = total
+		return page, nil
+	}
 
 	messages, err := tr.readMessages(rpm, format, order, params)
 	if err != nil {

@@ -34,6 +34,10 @@ const (
 	jsonCT      = "application/json"
 	jsonTable   = "json"
 	senmlTable  = "messages"
+	minAgg      = "min"
+	maxAgg      = "max"
+	countAgg    = "count"
+	avgAgg      = "avg"
 )
 
 var (
@@ -317,6 +321,50 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Messages: fromSenml(messages[0:6]),
 			},
 		},
+		"count aggregation": {
+			pageMeta: readers.PageMetadata{
+				Limit:   noLimit,
+				AggType: countAgg,
+			},
+			page: readers.MessagesPage{
+				Total:    msgsNum,
+				Messages: fromSenml(messages),
+			},
+		},
+		"min aggregation with name filter": {
+			pageMeta: readers.PageMetadata{
+				Limit:   noLimit,
+				Name:    msgName,
+				AggType: minAgg,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(queryMsgs)),
+				Messages: fromSenml(queryMsgs),
+			},
+		},
+		"max aggregation with name filter": {
+			pageMeta: readers.PageMetadata{
+				Limit:   noLimit,
+				Name:    msgName,
+				AggType: maxAgg,
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(queryMsgs)),
+				Messages: fromSenml(queryMsgs),
+			},
+		},
+		"avg aggregation on sum field": {
+			pageMeta: readers.PageMetadata{
+				Limit:    noLimit,
+				Name:     msgName,
+				AggType:  avgAgg,
+				AggField: "sum",
+			},
+			page: readers.MessagesPage{
+				Total:    uint64(len(queryMsgs)),
+				Messages: fromSenml(queryMsgs),
+			},
+		},
 	}
 
 	for desc, tc := range cases {
@@ -567,7 +615,6 @@ func TestDeleteMessagesSenML(t *testing.T) {
 				From:      messages[50].Time,
 				To:        messages[20].Time,
 			},
-
 			expectedCount: 25,
 			description:   "should delete messages within time range",
 		},
