@@ -118,21 +118,43 @@ paths:
     post:
       summary: Self register user account
       description: |
-            Registers new user account given email and password. New account will
-            be uniquely identified by its email address. This endpoint is available only for administrators.
+            Registers a new user account given an email and password. The new account will
+            be uniquely identified by its email address. If e-mail verification is enabled in the service,
+            e-mail verification using the /register/verify endpoint is needed before the process is complete.
+            Otherwise, the new user account is immediately created.
       tags:
         - users
       requestBody:
-          $ref: "#/components/requestBodies/UserCreateReq"
+          $ref: "#/components/requestBodies/SelfRegisterReq"
+      responses:
+          '200':
+            description: Registration request successfull, e-mail verification necessary.
+          '201':
+            description: User registered.
+          '400':
+            description: Failed due to malformed JSON.
+          '415':
+            description: Missing or invalid content type.
+          '500':
+            $ref: "#/components/responses/ServiceError"
+  /register/verify:
+    post:
+      summary: Verify e-mail address.
+      description: |
+          Verify e-mail address by submitting a unique e-mail verification token associated with a particular registration process.
+      tags:
+        - users
+      parameters:
+        - $ref: "#/components/parameters/VerificationToken"
       responses:
           '201':
-              $ref: "#/components/responses/UserCreateRes"
+            description: Verification successful, user registered.
           '400':
-              description: Failed due to malformed JSON.
+            description: Missing or invalid verification token.
           '415':
-              description: Missing or invalid content type.
+            description: Missing or invalid content type.
           '500':
-              $ref: "#/components/responses/ServiceError"
+            $ref: "#/components/responses/ServiceError"
   /users/{userId}:
     get:
       summary: Retrieves user
@@ -361,6 +383,26 @@ components:
       required:
         - email
         - password
+    SelfRegisterReqObj:
+      type: object
+      properties:
+        redirect_path:
+          type: string
+          description: The path portion of the frontend URL that the user receives in the e-mail verification message.
+          example: "/auth/email-verify"
+        user:
+          type: object
+          properties:
+            email:
+              type: string
+              format: email
+              example: "test@example.com"
+              description: User's email address will be used as its unique identifier
+            password:
+              type: string
+              format: password
+              minimum: 8
+              description: Free-form account password used for acquiring auth token(s).
     User:
       type: object
       properties:
@@ -488,6 +530,14 @@ components:
         type: string
         format: uuid
       required: true
+    VerificationToken:
+      name: token
+      description: E-mail verification token.
+      in: query
+      schema:
+        type: string
+        format: uuid
+      required: true
     Limit:
       name: limit
       description: Size of the subset to retrieve.
@@ -523,6 +573,13 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/UserReqObj'
+    SelfRegisterReq:
+      description: JSON-formatted document describing the data needed for self-registration.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SelfRegisterReqObj"
     SearchUsersReq:
       description: JSON-formatted document describing user search parameters.
       required: false
