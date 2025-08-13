@@ -8,8 +8,7 @@ paths:
   /profiles/{profileId}/rules:
     post:
       summary: Adds new rules
-      description: |
-        Adds new rules to the list of rules for certain profile identified by the provided ID
+      description: Adds new rules to the list of rules for certain profile identified by the provided ID
       tags:
         - rules
       parameters:
@@ -24,7 +23,7 @@ paths:
         '401':
           description: Missing or invalid access token provided.
         '403':
-          description: Failed to perform authorization over the entity
+          description: Failed to perform authorization over the entity.
         '415':
           description: Missing or invalid content type.
         '500':
@@ -44,7 +43,7 @@ paths:
         '401':
           description: Missing or invalid access token provided.
         '403':
-          description: Failed to perform authorization over the entity
+          description: Failed to perform authorization over the entity.
         '422':
           description: Database can't process request.
         '500':
@@ -65,7 +64,7 @@ paths:
         '401':
           description: Missing or invalid access token provided.
         '403':
-          description: Failed to perform authorization over the entity
+          description: Failed to perform authorization over the entity.
         '422':
           description: Database can't process request.
         '500':
@@ -90,9 +89,7 @@ paths:
           $ref: "#/components/responses/ServiceError"
     put:
       summary: Updates rule info
-      description: |
-        Update is performed by replacing the current resource data with values
-        provided in a request payload.
+      description: Update is performed by replacing the current resource data with values provided in a request payload.
       tags:
         - rules
       parameters:
@@ -115,14 +112,14 @@ paths:
   /rules:
     patch:
       summary: Removes rules
-      description: Removes rules with provided identifiers
+      description: Removes rules with provided identifiers.
       tags:
         - rules
       requestBody:
         $ref: "#/components/requestBodies/RemoveRulesReq"
       responses:
         '204':
-          description: Rule removed.
+          description: Rules removed.
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -137,113 +134,82 @@ components:
       properties:
         field:
           type: string
-        operator:
+          example: "temperature"
+        comparator:
           type: string
+          example: ">="
         threshold:
           type: number
-      required:
-        - field
-        - operator
-        - threshold
+          example: 45
+      required: [field, comparator, threshold]
     Action:
       type: object
       properties:
-        type:
-          type: string
-          enum: [ smtp, smpp, alarm ]
         id:
           type: string
           description: Required for smtp and smpp actions.
+          example: "513e2557-e09b-42d3-s456-425614175403"
+        type:
+          type: string
+          enum: [ smtp, smpp, alarm ]
+          example: "smtp"
       required:
         - type
     RuleReqSchema:
       type: object
       properties:
+        profile_id:
+          type: string
+          example: "123e4567-e89b-12d3-a456-426614174000"
         name:
           type: string
-        condition:
-          $ref: "#/components/schemas/Condition"
+          example: "Temperature and Humidity Alert"
+        description:
+          type: string
+          example: "Triggers when temperature exceeds 45°C and humidity drops below 20%"
+        conditions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Condition"
+        operator:
+          type: string
+          enum: [AND, OR]
+          example: "AND"
         actions:
           type: array
           items:
             $ref: "#/components/schemas/Action"
-        description:
-          type: string
-      required:
-        - name
-        - condition
-        - actions
-      example:
-        name: "Temperature Alert"
-        description: "Triggers when temperature exceeds threshold"
-        condition:
-          field: "temperature"
-          operator: ">"
-          threshold: 45
-        actions:
-          - type: "smtp"
-            id: "smtp-notifier-id"
-          - type: "alarm"
+      required: [name, conditions, actions]
     RuleResSchema:
       type: object
       properties:
         id:
           type: string
-        group_id:
-          type: string
+          example: "789e4567-e89b-12d3-a456-426614174abc"
         profile_id:
           type: string
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        group_id:
+          type: string
+          example: "321e4567-e89b-12d3-a456-426614174def"
         name:
           type: string
+          example: "Temperature and Humidity Alert"
         description:
           type: string
-        condition:
-          $ref: "#/components/schemas/Condition"
+          example: "Triggers when temperature exceeds 45°C and humidity drops below 20%"
+        conditions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Condition"
+        operator:
+          type: string
+          example: "AND"
         actions:
           type: array
           items:
             $ref: "#/components/schemas/Action"
-      required: [ id, group_id, profile_id, name, condition, actions ]
-    RulesPageRes:
-      allOf:
-        - $ref: "#/components/schemas/PageRes"
-        - type: object
-          properties:
-            rules:
-              type: array
-              items:
-                $ref: "#/components/schemas/RuleRes"
-          required: [ rules ]
-    PageRes:
-      type: object
-      properties:
-        total:
-          type: integer
-        offset:
-          type: integer
-        limit:
-          type: integer
-      required: [ total, offset, limit ]
-    RuleRes:
-      type: object
-      properties:
-        id:
-          type: string
-        group_id:
-          type: string
-        profile_id:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-        condition:
-          $ref: "#/components/schemas/Condition"
-        actions:
-          type: array
-          items:
-            $ref: "#/components/schemas/Action"
-      required: [ id, group_id, profile_id, name, condition, actions ]
+      required: [ id, profile_id, group_id, name, conditions, actions ]
 
   parameters:
     RuleId:
@@ -253,22 +219,25 @@ components:
       schema:
         type: string
         format: uuid
+      example: "789e4567-e89b-12d3-a456-426614174abc"
       required: true
     GroupId:
       name: groupId
-      description: Group identifier refers to the group for which the rules is being created.
+      description: Group identifier for which the rules are being created/retrieved.
       in: path
       schema:
         type: string
         format: uuid
+      example: "321e4567-e89b-12d3-a456-426614174def"
       required: true
     ProfileId:
       name: profileId
-      description: Profile identifier refers to the profile for which the rule is being created.
+      description: Profile identifier for which the rules are being created/retrieved.
       in: path
       schema:
         type: string
         format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174000"
       required: true
 
   requestBodies:
@@ -286,6 +255,22 @@ components:
                   $ref: "#/components/schemas/RuleReqSchema"
             required:
               - rules
+          example:
+            rules:
+                name: "Temperature and Humidity Alert"
+                description: "Triggers when temperature exceeds 45°C and humidity drops below 20%"
+                conditions:
+                  - field: "temperature"
+                    comparator: ">"
+                    threshold: 45
+                  - field: "humidity"
+                    comparator: "<"
+                    threshold: 20
+                operator: "AND"
+                actions:
+                  - type: "smtp"
+                    id: "513e2557-e09b-42d3-s456-425614175403"
+                  - type: "alarm"
     UpdateRuleReq:
       description: JSON-formatted document describing the updated rule.
       required: true
@@ -293,6 +278,16 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/RuleReqSchema"
+          example:
+            profile_id: "123e4567-e89b-12d3-a456-426614174000"
+            name: "Temperature Alert"
+            description: "Triggers when temperature exceeds 50°C"
+            conditions:
+              - field: "temperature"
+                comparator: ">"
+                threshold: 50
+            actions:
+              - type: "alarm"
     RemoveRulesReq:
       description: JSON-formatted document describing the identifiers of rules for deleting.
       required: true
@@ -306,6 +301,12 @@ components:
                 items:
                   type: string
                   format: uuid
+            required:
+              - rule_ids
+          example:
+            rule_ids:
+              - "789e4567-e89b-12d3-a456-426614174abc"
+              - "654e4567-e89b-12d3-a456-426614174999"
 
   responses:
     CreateRulesRes:
@@ -316,12 +317,43 @@ components:
             type: array
             items:
               $ref: "#/components/schemas/RuleResSchema"
+          example:
+            - id: "84d1be5e-3511-4d15-aafa-b1bb4c20bca4"
+              profile_id: "123e4567-e89b-12d3-a456-426614174000"
+              group_id: "fc1e40aa-c5af-4a1d-b1e4-37f2e4bb50d1"
+              name: "Temperature and Humidity Alert"
+              description: "Triggers when temperature exceeds 45°C and humidity drops below 20%"
+              conditions:
+                - field: "temperature"
+                  comparator: ">"
+                  threshold: 45
+                - field: "humidity"
+                  comparator: "<"
+                  threshold: 20
+              operator: "AND"
+              actions:
+                - type: "smtp"
+                  id: "513e2557-e09b-42d3-s456-425614175403"
+                - type: "alarm"
     RuleRes:
       description: Data retrieved.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/RuleResSchema"
+          example:
+            id: "789e4567-e89b-12d3-a456-426614174abc"
+            profile_id: "123e4567-e89b-12d3-a456-426614174000"
+            group_id: "321e4567-e89b-12d3-a456-426614174def"
+            name: "Temperature Alert"
+            description: "Triggers when temperature exceeds 45°C"
+            conditions:
+              - field: "temperature"
+                comparator: ">"
+                threshold: 45
+            actions:
+              - type: "smtp"
+                id: "513e2557-e09b-42d3-s456-425614175403"
     ListRulesRes:
       description: Rules retrieved.
       content:
@@ -335,6 +367,20 @@ components:
                   $ref: "#/components/schemas/RuleResSchema"
             required:
               - rules
+          example:
+            rules:
+              - id: "789e4567-e89b-12d3-a456-426614174abc"
+                profile_id: "123e4567-e89b-12d3-a456-426614174000"
+                group_id: "321e4567-e89b-12d3-a456-426614174def"
+                name: "Temperature Alert"
+                description: "Triggers when temperature exceeds 45°C"
+                conditions:
+                  - field: "temperature"
+                    comparator: ">"
+                    threshold: 45
+                actions:
+                  - type: "smtp"
+                    id: "513e2557-e09b-42d3-s456-425614175403"
     ServiceError:
       description: Unexpected server-side error occurred.
       content:
