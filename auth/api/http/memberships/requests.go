@@ -105,17 +105,37 @@ func (req removeOrgMembershipsReq) validate() error {
 	return nil
 }
 
-type backupReq struct {
+type backupByOrgReq struct {
 	token string
 	id    string
 }
 
-func (req backupReq) validate() error {
+func (req backupByOrgReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 	if req.id == "" {
 		return apiutil.ErrMissingOrgID
 	}
+	return nil
+}
+
+type restoreByOrgReq struct {
+	id             string
+	token          string
+	OrgMemberships []viewOrgMembershipRes
+}
+
+func (req restoreByOrgReq) validate() error {
+	if req.id == "" {
+		return apiutil.ErrMissingOrgID
+	}
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if len(req.OrgMemberships) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
 	return nil
 }

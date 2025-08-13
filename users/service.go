@@ -5,6 +5,7 @@ package users
 
 import (
 	"context"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -32,15 +33,25 @@ var (
 
 	// ErrAlreadyDisabledUser indicates the user is already disabled.
 	ErrAlreadyDisabledUser = errors.New("the user is already disabled")
+
+	// ErrEmailVerificationExpired indicates that the e-mail verification token has expired.
+	ErrEmailVerificationExpired = errors.New("e-mail verification token expired")
 )
 
-// Service specifies an API that must be fullfiled by the domain service
+// Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
-	// Register creates new user account. In case of the failed registration, a
-	// non-nil error value is returned. The user registration is only allowed
-	// for admin.
-	SelfRegister(ctx context.Context, user User) (string, error)
+	// SelfRegister carries out the first stage of own account registration: it
+	// creates a pending e-mail verification entity and sends the user an e-mail
+	// with a URL containing a token used to verify the e-mail address and complete
+	// registration.
+	SelfRegister(ctx context.Context, user User, redirectPath string) (string, error)
+
+	// VerifyEmail completes the self-registration process by matching the provided
+	// email verification token against the database. If the token is valid and not expired, the e-mail
+	// is considered verified a new User is fully registered.
+	// Returns the ID of the newly-registered User upon success.
+	VerifyEmail(ctx context.Context, confirmationToken string) (string, error)
 
 	// Register creates new user account. In case of the failed registration, a
 	// non-nil error value is returned. The user registration is only allowed
@@ -67,7 +78,7 @@ type Service interface {
 	ListUsers(ctx context.Context, token string, pm PageMetadata) (UserPage, error)
 
 	// ListUsersByIDs retrieves users list for the given IDs.
-	ListUsersByIDs(ctx context.Context, ids []string, email string, order string, dir string, limit uint64, offset uint64) (UserPage, error)
+	ListUsersByIDs(ctx context.Context, ids []string, pm PageMetadata) (UserPage, error)
 
 	// ListUsersByEmails retrieves users list for the given emails.
 	ListUsersByEmails(ctx context.Context, emails []string) ([]User, error)
@@ -76,8 +87,7 @@ type Service interface {
 	UpdateUser(ctx context.Context, token string, user User) error
 
 	// GenerateResetToken email where mail will be sent.
-	// host is used for generating reset link.
-	GenerateResetToken(ctx context.Context, email, host string) error
+	GenerateResetToken(ctx context.Context, email, redirectPath string) error
 
 	// ChangePassword change users password for authenticated user.
 	ChangePassword(ctx context.Context, token, email, password, oldPassword string) error
@@ -87,9 +97,9 @@ type Service interface {
 	ResetPassword(ctx context.Context, resetToken, password string) error
 
 	// SendPasswordReset sends reset password link to email.
-	SendPasswordReset(ctx context.Context, host, email, token string) error
+	SendPasswordReset(ctx context.Context, redirectPath, email, token string) error
 
-	// EnableUser logically enableds the user identified with the provided ID
+	// EnableUser logically enables the user identified with the provided ID
 	EnableUser(ctx context.Context, token, id string) error
 
 	// DisableUser logically disables the user identified with the provided ID
@@ -123,44 +133,125 @@ type UserPage struct {
 var _ Service = (*usersService)(nil)
 
 type usersService struct {
-	users      UserRepository
-	hasher     Hasher
-	email      Emailer
-	auth       protomfx.AuthServiceClient
-	idProvider uuid.IDProvider
+	users              UserRepository
+	emailVerifications EmailVerificationRepository
+	emailVerifyEnabled bool
+	hasher             Hasher
+	email              Emailer
+	auth               protomfx.AuthServiceClient
+	idProvider         uuid.IDProvider
 }
 
 // New instantiates the users service implementation
-func New(users UserRepository, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider) Service {
+func New(users UserRepository, verifications EmailVerificationRepository, emailVerifyEnabled bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider) Service {
 	return &usersService{
-		users:      users,
-		hasher:     hasher,
-		auth:       auth,
-		email:      e,
-		idProvider: idp,
+		users:              users,
+		emailVerifications: verifications,
+		emailVerifyEnabled: emailVerifyEnabled,
+		hasher:             hasher,
+		auth:               auth,
+		email:              e,
+		idProvider:         idp,
 	}
 }
 
-func (svc usersService) SelfRegister(ctx context.Context, user User) (string, error) {
-	uid, err := svc.idProvider.ID()
-	if err != nil {
+func (svc usersService) SelfRegister(ctx context.Context, user User, redirectPath string) (string, error) {
+	_, err := svc.users.RetrieveByEmail(ctx, user.Email)
+	if err != nil && !errors.Contains(err, errors.ErrNotFound) {
 		return "", err
 	}
-	user.ID = uid
+
+	if err == nil {
+		return "", errors.ErrConflict
+	}
 
 	hash, err := svc.hasher.Hash(user.Password)
 	if err != nil {
 		return "", errors.Wrap(errors.ErrMalformedEntity, err)
 	}
+
 	user.Password = hash
 
-	user.Status = EnabledStatusKey
+	if !svc.emailVerifyEnabled {
+		userID, err := svc.idProvider.ID()
+		if err != nil {
+			return "", err
+		}
 
-	uid, err = svc.users.Save(ctx, user)
+		user.ID = userID
+		user.Status = EnabledStatusKey
+
+		if _, err := svc.users.Save(ctx, user); err != nil {
+			return "", err
+		}
+
+		return user.ID, nil
+	}
+
+	token, err := svc.idProvider.ID()
 	if err != nil {
 		return "", err
 	}
-	return uid, nil
+
+	verification := EmailVerification{
+		User:      user,
+		Token:     token,
+		CreatedAt: time.Now(),
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+	}
+
+	if _, err := svc.emailVerifications.Save(ctx, verification); err != nil {
+		return "", err
+	}
+
+	// If an error occurs while attempting to send the e-mail including confirmation token to the user,
+	// abort the process i.e. remove the pending Verification from the database.
+	if err := svc.email.SendEmailVerification([]string{user.Email}, redirectPath, token); err != nil {
+		if err := svc.emailVerifications.Remove(ctx, token); err != nil {
+			return "", err
+		}
+
+		return "", err
+	}
+
+	return token, nil
+}
+
+func (svc usersService) VerifyEmail(ctx context.Context, confirmationToken string) (string, error) {
+	verification, err := svc.emailVerifications.RetrieveByToken(ctx, confirmationToken)
+	if err != nil {
+		if errors.Contains(err, errors.ErrNotFound) {
+			return "", errors.Wrap(errors.ErrAuthentication, err)
+		}
+
+		return "", err
+	}
+
+	if time.Now().After(verification.ExpiresAt) {
+		if err := svc.emailVerifications.Remove(ctx, confirmationToken); err != nil {
+			return "", err
+		}
+
+		return "", ErrEmailVerificationExpired
+	}
+
+	userID, err := svc.idProvider.ID()
+	if err != nil {
+		return "", err
+	}
+
+	verification.User.ID = userID
+	verification.User.Status = EnabledStatusKey
+
+	if _, err := svc.users.Save(ctx, verification.User); err != nil {
+		return "", err
+	}
+
+	if err := svc.emailVerifications.Remove(ctx, confirmationToken); err != nil {
+		return "", err
+	}
+
+	return userID, nil
 }
 
 func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
@@ -315,8 +406,8 @@ func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMeta
 	return svc.users.RetrieveByIDs(ctx, nil, pm)
 }
 
-func (svc usersService) ListUsersByIDs(ctx context.Context, ids []string, email string, order string, dir string, limit uint64, offset uint64) (UserPage, error) {
-	pm := PageMetadata{Status: EnabledStatusKey, Email: email, Order: order, Dir: dir, Limit: limit, Offset: offset}
+func (svc usersService) ListUsersByIDs(ctx context.Context, ids []string, pm PageMetadata) (UserPage, error) {
+	pm.Status = EnabledStatusKey
 	return svc.users.RetrieveByIDs(ctx, ids, pm)
 }
 
@@ -399,7 +490,7 @@ func (svc usersService) UpdateUser(ctx context.Context, token string, u User) er
 	return svc.users.UpdateUser(ctx, user)
 }
 
-func (svc usersService) GenerateResetToken(ctx context.Context, email, host string) error {
+func (svc usersService) GenerateResetToken(ctx context.Context, email, redirectPath string) error {
 	user, err := svc.users.RetrieveByEmail(ctx, email)
 	if err != nil || user.Email == "" {
 		return errors.ErrNotFound
@@ -408,7 +499,7 @@ func (svc usersService) GenerateResetToken(ctx context.Context, email, host stri
 	if err != nil {
 		return errors.Wrap(ErrRecoveryToken, err)
 	}
-	return svc.SendPasswordReset(ctx, host, email, t)
+	return svc.SendPasswordReset(ctx, redirectPath, email, t)
 }
 
 func (svc usersService) ResetPassword(ctx context.Context, resetToken, password string) error {
@@ -470,9 +561,9 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 	return svc.users.UpdatePassword(ctx, userEmail, hashedPassword)
 }
 
-func (svc usersService) SendPasswordReset(_ context.Context, host, email, token string) error {
+func (svc usersService) SendPasswordReset(_ context.Context, redirectPath, email, token string) error {
 	to := []string{email}
-	return svc.email.SendPasswordReset(to, host, token)
+	return svc.email.SendPasswordReset(to, redirectPath, token)
 }
 
 func (svc usersService) EnableUser(ctx context.Context, token, id string) error {

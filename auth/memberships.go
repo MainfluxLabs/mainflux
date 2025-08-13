@@ -18,9 +18,6 @@ var (
 
 	// ErrOrgMembershipExists indicates that membership already exists.
 	ErrOrgMembershipExists = errors.New("org membership already exists")
-
-	// ErrMissingUserMembership indicates that required user membership was not found.
-	ErrMissingUserMembership = errors.New("user membership not found")
 )
 
 type OrgMembership struct {
@@ -39,7 +36,7 @@ type OrgMembershipsPage struct {
 	OrgMemberships []OrgMembership
 }
 
-type BackupOrgMemberships struct {
+type OrgMembershipsBackup struct {
 	OrgMemberships []OrgMembership
 }
 
@@ -85,7 +82,10 @@ type OrgMemberships interface {
 	ViewOrgMembership(ctx context.Context, token, orgID, memberID string) (OrgMembership, error)
 
 	// BackupOrgMemberships retrieves all org memberships for given org ID.
-	BackupOrgMemberships(ctx context.Context, token string, orgID string) (BackupOrgMemberships, error)
+	BackupOrgMemberships(ctx context.Context, token string, orgID string) (OrgMembershipsBackup, error)
+
+	// RestoreOrgMemberships adds all org memberships for given org ID from a backup.
+	RestoreOrgMemberships(ctx context.Context, token string, orgID string, backup OrgMembershipsBackup) error
 }
 
 func (svc service) CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...OrgMembership) error {
@@ -157,55 +157,65 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 		return OrgMembershipsPage{}, err
 	}
 
-	orgMemberships, err := svc.memberships.BackupByOrg(ctx, orgID)
+	memberships, err := svc.memberships.BackupByOrg(ctx, orgID)
 	if err != nil {
 		return OrgMembershipsPage{}, errors.Wrap(ErrRetrieveMembershipsByOrg, err)
 	}
 
-	var memberIDs []string
-	membershipByMemberID := make(map[string]OrgMembership, len(orgMemberships))
-	for _, m := range orgMemberships {
-		membershipByMemberID[m.MemberID] = m
+	if len(memberships) == 0 {
+		return OrgMembershipsPage{
+			OrgMemberships: []OrgMembership{},
+			PageMetadata: apiutil.PageMetadata{
+				Total:  0,
+				Offset: pm.Offset,
+				Limit:  pm.Limit,
+				Email:  pm.Email,
+			},
+		}, nil
+	}
+
+	memberIDs := make([]string, 0, len(memberships))
+	membershipByMemberID := make(map[string]OrgMembership, len(memberships))
+	for _, m := range memberships {
 		memberIDs = append(memberIDs, m.MemberID)
+		membershipByMemberID[m.MemberID] = m
 	}
 
-	var oms []OrgMembership
-	var page *protomfx.UsersRes
-	if len(orgMemberships) > 0 {
-		usrReq := protomfx.UsersByIDsReq{Ids: memberIDs, Email: pm.Email, Order: pm.Order, Dir: pm.Dir, Limit: pm.Limit, Offset: pm.Offset}
-		page, err = svc.users.GetUsersByIDs(ctx, &usrReq)
-		if err != nil {
-			return OrgMembershipsPage{}, err
-		}
-
-		for _, u := range page.Users {
-			m, ok := membershipByMemberID[u.Id]
-			if !ok {
-				return OrgMembershipsPage{}, ErrMissingUserMembership
-			}
-
-			oms = append(oms, OrgMembership{
-				MemberID:  m.MemberID,
-				OrgID:     m.OrgID,
-				Email:     u.Email,
-				Role:      m.Role,
-				CreatedAt: m.CreatedAt,
-				UpdatedAt: m.UpdatedAt,
-			})
-		}
-	}
-
-	omp := OrgMembershipsPage{
-		OrgMemberships: oms,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  page.Total,
-			Offset: page.Offset,
-			Limit:  page.Limit,
+	userReq := &protomfx.UsersByIDsReq{
+		Ids: memberIDs,
+		PageMetadata: &protomfx.PageMetadata{
 			Email:  pm.Email,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
+			Limit:  pm.Limit,
+			Offset: pm.Offset,
 		},
 	}
 
-	return omp, nil
+	res, err := svc.users.GetUsersByIDs(ctx, userReq)
+	if err != nil {
+		return OrgMembershipsPage{}, err
+	}
+
+	var oms []OrgMembership
+	for _, u := range res.Users {
+		if m, ok := membershipByMemberID[u.Id]; ok {
+			m.Email = u.Email
+			oms = append(oms, m)
+		}
+	}
+
+	return OrgMembershipsPage{
+		OrgMemberships: oms,
+		PageMetadata: apiutil.PageMetadata{
+			Total:  res.PageMetadata.Total,
+			Offset: res.PageMetadata.Offset,
+			Limit:  res.PageMetadata.Limit,
+			Email:  res.PageMetadata.Email,
+			Order:  res.PageMetadata.Order,
+			Dir:    res.PageMetadata.Dir,
+		},
+	}, nil
 }
 
 func (svc service) UpdateOrgMemberships(ctx context.Context, token, orgID string, members ...OrgMembership) error {
@@ -285,14 +295,14 @@ func (svc service) canRemoveMemberships(ctx context.Context, token, orgID string
 	return nil
 }
 
-func (svc service) BackupOrgMemberships(ctx context.Context, token string, orgID string) (BackupOrgMemberships, error) {
+func (svc service) BackupOrgMemberships(ctx context.Context, token string, orgID string) (OrgMembershipsBackup, error) {
 	if err := svc.canAccessOrg(ctx, token, orgID, Owner); err != nil {
-		return BackupOrgMemberships{}, err
+		return OrgMembershipsBackup{}, err
 	}
 
 	memberships, err := svc.memberships.BackupByOrg(ctx, orgID)
 	if err != nil {
-		return BackupOrgMemberships{}, err
+		return OrgMembershipsBackup{}, err
 	}
 
 	var memberIDs []string
@@ -302,7 +312,7 @@ func (svc service) BackupOrgMemberships(ctx context.Context, token string, orgID
 
 	usersResp, err := svc.users.GetUsersByIDs(ctx, &protomfx.UsersByIDsReq{Ids: memberIDs})
 	if err != nil {
-		return BackupOrgMemberships{}, err
+		return OrgMembershipsBackup{}, err
 	}
 
 	emailMap := make(map[string]string)
@@ -314,7 +324,19 @@ func (svc service) BackupOrgMemberships(ctx context.Context, token string, orgID
 		memberships[i].Email = emailMap[memberships[i].MemberID]
 	}
 
-	return BackupOrgMemberships{
+	return OrgMembershipsBackup{
 		OrgMemberships: memberships,
 	}, nil
+}
+
+func (svc service) RestoreOrgMemberships(ctx context.Context, token string, orgID string, backup OrgMembershipsBackup) error {
+	if err := svc.canAccessOrg(ctx, token, orgID, Owner); err != nil {
+		return err
+	}
+
+	if err := svc.memberships.Save(ctx, backup.OrgMemberships...); err != nil {
+		return err
+	}
+
+	return nil
 }

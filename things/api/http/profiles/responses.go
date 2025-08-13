@@ -93,18 +93,16 @@ type viewProfileRes struct {
 	Config   map[string]interface{} `json:"config,omitempty"`
 }
 
-type backupProfilesRes struct {
-	Profiles []viewProfileRes `json:"profiles"`
+type restoreRes struct{}
+
+func (res restoreRes) Code() int {
+	return http.StatusCreated
 }
 
-func (res backupProfilesRes) Code() int {
-	return http.StatusOK
-}
-
-func (res backupProfilesRes) Headers() map[string]string {
+func (res restoreRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res backupProfilesRes) Empty() bool {
-	return len(res.Profiles) == 0
+func (res restoreRes) Empty() bool {
+	return true
 }
