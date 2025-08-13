@@ -39,10 +39,8 @@ var jsonHeader = []string{
 }
 
 const (
-	defTable   = "messages"
-	jsonTable  = "json"
-	csvFormat  = "csv"
-	jsonFormat = "json"
+	defTable  = "messages"
+	jsonTable = "json"
 )
 
 func GenerateCSV(page readers.MessagesPage, table string) ([]byte, error) {
@@ -181,6 +179,7 @@ func GenerateJSON(page readers.MessagesPage) ([]byte, error) {
 }
 
 func ConvertJSONToJSONMessages(data []byte) ([]mfjson.Message, error) {
+	// this was used because mfjson.Message uses []byte but json stores map[string]interface{}
 	var tempMessages []struct {
 		Created   int64                  `json:"created"`
 		Subtopic  string                 `json:"subtopic"`
