@@ -18,28 +18,24 @@ import (
 )
 
 const (
-	OffsetKey   = "offset"
-	LimitKey    = "limit"
-	NameKey     = "name"
-	OrderKey    = "order"
-	DirKey      = "dir"
-	MetadataKey = "metadata"
-	IDKey       = "id"
-	EmailKey    = "email"
-	PayloadKey  = "payload"
-
-
-	NameOrder       = "name"
-	IDOrder         = "id"
-	AscDir          = "asc"
-	DescDir         = "desc"
-	ContentTypeJSON = "application/json"
-	ContentTypeCSV  = "text/csv"
+	OffsetKey              = "offset"
+	LimitKey               = "limit"
+	NameKey                = "name"
+	OrderKey               = "order"
+	DirKey                 = "dir"
+	MetadataKey            = "metadata"
+	IDKey                  = "id"
+	EmailKey               = "email"
+	PayloadKey             = "payload"
+	NameOrder              = "name"
+	IDOrder                = "id"
+	AscDir                 = "asc"
+	DescDir                = "desc"
+	ContentTypeJSON        = "application/json"
+	ContentTypeCSV         = "text/csv"
 	ContentTypeOctetStream = "application/octet-stream"
-
-
-	DefOffset = 0
-	DefLimit  = 10
+	DefOffset              = 0
+	DefLimit               = 10
 )
 
 // PageMetadata contains page metadata that helps navigation.

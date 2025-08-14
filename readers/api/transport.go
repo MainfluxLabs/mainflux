@@ -262,7 +262,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 }
 
 func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, error) {
-	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, "json")
+	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, jsonFormat)
 	if err != nil {
 		return nil, err
 	}
@@ -272,12 +272,12 @@ func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, erro
 		return nil, errors.Wrap(apiutil.ErrInvalidQueryParams, err)
 	}
 
-	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, 0)
+	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
 	if err != nil {
 		return nil, err
 	}
 
-	limit, err := apiutil.ReadLimitQuery(r, apiutil.LimitKey, 100000)
+	limit, err := apiutil.ReadLimitQuery(r, apiutil.LimitKey, apiutil.DefLimit)
 	if err != nil {
 		return nil, err
 	}
