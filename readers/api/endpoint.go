@@ -11,7 +11,6 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -49,26 +48,17 @@ func listAllMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 				return nil, err
 			}
 			req.pageMeta.Publisher = pc.PublisherID
-			req.pageMeta.Format = dbutil.GetTableName(pc.ProfileConfig.GetContentType())
-
-			p, err := svc.ListAllMessages(req.pageMeta)
-			if err != nil {
-				return nil, err
-			}
-
-			page = p
 		default:
 			// Check if user is authorized to read all messages
 			if err := isAdmin(ctx, req.token); err != nil {
 				return nil, err
 			}
 
-			p, err := svc.ListAllMessages(req.pageMeta)
-			if err != nil {
-				return nil, err
-			}
+		}
 
-			page = p
+		page, err := svc.ListAllMessages(req.pageMeta)
+		if err != nil {
+			return nil, err
 		}
 
 		return listMessagesRes{
@@ -86,17 +76,13 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, err
 		}
 
-		var table string
-
 		switch {
 		case req.key != "":
 			pc, err := getPubConfByKey(ctx, req.key)
 			if err != nil {
 				return nil, errors.Wrap(errors.ErrAuthentication, err)
 			}
-
 			req.pageMeta.Publisher = pc.PublisherID
-			table = dbutil.GetTableName(pc.ProfileConfig.GetContentType())
 
 		case req.token != "":
 			if err := isAdmin(ctx, req.token); err != nil {
@@ -106,7 +92,7 @@ func deleteMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, errors.ErrAuthentication
 		}
 
-		err := svc.DeleteMessages(ctx, req.pageMeta, table)
+		err := svc.DeleteMessages(ctx, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}

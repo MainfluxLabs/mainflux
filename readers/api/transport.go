@@ -13,6 +13,7 @@ import (
 	auth "github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -32,6 +33,9 @@ const (
 	comparatorKey          = "comparator"
 	fromKey                = "from"
 	toKey                  = "to"
+	formatKey              = "format"
+	jsonFormat             = "json"
+	senmlFormat            = "senml"
 	defFormat              = "messages"
 	aggIntervalKey         = "agg_interval"
 	aggTypeKey             = "agg_type"
@@ -53,13 +57,13 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 	}
 
 	mux := bone.New()
-	mux.Get("/messages", kithttp.NewServer(
+	mux.Get("/:format", kithttp.NewServer(
 		listAllMessagesEndpoint(svc),
 		decodeListAllMessages,
 		encodeResponse,
 		opts...,
 	))
-	mux.Delete("/messages", kithttp.NewServer(
+	mux.Delete("/:format", kithttp.NewServer(
 		deleteMessagesEndpoint(svc),
 		decodeDeleteMessages,
 		encodeResponse,
@@ -85,6 +89,11 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 }
 
 func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	format := bone.GetValue(r, formatKey)
+	if format != jsonFormat && format != senmlFormat {
+		return nil, apiutil.ErrInvalidPathParams
+	}
+
 	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
 	if err != nil {
 		return nil, err
@@ -173,6 +182,7 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 			AggInterval: ai,
 			AggType:     at,
 			AggField:    af,
+			Format:      dbutil.GetTableName(format),
 		},
 	}
 
@@ -188,6 +198,11 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 }
 
 func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	format := bone.GetValue(r, formatKey)
+	if format != jsonFormat && format != senmlFormat {
+		return nil, apiutil.ErrInvalidPathParams
+	}
+
 	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
 	if err != nil {
 		return nil, err
@@ -202,8 +217,9 @@ func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, erro
 		token: apiutil.ExtractBearerToken(r),
 		key:   apiutil.ExtractThingKey(r),
 		pageMeta: readers.PageMetadata{
-			From: from,
-			To:   to,
+			From:   from,
+			To:     to,
+			Format: dbutil.GetTableName(format),
 		},
 	}
 
