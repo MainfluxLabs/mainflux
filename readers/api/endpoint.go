@@ -149,10 +149,12 @@ func restoreMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			return nil, err
 		}
 
-		var messages []readers.Message
-		var jsonMessages []mfjson.Message
-		var senmlMessages []senml.Message
-		var err error
+		var (
+			messages      []readers.Message
+			jsonMessages  []mfjson.Message
+			senmlMessages []senml.Message
+			err           error
+		)
 
 		switch req.messageFormat {
 		case messaging.JSONFormat:
