@@ -60,13 +60,13 @@ func GenerateCSV(page readers.MessagesPage, table string) ([]byte, error) {
 
 	switch table {
 	case jsonTable:
-		err = convertJSONMessagesToCSV(page, writer)
+		if err = convertJSONMessagesToCSV(page, writer); err != nil {
+			return nil, err
+		}
 	default:
-		err = convertSenMLMessagesToCSV(page, writer)
-	}
-
-	if err != nil {
-		return nil, err
+		if err = convertSenMLMessagesToCSV(page, writer); err != nil {
+			return nil, err
+		}
 	}
 
 	writer.Flush()
