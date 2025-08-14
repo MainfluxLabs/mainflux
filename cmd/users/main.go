@@ -292,14 +292,31 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceC
 	userRepo := tracing.UserRepositoryMiddleware(postgres.NewUserRepo(database), tracer)
 	verificationRepo := tracing.VerificationRepositoryMiddleware(postgres.NewEmailVerificationRepo(database), tracer)
 
-	emailer, err := emailer.New(c.host, &c.emailConf)
+	svcEmailer, err := emailer.New(c.host, &c.emailConf)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to configure e-mailing util: %s", err.Error()))
 	}
 
+	svcEmailer = emailer.LoggingMiddleware(svcEmailer, logger)
+	svcEmailer = emailer.MetricsMiddleware(
+		svcEmailer,
+		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: "users",
+			Subsystem: "email",
+			Name:      "request_count",
+			Help:      "Number of requests received.",
+		}, []string{"method"}),
+		kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
+			Namespace: "users",
+			Subsystem: "email",
+			Name:      "request_latency_microseconds",
+			Help:      "Total duration of requests in microseconds.",
+		}, []string{"method"}),
+	)
+
 	idProvider := uuid.New()
 
-	svc := users.New(userRepo, verificationRepo, c.emailVerifyEnabled, hasher, ac, emailer, idProvider)
+	svc := users.New(userRepo, verificationRepo, c.emailVerifyEnabled, hasher, ac, svcEmailer, idProvider)
 	svc = httpapi.LoggingMiddleware(svc, logger)
 	svc = httpapi.MetricsMiddleware(
 		svc,
