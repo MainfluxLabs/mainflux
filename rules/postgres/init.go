@@ -64,6 +64,9 @@ func migrateDB(db *sqlx.DB) error {
 				Up: []string{
 					`ALTER TABLE rules RENAME COLUMN condition TO conditions`,
 					`ALTER TABLE rules ADD COLUMN operator VARCHAR(3) NOT NULL DEFAULT ''`,
+					`UPDATE rules
+					 SET conditions = jsonb_build_array(jsonb_set(conditions, '{comparator}', conditions->'operator') - 'operator')
+					 WHERE jsonb_typeof(conditions) = 'object'`,
 				},
 			},
 		},
