@@ -148,7 +148,7 @@ func (rs *rulesService) ViewRule(ctx context.Context, token, id string) (Rule, e
 		return Rule{}, err
 	}
 
-	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Viewer}); err != nil {
+	if _, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.ProfileID, Action: things.Viewer}); err != nil {
 		return Rule{}, err
 	}
 
@@ -156,12 +156,7 @@ func (rs *rulesService) ViewRule(ctx context.Context, token, id string) (Rule, e
 }
 
 func (rs *rulesService) UpdateRule(ctx context.Context, token string, rule Rule) error {
-	r, err := rs.rules.RetrieveByID(ctx, rule.ID)
-	if err != nil {
-		return err
-	}
-
-	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: r.GroupID, Action: things.Editor}); err != nil {
+	if _, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.ProfileID, Action: things.Editor}); err != nil {
 		return err
 	}
 
@@ -175,8 +170,8 @@ func (rs *rulesService) RemoveRules(ctx context.Context, token string, ids ...st
 			return err
 		}
 
-		if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Editor}); err != nil {
-			return errors.Wrap(errors.ErrAuthorization, err)
+		if _, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.ProfileID, Action: things.Editor}); err != nil {
+			return err
 		}
 	}
 	return rs.rules.Remove(ctx, ids...)
