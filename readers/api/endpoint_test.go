@@ -162,7 +162,7 @@ func TestListAllMessages(t *testing.T) {
 	}{
 		{
 			desc:   "read page with valid offset and limit",
-			url:    fmt.Sprintf("%s/messages?offset=0&limit=10", ts.URL),
+			url:    fmt.Sprintf("%s/senml?offset=0&limit=10", ts.URL),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -172,7 +172,7 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with valid offset and limit",
-			url:    fmt.Sprintf("%s/messages?offset=0&limit=10", ts.URL),
+			url:    fmt.Sprintf("%s/senml?offset=0&limit=10", ts.URL),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -182,61 +182,61 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with negative offset",
-			url:    fmt.Sprintf("%s/messages?offset=-1&limit=10", ts.URL),
+			url:    fmt.Sprintf("%s/senml?offset=-1&limit=10", ts.URL),
 			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with negative limit",
-			url:    fmt.Sprintf("%s/messages?offset=0&limit=-10", ts.URL),
+			url:    fmt.Sprintf("%s/senml?offset=0&limit=-10", ts.URL),
 			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with zero limit",
-			url:    fmt.Sprintf("%s/messages?offset=0&limit=0", ts.URL),
+			url:    fmt.Sprintf("%s/senml?offset=0&limit=0", ts.URL),
 			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with non-integer offset",
-			url:    fmt.Sprintf("%s/messages?offset=abc&limit=10", ts.URL),
+			url:    fmt.Sprintf("%s/senml?offset=abc&limit=10", ts.URL),
 			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with non-integer limit",
-			url:    fmt.Sprintf("%s/messages?offset=0&limit=abc", ts.URL),
+			url:    fmt.Sprintf("%s/senml?offset=0&limit=abc", ts.URL),
 			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with invalid token",
-			url:    fmt.Sprintf("%s/messages?offset=0&limit=10", ts.URL),
+			url:    fmt.Sprintf("%s/senml?offset=0&limit=10", ts.URL),
 			token:  invalid,
 			status: http.StatusUnauthorized,
 		},
 		{
 			desc:   "read page with multiple offset",
-			url:    fmt.Sprintf("%s/messages?offset=0&offset=1&limit=10", ts.URL),
+			url:    fmt.Sprintf("%s/senml?offset=0&offset=1&limit=10", ts.URL),
 			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with multiple limit",
-			url:    fmt.Sprintf("%s/messages?offset=0&limit=20&limit=10", ts.URL),
+			url:    fmt.Sprintf("%s/senml?offset=0&limit=20&limit=10", ts.URL),
 			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with empty token",
-			url:    fmt.Sprintf("%s/messages?offset=0&limit=10", ts.URL),
+			url:    fmt.Sprintf("%s/senml?offset=0&limit=10", ts.URL),
 			token:  "",
 			status: http.StatusUnauthorized,
 		},
 		{
 			desc:   "read page with default offset",
-			url:    fmt.Sprintf("%s/messages?limit=10", ts.URL),
+			url:    fmt.Sprintf("%s/senml?limit=10", ts.URL),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -246,7 +246,7 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with default limit",
-			url:    fmt.Sprintf("%s/messages?offset=0", ts.URL),
+			url:    fmt.Sprintf("%s/senml?offset=0", ts.URL),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -256,7 +256,7 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with senml format",
-			url:    fmt.Sprintf("%s/messages?format=messages", ts.URL),
+			url:    fmt.Sprintf("%s/senml?format=messages", ts.URL),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -266,7 +266,7 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with subtopic",
-			url:    fmt.Sprintf("%s/messages?subtopic=%s&protocol=%s", ts.URL, subtopic, httpProt),
+			url:    fmt.Sprintf("%s/senml?subtopic=%s&protocol=%s", ts.URL, subtopic, httpProt),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -276,7 +276,7 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with subtopic and protocol",
-			url:    fmt.Sprintf("%s/messages?subtopic=%s&protocol=%s", ts.URL, subtopic, httpProt),
+			url:    fmt.Sprintf("%s/senml?subtopic=%s&protocol=%s", ts.URL, subtopic, httpProt),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -286,7 +286,7 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with protocol",
-			url:    fmt.Sprintf("%s/messages?protocol=http", ts.URL),
+			url:    fmt.Sprintf("%s/senml?protocol=http", ts.URL),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -296,7 +296,7 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with name",
-			url:    fmt.Sprintf("%s/messages?name=%s", ts.URL, msgName),
+			url:    fmt.Sprintf("%s/senml?name=%s", ts.URL, msgName),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -306,7 +306,7 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with value",
-			url:    fmt.Sprintf("%s/messages?v=%f", ts.URL, v),
+			url:    fmt.Sprintf("%s/senml?v=%f", ts.URL, v),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -316,7 +316,7 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with value and equal comparator",
-			url:    fmt.Sprintf("%s/messages?v=%f&comparator=%s", ts.URL, v, readers.EqualKey),
+			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v, readers.EqualKey),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -326,7 +326,7 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with value and lower-than comparator",
-			url:    fmt.Sprintf("%s/messages?v=%f&comparator=%s", ts.URL, v+1, readers.LowerThanKey),
+			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v+1, readers.LowerThanKey),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -336,7 +336,7 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with value and lower-than-or-equal comparator",
-			url:    fmt.Sprintf("%s/messages?v=%f&comparator=%s", ts.URL, v+1, readers.LowerThanEqualKey),
+			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v+1, readers.LowerThanEqualKey),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -346,7 +346,7 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with value and greater-than comparator",
-			url:    fmt.Sprintf("%s/messages?v=%f&comparator=%s", ts.URL, v-1, readers.GreaterThanKey),
+			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v-1, readers.GreaterThanKey),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -356,7 +356,7 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with value and greater-than-or-equal comparator",
-			url:    fmt.Sprintf("%s/messages?v=%f&comparator=%s", ts.URL, v-1, readers.GreaterThanEqualKey),
+			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v-1, readers.GreaterThanEqualKey),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -366,19 +366,19 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with non-float value",
-			url:    fmt.Sprintf("%s/messages?v=ab01", ts.URL),
+			url:    fmt.Sprintf("%s/senml?v=ab01", ts.URL),
 			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with value and wrong comparator",
-			url:    fmt.Sprintf("%s/messages?v=%f&comparator=wrong", ts.URL, v-1),
+			url:    fmt.Sprintf("%s/senml?v=%f&comparator=wrong", ts.URL, v-1),
 			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with boolean value",
-			url:    fmt.Sprintf("%s/messages?vb=true", ts.URL),
+			url:    fmt.Sprintf("%s/senml?vb=true", ts.URL),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -388,13 +388,13 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with non-boolean value",
-			url:    fmt.Sprintf("%s/messages?vb=yes", ts.URL),
+			url:    fmt.Sprintf("%s/senml?vb=yes", ts.URL),
 			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with string value",
-			url:    fmt.Sprintf("%s/messages?vs=%s", ts.URL, vs),
+			url:    fmt.Sprintf("%s/senml?vs=%s", ts.URL, vs),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -404,7 +404,7 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with data value",
-			url:    fmt.Sprintf("%s/messages?vd=%s", ts.URL, vd),
+			url:    fmt.Sprintf("%s/senml?vd=%s", ts.URL, vd),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -414,20 +414,20 @@ func TestListAllMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with non-float from",
-			url:    fmt.Sprintf("%s/messages?from=ABCD", ts.URL),
+			url:    fmt.Sprintf("%s/senml?from=ABCD", ts.URL),
 			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 
 		{
 			desc:   "read page with non-float",
-			url:    fmt.Sprintf("%s/messages?to=ABCD", ts.URL),
+			url:    fmt.Sprintf("%s/senml?to=ABCD", ts.URL),
 			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with from/to ",
-			url:    fmt.Sprintf("%s/messages?from=%d&to=%d", ts.URL, messages[19].Time, messages[4].Time),
+			url:    fmt.Sprintf("%s/senml?from=%d&to=%d", ts.URL, messages[19].Time, messages[4].Time),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
