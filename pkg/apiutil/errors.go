@@ -132,6 +132,9 @@ var (
 	// ErrInvalidQueryParams indicates invalid query parameters
 	ErrInvalidQueryParams = errors.New("invalid query parameters")
 
+	// ErrInvalidQueryParams indicates invalid path parameters
+	ErrInvalidPathParams = errors.New("invalid path parameters")
+
 	// ErrNotFoundParam indicates that the parameter was not found in the query
 	ErrNotFoundParam = errors.New("parameter not found in the query")
 
