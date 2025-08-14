@@ -59,6 +59,13 @@ func migrateDB(db *sqlx.DB) error {
 				},
 				Down: []string{"DROP TABLE rules"},
 			},
+			{
+				Id: "rules_2",
+				Up: []string{
+					`ALTER TABLE rules RENAME COLUMN condition TO conditions`,
+					`ALTER TABLE rules ADD COLUMN operator VARCHAR(3) NOT NULL`,
+				},
+			},
 		},
 	}
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)

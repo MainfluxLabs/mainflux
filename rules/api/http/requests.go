@@ -15,11 +15,12 @@ const (
 )
 
 type ruleReq struct {
-	Name        string          `json:"name"`
-	Condition   rules.Condition `json:"condition"`
-	Actions     []rules.Action  `json:"actions"`
-	Description string          `json:"description,omitempty"`
-	ProfileID   string          `json:"profile_id"`
+	ProfileID   string            `json:"profile_id"`
+	Name        string            `json:"name"`
+	Description string            `json:"description,omitempty"`
+	Conditions  []rules.Condition `json:"conditions"`
+	Operator    string            `json:"operator,omitempty"`
+	Actions     []rules.Action    `json:"actions"`
 }
 
 type createRulesReq struct {
@@ -51,39 +52,47 @@ func (req createRulesReq) validate() error {
 }
 
 func (req ruleReq) validate() error {
+	if req.ProfileID == "" {
+		return apiutil.ErrMissingProfileID
+	}
+
 	if req.Name == "" || len(req.Name) > maxNameSize {
 		return apiutil.ErrNameSize
 	}
 
-	if req.Condition.Field == "" {
-		return apiutil.ErrMissingConditionField
+	if len(req.Conditions) < minLen {
+		return apiutil.ErrEmptyList
+	}
+	for _, condition := range req.Conditions {
+		if condition.Field == "" {
+			return apiutil.ErrMissingConditionField
+		}
+		if condition.Comparator == "" {
+			return apiutil.ErrMissingConditionComparator
+		}
+		if condition.Threshold == nil {
+			return apiutil.ErrMissingConditionThreshold
+		}
 	}
 
-	if req.Condition.Operator == "" {
-		return apiutil.ErrMissingConditionOperator
-	}
-
-	if req.Condition.Threshold == nil {
-		return apiutil.ErrMissingConditionThreshold
-	}
-
-	if req.ProfileID == "" {
-		return apiutil.ErrMissingProfileID
+	if len(req.Conditions) > minLen {
+		if req.Operator != rules.OperatorAND && req.Operator != rules.OperatorOR {
+			return apiutil.ErrInvalidOperator
+		}
 	}
 
 	if len(req.Actions) < minLen {
 		return apiutil.ErrEmptyList
 	}
-
 	for _, action := range req.Actions {
-		if action.Type != rules.ActionTypeSMTP && action.Type != rules.ActionTypeSMPP && action.Type != rules.ActionTypeAlarm {
-			return apiutil.ErrInvalidActionType
-		}
-
-		if action.Type == rules.ActionTypeSMTP || action.Type == rules.ActionTypeSMPP {
+		switch action.Type {
+		case rules.ActionTypeSMTP, rules.ActionTypeSMPP:
 			if action.ID == "" {
 				return apiutil.ErrMissingActionID
 			}
+		case rules.ActionTypeAlarm:
+		default:
+			return apiutil.ErrInvalidActionType
 		}
 	}
 

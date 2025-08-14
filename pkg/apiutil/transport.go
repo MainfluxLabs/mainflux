@@ -95,7 +95,13 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrUnsupportedContentType),
 			errors.Contains(err, ErrMalformedEntity),
 			errors.Contains(err, ErrInvalidRole),
-			errors.Contains(err, ErrInvalidQueryParams):
+			errors.Contains(err, ErrInvalidQueryParams),
+			errors.Contains(err, ErrMissingConditionField),
+			errors.Contains(err, ErrMissingConditionComparator),
+			errors.Contains(err, ErrMissingConditionThreshold),
+			errors.Contains(err, ErrInvalidActionType),
+			errors.Contains(err, ErrMissingActionID),
+			errors.Contains(err, ErrInvalidOperator):
 			logger.Error(err.Error())
 		}
 

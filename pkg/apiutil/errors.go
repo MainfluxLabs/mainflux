@@ -150,8 +150,8 @@ var (
 	// ErrMissingConditionField indicates a missing condition field
 	ErrMissingConditionField = errors.New("missing condition field")
 
-	// ErrMissingConditionOperator indicates a missing condition operator
-	ErrMissingConditionOperator = errors.New("missing condition operator")
+	// ErrMissingConditionComparator indicates a missing condition operator
+	ErrMissingConditionComparator = errors.New("missing condition comparator")
 
 	// ErrMissingConditionThreshold indicates a missing condition threshold
 	ErrMissingConditionThreshold = errors.New("missing condition threshold")
@@ -162,6 +162,6 @@ var (
 	// ErrMissingActionID indicates a missing action id
 	ErrMissingActionID = errors.New("missing action id")
 
-	// ErrMissingPublisherID indicated a missing publisher id
-	ErrMissingPublisherID = errors.New("missing publisher id")
+	// ErrInvalidOperator indicates an invalid logical operator
+	ErrInvalidOperator = errors.New("missing or invalid logical operator")
 )

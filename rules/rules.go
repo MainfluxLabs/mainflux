@@ -12,14 +12,15 @@ type Rule struct {
 	GroupID     string
 	Name        string
 	Description string
-	Condition   Condition
+	Conditions  []Condition
+	Operator    string
 	Actions     []Action
 }
 
 type Condition struct {
-	Field     string   `json:"field"`
-	Operator  string   `json:"operator"`
-	Threshold *float64 `json:"threshold"`
+	Field      string   `json:"field"`
+	Comparator string   `json:"comparator"`
+	Threshold  *float64 `json:"threshold"`
 }
 
 type Action struct {
