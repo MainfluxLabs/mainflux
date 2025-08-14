@@ -60,3 +60,7 @@ func (repo singleUserRepo) AssignRole(ctx context.Context, req *protomfx.AssignR
 func (repo singleUserRepo) RetrieveRole(ctx context.Context, req *protomfx.RetrieveRoleReq, _ ...grpc.CallOption) (r *protomfx.RetrieveRoleRes, err error) {
 	return &protomfx.RetrieveRoleRes{}, errUnsupported
 }
+
+func (repo singleUserRepo) FlipInactiveInvites(ctx context.Context, req *protomfx.FlipInactiveInvitesReq, _ ...grpc.CallOption) (r *protomfx.Count, err error) {
+	return &protomfx.Count{}, errUnsupported
+}

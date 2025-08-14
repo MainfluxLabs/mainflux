@@ -42,6 +42,7 @@ const (
 	description            = "testDesc"
 	n                      = 10
 	loginDuration          = 30 * time.Minute
+	inviteDuration         = 7 * 24 * time.Hour
 	emailKey               = "email"
 	idKey                  = "id"
 	ascKey                 = "asc"
@@ -93,13 +94,14 @@ func newService() auth.Service {
 	membershipsRepo := mocks.NewOrgMembershipsRepository()
 	orgsRepo := mocks.NewOrgRepository(membershipsRepo)
 	rolesRepo := mocks.NewRolesRepository()
+	invitesRepo := mocks.NewInvitesRepository()
 
 	idProvider := uuid.NewMock()
 	t := jwt.New(secret)
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
 	tc := thmocks.NewThingsServiceClient(nil, nil, nil)
 
-	return auth.New(orgsRepo, tc, uc, nil, rolesRepo, membershipsRepo, idProvider, t, loginDuration)
+	return auth.New(orgsRepo, tc, uc, nil, rolesRepo, membershipsRepo, invitesRepo, nil, idProvider, t, loginDuration, inviteDuration)
 }
 
 func newServer(svc auth.Service) *httptest.Server {

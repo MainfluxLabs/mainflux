@@ -313,3 +313,101 @@ func (lm *loggingMiddleware) RetrieveRole(ctx context.Context, id string) (role 
 
 	return lm.svc.RetrieveRole(ctx, id)
 }
+
+func (lm *loggingMiddleware) InviteMember(ctx context.Context, token string, orgID string, invRedirectPath string, registerRedirectPath string, om auth.OrgMembership) (invite auth.Invite, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method invite_members took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.InviteMember(ctx, token, orgID, invRedirectPath, registerRedirectPath, om)
+}
+
+func (lm *loggingMiddleware) RevokeInvite(ctx context.Context, token string, inviteID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method revoke_invite took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RevokeInvite(ctx, token, inviteID)
+}
+
+func (lm *loggingMiddleware) InviteRespond(ctx context.Context, token string, inviteID string, accept bool) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method invite_respond took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.InviteRespond(ctx, token, inviteID, accept)
+}
+
+func (lm *loggingMiddleware) ListInvitesByUser(ctx context.Context, token string, userType string, userID string, pm apiutil.PageMetadata) (invPage auth.InvitesPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_invites_by_invitee_id took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListInvitesByUser(ctx, token, userType, userID, pm)
+}
+
+func (lm *loggingMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth.Invite, orgName string, invRedirectPath string, registerRedirectPath string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method send_org_invite_email took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.SendOrgInviteEmail(ctx, invite, orgName, invRedirectPath, registerRedirectPath)
+}
+
+func (lm *loggingMiddleware) ViewInvite(ctx context.Context, token string, inviteID string) (invite auth.Invite, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method view_invite took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ViewInvite(ctx, token, inviteID)
+}
+
+func (lm *loggingMiddleware) FlipInactiveInvites(ctx context.Context, email string, inviteeID string) (cnt uint32, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method flip_inactive_invites took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.FlipInactiveInvites(ctx, email, inviteeID)
+}
