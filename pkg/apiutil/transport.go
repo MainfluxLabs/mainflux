@@ -6,6 +6,7 @@ package apiutil
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -27,11 +28,12 @@ const (
 	EmailKey    = "email"
 	PayloadKey  = "payload"
 
-	NameOrder       = "name"
-	IDOrder         = "id"
-	AscDir          = "asc"
-	DescDir         = "desc"
-	ContentTypeJSON = "application/json"
+	NameOrder              = "name"
+	IDOrder                = "id"
+	AscDir                 = "asc"
+	DescDir                = "desc"
+	ContentTypeJSON        = "application/json"
+	ContentTypeOctetStream = "application/octet-stream"
 
 	DefOffset = 0
 	DefLimit  = 10
@@ -83,8 +85,8 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrInvalidTopic),
 			errors.Contains(err, ErrInvalidContact),
 			errors.Contains(err, ErrMissingEmail),
-			errors.Contains(err, ErrMissingHost),
 			errors.Contains(err, ErrMissingPass),
+			errors.Contains(err, ErrMissingRedirectPath),
 			errors.Contains(err, ErrMissingConfPass),
 			errors.Contains(err, ErrInvalidResetPass),
 			errors.Contains(err, ErrInvalidComparator),
@@ -130,6 +132,28 @@ func WriteErrorResponse(err error, w http.ResponseWriter) {
 	}
 }
 
+func EncodeFileResponse(_ context.Context, w http.ResponseWriter, response interface{}) (err error) {
+	w.Header().Set("Content-Type", ContentTypeOctetStream)
+
+	if fr, ok := response.(ViewFileRes); ok {
+		for k, v := range fr.Headers() {
+			w.Header().Set(k, v)
+		}
+
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, fr.FileName))
+		w.WriteHeader(fr.Code())
+
+		if fr.Empty() {
+			return nil
+		}
+
+		_, err := w.Write(fr.File)
+		return err
+	}
+
+	return nil
+}
+
 // ReadUintQuery reads the value of uint64 http query parameters for a given key
 func ReadUintQuery(r *http.Request, key string, def uint64) (uint64, error) {
 	vals := bone.GetQuery(r, key)
@@ -155,7 +179,7 @@ func ReadIntQuery(r *http.Request, key string, def int64) (int64, error) {
 	if len(vals) > 1 {
 		return 0, ErrInvalidQueryParams
 	}
-	
+
 	if len(vals) == 0 {
 		return def, nil
 	}

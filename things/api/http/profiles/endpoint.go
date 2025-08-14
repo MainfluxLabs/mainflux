@@ -5,7 +5,10 @@ package profiles
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -160,11 +163,31 @@ func backupProfilesByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
+
 		backup, err := svc.BackupProfilesByOrg(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}
-		return buildBackupResponse(backup), nil
+
+		fileName := fmt.Sprintf("profiles-backup-by-org-%s.json", req.id)
+		return buildBackupResponse(backup, fileName)
+	}
+}
+
+func restoreProfilesByOrgEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(restoreByOrgReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		profilesBackup := buildProfilesBackup(req.Profiles)
+
+		if err := svc.RestoreProfilesByOrg(ctx, req.token, req.id, profilesBackup); err != nil {
+			return nil, err
+		}
+
+		return restoreRes{}, nil
 	}
 }
 
@@ -174,11 +197,31 @@ func backupProfilesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
+
 		backup, err := svc.BackupProfilesByGroup(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}
-		return buildBackupResponse(backup), nil
+
+		fileName := fmt.Sprintf("profiles-backup-by-group-%s.json", req.id)
+		return buildBackupResponse(backup, fileName)
+	}
+}
+
+func restoreProfilesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(restoreByGroupReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		profilesBackup := buildProfilesBackup(req.Profiles)
+
+		if err := svc.RestoreProfilesByGroup(ctx, req.token, req.id, profilesBackup); err != nil {
+			return nil, err
+		}
+
+		return restoreRes{}, nil
 	}
 }
 
@@ -267,19 +310,39 @@ func buildProfilesResponse(pp things.ProfilesPage) profilesPageRes {
 	return res
 }
 
-func buildBackupResponse(pb things.ProfilesBackup) backupProfilesRes {
-	res := backupProfilesRes{
-		Profiles: []viewProfileRes{},
+func buildProfilesBackup(profiles []viewProfileRes) (backup things.ProfilesBackup) {
+	for _, profile := range profiles {
+		pr := things.Profile{
+			ID:       profile.ID,
+			GroupID:  profile.GroupID,
+			Name:     profile.Name,
+			Config:   profile.Config,
+			Metadata: profile.Metadata,
+		}
+		backup.Profiles = append(backup.Profiles, pr)
 	}
+	return backup
+}
+
+func buildBackupResponse(pb things.ProfilesBackup, fileName string) (apiutil.ViewFileRes, error) {
+	views := make([]viewProfileRes, 0, len(pb.Profiles))
 	for _, profile := range pb.Profiles {
-		view := viewProfileRes{
+		views = append(views, viewProfileRes{
 			ID:       profile.ID,
 			GroupID:  profile.GroupID,
 			Name:     profile.Name,
 			Metadata: profile.Metadata,
 			Config:   profile.Config,
-		}
-		res.Profiles = append(res.Profiles, view)
+		})
 	}
-	return res
+
+	data, err := json.MarshalIndent(views, "", "  ")
+	if err != nil {
+		return apiutil.ViewFileRes{}, err
+	}
+
+	return apiutil.ViewFileRes{
+		File:     data,
+		FileName: fileName,
+	}, nil
 }

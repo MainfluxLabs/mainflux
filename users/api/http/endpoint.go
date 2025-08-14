@@ -14,18 +14,31 @@ func selfRegistrationEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(selfRegisterUserReq)
 		if err := req.validate(); err != nil {
+			return selfRegisterRes{}, err
+		}
+
+		_, err := svc.SelfRegister(ctx, req.User, req.RedirectPath)
+		if err != nil {
+			return selfRegisterRes{}, err
+		}
+
+		return selfRegisterRes{}, nil
+	}
+}
+
+func verifyEmailEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(verifyEmailReq)
+		if err := req.validate(); err != nil {
 			return createUserRes{}, err
 		}
-		uid, err := svc.SelfRegister(ctx, req.user)
+
+		userID, err := svc.VerifyEmail(ctx, req.emailToken)
 		if err != nil {
 			return createUserRes{}, err
 		}
-		ucr := createUserRes{
-			ID:      uid,
-			created: true,
-		}
 
-		return ucr, nil
+		return createUserRes{created: true, ID: userID}, nil
 	}
 }
 
@@ -48,16 +61,11 @@ func registrationEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
-// Password reset request endpoint.
-// When successful password reset link is generated.
-// Link is generated using MF_TOKEN_RESET_ENDPOINT env.
-// and value from Referer header for host.
-// {Referer}+{MF_TOKEN_RESET_ENDPOINT}+{token=TOKEN}
-// http://mainflux.com/reset-request?token=xxxxxxxxxxx.
-// Email with a link is being sent to the user.
-// When user clicks on a link it should get the ui with form to
-// enter new password, when form is submitted token and new password
-// must be sent as PUT request to 'password/reset' passwordResetEndpoint
+// Password reset request endpoint. A client makes a call to this endpoint,
+// supplying an e-mail address and a "path" string, which is appended to the
+// host of the running service to generate a final password reset link
+// that the users receives in an e-mail message:
+// URL: {MF_HOST}+{redirect_path}+"?token="+<token>
 func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(passwResetReq)
@@ -65,8 +73,7 @@ func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 		res := passwResetReqRes{}
-		email := req.Email
-		if err := svc.GenerateResetToken(ctx, email, req.Host); err != nil {
+		if err := svc.GenerateResetToken(ctx, req.Email, req.RedirectPath); err != nil {
 			return nil, err
 		}
 		res.Msg = MailSent

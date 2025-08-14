@@ -69,7 +69,7 @@ const (
 	defAdminPassword    = ""
 	defPassRegex        = `^\S{8,}$`
 
-	defPassResetEndpoint = "/password-reset" // URL where user lands after navigating to the reset link from email
+	defHost = "http://localhost"
 
 	defAuthTLS         = "false"
 	defAuthCACerts     = ""
@@ -77,7 +77,8 @@ const (
 	defAuthGRPCTimeout = "1s"
 	defGRPCPort        = "8184"
 
-	defSelfRegister = "true" // By default, everybody can create a user. Otherwise, only admin can create a user.
+	defSelfRegisterEnabled = "true" // By default, everybody can create a user. Otherwise, only admin can create a user.
+	defEmailVerifyEnabled  = "true"
 
 	envLogLevel      = "MF_USERS_LOG_LEVEL"
 	envDBHost        = "MF_USERS_DB_HOST"
@@ -106,28 +107,33 @@ const (
 	envEmailFromName    = "MF_EMAIL_FROM_NAME"
 	envEmailTemplate    = "MF_EMAIL_TEMPLATE"
 
+	envHost = "MF_HOST"
+
 	envAuthTLS         = "MF_AUTH_CLIENT_TLS"
 	envAuthCACerts     = "MF_AUTH_CA_CERTS"
 	envAuthGRPCURL     = "MF_AUTH_GRPC_URL"
 	envauthGRPCTimeout = "MF_AUTH_GRPC_TIMEOUT"
 	envGRPCPort        = "MF_USERS_GRPC_PORT"
 
-	envSelfRegister = "MF_USERS_ALLOW_SELF_REGISTER"
+	envSelfRegisterEnabled = "MF_USERS_SELF_REGISTER_ENABLED"
+	envEmailVerifyEnabled  = "MF_REQUIRE_EMAIL_VERIFICATION"
 )
 
 type config struct {
-	logLevel        string
-	dbConfig        postgres.Config
-	httpConfig      servers.Config
-	grpcConfig      servers.Config
-	emailConf       email.Config
-	authConfig      clients.Config
-	jaegerURL       string
-	authGRPCTimeout time.Duration
-	adminEmail      string
-	adminPassword   string
-	passRegex       *regexp.Regexp
-	selfRegister    bool
+	logLevel            string
+	dbConfig            postgres.Config
+	httpConfig          servers.Config
+	grpcConfig          servers.Config
+	emailConf           email.Config
+	authConfig          clients.Config
+	jaegerURL           string
+	authGRPCTimeout     time.Duration
+	adminEmail          string
+	adminPassword       string
+	passRegex           *regexp.Regexp
+	host                string
+	selfRegisterEnabled bool
+	emailVerifyEnabled  bool
 }
 
 func main() {
@@ -198,9 +204,14 @@ func loadConfig() config {
 		log.Fatalf("Invalid password validation rules %s\n", envPassRegex)
 	}
 
-	selfRegister, err := strconv.ParseBool(mainflux.Env(envSelfRegister, defSelfRegister))
+	selfRegisterEnabled, err := strconv.ParseBool(mainflux.Env(envSelfRegisterEnabled, defSelfRegisterEnabled))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envSelfRegister, err.Error())
+		log.Fatalf("Invalid %s value: %s", envSelfRegisterEnabled, err.Error())
+	}
+
+	emailVerifyEnabled, err := strconv.ParseBool(mainflux.Env(envEmailVerifyEnabled, defEmailVerifyEnabled))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envEmailVerifyEnabled, err.Error())
 	}
 
 	dbConfig := postgres.Config{
@@ -249,20 +260,21 @@ func loadConfig() config {
 	}
 
 	return config{
-		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
-		dbConfig:        dbConfig,
-		httpConfig:      httpConfig,
-		grpcConfig:      grpcConfig,
-		emailConf:       emailConf,
-		authConfig:      authConfig,
-		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
-		authGRPCTimeout: authGRPCTimeout,
-		adminEmail:      mainflux.Env(envAdminEmail, defAdminEmail),
-		adminPassword:   mainflux.Env(envAdminPassword, defAdminPassword),
-		passRegex:       passRegex,
-		selfRegister:    selfRegister,
+		logLevel:            mainflux.Env(envLogLevel, defLogLevel),
+		dbConfig:            dbConfig,
+		httpConfig:          httpConfig,
+		grpcConfig:          grpcConfig,
+		emailConf:           emailConf,
+		authConfig:          authConfig,
+		jaegerURL:           mainflux.Env(envJaegerURL, defJaegerURL),
+		authGRPCTimeout:     authGRPCTimeout,
+		adminEmail:          mainflux.Env(envAdminEmail, defAdminEmail),
+		adminPassword:       mainflux.Env(envAdminPassword, defAdminPassword),
+		host:                mainflux.Env(envHost, defHost),
+		passRegex:           passRegex,
+		selfRegisterEnabled: selfRegisterEnabled,
+		emailVerifyEnabled:  emailVerifyEnabled,
 	}
-
 }
 
 func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
@@ -278,15 +290,16 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceC
 	database := dbutil.NewDatabase(db)
 	hasher := bcrypt.New()
 	userRepo := tracing.UserRepositoryMiddleware(postgres.NewUserRepo(database), tracer)
+	verificationRepo := tracing.VerificationRepositoryMiddleware(postgres.NewEmailVerificationRepo(database), tracer)
 
-	emailer, err := emailer.New(defPassResetEndpoint, &c.emailConf)
+	emailer, err := emailer.New(c.host, &c.emailConf)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to configure e-mailing util: %s", err.Error()))
 	}
 
 	idProvider := uuid.New()
 
-	svc := users.New(userRepo, hasher, ac, emailer, idProvider)
+	svc := users.New(userRepo, verificationRepo, c.emailVerifyEnabled, hasher, ac, emailer, idProvider)
 	svc = httpapi.LoggingMiddleware(svc, logger)
 	svc = httpapi.MetricsMiddleware(
 		svc,
