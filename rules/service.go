@@ -52,11 +52,7 @@ const (
 	subjectAlarm = "alarms"
 )
 
-var (
-	errInvalidActionID   = errors.New("invalid action id")
-	errInvalidActionType = errors.New("invalid action type")
-	errInvalidObject     = errors.New("invalid JSON object")
-)
+var errInvalidObject = errors.New("invalid JSON object")
 
 type rulesService struct {
 	rules      RuleRepository
@@ -202,7 +198,6 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 		if err != nil {
 			return err
 		}
-
 		if !triggered {
 			continue
 		}
@@ -214,20 +209,13 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 
 				switch action.Type {
 				case ActionTypeSMTP, ActionTypeSMPP:
-					if action.ID == "" {
-						return errInvalidActionID
-					}
 					newMsg.Subject = fmt.Sprintf("%s.%s", action.Type, action.ID)
-					if err := rs.publisher.Publish(newMsg); err != nil {
-						return err
-					}
 				case ActionTypeAlarm:
 					newMsg.Subject = subjectAlarm
-					if err := rs.publisher.Publish(newMsg); err != nil {
-						return err
-					}
-				default:
-					return errInvalidActionType
+				}
+
+				if err := rs.publisher.Publish(newMsg); err != nil {
+					return err
 				}
 			}
 		}
