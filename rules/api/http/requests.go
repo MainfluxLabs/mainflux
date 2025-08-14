@@ -52,10 +52,6 @@ func (req createRulesReq) validate() error {
 }
 
 func (req ruleReq) validate() error {
-	if req.ProfileID == "" {
-		return apiutil.ErrMissingProfileID
-	}
-
 	if req.Name == "" || len(req.Name) > maxNameSize {
 		return apiutil.ErrNameSize
 	}
@@ -163,6 +159,10 @@ func (req updateRuleReq) validate() error {
 
 	if req.id == "" {
 		return apiutil.ErrMissingRuleID
+	}
+
+	if req.ProfileID == "" {
+		return apiutil.ErrMissingProfileID
 	}
 
 	return req.ruleReq.validate()
