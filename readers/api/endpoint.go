@@ -117,8 +117,8 @@ func backupMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 		}
 
 		var data []byte
-		requestedOutputFormat := strings.ToLower(strings.TrimSpace(req.convertFormat))
-		switch requestedOutputFormat {
+		outputFormat := strings.ToLower(strings.TrimSpace(req.convertFormat))
+		switch outputFormat {
 		case jsonFormat:
 			data, err = apiutil.GenerateJSON(page)
 		case csvFormat:
