@@ -15,7 +15,6 @@ import (
 )
 
 var senmlHeader = []string{
-	"profile",
 	"subtopic",
 	"publisher",
 	"protocol",
@@ -115,7 +114,6 @@ func convertSenMLMessagesToCSV(page readers.MessagesPage, writer *csv.Writer) er
 	for _, msg := range page.Messages {
 		if m, ok := msg.(senml.Message); ok {
 			row := []string{
-				"",
 				m.Subtopic,
 				m.Publisher,
 				m.Protocol,
