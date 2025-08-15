@@ -43,7 +43,7 @@ func (lm *loggingMiddleware) ListAllMessages(rpm readers.PageMetadata) (page rea
 	return lm.svc.ListAllMessages(rpm)
 }
 
-func (lm *loggingMiddleware) DeleteMessages(ctx context.Context, rpm readers.PageMetadata, table string) (err error) {
+func (lm *loggingMiddleware) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method delete_messages took %s to complete", time.Since(begin))
 		if err != nil {
@@ -53,7 +53,7 @@ func (lm *loggingMiddleware) DeleteMessages(ctx context.Context, rpm readers.Pag
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.DeleteMessages(ctx, rpm, table)
+	return lm.svc.DeleteMessages(ctx, rpm)
 }
 
 func (lm *loggingMiddleware) Backup(rpm readers.PageMetadata) (page readers.MessagesPage, err error) {

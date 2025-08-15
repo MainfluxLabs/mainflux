@@ -90,7 +90,7 @@ func (repo *messageRepositoryMock) readAll(profileID string, rpm readers.PageMet
 	}, nil
 }
 
-func (repo *messageRepositoryMock) DeleteMessages(ctx context.Context, rpm readers.PageMetadata, table string) error {
+func (repo *messageRepositoryMock) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) error {
 	repo.mutex.Lock()
 	defer repo.mutex.Unlock()
 
@@ -173,7 +173,7 @@ func (repo *messageRepositoryMock) checkValueFilter(senmlMsg senml.Message, quer
 		return *senmlMsg.Value >= rpm.Value
 	case readers.EqualKey:
 		return *senmlMsg.Value == rpm.Value
-	default: 
+	default:
 		return *senmlMsg.Value == rpm.Value
 	}
 }
