@@ -4,8 +4,6 @@
 package api
 
 import (
-	"strings"
-
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/readers"
 )
