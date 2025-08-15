@@ -154,8 +154,8 @@ func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
 	}
 
 	var fileType string
-	formatType := r.Header.Get("Content-Type")
-	switch formatType {
+	contentType := r.Header.Get("Content-Type")
+	switch contentType {
 	case apiutil.ContentTypeJSON:
 		fileType = jsonFormat
 	case apiutil.ContentTypeCSV:
