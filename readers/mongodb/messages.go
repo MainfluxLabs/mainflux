@@ -48,7 +48,7 @@ func (repo mongoRepository) DeleteMessages(ctx context.Context, rpm readers.Page
 	return nil
 }
 
-func (repo mongoRepository) Restore(ctx context.Context, messages ...senml.Message) error {
+func (repo mongoRepository) Restore(ctx context.Context, format string, messages ...readers.Message) error {
 	coll := repo.db.Collection(defCollection)
 	var dbMsgs []interface{}
 	for _, msg := range messages {

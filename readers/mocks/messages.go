@@ -45,7 +45,7 @@ func (repo *messageRepositoryMock) Backup(rpm readers.PageMetadata) (readers.Mes
 	return repo.readAll("", rpm)
 }
 
-func (repo *messageRepositoryMock) Restore(ctx context.Context, messages ...senml.Message) error {
+func (repo *messageRepositoryMock) Restore(ctx context.Context, format string, messages ...readers.Message) error {
 	panic("not implemented")
 }
 
@@ -173,7 +173,7 @@ func (repo *messageRepositoryMock) checkValueFilter(senmlMsg senml.Message, quer
 		return *senmlMsg.Value >= rpm.Value
 	case readers.EqualKey:
 		return *senmlMsg.Value == rpm.Value
-	default: 
+	default:
 		return *senmlMsg.Value == rpm.Value
 	}
 }

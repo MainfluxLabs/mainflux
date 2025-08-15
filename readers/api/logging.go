@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
 )
 
@@ -69,7 +68,7 @@ func (lm *loggingMiddleware) Backup(rpm readers.PageMetadata) (page readers.Mess
 	return lm.svc.Backup(rpm)
 }
 
-func (lm *loggingMiddleware) Restore(ctx context.Context, messages ...senml.Message) (err error) {
+func (lm *loggingMiddleware) Restore(ctx context.Context, format string, messages ...readers.Message) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method restore took %s to complete", time.Since(begin))
 		if err != nil {
@@ -79,5 +78,5 @@ func (lm *loggingMiddleware) Restore(ctx context.Context, messages ...senml.Mess
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Restore(ctx, messages...)
+	return lm.svc.Restore(ctx, format, messages...)
 }
