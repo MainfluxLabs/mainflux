@@ -4,6 +4,8 @@
 package api
 
 import (
+	"strings"
+
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/readers"
 )
@@ -59,6 +61,11 @@ type backupMessagesReq struct {
 func (req backupMessagesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
+	}
+
+	convertFormat := strings.ToLower(strings.TrimSpace(req.convertFormat))
+	if convertFormat != jsonFormat && convertFormat != csvFormat {
+		return apiutil.ErrInvalidQueryParams
 	}
 
 	return nil

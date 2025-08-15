@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/MainfluxLabs/mainflux"
 	auth "github.com/MainfluxLabs/mainflux/auth"
@@ -195,11 +194,6 @@ func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, erro
 	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, jsonFormat)
 	if err != nil {
 		return nil, err
-	}
-
-	convertFormat = strings.ToLower(strings.TrimSpace(convertFormat))
-	if convertFormat != jsonFormat && convertFormat != csvFormat {
-		return nil, errors.Wrap(apiutil.ErrInvalidQueryParams, err)
 	}
 
 	pageMeta, err := apiutil.BuildMessagePageMetadata(r)
