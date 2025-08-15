@@ -93,8 +93,6 @@ func GetTableName(format string) string {
 	switch format {
 	case messaging.JSONFormat, messaging.JSONContentType:
 		return "json"
-	case messaging.SenMLFormat, messaging.SenMLContentType:
-		return "messages"
 	default:
 		return "messages"
 	}
