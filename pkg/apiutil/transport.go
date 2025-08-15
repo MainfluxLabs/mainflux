@@ -12,6 +12,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/readers"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
 	"github.com/gofrs/uuid"
@@ -27,6 +28,15 @@ const (
 	IDKey                  = "id"
 	EmailKey               = "email"
 	PayloadKey             = "payload"
+	SubtopicKey            = "subtopic"
+	ProtocolKey            = "protocol"
+	ValueKey               = "v"
+	StringValueKey         = "vs"
+	DataValueKey           = "vd"
+	BoolValueKey           = "vb"
+	ComparatorKey          = "comparator"
+	FromKey                = "from"
+	ToKey                  = "to"
 	NameOrder              = "name"
 	IDOrder                = "id"
 	AscDir                 = "asc"
@@ -340,6 +350,77 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 		Email:    e,
 		Payload:  p,
 	}, nil
+}
+
+func BuildMessagePageMetadata(r *http.Request) (readers.PageMetadata, error) {
+	pm, err := BuildPageMetadata(r)
+	if err != nil {
+		return readers.PageMetadata{}, nil
+	}
+
+	subtopic, err := ReadStringQuery(r, SubtopicKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	protocol, err := ReadStringQuery(r, ProtocolKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	v, err := ReadFloatQuery(r, ValueKey, 0)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	comparator, err := ReadStringQuery(r, ComparatorKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	vs, err := ReadStringQuery(r, StringValueKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	vd, err := ReadStringQuery(r, DataValueKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	from, err := ReadIntQuery(r, FromKey, 0)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	to, err := ReadIntQuery(r, ToKey, 0)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	pageMeta := readers.PageMetadata{
+		Offset:      pm.Offset,
+		Limit:       pm.Limit,
+		Name:        pm.Name,
+		Subtopic:    subtopic,
+		Protocol:    protocol,
+		Value:       v,
+		Comparator:  comparator,
+		StringValue: vs,
+		DataValue:   vd,
+		From:        from,
+		To:          to,
+	}
+
+	vb, err := ReadBoolQuery(r, BoolValueKey, false)
+	if err != nil && err != ErrNotFoundParam {
+		return readers.PageMetadata{}, err
+	}
+	if err == nil {
+		pageMeta.BoolValue = vb
+	}
+
+	return pageMeta, nil
 }
 
 func BuildPageMetadataFromBody(r *http.Request) (PageMetadata, error) {
