@@ -134,7 +134,7 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 		Messages:     []readers.Message{},
 	}
 
-	order := tr.getFormatAndOrder(rpm)
+	order := tr.getOrder(rpm)
 	params := tr.buildQueryParams(rpm)
 
 	if rpm.AggType != "" && rpm.AggInterval != "" {
@@ -296,7 +296,7 @@ func (tr postgresRepository) fmtCondition(rpm readers.PageMetadata) string {
 	return condition
 }
 
-func (tr postgresRepository) getFormatAndOrder(rpm readers.PageMetadata) string {
+func (tr postgresRepository) getOrder(rpm readers.PageMetadata) string {
 	if rpm.Format == jsonTable {
 		return jsonTableOrder
 	}
