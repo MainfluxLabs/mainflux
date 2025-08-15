@@ -353,9 +353,19 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 }
 
 func BuildMessagePageMetadata(r *http.Request) (readers.PageMetadata, error) {
-	pm, err := BuildPageMetadata(r)
+	offset, err := ReadUintQuery(r, OffsetKey, DefOffset)
 	if err != nil {
-		return readers.PageMetadata{}, nil
+		return readers.PageMetadata{}, err
+	}
+
+	limit, err := ReadLimitQuery(r, LimitKey, DefLimit)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	name, err := ReadStringQuery(r, NameKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
 	}
 
 	subtopic, err := ReadStringQuery(r, SubtopicKey, "")
@@ -399,9 +409,9 @@ func BuildMessagePageMetadata(r *http.Request) (readers.PageMetadata, error) {
 	}
 
 	pageMeta := readers.PageMetadata{
-		Offset:      pm.Offset,
-		Limit:       pm.Limit,
-		Name:        pm.Name,
+		Offset:      offset,
+		Limit:       limit,
+		Name:        name,
 		Subtopic:    subtopic,
 		Protocol:    protocol,
 		Value:       v,
