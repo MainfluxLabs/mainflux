@@ -63,8 +63,7 @@ func (req backupMessagesReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	convertFormat := strings.ToLower(strings.TrimSpace(req.convertFormat))
-	if convertFormat != jsonFormat && convertFormat != csvFormat {
+	if req.convertFormat != jsonFormat && req.convertFormat != csvFormat {
 		return apiutil.ErrInvalidQueryParams
 	}
 
