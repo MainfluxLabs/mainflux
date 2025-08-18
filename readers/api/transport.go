@@ -72,14 +72,14 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 		opts...,
 	))
 
-	mux.Get("/messages/:format/backup", kithttp.NewServer(
+	mux.Get("/:format/backup", kithttp.NewServer(
 		backupMessagesEndpoint(svc),
 		decodeBackupMessages,
 		encodeBackupFileResponse,
 		opts...,
 	))
 
-	mux.Post("/messages/:format/restore", kithttp.NewServer(
+	mux.Post("/:format/restore", kithttp.NewServer(
 		restoreMessagesEndpoint(svc),
 		decodeRestore,
 		encodeResponse,
@@ -96,6 +96,11 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 	pageMeta, err := apiutil.BuildMessagePageMetadata(r)
 	if err != nil {
 		return nil, err
+	}
+
+	format := bone.GetValue(r, formatKey)
+	if format != jsonFormat && format != senmlFormat {
+		return nil, apiutil.ErrInvalidPathParams
 	}
 
 	ai, err := apiutil.ReadStringQuery(r, aggIntervalKey, "")
@@ -116,6 +121,7 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 	pageMeta.AggInterval = ai
 	pageMeta.AggType = at
 	pageMeta.AggField = af
+	pageMeta.Format = dbutil.GetTableName(format)
 
 	return listAllMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
@@ -208,6 +214,13 @@ func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, erro
 	if err != nil {
 		return nil, err
 	}
+
+	format := bone.GetValue(r, formatKey)
+	if format != jsonFormat && format != senmlFormat {
+		return nil, apiutil.ErrInvalidPathParams
+	}
+
+	pageMeta.Format = format
 
 	return backupMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
