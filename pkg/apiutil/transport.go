@@ -12,31 +12,40 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/readers"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
 	"github.com/gofrs/uuid"
 )
 
 const (
-	OffsetKey   = "offset"
-	LimitKey    = "limit"
-	NameKey     = "name"
-	OrderKey    = "order"
-	DirKey      = "dir"
-	MetadataKey = "metadata"
-	IDKey       = "id"
-	EmailKey    = "email"
-	PayloadKey  = "payload"
-
+	OffsetKey              = "offset"
+	LimitKey               = "limit"
+	NameKey                = "name"
+	OrderKey               = "order"
+	DirKey                 = "dir"
+	MetadataKey            = "metadata"
+	IDKey                  = "id"
+	EmailKey               = "email"
+	PayloadKey             = "payload"
+	SubtopicKey            = "subtopic"
+	ProtocolKey            = "protocol"
+	ValueKey               = "v"
+	StringValueKey         = "vs"
+	DataValueKey           = "vd"
+	BoolValueKey           = "vb"
+	ComparatorKey          = "comparator"
+	FromKey                = "from"
+	ToKey                  = "to"
 	NameOrder              = "name"
 	IDOrder                = "id"
 	AscDir                 = "asc"
 	DescDir                = "desc"
 	ContentTypeJSON        = "application/json"
+	ContentTypeCSV         = "text/csv"
 	ContentTypeOctetStream = "application/octet-stream"
-
-	DefOffset = 0
-	DefLimit  = 10
+	DefOffset              = 0
+	DefLimit               = 10
 )
 
 // PageMetadata contains page metadata that helps navigation.
@@ -95,7 +104,13 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrUnsupportedContentType),
 			errors.Contains(err, ErrMalformedEntity),
 			errors.Contains(err, ErrInvalidRole),
-			errors.Contains(err, ErrInvalidQueryParams):
+			errors.Contains(err, ErrInvalidQueryParams),
+			errors.Contains(err, ErrMissingConditionField),
+			errors.Contains(err, ErrMissingConditionComparator),
+			errors.Contains(err, ErrMissingConditionThreshold),
+			errors.Contains(err, ErrInvalidActionType),
+			errors.Contains(err, ErrMissingActionID),
+			errors.Contains(err, ErrInvalidOperator):
 			logger.Error(err.Error())
 		}
 
@@ -341,6 +356,87 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 		Email:    e,
 		Payload:  p,
 	}, nil
+}
+
+func BuildMessagePageMetadata(r *http.Request) (readers.PageMetadata, error) {
+	offset, err := ReadUintQuery(r, OffsetKey, DefOffset)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	limit, err := ReadLimitQuery(r, LimitKey, DefLimit)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	name, err := ReadStringQuery(r, NameKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	subtopic, err := ReadStringQuery(r, SubtopicKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	protocol, err := ReadStringQuery(r, ProtocolKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	v, err := ReadFloatQuery(r, ValueKey, 0)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	comparator, err := ReadStringQuery(r, ComparatorKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	vs, err := ReadStringQuery(r, StringValueKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	vd, err := ReadStringQuery(r, DataValueKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	from, err := ReadIntQuery(r, FromKey, 0)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	to, err := ReadIntQuery(r, ToKey, 0)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	pageMeta := readers.PageMetadata{
+		Offset:      offset,
+		Limit:       limit,
+		Name:        name,
+		Subtopic:    subtopic,
+		Protocol:    protocol,
+		Value:       v,
+		Comparator:  comparator,
+		StringValue: vs,
+		DataValue:   vd,
+		From:        from,
+		To:          to,
+	}
+
+	vb, err := ReadBoolQuery(r, BoolValueKey, false)
+	if err != nil && err != ErrNotFoundParam {
+		return readers.PageMetadata{}, err
+	}
+	if err == nil {
+		pageMeta.BoolValue = vb
+	}
+
+	return pageMeta, nil
 }
 
 func BuildPageMetadataFromBody(r *http.Request) (PageMetadata, error) {

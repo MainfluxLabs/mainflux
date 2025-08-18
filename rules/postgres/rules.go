@@ -35,7 +35,7 @@ func (rr ruleRepository) Save(ctx context.Context, rls ...rules.Rule) ([]rules.R
 		return []rules.Rule{}, errors.Wrap(errors.ErrCreateEntity, err)
 	}
 
-	q := `INSERT INTO rules (id, profile_id, group_id, name, description, condition, actions) VALUES (:id, :profile_id, :group_id, :name, :description, :condition, :actions);`
+	q := `INSERT INTO rules (id, profile_id, group_id, name, description, conditions, operator, actions) VALUES (:id, :profile_id, :group_id, :name, :description, :conditions, :operator, :actions);`
 
 	for _, rule := range rls {
 		dbr, err := toDBRule(rule)
@@ -79,7 +79,7 @@ func (rr ruleRepository) RetrieveByGroup(ctx context.Context, groupID string, pm
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	whereClause := dbutil.BuildWhereClause(gq, nq)
 
-	q := fmt.Sprintf(`SELECT id, profile_id, group_id, name, description, condition, actions FROM rules %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	q := fmt.Sprintf(`SELECT id, profile_id, group_id, name, description, conditions, operator, actions FROM rules %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM rules WHERE %s;`, gq)
 
 	params := map[string]interface{}{
@@ -104,7 +104,7 @@ func (rr ruleRepository) RetrieveByProfile(ctx context.Context, profileID string
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	whereClause := dbutil.BuildWhereClause(pq, nq)
 
-	q := fmt.Sprintf(`SELECT id, profile_id, group_id, name, description, condition, actions FROM rules %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	q := fmt.Sprintf(`SELECT id, profile_id, group_id, name, description, conditions, operator, actions FROM rules %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM rules WHERE %s;`, pq)
 
 	params := map[string]interface{}{
@@ -118,7 +118,7 @@ func (rr ruleRepository) RetrieveByProfile(ctx context.Context, profileID string
 }
 
 func (rr ruleRepository) RetrieveByID(ctx context.Context, id string) (rules.Rule, error) {
-	q := `SELECT id, profile_id, group_id, name, description, condition, actions FROM rules WHERE id = $1;`
+	q := `SELECT id, profile_id, group_id, name, description, conditions, operator, actions FROM rules WHERE id = $1;`
 
 	var dbr dbRule
 	if err := rr.db.QueryRowxContext(ctx, q, id).StructScan(&dbr); err != nil {
@@ -134,7 +134,7 @@ func (rr ruleRepository) RetrieveByID(ctx context.Context, id string) (rules.Rul
 }
 
 func (rr ruleRepository) Update(ctx context.Context, r rules.Rule) error {
-	q := `UPDATE rules SET name = :name, description = :description, condition = :condition, actions = :actions, profile_id = :profile_id WHERE id = :id;`
+	q := `UPDATE rules SET name = :name, description = :description, conditions = :conditions, operator = :operator, actions = :actions, profile_id = :profile_id WHERE id = :id;`
 
 	dbr, err := toDBRule(r)
 	if err != nil {
@@ -227,12 +227,13 @@ type dbRule struct {
 	GroupID     string `db:"group_id"`
 	Name        string `db:"name"`
 	Description string `db:"description"`
-	Condition   []byte `db:"condition"`
+	Conditions  []byte `db:"conditions"`
+	Operator    string `db:"operator"`
 	Actions     []byte `db:"actions"`
 }
 
 func toDBRule(r rules.Rule) (dbRule, error) {
-	condition, err := json.Marshal(r.Condition)
+	conditions, err := json.Marshal(r.Conditions)
 	if err != nil {
 		return dbRule{}, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
@@ -248,14 +249,15 @@ func toDBRule(r rules.Rule) (dbRule, error) {
 		GroupID:     r.GroupID,
 		Name:        r.Name,
 		Description: r.Description,
-		Condition:   condition,
+		Conditions:  conditions,
+		Operator:    r.Operator,
 		Actions:     actions,
 	}, nil
 }
 
 func toRule(dbr dbRule) (rules.Rule, error) {
-	var condition rules.Condition
-	if err := json.Unmarshal(dbr.Condition, &condition); err != nil {
+	var conditions []rules.Condition
+	if err := json.Unmarshal(dbr.Conditions, &conditions); err != nil {
 		return rules.Rule{}, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
@@ -270,7 +272,8 @@ func toRule(dbr dbRule) (rules.Rule, error) {
 		GroupID:     dbr.GroupID,
 		Name:        dbr.Name,
 		Description: dbr.Description,
-		Condition:   condition,
+		Conditions:  conditions,
+		Operator:    dbr.Operator,
 		Actions:     actions,
 	}, nil
 }

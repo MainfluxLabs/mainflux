@@ -49,9 +49,30 @@ func (req listAllMessagesReq) validate() error {
 	return nil
 }
 
+type backupMessagesReq struct {
+	token         string
+	convertFormat string
+	messageFormat string
+	pageMeta      readers.PageMetadata
+}
+
+func (req backupMessagesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.convertFormat != jsonFormat && req.convertFormat != csvFormat {
+		return apiutil.ErrInvalidQueryParams
+	}
+
+	return nil
+}
+
 type restoreMessagesReq struct {
-	token    string
-	Messages []byte
+	token         string
+	fileType      string
+	messageFormat string
+	Messages      []byte
 }
 
 func (req restoreMessagesReq) validate() error {

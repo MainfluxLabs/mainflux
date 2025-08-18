@@ -53,7 +53,7 @@ func (tr timescaleRepository) Backup(rpm readers.PageMetadata) (readers.Messages
 	return tr.readAll(rpm)
 }
 
-func (tr timescaleRepository) Restore(ctx context.Context, messages ...senml.Message) error {
+func (tr timescaleRepository) Restore(ctx context.Context, format string, messages ...readers.Message) error {
 	q := `INSERT INTO messages (subtopic, publisher, protocol,
 		name, unit, value, string_value, bool_value, data_value, sum,
 		time, update_time)
@@ -80,7 +80,7 @@ func (tr timescaleRepository) Restore(ctx context.Context, messages ...senml.Mes
 	}()
 
 	for _, msg := range messages {
-		m := senmlMessage{Message: msg}
+		m := senmlMessage{Message: msg.(senml.Message)}
 		if _, err := tx.NamedExec(q, m); err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {

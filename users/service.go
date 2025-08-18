@@ -204,15 +204,13 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, redirectPat
 		return "", err
 	}
 
-	// If an error occurs while attempting to send the e-mail including confirmation token to the user,
-	// abort the process i.e. remove the pending Verification from the database.
-	if err := svc.email.SendEmailVerification([]string{user.Email}, redirectPath, token); err != nil {
-		if err := svc.emailVerifications.Remove(ctx, token); err != nil {
-			return "", err
+	go func() {
+		// If an error occurs while attempting to send the e-mail including confirmation token to the user,
+		// abort the process i.e. remove the pending Verification from the database.
+		if err := svc.email.SendEmailVerification([]string{user.Email}, redirectPath, token); err != nil {
+			svc.emailVerifications.Remove(ctx, token)
 		}
-
-		return "", err
-	}
+	}()
 
 	return token, nil
 }
@@ -499,7 +497,12 @@ func (svc usersService) GenerateResetToken(ctx context.Context, email, redirectP
 	if err != nil {
 		return errors.Wrap(ErrRecoveryToken, err)
 	}
-	return svc.SendPasswordReset(ctx, redirectPath, email, t)
+
+	go func() {
+		svc.SendPasswordReset(ctx, redirectPath, email, t)
+	}()
+
+	return nil
 }
 
 func (svc usersService) ResetPassword(ctx context.Context, resetToken, password string) error {

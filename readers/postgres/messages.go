@@ -93,14 +93,7 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.Pag
 	return nil
 }
 
-func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Message) error {
-	q := `INSERT INTO messages (subtopic, publisher, protocol,
-          name, unit, value, string_value, bool_value, data_value, sum,
-          time, update_time)
-          VALUES (:subtopic, :publisher, :protocol, :name, :unit,
-          :value, :string_value, :bool_value, :data_value, :sum,
-          :time, :update_time);`
-
+func (tr postgresRepository) Restore(ctx context.Context, format string, messages ...readers.Message) error {
 	tx, err := tr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(errors.ErrSaveMessages, err)
@@ -119,8 +112,47 @@ func (tr postgresRepository) Restore(ctx context.Context, messages ...senml.Mess
 		}
 	}()
 
+	switch format {
+	case defTable:
+		return tr.restoreSenMLMessages(ctx, tx, messages...)
+	default:
+		return tr.restoreJSONMessages(ctx, tx, messages...)
+	}
+}
+
+func (tr postgresRepository) restoreJSONMessages(ctx context.Context, tx *sqlx.Tx, messages ...readers.Message) error {
+	q := `INSERT INTO json (subtopic, publisher, protocol, payload, created)
+          VALUES (:subtopic, :publisher, :protocol, :payload, :created);`
+
 	for _, msg := range messages {
-		if _, err := tx.NamedExec(q, msg); err != nil {
+		jsonMsg, ok := msg.(mfjson.Message)
+		if !ok {
+			return errors.Wrap(errors.ErrSaveMessages, errInvalidMessage)
+		}
+
+		if _, err := tx.NamedExecContext(ctx, q, jsonMsg); err != nil {
+			return tr.handlePgError(err, errors.ErrSaveMessages)
+		}
+	}
+
+	return nil
+}
+
+func (tr postgresRepository) restoreSenMLMessages(ctx context.Context, tx *sqlx.Tx, messages ...readers.Message) error {
+	q := `INSERT INTO messages (subtopic, publisher, protocol,
+          name, unit, value, string_value, bool_value, data_value, sum,
+          time, update_time)
+          VALUES (:subtopic, :publisher, :protocol, :name, :unit,
+          :value, :string_value, :bool_value, :data_value, :sum,
+          :time, :update_time);`
+
+	for _, msg := range messages {
+		senmlMesage, ok := msg.(senml.Message)
+		if !ok {
+			return errors.Wrap(errors.ErrSaveMessages, errInvalidMessage)
+		}
+
+		if _, err := tx.NamedExecContext(ctx, q, senmlMesage); err != nil {
 			return tr.handlePgError(err, errors.ErrSaveMessages)
 		}
 	}
