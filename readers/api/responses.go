@@ -60,5 +60,5 @@ func (res backupFileRes) Headers() map[string]string {
 }
 
 func (res backupFileRes) Empty() bool {
-	return false
+	return len(res.file) == 0
 }
