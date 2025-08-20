@@ -246,8 +246,6 @@ func decodeBackupMessagesWithFormat(_ context.Context, r *http.Request, format s
 		return nil, err
 	}
 
-	pageMeta.Format = format
-
 	return backupMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
 		messageFormat: format,
