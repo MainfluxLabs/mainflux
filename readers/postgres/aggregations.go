@@ -57,7 +57,7 @@ func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata) (
 	config := QueryConfig{
 		Format:      rpm.Format,
 		TimeColumn:  as.getTimeColumn(rpm.Format),
-		AggField:    as.getAggregateField(rpm),
+		AggField:    rpm.AggField,
 		AggInterval: rpm.AggInterval,
 		Limit:       rpm.Limit,
 		AggType:     rpm.AggType,
@@ -479,15 +479,6 @@ func (as *aggregationService) getTimeColumn(table string) string {
 		return "created"
 	}
 	return "time"
-}
-
-func (as *aggregationService) getAggregateField(rpm readers.PageMetadata) string {
-	switch rpm.AggField {
-	case "":
-		return "value"
-	default:
-		return rpm.AggField
-	}
 }
 
 func (as *aggregationService) buildQueryParams(rpm readers.PageMetadata) map[string]interface{} {
