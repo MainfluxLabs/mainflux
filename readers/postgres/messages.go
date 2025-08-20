@@ -295,12 +295,7 @@ func (tr postgresRepository) fmtCondition(rpm readers.PageMetadata, table string
 		case "subtopic", "publisher", "protocol":
 			clause = fmt.Sprintf("%s = :%s", name, name)
 		case "name":
-			switch table {
-			case jsonTable:
-				clause = "payload->>'n' = :name"
-			default:
-				clause = "name = :name"
-			}
+			clause = "name = :name"
 		case "v":
 			comparator := readers.ParseValueComparator(query)
 			clause = fmt.Sprintf("value %s :value", comparator)
