@@ -348,7 +348,7 @@ func (as *aggregationService) buildNameCondition(rpm readers.PageMetadata) strin
 	case defTable:
 		return "WHERE name = :name"
 	default:
-		return "WHERE payload->>'n' = :name OR payload->>'name' = :name"
+		return "WHERE payload->>'n' = :name"
 	}
 }
 
