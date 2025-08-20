@@ -425,10 +425,6 @@ func (as *aggregationService) scanAggregatedMessages(rows *sqlx.Rows, format str
 }
 
 func buildJSONPath(field string) string {
-	if field == "" || field == "v" {
-		return "payload->>'v'"
-	}
-
 	parts := strings.Split(field, ".")
 	if len(parts) == 1 {
 		return fmt.Sprintf("payload->>'%s'", parts[0])
@@ -449,14 +445,6 @@ func buildJSONPath(field string) string {
 }
 
 func buildAggregatedJSONSelect(aggField string, aggAlias string) string {
-	if aggField == "" || aggField == "v" {
-		return fmt.Sprintf(`m.created, m.subtopic, m.publisher, m.protocol,
-				jsonb_build_object(
-					'n', m.payload->>'n',
-					'v', ia.%s  
-				) as payload`, aggAlias)
-	}
-
 	parts := strings.Split(aggField, ".")
 	if len(parts) == 1 {
 		return fmt.Sprintf(`m.created, m.subtopic, m.publisher, m.protocol,
