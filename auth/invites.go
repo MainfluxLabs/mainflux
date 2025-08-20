@@ -79,9 +79,9 @@ type Invites interface {
 	// to by the invitee that it's directed towards.
 	RespondOrgInvite(ctx context.Context, token string, inviteID string, accept bool) error
 
-	// ViewOrgInvite retrieves a single Invite denoted by its ID. A specific Invite can only be retrieved
-	// by its issuer, i.e. inviter, or the invitee towards who it is directed, as well as the platform
-	// Root Admin.
+	// ViewOrgInvite retrieves a single Invite denoted by its ID.  A specific Org Invite can be retrieved
+	// by any user with admin privileges within the Org to which the invite belongs,
+	// the Invitee towards who it is directed, or the platform Root Admin.
 	ViewOrgInvite(ctx context.Context, token string, inviteID string) (OrgInvite, error)
 
 	// ListOrgInvitesByUser retrieves a list of invites either directed towards a specific Invitee,
@@ -246,20 +246,28 @@ func (svc service) ViewOrgInvite(ctx context.Context, token string, inviteID str
 	}
 
 	// A specific Invite can only be retrieved by the platform Root Admin, the Invitee towards who
-	// the Invite is directed, or the original Inviter (sender)
+	// the Invite is directed, or any person with admin (or higher) rights in the Org to which
+	// the invite belongs
 	if err := svc.isAdmin(ctx, token); err != nil {
 		if err != errors.ErrAuthorization {
 			return OrgInvite{}, err
 		}
 
-		// Current User is not Root Admin - must be either the Invitee or Inviter
-		currentUser, err := svc.identify(ctx, token)
-		if err != nil {
-			return OrgInvite{}, err
-		}
+		// Current User is not Root Admin - must be either admin (or higher) in Org, or invitee
+		if err := svc.canAccessOrg(ctx, token, invite.OrgID, Admin); err != nil {
+			if err != errors.ErrAuthorization {
+				return OrgInvite{}, err
+			}
 
-		if currentUser.ID != invite.InviteeID && currentUser.ID != invite.InviterID {
-			return OrgInvite{}, errors.ErrAuthorization
+			// Current user isn't admin (or higher) in Org, must be invitee
+			currentUser, err := svc.identify(ctx, token)
+			if err != nil {
+				return OrgInvite{}, err
+			}
+
+			if currentUser.ID != invite.InviteeID {
+				return OrgInvite{}, errors.ErrAuthorization
+			}
 		}
 	}
 
