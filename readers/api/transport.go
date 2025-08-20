@@ -34,14 +34,14 @@ const (
 	fromKey                = "from"
 	toKey                  = "to"
 	formatKey              = "format"
-	jsonFormat             = "json"
-	senmlFormat            = "senml"
 	convertKey             = "convert"
-	csvFormat              = "csv"
-	defFormat              = "messages"
 	aggIntervalKey         = "agg_interval"
 	aggTypeKey             = "agg_type"
 	aggFieldKey            = "agg_field"
+	jsonFormat             = "json"
+	senmlFormat            = "senml"
+	csvFormat              = "csv"
+	defFormat              = "messages"
 )
 
 var (
@@ -49,7 +49,6 @@ var (
 	authc  protomfx.AuthServiceClient
 )
 
-// MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient, ac protomfx.AuthServiceClient, svcName string, logger logger.Logger) http.Handler {
 	thingc = tc
 	authc = ac
@@ -59,29 +58,59 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 	}
 
 	mux := bone.New()
-	mux.Get("/:format", kithttp.NewServer(
+
+	mux.Get("/json", kithttp.NewServer(
 		listAllMessagesEndpoint(svc),
-		decodeListAllMessages,
-		encodeResponse,
-		opts...,
-	))
-	mux.Delete("/:format", kithttp.NewServer(
-		deleteMessagesEndpoint(svc),
-		decodeDeleteMessages,
+		decodeListAllMessagesJSON,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Get("/:format/backup", kithttp.NewServer(
+	mux.Get("/senml", kithttp.NewServer(
+		listAllMessagesEndpoint(svc),
+		decodeListAllMessagesSenML,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Delete("/json", kithttp.NewServer(
+		deleteMessagesEndpoint(svc),
+		decodeDeleteMessagesJSON,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Delete("/senml", kithttp.NewServer(
+		deleteMessagesEndpoint(svc),
+		decodeDeleteMessagesSenML,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Get("/json/backup", kithttp.NewServer(
 		backupMessagesEndpoint(svc),
-		decodeBackupMessages,
+		decodeBackupMessagesJSON,
 		encodeBackupFileResponse,
 		opts...,
 	))
 
-	mux.Post("/:format/restore", kithttp.NewServer(
+	mux.Get("/senml/backup", kithttp.NewServer(
+		backupMessagesEndpoint(svc),
+		decodeBackupMessagesSenML,
+		encodeBackupFileResponse,
+		opts...,
+	))
+
+	mux.Post("/json/restore", kithttp.NewServer(
 		restoreMessagesEndpoint(svc),
-		decodeRestore,
+		decodeRestoreJSON,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/senml/restore", kithttp.NewServer(
+		restoreMessagesEndpoint(svc),
+		decodeRestoreSenML,
 		encodeResponse,
 		opts...,
 	))
@@ -92,15 +121,18 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 	return mux
 }
 
-func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListAllMessagesJSON(ctx context.Context, r *http.Request) (interface{}, error) {
+	return decodeListAllMessagesWithFormat(ctx, r, jsonFormat)
+}
+
+func decodeListAllMessagesSenML(ctx context.Context, r *http.Request) (interface{}, error) {
+	return decodeListAllMessagesWithFormat(ctx, r, senmlFormat)
+}
+
+func decodeListAllMessagesWithFormat(_ context.Context, r *http.Request, format string) (interface{}, error) {
 	pageMeta, err := apiutil.BuildMessagePageMetadata(r)
 	if err != nil {
 		return nil, err
-	}
-
-	format := bone.GetValue(r, formatKey)
-	if format != jsonFormat && format != senmlFormat {
-		return nil, apiutil.ErrInvalidPathParams
 	}
 
 	ai, err := apiutil.ReadStringQuery(r, aggIntervalKey, "")
@@ -128,15 +160,17 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 		key:      apiutil.ExtractThingKey(r),
 		pageMeta: pageMeta,
 	}, nil
-
 }
 
-func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, error) {
-	format := bone.GetValue(r, formatKey)
-	if format != jsonFormat && format != senmlFormat {
-		return nil, apiutil.ErrInvalidPathParams
-	}
+func decodeDeleteMessagesJSON(ctx context.Context, r *http.Request) (interface{}, error) {
+	return decodeDeleteMessagesWithFormat(ctx, r, jsonFormat)
+}
 
+func decodeDeleteMessagesSenML(ctx context.Context, r *http.Request) (interface{}, error) {
+	return decodeDeleteMessagesWithFormat(ctx, r, senmlFormat)
+}
+
+func decodeDeleteMessagesWithFormat(_ context.Context, r *http.Request, format string) (interface{}, error) {
 	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
 	if err != nil {
 		return nil, err
@@ -160,7 +194,15 @@ func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, erro
 	return req, nil
 }
 
-func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRestoreJSON(ctx context.Context, r *http.Request) (interface{}, error) {
+	return decodeRestoreWithFormat(ctx, r, jsonFormat)
+}
+
+func decodeRestoreSenML(ctx context.Context, r *http.Request) (interface{}, error) {
+	return decodeRestoreWithFormat(ctx, r, senmlFormat)
+}
+
+func decodeRestoreWithFormat(_ context.Context, r *http.Request, messageFormat string) (interface{}, error) {
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
@@ -173,7 +215,6 @@ func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
 		fileType = jsonFormat
 	case apiutil.ContentTypeCSV:
 		fileType = csvFormat
-
 	default:
 		return nil, errors.Wrap(apiutil.ErrUnsupportedContentType, err)
 	}
@@ -181,8 +222,37 @@ func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
 	return restoreMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
 		fileType:      fileType,
-		messageFormat: bone.GetValue(r, formatKey),
+		messageFormat: messageFormat,
 		Messages:      data,
+	}, nil
+}
+
+func decodeBackupMessagesJSON(ctx context.Context, r *http.Request) (interface{}, error) {
+	return decodeBackupMessagesWithFormat(ctx, r, jsonFormat)
+}
+
+func decodeBackupMessagesSenML(ctx context.Context, r *http.Request) (interface{}, error) {
+	return decodeBackupMessagesWithFormat(ctx, r, senmlFormat)
+}
+
+func decodeBackupMessagesWithFormat(_ context.Context, r *http.Request, format string) (interface{}, error) {
+	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, jsonFormat)
+	if err != nil {
+		return nil, err
+	}
+
+	pageMeta, err := apiutil.BuildMessagePageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	pageMeta.Format = format
+
+	return backupMessagesReq{
+		token:         apiutil.ExtractBearerToken(r),
+		messageFormat: format,
+		convertFormat: convertFormat,
+		pageMeta:      pageMeta,
 	}, nil
 }
 
@@ -202,32 +272,6 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	}
 
 	return json.NewEncoder(w).Encode(response)
-}
-
-func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, error) {
-	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, jsonFormat)
-	if err != nil {
-		return nil, err
-	}
-
-	pageMeta, err := apiutil.BuildMessagePageMetadata(r)
-	if err != nil {
-		return nil, err
-	}
-
-	format := bone.GetValue(r, formatKey)
-	if format != jsonFormat && format != senmlFormat {
-		return nil, apiutil.ErrInvalidPathParams
-	}
-
-	pageMeta.Format = format
-
-	return backupMessagesReq{
-		token:         apiutil.ExtractBearerToken(r),
-		messageFormat: bone.GetValue(r, formatKey),
-		convertFormat: convertFormat,
-		pageMeta:      pageMeta,
-	}, nil
 }
 
 func encodeBackupFileResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
