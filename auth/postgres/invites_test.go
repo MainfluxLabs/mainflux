@@ -21,7 +21,7 @@ const inviteExpiryTime = 24 * 7 * time.Hour
 
 func TestSaveInvite(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
-	repoInvites := postgres.NewInvitesRepo(dbMiddleware)
+	repoInvites := postgres.NewOrgInvitesRepo(dbMiddleware)
 	repoOrgs := postgres.NewOrgRepo(dbMiddleware)
 
 	orgID, err := idProvider.ID()
@@ -40,7 +40,7 @@ func TestSaveInvite(t *testing.T) {
 	err = repoOrgs.Save(context.Background(), org)
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	var invites []auth.Invite
+	var invites []auth.OrgInvite
 
 	m := 5
 	for i := 0; i < m; i++ {
@@ -53,7 +53,7 @@ func TestSaveInvite(t *testing.T) {
 		inviterID, err := idProvider.ID()
 		assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-		invites = append(invites, auth.Invite{
+		invites = append(invites, auth.OrgInvite{
 			ID:           invID,
 			InviteeID:    inviteeID,
 			InviteeEmail: "",
@@ -71,7 +71,7 @@ func TestSaveInvite(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	inviterID, err := idProvider.ID()
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	expiredInvite := auth.Invite{
+	expiredInvite := auth.OrgInvite{
 		ID:           invID,
 		InviteeID:    inviteeID,
 		InviteeEmail: "",
@@ -88,13 +88,13 @@ func TestSaveInvite(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	alreadyInvitedInvite.ID = invID
 
-	var invalidOrgIDInvites []auth.Invite
+	var invalidOrgIDInvites []auth.OrgInvite
 	for _, inv := range invites {
 		inv.OrgID = "invalid"
 		invalidOrgIDInvites = append(invalidOrgIDInvites, inv)
 	}
 
-	var emptyOrgIDInvites []auth.Invite
+	var emptyOrgIDInvites []auth.OrgInvite
 	for _, inv := range invites {
 		inv.OrgID = ""
 		emptyOrgIDInvites = append(emptyOrgIDInvites, inv)
@@ -102,7 +102,7 @@ func TestSaveInvite(t *testing.T) {
 
 	invID, err = idProvider.ID()
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	reinviteExpiredInvite := auth.Invite{
+	reinviteExpiredInvite := auth.OrgInvite{
 		ID:           invID,
 		InviteeID:    expiredInvite.InviteeID,
 		InviteeEmail: expiredInvite.InviteeEmail,
@@ -115,7 +115,7 @@ func TestSaveInvite(t *testing.T) {
 
 	cases := []struct {
 		desc    string
-		invites []auth.Invite
+		invites []auth.OrgInvite
 		err     error
 	}{
 		{
@@ -130,7 +130,7 @@ func TestSaveInvite(t *testing.T) {
 		},
 		{
 			desc:    "save invite to same invitee by same inviter to same org",
-			invites: []auth.Invite{alreadyInvitedInvite},
+			invites: []auth.OrgInvite{alreadyInvitedInvite},
 			err:     auth.ErrUserAlreadyInvited,
 		},
 		{
@@ -145,7 +145,7 @@ func TestSaveInvite(t *testing.T) {
 		},
 		{
 			desc:    "save invite with same properties as existing expired invite",
-			invites: []auth.Invite{reinviteExpiredInvite},
+			invites: []auth.OrgInvite{reinviteExpiredInvite},
 			err:     nil,
 		},
 	}
@@ -158,7 +158,7 @@ func TestSaveInvite(t *testing.T) {
 
 func TestRetrieveInviteByID(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
-	repoInvites := postgres.NewInvitesRepo(dbMiddleware)
+	repoInvites := postgres.NewOrgInvitesRepo(dbMiddleware)
 	repoOrgs := postgres.NewOrgRepo(dbMiddleware)
 
 	orgID, err := idProvider.ID()
@@ -177,7 +177,7 @@ func TestRetrieveInviteByID(t *testing.T) {
 	err = repoOrgs.Save(context.Background(), org)
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	var invites []auth.Invite
+	var invites []auth.OrgInvite
 
 	m := 5
 	for i := 0; i < m; i++ {
@@ -190,7 +190,7 @@ func TestRetrieveInviteByID(t *testing.T) {
 		inviterID, err := idProvider.ID()
 		assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-		invites = append(invites, auth.Invite{
+		invites = append(invites, auth.OrgInvite{
 			ID:           invID,
 			InviteeID:    inviteeID,
 			InviteeEmail: fmt.Sprintf("invitee%d@test.com", i),
@@ -243,7 +243,7 @@ func TestRetrieveInviteByID(t *testing.T) {
 
 func TestRemoveInvite(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
-	repoInvites := postgres.NewInvitesRepo(dbMiddleware)
+	repoInvites := postgres.NewOrgInvitesRepo(dbMiddleware)
 	repoOrgs := postgres.NewOrgRepo(dbMiddleware)
 
 	orgID, err := idProvider.ID()
@@ -262,7 +262,7 @@ func TestRemoveInvite(t *testing.T) {
 	err = repoOrgs.Save(context.Background(), org)
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	var invites []auth.Invite
+	var invites []auth.OrgInvite
 
 	m := 5
 	for i := 0; i < m; i++ {
@@ -275,7 +275,7 @@ func TestRemoveInvite(t *testing.T) {
 		inviterID, err := idProvider.ID()
 		assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-		invites = append(invites, auth.Invite{
+		invites = append(invites, auth.OrgInvite{
 			ID:           invID,
 			InviteeID:    inviteeID,
 			InviteeEmail: fmt.Sprintf("invitee%d@test.com", i),
@@ -328,12 +328,12 @@ func TestRemoveInvite(t *testing.T) {
 
 func TestRetrieveByUserID(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
-	repoInvites := postgres.NewInvitesRepo(dbMiddleware)
+	repoInvites := postgres.NewOrgInvitesRepo(dbMiddleware)
 	repoOrgs := postgres.NewOrgRepo(dbMiddleware)
 
 	m := 5
 
-	var invites []auth.Invite
+	var invites []auth.OrgInvite
 
 	inviteeID, err := idProvider.ID()
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
@@ -361,7 +361,7 @@ func TestRetrieveByUserID(t *testing.T) {
 		invID, err := idProvider.ID()
 		assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-		invites = append(invites, auth.Invite{
+		invites = append(invites, auth.OrgInvite{
 			ID:           invID,
 			InviteeID:    inviteeID,
 			InviteeEmail: "",

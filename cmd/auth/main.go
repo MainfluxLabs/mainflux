@@ -311,7 +311,7 @@ func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersS
 	membsRepo := postgres.NewOrgMembershipsRepo(db)
 	membsRepo = tracing.OrgMembershipsRepositoryMiddleware(tracer, membsRepo)
 
-	invitesRepo := postgres.NewInvitesRepo(db)
+	invitesRepo := postgres.NewOrgInvitesRepo(db)
 	invitesRepo = tracing.InvitesRepositoryMiddleware(tracer, invitesRepo)
 
 	idProvider := uuid.New()

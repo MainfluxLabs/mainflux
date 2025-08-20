@@ -225,65 +225,110 @@ func (ms *metricsMiddleware) RetrieveRole(ctx context.Context, id string) (strin
 	return ms.svc.RetrieveRole(ctx, id)
 }
 
-func (ms *metricsMiddleware) InviteMember(ctx context.Context, token string, orgID string, invRedirectPath string, registerRedirectPath string, om auth.OrgMembership) (auth.Invite, error) {
+func (ms *metricsMiddleware) InviteOrgMember(ctx context.Context, token string, orgID string, invRedirectPath string, om auth.OrgMembership) (auth.OrgInvite, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "invite_members").Add(1)
-		ms.latency.With("method", "invite_members").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "invite_org_member").Add(1)
+		ms.latency.With("method", "invite_org_member").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.InviteMember(ctx, token, orgID, invRedirectPath, registerRedirectPath, om)
+	return ms.svc.InviteOrgMember(ctx, token, orgID, invRedirectPath, om)
 }
 
-func (ms *metricsMiddleware) RevokeInvite(ctx context.Context, token string, inviteID string) error {
+func (ms *metricsMiddleware) ViewOrgInvite(ctx context.Context, token string, inviteID string) (auth.OrgInvite, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "revoke_invite").Add(1)
-		ms.latency.With("method", "revoke_invite").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "view_org_invite").Add(1)
+		ms.latency.With("method", "view_org_invite").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.RevokeInvite(ctx, token, inviteID)
+	return ms.svc.ViewOrgInvite(ctx, token, inviteID)
 }
 
-func (ms *metricsMiddleware) InviteRespond(ctx context.Context, token string, inviteID string, accept bool) error {
+func (ms *metricsMiddleware) RevokeOrgInvite(ctx context.Context, token string, inviteID string) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "invite_respond").Add(1)
-		ms.latency.With("method", "invite_respond").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "revoke_org_invite").Add(1)
+		ms.latency.With("method", "revoke_org_invite").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.InviteRespond(ctx, token, inviteID, accept)
+	return ms.svc.RevokeOrgInvite(ctx, token, inviteID)
 }
 
-func (ms *metricsMiddleware) ListInvitesByUser(ctx context.Context, token string, userType string, userID string, pm apiutil.PageMetadata) (auth.InvitesPage, error) {
+func (ms *metricsMiddleware) RespondOrgInvite(ctx context.Context, token string, inviteID string, accept bool) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "list_invites_by_invitee_id").Add(1)
-		ms.latency.With("method", "list_invites_by_invitee_id").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "respond_org_invite").Add(1)
+		ms.latency.With("method", "respond_org_invite").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListInvitesByUser(ctx, token, userType, userID, pm)
+	return ms.svc.RespondOrgInvite(ctx, token, inviteID, accept)
 }
 
-func (ms *metricsMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth.Invite, orgName string, invRedirectPath string, registerRedirectPath string) error {
+func (ms *metricsMiddleware) ListOrgInvitesByUser(ctx context.Context, token string, userType string, userID string, pm apiutil.PageMetadata) (auth.OrgInvitesPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_org_invites_by_user").Add(1)
+		ms.latency.With("method", "list_org_invites_by_user").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListOrgInvitesByUser(ctx, token, userType, userID, pm)
+}
+
+func (ms *metricsMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth.OrgInvite, email string, orgName string, invRedirectPath string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "send_org_invite_email").Add(1)
 		ms.latency.With("method", "send_org_invite_email").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.SendOrgInviteEmail(ctx, invite, orgName, invRedirectPath, registerRedirectPath)
+	return ms.svc.SendOrgInviteEmail(ctx, invite, email, orgName, invRedirectPath)
 }
 
-func (ms *metricsMiddleware) ViewInvite(ctx context.Context, token string, inviteID string) (auth.Invite, error) {
+func (ms *metricsMiddleware) InvitePlatformMember(ctx context.Context, token string, redirectPath string, email string) (auth.PlatformInvite, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "view_invite").Add(1)
-		ms.latency.With("method", "view_invite").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "invite_platform_member").Add(1)
+		ms.latency.With("method", "invite_platform_member").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ViewInvite(ctx, token, inviteID)
+	return ms.svc.InvitePlatformMember(ctx, token, redirectPath, email)
 }
 
-func (ms *metricsMiddleware) FlipInactiveInvites(ctx context.Context, email string, inviteeID string) (uint32, error) {
+func (ms *metricsMiddleware) RevokePlatformInvite(ctx context.Context, token string, inviteID string) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "flip_inactive_invites").Add(1)
-		ms.latency.With("method", "flip_inactive_invites").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "revoke_platform_invite").Add(1)
+		ms.latency.With("method", "revoke_platform_invite").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.FlipInactiveInvites(ctx, email, inviteeID)
+	return ms.svc.RevokePlatformInvite(ctx, token, inviteID)
+}
+
+func (ms *metricsMiddleware) ViewPlatformInvite(ctx context.Context, token string, inviteID string) (auth.PlatformInvite, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "view_platform_invite").Add(1)
+		ms.latency.With("method", "view_platform_invite").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ViewPlatformInvite(ctx, token, inviteID)
+}
+
+func (ms *metricsMiddleware) ListPlatformInvites(ctx context.Context, token string, pm apiutil.PageMetadata) (auth.PlatformInvitesPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_platform_invites").Add(1)
+		ms.latency.With("method", "list_platform_invites").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListPlatformInvites(ctx, token, pm)
+}
+
+func (ms *metricsMiddleware) ValidatePlatformInvite(ctx context.Context, inviteID string, email string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "validate_platform_invite").Add(1)
+		ms.latency.With("method", "validate_platform_invite").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ValidatePlatformInvite(ctx, inviteID, email)
+}
+
+func (ms *metricsMiddleware) SendPlatformInviteEmail(ctx context.Context, invite auth.PlatformInvite, redirectPath string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "send_platform_invite_email").Add(1)
+		ms.latency.With("method", "send_platform_invite_email").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.SendPlatformInviteEmail(ctx, invite, redirectPath)
 }

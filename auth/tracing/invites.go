@@ -13,9 +13,15 @@ import (
 )
 
 const (
-	save         = "save"
-	remove       = "remove"
-	retrieveByID = "retrieve_by_id"
+	saveOrgInvite              = "save_org_invite"
+	retrieveOrgInviteByID      = "retrieve_org_invite_by_id"
+	removeOrgInvite            = "remove_org_invite"
+	retrieveOrgInvitesByUserID = "retrieve_org_invites_by_user_id"
+	updateOrgInviteState       = "update_org_invite_state"
+	savePlatformInvite         = "save_platform_invite"
+	retrievePlatformInviteByID = "retrieve_platform_invite_by_id"
+	retrievePlatformInvites    = "retrieve_platform_invites"
+	updatePlatformInviteState  = "update_platform_invite_state"
 )
 
 var _ auth.InvitesRepository = (*invitesRepositoryMiddleware)(nil)
@@ -32,42 +38,74 @@ func InvitesRepositoryMiddleware(tracer opentracing.Tracer, repo auth.InvitesRep
 	}
 }
 
-func (irm invitesRepositoryMiddleware) Save(ctx context.Context, invites ...auth.Invite) error {
-	span := createSpan(ctx, irm.tracer, save)
+func (irm invitesRepositoryMiddleware) SaveOrgInvite(ctx context.Context, invites ...auth.OrgInvite) error {
+	span := createSpan(ctx, irm.tracer, saveOrgInvite)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return irm.repo.Save(ctx, invites...)
+	return irm.repo.SaveOrgInvite(ctx, invites...)
 }
 
-func (irm invitesRepositoryMiddleware) RetrieveByID(ctx context.Context, inviteID string) (auth.Invite, error) {
-	span := createSpan(ctx, irm.tracer, retrieveByID)
+func (irm invitesRepositoryMiddleware) RetrieveOrgInviteByID(ctx context.Context, inviteID string) (auth.OrgInvite, error) {
+	span := createSpan(ctx, irm.tracer, retrieveOrgInviteByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return irm.repo.RetrieveByID(ctx, inviteID)
+	return irm.repo.RetrieveOrgInviteByID(ctx, inviteID)
 }
 
-func (irm invitesRepositoryMiddleware) Remove(ctx context.Context, inviteID string) error {
-	span := createSpan(ctx, irm.tracer, remove)
+func (irm invitesRepositoryMiddleware) RemoveOrgInvite(ctx context.Context, inviteID string) error {
+	span := createSpan(ctx, irm.tracer, removeOrgInvite)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return irm.repo.Remove(ctx, inviteID)
+	return irm.repo.RemoveOrgInvite(ctx, inviteID)
 }
 
-func (irm invitesRepositoryMiddleware) RetrieveByUserID(ctx context.Context, userType string, userID string, pm apiutil.PageMetadata) (auth.InvitesPage, error) {
-	span := createSpan(ctx, irm.tracer, remove)
+func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByUserID(ctx context.Context, userType string, userID string, pm apiutil.PageMetadata) (auth.OrgInvitesPage, error) {
+	span := createSpan(ctx, irm.tracer, retrieveOrgInvitesByUserID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return irm.repo.RetrieveByUserID(ctx, userType, userID, pm)
+	return irm.repo.RetrieveOrgInvitesByUserID(ctx, userType, userID, pm)
 }
 
-func (irm invitesRepositoryMiddleware) FlipInactiveInvites(ctx context.Context, email string, inviteeID string) (uint32, error) {
-	span := createSpan(ctx, irm.tracer, remove)
+func (irm invitesRepositoryMiddleware) UpdateOrgInviteState(ctx context.Context, inviteID string, state string) error {
+	span := createSpan(ctx, irm.tracer, updateOrgInviteState)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return irm.repo.FlipInactiveInvites(ctx, email, inviteeID)
+	return irm.repo.UpdateOrgInviteState(ctx, inviteID, state)
+}
+
+func (irm invitesRepositoryMiddleware) SavePlatformInvite(ctx context.Context, invites ...auth.PlatformInvite) error {
+	span := createSpan(ctx, irm.tracer, savePlatformInvite)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return irm.repo.SavePlatformInvite(ctx, invites...)
+}
+
+func (irm invitesRepositoryMiddleware) RetrievePlatformInviteByID(ctx context.Context, inviteID string) (auth.PlatformInvite, error) {
+	span := createSpan(ctx, irm.tracer, retrievePlatformInviteByID)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return irm.repo.RetrievePlatformInviteByID(ctx, inviteID)
+}
+
+func (irm invitesRepositoryMiddleware) RetrievePlatformInvites(ctx context.Context, pm apiutil.PageMetadata) (auth.PlatformInvitesPage, error) {
+	span := createSpan(ctx, irm.tracer, retrievePlatformInvites)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return irm.repo.RetrievePlatformInvites(ctx, pm)
+}
+
+func (irm invitesRepositoryMiddleware) UpdatePlatformInviteState(ctx context.Context, inviteID string, state string) error {
+	span := createSpan(ctx, irm.tracer, updatePlatformInviteState)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return irm.repo.UpdatePlatformInviteState(ctx, inviteID, state)
 }

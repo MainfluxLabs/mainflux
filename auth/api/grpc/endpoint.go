@@ -130,19 +130,19 @@ func retrieveRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func flipInactiveInvitesEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(flipInactiveInvitesReq)
+// func flipInactiveInvitesEndpoint(svc auth.Service) endpoint.Endpoint {
+// 	return func(ctx context.Context, request any) (any, error) {
+// 		req := request.(flipInactiveInvitesReq)
 
-		if err := req.validate(); err != nil {
-			return countRes{}, err
-		}
+// 		if err := req.validate(); err != nil {
+// 			return countRes{}, err
+// 		}
 
-		cnt, err := svc.FlipInactiveInvites(ctx, req.email, req.userID)
-		if err != nil {
-			return countRes{}, err
-		}
+// 		cnt, err := svc.FlipInactiveInvites(ctx, req.email, req.userID)
+// 		if err != nil {
+// 			return countRes{}, err
+// 		}
 
-		return countRes{value: cnt}, nil
-	}
-}
+// 		return countRes{value: cnt}, nil
+// 	}
+// }

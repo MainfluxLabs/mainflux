@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	subjectOrgInvite = "You've been invited to join an Organization"
+	subjectOrgInvite      = "You've been invited to join an Organization"
+	subjectPlatformInvite = "You've been invited to join MainfluxLabs"
 )
 
 type emailer struct {
@@ -28,24 +29,32 @@ func New(host string, config *email.Config) (auth.Emailer, error) {
 	}, nil
 }
 
-func (e *emailer) SendOrgInvite(To []string, inv auth.Invite, orgName string, invRedirectPath string, registerRedirectPath string) error {
-	var redirectURL, instruction string
-	if inv.InviteeID != "" {
-		redirectURL = fmt.Sprintf("%s%s/%s", e.host, invRedirectPath, inv.ID)
-		instruction = "Navigate to the following URL to view the invitation:"
-	} else {
-		redirectURL = fmt.Sprintf("%s/%s", e.host, registerRedirectPath)
-		instruction = "Navigate to the following URL to register a MainfluxLabs user account:"
-	}
+func (e *emailer) SendOrgInvite(To []string, inv auth.OrgInvite, orgName string, invRedirectPath string) error {
+	redirectURL := fmt.Sprintf("%s%s/%s", e.host, invRedirectPath, inv.ID)
 
 	emailContent := fmt.Sprintf(`
 		Hello,
 
 		You've been invited to join the %s Organization with role: %s.
 
-		%s:
+		Navigate to the following URL to view the invitation:
 		%s
-	`, orgName, inv.InviteeRole, instruction, redirectURL)
+	`, orgName, inv.InviteeRole, redirectURL)
 
 	return e.agent.Send(To, "", subjectOrgInvite, "", emailContent, "")
+}
+
+func (e *emailer) SendPlatformInvite(To []string, inv auth.PlatformInvite, redirectPath string) error {
+	redirectURL := fmt.Sprintf("%s%s/%s", e.host, redirectPath, inv.ID)
+
+	emailContent := fmt.Sprintf(`
+		Hello,
+
+		You've been invited to join the MainfluxLabs platform!
+
+		Navigate to the following URL to create an account:
+		%s
+	`, redirectURL)
+
+	return e.agent.Send(To, "", subjectPlatformInvite, "", emailContent, "")
 }

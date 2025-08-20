@@ -7,15 +7,14 @@ import (
 
 const maxLimitSize = 200
 
-type createInviteReq struct {
-	token                string
-	orgID                string
-	OrgMember            auth.OrgMembership `json:"org_member,omitempty"`
-	RedirectPathRegister string             `json:"redirect_path_register,omitempty"`
-	RedirectPathInvite   string             `json:"redirect_path_invite,omitempty"`
+type createOrgInviteReq struct {
+	token        string
+	orgID        string
+	OrgMember    auth.OrgMembership `json:"org_member,omitempty"`
+	RedirectPath string             `json:"redirect_path,omitempty"`
 }
 
-func (req createInviteReq) validate() error {
+func (req createOrgInviteReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -24,7 +23,7 @@ func (req createInviteReq) validate() error {
 		return apiutil.ErrMissingOrgID
 	}
 
-	if req.RedirectPathRegister == "" || req.RedirectPathInvite == "" {
+	if req.RedirectPath == "" {
 		return apiutil.ErrMissingRedirectPath
 	}
 
@@ -39,12 +38,12 @@ func (req createInviteReq) validate() error {
 	return nil
 }
 
-type inviteRevokeReq struct {
+type orgInviteRevokeReq struct {
 	token    string
 	inviteID string
 }
 
-func (req inviteRevokeReq) validate() error {
+func (req orgInviteRevokeReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -56,13 +55,13 @@ func (req inviteRevokeReq) validate() error {
 	return nil
 }
 
-type inviteResponseReq struct {
+type orgInviteResponseReq struct {
 	token          string
 	inviteID       string
 	inviteAccepted bool
 }
 
-func (req inviteResponseReq) validate() error {
+func (req orgInviteResponseReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -74,13 +73,13 @@ func (req inviteResponseReq) validate() error {
 	return nil
 }
 
-type listInvitesByUserReq struct {
+type listOrgInvitesByUserReq struct {
 	token  string
 	userID string
 	pm     apiutil.PageMetadata
 }
 
-func (req listInvitesByUserReq) validate() error {
+func (req listOrgInvitesByUserReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -96,12 +95,12 @@ func (req listInvitesByUserReq) validate() error {
 	return nil
 }
 
-type viewInviteReq struct {
+type viewOrgInviteReq struct {
 	token    string
 	inviteID string
 }
 
-func (req viewInviteReq) validate() error {
+func (req viewOrgInviteReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

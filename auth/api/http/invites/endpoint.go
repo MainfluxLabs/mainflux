@@ -7,99 +7,99 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-func createInviteEndpoint(svc auth.Service) endpoint.Endpoint {
+func createOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(createInviteReq)
+		req := request.(createOrgInviteReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if _, err := svc.InviteMember(ctx, req.token, req.orgID, req.RedirectPathInvite, req.RedirectPathRegister, req.OrgMember); err != nil {
+		if _, err := svc.InviteOrgMember(ctx, req.token, req.orgID, req.RedirectPath, req.OrgMember); err != nil {
 			return nil, err
 		}
 
-		return createInviteRes{}, nil
+		return createOrgInviteRes{}, nil
 	}
 }
 
-func viewInviteEndpoint(svc auth.Service) endpoint.Endpoint {
+func viewOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(viewInviteReq)
+		req := request.(viewOrgInviteReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		invite, err := svc.ViewInvite(ctx, req.token, req.inviteID)
+		invite, err := svc.ViewOrgInvite(ctx, req.token, req.inviteID)
 		if err != nil {
 			return nil, err
 		}
 
-		return inviteRes{
-			ID:           invite.ID,
-			InviteeID:    invite.InviteeID,
-			InviteeEmail: invite.InviteeEmail,
-			OrgID:        invite.OrgID,
-			InviterID:    invite.InviterID,
-			InviteeRole:  invite.InviteeRole,
-			CreatedAt:    invite.CreatedAt,
-			ExpiresAt:    invite.ExpiresAt,
+		return orgInviteRes{
+			ID:          invite.ID,
+			InviteeID:   invite.InviteeID,
+			OrgID:       invite.OrgID,
+			InviterID:   invite.InviterID,
+			InviteeRole: invite.InviteeRole,
+			CreatedAt:   invite.CreatedAt,
+			ExpiresAt:   invite.ExpiresAt,
+			State:       invite.State,
 		}, nil
 	}
 }
 
-func revokeInviteEndpoint(svc auth.Service) endpoint.Endpoint {
+func revokeOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(inviteRevokeReq)
+		req := request.(orgInviteRevokeReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.RevokeInvite(ctx, req.token, req.inviteID); err != nil {
+		if err := svc.RevokeOrgInvite(ctx, req.token, req.inviteID); err != nil {
 			return nil, err
 		}
 
-		return revokeInviteRes{}, nil
+		return revokeOrgInviteRes{}, nil
 	}
 }
 
-func respondInviteEndpoint(svc auth.Service) endpoint.Endpoint {
+func respondOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(inviteResponseReq)
+		req := request.(orgInviteResponseReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.InviteRespond(ctx, req.token, req.inviteID, req.inviteAccepted); err != nil {
+		if err := svc.RespondOrgInvite(ctx, req.token, req.inviteID, req.inviteAccepted); err != nil {
 			return nil, err
 		}
 
-		return respondInviteRes{accept: req.inviteAccepted}, nil
+		return respondOrgInviteRes{accept: req.inviteAccepted}, nil
 	}
 }
 
-func listInvitesByUserEndpoint(svc auth.Service, userType string) endpoint.Endpoint {
+func listOrgInvitesByUserEndpoint(svc auth.Service, userType string) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(listInvitesByUserReq)
+		req := request.(listOrgInvitesByUserReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		page, err := svc.ListInvitesByUser(ctx, req.token, userType, req.userID, req.pm)
+		page, err := svc.ListOrgInvitesByUser(ctx, req.token, userType, req.userID, req.pm)
 		if err != nil {
 			return nil, err
 		}
 
-		response := invitePageRes{
+		response := orgInvitePageRes{
 			pageRes: pageRes{
 				Limit:  page.Limit,
 				Offset: page.Offset,
 				Total:  page.Total,
 			},
-			Invites: []inviteRes{},
+			Invites: []orgInviteRes{},
 		}
 
 		for _, inv := range page.Invites {
-			resInv := inviteRes{
+			resInv := orgInviteRes{
 				ID:          inv.ID,
 				InviteeID:   inv.InviteeID,
 				InviteeRole: inv.InviteeRole,
@@ -107,6 +107,7 @@ func listInvitesByUserEndpoint(svc auth.Service, userType string) endpoint.Endpo
 				OrgID:       inv.OrgID,
 				CreatedAt:   inv.CreatedAt,
 				ExpiresAt:   inv.ExpiresAt,
+				State:       inv.State,
 			}
 
 			response.Invites = append(response.Invites, resInv)

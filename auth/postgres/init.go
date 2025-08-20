@@ -99,23 +99,41 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				Id: "auth_3",
 				Up: []string{
-					`CREATE TABLE IF NOT EXISTS invites (
-						id UUID NOT NULL,
-						invitee_id UUID,
-						invitee_email VARCHAR,
-						inviter_id UUID NOT NULL,
-						org_id UUID NOT NULL,
+					`
+					CREATE TABLE IF NOT EXISTS invites_org (
+						id           UUID NOT NULL,
+						invitee_id   UUID NOT NULL,         
+						inviter_id   UUID NOT NULL,
+						org_id       UUID NOT NULL,
 						invitee_role VARCHAR(12) NOT NULL,
-						created_at TIMESTAMPTZ,
-						expires_at TIMESTAMPTZ,
-						FOREIGN KEY (org_id) REFERENCES orgs (id) ON DELETE CASCADE,
-						PRIMARY KEY (id),
-						UNIQUE (invitee_id, inviter_id, org_id),
-						UNIQUE (invitee_email, inviter_id, org_id)
-					)`,
+						created_at   TIMESTAMPTZ,
+						expires_at   TIMESTAMPTZ,
+						state        VARCHAR DEFAULT 'pending' NOT NULL,      
+						FOREIGN KEY  (org_id) REFERENCES orgs (id) ON DELETE CASCADE,
+						PRIMARY KEY  (id)
+					)
+					`,
+					`
+					CREATE TABLE IF NOT EXISTS invites_platform (
+						id            UUID NOT NULL,
+						invitee_email VARCHAR NOT NULL,
+						created_at    TIMESTAMPTZ,
+						expires_at    TIMESTAMPTZ,
+						state         VARCHAR DEFAULT 'pending' NOT NULL
+ 					)
+					`,
+					`
+					CREATE UNIQUE INDEX ux_invites_org_invitee_id_org_id on invites_org (invitee_id, org_id) WHERE state='pending'
+					`,
+					`
+					CREATE UNIQUE INDEX ux_invites_platform_invitee_email on invites_platform (invitee_email) WHERE state='pending'
+					`,
 				},
 				Down: []string{
-					`DROP TABLE IF EXISTS invites`,
+					`DROP TABLE IF EXISTS invites_org`,
+					`DROP TABLE IF EXISTS invites_platform`,
+					`DROP INDEX IF EXISTS ux_invites_org_invitee_id_org_id`,
+					`DROP INDEX IF EXISTS ux_invites_platform_invitee_email`,
 				},
 			},
 		},

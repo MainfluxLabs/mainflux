@@ -1381,7 +1381,7 @@ func TestInviteRespond(t *testing.T) {
 	testOrg, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	testInvites := []auth.Invite{}
+	testInvites := []auth.OrgInvite{}
 	for i := range 3 {
 		inv, err := svc.InviteMember(
 			context.Background(),

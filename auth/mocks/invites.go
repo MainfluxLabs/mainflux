@@ -14,85 +14,79 @@ import (
 var _ auth.InvitesRepository = (*invitesRepositoryMock)(nil)
 
 type invitesRepositoryMock struct {
-	mu      sync.Mutex
-	invites map[string]auth.Invite
+	mu              sync.Mutex
+	orgInvites      map[string]auth.OrgInvite
+	platformInvites map[string]auth.PlatformInvite
 }
 
 func NewInvitesRepository() auth.InvitesRepository {
 	return &invitesRepositoryMock{
-		invites: make(map[string]auth.Invite),
+		orgInvites:      make(map[string]auth.OrgInvite),
+		platformInvites: make(map[string]auth.PlatformInvite),
 	}
 }
 
-func (irm *invitesRepositoryMock) Save(ctx context.Context, invites ...auth.Invite) error {
+func (irm *invitesRepositoryMock) SaveOrgInvite(ctx context.Context, invites ...auth.OrgInvite) error {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 
 	for _, invite := range invites {
-		if _, ok := irm.invites[invite.ID]; ok {
+		if _, ok := irm.orgInvites[invite.ID]; ok {
 			return errors.ErrConflict
 		}
 
-		for _, iInv := range irm.invites {
-			if iInv.InviteeID != "" &&
-				iInv.InviteeID == invite.InviteeID &&
+		for _, iInv := range irm.orgInvites {
+			if iInv.InviteeID == invite.InviteeID &&
 				iInv.OrgID == invite.OrgID &&
 				iInv.InviterID == invite.InviterID &&
-				iInv.ExpiresAt.After(time.Now()) {
-				return errors.ErrConflict
-			}
-
-			if iInv.InviteeEmail != "" &&
-				iInv.InviteeEmail == invite.InviteeEmail &&
-				iInv.OrgID == invite.OrgID &&
-				iInv.InviterID == invite.InviterID &&
+				iInv.State == "pending" &&
 				iInv.ExpiresAt.After(time.Now()) {
 				return errors.ErrConflict
 			}
 		}
 
-		irm.invites[invite.ID] = invite
+		irm.orgInvites[invite.ID] = invite
 	}
 
 	return nil
 }
 
-func (irm *invitesRepositoryMock) RetrieveByID(ctx context.Context, inviteID string) (auth.Invite, error) {
+func (irm *invitesRepositoryMock) RetrieveOrgInviteByID(ctx context.Context, inviteID string) (auth.OrgInvite, error) {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 
-	if _, ok := irm.invites[inviteID]; !ok {
-		return auth.Invite{}, errors.ErrNotFound
+	if _, ok := irm.orgInvites[inviteID]; !ok {
+		return auth.OrgInvite{}, errors.ErrNotFound
 	}
 
-	return irm.invites[inviteID], nil
+	return irm.orgInvites[inviteID], nil
 }
 
-func (irm *invitesRepositoryMock) Remove(ctx context.Context, inviteID string) error {
+func (irm *invitesRepositoryMock) RemoveOrgInvite(ctx context.Context, inviteID string) error {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 
-	if _, ok := irm.invites[inviteID]; !ok {
+	if _, ok := irm.orgInvites[inviteID]; !ok {
 		return errors.ErrNotFound
 	}
 
-	delete(irm.invites, inviteID)
+	delete(irm.orgInvites, inviteID)
 
 	return nil
 }
 
-func (irm *invitesRepositoryMock) RetrieveByUserID(ctx context.Context, userType string, userID string, pm apiutil.PageMetadata) (auth.InvitesPage, error) {
+func (irm *invitesRepositoryMock) RetrieveOrgInvitesByUserID(ctx context.Context, userType string, userID string, pm apiutil.PageMetadata) (auth.OrgInvitesPage, error) {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 
 	keys := make([]string, 0)
-	for k := range irm.invites {
+	for k := range irm.orgInvites {
 		keys = append(keys, k)
 	}
 
 	sort.Strings(keys)
 
-	invites := make([]auth.Invite, 0)
+	invites := make([]auth.OrgInvite, 0)
 	idxEnd := pm.Offset + pm.Limit
 	if idxEnd > uint64(len(keys)) {
 		idxEnd = uint64(len(keys))
@@ -101,42 +95,117 @@ func (irm *invitesRepositoryMock) RetrieveByUserID(ctx context.Context, userType
 	for _, key := range keys[pm.Offset:idxEnd] {
 		switch userType {
 		case auth.UserTypeInvitee:
-			if irm.invites[key].InviteeID == userID {
-				invites = append(invites, irm.invites[key])
+			if irm.orgInvites[key].InviteeID == userID {
+				invites = append(invites, irm.orgInvites[key])
 			}
 		case auth.UserTypeInviter:
-			if irm.invites[key].InviterID == userID {
-				invites = append(invites, irm.invites[key])
+			if irm.orgInvites[key].InviterID == userID {
+				invites = append(invites, irm.orgInvites[key])
 			}
 		}
 	}
 
-	return auth.InvitesPage{
+	return auth.OrgInvitesPage{
 		Invites: invites,
 		PageMetadata: apiutil.PageMetadata{
-			Total:  uint64(len(irm.invites)),
+			Total:  uint64(len(irm.orgInvites)),
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
 		},
 	}, nil
 }
 
-func (irm *invitesRepositoryMock) FlipInactiveInvites(ctx context.Context, email string, inviteeID string) (uint32, error) {
+func (irm *invitesRepositoryMock) UpdateOrgInviteState(ctx context.Context, inviteID string, state string) error {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 
-	cnt := uint32(0)
-
-	for inviteID, inv := range irm.invites {
-		if inv.InviteeEmail == email {
-			inv.InviteeID = inviteeID
-			inv.InviteeEmail = ""
-
-			irm.invites[inviteID] = inv
-
-			cnt += 1
-		}
+	if _, ok := irm.orgInvites[inviteID]; !ok {
+		return errors.ErrNotFound
 	}
 
-	return cnt, nil
+	inv := irm.orgInvites[inviteID]
+	inv.State = state
+
+	irm.orgInvites[inviteID] = inv
+	return nil
+}
+
+func (irm *invitesRepositoryMock) SavePlatformInvite(ctx context.Context, invites ...auth.PlatformInvite) error {
+	irm.mu.Lock()
+	defer irm.mu.Unlock()
+
+	for _, invite := range invites {
+		if _, ok := irm.platformInvites[invite.ID]; ok {
+			return errors.ErrConflict
+		}
+
+		for _, iInv := range irm.platformInvites {
+			if iInv.InviteeEmail == invite.InviteeEmail &&
+				iInv.State == "pending" &&
+				iInv.ExpiresAt.After(time.Now()) {
+				return errors.ErrConflict
+			}
+		}
+
+		irm.platformInvites[invite.ID] = invite
+	}
+
+	return nil
+}
+
+func (irm *invitesRepositoryMock) RetrievePlatformInviteByID(ctx context.Context, inviteID string) (auth.PlatformInvite, error) {
+	irm.mu.Lock()
+	defer irm.mu.Unlock()
+
+	if _, ok := irm.platformInvites[inviteID]; !ok {
+		return auth.PlatformInvite{}, errors.ErrNotFound
+	}
+
+	return irm.platformInvites[inviteID], nil
+}
+
+func (irm *invitesRepositoryMock) RetrievePlatformInvites(ctx context.Context, pm apiutil.PageMetadata) (auth.PlatformInvitesPage, error) {
+	irm.mu.Lock()
+	defer irm.mu.Unlock()
+
+	keys := make([]string, 0)
+	for k := range irm.platformInvites {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	invites := make([]auth.PlatformInvite, 0)
+	idxEnd := pm.Offset + pm.Limit
+	if idxEnd > uint64(len(keys)) {
+		idxEnd = uint64(len(keys))
+	}
+
+	for _, key := range keys[pm.Offset:idxEnd] {
+		invites = append(invites, irm.platformInvites[key])
+	}
+
+	return auth.PlatformInvitesPage{
+		Invites: invites,
+		PageMetadata: apiutil.PageMetadata{
+			Total:  uint64(len(irm.platformInvites)),
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+		},
+	}, nil
+}
+
+func (irm *invitesRepositoryMock) UpdatePlatformInviteState(ctx context.Context, inviteID string, state string) error {
+	irm.mu.Lock()
+	defer irm.mu.Unlock()
+
+	if _, ok := irm.platformInvites[inviteID]; !ok {
+		return errors.ErrNotFound
+	}
+
+	inv := irm.platformInvites[inviteID]
+	inv.State = state
+
+	irm.platformInvites[inviteID] = inv
+	return nil
 }

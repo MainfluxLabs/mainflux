@@ -13,10 +13,9 @@ func NewEmailer() auth.Emailer {
 	return &emailerMock{}
 }
 
-func (e *emailerMock) SendPasswordReset([]string, string, string) error {
+func (e *emailerMock) SendOrgInvite(To []string, inv auth.OrgInvite, orgName string, invRedirectPath string) error {
 	return nil
 }
-
-func (e *emailerMock) SendOrgInvite(To []string, inv auth.Invite, orgName string, invRedirectPath string, registerRedirectPath string) error {
+func (e *emailerMock) SendPlatformInvite(To []string, inv auth.PlatformInvite, redirectPath string) error {
 	return nil
 }

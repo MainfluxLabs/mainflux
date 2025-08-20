@@ -63,11 +63,11 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			decodeRetrieveRoleRequest,
 			encodeRetrieveRoleResponse,
 		),
-		flipInactiveInvites: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "flip_inactive_invites")(flipInactiveInvitesEndpoint(svc)),
-			decodeFlipInactiveInvitesRequest,
-			encodeCountResponse,
-		),
+		// flipInactiveInvites: kitgrpc.NewServer(
+		// 	kitot.TraceServer(tracer, "flip_inactive_invites")(flipInactiveInvitesEndpoint(svc)),
+		// 	decodeFlipInactiveInvitesRequest,
+		// 	encodeCountResponse,
+		// ),
 	}
 }
 

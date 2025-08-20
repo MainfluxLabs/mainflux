@@ -369,7 +369,7 @@ func TestRespondInvite(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	memberships := []auth.OrgMembership{viewer, editor, admin}
-	invites := []auth.Invite{}
+	invites := []auth.OrgInvite{}
 	for _, membership := range memberships {
 		inv, err := svc.InviteMember(context.Background(), ownerToken, org.ID, redirectPathInvite, redirectPathRegister, membership)
 		assert.Nil(t, err, fmt.Sprintf("Inviting members expected to succeed: %s", err))

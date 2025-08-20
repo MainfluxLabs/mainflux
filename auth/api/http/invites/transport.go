@@ -28,43 +28,43 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	}
 
 	mux.Post("/orgs/:id/invites", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_invite")(createInviteEndpoint(svc)),
-		decodeCreateInviteRequest,
+		kitot.TraceServer(tracer, "create_invite")(createOrgInviteEndpoint(svc)),
+		decodeCreateOrgInviteRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/invites/:inviteID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_invite")(viewInviteEndpoint(svc)),
-		decodeViewInviteRequest,
+		kitot.TraceServer(tracer, "view_invite")(viewOrgInviteEndpoint(svc)),
+		decodeViewOrgInviteRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/invites/:inviteID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "revoke_invite")(revokeInviteEndpoint(svc)),
-		decodeInviteRevokeRequest,
+		kitot.TraceServer(tracer, "revoke_invite")(revokeOrgInviteEndpoint(svc)),
+		decodeOrgInviteRevokeRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/invites/:inviteID/:responseVerb", kithttp.NewServer(
-		kitot.TraceServer(tracer, "respond_invite")(respondInviteEndpoint(svc)),
-		decodeInviteResponseRequest,
+		kitot.TraceServer(tracer, "respond_invite")(respondOrgInviteEndpoint(svc)),
+		decodeOrgInviteResponseRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/users/:userID/invites", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_invites_by_invitee")(listInvitesByUserEndpoint(svc, auth.UserTypeInvitee)),
-		decodeListInvitesByUserRequest,
+		kitot.TraceServer(tracer, "list_invites_by_invitee")(listOrgInvitesByUserEndpoint(svc, auth.UserTypeInvitee)),
+		decodeListOrgInvitesByUserRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/users/:userID/invites/sent", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_invites_by_inviter")(listInvitesByUserEndpoint(svc, auth.UserTypeInviter)),
-		decodeListInvitesByUserRequest,
+		kitot.TraceServer(tracer, "list_invites_by_inviter")(listOrgInvitesByUserEndpoint(svc, auth.UserTypeInviter)),
+		decodeListOrgInvitesByUserRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -72,12 +72,12 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	return mux
 }
 
-func decodeCreateInviteRequest(_ context.Context, r *http.Request) (any, error) {
+func decodeCreateOrgInviteRequest(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := createInviteReq{
+	req := createOrgInviteReq{
 		token: apiutil.ExtractBearerToken(r),
 		orgID: bone.GetValue(r, apiutil.IDKey),
 	}
@@ -97,8 +97,8 @@ func decodeCreateInviteRequest(_ context.Context, r *http.Request) (any, error) 
 	return req, nil
 }
 
-func decodeInviteRevokeRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := inviteRevokeReq{
+func decodeOrgInviteRevokeRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := orgInviteRevokeReq{
 		token:    apiutil.ExtractBearerToken(r),
 		inviteID: bone.GetValue(r, inviteIDKey),
 	}
@@ -106,8 +106,8 @@ func decodeInviteRevokeRequest(_ context.Context, r *http.Request) (interface{},
 	return req, nil
 }
 
-func decodeInviteResponseRequest(_ context.Context, r *http.Request) (any, error) {
-	req := inviteResponseReq{
+func decodeOrgInviteResponseRequest(_ context.Context, r *http.Request) (any, error) {
+	req := orgInviteResponseReq{
 		token:    apiutil.ExtractBearerToken(r),
 		inviteID: bone.GetValue(r, inviteIDKey),
 	}
@@ -119,14 +119,14 @@ func decodeInviteResponseRequest(_ context.Context, r *http.Request) (any, error
 	case "decline":
 		req.inviteAccepted = false
 	default:
-		return inviteResponseReq{}, apiutil.ErrInvalidInviteResponse
+		return orgInviteResponseReq{}, apiutil.ErrInvalidInviteResponse
 	}
 
 	return req, nil
 }
 
-func decodeListInvitesByUserRequest(_ context.Context, r *http.Request) (any, error) {
-	req := listInvitesByUserReq{
+func decodeListOrgInvitesByUserRequest(_ context.Context, r *http.Request) (any, error) {
+	req := listOrgInvitesByUserReq{
 		token:  apiutil.ExtractBearerToken(r),
 		userID: bone.GetValue(r, userIDKey),
 	}
@@ -141,8 +141,8 @@ func decodeListInvitesByUserRequest(_ context.Context, r *http.Request) (any, er
 	return req, nil
 }
 
-func decodeViewInviteRequest(_ context.Context, r *http.Request) (any, error) {
-	req := viewInviteReq{
+func decodeViewOrgInviteRequest(_ context.Context, r *http.Request) (any, error) {
+	req := viewOrgInviteReq{
 		token:    apiutil.ExtractBearerToken(r),
 		inviteID: bone.GetValue(r, inviteIDKey),
 	}
