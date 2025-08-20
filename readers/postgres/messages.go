@@ -290,35 +290,35 @@ func (tr postgresRepository) fmtCondition(rpm readers.PageMetadata, table string
 	timeColumn := tr.getTimeColumn(table)
 
 	for name := range query {
-		var clause string
 		switch name {
 		case "subtopic", "publisher", "protocol":
-			clause = fmt.Sprintf("%s = :%s", name, name)
+			condition = fmt.Sprintf(`%s %s %s = :%s`, condition, op, name, name)
+			op = "AND"
 		case "name":
-			clause = "name = :name"
+			condition = fmt.Sprintf(`%s %s name = :name`, condition, op)
+			op = "AND"
 		case "v":
 			comparator := readers.ParseValueComparator(query)
-			clause = fmt.Sprintf("value %s :value", comparator)
+			condition = fmt.Sprintf(`%s %s value %s :value`, condition, op, comparator)
+			op = "AND"
 		case "vb":
-			clause = "bool_value = :bool_value"
+			condition = fmt.Sprintf(`%s %s bool_value = :bool_value`, condition, op)
+			op = "AND"
 		case "vs":
-			clause = "string_value = :string_value"
+			condition = fmt.Sprintf(`%s %s string_value = :string_value`, condition, op)
+			op = "AND"
 		case "vd":
-			clause = "data_value = :data_value"
+			condition = fmt.Sprintf(`%s %s data_value = :data_value`, condition, op)
+			op = "AND"
 		case "from":
-			clause = fmt.Sprintf("%s >= :from", timeColumn)
+			condition = fmt.Sprintf(`%s %s %s >= :from`, condition, op, timeColumn)
+			op = "AND"
 		case "to":
-			clause = fmt.Sprintf("%s <= :to", timeColumn)
-		default:
-			continue
+			condition = fmt.Sprintf(`%s %s %s <= :to`, condition, op, timeColumn)
+			op = "AND"
 		}
-
-		condition = fmt.Sprintf("%s %s %s", condition, op, clause)
-		op = "AND"
 	}
-
 	return condition
-
 }
 
 func (tr postgresRepository) getFormatAndOrder(rpm readers.PageMetadata) (format, order string) {
