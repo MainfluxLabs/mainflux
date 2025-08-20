@@ -116,3 +116,43 @@ func listOrgInvitesByUserEndpoint(svc auth.Service, userType string) endpoint.En
 		return response, nil
 	}
 }
+
+func listOrgInvitesByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(listOrgInvitesByOrgReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		page, err := svc.ListOrgInvitesByOrgID(ctx, req.token, req.orgID, req.pm)
+		if err != nil {
+			return nil, err
+		}
+
+		response := orgInvitePageRes{
+			pageRes: pageRes{
+				Limit:  page.Limit,
+				Offset: page.Offset,
+				Total:  page.Total,
+			},
+			Invites: []orgInviteRes{},
+		}
+
+		for _, inv := range page.Invites {
+			resInv := orgInviteRes{
+				ID:          inv.ID,
+				InviteeID:   inv.InviteeID,
+				InviteeRole: inv.InviteeRole,
+				InviterID:   inv.InviterID,
+				OrgID:       inv.OrgID,
+				CreatedAt:   inv.CreatedAt,
+				ExpiresAt:   inv.ExpiresAt,
+				State:       inv.State,
+			}
+
+			response.Invites = append(response.Invites, resInv)
+		}
+
+		return response, nil
+	}
+}

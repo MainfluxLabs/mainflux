@@ -270,6 +270,15 @@ func (ms *metricsMiddleware) ListOrgInvitesByUser(ctx context.Context, token str
 	return ms.svc.ListOrgInvitesByUser(ctx, token, userType, userID, pm)
 }
 
+func (ms *metricsMiddleware) ListOrgInvitesByOrgID(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (auth.OrgInvitesPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_org_invites_by_org_id").Add(1)
+		ms.latency.With("method", "list_org_invites_by_org_id").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListOrgInvitesByOrgID(ctx, token, orgID, pm)
+}
+
 func (ms *metricsMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth.OrgInvite, email string, orgName string, invRedirectPath string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "send_org_invite_email").Add(1)

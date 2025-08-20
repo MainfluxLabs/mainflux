@@ -161,6 +161,60 @@ func (ir invitesRepository) UpdateOrgInviteState(ctx context.Context, inviteID s
 	return nil
 }
 
+func (ir invitesRepository) RetrieveOrgInvitesByOrgID(ctx context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgInvitesPage, error) {
+	query := `
+		SELECT id, invitee_id, inviter_id, org_id, invitee_role, created_at, expires_at, state
+		FROM invites_org
+		WHERE org_id = :orgID
+	`
+
+	queryCount := `SELECT COUNT(*) FROM invites_org WHERE org_id = :orgID`
+
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	query = fmt.Sprintf("%s %s", query, olq)
+
+	params := map[string]any{
+		"orgID":  orgID,
+		"limit":  pm.Limit,
+		"offset": pm.Offset,
+	}
+
+	rows, err := ir.db.NamedQueryContext(ctx, query, params)
+	if err != nil {
+		return auth.OrgInvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	var invites []auth.OrgInvite
+
+	for rows.Next() {
+		dbInv := dbOrgInvite{}
+
+		if err := rows.StructScan(&dbInv); err != nil {
+			return auth.OrgInvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		}
+
+		inv := toOrgInvite(dbInv)
+		invites = append(invites, inv)
+	}
+
+	total, err := dbutil.Total(ctx, ir.db, queryCount, params)
+	if err != nil {
+		return auth.OrgInvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	page := auth.OrgInvitesPage{
+		Invites: invites,
+		PageMetadata: apiutil.PageMetadata{
+			Total:  total,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+		},
+	}
+
+	return page, nil
+}
+
 func (ir invitesRepository) RetrieveOrgInvitesByUserID(ctx context.Context, userType string, userID string, pm apiutil.PageMetadata) (auth.OrgInvitesPage, error) {
 	query := `
 		SELECT id, invitee_id, inviter_id, org_id, invitee_role, created_at, expires_at, state

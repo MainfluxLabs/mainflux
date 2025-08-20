@@ -75,6 +75,39 @@ func (irm *invitesRepositoryMock) RemoveOrgInvite(ctx context.Context, inviteID 
 	return nil
 }
 
+func (irm *invitesRepositoryMock) RetrieveOrgInvitesByOrgID(ctx context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgInvitesPage, error) {
+	irm.mu.Lock()
+	defer irm.mu.Unlock()
+
+	keys := make([]string, 0)
+	for k := range irm.orgInvites {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	invites := make([]auth.OrgInvite, 0)
+	idxEnd := pm.Offset + pm.Limit
+	if idxEnd > uint64(len(keys)) {
+		idxEnd = uint64(len(keys))
+	}
+
+	for _, key := range keys[pm.Offset:idxEnd] {
+		if irm.orgInvites[key].OrgID == orgID {
+			invites = append(invites, irm.orgInvites[key])
+		}
+	}
+
+	return auth.OrgInvitesPage{
+		Invites: invites,
+		PageMetadata: apiutil.PageMetadata{
+			Total:  uint64(len(irm.orgInvites)),
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+		},
+	}, nil
+}
+
 func (irm *invitesRepositoryMock) RetrieveOrgInvitesByUserID(ctx context.Context, userType string, userID string, pm apiutil.PageMetadata) (auth.OrgInvitesPage, error) {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()

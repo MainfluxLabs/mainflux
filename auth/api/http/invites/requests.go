@@ -111,3 +111,25 @@ func (req viewOrgInviteReq) validate() error {
 
 	return nil
 }
+
+type listOrgInvitesByOrgReq struct {
+	token string
+	orgID string
+	pm    apiutil.PageMetadata
+}
+
+func (req listOrgInvitesByOrgReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.orgID == "" {
+		return apiutil.ErrMissingOrgID
+	}
+
+	if err := apiutil.ValidatePageMetadata(req.pm, maxLimitSize, 254); err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -34,6 +34,13 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
+	mux.Get("/orgs/:id/invites", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_org_invites_by_org")(listOrgInvitesByOrgEndpoint(svc)),
+		decodeListOrgInvitesByOrgRequest,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Get("/invites/:inviteID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_org_invite")(viewOrgInviteEndpoint(svc)),
 		decodeViewOrgInviteRequest,
@@ -146,6 +153,22 @@ func decodeViewOrgInviteRequest(_ context.Context, r *http.Request) (any, error)
 		token:    apiutil.ExtractBearerToken(r),
 		inviteID: bone.GetValue(r, inviteIDKey),
 	}
+
+	return req, nil
+}
+
+func decodeListOrgInvitesByOrgRequest(_ context.Context, r *http.Request) (any, error) {
+	req := listOrgInvitesByOrgReq{
+		token: apiutil.ExtractBearerToken(r),
+		orgID: bone.GetValue(r, apiutil.IDKey),
+	}
+
+	pm, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req.pm = pm
 
 	return req, nil
 }
