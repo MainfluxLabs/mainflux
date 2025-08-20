@@ -52,7 +52,6 @@ func (req listAllMessagesReq) validate() error {
 type backupMessagesReq struct {
 	token         string
 	convertFormat string
-	messageFormat string
 	pageMeta      readers.PageMetadata
 }
 

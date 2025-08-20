@@ -13,7 +13,6 @@ import (
 	auth "github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -60,56 +59,56 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 	mux := bone.New()
 
 	mux.Get("/json", kithttp.NewServer(
-		listAllMessagesEndpoint(svc),
-		decodeListAllMessagesJSON,
+		listAllJSONMessagesEndpoint(svc),
+		decodeListAllMessages,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/senml", kithttp.NewServer(
-		listAllMessagesEndpoint(svc),
-		decodeListAllMessagesSenML,
+		listAllSenMLMessagesEndpoint(svc),
+		decodeListAllMessages,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/json", kithttp.NewServer(
-		deleteMessagesEndpoint(svc),
-		decodeDeleteMessagesJSON,
+		deleteJSONMessagesEndpoint(svc),
+		decodeDeleteMessages,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/senml", kithttp.NewServer(
-		deleteMessagesEndpoint(svc),
-		decodeDeleteMessagesSenML,
+		deleteSenMLMessagesEndpoint(svc),
+		decodeDeleteMessages,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/json/backup", kithttp.NewServer(
-		backupMessagesEndpoint(svc),
-		decodeBackupMessagesJSON,
+		backupJSONMessagesEndpoint(svc),
+		decodeBackupMessages,
 		encodeBackupFileResponse,
 		opts...,
 	))
 
 	mux.Get("/senml/backup", kithttp.NewServer(
-		backupMessagesEndpoint(svc),
-		decodeBackupMessagesSenML,
+		backupSenMLMessagesEndpoint(svc),
+		decodeBackupMessages,
 		encodeBackupFileResponse,
 		opts...,
 	))
 
 	mux.Post("/json/restore", kithttp.NewServer(
-		restoreMessagesEndpoint(svc),
+		restoreJSONMessagesEndpoint(svc),
 		decodeRestoreJSON,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/senml/restore", kithttp.NewServer(
-		restoreMessagesEndpoint(svc),
+		restoreSenMLMessagesEndpoint(svc),
 		decodeRestoreSenML,
 		encodeResponse,
 		opts...,
@@ -121,15 +120,7 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 	return mux
 }
 
-func decodeListAllMessagesJSON(ctx context.Context, r *http.Request) (interface{}, error) {
-	return decodeListAllMessagesWithFormat(ctx, r, jsonFormat)
-}
-
-func decodeListAllMessagesSenML(ctx context.Context, r *http.Request) (interface{}, error) {
-	return decodeListAllMessagesWithFormat(ctx, r, senmlFormat)
-}
-
-func decodeListAllMessagesWithFormat(_ context.Context, r *http.Request, format string) (interface{}, error) {
+func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, error) {
 	pageMeta, err := apiutil.BuildMessagePageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -153,7 +144,6 @@ func decodeListAllMessagesWithFormat(_ context.Context, r *http.Request, format 
 	pageMeta.AggInterval = ai
 	pageMeta.AggType = at
 	pageMeta.AggField = af
-	pageMeta.Format = dbutil.GetTableName(format)
 
 	return listAllMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
@@ -162,15 +152,7 @@ func decodeListAllMessagesWithFormat(_ context.Context, r *http.Request, format 
 	}, nil
 }
 
-func decodeDeleteMessagesJSON(ctx context.Context, r *http.Request) (interface{}, error) {
-	return decodeDeleteMessagesWithFormat(ctx, r, jsonFormat)
-}
-
-func decodeDeleteMessagesSenML(ctx context.Context, r *http.Request) (interface{}, error) {
-	return decodeDeleteMessagesWithFormat(ctx, r, senmlFormat)
-}
-
-func decodeDeleteMessagesWithFormat(_ context.Context, r *http.Request, format string) (interface{}, error) {
+func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, error) {
 	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
 	if err != nil {
 		return nil, err
@@ -185,9 +167,8 @@ func decodeDeleteMessagesWithFormat(_ context.Context, r *http.Request, format s
 		token: apiutil.ExtractBearerToken(r),
 		key:   apiutil.ExtractThingKey(r),
 		pageMeta: readers.PageMetadata{
-			From:   from,
-			To:     to,
-			Format: dbutil.GetTableName(format),
+			From: from,
+			To:   to,
 		},
 	}
 
@@ -227,15 +208,7 @@ func decodeRestoreWithFormat(_ context.Context, r *http.Request, messageFormat s
 	}, nil
 }
 
-func decodeBackupMessagesJSON(ctx context.Context, r *http.Request) (interface{}, error) {
-	return decodeBackupMessagesWithFormat(ctx, r, jsonFormat)
-}
-
-func decodeBackupMessagesSenML(ctx context.Context, r *http.Request) (interface{}, error) {
-	return decodeBackupMessagesWithFormat(ctx, r, senmlFormat)
-}
-
-func decodeBackupMessagesWithFormat(_ context.Context, r *http.Request, format string) (interface{}, error) {
+func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, error) {
 	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, jsonFormat)
 	if err != nil {
 		return nil, err
@@ -248,7 +221,6 @@ func decodeBackupMessagesWithFormat(_ context.Context, r *http.Request, format s
 
 	return backupMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
-		messageFormat: format,
 		convertFormat: convertFormat,
 		pageMeta:      pageMeta,
 	}, nil
