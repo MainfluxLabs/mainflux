@@ -1,6 +1,7 @@
 package invites
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 )
@@ -108,7 +109,7 @@ type platformInviteRes struct {
 }
 
 func (res platformInviteRes) Code() int {
-	return http.StatusCreated
+	return http.StatusOK
 }
 
 func (res platformInviteRes) Headers() map[string]string {
@@ -117,6 +118,33 @@ func (res platformInviteRes) Headers() map[string]string {
 
 func (res platformInviteRes) Empty() bool {
 	return false
+}
+
+type createdPlatformInviteRes struct {
+	ID      string
+	created bool
+}
+
+func (res createdPlatformInviteRes) Code() int {
+	if res.created {
+		return http.StatusCreated
+	}
+
+	return http.StatusOK
+}
+
+func (res createdPlatformInviteRes) Headers() map[string]string {
+	if res.created {
+		return map[string]string{
+			"Location": fmt.Sprintf("/invites-platform/%s", res.ID),
+		}
+	}
+
+	return map[string]string{}
+}
+
+func (res createdPlatformInviteRes) Empty() bool {
+	return true
 }
 
 type platformInvitePageRes struct {

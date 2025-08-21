@@ -169,12 +169,9 @@ func createPlatformInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return platformInviteRes{
-			ID:           invite.ID,
-			InviteeEmail: invite.InviteeEmail,
-			CreatedAt:    invite.CreatedAt,
-			ExpiresAt:    invite.ExpiresAt,
-			State:        invite.State,
+		return createdPlatformInviteRes{
+			ID:      invite.ID,
+			created: true,
 		}, nil
 	}
 }
