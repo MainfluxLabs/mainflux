@@ -218,7 +218,9 @@ func (svc service) InviteOrgMember(ctx context.Context, token string, orgID stri
 		return OrgInvite{}, err
 	}
 
-	svc.SendOrgInviteEmail(ctx, invite, om.Email, org.Name, invRedirectPath)
+	go func() {
+		svc.SendOrgInviteEmail(ctx, invite, om.Email, org.Name, invRedirectPath)
+	}()
 
 	return invite, nil
 }
@@ -418,7 +420,9 @@ func (svc service) InvitePlatformMember(ctx context.Context, token string, redir
 		return PlatformInvite{}, err
 	}
 
-	svc.SendPlatformInviteEmail(ctx, invite, redirectPath)
+	go func() {
+		svc.SendPlatformInviteEmail(ctx, invite, redirectPath)
+	}()
 
 	return invite, nil
 }

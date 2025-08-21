@@ -322,6 +322,23 @@ func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersS
 		logger.Error(fmt.Sprintf("Failed to configure e-mailing util: %s", err.Error()))
 	}
 
+	authEmailer = emailer.LoggingMiddleware(authEmailer, logger)
+	authEmailer = emailer.MetricsMiddleware(
+		authEmailer,
+		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: "auth",
+			Subsystem: "email",
+			Name:      "request_count",
+			Help:      "Number of requests received.",
+		}, []string{"method"}),
+		kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
+			Namespace: "auth",
+			Subsystem: "email",
+			Name:      "request_latency_microseconds",
+			Help:      "Total duration of requests in microseconds.",
+		}, []string{"method"}),
+	)
+
 	svc := auth.New(orgsRepo, tc, uc, keysRepo, rolesRepo, membsRepo, invitesRepo, authEmailer, idProvider, t, loginDuration, inviteDuration)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
