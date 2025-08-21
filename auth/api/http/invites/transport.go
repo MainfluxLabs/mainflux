@@ -90,14 +90,14 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
-	mux.Get("/invites-platform/:id", kithttp.NewServer(
+	mux.Get("/invites-platform/:inviteID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_platform_invite")(viewPlatformInviteEndpoint(svc)),
 		decodeInviteRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Delete("/invites-platform/:id", kithttp.NewServer(
+	mux.Delete("/invites-platform/:inviteID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "revoke_platform_invite")(revokePlatformInviteEndpoint(svc)),
 		decodeInviteRequest,
 		encodeResponse,
