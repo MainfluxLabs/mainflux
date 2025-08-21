@@ -141,6 +141,6 @@ func (svc authServiceMock) RetrieveRole(_ context.Context, _ *protomfx.RetrieveR
 	panic("not implemented")
 }
 
-func (svc authServiceMock) FlipInactiveInvites(_ context.Context, _ *protomfx.FlipInactiveInvitesReq, _ ...grpc.CallOption) (*protomfx.Count, error) {
+func (svc authServiceMock) ValidatePlatformInvite(_ context.Context, _ *protomfx.ValidatePlatformInviteReq, _ ...grpc.CallOption) (*protomfx.ValidatePlatformInviteRes, error) {
 	return nil, nil
 }

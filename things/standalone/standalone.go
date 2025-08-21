@@ -61,6 +61,6 @@ func (repo singleUserRepo) RetrieveRole(ctx context.Context, req *protomfx.Retri
 	return &protomfx.RetrieveRoleRes{}, errUnsupported
 }
 
-func (repo singleUserRepo) FlipInactiveInvites(ctx context.Context, req *protomfx.FlipInactiveInvitesReq, _ ...grpc.CallOption) (r *protomfx.Count, err error) {
-	return &protomfx.Count{}, errUnsupported
+func (repo singleUserRepo) ValidatePlatformInvite(ctx context.Context, req *protomfx.ValidatePlatformInviteReq, _ ...grpc.CallOption) (r *protomfx.ValidatePlatformInviteRes, err error) {
+	return &protomfx.ValidatePlatformInviteRes{}, errUnsupported
 }
