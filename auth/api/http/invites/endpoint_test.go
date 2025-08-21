@@ -77,9 +77,8 @@ type testRequest struct {
 }
 
 type invitesReq struct {
-	Om                   auth.OrgMembership `json:"org_member,omitempty"`
-	RedirectPathRegister string             `json:"redirect_path_register,omitempty"`
-	RedirectPathInvite   string             `json:"redirect_path_invite,omitempty"`
+	Om           auth.OrgMembership `json:"org_member,omitempty"`
+	RedirectPath string             `json:"redirect_path,omitempty"`
 }
 
 func (tr testRequest) make() (*http.Response, error) {
@@ -149,21 +148,21 @@ func TestInviteMembers(t *testing.T) {
 	}{
 		{
 			desc:   "invite single member",
-			req:    toJSON(invitesReq{Om: viewer, RedirectPathRegister: redirectPathRegister, RedirectPathInvite: redirectPathInvite}),
+			req:    toJSON(invitesReq{Om: viewer, RedirectPath: redirectPathInvite}),
 			ct:     contentType,
 			token:  ownerToken,
 			status: http.StatusCreated,
 		},
 		{
 			desc:   "invite member with invalid auth token",
-			req:    toJSON(invitesReq{Om: viewer, RedirectPathRegister: redirectPathRegister, RedirectPathInvite: redirectPathInvite}),
+			req:    toJSON(invitesReq{Om: viewer, RedirectPath: redirectPathInvite}),
 			ct:     contentType,
 			token:  "invalid-token",
 			status: http.StatusUnauthorized,
 		},
 		{
 			desc:   "invite member with empty auth token",
-			req:    toJSON(invitesReq{Om: viewer, RedirectPathRegister: redirectPathRegister, RedirectPathInvite: redirectPathInvite}),
+			req:    toJSON(invitesReq{Om: viewer, RedirectPath: redirectPathInvite}),
 			ct:     contentType,
 			token:  "",
 			status: http.StatusUnauthorized,
@@ -191,7 +190,7 @@ func TestInviteMembers(t *testing.T) {
 		},
 		{
 			desc:   "create org without content type",
-			req:    toJSON(invitesReq{Om: viewer, RedirectPathRegister: redirectPathRegister, RedirectPathInvite: redirectPathInvite}),
+			req:    toJSON(invitesReq{Om: viewer, RedirectPath: redirectPathInvite}),
 			ct:     "",
 			token:  ownerToken,
 			status: http.StatusUnsupportedMediaType,
@@ -227,7 +226,7 @@ func TestViewInvite(t *testing.T) {
 	org, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 
-	invite, err := svc.InviteMember(context.Background(), ownerToken, org.ID, redirectPathInvite, redirectPathRegister, viewer)
+	invite, err := svc.InviteOrgMember(context.Background(), ownerToken, org.ID, redirectPathInvite, viewer)
 	assert.Nil(t, err, fmt.Sprintf("Inviting member expected to succeed: %s", err))
 
 	inviteID := invite.ID
@@ -293,7 +292,7 @@ func TestRevokeInvite(t *testing.T) {
 	org, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 
-	invite, err := svc.InviteMember(context.Background(), ownerToken, org.ID, redirectPathInvite, redirectPathRegister, viewer)
+	invite, err := svc.InviteOrgMember(context.Background(), ownerToken, org.ID, redirectPathInvite, viewer)
 	assert.Nil(t, err, fmt.Sprintf("Inviting member expected to succeed: %s", err))
 
 	inviteID := invite.ID
@@ -371,7 +370,7 @@ func TestRespondInvite(t *testing.T) {
 	memberships := []auth.OrgMembership{viewer, editor, admin}
 	invites := []auth.OrgInvite{}
 	for _, membership := range memberships {
-		inv, err := svc.InviteMember(context.Background(), ownerToken, org.ID, redirectPathInvite, redirectPathRegister, membership)
+		inv, err := svc.InviteOrgMember(context.Background(), ownerToken, org.ID, redirectPathInvite, membership)
 		assert.Nil(t, err, fmt.Sprintf("Inviting members expected to succeed: %s", err))
 
 		invites = append(invites, inv)
@@ -473,7 +472,7 @@ func TestListInvitesByInvitee(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 		orgIDs = append(orgIDs, org.ID)
 
-		inv, err := svc.InviteMember(context.Background(), ownerToken, org.ID, redirectPathInvite, redirectPathRegister, auth.OrgMembership{
+		inv, err := svc.InviteOrgMember(context.Background(), ownerToken, org.ID, redirectPathInvite, auth.OrgMembership{
 			Email: viewerEmail,
 			Role:  auth.Viewer,
 		})
