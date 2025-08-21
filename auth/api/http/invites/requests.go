@@ -38,12 +38,12 @@ func (req createOrgInviteReq) validate() error {
 	return nil
 }
 
-type orgInviteRevokeReq struct {
+type inviteReq struct {
 	token    string
 	inviteID string
 }
 
-func (req orgInviteRevokeReq) validate() error {
+func (req inviteReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -90,23 +90,6 @@ func (req listOrgInvitesByUserReq) validate() error {
 
 	if err := apiutil.ValidatePageMetadata(req.pm, maxLimitSize, 254); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-type viewOrgInviteReq struct {
-	token    string
-	inviteID string
-}
-
-func (req viewOrgInviteReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.inviteID == "" {
-		return apiutil.ErrMissingInviteID
 	}
 
 	return nil
@@ -168,40 +151,6 @@ func (req listPlatformInvitesRequest) validate() error {
 
 	if err := apiutil.ValidatePageMetadata(req.pm, maxLimitSize, 254); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-type viewPlatformInviteRequest struct {
-	token    string
-	inviteID string
-}
-
-func (req viewPlatformInviteRequest) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.inviteID == "" {
-		return apiutil.ErrMissingInviteID
-	}
-
-	return nil
-}
-
-type revokePlatformInviteReq struct {
-	token    string
-	inviteID string
-}
-
-func (req revokePlatformInviteReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.inviteID == "" {
-		return apiutil.ErrMissingInviteID
 	}
 
 	return nil

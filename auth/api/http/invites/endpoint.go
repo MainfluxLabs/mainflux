@@ -24,7 +24,7 @@ func createOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 
 func viewOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(viewOrgInviteReq)
+		req := request.(inviteReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -49,7 +49,7 @@ func viewOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 
 func revokeOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(orgInviteRevokeReq)
+		req := request.(inviteReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -218,7 +218,7 @@ func listPlatformInvitesEndpoint(svc auth.Service) endpoint.Endpoint {
 
 func viewPlatformInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(viewPlatformInviteRequest)
+		req := request.(inviteReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -240,7 +240,7 @@ func viewPlatformInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 
 func revokePlatformInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(revokePlatformInviteReq)
+		req := request.(inviteReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}

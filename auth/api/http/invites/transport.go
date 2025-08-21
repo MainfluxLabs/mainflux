@@ -43,14 +43,14 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 
 	mux.Get("/invites/:inviteID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_org_invite")(viewOrgInviteEndpoint(svc)),
-		decodeViewOrgInviteRequest,
+		decodeInviteRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/invites/:inviteID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "revoke_org_invite")(revokeOrgInviteEndpoint(svc)),
-		decodeOrgInviteRevokeRequest,
+		decodeInviteRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -92,14 +92,14 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 
 	mux.Get("/invites-platform/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_platform_invite")(viewPlatformInviteEndpoint(svc)),
-		decodeViewPlatformInviteEndpoint,
+		decodeInviteRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/invites-platform/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "revoke_platform_invite")(revokePlatformInviteEndpoint(svc)),
-		decodeRevokePlatformInviteEndpoint,
+		decodeInviteRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -127,15 +127,6 @@ func decodeCreateOrgInviteRequest(_ context.Context, r *http.Request) (any, erro
 
 	if req.OrgMember.Role == auth.Owner {
 		return nil, apiutil.ErrMalformedEntity
-	}
-
-	return req, nil
-}
-
-func decodeOrgInviteRevokeRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := orgInviteRevokeReq{
-		token:    apiutil.ExtractBearerToken(r),
-		inviteID: bone.GetValue(r, inviteIDKey),
 	}
 
 	return req, nil
@@ -176,8 +167,8 @@ func decodeListOrgInvitesByUserRequest(_ context.Context, r *http.Request) (any,
 	return req, nil
 }
 
-func decodeViewOrgInviteRequest(_ context.Context, r *http.Request) (any, error) {
-	req := viewOrgInviteReq{
+func decodeInviteRequest(_ context.Context, r *http.Request) (any, error) {
+	req := inviteReq{
 		token:    apiutil.ExtractBearerToken(r),
 		inviteID: bone.GetValue(r, inviteIDKey),
 	}
@@ -224,24 +215,6 @@ func decodeListPlatformInvitesRequest(_ context.Context, r *http.Request) (any, 
 	}
 
 	req.pm = pm
-
-	return req, nil
-}
-
-func decodeViewPlatformInviteEndpoint(_ context.Context, r *http.Request) (any, error) {
-	req := viewPlatformInviteRequest{
-		token:    apiutil.ExtractBearerToken(r),
-		inviteID: bone.GetValue(r, apiutil.IDKey),
-	}
-
-	return req, nil
-}
-
-func decodeRevokePlatformInviteEndpoint(_ context.Context, r *http.Request) (any, error) {
-	req := revokePlatformInviteReq{
-		token:    apiutil.ExtractBearerToken(r),
-		inviteID: bone.GetValue(r, apiutil.IDKey),
-	}
 
 	return req, nil
 }
