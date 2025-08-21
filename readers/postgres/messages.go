@@ -297,13 +297,8 @@ func (tr postgresRepository) fmtCondition(rpm readers.PageMetadata) string {
 			condition = fmt.Sprintf(`%s %s %s = :%s`, condition, op, name, name)
 			op = "AND"
 		case "name":
-			switch rpm.Format {
-			case jsonTable:
-				condition = fmt.Sprintf(`%s %s payload->>'n' = :name`, condition, op)
-			default:
-				condition = fmt.Sprintf(`%s %s name = :name`, condition, op)
-			}
-
+			condition = fmt.Sprintf(`%s %s name = :name`, condition, op)
+			op = "AND"
 		case "v":
 			comparator := readers.ParseValueComparator(query)
 			condition = fmt.Sprintf(`%s %s value %s :value`, condition, op, comparator)

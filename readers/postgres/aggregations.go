@@ -146,7 +146,8 @@ func (maxStrt MaxStrategy) GetAggregateExpression(config QueryConfig) string {
 	case defTable:
 		return fmt.Sprintf("MAX(m.%s)", config.AggField)
 	default:
-		return fmt.Sprintf("MAX(CAST(m.payload->>'v' AS float))")
+		jsonPath := buildJSONPath(config.AggField)
+		return fmt.Sprintf("MAX(CAST(m.%s AS float))", jsonPath)
 	}
 }
 
@@ -186,7 +187,8 @@ func (minStrt MinStrategy) GetAggregateExpression(config QueryConfig) string {
 	case defTable:
 		return fmt.Sprintf("MIN(m.%s)", config.AggField)
 	default:
-		return fmt.Sprintf("MIN(CAST(m.payload->>'v' AS float))")
+		jsonPath := buildJSONPath(config.AggField)
+		return fmt.Sprintf("MIN(CAST(m.%s AS float))", jsonPath)
 	}
 }
 
@@ -226,11 +228,7 @@ func (avgStrt AvgStrategy) GetSelectedFields(config QueryConfig) string {
 				m.string_value, m.bool_value, m.data_value, m.sum,
 				m.time, m.update_time`
 	default:
-		return `m.created, m.subtopic, m.publisher, m.protocol,
-				jsonb_build_object(
-					'n', m.payload->>'n',
-					'v', ia.avg_value  
-				) as payload`
+		return buildAggregatedJSONSelect(config.AggField, "avg_value")
 	}
 }
 
@@ -239,7 +237,8 @@ func (avgStrt AvgStrategy) GetAggregateExpression(config QueryConfig) string {
 	case defTable:
 		return fmt.Sprintf("AVG(m.%s)", config.AggField)
 	default:
-		return fmt.Sprintf("AVG(CAST(m.payload->>'v' AS float))")
+		jsonPath := buildJSONPath(config.AggField)
+		return fmt.Sprintf("AVG(CAST(m.%s AS float))", jsonPath)
 	}
 }
 
@@ -299,11 +298,7 @@ func (countStrt CountStrategy) GetSelectedFields(config QueryConfig) string {
 				m.string_value, m.bool_value, m.data_value, m.sum,
 				m.time, m.update_time`
 	default:
-		return `m.created, m.subtopic, m.publisher, m.protocol,
-				jsonb_build_object(
-					'n', m.payload->>'n',
-					'v', ia.sum_value  
-				) as payload`
+		return buildAggregatedJSONSelect(config.AggField, "sum_value")
 	}
 }
 
@@ -312,7 +307,8 @@ func (countStrt CountStrategy) GetAggregateExpression(config QueryConfig) string
 	case defTable:
 		return fmt.Sprintf("SUM(m.%s)", config.AggField)
 	default:
-		return fmt.Sprintf("SUM(CAST(m.payload->>'v' AS float))")
+		jsonPath := buildJSONPath(config.AggField)
+		return fmt.Sprintf("SUM(CAST(m.%s AS float))", jsonPath)
 	}
 }
 
@@ -338,7 +334,8 @@ func buildValueCondition(config QueryConfig) string {
 	case defTable:
 		return fmt.Sprintf("m.%s = ia.agg_value", config.AggField)
 	default:
-		return "CAST(m.payload->>'v' as FLOAT) = ia.agg_value"
+		jsonPath := buildJSONPath(config.AggField)
+		return fmt.Sprintf("CAST(m.%s as FLOAT) = ia.agg_value", jsonPath)
 	}
 }
 
@@ -427,6 +424,45 @@ func (as *aggregationService) scanAggregatedMessages(rows *sqlx.Rows, format str
 	return messages, nil
 }
 
+func buildJSONPath(field string) string {
+	parts := strings.Split(field, ".")
+	if len(parts) == 1 {
+		return fmt.Sprintf("payload->>'%s'", parts[0])
+	}
+
+	var path strings.Builder
+	path.WriteString("payload")
+
+	for i, part := range parts {
+		if i == len(parts)-1 {
+			path.WriteString(fmt.Sprintf("->>'%s'", part))
+		} else {
+			path.WriteString(fmt.Sprintf("->'%s'", part))
+		}
+	}
+
+	return path.String()
+}
+
+func buildAggregatedJSONSelect(aggField string, aggAlias string) string {
+	parts := strings.Split(aggField, ".")
+	if len(parts) == 1 {
+		return fmt.Sprintf(`m.created, m.subtopic, m.publisher, m.protocol,
+				jsonb_set(m.payload, '{%s}', to_jsonb(ia.%s)) as payload`,
+			parts[0], aggAlias)
+	}
+
+	pathParts := make([]string, len(parts))
+	for i, part := range parts {
+		pathParts[i] = part
+	}
+
+	pathArray := "{" + strings.Join(pathParts, ",") + "}"
+	return fmt.Sprintf(`m.created, m.subtopic, m.publisher, m.protocol,
+			jsonb_set(m.payload, '%s', to_jsonb(ia.%s)) as payload`,
+		pathArray, aggAlias)
+}
+
 func (as *aggregationService) executeQuery(query string, params map[string]interface{}) (*sqlx.Rows, error) {
 	rows, err := as.db.NamedQuery(query, params)
 	if err != nil {
@@ -438,13 +474,6 @@ func (as *aggregationService) executeQuery(query string, params map[string]inter
 	return rows, nil
 }
 
-func (as *aggregationService) getTimeColumn(table string) string {
-	if table == jsonTable {
-		return "created"
-	}
-	return "time"
-}
-
 func (as *aggregationService) getAggregateField(rpm readers.PageMetadata) string {
 	switch rpm.AggField {
 	case "":
@@ -452,6 +481,13 @@ func (as *aggregationService) getAggregateField(rpm readers.PageMetadata) string
 	default:
 		return rpm.AggField
 	}
+}
+
+func (as *aggregationService) getTimeColumn(table string) string {
+	if table == jsonTable {
+		return "created"
+	}
+	return "time"
 }
 
 func (as *aggregationService) buildQueryParams(rpm readers.PageMetadata) map[string]interface{} {
