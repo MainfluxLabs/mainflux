@@ -481,6 +481,14 @@ func (svc service) ValidatePlatformInvite(ctx context.Context, inviteID string, 
 		return errors.ErrAuthorization
 	}
 
+	if invite.State != InviteStatePending {
+		if invite.State == InviteStateExpired {
+			return ErrInviteExpired
+		}
+
+		return ErrInvalidInviteState
+	}
+
 	if err := svc.invites.UpdatePlatformInviteState(ctx, inviteID, InviteStateAccepted); err != nil {
 		return err
 	}
