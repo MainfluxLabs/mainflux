@@ -188,6 +188,15 @@ func (svc service) InviteOrgMember(ctx context.Context, token string, orgID stri
 
 	inviteeID := users.Users[0].Id
 
+	_, err = svc.ViewOrgMembership(ctx, token, orgID, inviteeID)
+	if err != nil && !errors.Contains(err, errors.ErrNotFound) {
+		return OrgInvite{}, err
+	}
+
+	if err == nil {
+		return OrgInvite{}, ErrOrgMembershipExists
+	}
+
 	createdAt := getTimestmap()
 	inviteID, err := svc.idProvider.ID()
 	if err != nil {
