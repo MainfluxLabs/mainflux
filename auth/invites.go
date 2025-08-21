@@ -265,30 +265,24 @@ func (svc service) ViewOrgInvite(ctx context.Context, token string, inviteID str
 	// A specific Invite can only be retrieved by the platform Root Admin, the Invitee towards who
 	// the Invite is directed, or any person with admin (or higher) rights in the Org to which
 	// the invite belongs
-	if err := svc.isAdmin(ctx, token); err != nil {
-		if err != errors.ErrAuthorization {
-			return OrgInvite{}, err
-		}
-
-		// Current User is not Root Admin - must be either admin (or higher) in Org, or invitee
-		if err := svc.canAccessOrg(ctx, token, invite.OrgID, Admin); err != nil {
-			if err != errors.ErrAuthorization {
-				return OrgInvite{}, err
-			}
-
-			// Current user isn't admin (or higher) in Org, must be invitee
-			currentUser, err := svc.identify(ctx, token)
-			if err != nil {
-				return OrgInvite{}, err
-			}
-
-			if currentUser.ID != invite.InviteeID {
-				return OrgInvite{}, errors.ErrAuthorization
-			}
-		}
+	if err := svc.isAdmin(ctx, token); err == nil {
+		return invite, nil
 	}
 
-	return invite, nil
+	if err := svc.canAccessOrg(ctx, token, invite.OrgID, Admin); err == nil {
+		return invite, nil
+	}
+
+	currentUser, err := svc.identify(ctx, token)
+	if err != nil {
+		return OrgInvite{}, err
+	}
+
+	if currentUser.ID == invite.InviteeID {
+		return invite, nil
+	}
+
+	return OrgInvite{}, errors.ErrAuthorization
 }
 
 func (svc service) RespondOrgInvite(ctx context.Context, token string, inviteID string, accept bool) error {
