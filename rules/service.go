@@ -45,14 +45,14 @@ const (
 	ActionTypeSMTP  = "smtp"
 	ActionTypeSMPP  = "smpp"
 	ActionTypeAlarm = "alarm"
-)
-const subjectAlarm = "alarms"
 
-var (
-	errInvalidActionID   = errors.New("invalid action id")
-	errInvalidActionType = errors.New("invalid action type")
-	errInvalidObject     = errors.New("invalid JSON object")
+	OperatorAND = "AND"
+	OperatorOR  = "OR"
+
+	subjectAlarm = "alarms"
 )
+
+var errInvalidObject = errors.New("invalid JSON object")
 
 type rulesService struct {
 	rules      RuleRepository
@@ -76,17 +76,16 @@ func New(rules RuleRepository, things protomfx.ThingsServiceClient, publisher me
 func (rs *rulesService) CreateRules(ctx context.Context, token string, rules ...Rule) ([]Rule, error) {
 	var rls []Rule
 	for _, rule := range rules {
-		r, err := rs.createRule(ctx, &rule, token)
+		r, err := rs.createRule(ctx, rule, token)
 		if err != nil {
-			return []Rule{}, err
+			return nil, err
 		}
 		rls = append(rls, r)
 	}
-
 	return rls, nil
 }
 
-func (rs *rulesService) createRule(ctx context.Context, rule *Rule, token string) (Rule, error) {
+func (rs *rulesService) createRule(ctx context.Context, rule Rule, token string) (Rule, error) {
 	_, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.ProfileID, Action: things.Editor})
 	if err != nil {
 		return Rule{}, err
@@ -104,11 +103,10 @@ func (rs *rulesService) createRule(ctx context.Context, rule *Rule, token string
 	}
 	rule.ID = id
 
-	rls, err := rs.rules.Save(ctx, *rule)
+	rls, err := rs.rules.Save(ctx, rule)
 	if err != nil {
 		return Rule{}, err
 	}
-
 	if len(rls) == 0 {
 		return Rule{}, errors.ErrCreateEntity
 	}
@@ -150,7 +148,7 @@ func (rs *rulesService) ViewRule(ctx context.Context, token, id string) (Rule, e
 		return Rule{}, err
 	}
 
-	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Viewer}); err != nil {
+	if _, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.ProfileID, Action: things.Viewer}); err != nil {
 		return Rule{}, err
 	}
 
@@ -158,12 +156,7 @@ func (rs *rulesService) ViewRule(ctx context.Context, token, id string) (Rule, e
 }
 
 func (rs *rulesService) UpdateRule(ctx context.Context, token string, rule Rule) error {
-	r, err := rs.rules.RetrieveByID(ctx, rule.ID)
-	if err != nil {
-		return err
-	}
-
-	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: r.GroupID, Action: things.Editor}); err != nil {
+	if _, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.ProfileID, Action: things.Editor}); err != nil {
 		return err
 	}
 
@@ -177,8 +170,8 @@ func (rs *rulesService) RemoveRules(ctx context.Context, token string, ids ...st
 			return err
 		}
 
-		if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Editor}); err != nil {
-			return errors.Wrap(errors.ErrAuthorization, err)
+		if _, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.ProfileID, Action: things.Editor}); err != nil {
+			return err
 		}
 	}
 	return rs.rules.Remove(ctx, ids...)
@@ -196,11 +189,11 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 	}
 
 	for _, rule := range rp.Rules {
-		isValid, payloads, err := processPayload(message.Payload, rule.Condition, message.ContentType)
+		triggered, payloads, err := processPayload(message.Payload, rule.Conditions, rule.Operator, message.ContentType)
 		if err != nil {
 			return err
 		}
-		if isValid {
+		if !triggered {
 			continue
 		}
 
@@ -211,20 +204,13 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 
 				switch action.Type {
 				case ActionTypeSMTP, ActionTypeSMPP:
-					if action.ID != "" {
-						newMsg.Subject = fmt.Sprintf("%s.%s", action.Type, action.ID)
-						if err := rs.publisher.Publish(newMsg); err != nil {
-							return err
-						}
-					}
-					return errInvalidActionID
+					newMsg.Subject = fmt.Sprintf("%s.%s", action.Type, action.ID)
 				case ActionTypeAlarm:
 					newMsg.Subject = subjectAlarm
-					if err := rs.publisher.Publish(newMsg); err != nil {
-						return err
-					}
-				default:
-					return errInvalidActionType
+				}
+
+				if err := rs.publisher.Publish(newMsg); err != nil {
+					return err
 				}
 			}
 		}
@@ -233,7 +219,7 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 	return nil
 }
 
-func processPayload(payload []byte, condition Condition, contentType string) (bool, [][]byte, error) {
+func processPayload(payload []byte, conditions []Condition, operator string, contentType string) (bool, [][]byte, error) {
 	var parsedData interface{}
 	if err := json.Unmarshal(payload, &parsedData); err != nil {
 		return false, nil, err
@@ -241,67 +227,97 @@ func processPayload(payload []byte, condition Condition, contentType string) (bo
 
 	switch data := parsedData.(type) {
 	case []interface{}:
-		var invalidPayloads [][]byte
+		var triggerPayloads [][]byte
 		for _, item := range data {
 			obj, ok := item.(map[string]interface{})
 			if !ok {
 				continue
 			}
 
-			isValid, err := validatePayload(obj, condition, contentType)
+			triggered, err := checkConditionsMet(obj, conditions, operator, contentType)
 			if err != nil {
 				return false, nil, err
 			}
 
-			if !isValid {
+			if triggered {
 				extractedPayload, _ := json.Marshal(obj)
-				invalidPayloads = append(invalidPayloads, extractedPayload)
+				triggerPayloads = append(triggerPayloads, extractedPayload)
 			}
 		}
 
-		return len(invalidPayloads) == 0, invalidPayloads, nil
+		return len(triggerPayloads) > 0, triggerPayloads, nil
 	case map[string]interface{}:
-		isValid, err := validatePayload(data, condition, contentType)
+		triggered, err := checkConditionsMet(data, conditions, operator, contentType)
 		if err != nil {
 			return false, nil, err
 		}
 
-		if !isValid {
+		if triggered {
 			extractedPayload, _ := json.Marshal(data)
-			return false, [][]byte{extractedPayload}, nil
+			return true, [][]byte{extractedPayload}, nil
 		}
 
-		return true, nil, nil
+		return false, nil, nil
 	default:
 		return false, nil, errInvalidObject
 	}
 }
 
-func validatePayload(payloadMap map[string]interface{}, condition Condition, contentType string) (bool, error) {
-	value := findPayloadParam(payloadMap, condition.Field, contentType)
-	if value == nil {
-		return true, nil
+func checkConditionsMet(payloadMap map[string]interface{}, conditions []Condition, operator, contentType string) (bool, error) {
+	results := make([]bool, len(conditions))
+
+	for i, condition := range conditions {
+		value := findPayloadParam(payloadMap, condition.Field, contentType)
+		if value == nil {
+			results[i] = false
+			continue
+		}
+
+		var payloadValue float64
+		switch v := value.(type) {
+		case string:
+			val, err := strconv.ParseFloat(v, 64)
+			if err != nil {
+				return false, err
+			}
+			payloadValue = val
+		case float64:
+			payloadValue = v
+		case int:
+			payloadValue = float64(v)
+		case int64:
+			payloadValue = float64(v)
+		case uint:
+			payloadValue = float64(v)
+		case uint64:
+			payloadValue = float64(v)
+		default:
+			results[i] = false
+			continue
+		}
+
+		results[i] = isConditionMet(condition.Comparator, payloadValue, *condition.Threshold)
 	}
 
-	var payloadValue float64
-	switch v := value.(type) {
-	case string:
-		val, err := strconv.ParseFloat(v, 64)
-		if err != nil {
-			return false, err
+	if operator == OperatorOR {
+		for _, r := range results {
+			if r {
+				return true, nil
+			}
 		}
-		payloadValue = val
-	case float64:
-		payloadValue = v
-	default:
 		return false, nil
 	}
 
-	return !isConditionMet(condition.Operator, payloadValue, *condition.Threshold), nil
+	for _, r := range results {
+		if !r {
+			return false, nil
+		}
+	}
+	return true, nil
 }
 
-func isConditionMet(operator string, val1, val2 float64) bool {
-	switch operator {
+func isConditionMet(comparator string, val1, val2 float64) bool {
+	switch comparator {
 	case "==":
 		return val1 == val2
 	case ">=":

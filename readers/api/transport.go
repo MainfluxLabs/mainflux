@@ -31,9 +31,15 @@ const (
 	boolValueKey           = "vb"
 	comparatorKey          = "comparator"
 	fromKey                = "from"
-	intervalKey            = "interval"
 	toKey                  = "to"
+	convertKey             = "convert"
+	formatKey              = "format"
+	csvFormat              = "csv"
+	jsonFormat             = "json"
 	defFormat              = "messages"
+	aggIntervalKey         = "agg_interval"
+	aggTypeKey             = "agg_type"
+	aggFieldKey            = "agg_field"
 )
 
 var (
@@ -63,16 +69,18 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 		encodeResponse,
 		opts...,
 	))
-	mux.Post("/restore", kithttp.NewServer(
-		restoreEndpoint(svc),
-		decodeRestore,
-		encodeResponse,
+
+	mux.Get("/messages/:format/backup", kithttp.NewServer(
+		backupMessagesEndpoint(svc),
+		decodeBackupMessages,
+		encodeBackupFileResponse,
 		opts...,
 	))
-	mux.Get("/backup", kithttp.NewServer(
-		backupEndpoint(svc),
-		decodeListAllMessages,
-		encodeBackupFileResponse,
+
+	mux.Post("/messages/:format/restore", kithttp.NewServer(
+		restoreMessagesEndpoint(svc),
+		decodeRestore,
+		encodeResponse,
 		opts...,
 	))
 
@@ -83,94 +91,36 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 }
 
 func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, error) {
-	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
+	pageMeta, err := apiutil.BuildMessagePageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
 
-	limit, err := apiutil.ReadLimitQuery(r, apiutil.LimitKey, apiutil.DefLimit)
+	ai, err := apiutil.ReadStringQuery(r, aggIntervalKey, "")
 	if err != nil {
 		return nil, err
 	}
 
-	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
+	at, err := apiutil.ReadStringQuery(r, aggTypeKey, "")
 	if err != nil {
 		return nil, err
 	}
 
-	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
+	af, err := apiutil.ReadStringQuery(r, aggFieldKey, "")
 	if err != nil {
 		return nil, err
 	}
 
-	name, err := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
-	if err != nil {
-		return nil, err
-	}
+	pageMeta.AggInterval = ai
+	pageMeta.AggType = at
+	pageMeta.AggField = af
 
-	v, err := apiutil.ReadFloatQuery(r, valueKey, 0)
-	if err != nil {
-		return nil, err
-	}
+	return listAllMessagesReq{
+		token:    apiutil.ExtractBearerToken(r),
+		key:      apiutil.ExtractThingKey(r),
+		pageMeta: pageMeta,
+	}, nil
 
-	comparator, err := apiutil.ReadStringQuery(r, comparatorKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	vs, err := apiutil.ReadStringQuery(r, stringValueKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	vd, err := apiutil.ReadStringQuery(r, dataValueKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	to, err := apiutil.ReadIntQuery(r, toKey, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	i, err := apiutil.ReadStringQuery(r, intervalKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	req := listAllMessagesReq{
-		token: apiutil.ExtractBearerToken(r),
-		key:   apiutil.ExtractThingKey(r),
-		pageMeta: readers.PageMetadata{
-			Offset:      offset,
-			Limit:       limit,
-			Subtopic:    subtopic,
-			Protocol:    protocol,
-			Name:        name,
-			Value:       v,
-			Comparator:  comparator,
-			StringValue: vs,
-			DataValue:   vd,
-			From:        from,
-			To:          to,
-			Interval:    i,
-		},
-	}
-
-	vb, err := apiutil.ReadBoolQuery(r, boolValueKey, false)
-	if err != nil && err != apiutil.ErrNotFoundParam {
-		return nil, err
-	}
-	if err == nil {
-		req.pageMeta.BoolValue = vb
-	}
-
-	return req, nil
 }
 
 func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, error) {
@@ -197,16 +147,28 @@ func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, erro
 }
 
 func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
-	token := apiutil.ExtractBearerToken(r)
-
-	csvData, err := io.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
+	var fileType string
+	contentType := r.Header.Get("Content-Type")
+	switch contentType {
+	case apiutil.ContentTypeJSON:
+		fileType = jsonFormat
+	case apiutil.ContentTypeCSV:
+		fileType = csvFormat
+
+	default:
+		return nil, errors.Wrap(apiutil.ErrUnsupportedContentType, err)
+	}
+
 	return restoreMessagesReq{
-		token:    token,
-		Messages: csvData,
+		token:         apiutil.ExtractBearerToken(r),
+		fileType:      fileType,
+		messageFormat: bone.GetValue(r, formatKey),
+		Messages:      data,
 	}, nil
 }
 
@@ -226,6 +188,25 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	}
 
 	return json.NewEncoder(w).Encode(response)
+}
+
+func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, jsonFormat)
+	if err != nil {
+		return nil, err
+	}
+
+	pageMeta, err := apiutil.BuildMessagePageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return backupMessagesReq{
+		token:         apiutil.ExtractBearerToken(r),
+		messageFormat: bone.GetValue(r, formatKey),
+		convertFormat: convertFormat,
+		pageMeta:      pageMeta,
+	}, nil
 }
 
 func encodeBackupFileResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {

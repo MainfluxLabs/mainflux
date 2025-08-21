@@ -38,12 +38,41 @@ func (req listAllMessagesReq) validate() error {
 		return apiutil.ErrInvalidComparator
 	}
 
+	if req.pageMeta.AggType != "" {
+		switch req.pageMeta.AggType {
+		case readers.AggregationMin, readers.AggregationMax, readers.AggregationAvg, readers.AggregationCount:
+		default:
+			return apiutil.ErrInvalidAggType
+		}
+	}
+
+	return nil
+}
+
+type backupMessagesReq struct {
+	token         string
+	convertFormat string
+	messageFormat string
+	pageMeta      readers.PageMetadata
+}
+
+func (req backupMessagesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.convertFormat != jsonFormat && req.convertFormat != csvFormat {
+		return apiutil.ErrInvalidQueryParams
+	}
+
 	return nil
 }
 
 type restoreMessagesReq struct {
-	token    string
-	Messages []byte
+	token         string
+	fileType      string
+	messageFormat string
+	Messages      []byte
 }
 
 func (req restoreMessagesReq) validate() error {

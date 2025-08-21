@@ -91,10 +91,8 @@ func GetOffsetLimitQuery(limit uint64) string {
 
 func GetTableName(format string) string {
 	switch format {
-	case messaging.JSONContentType:
+	case messaging.JSONFormat, messaging.JSONContentType:
 		return "json"
-	case messaging.SenMLContentType:
-		return "messages"
 	default:
 		return "messages"
 	}

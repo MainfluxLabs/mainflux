@@ -22,7 +22,8 @@ func createRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 			r := rules.Rule{
 				ProfileID:   req.profileID,
 				Name:        rReq.Name,
-				Condition:   rReq.Condition,
+				Conditions:  rReq.Conditions,
+				Operator:    rReq.Operator,
 				Actions:     rReq.Actions,
 				Description: rReq.Description,
 			}
@@ -95,11 +96,12 @@ func updateRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 
 		rule := rules.Rule{
 			ID:          req.id,
-			Name:        req.Name,
-			Condition:   req.Condition,
-			Actions:     req.Actions,
-			Description: req.Description,
 			ProfileID:   req.ProfileID,
+			Name:        req.Name,
+			Description: req.Description,
+			Conditions:  req.Conditions,
+			Operator:    req.Operator,
+			Actions:     req.Actions,
 		}
 
 		if err := svc.UpdateRule(ctx, req.token, rule); err != nil {
@@ -135,7 +137,8 @@ func buildRulesResponse(rules []rules.Rule, created bool) rulesRes {
 			GroupID:     r.GroupID,
 			Name:        r.Name,
 			Description: r.Description,
-			Condition:   r.Condition,
+			Conditions:  r.Conditions,
+			Operator:    r.Operator,
 			Actions:     r.Actions,
 		}
 		res.Rules = append(res.Rules, rule)
@@ -161,7 +164,8 @@ func buildRulesPageResponse(page rules.RulesPage) RulesPageRes {
 			GroupID:     r.GroupID,
 			Name:        r.Name,
 			Description: r.Description,
-			Condition:   r.Condition,
+			Conditions:  r.Conditions,
+			Operator:    r.Operator,
 			Actions:     r.Actions,
 		}
 		res.Rules = append(res.Rules, rule)
@@ -177,7 +181,8 @@ func buildRuleResponse(rule rules.Rule, updated bool) ruleResponse {
 		GroupID:     rule.GroupID,
 		Name:        rule.Name,
 		Description: rule.Description,
-		Condition:   rule.Condition,
+		Conditions:  rule.Conditions,
+		Operator:    rule.Operator,
 		Actions:     rule.Actions,
 		updated:     updated,
 	}

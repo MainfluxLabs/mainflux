@@ -6,8 +6,6 @@ package readers
 import (
 	"context"
 	"errors"
-
-	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 )
 
 const (
@@ -21,6 +19,14 @@ const (
 	GreaterThanKey = "gt"
 	// GreaterThanEqualKey represents the greater-than-or-equal comparison operator key.
 	GreaterThanEqualKey = "ge"
+	// AggregationMin represents the minimum aggregation key.
+	AggregationMin = "min"
+	// AggregationMax represents the maximum aggregation key.
+	AggregationMax = "max"
+	// AggregationAvg represents the average aggregation key.
+	AggregationAvg = "avg"
+	// AggregationCount represents the count aggregation key.
+	AggregationCount = "count"
 )
 
 // ErrReadMessages indicates failure occurred while reading messages from database.
@@ -32,7 +38,7 @@ type MessageRepository interface {
 	ListAllMessages(rpm PageMetadata) (MessagesPage, error)
 
 	// Restore restores message database from a backup.
-	Restore(ctx context.Context, messages ...senml.Message) error
+	Restore(ctx context.Context, format string, messages ...Message) error
 
 	// Backup retrieves all messages from database.
 	Backup(rpm PageMetadata) (MessagesPage, error)
@@ -68,7 +74,9 @@ type PageMetadata struct {
 	From        int64   `json:"from,omitempty"`
 	To          int64   `json:"to,omitempty"`
 	Format      string  `json:"format,omitempty"`
-	Interval    string  `json:"interval,omitempty"`
+	AggInterval string  `json:"agg_interval,omitempty"`
+	AggType     string  `json:"agg_type,omitempty"`
+	AggField    string  `json:"agg_field,omitempty"`
 }
 
 // ParseValueComparator convert comparison operator keys into mathematic anotation
