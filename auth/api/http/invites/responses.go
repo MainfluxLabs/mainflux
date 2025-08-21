@@ -6,13 +6,26 @@ import (
 	"time"
 )
 
-type createOrgInviteRes struct{}
+type createOrgInviteRes struct {
+	ID      string
+	created bool
+}
 
 func (res createOrgInviteRes) Code() int {
-	return http.StatusCreated
+	if res.created {
+		return http.StatusCreated
+	}
+
+	return http.StatusOK
 }
 
 func (res createOrgInviteRes) Headers() map[string]string {
+	if res.created {
+		return map[string]string{
+			"Location": fmt.Sprintf("/invites-org/%s", res.ID),
+		}
+	}
+
 	return map[string]string{}
 }
 

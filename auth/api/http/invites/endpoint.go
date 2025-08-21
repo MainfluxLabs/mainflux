@@ -14,11 +14,15 @@ func createOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if _, err := svc.InviteOrgMember(ctx, req.token, req.orgID, req.RedirectPath, req.OrgMember); err != nil {
+		invite, err := svc.InviteOrgMember(ctx, req.token, req.orgID, req.RedirectPath, req.OrgMember)
+		if err != nil {
 			return nil, err
 		}
 
-		return createOrgInviteRes{}, nil
+		return createOrgInviteRes{
+			created: true,
+			ID:      invite.ID,
+		}, nil
 	}
 }
 
