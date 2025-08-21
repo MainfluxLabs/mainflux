@@ -133,3 +133,76 @@ func (req listOrgInvitesByOrgReq) validate() error {
 
 	return nil
 }
+
+type createPlatformInviteRequest struct {
+	token        string
+	Email        string `json:"email,omitempty"`
+	RedirectPath string `json:"redirect_path,omitempty"`
+}
+
+func (req createPlatformInviteRequest) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.Email == "" {
+		return apiutil.ErrMissingEmail
+	}
+
+	if req.RedirectPath == "" {
+		return apiutil.ErrMissingRedirectPath
+	}
+
+	return nil
+}
+
+type listPlatformInvitesRequest struct {
+	token string
+	pm    apiutil.PageMetadata
+}
+
+func (req listPlatformInvitesRequest) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if err := apiutil.ValidatePageMetadata(req.pm, maxLimitSize, 254); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type viewPlatformInviteRequest struct {
+	token    string
+	inviteID string
+}
+
+func (req viewPlatformInviteRequest) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.inviteID == "" {
+		return apiutil.ErrMissingInviteID
+	}
+
+	return nil
+}
+
+type revokePlatformInviteReq struct {
+	token    string
+	inviteID string
+}
+
+func (req revokePlatformInviteReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.inviteID == "" {
+		return apiutil.ErrMissingInviteID
+	}
+
+	return nil
+}

@@ -98,3 +98,42 @@ func (res orgInvitePageRes) Headers() map[string]string {
 func (res orgInvitePageRes) Empty() bool {
 	return false
 }
+
+type platformInviteRes struct {
+	ID           string    `json:"id,omitempty"`
+	InviteeEmail string    `json:"invitee_email,omitempty"`
+	CreatedAt    time.Time `json:"created_at,omitempty"`
+	ExpiresAt    time.Time `json:"expires_at,omitempty"`
+	State        string    `json:"state,omitempty"`
+}
+
+func (res platformInviteRes) Code() int {
+	return http.StatusCreated
+}
+
+func (res platformInviteRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res platformInviteRes) Empty() bool {
+	return false
+}
+
+type platformInvitePageRes struct {
+	pageRes
+	Invites []platformInviteRes `json:"invites"`
+}
+
+type revokePlatformInviteRes struct{}
+
+func (res revokePlatformInviteRes) Code() int {
+	return http.StatusNoContent
+}
+
+func (res revokePlatformInviteRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res revokePlatformInviteRes) Empty() bool {
+	return true
+}
