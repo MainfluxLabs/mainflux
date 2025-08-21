@@ -539,7 +539,7 @@ func (ir invitesRepository) syncPlatformInviteStateByEmail(ctx context.Context, 
 		WHERE invitee_email=:email AND state='pending' AND expires_at < NOW()
 	`
 
-	_, err := ir.db.NamedExecContext(ctx, query, map[string]any{"invitee_email": email})
+	_, err := ir.db.NamedExecContext(ctx, query, map[string]any{"email": email})
 	if err != nil {
 		pqErr, ok := err.(*pgconn.PgError)
 		if ok {
