@@ -1311,12 +1311,12 @@ func TestInviteMembers(t *testing.T) {
 				Role:  auth.Editor,
 				Email: unregisteredEmail,
 			},
-			err: nil,
+			err: errors.ErrNotFound,
 		},
 	}
 
 	for _, tc := range cases {
-		_, err := svc.InviteMember(context.Background(), tc.token, tc.orgID, redirectPathInvite, redirectPathRegister, tc.membership)
+		_, err := svc.InviteOrgMember(context.Background(), tc.token, tc.orgID, redirectPathInvite, tc.membership)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -1335,7 +1335,7 @@ func TestRevokeInvite(t *testing.T) {
 	testOrg, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	testInvite, err := svc.InviteMember(context.Background(), ownerToken, testOrg.ID, redirectPathInvite, redirectPathRegister, auth.OrgMembership{Email: invitee.Email, Role: auth.Viewer})
+	testInvite, err := svc.InviteOrgMember(context.Background(), ownerToken, testOrg.ID, redirectPathInvite, auth.OrgMembership{Email: invitee.Email, Role: auth.Viewer})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	testInviteID := testInvite.ID
 
@@ -1357,7 +1357,7 @@ func TestRevokeInvite(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.RevokeInvite(context.Background(), tc.token, testInviteID)
+		err := svc.RevokeOrgInvite(context.Background(), tc.token, testInviteID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 
@@ -1383,12 +1383,11 @@ func TestInviteRespond(t *testing.T) {
 
 	testInvites := []auth.OrgInvite{}
 	for i := range 3 {
-		inv, err := svc.InviteMember(
+		inv, err := svc.InviteOrgMember(
 			context.Background(),
 			ownerToken,
 			testOrg.ID,
 			redirectPathInvite,
-			redirectPathRegister,
 			auth.OrgMembership{Email: fmt.Sprintf("example%d@test.com", i+1), Role: auth.Viewer},
 		)
 
@@ -1427,7 +1426,7 @@ func TestInviteRespond(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.InviteRespond(context.Background(), tc.token, tc.inviteID, tc.accept)
+		err := svc.RespondOrgInvite(context.Background(), tc.token, tc.inviteID, tc.accept)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected: %s, got: %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -1467,7 +1466,7 @@ func TestViewInvite(t *testing.T) {
 
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	invite, err := svc.InviteMember(context.Background(), inviterToken, testOrg.ID, redirectPathInvite, redirectPathRegister, auth.OrgMembership{
+	invite, err := svc.InviteOrgMember(context.Background(), inviterToken, testOrg.ID, redirectPathInvite, auth.OrgMembership{
 		Email: invitee.Email,
 		Role:  auth.Viewer,
 	})
@@ -1502,7 +1501,7 @@ func TestViewInvite(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_, err := svc.ViewInvite(context.Background(), tc.token, invite.ID)
+		_, err := svc.ViewOrgInvite(context.Background(), tc.token, invite.ID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected :%s, got :%s\n", tc.desc, tc.err, err))
 	}
 
@@ -1537,7 +1536,7 @@ func TestListInvitesByUser(t *testing.T) {
 
 		assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 
-		_, err = svc.InviteMember(context.Background(), ownerToken, org.ID, redirectPathInvite, redirectPathRegister, auth.OrgMembership{
+		_, err = svc.InviteOrgMember(context.Background(), ownerToken, org.ID, redirectPathInvite, auth.OrgMembership{
 			Role:  auth.Viewer,
 			Email: invitee.Email,
 		})
@@ -1647,7 +1646,7 @@ func TestListInvitesByUser(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		invitesPage, err := svc.ListInvitesByUser(context.Background(), tc.token, tc.userType, tc.userID, tc.pm)
+		invitesPage, err := svc.ListOrgInvitesByUser(context.Background(), tc.token, tc.userType, tc.userID, tc.pm)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 
 		invCount := uint64(len(invitesPage.Invites))
