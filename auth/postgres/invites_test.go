@@ -54,14 +54,14 @@ func TestSaveInvite(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 		invites = append(invites, auth.OrgInvite{
-			ID:           invID,
-			InviteeID:    inviteeID,
-			InviteeEmail: "",
-			InviterID:    inviterID,
-			OrgID:        org.ID,
-			InviteeRole:  auth.Viewer,
-			CreatedAt:    time.Now(),
-			ExpiresAt:    time.Now().Add(inviteExpiryTime),
+			ID:          invID,
+			InviteeID:   inviteeID,
+			InviterID:   inviterID,
+			OrgID:       org.ID,
+			InviteeRole: auth.Viewer,
+			CreatedAt:   time.Now(),
+			ExpiresAt:   time.Now().Add(inviteExpiryTime),
+			State:       auth.InviteStatePending,
 		})
 	}
 
@@ -72,14 +72,14 @@ func TestSaveInvite(t *testing.T) {
 	inviterID, err := idProvider.ID()
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	expiredInvite := auth.OrgInvite{
-		ID:           invID,
-		InviteeID:    inviteeID,
-		InviteeEmail: "",
-		InviterID:    inviterID,
-		OrgID:        org.ID,
-		InviteeRole:  auth.Editor,
-		CreatedAt:    time.Now().Add(-2 * inviteExpiryTime),
-		ExpiresAt:    time.Now().Add(-1 * inviteExpiryTime),
+		ID:          invID,
+		InviteeID:   inviteeID,
+		InviterID:   inviterID,
+		OrgID:       org.ID,
+		InviteeRole: auth.Editor,
+		CreatedAt:   time.Now().Add(-2 * inviteExpiryTime),
+		ExpiresAt:   time.Now().Add(-1 * inviteExpiryTime),
+		State:       auth.InviteStatePending,
 	}
 	invites = append(invites, expiredInvite)
 
@@ -103,14 +103,14 @@ func TestSaveInvite(t *testing.T) {
 	invID, err = idProvider.ID()
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	reinviteExpiredInvite := auth.OrgInvite{
-		ID:           invID,
-		InviteeID:    expiredInvite.InviteeID,
-		InviteeEmail: expiredInvite.InviteeEmail,
-		InviterID:    expiredInvite.InviterID,
-		OrgID:        expiredInvite.OrgID,
-		InviteeRole:  expiredInvite.InviteeRole,
-		CreatedAt:    time.Now(),
-		ExpiresAt:    time.Now().Add(inviteExpiryTime),
+		ID:          invID,
+		InviteeID:   expiredInvite.InviteeID,
+		InviterID:   expiredInvite.InviterID,
+		OrgID:       expiredInvite.OrgID,
+		InviteeRole: expiredInvite.InviteeRole,
+		CreatedAt:   time.Now(),
+		ExpiresAt:   time.Now().Add(inviteExpiryTime),
+		State:       auth.InviteStatePending,
 	}
 
 	cases := []struct {
@@ -151,7 +151,7 @@ func TestSaveInvite(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := repoInvites.Save(context.Background(), tc.invites...)
+		err := repoInvites.SaveOrgInvite(context.Background(), tc.invites...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s, got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -191,18 +191,18 @@ func TestRetrieveInviteByID(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 		invites = append(invites, auth.OrgInvite{
-			ID:           invID,
-			InviteeID:    inviteeID,
-			InviteeEmail: fmt.Sprintf("invitee%d@test.com", i),
-			InviterID:    inviterID,
-			OrgID:        org.ID,
-			InviteeRole:  auth.Viewer,
-			CreatedAt:    time.Now(),
-			ExpiresAt:    time.Now(),
+			ID:          invID,
+			InviteeID:   inviteeID,
+			InviterID:   inviterID,
+			OrgID:       org.ID,
+			InviteeRole: auth.Viewer,
+			CreatedAt:   time.Now(),
+			ExpiresAt:   time.Now(),
+			State:       auth.InviteStatePending,
 		})
 	}
 
-	err = repoInvites.Save(context.Background(), invites...)
+	err = repoInvites.SaveOrgInvite(context.Background(), invites...)
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	nonExistentID, err := idProvider.ID()
@@ -236,7 +236,7 @@ func TestRetrieveInviteByID(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_, err := repoInvites.RetrieveByID(context.Background(), tc.inviteID)
+		_, err := repoInvites.RetrieveOrgInviteByID(context.Background(), tc.inviteID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s, got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -276,18 +276,18 @@ func TestRemoveInvite(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 		invites = append(invites, auth.OrgInvite{
-			ID:           invID,
-			InviteeID:    inviteeID,
-			InviteeEmail: fmt.Sprintf("invitee%d@test.com", i),
-			InviterID:    inviterID,
-			OrgID:        org.ID,
-			InviteeRole:  auth.Viewer,
-			CreatedAt:    time.Now(),
-			ExpiresAt:    time.Now(),
+			ID:          invID,
+			InviteeID:   inviteeID,
+			InviterID:   inviterID,
+			OrgID:       org.ID,
+			InviteeRole: auth.Viewer,
+			CreatedAt:   time.Now(),
+			ExpiresAt:   time.Now(),
+			State:       auth.InviteStatePending,
 		})
 	}
 
-	err = repoInvites.Save(context.Background(), invites...)
+	err = repoInvites.SaveOrgInvite(context.Background(), invites...)
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	nonExistentID, err := idProvider.ID()
@@ -321,7 +321,7 @@ func TestRemoveInvite(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := repoInvites.Remove(context.Background(), tc.inviteID)
+		err := repoInvites.RemoveOrgInvite(context.Background(), tc.inviteID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s, got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -362,18 +362,18 @@ func TestRetrieveByUserID(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 		invites = append(invites, auth.OrgInvite{
-			ID:           invID,
-			InviteeID:    inviteeID,
-			InviteeEmail: "",
-			InviterID:    inviterID,
-			OrgID:        org.ID,
-			InviteeRole:  auth.Viewer,
-			CreatedAt:    time.Now(),
-			ExpiresAt:    time.Now().Add(inviteExpiryTime),
+			ID:          invID,
+			InviteeID:   inviteeID,
+			InviterID:   inviterID,
+			OrgID:       org.ID,
+			InviteeRole: auth.Viewer,
+			CreatedAt:   time.Now(),
+			ExpiresAt:   time.Now().Add(inviteExpiryTime),
+			State:       auth.InviteStatePending,
 		})
 	}
 
-	err = repoInvites.Save(context.Background(), invites...)
+	err = repoInvites.SaveOrgInvite(context.Background(), invites...)
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := []struct {
@@ -427,7 +427,7 @@ func TestRetrieveByUserID(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		invPage, err := repoInvites.RetrieveByUserID(context.Background(), tc.userType, tc.userID, tc.pm)
+		invPage, err := repoInvites.RetrieveOrgInvitesByUserID(context.Background(), tc.userType, tc.userID, tc.pm)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s, got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.size, len(invPage.Invites), fmt.Sprintf("%s: expected size %d got %d\n", tc.desc, tc.size, len(invPage.Invites)))
 	}

@@ -245,7 +245,7 @@ func (ir invitesRepository) RetrieveOrgInvitesByUserID(ctx context.Context, user
 	}
 
 	if err := ir.syncOrgInviteStateByUserID(ctx, userType, userID); err != nil {
-		return auth.OrgInvitesPage{}, err
+		return auth.OrgInvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
 	}
 
 	rows, err := ir.db.NamedQueryContext(ctx, query, params)
