@@ -102,14 +102,14 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 
 	mux.Post("/json/restore", kithttp.NewServer(
 		restoreJSONMessagesEndpoint(svc),
-		decodeRestoreJSON,
+		decodeRestoreMessages,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/senml/restore", kithttp.NewServer(
 		restoreSenMLMessagesEndpoint(svc),
-		decodeRestoreSenML,
+		decodeRestoreMessages,
 		encodeResponse,
 		opts...,
 	))
@@ -175,15 +175,7 @@ func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, erro
 	return req, nil
 }
 
-func decodeRestoreJSON(ctx context.Context, r *http.Request) (interface{}, error) {
-	return decodeRestoreWithFormat(ctx, r, jsonFormat)
-}
-
-func decodeRestoreSenML(ctx context.Context, r *http.Request) (interface{}, error) {
-	return decodeRestoreWithFormat(ctx, r, senmlFormat)
-}
-
-func decodeRestoreWithFormat(_ context.Context, r *http.Request, messageFormat string) (interface{}, error) {
+func decodeRestoreMessages(_ context.Context, r *http.Request) (interface{}, error) {
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
@@ -201,10 +193,9 @@ func decodeRestoreWithFormat(_ context.Context, r *http.Request, messageFormat s
 	}
 
 	return restoreMessagesReq{
-		token:         apiutil.ExtractBearerToken(r),
-		fileType:      fileType,
-		messageFormat: messageFormat,
-		Messages:      data,
+		token:    apiutil.ExtractBearerToken(r),
+		fileType: fileType,
+		Messages: data,
 	}, nil
 }
 
@@ -214,9 +205,67 @@ func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, erro
 		return nil, err
 	}
 
-	pageMeta, err := apiutil.BuildMessagePageMetadata(r)
+	name, err := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
 	if err != nil {
-		return nil, err
+		return readers.PageMetadata{}, err
+	}
+
+	subtopic, err := apiutil.ReadStringQuery(r, apiutil.SubtopicKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	protocol, err := apiutil.ReadStringQuery(r, apiutil.ProtocolKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	v, err := apiutil.ReadFloatQuery(r, apiutil.ValueKey, 0)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	comparator, err := apiutil.ReadStringQuery(r, apiutil.ComparatorKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	vs, err := apiutil.ReadStringQuery(r, apiutil.StringValueKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	vd, err := apiutil.ReadStringQuery(r, apiutil.DataValueKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	vb, err := apiutil.ReadBoolQuery(r, apiutil.BoolValueKey, false)
+	if err != nil && err != apiutil.ErrNotFoundParam {
+		return readers.PageMetadata{}, err
+	}
+
+	from, err := apiutil.ReadIntQuery(r, apiutil.FromKey, 0)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	to, err := apiutil.ReadIntQuery(r, apiutil.ToKey, 0)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	pageMeta := readers.PageMetadata{
+		Name:        name,
+		Subtopic:    subtopic,
+		Protocol:    protocol,
+		Value:       v,
+		Comparator:  comparator,
+		StringValue: vs,
+		DataValue:   vd,
+		BoolValue:   vb,
+		From:        from,
+		To:          to,
 	}
 
 	return backupMessagesReq{
