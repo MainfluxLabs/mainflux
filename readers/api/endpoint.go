@@ -269,7 +269,7 @@ func restoreJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 			messages = append(messages, msg)
 		}
 
-		table := dbutil.GetTableName(req.messageFormat)
+		table := dbutil.GetTableName(jsonFormat)
 		if err := svc.Restore(ctx, table, messages...); err != nil {
 			return nil, err
 		}
@@ -309,7 +309,7 @@ func restoreSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoi
 			messages = append(messages, msg)
 		}
 
-		table := dbutil.GetTableName(req.messageFormat)
+		table := dbutil.GetTableName(senmlFormat)
 		if err := svc.Restore(ctx, table, messages...); err != nil {
 			return nil, err
 		}
