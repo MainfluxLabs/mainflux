@@ -587,7 +587,7 @@ func (ir invitesRepository) syncPlatformInviteState(ctx context.Context) error {
 		WHERE state='pending' AND expires_at < NOW()
 	`
 
-	_, err := ir.db.NamedExecContext(ctx, query, nil)
+	_, err := ir.db.NamedExecContext(ctx, query, map[string]any{})
 	if err != nil {
 		return errors.Wrap(errors.ErrUpdateEntity, err)
 	}
