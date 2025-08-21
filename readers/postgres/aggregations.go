@@ -57,7 +57,7 @@ func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata) (
 	config := QueryConfig{
 		Format:      rpm.Format,
 		TimeColumn:  as.getTimeColumn(rpm.Format),
-		AggField:    rpm.AggField,
+		AggField:    as.getAggregateField(rpm),
 		AggInterval: rpm.AggInterval,
 		Limit:       rpm.Limit,
 		AggType:     rpm.AggType,
@@ -472,6 +472,15 @@ func (as *aggregationService) executeQuery(query string, params map[string]inter
 		return nil, errors.Wrap(readers.ErrReadMessages, err)
 	}
 	return rows, nil
+}
+
+func (as *aggregationService) getAggregateField(rpm readers.PageMetadata) string {
+	switch rpm.AggField {
+	case "":
+		return "value"
+	default:
+		return rpm.AggField
+	}
 }
 
 func (as *aggregationService) getTimeColumn(table string) string {
