@@ -24,6 +24,6 @@ type ownerIDByOrgIDRes struct {
 	ownerID string
 }
 
-type countRes struct {
-	value uint32
+type validatePlatformInviteRes struct {
+	valid bool
 }

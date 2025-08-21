@@ -23,14 +23,14 @@ const (
 var _ protomfx.AuthServiceClient = (*grpcClient)(nil)
 
 type grpcClient struct {
-	issue               endpoint.Endpoint
-	identify            endpoint.Endpoint
-	authorize           endpoint.Endpoint
-	getOwnerIDByOrgID   endpoint.Endpoint
-	retrieveRole        endpoint.Endpoint
-	assignRole          endpoint.Endpoint
-	flipInactiveInvites endpoint.Endpoint
-	timeout             time.Duration
+	issue                  endpoint.Endpoint
+	identify               endpoint.Endpoint
+	authorize              endpoint.Endpoint
+	getOwnerIDByOrgID      endpoint.Endpoint
+	retrieveRole           endpoint.Endpoint
+	assignRole             endpoint.Endpoint
+	validatePlatformInvite endpoint.Endpoint
+	timeout                time.Duration
 }
 
 // NewClient returns new gRPC client instance.
@@ -84,13 +84,13 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			decodeEmptyResponse,
 			empty.Empty{},
 		).Endpoint()),
-		flipInactiveInvites: kitot.TraceClient(tracer, "flip_inactive_invites")(kitgrpc.NewClient(
+		validatePlatformInvite: kitot.TraceClient(tracer, "validate_platform_invite")(kitgrpc.NewClient(
 			conn,
 			svcName,
-			"FlipInactiveInvites",
-			encodeFlipInactiveInvitesRequest,
-			decodeCountResponse,
-			protomfx.Count{},
+			"ValidatePlatformInvite",
+			encodeValidatePlatformInviteRequest,
+			decodeValidatePlatformInviteResponse,
+			protomfx.ValidatePlatformInviteRes{},
 		).Endpoint()),
 
 		timeout: timeout,
@@ -239,30 +239,30 @@ func decodeEmptyResponse(_ context.Context, _ interface{}) (interface{}, error) 
 	return emptyRes{}, nil
 }
 
-func encodeFlipInactiveInvitesRequest(_ context.Context, grpcReq any) (any, error) {
-	req := grpcReq.(flipInactiveInvitesReq)
-	return &protomfx.FlipInactiveInvitesReq{
-		Email:  req.email,
-		UserID: req.userID,
+func encodeValidatePlatformInviteRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(validatePlatformInviteReq)
+	return &protomfx.ValidatePlatformInviteReq{
+		Email:    req.email,
+		InviteID: req.inviteID,
 	}, nil
 }
 
-func decodeCountResponse(_ context.Context, grpcRes any) (any, error) {
-	res := grpcRes.(*protomfx.Count)
-	return countRes{
-		value: res.GetValue(),
+func decodeValidatePlatformInviteResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(*protomfx.ValidatePlatformInviteRes)
+	return validatePlatformInviteRes{
+		valid: res.GetValid(),
 	}, nil
 }
 
-func (client grpcClient) FlipInactiveInvites(ctx context.Context, req *protomfx.FlipInactiveInvitesReq, _ ...grpc.CallOption) (*protomfx.Count, error) {
+func (client grpcClient) ValidatePlatformInvite(ctx context.Context, req *protomfx.ValidatePlatformInviteReq, _ ...grpc.CallOption) (*protomfx.ValidatePlatformInviteRes, error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := client.flipInactiveInvites(ctx, flipInactiveInvitesReq{email: req.GetEmail(), userID: req.GetUserID()})
+	res, err := client.validatePlatformInvite(ctx, validatePlatformInviteReq{email: req.GetEmail(), inviteID: req.GetInviteID()})
 	if err != nil {
-		return &protomfx.Count{}, err
+		return &protomfx.ValidatePlatformInviteRes{}, err
 	}
 
-	rr := res.(countRes)
-	return &protomfx.Count{Value: rr.value}, nil
+	rr := res.(validatePlatformInviteRes)
+	return &protomfx.ValidatePlatformInviteRes{Valid: rr.valid}, nil
 }

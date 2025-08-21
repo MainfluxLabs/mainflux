@@ -474,19 +474,23 @@ func (svc service) ListPlatformInvites(ctx context.Context, token string, pm api
 func (svc service) ValidatePlatformInvite(ctx context.Context, inviteID string, email string) error {
 	invite, err := svc.invites.RetrievePlatformInviteByID(ctx, inviteID)
 	if err != nil {
+		if errors.Contains(err, errors.ErrNotFound) {
+			return errors.Wrap(errors.ErrAuthorization, err)
+		}
+
 		return err
 	}
 
 	if invite.InviteeEmail != email {
-		return errors.ErrAuthorization
+		return errors.Wrap(errors.ErrAuthorization, errors.ErrAuthorization)
 	}
 
 	if invite.State != InviteStatePending {
 		if invite.State == InviteStateExpired {
-			return ErrInviteExpired
+			return errors.Wrap(errors.ErrAuthorization, ErrInviteExpired)
 		}
 
-		return ErrInvalidInviteState
+		return errors.Wrap(errors.ErrAuthorization, ErrInvalidInviteState)
 	}
 
 	if err := svc.invites.UpdatePlatformInviteState(ctx, inviteID, InviteStateAccepted); err != nil {

@@ -21,13 +21,13 @@ import (
 var _ protomfx.AuthServiceServer = (*grpcServer)(nil)
 
 type grpcServer struct {
-	issue               kitgrpc.Handler
-	identify            kitgrpc.Handler
-	authorize           kitgrpc.Handler
-	getOwnerIDByOrgID   kitgrpc.Handler
-	assignRole          kitgrpc.Handler
-	retrieveRole        kitgrpc.Handler
-	flipInactiveInvites kitgrpc.Handler
+	issue                  kitgrpc.Handler
+	identify               kitgrpc.Handler
+	authorize              kitgrpc.Handler
+	getOwnerIDByOrgID      kitgrpc.Handler
+	assignRole             kitgrpc.Handler
+	retrieveRole           kitgrpc.Handler
+	validatePlatformInvite kitgrpc.Handler
 }
 
 // NewServer returns new AuthServiceServer instance.
@@ -63,11 +63,11 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			decodeRetrieveRoleRequest,
 			encodeRetrieveRoleResponse,
 		),
-		// flipInactiveInvites: kitgrpc.NewServer(
-		// 	kitot.TraceServer(tracer, "flip_inactive_invites")(flipInactiveInvitesEndpoint(svc)),
-		// 	decodeFlipInactiveInvitesRequest,
-		// 	encodeCountResponse,
-		// ),
+		validatePlatformInvite: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "validate_platform_invite")(validatePlatformInviteEndpoint(svc)),
+			decodeValidatePlatformInviteRequest,
+			encoveValidatePlatformInviteResponse,
+		),
 	}
 }
 
@@ -120,13 +120,13 @@ func (s *grpcServer) RetrieveRole(ctx context.Context, req *protomfx.RetrieveRol
 	return res.(*protomfx.RetrieveRoleRes), nil
 }
 
-func (s *grpcServer) FlipInactiveInvites(ctx context.Context, req *protomfx.FlipInactiveInvitesReq) (*protomfx.Count, error) {
-	_, res, err := s.flipInactiveInvites.ServeGRPC(ctx, req)
+func (s *grpcServer) ValidatePlatformInvite(ctx context.Context, req *protomfx.ValidatePlatformInviteReq) (*protomfx.ValidatePlatformInviteRes, error) {
+	_, res, err := s.validatePlatformInvite.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
 
-	return res.(*protomfx.Count), nil
+	return res.(*protomfx.ValidatePlatformInviteRes), nil
 }
 
 func decodeAssignRoleRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
@@ -174,11 +174,11 @@ func decodeGetOwnerIDByOrgIDRequest(_ context.Context, grpcReq interface{}) (int
 	return ownerIDByOrgIDReq{orgID: req.GetValue()}, nil
 }
 
-func decodeFlipInactiveInvitesRequest(_ context.Context, grpcReq any) (any, error) {
-	req := grpcReq.(*protomfx.FlipInactiveInvitesReq)
-	return flipInactiveInvitesReq{
-		email:  req.GetEmail(),
-		userID: req.GetUserID(),
+func decodeValidatePlatformInviteRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.ValidatePlatformInviteReq)
+	return validatePlatformInviteReq{
+		email:    req.GetEmail(),
+		inviteID: req.GetInviteID(),
 	}, nil
 }
 
@@ -192,9 +192,9 @@ func encodeEmptyResponse(_ context.Context, grpcRes interface{}) (interface{}, e
 	return &empty.Empty{}, encodeError(res.err)
 }
 
-func encodeCountResponse(_ context.Context, grpcRes any) (any, error) {
-	res := grpcRes.(countRes)
-	return &protomfx.Count{Value: res.value}, nil
+func encoveValidatePlatformInviteResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(validatePlatformInviteRes)
+	return &protomfx.ValidatePlatformInviteRes{Valid: res.valid}, nil
 }
 
 func encodeError(err error) error {

@@ -185,12 +185,6 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, redirectPat
 			return "", err
 		}
 
-		_, err = svc.auth.FlipInactiveInvites(ctx, &protomfx.FlipInactiveInvitesReq{Email: user.Email, UserID: user.ID})
-		if err != nil {
-			// TODO: what to do here - the user's been saved but flipping the invites failed?
-			return "", err
-		}
-
 		return user.ID, nil
 	}
 
@@ -250,12 +244,6 @@ func (svc usersService) VerifyEmail(ctx context.Context, confirmationToken strin
 	verification.User.Status = EnabledStatusKey
 
 	if _, err := svc.users.Save(ctx, verification.User); err != nil {
-		return "", err
-	}
-
-	_, err = svc.auth.FlipInactiveInvites(ctx, &protomfx.FlipInactiveInvitesReq{Email: verification.User.Email, UserID: verification.User.ID})
-	if err != nil {
-		// TODO: what to do here - the user's been saved but flipping the invites failed?
 		return "", err
 	}
 

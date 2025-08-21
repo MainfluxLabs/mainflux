@@ -106,18 +106,18 @@ func (req retrieveRoleReq) validate() error {
 	return nil
 }
 
-type flipInactiveInvitesReq struct {
-	email  string
-	userID string
+type validatePlatformInviteReq struct {
+	email    string
+	inviteID string
 }
 
-func (req flipInactiveInvitesReq) validate() error {
+func (req validatePlatformInviteReq) validate() error {
 	if req.email == "" {
 		return apiutil.ErrMissingEmail
 	}
 
-	if req.userID == "" {
-		return apiutil.ErrMissingUserID
+	if req.inviteID == "" {
+		return apiutil.ErrMissingInviteID
 	}
 
 	return nil
