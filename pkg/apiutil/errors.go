@@ -135,9 +135,6 @@ var (
 	// ErrInvalidQueryParams indicates invalid query parameters
 	ErrInvalidQueryParams = errors.New("invalid query parameters")
 
-	// ErrInvalidPathParams indicates invalid path parameters
-	ErrInvalidPathParams = errors.New("invalid path parameters")
-
 	//ErrInvalidAggType indicates invalid aggregation type
 	ErrInvalidAggType = errors.New("invalid aggregation type")
 
