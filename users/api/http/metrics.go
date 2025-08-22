@@ -48,6 +48,15 @@ func (ms *metricsMiddleware) VerifyEmail(ctx context.Context, token string) (str
 	return ms.svc.VerifyEmail(ctx, token)
 }
 
+func (ms *metricsMiddleware) PlatformInviteRegister(ctx context.Context, user users.User, inviteID string, emailVerifyRedirectPath string) (string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "platform_invite_register").Add(1)
+		ms.latency.With("method", "platform_invite_register").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.PlatformInviteRegister(ctx, user, inviteID, emailVerifyRedirectPath)
+}
+
 func (ms *metricsMiddleware) RegisterAdmin(ctx context.Context, user users.User) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "register_admin").Add(1)

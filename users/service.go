@@ -53,6 +53,14 @@ type Service interface {
 	// Returns the ID of the newly-registered User upon success.
 	VerifyEmail(ctx context.Context, confirmationToken string) (string, error)
 
+	// PlatformInviteRegister performs user registration based on a platform invite.
+	// inviteID must correspond to a valid, pending and non-expired platform invite, and the user's supplied
+	// e-mail address must match the e-mail address of that platform invite. If e-mail verification is disabled
+	// in the service, user account creation is then performed without any further checks, and this method returns
+	// the ID of the newly created user. If e-mail verification is enabled in the service, a pending EmailVerification is created,
+	// an e-mail message is sent to the user, and this method returns the e-mail verification token.
+	PlatformInviteRegister(ctx context.Context, user User, inviteID string, emailVerifyRedirectPath string) (string, error)
+
 	// Register creates new user account. In case of the failed registration, a
 	// non-nil error value is returned. The user registration is only allowed
 	// for admin.
@@ -213,6 +221,54 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, redirectPat
 	}()
 
 	return token, nil
+}
+
+func (svc usersService) PlatformInviteRegister(ctx context.Context, user User, inviteID string, emailVerifyRedirectPath string) (string, error) {
+	// Make sure user with same e-mail isn't registered already
+	_, err := svc.users.RetrieveByEmail(ctx, user.Email)
+	if err != nil && !errors.Contains(err, errors.ErrNotFound) {
+		return "", err
+	}
+
+	if err == nil {
+		return "", errors.ErrConflict
+	}
+
+	// Validate platform invite
+	validateInviteReq := &protomfx.ValidatePlatformInviteReq{
+		Email:    user.Email,
+		InviteID: inviteID,
+	}
+
+	resp, err := svc.auth.ValidatePlatformInvite(ctx, validateInviteReq)
+	if err != nil {
+		return "", err
+	}
+
+	if !resp.GetValid() {
+		return "", errors.ErrAuthorization
+	}
+
+	hash, err := svc.hasher.Hash(user.Password)
+	if err != nil {
+		return "", errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	user.Password = hash
+
+	userID, err := svc.idProvider.ID()
+	if err != nil {
+		return "", err
+	}
+
+	user.ID = userID
+	user.Status = EnabledStatusKey
+
+	if _, err := svc.users.Save(ctx, user); err != nil {
+		return "", err
+	}
+
+	return user.ID, nil
 }
 
 func (svc usersService) VerifyEmail(ctx context.Context, confirmationToken string) (string, error) {

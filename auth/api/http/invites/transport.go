@@ -62,7 +62,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
-	mux.Get("/users/:userID/invites", kithttp.NewServer(
+	mux.Get("/users/:userID/invites/received", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_org_invites_by_invitee")(listOrgInvitesByUserEndpoint(svc, auth.UserTypeInvitee)),
 		decodeListOrgInvitesByUserRequest,
 		encodeResponse,
