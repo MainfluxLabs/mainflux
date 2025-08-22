@@ -86,7 +86,6 @@ func listSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint 
 			Messages:     page.Messages,
 		}, nil
 	}
-
 }
 
 func deleteJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
@@ -120,7 +119,6 @@ func deleteJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint
 
 		return nil, nil
 	}
-
 }
 
 func deleteSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
@@ -154,7 +152,6 @@ func deleteSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 
 		return nil, nil
 	}
-
 }
 
 func backupJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
@@ -193,9 +190,7 @@ func backupJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint
 		return backupFileRes{
 			file: data,
 		}, nil
-
 	}
-
 }
 
 func backupSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
@@ -234,9 +229,7 @@ func backupSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 		return backupFileRes{
 			file: data,
 		}, nil
-
 	}
-
 }
 
 func restoreJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
@@ -280,7 +273,6 @@ func restoreJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 
 		return restoreMessagesRes{}, nil
 	}
-
 }
 
 func restoreSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
@@ -324,5 +316,4 @@ func restoreSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoi
 
 		return restoreMessagesRes{}, nil
 	}
-
 }
