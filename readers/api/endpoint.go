@@ -16,9 +16,9 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-func listAllJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func listJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listAllMessagesReq)
+		req := request.(listMessagesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -52,9 +52,9 @@ func listAllJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 	}
 }
 
-func listAllSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func listSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listAllMessagesReq)
+		req := request.(listMessagesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
