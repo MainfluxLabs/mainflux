@@ -262,7 +262,7 @@ func restoreJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 		case csvFormat:
 			jsonMessages, err = apiutil.ConvertCSVToJSONMessages(req.Messages)
 		default:
-			return nil, errors.Wrap(errors.ErrMessage, err)
+			return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 		}
 
 		for _, msg := range jsonMessages {
@@ -302,7 +302,7 @@ func restoreSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoi
 		case csvFormat:
 			senmlMessages, err = apiutil.ConvertCSVToSenMLMessages(req.Messages)
 		default:
-			return nil, errors.Wrap(errors.ErrMessage, err)
+			return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 		}
 
 		for _, msg := range senmlMessages {
