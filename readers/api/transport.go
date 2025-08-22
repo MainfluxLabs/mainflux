@@ -59,14 +59,14 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 	mux := bone.New()
 
 	mux.Get("/json", kithttp.NewServer(
-		listAllJSONMessagesEndpoint(svc),
+		listJSONMessagesEndpoint(svc),
 		decodeListAllMessages,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/senml", kithttp.NewServer(
-		listAllSenMLMessagesEndpoint(svc),
+		listSenMLMessagesEndpoint(svc),
 		decodeListAllMessages,
 		encodeResponse,
 		opts...,
@@ -145,7 +145,7 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 	pageMeta.AggType = at
 	pageMeta.AggField = af
 
-	return listAllMessagesReq{
+	return listMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
 		key:      apiutil.ExtractThingKey(r),
 		pageMeta: pageMeta,
