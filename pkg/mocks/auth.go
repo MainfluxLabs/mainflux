@@ -140,7 +140,3 @@ func (svc authServiceMock) AssignRole(_ context.Context, _ *protomfx.AssignRoleR
 func (svc authServiceMock) RetrieveRole(_ context.Context, _ *protomfx.RetrieveRoleReq, _ ...grpc.CallOption) (r *protomfx.RetrieveRoleRes, err error) {
 	panic("not implemented")
 }
-
-func (svc authServiceMock) ValidatePlatformInvite(_ context.Context, _ *protomfx.ValidatePlatformInviteReq, _ ...grpc.CallOption) (*protomfx.ValidatePlatformInviteRes, error) {
-	return nil, nil
-}

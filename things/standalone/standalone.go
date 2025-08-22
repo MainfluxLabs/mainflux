@@ -60,7 +60,3 @@ func (repo singleUserRepo) AssignRole(ctx context.Context, req *protomfx.AssignR
 func (repo singleUserRepo) RetrieveRole(ctx context.Context, req *protomfx.RetrieveRoleReq, _ ...grpc.CallOption) (r *protomfx.RetrieveRoleRes, err error) {
 	return &protomfx.RetrieveRoleRes{}, errUnsupported
 }
-
-func (repo singleUserRepo) ValidatePlatformInvite(ctx context.Context, req *protomfx.ValidatePlatformInviteReq, _ ...grpc.CallOption) (r *protomfx.ValidatePlatformInviteRes, err error) {
-	return &protomfx.ValidatePlatformInviteRes{}, errUnsupported
-}

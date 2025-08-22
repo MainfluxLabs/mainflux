@@ -16,6 +16,3 @@ func NewEmailer() auth.Emailer {
 func (e *emailerMock) SendOrgInvite(To []string, inv auth.OrgInvite, orgName string, invRedirectPath string) error {
 	return nil
 }
-func (e *emailerMock) SendPlatformInvite(To []string, inv auth.PlatformInvite, redirectPath string) error {
-	return nil
-}

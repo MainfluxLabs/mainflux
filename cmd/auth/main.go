@@ -96,7 +96,7 @@ const (
 	envServerKey       = "MF_AUTH_SERVER_KEY"
 	envJaegerURL       = "MF_JAEGER_URL"
 	envLoginDuration   = "MF_AUTH_LOGIN_TOKEN_DURATION"
-	envInviteDuration  = "MF_AUTH_INVITE_DURATION"
+	envInviteDuration  = "MF_INVITE_DURATION"
 	envAdminEmail      = "MF_USERS_ADMIN_EMAIL"
 	envThingsGRPCURL   = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsCACerts   = "MF_THINGS_CA_CERTS"

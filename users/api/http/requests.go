@@ -216,6 +216,62 @@ func (req changeUserStatusReq) validate() error {
 	return nil
 }
 
+type inviteReq struct {
+	token    string
+	inviteID string
+}
+
+func (req inviteReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.inviteID == "" {
+		return apiutil.ErrMissingInviteID
+	}
+
+	return nil
+}
+
+type createPlatformInviteRequest struct {
+	token        string
+	Email        string `json:"email,omitempty"`
+	RedirectPath string `json:"redirect_path,omitempty"`
+}
+
+func (req createPlatformInviteRequest) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.Email == "" {
+		return apiutil.ErrMissingEmail
+	}
+
+	if req.RedirectPath == "" {
+		return apiutil.ErrMissingRedirectPath
+	}
+
+	return nil
+}
+
+type listPlatformInvitesRequest struct {
+	token string
+	pm    apiutil.PageMetadata
+}
+
+func (req listPlatformInvitesRequest) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if err := apiutil.ValidatePageMetadata(req.pm, maxLimitSize, 254); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type backupReq struct {
 	token string
 }

@@ -131,7 +131,7 @@ func TestSaveInvite(t *testing.T) {
 		{
 			desc:    "save invite to same invitee by same inviter to same org",
 			invites: []auth.OrgInvite{alreadyInvitedInvite},
-			err:     auth.ErrUserAlreadyInvited,
+			err:     apiutil.ErrUserAlreadyInvited,
 		},
 		{
 			desc:    "save invites with invalid org id",

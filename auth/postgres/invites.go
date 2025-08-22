@@ -21,7 +21,7 @@ type invitesRepository struct {
 	db dbutil.Database
 }
 
-func NewOrgInvitesRepo(db dbutil.Database) auth.InvitesRepository {
+func NewOrgInvitesRepo(db dbutil.Database) auth.OrgInvitesRepository {
 	return &invitesRepository{
 		db: db,
 	}
@@ -30,7 +30,7 @@ func NewOrgInvitesRepo(db dbutil.Database) auth.InvitesRepository {
 func (ir invitesRepository) SaveOrgInvite(ctx context.Context, invites ...auth.OrgInvite) error {
 	tx, err := ir.db.BeginTxx(ctx, nil)
 	if err != nil {
-		errors.Wrap(auth.ErrCreateInvite, err)
+		errors.Wrap(apiutil.ErrCreateInvite, err)
 	}
 
 	qIns := `
@@ -56,19 +56,19 @@ func (ir invitesRepository) SaveOrgInvite(ctx context.Context, invites ...auth.O
 				case pgerrcode.UniqueViolation:
 					var e = errors.ErrConflict
 					if pgErr.ConstraintName == "ux_invites_org_invitee_id_org_id" {
-						e = auth.ErrUserAlreadyInvited
+						e = apiutil.ErrUserAlreadyInvited
 					}
 
 					return errors.Wrap(e, errors.New(pgErr.Detail))
 				}
 			}
 
-			return errors.Wrap(auth.ErrCreateInvite, err)
+			return errors.Wrap(apiutil.ErrCreateInvite, err)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return errors.Wrap(auth.ErrCreateInvite, err)
+		return errors.Wrap(apiutil.ErrCreateInvite, err)
 	}
 
 	return nil
@@ -370,231 +370,6 @@ func (ir invitesRepository) syncOrgInviteStateByID(ctx context.Context, inviteID
 	return nil
 }
 
-func (ir invitesRepository) SavePlatformInvite(ctx context.Context, invites ...auth.PlatformInvite) error {
-	tx, err := ir.db.BeginTxx(ctx, nil)
-	if err != nil {
-		errors.Wrap(auth.ErrCreateInvite, err)
-	}
-
-	qIns := `
-		INSERT INTO invites_platform (id, invitee_email, created_at, expires_at, state)	
-		VALUES (:id, :invitee_email, :created_at, :expires_at, :state)
-	`
-
-	for _, invite := range invites {
-		if err := ir.syncPlatformInviteStateByEmail(ctx, invite.InviteeEmail); err != nil {
-			tx.Rollback()
-			return err
-		}
-
-		dbInvite := toDBPlatformInvite(invite)
-		if _, err := tx.NamedExecContext(ctx, qIns, dbInvite); err != nil {
-			tx.Rollback()
-
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					var e = errors.ErrConflict
-					if pgErr.ConstraintName == "ux_invites_platform_invitee_email" {
-						e = auth.ErrUserAlreadyInvited
-					}
-
-					return errors.Wrap(e, errors.New(pgErr.Detail))
-				}
-			}
-
-			return errors.Wrap(auth.ErrCreateInvite, err)
-		}
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(auth.ErrCreateInvite, err)
-	}
-
-	return nil
-}
-
-func (ir invitesRepository) RetrievePlatformInviteByID(ctx context.Context, inviteID string) (auth.PlatformInvite, error) {
-	if err := ir.syncPlatformInviteStateByID(ctx, inviteID); err != nil {
-		return auth.PlatformInvite{}, err
-	}
-
-	q := `
-		SELECT id, invitee_email, created_at, expires_at, state
-		FROM invites_platform
-		WHERE id = $1
-	`
-
-	dbI := dbPlatformInvite{ID: inviteID}
-
-	if err := ir.db.QueryRowxContext(ctx, q, inviteID).StructScan(&dbI); err != nil {
-		if err == sql.ErrNoRows {
-			return auth.PlatformInvite{}, errors.Wrap(errors.ErrNotFound, err)
-		}
-
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pgErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return auth.PlatformInvite{}, errors.Wrap(errors.ErrMalformedEntity, err)
-			}
-		}
-
-		return auth.PlatformInvite{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	return toPlatformInvite(dbI), nil
-}
-
-func (ir invitesRepository) RetrievePlatformInvites(ctx context.Context, pm apiutil.PageMetadata) (auth.PlatformInvitesPage, error) {
-	query := `
-		SELECT id, invitee_email, created_at, expires_at, state
-		FROM invites_platform
-	`
-
-	queryCount := `SELECT COUNT(*) FROM invites_platform`
-
-	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	query = fmt.Sprintf("%s %s", query, olq)
-
-	params := map[string]any{
-		"limit":  pm.Limit,
-		"offset": pm.Offset,
-	}
-
-	if err := ir.syncPlatformInviteState(ctx); err != nil {
-		return auth.PlatformInvitesPage{}, err
-	}
-
-	rows, err := ir.db.NamedQueryContext(ctx, query, params)
-	if err != nil {
-		return auth.PlatformInvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
-
-	var invites []auth.PlatformInvite
-
-	for rows.Next() {
-		dbInv := dbPlatformInvite{}
-
-		if err := rows.StructScan(&dbInv); err != nil {
-			return auth.PlatformInvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-		}
-
-		inv := toPlatformInvite(dbInv)
-		invites = append(invites, inv)
-	}
-
-	total, err := dbutil.Total(ctx, ir.db, queryCount, params)
-	if err != nil {
-		return auth.PlatformInvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
-	}
-
-	page := auth.PlatformInvitesPage{
-		Invites: invites,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
-	}
-
-	return page, nil
-}
-
-func (ir invitesRepository) UpdatePlatformInviteState(ctx context.Context, inviteID string, state string) error {
-	query := `
-		UPDATE invites_platform
-		SET state=:state
-		WHERE id=:inviteID
-	`
-	_, err := ir.db.NamedExecContext(ctx, query, map[string]any{
-		"inviteID": inviteID,
-		"state":    state,
-	})
-
-	if err != nil {
-		pqErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pqErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
-			}
-		}
-		return errors.Wrap(errors.ErrUpdateEntity, err)
-	}
-
-	return nil
-}
-
-// Syncs the states of all platform invites with the passed invitee email. That is, sets
-// state='expired' where state='pending' and expires_at < now().
-func (ir invitesRepository) syncPlatformInviteStateByEmail(ctx context.Context, email string) error {
-	query := `
-		UPDATE invites_platform
-		SET state='expired'
-		WHERE invitee_email=:email AND state='pending' AND expires_at < NOW()
-	`
-
-	_, err := ir.db.NamedExecContext(ctx, query, map[string]any{"email": email})
-	if err != nil {
-		pqErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pqErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
-			}
-		}
-		return errors.Wrap(errors.ErrUpdateEntity, err)
-	}
-
-	return nil
-}
-
-// Syncs the states of a specific invite denoted by its ID. That is, sets state='expired' where state='pending'
-// and expires_at < now().
-func (ir invitesRepository) syncPlatformInviteStateByID(ctx context.Context, inviteID string) error {
-	query := `
-		UPDATE invites_platform
-		SET state='expired'
-		WHERE id=:inviteID AND state='pending' AND expires_at < NOW()
-	`
-
-	_, err := ir.db.NamedExecContext(ctx, query, map[string]any{"inviteID": inviteID})
-	if err != nil {
-		pqErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pqErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
-			}
-		}
-		return errors.Wrap(errors.ErrUpdateEntity, err)
-	}
-
-	return nil
-}
-
-// Syncs the state of all platform invites in the database. That is, sets state='expired' where state='pending'
-// and expires_at < now().
-func (ir invitesRepository) syncPlatformInviteState(ctx context.Context) error {
-	query := `
-		UPDATE invites_platform
-		SET state='expired'
-		WHERE state='pending' AND expires_at < NOW()
-	`
-
-	_, err := ir.db.NamedExecContext(ctx, query, map[string]any{})
-	if err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
-	}
-
-	return nil
-}
-
 func toDBOrgInvite(invite auth.OrgInvite) dbOrgInvite {
 	return dbOrgInvite{
 		ID:          invite.ID,
@@ -621,26 +396,6 @@ func toOrgInvite(dbI dbOrgInvite) auth.OrgInvite {
 	}
 }
 
-func toDBPlatformInvite(invite auth.PlatformInvite) dbPlatformInvite {
-	return dbPlatformInvite{
-		ID:           invite.ID,
-		InviteeEmail: invite.InviteeEmail,
-		CreatedAt:    invite.CreatedAt,
-		ExpiresAt:    invite.ExpiresAt,
-		State:        invite.State,
-	}
-}
-
-func toPlatformInvite(dbI dbPlatformInvite) auth.PlatformInvite {
-	return auth.PlatformInvite{
-		ID:           dbI.ID,
-		InviteeEmail: dbI.InviteeEmail,
-		CreatedAt:    dbI.CreatedAt,
-		ExpiresAt:    dbI.ExpiresAt,
-		State:        dbI.State,
-	}
-}
-
 type dbOrgInvite struct {
 	ID          string    `db:"id"`
 	InviteeID   string    `db:"invitee_id"`
@@ -650,12 +405,4 @@ type dbOrgInvite struct {
 	CreatedAt   time.Time `db:"created_at"`
 	ExpiresAt   time.Time `db:"expires_at"`
 	State       string    `db:"state"`
-}
-
-type dbPlatformInvite struct {
-	ID           string    `db:"id"`
-	InviteeEmail string    `db:"invitee_email"`
-	CreatedAt    time.Time `db:"created_at"`
-	ExpiresAt    time.Time `db:"expires_at"`
-	State        string    `db:"state"`
 }

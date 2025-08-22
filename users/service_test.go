@@ -23,6 +23,8 @@ import (
 const (
 	wrong   = "wrong-value"
 	userNum = 101
+
+	inviteDuration = 7 * 24 * time.Hour
 )
 
 var (
@@ -66,10 +68,11 @@ func newService() users.Service {
 	hasher := usmocks.NewHasher()
 	userRepo := usmocks.NewUserRepository(usersList)
 	verificationRepo := usmocks.NewEmailVerificationRepository(verificationsList)
+	invitesRepo := usmocks.NewPlatformInvitesRepository()
 	authSvc := mocks.NewAuthService(admin.ID, usersList, nil)
 	e := usmocks.NewEmailer()
 
-	return users.New(userRepo, verificationRepo, true, hasher, authSvc, e, idProvider)
+	return users.New(userRepo, verificationRepo, invitesRepo, inviteDuration, true, hasher, authSvc, e, idProvider)
 }
 
 func TestSelfRegister(t *testing.T) {

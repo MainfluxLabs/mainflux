@@ -21,13 +21,12 @@ import (
 var _ protomfx.AuthServiceServer = (*grpcServer)(nil)
 
 type grpcServer struct {
-	issue                  kitgrpc.Handler
-	identify               kitgrpc.Handler
-	authorize              kitgrpc.Handler
-	getOwnerIDByOrgID      kitgrpc.Handler
-	assignRole             kitgrpc.Handler
-	retrieveRole           kitgrpc.Handler
-	validatePlatformInvite kitgrpc.Handler
+	issue             kitgrpc.Handler
+	identify          kitgrpc.Handler
+	authorize         kitgrpc.Handler
+	getOwnerIDByOrgID kitgrpc.Handler
+	assignRole        kitgrpc.Handler
+	retrieveRole      kitgrpc.Handler
 }
 
 // NewServer returns new AuthServiceServer instance.
@@ -62,11 +61,6 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			kitot.TraceServer(tracer, "retrieve_role")(retrieveRoleEndpoint(svc)),
 			decodeRetrieveRoleRequest,
 			encodeRetrieveRoleResponse,
-		),
-		validatePlatformInvite: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "validate_platform_invite")(validatePlatformInviteEndpoint(svc)),
-			decodeValidatePlatformInviteRequest,
-			encoveValidatePlatformInviteResponse,
 		),
 	}
 }
@@ -120,15 +114,6 @@ func (s *grpcServer) RetrieveRole(ctx context.Context, req *protomfx.RetrieveRol
 	return res.(*protomfx.RetrieveRoleRes), nil
 }
 
-func (s *grpcServer) ValidatePlatformInvite(ctx context.Context, req *protomfx.ValidatePlatformInviteReq) (*protomfx.ValidatePlatformInviteRes, error) {
-	_, res, err := s.validatePlatformInvite.ServeGRPC(ctx, req)
-	if err != nil {
-		return nil, encodeError(err)
-	}
-
-	return res.(*protomfx.ValidatePlatformInviteRes), nil
-}
-
 func decodeAssignRoleRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*protomfx.AssignRoleReq)
 	return assignRoleReq{ID: req.GetId(), Role: req.GetRole()}, nil
@@ -174,14 +159,6 @@ func decodeGetOwnerIDByOrgIDRequest(_ context.Context, grpcReq interface{}) (int
 	return ownerIDByOrgIDReq{orgID: req.GetValue()}, nil
 }
 
-func decodeValidatePlatformInviteRequest(_ context.Context, grpcReq any) (any, error) {
-	req := grpcReq.(*protomfx.ValidatePlatformInviteReq)
-	return validatePlatformInviteReq{
-		email:    req.GetEmail(),
-		inviteID: req.GetInviteID(),
-	}, nil
-}
-
 func encodeGetOwnerIDByOrgIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(ownerIDByOrgIDRes)
 	return &protomfx.OwnerID{Value: res.ownerID}, nil
@@ -190,11 +167,6 @@ func encodeGetOwnerIDByOrgIDResponse(_ context.Context, grpcRes interface{}) (in
 func encodeEmptyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(emptyRes)
 	return &empty.Empty{}, encodeError(res.err)
-}
-
-func encoveValidatePlatformInviteResponse(_ context.Context, grpcRes any) (any, error) {
-	res := grpcRes.(validatePlatformInviteRes)
-	return &protomfx.ValidatePlatformInviteRes{Valid: res.valid}, nil
 }
 
 func encodeError(err error) error {

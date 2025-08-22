@@ -31,12 +31,3 @@ func (ms *metricsMiddleware) SendOrgInvite(To []string, invite auth.OrgInvite, o
 
 	return ms.emailer.SendOrgInvite(To, invite, orgName, invRedirectPath)
 }
-
-func (ms *metricsMiddleware) SendPlatformInvite(To []string, invite auth.PlatformInvite, redirectPath string) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "send_email_verification").Add(1)
-		ms.latency.With("method", "send_email_verification").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.emailer.SendPlatformInvite(To, invite, redirectPath)
-}

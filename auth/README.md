@@ -73,7 +73,7 @@ default values.
 | MF_AUTH_SERVER_KEY            | Path to server key in pem format                                         |                |
 | MF_AUTH_SECRET                | String used for signing tokens                                           | auth           |
 | MF_AUTH_LOGIN_TOKEN_DURATION  | The login token expiration period                                        | 10h            |
-| MF_AUTH_INVITE_DURATION       | Duration of validity of created Org invites                              | 168h           |
+| MF_INVITE_DURATION            | Duration of validity of created Org invites                              | 168h           |
 | MF_JAEGER_URL                 | Jaeger server URL                                                        | localhost:6831 |
 | MF_EMAIL_HOST                 | Mail server host                                                         | localhost      |
 | MF_EMAIL_PORT                 | Mail server port                                                         | 25             |

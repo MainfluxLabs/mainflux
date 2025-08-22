@@ -71,6 +71,8 @@ const (
 
 	defHost = "http://localhost"
 
+	defInviteDuration = "168h"
+
 	defAuthTLS         = "false"
 	defAuthCACerts     = ""
 	defAuthGRPCURL     = "localhost:8181"
@@ -117,6 +119,8 @@ const (
 
 	envSelfRegisterEnabled = "MF_USERS_SELF_REGISTER_ENABLED"
 	envEmailVerifyEnabled  = "MF_REQUIRE_EMAIL_VERIFICATION"
+
+	envInviteDuration = "MF_INVITE_DURATION"
 )
 
 type config struct {
@@ -134,6 +138,7 @@ type config struct {
 	host                string
 	selfRegisterEnabled bool
 	emailVerifyEnabled  bool
+	inviteDuration      time.Duration
 }
 
 func main() {
@@ -259,6 +264,11 @@ func loadConfig() config {
 		ClientName: clients.Auth,
 	}
 
+	inviteDuration, err := time.ParseDuration(mainflux.Env(envInviteDuration, defInviteDuration))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return config{
 		logLevel:            mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:            dbConfig,
@@ -274,6 +284,7 @@ func loadConfig() config {
 		passRegex:           passRegex,
 		selfRegisterEnabled: selfRegisterEnabled,
 		emailVerifyEnabled:  emailVerifyEnabled,
+		inviteDuration:      inviteDuration,
 	}
 }
 
@@ -291,6 +302,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceC
 	hasher := bcrypt.New()
 	userRepo := tracing.UserRepositoryMiddleware(postgres.NewUserRepo(database), tracer)
 	verificationRepo := tracing.VerificationRepositoryMiddleware(postgres.NewEmailVerificationRepo(database), tracer)
+	platformInvitesRepo := tracing.PlatformInvitesRepositoryMiddleware(postgres.NewPlatformInvitesRepo(database), tracer)
 
 	svcEmailer, err := emailer.New(c.host, &c.emailConf)
 	if err != nil {
@@ -316,7 +328,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceC
 
 	idProvider := uuid.New()
 
-	svc := users.New(userRepo, verificationRepo, c.emailVerifyEnabled, hasher, ac, svcEmailer, idProvider)
+	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, c.inviteDuration, c.emailVerifyEnabled, hasher, ac, svcEmailer, idProvider)
 	svc = httpapi.LoggingMiddleware(svc, logger)
 	svc = httpapi.MetricsMiddleware(
 		svc,

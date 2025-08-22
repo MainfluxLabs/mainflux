@@ -118,6 +118,8 @@ type Service interface {
 
 	// Restore restores users from backup. Only accessible by admin.
 	Restore(ctx context.Context, token string, admin User, users []User) error
+
+	PlatformInvites
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -143,6 +145,8 @@ var _ Service = (*usersService)(nil)
 type usersService struct {
 	users              UserRepository
 	emailVerifications EmailVerificationRepository
+	platformInvites    PlatformInvitesRepository
+	inviteDuration     time.Duration
 	emailVerifyEnabled bool
 	hasher             Hasher
 	email              Emailer
@@ -151,10 +155,12 @@ type usersService struct {
 }
 
 // New instantiates the users service implementation
-func New(users UserRepository, verifications EmailVerificationRepository, emailVerifyEnabled bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider) Service {
+func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, inviteDuration time.Duration, emailVerifyEnabled bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider) Service {
 	return &usersService{
 		users:              users,
 		emailVerifications: verifications,
+		platformInvites:    invites,
+		inviteDuration:     inviteDuration,
 		emailVerifyEnabled: emailVerifyEnabled,
 		hasher:             hasher,
 		auth:               auth,
@@ -235,18 +241,10 @@ func (svc usersService) PlatformInviteRegister(ctx context.Context, user User, i
 	}
 
 	// Validate platform invite
-	validateInviteReq := &protomfx.ValidatePlatformInviteReq{
-		Email:    user.Email,
-		InviteID: inviteID,
-	}
 
-	resp, err := svc.auth.ValidatePlatformInvite(ctx, validateInviteReq)
+	err = svc.ValidatePlatformInvite(ctx, inviteID, user.Email)
 	if err != nil {
 		return "", err
-	}
-
-	if !resp.GetValid() {
-		return "", errors.ErrAuthorization
 	}
 
 	hash, err := svc.hasher.Hash(user.Password)

@@ -9,6 +9,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/users"
 )
 
+const (
+	subjectPlatformInvite = "You've been invited to join MainfluxLabs"
+)
+
 var _ users.Emailer = (*emailer)(nil)
 
 type emailer struct {
@@ -47,4 +51,19 @@ func (e *emailer) SendEmailVerification(To []string, redirectPath string, token 
 	content = fmt.Sprintf(content, url)
 
 	return e.agent.Send(To, "", subject, "", content, "")
+}
+
+func (e *emailer) SendPlatformInvite(To []string, inv users.PlatformInvite, redirectPath string) error {
+	redirectURL := fmt.Sprintf("%s%s/%s", e.host, redirectPath, inv.ID)
+
+	emailContent := fmt.Sprintf(`
+		Hello,
+
+		You've been invited to join the MainfluxLabs platform!
+
+		Navigate to the following URL to create an account:
+		%s
+	`, redirectURL)
+
+	return e.agent.Send(To, "", subjectPlatformInvite, "", emailContent, "")
 }

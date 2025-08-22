@@ -11,6 +11,7 @@ import (
 	"time"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/users"
 )
 
@@ -281,4 +282,88 @@ func (lm *loggingMiddleware) Restore(ctx context.Context, token string, admin us
 	}(time.Now())
 
 	return lm.svc.Restore(ctx, token, admin, users)
+}
+
+func (lm *loggingMiddleware) InvitePlatformMember(ctx context.Context, token, redirectPath, email string) (invite users.PlatformInvite, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method invite_platform_member took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.InvitePlatformMember(ctx, token, redirectPath, email)
+}
+
+func (lm *loggingMiddleware) RevokePlatformInvite(ctx context.Context, token, inviteID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method revoke_platform_invite took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RevokePlatformInvite(ctx, token, inviteID)
+}
+
+func (lm *loggingMiddleware) ViewPlatformInvite(ctx context.Context, token, inviteID string) (invite users.PlatformInvite, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method view_platform_invite took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ViewPlatformInvite(ctx, token, inviteID)
+}
+
+func (lm *loggingMiddleware) ListPlatformInvites(ctx context.Context, token string, pm apiutil.PageMetadata) (invitesPage users.PlatformInvitesPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_platform_invites took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListPlatformInvites(ctx, token, pm)
+}
+
+func (lm *loggingMiddleware) ValidatePlatformInvite(ctx context.Context, inviteID string, email string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method validate_platform_invite took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ValidatePlatformInvite(ctx, inviteID, email)
+}
+
+func (lm *loggingMiddleware) SendPlatformInviteEmail(ctx context.Context, invite users.PlatformInvite, redirectPath string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method send_platform_invite_email took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.SendPlatformInviteEmail(ctx, invite, redirectPath)
 }

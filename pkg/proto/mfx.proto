@@ -42,7 +42,6 @@ service AuthService {
     rpc GetOwnerIDByOrgID(OrgID) returns (OwnerID) {}
     rpc AssignRole(AssignRoleReq) returns (google.protobuf.Empty) {}
     rpc RetrieveRole(RetrieveRoleReq) returns (RetrieveRoleRes) {}
-    rpc ValidatePlatformInvite(ValidatePlatformInviteReq) returns (ValidatePlatformInviteRes) {}
 }
 
 service RulesService {
@@ -98,15 +97,6 @@ message OrgID {
 
 message OwnerID {
     string value = 1;
-}
-
-message ValidatePlatformInviteReq {
-    string email    = 1;
-    string inviteID = 2;
-}
-
-message ValidatePlatformInviteRes {
-    bool valid = 1;
 }
 
 // If a token is not carrying any information itself, the type

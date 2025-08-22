@@ -58,6 +58,8 @@ const (
 	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
 	invalidLimitData = `{"limit":210,"offset":0}`
 	invalidData      = `{"limit": "invalid"}`
+
+	inviteDuration = 7 * 24 * time.Hour
 )
 
 var (
@@ -142,10 +144,11 @@ func (tr testRequest) make() (*http.Response, error) {
 func newService() users.Service {
 	usersRepo := usmocks.NewUserRepository(usersList)
 	verificationsRepo := usmocks.NewEmailVerificationRepository(verificationsList)
+	invitesRepo := usmocks.NewPlatformInvitesRepository()
 	hasher := usmocks.NewHasher()
 	auth := mocks.NewAuthService(admin.ID, usersList, nil)
 	email := usmocks.NewEmailer()
-	return users.New(usersRepo, verificationsRepo, true, hasher, auth, email, idProvider)
+	return users.New(usersRepo, verificationsRepo, invitesRepo, inviteDuration, true, hasher, auth, email, idProvider)
 }
 
 func newServer(svc users.Service) *httptest.Server {

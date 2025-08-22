@@ -11,19 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var (
-	// ErrCreateInvite indicates failure to create a new Invite
-	ErrCreateInvite = errors.New("error creating invite")
-
-	// ErrInviteExpired indicates that an invite has expired
-	ErrInviteExpired = errors.New("invite expired")
-
-	// ErrInviteExpired indicates that an invite is in an invalid state for a certain action to be performed on it
-	ErrInvalidInviteState = errors.New("invalid invite state")
-
-	// ErrUserAlreadyInvited indicates that the invitee already has a pending invitation to join the same Org
-	ErrUserAlreadyInvited = errors.New("user already has pending invite to org")
-)
+var ()
 
 type OrgInvite struct {
 	ID          string
@@ -38,19 +26,6 @@ type OrgInvite struct {
 
 type OrgInvitesPage struct {
 	Invites []OrgInvite
-	apiutil.PageMetadata
-}
-
-type PlatformInvite struct {
-	ID           string
-	InviteeEmail string
-	CreatedAt    time.Time
-	ExpiresAt    time.Time
-	State        string
-}
-
-type PlatformInvitesPage struct {
-	Invites []PlatformInvite
 	apiutil.PageMetadata
 }
 
@@ -95,30 +70,9 @@ type Invites interface {
 
 	// SendOrgInviteEmail sends an e-mail notifying the invitee of the corresponding Invite.
 	SendOrgInviteEmail(ctx context.Context, invite OrgInvite, email string, orgName string, invRedirectPath string) error
-
-	// InvitePlatformMember creates a pending platform Invite for the appropriate email address.
-	// Only usable by the platform Root Admin.
-	InvitePlatformMember(ctx context.Context, token string, redirectPath string, email string) (PlatformInvite, error)
-
-	// RevokePlatformInvite revokes a specific pending PlatformInvite. Only usable by the platform Root Admin.
-	RevokePlatformInvite(ctx context.Context, token string, inviteID string) error
-
-	// ViewPlatformInvite retrieves a single PlatformInvite denoted by its ID. Only usable by the platform Root Admin.
-	ViewPlatformInvite(ctx context.Context, token string, inviteID string) (PlatformInvite, error)
-
-	// ListPlatformInvites retrieves a list of platform invites. Only usable by the platform Root Admin.
-	ListPlatformInvites(ctx context.Context, token string, pm apiutil.PageMetadata) (PlatformInvitesPage, error)
-
-	// ValidatePlatformInvite checks if there exists a valid, pending, non-expired platform invite in the database that matches
-	// the passed ID and user e-mail. If so, it marks that invite's state as 'accepted', and returns nil.
-	// If no such valid platform invite is found in the database, it instead returns errors.ErrNotFound.
-	ValidatePlatformInvite(ctx context.Context, inviteID string, email string) error
-
-	// SendPlatformInviteEmail sends an e-mail notifying the invitee about the corresponding platform invite.
-	SendPlatformInviteEmail(ctx context.Context, invite PlatformInvite, redirectPath string) error
 }
 
-type InvitesRepository interface {
+type OrgInvitesRepository interface {
 	// SaveOrgInvite saves one or more pending org invites to the repository.
 	SaveOrgInvite(ctx context.Context, invites ...OrgInvite) error
 
@@ -138,18 +92,6 @@ type InvitesRepository interface {
 
 	// UpdateOrgInviteState updates the state of a specific Invite denoted by its ID.
 	UpdateOrgInviteState(ctx context.Context, inviteID string, state string) error
-
-	// SavePlatformInvite saves one or more pending platform invites to the repository.
-	SavePlatformInvite(ctx context.Context, invites ...PlatformInvite) error
-
-	// RetrievePlatformInviteByID retrieves a single platform invite by its ID.
-	RetrievePlatformInviteByID(ctx context.Context, inviteID string) (PlatformInvite, error)
-
-	// RetrievePlatformInvites retrieves a list of platform invites.
-	RetrievePlatformInvites(ctx context.Context, pm apiutil.PageMetadata) (PlatformInvitesPage, error)
-
-	// UpdatePlatformInviteState updates the state of a specific platform invite denoted by its ID.
-	UpdatePlatformInviteState(ctx context.Context, inviteID string, state string) error
 }
 
 func (svc service) InviteOrgMember(ctx context.Context, token string, orgID string, invRedirectPath string, om OrgMembership) (OrgInvite, error) {
@@ -245,10 +187,10 @@ func (svc service) RevokeOrgInvite(ctx context.Context, token string, inviteID s
 
 	if invite.State != InviteStatePending {
 		if invite.State == InviteStateExpired {
-			return ErrInviteExpired
+			return apiutil.ErrInviteExpired
 		}
 
-		return ErrInvalidInviteState
+		return apiutil.ErrInvalidInviteState
 	}
 
 	if err := svc.invites.UpdateOrgInviteState(ctx, inviteID, InviteStateRevoked); err != nil {
@@ -302,10 +244,10 @@ func (svc service) RespondOrgInvite(ctx context.Context, token string, inviteID 
 
 	if invite.State != "pending" {
 		if invite.State == InviteStateExpired {
-			return ErrInviteExpired
+			return apiutil.ErrInviteExpired
 		}
 
-		return ErrInvalidInviteState
+		return apiutil.ErrInvalidInviteState
 	}
 
 	// An Invite can only be responded to by the invitee
@@ -382,132 +324,4 @@ func (svc service) ListOrgInvitesByUser(ctx context.Context, token string, userT
 func (svc service) SendOrgInviteEmail(ctx context.Context, invite OrgInvite, email string, orgName string, invRedirectPath string) error {
 	to := []string{email}
 	return svc.email.SendOrgInvite(to, invite, orgName, invRedirectPath)
-}
-
-func (svc service) InvitePlatformMember(ctx context.Context, token string, redirectPath string, email string) (PlatformInvite, error) {
-	if err := svc.isAdmin(ctx, token); err != nil {
-		return PlatformInvite{}, err
-	}
-
-	muReq := protomfx.UsersByEmailsReq{Emails: []string{email}}
-	_, err := svc.users.GetUsersByEmails(ctx, &muReq)
-
-	// User with e-mail already registered
-	if err == nil {
-		return PlatformInvite{}, errors.ErrConflict
-	} else {
-		st, ok := status.FromError(err)
-		if ok && st.Code() != codes.NotFound {
-			return PlatformInvite{}, err
-		}
-	}
-
-	createdAt := getTimestmap()
-	inviteID, err := svc.idProvider.ID()
-	if err != nil {
-		return PlatformInvite{}, err
-	}
-
-	invite := PlatformInvite{
-		ID:           inviteID,
-		InviteeEmail: email,
-		CreatedAt:    createdAt,
-		ExpiresAt:    createdAt.Add(svc.inviteDuration),
-		State:        InviteStatePending,
-	}
-
-	if err := svc.invites.SavePlatformInvite(ctx, invite); err != nil {
-		return PlatformInvite{}, err
-	}
-
-	go func() {
-		svc.SendPlatformInviteEmail(ctx, invite, redirectPath)
-	}()
-
-	return invite, nil
-}
-
-func (svc service) RevokePlatformInvite(ctx context.Context, token string, inviteID string) error {
-	if err := svc.isAdmin(ctx, token); err != nil {
-		return err
-	}
-
-	invite, err := svc.invites.RetrievePlatformInviteByID(ctx, inviteID)
-	if err != nil {
-		return err
-	}
-
-	if invite.State != InviteStatePending {
-		if invite.State == InviteStateExpired {
-			return ErrInviteExpired
-		}
-
-		return ErrInvalidInviteState
-	}
-
-	if err := svc.invites.UpdatePlatformInviteState(ctx, inviteID, InviteStateRevoked); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (svc service) ViewPlatformInvite(ctx context.Context, token string, inviteID string) (PlatformInvite, error) {
-	if err := svc.isAdmin(ctx, token); err != nil {
-		return PlatformInvite{}, err
-	}
-
-	invite, err := svc.invites.RetrievePlatformInviteByID(ctx, inviteID)
-	if err != nil {
-		return PlatformInvite{}, err
-	}
-
-	return invite, nil
-}
-
-func (svc service) ListPlatformInvites(ctx context.Context, token string, pm apiutil.PageMetadata) (PlatformInvitesPage, error) {
-	if err := svc.isAdmin(ctx, token); err != nil {
-		return PlatformInvitesPage{}, err
-	}
-
-	invitesPage, err := svc.invites.RetrievePlatformInvites(ctx, pm)
-	if err != nil {
-		return PlatformInvitesPage{}, err
-	}
-
-	return invitesPage, nil
-}
-
-func (svc service) ValidatePlatformInvite(ctx context.Context, inviteID string, email string) error {
-	invite, err := svc.invites.RetrievePlatformInviteByID(ctx, inviteID)
-	if err != nil {
-		if errors.Contains(err, errors.ErrNotFound) {
-			return errors.Wrap(errors.ErrAuthorization, err)
-		}
-
-		return err
-	}
-
-	if invite.InviteeEmail != email {
-		return errors.ErrAuthorization
-	}
-
-	if invite.State != InviteStatePending {
-		if invite.State == InviteStateExpired {
-			return errors.Wrap(errors.ErrAuthorization, ErrInviteExpired)
-		}
-
-		return errors.Wrap(errors.ErrAuthorization, ErrInvalidInviteState)
-	}
-
-	if err := svc.invites.UpdatePlatformInviteState(ctx, inviteID, InviteStateAccepted); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (svc service) SendPlatformInviteEmail(ctx context.Context, invite PlatformInvite, redirectPath string) error {
-	to := []string{invite.InviteeEmail}
-	return svc.email.SendPlatformInvite(to, invite, redirectPath)
 }

@@ -76,34 +76,6 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
-	mux.Post("/invites-platform", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_platform_invite")(createPlatformInviteEndpoint(svc)),
-		decodeCreatePlatformInviteRequest,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Get("/invites-platform", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_platform_invites")(listPlatformInvitesEndpoint(svc)),
-		decodeListPlatformInvitesRequest,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Get("/invites-platform/:inviteID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_platform_invite")(viewPlatformInviteEndpoint(svc)),
-		decodeInviteRequest,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Delete("/invites-platform/:inviteID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "revoke_platform_invite")(revokePlatformInviteEndpoint(svc)),
-		decodeInviteRequest,
-		encodeResponse,
-		opts...,
-	))
-
 	return mux
 }
 
@@ -192,33 +164,6 @@ func decodeListOrgInvitesByOrgRequest(_ context.Context, r *http.Request) (any, 
 	return req, nil
 }
 
-func decodeCreatePlatformInviteRequest(_ context.Context, r *http.Request) (any, error) {
-	req := createPlatformInviteRequest{
-		token: apiutil.ExtractBearerToken(r),
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeListPlatformInvitesRequest(_ context.Context, r *http.Request) (any, error) {
-	req := listPlatformInvitesRequest{
-		token: apiutil.ExtractBearerToken(r),
-	}
-
-	pm, err := apiutil.BuildPageMetadata(r)
-	if err != nil {
-		return nil, err
-	}
-
-	req.pm = pm
-
-	return req, nil
-}
-
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
@@ -256,7 +201,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case err == apiutil.ErrBearerToken:
 		w.WriteHeader(http.StatusUnauthorized)
 	case errors.Contains(err, auth.ErrOrgMembershipExists),
-		errors.Contains(err, auth.ErrUserAlreadyInvited):
+		errors.Contains(err, apiutil.ErrUserAlreadyInvited):
 		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)

@@ -227,7 +227,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case err == apiutil.ErrBearerToken:
 		w.WriteHeader(http.StatusUnauthorized)
 	case errors.Contains(err, auth.ErrOrgMembershipExists),
-		errors.Contains(err, auth.ErrUserAlreadyInvited):
+		errors.Contains(err, apiutil.ErrUserAlreadyInvited):
 		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)

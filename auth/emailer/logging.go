@@ -32,17 +32,3 @@ func (lm *loggingMiddleware) SendOrgInvite(To []string, inv auth.OrgInvite, orgN
 
 	return lm.emailer.SendOrgInvite(To, inv, orgName, invRedirectPath)
 }
-
-func (lm *loggingMiddleware) SendPlatformInvite(To []string, invite auth.PlatformInvite, redirectPath string) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Emailer method send_platform_invite took %s to complete", time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-
-	}(time.Now())
-
-	return lm.emailer.SendPlatformInvite(To, invite, redirectPath)
-}

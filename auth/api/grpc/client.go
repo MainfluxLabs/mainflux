@@ -23,14 +23,13 @@ const (
 var _ protomfx.AuthServiceClient = (*grpcClient)(nil)
 
 type grpcClient struct {
-	issue                  endpoint.Endpoint
-	identify               endpoint.Endpoint
-	authorize              endpoint.Endpoint
-	getOwnerIDByOrgID      endpoint.Endpoint
-	retrieveRole           endpoint.Endpoint
-	assignRole             endpoint.Endpoint
-	validatePlatformInvite endpoint.Endpoint
-	timeout                time.Duration
+	issue             endpoint.Endpoint
+	identify          endpoint.Endpoint
+	authorize         endpoint.Endpoint
+	getOwnerIDByOrgID endpoint.Endpoint
+	retrieveRole      endpoint.Endpoint
+	assignRole        endpoint.Endpoint
+	timeout           time.Duration
 }
 
 // NewClient returns new gRPC client instance.
@@ -83,14 +82,6 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			encodeAssignRoleRequest,
 			decodeEmptyResponse,
 			empty.Empty{},
-		).Endpoint()),
-		validatePlatformInvite: kitot.TraceClient(tracer, "validate_platform_invite")(kitgrpc.NewClient(
-			conn,
-			svcName,
-			"ValidatePlatformInvite",
-			encodeValidatePlatformInviteRequest,
-			decodeValidatePlatformInviteResponse,
-			protomfx.ValidatePlatformInviteRes{},
 		).Endpoint()),
 
 		timeout: timeout,
@@ -237,32 +228,4 @@ func decodeRetrieveRoleResponse(_ context.Context, grpcRes interface{}) (interfa
 
 func decodeEmptyResponse(_ context.Context, _ interface{}) (interface{}, error) {
 	return emptyRes{}, nil
-}
-
-func encodeValidatePlatformInviteRequest(_ context.Context, grpcReq any) (any, error) {
-	req := grpcReq.(validatePlatformInviteReq)
-	return &protomfx.ValidatePlatformInviteReq{
-		Email:    req.email,
-		InviteID: req.inviteID,
-	}, nil
-}
-
-func decodeValidatePlatformInviteResponse(_ context.Context, grpcRes any) (any, error) {
-	res := grpcRes.(*protomfx.ValidatePlatformInviteRes)
-	return validatePlatformInviteRes{
-		valid: res.GetValid(),
-	}, nil
-}
-
-func (client grpcClient) ValidatePlatformInvite(ctx context.Context, req *protomfx.ValidatePlatformInviteReq, _ ...grpc.CallOption) (*protomfx.ValidatePlatformInviteRes, error) {
-	ctx, close := context.WithTimeout(ctx, client.timeout)
-	defer close()
-
-	res, err := client.validatePlatformInvite(ctx, validatePlatformInviteReq{email: req.GetEmail(), inviteID: req.GetInviteID()})
-	if err != nil {
-		return &protomfx.ValidatePlatformInviteRes{}, err
-	}
-
-	rr := res.(validatePlatformInviteRes)
-	return &protomfx.ValidatePlatformInviteRes{Valid: rr.valid}, nil
 }

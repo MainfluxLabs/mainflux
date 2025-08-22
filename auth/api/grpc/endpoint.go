@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -128,24 +127,5 @@ func retrieveRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		return res, nil
-	}
-}
-
-func validatePlatformInviteEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(validatePlatformInviteReq)
-
-		if err := req.validate(); err != nil {
-			return validatePlatformInviteRes{}, err
-		}
-
-		err := svc.ValidatePlatformInvite(ctx, req.inviteID, req.email)
-		if err != nil && !errors.Contains(err, errors.ErrAuthorization) {
-			return validatePlatformInviteRes{}, err
-		}
-
-		isValid := !errors.Contains(err, errors.ErrAuthorization)
-
-		return validatePlatformInviteRes{valid: isValid}, nil
 	}
 }

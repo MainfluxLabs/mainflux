@@ -105,20 +105,3 @@ func (req retrieveRoleReq) validate() error {
 
 	return nil
 }
-
-type validatePlatformInviteReq struct {
-	email    string
-	inviteID string
-}
-
-func (req validatePlatformInviteReq) validate() error {
-	if req.email == "" {
-		return apiutil.ErrMissingEmail
-	}
-
-	if req.inviteID == "" {
-		return apiutil.ErrMissingInviteID
-	}
-
-	return nil
-}

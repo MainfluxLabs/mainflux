@@ -9,6 +9,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-kit/kit/metrics"
 )
@@ -208,4 +209,58 @@ func (ms *metricsMiddleware) Restore(ctx context.Context, token string, admin us
 	}(time.Now())
 
 	return ms.svc.Restore(ctx, token, admin, users)
+}
+
+func (ms *metricsMiddleware) InvitePlatformMember(ctx context.Context, token string, redirectPath string, email string) (users.PlatformInvite, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "invite_platform_member").Add(1)
+		ms.latency.With("method", "invite_platform_member").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.InvitePlatformMember(ctx, token, redirectPath, email)
+}
+
+func (ms *metricsMiddleware) RevokePlatformInvite(ctx context.Context, token string, inviteID string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "revoke_platform_invite").Add(1)
+		ms.latency.With("method", "revoke_platform_invite").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RevokePlatformInvite(ctx, token, inviteID)
+}
+
+func (ms *metricsMiddleware) ViewPlatformInvite(ctx context.Context, token string, inviteID string) (users.PlatformInvite, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "view_platform_invite").Add(1)
+		ms.latency.With("method", "view_platform_invite").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ViewPlatformInvite(ctx, token, inviteID)
+}
+
+func (ms *metricsMiddleware) ListPlatformInvites(ctx context.Context, token string, pm apiutil.PageMetadata) (users.PlatformInvitesPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_platform_invites").Add(1)
+		ms.latency.With("method", "list_platform_invites").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListPlatformInvites(ctx, token, pm)
+}
+
+func (ms *metricsMiddleware) ValidatePlatformInvite(ctx context.Context, inviteID string, email string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "validate_platform_invite").Add(1)
+		ms.latency.With("method", "validate_platform_invite").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ValidatePlatformInvite(ctx, inviteID, email)
+}
+
+func (ms *metricsMiddleware) SendPlatformInviteEmail(ctx context.Context, invite users.PlatformInvite, redirectPath string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "send_platform_invite_email").Add(1)
+		ms.latency.With("method", "send_platform_invite_email").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.SendPlatformInviteEmail(ctx, invite, redirectPath)
 }

@@ -92,8 +92,3 @@ func (svc authServiceMock) AssignRole(ctx context.Context, req *protomfx.AssignR
 func (svc authServiceMock) RetrieveRole(ctx context.Context, req *protomfx.RetrieveRoleReq, _ ...grpc.CallOption) (r *protomfx.RetrieveRoleRes, err error) {
 	panic("not implemented")
 }
-
-func (svc authServiceMock) ValidatePlatformInvite(ctx context.Context, req *protomfx.ValidatePlatformInviteReq, _ ...grpc.CallOption) (r *protomfx.ValidatePlatformInviteRes, err error) {
-	// TODO: implement
-	panic("not implemented")
-}
