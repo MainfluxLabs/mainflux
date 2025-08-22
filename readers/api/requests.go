@@ -10,13 +10,13 @@ import (
 
 const maxLimitSize = 1000
 
-type listAllMessagesReq struct {
+type listMessagesReq struct {
 	token    string
 	key      string
 	pageMeta readers.PageMetadata
 }
 
-func (req listAllMessagesReq) validate() error {
+func (req listMessagesReq) validate() error {
 	if req.token == "" && req.key == "" {
 		return apiutil.ErrBearerToken
 	}
