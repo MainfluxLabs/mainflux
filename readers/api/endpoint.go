@@ -220,15 +220,15 @@ func backupSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 		outputFormat := strings.ToLower(strings.TrimSpace(req.convertFormat))
 		switch outputFormat {
 		case jsonFormat:
-			data, err = apiutil.GenerateJSON(page)
+			if data, err = apiutil.GenerateJSON(page); err != nil {
+				return nil, errors.Wrap(errors.ErrBackupMessages, err)
+			}
 		case csvFormat:
-			data, err = apiutil.GenerateCSV(page, req.pageMeta.Format)
+			if data, err = apiutil.GenerateCSV(page, req.pageMeta.Format); err != nil {
+				return nil, errors.Wrap(errors.ErrBackupMessages, err)
+			}
 		default:
 			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-		}
-
-		if err != nil {
-			return nil, errors.Wrap(errors.ErrBackupMessages, err)
 		}
 
 		return backupFileRes{
@@ -258,9 +258,13 @@ func restoreJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 
 		switch req.fileType {
 		case jsonFormat:
-			jsonMessages, err = apiutil.ConvertJSONToJSONMessages(req.Messages)
+			if jsonMessages, err = apiutil.ConvertJSONToJSONMessages(req.Messages); err != nil {
+				return nil, errors.Wrap(errors.ErrRestoreMessages, err)
+			}
 		case csvFormat:
-			jsonMessages, err = apiutil.ConvertCSVToJSONMessages(req.Messages)
+			if jsonMessages, err = apiutil.ConvertCSVToJSONMessages(req.Messages); err != nil {
+				return nil, errors.Wrap(errors.ErrRestoreMessages, err)
+			}
 		default:
 			return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 		}
@@ -298,9 +302,13 @@ func restoreSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoi
 
 		switch req.fileType {
 		case jsonFormat:
-			senmlMessages, err = apiutil.ConvertJSONToSenMLMessages(req.Messages)
+			if senmlMessages, err = apiutil.ConvertJSONToSenMLMessages(req.Messages); err != nil {
+				return nil, errors.Wrap(errors.ErrRestoreMessages, err)
+			}
 		case csvFormat:
-			senmlMessages, err = apiutil.ConvertCSVToSenMLMessages(req.Messages)
+			if senmlMessages, err = apiutil.ConvertCSVToSenMLMessages(req.Messages); err != nil {
+				return nil, errors.Wrap(errors.ErrRestoreMessages, err)
+			}
 		default:
 			return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 		}
