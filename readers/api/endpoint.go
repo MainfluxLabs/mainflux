@@ -35,7 +35,6 @@ func listJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			if err := isAdmin(ctx, req.token); err != nil {
 				return nil, err
 			}
-
 		}
 
 		req.pageMeta.Format = jsonFormat
@@ -102,7 +101,6 @@ func deleteJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint
 				return nil, errors.Wrap(errors.ErrAuthentication, err)
 			}
 			req.pageMeta.Publisher = pc.PublisherID
-
 		case req.token != "":
 			if err := isAdmin(ctx, req.token); err != nil {
 				return nil, err
