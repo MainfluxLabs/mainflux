@@ -489,7 +489,7 @@ func (svc service) ValidatePlatformInvite(ctx context.Context, inviteID string, 
 	}
 
 	if invite.InviteeEmail != email {
-		return errors.Wrap(errors.ErrAuthorization, errors.ErrAuthorization)
+		return errors.ErrAuthorization
 	}
 
 	if invite.State != InviteStatePending {
