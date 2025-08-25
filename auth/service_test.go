@@ -23,8 +23,7 @@ import (
 )
 
 const (
-	redirectPathInvite   = "/view-invite"
-	redirectPathRegister = "/auth/register"
+	redirectPathInvite = "/view-invite"
 
 	secret            = "secret"
 	email             = "test@example.com"

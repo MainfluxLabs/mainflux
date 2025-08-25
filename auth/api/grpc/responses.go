@@ -23,7 +23,3 @@ type retrieveRoleRes struct {
 type ownerIDByOrgIDRes struct {
 	ownerID string
 }
-
-type validatePlatformInviteRes struct {
-	valid bool
-}
