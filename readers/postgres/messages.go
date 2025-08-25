@@ -172,13 +172,13 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 		if err != nil {
 			return page, err
 		}
-		page.Messages = messages
 
-		total, err := tr.readCount(rpm, format, order, params)
-		if err != nil {
-			return page, err
+		if messages == nil {
+			messages = []readers.Message{}
 		}
-		page.Total = total
+
+		page.Messages = messages
+		page.Total = uint64(len(messages))
 		return page, nil
 	}
 
