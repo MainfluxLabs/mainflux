@@ -381,7 +381,7 @@ paths:
         - $ref: "#/components/parameters/OrgId"
       responses:
         '200':
-          description: Success.
+          $ref: "#/components/responses/InvitesPageRes"
         '403':
           description: Unauthorized.
         '415':
@@ -407,7 +407,7 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
     delete:
-      summary: Revoke a specific Invite.
+      summary: Revoke a specific Org Invite.
       description: |
         Revoke a specific pending Invite denoted by its ID. An Invite can only be revoked by its original
         Inviter, i.e. the user who sent it.
