@@ -896,22 +896,8 @@ components:
           example: "2024-05-2316:05:01"
           description: Time at which the Invite expires.
         state:
-          oneOf:
-            - const: pending
-              title: Pending
-              description: Valid, pending invite.
-            - const: expired
-              title: Expired
-              description: Expired invite.
-            - const: revoked
-              title: Revoked
-              description: Revoked invite.
-            - const: accepted
-              title: Accepted
-              description: Accepted invite.
-            - const: declined
-              title: Declined
-              description: Declined invite.
+          type: string
+          enum: [pending, expired, revoked, accepted, declined]
 
     InvitesPageSchema:
       type: object
