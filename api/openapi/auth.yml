@@ -365,15 +365,34 @@ paths:
           description: Failed due to malformed JSON.
         '401':
           description: Missing or invalid access token provided.
+        '403':
+          description: Unauthorized.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    get:
+      summary: List all organization Invites.
+      description: |
+        Retrieve a list of all existing Invites for any user to join the Organization identified by its ID.
+      tags:
+        - auth
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      responses:
+        '200':
+          description: Success.
+        '403':
+          description: Unauthorized.
         '415':
           description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
   /invites/{inviteId}:
     get:
-      summary: Retrieve a specific Invite.
+      summary: Retrieve a specific Org Invite.
       description: |
-        Retrieve detailed information about a specific invite denoted by its ID.
+        Retrieve detailed information about a specific organization invite denoted by its ID.
       tags:
         - auth
       parameters:
@@ -383,6 +402,8 @@ paths:
           $ref: "#/components/responses/InviteRes"
         '404':
           description: Failed due to non existing Invite.
+        '403':
+          description: Unauthorized.
         '500':
           $ref: "#/components/responses/ServiceError"
     delete:
@@ -397,6 +418,8 @@ paths:
       responses:
         '204':
           description: Invite revoked.
+        '403':
+          description: Unauthorized.
         '404':
           description: Failed due to non existing Invite.
         '500':
@@ -414,15 +437,17 @@ paths:
       responses:
         '201':
           description: Invite accepted and invitee added as a member of the organization.
+        '403':
+          description: Unauthorized.
         '404':
           description: Failed due to non existing Invite.
         '500':
           $ref: "#/components/responses/ServiceError"
   /invites/{inviteId}/decline:
     post:
-      summary: Decline an Invite.
+      summary: Decline an Organization Invite.
       description: |
-        Decline a specific Invite denoted by its ID. An Invite can only be responded to by the invitee,
+        Decline a specific organization Invite denoted by its ID. An Invite can only be responded to by the invitee,
         i.e. the user being invited.
       tags:
         - auth
@@ -433,11 +458,13 @@ paths:
           description: Invite declined and removed from the database.
         '401':
           description: Missing or invalid access token provided.
+        '403':
+          description: Unauthorized.
         '404':
           description: Failed due to non existing Invite.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /users/{userId}/invites:
+  /users/{userId}/invites/received:
     get:
       summary: Retrieve pending Invites sent to specific user.
       description: |
@@ -847,10 +874,6 @@ components:
           type: string
           format: uuid
           description: The receiving Invitee's unique user identifier
-        invitee_email:
-          type: string
-          format: email
-          description: The receiving Invitee'e e-mail address, if applicable
         inviter_id:
           type: string
           format: uuid
@@ -871,7 +894,24 @@ components:
           type: string
           format: date-time
           example: "2024-05-2316:05:01"
-          description: Time at which the Invite is set to expire.
+          description: Time at which the Invite expires.
+        state:
+          oneOf:
+            - const: pending
+              title: Pending
+              description: Valid, pending invite.
+            - const: expired
+              title: Expired
+              description: Expired invite.
+            - const: revoked
+              title: Revoked
+              description: Revoked invite.
+            - const: accepted
+              title: Accepted
+              description: Accepted invite.
+            - const: declined
+              title: Declined
+              description: Declined invite.
 
     InvitesPageSchema:
       type: object
@@ -893,11 +933,7 @@ components:
     CreateInviteSchema:
       type: object
       properties:
-        redirect_path_register:
-          type: string
-          example: "/auth/register"
-          description: The path portion of the account registration URL that the end user receives in the Invite notification.
-        redirect_path_invite:
+        redirect_path:
           type: string
           example: "/invite-view"
           description: The path portion of the Invite view URL that the end user receives in the Invite notification.
