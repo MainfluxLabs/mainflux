@@ -79,7 +79,7 @@ func (svc usersService) InvitePlatformMember(ctx context.Context, token string, 
 	// User with e-mail already registered
 	if err == nil {
 		return PlatformInvite{}, errors.ErrConflict
-	} else if err != errors.ErrNotFound {
+	} else if !errors.Contains(err, errors.ErrNotFound) {
 		return PlatformInvite{}, err
 	}
 
