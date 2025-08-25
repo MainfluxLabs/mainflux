@@ -352,8 +352,15 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 }
 
 func (svc usersService) ViewUser(ctx context.Context, token, id string) (User, error) {
-	if _, err := svc.identify(ctx, token); err != nil {
+	currentUser, err := svc.identify(ctx, token)
+	if err != nil {
 		return User{}, err
+	}
+
+	if err := svc.isAdmin(ctx, token); err != nil {
+		if currentUser.id != id {
+			return User{}, errors.ErrAuthorization
+		}
 	}
 
 	dbUser, err := svc.users.RetrieveByID(ctx, id)

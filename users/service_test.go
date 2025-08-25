@@ -203,11 +203,11 @@ func TestViewUser(t *testing.T) {
 			userID: registerUser.ID,
 			err:    errors.ErrAuthentication,
 		},
-		"view user with valid token and invalid user id": {
+		"view user as unauthorized user": {
 			user:   users.User{},
 			token:  token,
-			userID: "",
-			err:    errors.ErrNotFound,
+			userID: registerUser.ID,
+			err:    errors.ErrAuthorization,
 		},
 	}
 
