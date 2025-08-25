@@ -50,7 +50,7 @@ func newUserService() users.Service {
 	auth := mocks.NewAuthService(admin.ID, usersList, orgsList)
 	emailer := usmocks.NewEmailer()
 
-	return users.New(usersRepo, verificationsRepo, true, hasher, auth, emailer, idProvider)
+	return users.New(usersRepo, verificationsRepo, true, true, hasher, auth, emailer, idProvider)
 }
 
 func newUserServer(svc users.Service) *httptest.Server {
