@@ -353,7 +353,7 @@ paths:
         Creates a new Invite on behalf of the currently authenticated User, towards the user identified by the supplied
         e-mail, to join the specified organization with the specified role.
       tags:
-        - auth
+        - org invites
       parameters:
         - $ref: "#/components/parameters/OrgId"
       requestBody:
@@ -376,7 +376,7 @@ paths:
       description: |
         Retrieve a list of all existing Invites for any user to join the Organization identified by its ID.
       tags:
-        - auth
+        - org invites
       parameters:
         - $ref: "#/components/parameters/OrgId"
       responses:
@@ -394,7 +394,7 @@ paths:
       description: |
         Retrieve detailed information about a specific organization invite denoted by its ID.
       tags:
-        - auth
+        - org invites
       parameters:
           - $ref: "#/components/parameters/InviteId"
       responses:
@@ -412,7 +412,7 @@ paths:
         Revoke a specific pending Invite denoted by its ID. An Invite can only be revoked by its original
         Inviter, i.e. the user who sent it.
       tags:
-        - auth
+        - org invites
       parameters:
         - $ref: "#/components/parameters/InviteId"
       responses:
@@ -431,7 +431,7 @@ paths:
         Accept a specific Invite denoted by its ID. An Invite can only be responded to by the invitee,
         i.e. the user being invited.
       tags:
-        - auth
+        - org invites
       parameters:
         - $ref: "#/components/parameters/InviteId"
       responses:
@@ -450,7 +450,7 @@ paths:
         Decline a specific organization Invite denoted by its ID. An Invite can only be responded to by the invitee,
         i.e. the user being invited.
       tags:
-        - auth
+        - org invites
       parameters:
         - $ref: "#/components/parameters/InviteId"
       responses:
@@ -471,7 +471,7 @@ paths:
         Retreieve a list of pending Invites send to a specific user, i.e. invitee, denoted by their
         user ID.
       tags:
-        - auth
+        - org invites
       parameters:
         - $ref: "#/components/parameters/UserId"
         - $ref: "#/components/parameters/Offset"
@@ -494,7 +494,7 @@ paths:
         Retreieve a list of pending Invites send by a specific user, i.e. inviter, denoted by their
         user ID.
       tags:
-        - auth
+        - org invites
       parameters:
         - $ref: "#/components/parameters/UserId"
         - $ref: "#/components/parameters/Offset"
