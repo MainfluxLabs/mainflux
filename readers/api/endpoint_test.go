@@ -17,6 +17,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -275,6 +276,26 @@ func TestListAllMessages(t *testing.T) {
 			},
 		},
 		{
+			desc:   "read page with value and greater-than comparator",
+			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v-1, readers.GreaterThanKey),
+			token:  adminToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(valueMsgs)),
+				Messages: valueMsgs[0:10],
+			},
+		},
+		{
+			desc:   "read page with value and greater-than-or-equal comparator",
+			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v-1, readers.GreaterThanEqualKey),
+			token:  adminToken,
+			status: http.StatusOK,
+			res: pageRes{
+				Total:    uint64(len(valueMsgs)),
+				Messages: valueMsgs[0:10],
+			},
+		},
+		{
 			desc:   "read page with subtopic and protocol",
 			url:    fmt.Sprintf("%s/senml?subtopic=%s&protocol=%s", ts.URL, subtopic, httpProt),
 			token:  adminToken,
@@ -337,26 +358,6 @@ func TestListAllMessages(t *testing.T) {
 		{
 			desc:   "read page with value and lower-than-or-equal comparator",
 			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v+1, readers.LowerThanEqualKey),
-			token:  adminToken,
-			status: http.StatusOK,
-			res: pageRes{
-				Total:    uint64(len(valueMsgs)),
-				Messages: valueMsgs[0:10],
-			},
-		},
-		{
-			desc:   "read page with value and greater-than comparator",
-			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v-1, readers.GreaterThanKey),
-			token:  adminToken,
-			status: http.StatusOK,
-			res: pageRes{
-				Total:    uint64(len(valueMsgs)),
-				Messages: valueMsgs[0:10],
-			},
-		},
-		{
-			desc:   "read page with value and greater-than-or-equal comparator",
-			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v-1, readers.GreaterThanEqualKey),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: pageRes{
@@ -456,6 +457,282 @@ func TestListAllMessages(t *testing.T) {
 		assert.Equal(t, tc.res.Total, page.Total, fmt.Sprintf("%s: expected %d got %d", tc.desc, tc.res.Total, page.Total))
 		assert.ElementsMatch(t, tc.res.Messages, page.Messages, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.Messages, page.Messages))
 	}
+}
+
+func TestListJSONMessages(t *testing.T) {
+	pubID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	now := time.Now().Unix()
+
+	var messages []mfjson.Message
+	var queryMsgs []mfjson.Message
+	var valueMsgs []mfjson.Message
+	var boolMsgs []mfjson.Message
+	var stringMsgs []mfjson.Message
+	var dataMsgs []mfjson.Message
+
+	for i := 0; i < numOfMessages; i++ {
+		msg := mfjson.Message{
+			Publisher: pubID,
+			Protocol:  mqttProt,
+			Created:   int64(now - int64(i)),
+		}
+
+		// Mix different value types
+		payload := make(map[string]interface{})
+		count := i % valueFields
+		switch count {
+		case 0:
+			payload["value"] = v
+			valueMsgs = append(valueMsgs, msg)
+		case 1:
+			payload["bool_value"] = vb
+			boolMsgs = append(boolMsgs, msg)
+		case 2:
+			payload["string_value"] = vs
+			stringMsgs = append(stringMsgs, msg)
+		case 3:
+			payload["data_value"] = vd
+			dataMsgs = append(dataMsgs, msg)
+		case 4:
+			msg.Subtopic = subtopic
+			msg.Protocol = httpProt
+			payload["name"] = msgName
+			queryMsgs = append(queryMsgs, msg)
+		}
+
+		msg.Payload, _ = json.Marshal(payload)
+		messages = append(messages, msg)
+	}
+
+	thSvc := thmocks.NewThingsServiceClient(nil, nil, nil)
+	authSvc := newAuthService()
+
+	adminTok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
+	require.Nil(t, err, fmt.Sprintf("issue token for admin got unexpected error: %s", err))
+
+	adminToken := adminTok.GetValue()
+
+	repoMessages := make([]readers.Message, len(messages))
+	for i, msg := range messages {
+		msgMap, _ := msg.ToMap()
+		repoMessages[i] = msgMap
+	}
+
+	repo := rmocks.NewMessageRepository("", repoMessages)
+	ts := newServer(repo, thSvc, authSvc)
+	defer ts.Close()
+
+	cases := []struct {
+		desc   string
+		url    string
+		token  string
+		key    string
+		status int
+		res    jsonPageRes
+	}{
+		{
+			desc:   "read JSON messages with valid offset and limit",
+			url:    fmt.Sprintf("%s/json?offset=0&limit=10", ts.URL),
+			token:  adminToken,
+			status: http.StatusOK,
+			res: jsonPageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[0:10],
+			},
+		},
+		{
+			desc:   "read JSON messages with large limit",
+			url:    fmt.Sprintf("%s/json?offset=0&limit=100", ts.URL),
+			token:  adminToken,
+			status: http.StatusOK,
+			res: jsonPageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[0:100],
+			},
+		},
+		{
+			desc:   "read JSON messages with offset",
+			url:    fmt.Sprintf("%s/json?offset=50&limit=20", ts.URL),
+			token:  adminToken,
+			status: http.StatusOK,
+			res: jsonPageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[50:70],
+			},
+		},
+		{
+			desc:   "read JSON messages with negative offset",
+			url:    fmt.Sprintf("%s/json?offset=-1&limit=10", ts.URL),
+			token:  adminToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read JSON messages with negative limit",
+			url:    fmt.Sprintf("%s/json?offset=0&limit=-10", ts.URL),
+			token:  adminToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read JSON messages with zero limit",
+			url:    fmt.Sprintf("%s/json?offset=0&limit=0", ts.URL),
+			token:  adminToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read JSON messages with non-integer offset",
+			url:    fmt.Sprintf("%s/json?offset=abc&limit=10", ts.URL),
+			token:  adminToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read JSON messages with non-integer limit",
+			url:    fmt.Sprintf("%s/json?offset=0&limit=xyz", ts.URL),
+			token:  adminToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read JSON messages with invalid token",
+			url:    fmt.Sprintf("%s/json?offset=0&limit=10", ts.URL),
+			token:  invalid,
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "read JSON messages with empty token",
+			url:    fmt.Sprintf("%s/json?offset=0&limit=10", ts.URL),
+			token:  "",
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "read JSON messages with multiple offset parameters",
+			url:    fmt.Sprintf("%s/json?offset=0&offset=1&limit=10", ts.URL),
+			token:  adminToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read JSON messages with multiple limit parameters",
+			url:    fmt.Sprintf("%s/json?offset=0&limit=20&limit=10", ts.URL),
+			token:  adminToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read JSON messages with non-float value",
+			url:    fmt.Sprintf("%s/json?v=abc123", ts.URL),
+			token:  adminToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read JSON messages with value and invalid comparator",
+			url:    fmt.Sprintf("%s/json?v=%f&comparator=invalid", ts.URL, v),
+			token:  adminToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read JSON messages with non-boolean value",
+			url:    fmt.Sprintf("%s/json?vb=yes", ts.URL),
+			token:  adminToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read JSON messages with from time filter",
+			url:    fmt.Sprintf("%s/json?from=%d", ts.URL, messages[50].Created),
+			token:  adminToken,
+			status: http.StatusOK,
+			res: jsonPageRes{
+				Total:    uint64(len(messages[0:51])),
+				Messages: messages[0:10],
+			},
+		},
+		{
+			desc:   "read JSON messages with to time filter",
+			url:    fmt.Sprintf("%s/json?to=%d", ts.URL, messages[20].Created),
+			token:  adminToken,
+			status: http.StatusOK,
+			res: jsonPageRes{
+				Total:    uint64(len(messages[21:])),
+				Messages: messages[21:31],
+			},
+		},
+		{
+			desc:   "read JSON messages with from/to time range",
+			url:    fmt.Sprintf("%s/json?from=%d&to=%d", ts.URL, messages[50].Created, messages[20].Created),
+			token:  adminToken,
+			status: http.StatusOK,
+			res: jsonPageRes{
+				Total:    uint64(len(messages[21:51])),
+				Messages: messages[21:31],
+			},
+		},
+		{
+			desc:   "read JSON messages with non-numeric from",
+			url:    fmt.Sprintf("%s/json?from=yesterday", ts.URL),
+			token:  adminToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read JSON messages with non-numeric to",
+			url:    fmt.Sprintf("%s/json?to=tomorrow", ts.URL),
+			token:  adminToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read JSON messages with format parameter",
+			url:    fmt.Sprintf("%s/json?format=json", ts.URL),
+			token:  adminToken,
+			status: http.StatusOK,
+			res: jsonPageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[0:10],
+			},
+		},
+		{
+			desc:   "read JSON messages with default parameters",
+			url:    fmt.Sprintf("%s/json", ts.URL),
+			token:  adminToken,
+			status: http.StatusOK,
+			res: jsonPageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[0:10],
+			},
+		},
+		{
+			desc:   "read JSON messages with publisher filter",
+			url:    fmt.Sprintf("%s/json?publisher=%s", ts.URL, pubID),
+			token:  adminToken,
+			status: http.StatusOK,
+			res: jsonPageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[0:10],
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodGet,
+			url:    tc.url,
+			token:  tc.token,
+			key:    tc.key,
+		}
+
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
+		var page jsonPageRes
+		err = json.NewDecoder(res.Body).Decode(&page)
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error decoding response %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.Equal(t, tc.res.Total, page.Total, fmt.Sprintf("%s: expected total %d got %d", tc.desc, tc.res.Total, page.Total))
+		assert.ElementsMatch(t, tc.res.Messages, page.Messages, fmt.Sprintf("%s: expected messages %v got %v", tc.desc, tc.res.Messages, page.Messages))
+	}
+}
+
+type jsonPageRes struct {
+	readers.PageMetadata
+	Total    uint64           `json:"total"`
+	Messages []mfjson.Message `json:"messages,omitempty"`
 }
 
 type pageRes struct {
