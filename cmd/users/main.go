@@ -316,7 +316,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceC
 
 	idProvider := uuid.New()
 
-	svc := users.New(userRepo, verificationRepo, c.emailVerifyEnabled, hasher, ac, svcEmailer, idProvider)
+	svc := users.New(userRepo, verificationRepo, c.emailVerifyEnabled, c.selfRegisterEnabled, hasher, ac, svcEmailer, idProvider)
 	svc = httpapi.LoggingMiddleware(svc, logger)
 	svc = httpapi.MetricsMiddleware(
 		svc,

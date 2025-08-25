@@ -447,6 +447,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case errors.Contains(err, uuid.ErrGeneratingID),
 		errors.Contains(err, users.ErrRecoveryToken):
 		w.WriteHeader(http.StatusInternalServerError)
+	case errors.Contains(err, users.ErrSelfRegisterDisabled):
+		w.WriteHeader(http.StatusNotImplemented)
 	default:
 		apiutil.EncodeError(err, w)
 	}

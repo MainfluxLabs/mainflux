@@ -69,7 +69,7 @@ func newService() users.Service {
 	authSvc := mocks.NewAuthService(admin.ID, usersList, nil)
 	e := usmocks.NewEmailer()
 
-	return users.New(userRepo, verificationRepo, true, hasher, authSvc, e, idProvider)
+	return users.New(userRepo, verificationRepo, true, true, hasher, authSvc, e, idProvider)
 }
 
 func TestSelfRegister(t *testing.T) {
