@@ -25,22 +25,20 @@ import (
 )
 
 const (
-	redirectPathInvite   = "/view-invite"
-	redirectPathRegister = "/auth/register"
-	secret               = "secret"
-	contentType          = "application/json"
-	id                   = "123e4567-e89b-12d3-a456-000000000022"
-	adminID              = "adminID"
-	editorID             = "editorID"
-	viewerID             = "viewerID"
-	email                = "user@example.com"
-	adminEmail           = "admin@example.com"
-	editorEmail          = "editor@example.com"
-	viewerEmail          = "viewer@example.com"
-	wrongValue           = "wrong_value"
-	name                 = "testName"
-	description          = "testDesc"
-	n                    = 10
+	redirectPathInvite = "/view-invite"
+	secret             = "secret"
+	contentType        = "application/json"
+	id                 = "123e4567-e89b-12d3-a456-000000000022"
+	adminID            = "adminID"
+	editorID           = "editorID"
+	viewerID           = "viewerID"
+	email              = "user@example.com"
+	adminEmail         = "admin@example.com"
+	editorEmail        = "editor@example.com"
+	viewerEmail        = "viewer@example.com"
+	name               = "testName"
+	description        = "testDesc"
+	n                  = 10
 
 	responseAccept  = "accept"
 	responseDecline = "decline"
@@ -56,8 +54,6 @@ var (
 		Description: description,
 		Metadata:    map[string]interface{}{"key": "value"},
 	}
-
-	idProvider = uuid.New()
 
 	viewer = auth.OrgMembership{MemberID: viewerID, Email: viewerEmail, Role: auth.Viewer}
 	editor = auth.OrgMembership{MemberID: editorID, Email: editorEmail, Role: auth.Editor}
@@ -486,6 +482,7 @@ func TestListInvitesByInvitee(t *testing.T) {
 			InviteeRole: inv.InviteeRole,
 			CreatedAt:   inv.CreatedAt,
 			ExpiresAt:   inv.ExpiresAt,
+			State:       auth.InviteStatePending,
 		})
 	}
 
@@ -498,56 +495,56 @@ func TestListInvitesByInvitee(t *testing.T) {
 	}{
 		{
 			desc:   "list invites",
-			url:    fmt.Sprintf("%s/users/%s/invites", ts.URL, viewerID),
+			url:    fmt.Sprintf("%s/users/%s/invites/received", ts.URL, viewerID),
 			token:  viewerToken,
 			status: http.StatusOK,
 			res:    invites,
 		},
 		{
 			desc:   "list invites with invalid auth token",
-			url:    fmt.Sprintf("%s/users/%s/invites", ts.URL, viewerID),
+			url:    fmt.Sprintf("%s/users/%s/invites/received", ts.URL, viewerID),
 			token:  "invalid",
 			status: http.StatusUnauthorized,
 			res:    nil,
 		},
 		{
 			desc:   "list invites with empty auth token",
-			url:    fmt.Sprintf("%s/users/%s/invites", ts.URL, viewerID),
+			url:    fmt.Sprintf("%s/users/%s/invites/received", ts.URL, viewerID),
 			token:  "",
 			status: http.StatusUnauthorized,
 			res:    nil,
 		},
 		{
 			desc:   "list invites with negative offset",
-			url:    fmt.Sprintf("%s/users/%s/invites?offset=%d", ts.URL, viewerID, -1),
+			url:    fmt.Sprintf("%s/users/%s/invites/received?offset=%d/received", ts.URL, viewerID, -1),
 			token:  "",
 			status: http.StatusBadRequest,
 			res:    nil,
 		},
 		{
 			desc:   "list invites with negative limit",
-			url:    fmt.Sprintf("%s/users/%s/invites?offset=%d&limit=%d", ts.URL, viewerID, 0, -1),
+			url:    fmt.Sprintf("%s/users/%s/invites/received?offset=%d&limit=%d", ts.URL, viewerID, 0, -1),
 			token:  "",
 			status: http.StatusBadRequest,
 			res:    nil,
 		},
 		{
 			desc:   "list invites without offset",
-			url:    fmt.Sprintf("%s/users/%s/invites?limit=%d", ts.URL, viewerID, 2),
+			url:    fmt.Sprintf("%s/users/%s/invites/received?limit=%d", ts.URL, viewerID, 2),
 			token:  viewerToken,
 			status: http.StatusOK,
 			res:    invites[:2],
 		},
 		{
 			desc:   "list invites without limit",
-			url:    fmt.Sprintf("%s/users/%s/invites?offset=%d", ts.URL, viewerID, 0),
+			url:    fmt.Sprintf("%s/users/%s/invites/received?offset=%d", ts.URL, viewerID, 0),
 			token:  viewerToken,
 			status: http.StatusOK,
 			res:    invites,
 		},
 		{
 			desc:   "list invites with invalid limit",
-			url:    fmt.Sprintf("%s/users/%s/invites?offset=%d&limit=%s", ts.URL, viewerID, 0, "l"),
+			url:    fmt.Sprintf("%s/users/%s/invites/received?offset=%d&limit=%s", ts.URL, viewerID, 0, "l"),
 			token:  viewerToken,
 			status: http.StatusBadRequest,
 			res:    nil,
@@ -581,6 +578,7 @@ type inviteRes struct {
 	InviteeRole string    `json:"invitee_role"`
 	CreatedAt   time.Time `json:"created_at"`
 	ExpiresAt   time.Time `json:"expires_at"`
+	State       string    `json:"state"`
 }
 
 type pageRes struct {
