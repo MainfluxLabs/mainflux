@@ -77,6 +77,27 @@ func migrateDB(db *sqlx.DB) error {
 					`DROP TABLE IF EXISTS verifications`,
 				},
 			},
+			{
+				Id: "users_3",
+				Up: []string{
+					`
+					CREATE TABLE IF NOT EXISTS invites_platform (
+						id            UUID NOT NULL,
+						invitee_email VARCHAR NOT NULL,
+						created_at    TIMESTAMPTZ,
+						expires_at    TIMESTAMPTZ,
+						state         VARCHAR DEFAULT 'pending' NOT NULL
+ 					)
+					`,
+					`
+					CREATE UNIQUE INDEX ux_invites_platform_invitee_email on invites_platform (invitee_email) WHERE state='pending'
+					`,
+				},
+				Down: []string{
+					`DROP TABLE IF EXISTS invites_platform`,
+					`DROP INDEX IF EXISTS ux_invites_platform_invitee_email`,
+				},
+			},
 		},
 	}
 

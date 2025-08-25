@@ -53,6 +53,12 @@ type Service interface {
 	// Returns the ID of the newly-registered User upon success.
 	VerifyEmail(ctx context.Context, confirmationToken string) (string, error)
 
+	// PlatformInviteRegister performs user registration based on a platform invite.
+	// inviteID must correspond to a valid, pending and non-expired platform invite, and the user's supplied
+	// e-mail address must match the e-mail address of that platform invite. Upon success, marks the associated
+	// invite's state as 'accepted'. Returns the ID of the newly registered user.
+	PlatformInviteRegister(ctx context.Context, user User, inviteID string) (string, error)
+
 	// Register creates new user account. In case of the failed registration, a
 	// non-nil error value is returned. The user registration is only allowed
 	// for admin.
@@ -110,6 +116,8 @@ type Service interface {
 
 	// Restore restores users from backup. Only accessible by admin.
 	Restore(ctx context.Context, token string, admin User, users []User) error
+
+	PlatformInvites
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -135,6 +143,8 @@ var _ Service = (*usersService)(nil)
 type usersService struct {
 	users              UserRepository
 	emailVerifications EmailVerificationRepository
+	platformInvites    PlatformInvitesRepository
+	inviteDuration     time.Duration
 	emailVerifyEnabled bool
 	hasher             Hasher
 	email              Emailer
@@ -143,10 +153,12 @@ type usersService struct {
 }
 
 // New instantiates the users service implementation
-func New(users UserRepository, verifications EmailVerificationRepository, emailVerifyEnabled bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider) Service {
+func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, inviteDuration time.Duration, emailVerifyEnabled bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider) Service {
 	return &usersService{
 		users:              users,
 		emailVerifications: verifications,
+		platformInvites:    invites,
+		inviteDuration:     inviteDuration,
 		emailVerifyEnabled: emailVerifyEnabled,
 		hasher:             hasher,
 		auth:               auth,
@@ -213,6 +225,45 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, redirectPat
 	}()
 
 	return token, nil
+}
+
+func (svc usersService) PlatformInviteRegister(ctx context.Context, user User, inviteID string) (string, error) {
+	// Make sure user with same e-mail isn't registered already
+	_, err := svc.users.RetrieveByEmail(ctx, user.Email)
+	if err != nil && !errors.Contains(err, errors.ErrNotFound) {
+		return "", err
+	}
+
+	if err == nil {
+		return "", errors.ErrConflict
+	}
+
+	// Validate platform invite
+	err = svc.ValidatePlatformInvite(ctx, inviteID, user.Email)
+	if err != nil {
+		return "", err
+	}
+
+	hash, err := svc.hasher.Hash(user.Password)
+	if err != nil {
+		return "", errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	user.Password = hash
+
+	userID, err := svc.idProvider.ID()
+	if err != nil {
+		return "", err
+	}
+
+	user.ID = userID
+	user.Status = EnabledStatusKey
+
+	if _, err := svc.users.Save(ctx, user); err != nil {
+		return "", err
+	}
+
+	return user.ID, nil
 }
 
 func (svc usersService) VerifyEmail(ctx context.Context, confirmationToken string) (string, error) {
