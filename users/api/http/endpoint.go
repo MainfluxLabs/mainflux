@@ -26,6 +26,22 @@ func selfRegistrationEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
+func platformInviteRegistrationEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(platformInviteRegisterUserReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		userID, err := svc.PlatformInviteRegister(ctx, req.User, req.inviteID)
+		if err != nil {
+			return nil, err
+		}
+
+		return createUserRes{created: true, ID: userID}, nil
+	}
+}
+
 func verifyEmailEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(verifyEmailReq)

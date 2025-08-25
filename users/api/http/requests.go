@@ -43,6 +43,19 @@ func (req selfRegisterUserReq) validate() error {
 	return req.User.Validate(userPasswordRegex)
 }
 
+type platformInviteRegisterUserReq struct {
+	User     users.User `json:"user"`
+	inviteID string
+}
+
+func (req platformInviteRegisterUserReq) validate() error {
+	if req.inviteID == "" {
+		return apiutil.ErrMissingInviteID
+	}
+
+	return req.User.Validate(userPasswordRegex)
+}
+
 type verifyEmailReq struct {
 	emailToken string
 }

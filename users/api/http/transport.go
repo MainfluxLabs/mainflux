@@ -61,6 +61,13 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 		opts...,
 	))
 
+	mux.Post("/register/invite/:inviteID", kithttp.NewServer(
+		kitot.TraceServer(tracer, "register_by_invite")(platformInviteRegistrationEndpoint(svc)),
+		decodePlatformInviteRegister,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Get("/users/profile", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_profile")(viewProfileEndpoint(svc)),
 		decodeViewProfile,
@@ -358,6 +365,18 @@ func decodeVerifyEmail(_ context.Context, r *http.Request) (any, error) {
 
 	req := verifyEmailReq{
 		emailToken: token,
+	}
+
+	return req, nil
+}
+
+func decodePlatformInviteRegister(_ context.Context, r *http.Request) (any, error) {
+	req := platformInviteRegisterUserReq{
+		inviteID: bone.GetValue(r, inviteIDKey),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req.User); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil
