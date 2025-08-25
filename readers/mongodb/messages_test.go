@@ -34,6 +34,7 @@ const (
 	coapProt    = "coap"
 	udpProt     = "udp"
 	msgName     = "temperature"
+	senmlFormat = "messages"
 	jsonFormat  = "json"
 	jsonCT      = "application/json"
 )
@@ -142,7 +143,8 @@ func TestListAllMessagesSenML(t *testing.T) {
 	}{
 		"read all messages": {
 			pageMeta: readers.PageMetadata{
-				Limit: noLimit,
+				Limit:  noLimit,
+				Format: senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    msgsNum,
@@ -153,6 +155,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Limit:    noLimit,
 				Subtopic: "not-present",
+				Format:   senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Messages: []readers.Message{},
@@ -162,6 +165,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Limit:    noLimit,
 				Subtopic: subtopic,
+				Format:   senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(queryMsgs)),
@@ -172,6 +176,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Limit:     noLimit,
 				Publisher: pubID2,
+				Format:    senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(queryMsgs)),
@@ -183,6 +188,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Limit:    noLimit,
 				Protocol: httpProt,
+				Format:   senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(queryMsgs)),
@@ -191,8 +197,9 @@ func TestListAllMessagesSenML(t *testing.T) {
 		},
 		"read messages with name": {
 			pageMeta: readers.PageMetadata{
-				Limit: noLimit,
-				Name:  msgName,
+				Limit:  noLimit,
+				Name:   msgName,
+				Format: senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(queryMsgs)),
@@ -201,8 +208,9 @@ func TestListAllMessagesSenML(t *testing.T) {
 		},
 		"read messages with value": {
 			pageMeta: readers.PageMetadata{
-				Limit: noLimit,
-				Value: v,
+				Limit:  noLimit,
+				Value:  v,
+				Format: senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(valueMsgs)),
@@ -214,6 +222,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit:      noLimit,
 				Value:      v,
 				Comparator: readers.EqualKey,
+				Format:     senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(valueMsgs)),
@@ -225,6 +234,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit:      noLimit,
 				Value:      v + 1,
 				Comparator: readers.LowerThanKey,
+				Format:     senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(valueMsgs)),
@@ -236,6 +246,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit:      noLimit,
 				Value:      v + 1,
 				Comparator: readers.LowerThanEqualKey,
+				Format:     senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(valueMsgs)),
@@ -247,6 +258,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit:      noLimit,
 				Value:      v - 1,
 				Comparator: readers.GreaterThanKey,
+				Format:     senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(valueMsgs)),
@@ -258,6 +270,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit:      noLimit,
 				Value:      v - 1,
 				Comparator: readers.GreaterThanEqualKey,
+				Format:     senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(valueMsgs)),
@@ -268,6 +281,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Limit:     noLimit,
 				BoolValue: vb,
+				Format:    senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(boolMsgs)),
@@ -278,6 +292,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Limit:       noLimit,
 				StringValue: vs,
+				Format:      senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(stringMsgs)),
@@ -288,6 +303,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Limit:     noLimit,
 				DataValue: vd,
+				Format:    senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(dataMsgs)),
@@ -296,8 +312,9 @@ func TestListAllMessagesSenML(t *testing.T) {
 		},
 		"read messages with from": {
 			pageMeta: readers.PageMetadata{
-				Limit: noLimit,
-				From:  messages[20].Time,
+				Limit:  noLimit,
+				From:   messages[20].Time,
+				Format: senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(messages[0:21])),
@@ -306,8 +323,9 @@ func TestListAllMessagesSenML(t *testing.T) {
 		},
 		"read messages with to": {
 			pageMeta: readers.PageMetadata{
-				Limit: noLimit,
-				To:    messages[20].Time,
+				Limit:  noLimit,
+				To:     messages[20].Time,
+				Format: senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(messages[21:])),
@@ -316,9 +334,10 @@ func TestListAllMessagesSenML(t *testing.T) {
 		},
 		"read messages with from/to": {
 			pageMeta: readers.PageMetadata{
-				Limit: noLimit,
-				From:  messages[5].Time,
-				To:    messages[0].Time,
+				Limit:  noLimit,
+				From:   messages[5].Time,
+				To:     messages[0].Time,
+				Format: senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    5,

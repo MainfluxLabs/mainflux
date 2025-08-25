@@ -33,7 +33,7 @@ const (
 	jsonFormat  = "json"
 	jsonCT      = "application/json"
 	jsonTable   = "json"
-	senmlTable  = "messages"
+	senmlFormat = "messages"
 	minAgg      = "min"
 	maxAgg      = "max"
 	countAgg    = "count"
@@ -139,7 +139,8 @@ func TestListAllMessagesSenML(t *testing.T) {
 	}{
 		"read all messages": {
 			pageMeta: readers.PageMetadata{
-				Limit: noLimit,
+				Limit:  noLimit,
+				Format: senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    msgsNum,
@@ -150,6 +151,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Limit:    noLimit,
 				Subtopic: "not-present",
+				Format:   senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Messages: []readers.Message{},
@@ -159,6 +161,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Limit:    noLimit,
 				Subtopic: subtopic,
+				Format:   senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(queryMsgs)),
@@ -169,6 +172,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Limit:     noLimit,
 				Publisher: pubID2,
+				Format:    senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(queryMsgs)),
@@ -179,6 +183,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Limit:    noLimit,
 				Protocol: httpProt,
+				Format:   senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(queryMsgs)),
@@ -187,8 +192,9 @@ func TestListAllMessagesSenML(t *testing.T) {
 		},
 		"read messages with name": {
 			pageMeta: readers.PageMetadata{
-				Limit: noLimit,
-				Name:  msgName,
+				Limit:  noLimit,
+				Name:   msgName,
+				Format: senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(queryMsgs)),
@@ -197,8 +203,9 @@ func TestListAllMessagesSenML(t *testing.T) {
 		},
 		"read messages with value": {
 			pageMeta: readers.PageMetadata{
-				Limit: noLimit,
-				Value: v,
+				Limit:  noLimit,
+				Value:  v,
+				Format: senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(valueMsgs)),
@@ -210,6 +217,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit:      noLimit,
 				Value:      v,
 				Comparator: readers.EqualKey,
+				Format:     senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(valueMsgs)),
@@ -221,6 +229,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit:      noLimit,
 				Value:      v + 1,
 				Comparator: readers.LowerThanKey,
+				Format:     senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(valueMsgs)),
@@ -232,6 +241,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit:      noLimit,
 				Value:      v + 1,
 				Comparator: readers.LowerThanEqualKey,
+				Format:     senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(valueMsgs)),
@@ -243,6 +253,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit:      noLimit,
 				Value:      v - 1,
 				Comparator: readers.GreaterThanKey,
+				Format:     senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(valueMsgs)),
@@ -254,6 +265,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit:      noLimit,
 				Value:      v - 1,
 				Comparator: readers.GreaterThanEqualKey,
+				Format:     senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(valueMsgs)),
@@ -264,6 +276,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Limit:     noLimit,
 				BoolValue: vb,
+				Format:    senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(boolMsgs)),
@@ -274,6 +287,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Limit:       noLimit,
 				StringValue: vs,
+				Format:      senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(stringMsgs)),
@@ -284,6 +298,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Limit:     noLimit,
 				DataValue: vd,
+				Format:    senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(dataMsgs)),
@@ -292,8 +307,9 @@ func TestListAllMessagesSenML(t *testing.T) {
 		},
 		"read messages with from": {
 			pageMeta: readers.PageMetadata{
-				Limit: noLimit,
-				From:  messages[20].Time,
+				Limit:  noLimit,
+				From:   messages[20].Time,
+				Format: senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(messages[0:21])),
@@ -302,8 +318,9 @@ func TestListAllMessagesSenML(t *testing.T) {
 		},
 		"read messages with to": {
 			pageMeta: readers.PageMetadata{
-				Limit: noLimit,
-				To:    messages[20].Time,
+				Limit:  noLimit,
+				To:     messages[20].Time,
+				Format: senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(messages[20:])),
@@ -312,9 +329,10 @@ func TestListAllMessagesSenML(t *testing.T) {
 		},
 		"read messages with from/to": {
 			pageMeta: readers.PageMetadata{
-				Limit: noLimit,
-				From:  messages[5].Time,
-				To:    messages[0].Time,
+				Limit:  noLimit,
+				From:   messages[5].Time,
+				To:     messages[0].Time,
+				Format: senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    6,
@@ -325,6 +343,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			pageMeta: readers.PageMetadata{
 				Limit:   noLimit,
 				AggType: countAgg,
+				Format:  senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    msgsNum,
@@ -336,6 +355,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit:   noLimit,
 				Name:    msgName,
 				AggType: minAgg,
+				Format:  senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(queryMsgs)),
@@ -347,6 +367,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit:   noLimit,
 				Name:    msgName,
 				AggType: maxAgg,
+				Format:  senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(queryMsgs)),
@@ -359,6 +380,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Name:     msgName,
 				AggType:  avgAgg,
 				AggField: "sum",
+				Format:   senmlFormat,
 			},
 			page: readers.MessagesPage{
 				Total:    uint64(len(queryMsgs)),
@@ -577,6 +599,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 				Subtopic:  subtopic,
 				From:      0,
 				To:        now + 1,
+				Format:    senmlFormat,
 			},
 			expectedCount: uint64(len(queryMsgs)),
 			description:   "should delete messages with specific subtopic",
@@ -587,6 +610,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 				Protocol:  httpProt,
 				From:      0,
 				To:        now + 1,
+				Format:    senmlFormat,
 			},
 			expectedCount: uint64(len(queryMsgs)),
 			description:   "should delete messages with specific protocol",
@@ -596,6 +620,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 				Publisher: pubID,
 				From:      messages[20].Time,
 				To:        now + 1,
+				Format:    senmlFormat,
 			},
 			expectedCount: 17,
 			description:   "should delete messages from specific time",
@@ -605,6 +630,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 				Publisher: pubID,
 				From:      0,
 				To:        messages[20].Time,
+				Format:    senmlFormat,
 			},
 			expectedCount: 65,
 			description:   "should delete messages to specific time",
@@ -614,6 +640,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 				Publisher: pubID,
 				From:      messages[50].Time,
 				To:        messages[20].Time,
+				Format:    senmlFormat,
 			},
 			expectedCount: 25,
 			description:   "should delete messages within time range",
@@ -623,6 +650,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 				Publisher: pubID,
 				From:      0,
 				To:        now + 1,
+				Format:    senmlFormat,
 			},
 			expectedCount: uint64(msgsNum - len(queryMsgs)),
 			description:   "should delete all messages for specific publisher",
@@ -634,12 +662,14 @@ func TestDeleteMessagesSenML(t *testing.T) {
 			Publisher: pubID,
 			From:      0,
 			To:        now,
-		}, senmlTable)
+			Format:    senmlFormat,
+		})
 		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
 			Publisher: pubID2,
 			From:      0,
 			To:        now,
-		}, senmlTable)
+			Format:    senmlFormat,
+		})
 
 		for _, m := range messages {
 			pyd := senml.Message{
@@ -675,12 +705,13 @@ func TestDeleteMessagesSenML(t *testing.T) {
 			From:      tc.pageMeta.From,
 			To:        tc.pageMeta.To,
 			Limit:     noLimit,
+			Format:    senmlFormat,
 		})
 
 		require.Nil(t, err)
 		beforeCount := beforePage.Total
 
-		err = reader.DeleteMessages(context.Background(), tc.pageMeta, senmlTable)
+		err = reader.DeleteMessages(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
 		afterPage, err := reader.ListAllMessages(readers.PageMetadata{
@@ -690,6 +721,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 			From:      tc.pageMeta.From,
 			To:        tc.pageMeta.To,
 			Limit:     noLimit,
+			Format:    senmlFormat,
 		})
 		require.Nil(t, err)
 		afterCount := afterPage.Total
@@ -829,18 +861,18 @@ func TestDeleteMessagesJSON(t *testing.T) {
 
 	for desc, tc := range cases {
 		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
-			Format:    jsonFormat,
 			Publisher: id1,
 			From:      0,
 			To:        int64(created + int64(msgsNum)),
-		}, jsonTable)
+			Format:    jsonTable,
+		})
 
 		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
-			Format:    jsonFormat,
 			Publisher: id2,
 			From:      0,
 			To:        int64(created + int64(msgsNum)),
-		}, jsonTable)
+			Format:    jsonTable,
+		})
 
 		for _, m := range messages {
 			err := writer.Consume(m)
@@ -848,26 +880,26 @@ func TestDeleteMessagesJSON(t *testing.T) {
 		}
 
 		beforePage, err := reader.ListAllMessages(readers.PageMetadata{
-			Format:    tc.pageMeta.Format,
 			Publisher: tc.pageMeta.Publisher,
 			Subtopic:  tc.pageMeta.Subtopic,
 			Protocol:  tc.pageMeta.Protocol,
 			From:      tc.pageMeta.From,
 			To:        tc.pageMeta.To,
 			Limit:     noLimit,
+			Format:    tc.pageMeta.Format,
 		})
 		require.Nil(t, err)
 		beforeCount := beforePage.Total
 
-		err = reader.DeleteMessages(context.Background(), tc.pageMeta, jsonTable)
+		err = reader.DeleteMessages(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
 		afterPage, err := reader.ListAllMessages(readers.PageMetadata{
-			Format:    tc.pageMeta.Format,
 			Publisher: tc.pageMeta.Publisher,
 			Subtopic:  tc.pageMeta.Subtopic,
 			Protocol:  tc.pageMeta.Protocol,
 			From:      tc.pageMeta.From,
+			Format:    tc.pageMeta.Format,
 			To:        tc.pageMeta.To,
 			Limit:     noLimit,
 		})
