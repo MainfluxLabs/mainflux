@@ -39,18 +39,19 @@ CREATE TABLE users_roles (
     CONSTRAINT users_roles_pkey PRIMARY KEY (user_id),
 );
 
-CREATE TABLE IF NOT EXISTS invites (
-    id UUID NOT NULL,
-    invitee_id UUID,
-    email VARCHAR,
-    inviter_id UUID NOT NULL,
-    org_id UUID NOT NULL,
+CREATE TABLE IF NOT EXISTS invites_org (
+    id           UUID NOT NULL,
+    invitee_id   UUID NOT NULL,         
+    inviter_id   UUID NOT NULL,
+    org_id       UUID NOT NULL,
     invitee_role VARCHAR(12) NOT NULL,
-    created_at TIMESTAMPTZ,
-    expires_at TIMESTAMPTZ,
-    FOREIGN KEY (org_id) REFERENCES orgs (id) ON DELETE CASCADE,
-    PRIMARY KEY (id),
-    UNIQUE (invitee_id, org_id),
-    UNIQUE (email, org_id)
+    created_at   TIMESTAMPTZ,
+    expires_at   TIMESTAMPTZ,
+    state        VARCHAR DEFAULT 'pending' NOT NULL,      
+    FOREIGN KEY  (org_id) REFERENCES orgs (id) ON DELETE CASCADE,
+    PRIMARY KEY  (id)
 );
+
+CREATE UNIQUE INDEX ux_invites_org_invitee_id_org_id on invites_org (invitee_id, org_id) WHERE state='pending';
+
 ```
