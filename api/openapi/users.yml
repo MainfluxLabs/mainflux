@@ -155,6 +155,27 @@ paths:
             description: Missing or invalid content type.
           '500':
             $ref: "#/components/responses/ServiceError"
+  /register/invite/{inviteId}:
+    post:
+      summary: Register an account using a Platform Invite.  
+      description: | 
+        Register a user account using a Platform Invite as a reference. The platform invite must be valid and non-expired. The
+        subbmitted e-mail address must not be registered and must match that of the platform invite.
+      tags:
+        - users
+      parameters:
+          - $ref: "#/components/parameters/InviteId"
+      requestBody:
+        $ref: "#/components/requestBodies/PlatformInviteRegisterReq"
+      responses:
+        '200':
+          $ref: "#/components/responses/UserCreateRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /users/{userId}:
     get:
       summary: Retrieves user
@@ -173,6 +194,80 @@ paths:
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /invites-platform:
+    post:
+      summary: Create new Platform Invite.
+      description: |
+        Create a new Platform Invite towards an unregistered user to createa a Mainflux user account.
+      tags:
+        - platform invites
+      requestBody:
+        $ref: "#/components/requestBodies/PlatformInviteReq"
+      responses:
+        '201':
+          description: Invite created.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Unauthorized.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    get:
+      summary: List all platform invites.
+      description: | 
+        Retrieve a list of all platform invites.
+      tags:
+        - platform invites
+      responses:
+        '200':
+          $ref: "#/components/responses/PlatformInvitesPageRes"
+        '403':
+          description: Unauthorized.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /invites-platform/{inviteId}:
+    get:
+      summary: Retrieve a specific Platform Invite.
+      description: |
+        Retrieve detailed information about a specific platform invite denoted by its ID.
+      tags:
+        - platform invites
+      parameters:
+          - $ref: "#/components/parameters/InviteId"
+      responses:
+        '200':
+          $ref: "#/components/responses/PlatformInviteRes"
+        '404':
+          description: Failed due to non existing Invite.
+        '403':
+          description: Unauthorized.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    delete:
+      summary: Revoke a specific Platform Invite.
+      description: |
+        Revoke a specific pending Invite denoted by its ID. 
+      tags:
+        - platform invites
+      parameters:
+        - $ref: "#/components/parameters/InviteId"
+      responses:
+        '204':
+          description: Invite revoked.
+        '403':
+          description: Unauthorized.
+        '404':
+          description: Failed due to non existing Invite.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
   /tokens:
     post:
       summary: User authentication
@@ -403,6 +498,19 @@ components:
               format: password
               minimum: 8
               description: Free-form account password used for acquiring auth token(s).
+    PlatformInviteRegisterReqObj:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: "test@example.com"
+          description: User's email address will be used as its unique identifier
+        password:
+          type: string
+          format: password
+          minimum: 8
+          description: Free-form account password used for acquiring auth token(s).
     User:
       type: object
       properties:
@@ -423,6 +531,17 @@ components:
           type: string
           enum: [enabled, disabled]
           description: User status.
+    CreatePlatformInviteSchema:
+      type: object
+      properties:
+        redirect_path:
+          type: string
+          example: "/register/view-invite"
+          description: The path portion of the Platform Invite view URL that the end user receives in the email notification.
+        email:
+          type: string
+          format: email
+          description: E-mail of user to invite.
     Users:
       type: object
       properties:
@@ -499,6 +618,47 @@ components:
         metadata:
           type: object
           description: Arbitrary, object-encoded user's data.
+    PlatformInviteSchema:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Invite's unique identifier
+        invitee_email:
+          type: string
+          format: email
+          description: E-mail of invited user.
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-05-16 16:05:01"
+          description: Time at which the Invite was created.
+        updated_at:
+          type: string
+          format: date-time
+          example: "2024-05-2316:05:01"
+          description: Time at which the Invite expires.
+        state:
+          type: string
+          description: Current state of invite.
+          enum: [pending, expired, revoked, accepted]
+    PlatformInvitesPageSchema:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of Invites.
+        offset:
+          type: integer
+          description: Offset of the page.
+        limit:
+          type: integer
+          description: Limit of the page.
+        invites:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlatformInviteSchema"
     Error:
       type: object
       properties:
@@ -565,6 +725,14 @@ components:
         type: string
         default: enabled
       required: false
+    InviteId:
+      name: inviteId
+      description: Invite ID.
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
   requestBodies:
     UserCreateReq:
       description: JSON-formatted document describing the new user to be registered
@@ -580,6 +748,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/SelfRegisterReqObj"
+    PlatformInviteRegisterReq:
+      description: JSON-formatted document describing the data needed for platform-invite registration.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/PlatformInviteRegisterReqObj"
     SearchUsersReq:
       description: JSON-formatted document describing user search parameters.
       required: false
@@ -650,6 +825,13 @@ components:
                 type: string
                 format: password
                 description: Old password.
+    PlatformInviteReq:
+      description: JSON-formatted document describing a request to create a new Platform Invite.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CreatePlatformInviteSchema"
 
   responses:
     UserCreateRes:
@@ -681,6 +863,18 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Users"
+    PlatformInviteRes:
+      description: Data retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/PlatformInviteSchema"
+    PlatformInvitesPageRes:
+      description: Data retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/PlatformInvitesPageSchema"
     ServiceError:
       description: Unexpected server-side error occurred.
     HealthRes:
