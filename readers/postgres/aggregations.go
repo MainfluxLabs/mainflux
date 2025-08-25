@@ -52,6 +52,10 @@ func newAggregationService(db *sqlx.DB) *aggregationService {
 }
 
 func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata) ([]readers.Message, error) {
+	if rpm.Format == defTable && rpm.AggField != "" {
+		rpm.Name = rpm.AggField
+	}
+
 	params := as.buildQueryParams(rpm)
 
 	config := QueryConfig{
@@ -475,12 +479,10 @@ func (as *aggregationService) executeQuery(query string, params map[string]inter
 }
 
 func (as *aggregationService) getAggregateField(rpm readers.PageMetadata) string {
-	switch rpm.AggField {
-	case "":
+	if rpm.Format == defTable {
 		return "value"
-	default:
-		return rpm.AggField
 	}
+	return rpm.AggField
 }
 
 func (as *aggregationService) getTimeColumn(table string) string {
