@@ -48,7 +48,7 @@ type PlatformInvites interface {
 
 	// ValidatePlatformInvite checks if there exists a valid, pending, non-expired platform invite in the database that matches
 	// the passed ID and user e-mail. If so, it marks that invite's state as 'accepted', and returns nil.
-	// If no such valid platform invite is found in the database, it instead returns errors.ErrNotFound.
+	// If no such valid platform invite is found in the database, it instead returns errors.ErrAuthorization.
 	ValidatePlatformInvite(ctx context.Context, inviteID string, email string) error
 
 	// SendPlatformInviteEmail sends an e-mail notifying the invitee about the corresponding platform invite.
