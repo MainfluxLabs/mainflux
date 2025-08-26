@@ -148,7 +148,7 @@ func newService() users.Service {
 	hasher := usmocks.NewHasher()
 	auth := mocks.NewAuthService(admin.ID, usersList, nil)
 	email := usmocks.NewEmailer()
-	return users.New(usersRepo, verificationsRepo, invitesRepo, inviteDuration, true, hasher, auth, email, idProvider)
+	return users.New(usersRepo, verificationsRepo, invitesRepo, inviteDuration, true, true, hasher, auth, email, idProvider)
 }
 
 func newServer(svc users.Service) *httptest.Server {

@@ -74,7 +74,7 @@ func newService() users.Service {
 	authSvc := mocks.NewAuthService(admin.ID, usersList, nil)
 	e := usmocks.NewEmailer()
 
-	return users.New(userRepo, verificationRepo, invitesRepo, inviteDuration, true, hasher, authSvc, e, idProvider)
+	return users.New(userRepo, verificationRepo, invitesRepo, inviteDuration, true, true, hasher, authSvc, e, idProvider)
 }
 
 func TestSelfRegister(t *testing.T) {
@@ -208,11 +208,11 @@ func TestViewUser(t *testing.T) {
 			userID: registerUser.ID,
 			err:    errors.ErrAuthentication,
 		},
-		"view user with valid token and invalid user id": {
+		"view user as unauthorized user": {
 			user:   users.User{},
 			token:  token,
-			userID: "",
-			err:    errors.ErrNotFound,
+			userID: registerUser.ID,
+			err:    errors.ErrAuthorization,
 		},
 	}
 
