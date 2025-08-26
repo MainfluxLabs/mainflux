@@ -52,6 +52,10 @@ func newAggregationService(db *sqlx.DB) *aggregationService {
 }
 
 func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata) ([]readers.Message, error) {
+	if rpm.Format == defTable && rpm.AggField != "" {
+		rpm.Name = rpm.AggField
+	}
+
 	params := as.buildQueryParams(rpm)
 
 	config := QueryConfig{
@@ -82,6 +86,7 @@ func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata) (
 	if err != nil {
 		return nil, err
 	}
+
 	if rows == nil {
 		return []readers.Message{}, nil
 	}
@@ -305,23 +310,21 @@ func (countStrt CountStrategy) GetSelectedFields(config QueryConfig) string {
 func (countStrt CountStrategy) GetAggregateExpression(config QueryConfig) string {
 	switch config.Format {
 	case defTable:
-		return fmt.Sprintf("SUM(m.%s)", config.AggField)
+		return fmt.Sprintf("COUNT(m.%s)", config.AggField)
 	default:
 		jsonPath := buildJSONPath(config.AggField)
-		return fmt.Sprintf("SUM(CAST(m.%s AS float))", jsonPath)
+		return fmt.Sprintf("COUNT(m.%s)", jsonPath)
 	}
 }
 
 func buildTimeIntervals(config QueryConfig) string {
 	return fmt.Sprintf(`
-		SELECT generate_series(
-			date_trunc('%s', NOW() - interval '%d %s'),
-			date_trunc('%s', NOW()),
-			interval '1 %s'
-		) as interval_time
-		ORDER BY interval_time DESC
-		LIMIT %d`,
-		config.AggInterval, config.Limit, config.AggInterval, config.AggInterval, config.AggInterval, config.Limit)
+        SELECT DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000)) as interval_time
+        FROM %s 
+        %s
+        ORDER BY interval_time DESC
+        LIMIT %d`,
+		config.AggInterval, config.TimeColumn, config.Format, config.Condition, config.Limit)
 }
 
 func buildTimeJoinCondition(config QueryConfig, tableAlias string) string {
@@ -337,6 +340,39 @@ func buildValueCondition(config QueryConfig) string {
 		jsonPath := buildJSONPath(config.AggField)
 		return fmt.Sprintf("CAST(m.%s as FLOAT) = ia.agg_value", jsonPath)
 	}
+}
+
+func (as *aggregationService) readAggregatedCount(rpm readers.PageMetadata) (uint64, error) {
+	params := as.buildQueryParams(rpm)
+
+	timeColumn := as.getTimeColumn(rpm.Format)
+	baseCondition := as.buildBaseCondition(rpm)
+	nameCondition := as.buildNameCondition(rpm)
+	condition := as.combineConditions(baseCondition, nameCondition)
+
+	query := fmt.Sprintf(`
+        SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000)))
+        FROM %s
+        %s`,
+		rpm.AggInterval, timeColumn, rpm.Format, condition)
+
+	rows, err := as.db.NamedQuery(query, params)
+	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
+			return 0, nil
+		}
+		return 0, errors.Wrap(readers.ErrReadMessages, err)
+	}
+	defer rows.Close()
+
+	var total uint64
+	if rows.Next() {
+		if err := rows.Scan(&total); err != nil {
+			return 0, err
+		}
+	}
+
+	return total, nil
 }
 
 func (as *aggregationService) buildNameCondition(rpm readers.PageMetadata) string {
@@ -475,12 +511,10 @@ func (as *aggregationService) executeQuery(query string, params map[string]inter
 }
 
 func (as *aggregationService) getAggregateField(rpm readers.PageMetadata) string {
-	switch rpm.AggField {
-	case "":
+	if rpm.Format == defTable {
 		return "value"
-	default:
-		return rpm.AggField
 	}
+	return rpm.AggField
 }
 
 func (as *aggregationService) getTimeColumn(table string) string {
