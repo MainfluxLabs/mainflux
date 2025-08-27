@@ -121,7 +121,7 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 }
 
 func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, error) {
-	pageMeta, err := apiutil.BuildMessagePageMetadata(r)
+	pageMeta, err := BuildMessagePageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -366,4 +366,85 @@ func isAdmin(ctx context.Context, token string) error {
 	}
 
 	return nil
+}
+
+func BuildMessagePageMetadata(r *http.Request) (readers.PageMetadata, error) {
+	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	limit, err := apiutil.ReadLimitQuery(r, apiutil.LimitKey, apiutil.DefLimit)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	name, err := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	v, err := apiutil.ReadFloatQuery(r, valueKey, 0)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	comparator, err := apiutil.ReadStringQuery(r, comparatorKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	vs, err := apiutil.ReadStringQuery(r, stringValueKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	vd, err := apiutil.ReadStringQuery(r, dataValueKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	to, err := apiutil.ReadIntQuery(r, toKey, 0)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	pageMeta := readers.PageMetadata{
+		Offset:      offset,
+		Limit:       limit,
+		Name:        name,
+		Subtopic:    subtopic,
+		Protocol:    protocol,
+		Value:       v,
+		Comparator:  comparator,
+		StringValue: vs,
+		DataValue:   vd,
+		From:        from,
+		To:          to,
+	}
+
+	vb, err := apiutil.ReadBoolQuery(r, boolValueKey, false)
+	if err != nil && err != apiutil.ErrNotFoundParam {
+		return readers.PageMetadata{}, err
+	}
+	if err == nil {
+		pageMeta.BoolValue = vb
+	}
+
+	return pageMeta, nil
 }
