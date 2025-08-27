@@ -10,7 +10,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
-const redirectPathViewInvite = "/view-invite"
+const redirectPath = "/view-invite"
 
 const (
 	UserTypeInviter = "inviter"
@@ -19,13 +19,11 @@ const (
 
 func (sdk mfSDK) CreateInvite(orgID string, om OrgMembership, token string) (Invite, error) {
 	data, err := json.Marshal(struct {
-		Om                   OrgMembership `json:"org_membership"`
-		RedirectPathRegister string        `json:"redirect_path_register"`
-		RedirectPathInvite   string        `json:"redirect_path_invite"`
+		Om           OrgMembership `json:"org_membership"`
+		RedirectPath string        `json:"redirect_path"`
 	}{
 		om,
-		redirectPathEmailVerify,
-		redirectPathViewInvite,
+		redirectPath,
 	})
 
 	if err != nil {
@@ -137,7 +135,12 @@ func (sdk mfSDK) GetInvite(inviteID string, token string) (Invite, error) {
 
 func (sdk mfSDK) ListInvitesByUser(userID string, userType string, pm PageMetadata, token string) (InvitesPage, error) {
 	url := fmt.Sprintf("%s/users/%s/invites", sdk.authURL, userID)
-	if userType == UserTypeInviter {
+	switch userType {
+	case UserTypeInviter:
+		url += "/sent"
+	case UserTypeInvitee:
+		url += "/received"
+	default:
 		url += "/sent"
 	}
 
