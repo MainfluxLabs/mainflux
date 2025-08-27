@@ -516,7 +516,7 @@ func TestListInvitesByInvitee(t *testing.T) {
 		},
 		{
 			desc:   "list invites with negative offset",
-			url:    fmt.Sprintf("%s/users/%s/invites/received?offset=%d/received", ts.URL, viewerID, -1),
+			url:    fmt.Sprintf("%s/users/%s/invites/received?offset=%d", ts.URL, viewerID, -1),
 			token:  "",
 			status: http.StatusBadRequest,
 			res:    nil,
