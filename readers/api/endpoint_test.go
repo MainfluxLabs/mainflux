@@ -93,18 +93,20 @@ func newAuthService() protomfx.AuthServiceClient {
 	return mocks.NewAuthService(admin.ID, usersList, nil)
 }
 
-func TestListAllMessages(t *testing.T) {
+func TestListSenMLMessages(t *testing.T) {
 	pubID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	now := time.Now().Unix()
 
-	var messages []senml.Message
-	var queryMsgs []senml.Message
-	var valueMsgs []senml.Message
-	var boolMsgs []senml.Message
-	var stringMsgs []senml.Message
-	var dataMsgs []senml.Message
+	var (
+		messages   []senml.Message
+		queryMsgs  []senml.Message
+		valueMsgs  []senml.Message
+		boolMsgs   []senml.Message
+		stringMsgs []senml.Message
+		dataMsgs   []senml.Message
+	)
 
 	for i := 0; i < numOfMessages; i++ {
 		// Mix possible values as well as value sum.
@@ -465,12 +467,14 @@ func TestListJSONMessages(t *testing.T) {
 
 	now := time.Now().Unix()
 
-	var messages []mfjson.Message
-	var queryMsgs []mfjson.Message
-	var valueMsgs []mfjson.Message
-	var boolMsgs []mfjson.Message
-	var stringMsgs []mfjson.Message
-	var dataMsgs []mfjson.Message
+	var (
+		messages   []mfjson.Message
+		queryMsgs  []mfjson.Message
+		valueMsgs  []mfjson.Message
+		boolMsgs   []mfjson.Message
+		stringMsgs []mfjson.Message
+		dataMsgs   []mfjson.Message
+	)
 
 	for i := 0; i < numOfMessages; i++ {
 		msg := mfjson.Message{
