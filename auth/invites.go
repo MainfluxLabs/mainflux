@@ -11,8 +11,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var ()
-
 type OrgInvite struct {
 	ID          string
 	InviteeID   string
