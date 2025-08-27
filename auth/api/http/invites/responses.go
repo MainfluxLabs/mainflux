@@ -54,9 +54,9 @@ type respondOrgInviteRes struct {
 func (res respondOrgInviteRes) Code() int {
 	if res.accept {
 		return http.StatusCreated
-	} else {
-		return http.StatusNoContent
 	}
+
+	return http.StatusNoContent
 }
 
 func (res respondOrgInviteRes) Headers() map[string]string {
