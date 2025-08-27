@@ -199,16 +199,6 @@ func (repo *messageRepositoryMock) checkJsonMapFilterCondition(jsonMap map[strin
 			return rpm.Publisher == publisher
 		}
 		return rpm.Publisher == ""
-	case "name":
-		if name, ok := jsonMap["name"].(string); ok {
-			return rpm.Name == name
-		}
-		if payload, ok := jsonMap["payload"].(map[string]interface{}); ok {
-			if name, ok := payload["name"].(string); ok {
-				return rpm.Name == name
-			}
-		}
-		return rpm.Name == ""
 	case "protocol":
 		if protocol, ok := jsonMap["protocol"].(string); ok {
 			return rpm.Protocol == protocol
@@ -268,14 +258,6 @@ func (repo *messageRepositoryMock) checkJsonFilterCondition(jsonMsg mfjson.Messa
 		return rpm.Subtopic == jsonMsg.Subtopic
 	case "publisher":
 		return rpm.Publisher == jsonMsg.Publisher
-	case "name":
-		var payload map[string]interface{}
-		if err := json.Unmarshal(jsonMsg.Payload, &payload); err == nil {
-			if name, ok := payload["name"].(string); ok {
-				return rpm.Name == name
-			}
-		}
-		return rpm.Name == ""
 	case "protocol":
 		return rpm.Protocol == jsonMsg.Protocol
 	case "from":
