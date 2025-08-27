@@ -5,7 +5,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
-const maxLimitSize = 200
+const (
+	maxLimitSize = 200
+	maxNameSize  = 254
+)
 
 type createOrgInviteReq struct {
 	token        string
@@ -88,7 +91,7 @@ func (req listOrgInvitesByUserReq) validate() error {
 		return apiutil.ErrMissingUserID
 	}
 
-	if err := apiutil.ValidatePageMetadata(req.pm, maxLimitSize, 254); err != nil {
+	if err := apiutil.ValidatePageMetadata(req.pm, maxLimitSize, maxNameSize); err != nil {
 		return err
 	}
 
@@ -110,7 +113,7 @@ func (req listOrgInvitesByOrgReq) validate() error {
 		return apiutil.ErrMissingOrgID
 	}
 
-	if err := apiutil.ValidatePageMetadata(req.pm, maxLimitSize, 254); err != nil {
+	if err := apiutil.ValidatePageMetadata(req.pm, maxLimitSize, maxNameSize); err != nil {
 		return err
 	}
 

@@ -14,6 +14,7 @@ import (
 const (
 	maxLimitSize = 200
 	maxEmailSize = 1024
+	maxNameSize  = 254
 	EmailOrder   = "email"
 	IDOrder      = "id"
 	AscDir       = "asc"
@@ -278,7 +279,7 @@ func (req listPlatformInvitesRequest) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if err := apiutil.ValidatePageMetadata(req.pm, maxLimitSize, 254); err != nil {
+	if err := apiutil.ValidatePageMetadata(req.pm, maxLimitSize, maxNameSize); err != nil {
 		return err
 	}
 
