@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"internal/fmtsort"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -25,7 +24,7 @@ type jsonRepository struct {
 	aggregator *aggregationService
 }
 
-func newJSONReepository(db *sqlx.DB) *jsonRepository {
+func newJSONRepository(db *sqlx.DB) *jsonRepository {
 	return &jsonRepository{
 		db: db,
 	}
