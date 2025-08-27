@@ -96,11 +96,8 @@ func (repo *messageRepositoryMock) readAll(profileID string, rpm readers.PageMet
 
 func (repo *messageRepositoryMock) mapToJSONMessage(msgMap map[string]interface{}) mfjson.Message {
 	msg := mfjson.Message{}
-
 	if created, ok := msgMap["created"].(int64); ok {
 		msg.Created = created
-	} else if created, ok := msgMap["created"].(float64); ok {
-		msg.Created = int64(created)
 	}
 
 	if subtopic, ok := msgMap["subtopic"].(string); ok {
