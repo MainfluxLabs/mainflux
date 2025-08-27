@@ -637,7 +637,7 @@ components:
         expires_at:
           type: string
           format: date-time
-          example: "2024-05-2316:05:01"
+          example: "2024-05-23 16:05:01"
           description: Time at which the Invite expires.
         state:
           type: string
