@@ -240,7 +240,7 @@ func (svc service) RespondOrgInvite(ctx context.Context, token string, inviteID 
 		return err
 	}
 
-	if invite.State != "pending" {
+	if invite.State != InviteStatePending {
 		if invite.State == InviteStateExpired {
 			return apiutil.ErrInviteExpired
 		}
