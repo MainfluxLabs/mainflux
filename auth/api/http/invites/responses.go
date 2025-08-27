@@ -22,7 +22,7 @@ func (res createOrgInviteRes) Code() int {
 func (res createOrgInviteRes) Headers() map[string]string {
 	if res.created {
 		return map[string]string{
-			"Location": fmt.Sprintf("/invites-org/%s", res.ID),
+			"Location": fmt.Sprintf("/invites/%s", res.ID),
 		}
 	}
 
