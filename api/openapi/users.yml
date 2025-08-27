@@ -198,7 +198,7 @@ paths:
     post:
       summary: Create new Platform Invite.
       description: |
-        Create a new Platform Invite towards an unregistered user to createa a Mainflux user account.
+        Create a new Platform Invite towards an unregistered user to create a Mainflux user account.
       tags:
         - platform invites
       requestBody:
