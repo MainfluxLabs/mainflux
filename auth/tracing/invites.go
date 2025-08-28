@@ -8,7 +8,6 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
@@ -58,7 +57,7 @@ func (irm invitesRepositoryMiddleware) RemoveOrgInvite(ctx context.Context, invi
 	return irm.repo.RemoveOrgInvite(ctx, inviteID)
 }
 
-func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByUserID(ctx context.Context, userType string, userID string, pm apiutil.PageMetadata) (auth.OrgInvitesPage, error) {
+func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByUserID(ctx context.Context, userType string, userID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
 	span := createSpan(ctx, irm.tracer, retrieveOrgInvitesByUserID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -66,7 +65,7 @@ func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByUserID(ctx context.Co
 	return irm.repo.RetrieveOrgInvitesByUserID(ctx, userType, userID, pm)
 }
 
-func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByOrgID(ctx context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgInvitesPage, error) {
+func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByOrgID(ctx context.Context, orgID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
 	span := createSpan(ctx, irm.tracer, retrieveOrgInvitesByUserID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

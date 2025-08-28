@@ -378,7 +378,7 @@ func TestRetrieveByUserID(t *testing.T) {
 
 	cases := []struct {
 		desc     string
-		pm       apiutil.PageMetadata
+		pm       auth.PageMetadataInvites
 		userType string
 		userID   string
 		size     int
@@ -386,7 +386,7 @@ func TestRetrieveByUserID(t *testing.T) {
 	}{
 		{
 			desc:     "retrieve all pending invites towards invitee",
-			pm:       apiutil.PageMetadata{},
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{}},
 			userID:   inviteeID,
 			userType: auth.UserTypeInvitee,
 			size:     m,
@@ -394,7 +394,7 @@ func TestRetrieveByUserID(t *testing.T) {
 		},
 		{
 			desc:     "retrieve 1 pending invite towards invitee",
-			pm:       apiutil.PageMetadata{Limit: 1},
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: 1}},
 			userID:   inviteeID,
 			userType: auth.UserTypeInvitee,
 			size:     1,
@@ -402,7 +402,7 @@ func TestRetrieveByUserID(t *testing.T) {
 		},
 		{
 			desc:     "retrieve pending invites with empty user id",
-			pm:       apiutil.PageMetadata{Limit: 1},
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: 1}},
 			userID:   "",
 			userType: auth.UserTypeInvitee,
 			size:     0,
@@ -410,7 +410,7 @@ func TestRetrieveByUserID(t *testing.T) {
 		},
 		{
 			desc:     "retrieve all sent invites by inviter",
-			pm:       apiutil.PageMetadata{},
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{}},
 			userID:   inviterID,
 			userType: auth.UserTypeInviter,
 			size:     m,
@@ -418,7 +418,7 @@ func TestRetrieveByUserID(t *testing.T) {
 		},
 		{
 			desc:     "retrieve 1 sent invite by inviter",
-			pm:       apiutil.PageMetadata{Limit: 1},
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: 1}},
 			userID:   inviterID,
 			userType: auth.UserTypeInviter,
 			size:     1,

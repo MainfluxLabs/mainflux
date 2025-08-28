@@ -161,22 +161,33 @@ func (ir invitesRepository) UpdateOrgInviteState(ctx context.Context, inviteID s
 	return nil
 }
 
-func (ir invitesRepository) RetrieveOrgInvitesByOrgID(ctx context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgInvitesPage, error) {
+func (ir invitesRepository) RetrieveOrgInvitesByOrgID(ctx context.Context, orgID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
 	query := `
 		SELECT id, invitee_id, inviter_id, org_id, invitee_role, created_at, expires_at, state
-		FROM invites_org
-		WHERE org_id = :orgID
+		FROM invites_org %s ORDER BY %s %s %s
 	`
 
-	queryCount := `SELECT COUNT(*) FROM invites_org WHERE org_id = :orgID`
+	queryCount := `SELECT COUNT(*) FROM invites_org %s`
 
+	filterOrgID := `org_id = :orgID`
+	filterState := ``
+	if pm.State != "" {
+		filterState = "state = :state"
+	}
+
+	whereClause := dbutil.BuildWhereClause(filterOrgID, filterState)
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	query = fmt.Sprintf("%s %s", query, olq)
+
+	query = fmt.Sprintf(query, whereClause, oq, dq, olq)
+	queryCount = fmt.Sprintf(queryCount, whereClause)
 
 	params := map[string]any{
 		"orgID":  orgID,
 		"limit":  pm.Limit,
 		"offset": pm.Offset,
+		"state":  pm.State,
 	}
 
 	rows, err := ir.db.NamedQueryContext(ctx, query, params)
@@ -215,33 +226,42 @@ func (ir invitesRepository) RetrieveOrgInvitesByOrgID(ctx context.Context, orgID
 	return page, nil
 }
 
-func (ir invitesRepository) RetrieveOrgInvitesByUserID(ctx context.Context, userType string, userID string, pm apiutil.PageMetadata) (auth.OrgInvitesPage, error) {
+func (ir invitesRepository) RetrieveOrgInvitesByUserID(ctx context.Context, userType string, userID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
 	query := `
 		SELECT id, invitee_id, inviter_id, org_id, invitee_role, created_at, expires_at, state
-		FROM invites_org
-		WHERE %s = :userID
+		FROM invites_org %s ORDER BY %s %s %s
 	`
 
-	queryCount := `SELECT COUNT(*) FROM invites_org WHERE %s = :userID`
+	queryCount := `SELECT COUNT(*) FROM invites_org %s`
 
+	filterUserType := `%s = :userID`
 	switch userType {
 	case auth.UserTypeInvitee:
-		query = fmt.Sprintf(query, "invitee_id")
-		queryCount = fmt.Sprintf(queryCount, "invitee_id")
+		filterUserType = fmt.Sprintf(filterUserType, "invitee_id")
 	case auth.UserTypeInviter:
-		query = fmt.Sprintf(query, "inviter_id")
-		queryCount = fmt.Sprintf(queryCount, "inviter_id")
+		filterUserType = fmt.Sprintf(filterUserType, "inviter_id")
 	default:
 		return auth.OrgInvitesPage{}, errors.New("invalid invite user type")
 	}
 
+	filterState := ``
+	if pm.State != "" {
+		filterState = "state = :state"
+	}
+
+	whereClause := dbutil.BuildWhereClause(filterUserType, filterState)
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	query = fmt.Sprintf("%s %s", query, olq)
+
+	query = fmt.Sprintf(query, whereClause, oq, dq, olq)
+	queryCount = fmt.Sprintf(queryCount, whereClause)
 
 	params := map[string]any{
 		"userID": userID,
 		"limit":  pm.Limit,
 		"offset": pm.Offset,
+		"state":  pm.State,
 	}
 
 	if err := ir.syncOrgInviteStateByUserID(ctx, userType, userID); err != nil {

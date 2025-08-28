@@ -1546,7 +1546,7 @@ func TestListInvitesByUser(t *testing.T) {
 	cases := []struct {
 		desc     string
 		token    string
-		pm       apiutil.PageMetadata
+		pm       auth.PageMetadataInvites
 		userID   string
 		userType string
 		size     uint64
@@ -1555,7 +1555,7 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list all pending invites as invitee",
 			token:    inviteeToken,
-			pm:       apiutil.PageMetadata{Limit: n, Offset: 0},
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
 			userID:   invitee.ID,
 			userType: auth.UserTypeInvitee,
 			size:     n,
@@ -1564,7 +1564,7 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list all pending invites as root admin",
 			token:    rootAdminToken,
-			pm:       apiutil.PageMetadata{Limit: n, Offset: 0},
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
 			userID:   invitee.ID,
 			userType: auth.UserTypeInvitee,
 			size:     n,
@@ -1573,7 +1573,7 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list all pending invites as unauthorized user",
 			token:    unauthToken,
-			pm:       apiutil.PageMetadata{Limit: n, Offset: 0},
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
 			userID:   invitee.ID,
 			userType: auth.UserTypeInvitee,
 			size:     0,
@@ -1582,7 +1582,7 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list half of pending invites as invitee",
 			token:    inviteeToken,
-			pm:       apiutil.PageMetadata{Limit: n / 2, Offset: 0},
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n / 2, Offset: 0}},
 			userID:   invitee.ID,
 			userType: auth.UserTypeInvitee,
 			size:     n / 2,
@@ -1591,7 +1591,7 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list last pending invite as invitee",
 			token:    inviteeToken,
-			pm:       apiutil.PageMetadata{Limit: 1, Offset: n - 1},
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: n - 1}},
 			userID:   invitee.ID,
 			userType: auth.UserTypeInvitee,
 			size:     1,
@@ -1600,7 +1600,7 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list all sent invites as inviter",
 			token:    ownerToken,
-			pm:       apiutil.PageMetadata{Limit: n, Offset: 0},
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
 			userID:   ownerID,
 			userType: auth.UserTypeInviter,
 			size:     n,
@@ -1609,7 +1609,7 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list all sent invites as root admin",
 			token:    rootAdminToken,
-			pm:       apiutil.PageMetadata{Limit: n, Offset: 0},
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
 			userID:   ownerID,
 			userType: auth.UserTypeInviter,
 			size:     n,
@@ -1618,7 +1618,7 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list all sent invites as unauthorized user",
 			token:    unauthToken,
-			pm:       apiutil.PageMetadata{Limit: n, Offset: 0},
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
 			userID:   ownerID,
 			userType: auth.UserTypeInviter,
 			size:     0,
@@ -1627,7 +1627,7 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list half of sent invites as inviter",
 			token:    ownerToken,
-			pm:       apiutil.PageMetadata{Limit: n / 2, Offset: 0},
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n / 2, Offset: 0}},
 			userID:   ownerID,
 			userType: auth.UserTypeInviter,
 			size:     n / 2,
@@ -1636,7 +1636,7 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list last sent invite as inviter",
 			token:    ownerToken,
-			pm:       apiutil.PageMetadata{Limit: 1, Offset: n - 1},
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: n - 1}},
 			userID:   ownerID,
 			userType: auth.UserTypeInviter,
 			size:     1,
