@@ -52,7 +52,7 @@ func newAggregationService(db *sqlx.DB) *aggregationService {
 }
 
 func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata) ([]readers.Message, error) {
-	if rpm.Format == defTable && rpm.AggField != "" {
+	if rpm.Format == senmlTable && rpm.AggField != "" {
 		rpm.Name = rpm.AggField
 	}
 
@@ -148,7 +148,7 @@ func (maxStrt MaxStrategy) GetSelectedFields(config QueryConfig) string {
 
 func (maxStrt MaxStrategy) GetAggregateExpression(config QueryConfig) string {
 	switch config.Format {
-	case defTable:
+	case senmlTable:
 		return fmt.Sprintf("MAX(m.%s)", config.AggField)
 	default:
 		jsonPath := buildJSONPath(config.AggField)
@@ -189,7 +189,7 @@ func (minStrt MinStrategy) GetSelectedFields(config QueryConfig) string {
 
 func (minStrt MinStrategy) GetAggregateExpression(config QueryConfig) string {
 	switch config.Format {
-	case defTable:
+	case senmlTable:
 		return fmt.Sprintf("MIN(m.%s)", config.AggField)
 	default:
 		jsonPath := buildJSONPath(config.AggField)
@@ -227,7 +227,7 @@ func (avgStrt AvgStrategy) BuildQuery(config QueryConfig) string {
 
 func (avgStrt AvgStrategy) GetSelectedFields(config QueryConfig) string {
 	switch config.Format {
-	case defTable:
+	case senmlTable:
 		return `m.subtopic, m.publisher, m.protocol, m.name, m.unit,
 				ia.avg_value as value, 
 				m.string_value, m.bool_value, m.data_value, m.sum,
@@ -239,7 +239,7 @@ func (avgStrt AvgStrategy) GetSelectedFields(config QueryConfig) string {
 
 func (avgStrt AvgStrategy) GetAggregateExpression(config QueryConfig) string {
 	switch config.Format {
-	case defTable:
+	case senmlTable:
 		return fmt.Sprintf("AVG(m.%s)", config.AggField)
 	default:
 		jsonPath := buildJSONPath(config.AggField)
@@ -297,7 +297,7 @@ func renderTemplate(templateStr string, config QueryConfig, strategy AggStrategy
 
 func (countStrt CountStrategy) GetSelectedFields(config QueryConfig) string {
 	switch config.Format {
-	case defTable:
+	case senmlTable:
 		return `m.subtopic, m.publisher, m.protocol, m.name, m.unit,
 				ia.sum_value as value, 
 				m.string_value, m.bool_value, m.data_value, m.sum,
@@ -309,7 +309,7 @@ func (countStrt CountStrategy) GetSelectedFields(config QueryConfig) string {
 
 func (countStrt CountStrategy) GetAggregateExpression(config QueryConfig) string {
 	switch config.Format {
-	case defTable:
+	case senmlTable:
 		return fmt.Sprintf("COUNT(m.%s)", config.AggField)
 	default:
 		jsonPath := buildJSONPath(config.AggField)
@@ -334,7 +334,7 @@ func buildTimeJoinCondition(config QueryConfig, tableAlias string) string {
 
 func buildValueCondition(config QueryConfig) string {
 	switch config.Format {
-	case defTable:
+	case senmlTable:
 		return fmt.Sprintf("m.%s = ia.agg_value", config.AggField)
 	default:
 		jsonPath := buildJSONPath(config.AggField)
@@ -381,7 +381,7 @@ func (as *aggregationService) buildNameCondition(rpm readers.PageMetadata) strin
 	}
 
 	switch rpm.Format {
-	case defTable:
+	case senmlTable:
 		return "WHERE name = :name"
 	default:
 		return "WHERE payload->>'n' = :name"
@@ -434,7 +434,7 @@ func (as *aggregationService) scanAggregatedMessages(rows *sqlx.Rows, format str
 	var messages []readers.Message
 
 	switch format {
-	case defTable:
+	case senmlTable:
 		for rows.Next() {
 			msg := senml.Message{}
 			if err := rows.StructScan(&msg); err != nil {
@@ -511,7 +511,7 @@ func (as *aggregationService) executeQuery(query string, params map[string]inter
 }
 
 func (as *aggregationService) getAggregateField(rpm readers.PageMetadata) string {
-	if rpm.Format == defTable {
+	if rpm.Format == senmlTable {
 		return "value"
 	}
 	return rpm.AggField
