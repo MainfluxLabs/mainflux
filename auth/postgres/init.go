@@ -81,7 +81,7 @@ func migrateDB(db *sqlx.DB) error {
 					)`,
 				},
 				Down: []string{
-					"DROP TABLE IF EXISTS users_roles",
+					`DROP TABLE IF EXISTS users_roles`,
 					`DROP TABLE IF EXISTS keys`,
 					`DROP TABLE IF EXISTS orgs`,
 					`DROP TABLE IF EXISTS member_relations`,
@@ -95,6 +95,32 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE org_memberships RENAME CONSTRAINT member_relations_pkey TO org_memberships_pkey`,
 				},
 				Down: []string{},
+			},
+			{
+				Id: "auth_3",
+				Up: []string{
+					`
+					CREATE TABLE IF NOT EXISTS invites_org (
+						id           UUID NOT NULL,
+						invitee_id   UUID NOT NULL,         
+						inviter_id   UUID NOT NULL,
+						org_id       UUID NOT NULL,
+						invitee_role VARCHAR(12) NOT NULL,
+						created_at   TIMESTAMPTZ,
+						expires_at   TIMESTAMPTZ,
+						state        VARCHAR DEFAULT 'pending' NOT NULL,      
+						FOREIGN KEY  (org_id) REFERENCES orgs (id) ON DELETE CASCADE,
+						PRIMARY KEY  (id)
+					)
+					`,
+					`
+					CREATE UNIQUE INDEX ux_invites_org_invitee_id_org_id on invites_org (invitee_id, org_id) WHERE state='pending'
+					`,
+				},
+				Down: []string{
+					`DROP TABLE IF EXISTS invites_org`,
+					`DROP INDEX IF EXISTS ux_invites_org_invitee_id_org_id`,
+				},
 			},
 		},
 	}

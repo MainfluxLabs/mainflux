@@ -43,6 +43,7 @@ default values.
 | MF_EMAIL_TEMPLATE             | Email template for sending emails with password reset link              | email.tmpl       |
 | MF_HOST                       | URL Path of the frontend included in user-facing e-mails                | http://localhost |  
 | MF_REQUIRE_EMAIL_VERIFICATION | Whether e-mail verification is required during self-registration        | true             |  
+| MF_INVITE_DURATION            | Duration of validity of created platform invites                        | 168h           |
 
 ## Deployment
 
