@@ -44,8 +44,8 @@ func (ms *metricsMiddleware) SendEmailVerification(To []string, redirectPath, to
 
 func (ms *metricsMiddleware) SendPlatformInvite(To []string, invite users.PlatformInvite, redirectPath string) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "send_email_verification").Add(1)
-		ms.latency.With("method", "send_email_verification").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "send_platform_invite").Add(1)
+		ms.latency.With("method", "send_platform_invite").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.emailer.SendPlatformInvite(To, invite, redirectPath)

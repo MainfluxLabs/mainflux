@@ -17,10 +17,10 @@ import (
 )
 
 const (
-	userIDKey            = "userID"
-	inviteIDKey          = "inviteID"
-	inviteReponseVerbKey = "responseVerb"
-	stateKey             = "state"
+	userIDKey             = "userID"
+	inviteIDKey           = "inviteID"
+	inviteResponseVerbKey = "responseVerb"
+	stateKey              = "state"
 )
 
 func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
@@ -111,7 +111,7 @@ func decodeOrgInviteResponseRequest(_ context.Context, r *http.Request) (any, er
 		inviteID: bone.GetValue(r, inviteIDKey),
 	}
 
-	inviteResponseVerb := bone.GetValue(r, inviteReponseVerbKey)
+	inviteResponseVerb := bone.GetValue(r, inviteResponseVerbKey)
 	switch inviteResponseVerb {
 	case "accept":
 		req.inviteAccepted = true
