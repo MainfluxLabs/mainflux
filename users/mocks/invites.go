@@ -58,7 +58,7 @@ func (irm *platformInvitesRepositoryMock) RetrievePlatformInviteByID(ctx context
 	return irm.platformInvites[inviteID], nil
 }
 
-func (irm *platformInvitesRepositoryMock) RetrievePlatformInvites(ctx context.Context, pm apiutil.PageMetadata) (users.PlatformInvitesPage, error) {
+func (irm *platformInvitesRepositoryMock) RetrievePlatformInvites(ctx context.Context, pm users.PageMetadataInvites) (users.PlatformInvitesPage, error) {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 

@@ -578,14 +578,14 @@ func TestListPlatformInvites(t *testing.T) {
 
 	cases := map[string]struct {
 		token string
-		pm    apiutil.PageMetadata
+		pm    users.PageMetadataInvites
 		size  uint64
 		err   error
 	}{
-		"list platform invites":                        {tokenAdmin, apiutil.PageMetadata{Limit: n}, n, nil},
-		"list half platform invites":                   {tokenAdmin, apiutil.PageMetadata{Limit: n / 2}, n / 2, nil},
-		"list last platform invite":                    {tokenAdmin, apiutil.PageMetadata{Limit: 1, Offset: n - 1}, 1, nil},
-		"list platform invites as non-root-admin user": {tokenUser, apiutil.PageMetadata{}, 0, errors.ErrAuthorization},
+		"list platform invites":                        {tokenAdmin, users.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n}}, n, nil},
+		"list half platform invites":                   {tokenAdmin, users.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n / 2}}, n / 2, nil},
+		"list last platform invite":                    {tokenAdmin, users.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: n - 1}}, 1, nil},
+		"list platform invites as non-root-admin user": {tokenUser, users.PageMetadataInvites{}, 0, errors.ErrAuthorization},
 	}
 
 	for desc, tc := range cases {

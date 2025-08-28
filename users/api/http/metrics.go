@@ -9,7 +9,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-kit/kit/metrics"
 )
@@ -238,7 +237,7 @@ func (ms *metricsMiddleware) ViewPlatformInvite(ctx context.Context, token strin
 	return ms.svc.ViewPlatformInvite(ctx, token, inviteID)
 }
 
-func (ms *metricsMiddleware) ListPlatformInvites(ctx context.Context, token string, pm apiutil.PageMetadata) (users.PlatformInvitesPage, error) {
+func (ms *metricsMiddleware) ListPlatformInvites(ctx context.Context, token string, pm users.PageMetadataInvites) (users.PlatformInvitesPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_platform_invites").Add(1)
 		ms.latency.With("method", "list_platform_invites").Observe(time.Since(begin).Seconds())

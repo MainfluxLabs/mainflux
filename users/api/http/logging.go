@@ -11,7 +11,6 @@ import (
 	"time"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/users"
 )
 
@@ -326,7 +325,7 @@ func (lm *loggingMiddleware) ViewPlatformInvite(ctx context.Context, token, invi
 	return lm.svc.ViewPlatformInvite(ctx, token, inviteID)
 }
 
-func (lm *loggingMiddleware) ListPlatformInvites(ctx context.Context, token string, pm apiutil.PageMetadata) (invitesPage users.PlatformInvitesPage, err error) {
+func (lm *loggingMiddleware) ListPlatformInvites(ctx context.Context, token string, pm users.PageMetadataInvites) (invitesPage users.PlatformInvitesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_platform_invites took %s to complete", time.Since(begin))
 		if err != nil {

@@ -3,7 +3,6 @@ package tracing
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/users"
 	opentracing "github.com/opentracing/opentracing-go"
 )
@@ -45,7 +44,7 @@ func (irm invitesRepositoryMiddleware) RetrievePlatformInviteByID(ctx context.Co
 	return irm.repo.RetrievePlatformInviteByID(ctx, inviteID)
 }
 
-func (irm invitesRepositoryMiddleware) RetrievePlatformInvites(ctx context.Context, pm apiutil.PageMetadata) (users.PlatformInvitesPage, error) {
+func (irm invitesRepositoryMiddleware) RetrievePlatformInvites(ctx context.Context, pm users.PageMetadataInvites) (users.PlatformInvitesPage, error) {
 	span := createSpan(ctx, irm.tracer, retrievePlatformInvites)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

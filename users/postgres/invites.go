@@ -106,20 +106,31 @@ func (ir invitesRepository) RetrievePlatformInviteByID(ctx context.Context, invi
 	return toPlatformInvite(dbI), nil
 }
 
-func (ir invitesRepository) RetrievePlatformInvites(ctx context.Context, pm apiutil.PageMetadata) (users.PlatformInvitesPage, error) {
+func (ir invitesRepository) RetrievePlatformInvites(ctx context.Context, pm users.PageMetadataInvites) (users.PlatformInvitesPage, error) {
 	query := `
 		SELECT id, invitee_email, created_at, expires_at, state
-		FROM invites_platform
+		FROM invites_platform %s ORDER BY %s %s %s
 	`
 
-	queryCount := `SELECT COUNT(*) FROM invites_platform`
+	queryCount := `SELECT COUNT(*) FROM invites_platform %s`
 
+	filterState := ``
+	if pm.State != "" {
+		filterState = `state = :state`
+	}
+
+	whereClause := dbutil.BuildWhereClause(filterState)
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	query = fmt.Sprintf("%s %s", query, olq)
+
+	query = fmt.Sprintf(query, whereClause, oq, dq, olq)
+	queryCount = fmt.Sprintf(queryCount, whereClause)
 
 	params := map[string]any{
 		"limit":  pm.Limit,
 		"offset": pm.Offset,
+		"state":  pm.State,
 	}
 
 	if err := ir.syncPlatformInviteState(ctx); err != nil {

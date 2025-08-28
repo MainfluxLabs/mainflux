@@ -28,6 +28,7 @@ const (
 	statusKey     = "status"
 	emailTokenKey = "token"
 	inviteIDKey   = "inviteID"
+	stateKey      = "state"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -476,7 +477,7 @@ func decodeListPlatformInvitesRequest(_ context.Context, r *http.Request) (any, 
 		token: apiutil.ExtractBearerToken(r),
 	}
 
-	pm, err := apiutil.BuildPageMetadata(r)
+	pm, err := buildPageMetadataInvites(r)
 	if err != nil {
 		return nil, err
 	}
@@ -484,6 +485,26 @@ func decodeListPlatformInvitesRequest(_ context.Context, r *http.Request) (any, 
 	req.pm = pm
 
 	return req, nil
+}
+
+func buildPageMetadataInvites(r *http.Request) (users.PageMetadataInvites, error) {
+	pm := users.PageMetadataInvites{}
+
+	apm, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return users.PageMetadataInvites{}, err
+	}
+
+	pm.PageMetadata = apm
+
+	state, err := apiutil.ReadStringQuery(r, stateKey, "")
+	if err != nil {
+		return users.PageMetadataInvites{}, err
+	}
+
+	pm.State = state
+
+	return pm, nil
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
