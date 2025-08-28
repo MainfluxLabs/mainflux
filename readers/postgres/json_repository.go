@@ -190,7 +190,7 @@ func (jr *jsonRepository) Backup(rpm readers.PageMetadata) (readers.MessagesPage
 	return jr.readAll(rpm)
 }
 
-func (jr *jsonRepository) Delete(ctx context.Context, rpm readers.PageMetadata) error {
+func (jr *jsonRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) error {
 	tx, err := jr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(errors.ErrSaveMessages, err)
