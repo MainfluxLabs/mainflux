@@ -303,3 +303,34 @@ func (repo *messageRepositoryMock) checkSenmlStringValueFilter(senmlMsg senml.Me
 func (repo *messageRepositoryMock) checkSenmlDataValueFilter(senmlMsg senml.Message, rpm readers.PageMetadata) bool {
 	return senmlMsg.DataValue != nil && *senmlMsg.DataValue == rpm.DataValue
 }
+
+func (repo *messageRepositoryMock) ListJSONMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll("", rpm)
+}
+func (repo *messageRepositoryMock) ListSenMLMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll("", rpm)
+}
+
+func (repo *messageRepositoryMock) BackupJSONMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll("", rpm)
+}
+
+func (repo *messageRepositoryMock) BackupSenMLMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll("", rpm)
+}
+
+func (repo *messageRepositoryMock) RestoreJSONMessages(ctx context.Context, messages ...readers.Message) error {
+	return nil
+}
+
+func (repo *messageRepositoryMock) RestoreSenMLMessageS(ctx context.Context, messages ...readers.Message) error {
+	return nil
+}
+
+func (repo *messageRepositoryMock) DeleteJSONMessages(ctx context.Context, rpm readers.PageMetadata) error {
+	return nil
+}
+
+func (repo *messageRepositoryMock) DeleteSenMLMessages(ctx context.Context, rpm readers.PageMetadata) error {
+	return nil
+}
