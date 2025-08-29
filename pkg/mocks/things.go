@@ -38,11 +38,17 @@ func (svc *mainfluxThings) CreateThings(_ context.Context, token, profileID stri
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
+	profile, ok := svc.profiles[profileID]
+	if !ok {
+		return []things.Thing{}, errors.ErrNotFound
+	}
+
 	for i := range ths {
 		svc.counter++
 		ths[i].ID = strconv.FormatUint(svc.counter, 10)
 		ths[i].Key = ths[i].ID
 		ths[i].ProfileID = profileID
+		ths[i].GroupID = profile.GroupID
 		svc.things[ths[i].ID] = ths[i]
 	}
 
