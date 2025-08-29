@@ -37,7 +37,7 @@ type EmailVerification struct {
 // Validate returns an error if user representation is invalid.
 func (u User) Validate(passRegex *regexp.Regexp) error {
 	if !email.IsEmail(u.Email) {
-		return dbutil.ErrMalformedEntity
+		return apiutil.ErrMalformedEntity
 	}
 
 	if !passRegex.MatchString(u.Password) {
