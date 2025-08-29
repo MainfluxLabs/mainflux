@@ -6,7 +6,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 )
 
@@ -32,7 +32,7 @@ func (mrm *orgMembershipsRepositoryMock) Save(_ context.Context, oms ...auth.Org
 
 	for _, om := range oms {
 		if om.OrgID == "" {
-			return errors.ErrNotFound
+			return dbutil.ErrNotFound
 		}
 
 		m := auth.OrgMembership{
@@ -54,11 +54,11 @@ func (mrm *orgMembershipsRepositoryMock) Remove(_ context.Context, orgID string,
 
 	for _, memberID := range memberIDs {
 		if _, ok := mrm.memberships[memberID]; !ok {
-			return errors.ErrNotFound
+			return dbutil.ErrNotFound
 		}
 
 		if _, ok := mrm.membershipsByOrgID[orgID]; !ok {
-			return errors.ErrNotFound
+			return dbutil.ErrNotFound
 		}
 
 		delete(mrm.memberships, memberID)
@@ -73,7 +73,7 @@ func (mrm *orgMembershipsRepositoryMock) Update(_ context.Context, oms ...auth.O
 
 	for _, om := range oms {
 		if _, ok := mrm.memberships[om.MemberID]; !ok {
-			return errors.ErrNotFound
+			return dbutil.ErrNotFound
 		}
 		mrm.memberships[om.MemberID] = []auth.OrgMembership{
 			{
@@ -98,7 +98,7 @@ func (mrm *orgMembershipsRepositoryMock) RetrieveRole(_ context.Context, memberI
 		}
 	}
 
-	return "", errors.ErrNotFound
+	return "", dbutil.ErrNotFound
 }
 
 func (mrm *orgMembershipsRepositoryMock) RetrieveByOrg(_ context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembershipsPage, error) {

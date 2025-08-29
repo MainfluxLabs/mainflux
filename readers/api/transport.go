@@ -13,6 +13,7 @@ import (
 	auth "github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -328,16 +329,16 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusUnauthorized)
 	case errors.Contains(err, errors.ErrAuthorization):
 		w.WriteHeader(http.StatusForbidden)
-	case errors.Contains(err, errors.ErrNotFound):
+	case errors.Contains(err, dbutil.ErrNotFound):
 		w.WriteHeader(http.StatusNotFound)
 	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)
-	case errors.Contains(err, errors.ErrConflict):
+	case errors.Contains(err, dbutil.ErrConflict):
 		w.WriteHeader(http.StatusConflict)
-	case errors.Contains(err, errors.ErrScanMetadata):
+	case errors.Contains(err, dbutil.ErrScanMetadata):
 		w.WriteHeader(http.StatusUnprocessableEntity)
 	case errors.Contains(err, readers.ErrReadMessages),
-		errors.Contains(err, errors.ErrCreateEntity):
+		errors.Contains(err, dbutil.ErrCreateEntity):
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
 		w.WriteHeader(http.StatusInternalServerError)

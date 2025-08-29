@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 )
 
 var _ auth.KeyRepository = (*keyRepositoryMock)(nil)
@@ -30,7 +30,7 @@ func (krm *keyRepositoryMock) Save(ctx context.Context, key auth.Key) (string, e
 	defer krm.mu.Unlock()
 
 	if _, ok := krm.keys[key.ID]; ok {
-		return "", errors.ErrConflict
+		return "", dbutil.ErrConflict
 	}
 
 	krm.keys[key.ID] = key
@@ -44,7 +44,7 @@ func (krm *keyRepositoryMock) Retrieve(ctx context.Context, issuerID, id string)
 		return key, nil
 	}
 
-	return auth.Key{}, errors.ErrNotFound
+	return auth.Key{}, dbutil.ErrNotFound
 }
 func (krm *keyRepositoryMock) Remove(ctx context.Context, issuerID, id string) error {
 	krm.mu.Lock()

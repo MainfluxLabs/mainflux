@@ -61,12 +61,12 @@ func TestSave(t *testing.T) {
 		{
 			desc: "save existing subscription",
 			sub:  sub,
-			err:  errors.ErrConflict,
+			err:  dbutil.ErrConflict,
 		},
 		{
 			desc: "save invalid subscription",
 			sub:  invalidSub,
-			err:  errors.ErrCreateEntity,
+			err:  dbutil.ErrCreateEntity,
 		},
 	}
 
@@ -233,7 +233,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 				},
 				Subscriptions: nil,
 			},
-			err: errors.ErrRetrieveEntity,
+			err: dbutil.ErrRetrieveEntity,
 		},
 	}
 

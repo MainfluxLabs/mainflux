@@ -9,7 +9,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
@@ -69,7 +69,7 @@ func (nrm *notifierRepositoryMock) Save(_ context.Context, nfs ...notifiers.Noti
 	for _, nf := range nfs {
 		for _, n := range nrm.notifiers {
 			if n.GroupID == nf.GroupID && n.Name == nf.Name {
-				return []notifiers.Notifier{}, errors.ErrConflict
+				return []notifiers.Notifier{}, dbutil.ErrConflict
 			}
 		}
 
@@ -126,7 +126,7 @@ func (nrm *notifierRepositoryMock) RetrieveByID(_ context.Context, id string) (n
 		}
 	}
 
-	return notifiers.Notifier{}, errors.ErrNotFound
+	return notifiers.Notifier{}, dbutil.ErrNotFound
 }
 
 func (nrm *notifierRepositoryMock) Update(_ context.Context, nf notifiers.Notifier) error {
@@ -134,7 +134,7 @@ func (nrm *notifierRepositoryMock) Update(_ context.Context, nf notifiers.Notifi
 	defer nrm.mu.Unlock()
 
 	if _, ok := nrm.notifiers[nf.ID]; !ok {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 	nrm.notifiers[nf.ID] = nf
 
@@ -147,7 +147,7 @@ func (nrm *notifierRepositoryMock) Remove(_ context.Context, ids ...string) erro
 
 	for _, id := range ids {
 		if _, ok := nrm.notifiers[id]; !ok {
-			return errors.ErrNotFound
+			return dbutil.ErrNotFound
 		}
 		delete(nrm.notifiers, id)
 	}

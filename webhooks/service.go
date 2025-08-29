@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -99,7 +100,7 @@ func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, 
 	}
 
 	if len(whs) == 0 {
-		return Webhook{}, errors.ErrCreateEntity
+		return Webhook{}, dbutil.ErrCreateEntity
 	}
 
 	return whs[0], nil

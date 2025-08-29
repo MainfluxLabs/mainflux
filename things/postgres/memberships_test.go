@@ -88,12 +88,12 @@ func TestSave(t *testing.T) {
 		{
 			desc: "save group memberships without group ids",
 			gms:  gmsWithoutGroupIDs,
-			err:  errors.ErrMalformedEntity,
+			err:  dbutil.ErrMalformedEntity,
 		},
 		{
 			desc: "save group memberships without member id",
 			gms:  gmsWithoutMemberIDs,
-			err:  errors.ErrMalformedEntity,
+			err:  dbutil.ErrMalformedEntity,
 		},
 	}
 
@@ -147,7 +147,7 @@ func TestRetrieveRole(t *testing.T) {
 				MemberID: memberID,
 			},
 			role: "",
-			err:  errors.ErrNotFound,
+			err:  dbutil.ErrNotFound,
 		},
 		{
 			desc: "retrieve member role without member id",
@@ -156,7 +156,7 @@ func TestRetrieveRole(t *testing.T) {
 				MemberID: "",
 			},
 			role: "",
-			err:  errors.ErrNotFound,
+			err:  dbutil.ErrNotFound,
 		},
 	}
 
@@ -230,7 +230,7 @@ func TestRetrieveByGroup(t *testing.T) {
 				Limit:  n,
 				Total:  0,
 			},
-			err: errors.ErrRetrieveEntity,
+			err: dbutil.ErrRetrieveEntity,
 		},
 		{
 			desc:    "retrieve group memberships without group id",
@@ -242,7 +242,7 @@ func TestRetrieveByGroup(t *testing.T) {
 			},
 			size: 0,
 
-			err: errors.ErrRetrieveEntity,
+			err: dbutil.ErrRetrieveEntity,
 		},
 	}
 
@@ -295,13 +295,13 @@ func TestRemoveGroupMemberships(t *testing.T) {
 			desc:      "remove group memberships without group id",
 			groupID:   "",
 			memberIDs: memberIDs,
-			err:       errors.ErrRemoveEntity,
+			err:       dbutil.ErrRemoveEntity,
 		},
 		{
 			desc:      "remove group memberships without member ids",
 			groupID:   group.ID,
 			memberIDs: []string{""},
-			err:       errors.ErrRemoveEntity,
+			err:       dbutil.ErrRemoveEntity,
 		},
 		{
 			desc:      "remove group memberships",
@@ -362,7 +362,7 @@ func TestUpdateGroupMemberships(t *testing.T) {
 				GroupID:  "",
 				Role:     things.Viewer,
 			},
-			err: errors.ErrMalformedEntity,
+			err: dbutil.ErrMalformedEntity,
 		},
 		{
 			desc: "update group membership without member id",
@@ -371,7 +371,7 @@ func TestUpdateGroupMemberships(t *testing.T) {
 				GroupID:  group.ID,
 				Role:     things.Viewer,
 			},
-			err: errors.ErrMalformedEntity,
+			err: dbutil.ErrMalformedEntity,
 		},
 		{
 			desc: "update group membership",

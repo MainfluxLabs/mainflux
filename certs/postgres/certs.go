@@ -11,6 +11,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/certs"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -78,7 +79,7 @@ func (cr certsRepository) Save(ctx context.Context, cert certs.Cert) (string, er
 
 	tx, err := cr.db.Beginx()
 	if err != nil {
-		return "", errors.Wrap(errors.ErrCreateEntity, err)
+		return "", errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	dbcrt := toDBCert(cert)
@@ -91,7 +92,7 @@ func (cr certsRepository) Save(ctx context.Context, cert certs.Cert) (string, er
 
 		cr.rollback("Failed to insert a Cert", tx, err)
 
-		return "", errors.Wrap(errors.ErrCreateEntity, e)
+		return "", errors.Wrap(dbutil.ErrCreateEntity, e)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -103,14 +104,14 @@ func (cr certsRepository) Save(ctx context.Context, cert certs.Cert) (string, er
 
 func (cr certsRepository) Remove(ctx context.Context, ownerID, serial string) error {
 	if _, err := cr.RetrieveBySerial(ctx, ownerID, serial); err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 	q := `DELETE FROM certs WHERE serial = :serial`
 	var c certs.Cert
 	c.Serial = serial
 	dbcrt := toDBCert(c)
 	if _, err := cr.db.NamedExecContext(ctx, q, dbcrt); err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 	return nil
 }
@@ -159,10 +160,10 @@ func (cr certsRepository) RetrieveBySerial(ctx context.Context, ownerID, serialI
 
 		pqErr, ok := err.(*pgconn.PgError)
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pqErr.Code {
-			return c, errors.Wrap(errors.ErrNotFound, err)
+			return c, errors.Wrap(dbutil.ErrNotFound, err)
 		}
 
-		return c, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return c, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	c = toCert(dbcrt)
 

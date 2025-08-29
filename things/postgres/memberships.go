@@ -42,19 +42,19 @@ func (mr groupMembershipsRepository) Save(ctx context.Context, gms ...things.Gro
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
+					return errors.Wrap(dbutil.ErrMalformedEntity, err)
 				case pgerrcode.ForeignKeyViolation:
-					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
+					return errors.Wrap(dbutil.ErrConflict, errors.New(pgErr.Detail))
 				case pgerrcode.UniqueViolation:
 					return errors.Wrap(things.ErrGroupMembershipExists, errors.New(pgErr.Detail))
 				}
 			}
-			return errors.Wrap(errors.ErrCreateEntity, err)
+			return errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return errors.Wrap(errors.ErrCreateEntity, err)
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	return nil
@@ -67,10 +67,10 @@ func (mr groupMembershipsRepository) RetrieveRole(ctx context.Context, gm things
 	if err := mr.db.QueryRowxContext(ctx, q, gm.MemberID, gm.GroupID).Scan(&role); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
-			return "", errors.Wrap(errors.ErrNotFound, err)
+			return "", errors.Wrap(dbutil.ErrNotFound, err)
 		}
 
-		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
+		return "", errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	return role, nil
@@ -88,7 +88,7 @@ func (mr groupMembershipsRepository) RetrieveByGroup(ctx context.Context, groupI
 
 	rows, err := mr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.GroupMembershipsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.GroupMembershipsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -96,7 +96,7 @@ func (mr groupMembershipsRepository) RetrieveByGroup(ctx context.Context, groupI
 	for rows.Next() {
 		dbgm := dbGroupMembership{}
 		if err := rows.StructScan(&dbgm); err != nil {
-			return things.GroupMembershipsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return things.GroupMembershipsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		gm := toGroupMemberships(dbgm)
@@ -107,7 +107,7 @@ func (mr groupMembershipsRepository) RetrieveByGroup(ctx context.Context, groupI
 
 	total, err := dbutil.Total(ctx, mr.db, cq, params)
 	if err != nil {
-		return things.GroupMembershipsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.GroupMembershipsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	page := things.GroupMembershipsPage{
@@ -127,7 +127,7 @@ func (mr groupMembershipsRepository) BackupAll(ctx context.Context) ([]things.Gr
 
 	rows, err := mr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
-		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -135,7 +135,7 @@ func (mr groupMembershipsRepository) BackupAll(ctx context.Context) ([]things.Gr
 	for rows.Next() {
 		dbgm := dbGroupMembership{}
 		if err := rows.StructScan(&dbgm); err != nil {
-			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		gm := toGroupMemberships(dbgm)
@@ -152,7 +152,7 @@ func (mr groupMembershipsRepository) BackupByGroup(ctx context.Context, groupID 
 		"group_id": groupID,
 	})
 	if err != nil {
-		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -160,7 +160,7 @@ func (mr groupMembershipsRepository) BackupByGroup(ctx context.Context, groupID 
 	for rows.Next() {
 		dbgm := dbGroupMembership{}
 		if err := rows.StructScan(&dbgm); err != nil {
-			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		gm := toGroupMemberships(dbgm)
@@ -192,7 +192,7 @@ func (mr groupMembershipsRepository) Remove(ctx context.Context, groupID string,
 		}
 
 		if _, err := mr.db.NamedExecContext(ctx, q, dbgm); err != nil {
-			return errors.Wrap(errors.ErrRemoveEntity, err)
+			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
 	}
 	return nil
@@ -209,22 +209,22 @@ func (mr groupMembershipsRepository) Update(ctx context.Context, gms ...things.G
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
+					return errors.Wrap(dbutil.ErrMalformedEntity, err)
 				case pgerrcode.StringDataRightTruncationDataException:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
+					return errors.Wrap(dbutil.ErrMalformedEntity, err)
 				}
 			}
 
-			return errors.Wrap(errors.ErrUpdateEntity, err)
+			return errors.Wrap(dbutil.ErrUpdateEntity, err)
 		}
 
 		cnt, err := row.RowsAffected()
 		if err != nil {
-			return errors.Wrap(errors.ErrUpdateEntity, err)
+			return errors.Wrap(dbutil.ErrUpdateEntity, err)
 		}
 
 		if cnt != 1 {
-			return errors.Wrap(errors.ErrNotFound, err)
+			return errors.Wrap(dbutil.ErrNotFound, err)
 		}
 	}
 

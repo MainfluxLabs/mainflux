@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 )
@@ -57,7 +57,7 @@ func (svc *mainfluxThings) ViewThing(_ context.Context, token, id string) (thing
 
 	}
 
-	return things.Thing{}, errors.ErrNotFound
+	return things.Thing{}, dbutil.ErrNotFound
 }
 
 func (svc *mainfluxThings) RemoveThings(_ context.Context, token string, ids ...string) error {
@@ -66,7 +66,7 @@ func (svc *mainfluxThings) RemoveThings(_ context.Context, token string, ids ...
 
 	for _, id := range ids {
 		if _, ok := svc.things[id]; !ok {
-			return errors.ErrNotFound
+			return dbutil.ErrNotFound
 		}
 
 		delete(svc.things, id)
@@ -79,7 +79,7 @@ func (svc *mainfluxThings) ViewProfile(_ context.Context, token, id string) (thi
 	if c, ok := svc.profiles[id]; ok {
 		return c, nil
 	}
-	return things.Profile{}, errors.ErrNotFound
+	return things.Profile{}, dbutil.ErrNotFound
 }
 
 func (svc *mainfluxThings) UpdateThing(context.Context, string, things.Thing) error {

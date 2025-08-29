@@ -9,6 +9,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -166,17 +167,17 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, redirectPat
 	}
 
 	_, err := svc.users.RetrieveByEmail(ctx, user.Email)
-	if err != nil && !errors.Contains(err, errors.ErrNotFound) {
+	if err != nil && !errors.Contains(err, dbutil.ErrNotFound) {
 		return "", err
 	}
 
 	if err == nil {
-		return "", errors.ErrConflict
+		return "", dbutil.ErrConflict
 	}
 
 	hash, err := svc.hasher.Hash(user.Password)
 	if err != nil {
-		return "", errors.Wrap(errors.ErrMalformedEntity, err)
+		return "", errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
 
 	user.Password = hash
@@ -227,7 +228,7 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, redirectPat
 func (svc usersService) VerifyEmail(ctx context.Context, confirmationToken string) (string, error) {
 	verification, err := svc.emailVerifications.RetrieveByToken(ctx, confirmationToken)
 	if err != nil {
-		if errors.Contains(err, errors.ErrNotFound) {
+		if errors.Contains(err, dbutil.ErrNotFound) {
 			return "", errors.Wrap(errors.ErrAuthentication, err)
 		}
 
@@ -293,7 +294,7 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 
 	hash, err := svc.hasher.Hash(user.Password)
 	if err != nil {
-		return errors.Wrap(errors.ErrMalformedEntity, err)
+		return errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
 	user.Password = hash
 
@@ -329,7 +330,7 @@ func (svc usersService) Register(ctx context.Context, token string, user User) (
 
 	hash, err := svc.hasher.Hash(user.Password)
 	if err != nil {
-		return "", errors.Wrap(errors.ErrMalformedEntity, err)
+		return "", errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
 	user.Password = hash
 	if user.Status == "" {
@@ -374,7 +375,7 @@ func (svc usersService) ViewUser(ctx context.Context, token, id string) (User, e
 
 	dbUser, err := svc.users.RetrieveByID(ctx, id)
 	if err != nil {
-		return User{}, errors.Wrap(errors.ErrNotFound, err)
+		return User{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
 	return User{
@@ -507,7 +508,7 @@ func (svc usersService) UpdateUser(ctx context.Context, token string, u User) er
 func (svc usersService) GenerateResetToken(ctx context.Context, email, redirectPath string) error {
 	user, err := svc.users.RetrieveByEmail(ctx, email)
 	if err != nil || user.Email == "" {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 	t, err := svc.issue(ctx, user.ID, user.Email, auth.RecoveryKey)
 	if err != nil {
@@ -531,7 +532,7 @@ func (svc usersService) ResetPassword(ctx context.Context, resetToken, password 
 		return err
 	}
 	if u.Email == "" {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 
 	password, err = svc.hasher.Hash(password)
@@ -606,7 +607,7 @@ func (svc usersService) changeStatus(ctx context.Context, token, id, status stri
 
 	dbUser, err := svc.users.RetrieveByID(ctx, id)
 	if err != nil {
-		return errors.Wrap(errors.ErrNotFound, err)
+		return errors.Wrap(dbutil.ErrNotFound, err)
 	}
 	if dbUser.Status == status {
 		if status == DisabledStatusKey {
@@ -622,7 +623,7 @@ func (svc usersService) changeStatus(ctx context.Context, token, id, status stri
 func (svc usersService) issue(ctx context.Context, id, email string, keyType uint32) (string, error) {
 	key, err := svc.auth.Issue(ctx, &protomfx.IssueReq{Id: id, Email: email, Type: keyType})
 	if err != nil {
-		return "", errors.Wrap(errors.ErrNotFound, err)
+		return "", errors.Wrap(dbutil.ErrNotFound, err)
 	}
 	return key.GetValue(), nil
 }

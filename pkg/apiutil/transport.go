@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/readers"
 	kithttp "github.com/go-kit/kit/transport/http"
@@ -124,14 +125,14 @@ func EncodeError(err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusUnauthorized)
 	case errors.Contains(err, errors.ErrAuthorization):
 		w.WriteHeader(http.StatusForbidden)
-	case errors.Contains(err, errors.ErrNotFound):
+	case errors.Contains(err, dbutil.ErrNotFound):
 		w.WriteHeader(http.StatusNotFound)
-	case errors.Contains(err, errors.ErrConflict):
+	case errors.Contains(err, dbutil.ErrConflict):
 		w.WriteHeader(http.StatusConflict)
-	case errors.Contains(err, errors.ErrCreateEntity),
-		errors.Contains(err, errors.ErrUpdateEntity),
-		errors.Contains(err, errors.ErrRetrieveEntity),
-		errors.Contains(err, errors.ErrRemoveEntity):
+	case errors.Contains(err, dbutil.ErrCreateEntity),
+		errors.Contains(err, dbutil.ErrUpdateEntity),
+		errors.Contains(err, dbutil.ErrRetrieveEntity),
+		errors.Contains(err, dbutil.ErrRemoveEntity):
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
 		w.WriteHeader(http.StatusInternalServerError)

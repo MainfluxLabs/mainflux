@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/email"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 // Metadata to be used for Mainflux thing or profile for customized
@@ -37,7 +37,7 @@ type EmailVerification struct {
 // Validate returns an error if user representation is invalid.
 func (u User) Validate(passRegex *regexp.Regexp) error {
 	if !email.IsEmail(u.Email) {
-		return errors.ErrMalformedEntity
+		return apiutil.ErrMalformedEntity
 	}
 
 	if !passRegex.MatchString(u.Password) {
