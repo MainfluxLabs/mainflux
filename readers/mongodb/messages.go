@@ -184,3 +184,34 @@ func fmtCondition(profileID string, rpm readers.PageMetadata) bson.D {
 
 	return filter
 }
+
+func (repo mongoRepository) ListJSONMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll("", rpm)
+}
+func (repo mongoRepository) ListSenMLMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll("", rpm)
+}
+
+func (repo mongoRepository) BackupJSONMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll("", rpm)
+}
+
+func (repo mongoRepository) BackupSenMLMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return repo.readAll("", rpm)
+}
+
+func (repo mongoRepository) RestoreJSONMessages(ctx context.Context, messages ...readers.Message) error {
+	return nil
+}
+
+func (repo mongoRepository) RestoreSenMLMessageS(ctx context.Context, messages ...readers.Message) error {
+	return nil
+}
+
+func (repo mongoRepository) DeleteJSONMessages(ctx context.Context, rpm readers.PageMetadata) error {
+	return nil
+}
+
+func (repo mongoRepository) DeleteSenMLMessages(ctx context.Context, rpm readers.PageMetadata) error {
+	return nil
+}

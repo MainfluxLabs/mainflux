@@ -22,7 +22,7 @@ const (
 )
 
 type QueryConfig struct {
-	Format           string
+	Table            string
 	TimeColumn       string
 	Condition        string
 	ConditionForJoin string
@@ -51,24 +51,24 @@ func newAggregationService(db *sqlx.DB) *aggregationService {
 	return &aggregationService{db: db}
 }
 
-func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata) ([]readers.Message, error) {
-	if rpm.Format == defTable && rpm.AggField != "" {
+func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata, table string) ([]readers.Message, error) {
+	if table == senmlTable && rpm.AggField != "" {
 		rpm.Name = rpm.AggField
 	}
 
 	params := as.buildQueryParams(rpm)
 
 	config := QueryConfig{
-		Format:      rpm.Format,
-		TimeColumn:  as.getTimeColumn(rpm.Format),
-		AggField:    as.getAggregateField(rpm),
+		Table:       table,
+		TimeColumn:  as.getTimeColumn(table),
+		AggField:    as.getAggregateField(rpm, table),
 		AggInterval: rpm.AggInterval,
 		Limit:       rpm.Limit,
 		AggType:     rpm.AggType,
 	}
 
-	baseCondition := as.buildBaseCondition(rpm)
-	nameCondition := as.buildNameCondition(rpm)
+	baseCondition := as.buildBaseCondition(rpm, table)
+	nameCondition := as.buildNameCondition(rpm, table)
 	config.Condition = as.combineConditions(baseCondition, nameCondition)
 	config.ConditionForJoin = strings.Replace(config.Condition, "WHERE", "AND", 1)
 
@@ -92,7 +92,7 @@ func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata) (
 	}
 	defer rows.Close()
 
-	messages, err := as.scanAggregatedMessages(rows, rpm.Format)
+	messages, err := as.scanAggregatedMessages(rows, table)
 	if err != nil {
 		return nil, err
 	}
@@ -127,13 +127,13 @@ func (maxStrt MaxStrategy) BuildQuery(config QueryConfig) string {
 				ti.interval_time,
 				{{.AggExpression}} as agg_value
 			FROM time_intervals ti
-			LEFT JOIN {{.Format}} m ON {{.TimeJoinCondition}}
+			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
 				{{.ConditionForJoin}}
 			GROUP BY ti.interval_time
 			HAVING {{.AggExpression}} IS NOT NULL
 		)
 		SELECT DISTINCT ON (ia.interval_time) {{.SelectedFields}}
-		FROM {{.Format}} m
+		FROM {{.Table}} m
 		JOIN interval_aggs ia ON {{.TimeJoinConditionIA}}
 			AND {{.ValueCondition}}
 		{{.Condition}}
@@ -147,8 +147,8 @@ func (maxStrt MaxStrategy) GetSelectedFields(config QueryConfig) string {
 }
 
 func (maxStrt MaxStrategy) GetAggregateExpression(config QueryConfig) string {
-	switch config.Format {
-	case defTable:
+	switch config.Table {
+	case senmlTable:
 		return fmt.Sprintf("MAX(m.%s)", config.AggField)
 	default:
 		jsonPath := buildJSONPath(config.AggField)
@@ -168,13 +168,13 @@ func (minStrt MinStrategy) BuildQuery(config QueryConfig) string {
 				ti.interval_time,
 				{{.AggExpression}} as agg_value
 			FROM time_intervals ti
-			LEFT JOIN {{.Format}} m ON {{.TimeJoinCondition}}
+			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
 				{{.ConditionForJoin}}
 			GROUP BY ti.interval_time
 			HAVING {{.AggExpression}} IS NOT NULL
 		)
 		SELECT DISTINCT ON (ia.interval_time) {{.SelectedFields}}
-		FROM {{.Format}} m
+		FROM {{.Table}} m
 		JOIN interval_aggs ia ON {{.TimeJoinConditionIA}}
 			AND {{.ValueCondition}}
 		{{.Condition}}
@@ -188,8 +188,8 @@ func (minStrt MinStrategy) GetSelectedFields(config QueryConfig) string {
 }
 
 func (minStrt MinStrategy) GetAggregateExpression(config QueryConfig) string {
-	switch config.Format {
-	case defTable:
+	switch config.Table {
+	case senmlTable:
 		return fmt.Sprintf("MIN(m.%s)", config.AggField)
 	default:
 		jsonPath := buildJSONPath(config.AggField)
@@ -210,13 +210,13 @@ func (avgStrt AvgStrategy) BuildQuery(config QueryConfig) string {
 				{{.AggExpression}} as avg_value,
 				MAX(m.{{.TimeColumn}}) as max_time  
 			FROM time_intervals ti
-			LEFT JOIN {{.Format}} m ON {{.TimeJoinCondition}}
+			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
 				{{.ConditionForJoin}}
 			GROUP BY ti.interval_time
 			HAVING {{.AggExpression}} IS NOT NULL
 		)
 		SELECT DISTINCT ON (ia.interval_time) {{.SelectedFields}}
-		FROM {{.Format}} m
+		FROM {{.Table}} m
 		JOIN interval_aggs ia ON {{.TimeJoinConditionIA}}
 			AND m.{{.TimeColumn}} = ia.max_time
 		{{.Condition}}
@@ -226,8 +226,8 @@ func (avgStrt AvgStrategy) BuildQuery(config QueryConfig) string {
 }
 
 func (avgStrt AvgStrategy) GetSelectedFields(config QueryConfig) string {
-	switch config.Format {
-	case defTable:
+	switch config.Table {
+	case senmlTable:
 		return `m.subtopic, m.publisher, m.protocol, m.name, m.unit,
 				ia.avg_value as value, 
 				m.string_value, m.bool_value, m.data_value, m.sum,
@@ -238,8 +238,8 @@ func (avgStrt AvgStrategy) GetSelectedFields(config QueryConfig) string {
 }
 
 func (avgStrt AvgStrategy) GetAggregateExpression(config QueryConfig) string {
-	switch config.Format {
-	case defTable:
+	switch config.Table {
+	case senmlTable:
 		return fmt.Sprintf("AVG(m.%s)", config.AggField)
 	default:
 		jsonPath := buildJSONPath(config.AggField)
@@ -260,13 +260,13 @@ func (countStrt CountStrategy) BuildQuery(config QueryConfig) string {
 				{{.AggExpression}} as sum_value,
 				MAX(m.{{.TimeColumn}}) as max_time  
 			FROM time_intervals ti
-			LEFT JOIN {{.Format}} m ON {{.TimeJoinCondition}}
+			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
 				{{.ConditionForJoin}}
 			GROUP BY ti.interval_time
 			HAVING {{.AggExpression}} IS NOT NULL
 		)
 		SELECT DISTINCT ON (ia.interval_time) {{.SelectedFields}}
-		FROM {{.Format}} m
+		FROM {{.Table}} m
 		JOIN interval_aggs ia ON {{.TimeJoinConditionIA}}
 			AND m.{{.TimeColumn}} = ia.max_time
 		{{.Condition}}
@@ -279,7 +279,7 @@ func renderTemplate(templateStr string, config QueryConfig, strategy AggStrategy
 	data := map[string]string{
 		"TimeIntervals":       buildTimeIntervals(config),
 		"AggExpression":       strategy.GetAggregateExpression(config),
-		"Format":              config.Format,
+		"Table":               config.Table,
 		"TimeJoinCondition":   buildTimeJoinCondition(config, timeIntervals),
 		"TimeJoinConditionIA": buildTimeJoinCondition(config, intervalAggregations),
 		"ConditionForJoin":    config.ConditionForJoin,
@@ -296,8 +296,8 @@ func renderTemplate(templateStr string, config QueryConfig, strategy AggStrategy
 }
 
 func (countStrt CountStrategy) GetSelectedFields(config QueryConfig) string {
-	switch config.Format {
-	case defTable:
+	switch config.Table {
+	case senmlTable:
 		return `m.subtopic, m.publisher, m.protocol, m.name, m.unit,
 				ia.sum_value as value, 
 				m.string_value, m.bool_value, m.data_value, m.sum,
@@ -308,8 +308,8 @@ func (countStrt CountStrategy) GetSelectedFields(config QueryConfig) string {
 }
 
 func (countStrt CountStrategy) GetAggregateExpression(config QueryConfig) string {
-	switch config.Format {
-	case defTable:
+	switch config.Table {
+	case senmlTable:
 		return fmt.Sprintf("COUNT(m.%s)", config.AggField)
 	default:
 		jsonPath := buildJSONPath(config.AggField)
@@ -324,7 +324,7 @@ func buildTimeIntervals(config QueryConfig) string {
         %s
         ORDER BY interval_time DESC
         LIMIT %d`,
-		config.AggInterval, config.TimeColumn, config.Format, config.Condition, config.Limit)
+		config.AggInterval, config.TimeColumn, config.Table, config.Condition, config.Limit)
 }
 
 func buildTimeJoinCondition(config QueryConfig, tableAlias string) string {
@@ -333,8 +333,8 @@ func buildTimeJoinCondition(config QueryConfig, tableAlias string) string {
 }
 
 func buildValueCondition(config QueryConfig) string {
-	switch config.Format {
-	case defTable:
+	switch config.Table {
+	case senmlTable:
 		return fmt.Sprintf("m.%s = ia.agg_value", config.AggField)
 	default:
 		jsonPath := buildJSONPath(config.AggField)
@@ -342,19 +342,19 @@ func buildValueCondition(config QueryConfig) string {
 	}
 }
 
-func (as *aggregationService) readAggregatedCount(rpm readers.PageMetadata) (uint64, error) {
+func (as *aggregationService) readAggregatedCount(rpm readers.PageMetadata, table string) (uint64, error) {
 	params := as.buildQueryParams(rpm)
 
-	timeColumn := as.getTimeColumn(rpm.Format)
-	baseCondition := as.buildBaseCondition(rpm)
-	nameCondition := as.buildNameCondition(rpm)
+	timeColumn := as.getTimeColumn(table)
+	baseCondition := as.buildBaseCondition(rpm, table)
+	nameCondition := as.buildNameCondition(rpm, table)
 	condition := as.combineConditions(baseCondition, nameCondition)
 
 	query := fmt.Sprintf(`
         SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000)))
         FROM %s
         %s`,
-		rpm.AggInterval, timeColumn, rpm.Format, condition)
+		rpm.AggInterval, timeColumn, table, condition)
 
 	rows, err := as.db.NamedQuery(query, params)
 	if err != nil {
@@ -375,13 +375,13 @@ func (as *aggregationService) readAggregatedCount(rpm readers.PageMetadata) (uin
 	return total, nil
 }
 
-func (as *aggregationService) buildNameCondition(rpm readers.PageMetadata) string {
+func (as *aggregationService) buildNameCondition(rpm readers.PageMetadata, table string) string {
 	if rpm.Name == "" {
 		return ""
 	}
 
-	switch rpm.Format {
-	case defTable:
+	switch table {
+	case senmlTable:
 		return "WHERE name = :name"
 	default:
 		return "WHERE payload->>'n' = :name"
@@ -403,9 +403,9 @@ func (as *aggregationService) combineConditions(condition1, condition2 string) s
 	return condition1 + " " + condition2
 }
 
-func (as *aggregationService) buildBaseCondition(rpm readers.PageMetadata) string {
+func (as *aggregationService) buildBaseCondition(rpm readers.PageMetadata, table string) string {
 	var conditions []string
-	timeColumn := as.getTimeColumn(rpm.Format)
+	timeColumn := as.getTimeColumn(table)
 
 	if rpm.Subtopic != "" {
 		conditions = append(conditions, "subtopic = :subtopic")
@@ -434,7 +434,7 @@ func (as *aggregationService) scanAggregatedMessages(rows *sqlx.Rows, format str
 	var messages []readers.Message
 
 	switch format {
-	case defTable:
+	case senmlTable:
 		for rows.Next() {
 			msg := senml.Message{}
 			if err := rows.StructScan(&msg); err != nil {
@@ -510,8 +510,8 @@ func (as *aggregationService) executeQuery(query string, params map[string]inter
 	return rows, nil
 }
 
-func (as *aggregationService) getAggregateField(rpm readers.PageMetadata) string {
-	if rpm.Format == defTable {
+func (as *aggregationService) getAggregateField(rpm readers.PageMetadata, table string) string {
+	if table == senmlTable {
 		return "value"
 	}
 	return rpm.AggField

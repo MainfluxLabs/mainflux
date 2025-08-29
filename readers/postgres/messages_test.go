@@ -390,7 +390,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ListAllMessages(tc.pageMeta)
+		result, err := reader.ListSenMLMessages(tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Messages, result.Messages))
 		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Total, result.Total))
@@ -502,7 +502,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ListAllMessages(tc.pageMeta)
+		result, err := reader.ListJSONMessages(tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Messages, result.Messages))
 		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Total, result.Total))
@@ -658,13 +658,13 @@ func TestDeleteMessagesSenML(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
+		_ = reader.DeleteSenMLMessages(context.Background(), readers.PageMetadata{
 			Publisher: pubID,
 			From:      0,
 			To:        now,
 			Format:    senmlFormat,
 		})
-		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
+		_ = reader.DeleteSenMLMessages(context.Background(), readers.PageMetadata{
 			Publisher: pubID2,
 			From:      0,
 			To:        now,
@@ -698,7 +698,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 			require.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 		}
 
-		beforePage, err := reader.ListAllMessages(readers.PageMetadata{
+		beforePage, err := reader.ListSenMLMessages(readers.PageMetadata{
 			Publisher: tc.pageMeta.Publisher,
 			Subtopic:  tc.pageMeta.Subtopic,
 			Protocol:  tc.pageMeta.Protocol,
@@ -711,10 +711,10 @@ func TestDeleteMessagesSenML(t *testing.T) {
 		require.Nil(t, err)
 		beforeCount := beforePage.Total
 
-		err = reader.DeleteMessages(context.Background(), tc.pageMeta)
+		err = reader.DeleteSenMLMessages(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
-		afterPage, err := reader.ListAllMessages(readers.PageMetadata{
+		afterPage, err := reader.ListSenMLMessages(readers.PageMetadata{
 			Publisher: tc.pageMeta.Publisher,
 			Subtopic:  tc.pageMeta.Subtopic,
 			Protocol:  tc.pageMeta.Protocol,
@@ -860,14 +860,14 @@ func TestDeleteMessagesJSON(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
+		_ = reader.DeleteJSONMessages(context.Background(), readers.PageMetadata{
 			Publisher: id1,
 			From:      0,
 			To:        int64(created + int64(msgsNum)),
 			Format:    jsonTable,
 		})
 
-		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
+		_ = reader.DeleteJSONMessages(context.Background(), readers.PageMetadata{
 			Publisher: id2,
 			From:      0,
 			To:        int64(created + int64(msgsNum)),
@@ -879,7 +879,7 @@ func TestDeleteMessagesJSON(t *testing.T) {
 			require.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 		}
 
-		beforePage, err := reader.ListAllMessages(readers.PageMetadata{
+		beforePage, err := reader.ListJSONMessages(readers.PageMetadata{
 			Publisher: tc.pageMeta.Publisher,
 			Subtopic:  tc.pageMeta.Subtopic,
 			Protocol:  tc.pageMeta.Protocol,
@@ -891,10 +891,10 @@ func TestDeleteMessagesJSON(t *testing.T) {
 		require.Nil(t, err)
 		beforeCount := beforePage.Total
 
-		err = reader.DeleteMessages(context.Background(), tc.pageMeta)
+		err = reader.DeleteJSONMessages(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
-		afterPage, err := reader.ListAllMessages(readers.PageMetadata{
+		afterPage, err := reader.ListJSONMessages(readers.PageMetadata{
 			Publisher: tc.pageMeta.Publisher,
 			Subtopic:  tc.pageMeta.Subtopic,
 			Protocol:  tc.pageMeta.Protocol,

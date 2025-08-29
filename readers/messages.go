@@ -34,17 +34,17 @@ var ErrReadMessages = errors.New("failed to read messages from database")
 
 // MessageRepository specifies message reader API.
 type MessageRepository interface {
-	// ListAllMessages retrieves all messages from database.
-	ListAllMessages(rpm PageMetadata) (MessagesPage, error)
+	ListJSONMessages(rpm PageMetadata) (MessagesPage, error)
+	ListSenMLMessages(rpm PageMetadata) (MessagesPage, error)
 
-	// Restore restores message database from a backup.
-	Restore(ctx context.Context, format string, messages ...Message) error
+	BackupJSONMessages(rpm PageMetadata) (MessagesPage, error)
+	BackupSenMLMessages(rpm PageMetadata) (MessagesPage, error)
 
-	// Backup retrieves all messages from database.
-	Backup(rpm PageMetadata) (MessagesPage, error)
+	RestoreJSONMessages(ctx context.Context, messages ...Message) error
+	RestoreSenMLMessageS(ctx context.Context, messages ...Message) error
 
-	// Deletes messages for a specific publisher within a time range.
-	DeleteMessages(ctx context.Context, rpm PageMetadata) error
+	DeleteJSONMessages(ctx context.Context, rpm PageMetadata) error
+	DeleteSenMLMessages(ctx context.Context, rpm PageMetadata) error
 }
 
 // Message represents any message format.

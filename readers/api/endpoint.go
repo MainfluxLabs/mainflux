@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
@@ -38,7 +37,7 @@ func listJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 		}
 
 		req.pageMeta.Format = jsonFormat
-		page, err := svc.ListAllMessages(req.pageMeta)
+		page, err := svc.ListJSONMessages(req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -74,7 +73,7 @@ func listSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint 
 		}
 
 		req.pageMeta.Format = defFormat
-		page, err := svc.ListAllMessages(req.pageMeta)
+		page, err := svc.ListSenMLMessages(req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -110,7 +109,7 @@ func deleteJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint
 		}
 
 		req.pageMeta.Format = jsonFormat
-		err := svc.DeleteMessages(ctx, req.pageMeta)
+		err := svc.DeleteJSONMessages(ctx, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -143,7 +142,7 @@ func deleteSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 		}
 
 		req.pageMeta.Format = defFormat
-		err := svc.DeleteMessages(ctx, req.pageMeta)
+		err := svc.DeleteSenMLMessages(ctx, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -165,7 +164,7 @@ func backupJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint
 		}
 
 		req.pageMeta.Format = jsonFormat
-		page, err := svc.Backup(req.pageMeta)
+		page, err := svc.BackupJSONMessages(req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -204,7 +203,7 @@ func backupSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 		}
 
 		req.pageMeta.Format = defFormat
-		page, err := svc.Backup(req.pageMeta)
+		page, err := svc.BackupSenMLMessages(req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -264,8 +263,7 @@ func restoreJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 			messages = append(messages, msg)
 		}
 
-		table := dbutil.GetTableName(jsonFormat)
-		if err := svc.Restore(ctx, table, messages...); err != nil {
+		if err := svc.RestoreJSONMessages(ctx, messages...); err != nil {
 			return nil, err
 		}
 
@@ -307,8 +305,7 @@ func restoreSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoi
 			messages = append(messages, msg)
 		}
 
-		table := dbutil.GetTableName(senmlFormat)
-		if err := svc.Restore(ctx, table, messages...); err != nil {
+		if err := svc.RestoreSenMLMessageS(ctx, messages...); err != nil {
 			return nil, err
 		}
 

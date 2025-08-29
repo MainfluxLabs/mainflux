@@ -252,4 +252,36 @@ func (msg jsonMessage) toMap() (map[string]interface{}, error) {
 	}
 	ret["payload"] = pld
 	return ret, nil
+
+}
+
+func (tr timescaleRepository) ListJSONMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return tr.readAll(rpm)
+}
+func (tr timescaleRepository) ListSenMLMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return tr.readAll(rpm)
+}
+
+func (tr timescaleRepository) BackupJSONMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return tr.readAll(rpm)
+}
+
+func (tr timescaleRepository) BackupSenMLMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+	return tr.readAll(rpm)
+}
+
+func (tr timescaleRepository) RestoreJSONMessages(ctx context.Context, messages ...readers.Message) error {
+	return nil
+}
+
+func (tr timescaleRepository) RestoreSenMLMessageS(ctx context.Context, messages ...readers.Message) error {
+	return nil
+}
+
+func (tr timescaleRepository) DeleteJSONMessages(ctx context.Context, rpm readers.PageMetadata) error {
+	return nil
+}
+
+func (tr timescaleRepository) DeleteSenMLMessages(ctx context.Context, rpm readers.PageMetadata) error {
+	return nil
 }
