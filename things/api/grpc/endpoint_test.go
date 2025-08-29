@@ -39,8 +39,7 @@ func TestGetPubConfByKey(t *testing.T) {
 	prID := prs[0].ID
 
 	thing.GroupID = grID
-	thing.ProfileID = prID
-	ths, err := svc.CreateThings(context.Background(), token, thing)
+	ths, err := svc.CreateThings(context.Background(), token, prID, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	thKey := ths[0].Key
 
@@ -84,8 +83,7 @@ func TestIdentify(t *testing.T) {
 	prID := prs[0].ID
 
 	thing.GroupID = grID
-	thing.ProfileID = prID
-	ths, err := svc.CreateThings(context.Background(), token, thing)
+	ths, err := svc.CreateThings(context.Background(), token, prID, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	sth := ths[0]
 
