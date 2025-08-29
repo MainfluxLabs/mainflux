@@ -1698,9 +1698,7 @@ func TestViewProfileByThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	pr := prs[0]
 
-	thing.GroupID = gr.ID
-	thing.ProfileID = pr.ID
-	ths, err := svc.CreateThings(context.Background(), token, thing)
+	ths, err := svc.CreateThings(context.Background(), token, pr.ID, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	th := ths[0]
 
@@ -1787,9 +1785,7 @@ func TestRemoveProfile(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID, prID1 := prs[0].ID, prs[1].ID
 
-	thing.GroupID = grID
-	thing.ProfileID = prID1
-	_, err = svc.CreateThings(context.Background(), token, thing)
+	_, err = svc.CreateThings(context.Background(), token, prID1, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -1858,9 +1854,7 @@ func TestRemoveProfiles(t *testing.T) {
 	prs, err := svc.CreateProfiles(context.Background(), token, cList...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	thing.GroupID = grID
-	thing.ProfileID = prs[2].ID
-	_, err = svc.CreateThings(context.Background(), token, thing)
+	_, err = svc.CreateThings(context.Background(), token, prs[2].ID, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	profileIDs := []string{prs[0].ID, prs[1].ID}

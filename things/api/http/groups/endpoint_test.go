@@ -311,8 +311,8 @@ func TestViewGroupByThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
 
-	thing := things.Thing{Name: "test", ProfileID: prID, GroupID: gr.ID}
-	ths, err := svc.CreateThings(context.Background(), token, thing)
+	thing := things.Thing{Name: "test"}
+	ths, err := svc.CreateThings(context.Background(), token, prID, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	th := ths[0]
 

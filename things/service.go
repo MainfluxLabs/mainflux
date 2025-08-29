@@ -30,7 +30,7 @@ var (
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
 	// CreateThings adds things to the user identified by the provided key.
-	CreateThings(ctx context.Context, token string, things ...Thing) ([]Thing, error)
+	CreateThings(ctx context.Context, token, profileID string, things ...Thing) ([]Thing, error)
 
 	// UpdateThing updates the thing identified by the provided ID, that
 	// belongs to the user identified by the provided token.
@@ -242,64 +242,46 @@ func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, thi
 	}
 }
 
-func (ts *thingsService) CreateThings(ctx context.Context, token string, things ...Thing) ([]Thing, error) {
+func (ts *thingsService) CreateThings(ctx context.Context, token, profileID string, things ...Thing) ([]Thing, error) {
+	groupID, err := ts.getGroupIDByProfileID(ctx, profileID)
+	if err != nil {
+		return []Thing{}, err
+	}
+
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     groupID,
+		Action: Editor,
+	}
+	if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
+		return nil, err
+	}
+
 	ths := []Thing{}
 	for _, thing := range things {
-		ar := UserAccessReq{
-			Token:  token,
-			ID:     thing.GroupID,
-			Action: Editor,
-		}
-		if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
-			return nil, err
-		}
-
-		prGrID, err := ts.getGroupIDByProfileID(ctx, thing.ProfileID)
-		if err != nil {
-			return []Thing{}, err
+		thing.ProfileID = profileID
+		thing.GroupID = groupID
+		if thing.ID == "" {
+			id, err := ts.idProvider.ID()
+			if err != nil {
+				return []Thing{}, err
+			}
+			thing.ID = id
 		}
 
-		if prGrID != thing.GroupID {
-			return nil, errors.ErrAuthorization
+		if thing.Key == "" {
+			key, err := ts.idProvider.ID()
+
+			if err != nil {
+				return []Thing{}, err
+			}
+			thing.Key = key
 		}
 
-		th, err := ts.createThing(ctx, &thing)
-		if err != nil {
-			return []Thing{}, err
-		}
-		ths = append(ths, th)
+		ths = append(ths, thing)
 	}
 
-	return ths, nil
-}
-
-func (ts *thingsService) createThing(ctx context.Context, thing *Thing) (Thing, error) {
-	if thing.ID == "" {
-		id, err := ts.idProvider.ID()
-		if err != nil {
-			return Thing{}, err
-		}
-		thing.ID = id
-	}
-
-	if thing.Key == "" {
-		key, err := ts.idProvider.ID()
-
-		if err != nil {
-			return Thing{}, err
-		}
-		thing.Key = key
-	}
-
-	ths, err := ts.things.Save(ctx, *thing)
-	if err != nil {
-		return Thing{}, err
-	}
-	if len(ths) == 0 {
-		return Thing{}, dbutil.ErrCreateEntity
-	}
-
-	return ths[0], nil
+	return ts.things.Save(ctx, ths...)
 }
 
 func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Thing) error {

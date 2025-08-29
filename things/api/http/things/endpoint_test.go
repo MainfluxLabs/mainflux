@@ -270,9 +270,7 @@ func TestUpdateThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
 
-	thing.GroupID = grID
-	thing.ProfileID = prID
-	ths, err := svc.CreateThings(context.Background(), token, thing)
+	ths, err := svc.CreateThings(context.Background(), token, prID, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
 
@@ -408,9 +406,7 @@ func TestUpdateKey(t *testing.T) {
 
 	th := thing
 	th.Key = "key"
-	th.GroupID = grID
-	th.ProfileID = prID
-	ths, err := svc.CreateThings(context.Background(), token, th)
+	ths, err := svc.CreateThings(context.Background(), token, prID, th)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th = ths[0]
 
@@ -539,9 +535,7 @@ func TestViewThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	prID := prs[0].ID
 
-	thing.GroupID = grID
-	thing.ProfileID = prID
-	ths, err := svc.CreateThings(context.Background(), token, thing)
+	ths, err := svc.CreateThings(context.Background(), token, prID, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	th := ths[0]
 
@@ -633,13 +627,11 @@ func TestViewMetadataByKey(t *testing.T) {
 	prID := prs[0].ID
 
 	thing := things.Thing{
-		GroupID:   grID,
-		ProfileID: prID,
-		Name:      "test-meta",
-		Key:       key,
-		Metadata:  metadata,
+		Name:     "test-meta",
+		Key:      key,
+		Metadata: metadata,
 	}
-	ths, err := svc.CreateThings(context.Background(), token, thing)
+	ths, err := svc.CreateThings(context.Background(), token, prID, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	th := ths[0]
 
@@ -710,10 +702,8 @@ func TestListThings(t *testing.T) {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 		thing1 := thing
 		thing1.ID = id
-		thing1.GroupID = grID
-		thing1.ProfileID = prID
 
-		ths, err := svc.CreateThings(context.Background(), token, thing1)
+		ths, err := svc.CreateThings(context.Background(), token, prID, thing1)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := ths[0]
 
@@ -905,8 +895,8 @@ func TestSearchThings(t *testing.T) {
 		name := "name_" + fmt.Sprintf("%03d", i+1)
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 
-		th := things.Thing{ID: id, GroupID: grID, ProfileID: prID, Name: name, Metadata: map[string]interface{}{"test": name}}
-		ths, err := svc.CreateThings(context.Background(), token, th)
+		th := things.Thing{ID: id, Name: name, Metadata: map[string]interface{}{"test": name}}
+		ths, err := svc.CreateThings(context.Background(), token, prID, th)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		thing := ths[0]
 
@@ -1085,10 +1075,8 @@ func TestSearchThingsByProfile(t *testing.T) {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 		thing1 := thing
 		thing1.ID = id
-		thing1.GroupID = gr.ID
-		thing1.ProfileID = pr.ID
 
-		ths, err := svc.CreateThings(context.Background(), token, thing1)
+		ths, err := svc.CreateThings(context.Background(), token, pr.ID, thing1)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := ths[0]
 
@@ -1238,10 +1226,8 @@ func TestSearchThingsByGroup(t *testing.T) {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 		thing1 := thing
 		thing1.ID = id
-		thing1.GroupID = gr.ID
-		thing1.ProfileID = pr.ID
 
-		ths, err := svc.CreateThings(context.Background(), token, thing1)
+		ths, err := svc.CreateThings(context.Background(), token, pr.ID, thing1)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := ths[0]
 
@@ -1392,10 +1378,8 @@ func TestSearchThingsByOrg(t *testing.T) {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 		thing1 := thing
 		thing1.ID = id
-		thing1.GroupID = gr.ID
-		thing1.ProfileID = pr.ID
 
-		ths, err := svc.CreateThings(context.Background(), token, thing1)
+		ths, err := svc.CreateThings(context.Background(), token, pr.ID, thing1)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := ths[0]
 
@@ -1545,10 +1529,8 @@ func TestListThingsByProfile(t *testing.T) {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 		thing1 := thing
 		thing1.ID = id
-		thing1.GroupID = gr.ID
-		thing1.ProfileID = pr.ID
 
-		ths, err := svc.CreateThings(context.Background(), token, thing1)
+		ths, err := svc.CreateThings(context.Background(), token, pr.ID, thing1)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := ths[0]
 
@@ -1741,10 +1723,8 @@ func TestListThingsByOrg(t *testing.T) {
 		thing1 := thing
 		thing1.Name = fmt.Sprintf("%s%012d", prefix, suffix)
 		thing1.ID = fmt.Sprintf("%s%012d", prefix, suffix)
-		thing1.GroupID = gr.ID
-		thing1.ProfileID = pr.ID
 
-		ths, err := svc.CreateThings(context.Background(), adminToken, thing1)
+		ths, err := svc.CreateThings(context.Background(), adminToken, pr.ID, thing1)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := ths[0]
 
@@ -1764,10 +1744,8 @@ func TestListThingsByOrg(t *testing.T) {
 		thing2 := thing
 		thing2.Name = fmt.Sprintf("%s%012d", prefix, suffix)
 		thing2.ID = fmt.Sprintf("%s%012d", prefix, suffix)
-		thing2.GroupID = gr2.ID
-		thing2.ProfileID = pr2.ID
 
-		ths2, err := svc.CreateThings(context.Background(), otherToken, thing2)
+		ths2, err := svc.CreateThings(context.Background(), otherToken, pr2.ID, thing2)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th2 := ths2[0]
 
@@ -1961,10 +1939,8 @@ func TestBackupThingsByGroup(t *testing.T) {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 		thing1 := thing
 		thing1.ID = id
-		thing1.GroupID = gr.ID
-		thing1.ProfileID = pr.ID
 
-		ths, err := svc.CreateThings(context.Background(), token, thing1)
+		ths, err := svc.CreateThings(context.Background(), token, pr.ID, thing1)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := ths[0]
 
@@ -2175,10 +2151,8 @@ func TestBackupThingsByOrg(t *testing.T) {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 		thing1 := thing
 		thing1.ID = id
-		thing1.GroupID = gr.ID
-		thing1.ProfileID = pr.ID
 
-		ths, err := svc.CreateThings(context.Background(), token, thing1)
+		ths, err := svc.CreateThings(context.Background(), token, pr.ID, thing1)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := ths[0]
 
@@ -2383,9 +2357,7 @@ func TestRemoveThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
 
-	thing.GroupID = grID
-	thing.ProfileID = prID
-	ths, err := svc.CreateThings(context.Background(), token, thing)
+	ths, err := svc.CreateThings(context.Background(), token, prID, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
 
@@ -2448,9 +2420,7 @@ func TestRemoveThings(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
 
-	thing.GroupID = grID
-	thing.ProfileID = prID
-	ths, err := svc.CreateThings(context.Background(), token, thing, thing)
+	ths, err := svc.CreateThings(context.Background(), token, prID, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	var thingIDs []string
@@ -2579,12 +2549,10 @@ func TestBackup(t *testing.T) {
 	ths := []things.Thing{}
 	for i := 0; i < 10; i++ {
 		name := "name_" + fmt.Sprintf("%03d", i+1)
-		things, err := svc.CreateThings(context.Background(), token,
+		things, err := svc.CreateThings(context.Background(), token, pr.ID,
 			things.Thing{
-				Name:      name,
-				GroupID:   gr.ID,
-				ProfileID: pr.ID,
-				Metadata:  metadata,
+				Name:     name,
+				Metadata: metadata,
 			})
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := things[0]
@@ -2835,9 +2803,7 @@ func TestIdentify(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
 
-	thing.GroupID = grID
-	thing.ProfileID = prID
-	ths, err := svc.CreateThings(context.Background(), token, thing)
+	ths, err := svc.CreateThings(context.Background(), token, prID, thing)
 	require.Nil(t, err, fmt.Sprintf("failed to create thing: %s", err))
 	th := ths[0]
 

@@ -32,8 +32,8 @@ func NewEventStoreMiddleware(svc things.Service, client *redis.Client) things.Se
 	}
 }
 
-func (es eventStore) CreateThings(ctx context.Context, token string, ths ...things.Thing) ([]things.Thing, error) {
-	sths, err := es.svc.CreateThings(ctx, token, ths...)
+func (es eventStore) CreateThings(ctx context.Context, token, profileID string, ths ...things.Thing) ([]things.Thing, error) {
+	sths, err := es.svc.CreateThings(ctx, token, profileID, ths...)
 	if err != nil {
 		return sths, err
 	}
@@ -342,7 +342,7 @@ func (es eventStore) ViewGroupByThing(ctx context.Context, token string, thingID
 	return es.svc.ViewGroupByThing(ctx, token, thingID)
 }
 
-func (es eventStore) ViewGroupByProfile(ctx context.Context, token string, profileID string) (things.Group, error) {
+func (es eventStore) ViewGroupByProfile(ctx context.Context, token, profileID string) (things.Group, error) {
 	return es.svc.ViewGroupByProfile(ctx, token, profileID)
 }
 

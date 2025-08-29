@@ -34,14 +34,21 @@ func NewThingsService(things map[string]things.Thing, profiles map[string]things
 	}
 }
 
-func (svc *mainfluxThings) CreateThings(_ context.Context, token string, ths ...things.Thing) ([]things.Thing, error) {
+func (svc *mainfluxThings) CreateThings(_ context.Context, token, profileID string, ths ...things.Thing) ([]things.Thing, error) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
+
+	profile, ok := svc.profiles[profileID]
+	if !ok {
+		return []things.Thing{}, dbutil.ErrNotFound
+	}
 
 	for i := range ths {
 		svc.counter++
 		ths[i].ID = strconv.FormatUint(svc.counter, 10)
 		ths[i].Key = ths[i].ID
+		ths[i].ProfileID = profileID
+		ths[i].GroupID = profile.GroupID
 		svc.things[ths[i].ID] = ths[i]
 	}
 
@@ -271,7 +278,7 @@ func (svc *mainfluxThings) ViewGroupByThing(_ context.Context, token string, thi
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewGroupByProfile(_ context.Context, token string, profileID string) (things.Group, error) {
+func (svc *mainfluxThings) ViewGroupByProfile(_ context.Context, token, profileID string) (things.Group, error) {
 	panic("not implemented")
 }
 
