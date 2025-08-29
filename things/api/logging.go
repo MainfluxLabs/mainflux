@@ -27,7 +27,7 @@ func LoggingMiddleware(svc things.Service, logger log.Logger) things.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) CreateThings(ctx context.Context, token string, profileID string, ths ...things.Thing) (saved []things.Thing, err error) {
+func (lm *loggingMiddleware) CreateThings(ctx context.Context, token, profileID string, ths ...things.Thing) (saved []things.Thing, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_things for things %s took %s to complete", saved, time.Since(begin))
 		if err != nil {

@@ -274,7 +274,7 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, groupID string) (
 	return gr, nil
 }
 
-func (ts *thingsService) ViewGroupByProfile(ctx context.Context, token string, profileID string) (Group, error) {
+func (ts *thingsService) ViewGroupByProfile(ctx context.Context, token, profileID string) (Group, error) {
 	ar := UserAccessReq{
 		Token:  token,
 		ID:     profileID,

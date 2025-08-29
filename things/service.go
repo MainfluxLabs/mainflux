@@ -29,7 +29,7 @@ var (
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
 	// CreateThings adds things to the user identified by the provided key.
-	CreateThings(ctx context.Context, token string, profileID string, things ...Thing) ([]Thing, error)
+	CreateThings(ctx context.Context, token, profileID string, things ...Thing) ([]Thing, error)
 
 	// UpdateThing updates the thing identified by the provided ID, that
 	// belongs to the user identified by the provided token.
@@ -241,7 +241,7 @@ func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, thi
 	}
 }
 
-func (ts *thingsService) CreateThings(ctx context.Context, token string, profileID string, things ...Thing) ([]Thing, error) {
+func (ts *thingsService) CreateThings(ctx context.Context, token, profileID string, things ...Thing) ([]Thing, error) {
 	groupID, err := ts.getGroupIDByProfileID(ctx, profileID)
 	if err != nil {
 		return []Thing{}, err
