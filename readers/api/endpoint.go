@@ -221,7 +221,7 @@ func backupSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
 		default:
-			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+			return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 		}
 
 		return backupFileRes{
