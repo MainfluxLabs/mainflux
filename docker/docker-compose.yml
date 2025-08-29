@@ -428,7 +428,7 @@ services:
       - mainfluxlabs-base-net
 
   postgres-reader:
-    image: ${MF_RELEASE_PREFIX}/postgres-reader:${MF_RELEASE_TAG}
+    image: ${MF_RELEASE_PREFIX}/postgres-reader:v0.30.0
     container_name: mainfluxlabs-postgres-reader
     restart: on-failure
     environment:

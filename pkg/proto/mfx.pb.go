@@ -7,10 +7,10 @@ import (
 	context "context"
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
+	empty "github.com/golang/protobuf/ptypes/empty"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -1632,10 +1632,10 @@ const _ = grpc.SupportPackageIsVersion4
 type ThingsServiceClient interface {
 	GetPubConfByKey(ctx context.Context, in *PubConfByKeyReq, opts ...grpc.CallOption) (*PubConfByKeyRes, error)
 	GetConfigByThingID(ctx context.Context, in *ThingID, opts ...grpc.CallOption) (*ConfigByThingIDRes, error)
-	CanUserAccessThing(ctx context.Context, in *UserAccessReq, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	CanUserAccessProfile(ctx context.Context, in *UserAccessReq, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	CanUserAccessGroup(ctx context.Context, in *UserAccessReq, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	CanThingAccessGroup(ctx context.Context, in *ThingAccessReq, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	CanUserAccessThing(ctx context.Context, in *UserAccessReq, opts ...grpc.CallOption) (*empty.Empty, error)
+	CanUserAccessProfile(ctx context.Context, in *UserAccessReq, opts ...grpc.CallOption) (*empty.Empty, error)
+	CanUserAccessGroup(ctx context.Context, in *UserAccessReq, opts ...grpc.CallOption) (*empty.Empty, error)
+	CanThingAccessGroup(ctx context.Context, in *ThingAccessReq, opts ...grpc.CallOption) (*empty.Empty, error)
 	Identify(ctx context.Context, in *Token, opts ...grpc.CallOption) (*ThingID, error)
 	GetGroupIDByThingID(ctx context.Context, in *ThingID, opts ...grpc.CallOption) (*GroupID, error)
 	GetGroupIDByProfileID(ctx context.Context, in *ProfileID, opts ...grpc.CallOption) (*GroupID, error)
@@ -1668,8 +1668,8 @@ func (c *thingsServiceClient) GetConfigByThingID(ctx context.Context, in *ThingI
 	return out, nil
 }
 
-func (c *thingsServiceClient) CanUserAccessThing(ctx context.Context, in *UserAccessReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
+func (c *thingsServiceClient) CanUserAccessThing(ctx context.Context, in *UserAccessReq, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
 	err := c.cc.Invoke(ctx, "/protomfx.ThingsService/CanUserAccessThing", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -1677,8 +1677,8 @@ func (c *thingsServiceClient) CanUserAccessThing(ctx context.Context, in *UserAc
 	return out, nil
 }
 
-func (c *thingsServiceClient) CanUserAccessProfile(ctx context.Context, in *UserAccessReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
+func (c *thingsServiceClient) CanUserAccessProfile(ctx context.Context, in *UserAccessReq, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
 	err := c.cc.Invoke(ctx, "/protomfx.ThingsService/CanUserAccessProfile", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -1686,8 +1686,8 @@ func (c *thingsServiceClient) CanUserAccessProfile(ctx context.Context, in *User
 	return out, nil
 }
 
-func (c *thingsServiceClient) CanUserAccessGroup(ctx context.Context, in *UserAccessReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
+func (c *thingsServiceClient) CanUserAccessGroup(ctx context.Context, in *UserAccessReq, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
 	err := c.cc.Invoke(ctx, "/protomfx.ThingsService/CanUserAccessGroup", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -1695,8 +1695,8 @@ func (c *thingsServiceClient) CanUserAccessGroup(ctx context.Context, in *UserAc
 	return out, nil
 }
 
-func (c *thingsServiceClient) CanThingAccessGroup(ctx context.Context, in *ThingAccessReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
+func (c *thingsServiceClient) CanThingAccessGroup(ctx context.Context, in *ThingAccessReq, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
 	err := c.cc.Invoke(ctx, "/protomfx.ThingsService/CanThingAccessGroup", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -1744,10 +1744,10 @@ func (c *thingsServiceClient) GetProfileIDByThingID(ctx context.Context, in *Thi
 type ThingsServiceServer interface {
 	GetPubConfByKey(context.Context, *PubConfByKeyReq) (*PubConfByKeyRes, error)
 	GetConfigByThingID(context.Context, *ThingID) (*ConfigByThingIDRes, error)
-	CanUserAccessThing(context.Context, *UserAccessReq) (*emptypb.Empty, error)
-	CanUserAccessProfile(context.Context, *UserAccessReq) (*emptypb.Empty, error)
-	CanUserAccessGroup(context.Context, *UserAccessReq) (*emptypb.Empty, error)
-	CanThingAccessGroup(context.Context, *ThingAccessReq) (*emptypb.Empty, error)
+	CanUserAccessThing(context.Context, *UserAccessReq) (*empty.Empty, error)
+	CanUserAccessProfile(context.Context, *UserAccessReq) (*empty.Empty, error)
+	CanUserAccessGroup(context.Context, *UserAccessReq) (*empty.Empty, error)
+	CanThingAccessGroup(context.Context, *ThingAccessReq) (*empty.Empty, error)
 	Identify(context.Context, *Token) (*ThingID, error)
 	GetGroupIDByThingID(context.Context, *ThingID) (*GroupID, error)
 	GetGroupIDByProfileID(context.Context, *ProfileID) (*GroupID, error)
@@ -1764,16 +1764,16 @@ func (*UnimplementedThingsServiceServer) GetPubConfByKey(ctx context.Context, re
 func (*UnimplementedThingsServiceServer) GetConfigByThingID(ctx context.Context, req *ThingID) (*ConfigByThingIDRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConfigByThingID not implemented")
 }
-func (*UnimplementedThingsServiceServer) CanUserAccessThing(ctx context.Context, req *UserAccessReq) (*emptypb.Empty, error) {
+func (*UnimplementedThingsServiceServer) CanUserAccessThing(ctx context.Context, req *UserAccessReq) (*empty.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CanUserAccessThing not implemented")
 }
-func (*UnimplementedThingsServiceServer) CanUserAccessProfile(ctx context.Context, req *UserAccessReq) (*emptypb.Empty, error) {
+func (*UnimplementedThingsServiceServer) CanUserAccessProfile(ctx context.Context, req *UserAccessReq) (*empty.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CanUserAccessProfile not implemented")
 }
-func (*UnimplementedThingsServiceServer) CanUserAccessGroup(ctx context.Context, req *UserAccessReq) (*emptypb.Empty, error) {
+func (*UnimplementedThingsServiceServer) CanUserAccessGroup(ctx context.Context, req *UserAccessReq) (*empty.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CanUserAccessGroup not implemented")
 }
-func (*UnimplementedThingsServiceServer) CanThingAccessGroup(ctx context.Context, req *ThingAccessReq) (*emptypb.Empty, error) {
+func (*UnimplementedThingsServiceServer) CanThingAccessGroup(ctx context.Context, req *ThingAccessReq) (*empty.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CanThingAccessGroup not implemented")
 }
 func (*UnimplementedThingsServiceServer) Identify(ctx context.Context, req *Token) (*ThingID, error) {
@@ -2136,9 +2136,9 @@ var _UsersService_serviceDesc = grpc.ServiceDesc{
 type AuthServiceClient interface {
 	Issue(ctx context.Context, in *IssueReq, opts ...grpc.CallOption) (*Token, error)
 	Identify(ctx context.Context, in *Token, opts ...grpc.CallOption) (*UserIdentity, error)
-	Authorize(ctx context.Context, in *AuthorizeReq, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Authorize(ctx context.Context, in *AuthorizeReq, opts ...grpc.CallOption) (*empty.Empty, error)
 	GetOwnerIDByOrgID(ctx context.Context, in *OrgID, opts ...grpc.CallOption) (*OwnerID, error)
-	AssignRole(ctx context.Context, in *AssignRoleReq, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	AssignRole(ctx context.Context, in *AssignRoleReq, opts ...grpc.CallOption) (*empty.Empty, error)
 	RetrieveRole(ctx context.Context, in *RetrieveRoleReq, opts ...grpc.CallOption) (*RetrieveRoleRes, error)
 }
 
@@ -2168,8 +2168,8 @@ func (c *authServiceClient) Identify(ctx context.Context, in *Token, opts ...grp
 	return out, nil
 }
 
-func (c *authServiceClient) Authorize(ctx context.Context, in *AuthorizeReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
+func (c *authServiceClient) Authorize(ctx context.Context, in *AuthorizeReq, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
 	err := c.cc.Invoke(ctx, "/protomfx.AuthService/Authorize", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -2186,8 +2186,8 @@ func (c *authServiceClient) GetOwnerIDByOrgID(ctx context.Context, in *OrgID, op
 	return out, nil
 }
 
-func (c *authServiceClient) AssignRole(ctx context.Context, in *AssignRoleReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
+func (c *authServiceClient) AssignRole(ctx context.Context, in *AssignRoleReq, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
 	err := c.cc.Invoke(ctx, "/protomfx.AuthService/AssignRole", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -2208,9 +2208,9 @@ func (c *authServiceClient) RetrieveRole(ctx context.Context, in *RetrieveRoleRe
 type AuthServiceServer interface {
 	Issue(context.Context, *IssueReq) (*Token, error)
 	Identify(context.Context, *Token) (*UserIdentity, error)
-	Authorize(context.Context, *AuthorizeReq) (*emptypb.Empty, error)
+	Authorize(context.Context, *AuthorizeReq) (*empty.Empty, error)
 	GetOwnerIDByOrgID(context.Context, *OrgID) (*OwnerID, error)
-	AssignRole(context.Context, *AssignRoleReq) (*emptypb.Empty, error)
+	AssignRole(context.Context, *AssignRoleReq) (*empty.Empty, error)
 	RetrieveRole(context.Context, *RetrieveRoleReq) (*RetrieveRoleRes, error)
 }
 
@@ -2224,13 +2224,13 @@ func (*UnimplementedAuthServiceServer) Issue(ctx context.Context, req *IssueReq)
 func (*UnimplementedAuthServiceServer) Identify(ctx context.Context, req *Token) (*UserIdentity, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Identify not implemented")
 }
-func (*UnimplementedAuthServiceServer) Authorize(ctx context.Context, req *AuthorizeReq) (*emptypb.Empty, error) {
+func (*UnimplementedAuthServiceServer) Authorize(ctx context.Context, req *AuthorizeReq) (*empty.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Authorize not implemented")
 }
 func (*UnimplementedAuthServiceServer) GetOwnerIDByOrgID(ctx context.Context, req *OrgID) (*OwnerID, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetOwnerIDByOrgID not implemented")
 }
-func (*UnimplementedAuthServiceServer) AssignRole(ctx context.Context, req *AssignRoleReq) (*emptypb.Empty, error) {
+func (*UnimplementedAuthServiceServer) AssignRole(ctx context.Context, req *AssignRoleReq) (*empty.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AssignRole not implemented")
 }
 func (*UnimplementedAuthServiceServer) RetrieveRole(ctx context.Context, req *RetrieveRoleReq) (*RetrieveRoleRes, error) {
@@ -2386,7 +2386,7 @@ var _AuthService_serviceDesc = grpc.ServiceDesc{
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type RulesServiceClient interface {
-	Publish(ctx context.Context, in *PublishReq, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Publish(ctx context.Context, in *PublishReq, opts ...grpc.CallOption) (*empty.Empty, error)
 }
 
 type rulesServiceClient struct {
@@ -2397,8 +2397,8 @@ func NewRulesServiceClient(cc *grpc.ClientConn) RulesServiceClient {
 	return &rulesServiceClient{cc}
 }
 
-func (c *rulesServiceClient) Publish(ctx context.Context, in *PublishReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
+func (c *rulesServiceClient) Publish(ctx context.Context, in *PublishReq, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
 	err := c.cc.Invoke(ctx, "/protomfx.RulesService/Publish", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -2408,14 +2408,14 @@ func (c *rulesServiceClient) Publish(ctx context.Context, in *PublishReq, opts .
 
 // RulesServiceServer is the server API for RulesService service.
 type RulesServiceServer interface {
-	Publish(context.Context, *PublishReq) (*emptypb.Empty, error)
+	Publish(context.Context, *PublishReq) (*empty.Empty, error)
 }
 
 // UnimplementedRulesServiceServer can be embedded to have forward compatible implementations.
 type UnimplementedRulesServiceServer struct {
 }
 
-func (*UnimplementedRulesServiceServer) Publish(ctx context.Context, req *PublishReq) (*emptypb.Empty, error) {
+func (*UnimplementedRulesServiceServer) Publish(ctx context.Context, req *PublishReq) (*empty.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Publish not implemented")
 }
 

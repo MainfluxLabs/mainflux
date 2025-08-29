@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -12,15 +13,21 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
+const (
+	Viewer = "viewer"
+)
+
 type Service interface {
 	ListAlarmsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (AlarmsPage, error)
 	ListAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error)
+	ListAlarmsByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (AlarmsPage, error)
 	ViewAlarm(ctx context.Context, token, id string) (Alarm, error)
 	RemoveAlarms(ctx context.Context, token string, id ...string) error
 	consumers.Consumer
 }
 
 type alarmService struct {
+	auth       protomfx.AuthServiceClient
 	things     protomfx.ThingsServiceClient
 	alarms     AlarmRepository
 	idProvider uuid.IDProvider
@@ -28,8 +35,9 @@ type alarmService struct {
 
 var _ Service = (*alarmService)(nil)
 
-func New(things protomfx.ThingsServiceClient, alarms AlarmRepository, idp uuid.IDProvider) Service {
+func New(auth protomfx.AuthServiceClient, things protomfx.ThingsServiceClient, alarms AlarmRepository, idp uuid.IDProvider) Service {
 	return &alarmService{
+		auth:       auth,
 		things:     things,
 		alarms:     alarms,
 		idProvider: idp,
@@ -62,6 +70,31 @@ func (as *alarmService) ListAlarmsByThing(ctx context.Context, token, thingID st
 	}
 
 	return alarms, nil
+}
+
+func (as *alarmService) ListAlarmsByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
+	if err := as.isAdmin(ctx, token); err == nil {
+		if grIDs, err := as.things.RetrieveIDsByOrg(ctx, orgID); err == nil {
+			return as.alarms.RetrieveByGroups(ctx, grIDs, pm)
+		}
+		return AlarmsPage{}, err
+	}
+
+	if err := as.canAccessOrg(ctx, token, orgID, auth.OrgSub, Viewer); err != nil {
+		return AlarmsPage{}, err
+	}
+
+	user, err := as.auth.Identify(ctx, &protomfx.Token{Value: token})
+	if err != nil {
+		return AlarmsPage{}, errors.Wrap(errors.ErrAuthentication, err)
+	}
+
+	grIDs, err := as.things.RetrieveIDsByOrgMembership(ctx, orgID, user.GetId())
+	if err != nil {
+		return AlarmsPage{}, err
+	}
+
+	return as.alarms.RetrieveByGroups(ctx, grIDs, pm)
 }
 
 func (as *alarmService) ViewAlarm(ctx context.Context, token, id string) (Alarm, error) {
@@ -128,6 +161,34 @@ func (as *alarmService) Consume(message interface{}) error {
 		if err := as.createAlarm(ctx, &alarm); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (as *alarmService) isAdmin(ctx context.Context, token string) error {
+	req := &protomfx.AuthorizeReq{
+		Token:   token,
+		Subject: auth.RootSub,
+	}
+
+	if _, err := as.auth.Authorize(ctx, req); err != nil {
+		return errors.Wrap(errors.ErrAuthorization, err)
+	}
+
+	return nil
+}
+
+func (as *alarmService) canAccessOrg(ctx context.Context, token, orgID, subject, action string) error {
+	req := &protomfx.AuthorizeReq{
+		Token:   token,
+		Object:  orgID,
+		Subject: subject,
+		Action:  action,
+	}
+
+	if _, err := as.auth.Authorize(ctx, req); err != nil {
+		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
 	return nil

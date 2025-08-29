@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -142,6 +143,34 @@ func (ar *alarmRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 	return ar.retrieve(ctx, q, qc, params)
 }
 
+func (ar *alarmRepository) RetrieveByGroups(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+	if len(groupIDs) == 0 {
+		return alarms.AlarmsPage{}, nil
+	}
+
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	giq := getGroupIDsQuery(groupIDs)
+	p, pq, err := dbutil.GetPayloadQuery(pm.Payload)
+	if err != nil {
+		return alarms.AlarmsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+	}
+
+	whereClause := dbutil.BuildWhereClause(giq, pq)
+	query := fmt.Sprintf(`SELECT id, thing_id, group_id, subtopic, protocol, payload, created FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
+
+	params := map[string]interface{}{
+		"limit":     pm.Limit,
+		"offset":    pm.Offset,
+		"payload":   p,
+		"group_ids": groupIDs,
+	}
+
+	return ar.retrieve(ctx, query, cquery, params)
+}
+
 func (ar *alarmRepository) Remove(ctx context.Context, ids ...string) error {
 	for _, id := range ids {
 		dba := dbAlarm{ID: id}
@@ -237,4 +266,11 @@ func toAlarm(dbAlarm dbAlarm) (alarms.Alarm, error) {
 		Payload:  payload,
 		Created:  dbAlarm.Created,
 	}, nil
+}
+
+func getGroupIDsQuery(ids []string) string {
+	if len(ids) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("group_id IN ('%s') ", strings.Join(ids, "','"))
 }

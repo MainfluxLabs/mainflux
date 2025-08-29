@@ -41,6 +41,13 @@ func MakeHandler(tracer opentracing.Tracer, svc alarms.Service, logger log.Logge
 		opts...,
 	))
 
+	r.Get("/orgs/:id/alarms", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_alarms_by_org")(listAlarmsByOrgEndpoint(svc)),
+		decodeListAlarmsByOrg,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Get("/alarms/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_alarm")(viewAlarmEndpoint(svc)),
 		decodeViewAlarm,
@@ -83,6 +90,19 @@ func decodeListGroupAlarms(_ context.Context, r *http.Request) (interface{}, err
 	return listAlarmsByGroupReq{
 		token:        apiutil.ExtractBearerToken(r),
 		groupID:      bone.GetValue(r, apiutil.IDKey),
+		pageMetadata: pm,
+	}, nil
+}
+
+func decodeListAlarmsByOrg(_ context.Context, r *http.Request) (interface{}, error) {
+	pm, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return listAlarmsByOrgReq{
+		token:        apiutil.ExtractBearerToken(r),
+		orgID:        bone.GetValue(r, apiutil.IDKey),
 		pageMetadata: pm,
 	}, nil
 }

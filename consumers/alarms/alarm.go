@@ -36,6 +36,9 @@ type AlarmRepository interface {
 	// RetrieveByGroup retrieves alarms associated with a given group ID.
 	RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (AlarmsPage, error)
 
+	// RetrieveByGroups retrieves the subset of alarms specified by given group ids.
+	RetrieveByGroups(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (AlarmsPage, error)
+
 	// Remove removes alarms by their identifiers.
 	Remove(ctx context.Context, ids ...string) error
 }

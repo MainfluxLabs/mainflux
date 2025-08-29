@@ -48,6 +48,19 @@ func (lm loggingMiddleware) ListAlarmsByThing(ctx context.Context, token, thingI
 	return lm.svc.ListAlarmsByThing(ctx, token, thingID, pm)
 }
 
+func (lm loggingMiddleware) ListAlarmsByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (_ alarms.AlarmsPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_alarms_by_org for org id %s took %s to complete", orgID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListAlarmsByOrg(ctx, token, orgID, pm)
+}
+
 func (lm loggingMiddleware) ViewAlarm(ctx context.Context, token, id string) (_ alarms.Alarm, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view_alarm for id %s took %s to complete", id, time.Since(begin))
