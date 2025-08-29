@@ -26,7 +26,8 @@ type jsonRepository struct {
 
 func newJSONRepository(db *sqlx.DB) *jsonRepository {
 	return &jsonRepository{
-		db: db,
+		db:         db,
+		aggregator: newAggregationService(db),
 	}
 }
 
@@ -43,13 +44,13 @@ func (jr *jsonRepository) readAll(rpm readers.PageMetadata) (readers.MessagesPag
 	params := jr.buildQueryParams(rpm)
 
 	if rpm.AggType != "" && rpm.AggInterval != "" {
-		messages, err := jr.aggregator.readAggregatedMessages(rpm)
+		messages, err := jr.aggregator.readAggregatedMessages(rpm, jsonTable)
 		if err != nil {
 			return page, err
 		}
 		page.Messages = messages
 
-		total, err := jr.aggregator.readAggregatedCount(rpm)
+		total, err := jr.aggregator.readAggregatedCount(rpm, jsonTable)
 		if err != nil {
 			return page, err
 		}

@@ -26,7 +26,8 @@ type senmlRepository struct {
 
 func newSenMLRepository(db *sqlx.DB) *senmlRepository {
 	return &senmlRepository{
-		db: db,
+		db:         db,
+		aggregator: newAggregationService(db),
 	}
 }
 
@@ -89,13 +90,13 @@ func (sr *senmlRepository) readAll(rpm readers.PageMetadata) (readers.MessagesPa
 	params := sr.buildQueryParams(rpm)
 
 	if rpm.AggType != "" && rpm.AggInterval != "" {
-		messages, err := sr.aggregator.readAggregatedMessages(rpm)
+		messages, err := sr.aggregator.readAggregatedMessages(rpm, senmlTable)
 		if err != nil {
 			return page, err
 		}
 		page.Messages = messages
 
-		total, err := sr.aggregator.readAggregatedCount(rpm)
+		total, err := sr.aggregator.readAggregatedCount(rpm, senmlTable)
 		if err != nil {
 			return page, err
 		}
