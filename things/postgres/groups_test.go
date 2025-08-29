@@ -59,7 +59,7 @@ func TestSaveGroup(t *testing.T) {
 				OrgID: orgID,
 				Name:  groupName,
 			},
-			err: errors.ErrConflict,
+			err: dbutil.ErrConflict,
 		},
 		{
 			desc: "save group with invalid name",
@@ -68,7 +68,7 @@ func TestSaveGroup(t *testing.T) {
 				OrgID: orgID,
 				Name:  invalidName,
 			},
-			err: errors.ErrMalformedEntity,
+			err: dbutil.ErrMalformedEntity,
 		},
 		{
 			desc: "save group with invalid description",
@@ -78,7 +78,7 @@ func TestSaveGroup(t *testing.T) {
 				Name:        groupName,
 				Description: invalidDesc,
 			},
-			err: errors.ErrMalformedEntity,
+			err: dbutil.ErrMalformedEntity,
 		},
 	}
 
@@ -130,7 +130,7 @@ func TestRetrieveGroupByID(t *testing.T) {
 	assert.True(t, retrieved.Description == description, fmt.Sprintf("Save group, Description: expected %v got %v\n", retrieved.Description, description))
 
 	retrieved, err = groupRepo.RetrieveByID(context.Background(), generateUUID(t))
-	assert.True(t, errors.Contains(err, errors.ErrNotFound), fmt.Sprintf("Retrieve group: expected %s got %s\n", errors.ErrNotFound, err))
+	assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("Retrieve group: expected %s got %s\n", dbutil.ErrNotFound, err))
 }
 
 func TestUpdateGroup(t *testing.T) {
@@ -189,7 +189,7 @@ func TestUpdateGroup(t *testing.T) {
 				ID:   wrongUid,
 				Name: fmt.Sprintf("%s-%d", groupName, 2),
 			},
-			err: errors.ErrUpdateEntity,
+			err: dbutil.ErrUpdateEntity,
 		},
 		{
 			desc: "update group for invalid name",
@@ -197,7 +197,7 @@ func TestUpdateGroup(t *testing.T) {
 				ID:   groupID,
 				Name: invalidName,
 			},
-			err: errors.ErrMalformedEntity,
+			err: dbutil.ErrMalformedEntity,
 		},
 		{
 			desc: "update group for invalid description",
@@ -205,7 +205,7 @@ func TestUpdateGroup(t *testing.T) {
 				ID:          groupID,
 				Description: invalidDesc,
 			},
-			err: errors.ErrMalformedEntity,
+			err: dbutil.ErrMalformedEntity,
 		},
 	}
 

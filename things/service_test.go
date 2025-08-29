@@ -11,6 +11,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	authmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -126,7 +127,7 @@ func TestCreateThings(t *testing.T) {
 			desc:   "create new thing with wrong group id",
 			things: []things.Thing{{Name: "e", GroupID: wrongValue, ProfileID: prID}},
 			token:  token,
-			err:    errors.ErrNotFound,
+			err:    dbutil.ErrNotFound,
 		},
 		{
 			desc:   "create thing with wrong credentials",
@@ -205,7 +206,7 @@ func TestUpdateThing(t *testing.T) {
 			desc:  "update non-existing thing",
 			thing: other,
 			token: token,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "update thing with profile from different group",
@@ -266,7 +267,7 @@ func TestUpdateKey(t *testing.T) {
 			token: token,
 			id:    emptyValue,
 			key:   wrongValue,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 
@@ -317,7 +318,7 @@ func TestViewThing(t *testing.T) {
 		"view non-existing thing": {
 			id:    emptyValue,
 			token: token,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 
@@ -366,7 +367,7 @@ func TestViewMetadataByKey(t *testing.T) {
 		},
 		"view metadata from a non-existing thing": {
 			key: otherKey,
-			err: errors.ErrNotFound,
+			err: dbutil.ErrNotFound,
 		},
 	}
 
@@ -661,7 +662,7 @@ func TestListThingsByProfile(t *testing.T) {
 				Limit:  n,
 			},
 			size: 0,
-			err:  errors.ErrNotFound,
+			err:  dbutil.ErrNotFound,
 		},
 		"list all things by profile sorted by name ascendant": {
 			token: token,
@@ -915,13 +916,13 @@ func TestRemoveThings(t *testing.T) {
 			desc:  "remove removed thing",
 			id:    th.ID,
 			token: token,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "remove non-existing thing",
 			id:    emptyValue,
 			token: token,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 
@@ -954,7 +955,7 @@ func TestCreateProfiles(t *testing.T) {
 			desc:     "create new profile with wrong group id",
 			profiles: []things.Profile{{Name: "e", GroupID: wrongValue}},
 			token:    token,
-			err:      errors.ErrNotFound,
+			err:      dbutil.ErrNotFound,
 		},
 		{
 			desc:     "create profile with wrong credentials",
@@ -1017,7 +1018,7 @@ func TestUpdateProfile(t *testing.T) {
 			desc:    "update non-existing profile",
 			profile: other,
 			token:   token,
-			err:     errors.ErrNotFound,
+			err:     dbutil.ErrNotFound,
 		},
 	}
 
@@ -1063,12 +1064,12 @@ func TestViewProfile(t *testing.T) {
 		"view non-existing profile": {
 			id:    emptyValue,
 			token: token,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 		"view profile with metadata": {
 			id:    emptyValue,
 			token: token,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 
@@ -1464,7 +1465,7 @@ func TestViewProfileByThing(t *testing.T) {
 			token:   token,
 			thID:    "non-existent",
 			profile: things.Profile{},
-			err:     errors.ErrNotFound,
+			err:     dbutil.ErrNotFound,
 		},
 		"view profile by existent thing with invalid token": {
 			token:   wrongValue,
@@ -1519,13 +1520,13 @@ func TestRemoveProfile(t *testing.T) {
 			desc:  "remove removed profile",
 			id:    prID,
 			token: token,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "remove non-existing profile",
 			id:    emptyValue,
 			token: token,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 
@@ -1563,7 +1564,7 @@ func TestGetPubConfByKey(t *testing.T) {
 		},
 		"non-existing thing": {
 			key: wrongValue,
-			err: errors.ErrNotFound,
+			err: dbutil.ErrNotFound,
 		},
 	}
 
@@ -1604,7 +1605,7 @@ func TestIdentify(t *testing.T) {
 		"identify non-existing thing": {
 			token: wrongValue,
 			id:    emptyValue,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 
@@ -1646,7 +1647,7 @@ func TestCreateGroups(t *testing.T) {
 			desc:  "create group without org",
 			token: token,
 			group: things.Group{Name: "test-group", Description: "test"},
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 
@@ -1896,7 +1897,7 @@ func TestRemoveGroup(t *testing.T) {
 			desc:  "remove non-existing group",
 			token: token,
 			id:    wrongValue,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "remove group as viewer",
@@ -1926,13 +1927,13 @@ func TestRemoveGroup(t *testing.T) {
 			desc:  "remove removed group",
 			token: token,
 			id:    grID,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "remove non-existing group",
 			token: token,
 			id:    wrongValue,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 
@@ -2007,7 +2008,7 @@ func TestUpdateGroup(t *testing.T) {
 			desc:  "update non-existing group",
 			token: token,
 			group: things.Group{},
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 
@@ -2100,14 +2101,14 @@ func TestViewGroup(t *testing.T) {
 			token: token,
 			grID:  emptyValue,
 			res:   things.Group{},
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "view non-existing group",
 			token: token,
 			grID:  wrongValue,
 			res:   things.Group{},
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 
@@ -2184,21 +2185,21 @@ func TestViewGroupByThing(t *testing.T) {
 			token: token,
 			thID:  emptyValue,
 			res:   things.Group{},
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "view group by non-existing thing",
 			token: token,
 			thID:  wrongValue,
 			res:   things.Group{},
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "view group by thing without user rights",
 			token: otherToken,
 			thID:  th.ID,
 			res:   things.Group{},
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 
@@ -2269,21 +2270,21 @@ func TestViewGroupByProfile(t *testing.T) {
 			token: token,
 			prID:  emptyValue,
 			res:   things.Group{},
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "view group by profile with non-existing profile",
 			token: token,
 			prID:  wrongValue,
 			res:   things.Group{},
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "view group by profile without user rights",
 			token: otherToken,
 			prID:  prID,
 			res:   things.Group{},
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 
@@ -2360,7 +2361,7 @@ func TestCreateGroupMemberships(t *testing.T) {
 			desc:        "create group memberships without group id",
 			token:       token,
 			memberships: []things.GroupMembership{{MemberID: "2", Email: "member2@gmail.com", Role: things.Viewer}},
-			err:         errors.ErrNotFound,
+			err:         dbutil.ErrNotFound,
 		},
 	}
 
@@ -2491,7 +2492,7 @@ func TestListGroupMemberships(t *testing.T) {
 			groupID: wrongValue,
 			meta:    apiutil.PageMetadata{},
 			size:    0,
-			err:     errors.ErrNotFound,
+			err:     dbutil.ErrNotFound,
 		},
 	}
 
@@ -2576,7 +2577,7 @@ func TestUpdateMemberships(t *testing.T) {
 			desc:       "update group membership with non-existing group",
 			token:      token,
 			membership: things.GroupMembership{MemberID: editor.ID, GroupID: wrongValue, Email: editor.Email, Role: things.Editor},
-			err:        errors.ErrNotFound,
+			err:        dbutil.ErrNotFound,
 		},
 	}
 
@@ -2660,7 +2661,7 @@ func TestRemoveGroupMemberships(t *testing.T) {
 			token:    token,
 			groupID:  wrongValue,
 			memberID: editor.ID,
-			err:      errors.ErrNotFound,
+			err:      dbutil.ErrNotFound,
 		},
 	}
 

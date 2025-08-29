@@ -81,33 +81,33 @@ func TestSaveThings(t *testing.T) {
 		{
 			desc:   "save things that already exist",
 			things: ths,
-			err:    errors.ErrConflict,
+			err:    dbutil.ErrConflict,
 		},
 		{
 			desc: "save thing with invalid ID",
 			things: []things.Thing{
 				{ID: "invalid", GroupID: group.ID, Key: thkey},
 			},
-			err: errors.ErrMalformedEntity,
+			err: dbutil.ErrMalformedEntity,
 		},
 		{
 			desc: "save thing with invalid name",
 			things: []things.Thing{
 				{ID: thID, GroupID: group.ID, Key: thkey, Name: invalidName},
 			},
-			err: errors.ErrMalformedEntity,
+			err: dbutil.ErrMalformedEntity,
 		},
 		{
 			desc: "save thing with invalid Key",
 			things: []things.Thing{
 				{ID: thID, GroupID: group.ID, Key: nonexistentThingKey},
 			},
-			err: errors.ErrMalformedEntity,
+			err: dbutil.ErrMalformedEntity,
 		},
 		{
 			desc:   "save things with conflicting keys",
 			things: ths,
-			err:    errors.ErrConflict,
+			err:    dbutil.ErrConflict,
 		},
 	}
 
@@ -170,7 +170,7 @@ func TestUpdateThing(t *testing.T) {
 				ID:      nonexistentThingID,
 				GroupID: group.ID,
 			},
-			err: errors.ErrNotFound,
+			err: dbutil.ErrNotFound,
 		},
 		{
 			desc: "update existing thing ID",
@@ -197,7 +197,7 @@ func TestUpdateThing(t *testing.T) {
 				Key:  thkey,
 				Name: invalidName,
 			},
-			err: errors.ErrMalformedEntity,
+			err: dbutil.ErrMalformedEntity,
 		},
 	}
 
@@ -271,13 +271,13 @@ func TestUpdateKey(t *testing.T) {
 			desc: "update key of a non-existing thing",
 			id:   nonexistentThingID,
 			key:  newKey,
-			err:  errors.ErrNotFound,
+			err:  dbutil.ErrNotFound,
 		},
 		{
 			desc: "update key with existing key value",
 			id:   th2.ID,
 			key:  th1.Key,
-			err:  errors.ErrConflict,
+			err:  dbutil.ErrConflict,
 		},
 	}
 
@@ -330,11 +330,11 @@ func TestRetrieveThingByID(t *testing.T) {
 		},
 		"retrieve non-existing thing with existing user": {
 			ID:  nonexistentThingID,
-			err: errors.ErrNotFound,
+			err: dbutil.ErrNotFound,
 		},
 		"retrieve thing with malformed ID": {
 			ID:  wrongID,
-			err: errors.ErrNotFound,
+			err: dbutil.ErrNotFound,
 		},
 	}
 
@@ -387,7 +387,7 @@ func TestRetrieveByKey(t *testing.T) {
 		"retrieve non-existent thing by key": {
 			key: wrongID,
 			ID:  "",
-			err: errors.ErrNotFound,
+			err: dbutil.ErrNotFound,
 		},
 	}
 
@@ -713,7 +713,7 @@ func TestRetrieveByProfile(t *testing.T) {
 				Limit:  n,
 			},
 			size: 0,
-			err:  errors.ErrNotFound,
+			err:  dbutil.ErrNotFound,
 		},
 		"retrieve all things by profile sorted by name ascendant": {
 			prID: prID,
@@ -843,7 +843,7 @@ func TestRemoveThing(t *testing.T) {
 	}{
 		"remove non-existing thing": {
 			thingID: "wrong",
-			err:     errors.ErrRemoveEntity,
+			err:     dbutil.ErrRemoveEntity,
 		},
 		"remove thing": {
 			thingID: thing.ID,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-redis/redis/v8"
@@ -40,7 +41,7 @@ func (gc *groupCache) RemoveGroupEntities(ctx context.Context, groupID string) e
 		esKey := fmt.Sprintf("%s:%s", prefix, groupID)
 		entities, err := gc.client.SMembers(ctx, esKey).Result()
 		if err != nil {
-			return errors.Wrap(errors.ErrRemoveEntity, err)
+			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
 
 		for _, entityID := range entities {
@@ -65,11 +66,11 @@ func (gc *groupCache) RemoveGroupEntities(ctx context.Context, groupID string) e
 	}
 
 	if err := gc.client.Unlink(ctx, removalKeys...).Err(); err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	if _, err := pipe.Exec(ctx); err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil
@@ -78,12 +79,12 @@ func (gc *groupCache) RemoveGroupEntities(ctx context.Context, groupID string) e
 func (gc *groupCache) SaveGroupMembership(ctx context.Context, groupID, memberID, role string) error {
 	gk := groupsByMemberIDKey(memberID)
 	if err := gc.client.HSet(ctx, gk, groupID, role).Err(); err != nil {
-		return errors.Wrap(errors.ErrCreateEntity, err)
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	mk := membersByGroupIDKey(groupID)
 	if err := gc.client.SAdd(ctx, mk, memberID).Err(); err != nil {
-		return errors.Wrap(errors.ErrCreateEntity, err)
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	return nil
@@ -94,9 +95,9 @@ func (gc *groupCache) ViewRole(ctx context.Context, groupID, memberID string) (s
 	role, err := gc.client.HGet(ctx, gk, groupID).Result()
 	if err != nil {
 		if err == redis.Nil {
-			return "", errors.Wrap(errors.ErrNotFound, err)
+			return "", errors.Wrap(dbutil.ErrNotFound, err)
 		}
-		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
+		return "", errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	return role, nil
@@ -105,12 +106,12 @@ func (gc *groupCache) ViewRole(ctx context.Context, groupID, memberID string) (s
 func (gc *groupCache) RemoveGroupMembership(ctx context.Context, groupID, memberID string) error {
 	gk := groupsByMemberIDKey(memberID)
 	if _, err := gc.client.HDel(ctx, gk, groupID).Result(); err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	mk := membersByGroupIDKey(groupID)
 	if _, err := gc.client.SRem(ctx, mk, memberID).Result(); err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil
@@ -120,7 +121,7 @@ func (gc *groupCache) RetrieveGroupIDsByMember(ctx context.Context, memberID str
 	gk := groupsByMemberIDKey(memberID)
 	groups, err := gc.client.HKeys(ctx, gk).Result()
 	if err != nil {
-		return nil, errors.Wrap(errors.ErrNotFound, err)
+		return nil, errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
 	return groups, nil

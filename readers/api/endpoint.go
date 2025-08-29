@@ -124,7 +124,7 @@ func backupMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 		case csvFormat:
 			data, err = apiutil.GenerateCSV(page, req.pageMeta.Format)
 		default:
-			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+			return nil, errors.Wrap(dbutil.ErrMalformedEntity, err)
 		}
 
 		if err != nil {

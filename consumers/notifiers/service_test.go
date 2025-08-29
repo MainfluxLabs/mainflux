@@ -11,6 +11,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	ntmocks "github.com/MainfluxLabs/mainflux/consumers/notifiers/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -170,7 +171,7 @@ func runCreateNotifiersTest(t *testing.T, svcName string, validContacts []string
 			desc:      "create notifier with invalid contacts",
 			notifiers: []notifiers.Notifier{invalidContactsNf},
 			token:     token,
-			err:       errors.ErrMalformedEntity,
+			err:       dbutil.ErrMalformedEntity,
 		},
 		{
 			desc:      "create notifier with invalid group id",
@@ -370,13 +371,13 @@ func runUpdateNotifierTest(t *testing.T, svcName string, validContacts []string)
 			desc:     "update non-existing notifier",
 			notifier: invalidIDNf,
 			token:    token,
-			err:      errors.ErrNotFound,
+			err:      dbutil.ErrNotFound,
 		},
 		{
 			desc:     "create notifier with invalid contacts",
 			notifier: invalidContactsNf,
 			token:    token,
-			err:      errors.ErrMalformedEntity,
+			err:      dbutil.ErrMalformedEntity,
 		},
 		{
 			desc:     "create notifier with invalid name",
@@ -423,7 +424,7 @@ func runViewNotifierTest(t *testing.T, validContacts []string) {
 		"view non-existing notifier": {
 			id:    wrongValue,
 			token: token,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 
@@ -467,7 +468,7 @@ func runRemoveNotifiersTest(t *testing.T, validContacts []string) {
 			desc:  "remove non-existing notifier",
 			id:    wrongValue,
 			token: token,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 

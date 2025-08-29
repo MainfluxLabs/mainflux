@@ -7,7 +7,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/users"
 )
@@ -41,7 +41,7 @@ func (urm *userRepositoryMock) Save(ctx context.Context, u users.User) (string, 
 	defer urm.mu.Unlock()
 
 	if _, ok := urm.usersByEmail[u.Email]; ok {
-		return "", errors.ErrConflict
+		return "", dbutil.ErrConflict
 	}
 
 	urm.usersByEmail[u.Email] = u
@@ -54,7 +54,7 @@ func (urm *userRepositoryMock) Update(ctx context.Context, u users.User) error {
 	defer urm.mu.Unlock()
 
 	if _, ok := urm.usersByEmail[u.Email]; !ok {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 
 	urm.usersByEmail[u.Email] = u
@@ -67,7 +67,7 @@ func (urm *userRepositoryMock) UpdateUser(ctx context.Context, u users.User) err
 	defer urm.mu.Unlock()
 
 	if _, ok := urm.usersByEmail[u.Email]; !ok {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 
 	urm.usersByEmail[u.Email] = u
@@ -81,7 +81,7 @@ func (urm *userRepositoryMock) RetrieveByEmail(ctx context.Context, email string
 
 	val, ok := urm.usersByEmail[email]
 	if !ok {
-		return users.User{}, errors.ErrNotFound
+		return users.User{}, dbutil.ErrNotFound
 	}
 
 	return val, nil
@@ -93,7 +93,7 @@ func (urm *userRepositoryMock) RetrieveByID(ctx context.Context, id string) (use
 
 	val, ok := urm.usersByID[id]
 	if !ok {
-		return users.User{}, errors.ErrNotFound
+		return users.User{}, dbutil.ErrNotFound
 	}
 
 	return val, nil
@@ -109,7 +109,7 @@ func (urm *userRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string, 
 	if pm.Email != "" {
 		val, ok := urm.usersByEmail[pm.Email]
 		if !ok {
-			return users.UserPage{}, errors.ErrNotFound
+			return users.UserPage{}, dbutil.ErrNotFound
 		}
 		up.Offset = pm.Offset
 		up.Limit = pm.Limit
@@ -166,7 +166,7 @@ func (urm *userRepositoryMock) UpdatePassword(_ context.Context, token, password
 	defer urm.mu.Unlock()
 
 	if _, ok := urm.usersByEmail[token]; !ok {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 	return nil
 }
@@ -177,7 +177,7 @@ func (urm *userRepositoryMock) ChangeStatus(ctx context.Context, id, status stri
 
 	u, ok := urm.usersByID[id]
 	if !ok {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 	u.Status = status
 	urm.usersByID[id] = u

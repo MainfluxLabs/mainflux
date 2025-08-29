@@ -13,6 +13,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -324,7 +325,7 @@ func TestRemoveThing(t *testing.T) {
 			desc:  "remove non-existent thing",
 			id:    strconv.FormatUint(math.MaxUint64, 10),
 			key:   "",
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 			event: nil,
 		},
 	}
@@ -455,7 +456,7 @@ func TestUpdateProfile(t *testing.T) {
 				Name: "c",
 			},
 			key:   token,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 			event: nil,
 		},
 	}
@@ -580,7 +581,7 @@ func TestRemoveProfile(t *testing.T) {
 			desc:  "remove non-existent profile",
 			id:    strconv.FormatUint(math.MaxUint64, 10),
 			key:   "",
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 			event: nil,
 		},
 	}

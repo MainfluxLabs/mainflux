@@ -47,17 +47,17 @@ func (gr groupRepository) Save(ctx context.Context, g things.Group) (things.Grou
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return things.Group{}, errors.Wrap(errors.ErrMalformedEntity, err)
+				return things.Group{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 			case pgerrcode.ForeignKeyViolation:
-				return things.Group{}, errors.Wrap(errors.ErrCreateEntity, err)
+				return things.Group{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 			case pgerrcode.UniqueViolation:
-				return things.Group{}, errors.Wrap(errors.ErrConflict, err)
+				return things.Group{}, errors.Wrap(dbutil.ErrConflict, err)
 			case pgerrcode.StringDataRightTruncationDataException:
-				return things.Group{}, errors.Wrap(errors.ErrMalformedEntity, err)
+				return things.Group{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
 
-		return things.Group{}, errors.Wrap(errors.ErrCreateEntity, err)
+		return things.Group{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	defer row.Close()
@@ -76,7 +76,7 @@ func (gr groupRepository) Update(ctx context.Context, g things.Group) (things.Gr
 
 	dbu, err := toDBGroup(g)
 	if err != nil {
-		return things.Group{}, errors.Wrap(errors.ErrUpdateEntity, err)
+		return things.Group{}, errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	row, err := gr.db.NamedQueryContext(ctx, q, dbu)
@@ -85,21 +85,21 @@ func (gr groupRepository) Update(ctx context.Context, g things.Group) (things.Gr
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return things.Group{}, errors.Wrap(errors.ErrMalformedEntity, err)
+				return things.Group{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 			case pgerrcode.UniqueViolation:
-				return things.Group{}, errors.Wrap(errors.ErrConflict, err)
+				return things.Group{}, errors.Wrap(dbutil.ErrConflict, err)
 			case pgerrcode.StringDataRightTruncationDataException:
-				return things.Group{}, errors.Wrap(errors.ErrMalformedEntity, err)
+				return things.Group{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
-		return things.Group{}, errors.Wrap(errors.ErrUpdateEntity, err)
+		return things.Group{}, errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	defer row.Close()
 	row.Next()
 	dbu = dbGroup{}
 	if err := row.StructScan(&dbu); err != nil {
-		return g, errors.Wrap(errors.ErrUpdateEntity, err)
+		return g, errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	return toGroup(dbu)
@@ -119,22 +119,22 @@ func (gr groupRepository) Remove(ctx context.Context, groupIDs ...string) error 
 			if ok {
 				switch pqErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
+					return errors.Wrap(dbutil.ErrMalformedEntity, err)
 				case pgerrcode.ForeignKeyViolation:
-					return errors.Wrap(errors.ErrConflict, err)
+					return errors.Wrap(dbutil.ErrConflict, err)
 				}
 			}
 
-			return errors.Wrap(errors.ErrUpdateEntity, err)
+			return errors.Wrap(dbutil.ErrUpdateEntity, err)
 		}
 
 		cnt, err := res.RowsAffected()
 		if err != nil {
-			return errors.Wrap(errors.ErrRemoveEntity, err)
+			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
 
 		if cnt != 1 {
-			return errors.Wrap(errors.ErrRemoveEntity, err)
+			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
 	}
 
@@ -147,14 +147,14 @@ func (gr groupRepository) BackupAll(ctx context.Context) ([]things.Group, error)
 	var items []dbGroup
 	err := gr.db.SelectContext(ctx, &items, query)
 	if err != nil {
-		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	var groups []things.Group
 	for _, i := range items {
 		gr, err := toGroup(i)
 		if err != nil {
-			return []things.Group{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return []things.Group{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		groups = append(groups, gr)
@@ -169,14 +169,14 @@ func (gr groupRepository) BackupByOrg(ctx context.Context, orgID string) ([]thin
 	var items []dbGroup
 	err := gr.db.SelectContext(ctx, &items, query, orgID)
 	if err != nil {
-		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	var groups []things.Group
 	for _, i := range items {
 		gr, err := toGroup(i)
 		if err != nil {
-			return []things.Group{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return []things.Group{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		groups = append(groups, gr)
@@ -216,9 +216,9 @@ func (gr groupRepository) RetrieveByID(ctx context.Context, id string) (things.G
 		pgErr, ok := err.(*pgconn.PgError)
 		//  If there is no result or ID is in an invalid format, return ErrNotFound.
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
-			return things.Group{}, errors.Wrap(errors.ErrNotFound, err)
+			return things.Group{}, errors.Wrap(dbutil.ErrNotFound, err)
 		}
-		return things.Group{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.Group{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	return toGroup(dbu)
 }
@@ -235,7 +235,7 @@ func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string, 
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
-		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.GroupPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	whereClause := dbutil.BuildWhereClause(iq, nq, mq)
 	query := fmt.Sprintf(`SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
@@ -258,7 +258,7 @@ func (gr groupRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetada
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
-		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.GroupPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	whereClause := dbutil.BuildWhereClause(nq, mq)
@@ -297,7 +297,7 @@ func (gr groupRepository) retrieveIDs(ctx context.Context, query string, params 
 func (gr groupRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (things.GroupPage, error) {
 	rows, err := gr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.GroupPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -305,18 +305,18 @@ func (gr groupRepository) retrieve(ctx context.Context, query, cquery string, pa
 	for rows.Next() {
 		dbg := dbGroup{}
 		if err := rows.StructScan(&dbg); err != nil {
-			return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return things.GroupPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 		gr, err := toGroup(dbg)
 		if err != nil {
-			return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return things.GroupPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 		items = append(items, gr)
 	}
 
 	total, err := dbutil.Total(ctx, gr.db, cquery, params)
 	if err != nil {
-		return things.GroupPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.GroupPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	page := things.GroupPage{

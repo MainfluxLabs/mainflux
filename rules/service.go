@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -108,7 +109,7 @@ func (rs *rulesService) createRule(ctx context.Context, rule Rule, token string)
 		return Rule{}, err
 	}
 	if len(rls) == 0 {
-		return Rule{}, errors.ErrCreateEntity
+		return Rule{}, dbutil.ErrCreateEntity
 	}
 
 	return rls[0], nil

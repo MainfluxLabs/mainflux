@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -386,7 +387,7 @@ func TestUpdateWebhook(t *testing.T) {
 			desc:    "update non-existing webhook",
 			webhook: invalidWh,
 			token:   token,
-			err:     errors.ErrNotFound,
+			err:     dbutil.ErrNotFound,
 		},
 	}
 
@@ -420,7 +421,7 @@ func TestViewWebhook(t *testing.T) {
 		"view non-existing webhook": {
 			id:    wrongValue,
 			token: token,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 
@@ -458,7 +459,7 @@ func TestRemoveWebhooks(t *testing.T) {
 			desc:  "remove non-existing webhook",
 			id:    wrongValue,
 			token: token,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 

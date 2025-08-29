@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -52,7 +52,7 @@ func (prm *profileRepositoryMock) Update(_ context.Context, profile things.Profi
 	defer prm.mu.Unlock()
 
 	if _, ok := prm.profiles[profile.ID]; !ok {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 	profile.GroupID = prm.profiles[profile.ID].GroupID
 
@@ -70,7 +70,7 @@ func (prm *profileRepositoryMock) RetrieveByID(_ context.Context, id string) (th
 		}
 	}
 
-	return things.Profile{}, errors.ErrNotFound
+	return things.Profile{}, dbutil.ErrNotFound
 }
 
 func (prm *profileRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
@@ -159,7 +159,7 @@ func (prm *profileRepositoryMock) RetrieveByThing(_ context.Context, thID string
 		}
 	}
 
-	return things.Profile{}, errors.ErrNotFound
+	return things.Profile{}, dbutil.ErrNotFound
 }
 
 func (prm *profileRepositoryMock) Remove(_ context.Context, ids ...string) error {
@@ -168,7 +168,7 @@ func (prm *profileRepositoryMock) Remove(_ context.Context, ids ...string) error
 
 	for _, id := range ids {
 		if _, ok := prm.profiles[id]; !ok {
-			return errors.ErrNotFound
+			return dbutil.ErrNotFound
 		}
 
 		delete(prm.profiles, id)

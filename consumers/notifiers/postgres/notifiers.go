@@ -32,7 +32,7 @@ func NewNotifierRepository(db dbutil.Database) notifiers.NotifierRepository {
 func (nr notifierRepository) Save(ctx context.Context, nfs ...notifiers.Notifier) ([]notifiers.Notifier, error) {
 	tx, err := nr.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return []notifiers.Notifier{}, errors.Wrap(errors.ErrCreateEntity, err)
+		return []notifiers.Notifier{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	q := `INSERT INTO notifiers (id, group_id, name, contacts, metadata) VALUES (:id, :group_id, :name, :contacts, :metadata);`
@@ -40,7 +40,7 @@ func (nr notifierRepository) Save(ctx context.Context, nfs ...notifiers.Notifier
 	for _, notifier := range nfs {
 		dbNf, err := toDBNotifier(notifier)
 		if err != nil {
-			return []notifiers.Notifier{}, errors.Wrap(errors.ErrCreateEntity, err)
+			return []notifiers.Notifier{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 
 		if _, err := tx.NamedExecContext(ctx, q, dbNf); err != nil {
@@ -49,27 +49,27 @@ func (nr notifierRepository) Save(ctx context.Context, nfs ...notifiers.Notifier
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return []notifiers.Notifier{}, errors.Wrap(errors.ErrMalformedEntity, err)
+					return []notifiers.Notifier{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 				case pgerrcode.UniqueViolation:
-					return []notifiers.Notifier{}, errors.Wrap(errors.ErrConflict, err)
+					return []notifiers.Notifier{}, errors.Wrap(dbutil.ErrConflict, err)
 				case pgerrcode.StringDataRightTruncationWarning:
-					return []notifiers.Notifier{}, errors.Wrap(errors.ErrMalformedEntity, err)
+					return []notifiers.Notifier{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 				}
 			}
 
-			return []notifiers.Notifier{}, errors.Wrap(errors.ErrCreateEntity, err)
+			return []notifiers.Notifier{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return []notifiers.Notifier{}, errors.Wrap(errors.ErrCreateEntity, err)
+		return []notifiers.Notifier{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 	return nfs, nil
 }
 
 func (nr notifierRepository) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (notifiers.NotifiersPage, error) {
 	if _, err := uuid.FromString(groupID); err != nil {
-		return notifiers.NotifiersPage{}, errors.Wrap(errors.ErrNotFound, err)
+		return notifiers.NotifiersPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
 	oq := dbutil.GetOrderQuery(pm.Order)
@@ -78,7 +78,7 @@ func (nr notifierRepository) RetrieveByGroup(ctx context.Context, groupID string
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
-		return notifiers.NotifiersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return notifiers.NotifiersPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	groupFilter := "group_id = :group_id"
@@ -97,7 +97,7 @@ func (nr notifierRepository) RetrieveByGroup(ctx context.Context, groupID string
 
 	rows, err := nr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return notifiers.NotifiersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return notifiers.NotifiersPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -105,7 +105,7 @@ func (nr notifierRepository) RetrieveByGroup(ctx context.Context, groupID string
 	for rows.Next() {
 		dbNf := dbNotifier{}
 		if err := rows.StructScan(&dbNf); err != nil {
-			return notifiers.NotifiersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return notifiers.NotifiersPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 		notifier, err := toNotifier(dbNf)
 		if err != nil {
@@ -117,7 +117,7 @@ func (nr notifierRepository) RetrieveByGroup(ctx context.Context, groupID string
 
 	total, err := dbutil.Total(ctx, nr.db, qc, params)
 	if err != nil {
-		return notifiers.NotifiersPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return notifiers.NotifiersPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	page := notifiers.NotifiersPage{
@@ -139,9 +139,9 @@ func (nr notifierRepository) RetrieveByID(ctx context.Context, id string) (notif
 	if err := nr.db.QueryRowxContext(ctx, q, id).StructScan(&dbNf); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
-			return notifiers.Notifier{}, errors.Wrap(errors.ErrNotFound, err)
+			return notifiers.Notifier{}, errors.Wrap(dbutil.ErrNotFound, err)
 		}
-		return notifiers.Notifier{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return notifiers.Notifier{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	return toNotifier(dbNf)
@@ -152,7 +152,7 @@ func (nr notifierRepository) Update(ctx context.Context, n notifiers.Notifier) e
 
 	dbNf, err := toDBNotifier(n)
 	if err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	res, errdb := nr.db.NamedExecContext(ctx, q, dbNf)
@@ -161,22 +161,22 @@ func (nr notifierRepository) Update(ctx context.Context, n notifiers.Notifier) e
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, errdb)
+				return errors.Wrap(dbutil.ErrMalformedEntity, errdb)
 			case pgerrcode.StringDataRightTruncationDataException:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
 
-		return errors.Wrap(errors.ErrUpdateEntity, errdb)
+		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
 	}
 
 	cnt, errdb := res.RowsAffected()
 	if errdb != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, errdb)
+		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
 	}
 
 	if cnt == 0 {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 
 	return nil
@@ -189,7 +189,7 @@ func (nr notifierRepository) Remove(ctx context.Context, ids ...string) error {
 
 		_, err := nr.db.NamedExecContext(ctx, q, dbNf)
 		if err != nil {
-			return errors.Wrap(errors.ErrRemoveEntity, err)
+			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
 	}
 
@@ -210,7 +210,7 @@ func toDBNotifier(nf notifiers.Notifier) (dbNotifier, error) {
 	if len(nf.Metadata) > 0 {
 		b, err := json.Marshal(nf.Metadata)
 		if err != nil {
-			return dbNotifier{}, errors.Wrap(errors.ErrMalformedEntity, err)
+			return dbNotifier{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 		}
 		metadata = b
 	}
@@ -229,7 +229,7 @@ func toNotifier(dbN dbNotifier) (notifiers.Notifier, error) {
 	contacts := strings.Split(dbN.Contacts, ",")
 
 	if err := json.Unmarshal([]byte(dbN.Metadata), &metadata); err != nil {
-		return notifiers.Notifier{}, errors.Wrap(errors.ErrMalformedEntity, err)
+		return notifiers.Notifier{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
 
 	return notifiers.Notifier{
