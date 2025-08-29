@@ -4,7 +4,7 @@
 package mocks
 
 import (
-	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
 )
@@ -21,7 +21,7 @@ func NewHasher() users.Hasher {
 
 func (hm *hasherMock) Hash(pwd string) (string, error) {
 	if pwd == "" {
-		return "", dbutil.ErrMalformedEntity
+		return "", apiutil.ErrMalformedEntity
 	}
 	return pwd, nil
 }

@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/email"
 )
 
