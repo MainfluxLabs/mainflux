@@ -30,7 +30,7 @@ func NewAlarmRepository(db dbutil.Database) alarms.AlarmRepository {
 func (ar *alarmRepository) Save(ctx context.Context, alarms ...alarms.Alarm) error {
 	tx, err := ar.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return errors.Wrap(errors.ErrCreateEntity, err)
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	q := `INSERT INTO alarms (id, thing_id, group_id, subtopic, protocol, payload, created)
@@ -40,7 +40,7 @@ func (ar *alarmRepository) Save(ctx context.Context, alarms ...alarms.Alarm) err
 		dbAlarm, err := toDBAlarm(alarm)
 		if err != nil {
 			tx.Rollback()
-			return errors.Wrap(errors.ErrCreateEntity, err)
+			return errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 
 		if _, err := tx.NamedExecContext(ctx, q, dbAlarm); err != nil {
@@ -49,19 +49,19 @@ func (ar *alarmRepository) Save(ctx context.Context, alarms ...alarms.Alarm) err
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
+					return errors.Wrap(dbutil.ErrMalformedEntity, err)
 				case pgerrcode.UniqueViolation:
-					return errors.Wrap(errors.ErrConflict, err)
+					return errors.Wrap(dbutil.ErrConflict, err)
 				case pgerrcode.StringDataRightTruncationWarning:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
+					return errors.Wrap(dbutil.ErrMalformedEntity, err)
 				}
 			}
-			return errors.Wrap(errors.ErrCreateEntity, err)
+			return errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return errors.Wrap(errors.ErrCreateEntity, err)
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 	return nil
 }
@@ -73,9 +73,9 @@ func (ar *alarmRepository) RetrieveByID(ctx context.Context, id string) (alarms.
 	if err := ar.db.QueryRowxContext(ctx, q, id).StructScan(&dba); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
-			return alarms.Alarm{}, errors.Wrap(errors.ErrNotFound, err)
+			return alarms.Alarm{}, errors.Wrap(dbutil.ErrNotFound, err)
 		}
-		return alarms.Alarm{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return alarms.Alarm{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	return toAlarm(dba)
@@ -83,7 +83,7 @@ func (ar *alarmRepository) RetrieveByID(ctx context.Context, id string) (alarms.
 
 func (ar *alarmRepository) RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
 	if _, err := uuid.FromString(thingID); err != nil {
-		return alarms.AlarmsPage{}, errors.Wrap(errors.ErrNotFound, err)
+		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
 	oq := dbutil.GetOrderQuery(pm.Order)
@@ -91,7 +91,7 @@ func (ar *alarmRepository) RetrieveByThing(ctx context.Context, thingID string, 
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	p, pq, err := dbutil.GetPayloadQuery(pm.Payload)
 	if err != nil {
-		return alarms.AlarmsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	thingFilter := "thing_id = :thing_id"
@@ -113,7 +113,7 @@ func (ar *alarmRepository) RetrieveByThing(ctx context.Context, thingID string, 
 
 func (ar *alarmRepository) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
 	if _, err := uuid.FromString(groupID); err != nil {
-		return alarms.AlarmsPage{}, errors.Wrap(errors.ErrNotFound, err)
+		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
 	oq := dbutil.GetOrderQuery(pm.Order)
@@ -122,7 +122,7 @@ func (ar *alarmRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 
 	p, pq, err := dbutil.GetPayloadQuery(pm.Payload)
 	if err != nil {
-		return alarms.AlarmsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	groupFilter := "group_id = :group_id"
@@ -149,7 +149,7 @@ func (ar *alarmRepository) Remove(ctx context.Context, ids ...string) error {
 
 		_, err := ar.db.NamedExecContext(ctx, q, dba)
 		if err != nil {
-			return errors.Wrap(errors.ErrRemoveEntity, err)
+			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
 	}
 
@@ -159,7 +159,7 @@ func (ar *alarmRepository) Remove(ctx context.Context, ids ...string) error {
 func (ar *alarmRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (alarms.AlarmsPage, error) {
 	rows, err := ar.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return alarms.AlarmsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -167,12 +167,12 @@ func (ar *alarmRepository) retrieve(ctx context.Context, query, cquery string, p
 	for rows.Next() {
 		var dbAlarm dbAlarm
 		if err := rows.StructScan(&dbAlarm); err != nil {
-			return alarms.AlarmsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		alarm, err := toAlarm(dbAlarm)
 		if err != nil {
-			return alarms.AlarmsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		items = append(items, alarm)
@@ -180,7 +180,7 @@ func (ar *alarmRepository) retrieve(ctx context.Context, query, cquery string, p
 
 	total, err := dbutil.Total(ctx, ar.db, cquery, params)
 	if err != nil {
-		return alarms.AlarmsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	page := alarms.AlarmsPage{
@@ -225,7 +225,7 @@ func toDBAlarm(alarm alarms.Alarm) (dbAlarm, error) {
 func toAlarm(dbAlarm dbAlarm) (alarms.Alarm, error) {
 	var payload map[string]interface{}
 	if err := json.Unmarshal(dbAlarm.Payload, &payload); err != nil {
-		return alarms.Alarm{}, errors.Wrap(errors.ErrMalformedEntity, err)
+		return alarms.Alarm{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
 
 	return alarms.Alarm{

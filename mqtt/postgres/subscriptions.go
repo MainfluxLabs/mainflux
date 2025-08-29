@@ -37,9 +37,9 @@ func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error
 	row, err := mr.db.NamedQueryContext(ctx, q, dbSub)
 	if err != nil {
 		if pqErr, ok := err.(*pgconn.PgError); ok && pqErr.Code == pgerrcode.UniqueViolation {
-			return errors.Wrap(errors.ErrConflict, err)
+			return errors.Wrap(dbutil.ErrConflict, err)
 		}
-		return errors.Wrap(errors.ErrCreateEntity, err)
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 	defer row.Close()
 
@@ -57,7 +57,7 @@ func (mr *mqttRepository) UpdateStatus(ctx context.Context, sub mqtt.Subscriptio
 
 	row, err := mr.db.NamedQueryContext(ctx, q, dbSub)
 	if err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 	defer row.Close()
 
@@ -76,7 +76,7 @@ func (mr *mqttRepository) Remove(ctx context.Context, sub mqtt.Subscription) err
 
 	_, err := mr.db.NamedExecContext(ctx, q, dbSub)
 	if err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil
@@ -86,11 +86,11 @@ func (mr *mqttRepository) HasClientID(ctx context.Context, clientID string) erro
 	q := `SELECT EXISTS (SELECT 1 FROM subscriptions WHERE client_id = $1);`
 	exists := false
 	if err := mr.db.QueryRowxContext(ctx, q, clientID).Scan(&exists); err != nil {
-		return errors.Wrap(errors.ErrRetrieveEntity, err)
+		return errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	if !exists {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 
 	return nil
@@ -108,7 +108,7 @@ func (mr *mqttRepository) RetrieveByGroupID(ctx context.Context, pm mqtt.PageMet
 
 	rows, err := mr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return mqtt.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return mqtt.Page{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -116,7 +116,7 @@ func (mr *mqttRepository) RetrieveByGroupID(ctx context.Context, pm mqtt.PageMet
 	for rows.Next() {
 		item := dbSubscription{}
 		if err := rows.StructScan(&item); err != nil {
-			return mqtt.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return mqtt.Page{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 		items = append(items, fromDBSub(item))
 	}
@@ -124,7 +124,7 @@ func (mr *mqttRepository) RetrieveByGroupID(ctx context.Context, pm mqtt.PageMet
 	cq := `SELECT COUNT(*) FROM subscriptions WHERE group_id= :group_id;`
 	total, err := dbutil.Total(ctx, mr.db, cq, params)
 	if err != nil {
-		return mqtt.Page{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return mqtt.Page{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	return mqtt.Page{

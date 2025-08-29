@@ -8,7 +8,6 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -168,7 +167,7 @@ func GenerateJSON(page readers.MessagesPage) ([]byte, error) {
 
 	data, err := json.Marshal(page.Messages)
 	if err != nil {
-		return nil, errors.Wrap(errors.ErrCreateEntity, err)
+		return nil, err
 	}
 
 	return data, nil

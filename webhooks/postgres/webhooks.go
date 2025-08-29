@@ -32,7 +32,7 @@ func NewWebhookRepository(db dbutil.Database) webhooks.WebhookRepository {
 func (wr webhookRepository) Save(ctx context.Context, whs ...webhooks.Webhook) ([]webhooks.Webhook, error) {
 	tx, err := wr.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return []webhooks.Webhook{}, errors.Wrap(errors.ErrCreateEntity, err)
+		return []webhooks.Webhook{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	q := `INSERT INTO webhooks (id, thing_id, group_id, name, url, headers, metadata) VALUES (:id, :thing_id, :group_id, :name, :url, :headers, :metadata);`
@@ -40,7 +40,7 @@ func (wr webhookRepository) Save(ctx context.Context, whs ...webhooks.Webhook) (
 	for _, webhook := range whs {
 		dbWh, err := toDBWebhook(webhook)
 		if err != nil {
-			return []webhooks.Webhook{}, errors.Wrap(errors.ErrCreateEntity, err)
+			return []webhooks.Webhook{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 
 		if _, err := tx.NamedExecContext(ctx, q, dbWh); err != nil {
@@ -49,27 +49,27 @@ func (wr webhookRepository) Save(ctx context.Context, whs ...webhooks.Webhook) (
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return []webhooks.Webhook{}, errors.Wrap(errors.ErrMalformedEntity, err)
+					return []webhooks.Webhook{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 				case pgerrcode.UniqueViolation:
-					return []webhooks.Webhook{}, errors.Wrap(errors.ErrConflict, err)
+					return []webhooks.Webhook{}, errors.Wrap(dbutil.ErrConflict, err)
 				case pgerrcode.StringDataRightTruncationWarning:
-					return []webhooks.Webhook{}, errors.Wrap(errors.ErrMalformedEntity, err)
+					return []webhooks.Webhook{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 				}
 			}
 
-			return []webhooks.Webhook{}, errors.Wrap(errors.ErrCreateEntity, err)
+			return []webhooks.Webhook{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return []webhooks.Webhook{}, errors.Wrap(errors.ErrCreateEntity, err)
+		return []webhooks.Webhook{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 	return whs, nil
 }
 
 func (wr webhookRepository) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
 	if _, err := uuid.FromString(groupID); err != nil {
-		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrNotFound, err)
+		return webhooks.WebhooksPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
 	gq := "group_id = :group_id"
@@ -79,7 +79,7 @@ func (wr webhookRepository) RetrieveByGroup(ctx context.Context, groupID string,
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
-		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return webhooks.WebhooksPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	whereClause := dbutil.BuildWhereClause(gq, nq, mq)
 
@@ -99,7 +99,7 @@ func (wr webhookRepository) RetrieveByGroup(ctx context.Context, groupID string,
 
 func (wr webhookRepository) RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
 	if _, err := uuid.FromString(thingID); err != nil {
-		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrNotFound, err)
+		return webhooks.WebhooksPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
 	tq := "thing_id = :thing_id"
@@ -109,7 +109,7 @@ func (wr webhookRepository) RetrieveByThing(ctx context.Context, thingID string,
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
-		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return webhooks.WebhooksPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	whereClause := dbutil.BuildWhereClause(tq, nq, mq)
 
@@ -135,9 +135,9 @@ func (wr webhookRepository) RetrieveByID(ctx context.Context, id string) (webhoo
 		pgErr, ok := err.(*pgconn.PgError)
 		//  If there is no result or ID is in an invalid format, return ErrNotFound.
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
-			return webhooks.Webhook{}, errors.Wrap(errors.ErrNotFound, err)
+			return webhooks.Webhook{}, errors.Wrap(dbutil.ErrNotFound, err)
 		}
-		return webhooks.Webhook{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return webhooks.Webhook{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	return toWebhook(dbwh)
@@ -148,7 +148,7 @@ func (wr webhookRepository) Update(ctx context.Context, w webhooks.Webhook) erro
 
 	dbwh, err := toDBWebhook(w)
 	if err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	res, errdb := wr.db.NamedExecContext(ctx, q, dbwh)
@@ -157,22 +157,22 @@ func (wr webhookRepository) Update(ctx context.Context, w webhooks.Webhook) erro
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, errdb)
+				return errors.Wrap(dbutil.ErrMalformedEntity, errdb)
 			case pgerrcode.StringDataRightTruncationDataException:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
 
-		return errors.Wrap(errors.ErrUpdateEntity, errdb)
+		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
 	}
 
 	cnt, errdb := res.RowsAffected()
 	if errdb != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, errdb)
+		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
 	}
 
 	if cnt == 0 {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 
 	return nil
@@ -185,7 +185,7 @@ func (wr webhookRepository) Remove(ctx context.Context, ids ...string) error {
 
 		_, err := wr.db.NamedExecContext(ctx, q, dbwh)
 		if err != nil {
-			return errors.Wrap(errors.ErrRemoveEntity, err)
+			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
 	}
 
@@ -195,7 +195,7 @@ func (wr webhookRepository) Remove(ctx context.Context, ids ...string) error {
 func (wr webhookRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (webhooks.WebhooksPage, error) {
 	rows, err := wr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return webhooks.WebhooksPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -203,12 +203,12 @@ func (wr webhookRepository) retrieve(ctx context.Context, query, cquery string, 
 	for rows.Next() {
 		dbWh := dbWebhook{}
 		if err := rows.StructScan(&dbWh); err != nil {
-			return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return webhooks.WebhooksPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		wh, err := toWebhook(dbWh)
 		if err != nil {
-			return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return webhooks.WebhooksPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		items = append(items, wh)
@@ -216,7 +216,7 @@ func (wr webhookRepository) retrieve(ctx context.Context, query, cquery string, 
 
 	total, err := dbutil.Total(ctx, wr.db, cquery, params)
 	if err != nil {
-		return webhooks.WebhooksPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return webhooks.WebhooksPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	page := webhooks.WebhooksPage{
@@ -246,7 +246,7 @@ func toDBWebhook(wh webhooks.Webhook) (dbWebhook, error) {
 	if len(wh.Headers) > 0 {
 		b, err := json.Marshal(wh.Headers)
 		if err != nil {
-			return dbWebhook{}, errors.Wrap(errors.ErrMalformedEntity, err)
+			return dbWebhook{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 		}
 		headers = b
 	}
@@ -255,7 +255,7 @@ func toDBWebhook(wh webhooks.Webhook) (dbWebhook, error) {
 	if len(wh.Metadata) > 0 {
 		b, err := json.Marshal(wh.Metadata)
 		if err != nil {
-			return dbWebhook{}, errors.Wrap(errors.ErrMalformedEntity, err)
+			return dbWebhook{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 		}
 		metadata = b
 	}
@@ -274,12 +274,12 @@ func toDBWebhook(wh webhooks.Webhook) (dbWebhook, error) {
 func toWebhook(dbW dbWebhook) (webhooks.Webhook, error) {
 	var headers map[string]string
 	if err := json.Unmarshal([]byte(dbW.Headers), &headers); err != nil {
-		return webhooks.Webhook{}, errors.Wrap(errors.ErrMalformedEntity, err)
+		return webhooks.Webhook{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
 
 	var metadata map[string]interface{}
 	if err := json.Unmarshal([]byte(dbW.Metadata), &metadata); err != nil {
-		return webhooks.Webhook{}, errors.Wrap(errors.ErrMalformedEntity, err)
+		return webhooks.Webhook{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
 
 	return webhooks.Webhook{

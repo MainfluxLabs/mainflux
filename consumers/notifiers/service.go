@@ -9,6 +9,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -100,7 +101,7 @@ func (ns *notifierService) CreateNotifiers(ctx context.Context, token string, no
 	nfs := []Notifier{}
 	for _, notifier := range notifiers {
 		if err := ns.sender.ValidateContacts(notifier.Contacts); err != nil {
-			return []Notifier{}, errors.Wrap(errors.ErrMalformedEntity, err)
+			return []Notifier{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 		}
 
 		nf, err := ns.createNotifier(ctx, &notifier, token)
@@ -131,7 +132,7 @@ func (ns *notifierService) createNotifier(ctx context.Context, notifier *Notifie
 	}
 
 	if len(nfs) == 0 {
-		return Notifier{}, errors.ErrCreateEntity
+		return Notifier{}, dbutil.ErrCreateEntity
 	}
 
 	return nfs[0], nil
@@ -175,7 +176,7 @@ func (ns *notifierService) UpdateNotifier(ctx context.Context, token string, not
 	}
 
 	if err := ns.sender.ValidateContacts(notifier.Contacts); err != nil {
-		return errors.Wrap(errors.ErrMalformedEntity, err)
+		return errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
 
 	return ns.notifierRepo.Update(ctx, notifier)

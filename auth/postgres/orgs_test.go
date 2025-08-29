@@ -63,17 +63,17 @@ func TestSave(t *testing.T) {
 		{
 			desc: "save org with invalid owner id",
 			org:  invalidOwnerOrg,
-			err:  errors.ErrMalformedEntity,
+			err:  dbutil.ErrMalformedEntity,
 		},
 		{
 			desc: "save org with invalid org id",
 			org:  invalidIDOrg,
-			err:  errors.ErrMalformedEntity,
+			err:  dbutil.ErrMalformedEntity,
 		},
 		{
 			desc: "save empty org",
 			org:  auth.Org{},
-			err:  errors.ErrMalformedEntity,
+			err:  dbutil.ErrMalformedEntity,
 		},
 		{
 			desc: "save org",
@@ -83,7 +83,7 @@ func TestSave(t *testing.T) {
 		{
 			desc: "save existing org",
 			org:  org,
-			err:  errors.ErrConflict,
+			err:  dbutil.ErrConflict,
 		},
 	}
 
@@ -143,12 +143,12 @@ func TestUpdate(t *testing.T) {
 		{
 			desc: "update org with invalid org id",
 			org:  invalidIDOrg,
-			err:  errors.ErrMalformedEntity,
+			err:  dbutil.ErrMalformedEntity,
 		},
 		{
 			desc: "update with empty org",
 			org:  auth.Org{},
-			err:  errors.ErrMalformedEntity,
+			err:  dbutil.ErrMalformedEntity,
 		},
 		{
 			desc: "update org",
@@ -195,25 +195,25 @@ func TestDelete(t *testing.T) {
 			desc:    "remove org with invalid org id",
 			orgID:   invalidID,
 			ownerID: ownerID,
-			err:     errors.ErrMalformedEntity,
+			err:     dbutil.ErrMalformedEntity,
 		},
 		{
 			desc:    "remove org with unknown org id",
 			orgID:   unknownID,
 			ownerID: ownerID,
-			err:     errors.ErrRemoveEntity,
+			err:     dbutil.ErrRemoveEntity,
 		},
 		{
 			desc:    "remove org with invalid owner id",
 			orgID:   orgID,
 			ownerID: invalidID,
-			err:     errors.ErrMalformedEntity,
+			err:     dbutil.ErrMalformedEntity,
 		},
 		{
 			desc:    "remove org with unknown owner id",
 			orgID:   orgID,
 			ownerID: unknownID,
-			err:     errors.ErrRemoveEntity,
+			err:     dbutil.ErrRemoveEntity,
 		},
 		{
 			desc:    "remove org",
@@ -225,7 +225,7 @@ func TestDelete(t *testing.T) {
 			desc:    "remove removed org",
 			orgID:   orgID,
 			ownerID: ownerID,
-			err:     errors.ErrRemoveEntity,
+			err:     dbutil.ErrRemoveEntity,
 		},
 	}
 
@@ -270,17 +270,17 @@ func TestRetrieveByID(t *testing.T) {
 		{
 			desc:  "retrieve org with unknown org id",
 			orgID: unknownID,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "retrieve org with invalid org id",
 			orgID: invalidID,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "retrieve org without org id",
 			orgID: "",
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 
@@ -455,7 +455,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 				Order:  idOrder,
 			},
 			size: 0,
-			err:  errors.ErrRetrieveEntity,
+			err:  dbutil.ErrRetrieveEntity,
 		},
 		{
 			desc:     "retrieve orgs by member without member id",
@@ -467,7 +467,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 				Order:  idOrder,
 			},
 			size: 0,
-			err:  errors.ErrRetrieveEntity,
+			err:  dbutil.ErrRetrieveEntity,
 		},
 	}
 

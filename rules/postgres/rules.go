@@ -32,7 +32,7 @@ func NewRuleRepository(db dbutil.Database) rules.RuleRepository {
 func (rr ruleRepository) Save(ctx context.Context, rls ...rules.Rule) ([]rules.Rule, error) {
 	tx, err := rr.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return []rules.Rule{}, errors.Wrap(errors.ErrCreateEntity, err)
+		return []rules.Rule{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	q := `INSERT INTO rules (id, profile_id, group_id, name, description, conditions, operator, actions) VALUES (:id, :profile_id, :group_id, :name, :description, :conditions, :operator, :actions);`
@@ -40,7 +40,7 @@ func (rr ruleRepository) Save(ctx context.Context, rls ...rules.Rule) ([]rules.R
 	for _, rule := range rls {
 		dbr, err := toDBRule(rule)
 		if err != nil {
-			return []rules.Rule{}, errors.Wrap(errors.ErrCreateEntity, err)
+			return []rules.Rule{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 
 		if _, err := tx.NamedExecContext(ctx, q, dbr); err != nil {
@@ -49,27 +49,27 @@ func (rr ruleRepository) Save(ctx context.Context, rls ...rules.Rule) ([]rules.R
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return []rules.Rule{}, errors.Wrap(errors.ErrMalformedEntity, err)
+					return []rules.Rule{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 				case pgerrcode.UniqueViolation:
-					return []rules.Rule{}, errors.Wrap(errors.ErrConflict, err)
+					return []rules.Rule{}, errors.Wrap(dbutil.ErrConflict, err)
 				case pgerrcode.StringDataRightTruncationWarning:
-					return []rules.Rule{}, errors.Wrap(errors.ErrMalformedEntity, err)
+					return []rules.Rule{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 				}
 			}
 
-			return []rules.Rule{}, errors.Wrap(errors.ErrCreateEntity, err)
+			return []rules.Rule{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return []rules.Rule{}, errors.Wrap(errors.ErrCreateEntity, err)
+		return []rules.Rule{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 	return rls, nil
 }
 
 func (rr ruleRepository) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
 	if _, err := uuid.FromString(groupID); err != nil {
-		return rules.RulesPage{}, errors.Wrap(errors.ErrNotFound, err)
+		return rules.RulesPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
 	gq := "group_id = :group_id"
@@ -94,7 +94,7 @@ func (rr ruleRepository) RetrieveByGroup(ctx context.Context, groupID string, pm
 
 func (rr ruleRepository) RetrieveByProfile(ctx context.Context, profileID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
 	if _, err := uuid.FromString(profileID); err != nil {
-		return rules.RulesPage{}, errors.Wrap(errors.ErrNotFound, err)
+		return rules.RulesPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
 	pq := "profile_id = :profile_id"
@@ -125,9 +125,9 @@ func (rr ruleRepository) RetrieveByID(ctx context.Context, id string) (rules.Rul
 		pgErr, ok := err.(*pgconn.PgError)
 		//  If there is no result or ID is in an invalid format, return ErrNotFound.
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
-			return rules.Rule{}, errors.Wrap(errors.ErrNotFound, err)
+			return rules.Rule{}, errors.Wrap(dbutil.ErrNotFound, err)
 		}
-		return rules.Rule{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return rules.Rule{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	return toRule(dbr)
@@ -138,7 +138,7 @@ func (rr ruleRepository) Update(ctx context.Context, r rules.Rule) error {
 
 	dbr, err := toDBRule(r)
 	if err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	res, errdb := rr.db.NamedExecContext(ctx, q, dbr)
@@ -147,22 +147,22 @@ func (rr ruleRepository) Update(ctx context.Context, r rules.Rule) error {
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, errdb)
+				return errors.Wrap(dbutil.ErrMalformedEntity, errdb)
 			case pgerrcode.StringDataRightTruncationDataException:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
 
-		return errors.Wrap(errors.ErrUpdateEntity, errdb)
+		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
 	}
 
 	cnt, errdb := res.RowsAffected()
 	if errdb != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, errdb)
+		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
 	}
 
 	if cnt == 0 {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 
 	return nil
@@ -175,7 +175,7 @@ func (rr ruleRepository) Remove(ctx context.Context, ids ...string) error {
 
 		_, err := rr.db.NamedExecContext(ctx, q, dbr)
 		if err != nil {
-			return errors.Wrap(errors.ErrRemoveEntity, err)
+			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
 	}
 
@@ -185,7 +185,7 @@ func (rr ruleRepository) Remove(ctx context.Context, ids ...string) error {
 func (rr ruleRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (rules.RulesPage, error) {
 	rows, err := rr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return rules.RulesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return rules.RulesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -193,12 +193,12 @@ func (rr ruleRepository) retrieve(ctx context.Context, query, cquery string, par
 	for rows.Next() {
 		var dbr dbRule
 		if err = rows.StructScan(&dbr); err != nil {
-			return rules.RulesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return rules.RulesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		rule, err := toRule(dbr)
 		if err != nil {
-			return rules.RulesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return rules.RulesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		items = append(items, rule)
@@ -206,7 +206,7 @@ func (rr ruleRepository) retrieve(ctx context.Context, query, cquery string, par
 
 	total, err := dbutil.Total(ctx, rr.db, cquery, params)
 	if err != nil {
-		return rules.RulesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return rules.RulesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	page := rules.RulesPage{
@@ -235,12 +235,12 @@ type dbRule struct {
 func toDBRule(r rules.Rule) (dbRule, error) {
 	conditions, err := json.Marshal(r.Conditions)
 	if err != nil {
-		return dbRule{}, errors.Wrap(errors.ErrMalformedEntity, err)
+		return dbRule{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
 
 	actions, err := json.Marshal(r.Actions)
 	if err != nil {
-		return dbRule{}, errors.Wrap(errors.ErrMalformedEntity, err)
+		return dbRule{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
 
 	return dbRule{
@@ -258,12 +258,12 @@ func toDBRule(r rules.Rule) (dbRule, error) {
 func toRule(dbr dbRule) (rules.Rule, error) {
 	var conditions []rules.Condition
 	if err := json.Unmarshal(dbr.Conditions, &conditions); err != nil {
-		return rules.Rule{}, errors.Wrap(errors.ErrMalformedEntity, err)
+		return rules.Rule{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
 
 	var actions []rules.Action
 	if err := json.Unmarshal(dbr.Actions, &actions); err != nil {
-		return rules.Rule{}, errors.Wrap(errors.ErrMalformedEntity, err)
+		return rules.Rule{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
 
 	return rules.Rule{

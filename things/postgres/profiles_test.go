@@ -54,21 +54,21 @@ func TestSaveProfiles(t *testing.T) {
 		{
 			desc:     "save profiles that already exist",
 			profiles: prs,
-			err:      errors.ErrConflict,
+			err:      dbutil.ErrConflict,
 		},
 		{
 			desc: "save profile with invalid ID",
 			profiles: []things.Profile{
 				{ID: "invalid", GroupID: group.ID, Name: profileName},
 			},
-			err: errors.ErrMalformedEntity,
+			err: dbutil.ErrMalformedEntity,
 		},
 		{
 			desc: "save profile with invalid name",
 			profiles: []things.Profile{
 				{ID: id, GroupID: group.ID, Name: invalidName},
 			},
-			err: errors.ErrMalformedEntity,
+			err: dbutil.ErrMalformedEntity,
 		},
 	}
 
@@ -114,7 +114,7 @@ func TestUpdateProfile(t *testing.T) {
 			profile: things.Profile{
 				ID: nonexistentProfileID,
 			},
-			err: errors.ErrNotFound,
+			err: dbutil.ErrNotFound,
 		},
 	}
 
@@ -168,11 +168,11 @@ func TestRetrieveProfileByID(t *testing.T) {
 		},
 		"retrieve profile with non-existing profile": {
 			ID:  nonexistentProfileID,
-			err: errors.ErrNotFound,
+			err: dbutil.ErrNotFound,
 		},
 		"retrieve profile with malformed ID": {
 			ID:  wrongID,
-			err: errors.ErrNotFound,
+			err: dbutil.ErrNotFound,
 		},
 	}
 
@@ -370,7 +370,7 @@ func TestRetrieveProfileByThing(t *testing.T) {
 		"retrieve profile with malformed UUID": {
 			thID:    "wrong",
 			profile: things.Profile{},
-			err:     errors.ErrNotFound,
+			err:     dbutil.ErrNotFound,
 		},
 	}
 
@@ -422,7 +422,7 @@ func TestRemoveProfile(t *testing.T) {
 	}{
 		"remove non-existing profile": {
 			prID: "wrong",
-			err:  errors.ErrRemoveEntity,
+			err:  dbutil.ErrRemoveEntity,
 		},
 		"remove profile": {
 			prID: prID1,

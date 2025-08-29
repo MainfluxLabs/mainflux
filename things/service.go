@@ -9,6 +9,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -566,7 +567,7 @@ func (ts *thingsService) createProfile(ctx context.Context, profile *Profile) (P
 		return Profile{}, err
 	}
 	if len(prs) == 0 {
-		return Profile{}, errors.ErrCreateEntity
+		return Profile{}, dbutil.ErrCreateEntity
 	}
 
 	return prs[0], nil

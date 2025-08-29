@@ -7,6 +7,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	"github.com/MainfluxLabs/mainflux/mqtt/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -64,7 +65,7 @@ func TestCreateSubscription(t *testing.T) {
 		{
 			desc: "create with existing subscription",
 			sub:  sub,
-			err:  errors.ErrConflict,
+			err:  dbutil.ErrConflict,
 		},
 	}
 
@@ -105,7 +106,7 @@ func TestRemoveSubscription(t *testing.T) {
 		{
 			desc: "subscription does not exist",
 			sub:  mqtt.Subscription{},
-			err:  errors.ErrNotFound,
+			err:  dbutil.ErrNotFound,
 		},
 	}
 
@@ -263,7 +264,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 				},
 				Subscriptions: nil,
 			},
-			err: errors.ErrNotFound,
+			err: dbutil.ErrNotFound,
 		},
 		{
 			desc:    "retrieve subscriptions by group without thing key",
