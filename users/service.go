@@ -37,6 +37,9 @@ var (
 
 	// ErrEmailVerificationExpired indicates that the e-mail verification token has expired.
 	ErrEmailVerificationExpired = errors.New("e-mail verification token expired")
+
+	// ErrSelfRegisterDisabled indicates that self-registration is disabled in the service config.
+	ErrSelfRegisterDisabled = errors.New("self register disabled")
 )
 
 // Service specifies an API that must be fulfilled by the domain service
@@ -134,29 +137,35 @@ type UserPage struct {
 var _ Service = (*usersService)(nil)
 
 type usersService struct {
-	users              UserRepository
-	emailVerifications EmailVerificationRepository
-	emailVerifyEnabled bool
-	hasher             Hasher
-	email              Emailer
-	auth               protomfx.AuthServiceClient
-	idProvider         uuid.IDProvider
+	users               UserRepository
+	emailVerifications  EmailVerificationRepository
+	emailVerifyEnabled  bool
+	selfRegisterEnabled bool
+	hasher              Hasher
+	email               Emailer
+	auth                protomfx.AuthServiceClient
+	idProvider          uuid.IDProvider
 }
 
 // New instantiates the users service implementation
-func New(users UserRepository, verifications EmailVerificationRepository, emailVerifyEnabled bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider) Service {
+func New(users UserRepository, verifications EmailVerificationRepository, emailVerifyEnabled bool, selfRegisterEnabled bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider) Service {
 	return &usersService{
-		users:              users,
-		emailVerifications: verifications,
-		emailVerifyEnabled: emailVerifyEnabled,
-		hasher:             hasher,
-		auth:               auth,
-		email:              e,
-		idProvider:         idp,
+		users:               users,
+		emailVerifications:  verifications,
+		emailVerifyEnabled:  emailVerifyEnabled,
+		selfRegisterEnabled: selfRegisterEnabled,
+		hasher:              hasher,
+		auth:                auth,
+		email:               e,
+		idProvider:          idp,
 	}
 }
 
 func (svc usersService) SelfRegister(ctx context.Context, user User, redirectPath string) (string, error) {
+	if !svc.selfRegisterEnabled {
+		return "", ErrSelfRegisterDisabled
+	}
+
 	_, err := svc.users.RetrieveByEmail(ctx, user.Email)
 	if err != nil && !errors.Contains(err, dbutil.ErrNotFound) {
 		return "", err
@@ -353,8 +362,15 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 }
 
 func (svc usersService) ViewUser(ctx context.Context, token, id string) (User, error) {
-	if _, err := svc.identify(ctx, token); err != nil {
+	user, err := svc.identify(ctx, token)
+	if err != nil {
 		return User{}, err
+	}
+
+	if err := svc.isAdmin(ctx, token); err != nil {
+		if user.id != id {
+			return User{}, errors.ErrAuthorization
+		}
 	}
 
 	dbUser, err := svc.users.RetrieveByID(ctx, id)

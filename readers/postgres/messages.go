@@ -18,8 +18,10 @@ import (
 )
 
 const (
-	defTable  = "messages"
-	jsonTable = "json"
+	defTable       = "messages"
+	jsonTable      = "json"
+	defTableOrder  = "time"
+	jsonTableOrder = "created"
 )
 
 var _ readers.MessageRepository = (*postgresRepository)(nil)
@@ -49,7 +51,7 @@ func (tr postgresRepository) Backup(rpm readers.PageMetadata) (readers.MessagesP
 	return tr.readAll(rpm)
 }
 
-func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata, table string) error {
+func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) error {
 	tx, err := tr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(errors.ErrSaveMessages, err)
@@ -68,8 +70,8 @@ func (tr postgresRepository) DeleteMessages(ctx context.Context, rpm readers.Pag
 		}
 	}()
 
-	condition := tr.fmtCondition(rpm, table)
-	q := fmt.Sprintf("DELETE FROM %s %s", table, condition)
+	condition := tr.fmtCondition(rpm)
+	q := fmt.Sprintf("DELETE FROM %s %s", rpm.Format, condition)
 	params := map[string]interface{}{
 		"subtopic":     rpm.Subtopic,
 		"publisher":    rpm.Publisher,
@@ -164,7 +166,7 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 		Messages:     []readers.Message{},
 	}
 
-	format, order := tr.getFormatAndOrder(rpm)
+	order := tr.getOrder(rpm)
 	params := tr.buildQueryParams(rpm)
 
 	if rpm.AggType != "" && rpm.AggInterval != "" {
@@ -172,9 +174,11 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 		if err != nil {
 			return page, err
 		}
+
 		page.Messages = messages
 
-		total, err := tr.readCount(rpm, format, order, params)
+		total, err := tr.aggregator.readAggregatedCount(rpm)
+
 		if err != nil {
 			return page, err
 		}
@@ -182,13 +186,13 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 		return page, nil
 	}
 
-	messages, err := tr.readMessages(rpm, format, order, params)
+	messages, err := tr.readMessages(rpm, order, params)
 	if err != nil {
 		return page, err
 	}
 	page.Messages = messages
 
-	total, err := tr.readCount(rpm, format, order, params)
+	total, err := tr.readCount(rpm, params)
 	if err != nil {
 		return page, err
 	}
@@ -197,10 +201,10 @@ func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.Messages
 	return page, nil
 }
 
-func (tr postgresRepository) readMessages(rpm readers.PageMetadata, format, order string, params map[string]interface{}) ([]readers.Message, error) {
+func (tr postgresRepository) readMessages(rpm readers.PageMetadata, order string, params map[string]interface{}) ([]readers.Message, error) {
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
-	condition := tr.fmtCondition(rpm, format)
-	query := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s;`, format, condition, order, olq)
+	condition := tr.fmtCondition(rpm)
+	query := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s;`, rpm.Format, condition, order, olq)
 
 	rows, err := tr.executeQuery(query, params)
 	if err != nil {
@@ -211,12 +215,12 @@ func (tr postgresRepository) readMessages(rpm readers.PageMetadata, format, orde
 	}
 	defer rows.Close()
 
-	return tr.scanMessages(rows, format)
+	return tr.scanMessages(rows, rpm.Format)
 }
 
-func (tr postgresRepository) readCount(rpm readers.PageMetadata, format, order string, params map[string]interface{}) (uint64, error) {
-	condition := tr.fmtCondition(rpm, format)
-	query := fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, format, condition)
+func (tr postgresRepository) readCount(rpm readers.PageMetadata, params map[string]interface{}) (uint64, error) {
+	condition := tr.fmtCondition(rpm)
+	query := fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, rpm.Format, condition)
 
 	rows, err := tr.executeQuery(query, params)
 	if err != nil {
@@ -277,7 +281,7 @@ func (tr postgresRepository) scanMessages(rows *sqlx.Rows, format string) ([]rea
 	return messages, nil
 }
 
-func (tr postgresRepository) fmtCondition(rpm readers.PageMetadata, table string) string {
+func (tr postgresRepository) fmtCondition(rpm readers.PageMetadata) string {
 	var query map[string]interface{}
 	meta, err := json.Marshal(rpm)
 	if err != nil {
@@ -287,7 +291,7 @@ func (tr postgresRepository) fmtCondition(rpm readers.PageMetadata, table string
 
 	condition := ""
 	op := "WHERE"
-	timeColumn := tr.getTimeColumn(table)
+	timeColumn := tr.getTimeColumn(rpm.Format)
 
 	for name := range query {
 		switch name {
@@ -321,16 +325,11 @@ func (tr postgresRepository) fmtCondition(rpm readers.PageMetadata, table string
 	return condition
 }
 
-func (tr postgresRepository) getFormatAndOrder(rpm readers.PageMetadata) (format, order string) {
-	format = defTable
-	order = "time"
-
+func (tr postgresRepository) getOrder(rpm readers.PageMetadata) string {
 	if rpm.Format == jsonTable {
-		format = jsonTable
-		order = "created"
+		return jsonTableOrder
 	}
-
-	return format, order
+	return defTableOrder
 }
 
 func (tr postgresRepository) getTimeColumn(table string) string {
