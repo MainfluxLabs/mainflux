@@ -177,13 +177,14 @@ func (svc *mainfluxThings) Restore(context.Context, string, things.Backup) error
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CreateProfiles(_ context.Context, token string, prs ...things.Profile) ([]things.Profile, error) {
+func (svc *mainfluxThings) CreateProfiles(_ context.Context, token, grID string, prs ...things.Profile) ([]things.Profile, error) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
 	for i := range prs {
 		svc.counter++
 		prs[i].ID = strconv.FormatUint(svc.counter, 10)
+		prs[i].GroupID = grID
 		svc.profiles[prs[i].ID] = prs[i]
 	}
 

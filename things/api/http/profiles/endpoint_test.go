@@ -249,8 +249,7 @@ func TestUpdateProfile(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	profile.GroupID = gr.ID
-	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	prs, err := svc.CreateProfiles(context.Background(), token, gr.ID, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	pr := prs[0]
 
@@ -374,8 +373,7 @@ func TestViewProfile(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	profile.GroupID = gr.ID
-	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	prs, err := svc.CreateProfiles(context.Background(), token, gr.ID, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	pr := prs[0]
 
@@ -459,9 +457,9 @@ func TestListProfiles(t *testing.T) {
 	for i := 0; i < n; i++ {
 		name := "name_" + fmt.Sprintf("%03d", i+1)
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
-		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: metadata}
+		pr := things.Profile{ID: id, Name: name, Metadata: metadata}
 
-		prs, err := svc.CreateProfiles(context.Background(), token, pr)
+		prs, err := svc.CreateProfiles(context.Background(), token, gr.ID, pr)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		profile := prs[0]
 
@@ -649,9 +647,9 @@ func TestListProfilesByOrg(t *testing.T) {
 		suffix := i + 1
 		name := "name_" + fmt.Sprintf("%03d", suffix)
 		id := fmt.Sprintf("%s%012d", prefix, suffix)
-		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: metadata}
+		pr := things.Profile{ID: id, Name: name, Metadata: metadata}
 
-		prs, err := svc.CreateProfiles(context.Background(), adminToken, pr)
+		prs, err := svc.CreateProfiles(context.Background(), adminToken, gr.ID, pr)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		profile := prs[0]
 
@@ -669,9 +667,9 @@ func TestListProfilesByOrg(t *testing.T) {
 		suffix := n + i + 1
 		name := "name_" + fmt.Sprintf("%03d", suffix)
 		id := fmt.Sprintf("%s%012d", prefix, suffix)
-		pr := things.Profile{ID: id, GroupID: gr2.ID, Name: name, Metadata: metadata}
+		pr := things.Profile{ID: id, Name: name, Metadata: metadata}
 
-		prs, err := svc.CreateProfiles(context.Background(), otherToken, pr)
+		prs, err := svc.CreateProfiles(context.Background(), otherToken, gr2.ID, pr)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		profile := prs[0]
 
@@ -856,9 +854,9 @@ func TestSearchProfiles(t *testing.T) {
 	for i := 0; i < n; i++ {
 		name := fmt.Sprintf("name_%03d", i+1)
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
-		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: metadata}
+		pr := things.Profile{ID: id, Name: name, Metadata: metadata}
 
-		prs, err := svc.CreateProfiles(context.Background(), token, pr)
+		prs, err := svc.CreateProfiles(context.Background(), token, gr.ID, pr)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		profile := prs[0]
 
@@ -1003,9 +1001,9 @@ func TestSearchProfilesByGroup(t *testing.T) {
 	for i := 0; i < n; i++ {
 		name := fmt.Sprintf("name_%03d", i+1)
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
-		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: metadata}
+		pr := things.Profile{ID: id, Name: name, Metadata: metadata}
 
-		prs, err := svc.CreateProfiles(context.Background(), token, pr)
+		prs, err := svc.CreateProfiles(context.Background(), token, gr.ID, pr)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		profile := prs[0]
 
@@ -1150,9 +1148,9 @@ func TestSearchProfilesByOrg(t *testing.T) {
 	for i := 0; i < n; i++ {
 		name := fmt.Sprintf("name_%03d", i+1)
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
-		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: metadata}
+		pr := things.Profile{ID: id, Name: name, Metadata: metadata}
 
-		prs, err := svc.CreateProfiles(context.Background(), token, pr)
+		prs, err := svc.CreateProfiles(context.Background(), token, gr.ID, pr)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		profile := prs[0]
 
@@ -1298,9 +1296,9 @@ func TestBackupProfilesByOrg(t *testing.T) {
 		suffix := i + 1
 		name := "name_" + fmt.Sprintf("%03d", suffix)
 		id := fmt.Sprintf("%s%012d", prefix, suffix)
-		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: metadata}
+		pr := things.Profile{ID: id, Name: name, Metadata: metadata}
 
-		prs, err := svc.CreateProfiles(context.Background(), adminToken, pr)
+		prs, err := svc.CreateProfiles(context.Background(), adminToken, gr.ID, pr)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		profile := prs[0]
 
@@ -1498,9 +1496,9 @@ func TestBackupProfilesByGroup(t *testing.T) {
 		suffix := i + 1
 		name := "name_" + fmt.Sprintf("%03d", suffix)
 		id := fmt.Sprintf("%s%012d", prefix, suffix)
-		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: metadata}
+		pr := things.Profile{ID: id, Name: name, Metadata: metadata}
 
-		prs, err := svc.CreateProfiles(context.Background(), adminToken, pr)
+		prs, err := svc.CreateProfiles(context.Background(), adminToken, gr.ID, pr)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		profile := prs[0]
 
@@ -1693,8 +1691,7 @@ func TestViewProfileByThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	profile.GroupID = gr.ID
-	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	prs, err := svc.CreateProfiles(context.Background(), token, gr.ID, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	pr := prs[0]
 
@@ -1780,8 +1777,7 @@ func TestRemoveProfile(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grID := grs[0].ID
 
-	profile.GroupID = grID
-	prs, err := svc.CreateProfiles(context.Background(), token, profile, profile)
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID, prID1 := prs[0].ID, prs[1].ID
 
@@ -1848,10 +1844,8 @@ func TestRemoveProfiles(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grID := grs[0].ID
 
-	profile.GroupID = grID
-	profile1.GroupID = grID
 	cList := []things.Profile{profile, profile, profile1}
-	prs, err := svc.CreateProfiles(context.Background(), token, cList...)
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, cList...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	_, err = svc.CreateThings(context.Background(), token, prs[2].ID, thing)

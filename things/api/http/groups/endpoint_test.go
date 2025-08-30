@@ -306,8 +306,8 @@ func TestViewGroupByThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	profile := things.Profile{Name: "test", GroupID: gr.ID}
-	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	profile := things.Profile{Name: "test"}
+	prs, err := svc.CreateProfiles(context.Background(), token, gr.ID, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
 
@@ -396,8 +396,8 @@ func TestViewGroupByProfile(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	profile := things.Profile{Name: "test", GroupID: gr.ID}
-	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	profile := things.Profile{Name: "test"}
+	prs, err := svc.CreateProfiles(context.Background(), token, gr.ID, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
 
