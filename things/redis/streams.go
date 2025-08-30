@@ -314,8 +314,8 @@ func (es eventStore) ListProfilesByGroup(ctx context.Context, token, groupID str
 	return es.svc.ListProfilesByGroup(ctx, token, groupID, pm)
 }
 
-func (es eventStore) CreateGroups(ctx context.Context, token string, grs ...things.Group) ([]things.Group, error) {
-	return es.svc.CreateGroups(ctx, token, grs...)
+func (es eventStore) CreateGroups(ctx context.Context, token, orgID string, grs ...things.Group) ([]things.Group, error) {
+	return es.svc.CreateGroups(ctx, token, orgID, grs...)
 }
 
 func (es eventStore) ListGroups(ctx context.Context, token string, pm apiutil.PageMetadata) (things.GroupPage, error) {

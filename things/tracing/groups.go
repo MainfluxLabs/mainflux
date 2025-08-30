@@ -40,12 +40,12 @@ func GroupRepositoryMiddleware(tracer opentracing.Tracer, repo things.GroupRepos
 	}
 }
 
-func (grm groupRepositoryMiddleware) Save(ctx context.Context, g things.Group) (things.Group, error) {
+func (grm groupRepositoryMiddleware) Save(ctx context.Context, grs ...things.Group) ([]things.Group, error) {
 	span := createSpan(ctx, grm.tracer, saveGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return grm.repo.Save(ctx, g)
+	return grm.repo.Save(ctx, grs...)
 }
 
 func (grm groupRepositoryMiddleware) Update(ctx context.Context, g things.Group) (things.Group, error) {

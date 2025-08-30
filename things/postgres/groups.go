@@ -31,43 +31,47 @@ func NewGroupRepository(db dbutil.Database) things.GroupRepository {
 	}
 }
 
-func (gr groupRepository) Save(ctx context.Context, g things.Group) (things.Group, error) {
-	q := `INSERT INTO groups (name, description, id, org_id, metadata, created_at, updated_at)
-		  VALUES (:name, :description, :id, :org_id, :metadata, :created_at, :updated_at)
-		  RETURNING id, name, org_id, description, metadata, created_at, updated_at`
-
-	dbg, err := toDBGroup(g)
+func (gr groupRepository) Save(ctx context.Context, gs ...things.Group) ([]things.Group, error) {
+	tx, err := gr.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return things.Group{}, err
+		return []things.Group{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
-	row, err := gr.db.NamedQueryContext(ctx, q, dbg)
-	if err != nil {
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pgErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return things.Group{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-			case pgerrcode.ForeignKeyViolation:
-				return things.Group{}, errors.Wrap(dbutil.ErrCreateEntity, err)
-			case pgerrcode.UniqueViolation:
-				return things.Group{}, errors.Wrap(dbutil.ErrConflict, err)
-			case pgerrcode.StringDataRightTruncationDataException:
-				return things.Group{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-			}
+	q := `INSERT INTO groups (name, description, id, org_id, metadata, created_at, updated_at)
+		  VALUES (:name, :description, :id, :org_id, :metadata, :created_at, :updated_at)`
+
+	for _, group := range gs {
+		dbg, err := toDBGroup(group)
+		if err != nil {
+			tx.Rollback()
+			return []things.Group{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 
-		return things.Group{}, errors.Wrap(dbutil.ErrCreateEntity, err)
+		if _, err := tx.NamedExecContext(ctx, q, dbg); err != nil {
+			tx.Rollback()
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return []things.Group{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+				case pgerrcode.ForeignKeyViolation:
+					return []things.Group{}, errors.Wrap(dbutil.ErrCreateEntity, err)
+				case pgerrcode.UniqueViolation:
+					return []things.Group{}, errors.Wrap(dbutil.ErrConflict, err)
+				case pgerrcode.StringDataRightTruncationDataException:
+					return []things.Group{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+				}
+			}
+
+			return []things.Group{}, errors.Wrap(dbutil.ErrCreateEntity, err)
+		}
 	}
 
-	defer row.Close()
-	row.Next()
-	dbg = dbGroup{}
-	if err := row.StructScan(&dbg); err != nil {
-		return things.Group{}, err
+	if err = tx.Commit(); err != nil {
+		return []things.Group{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
-	return toGroup(dbg)
+	return gs, nil
 }
 
 func (gr groupRepository) Update(ctx context.Context, g things.Group) (things.Group, error) {
