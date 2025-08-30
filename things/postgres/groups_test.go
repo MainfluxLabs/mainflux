@@ -249,10 +249,7 @@ func TestRemoveGroup(t *testing.T) {
 	key, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	group1, err = groupRepo.Save(context.Background(), group1)
-	require.Nil(t, err, fmt.Sprintf("group save got unexpected error: %s", err))
-
-	group2, err = groupRepo.Save(context.Background(), group2)
+	_, err = groupRepo.Save(context.Background(), group1, group2)
 	require.Nil(t, err, fmt.Sprintf("group save got unexpected error: %s", err))
 
 	pr, err := profileRepo.Save(context.Background(), things.Profile{
@@ -503,14 +500,14 @@ func createGroup(t *testing.T, dbMiddleware dbutil.Database) things.Group {
 	grID := generateUUID(t)
 	orgID := generateUUID(t)
 
-	group, err := groupRepo.Save(context.Background(), things.Group{
+	groups, err := groupRepo.Save(context.Background(), things.Group{
 		ID:    grID,
 		OrgID: orgID,
 		Name:  groupName,
 	})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	return group
+	return groups[0]
 }
 
 func testSortGroups(t *testing.T, pm apiutil.PageMetadata, grs []things.Group) {

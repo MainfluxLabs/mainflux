@@ -250,7 +250,7 @@ func (svc *mainfluxThings) ListThingsByGroup(_ context.Context, token, groupID s
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CreateGroups(_ context.Context, token string, groups ...things.Group) ([]things.Group, error) {
+func (svc *mainfluxThings) CreateGroups(_ context.Context, token, orgID string, groups ...things.Group) ([]things.Group, error) {
 	panic("not implemented")
 }
 
