@@ -45,15 +45,20 @@ func NewGroupRepository(groupMembershipsRepo things.GroupMembershipsRepository) 
 	}
 }
 
-func (grm *groupRepositoryMock) Save(_ context.Context, group things.Group) (things.Group, error) {
+func (grm *groupRepositoryMock) Save(_ context.Context, groups ...things.Group) ([]things.Group, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
-	if _, ok := grm.groups[group.ID]; ok {
-		return things.Group{}, dbutil.ErrConflict
+
+	for _, gr := range groups {
+		if _, ok := grm.groups[gr.ID]; ok {
+			println("HHELO", gr.ID)
+			return []things.Group{}, dbutil.ErrConflict
+		}
+
+		grm.groups[gr.ID] = gr
 	}
 
-	grm.groups[group.ID] = group
-	return group, nil
+	return groups, nil
 }
 
 func (grm *groupRepositoryMock) Update(_ context.Context, group things.Group) (things.Group, error) {

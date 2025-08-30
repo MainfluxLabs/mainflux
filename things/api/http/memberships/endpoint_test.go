@@ -129,7 +129,7 @@ func TestCreateGroupMemberships(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
@@ -220,7 +220,8 @@ func TestRemoveGroupMemberships(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
@@ -313,7 +314,8 @@ func TestUpdateMemberships(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
@@ -422,7 +424,8 @@ func TestListGroupMemberships(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
@@ -638,7 +641,8 @@ func TestBackupGroupMemberships(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
@@ -733,7 +737,7 @@ func TestRestoreGroupMemberships(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), otherToken, group)
+	grs, err := svc.CreateGroups(context.Background(), otherToken, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
