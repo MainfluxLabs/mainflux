@@ -8,7 +8,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -19,7 +18,7 @@ import (
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
 	// CreateWebhooks creates webhooks for certain group identified by the provided ID
-	CreateWebhooks(ctx context.Context, token string, webhooks ...Webhook) ([]Webhook, error)
+	CreateWebhooks(ctx context.Context, token, thingID string, webhooks ...Webhook) ([]Webhook, error)
 
 	// ListWebhooksByGroup retrieves data about a subset of webhooks
 	// related to a certain group identified by the provided ID.
@@ -63,47 +62,37 @@ func New(things protomfx.ThingsServiceClient, webhooks WebhookRepository, forwar
 	}
 }
 
-func (ws *webhooksService) CreateWebhooks(ctx context.Context, token string, webhooks ...Webhook) ([]Webhook, error) {
+func (ws *webhooksService) CreateWebhooks(ctx context.Context, token, thingID string, webhooks ...Webhook) ([]Webhook, error) {
+	_, err := ws.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor})
+	if err != nil {
+		return []Webhook{}, err
+	}
+
+	grID, err := ws.things.GetGroupIDByThingID(ctx, &protomfx.ThingID{Value: thingID})
+	if err != nil {
+		return []Webhook{}, err
+	}
+
 	whs := []Webhook{}
-	for _, webhook := range webhooks {
-		wh, err := ws.createWebhook(ctx, &webhook, token)
+	for _, wh := range webhooks {
+		wh.GroupID = grID.GetValue()
+		wh.ThingID = thingID
+
+		id, err := ws.idProvider.ID()
 		if err != nil {
 			return []Webhook{}, err
 		}
+		wh.ID = id
+
 		whs = append(whs, wh)
 	}
 
+	whs, err = ws.webhooks.Save(ctx, whs...)
+	if err != nil {
+		return []Webhook{}, err
+	}
+
 	return whs, nil
-}
-
-func (ws *webhooksService) createWebhook(ctx context.Context, webhook *Webhook, token string) (Webhook, error) {
-	_, err := ws.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: webhook.ThingID, Action: things.Editor})
-	if err != nil {
-		return Webhook{}, err
-	}
-
-	grID, err := ws.things.GetGroupIDByThingID(ctx, &protomfx.ThingID{Value: webhook.ThingID})
-	if err != nil {
-		return Webhook{}, err
-	}
-	webhook.GroupID = grID.GetValue()
-
-	id, err := ws.idProvider.ID()
-	if err != nil {
-		return Webhook{}, err
-	}
-	webhook.ID = id
-
-	whs, err := ws.webhooks.Save(ctx, *webhook)
-	if err != nil {
-		return Webhook{}, err
-	}
-
-	if len(whs) == 0 {
-		return Webhook{}, dbutil.ErrCreateEntity
-	}
-
-	return whs[0], nil
 }
 
 func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (WebhooksPage, error) {
