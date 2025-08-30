@@ -24,14 +24,13 @@ func createGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 		for _, g := range req.Groups {
 			group := things.Group{
 				Name:        g.Name,
-				OrgID:       req.orgID,
 				Description: g.Description,
 				Metadata:    g.Metadata,
 			}
 			grs = append(grs, group)
 		}
 
-		groups, err := svc.CreateGroups(ctx, req.token, grs...)
+		groups, err := svc.CreateGroups(ctx, req.token, req.orgID, grs...)
 		if err != nil {
 			return nil, err
 		}

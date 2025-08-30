@@ -222,7 +222,8 @@ func TestViewGroup(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
@@ -302,7 +303,8 @@ func TestViewGroupByThing(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
@@ -392,7 +394,8 @@ func TestViewGroupByProfile(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
@@ -477,7 +480,8 @@ func TestUpdateGroup(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	grID := grs[0].ID
 
@@ -589,7 +593,8 @@ func TestListGroups(t *testing.T) {
 	for i := uint64(0); i < n; i++ {
 		group.Name = fmt.Sprintf("group-%d", i)
 		group.Description = fmt.Sprintf("desc-%d", i)
-		grs, err := svc.CreateGroups(context.Background(), token, group)
+		grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 		gr := grs[0]
 
@@ -726,7 +731,8 @@ func TestListGroupsByOrg(t *testing.T) {
 	for i := uint64(0); i < n; i++ {
 		group.Name = fmt.Sprintf("group-%d", i)
 		group.Description = fmt.Sprintf("desc-%d", i)
-		grs, err := svc.CreateGroups(context.Background(), token, group)
+		grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 		gr := grs[0]
 
@@ -863,7 +869,7 @@ func TestSearchGroups(t *testing.T) {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 		gr := things.Group{ID: id, OrgID: orgID, Name: name, Description: "desc", Metadata: metadata}
 
-		grs, err := svc.CreateGroups(context.Background(), token, gr)
+		grs, err := svc.CreateGroups(context.Background(), token, orgID, gr)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		group := grs[0]
 
@@ -1006,7 +1012,7 @@ func TestSearchGroupsByOrg(t *testing.T) {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 		gr := things.Group{ID: id, OrgID: orgID, Name: name, Description: "desc", Metadata: metadata}
 
-		grs, err := svc.CreateGroups(context.Background(), token, gr)
+		grs, err := svc.CreateGroups(context.Background(), token, orgID, gr)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		group := grs[0]
 
@@ -1149,7 +1155,7 @@ func TestBackupGroupsByOrg(t *testing.T) {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 		gr := things.Group{ID: id, OrgID: orgID, Name: name, Description: "desc", Metadata: metadata}
 
-		grs, err := svc.CreateGroups(context.Background(), token, gr)
+		grs, err := svc.CreateGroups(context.Background(), token, orgID, gr)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		group := grs[0]
 
@@ -1341,7 +1347,8 @@ func TestRemoveGroups(t *testing.T) {
 			Name:        "test-group-" + num,
 			Description: "test group desc",
 		}
-		grs, err := svc.CreateGroups(context.Background(), token, group)
+		grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		gr := grs[0]
 

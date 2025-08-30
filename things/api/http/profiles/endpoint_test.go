@@ -142,7 +142,7 @@ func TestCreateProfiles(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
@@ -245,7 +245,7 @@ func TestUpdateProfile(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
@@ -370,7 +370,7 @@ func TestViewProfile(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
@@ -451,7 +451,7 @@ func TestListProfiles(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
@@ -638,9 +638,9 @@ func TestListProfilesByOrg(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), adminToken, group)
+	grs, err := svc.CreateGroups(context.Background(), adminToken, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	grs2, err := svc.CreateGroups(context.Background(), otherToken, group)
+	grs2, err := svc.CreateGroups(context.Background(), otherToken, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr, gr2 := grs[0], grs2[0]
 
@@ -848,7 +848,7 @@ func TestSearchProfiles(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
@@ -995,7 +995,7 @@ func TestSearchProfilesByGroup(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
@@ -1142,7 +1142,7 @@ func TestSearchProfilesByOrg(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
@@ -1289,7 +1289,7 @@ func TestBackupProfilesByOrg(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), otherToken, group)
+	grs, err := svc.CreateGroups(context.Background(), otherToken, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
@@ -1387,7 +1387,7 @@ func TestRestoreProfilesByOrg(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), otherToken, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
@@ -1489,7 +1489,7 @@ func TestBackupProfilesByGroup(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), otherToken, group)
+	grs, err := svc.CreateGroups(context.Background(), otherToken, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
@@ -1587,7 +1587,7 @@ func TestRestoreProfilesByGroup(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), otherToken, group)
+	grs, err := svc.CreateGroups(context.Background(), otherToken, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
@@ -1689,7 +1689,7 @@ func TestViewProfileByThing(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
@@ -1776,7 +1776,7 @@ func TestRemoveProfile(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grID := grs[0].ID
 
@@ -1844,7 +1844,7 @@ func TestRemoveProfiles(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grID := grs[0].ID
 
