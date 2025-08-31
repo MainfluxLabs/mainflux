@@ -28,7 +28,8 @@ var (
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
-	// CreateThings adds things with profile and group IDs to the user identified by the provided token.
+	// CreateThings adds things to the user identified by the token.
+	// The group ID for each thing is assigned based on the provided profile ID.
 	CreateThings(ctx context.Context, token, profileID string, things ...Thing) ([]Thing, error)
 
 	// UpdateThing updates the thing identified by the provided ID, that
@@ -75,7 +76,8 @@ type Service interface {
 	// belongs to the user identified by the provided key.
 	RemoveThings(ctx context.Context, token string, id ...string) error
 
-	// CreateProfiles adds profiles to the user identified by the provided key.
+	// CreateProfiles adds profiles to the user identified by the token.
+	// The group ID is assigned to each profile.
 	CreateProfiles(ctx context.Context, token, groupID string, profiles ...Profile) ([]Profile, error)
 
 	// UpdateProfile updates the profile identified by the provided ID, that
