@@ -453,17 +453,19 @@ func TestListProfiles(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	profiles := []profileRes{}
+	profiles := make([]things.Profile, n)
 	for i := 0; i < n; i++ {
 		name := "name_" + fmt.Sprintf("%03d", i+1)
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
-		pr := things.Profile{ID: id, Name: name, Metadata: metadata}
+		profiles[i] = things.Profile{ID: id, Name: name, Metadata: metadata}
+	}
 
-		prs, err := svc.CreateProfiles(context.Background(), token, gr.ID, pr)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		profile := prs[0]
+	prs, err := svc.CreateProfiles(context.Background(), token, gr.ID, profiles...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		profiles = append(profiles, profileRes{
+	data := []profileRes{}
+	for _, profile := range prs {
+		data = append(data, profileRes{
 			ID:       profile.ID,
 			Name:     profile.Name,
 			Metadata: profile.Metadata,
@@ -485,7 +487,7 @@ func TestListProfiles(t *testing.T) {
 			auth:   token,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s?offset=%d&limit=%d", profileURL, 0, 6),
-			res:    profiles[0:6],
+			res:    data[0:6],
 		},
 		{
 			desc:   "get a list of profiles with invalid token",
@@ -527,21 +529,21 @@ func TestListProfiles(t *testing.T) {
 			auth:   token,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s?limit=%d", profileURL, 5),
-			res:    profiles[0:5],
+			res:    data[0:5],
 		},
 		{
 			desc:   "get a list of profiles without limit",
 			auth:   token,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s?offset=%d", profileURL, 1),
-			res:    profiles[1:11],
+			res:    data[1:11],
 		},
 		{
 			desc:   "get a list of profiles with redundant query params",
 			auth:   token,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s?offset=%d&limit=%d&value=something", profileURL, 0, 5),
-			res:    profiles[0:5],
+			res:    data[0:5],
 		},
 		{
 			desc:   "get a list of profiles with limit greater than max",
@@ -555,7 +557,7 @@ func TestListProfiles(t *testing.T) {
 			auth:   token,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s%s", profileURL, emptyValue),
-			res:    profiles[0:10],
+			res:    data[0:10],
 		},
 		{
 			desc:   "get a list of profiles with invalid number of params",
@@ -590,14 +592,14 @@ func TestListProfiles(t *testing.T) {
 			auth:   token,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s?offset=%d&limit=%d&order=%s&dir=%s", profileURL, 0, 6, nameKey, ascKey),
-			res:    profiles[0:6],
+			res:    data[0:6],
 		},
 		{
 			desc:   "get a list of profiles sorted by name descendent",
 			auth:   token,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s?offset=%d&limit=%d&order=%s&dir=%s", profileURL, 0, 6, nameKey, descKey),
-			res:    profiles[0:6],
+			res:    data[0:6],
 		},
 		{
 			desc:   "get a list of profiles sorted with invalid order",
@@ -642,17 +644,19 @@ func TestListProfilesByOrg(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr, gr2 := grs[0], grs2[0]
 
-	data := []profileRes{}
+	profiles := make([]things.Profile, n)
 	for i := 0; i < n; i++ {
 		suffix := i + 1
 		name := "name_" + fmt.Sprintf("%03d", suffix)
 		id := fmt.Sprintf("%s%012d", prefix, suffix)
-		pr := things.Profile{ID: id, Name: name, Metadata: metadata}
+		profiles[i] = things.Profile{ID: id, Name: name, Metadata: metadata}
+	}
 
-		prs, err := svc.CreateProfiles(context.Background(), adminToken, gr.ID, pr)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		profile := prs[0]
+	prs, err := svc.CreateProfiles(context.Background(), adminToken, gr.ID, profiles...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	data := []profileRes{}
+	for _, profile := range prs {
 		data = append(data, profileRes{
 			ID:       profile.ID,
 			Name:     profile.Name,
@@ -662,17 +666,19 @@ func TestListProfilesByOrg(t *testing.T) {
 		})
 	}
 
-	data2 := []profileRes{}
+	profiles2 := make([]things.Profile, n)
 	for i := 0; i < n; i++ {
 		suffix := n + i + 1
 		name := "name_" + fmt.Sprintf("%03d", suffix)
 		id := fmt.Sprintf("%s%012d", prefix, suffix)
-		pr := things.Profile{ID: id, Name: name, Metadata: metadata}
+		profiles2[i] = things.Profile{ID: id, Name: name, Metadata: metadata}
+	}
 
-		prs, err := svc.CreateProfiles(context.Background(), otherToken, gr2.ID, pr)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		profile := prs[0]
+	prs2, err := svc.CreateProfiles(context.Background(), otherToken, gr2.ID, profiles2...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	data2 := []profileRes{}
+	for _, profile := range prs2 {
 		data2 = append(data2, profileRes{
 			ID:       profile.ID,
 			Name:     profile.Name,
@@ -681,6 +687,7 @@ func TestListProfilesByOrg(t *testing.T) {
 			Config:   profile.Config,
 		})
 	}
+
 	profileURL := fmt.Sprintf("%s/orgs", ts.URL)
 
 	cases := []struct {
@@ -850,17 +857,20 @@ func TestSearchProfiles(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	profiles := []profileRes{}
+	profiles := make([]things.Profile, n)
 	for i := 0; i < n; i++ {
-		name := fmt.Sprintf("name_%03d", i+1)
-		id := fmt.Sprintf("%s%012d", prefix, i+1)
-		pr := things.Profile{ID: id, Name: name, Metadata: metadata}
+		suffix := i + 1
+		name := "name_" + fmt.Sprintf("%03d", suffix)
+		id := fmt.Sprintf("%s%012d", prefix, suffix)
+		profiles[i] = things.Profile{ID: id, Name: name, Metadata: metadata}
+	}
 
-		prs, err := svc.CreateProfiles(context.Background(), token, gr.ID, pr)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		profile := prs[0]
+	prs, err := svc.CreateProfiles(context.Background(), adminToken, gr.ID, profiles...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		profiles = append(profiles, profileRes{
+	data := []profileRes{}
+	for _, profile := range prs {
+		data = append(data, profileRes{
 			ID:       profile.ID,
 			Name:     profile.Name,
 			Metadata: profile.Metadata,
@@ -881,21 +891,21 @@ func TestSearchProfiles(t *testing.T) {
 			auth:   token,
 			status: http.StatusOK,
 			req:    validData,
-			res:    profiles[0:5],
+			res:    data[0:5],
 		},
 		{
 			desc:   "search profiles ordered by name asc",
 			auth:   token,
 			status: http.StatusOK,
 			req:    ascData,
-			res:    profiles[0:5],
+			res:    data[0:5],
 		},
 		{
 			desc:   "search profiles ordered by name desc",
 			auth:   token,
 			status: http.StatusOK,
 			req:    descData,
-			res:    profiles[0:5],
+			res:    data[0:5],
 		},
 		{
 			desc:   "search profiles with invalid order",
@@ -937,7 +947,7 @@ func TestSearchProfiles(t *testing.T) {
 			auth:   token,
 			status: http.StatusOK,
 			req:    zeroLimitData,
-			res:    profiles[0:10],
+			res:    data[0:10],
 		},
 		{
 			desc:   "search profiles with limit greater than max",
@@ -958,14 +968,14 @@ func TestSearchProfiles(t *testing.T) {
 			auth:   token,
 			status: http.StatusOK,
 			req:    emptyJson,
-			res:    profiles[0:10],
+			res:    data[0:10],
 		},
 		{
 			desc:   "search profiles with no body",
 			auth:   token,
 			status: http.StatusOK,
 			req:    emptyValue,
-			res:    profiles[0:10],
+			res:    data[0:10],
 		},
 	}
 
@@ -997,17 +1007,20 @@ func TestSearchProfilesByGroup(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	profiles := []profileRes{}
+	profiles := make([]things.Profile, n)
 	for i := 0; i < n; i++ {
-		name := fmt.Sprintf("name_%03d", i+1)
-		id := fmt.Sprintf("%s%012d", prefix, i+1)
-		pr := things.Profile{ID: id, Name: name, Metadata: metadata}
+		suffix := i + 1
+		name := "name_" + fmt.Sprintf("%03d", suffix)
+		id := fmt.Sprintf("%s%012d", prefix, suffix)
+		profiles[i] = things.Profile{ID: id, Name: name, Metadata: metadata}
+	}
 
-		prs, err := svc.CreateProfiles(context.Background(), token, gr.ID, pr)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		profile := prs[0]
+	prs, err := svc.CreateProfiles(context.Background(), adminToken, gr.ID, profiles...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		profiles = append(profiles, profileRes{
+	data := []profileRes{}
+	for _, profile := range prs {
+		data = append(data, profileRes{
 			ID:       profile.ID,
 			Name:     profile.Name,
 			Metadata: profile.Metadata,
@@ -1028,21 +1041,21 @@ func TestSearchProfilesByGroup(t *testing.T) {
 			auth:   token,
 			status: http.StatusOK,
 			req:    validData,
-			res:    profiles[0:5],
+			res:    data[0:5],
 		},
 		{
 			desc:   "search profiles by group ordered by name asc",
 			auth:   token,
 			status: http.StatusOK,
 			req:    ascData,
-			res:    profiles[0:5],
+			res:    data[0:5],
 		},
 		{
 			desc:   "search profiles by group ordered by name desc",
 			auth:   token,
 			status: http.StatusOK,
 			req:    descData,
-			res:    profiles[0:5],
+			res:    data[0:5],
 		},
 		{
 			desc:   "search profiles by group with invalid order",
@@ -1084,7 +1097,7 @@ func TestSearchProfilesByGroup(t *testing.T) {
 			auth:   token,
 			status: http.StatusOK,
 			req:    zeroLimitData,
-			res:    profiles[0:10],
+			res:    data[0:10],
 		},
 		{
 			desc:   "search profiles by group with limit greater than max",
@@ -1105,14 +1118,14 @@ func TestSearchProfilesByGroup(t *testing.T) {
 			auth:   token,
 			status: http.StatusOK,
 			req:    emptyJson,
-			res:    profiles[0:10],
+			res:    data[0:10],
 		},
 		{
 			desc:   "search profiles by group with no body",
 			auth:   token,
 			status: http.StatusOK,
 			req:    emptyValue,
-			res:    profiles[0:10],
+			res:    data[0:10],
 		},
 	}
 
@@ -1144,17 +1157,20 @@ func TestSearchProfilesByOrg(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	profiles := []profileRes{}
+	profiles := make([]things.Profile, n)
 	for i := 0; i < n; i++ {
-		name := fmt.Sprintf("name_%03d", i+1)
-		id := fmt.Sprintf("%s%012d", prefix, i+1)
-		pr := things.Profile{ID: id, Name: name, Metadata: metadata}
+		suffix := i + 1
+		name := "name_" + fmt.Sprintf("%03d", suffix)
+		id := fmt.Sprintf("%s%012d", prefix, suffix)
+		profiles[i] = things.Profile{ID: id, Name: name, Metadata: metadata}
+	}
 
-		prs, err := svc.CreateProfiles(context.Background(), token, gr.ID, pr)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		profile := prs[0]
+	prs, err := svc.CreateProfiles(context.Background(), adminToken, gr.ID, profiles...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		profiles = append(profiles, profileRes{
+	data := []profileRes{}
+	for _, profile := range prs {
+		data = append(data, profileRes{
 			ID:       profile.ID,
 			Name:     profile.Name,
 			Metadata: profile.Metadata,
@@ -1175,21 +1191,21 @@ func TestSearchProfilesByOrg(t *testing.T) {
 			auth:   token,
 			status: http.StatusOK,
 			req:    validData,
-			res:    profiles[0:5],
+			res:    data[0:5],
 		},
 		{
 			desc:   "search profiles by org ordered by name asc",
 			auth:   token,
 			status: http.StatusOK,
 			req:    ascData,
-			res:    profiles[0:5],
+			res:    data[0:5],
 		},
 		{
 			desc:   "search profiles by org ordered by name desc",
 			auth:   token,
 			status: http.StatusOK,
 			req:    descData,
-			res:    profiles[0:5],
+			res:    data[0:5],
 		},
 		{
 			desc:   "search profiles by org with invalid order",
@@ -1231,7 +1247,7 @@ func TestSearchProfilesByOrg(t *testing.T) {
 			auth:   token,
 			status: http.StatusOK,
 			req:    zeroLimitData,
-			res:    profiles[0:10],
+			res:    data[0:10],
 		},
 		{
 			desc:   "search profiles by org with limit greater than max",
@@ -1252,14 +1268,14 @@ func TestSearchProfilesByOrg(t *testing.T) {
 			auth:   token,
 			status: http.StatusOK,
 			req:    emptyJson,
-			res:    profiles[0:10],
+			res:    data[0:10],
 		},
 		{
 			desc:   "search profiles by org with no body",
 			auth:   token,
 			status: http.StatusOK,
 			req:    emptyValue,
-			res:    profiles[0:10],
+			res:    data[0:10],
 		},
 	}
 
@@ -1291,17 +1307,19 @@ func TestBackupProfilesByOrg(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	data := []profileRes{}
+	profiles := make([]things.Profile, n)
 	for i := 0; i < n; i++ {
 		suffix := i + 1
 		name := "name_" + fmt.Sprintf("%03d", suffix)
 		id := fmt.Sprintf("%s%012d", prefix, suffix)
-		pr := things.Profile{ID: id, Name: name, Metadata: metadata}
+		profiles[i] = things.Profile{ID: id, Name: name, Metadata: metadata}
+	}
 
-		prs, err := svc.CreateProfiles(context.Background(), adminToken, gr.ID, pr)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		profile := prs[0]
+	prs, err := svc.CreateProfiles(context.Background(), adminToken, gr.ID, profiles...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	data := []profileRes{}
+	for _, profile := range prs {
 		data = append(data, profileRes{
 			ID:       profile.ID,
 			Name:     profile.Name,
@@ -1389,19 +1407,25 @@ func TestRestoreProfilesByOrg(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	data := []profileRes{}
+	profiles := make([]things.Profile, n)
 	for i := 0; i < n; i++ {
 		suffix := i + 1
 		name := "name_" + fmt.Sprintf("%03d", suffix)
 		id := fmt.Sprintf("%s%012d", prefix, suffix)
-		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: metadata}
+		profiles[i] = things.Profile{ID: id, Name: name, Metadata: metadata}
+	}
 
+	prs, err := svc.CreateProfiles(context.Background(), adminToken, gr.ID, profiles...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	data := []profileRes{}
+	for _, profile := range prs {
 		data = append(data, profileRes{
-			ID:       pr.ID,
-			Name:     pr.Name,
-			Metadata: pr.Metadata,
-			GroupID:  pr.GroupID,
-			Config:   pr.Config,
+			ID:       profile.ID,
+			Name:     profile.Name,
+			Metadata: profile.Metadata,
+			GroupID:  profile.GroupID,
+			Config:   profile.Config,
 		})
 	}
 
@@ -1491,18 +1515,19 @@ func TestBackupProfilesByGroup(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	data := []profileRes{}
+	profilesToCreate := make([]things.Profile, n)
 	for i := 0; i < n; i++ {
-		suffix := i + 1
-		name := "name_" + fmt.Sprintf("%03d", suffix)
-		id := fmt.Sprintf("%s%012d", prefix, suffix)
-		pr := things.Profile{ID: id, Name: name, Metadata: metadata}
+		name := "name_" + fmt.Sprintf("%03d", i+1)
+		id := fmt.Sprintf("%s%012d", prefix, i+1)
+		profilesToCreate[i] = things.Profile{ID: id, Name: name, Metadata: metadata}
+	}
 
-		prs, err := svc.CreateProfiles(context.Background(), adminToken, gr.ID, pr)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		profile := prs[0]
+	prs, err := svc.CreateProfiles(context.Background(), token, gr.ID, profilesToCreate...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		data = append(data, profileRes{
+	profiles := []profileRes{}
+	for _, profile := range prs {
+		profiles = append(profiles, profileRes{
 			ID:       profile.ID,
 			Name:     profile.Name,
 			Metadata: profile.Metadata,
@@ -1525,7 +1550,7 @@ func TestBackupProfilesByGroup(t *testing.T) {
 			auth:   token,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
-			res:    data,
+			res:    profiles,
 		},
 		{
 			desc:   "backup profiles by group the user belongs to",
@@ -1539,7 +1564,7 @@ func TestBackupProfilesByGroup(t *testing.T) {
 			auth:   adminToken,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s/%s/profiles/backup", profileURL, gr.ID),
-			res:    data,
+			res:    profiles,
 		},
 		{
 			desc:   "backup profiles by group without group id",
@@ -1589,19 +1614,25 @@ func TestRestoreProfilesByGroup(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	data := []profileRes{}
+	profiles := make([]things.Profile, n)
 	for i := 0; i < n; i++ {
 		suffix := i + 1
 		name := "name_" + fmt.Sprintf("%03d", suffix)
 		id := fmt.Sprintf("%s%012d", prefix, suffix)
-		pr := things.Profile{ID: id, GroupID: gr.ID, Name: name, Metadata: metadata}
+		profiles[i] = things.Profile{ID: id, Name: name, Metadata: metadata}
+	}
 
+	prs, err := svc.CreateProfiles(context.Background(), adminToken, gr.ID, profiles...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	data := []profileRes{}
+	for _, profile := range prs {
 		data = append(data, profileRes{
-			ID:       pr.ID,
-			Name:     pr.Name,
-			Metadata: pr.Metadata,
-			GroupID:  pr.GroupID,
-			Config:   pr.Config,
+			ID:       profile.ID,
+			Name:     profile.Name,
+			Metadata: profile.Metadata,
+			GroupID:  profile.GroupID,
+			Config:   profile.Config,
 		})
 	}
 
