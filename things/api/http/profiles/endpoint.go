@@ -27,13 +27,12 @@ func createProfilesEndpoint(svc things.Service) endpoint.Endpoint {
 				Name:     c.Name,
 				ID:       c.ID,
 				Config:   c.Config,
-				GroupID:  req.groupID,
 				Metadata: c.Metadata,
 			}
 			prs = append(prs, pr)
 		}
 
-		saved, err := svc.CreateProfiles(ctx, req.token, prs...)
+		saved, err := svc.CreateProfiles(ctx, req.token, req.groupID, prs...)
 		if err != nil {
 			return nil, err
 		}
