@@ -18,8 +18,8 @@ import (
 
 // Service represents a notification service.
 type Service interface {
-	// CreateNotifiers creates notifiers for certain group identified by the provided ID
-	CreateNotifiers(ctx context.Context, token string, notifiers ...Notifier) ([]Notifier, error)
+	// CreateNotifiers creates notifiers for certain group identified by the group ID
+	CreateNotifiers(ctx context.Context, token, groupID string, notifiers ...Notifier) ([]Notifier, error)
 
 	// ListNotifiersByGroup retrieves data about a subset of notifiers
 	// related to a certain group identified by the provided ID.
@@ -97,45 +97,33 @@ func (ns *notifierService) Consume(message interface{}) error {
 	return nil
 }
 
-func (ns *notifierService) CreateNotifiers(ctx context.Context, token string, notifiers ...Notifier) ([]Notifier, error) {
-	nfs := []Notifier{}
-	for _, notifier := range notifiers {
-		if err := ns.sender.ValidateContacts(notifier.Contacts); err != nil {
+func (ns *notifierService) CreateNotifiers(ctx context.Context, token, groupID string, notifiers ...Notifier) ([]Notifier, error) {
+	for i := range notifiers {
+		if err := ns.sender.ValidateContacts(notifiers[i].Contacts); err != nil {
 			return []Notifier{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 		}
+	}
 
-		nf, err := ns.createNotifier(ctx, &notifier, token)
+	_, err := ns.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Editor})
+	if err != nil {
+		return []Notifier{}, errors.Wrap(errors.ErrAuthorization, err)
+	}
+
+	for i := range notifiers {
+		id, err := ns.idp.ID()
 		if err != nil {
 			return []Notifier{}, err
 		}
-		nfs = append(nfs, nf)
+		notifiers[i].ID = id
+		notifiers[i].GroupID = groupID
+	}
+
+	nfs, err := ns.notifierRepo.Save(ctx, notifiers...)
+	if err != nil {
+		return []Notifier{}, err
 	}
 
 	return nfs, nil
-}
-
-func (ns *notifierService) createNotifier(ctx context.Context, notifier *Notifier, token string) (Notifier, error) {
-	_, err := ns.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: notifier.GroupID, Action: things.Editor})
-	if err != nil {
-		return Notifier{}, errors.Wrap(errors.ErrAuthorization, err)
-	}
-
-	id, err := ns.idp.ID()
-	if err != nil {
-		return Notifier{}, err
-	}
-	notifier.ID = id
-
-	nfs, err := ns.notifierRepo.Save(ctx, *notifier)
-	if err != nil {
-		return Notifier{}, err
-	}
-
-	if len(nfs) == 0 {
-		return Notifier{}, dbutil.ErrCreateEntity
-	}
-
-	return nfs[0], nil
 }
 
 func (ns *notifierService) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (NotifiersPage, error) {

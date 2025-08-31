@@ -20,7 +20,6 @@ func createNotifiersEndpoint(svc notifiers.Service) endpoint.Endpoint {
 		var nfs []notifiers.Notifier
 		for _, nReq := range req.Notifiers {
 			nf := notifiers.Notifier{
-				GroupID:  req.groupID,
 				Name:     nReq.Name,
 				Contacts: nReq.Contacts,
 				Metadata: nReq.Metadata,
@@ -28,7 +27,7 @@ func createNotifiersEndpoint(svc notifiers.Service) endpoint.Endpoint {
 			nfs = append(nfs, nf)
 		}
 
-		saved, err := svc.CreateNotifiers(ctx, req.token, nfs...)
+		saved, err := svc.CreateNotifiers(ctx, req.token, req.groupID, nfs...)
 		if err != nil {
 			return nil, err
 		}
