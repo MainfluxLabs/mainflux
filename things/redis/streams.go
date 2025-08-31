@@ -169,8 +169,8 @@ func (es eventStore) RemoveThings(ctx context.Context, token string, ids ...stri
 	return nil
 }
 
-func (es eventStore) CreateProfiles(ctx context.Context, token string, profiles ...things.Profile) ([]things.Profile, error) {
-	sprs, err := es.svc.CreateProfiles(ctx, token, profiles...)
+func (es eventStore) CreateProfiles(ctx context.Context, token, grID string, profiles ...things.Profile) ([]things.Profile, error) {
+	sprs, err := es.svc.CreateProfiles(ctx, token, grID, profiles...)
 	if err != nil {
 		return sprs, err
 	}

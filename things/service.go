@@ -9,7 +9,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -29,7 +28,8 @@ var (
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
-	// CreateThings adds things to the user identified by the provided key.
+	// CreateThings adds things to the user identified by the token.
+	// The group ID for each thing is assigned based on the provided profile ID.
 	CreateThings(ctx context.Context, token, profileID string, things ...Thing) ([]Thing, error)
 
 	// UpdateThing updates the thing identified by the provided ID, that
@@ -76,8 +76,9 @@ type Service interface {
 	// belongs to the user identified by the provided key.
 	RemoveThings(ctx context.Context, token string, id ...string) error
 
-	// CreateProfiles adds profiles to the user identified by the provided key.
-	CreateProfiles(ctx context.Context, token string, profiles ...Profile) ([]Profile, error)
+	// CreateProfiles adds profiles to the user identified by the token.
+	// The group ID is assigned to each profile.
+	CreateProfiles(ctx context.Context, token, groupID string, profiles ...Profile) ([]Profile, error)
 
 	// UpdateProfile updates the profile identified by the provided ID, that
 	// belongs to the user identified by the provided key.
@@ -532,45 +533,33 @@ func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...
 	return nil
 }
 
-func (ts *thingsService) CreateProfiles(ctx context.Context, token string, profiles ...Profile) ([]Profile, error) {
-	prs := []Profile{}
-	for _, profile := range profiles {
-		ar := UserAccessReq{
-			Token:  token,
-			ID:     profile.GroupID,
-			Action: Editor,
-		}
-		if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
-			return nil, err
-		}
-
-		pr, err := ts.createProfile(ctx, &profile)
-		if err != nil {
-			return []Profile{}, err
-		}
-		prs = append(prs, pr)
+func (ts *thingsService) CreateProfiles(ctx context.Context, token, groupID string, profiles ...Profile) ([]Profile, error) {
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     groupID,
+		Action: Editor,
 	}
-	return prs, nil
-}
-
-func (ts *thingsService) createProfile(ctx context.Context, profile *Profile) (Profile, error) {
-	if profile.ID == "" {
-		prID, err := ts.idProvider.ID()
-		if err != nil {
-			return Profile{}, err
-		}
-		profile.ID = prID
+	if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
+		return nil, err
 	}
 
-	prs, err := ts.profiles.Save(ctx, *profile)
+	for i := range profiles {
+		profiles[i].GroupID = groupID
+		if profiles[i].ID == "" {
+			prID, err := ts.idProvider.ID()
+			if err != nil {
+				return []Profile{}, err
+			}
+			profiles[i].ID = prID
+		}
+	}
+
+	prs, err := ts.profiles.Save(ctx, profiles...)
 	if err != nil {
-		return Profile{}, err
-	}
-	if len(prs) == 0 {
-		return Profile{}, dbutil.ErrCreateEntity
+		return []Profile{}, err
 	}
 
-	return prs[0], nil
+	return prs, nil
 }
 
 func (ts *thingsService) UpdateProfile(ctx context.Context, token string, profile Profile) error {
