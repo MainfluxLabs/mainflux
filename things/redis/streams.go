@@ -290,6 +290,14 @@ func (es eventStore) GetProfileIDByThingID(ctx context.Context, thingID string) 
 	return es.svc.GetProfileIDByThingID(ctx, thingID)
 }
 
+func (es eventStore) GetGroupIDsByOrg(ctx context.Context, orgID string) ([]string, error) {
+	return es.svc.GetGroupIDsByOrg(ctx, orgID)
+}
+
+func (es eventStore) GetGroupIDsByOrgMembership(ctx context.Context, orgID, memberID string) ([]string, error) {
+	return es.svc.GetGroupIDsByOrgMembership(ctx, orgID, memberID)
+}
+
 func (es eventStore) ListThingsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	return es.svc.ListThingsByGroup(ctx, token, groupID, pm)
 }

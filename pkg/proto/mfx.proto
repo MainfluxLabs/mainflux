@@ -28,6 +28,8 @@ service ThingsService {
     rpc GetGroupIDByThingID(ThingID) returns (GroupID) {}
     rpc GetGroupIDByProfileID(ProfileID) returns (GroupID) {}
     rpc GetProfileIDByThingID(ThingID) returns (ProfileID) {}
+    rpc GetGroupIDsByOrg(OrgID) returns (GroupIDs) {}
+    rpc GetGroupIDsByOrgMembership(OrgMembershipReq) returns (GroupIDs) {}
 }
 
 service UsersService {
@@ -89,6 +91,10 @@ message ProfileID {
 
 message GroupID {
     string value = 1;
+}
+
+message GroupIDs {
+    repeated string ids = 1;
 }
 
 message OrgID {
@@ -175,4 +181,9 @@ message RetrieveRoleReq {
 
 message RetrieveRoleRes {
     string role = 1;
+}
+
+message OrgMembershipReq {
+    string org_id = 1;
+    string user_id = 2;
 }

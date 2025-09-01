@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
+	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/consumers/alarms/api"
@@ -65,6 +66,8 @@ const (
 	defServerKey         = ""
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
+	defAuthGRPCURL       = "localhost:8181"
+	defAuthGRPCTimeout   = "1s"
 
 	envBrokerURL         = "MF_BROKER_URL"
 	envLogLevel          = "MF_ALARMS_LOG_LEVEL"
@@ -85,6 +88,8 @@ const (
 	envJaegerURL         = "MF_JAEGER_URL"
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
+	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
@@ -93,8 +98,10 @@ type config struct {
 	dbConfig          postgres.Config
 	httpConfig        servers.Config
 	thingsConfig      clients.Config
+	authConfig        clients.Config
 	jaegerURL         string
 	thingsGRPCTimeout time.Duration
+	authGRPCTimeout   time.Duration
 }
 
 func main() {
@@ -128,10 +135,18 @@ func main() {
 
 	things := thingsapi.NewClient(thingsConn, thingsTracer, cfg.thingsGRPCTimeout)
 
+	authTracer, authCloser := jaeger.Init("alarms_auth", cfg.jaegerURL, logger)
+	defer authCloser.Close()
+
+	authConn := clientsgrpc.Connect(cfg.authConfig, logger)
+	defer authConn.Close()
+
+	auth := authapi.NewClient(authConn, authTracer, cfg.authGRPCTimeout)
+
 	dbTracer, dbCloser := jaeger.Init("alarms_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(things, dbTracer, db, logger)
+	svc := newService(auth, things, dbTracer, db, logger)
 
 	if err = consumers.Start(svcName, pubSub, svc, brokers.SubjectAlarm); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Alarm: %s", err))
@@ -165,6 +180,11 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
 
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
+	}
+
 	dbConfig := postgres.Config{
 		Host:        mainflux.Env(envDBHost, defDBHost),
 		Port:        mainflux.Env(envDBPort, defDBPort),
@@ -192,14 +212,23 @@ func loadConfig() config {
 		ClientName: clients.Things,
 	}
 
+	authConfig := clients.Config{
+		ClientTLS:  tls,
+		CaCerts:    mainflux.Env(envCACerts, defCACerts),
+		URL:        mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		ClientName: clients.Auth,
+	}
+
 	return config{
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:          dbConfig,
 		httpConfig:        httpConfig,
 		thingsConfig:      thingsConfig,
+		authConfig:        authConfig,
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsAuthGRPCTimeout,
+		authGRPCTimeout:   authGRPCTimeout,
 	}
 }
 
@@ -212,13 +241,13 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(ts protomfx.ThingsServiceClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) alarms.Service {
+func newService(as protomfx.AuthServiceClient, ts protomfx.ThingsServiceClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) alarms.Service {
 	database := dbutil.NewDatabase(db)
 	alarmsRepo := postgres.NewAlarmRepository(database)
 	alarmsRepo = tracing.AlarmRepositoryMiddleware(dbTracer, alarmsRepo)
 	idProvider := uuid.New()
 
-	svc := alarms.New(ts, alarmsRepo, idProvider)
+	svc := alarms.New(as, ts, alarmsRepo, idProvider)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

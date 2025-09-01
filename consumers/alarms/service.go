@@ -74,10 +74,12 @@ func (as *alarmService) ListAlarmsByThing(ctx context.Context, token, thingID st
 
 func (as *alarmService) ListAlarmsByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
 	if err := as.isAdmin(ctx, token); err == nil {
-		if grIDs, err := as.things.RetrieveIDsByOrg(ctx, orgID); err == nil {
-			return as.alarms.RetrieveByGroups(ctx, grIDs, pm)
+		res, err := as.things.GetGroupIDsByOrg(ctx, &protomfx.OrgID{Value: orgID})
+		if err != nil {
+			return AlarmsPage{}, err
 		}
-		return AlarmsPage{}, err
+
+		return as.alarms.RetrieveByGroups(ctx, res.GetIds(), pm)
 	}
 
 	if err := as.canAccessOrg(ctx, token, orgID, auth.OrgSub, Viewer); err != nil {
@@ -89,12 +91,15 @@ func (as *alarmService) ListAlarmsByOrg(ctx context.Context, token string, orgID
 		return AlarmsPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	grIDs, err := as.things.RetrieveIDsByOrgMembership(ctx, orgID, user.GetId())
+	res, err := as.things.GetGroupIDsByOrgMembership(ctx, &protomfx.OrgMembershipReq{
+		OrgId:  orgID,
+		UserId: user.GetId(),
+	})
 	if err != nil {
 		return AlarmsPage{}, err
 	}
 
-	return as.alarms.RetrieveByGroups(ctx, grIDs, pm)
+	return as.alarms.RetrieveByGroups(ctx, res.GetIds(), pm)
 }
 
 func (as *alarmService) ViewAlarm(ctx context.Context, token, id string) (Alarm, error) {

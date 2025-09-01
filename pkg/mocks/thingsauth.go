@@ -136,3 +136,17 @@ func (svc thingsServiceMock) GetProfileIDByThingID(_ context.Context, in *protom
 	}
 	return nil, errors.ErrNotFound
 }
+
+func (svc thingsServiceMock) GetGroupIDsByOrg(_ context.Context, in *protomfx.OrgID, _ ...grpc.CallOption) (*protomfx.GroupIDs, error) {
+	var ids []string
+	for _, g := range svc.groups {
+		if g.OrgID == in.GetValue() {
+			ids = append(ids, g.ID)
+		}
+	}
+	return &protomfx.GroupIDs{Ids: ids}, nil
+}
+
+func (svc thingsServiceMock) GetGroupIDsByOrgMembership(_ context.Context, in *protomfx.OrgMembershipReq, _ ...grpc.CallOption) (*protomfx.GroupIDs, error) {
+	panic("GetGroupIDsByOrgMembership not implemented in mock")
+}
