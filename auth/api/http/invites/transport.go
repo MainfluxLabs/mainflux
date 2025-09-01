@@ -94,11 +94,11 @@ func decodeCreateOrgInviteRequest(_ context.Context, r *http.Request) (any, erro
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	if req.OrgMember.Role == "" {
-		req.OrgMember.Role = auth.Viewer
+	if req.OrgMembership.Role == "" {
+		req.OrgMembership.Role = auth.Viewer
 	}
 
-	if req.OrgMember.Role == auth.Owner {
+	if req.OrgMembership.Role == auth.Owner {
 		return nil, apiutil.ErrMalformedEntity
 	}
 

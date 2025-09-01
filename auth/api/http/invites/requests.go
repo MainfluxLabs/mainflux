@@ -11,10 +11,10 @@ const (
 )
 
 type createOrgInviteReq struct {
-	token        string
-	orgID        string
-	OrgMember    auth.OrgMembership `json:"org_member,omitempty"`
-	RedirectPath string             `json:"redirect_path,omitempty"`
+	token         string
+	orgID         string
+	OrgMembership auth.OrgMembership `json:"org_membership,omitempty"`
+	RedirectPath  string             `json:"redirect_path,omitempty"`
 }
 
 func (req createOrgInviteReq) validate() error {
@@ -30,11 +30,11 @@ func (req createOrgInviteReq) validate() error {
 		return apiutil.ErrMissingRedirectPath
 	}
 
-	if req.OrgMember.Email == "" {
+	if req.OrgMembership.Email == "" {
 		return apiutil.ErrMissingEmail
 	}
 
-	if req.OrgMember.Role != auth.Admin && req.OrgMember.Role != auth.Viewer && req.OrgMember.Role != auth.Editor {
+	if req.OrgMembership.Role != auth.Admin && req.OrgMembership.Role != auth.Viewer && req.OrgMembership.Role != auth.Editor {
 		return apiutil.ErrInvalidRole
 	}
 

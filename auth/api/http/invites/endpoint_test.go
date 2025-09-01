@@ -73,7 +73,7 @@ type testRequest struct {
 }
 
 type invitesReq struct {
-	Om           auth.OrgMembership `json:"org_member,omitempty"`
+	Om           auth.OrgMembership `json:"org_membership,omitempty"`
 	RedirectPath string             `json:"redirect_path,omitempty"`
 }
 

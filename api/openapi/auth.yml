@@ -923,7 +923,7 @@ components:
           type: string
           example: "/invite-view"
           description: The path portion of the Invite view URL that the end user receives in the Invite notification.
-        org_member:
+        org_membership:
           type: object
           properties:
               email:
