@@ -13,6 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth/jwt"
 	"github.com/MainfluxLabs/mainflux/auth/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -261,7 +262,7 @@ func TestRetrieve(t *testing.T) {
 			desc:  "retrieve non-existing login key",
 			id:    "invalid",
 			token: userToken,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "retrieve with wrong login key",
@@ -540,7 +541,7 @@ func TestRemoveOrg(t *testing.T) {
 			desc:  "remove non-existing org",
 			token: ownerToken,
 			id:    invalid,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "remove org as viewer",
@@ -570,13 +571,13 @@ func TestRemoveOrg(t *testing.T) {
 			desc:  "remove removed org",
 			token: ownerToken,
 			id:    res.ID,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "remove non-existing org",
 			token: ownerToken,
 			id:    invalid,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 
@@ -656,7 +657,7 @@ func TestUpdateOrg(t *testing.T) {
 			desc:  "update non-existing org",
 			token: ownerToken,
 			org:   auth.Org{},
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 
@@ -757,14 +758,14 @@ func TestViewOrg(t *testing.T) {
 			token: ownerToken,
 			orgID: "",
 			org:   auth.Org{},
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "view non-existing org",
 			token: ownerToken,
 			orgID: invalid,
 			org:   auth.Org{},
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 
@@ -862,7 +863,7 @@ func TestCreateOrgMemberships(t *testing.T) {
 			token:       ownerToken,
 			orgID:       "",
 			memberships: memberships,
-			err:         errors.ErrNotFound,
+			err:         dbutil.ErrNotFound,
 		},
 	}
 
@@ -951,7 +952,7 @@ func TestRemoveOrgMemberships(t *testing.T) {
 			token:    ownerToken,
 			orgID:    invalid,
 			memberID: editorID,
-			err:      errors.ErrNotFound,
+			err:      dbutil.ErrNotFound,
 		},
 	}
 
@@ -1049,7 +1050,7 @@ func TestUpdateOrgMemberships(t *testing.T) {
 			token:      ownerToken,
 			orgID:      invalid,
 			membership: memberships[1],
-			err:        errors.ErrNotFound,
+			err:        dbutil.ErrNotFound,
 		},
 	}
 
@@ -1190,7 +1191,7 @@ func TestListOrgMemberships(t *testing.T) {
 			orgID: invalid,
 			meta:  apiutil.PageMetadata{},
 			size:  0,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 

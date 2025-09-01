@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-redis/redis/v8"
@@ -30,12 +31,12 @@ func NewProfileCache(client *redis.Client) things.ProfileCache {
 func (pc *profileCache) SaveGroup(ctx context.Context, profileID string, groupID string) error {
 	gk := groupByProfileIDKey(profileID)
 	if err := pc.client.Set(ctx, gk, groupID, 0).Err(); err != nil {
-		return errors.Wrap(errors.ErrCreateEntity, err)
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	pk := profilesByGroupIDKey(groupID)
 	if err := pc.client.SAdd(ctx, pk, profileID).Err(); err != nil {
-		return errors.Wrap(errors.ErrCreateEntity, err)
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	return nil
@@ -48,16 +49,16 @@ func (pc *profileCache) RemoveGroup(ctx context.Context, profileID string) error
 		if err == redis.Nil {
 			return nil
 		}
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	if err := pc.client.Del(ctx, gk).Err(); err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	pk := profilesByGroupIDKey(groupID)
 	if err := pc.client.SRem(ctx, pk, profileID).Err(); err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil
@@ -67,7 +68,7 @@ func (pc *profileCache) ViewGroup(ctx context.Context, profileID string) (string
 	gk := groupByProfileIDKey(profileID)
 	groupID, err := pc.client.Get(ctx, gk).Result()
 	if err != nil {
-		return "", errors.Wrap(errors.ErrNotFound, err)
+		return "", errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
 	return groupID, nil

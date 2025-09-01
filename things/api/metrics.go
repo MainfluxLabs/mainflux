@@ -31,13 +31,13 @@ func MetricsMiddleware(svc things.Service, counter metrics.Counter, latency metr
 	}
 }
 
-func (ms *metricsMiddleware) CreateThings(ctx context.Context, token string, ths ...things.Thing) (saved []things.Thing, err error) {
+func (ms *metricsMiddleware) CreateThings(ctx context.Context, token, profileID string, ths ...things.Thing) (saved []things.Thing, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_things").Add(1)
 		ms.latency.With("method", "create_things").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateThings(ctx, token, ths...)
+	return ms.svc.CreateThings(ctx, token, profileID, ths...)
 }
 
 func (ms *metricsMiddleware) UpdateThing(ctx context.Context, token string, thing things.Thing) error {
@@ -121,13 +121,13 @@ func (ms *metricsMiddleware) RemoveThings(ctx context.Context, token string, id 
 	return ms.svc.RemoveThings(ctx, token, id...)
 }
 
-func (ms *metricsMiddleware) CreateProfiles(ctx context.Context, token string, profiles ...things.Profile) (saved []things.Profile, err error) {
+func (ms *metricsMiddleware) CreateProfiles(ctx context.Context, token, grID string, profiles ...things.Profile) (saved []things.Profile, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_profiles").Add(1)
 		ms.latency.With("method", "create_profiles").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateProfiles(ctx, token, profiles...)
+	return ms.svc.CreateProfiles(ctx, token, grID, profiles...)
 }
 
 func (ms *metricsMiddleware) UpdateProfile(ctx context.Context, token string, profile things.Profile) error {
@@ -399,13 +399,13 @@ func (ms *metricsMiddleware) Restore(ctx context.Context, token string, backup t
 	return ms.svc.Restore(ctx, token, backup)
 }
 
-func (ms *metricsMiddleware) CreateGroups(ctx context.Context, token string, grs ...things.Group) ([]things.Group, error) {
+func (ms *metricsMiddleware) CreateGroups(ctx context.Context, token, orgID string, grs ...things.Group) ([]things.Group, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_groups").Add(1)
 		ms.latency.With("method", "create_groups").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateGroups(ctx, token, grs...)
+	return ms.svc.CreateGroups(ctx, token, orgID, grs...)
 }
 
 func (ms *metricsMiddleware) UpdateGroup(ctx context.Context, token string, g things.Group) (things.Group, error) {

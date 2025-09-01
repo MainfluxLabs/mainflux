@@ -20,7 +20,7 @@ import (
 // Service specifies an API for managing rules.
 type Service interface {
 	// CreateRules creates rules.
-	CreateRules(ctx context.Context, token string, rules ...Rule) ([]Rule, error)
+	CreateRules(ctx context.Context, token, profileID string, rules ...Rule) ([]Rule, error)
 
 	// ListRulesByProfile retrieves a paginated list of rules by profile.
 	ListRulesByProfile(ctx context.Context, token, profileID string, pm apiutil.PageMetadata) (RulesPage, error)
@@ -73,45 +73,30 @@ func New(rules RuleRepository, things protomfx.ThingsServiceClient, publisher me
 	}
 }
 
-func (rs *rulesService) CreateRules(ctx context.Context, token string, rules ...Rule) ([]Rule, error) {
-	var rls []Rule
-	for _, rule := range rules {
-		r, err := rs.createRule(ctx, rule, token)
+func (rs *rulesService) CreateRules(ctx context.Context, token, profileID string, rules ...Rule) ([]Rule, error) {
+	_, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: profileID, Action: things.Editor})
+	if err != nil {
+		return []Rule{}, err
+	}
+
+	grID, err := rs.things.GetGroupIDByProfileID(ctx, &protomfx.ProfileID{Value: profileID})
+	if err != nil {
+		return []Rule{}, err
+	}
+	groupID := grID.GetValue()
+
+	for i := range rules {
+		rules[i].ProfileID = profileID
+		rules[i].GroupID = groupID
+
+		id, err := rs.idProvider.ID()
 		if err != nil {
-			return nil, err
+			return []Rule{}, err
 		}
-		rls = append(rls, r)
-	}
-	return rls, nil
-}
-
-func (rs *rulesService) createRule(ctx context.Context, rule Rule, token string) (Rule, error) {
-	_, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.ProfileID, Action: things.Editor})
-	if err != nil {
-		return Rule{}, err
+		rules[i].ID = id
 	}
 
-	grID, err := rs.things.GetGroupIDByProfileID(ctx, &protomfx.ProfileID{Value: rule.ProfileID})
-	if err != nil {
-		return Rule{}, err
-	}
-	rule.GroupID = grID.GetValue()
-
-	id, err := rs.idProvider.ID()
-	if err != nil {
-		return Rule{}, err
-	}
-	rule.ID = id
-
-	rls, err := rs.rules.Save(ctx, rule)
-	if err != nil {
-		return Rule{}, err
-	}
-	if len(rls) == 0 {
-		return Rule{}, errors.ErrCreateEntity
-	}
-
-	return rls[0], nil
+	return rs.rules.Save(ctx, rules...)
 }
 
 func (rs *rulesService) ListRulesByProfile(ctx context.Context, token, profileID string, pm apiutil.PageMetadata) (RulesPage, error) {

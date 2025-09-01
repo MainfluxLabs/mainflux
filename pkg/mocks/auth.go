@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/users"
@@ -130,7 +131,7 @@ func (svc authServiceMock) GetOwnerIDByOrgID(_ context.Context, req *protomfx.Or
 			return &protomfx.OwnerID{Value: org.OwnerID}, nil
 		}
 	}
-	return nil, errors.ErrNotFound
+	return nil, dbutil.ErrNotFound
 }
 
 func (svc authServiceMock) AssignRole(_ context.Context, _ *protomfx.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {

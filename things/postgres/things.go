@@ -35,7 +35,7 @@ func NewThingRepository(db dbutil.Database) things.ThingRepository {
 func (tr thingRepository) Save(ctx context.Context, ths ...things.Thing) ([]things.Thing, error) {
 	tx, err := tr.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return []things.Thing{}, errors.Wrap(errors.ErrCreateEntity, err)
+		return []things.Thing{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	q := `INSERT INTO things (id, group_id, profile_id, name, key, metadata)
@@ -44,7 +44,7 @@ func (tr thingRepository) Save(ctx context.Context, ths ...things.Thing) ([]thin
 	for _, thing := range ths {
 		dbth, err := toDBThing(thing)
 		if err != nil {
-			return []things.Thing{}, errors.Wrap(errors.ErrCreateEntity, err)
+			return []things.Thing{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 
 		if _, err := tx.NamedExecContext(ctx, q, dbth); err != nil {
@@ -53,20 +53,20 @@ func (tr thingRepository) Save(ctx context.Context, ths ...things.Thing) ([]thin
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return []things.Thing{}, errors.Wrap(errors.ErrMalformedEntity, err)
+					return []things.Thing{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 				case pgerrcode.UniqueViolation:
-					return []things.Thing{}, errors.Wrap(errors.ErrConflict, err)
+					return []things.Thing{}, errors.Wrap(dbutil.ErrConflict, err)
 				case pgerrcode.StringDataRightTruncationDataException:
-					return []things.Thing{}, errors.Wrap(errors.ErrMalformedEntity, err)
+					return []things.Thing{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 				}
 			}
 
-			return []things.Thing{}, errors.Wrap(errors.ErrCreateEntity, err)
+			return []things.Thing{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return []things.Thing{}, errors.Wrap(errors.ErrCreateEntity, err)
+		return []things.Thing{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	return ths, nil
@@ -84,7 +84,7 @@ func (tr thingRepository) Update(ctx context.Context, t things.Thing) error {
 
 	dbth, err := toDBThing(t)
 	if err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	res, errdb := tr.db.NamedExecContext(ctx, q, dbth)
@@ -93,22 +93,22 @@ func (tr thingRepository) Update(ctx context.Context, t things.Thing) error {
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, errdb)
+				return errors.Wrap(dbutil.ErrMalformedEntity, errdb)
 			case pgerrcode.StringDataRightTruncationDataException:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
 
-		return errors.Wrap(errors.ErrUpdateEntity, errdb)
+		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
 	}
 
 	cnt, errdb := res.RowsAffected()
 	if errdb != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, errdb)
+		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
 	}
 
 	if cnt == 0 {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 
 	return nil
@@ -128,24 +128,24 @@ func (tr thingRepository) UpdateKey(ctx context.Context, id, key string) error {
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			case pgerrcode.UniqueViolation:
-				return errors.Wrap(errors.ErrConflict, err)
+				return errors.Wrap(dbutil.ErrConflict, err)
 			case pgerrcode.StringDataRightTruncationDataException:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
 
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	cnt, err := res.RowsAffected()
 	if err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	if cnt == 0 {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 
 	return nil
@@ -160,9 +160,9 @@ func (tr thingRepository) RetrieveByID(ctx context.Context, id string) (things.T
 		pgErr, ok := err.(*pgconn.PgError)
 		//  If there is no result or ID is in an invalid format, return ErrNotFound.
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
-			return things.Thing{}, errors.Wrap(errors.ErrNotFound, err)
+			return things.Thing{}, errors.Wrap(dbutil.ErrNotFound, err)
 		}
-		return things.Thing{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.Thing{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	return toThing(dbth)
@@ -174,9 +174,9 @@ func (tr thingRepository) RetrieveByKey(ctx context.Context, key string) (string
 	var id string
 	if err := tr.db.QueryRowxContext(ctx, q, key).Scan(&id); err != nil {
 		if err == sql.ErrNoRows {
-			return "", errors.Wrap(errors.ErrNotFound, err)
+			return "", errors.Wrap(dbutil.ErrNotFound, err)
 		}
-		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
+		return "", errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	return id, nil
@@ -194,7 +194,7 @@ func (tr thingRepository) RetrieveByGroups(ctx context.Context, groupIDs []strin
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
-		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ThingsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	whereClause := dbutil.BuildWhereClause(giq, nq, mq)
@@ -217,14 +217,14 @@ func (tr thingRepository) BackupAll(ctx context.Context) ([]things.Thing, error)
 	var items []dbThing
 	err := tr.db.SelectContext(ctx, &items, query)
 	if err != nil {
-		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	var ths []things.Thing
 	for _, i := range items {
 		th, err := toThing(i)
 		if err != nil {
-			return []things.Thing{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return []things.Thing{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		ths = append(ths, th)
@@ -240,7 +240,7 @@ func (tr thingRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetada
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
-		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ThingsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	whereClause := dbutil.BuildWhereClause(nq, mq)
@@ -264,13 +264,13 @@ func (tr thingRepository) RetrieveByProfile(ctx context.Context, prID string, pm
 
 	// Verify if UUID format is valid to avoid internal Postgres error
 	if _, err := uuid.FromString(prID); err != nil {
-		return things.ThingsPage{}, errors.Wrap(errors.ErrNotFound, err)
+		return things.ThingsPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
 	baseCondition := "profile_id = :profile_id"
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
-		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ThingsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	whereClause := dbutil.BuildWhereClause(baseCondition, mq)
@@ -299,14 +299,14 @@ func (tr thingRepository) BackupByGroups(ctx context.Context, groupIDs []string)
 	var items []dbThing
 	err := tr.db.SelectContext(ctx, &items, query)
 	if err != nil {
-		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	var ths []things.Thing
 	for _, i := range items {
 		th, err := toThing(i)
 		if err != nil {
-			return []things.Thing{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return []things.Thing{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		ths = append(ths, th)
@@ -323,7 +323,7 @@ func (tr thingRepository) Remove(ctx context.Context, ids ...string) error {
 		q := `DELETE FROM things WHERE id = :id;`
 		_, err := tr.db.NamedExecContext(ctx, q, dbth)
 		if err != nil {
-			return errors.Wrap(errors.ErrRemoveEntity, err)
+			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
 	}
 
@@ -333,7 +333,7 @@ func (tr thingRepository) Remove(ctx context.Context, ids ...string) error {
 func (tr thingRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (things.ThingsPage, error) {
 	rows, err := tr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ThingsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -341,12 +341,12 @@ func (tr thingRepository) retrieve(ctx context.Context, query, cquery string, pa
 	for rows.Next() {
 		dbth := dbThing{}
 		if err := rows.StructScan(&dbth); err != nil {
-			return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return things.ThingsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		th, err := toThing(dbth)
 		if err != nil {
-			return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return things.ThingsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		items = append(items, th)
@@ -354,7 +354,7 @@ func (tr thingRepository) retrieve(ctx context.Context, query, cquery string, pa
 
 	total, err := dbutil.Total(ctx, tr.db, cquery, params)
 	if err != nil {
-		return things.ThingsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ThingsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	page := things.ThingsPage{
@@ -383,7 +383,7 @@ func toDBThing(th things.Thing) (dbThing, error) {
 	if len(th.Metadata) > 0 {
 		b, err := json.Marshal(th.Metadata)
 		if err != nil {
-			return dbThing{}, errors.Wrap(errors.ErrMalformedEntity, err)
+			return dbThing{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 		}
 		data = b
 	}
@@ -401,7 +401,7 @@ func toDBThing(th things.Thing) (dbThing, error) {
 func toThing(dbth dbThing) (things.Thing, error) {
 	var metadata map[string]interface{}
 	if err := json.Unmarshal([]byte(dbth.Metadata), &metadata); err != nil {
-		return things.Thing{}, errors.Wrap(errors.ErrMalformedEntity, err)
+		return things.Thing{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
 
 	return things.Thing{

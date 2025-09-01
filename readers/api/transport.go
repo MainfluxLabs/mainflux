@@ -13,6 +13,7 @@ import (
 	auth "github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -32,14 +33,15 @@ const (
 	comparatorKey          = "comparator"
 	fromKey                = "from"
 	toKey                  = "to"
-	convertKey             = "convert"
 	formatKey              = "format"
-	csvFormat              = "csv"
-	jsonFormat             = "json"
-	defFormat              = "messages"
+	convertKey             = "convert"
 	aggIntervalKey         = "agg_interval"
 	aggTypeKey             = "agg_type"
 	aggFieldKey            = "agg_field"
+	jsonFormat             = "json"
+	senmlFormat            = "senml"
+	csvFormat              = "csv"
+	defFormat              = "messages"
 )
 
 var (
@@ -47,7 +49,6 @@ var (
 	authc  protomfx.AuthServiceClient
 )
 
-// MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient, ac protomfx.AuthServiceClient, svcName string, logger logger.Logger) http.Handler {
 	thingc = tc
 	authc = ac
@@ -57,29 +58,59 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 	}
 
 	mux := bone.New()
-	mux.Get("/messages", kithttp.NewServer(
-		listAllMessagesEndpoint(svc),
+
+	mux.Get("/json", kithttp.NewServer(
+		listJSONMessagesEndpoint(svc),
 		decodeListAllMessages,
 		encodeResponse,
 		opts...,
 	))
-	mux.Delete("/messages", kithttp.NewServer(
-		deleteMessagesEndpoint(svc),
+
+	mux.Get("/senml", kithttp.NewServer(
+		listSenMLMessagesEndpoint(svc),
+		decodeListAllMessages,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Delete("/json", kithttp.NewServer(
+		deleteJSONMessagesEndpoint(svc),
 		decodeDeleteMessages,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Get("/messages/:format/backup", kithttp.NewServer(
-		backupMessagesEndpoint(svc),
+	mux.Delete("/senml", kithttp.NewServer(
+		deleteSenMLMessagesEndpoint(svc),
+		decodeDeleteMessages,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Get("/json/backup", kithttp.NewServer(
+		backupJSONMessagesEndpoint(svc),
 		decodeBackupMessages,
 		encodeBackupFileResponse,
 		opts...,
 	))
 
-	mux.Post("/messages/:format/restore", kithttp.NewServer(
-		restoreMessagesEndpoint(svc),
-		decodeRestore,
+	mux.Get("/senml/backup", kithttp.NewServer(
+		backupSenMLMessagesEndpoint(svc),
+		decodeBackupMessages,
+		encodeBackupFileResponse,
+		opts...,
+	))
+
+	mux.Post("/json/restore", kithttp.NewServer(
+		restoreJSONMessagesEndpoint(svc),
+		decodeRestoreMessages,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/senml/restore", kithttp.NewServer(
+		restoreSenMLMessagesEndpoint(svc),
+		decodeRestoreMessages,
 		encodeResponse,
 		opts...,
 	))
@@ -91,7 +122,7 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 }
 
 func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, error) {
-	pageMeta, err := apiutil.BuildMessagePageMetadata(r)
+	pageMeta, err := BuildMessagePageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -115,12 +146,11 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 	pageMeta.AggType = at
 	pageMeta.AggField = af
 
-	return listAllMessagesReq{
+	return listMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
 		key:      apiutil.ExtractThingKey(r),
 		pageMeta: pageMeta,
 	}, nil
-
 }
 
 func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, error) {
@@ -146,7 +176,7 @@ func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, erro
 	return req, nil
 }
 
-func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRestoreMessages(_ context.Context, r *http.Request) (interface{}, error) {
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
@@ -159,16 +189,90 @@ func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
 		fileType = jsonFormat
 	case apiutil.ContentTypeCSV:
 		fileType = csvFormat
-
 	default:
 		return nil, errors.Wrap(apiutil.ErrUnsupportedContentType, err)
 	}
 
 	return restoreMessagesReq{
+		token:    apiutil.ExtractBearerToken(r),
+		fileType: fileType,
+		Messages: data,
+	}, nil
+}
+
+func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, jsonFormat)
+	if err != nil {
+		return nil, err
+	}
+
+	name, err := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	subtopic, err := apiutil.ReadStringQuery(r, apiutil.SubtopicKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	protocol, err := apiutil.ReadStringQuery(r, apiutil.ProtocolKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	v, err := apiutil.ReadFloatQuery(r, apiutil.ValueKey, 0)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	comparator, err := apiutil.ReadStringQuery(r, apiutil.ComparatorKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	vs, err := apiutil.ReadStringQuery(r, apiutil.StringValueKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	vd, err := apiutil.ReadStringQuery(r, apiutil.DataValueKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	vb, err := apiutil.ReadBoolQuery(r, apiutil.BoolValueKey, false)
+	if err != nil && err != apiutil.ErrNotFoundParam {
+		return readers.PageMetadata{}, err
+	}
+
+	from, err := apiutil.ReadIntQuery(r, apiutil.FromKey, 0)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	to, err := apiutil.ReadIntQuery(r, apiutil.ToKey, 0)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	pageMeta := readers.PageMetadata{
+		Name:        name,
+		Subtopic:    subtopic,
+		Protocol:    protocol,
+		Value:       v,
+		Comparator:  comparator,
+		StringValue: vs,
+		DataValue:   vd,
+		BoolValue:   vb,
+		From:        from,
+		To:          to,
+	}
+
+	return backupMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
-		fileType:      fileType,
-		messageFormat: bone.GetValue(r, formatKey),
-		Messages:      data,
+		convertFormat: convertFormat,
+		pageMeta:      pageMeta,
 	}, nil
 }
 
@@ -188,25 +292,6 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	}
 
 	return json.NewEncoder(w).Encode(response)
-}
-
-func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, error) {
-	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, jsonFormat)
-	if err != nil {
-		return nil, err
-	}
-
-	pageMeta, err := apiutil.BuildMessagePageMetadata(r)
-	if err != nil {
-		return nil, err
-	}
-
-	return backupMessagesReq{
-		token:         apiutil.ExtractBearerToken(r),
-		messageFormat: bone.GetValue(r, formatKey),
-		convertFormat: convertFormat,
-		pageMeta:      pageMeta,
-	}, nil
 }
 
 func encodeBackupFileResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
@@ -244,16 +329,16 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusUnauthorized)
 	case errors.Contains(err, errors.ErrAuthorization):
 		w.WriteHeader(http.StatusForbidden)
-	case errors.Contains(err, errors.ErrNotFound):
+	case errors.Contains(err, dbutil.ErrNotFound):
 		w.WriteHeader(http.StatusNotFound)
 	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)
-	case errors.Contains(err, errors.ErrConflict):
+	case errors.Contains(err, dbutil.ErrConflict):
 		w.WriteHeader(http.StatusConflict)
-	case errors.Contains(err, errors.ErrScanMetadata):
+	case errors.Contains(err, dbutil.ErrScanMetadata):
 		w.WriteHeader(http.StatusUnprocessableEntity)
 	case errors.Contains(err, readers.ErrReadMessages),
-		errors.Contains(err, errors.ErrCreateEntity):
+		errors.Contains(err, dbutil.ErrCreateEntity):
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
@@ -282,4 +367,85 @@ func isAdmin(ctx context.Context, token string) error {
 	}
 
 	return nil
+}
+
+func BuildMessagePageMetadata(r *http.Request) (readers.PageMetadata, error) {
+	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	limit, err := apiutil.ReadLimitQuery(r, apiutil.LimitKey, apiutil.DefLimit)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	name, err := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	v, err := apiutil.ReadFloatQuery(r, valueKey, 0)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	comparator, err := apiutil.ReadStringQuery(r, comparatorKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	vs, err := apiutil.ReadStringQuery(r, stringValueKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	vd, err := apiutil.ReadStringQuery(r, dataValueKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	to, err := apiutil.ReadIntQuery(r, toKey, 0)
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	pageMeta := readers.PageMetadata{
+		Offset:      offset,
+		Limit:       limit,
+		Name:        name,
+		Subtopic:    subtopic,
+		Protocol:    protocol,
+		Value:       v,
+		Comparator:  comparator,
+		StringValue: vs,
+		DataValue:   vd,
+		From:        from,
+		To:          to,
+	}
+
+	vb, err := apiutil.ReadBoolQuery(r, boolValueKey, false)
+	if err != nil && err != apiutil.ErrNotFoundParam {
+		return readers.PageMetadata{}, err
+	}
+	if err == nil {
+		pageMeta.BoolValue = vb
+	}
+
+	return pageMeta, nil
 }

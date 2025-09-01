@@ -38,13 +38,13 @@ func (evr emailVerificationRepository) Save(ctx context.Context, ev users.EmailV
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return "", errors.Wrap(errors.ErrMalformedEntity, err)
+				return "", errors.Wrap(dbutil.ErrMalformedEntity, err)
 			case pgerrcode.UniqueViolation:
-				return "", errors.Wrap(errors.ErrConflict, err)
+				return "", errors.Wrap(dbutil.ErrConflict, err)
 			}
 		}
 
-		return "", errors.Wrap(errors.ErrCreateEntity, err)
+		return "", errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	defer rows.Close()
@@ -71,10 +71,10 @@ func (evr emailVerificationRepository) RetrieveByToken(ctx context.Context, conf
 
 	if err := evr.db.QueryRowxContext(ctx, q, confirmToken).StructScan(&dbv); err != nil {
 		if err == sql.ErrNoRows {
-			return users.EmailVerification{}, errors.Wrap(errors.ErrNotFound, err)
+			return users.EmailVerification{}, errors.Wrap(dbutil.ErrNotFound, err)
 		}
 
-		return users.EmailVerification{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return users.EmailVerification{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	return toVerification(dbv), nil
@@ -92,11 +92,11 @@ func (evr emailVerificationRepository) Remove(ctx context.Context, confirmToken 
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
 
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	rowsDeleted, err := res.RowsAffected()
@@ -105,7 +105,7 @@ func (evr emailVerificationRepository) Remove(ctx context.Context, confirmToken 
 	}
 
 	if rowsDeleted != 1 {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil

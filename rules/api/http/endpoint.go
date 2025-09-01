@@ -20,7 +20,6 @@ func createRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 		var rulesList []rules.Rule
 		for _, rReq := range req.Rules {
 			r := rules.Rule{
-				ProfileID:   req.profileID,
 				Name:        rReq.Name,
 				Conditions:  rReq.Conditions,
 				Operator:    rReq.Operator,
@@ -30,7 +29,7 @@ func createRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 			rulesList = append(rulesList, r)
 		}
 
-		rules, err := svc.CreateRules(ctx, req.token, rulesList...)
+		rules, err := svc.CreateRules(ctx, req.token, req.profileID, rulesList...)
 		if err != nil {
 			return nil, err
 		}

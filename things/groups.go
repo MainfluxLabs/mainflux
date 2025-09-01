@@ -37,7 +37,7 @@ type GroupPage struct {
 // GroupRepository specifies a group persistence API.
 type GroupRepository interface {
 	// Save group
-	Save(ctx context.Context, g Group) (Group, error)
+	Save(ctx context.Context, g ...Group) ([]Group, error)
 
 	// Update a group
 	Update(ctx context.Context, g Group) (Group, error)
@@ -69,7 +69,7 @@ type GroupRepository interface {
 
 type Groups interface {
 	// CreateGroups adds groups to the user identified by the provided key.
-	CreateGroups(ctx context.Context, token string, groups ...Group) ([]Group, error)
+	CreateGroups(ctx context.Context, token, orgID string, groups ...Group) ([]Group, error)
 
 	// UpdateGroup updates the group identified by the provided ID.
 	UpdateGroup(ctx context.Context, token string, g Group) (Group, error)
@@ -117,34 +117,47 @@ type GroupCache interface {
 	RetrieveGroupIDsByMember(context.Context, string) ([]string, error)
 }
 
-func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups ...Group) ([]Group, error) {
+func (ts *thingsService) CreateGroups(ctx context.Context, token, orgID string, groups ...Group) ([]Group, error) {
 	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
 		return []Group{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 	userID := user.GetId()
 
+	oid, err := ts.auth.GetOwnerIDByOrgID(ctx, &protomfx.OrgID{Value: orgID})
+	if err != nil {
+		return []Group{}, err
+	}
+	ownerID := oid.GetValue()
+
+	memberships := []GroupMembership{{MemberID: ownerID, Role: Owner}}
+	if ownerID != userID {
+		if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Editor); err != nil {
+			return nil, err
+		}
+		memberships = append(memberships, GroupMembership{MemberID: userID, Role: Admin})
+	}
+
 	grs := []Group{}
 	for _, group := range groups {
-		oid, err := ts.auth.GetOwnerIDByOrgID(ctx, &protomfx.OrgID{Value: group.OrgID})
+		timestamp := getTimestmap()
+		group.CreatedAt, group.UpdatedAt = timestamp, timestamp
+
+		id, err := ts.idProvider.ID()
 		if err != nil {
 			return []Group{}, err
 		}
-		ownerID := oid.GetValue()
+		group.ID = id
 
-		memberships := []GroupMembership{{MemberID: ownerID, Role: Owner}}
-		if ownerID != userID {
-			if err := ts.canAccessOrg(ctx, token, group.OrgID, auth.OrgSub, Editor); err != nil {
-				return nil, err
-			}
-			memberships = append(memberships, GroupMembership{MemberID: userID, Role: Admin})
-		}
+		grs = append(grs, group)
+	}
 
-		gr, err := ts.createGroup(ctx, group)
-		if err != nil {
-			return []Group{}, err
-		}
+	grs, err = ts.groups.Save(ctx, grs...)
+	if err != nil {
+		return []Group{}, err
+	}
 
+	for _, gr := range grs {
 		for i := range memberships {
 			memberships[i].GroupID = gr.ID
 			if err := ts.groupMemberships.Save(ctx, memberships[i]); err != nil {
@@ -155,29 +168,9 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token string, groups 
 				return []Group{}, err
 			}
 		}
-
-		grs = append(grs, gr)
 	}
 
 	return grs, nil
-}
-
-func (ts *thingsService) createGroup(ctx context.Context, group Group) (Group, error) {
-	timestamp := getTimestmap()
-	group.CreatedAt, group.UpdatedAt = timestamp, timestamp
-
-	id, err := ts.idProvider.ID()
-	if err != nil {
-		return Group{}, err
-	}
-	group.ID = id
-
-	group, err = ts.groups.Save(ctx, group)
-	if err != nil {
-		return Group{}, err
-	}
-
-	return group, nil
 }
 
 func (ts *thingsService) ListGroups(ctx context.Context, token string, pm apiutil.PageMetadata) (GroupPage, error) {
@@ -274,7 +267,7 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, groupID string) (
 	return gr, nil
 }
 
-func (ts *thingsService) ViewGroupByProfile(ctx context.Context, token string, profileID string) (Group, error) {
+func (ts *thingsService) ViewGroupByProfile(ctx context.Context, token, profileID string) (Group, error) {
 	ar := UserAccessReq{
 		Token:  token,
 		ID:     profileID,

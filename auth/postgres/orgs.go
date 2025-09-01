@@ -50,17 +50,17 @@ func (or orgRepository) Save(ctx context.Context, orgs ...auth.Org) error {
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
+					return errors.Wrap(dbutil.ErrMalformedEntity, err)
 				case pgerrcode.ForeignKeyViolation:
-					return errors.Wrap(errors.ErrCreateEntity, err)
+					return errors.Wrap(dbutil.ErrCreateEntity, err)
 				case pgerrcode.UniqueViolation:
-					return errors.Wrap(errors.ErrConflict, err)
+					return errors.Wrap(dbutil.ErrConflict, err)
 				case pgerrcode.StringDataRightTruncationDataException:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
+					return errors.Wrap(dbutil.ErrMalformedEntity, err)
 				}
 			}
 
-			return errors.Wrap(errors.ErrCreateEntity, err)
+			return errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 	}
 
@@ -73,7 +73,7 @@ func (or orgRepository) Update(ctx context.Context, org auth.Org) error {
 
 	dbo, err := toDBOrg(org)
 	if err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	row, err := or.db.NamedQueryContext(ctx, q, dbo)
@@ -82,14 +82,14 @@ func (or orgRepository) Update(ctx context.Context, org auth.Org) error {
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			case pgerrcode.UniqueViolation:
-				return errors.Wrap(errors.ErrConflict, err)
+				return errors.Wrap(dbutil.ErrConflict, err)
 			case pgerrcode.StringDataRightTruncationDataException:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 	defer row.Close()
 
@@ -105,7 +105,7 @@ func (or orgRepository) Remove(ctx context.Context, ownerID string, orgIDs ...st
 		}
 		dbo, err := toDBOrg(org)
 		if err != nil {
-			return errors.Wrap(errors.ErrUpdateEntity, err)
+			return errors.Wrap(dbutil.ErrUpdateEntity, err)
 		}
 
 		res, err := or.db.NamedExecContext(ctx, qd, dbo)
@@ -114,25 +114,25 @@ func (or orgRepository) Remove(ctx context.Context, ownerID string, orgIDs ...st
 			if ok {
 				switch pqErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
+					return errors.Wrap(dbutil.ErrMalformedEntity, err)
 				case pgerrcode.ForeignKeyViolation:
 					switch pqErr.ConstraintName {
 					case membershipsIDFkey:
 						return errors.Wrap(auth.ErrOrgNotEmpty, err)
 					}
-					return errors.Wrap(errors.ErrConflict, err)
+					return errors.Wrap(dbutil.ErrConflict, err)
 				}
 			}
-			return errors.Wrap(errors.ErrUpdateEntity, err)
+			return errors.Wrap(dbutil.ErrUpdateEntity, err)
 		}
 
 		cnt, err := res.RowsAffected()
 		if err != nil {
-			return errors.Wrap(errors.ErrRemoveEntity, err)
+			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
 
 		if cnt != 1 {
-			return errors.Wrap(errors.ErrRemoveEntity, err)
+			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
 	}
 	return nil
@@ -147,9 +147,9 @@ func (or orgRepository) RetrieveByID(ctx context.Context, id string) (auth.Org, 
 		pgErr, ok := err.(*pgconn.PgError)
 		//  If there is no result or ID is in an invalid format, return ErrNotFound.
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
-			return auth.Org{}, errors.Wrap(errors.ErrNotFound, err)
+			return auth.Org{}, errors.Wrap(dbutil.ErrNotFound, err)
 		}
-		return auth.Org{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.Org{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	return toOrg(dbo)
 }
@@ -161,7 +161,7 @@ func (or orgRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.OrgsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	whereClause := dbutil.BuildWhereClause(nq, mq)
@@ -184,14 +184,14 @@ func (or orgRepository) BackupAll(ctx context.Context) ([]auth.Org, error) {
 	var items []dbOrg
 	err := or.db.SelectContext(ctx, &items, query)
 	if err != nil {
-		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	var orgs []auth.Org
 	for _, i := range items {
 		org, err := toOrg(i)
 		if err != nil {
-			return []auth.Org{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return []auth.Org{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		orgs = append(orgs, org)
@@ -235,7 +235,7 @@ func (or orgRepository) RetrieveByMember(ctx context.Context, memberID string, p
 func (or orgRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (auth.OrgsPage, error) {
 	rows, err := or.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.OrgsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -243,12 +243,12 @@ func (or orgRepository) retrieve(ctx context.Context, query, cquery string, para
 	for rows.Next() {
 		dbor := dbOrg{}
 		if err := rows.StructScan(&dbor); err != nil {
-			return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return auth.OrgsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		or, err := toOrg(dbor)
 		if err != nil {
-			return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return auth.OrgsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		items = append(items, or)
@@ -256,7 +256,7 @@ func (or orgRepository) retrieve(ctx context.Context, query, cquery string, para
 
 	total, err := dbutil.Total(ctx, or.db, cquery, params)
 	if err != nil {
-		return auth.OrgsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.OrgsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	page := auth.OrgsPage{
@@ -316,7 +316,7 @@ func (m *dbOrgMetadata) Scan(value interface{}) error {
 
 	b, ok := value.([]byte)
 	if !ok {
-		return errors.ErrScanMetadata
+		return dbutil.ErrScanMetadata
 	}
 
 	if err := json.Unmarshal(b, m); err != nil {

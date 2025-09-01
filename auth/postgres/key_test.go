@@ -58,7 +58,7 @@ func TestKeySave(t *testing.T) {
 				ID:        id,
 				IssuerID:  id,
 			},
-			err: errors.ErrConflict,
+			err: dbutil.ErrConflict,
 		},
 	}
 
@@ -100,13 +100,13 @@ func TestKeyRetrieve(t *testing.T) {
 			desc:  "retrieve key with empty issuer id",
 			id:    key.ID,
 			owner: "",
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "retrieve non-existent key",
 			id:    "",
 			owner: key.IssuerID,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 

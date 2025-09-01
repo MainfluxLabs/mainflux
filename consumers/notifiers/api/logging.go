@@ -27,7 +27,7 @@ func LoggingMiddleware(svc notifiers.Service, logger log.Logger) notifiers.Servi
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) CreateNotifiers(ctx context.Context, token string, notifiers ...notifiers.Notifier) (response []notifiers.Notifier, err error) {
+func (lm *loggingMiddleware) CreateNotifiers(ctx context.Context, token, groupID string, notifiers ...notifiers.Notifier) (response []notifiers.Notifier, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_notifiers for notifiers %s took %s to complete", response, time.Since(begin))
 		if err != nil {
@@ -37,7 +37,7 @@ func (lm *loggingMiddleware) CreateNotifiers(ctx context.Context, token string, 
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CreateNotifiers(ctx, token, notifiers...)
+	return lm.svc.CreateNotifiers(ctx, token, groupID, notifiers...)
 }
 
 func (lm *loggingMiddleware) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (res notifiers.NotifiersPage, err error) {

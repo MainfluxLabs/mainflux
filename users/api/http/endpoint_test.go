@@ -19,6 +19,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -69,7 +70,7 @@ var (
 	newUser               = users.User{Email: "newuser@example.com", Password: validPass, Status: "enabled"}
 	usersList             = []users.User{admin, user}
 	metadata              = map[string]interface{}{"key": "value"}
-	notFoundRes           = toJSON(apiutil.ErrorRes{Err: errors.ErrNotFound.Error()})
+	notFoundRes           = toJSON(apiutil.ErrorRes{Err: dbutil.ErrNotFound.Error()})
 	unauthRes             = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
 	weakPassword          = toJSON(apiutil.ErrorRes{Err: users.ErrPasswordFormat.Error()})
 	malformedRes          = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMalformedEntity.Error()})

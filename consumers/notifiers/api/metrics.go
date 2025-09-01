@@ -31,13 +31,13 @@ func MetricsMiddleware(svc notifiers.Service, counter metrics.Counter, latency m
 	}
 }
 
-func (ms *metricsMiddleware) CreateNotifiers(ctx context.Context, token string, notifiers ...notifiers.Notifier) ([]notifiers.Notifier, error) {
+func (ms *metricsMiddleware) CreateNotifiers(ctx context.Context, token, groupID string, notifiers ...notifiers.Notifier) ([]notifiers.Notifier, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_notifiers").Add(1)
 		ms.latency.With("method", "create_notifiers").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateNotifiers(ctx, token, notifiers...)
+	return ms.svc.CreateNotifiers(ctx, token, groupID, notifiers...)
 }
 
 func (ms *metricsMiddleware) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (res notifiers.NotifiersPage, err error) {

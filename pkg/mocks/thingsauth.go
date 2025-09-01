@@ -6,6 +6,7 @@ package mocks
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -120,19 +121,19 @@ func (svc thingsServiceMock) GetGroupIDByThingID(_ context.Context, in *protomfx
 	if th, ok := svc.things[in.GetValue()]; ok {
 		return &protomfx.GroupID{Value: th.GroupID}, nil
 	}
-	return nil, errors.ErrNotFound
+	return nil, dbutil.ErrNotFound
 }
 
 func (svc thingsServiceMock) GetGroupIDByProfileID(_ context.Context, in *protomfx.ProfileID, _ ...grpc.CallOption) (*protomfx.GroupID, error) {
 	if pr, ok := svc.profiles[in.GetValue()]; ok {
 		return &protomfx.GroupID{Value: pr.GroupID}, nil
 	}
-	return nil, errors.ErrNotFound
+	return nil, dbutil.ErrNotFound
 }
 
 func (svc thingsServiceMock) GetProfileIDByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ProfileID, error) {
 	if th, ok := svc.things[in.GetValue()]; ok {
 		return &protomfx.ProfileID{Value: th.ProfileID}, nil
 	}
-	return nil, errors.ErrNotFound
+	return nil, dbutil.ErrNotFound
 }

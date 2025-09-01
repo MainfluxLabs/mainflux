@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 )
@@ -30,7 +30,7 @@ func (wrm *webhookRepositoryMock) Save(_ context.Context, whs ...webhooks.Webhoo
 	for _, wh := range whs {
 		for _, w := range wrm.webhooks {
 			if w.GroupID == wh.GroupID && w.Name == wh.Name {
-				return []webhooks.Webhook{}, errors.ErrConflict
+				return []webhooks.Webhook{}, dbutil.ErrConflict
 			}
 		}
 
@@ -104,7 +104,7 @@ func (wrm *webhookRepositoryMock) RetrieveByID(_ context.Context, id string) (we
 		}
 	}
 
-	return webhooks.Webhook{}, errors.ErrNotFound
+	return webhooks.Webhook{}, dbutil.ErrNotFound
 }
 
 func (wrm *webhookRepositoryMock) Update(_ context.Context, w webhooks.Webhook) error {
@@ -112,7 +112,7 @@ func (wrm *webhookRepositoryMock) Update(_ context.Context, w webhooks.Webhook) 
 	defer wrm.mu.Unlock()
 
 	if _, ok := wrm.webhooks[w.ID]; !ok {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 	wrm.webhooks[w.ID] = w
 
@@ -125,7 +125,7 @@ func (wrm *webhookRepositoryMock) Remove(_ context.Context, ids ...string) error
 
 	for _, id := range ids {
 		if _, ok := wrm.webhooks[id]; !ok {
-			return errors.ErrNotFound
+			return dbutil.ErrNotFound
 		}
 		delete(wrm.webhooks, id)
 	}
