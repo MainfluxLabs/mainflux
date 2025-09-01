@@ -54,7 +54,7 @@ func TestVerificationSave(t *testing.T) {
 				CreatedAt: time.Now(),
 				ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
 			},
-			err: errors.ErrConflict,
+			err: dbutil.ErrConflict,
 		},
 	}
 
@@ -101,7 +101,7 @@ func TestVerificationRemove(t *testing.T) {
 			verification: users.EmailVerification{
 				Token: nonExistentToken,
 			},
-			err: errors.ErrRemoveEntity,
+			err: dbutil.ErrRemoveEntity,
 		},
 	}
 
@@ -145,7 +145,7 @@ func TestVerificationRetrieve(t *testing.T) {
 			verification: users.EmailVerification{
 				Token: nonExistentToken,
 			},
-			err: errors.ErrNotFound,
+			err: dbutil.ErrNotFound,
 		},
 	}
 

@@ -53,7 +53,7 @@ const (
 
 var (
 	headers         = map[string]string{"Content-Type:": "application/json"}
-	webhook         = webhooks.Webhook{ThingID: thingID, GroupID: groupID, Name: "test-webhook", Url: "https://test.webhook.com", Headers: headers, Metadata: map[string]interface{}{"test": "data"}}
+	webhook         = webhooks.Webhook{Name: "test-webhook", Url: "https://test.webhook.com", Headers: headers, Metadata: map[string]interface{}{"test": "data"}}
 	invalidIDRes    = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingWebhookID.Error()})
 	missingTokRes   = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
 	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, strings.Repeat("m", maxNameSize+1))
@@ -271,7 +271,7 @@ func TestListWebhooksByGroup(t *testing.T) {
 		webhook1.ID = id
 		webhook1.Name = name
 
-		whs, err := svc.CreateWebhooks(context.Background(), token, webhook1)
+		whs, err := svc.CreateWebhooks(context.Background(), token, thingID, webhook1)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		w := whs[0]
 		whRes := webhookRes{
@@ -458,7 +458,7 @@ func TestSearchWebhooksByThing(t *testing.T) {
 		wh.ID = id
 		wh.Name = name
 
-		whs, err := svc.CreateWebhooks(context.Background(), token, wh)
+		whs, err := svc.CreateWebhooks(context.Background(), token, thingID, wh)
 		require.Nil(t, err, fmt.Sprintf("unexpected error creating webhook: %s", err))
 		w := whs[0]
 
@@ -605,7 +605,7 @@ func TestSearchWebhooksByGroup(t *testing.T) {
 		wh.ID = id
 		wh.Name = name
 
-		whs, err := svc.CreateWebhooks(context.Background(), token, wh)
+		whs, err := svc.CreateWebhooks(context.Background(), token, thingID, wh)
 		require.Nil(t, err, fmt.Sprintf("unexpected error creating webhook: %s", err))
 		w := whs[0]
 
@@ -746,7 +746,7 @@ func TestUpdateWebhook(t *testing.T) {
 
 	data := toJSON(webhook)
 
-	whs, err := svc.CreateWebhooks(context.Background(), token, webhook)
+	whs, err := svc.CreateWebhooks(context.Background(), token, thingID, webhook)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	wh1 := whs[0]
 
@@ -855,7 +855,7 @@ func TestViewWebhook(t *testing.T) {
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	whs, err := svc.CreateWebhooks(context.Background(), token, webhook)
+	whs, err := svc.CreateWebhooks(context.Background(), token, thingID, webhook)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	wh := whs[0]
 
@@ -925,7 +925,7 @@ func TestRemoveWebhooks(t *testing.T) {
 	webhook2.Name = "Test2"
 
 	whs := []webhooks.Webhook{webhook, webhook2}
-	grWhs, err := svc.CreateWebhooks(context.Background(), token, whs...)
+	grWhs, err := svc.CreateWebhooks(context.Background(), token, thingID, whs...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	var webhookIDs []string

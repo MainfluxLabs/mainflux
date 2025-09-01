@@ -85,10 +85,10 @@ func (omr orgMembershipsRepository) RetrieveRole(ctx context.Context, memberID, 
 	if err := omr.db.QueryRowxContext(ctx, q, memberID, orgID).StructScan(&membership); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
-			return "", errors.Wrap(errors.ErrNotFound, err)
+			return "", errors.Wrap(dbutil.ErrNotFound, err)
 		}
 
-		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
+		return "", errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	return membership.Role, nil
@@ -112,9 +112,9 @@ func (omr orgMembershipsRepository) Save(ctx context.Context, oms ...auth.OrgMem
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
+					return errors.Wrap(dbutil.ErrMalformedEntity, err)
 				case pgerrcode.ForeignKeyViolation:
-					return errors.Wrap(errors.ErrConflict, errors.New(pgErr.Detail))
+					return errors.Wrap(dbutil.ErrConflict, errors.New(pgErr.Detail))
 				case pgerrcode.UniqueViolation:
 					return errors.Wrap(auth.ErrOrgMembershipExists, errors.New(pgErr.Detail))
 				}
@@ -152,9 +152,9 @@ func (omr orgMembershipsRepository) Remove(ctx context.Context, orgID string, id
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
+					return errors.Wrap(dbutil.ErrMalformedEntity, err)
 				case pgerrcode.UniqueViolation:
-					return errors.Wrap(errors.ErrConflict, err)
+					return errors.Wrap(dbutil.ErrConflict, err)
 				}
 			}
 
@@ -182,22 +182,22 @@ func (omr orgMembershipsRepository) Update(ctx context.Context, oms ...auth.OrgM
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
+					return errors.Wrap(dbutil.ErrMalformedEntity, err)
 				case pgerrcode.StringDataRightTruncationDataException:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
+					return errors.Wrap(dbutil.ErrMalformedEntity, err)
 				}
 			}
 
-			return errors.Wrap(errors.ErrUpdateEntity, err)
+			return errors.Wrap(dbutil.ErrUpdateEntity, err)
 		}
 
 		cnt, errdb := row.RowsAffected()
 		if errdb != nil {
-			return errors.Wrap(errors.ErrUpdateEntity, errdb)
+			return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
 		}
 
 		if cnt != 1 {
-			return errors.Wrap(errors.ErrNotFound, err)
+			return errors.Wrap(dbutil.ErrNotFound, err)
 		}
 	}
 
@@ -209,7 +209,7 @@ func (omr orgMembershipsRepository) BackupAll(ctx context.Context) ([]auth.OrgMe
 
 	rows, err := omr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
-		return []auth.OrgMembership{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return []auth.OrgMembership{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -217,7 +217,7 @@ func (omr orgMembershipsRepository) BackupAll(ctx context.Context) ([]auth.OrgMe
 	for rows.Next() {
 		dbom := dbOrgMembership{}
 		if err := rows.StructScan(&dbom); err != nil {
-			return []auth.OrgMembership{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return []auth.OrgMembership{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		oms = append(oms, toOrgMembership(dbom))
@@ -233,7 +233,7 @@ func (omr orgMembershipsRepository) BackupByOrg(ctx context.Context, orgID strin
 		"org_id": orgID,
 	})
 	if err != nil {
-		return []auth.OrgMembership{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return []auth.OrgMembership{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -241,7 +241,7 @@ func (omr orgMembershipsRepository) BackupByOrg(ctx context.Context, orgID strin
 	for rows.Next() {
 		dbom := dbOrgMembership{}
 		if err := rows.StructScan(&dbom); err != nil {
-			return []auth.OrgMembership{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return []auth.OrgMembership{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		oms = append(oms, toOrgMembership(dbom))

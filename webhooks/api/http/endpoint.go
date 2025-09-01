@@ -20,7 +20,6 @@ func createWebhooksEndpoint(svc webhooks.Service) endpoint.Endpoint {
 		whs := []webhooks.Webhook{}
 		for _, wReq := range req.Webhooks {
 			wh := webhooks.Webhook{
-				ThingID:  req.thingID,
 				Name:     wReq.Name,
 				Url:      wReq.Url,
 				Headers:  wReq.Headers,
@@ -29,7 +28,7 @@ func createWebhooksEndpoint(svc webhooks.Service) endpoint.Endpoint {
 			whs = append(whs, wh)
 		}
 
-		saved, err := svc.CreateWebhooks(ctx, req.token, whs...)
+		saved, err := svc.CreateWebhooks(ctx, req.token, req.thingID, whs...)
 		if err != nil {
 			return nil, err
 		}

@@ -32,8 +32,8 @@ func NewEventStoreMiddleware(svc things.Service, client *redis.Client) things.Se
 	}
 }
 
-func (es eventStore) CreateThings(ctx context.Context, token string, ths ...things.Thing) ([]things.Thing, error) {
-	sths, err := es.svc.CreateThings(ctx, token, ths...)
+func (es eventStore) CreateThings(ctx context.Context, token, profileID string, ths ...things.Thing) ([]things.Thing, error) {
+	sths, err := es.svc.CreateThings(ctx, token, profileID, ths...)
 	if err != nil {
 		return sths, err
 	}
@@ -169,8 +169,8 @@ func (es eventStore) RemoveThings(ctx context.Context, token string, ids ...stri
 	return nil
 }
 
-func (es eventStore) CreateProfiles(ctx context.Context, token string, profiles ...things.Profile) ([]things.Profile, error) {
-	sprs, err := es.svc.CreateProfiles(ctx, token, profiles...)
+func (es eventStore) CreateProfiles(ctx context.Context, token, grID string, profiles ...things.Profile) ([]things.Profile, error) {
+	sprs, err := es.svc.CreateProfiles(ctx, token, grID, profiles...)
 	if err != nil {
 		return sprs, err
 	}
@@ -322,8 +322,8 @@ func (es eventStore) ListProfilesByGroup(ctx context.Context, token, groupID str
 	return es.svc.ListProfilesByGroup(ctx, token, groupID, pm)
 }
 
-func (es eventStore) CreateGroups(ctx context.Context, token string, grs ...things.Group) ([]things.Group, error) {
-	return es.svc.CreateGroups(ctx, token, grs...)
+func (es eventStore) CreateGroups(ctx context.Context, token, orgID string, grs ...things.Group) ([]things.Group, error) {
+	return es.svc.CreateGroups(ctx, token, orgID, grs...)
 }
 
 func (es eventStore) ListGroups(ctx context.Context, token string, pm apiutil.PageMetadata) (things.GroupPage, error) {
@@ -350,7 +350,7 @@ func (es eventStore) ViewGroupByThing(ctx context.Context, token string, thingID
 	return es.svc.ViewGroupByThing(ctx, token, thingID)
 }
 
-func (es eventStore) ViewGroupByProfile(ctx context.Context, token string, profileID string) (things.Group, error) {
+func (es eventStore) ViewGroupByProfile(ctx context.Context, token, profileID string) (things.Group, error) {
 	return es.svc.ViewGroupByProfile(ctx, token, profileID)
 }
 

@@ -10,30 +10,6 @@ var (
 	// ErrAuthorization indicates failure occurred while authorizing the entity.
 	ErrAuthorization = New("failed to perform authorization over the entity")
 
-	// ErrMalformedEntity indicates a malformed entity specification.
-	ErrMalformedEntity = New("malformed entity specification")
-
-	// ErrNotFound indicates a non-existent entity request.
-	ErrNotFound = New("entity not found")
-
-	// ErrConflict indicates that entity already exists.
-	ErrConflict = New("entity already exists")
-
-	// ErrCreateEntity indicates error in creating entity or entities.
-	ErrCreateEntity = New("failed to create entity in the db")
-
-	// ErrRetrieveEntity indicates error in viewing entity or entities.
-	ErrRetrieveEntity = New("failed to retrieve entity")
-
-	// ErrUpdateEntity indicates error in updating entity or entities.
-	ErrUpdateEntity = New("failed to update entity")
-
-	// ErrRemoveEntity indicates error in removing entity.
-	ErrRemoveEntity = New("failed to remove entity")
-
-	// ErrScanMetadata indicates problem with metadata in db.
-	ErrScanMetadata = New("failed to scan metadata in db")
-
 	// ErrSaveMessages indicates failure occurred while saving messages to database.
 	ErrSaveMessages = New("failed to save messages to database")
 

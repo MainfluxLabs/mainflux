@@ -34,12 +34,12 @@ func NewUserRepo(db dbutil.Database) users.UserRepository {
 func (ur userRepository) Save(ctx context.Context, user users.User) (string, error) {
 	q := `INSERT INTO users (email, password, id, metadata, status) VALUES (:email, :password, :id, :metadata, :status) RETURNING id`
 	if user.ID == "" || user.Email == "" {
-		return "", errors.ErrMalformedEntity
+		return "", dbutil.ErrMalformedEntity
 	}
 
 	dbu, err := toDBUser(user)
 	if err != nil {
-		return "", errors.Wrap(errors.ErrCreateEntity, err)
+		return "", errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	row, err := ur.db.NamedQueryContext(ctx, q, dbu)
@@ -49,12 +49,12 @@ func (ur userRepository) Save(ctx context.Context, user users.User) (string, err
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return "", errors.Wrap(errors.ErrMalformedEntity, err)
+				return "", errors.Wrap(dbutil.ErrMalformedEntity, err)
 			case pgerrcode.UniqueViolation:
-				return "", errors.Wrap(errors.ErrConflict, err)
+				return "", errors.Wrap(dbutil.ErrConflict, err)
 			}
 		}
-		return "", errors.Wrap(errors.ErrCreateEntity, err)
+		return "", errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	defer row.Close()
@@ -71,11 +71,11 @@ func (ur userRepository) Update(ctx context.Context, user users.User) error {
 
 	dbu, err := toDBUser(user)
 	if err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	if _, err := ur.db.NamedExecContext(ctx, q, dbu); err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	return nil
@@ -91,11 +91,11 @@ func (ur userRepository) UpdateUser(ctx context.Context, user users.User) error 
 
 	dbu, err := toDBUser(user)
 	if err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	if _, err := ur.db.NamedExecContext(ctx, q, dbu); err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	return nil
@@ -110,10 +110,10 @@ func (ur userRepository) RetrieveByEmail(ctx context.Context, email string) (use
 
 	if err := ur.db.QueryRowxContext(ctx, q, email).StructScan(&dbu); err != nil {
 		if err == sql.ErrNoRows {
-			return users.User{}, errors.Wrap(errors.ErrNotFound, err)
+			return users.User{}, errors.Wrap(dbutil.ErrNotFound, err)
 
 		}
-		return users.User{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return users.User{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	return toUser(dbu)
@@ -128,10 +128,10 @@ func (ur userRepository) RetrieveByID(ctx context.Context, id string) (users.Use
 
 	if err := ur.db.QueryRowxContext(ctx, q, id).StructScan(&dbu); err != nil {
 		if err == sql.ErrNoRows {
-			return users.User{}, errors.Wrap(errors.ErrNotFound, err)
+			return users.User{}, errors.Wrap(dbutil.ErrNotFound, err)
 
 		}
-		return users.User{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return users.User{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	return toUser(dbu)
@@ -140,7 +140,7 @@ func (ur userRepository) RetrieveByID(ctx context.Context, id string) (users.Use
 func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm users.PageMetadata) (users.UserPage, error) {
 	eq, ep, err := createEmailQuery("", pm.Email)
 	if err != nil {
-		return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return users.UserPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
@@ -149,7 +149,7 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 
 	mp, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
-		return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return users.UserPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	aq := fmt.Sprintf("status = '%s'", pm.Status)
 	if pm.Status == users.AllStatusKey {
@@ -186,7 +186,7 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 
 	rows, err := ur.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return users.UserPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -194,7 +194,7 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 	for rows.Next() {
 		dbusr := dbUser{}
 		if err := rows.StructScan(&dbusr); err != nil {
-			return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return users.UserPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		user, err := toUser(dbusr)
@@ -209,7 +209,7 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 
 	total, err := dbutil.Total(ctx, ur.db, cq, params)
 	if err != nil {
-		return users.UserPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return users.UserPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	page := users.UserPage{
@@ -232,7 +232,7 @@ func (ur userRepository) BackupAll(ctx context.Context) ([]users.User, error) {
 
 	rows, err := ur.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
-		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -240,7 +240,7 @@ func (ur userRepository) BackupAll(ctx context.Context) ([]users.User, error) {
 	for rows.Next() {
 		dbusr := dbUser{}
 		if err := rows.StructScan(&dbusr); err != nil {
-			return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		user, err := toUser(dbusr)
@@ -263,7 +263,7 @@ func (ur userRepository) UpdatePassword(ctx context.Context, email, password str
 	}
 
 	if _, err := ur.db.NamedExecContext(ctx, q, db); err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	return nil
@@ -277,7 +277,7 @@ func (ur userRepository) ChangeStatus(ctx context.Context, id, status string) er
 	}
 
 	if _, err := ur.db.NamedExecContext(ctx, q, dbu); err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	return nil
@@ -296,7 +296,7 @@ func toDBUser(u users.User) (dbUser, error) {
 	if len(u.Metadata) > 0 {
 		b, err := json.Marshal(u.Metadata)
 		if err != nil {
-			return dbUser{}, errors.Wrap(errors.ErrMalformedEntity, err)
+			return dbUser{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 		}
 		data = b
 	}
@@ -314,7 +314,7 @@ func toUser(dbu dbUser) (users.User, error) {
 	var metadata map[string]interface{}
 	if dbu.Metadata != nil {
 		if err := json.Unmarshal([]byte(dbu.Metadata), &metadata); err != nil {
-			return users.User{}, errors.Wrap(errors.ErrMalformedEntity, err)
+			return users.User{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 		}
 	}
 

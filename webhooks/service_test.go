@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -59,9 +60,6 @@ func TestCreateWebhooks(t *testing.T) {
 		whs = append(whs, webhook1)
 	}
 
-	invalidThingWh := webhook
-	invalidThingWh.ThingID = emptyValue
-
 	invalidNameWh := webhook
 	invalidNameWh.Name = emptyValue
 
@@ -72,42 +70,48 @@ func TestCreateWebhooks(t *testing.T) {
 		desc     string
 		webhooks []webhooks.Webhook
 		token    string
+		thingID  string
 		err      error
 	}{
 		{
 			desc:     "create new webhooks",
 			webhooks: whs,
 			token:    token,
+			thingID:  thingID,
 			err:      nil,
 		},
 		{
 			desc:     "create webhook with wrong credentials",
 			webhooks: whs,
 			token:    wrongValue,
+			thingID:  thingID,
 			err:      errors.ErrAuthentication,
 		},
 		{
 			desc:     "create webhook with invalid thing id",
-			webhooks: []webhooks.Webhook{invalidThingWh},
+			webhooks: whs,
 			token:    token,
+			thingID:  wrongValue,
 			err:      errors.ErrAuthorization,
 		},
 		{
 			desc:     "create webhook with invalid name",
 			webhooks: []webhooks.Webhook{invalidNameWh},
 			token:    token,
+			thingID:  thingID,
 			err:      nil,
 		},
 		{
 			desc:     "create webhook with invalid url",
 			webhooks: []webhooks.Webhook{invalidUrlWh},
 			token:    token,
+			thingID:  thingID,
 			err:      nil,
 		},
 	}
 
 	for _, tc := range cases {
-		_, err := svc.CreateWebhooks(context.Background(), tc.token, tc.webhooks...)
+		_, err := svc.CreateWebhooks(context.Background(), tc.token, tc.thingID, tc.webhooks...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%v: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -123,7 +127,7 @@ func TestListWebhooksByGroup(t *testing.T) {
 		webhook1.Name = name
 		whs = append(whs, webhook1)
 	}
-	whs, err := svc.CreateWebhooks(context.Background(), token, whs...)
+	whs, err := svc.CreateWebhooks(context.Background(), token, thingID, whs...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	cases := []struct {
 		desc         string
@@ -245,7 +249,7 @@ func TestListWebhooksByThing(t *testing.T) {
 		webhook1.Name = name
 		whs = append(whs, webhook1)
 	}
-	whs, err := svc.CreateWebhooks(context.Background(), token, whs...)
+	whs, err := svc.CreateWebhooks(context.Background(), token, thingID, whs...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	cases := []struct {
 		desc         string
@@ -358,7 +362,7 @@ func TestListWebhooksByThing(t *testing.T) {
 
 func TestUpdateWebhook(t *testing.T) {
 	svc := newService()
-	whs, err := svc.CreateWebhooks(context.Background(), token, webhook)
+	whs, err := svc.CreateWebhooks(context.Background(), token, thingID, webhook)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	wh := whs[0]
 
@@ -386,7 +390,7 @@ func TestUpdateWebhook(t *testing.T) {
 			desc:    "update non-existing webhook",
 			webhook: invalidWh,
 			token:   token,
-			err:     errors.ErrNotFound,
+			err:     dbutil.ErrNotFound,
 		},
 	}
 
@@ -398,7 +402,7 @@ func TestUpdateWebhook(t *testing.T) {
 
 func TestViewWebhook(t *testing.T) {
 	svc := newService()
-	whs, err := svc.CreateWebhooks(context.Background(), token, webhook)
+	whs, err := svc.CreateWebhooks(context.Background(), token, thingID, webhook)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	wh := whs[0]
 
@@ -420,7 +424,7 @@ func TestViewWebhook(t *testing.T) {
 		"view non-existing webhook": {
 			id:    wrongValue,
 			token: token,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 
@@ -432,7 +436,7 @@ func TestViewWebhook(t *testing.T) {
 
 func TestRemoveWebhooks(t *testing.T) {
 	svc := newService()
-	whs, err := svc.CreateWebhooks(context.Background(), token, webhook)
+	whs, err := svc.CreateWebhooks(context.Background(), token, thingID, webhook)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	wh := whs[0]
 
@@ -458,7 +462,7 @@ func TestRemoveWebhooks(t *testing.T) {
 			desc:  "remove non-existing webhook",
 			id:    wrongValue,
 			token: token,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 
@@ -470,7 +474,7 @@ func TestRemoveWebhooks(t *testing.T) {
 
 func TestConsume(t *testing.T) {
 	svc := newService()
-	whs, err := svc.CreateWebhooks(context.Background(), token, webhook)
+	whs, err := svc.CreateWebhooks(context.Background(), token, thingID, webhook)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	pyd := map[string]interface{}{

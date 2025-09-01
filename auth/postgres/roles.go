@@ -27,7 +27,7 @@ func (rr rolesRepository) SaveRole(ctx context.Context, userID, role string) err
 	dbur := toDBUsersRole(userID, role)
 
 	if _, err := rr.db.NamedExecContext(ctx, q, dbur); err != nil {
-		return errors.Wrap(errors.ErrCreateEntity, err)
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	return nil
@@ -40,14 +40,14 @@ func (rr rolesRepository) RetrieveRole(ctx context.Context, userID string) (stri
 
 	rows, err := rr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return "", errors.Wrap(errors.ErrRetrieveEntity, err)
+		return "", errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
 	var role string
 	for rows.Next() {
 		if err := rows.Scan(&role); err != nil {
-			return "", errors.Wrap(errors.ErrRetrieveEntity, err)
+			return "", errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 	}
 
@@ -60,7 +60,7 @@ func (rr rolesRepository) UpdateRole(ctx context.Context, userID, role string) e
 	dbur := toDBUsersRole(userID, role)
 
 	if _, err := rr.db.NamedExecContext(ctx, q, dbur); err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	return nil
@@ -72,7 +72,7 @@ func (rr rolesRepository) RemoveRole(ctx context.Context, userID string) error {
 	dbur := dbUserRole{UserID: userID}
 
 	if _, err := rr.db.NamedExecContext(ctx, q, dbur); err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil

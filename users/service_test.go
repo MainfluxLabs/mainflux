@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -96,7 +97,7 @@ func TestSelfRegister(t *testing.T) {
 			desc:  "self register existing user",
 			user:  registerUser,
 			token: admin.Email,
-			err:   errors.ErrConflict,
+			err:   dbutil.ErrConflict,
 		},
 	}
 
@@ -122,7 +123,7 @@ func TestVerifyEmail(t *testing.T) {
 		{
 			desc:         "confirm verification with already registered e-mail",
 			verification: duplicateVerification,
-			err:          errors.ErrConflict,
+			err:          dbutil.ErrConflict,
 		},
 		{
 			desc:         "confirm expired verification",
@@ -394,7 +395,7 @@ func TestGenerateResetToken(t *testing.T) {
 		err   error
 	}{
 		"valid user reset token":  {registerUser.Email, nil},
-		"invalid user rest token": {nonExistingUser.Email, errors.ErrNotFound},
+		"invalid user rest token": {nonExistingUser.Email, dbutil.ErrNotFound},
 	}
 
 	for desc, tc := range cases {
@@ -420,7 +421,7 @@ func TestChangePassword(t *testing.T) {
 		"valid user change password invalid token":       {"", "", "newpassword", registerUser.Password, errors.ErrAuthentication},
 
 		"valid admin change user password ":            {adminToken, registerUser.Email, "newpassword", "", nil},
-		"valid admin change password with wrong email": {adminToken, "wrongemail@example.com", "newpassword", "", errors.ErrNotFound},
+		"valid admin change password with wrong email": {adminToken, "wrongemail@example.com", "newpassword", "", dbutil.ErrNotFound},
 		"valid admin change password invalid token":    {"", registerUser.Email, "newpassword", "", errors.ErrAuthentication},
 	}
 

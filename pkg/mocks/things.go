@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 )
@@ -34,14 +34,21 @@ func NewThingsService(things map[string]things.Thing, profiles map[string]things
 	}
 }
 
-func (svc *mainfluxThings) CreateThings(_ context.Context, token string, ths ...things.Thing) ([]things.Thing, error) {
+func (svc *mainfluxThings) CreateThings(_ context.Context, token, profileID string, ths ...things.Thing) ([]things.Thing, error) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
+
+	profile, ok := svc.profiles[profileID]
+	if !ok {
+		return []things.Thing{}, dbutil.ErrNotFound
+	}
 
 	for i := range ths {
 		svc.counter++
 		ths[i].ID = strconv.FormatUint(svc.counter, 10)
 		ths[i].Key = ths[i].ID
+		ths[i].ProfileID = profileID
+		ths[i].GroupID = profile.GroupID
 		svc.things[ths[i].ID] = ths[i]
 	}
 
@@ -57,7 +64,7 @@ func (svc *mainfluxThings) ViewThing(_ context.Context, token, id string) (thing
 
 	}
 
-	return things.Thing{}, errors.ErrNotFound
+	return things.Thing{}, dbutil.ErrNotFound
 }
 
 func (svc *mainfluxThings) RemoveThings(_ context.Context, token string, ids ...string) error {
@@ -66,7 +73,7 @@ func (svc *mainfluxThings) RemoveThings(_ context.Context, token string, ids ...
 
 	for _, id := range ids {
 		if _, ok := svc.things[id]; !ok {
-			return errors.ErrNotFound
+			return dbutil.ErrNotFound
 		}
 
 		delete(svc.things, id)
@@ -79,7 +86,7 @@ func (svc *mainfluxThings) ViewProfile(_ context.Context, token, id string) (thi
 	if c, ok := svc.profiles[id]; ok {
 		return c, nil
 	}
-	return things.Profile{}, errors.ErrNotFound
+	return things.Profile{}, dbutil.ErrNotFound
 }
 
 func (svc *mainfluxThings) UpdateThing(context.Context, string, things.Thing) error {
@@ -170,13 +177,14 @@ func (svc *mainfluxThings) Restore(context.Context, string, things.Backup) error
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CreateProfiles(_ context.Context, token string, prs ...things.Profile) ([]things.Profile, error) {
+func (svc *mainfluxThings) CreateProfiles(_ context.Context, token, grID string, prs ...things.Profile) ([]things.Profile, error) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
 	for i := range prs {
 		svc.counter++
 		prs[i].ID = strconv.FormatUint(svc.counter, 10)
+		prs[i].GroupID = grID
 		svc.profiles[prs[i].ID] = prs[i]
 	}
 
@@ -251,7 +259,7 @@ func (svc *mainfluxThings) ListThingsByGroup(_ context.Context, token, groupID s
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CreateGroups(_ context.Context, token string, groups ...things.Group) ([]things.Group, error) {
+func (svc *mainfluxThings) CreateGroups(_ context.Context, token, orgID string, groups ...things.Group) ([]things.Group, error) {
 	panic("not implemented")
 }
 
@@ -279,7 +287,7 @@ func (svc *mainfluxThings) ViewGroupByThing(_ context.Context, token string, thi
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewGroupByProfile(_ context.Context, token string, profileID string) (things.Group, error) {
+func (svc *mainfluxThings) ViewGroupByProfile(_ context.Context, token, profileID string) (things.Group, error) {
 	panic("not implemented")
 }
 

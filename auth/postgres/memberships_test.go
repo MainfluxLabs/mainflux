@@ -98,22 +98,22 @@ func TestSaveOrgMemberships(t *testing.T) {
 		{
 			desc:           "create org memberships with invalid org id",
 			orgMemberships: invalidOrgIDmRel,
-			err:            errors.ErrMalformedEntity,
+			err:            dbutil.ErrMalformedEntity,
 		},
 		{
 			desc:           "create org memberships without org id",
 			orgMemberships: emptyOrgData,
-			err:            errors.ErrMalformedEntity,
+			err:            dbutil.ErrMalformedEntity,
 		},
 		{
 			desc:           "create org memberships with empty member ids",
 			orgMemberships: noMembershipData,
-			err:            errors.ErrMalformedEntity,
+			err:            dbutil.ErrMalformedEntity,
 		},
 		{
 			desc:           "create org memberships with invalid member ids",
 			orgMemberships: invalidMembershipData,
-			err:            errors.ErrMalformedEntity,
+			err:            dbutil.ErrMalformedEntity,
 		},
 	}
 
@@ -175,13 +175,13 @@ func TestRemoveOrgMemberships(t *testing.T) {
 			desc:      "remove org memberships with invalid org id",
 			orgID:     invalidID,
 			memberIDs: memberIDs,
-			err:       errors.ErrMalformedEntity,
+			err:       dbutil.ErrMalformedEntity,
 		},
 		{
 			desc:      "remove org memberships without org id",
 			orgID:     "",
 			memberIDs: memberIDs,
-			err:       errors.ErrMalformedEntity,
+			err:       dbutil.ErrMalformedEntity,
 		},
 		{
 			desc:      "remove org memberships without member IDs",
@@ -193,7 +193,7 @@ func TestRemoveOrgMemberships(t *testing.T) {
 			desc:      "remove org memberships with invalid member id",
 			orgID:     orgID,
 			memberIDs: []string{invalidID},
-			err:       errors.ErrMalformedEntity,
+			err:       dbutil.ErrMalformedEntity,
 		},
 
 		{
@@ -387,27 +387,27 @@ func TestUpdateOrgMemberships(t *testing.T) {
 		}, {
 			desc:          "update membership with invalid org id",
 			orgMembership: invalidOrgData,
-			err:           errors.ErrMalformedEntity,
+			err:           dbutil.ErrMalformedEntity,
 		}, {
 			desc:          "update membership with unknown org id",
 			orgMembership: unknownOrgData,
-			err:           errors.ErrNotFound,
+			err:           dbutil.ErrNotFound,
 		}, {
 			desc:          "update membership without org id",
 			orgMembership: emptyOrgData,
-			err:           errors.ErrMalformedEntity,
+			err:           dbutil.ErrMalformedEntity,
 		}, {
 			desc:          "update membership with invalid member id",
 			orgMembership: invalidMembershipData,
-			err:           errors.ErrMalformedEntity,
+			err:           dbutil.ErrMalformedEntity,
 		}, {
 			desc:          "update membership with unknown member id",
 			orgMembership: unknownMembershipData,
-			err:           errors.ErrNotFound,
+			err:           dbutil.ErrNotFound,
 		}, {
 			desc:          "update membership with empty member",
 			orgMembership: emptyMembershipData,
-			err:           errors.ErrMalformedEntity,
+			err:           dbutil.ErrMalformedEntity,
 		},
 	}
 

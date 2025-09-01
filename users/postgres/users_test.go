@@ -55,7 +55,7 @@ func TestUserSave(t *testing.T) {
 				Password: "password",
 				Status:   users.EnabledStatusKey,
 			},
-			err: errors.ErrConflict,
+			err: dbutil.ErrConflict,
 		},
 		{
 			desc: "invalid user status",
@@ -65,7 +65,7 @@ func TestUserSave(t *testing.T) {
 				Password: "password",
 				Status:   "invalid",
 			},
-			err: errors.ErrMalformedEntity,
+			err: dbutil.ErrMalformedEntity,
 		},
 	}
 
@@ -102,7 +102,7 @@ func TestSingleUserRetrieval(t *testing.T) {
 		err   error
 	}{
 		"existing user":     {email, nil},
-		"non-existing user": {"unknown@example.com", errors.ErrNotFound},
+		"non-existing user": {"unknown@example.com", dbutil.ErrNotFound},
 	}
 
 	for desc, tc := range cases {
@@ -368,12 +368,12 @@ func TestUpdateUser(t *testing.T) {
 		"update user with invalid email": {
 			user:  wrongEmailUser,
 			email: wrongEmailUser.Email,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 		"update disabled user": {
 			user:  disabledUser,
 			email: disabledUser.Email,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 		},
 		"update existing user": {
 			user:  updtUser,

@@ -27,7 +27,7 @@ func LoggingMiddleware(svc things.Service, logger log.Logger) things.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) CreateThings(ctx context.Context, token string, ths ...things.Thing) (saved []things.Thing, err error) {
+func (lm *loggingMiddleware) CreateThings(ctx context.Context, token, profileID string, ths ...things.Thing) (saved []things.Thing, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_things for things %s took %s to complete", saved, time.Since(begin))
 		if err != nil {
@@ -37,7 +37,7 @@ func (lm *loggingMiddleware) CreateThings(ctx context.Context, token string, ths
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CreateThings(ctx, token, ths...)
+	return lm.svc.CreateThings(ctx, token, profileID, ths...)
 }
 
 func (lm *loggingMiddleware) UpdateThing(ctx context.Context, token string, thing things.Thing) (err error) {
@@ -211,7 +211,7 @@ func (lm *loggingMiddleware) RemoveThings(ctx context.Context, token string, ids
 	return lm.svc.RemoveThings(ctx, token, ids...)
 }
 
-func (lm *loggingMiddleware) CreateProfiles(ctx context.Context, token string, profiles ...things.Profile) (saved []things.Profile, err error) {
+func (lm *loggingMiddleware) CreateProfiles(ctx context.Context, token, grID string, profiles ...things.Profile) (saved []things.Profile, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_profiles for profiles %s took %s to complete", saved, time.Since(begin))
 		if err != nil {
@@ -221,7 +221,7 @@ func (lm *loggingMiddleware) CreateProfiles(ctx context.Context, token string, p
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CreateProfiles(ctx, token, profiles...)
+	return lm.svc.CreateProfiles(ctx, token, grID, profiles...)
 }
 
 func (lm *loggingMiddleware) UpdateProfile(ctx context.Context, token string, profile things.Profile) (err error) {
@@ -585,7 +585,7 @@ func (lm *loggingMiddleware) Restore(ctx context.Context, token string, backup t
 	return lm.svc.Restore(ctx, token, backup)
 }
 
-func (lm *loggingMiddleware) CreateGroups(ctx context.Context, token string, grs ...things.Group) (saved []things.Group, err error) {
+func (lm *loggingMiddleware) CreateGroups(ctx context.Context, token, orgID string, grs ...things.Group) (saved []things.Group, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_groups for groups %s took %s to complete", saved, time.Since(begin))
 		if err != nil {
@@ -595,7 +595,7 @@ func (lm *loggingMiddleware) CreateGroups(ctx context.Context, token string, grs
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CreateGroups(ctx, token, grs...)
+	return lm.svc.CreateGroups(ctx, token, orgID, grs...)
 }
 
 func (lm *loggingMiddleware) UpdateGroup(ctx context.Context, token string, gr things.Group) (g things.Group, err error) {

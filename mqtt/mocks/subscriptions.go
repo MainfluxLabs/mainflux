@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/mqtt"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 )
 
 var _ mqtt.Repository = (*subRepoMock)(nil)
@@ -40,7 +40,7 @@ func (srm *subRepoMock) RetrieveByGroupID(_ context.Context, pm mqtt.PageMetadat
 	}
 
 	if len(subs) == 0 {
-		return mqtt.Page{}, errors.ErrNotFound
+		return mqtt.Page{}, dbutil.ErrNotFound
 	}
 
 	return mqtt.Page{
@@ -56,7 +56,7 @@ func (srm *subRepoMock) Save(_ context.Context, sub mqtt.Subscription) error {
 	for _, s := range srm.subs {
 		for _, m := range s {
 			if m.Subtopic == sub.Subtopic && m.ThingID == sub.ThingID && m.GroupID == sub.GroupID {
-				return errors.ErrConflict
+				return dbutil.ErrConflict
 			}
 		}
 	}
@@ -78,7 +78,7 @@ func (srm *subRepoMock) Remove(_ context.Context, sub mqtt.Subscription) error {
 		}
 	}
 
-	return errors.ErrNotFound
+	return dbutil.ErrNotFound
 }
 
 func (srm *subRepoMock) UpdateStatus(_ context.Context, sub mqtt.Subscription) error {

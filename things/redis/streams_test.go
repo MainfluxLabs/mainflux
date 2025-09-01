@@ -13,6 +13,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -48,7 +49,8 @@ var (
 	otherUser = users.User{ID: "674106f7-030e-4881-8ab0-151195c29f95", Email: otherUserEmail, Password: password, Role: auth.Editor}
 	admin     = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f97", Email: adminEmail, Password: password, Role: auth.RootSub}
 	usersList = []users.User{admin, user, otherUser}
-	group     = things.Group{OrgID: "374106f7-030e-4881-8ab0-151195c29f92", Name: "test-group", Description: "test-group-desc"}
+	orgID     = "374106f7-030e-4881-8ab0-151195c29f92"
+	group     = things.Group{Name: "test-group", Description: "test-group-desc"}
 	orgsList  = []auth.Org{{ID: "374106f7-030e-4881-8ab0-151195c29f92", OwnerID: user.ID}}
 	profile   = things.Profile{Name: "test-profile"}
 )
@@ -71,20 +73,18 @@ func TestCreateThings(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService()
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grID := grs[0].ID
 
-	profile.GroupID = grID
-	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
 
 	ths := []things.Thing{{
-		Name:      "a",
-		GroupID:   grID,
-		ProfileID: prID,
-		Metadata:  map[string]interface{}{"test": "test"},
+		Name:     "a",
+		Metadata: map[string]interface{}{"test": "test"},
 	}}
 
 	svc = redis.NewEventStoreMiddleware(svc, redisClient)
@@ -121,7 +121,7 @@ func TestCreateThings(t *testing.T) {
 
 	lastID := "0"
 	for _, tc := range cases {
-		_, err := svc.CreateThings(context.Background(), tc.key, tc.ths...)
+		_, err := svc.CreateThings(context.Background(), tc.key, prID, tc.ths...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
@@ -145,18 +145,18 @@ func TestUpdateThing(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService()
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grID := grs[0].ID
 
-	profile.GroupID = grID
-	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
 
 	// Create thing without sending event.
-	th := things.Thing{Name: "a", GroupID: grID, ProfileID: prID, Metadata: map[string]interface{}{"test": "test"}}
-	sths, err := svc.CreateThings(context.Background(), token, th)
+	th := things.Thing{Name: "a", Metadata: map[string]interface{}{"test": "test"}}
+	sths, err := svc.CreateThings(context.Background(), token, prID, th)
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
 
@@ -214,17 +214,17 @@ func TestViewThing(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService()
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grID := grs[0].ID
 
-	profile.GroupID = grID
-	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
 
 	// Create thing without sending event.
-	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: grID, ProfileID: prID})
+	sths, err := svc.CreateThings(context.Background(), token, prID, things.Thing{Name: "a"})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
 
@@ -239,17 +239,17 @@ func TestListThings(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService()
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grID := grs[0].ID
 
-	profile.GroupID = grID
-	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
 
 	// Create thing without sending event.
-	_, err = svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: grID, ProfileID: prID})
+	_, err = svc.CreateThings(context.Background(), token, prID, things.Thing{Name: "a"})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 
 	essvc := redis.NewEventStoreMiddleware(svc, redisClient)
@@ -264,16 +264,17 @@ func TestListThingsByProfile(t *testing.T) {
 
 	svc := newService()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
-	sprs, err := svc.CreateProfiles(context.Background(), token, things.Profile{Name: "a", GroupID: gr.ID})
+	sprs, err := svc.CreateProfiles(context.Background(), token, gr.ID, things.Profile{Name: "a"})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	pr := sprs[0]
 
 	// Create thing without sending event.
-	_, err = svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: gr.ID, ProfileID: pr.ID})
+	_, err = svc.CreateThings(context.Background(), token, pr.ID, things.Thing{Name: "a"})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 
 	essvc := redis.NewEventStoreMiddleware(svc, redisClient)
@@ -287,17 +288,17 @@ func TestRemoveThing(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService()
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grID := grs[0].ID
 
-	profile.GroupID = grID
-	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
 
 	// Create thing without sending event.
-	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: grID, ProfileID: prID})
+	sths, err := svc.CreateThings(context.Background(), token, prID, things.Thing{Name: "a"})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
 
@@ -324,7 +325,7 @@ func TestRemoveThing(t *testing.T) {
 			desc:  "remove non-existent thing",
 			id:    strconv.FormatUint(math.MaxUint64, 10),
 			key:   "",
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 			event: nil,
 		},
 	}
@@ -356,22 +357,25 @@ func TestCreateProfiles(t *testing.T) {
 
 	svc := newService()
 	svc = redis.NewEventStoreMiddleware(svc, redisClient)
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 
 	cases := []struct {
-		desc  string
-		prs   []things.Profile
-		key   string
-		err   error
-		event map[string]interface{}
+		desc    string
+		prs     []things.Profile
+		token   string
+		groupID string
+		err     error
+		event   map[string]interface{}
 	}{
 		{
-			desc: "create profiles successfully",
-			prs:  []things.Profile{{GroupID: gr.ID, Name: "a", Metadata: map[string]interface{}{"test": "test"}}},
-			key:  token,
-			err:  nil,
+			desc:    "create profiles successfully",
+			prs:     []things.Profile{{Name: "a", Metadata: map[string]interface{}{"test": "test"}}},
+			token:   token,
+			groupID: gr.ID,
+			err:     nil,
 			event: map[string]interface{}{
 				"id":        "123e4567-e89b-12d3-a456-000000000002",
 				"name":      "a",
@@ -381,17 +385,18 @@ func TestCreateProfiles(t *testing.T) {
 			},
 		},
 		{
-			desc:  "create profiles with invalid credentials",
-			prs:   []things.Profile{{GroupID: gr.ID, Name: "a", Metadata: map[string]interface{}{"test": "test"}}},
-			key:   "",
-			err:   errors.ErrAuthentication,
-			event: nil,
+			desc:    "create profiles with invalid credentials",
+			prs:     []things.Profile{{Name: "a", Metadata: map[string]interface{}{"test": "test"}}},
+			token:   "",
+			groupID: gr.ID,
+			err:     errors.ErrAuthentication,
+			event:   nil,
 		},
 	}
 
 	lastID := "0"
 	for _, tc := range cases {
-		_, err := svc.CreateProfiles(context.Background(), tc.key, tc.prs...)
+		_, err := svc.CreateProfiles(context.Background(), tc.token, tc.groupID, tc.prs...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
@@ -415,11 +420,11 @@ func TestUpdateProfile(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService()
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
-	// Create profile without sending event.
-	sprs, err := svc.CreateProfiles(context.Background(), token, things.Profile{Name: "a", GroupID: gr.ID})
+
+	sprs, err := svc.CreateProfiles(context.Background(), token, gr.ID, things.Profile{Name: "a"})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	spr := sprs[0]
 
@@ -455,7 +460,7 @@ func TestUpdateProfile(t *testing.T) {
 				Name: "c",
 			},
 			key:   token,
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 			event: nil,
 		},
 	}
@@ -486,11 +491,12 @@ func TestViewProfile(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService()
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 	// Create profile without sending event.
-	sprs, err := svc.CreateProfiles(context.Background(), token, things.Profile{Name: "a", GroupID: gr.ID})
+	sprs, err := svc.CreateProfiles(context.Background(), token, gr.ID, things.Profile{Name: "a"})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	spr := sprs[0]
 
@@ -505,11 +511,12 @@ func TestListProfiles(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService()
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 	// Create thing without sending event.
-	_, err = svc.CreateProfiles(context.Background(), token, things.Profile{Name: "a", GroupID: gr.ID})
+	_, err = svc.CreateProfiles(context.Background(), token, gr.ID, things.Profile{Name: "a"})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 
 	essvc := redis.NewEventStoreMiddleware(svc, redisClient)
@@ -524,17 +531,17 @@ func TestListProfilesByThing(t *testing.T) {
 
 	svc := newService()
 
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grID := grs[0].ID
 
-	profile.GroupID = grID
-	prs, err := svc.CreateProfiles(context.Background(), token, profile)
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
 
 	// Create thing without sending event.
-	sths, err := svc.CreateThings(context.Background(), token, things.Thing{Name: "a", GroupID: grID, ProfileID: prID})
+	sths, err := svc.CreateThings(context.Background(), token, prID, things.Thing{Name: "a"})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
 
@@ -549,11 +556,12 @@ func TestRemoveProfile(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService()
-	grs, err := svc.CreateGroups(context.Background(), token, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
 	// Create profile without sending event.
-	sprs, err := svc.CreateProfiles(context.Background(), token, things.Profile{Name: "a", GroupID: gr.ID})
+	sprs, err := svc.CreateProfiles(context.Background(), token, gr.ID, things.Profile{Name: "a"})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	spr := sprs[0]
 
@@ -580,7 +588,7 @@ func TestRemoveProfile(t *testing.T) {
 			desc:  "remove non-existent profile",
 			id:    strconv.FormatUint(math.MaxUint64, 10),
 			key:   "",
-			err:   errors.ErrNotFound,
+			err:   dbutil.ErrNotFound,
 			event: nil,
 		},
 	}
