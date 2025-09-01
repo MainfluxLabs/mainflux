@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"google.golang.org/grpc/codes"
@@ -122,7 +123,7 @@ func (svc service) InviteOrgMember(ctx context.Context, token string, orgID stri
 		if ok {
 			switch st.Code() {
 			case codes.NotFound:
-				return OrgInvite{}, errors.ErrNotFound
+				return OrgInvite{}, dbutil.ErrNotFound
 			default:
 				return OrgInvite{}, err
 			}
@@ -134,7 +135,7 @@ func (svc service) InviteOrgMember(ctx context.Context, token string, orgID stri
 	inviteeID := users.Users[0].Id
 
 	_, err = svc.ViewOrgMembership(ctx, token, orgID, inviteeID)
-	if err != nil && !errors.Contains(err, errors.ErrNotFound) {
+	if err != nil && !errors.Contains(err, dbutil.ErrNotFound) {
 		return OrgInvite{}, err
 	}
 

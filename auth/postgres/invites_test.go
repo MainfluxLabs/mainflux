@@ -126,7 +126,7 @@ func TestSaveInvite(t *testing.T) {
 		{
 			desc:    "save invite that already exists",
 			invites: invites,
-			err:     errors.ErrConflict,
+			err:     dbutil.ErrConflict,
 		},
 		{
 			desc:    "save invite to same invitee by same inviter to same org",
@@ -136,12 +136,12 @@ func TestSaveInvite(t *testing.T) {
 		{
 			desc:    "save invites with invalid org id",
 			invites: invalidOrgIDInvites,
-			err:     errors.ErrMalformedEntity,
+			err:     dbutil.ErrMalformedEntity,
 		},
 		{
 			desc:    "save invites with empty org id",
 			invites: emptyOrgIDInvites,
-			err:     errors.ErrMalformedEntity,
+			err:     dbutil.ErrMalformedEntity,
 		},
 		{
 			desc:    "save invite with same properties as existing expired invite",
@@ -221,17 +221,17 @@ func TestRetrieveInviteByID(t *testing.T) {
 		{
 			desc:     "retrieve invite with empty ID",
 			inviteID: "",
-			err:      errors.ErrMalformedEntity,
+			err:      dbutil.ErrMalformedEntity,
 		},
 		{
 			desc:     "retrieve invite with invalid ID",
 			inviteID: "invalid",
-			err:      errors.ErrMalformedEntity,
+			err:      dbutil.ErrMalformedEntity,
 		},
 		{
 			desc:     "retrieve invite with non-existent ID",
 			inviteID: nonExistentID,
-			err:      errors.ErrNotFound,
+			err:      dbutil.ErrNotFound,
 		},
 	}
 
@@ -306,17 +306,17 @@ func TestRemoveInvite(t *testing.T) {
 		{
 			desc:     "remove invite with empty ID",
 			inviteID: "",
-			err:      errors.ErrMalformedEntity,
+			err:      dbutil.ErrMalformedEntity,
 		},
 		{
 			desc:     "remove invite with invalid ID",
 			inviteID: "invalid",
-			err:      errors.ErrMalformedEntity,
+			err:      dbutil.ErrMalformedEntity,
 		},
 		{
 			desc:     "remove invite with non-existent ID",
 			inviteID: nonExistentID,
-			err:      errors.ErrRemoveEntity,
+			err:      dbutil.ErrRemoveEntity,
 		},
 	}
 
@@ -406,7 +406,7 @@ func TestRetrieveByUserID(t *testing.T) {
 			userID:   "",
 			userType: auth.UserTypeInvitee,
 			size:     0,
-			err:      errors.ErrRetrieveEntity,
+			err:      dbutil.ErrRetrieveEntity,
 		},
 		{
 			desc:     "retrieve all sent invites by inviter",

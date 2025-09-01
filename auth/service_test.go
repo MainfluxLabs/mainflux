@@ -1291,7 +1291,7 @@ func TestInviteMembers(t *testing.T) {
 				Role:  auth.Viewer,
 				Email: "example3@test.com",
 			},
-			err: errors.ErrConflict,
+			err: dbutil.ErrConflict,
 		},
 		{
 			desc:  "invite member who is already a member of org",
@@ -1311,7 +1311,7 @@ func TestInviteMembers(t *testing.T) {
 				Role:  auth.Editor,
 				Email: unregisteredEmail,
 			},
-			err: errors.ErrNotFound,
+			err: dbutil.ErrNotFound,
 		},
 	}
 

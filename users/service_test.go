@@ -494,7 +494,7 @@ func TestInvitePlatformMember(t *testing.T) {
 		err   error
 	}{
 		"create valid platform invite":                  {tokenAdmin, "newUser@example.com", nil},
-		"invite already reigstered user to platform":    {tokenAdmin, existingInvite.InviteeEmail, errors.ErrConflict},
+		"invite already reigstered user to platform":    {tokenAdmin, existingInvite.InviteeEmail, dbutil.ErrConflict},
 		"create platform invite as non-root-admin user": {tokenUser, "brandNewUser@example.com", errors.ErrAuthorization},
 	}
 

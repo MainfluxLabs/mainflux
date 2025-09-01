@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/users"
 )
 
@@ -30,14 +30,14 @@ func (irm *platformInvitesRepositoryMock) SavePlatformInvite(ctx context.Context
 
 	for _, invite := range invites {
 		if _, ok := irm.platformInvites[invite.ID]; ok {
-			return errors.ErrConflict
+			return dbutil.ErrConflict
 		}
 
 		for _, iInv := range irm.platformInvites {
 			if iInv.InviteeEmail == invite.InviteeEmail &&
 				iInv.State == "pending" &&
 				iInv.ExpiresAt.After(time.Now()) {
-				return errors.ErrConflict
+				return dbutil.ErrConflict
 			}
 		}
 
@@ -52,7 +52,7 @@ func (irm *platformInvitesRepositoryMock) RetrievePlatformInviteByID(ctx context
 	defer irm.mu.Unlock()
 
 	if _, ok := irm.platformInvites[inviteID]; !ok {
-		return users.PlatformInvite{}, errors.ErrNotFound
+		return users.PlatformInvite{}, dbutil.ErrNotFound
 	}
 
 	return irm.platformInvites[inviteID], nil
@@ -94,7 +94,7 @@ func (irm *platformInvitesRepositoryMock) UpdatePlatformInviteState(ctx context.
 	defer irm.mu.Unlock()
 
 	if _, ok := irm.platformInvites[inviteID]; !ok {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 
 	inv := irm.platformInvites[inviteID]

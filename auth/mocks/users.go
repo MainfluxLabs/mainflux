@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/users"
 	"google.golang.org/grpc"
@@ -69,7 +69,7 @@ func (svc *usersServiceClientMock) GetUsersByEmails(_ context.Context, in *proto
 		if user, ok := svc.usersByEmails[email]; ok {
 			users = append(users, &protomfx.User{Id: user.ID, Email: user.Email})
 		} else {
-			return nil, status.Error(codes.NotFound, errors.ErrNotFound.Error())
+			return nil, status.Error(codes.NotFound, dbutil.ErrNotFound.Error())
 		}
 	}
 

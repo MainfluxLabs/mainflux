@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
@@ -83,8 +84,8 @@ func (svc usersService) InvitePlatformMember(ctx context.Context, token string, 
 
 	// User with e-mail already registered
 	if err == nil {
-		return PlatformInvite{}, errors.ErrConflict
-	} else if !errors.Contains(err, errors.ErrNotFound) {
+		return PlatformInvite{}, dbutil.ErrConflict
+	} else if !errors.Contains(err, dbutil.ErrNotFound) {
 		return PlatformInvite{}, err
 	}
 
@@ -167,7 +168,7 @@ func (svc usersService) ListPlatformInvites(ctx context.Context, token string, p
 func (svc usersService) ValidatePlatformInvite(ctx context.Context, inviteID string, email string) error {
 	invite, err := svc.platformInvites.RetrievePlatformInviteByID(ctx, inviteID)
 	if err != nil {
-		if errors.Contains(err, errors.ErrNotFound) {
+		if errors.Contains(err, dbutil.ErrNotFound) {
 			return errors.Wrap(errors.ErrAuthorization, err)
 		}
 

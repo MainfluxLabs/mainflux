@@ -52,9 +52,9 @@ func (ir invitesRepository) SavePlatformInvite(ctx context.Context, invites ...u
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
+					return errors.Wrap(dbutil.ErrMalformedEntity, err)
 				case pgerrcode.UniqueViolation:
-					var e = errors.ErrConflict
+					var e = dbutil.ErrConflict
 					if pgErr.ConstraintName == "ux_invites_platform_invitee_email" {
 						e = apiutil.ErrUserAlreadyInvited
 					}
@@ -89,18 +89,18 @@ func (ir invitesRepository) RetrievePlatformInviteByID(ctx context.Context, invi
 
 	if err := ir.db.QueryRowxContext(ctx, q, inviteID).StructScan(&dbI); err != nil {
 		if err == sql.ErrNoRows {
-			return users.PlatformInvite{}, errors.Wrap(errors.ErrNotFound, err)
+			return users.PlatformInvite{}, errors.Wrap(dbutil.ErrNotFound, err)
 		}
 
 		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return users.PlatformInvite{}, errors.Wrap(errors.ErrMalformedEntity, err)
+				return users.PlatformInvite{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
 
-		return users.PlatformInvite{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return users.PlatformInvite{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	return toPlatformInvite(dbI), nil
@@ -139,7 +139,7 @@ func (ir invitesRepository) RetrievePlatformInvites(ctx context.Context, pm user
 
 	rows, err := ir.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return users.PlatformInvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return users.PlatformInvitesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -149,7 +149,7 @@ func (ir invitesRepository) RetrievePlatformInvites(ctx context.Context, pm user
 		dbInv := dbPlatformInvite{}
 
 		if err := rows.StructScan(&dbInv); err != nil {
-			return users.PlatformInvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return users.PlatformInvitesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		inv := toPlatformInvite(dbInv)
@@ -158,7 +158,7 @@ func (ir invitesRepository) RetrievePlatformInvites(ctx context.Context, pm user
 
 	total, err := dbutil.Total(ctx, ir.db, queryCount, params)
 	if err != nil {
-		return users.PlatformInvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return users.PlatformInvitesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	page := users.PlatformInvitesPage{
@@ -189,10 +189,10 @@ func (ir invitesRepository) UpdatePlatformInviteState(ctx context.Context, invit
 		if ok {
 			switch pqErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	return nil
@@ -213,10 +213,10 @@ func (ir invitesRepository) syncPlatformInviteStateByEmail(ctx context.Context, 
 		if ok {
 			switch pqErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	return nil
@@ -237,10 +237,10 @@ func (ir invitesRepository) syncPlatformInviteStateByID(ctx context.Context, inv
 		if ok {
 			switch pqErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	return nil
@@ -257,7 +257,7 @@ func (ir invitesRepository) syncPlatformInviteState(ctx context.Context) error {
 
 	_, err := ir.db.NamedExecContext(ctx, query, map[string]any{})
 	if err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	return nil

@@ -145,16 +145,16 @@ type UserPage struct {
 var _ Service = (*usersService)(nil)
 
 type usersService struct {
-	users              UserRepository
-	emailVerifications EmailVerificationRepository
-	platformInvites    PlatformInvitesRepository
-	inviteDuration     time.Duration
-	emailVerifyEnabled bool
+	users               UserRepository
+	emailVerifications  EmailVerificationRepository
+	platformInvites     PlatformInvitesRepository
+	inviteDuration      time.Duration
+	emailVerifyEnabled  bool
 	selfRegisterEnabled bool
-	hasher             Hasher
-	email              Emailer
-	auth               protomfx.AuthServiceClient
-	idProvider         uuid.IDProvider
+	hasher              Hasher
+	email               Emailer
+	auth                protomfx.AuthServiceClient
+	idProvider          uuid.IDProvider
 }
 
 // New instantiates the users service implementation
@@ -240,12 +240,12 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, redirectPat
 func (svc usersService) PlatformInviteRegister(ctx context.Context, user User, inviteID string) (string, error) {
 	// Make sure user with same e-mail isn't registered already
 	_, err := svc.users.RetrieveByEmail(ctx, user.Email)
-	if err != nil && !errors.Contains(err, errors.ErrNotFound) {
+	if err != nil && !errors.Contains(err, dbutil.ErrNotFound) {
 		return "", err
 	}
 
 	if err == nil {
-		return "", errors.ErrConflict
+		return "", dbutil.ErrConflict
 	}
 
 	// Validate platform invite
@@ -256,7 +256,7 @@ func (svc usersService) PlatformInviteRegister(ctx context.Context, user User, i
 
 	hash, err := svc.hasher.Hash(user.Password)
 	if err != nil {
-		return "", errors.Wrap(errors.ErrMalformedEntity, err)
+		return "", errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
 
 	user.Password = hash

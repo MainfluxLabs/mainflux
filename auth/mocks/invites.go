@@ -8,7 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 )
 
 var _ auth.OrgInvitesRepository = (*invitesRepositoryMock)(nil)
@@ -30,7 +30,7 @@ func (irm *invitesRepositoryMock) SaveOrgInvite(ctx context.Context, invites ...
 
 	for _, invite := range invites {
 		if _, ok := irm.orgInvites[invite.ID]; ok {
-			return errors.ErrConflict
+			return dbutil.ErrConflict
 		}
 
 		for _, iInv := range irm.orgInvites {
@@ -39,7 +39,7 @@ func (irm *invitesRepositoryMock) SaveOrgInvite(ctx context.Context, invites ...
 				iInv.InviterID == invite.InviterID &&
 				iInv.State == "pending" &&
 				iInv.ExpiresAt.After(time.Now()) {
-				return errors.ErrConflict
+				return dbutil.ErrConflict
 			}
 		}
 
@@ -54,7 +54,7 @@ func (irm *invitesRepositoryMock) RetrieveOrgInviteByID(ctx context.Context, inv
 	defer irm.mu.Unlock()
 
 	if _, ok := irm.orgInvites[inviteID]; !ok {
-		return auth.OrgInvite{}, errors.ErrNotFound
+		return auth.OrgInvite{}, dbutil.ErrNotFound
 	}
 
 	return irm.orgInvites[inviteID], nil
@@ -65,7 +65,7 @@ func (irm *invitesRepositoryMock) RemoveOrgInvite(ctx context.Context, inviteID 
 	defer irm.mu.Unlock()
 
 	if _, ok := irm.orgInvites[inviteID]; !ok {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 
 	delete(irm.orgInvites, inviteID)
@@ -151,7 +151,7 @@ func (irm *invitesRepositoryMock) UpdateOrgInviteState(ctx context.Context, invi
 	defer irm.mu.Unlock()
 
 	if _, ok := irm.orgInvites[inviteID]; !ok {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 
 	inv := irm.orgInvites[inviteID]

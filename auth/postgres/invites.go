@@ -52,9 +52,9 @@ func (ir invitesRepository) SaveOrgInvite(ctx context.Context, invites ...auth.O
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrMalformedEntity, err)
+					return errors.Wrap(dbutil.ErrMalformedEntity, err)
 				case pgerrcode.UniqueViolation:
-					var e = errors.ErrConflict
+					var e = dbutil.ErrConflict
 					if pgErr.ConstraintName == "ux_invites_org_invitee_id_org_id" {
 						e = apiutil.ErrUserAlreadyInvited
 					}
@@ -89,18 +89,18 @@ func (ir invitesRepository) RetrieveOrgInviteByID(ctx context.Context, inviteID 
 
 	if err := ir.db.QueryRowxContext(ctx, q, inviteID).StructScan(&dbI); err != nil {
 		if err == sql.ErrNoRows {
-			return auth.OrgInvite{}, errors.Wrap(errors.ErrNotFound, err)
+			return auth.OrgInvite{}, errors.Wrap(dbutil.ErrNotFound, err)
 		}
 
 		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return auth.OrgInvite{}, errors.Wrap(errors.ErrMalformedEntity, err)
+				return auth.OrgInvite{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
 
-		return auth.OrgInvite{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.OrgInvite{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	return toOrgInvite(dbI), nil
@@ -118,19 +118,19 @@ func (ir invitesRepository) RemoveOrgInvite(ctx context.Context, inviteID string
 		if ok {
 			switch pqErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	cnt, err := res.RowsAffected()
 	if err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	if cnt != 1 {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil
@@ -152,10 +152,10 @@ func (ir invitesRepository) UpdateOrgInviteState(ctx context.Context, inviteID s
 		if ok {
 			switch pqErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	return nil
@@ -192,7 +192,7 @@ func (ir invitesRepository) RetrieveOrgInvitesByOrgID(ctx context.Context, orgID
 
 	rows, err := ir.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return auth.OrgInvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.OrgInvitesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -202,7 +202,7 @@ func (ir invitesRepository) RetrieveOrgInvitesByOrgID(ctx context.Context, orgID
 		dbInv := dbOrgInvite{}
 
 		if err := rows.StructScan(&dbInv); err != nil {
-			return auth.OrgInvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return auth.OrgInvitesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		inv := toOrgInvite(dbInv)
@@ -211,7 +211,7 @@ func (ir invitesRepository) RetrieveOrgInvitesByOrgID(ctx context.Context, orgID
 
 	total, err := dbutil.Total(ctx, ir.db, queryCount, params)
 	if err != nil {
-		return auth.OrgInvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.OrgInvitesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	page := auth.OrgInvitesPage{
@@ -265,12 +265,12 @@ func (ir invitesRepository) RetrieveOrgInvitesByUserID(ctx context.Context, user
 	}
 
 	if err := ir.syncOrgInviteStateByUserID(ctx, userType, userID); err != nil {
-		return auth.OrgInvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.OrgInvitesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	rows, err := ir.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return auth.OrgInvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.OrgInvitesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -280,7 +280,7 @@ func (ir invitesRepository) RetrieveOrgInvitesByUserID(ctx context.Context, user
 		dbInv := dbOrgInvite{}
 
 		if err := rows.StructScan(&dbInv); err != nil {
-			return auth.OrgInvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return auth.OrgInvitesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		inv := toOrgInvite(dbInv)
@@ -289,7 +289,7 @@ func (ir invitesRepository) RetrieveOrgInvitesByUserID(ctx context.Context, user
 
 	total, err := dbutil.Total(ctx, ir.db, queryCount, params)
 	if err != nil {
-		return auth.OrgInvitesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.OrgInvitesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	page := auth.OrgInvitesPage{
@@ -332,10 +332,10 @@ func (ir invitesRepository) syncOrgInviteStateByUserID(ctx context.Context, user
 		if ok {
 			switch pqErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	return nil
@@ -358,10 +358,10 @@ func (ir invitesRepository) syncOrgInviteStateByInvite(ctx context.Context, invi
 		if ok {
 			switch pqErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	return nil
@@ -381,10 +381,10 @@ func (ir invitesRepository) syncOrgInviteStateByID(ctx context.Context, inviteID
 		if ok {
 			switch pqErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	return nil
