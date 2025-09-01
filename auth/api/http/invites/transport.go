@@ -114,9 +114,9 @@ func decodeOrgInviteResponseRequest(_ context.Context, r *http.Request) (any, er
 	inviteResponseVerb := bone.GetValue(r, inviteResponseVerbKey)
 	switch inviteResponseVerb {
 	case "accept":
-		req.inviteAccepted = true
+		req.accepted = true
 	case "decline":
-		req.inviteAccepted = false
+		req.accepted = false
 	default:
 		return orgInviteResponseReq{}, apiutil.ErrInvalidInviteResponse
 	}

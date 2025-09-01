@@ -59,9 +59,9 @@ func (req inviteReq) validate() error {
 }
 
 type orgInviteResponseReq struct {
-	token          string
-	inviteID       string
-	inviteAccepted bool
+	token    string
+	inviteID string
+	accepted bool
 }
 
 func (req orgInviteResponseReq) validate() error {
