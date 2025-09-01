@@ -107,8 +107,8 @@ func decodeCreateOrgInviteRequest(_ context.Context, r *http.Request) (any, erro
 
 func decodeOrgInviteResponseRequest(_ context.Context, r *http.Request) (any, error) {
 	req := orgInviteResponseReq{
-		token:    apiutil.ExtractBearerToken(r),
-		inviteID: bone.GetValue(r, inviteIDKey),
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, inviteIDKey),
 	}
 
 	inviteResponseVerb := bone.GetValue(r, inviteResponseVerbKey)
@@ -126,8 +126,8 @@ func decodeOrgInviteResponseRequest(_ context.Context, r *http.Request) (any, er
 
 func decodeListOrgInvitesByUserRequest(_ context.Context, r *http.Request) (any, error) {
 	req := listOrgInvitesByUserReq{
-		token:  apiutil.ExtractBearerToken(r),
-		userID: bone.GetValue(r, userIDKey),
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, userIDKey),
 	}
 
 	pm, err := buildPageMetadataInvites(r)
@@ -142,8 +142,8 @@ func decodeListOrgInvitesByUserRequest(_ context.Context, r *http.Request) (any,
 
 func decodeInviteRequest(_ context.Context, r *http.Request) (any, error) {
 	req := inviteReq{
-		token:    apiutil.ExtractBearerToken(r),
-		inviteID: bone.GetValue(r, inviteIDKey),
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, inviteIDKey),
 	}
 
 	return req, nil
@@ -152,7 +152,7 @@ func decodeInviteRequest(_ context.Context, r *http.Request) (any, error) {
 func decodeListOrgInvitesByOrgRequest(_ context.Context, r *http.Request) (any, error) {
 	req := listOrgInvitesByOrgReq{
 		token: apiutil.ExtractBearerToken(r),
-		orgID: bone.GetValue(r, apiutil.IDKey),
+		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
 	pm, err := buildPageMetadataInvites(r)

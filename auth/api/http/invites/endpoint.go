@@ -33,7 +33,7 @@ func viewOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		invite, err := svc.ViewOrgInvite(ctx, req.token, req.inviteID)
+		invite, err := svc.ViewOrgInvite(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}
@@ -58,7 +58,7 @@ func revokeOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.RevokeOrgInvite(ctx, req.token, req.inviteID); err != nil {
+		if err := svc.RevokeOrgInvite(ctx, req.token, req.id); err != nil {
 			return nil, err
 		}
 
@@ -73,7 +73,7 @@ func respondOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.RespondOrgInvite(ctx, req.token, req.inviteID, req.accepted); err != nil {
+		if err := svc.RespondOrgInvite(ctx, req.token, req.id, req.accepted); err != nil {
 			return nil, err
 		}
 
@@ -88,7 +88,7 @@ func listOrgInvitesByUserEndpoint(svc auth.Service, userType string) endpoint.En
 			return nil, err
 		}
 
-		page, err := svc.ListOrgInvitesByUser(ctx, req.token, userType, req.userID, req.pm)
+		page, err := svc.ListOrgInvitesByUser(ctx, req.token, userType, req.id, req.pm)
 		if err != nil {
 			return nil, err
 		}
@@ -128,7 +128,7 @@ func listOrgInvitesByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.ListOrgInvitesByOrgID(ctx, req.token, req.orgID, req.pm)
+		page, err := svc.ListOrgInvitesByOrgID(ctx, req.token, req.id, req.pm)
 		if err != nil {
 			return nil, err
 		}

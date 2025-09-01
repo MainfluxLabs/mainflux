@@ -42,8 +42,8 @@ func (req createOrgInviteReq) validate() error {
 }
 
 type inviteReq struct {
-	token    string
-	inviteID string
+	token string
+	id    string
 }
 
 func (req inviteReq) validate() error {
@@ -51,7 +51,7 @@ func (req inviteReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.inviteID == "" {
+	if req.id == "" {
 		return apiutil.ErrMissingInviteID
 	}
 
@@ -60,7 +60,7 @@ func (req inviteReq) validate() error {
 
 type orgInviteResponseReq struct {
 	token    string
-	inviteID string
+	id       string
 	accepted bool
 }
 
@@ -69,7 +69,7 @@ func (req orgInviteResponseReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.inviteID == "" {
+	if req.id == "" {
 		return apiutil.ErrMissingInviteID
 	}
 
@@ -77,9 +77,9 @@ func (req orgInviteResponseReq) validate() error {
 }
 
 type listOrgInvitesByUserReq struct {
-	token  string
-	userID string
-	pm     auth.PageMetadataInvites
+	token string
+	id    string
+	pm    auth.PageMetadataInvites
 }
 
 func (req listOrgInvitesByUserReq) validate() error {
@@ -87,7 +87,7 @@ func (req listOrgInvitesByUserReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.userID == "" {
+	if req.id == "" {
 		return apiutil.ErrMissingUserID
 	}
 
@@ -100,7 +100,7 @@ func (req listOrgInvitesByUserReq) validate() error {
 
 type listOrgInvitesByOrgReq struct {
 	token string
-	orgID string
+	id    string
 	pm    auth.PageMetadataInvites
 }
 
@@ -109,7 +109,7 @@ func (req listOrgInvitesByOrgReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.orgID == "" {
+	if req.id == "" {
 		return apiutil.ErrMissingOrgID
 	}
 
