@@ -154,7 +154,7 @@ func (ar *alarmRepository) RetrieveByGroups(ctx context.Context, groupIDs []stri
 	giq := getGroupIDsQuery(groupIDs)
 	p, pq, err := dbutil.GetPayloadQuery(pm.Payload)
 	if err != nil {
-		return alarms.AlarmsPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	whereClause := dbutil.BuildWhereClause(giq, pq)
