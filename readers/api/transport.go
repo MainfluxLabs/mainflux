@@ -256,6 +256,21 @@ func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, erro
 		return readers.PageMetadata{}, err
 	}
 
+	ai, err := apiutil.ReadStringQuery(r, aggIntervalKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	at, err := apiutil.ReadStringQuery(r, aggTypeKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
+	af, err := apiutil.ReadStringQuery(r, aggFieldKey, "")
+	if err != nil {
+		return readers.PageMetadata{}, err
+	}
+
 	pageMeta := readers.PageMetadata{
 		Name:        name,
 		Subtopic:    subtopic,
@@ -267,6 +282,9 @@ func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, erro
 		BoolValue:   vb,
 		From:        from,
 		To:          to,
+		AggInterval: ai,
+		AggType:     at,
+		AggField:    af,
 	}
 
 	return backupMessagesReq{
