@@ -55,11 +55,11 @@ func (ir invitesRepository) SaveOrgInvite(ctx context.Context, invites ...auth.O
 					return errors.Wrap(dbutil.ErrMalformedEntity, err)
 				case pgerrcode.UniqueViolation:
 					var e = dbutil.ErrConflict
-					if pgErr.ConstraintName == "ux_invites_org_invitee_id_org_id" {
+					if pgErr.ConstraintName == "unique_org_invitee_pending" {
 						e = apiutil.ErrUserAlreadyInvited
 					}
 
-					return errors.Wrap(e, errors.New(pgErr.Detail))
+					return errors.Wrap(e, err)
 				}
 			}
 

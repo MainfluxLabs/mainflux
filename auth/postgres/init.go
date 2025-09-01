@@ -99,8 +99,7 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				Id: "auth_3",
 				Up: []string{
-					`
-					CREATE TABLE IF NOT EXISTS invites_org (
+					`CREATE TABLE IF NOT EXISTS invites_org (
 						id           UUID NOT NULL,
 						invitee_id   UUID NOT NULL,         
 						inviter_id   UUID NOT NULL,
@@ -111,15 +110,12 @@ func migrateDB(db *sqlx.DB) error {
 						state        VARCHAR DEFAULT 'pending' NOT NULL,      
 						FOREIGN KEY  (org_id) REFERENCES orgs (id) ON DELETE CASCADE,
 						PRIMARY KEY  (id)
-					)
-					`,
-					`
-					CREATE UNIQUE INDEX ux_invites_org_invitee_id_org_id on invites_org (invitee_id, org_id) WHERE state='pending'
-					`,
+					)`,
+					`CREATE UNIQUE INDEX unique_org_invitee_pending on invites_org (invitee_id, org_id) WHERE state='pending'`,
 				},
 				Down: []string{
 					`DROP TABLE IF EXISTS invites_org`,
-					`DROP INDEX IF EXISTS ux_invites_org_invitee_id_org_id`,
+					`DROP INDEX IF EXISTS unique_org_invitee_pending`,
 				},
 			},
 		},
