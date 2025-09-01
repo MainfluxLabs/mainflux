@@ -713,6 +713,7 @@ services:
     container_name: mainfluxlabs-alarms
     depends_on:
       - things
+      - auth
       - alarms-db
     restart: on-failure
     environment:
