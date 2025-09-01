@@ -19,14 +19,15 @@ import (
 var _ protomfx.ThingsServiceClient = (*thingsServiceMock)(nil)
 
 type thingsServiceMock struct {
-	profiles map[string]things.Profile
-	things   map[string]things.Thing
-	groups   map[string]things.Group
+	profiles    map[string]things.Profile
+	things      map[string]things.Thing
+	groups      map[string]things.Group
+	memberships map[string][]things.GroupMembership
 }
 
 // NewThingsServiceClient returns mock implementation of things service
-func NewThingsServiceClient(profiles map[string]things.Profile, things map[string]things.Thing, groups map[string]things.Group) protomfx.ThingsServiceClient {
-	return &thingsServiceMock{profiles, things, groups}
+func NewThingsServiceClient(profiles map[string]things.Profile, things map[string]things.Thing, groups map[string]things.Group, memberships map[string][]things.GroupMembership) protomfx.ThingsServiceClient {
+	return &thingsServiceMock{profiles, things, groups, memberships}
 }
 
 func (svc thingsServiceMock) GetPubConfByKey(_ context.Context, in *protomfx.PubConfByKeyReq, _ ...grpc.CallOption) (*protomfx.PubConfByKeyRes, error) {
@@ -147,6 +148,16 @@ func (svc thingsServiceMock) GetGroupIDsByOrg(_ context.Context, in *protomfx.Or
 	return &protomfx.GroupIDs{Ids: ids}, nil
 }
 
-func (svc thingsServiceMock) GetGroupIDsByOrgMembership(_ context.Context, in *protomfx.OrgMembershipReq, _ ...grpc.CallOption) (*protomfx.GroupIDs, error) {
-	panic("GetGroupIDsByOrgMembership not implemented in mock")
+func (svc *thingsServiceMock) GetGroupIDsByOrgMembership(_ context.Context, in *protomfx.OrgMembershipReq, _ ...grpc.CallOption) (*protomfx.GroupIDs, error) {
+	var ids []string
+	for _, g := range svc.groups {
+		if g.OrgID == in.GetOrgId() {
+			for _, m := range svc.memberships[g.OrgID] {
+				if m.MemberID == in.GetUserId() {
+					ids = append(ids, g.ID)
+				}
+			}
+		}
+	}
+	return &protomfx.GroupIDs{Ids: ids}, nil
 }

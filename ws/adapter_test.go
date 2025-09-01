@@ -39,7 +39,7 @@ func newService(tc protomfx.ThingsServiceClient, rc protomfx.RulesServiceClient,
 }
 
 func TestPublish(t *testing.T) {
-	thingsClient := pkgmock.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
+	thingsClient := pkgmock.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil, nil)
 	rulesClient := pkgmock.NewRulesServiceClient()
 	logger := logger.NewMock()
 	svc, _ := newService(thingsClient, rulesClient, logger)
@@ -95,7 +95,7 @@ func TestPublish(t *testing.T) {
 }
 
 func TestSubscribe(t *testing.T) {
-	thingsClient := pkgmock.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
+	thingsClient := pkgmock.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil, nil)
 	rulesClient := pkgmock.NewRulesServiceClient()
 	logger := logger.NewMock()
 	svc, pubsub := newService(thingsClient, rulesClient, logger)
@@ -154,7 +154,7 @@ func TestSubscribe(t *testing.T) {
 }
 
 func TestUnsubscribe(t *testing.T) {
-	thingsClient := pkgmock.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
+	thingsClient := pkgmock.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil, nil)
 	rulesClient := pkgmock.NewRulesServiceClient()
 	logger := logger.NewMock()
 	svc, pubsub := newService(thingsClient, rulesClient, logger)

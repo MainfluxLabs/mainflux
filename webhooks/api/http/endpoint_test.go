@@ -71,7 +71,7 @@ func toJSON(data interface{}) string {
 }
 
 func newService() webhooks.Service {
-	ths := mocks.NewThingsServiceClient(nil, map[string]things.Thing{thingID: {ID: thingID, GroupID: groupID}, token: {ID: thingID, GroupID: groupID}}, map[string]things.Group{token: {ID: groupID}})
+	ths := mocks.NewThingsServiceClient(nil, map[string]things.Thing{thingID: {ID: thingID, GroupID: groupID}, token: {ID: thingID, GroupID: groupID}}, map[string]things.Group{token: {ID: groupID}}, nil)
 	webhookRepo := whmocks.NewWebhookRepository()
 	forwarder := whmocks.NewForwarder()
 	idProvider := uuid.NewMock()

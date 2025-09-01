@@ -75,7 +75,7 @@ func toJSON(data interface{}) string {
 }
 
 func newService() notifiers.Service {
-	things := mocks.NewThingsServiceClient(nil, nil, map[string]things.Group{token: {ID: groupID}})
+	things := mocks.NewThingsServiceClient(nil, nil, map[string]things.Group{token: {ID: groupID}}, nil)
 	notifier := ntmocks.NewNotifier()
 	notifierRepo := ntmocks.NewNotifierRepository()
 	idp := uuid.NewMock()

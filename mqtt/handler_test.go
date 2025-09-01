@@ -361,7 +361,7 @@ func newHandler() session.Handler {
 		log.Fatalf("failed to create logger: %s", err)
 	}
 
-	thingsClient := pkgmocks.NewThingsServiceClient(nil, map[string]things.Thing{password: {ID: thingID}}, nil)
+	thingsClient := pkgmocks.NewThingsServiceClient(nil, map[string]things.Thing{password: {ID: thingID}}, nil, nil)
 	rulesClient := pkgmocks.NewRulesServiceClient()
 	eventStore := mocks.NewEventStore()
 	return mqtt.NewHandler(pkgmocks.NewPublisher(), eventStore, logger, thingsClient, rulesClient, newService())
