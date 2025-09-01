@@ -34,8 +34,12 @@ func (req createOrgInviteReq) validate() error {
 		return apiutil.ErrMissingEmail
 	}
 
-	if req.OrgMembership.Role != auth.Admin && req.OrgMembership.Role != auth.Viewer && req.OrgMembership.Role != auth.Editor {
-		return apiutil.ErrInvalidRole
+	if err := auth.ValidateRole(req.OrgMembership.Role); err != nil {
+		return err
+	}
+
+	if req.OrgMembership.Role == auth.Owner {
+		return apiutil.ErrMalformedEntity
 	}
 
 	return nil
