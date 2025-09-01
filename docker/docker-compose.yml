@@ -94,7 +94,7 @@ services:
       - mainfluxlabs-auth-db-volume:/var/lib/postgresql/data
 
   auth:
-    image: ${MF_RELEASE_PREFIX}/auth:v0.30.0
+    image: ${MF_RELEASE_PREFIX}/auth:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-auth
     depends_on:
       - auth-db
@@ -203,7 +203,7 @@ services:
       - mainfluxlabs-auth-redis-volume:/data
 
   things:
-    image: ${MF_RELEASE_PREFIX}/things:v0.30.0
+    image: ${MF_RELEASE_PREFIX}/things:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-things
     depends_on:
       - things-db
@@ -428,7 +428,7 @@ services:
       - mainfluxlabs-base-net
 
   postgres-reader:
-    image: ${MF_RELEASE_PREFIX}/postgres-reader:v0.30.0
+    image: ${MF_RELEASE_PREFIX}/postgres-reader:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-postgres-reader
     restart: on-failure
     environment:
@@ -709,7 +709,7 @@ services:
       - mainfluxlabs-alarms-db-volume:/var/lib/postgresql/data
 
   alarms:
-    image: ${MF_RELEASE_PREFIX}/alarms:v0.30.0
+    image: ${MF_RELEASE_PREFIX}/alarms:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-alarms
     depends_on:
       - things
