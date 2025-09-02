@@ -12,6 +12,9 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// ErrInvalidInviteResponse indicates an invalid Invite response verb string.
+var ErrInvalidInviteResponse = errors.New("invalid invite response verb")
+
 type OrgInvite struct {
 	ID          string
 	InviteeID   string

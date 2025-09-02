@@ -110,7 +110,7 @@ func decodeOrgInviteResponseRequest(_ context.Context, r *http.Request) (any, er
 	case "decline":
 		req.accepted = false
 	default:
-		return orgInviteResponseReq{}, apiutil.ErrInvalidInviteResponse
+		return orgInviteResponseReq{}, auth.ErrInvalidInviteResponse
 	}
 
 	return req, nil
@@ -202,7 +202,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == apiutil.ErrMissingInviteID,
 		err == apiutil.ErrMissingMemberID,
 		err == apiutil.ErrEmptyList,
-		err == apiutil.ErrInvalidInviteResponse,
+		err == auth.ErrInvalidInviteResponse,
 		err == apiutil.ErrNameSize,
 		err == apiutil.ErrLimitSize,
 		err == apiutil.ErrOffsetSize,
