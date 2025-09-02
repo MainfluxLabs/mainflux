@@ -31,19 +31,19 @@ func New(db *sqlx.DB) readers.MessageRepository {
 	}
 }
 
-func (tr postgresRepository) ListJSONMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (tr postgresRepository) ListJSONMessages(rpm readers.JSONMetadata) (readers.MessagesPage, error) {
 	return tr.jsonRepository.ListMessages(rpm)
 }
 
-func (tr postgresRepository) ListSenMLMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (tr postgresRepository) ListSenMLMessages(rpm readers.SenMLMetadata) (readers.MessagesPage, error) {
 	return tr.senmlRepository.ListMessages(rpm)
 }
 
-func (tr postgresRepository) BackupJSONMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (tr postgresRepository) BackupJSONMessages(rpm readers.JSONMetadata) (readers.MessagesPage, error) {
 	return tr.jsonRepository.Backup(rpm)
 }
 
-func (tr postgresRepository) BackupSenMLMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (tr postgresRepository) BackupSenMLMessages(rpm readers.SenMLMetadata) (readers.MessagesPage, error) {
 	return tr.senmlRepository.Backup(rpm)
 }
 
@@ -55,10 +55,10 @@ func (tr postgresRepository) RestoreSenMLMessageS(ctx context.Context, messages 
 	return tr.senmlRepository.Restore(ctx, messages...)
 }
 
-func (tr postgresRepository) DeleteJSONMessages(ctx context.Context, rpm readers.PageMetadata) error {
+func (tr postgresRepository) DeleteJSONMessages(ctx context.Context, rpm readers.JSONMetadata) error {
 	return tr.jsonRepository.DeleteMessages(ctx, rpm)
 }
 
-func (tr postgresRepository) DeleteSenMLMessages(ctx context.Context, rpm readers.PageMetadata) error {
+func (tr postgresRepository) DeleteSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) error {
 	return tr.senmlRepository.DeleteMessages(ctx, rpm)
 }
