@@ -51,32 +51,48 @@ func newAggregationService(db *sqlx.DB) *aggregationService {
 	return &aggregationService{db: db}
 }
 
-func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata, table string) ([]readers.Message, error) {
+func (as *aggregationService) readAggregatedJSONMessages(rpm readers.JSONMetadata, table string) ([]readers.Message, error) {
+	adapter := NewJSONAdapter(rpm)
+	return as.readAggregatedMessages(adapter, table)
+}
+
+func (as *aggregationService) readAggregatedSenMLMessages(rpm readers.SenMLMetadata, table string) ([]readers.Message, error) {
 	if table == senmlTable && rpm.AggField != "" {
 		rpm.Name = rpm.AggField
 	}
+	adapter := NewSenMLAdapter(rpm)
+	return as.readAggregatedMessages(adapter, table)
+}
 
-	params := as.buildQueryParams(rpm)
+func (as *aggregationService) readAggregatedJSONCount(rpm readers.JSONMetadata, table string) (uint64, error) {
+	adapter := NewJSONAdapter(rpm)
+	return as.readAggregatedCount(adapter, table)
+}
+
+func (as *aggregationService) readAggregatedSenMLCount(rpm readers.SenMLMetadata, table string) (uint64, error) {
+	adapter := NewSenMLAdapter(rpm)
+	return as.readAggregatedCount(adapter, table)
+}
+
+func (as *aggregationService) readAggregatedMessages(adapter PageMetadataAdapter, table string) ([]readers.Message, error) {
+	params := adapter.GetQueryParams()
 
 	config := QueryConfig{
 		Table:       table,
-		TimeColumn:  as.getTimeColumn(table),
-		AggField:    as.getAggregateField(rpm, table),
-		AggInterval: rpm.AggInterval,
-		Limit:       rpm.Limit,
-		AggType:     rpm.AggType,
+		TimeColumn:  adapter.GetTimeColumn(),
+		AggField:    adapter.GetAggField(),
+		AggInterval: adapter.GetAggInterval(),
+		AggType:     adapter.GetAggType(),
+		Limit:       adapter.GetLimit(),
 	}
 
-	baseCondition := as.buildBaseCondition(rpm, table)
-	nameCondition := as.buildNameCondition(rpm, table)
-	config.Condition = as.combineConditions(baseCondition, nameCondition)
-	config.ConditionForJoin = strings.Replace(config.Condition, "WHERE", "AND", 1)
-
-	if config.Condition == "" {
-		config.ConditionForJoin = ""
+	conditions := adapter.GetConditions()
+	if len(conditions) > 0 {
+		config.Condition = "WHERE " + strings.Join(conditions, " AND ")
+		config.ConditionForJoin = "AND " + strings.Join(conditions, " AND ")
 	}
 
-	strategy := as.getAggregateStrategy(rpm.AggType)
+	strategy := as.getAggregateStrategy(adapter.GetAggType())
 	if strategy == nil {
 		return []readers.Message{}, nil
 	}
@@ -342,19 +358,20 @@ func buildValueCondition(config QueryConfig) string {
 	}
 }
 
-func (as *aggregationService) readAggregatedCount(rpm readers.PageMetadata, table string) (uint64, error) {
-	params := as.buildQueryParams(rpm)
+func (as *aggregationService) readAggregatedCount(rpm PageMetadataAdapter, table string) (uint64, error) {
+	params := rpm.GetQueryParams()
+	conditions := rpm.GetConditions()
 
-	timeColumn := as.getTimeColumn(table)
-	baseCondition := as.buildBaseCondition(rpm, table)
-	nameCondition := as.buildNameCondition(rpm, table)
-	condition := as.combineConditions(baseCondition, nameCondition)
+	condition := ""
+	if len(conditions) > 0 {
+		condition = "WHERE " + strings.Join(conditions, " AND ")
+	}
 
 	query := fmt.Sprintf(`
         SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000)))
         FROM %s
         %s`,
-		rpm.AggInterval, timeColumn, table, condition)
+		rpm.GetAggInterval(), rpm.GetTimeColumn(), table, condition)
 
 	rows, err := as.db.NamedQuery(query, params)
 	if err != nil {
@@ -373,61 +390,6 @@ func (as *aggregationService) readAggregatedCount(rpm readers.PageMetadata, tabl
 	}
 
 	return total, nil
-}
-
-func (as *aggregationService) buildNameCondition(rpm readers.PageMetadata, table string) string {
-	if rpm.Name == "" {
-		return ""
-	}
-
-	switch table {
-	case senmlTable:
-		return "WHERE name = :name"
-	default:
-		return "WHERE payload->>'n' = :name"
-	}
-}
-
-func (as *aggregationService) combineConditions(condition1, condition2 string) string {
-	if condition1 == "" && condition2 == "" {
-		return ""
-	}
-	if condition1 == "" {
-		return condition2
-	}
-	if condition2 == "" {
-		return condition1
-	}
-
-	condition2 = strings.Replace(condition2, "WHERE", "AND", 1)
-	return condition1 + " " + condition2
-}
-
-func (as *aggregationService) buildBaseCondition(rpm readers.PageMetadata, table string) string {
-	var conditions []string
-	timeColumn := as.getTimeColumn(table)
-
-	if rpm.Subtopic != "" {
-		conditions = append(conditions, "subtopic = :subtopic")
-	}
-	if rpm.Publisher != "" {
-		conditions = append(conditions, "publisher = :publisher")
-	}
-	if rpm.Protocol != "" {
-		conditions = append(conditions, "protocol = :protocol")
-	}
-	if rpm.From != 0 {
-		conditions = append(conditions, fmt.Sprintf("%s >= :from", timeColumn))
-	}
-	if rpm.To != 0 {
-		conditions = append(conditions, fmt.Sprintf("%s <= :to", timeColumn))
-	}
-
-	if len(conditions) == 0 {
-		return ""
-	}
-
-	return "WHERE " + strings.Join(conditions, " AND ")
 }
 
 func (as *aggregationService) scanAggregatedMessages(rows *sqlx.Rows, format string) ([]readers.Message, error) {
@@ -508,33 +470,4 @@ func (as *aggregationService) executeQuery(query string, params map[string]inter
 		return nil, errors.Wrap(readers.ErrReadMessages, err)
 	}
 	return rows, nil
-}
-
-func (as *aggregationService) getAggregateField(rpm readers.PageMetadata, table string) string {
-	if table == senmlTable {
-		return "value"
-	}
-	return rpm.AggField
-}
-
-func (as *aggregationService) getTimeColumn(table string) string {
-	if table == jsonTable {
-		return "created"
-	}
-	return "time"
-}
-
-func (as *aggregationService) buildQueryParams(rpm readers.PageMetadata) map[string]interface{} {
-	return map[string]interface{}{
-		"subtopic":     rpm.Subtopic,
-		"publisher":    rpm.Publisher,
-		"name":         rpm.Name,
-		"protocol":     rpm.Protocol,
-		"value":        rpm.Value,
-		"bool_value":   rpm.BoolValue,
-		"string_value": rpm.StringValue,
-		"data_value":   rpm.DataValue,
-		"from":         rpm.From,
-		"to":           rpm.To,
-	}
 }
