@@ -92,7 +92,6 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrEmptyList),
 			errors.Contains(err, ErrMissingCertID),
 			errors.Contains(err, ErrMissingCertData),
-			errors.Contains(err, ErrInvalidTopic),
 			errors.Contains(err, ErrInvalidContact),
 			errors.Contains(err, ErrMissingEmail),
 			errors.Contains(err, ErrMissingPass),
@@ -101,7 +100,6 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrInvalidResetPass),
 			errors.Contains(err, ErrInvalidComparator),
 			errors.Contains(err, ErrInvalidAPIKey),
-			errors.Contains(err, ErrMaxLevelExceeded),
 			errors.Contains(err, ErrUnsupportedContentType),
 			errors.Contains(err, ErrMalformedEntity),
 			errors.Contains(err, ErrInvalidRole),
@@ -121,14 +119,62 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 
 func EncodeError(err error, w http.ResponseWriter) {
 	switch {
-	case errors.Contains(err, errors.ErrAuthentication):
+	case errors.Contains(err, errors.ErrAuthentication),
+		errors.Contains(err, ErrBearerToken),
+		errors.Contains(err, ErrBearerKey):
 		w.WriteHeader(http.StatusUnauthorized)
+	case errors.Contains(err, ErrMissingGroupID),
+		errors.Contains(err, ErrMissingOrgID),
+		errors.Contains(err, ErrMissingThingID),
+		errors.Contains(err, ErrMissingProfileID),
+		errors.Contains(err, ErrMissingMemberID),
+		errors.Contains(err, ErrMissingWebhookID),
+		errors.Contains(err, ErrMissingNotifierID),
+		errors.Contains(err, ErrMissingAlarmID),
+		errors.Contains(err, ErrMissingRuleID),
+		errors.Contains(err, ErrMissingUserID),
+		errors.Contains(err, ErrMissingRole),
+		errors.Contains(err, ErrMissingObject),
+		errors.Contains(err, ErrMissingKeyID),
+		errors.Contains(err, ErrInvalidIDFormat),
+		errors.Contains(err, ErrNameSize),
+		errors.Contains(err, ErrEmailSize),
+		errors.Contains(err, ErrInvalidStatus),
+		errors.Contains(err, ErrLimitSize),
+		errors.Contains(err, ErrOffsetSize),
+		errors.Contains(err, ErrInvalidOrder),
+		errors.Contains(err, ErrInvalidDirection),
+		errors.Contains(err, ErrEmptyList),
+		errors.Contains(err, ErrMissingCertID),
+		errors.Contains(err, ErrMissingCertData),
+		errors.Contains(err, ErrInvalidContact),
+		errors.Contains(err, ErrMissingEmail),
+		errors.Contains(err, ErrMissingEmailToken),
+		errors.Contains(err, ErrMissingRedirectPath),
+		errors.Contains(err, ErrMissingPass),
+		errors.Contains(err, ErrMissingConfPass),
+		errors.Contains(err, ErrInvalidResetPass),
+		errors.Contains(err, ErrInvalidComparator),
+		errors.Contains(err, ErrInvalidAPIKey),
+		errors.Contains(err, ErrInvalidQueryParams),
+		errors.Contains(err, ErrInvalidAggType),
+		errors.Contains(err, ErrNotFoundParam),
+		errors.Contains(err, ErrMalformedEntity),
+		errors.Contains(err, ErrInvalidRole),
+		errors.Contains(err, ErrMissingConditionField),
+		errors.Contains(err, ErrMissingConditionThreshold),
+		errors.Contains(err, ErrInvalidActionType),
+		errors.Contains(err, ErrMissingActionID),
+		errors.Contains(err, ErrInvalidOperator):
+		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, errors.ErrAuthorization):
 		w.WriteHeader(http.StatusForbidden)
 	case errors.Contains(err, dbutil.ErrNotFound):
 		w.WriteHeader(http.StatusNotFound)
 	case errors.Contains(err, dbutil.ErrConflict):
 		w.WriteHeader(http.StatusConflict)
+	case errors.Contains(err, ErrUnsupportedContentType):
+		w.WriteHeader(http.StatusUnsupportedMediaType)
 	case errors.Contains(err, dbutil.ErrCreateEntity),
 		errors.Contains(err, dbutil.ErrUpdateEntity),
 		errors.Contains(err, dbutil.ErrRetrieveEntity),
