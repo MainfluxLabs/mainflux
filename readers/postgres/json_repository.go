@@ -31,26 +31,26 @@ func newJSONRepository(db *sqlx.DB) *jsonRepository {
 	}
 }
 
-func (jr *jsonRepository) ListMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (jr *jsonRepository) ListMessages(rpm readers.JSONMetadata) (readers.MessagesPage, error) {
 	return jr.readAll(rpm)
 }
 
-func (jr *jsonRepository) readAll(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (jr *jsonRepository) readAll(rpm readers.JSONMetadata) (readers.MessagesPage, error) {
 	page := readers.MessagesPage{
-		PageMetadata: rpm,
+		JSONMetadata: rpm,
 		Messages:     []readers.Message{},
 	}
 
 	params := jr.buildQueryParams(rpm)
 
 	if rpm.AggType != "" && rpm.AggInterval != "" {
-		messages, err := jr.aggregator.readAggregatedMessages(rpm, jsonTable)
+		messages, err := jr.aggregator.readAggregatedJSONMessages(rpm, jsonTable)
 		if err != nil {
 			return page, err
 		}
 		page.Messages = messages
 
-		total, err := jr.aggregator.readAggregatedCount(rpm, jsonTable)
+		total, err := jr.aggregator.readAggregatedJSONCount(rpm, jsonTable)
 		if err != nil {
 			return page, err
 		}
@@ -74,7 +74,7 @@ func (jr *jsonRepository) readAll(rpm readers.PageMetadata) (readers.MessagesPag
 	return page, nil
 }
 
-func (jr *jsonRepository) readMessages(rpm readers.PageMetadata, params map[string]interface{}) ([]readers.Message, error) {
+func (jr *jsonRepository) readMessages(rpm readers.JSONMetadata, params map[string]interface{}) ([]readers.Message, error) {
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 	condition := jr.fmtCondition(rpm)
 
@@ -92,7 +92,7 @@ func (jr *jsonRepository) readMessages(rpm readers.PageMetadata, params map[stri
 	return jr.scanMessages(rows)
 }
 
-func (jr *jsonRepository) readCount(rpm readers.PageMetadata, params map[string]interface{}) (uint64, error) {
+func (jr *jsonRepository) readCount(rpm readers.JSONMetadata, params map[string]interface{}) (uint64, error) {
 	condition := jr.fmtCondition(rpm)
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM json %s;`, condition)
 
@@ -147,7 +147,7 @@ func (jr *jsonRepository) executeQuery(query string, params map[string]interface
 	return rows, nil
 }
 
-func (jr *jsonRepository) fmtCondition(rpm readers.PageMetadata) string {
+func (jr *jsonRepository) fmtCondition(rpm readers.JSONMetadata) string {
 	var query map[string]interface{}
 	meta, err := json.Marshal(rpm)
 	if err != nil {
@@ -175,7 +175,7 @@ func (jr *jsonRepository) fmtCondition(rpm readers.PageMetadata) string {
 	return condition
 }
 
-func (jr *jsonRepository) buildQueryParams(rpm readers.PageMetadata) map[string]interface{} {
+func (jr *jsonRepository) buildQueryParams(rpm readers.JSONMetadata) map[string]interface{} {
 	return map[string]interface{}{
 		"limit":     rpm.Limit,
 		"offset":    rpm.Offset,
@@ -187,11 +187,11 @@ func (jr *jsonRepository) buildQueryParams(rpm readers.PageMetadata) map[string]
 	}
 }
 
-func (jr *jsonRepository) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (jr *jsonRepository) Backup(rpm readers.JSONMetadata) (readers.MessagesPage, error) {
 	return jr.readAll(rpm)
 }
 
-func (jr *jsonRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) error {
+func (jr *jsonRepository) DeleteMessages(ctx context.Context, rpm readers.JSONMetadata) error {
 	tx, err := jr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(errors.ErrSaveMessages, err)
