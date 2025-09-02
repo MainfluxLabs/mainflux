@@ -28,7 +28,7 @@ func LoggingMiddleware(svc webhooks.Service, logger log.Logger) webhooks.Service
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) CreateWebhooks(ctx context.Context, token string, webhooks ...webhooks.Webhook) (response []webhooks.Webhook, err error) {
+func (lm *loggingMiddleware) CreateWebhooks(ctx context.Context, token, thingID string, webhooks ...webhooks.Webhook) (response []webhooks.Webhook, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_webhooks for webhooks %s took %s to complete", response, time.Since(begin))
 		if err != nil {
@@ -38,7 +38,7 @@ func (lm *loggingMiddleware) CreateWebhooks(ctx context.Context, token string, w
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CreateWebhooks(ctx, token, webhooks...)
+	return lm.svc.CreateWebhooks(ctx, token, thingID, webhooks...)
 }
 
 func (lm *loggingMiddleware) ListWebhooksByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (response webhooks.WebhooksPage, err error) {

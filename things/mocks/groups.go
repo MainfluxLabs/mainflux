@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -45,15 +45,20 @@ func NewGroupRepository(groupMembershipsRepo things.GroupMembershipsRepository) 
 	}
 }
 
-func (grm *groupRepositoryMock) Save(_ context.Context, group things.Group) (things.Group, error) {
+func (grm *groupRepositoryMock) Save(_ context.Context, groups ...things.Group) ([]things.Group, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
-	if _, ok := grm.groups[group.ID]; ok {
-		return things.Group{}, errors.ErrConflict
+
+	for _, gr := range groups {
+		if _, ok := grm.groups[gr.ID]; ok {
+			println("HHELO", gr.ID)
+			return []things.Group{}, dbutil.ErrConflict
+		}
+
+		grm.groups[gr.ID] = gr
 	}
 
-	grm.groups[group.ID] = group
-	return group, nil
+	return groups, nil
 }
 
 func (grm *groupRepositoryMock) Update(_ context.Context, group things.Group) (things.Group, error) {
@@ -61,7 +66,7 @@ func (grm *groupRepositoryMock) Update(_ context.Context, group things.Group) (t
 	defer grm.mu.Unlock()
 	up, ok := grm.groups[group.ID]
 	if !ok {
-		return things.Group{}, errors.ErrNotFound
+		return things.Group{}, dbutil.ErrNotFound
 	}
 	up.Name = group.Name
 	up.Description = group.Description
@@ -78,7 +83,7 @@ func (grm *groupRepositoryMock) Remove(_ context.Context, ids ...string) error {
 
 	for _, id := range ids {
 		if _, ok := grm.groups[id]; !ok {
-			return errors.ErrNotFound
+			return dbutil.ErrNotFound
 		}
 
 		for _, thingID := range grm.things[id] {
@@ -161,7 +166,7 @@ func (grm *groupRepositoryMock) RetrieveByID(_ context.Context, id string) (thin
 
 	val, ok := grm.groups[id]
 	if !ok {
-		return things.Group{}, errors.ErrNotFound
+		return things.Group{}, dbutil.ErrNotFound
 	}
 	return val, nil
 }

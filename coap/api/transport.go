@@ -14,6 +14,7 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/coap"
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -88,13 +89,13 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 	case codes.POST:
 		err = service.Publish(context.Background(), key, msg)
 	default:
-		err = errors.ErrNotFound
+		err = dbutil.ErrNotFound
 	}
 	if err != nil {
 		switch {
 		case err == errBadOptions:
 			resp.Code = codes.BadOption
-		case err == errors.ErrNotFound:
+		case err == dbutil.ErrNotFound:
 			resp.Code = codes.NotFound
 		case errors.Contains(err, errors.ErrAuthorization),
 			errors.Contains(err, errors.ErrAuthentication):

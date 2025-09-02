@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
@@ -41,7 +41,7 @@ func (tcm *thingCacheMock) ID(_ context.Context, key string) (string, error) {
 
 	id, ok := tcm.things[key]
 	if !ok {
-		return "", errors.ErrNotFound
+		return "", dbutil.ErrNotFound
 	}
 
 	return id, nil
@@ -75,7 +75,7 @@ func (tcm *thingCacheMock) ViewGroup(_ context.Context, thingID string) (string,
 
 	groupID, ok := tcm.groups[thingID]
 	if !ok {
-		return "", errors.ErrNotFound
+		return "", dbutil.ErrNotFound
 	}
 
 	return groupID, nil
@@ -116,7 +116,7 @@ func (pcm *profileCacheMock) ViewGroup(_ context.Context, profileID string) (str
 
 	groupID, ok := pcm.groups[profileID]
 	if !ok {
-		return "", errors.ErrNotFound
+		return "", dbutil.ErrNotFound
 	}
 
 	return groupID, nil
@@ -162,7 +162,7 @@ func (gcm *groupCacheMock) ViewRole(_ context.Context, groupID, memberID string)
 	key := mKey(groupID, memberID)
 	role, ok := gcm.members[key]
 	if !ok {
-		return "", errors.ErrNotFound
+		return "", dbutil.ErrNotFound
 	}
 
 	return role, nil

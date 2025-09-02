@@ -177,7 +177,7 @@ func backupJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint
 		case csvFormat:
 			data, err = apiutil.GenerateCSV(page, req.pageMeta.Format)
 		default:
-			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+			return nil, errors.Wrap(dbutil.ErrMalformedEntity, err)
 		}
 
 		if err != nil {
@@ -220,7 +220,7 @@ func backupSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
 		default:
-			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+			return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 		}
 
 		return backupFileRes{

@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/things"
 )
@@ -45,7 +45,7 @@ func (gmr *groupMembershipsRepositoryMock) RetrieveRole(_ context.Context, gm th
 		}
 	}
 
-	return "", errors.ErrNotFound
+	return "", dbutil.ErrNotFound
 }
 
 func (gmr *groupMembershipsRepositoryMock) RetrieveByGroup(_ context.Context, groupID string, pm apiutil.PageMetadata) (things.GroupMembershipsPage, error) {
@@ -129,7 +129,7 @@ func (gmr *groupMembershipsRepositoryMock) Update(_ context.Context, gms ...thin
 
 	for _, gm := range gms {
 		if _, ok := gmr.groupMemberships[gm.GroupID]; !ok {
-			return errors.ErrNotFound
+			return dbutil.ErrNotFound
 		}
 		gmr.groupMemberships[gm.GroupID] = []things.GroupMembership{
 			{
@@ -148,7 +148,7 @@ func (gmr *groupMembershipsRepositoryMock) Remove(_ context.Context, groupID str
 
 	memberships, ok := gmr.groupMemberships[groupID]
 	if !ok {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 
 	for _, memberID := range memberIDs {
@@ -162,7 +162,7 @@ func (gmr *groupMembershipsRepositoryMock) Remove(_ context.Context, groupID str
 		}
 
 		if !found {
-			return errors.ErrNotFound
+			return dbutil.ErrNotFound
 		}
 	}
 

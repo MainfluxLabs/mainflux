@@ -20,6 +20,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/certs"
 	ctmocks "github.com/MainfluxLabs/mainflux/certs/mocks"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
@@ -403,7 +404,7 @@ func TestViewCert(t *testing.T) {
 			token:    token,
 			serialID: wrongValue,
 			cert:     certs.Cert{},
-			err:      errors.ErrNotFound,
+			err:      dbutil.ErrNotFound,
 		},
 	}
 

@@ -41,31 +41,31 @@ func TestSaveRole(t *testing.T) {
 			desc: "save already existing role",
 			id:   userID,
 			role: auth.RoleRootAdmin,
-			err:  errors.ErrCreateEntity,
+			err:  dbutil.ErrCreateEntity,
 		},
 		{
 			desc: "save invalid role",
 			id:   userID,
 			role: invalid,
-			err:  errors.ErrCreateEntity,
+			err:  dbutil.ErrCreateEntity,
 		},
 		{
 			desc: "save with invalid user id",
 			id:   invalid,
 			role: auth.RoleRootAdmin,
-			err:  errors.ErrCreateEntity,
+			err:  dbutil.ErrCreateEntity,
 		},
 		{
 			desc: "save without user id",
 			id:   "",
 			role: auth.RoleRootAdmin,
-			err:  errors.ErrCreateEntity,
+			err:  dbutil.ErrCreateEntity,
 		},
 		{
 			desc: "save without user role",
 			id:   userID,
 			role: "",
-			err:  errors.ErrCreateEntity,
+			err:  dbutil.ErrCreateEntity,
 		},
 	}
 
@@ -109,7 +109,7 @@ func TestRetrieve(t *testing.T) {
 			desc: "retrieve role for invalid user id",
 			id:   invalid,
 			role: "",
-			err:  errors.ErrRetrieveEntity,
+			err:  dbutil.ErrRetrieveEntity,
 		},
 	}
 
@@ -146,19 +146,19 @@ func TestUpdateRole(t *testing.T) {
 			desc: "update role for invalid user id",
 			id:   invalid,
 			role: auth.RoleRootAdmin,
-			err:  errors.ErrUpdateEntity,
+			err:  dbutil.ErrUpdateEntity,
 		},
 		{
 			desc: "update with empty role",
 			id:   userID,
 			role: "",
-			err:  errors.ErrUpdateEntity,
+			err:  dbutil.ErrUpdateEntity,
 		},
 		{
 			desc: "update with empty user id",
 			id:   "",
 			role: auth.RoleRootAdmin,
-			err:  errors.ErrUpdateEntity,
+			err:  dbutil.ErrUpdateEntity,
 		},
 	}
 
@@ -191,12 +191,12 @@ func TestDeleteRole(t *testing.T) {
 		{
 			desc: "delete role for invalid user id",
 			id:   invalid,
-			err:  errors.ErrRemoveEntity,
+			err:  dbutil.ErrRemoveEntity,
 		},
 		{
 			desc: "delete role without user id",
 			id:   "",
-			err:  errors.ErrRemoveEntity,
+			err:  dbutil.ErrRemoveEntity,
 		},
 	}
 

@@ -37,7 +37,7 @@ func NewProfileRepository(db dbutil.Database) things.ProfileRepository {
 func (pr profileRepository) Save(ctx context.Context, profiles ...things.Profile) ([]things.Profile, error) {
 	tx, err := pr.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return nil, errors.Wrap(errors.ErrCreateEntity, err)
+		return nil, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	q := `INSERT INTO profiles (id, group_id, name, metadata, config)
@@ -53,19 +53,19 @@ func (pr profileRepository) Save(ctx context.Context, profiles ...things.Profile
 			if ok {
 				switch pgErr.Code {
 				case pgerrcode.InvalidTextRepresentation:
-					return []things.Profile{}, errors.Wrap(errors.ErrMalformedEntity, err)
+					return []things.Profile{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 				case pgerrcode.UniqueViolation:
-					return []things.Profile{}, errors.Wrap(errors.ErrConflict, err)
+					return []things.Profile{}, errors.Wrap(dbutil.ErrConflict, err)
 				case pgerrcode.StringDataRightTruncationDataException:
-					return []things.Profile{}, errors.Wrap(errors.ErrMalformedEntity, err)
+					return []things.Profile{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 				}
 			}
-			return []things.Profile{}, errors.Wrap(errors.ErrCreateEntity, err)
+			return []things.Profile{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return []things.Profile{}, errors.Wrap(errors.ErrCreateEntity, err)
+		return []things.Profile{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	return profiles, nil
@@ -82,22 +82,22 @@ func (pr profileRepository) Update(ctx context.Context, profile things.Profile) 
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			case pgerrcode.StringDataRightTruncationDataException:
-				return errors.Wrap(errors.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
 
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	cnt, err := res.RowsAffected()
 	if err != nil {
-		return errors.Wrap(errors.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	if cnt == 0 {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 
 	return nil
@@ -114,9 +114,9 @@ func (pr profileRepository) RetrieveByID(ctx context.Context, id string) (things
 		pgErr, ok := err.(*pgconn.PgError)
 		//  If there is no result or ID is in an invalid format, return ErrNotFound.
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
-			return things.Profile{}, errors.ErrNotFound
+			return things.Profile{}, dbutil.ErrNotFound
 		}
-		return things.Profile{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.Profile{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	return toProfile(dbpr), nil
@@ -128,7 +128,7 @@ func (pr profileRepository) BackupAll(ctx context.Context) ([]things.Profile, er
 	var items []dbProfile
 	err := pr.db.SelectContext(ctx, &items, query)
 	if err != nil {
-		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	var profiles []things.Profile
@@ -151,7 +151,7 @@ func (pr profileRepository) BackupByGroups(ctx context.Context, groupIDs []strin
 	var items []dbProfile
 	err := pr.db.SelectContext(ctx, &items, query)
 	if err != nil {
-		return nil, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	var profiles []things.Profile
@@ -169,7 +169,7 @@ func (pr profileRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMeta
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
-		return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ProfilesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	whereClause := dbutil.BuildWhereClause(nq, mq)
@@ -189,7 +189,7 @@ func (pr profileRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMeta
 func (pr profileRepository) RetrieveByThing(ctx context.Context, thID string) (things.Profile, error) {
 	// Verify if UUID format is valid to avoid internal Postgres error
 	if _, err := uuid.FromString(thID); err != nil {
-		return things.Profile{}, errors.Wrap(errors.ErrNotFound, err)
+		return things.Profile{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
 	q := `SELECT pr.id, pr.group_id, pr.name, pr.metadata, pr.config
@@ -201,7 +201,7 @@ func (pr profileRepository) RetrieveByThing(ctx context.Context, thID string) (t
 
 	rows, err := pr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return things.Profile{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.Profile{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -209,7 +209,7 @@ func (pr profileRepository) RetrieveByThing(ctx context.Context, thID string) (t
 	for rows.Next() {
 		dbpr := dbProfile{}
 		if err := rows.StructScan(&dbpr); err != nil {
-			return things.Profile{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return things.Profile{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		item = toProfile(dbpr)
@@ -233,7 +233,7 @@ func (pr profileRepository) Remove(ctx context.Context, ids ...string) error {
 				}
 			}
 
-			return errors.Wrap(errors.ErrRemoveEntity, err)
+			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
 	}
 
@@ -252,7 +252,7 @@ func (pr profileRepository) RetrieveByGroups(ctx context.Context, groupIDs []str
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
-		return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ProfilesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	whereClause := dbutil.BuildWhereClause(giq, nq, mq)
@@ -272,7 +272,7 @@ func (pr profileRepository) RetrieveByGroups(ctx context.Context, groupIDs []str
 func (pr profileRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (things.ProfilesPage, error) {
 	rows, err := pr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ProfilesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -280,7 +280,7 @@ func (pr profileRepository) retrieve(ctx context.Context, query, cquery string, 
 	for rows.Next() {
 		dbpr := dbProfile{}
 		if err := rows.StructScan(&dbpr); err != nil {
-			return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+			return things.ProfilesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 		pr := toProfile(dbpr)
 
@@ -289,7 +289,7 @@ func (pr profileRepository) retrieve(ctx context.Context, query, cquery string, 
 
 	total, err := dbutil.Total(ctx, pr.db, cquery, params)
 	if err != nil {
-		return things.ProfilesPage{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return things.ProfilesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	page := things.ProfilesPage{
@@ -319,7 +319,7 @@ func (m *dbJSONB) Scan(value interface{}) error {
 	b, ok := value.([]byte)
 	if !ok {
 		m = &dbJSONB{}
-		return errors.ErrScanMetadata
+		return dbutil.ErrScanMetadata
 	}
 
 	if err := json.Unmarshal(b, m); err != nil {

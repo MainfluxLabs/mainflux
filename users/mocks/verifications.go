@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/users"
 )
 
@@ -32,7 +32,7 @@ func (vrm *emailVerificationsRepositoryMock) Save(ctx context.Context, verificat
 	defer vrm.mu.Unlock()
 
 	if _, ok := vrm.verificationsByToken[verification.Token]; ok {
-		return "", errors.ErrConflict
+		return "", dbutil.ErrConflict
 	}
 
 	vrm.verificationsByToken[verification.Token] = verification
@@ -45,7 +45,7 @@ func (vrm *emailVerificationsRepositoryMock) RetrieveByToken(ctx context.Context
 
 	v, ok := vrm.verificationsByToken[confirmationToken]
 	if !ok {
-		return users.EmailVerification{}, errors.ErrNotFound
+		return users.EmailVerification{}, dbutil.ErrNotFound
 	}
 
 	return v, nil
@@ -56,7 +56,7 @@ func (vrm *emailVerificationsRepositoryMock) Remove(ctx context.Context, confirm
 	defer vrm.mu.Unlock()
 
 	if _, ok := vrm.verificationsByToken[confirmationToken]; !ok {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 
 	delete(vrm.verificationsByToken, confirmationToken)

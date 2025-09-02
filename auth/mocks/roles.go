@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 )
 
 type rolesRepositoryMock struct {
@@ -44,7 +44,7 @@ func (rrm *rolesRepositoryMock) UpdateRole(ctx context.Context, id, role string)
 	defer rrm.mu.Unlock()
 
 	if _, ok := rrm.roles[id]; !ok {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 
 	rrm.roles[id] = role
@@ -57,7 +57,7 @@ func (rrm *rolesRepositoryMock) RemoveRole(ctx context.Context, id string) error
 	defer rrm.mu.Unlock()
 
 	if _, ok := rrm.roles[id]; !ok {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 
 	delete(rrm.roles, id)

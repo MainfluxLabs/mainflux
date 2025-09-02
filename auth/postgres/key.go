@@ -33,10 +33,10 @@ func (kr repo) Save(ctx context.Context, key auth.Key) (string, error) {
 	if _, err := kr.db.NamedExecContext(ctx, q, dbKey); err != nil {
 
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UniqueViolation {
-			return "", errors.Wrap(errors.ErrConflict, err)
+			return "", errors.Wrap(dbutil.ErrConflict, err)
 		}
 
-		return "", errors.Wrap(errors.ErrCreateEntity, err)
+		return "", errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	return dbKey.ID, nil
@@ -48,10 +48,10 @@ func (kr repo) Retrieve(ctx context.Context, issuerID, id string) (auth.Key, err
 	if err := kr.db.QueryRowxContext(ctx, q, issuerID, id).StructScan(&key); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
-			return auth.Key{}, errors.Wrap(errors.ErrNotFound, err)
+			return auth.Key{}, errors.Wrap(dbutil.ErrNotFound, err)
 		}
 
-		return auth.Key{}, errors.Wrap(errors.ErrRetrieveEntity, err)
+		return auth.Key{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	return toKey(key), nil
@@ -64,7 +64,7 @@ func (kr repo) Remove(ctx context.Context, issuerID, id string) error {
 		IssuerID: issuerID,
 	}
 	if _, err := kr.db.NamedExecContext(ctx, q, key); err != nil {
-		return errors.Wrap(errors.ErrRemoveEntity, err)
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil

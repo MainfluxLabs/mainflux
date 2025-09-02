@@ -8,7 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
@@ -35,7 +35,7 @@ func (orm *orgRepositoryMock) Save(_ context.Context, orgs ...auth.Org) error {
 
 	for _, org := range orgs {
 		if _, ok := orm.orgs[org.ID]; ok {
-			return errors.ErrConflict
+			return dbutil.ErrConflict
 		}
 
 		orm.orgs[org.ID] = org
@@ -49,7 +49,7 @@ func (orm *orgRepositoryMock) Update(_ context.Context, org auth.Org) error {
 	defer orm.mu.Unlock()
 
 	if _, ok := orm.orgs[org.ID]; !ok {
-		return errors.ErrNotFound
+		return dbutil.ErrNotFound
 	}
 
 	orm.orgs[org.ID] = org
@@ -63,7 +63,7 @@ func (orm *orgRepositoryMock) Remove(_ context.Context, ownerID string, ids ...s
 
 	for _, id := range ids {
 		if _, ok := orm.orgs[id]; !ok && orm.orgs[id].OwnerID != ownerID {
-			return errors.ErrNotFound
+			return dbutil.ErrNotFound
 		}
 		delete(orm.orgs, id)
 	}
@@ -77,7 +77,7 @@ func (orm *orgRepositoryMock) RetrieveByID(_ context.Context, id string) (auth.O
 
 	org, ok := orm.orgs[id]
 	if !ok {
-		return auth.Org{}, errors.ErrNotFound
+		return auth.Org{}, dbutil.ErrNotFound
 	}
 
 	return org, nil
