@@ -31,15 +31,15 @@ func newSenMLRepository(db *sqlx.DB) *senmlRepository {
 	}
 }
 
-func (sr *senmlRepository) ListMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (sr *senmlRepository) ListMessages(rpm readers.SenMLMetadata) (readers.MessagesPage, error) {
 	return sr.readAll(rpm)
 }
 
-func (sr *senmlRepository) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (sr *senmlRepository) Backup(rpm readers.SenMLMetadata) (readers.MessagesPage, error) {
 	return sr.readAll(rpm)
 }
 
-func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) error {
+func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenMLMetadata) error {
 	tx, err := sr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(errors.ErrSaveMessages, err)
@@ -81,22 +81,22 @@ func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.PageM
 	return nil
 }
 
-func (sr *senmlRepository) readAll(rpm readers.PageMetadata) (readers.MessagesPage, error) {
+func (sr *senmlRepository) readAll(rpm readers.SenMLMetadata) (readers.MessagesPage, error) {
 	page := readers.MessagesPage{
-		PageMetadata: rpm,
-		Messages:     []readers.Message{},
+		SenMLMetadata: rpm,
+		Messages:      []readers.Message{},
 	}
 
 	params := sr.buildQueryParams(rpm)
 
 	if rpm.AggType != "" && rpm.AggInterval != "" {
-		messages, err := sr.aggregator.readAggregatedMessages(rpm, senmlTable)
+		messages, err := sr.aggregator.readAggregatedSenMLMessages(rpm, senmlTable)
 		if err != nil {
 			return page, err
 		}
 		page.Messages = messages
 
-		total, err := sr.aggregator.readAggregatedCount(rpm, senmlTable)
+		total, err := sr.aggregator.readAggregatedSenMLCount(rpm, senmlTable)
 		if err != nil {
 			return page, err
 		}
@@ -120,7 +120,7 @@ func (sr *senmlRepository) readAll(rpm readers.PageMetadata) (readers.MessagesPa
 	return page, nil
 }
 
-func (sr *senmlRepository) readMessages(rpm readers.PageMetadata, params map[string]interface{}) ([]readers.Message, error) {
+func (sr *senmlRepository) readMessages(rpm readers.SenMLMetadata, params map[string]interface{}) ([]readers.Message, error) {
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 	condition := sr.fmtCondition(rpm)
 	query := fmt.Sprintf(`SELECT * FROM messages %s ORDER BY time DESC %s;`, condition, olq)
@@ -137,7 +137,7 @@ func (sr *senmlRepository) readMessages(rpm readers.PageMetadata, params map[str
 	return sr.scanMessages(rows)
 }
 
-func (sr *senmlRepository) readCount(rpm readers.PageMetadata, params map[string]interface{}) (uint64, error) {
+func (sr *senmlRepository) readCount(rpm readers.SenMLMetadata, params map[string]interface{}) (uint64, error) {
 	condition := sr.fmtCondition(rpm)
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM messages %s;`, condition)
 
@@ -186,7 +186,7 @@ func (sr *senmlRepository) executeQuery(query string, params map[string]interfac
 	return rows, nil
 }
 
-func (sr *senmlRepository) fmtCondition(rpm readers.PageMetadata) string {
+func (sr *senmlRepository) fmtCondition(rpm readers.SenMLMetadata) string {
 	var query map[string]interface{}
 	meta, err := json.Marshal(rpm)
 	if err != nil {
@@ -230,7 +230,7 @@ func (sr *senmlRepository) fmtCondition(rpm readers.PageMetadata) string {
 	return condition
 }
 
-func (sr *senmlRepository) buildQueryParams(rpm readers.PageMetadata) map[string]interface{} {
+func (sr *senmlRepository) buildQueryParams(rpm readers.SenMLMetadata) map[string]interface{} {
 	return map[string]interface{}{
 		"limit":        rpm.Limit,
 		"offset":       rpm.Offset,
