@@ -33,12 +33,12 @@ func New(host string, c *email.Config) (users.Emailer, error) {
 	}, nil
 }
 
-func (e *emailer) SendPasswordReset(To []string, redirectPath string, token string) error {
+func (e *emailer) SendPasswordReset(To []string, redirectPath, token string) error {
 	url := fmt.Sprintf("%s%s?token=%s", e.host, redirectPath, token)
 	return e.agent.Send(To, "", "Password reset", "", url, "")
 }
 
-func (e *emailer) SendEmailVerification(To []string, redirectPath string, token string) error {
+func (e *emailer) SendEmailVerification(To []string, redirectPath, token string) error {
 	subject := "Verify your MainfluxLabs e-mail address"
 	content := `
 		Use the following link to verify your e-mail address and complete registration:

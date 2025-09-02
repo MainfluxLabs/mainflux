@@ -106,7 +106,7 @@ func (irm *invitesRepositoryMock) RetrieveOrgInvitesByOrgID(ctx context.Context,
 	}, nil
 }
 
-func (irm *invitesRepositoryMock) RetrieveOrgInvitesByUserID(ctx context.Context, userType string, userID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
+func (irm *invitesRepositoryMock) RetrieveOrgInvitesByUserID(ctx context.Context, userType, userID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 
@@ -146,7 +146,7 @@ func (irm *invitesRepositoryMock) RetrieveOrgInvitesByUserID(ctx context.Context
 	}, nil
 }
 
-func (irm *invitesRepositoryMock) UpdateOrgInviteState(ctx context.Context, inviteID string, state string) error {
+func (irm *invitesRepositoryMock) UpdateOrgInviteState(ctx context.Context, inviteID, state string) error {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 

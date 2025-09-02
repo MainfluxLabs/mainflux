@@ -41,13 +41,13 @@ type PageMetadataInvites struct {
 type PlatformInvites interface {
 	// InvitePlatformMember creates a pending platform Invite for the appropriate email address.
 	// Only usable by the platform Root Admin.
-	InvitePlatformMember(ctx context.Context, token string, redirectPath string, email string) (PlatformInvite, error)
+	InvitePlatformMember(ctx context.Context, token, redirectPath, email string) (PlatformInvite, error)
 
 	// RevokePlatformInvite revokes a specific pending PlatformInvite. Only usable by the platform Root Admin.
-	RevokePlatformInvite(ctx context.Context, token string, inviteID string) error
+	RevokePlatformInvite(ctx context.Context, token, inviteID string) error
 
 	// ViewPlatformInvite retrieves a single PlatformInvite denoted by its ID. Only usable by the platform Root Admin.
-	ViewPlatformInvite(ctx context.Context, token string, inviteID string) (PlatformInvite, error)
+	ViewPlatformInvite(ctx context.Context, token, inviteID string) (PlatformInvite, error)
 
 	// ListPlatformInvites retrieves a list of platform invites. Only usable by the platform Root Admin.
 	ListPlatformInvites(ctx context.Context, token string, pm PageMetadataInvites) (PlatformInvitesPage, error)
@@ -55,7 +55,7 @@ type PlatformInvites interface {
 	// ValidatePlatformInvite checks if there exists a valid, pending, non-expired platform invite in the database that matches
 	// the passed ID and user e-mail. If so, it marks that invite's state as 'accepted', and returns nil.
 	// If no such valid platform invite is found in the database, it instead returns errors.ErrAuthorization.
-	ValidatePlatformInvite(ctx context.Context, inviteID string, email string) error
+	ValidatePlatformInvite(ctx context.Context, inviteID, email string) error
 
 	// SendPlatformInviteEmail sends an e-mail notifying the invitee about the corresponding platform invite.
 	SendPlatformInviteEmail(ctx context.Context, invite PlatformInvite, redirectPath string) error
@@ -72,10 +72,10 @@ type PlatformInvitesRepository interface {
 	RetrievePlatformInvites(ctx context.Context, pm PageMetadataInvites) (PlatformInvitesPage, error)
 
 	// UpdatePlatformInviteState updates the state of a specific platform invite denoted by its ID.
-	UpdatePlatformInviteState(ctx context.Context, inviteID string, state string) error
+	UpdatePlatformInviteState(ctx context.Context, inviteID, state string) error
 }
 
-func (svc usersService) InvitePlatformMember(ctx context.Context, token string, redirectPath string, email string) (PlatformInvite, error) {
+func (svc usersService) InvitePlatformMember(ctx context.Context, token, redirectPath, email string) (PlatformInvite, error) {
 	if err := svc.isAdmin(ctx, token); err != nil {
 		return PlatformInvite{}, err
 	}
@@ -114,7 +114,7 @@ func (svc usersService) InvitePlatformMember(ctx context.Context, token string, 
 	return invite, nil
 }
 
-func (svc usersService) RevokePlatformInvite(ctx context.Context, token string, inviteID string) error {
+func (svc usersService) RevokePlatformInvite(ctx context.Context, token, inviteID string) error {
 	if err := svc.isAdmin(ctx, token); err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func (svc usersService) RevokePlatformInvite(ctx context.Context, token string, 
 	return nil
 }
 
-func (svc usersService) ViewPlatformInvite(ctx context.Context, token string, inviteID string) (PlatformInvite, error) {
+func (svc usersService) ViewPlatformInvite(ctx context.Context, token, inviteID string) (PlatformInvite, error) {
 	if err := svc.isAdmin(ctx, token); err != nil {
 		return PlatformInvite{}, err
 	}
@@ -165,7 +165,7 @@ func (svc usersService) ListPlatformInvites(ctx context.Context, token string, p
 	return invitesPage, nil
 }
 
-func (svc usersService) ValidatePlatformInvite(ctx context.Context, inviteID string, email string) error {
+func (svc usersService) ValidatePlatformInvite(ctx context.Context, inviteID, email string) error {
 	invite, err := svc.platformInvites.RetrievePlatformInviteByID(ctx, inviteID)
 	if err != nil {
 		if errors.Contains(err, dbutil.ErrNotFound) {

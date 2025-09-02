@@ -28,7 +28,7 @@ func New(host string, config *email.Config) (auth.Emailer, error) {
 	}, nil
 }
 
-func (e *emailer) SendOrgInvite(To []string, inv auth.OrgInvite, orgName string, invRedirectPath string) error {
+func (e *emailer) SendOrgInvite(To []string, inv auth.OrgInvite, orgName, invRedirectPath string) error {
 	redirectURL := fmt.Sprintf("%s%s/%s", e.host, invRedirectPath, inv.ID)
 
 	emailContent := fmt.Sprintf(`

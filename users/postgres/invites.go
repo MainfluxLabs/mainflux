@@ -173,7 +173,7 @@ func (ir invitesRepository) RetrievePlatformInvites(ctx context.Context, pm user
 	return page, nil
 }
 
-func (ir invitesRepository) UpdatePlatformInviteState(ctx context.Context, inviteID string, state string) error {
+func (ir invitesRepository) UpdatePlatformInviteState(ctx context.Context, inviteID, state string) error {
 	query := `
 		UPDATE invites_platform
 		SET state=:state

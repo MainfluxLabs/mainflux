@@ -131,7 +131,7 @@ func (ir invitesRepository) RemoveOrgInvite(ctx context.Context, inviteID string
 	return nil
 }
 
-func (ir invitesRepository) UpdateOrgInviteState(ctx context.Context, inviteID string, state string) error {
+func (ir invitesRepository) UpdateOrgInviteState(ctx context.Context, inviteID, state string) error {
 	query := `
 		UPDATE invites_org
 		SET state=:state
@@ -221,7 +221,7 @@ func (ir invitesRepository) RetrieveOrgInvitesByOrgID(ctx context.Context, orgID
 	return page, nil
 }
 
-func (ir invitesRepository) RetrieveOrgInvitesByUserID(ctx context.Context, userType string, userID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
+func (ir invitesRepository) RetrieveOrgInvitesByUserID(ctx context.Context, userType, userID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
 	query := `
 		SELECT id, invitee_id, inviter_id, org_id, invitee_role, created_at, expires_at, state
 		FROM invites_org %s ORDER BY %s %s %s
@@ -302,7 +302,7 @@ func (ir invitesRepository) RetrieveOrgInvitesByUserID(ctx context.Context, user
 // Syncs the state of all invites either sent by or sent to the user denoted by `userID`, depending on the value
 // of userType, which may be one of `inviter` or `invitee`. That is, sets state='expired' for all matching invites where
 // state='pending' and expires_at < now().
-func (ir invitesRepository) syncOrgInviteStateByUserID(ctx context.Context, userType string, userID string) error {
+func (ir invitesRepository) syncOrgInviteStateByUserID(ctx context.Context, userType, userID string) error {
 	query := `
 		UPDATE invites_org
 		SET state='expired'

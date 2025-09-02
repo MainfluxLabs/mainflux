@@ -23,7 +23,7 @@ func MetricsMiddleware(emailer auth.Emailer, counter metrics.Counter, latency me
 	}
 }
 
-func (ms *metricsMiddleware) SendOrgInvite(To []string, invite auth.OrgInvite, orgName string, invRedirectPath string) error {
+func (ms *metricsMiddleware) SendOrgInvite(To []string, invite auth.OrgInvite, orgName, invRedirectPath string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "send_org_invite").Add(1)
 		ms.latency.With("method", "send_org_invite").Observe(time.Since(begin).Seconds())
