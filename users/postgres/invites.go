@@ -30,7 +30,7 @@ func NewPlatformInvitesRepo(db dbutil.Database) users.PlatformInvitesRepository 
 func (ir invitesRepository) SavePlatformInvite(ctx context.Context, invites ...users.PlatformInvite) error {
 	tx, err := ir.db.BeginTxx(ctx, nil)
 	if err != nil {
-		errors.Wrap(apiutil.ErrCreateInvite, err)
+		errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	qIns := `
@@ -63,12 +63,12 @@ func (ir invitesRepository) SavePlatformInvite(ctx context.Context, invites ...u
 				}
 			}
 
-			return errors.Wrap(apiutil.ErrCreateInvite, err)
+			return errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return errors.Wrap(apiutil.ErrCreateInvite, err)
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	return nil

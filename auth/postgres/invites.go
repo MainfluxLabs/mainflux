@@ -30,7 +30,7 @@ func NewOrgInvitesRepo(db dbutil.Database) auth.OrgInvitesRepository {
 func (ir invitesRepository) SaveOrgInvite(ctx context.Context, invites ...auth.OrgInvite) error {
 	tx, err := ir.db.BeginTxx(ctx, nil)
 	if err != nil {
-		errors.Wrap(apiutil.ErrCreateInvite, err)
+		errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	qIns := `
@@ -58,12 +58,12 @@ func (ir invitesRepository) SaveOrgInvite(ctx context.Context, invites ...auth.O
 				}
 			}
 
-			return errors.Wrap(apiutil.ErrCreateInvite, err)
+			return errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return errors.Wrap(apiutil.ErrCreateInvite, err)
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	return nil
