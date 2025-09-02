@@ -36,14 +36,13 @@ func listJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			}
 		}
 
-		req.pageMeta.Format = jsonFormat
-		page, err := svc.ListJSONMessages(req.pageMeta)
+		page, err := svc.ListJSONMessages(apiutil.ConvertPageMetaToJSONMeta(req.pageMeta))
 		if err != nil {
 			return nil, err
 		}
 
-		return listMessagesRes{
-			PageMetadata: page.PageMetadata,
+		return listJSONMessagesRes{
+			JSONMetadata: page.JSONMetadata,
 			Total:        page.Total,
 			Messages:     page.Messages,
 		}, nil
@@ -73,15 +72,16 @@ func listSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint 
 		}
 
 		req.pageMeta.Format = defFormat
-		page, err := svc.ListSenMLMessages(req.pageMeta)
+
+		page, err := svc.ListSenMLMessages(apiutil.ConvertPageMetaToSenMLMeta(req.pageMeta))
 		if err != nil {
 			return nil, err
 		}
 
-		return listMessagesRes{
-			PageMetadata: page.PageMetadata,
-			Total:        page.Total,
-			Messages:     page.Messages,
+		return listSenMLMessagesRes{
+			SenMLMetadata: page.SenMLMetadata,
+			Total:         page.Total,
+			Messages:      page.Messages,
 		}, nil
 	}
 }
@@ -109,7 +109,7 @@ func deleteJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint
 		}
 
 		req.pageMeta.Format = jsonFormat
-		err := svc.DeleteJSONMessages(ctx, req.pageMeta)
+		err := svc.DeleteJSONMessages(ctx, apiutil.ConvertPageMetaToJSONMeta(req.pageMeta))
 		if err != nil {
 			return nil, err
 		}
@@ -142,7 +142,7 @@ func deleteSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 		}
 
 		req.pageMeta.Format = defFormat
-		err := svc.DeleteSenMLMessages(ctx, req.pageMeta)
+		err := svc.DeleteSenMLMessages(ctx, apiutil.ConvertPageMetaToSenMLMeta(req.pageMeta))
 		if err != nil {
 			return nil, err
 		}
@@ -164,7 +164,7 @@ func backupJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint
 		}
 
 		req.pageMeta.Format = jsonFormat
-		page, err := svc.BackupJSONMessages(req.pageMeta)
+		page, err := svc.BackupJSONMessages(apiutil.ConvertPageMetaToJSONMeta(req.pageMeta))
 		if err != nil {
 			return nil, err
 		}
@@ -177,7 +177,7 @@ func backupJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint
 		case csvFormat:
 			data, err = apiutil.GenerateCSV(page, req.pageMeta.Format)
 		default:
-			return nil, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			return nil, errors.Wrap(errors.ErrBackupMessages, err)
 		}
 
 		if err != nil {
@@ -202,8 +202,7 @@ func backupSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 			return nil, err
 		}
 
-		req.pageMeta.Format = defFormat
-		page, err := svc.BackupSenMLMessages(req.pageMeta)
+		page, err := svc.BackupSenMLMessages(apiutil.ConvertPageMetaToSenMLMeta(req.pageMeta))
 		if err != nil {
 			return nil, err
 		}
