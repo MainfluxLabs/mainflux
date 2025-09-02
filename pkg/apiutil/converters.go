@@ -327,3 +327,39 @@ func ConvertCSVToJSONMessages(csvMessages []byte) ([]mfjson.Message, error) {
 
 	return messages, nil
 }
+
+func ConvertPageMetaToJSONMeta(metadata readers.PageMetadata) readers.JSONMetadata {
+	return readers.JSONMetadata{
+		Offset:      metadata.Offset,
+		Limit:       metadata.Limit,
+		Subtopic:    metadata.Subtopic,
+		Publisher:   metadata.Publisher,
+		Protocol:    metadata.Protocol,
+		From:        metadata.From,
+		To:          metadata.To,
+		AggField:    metadata.AggInterval,
+		AggType:     metadata.AggType,
+		AggInterval: metadata.AggField,
+	}
+}
+
+func ConvertPageMetaToSenMLMeta(metadata readers.PageMetadata) readers.SenMLMetadata {
+	return readers.SenMLMetadata{
+		Offset:      metadata.Offset,
+		Limit:       metadata.Limit,
+		Subtopic:    metadata.Subtopic,
+		Publisher:   metadata.Publisher,
+		Protocol:    metadata.Protocol,
+		Name:        metadata.Name,
+		Value:       metadata.Value,
+		Comparator:  metadata.Comparator,
+		BoolValue:   metadata.BoolValue,
+		StringValue: metadata.StringValue,
+		DataValue:   metadata.DataValue,
+		From:        metadata.From,
+		To:          metadata.To,
+		AggField:    metadata.AggInterval,
+		AggType:     metadata.AggType,
+		AggInterval: metadata.AggField,
+	}
+}
