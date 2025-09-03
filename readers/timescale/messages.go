@@ -136,8 +136,9 @@ func (tr timescaleRepository) readAll(rpm readers.PageMetadata) (readers.Message
 	defer rows.Close()
 
 	page := readers.MessagesPage{
-		PageMetadata: rpm,
-		Messages:     []readers.Message{},
+		SenMLMetadata: readers.SenMLMetadata{},
+		JSONMetadata:  readers.JSONMetadata{},
+		Messages:      []readers.Message{},
 	}
 	switch format {
 	case defTable:
@@ -255,19 +256,19 @@ func (msg jsonMessage) toMap() (map[string]interface{}, error) {
 
 }
 
-func (tr timescaleRepository) ListJSONMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return tr.readAll(rpm)
+func (tr timescaleRepository) ListJSONMessages(rpm readers.JSONMetadata) (readers.MessagesPage, error) {
+	return readers.MessagesPage{}, nil
 }
-func (tr timescaleRepository) ListSenMLMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return tr.readAll(rpm)
-}
-
-func (tr timescaleRepository) BackupJSONMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return tr.readAll(rpm)
+func (tr timescaleRepository) ListSenMLMessages(rpm readers.SenMLMetadata) (readers.MessagesPage, error) {
+	return readers.MessagesPage{}, nil
 }
 
-func (tr timescaleRepository) BackupSenMLMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return tr.readAll(rpm)
+func (tr timescaleRepository) BackupJSONMessages(rpm readers.JSONMetadata) (readers.MessagesPage, error) {
+	return readers.MessagesPage{}, nil
+}
+
+func (tr timescaleRepository) BackupSenMLMessages(rpm readers.SenMLMetadata) (readers.MessagesPage, error) {
+	return readers.MessagesPage{}, nil
 }
 
 func (tr timescaleRepository) RestoreJSONMessages(ctx context.Context, messages ...readers.Message) error {
@@ -278,10 +279,10 @@ func (tr timescaleRepository) RestoreSenMLMessageS(ctx context.Context, messages
 	return nil
 }
 
-func (tr timescaleRepository) DeleteJSONMessages(ctx context.Context, rpm readers.PageMetadata) error {
+func (tr timescaleRepository) DeleteJSONMessages(ctx context.Context, rpm readers.JSONMetadata) error {
 	return nil
 }
 
-func (tr timescaleRepository) DeleteSenMLMessages(ctx context.Context, rpm readers.PageMetadata) error {
+func (tr timescaleRepository) DeleteSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) error {
 	return nil
 }
