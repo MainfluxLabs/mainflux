@@ -20,7 +20,6 @@ type postgresRepository struct {
 	db              *sqlx.DB
 	jsonRepository  *jsonRepository
 	senmlRepository *senmlRepository
-	aggregator      *aggregationService
 }
 
 func New(db *sqlx.DB) readers.MessageRepository {
