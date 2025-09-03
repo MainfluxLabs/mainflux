@@ -197,27 +197,10 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
-	case errors.Contains(err, apiutil.ErrMalformedEntity),
-		err == apiutil.ErrMissingOrgID,
-		err == apiutil.ErrMissingInviteID,
-		err == apiutil.ErrMissingMemberID,
-		err == apiutil.ErrEmptyList,
-		err == auth.ErrInvalidInviteResponse,
-		err == apiutil.ErrNameSize,
-		err == apiutil.ErrLimitSize,
-		err == apiutil.ErrOffsetSize,
-		err == apiutil.ErrInvalidOrder,
-		err == apiutil.ErrInvalidDirection,
-		err == apiutil.ErrInvalidQueryParams,
-		err == apiutil.ErrInvalidRole:
+	case errors.Contains(err, auth.ErrInvalidInviteResponse):
 		w.WriteHeader(http.StatusBadRequest)
-	case err == apiutil.ErrBearerToken:
-		w.WriteHeader(http.StatusUnauthorized)
-	case errors.Contains(err, auth.ErrOrgMembershipExists),
-		errors.Contains(err, apiutil.ErrUserAlreadyInvited):
+	case errors.Contains(err, auth.ErrOrgMembershipExists):
 		w.WriteHeader(http.StatusConflict)
-	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
-		w.WriteHeader(http.StatusUnsupportedMediaType)
 	default:
 		apiutil.EncodeError(err, w)
 	}
