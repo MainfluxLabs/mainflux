@@ -71,8 +71,6 @@ func listSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint 
 
 		}
 
-		req.pageMeta.Format = defFormat
-
 		page, err := svc.ListSenMLMessages(apiutil.ConvertPageMetaToSenMLMeta(req.pageMeta))
 		if err != nil {
 			return nil, err
