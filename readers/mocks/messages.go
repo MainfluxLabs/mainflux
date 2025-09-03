@@ -49,6 +49,141 @@ func (repo *messageRepositoryMock) Restore(ctx context.Context, format string, m
 	panic("not implemented")
 }
 
+// ListJSONMessages implements the new interface method
+func (repo *messageRepositoryMock) ListJSONMessages(rpm readers.JSONMetadata) (readers.MessagesPage, error) {
+	// Convert JSONMetadata to PageMetadata for readAll
+	pageMetadata := readers.PageMetadata{
+		Offset:    rpm.Offset,
+		Limit:     rpm.Limit,
+		Subtopic:  rpm.Subtopic,
+		Publisher: rpm.Publisher,
+		Protocol:  rpm.Protocol,
+		From:      rpm.From,
+		To:        rpm.To,
+	}
+
+	// Add JSON-specific format handling
+	if pageMetadata.Format == "" {
+		pageMetadata.Format = "json"
+	}
+
+	page, err := repo.readAll("", pageMetadata)
+	if err != nil {
+		return page, err
+	}
+
+	// Update the page with JSONMetadata
+	page.JSONMetadata = rpm
+	return page, nil
+}
+
+// ListSenMLMessages implements the new interface method
+func (repo *messageRepositoryMock) ListSenMLMessages(rpm readers.SenMLMetadata) (readers.MessagesPage, error) {
+	// Convert SenMLMetadata to PageMetadata for readAll
+	pageMetadata := readers.PageMetadata{
+		Offset:      rpm.Offset,
+		Limit:       rpm.Limit,
+		Subtopic:    rpm.Subtopic,
+		Publisher:   rpm.Publisher,
+		Protocol:    rpm.Protocol,
+		Name:        rpm.Name,
+		Value:       rpm.Value,
+		BoolValue:   rpm.BoolValue,
+		StringValue: rpm.StringValue,
+		DataValue:   rpm.DataValue,
+		From:        rpm.From,
+		To:          rpm.To,
+		Format:      rpm.Format,
+		Comparator:  rpm.Comparator,
+	}
+
+	// Add SenML-specific format handling
+	if pageMetadata.Format == "" {
+		pageMetadata.Format = "messages"
+	}
+
+	page, err := repo.readAll("", pageMetadata)
+	if err != nil {
+		return page, err
+	}
+
+	// Update the page with SenMLMetadata
+	page.SenMLMetadata = rpm
+	return page, nil
+}
+
+// BackupJSONMessages implements the new interface method
+func (repo *messageRepositoryMock) BackupJSONMessages(rpm readers.JSONMetadata) (readers.MessagesPage, error) {
+	return repo.ListJSONMessages(rpm)
+}
+
+// BackupSenMLMessages implements the new interface method
+func (repo *messageRepositoryMock) BackupSenMLMessages(rpm readers.SenMLMetadata) (readers.MessagesPage, error) {
+	return repo.ListSenMLMessages(rpm)
+}
+
+// RestoreJSONMessages implements the new interface method
+func (repo *messageRepositoryMock) RestoreJSONMessages(ctx context.Context, messages ...readers.Message) error {
+	repo.mutex.Lock()
+	defer repo.mutex.Unlock()
+
+	// Add messages to the repository
+	for _, msg := range messages {
+		repo.messages[""] = append(repo.messages[""], msg)
+	}
+
+	return nil
+}
+
+// RestoreSenMLMessageS implements the new interface method (note the typo in the method name matches the interface)
+func (repo *messageRepositoryMock) RestoreSenMLMessageS(ctx context.Context, messages ...readers.Message) error {
+	repo.mutex.Lock()
+	defer repo.mutex.Unlock()
+
+	// Add messages to the repository
+	for _, msg := range messages {
+		repo.messages[""] = append(repo.messages[""], msg)
+	}
+
+	return nil
+}
+
+// DeleteJSONMessages implements the new interface method
+func (repo *messageRepositoryMock) DeleteJSONMessages(ctx context.Context, rpm readers.JSONMetadata) error {
+	pageMetadata := readers.PageMetadata{
+		Offset:    rpm.Offset,
+		Limit:     rpm.Limit,
+		Subtopic:  rpm.Subtopic,
+		Publisher: rpm.Publisher,
+		Protocol:  rpm.Protocol,
+		From:      rpm.From,
+		To:        rpm.To,
+		Format:    "json",
+	}
+	return repo.DeleteMessages(ctx, pageMetadata)
+}
+
+// DeleteSenMLMessages implements the new interface method
+func (repo *messageRepositoryMock) DeleteSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) error {
+	pageMetadata := readers.PageMetadata{
+		Offset:      rpm.Offset,
+		Limit:       rpm.Limit,
+		Subtopic:    rpm.Subtopic,
+		Publisher:   rpm.Publisher,
+		Protocol:    rpm.Protocol,
+		Name:        rpm.Name,
+		Value:       rpm.Value,
+		BoolValue:   rpm.BoolValue,
+		StringValue: rpm.StringValue,
+		DataValue:   rpm.DataValue,
+		From:        rpm.From,
+		To:          rpm.To,
+		Format:      "messages",
+		Comparator:  rpm.Comparator,
+	}
+	return repo.DeleteMessages(ctx, pageMetadata)
+}
+
 func (repo *messageRepositoryMock) readAll(profileID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	repo.mutex.Lock()
 	defer repo.mutex.Unlock()
@@ -87,11 +222,50 @@ func (repo *messageRepositoryMock) readAll(profileID string, rpm readers.PageMet
 		end = numOfMessages
 	}
 
-	return readers.MessagesPage{
-		PageMetadata: rpm,
-		Total:        uint64(len(msgs)),
-		Messages:     msgs[rpm.Offset:end],
-	}, nil
+	var messagesPage readers.MessagesPage
+
+	switch rpm.Format {
+	case "json":
+		jsonMeta := readers.JSONMetadata{
+			Offset:    rpm.Offset,
+			Limit:     rpm.Limit,
+			Subtopic:  rpm.Subtopic,
+			Publisher: rpm.Publisher,
+			Protocol:  rpm.Protocol,
+			From:      rpm.From,
+			To:        rpm.To,
+		}
+		messagesPage = readers.MessagesPage{
+			JSONMetadata: jsonMeta,
+			Total:        uint64(len(msgs)),
+			Messages:     msgs[rpm.Offset:end],
+		}
+	default:
+		senmlMeta := readers.SenMLMetadata{
+			Offset:      rpm.Offset,
+			Limit:       rpm.Limit,
+			Subtopic:    rpm.Subtopic,
+			Publisher:   rpm.Publisher,
+			Protocol:    rpm.Protocol,
+			Name:        rpm.Name,
+			Value:       rpm.Value,
+			BoolValue:   rpm.BoolValue,
+			StringValue: rpm.StringValue,
+			DataValue:   rpm.DataValue,
+			From:        rpm.From,
+			To:          rpm.To,
+			Format:      "messages",
+			Comparator:  rpm.Comparator,
+		}
+
+		messagesPage = readers.MessagesPage{
+			SenMLMetadata: senmlMeta,
+			Total:         uint64(len(msgs)),
+			Messages:      msgs[rpm.Offset:end],
+		}
+	}
+
+	return messagesPage, nil
 }
 
 func (repo *messageRepositoryMock) mapToJSONMessage(msgMap map[string]interface{}) mfjson.Message {
@@ -302,35 +476,4 @@ func (repo *messageRepositoryMock) checkSenmlStringValueFilter(senmlMsg senml.Me
 
 func (repo *messageRepositoryMock) checkSenmlDataValueFilter(senmlMsg senml.Message, rpm readers.PageMetadata) bool {
 	return senmlMsg.DataValue != nil && *senmlMsg.DataValue == rpm.DataValue
-}
-
-func (repo *messageRepositoryMock) ListJSONMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return repo.readAll("", rpm)
-}
-func (repo *messageRepositoryMock) ListSenMLMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return repo.readAll("", rpm)
-}
-
-func (repo *messageRepositoryMock) BackupJSONMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return repo.readAll("", rpm)
-}
-
-func (repo *messageRepositoryMock) BackupSenMLMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return repo.readAll("", rpm)
-}
-
-func (repo *messageRepositoryMock) RestoreJSONMessages(ctx context.Context, messages ...readers.Message) error {
-	return nil
-}
-
-func (repo *messageRepositoryMock) RestoreSenMLMessageS(ctx context.Context, messages ...readers.Message) error {
-	return nil
-}
-
-func (repo *messageRepositoryMock) DeleteJSONMessages(ctx context.Context, rpm readers.PageMetadata) error {
-	return nil
-}
-
-func (repo *messageRepositoryMock) DeleteSenMLMessages(ctx context.Context, rpm readers.PageMetadata) error {
-	return nil
 }
