@@ -525,30 +525,10 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
-	case errors.Contains(err, apiutil.ErrInvalidQueryParams),
-		errors.Contains(err, apiutil.ErrMalformedEntity),
-		errors.Contains(err, users.ErrPasswordFormat),
+	case errors.Contains(err, users.ErrPasswordFormat),
 		errors.Contains(err, errors.ErrInvalidPassword),
-		errors.Contains(err, users.ErrEmailVerificationExpired),
-		err == apiutil.ErrMissingEmail,
-		err == apiutil.ErrMissingPass,
-		err == apiutil.ErrMissingConfPass,
-		err == apiutil.ErrMissingUserID,
-		err == apiutil.ErrLimitSize,
-		err == apiutil.ErrOffsetSize,
-		err == apiutil.ErrInvalidOrder,
-		err == apiutil.ErrInvalidDirection,
-		err == apiutil.ErrEmailSize,
-		err == apiutil.ErrInvalidResetPass,
-		err == apiutil.ErrInvalidStatus,
-		err == apiutil.ErrMissingRedirectPath,
-		err == errors.ErrInvalidPassword:
+		errors.Contains(err, users.ErrEmailVerificationExpired):
 		w.WriteHeader(http.StatusBadRequest)
-	case errors.Contains(err, errors.ErrAuthentication),
-		err == apiutil.ErrBearerToken:
-		w.WriteHeader(http.StatusUnauthorized)
-	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
-		w.WriteHeader(http.StatusUnsupportedMediaType)
 	case errors.Contains(err, uuid.ErrGeneratingID),
 		errors.Contains(err, users.ErrRecoveryToken):
 		w.WriteHeader(http.StatusInternalServerError)

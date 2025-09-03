@@ -99,9 +99,6 @@ var (
 	// ErrMissingCertData indicates missing cert data (ttl, key_type or key_bits).
 	ErrMissingCertData = errors.New("missing certificate data")
 
-	// ErrInvalidTopic indicates an invalid subscription topic.
-	ErrInvalidTopic = errors.New("invalid Subscription topic")
-
 	// ErrInvalidContact indicates an invalid contact.
 	ErrInvalidContact = errors.New("invalid contact")
 
@@ -128,9 +125,6 @@ var (
 
 	// ErrInvalidAPIKey indicates an invalid API key type.
 	ErrInvalidAPIKey = errors.New("invalid api key type")
-
-	// ErrMaxLevelExceeded indicates an invalid group level.
-	ErrMaxLevelExceeded = errors.New("invalid group level (should be lower than 5)")
 
 	// ErrUnsupportedContentType indicates unacceptable or lack of Content-Type
 	ErrUnsupportedContentType = errors.New("unsupported content type")
