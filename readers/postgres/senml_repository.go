@@ -14,11 +14,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-const (
-	senmlTable = "messages"
-	senmlOrder = "time"
-)
-
 type senmlRepository struct {
 	db         *sqlx.DB
 	aggregator *aggregationService
@@ -90,13 +85,13 @@ func (sr *senmlRepository) readAll(rpm readers.SenMLMetadata) (readers.MessagesP
 	params := sr.buildQueryParams(rpm)
 
 	if rpm.AggType != "" && rpm.AggInterval != "" {
-		messages, err := sr.aggregator.readAggregatedSenMLMessages(rpm, senmlTable)
+		messages, err := sr.aggregator.readAggregatedSenMLMessages(rpm)
 		if err != nil {
 			return page, err
 		}
 		page.Messages = messages
 
-		total, err := sr.aggregator.readAggregatedSenMLCount(rpm, senmlTable)
+		total, err := sr.aggregator.readAggregatedSenMLCount(rpm)
 		if err != nil {
 			return page, err
 		}
@@ -196,7 +191,6 @@ func (sr *senmlRepository) fmtCondition(rpm readers.SenMLMetadata) string {
 
 	condition := ""
 	op := "WHERE"
-	timeColumn := senmlOrder
 
 	for name := range query {
 		switch name {
@@ -220,10 +214,10 @@ func (sr *senmlRepository) fmtCondition(rpm readers.SenMLMetadata) string {
 			condition = fmt.Sprintf(`%s %s data_value = :data_value`, condition, op)
 			op = "AND"
 		case "from":
-			condition = fmt.Sprintf(`%s %s %s >= :from`, condition, op, timeColumn)
+			condition = fmt.Sprintf(`%s %s time >= :from`, condition, op)
 			op = "AND"
 		case "to":
-			condition = fmt.Sprintf(`%s %s %s <= :to`, condition, op, timeColumn)
+			condition = fmt.Sprintf(`%s %s time <= :to`, condition, op)
 			op = "AND"
 		}
 	}

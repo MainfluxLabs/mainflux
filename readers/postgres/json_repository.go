@@ -14,11 +14,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-const (
-	jsonTable = "json"
-	jsonOrder = "created"
-)
-
 type jsonRepository struct {
 	db         *sqlx.DB
 	aggregator *aggregationService
@@ -44,13 +39,13 @@ func (jr *jsonRepository) readAll(rpm readers.JSONMetadata) (readers.MessagesPag
 	params := jr.buildQueryParams(rpm)
 
 	if rpm.AggType != "" && rpm.AggInterval != "" {
-		messages, err := jr.aggregator.readAggregatedJSONMessages(rpm, jsonTable)
+		messages, err := jr.aggregator.readAggregatedJSONMessages(rpm)
 		if err != nil {
 			return page, err
 		}
 		page.Messages = messages
 
-		total, err := jr.aggregator.readAggregatedJSONCount(rpm, jsonTable)
+		total, err := jr.aggregator.readAggregatedJSONCount(rpm)
 		if err != nil {
 			return page, err
 		}
@@ -157,7 +152,6 @@ func (jr *jsonRepository) fmtCondition(rpm readers.JSONMetadata) string {
 
 	condition := ""
 	op := "WHERE"
-	timeColumn := jsonOrder
 
 	for name := range query {
 		switch name {
@@ -165,10 +159,10 @@ func (jr *jsonRepository) fmtCondition(rpm readers.JSONMetadata) string {
 			condition = fmt.Sprintf(`%s %s %s = :%s`, condition, op, name, name)
 			op = "AND"
 		case "from":
-			condition = fmt.Sprintf(`%s %s %s >= :from`, condition, op, timeColumn)
+			condition = fmt.Sprintf(`%s %s created >= :from`, condition, op)
 			op = "AND"
 		case "to":
-			condition = fmt.Sprintf(`%s %s %s <= :to`, condition, op, timeColumn)
+			condition = fmt.Sprintf(`%s %s created <= :to`, condition, op)
 			op = "AND"
 		}
 	}
