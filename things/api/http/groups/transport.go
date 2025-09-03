@@ -306,23 +306,6 @@ func decodeBackupByOrg(_ context.Context, r *http.Request) (interface{}, error) 
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
-	case err == apiutil.ErrBearerToken:
-		w.WriteHeader(http.StatusUnauthorized)
-	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
-		w.WriteHeader(http.StatusUnsupportedMediaType)
-	case errors.Contains(err, apiutil.ErrInvalidQueryParams),
-		errors.Contains(err, apiutil.ErrMalformedEntity),
-		err == apiutil.ErrMissingThingID,
-		err == apiutil.ErrMissingProfileID,
-		err == apiutil.ErrMissingGroupID,
-		err == apiutil.ErrMissingOrgID,
-		err == apiutil.ErrNameSize,
-		err == apiutil.ErrEmptyList,
-		err == apiutil.ErrLimitSize,
-		err == apiutil.ErrOffsetSize,
-		err == apiutil.ErrInvalidOrder,
-		err == apiutil.ErrInvalidDirection:
-		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, dbutil.ErrScanMetadata):
 		w.WriteHeader(http.StatusUnprocessableEntity)
 	case errors.Contains(err, uuid.ErrGeneratingID):
