@@ -51,34 +51,35 @@ func newAggregationService(db *sqlx.DB) *aggregationService {
 	return &aggregationService{db: db}
 }
 
-func (as *aggregationService) readAggregatedJSONMessages(rpm readers.JSONMetadata, table string) ([]readers.Message, error) {
+func (as *aggregationService) readAggregatedJSONMessages(rpm readers.JSONMetadata) ([]readers.Message, error) {
 	adapter := NewJSONAdapter(rpm)
-	return as.readAggregatedMessages(adapter, table)
+	return as.readAggregatedMessages(adapter)
 }
 
-func (as *aggregationService) readAggregatedSenMLMessages(rpm readers.SenMLMetadata, table string) ([]readers.Message, error) {
-	if table == senmlTable && rpm.AggField != "" {
+func (as *aggregationService) readAggregatedSenMLMessages(rpm readers.SenMLMetadata) ([]readers.Message, error) {
+	adapter := NewSenMLAdapter(rpm)
+	return as.readAggregatedMessages(adapter)
+}
+
+func (as *aggregationService) readAggregatedJSONCount(rpm readers.JSONMetadata) (uint64, error) {
+	adapter := NewJSONAdapter(rpm)
+	return as.readAggregatedCount(adapter)
+}
+
+func (as *aggregationService) readAggregatedSenMLCount(rpm readers.SenMLMetadata) (uint64, error) {
+	if rpm.AggField != "" {
 		rpm.Name = rpm.AggField
 	}
+
 	adapter := NewSenMLAdapter(rpm)
-	return as.readAggregatedMessages(adapter, table)
+	return as.readAggregatedCount(adapter)
 }
 
-func (as *aggregationService) readAggregatedJSONCount(rpm readers.JSONMetadata, table string) (uint64, error) {
-	adapter := NewJSONAdapter(rpm)
-	return as.readAggregatedCount(adapter, table)
-}
-
-func (as *aggregationService) readAggregatedSenMLCount(rpm readers.SenMLMetadata, table string) (uint64, error) {
-	adapter := NewSenMLAdapter(rpm)
-	return as.readAggregatedCount(adapter, table)
-}
-
-func (as *aggregationService) readAggregatedMessages(adapter PageMetadataAdapter, table string) ([]readers.Message, error) {
+func (as *aggregationService) readAggregatedMessages(adapter PageMetadataAdapter) ([]readers.Message, error) {
 	params := adapter.GetQueryParams()
 
 	config := QueryConfig{
-		Table:       table,
+		Table:       adapter.GetTable(),
 		TimeColumn:  adapter.GetTimeColumn(),
 		AggField:    adapter.GetAggField(),
 		AggInterval: adapter.GetAggInterval(),
@@ -87,6 +88,13 @@ func (as *aggregationService) readAggregatedMessages(adapter PageMetadataAdapter
 	}
 
 	conditions := adapter.GetConditions()
+
+	// For SenML, add condition to filter by name if agg_field is specified
+	if adapter.GetTable() == senmlTable && adapter.GetAggField() != "" {
+		conditions = append(conditions, "name = :agg_field")
+		params["agg_field"] = adapter.GetAggField()
+	}
+
 	if len(conditions) > 0 {
 		config.Condition = "WHERE " + strings.Join(conditions, " AND ")
 		config.ConditionForJoin = "AND " + strings.Join(conditions, " AND ")
@@ -108,7 +116,7 @@ func (as *aggregationService) readAggregatedMessages(adapter PageMetadataAdapter
 	}
 	defer rows.Close()
 
-	messages, err := as.scanAggregatedMessages(rows, table)
+	messages, err := as.scanAggregatedMessages(rows, adapter.GetTable())
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +173,7 @@ func (maxStrt MaxStrategy) GetSelectedFields(config QueryConfig) string {
 func (maxStrt MaxStrategy) GetAggregateExpression(config QueryConfig) string {
 	switch config.Table {
 	case senmlTable:
-		return fmt.Sprintf("MAX(m.%s)", config.AggField)
+		return "MAX(m.value)"
 	default:
 		jsonPath := buildJSONPath(config.AggField)
 		return fmt.Sprintf("MAX(CAST(m.%s AS float))", jsonPath)
@@ -206,7 +214,7 @@ func (minStrt MinStrategy) GetSelectedFields(config QueryConfig) string {
 func (minStrt MinStrategy) GetAggregateExpression(config QueryConfig) string {
 	switch config.Table {
 	case senmlTable:
-		return fmt.Sprintf("MIN(m.%s)", config.AggField)
+		return "MIN(m.value)"
 	default:
 		jsonPath := buildJSONPath(config.AggField)
 		return fmt.Sprintf("MIN(CAST(m.%s AS float))", jsonPath)
@@ -256,7 +264,7 @@ func (avgStrt AvgStrategy) GetSelectedFields(config QueryConfig) string {
 func (avgStrt AvgStrategy) GetAggregateExpression(config QueryConfig) string {
 	switch config.Table {
 	case senmlTable:
-		return fmt.Sprintf("AVG(m.%s)", config.AggField)
+		return "AVG(m.value)"
 	default:
 		jsonPath := buildJSONPath(config.AggField)
 		return fmt.Sprintf("AVG(CAST(m.%s AS float))", jsonPath)
@@ -326,7 +334,7 @@ func (countStrt CountStrategy) GetSelectedFields(config QueryConfig) string {
 func (countStrt CountStrategy) GetAggregateExpression(config QueryConfig) string {
 	switch config.Table {
 	case senmlTable:
-		return fmt.Sprintf("COUNT(m.%s)", config.AggField)
+		return "COUNT(m.value)"
 	default:
 		jsonPath := buildJSONPath(config.AggField)
 		return fmt.Sprintf("COUNT(m.%s)", jsonPath)
@@ -351,16 +359,22 @@ func buildTimeJoinCondition(config QueryConfig, tableAlias string) string {
 func buildValueCondition(config QueryConfig) string {
 	switch config.Table {
 	case senmlTable:
-		return fmt.Sprintf("m.%s = ia.agg_value", config.AggField)
+		// Always match on 'value' column for SenML
+		return "m.value = ia.agg_value"
 	default:
 		jsonPath := buildJSONPath(config.AggField)
 		return fmt.Sprintf("CAST(m.%s as FLOAT) = ia.agg_value", jsonPath)
 	}
 }
 
-func (as *aggregationService) readAggregatedCount(rpm PageMetadataAdapter, table string) (uint64, error) {
+func (as *aggregationService) readAggregatedCount(rpm PageMetadataAdapter) (uint64, error) {
 	params := rpm.GetQueryParams()
 	conditions := rpm.GetConditions()
+
+	if rpm.GetTable() == senmlTable && rpm.GetAggField() != "" {
+		conditions = append(conditions, "name = :agg_field")
+		params["agg_field"] = rpm.GetAggField()
+	}
 
 	condition := ""
 	if len(conditions) > 0 {
@@ -371,7 +385,7 @@ func (as *aggregationService) readAggregatedCount(rpm PageMetadataAdapter, table
         SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000)))
         FROM %s
         %s`,
-		rpm.GetAggInterval(), rpm.GetTimeColumn(), table, condition)
+		rpm.GetAggInterval(), rpm.GetTimeColumn(), rpm.GetTable(), condition)
 
 	rows, err := as.db.NamedQuery(query, params)
 	if err != nil {
