@@ -5,6 +5,13 @@ import (
 	"github.com/MainfluxLabs/mainflux/readers"
 )
 
+const (
+	jsonTable  = "json"
+	jsonOrder  = "created"
+	senmlTable = "messages"
+	senmlOrder = "time"
+)
+
 type PageMetadataAdapter interface {
 	GetOffset() uint64
 	GetLimit() uint64
@@ -17,7 +24,7 @@ type PageMetadataAdapter interface {
 	GetAggType() string
 	GetAggField() string
 
-	GetTableName() string
+	GetTable() string
 	GetTimeColumn() string
 
 	GetQueryParams() map[string]interface{}
@@ -50,7 +57,7 @@ func (j *JSONAdapter) GetTo() int64           { return j.metadata.To }
 func (j *JSONAdapter) GetAggInterval() string { return j.metadata.AggInterval }
 func (j *JSONAdapter) GetAggType() string     { return j.metadata.AggType }
 func (j *JSONAdapter) GetAggField() string    { return j.metadata.AggField }
-func (j *JSONAdapter) GetTableName() string   { return jsonTable }
+func (j *JSONAdapter) GetTable() string       { return jsonTable }
 func (j *JSONAdapter) GetTimeColumn() string  { return jsonOrder }
 
 func (j *JSONAdapter) GetName() string        { return "" }
@@ -111,7 +118,7 @@ func (s *SenMLAdapter) GetTo() int64           { return s.metadata.To }
 func (s *SenMLAdapter) GetAggInterval() string { return s.metadata.AggInterval }
 func (s *SenMLAdapter) GetAggType() string     { return s.metadata.AggType }
 func (s *SenMLAdapter) GetAggField() string    { return s.metadata.AggField }
-func (s *SenMLAdapter) GetTableName() string   { return senmlTable }
+func (s *SenMLAdapter) GetTable() string       { return senmlTable }
 func (s *SenMLAdapter) GetTimeColumn() string  { return senmlOrder }
 
 func (s *SenMLAdapter) GetName() string        { return s.metadata.Name }
