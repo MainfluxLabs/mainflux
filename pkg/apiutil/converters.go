@@ -358,8 +358,8 @@ func ConvertPageMetaToSenMLMeta(metadata readers.PageMetadata) readers.SenMLMeta
 		DataValue:   metadata.DataValue,
 		From:        metadata.From,
 		To:          metadata.To,
-		AggField:    metadata.AggInterval,
+		AggInterval: metadata.AggInterval,
+		AggField:    metadata.AggField,
 		AggType:     metadata.AggType,
-		AggInterval: metadata.AggField,
 	}
 }

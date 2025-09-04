@@ -67,10 +67,6 @@ func (as *aggregationService) readAggregatedJSONCount(rpm readers.JSONMetadata) 
 }
 
 func (as *aggregationService) readAggregatedSenMLCount(rpm readers.SenMLMetadata) (uint64, error) {
-	if rpm.AggField != "" {
-		rpm.Name = rpm.AggField
-	}
-
 	adapter := NewSenMLAdapter(rpm)
 	return as.readAggregatedCount(adapter)
 }
@@ -89,7 +85,6 @@ func (as *aggregationService) readAggregatedMessages(adapter PageMetadataAdapter
 
 	conditions := adapter.GetConditions()
 
-	// For SenML, add condition to filter by name if agg_field is specified
 	if adapter.GetTable() == senmlTable && adapter.GetAggField() != "" {
 		conditions = append(conditions, "name = :agg_field")
 		params["agg_field"] = adapter.GetAggField()
