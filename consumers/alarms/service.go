@@ -13,10 +13,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
-const (
-	Viewer = "viewer"
-)
-
 type Service interface {
 	ListAlarmsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (AlarmsPage, error)
 	ListAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error)
@@ -82,7 +78,7 @@ func (as *alarmService) ListAlarmsByOrg(ctx context.Context, token string, orgID
 		return as.alarms.RetrieveByGroups(ctx, res.GetIds(), pm)
 	}
 
-	if err := as.canAccessOrg(ctx, token, orgID, auth.OrgSub, Viewer); err != nil {
+	if err := as.canAccessOrg(ctx, token, orgID, auth.OrgSub, auth.Viewer); err != nil {
 		return AlarmsPage{}, err
 	}
 

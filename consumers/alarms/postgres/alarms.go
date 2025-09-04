@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -151,7 +150,7 @@ func (ar *alarmRepository) RetrieveByGroups(ctx context.Context, groupIDs []stri
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	giq := getGroupIDsQuery(groupIDs)
+	giq := dbutil.GetGroupIDsQuery(groupIDs)
 	p, pq, err := dbutil.GetPayloadQuery(pm.Payload)
 	if err != nil {
 		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
@@ -266,11 +265,4 @@ func toAlarm(dbAlarm dbAlarm) (alarms.Alarm, error) {
 		Payload:  payload,
 		Created:  dbAlarm.Created,
 	}, nil
-}
-
-func getGroupIDsQuery(ids []string) string {
-	if len(ids) == 0 {
-		return ""
-	}
-	return fmt.Sprintf("group_id IN ('%s') ", strings.Join(ids, "','"))
 }

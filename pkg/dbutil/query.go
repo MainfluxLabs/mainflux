@@ -98,6 +98,13 @@ func GetTableName(format string) string {
 	}
 }
 
+func GetGroupIDsQuery(ids []string) string {
+	if len(ids) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("group_id IN ('%s') ", strings.Join(ids, "','"))
+}
+
 func Total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {
 	rows, err := db.NamedQueryContext(ctx, query, params)
 	if err != nil {
