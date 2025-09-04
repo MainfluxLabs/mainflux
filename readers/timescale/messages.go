@@ -19,7 +19,7 @@ import (
 
 const (
 	// Table for SenML messages
-	defTable = "messages"
+	defTable = "senml"
 	// Table for JSON messages
 	jsonTable = "json"
 )
@@ -54,7 +54,7 @@ func (tr timescaleRepository) Backup(rpm readers.PageMetadata) (readers.Messages
 }
 
 func (tr timescaleRepository) Restore(ctx context.Context, format string, messages ...readers.Message) error {
-	q := `INSERT INTO messages (subtopic, publisher, protocol,
+	q := `INSERT INTO senml (subtopic, publisher, protocol,
 		name, unit, value, string_value, bool_value, data_value, sum,
 		time, update_time)
 		VALUES (:subtopic, :publisher, :protocol, :name, :unit,

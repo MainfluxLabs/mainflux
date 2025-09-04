@@ -28,7 +28,7 @@ const (
 	coapProt    = "coap"
 	msgName     = "temperature"
 	jsonFormat  = "json"
-	senmlFormat = "messages"
+	senmlFormat = "senml"
 	jsonCT      = "application/json"
 	noLimit     = 0
 )
