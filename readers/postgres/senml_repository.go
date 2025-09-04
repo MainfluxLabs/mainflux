@@ -54,7 +54,7 @@ func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenML
 	}()
 
 	condition := sr.fmtCondition(rpm)
-	q := fmt.Sprintf("DELETE FROM messages %s", condition)
+	q := fmt.Sprintf("DELETE FROM senml %s", condition)
 	params := map[string]interface{}{
 		"subtopic":     rpm.Subtopic,
 		"publisher":    rpm.Publisher,
@@ -118,7 +118,7 @@ func (sr *senmlRepository) readAll(rpm readers.SenMLMetadata) (readers.MessagesP
 func (sr *senmlRepository) readMessages(rpm readers.SenMLMetadata, params map[string]interface{}) ([]readers.Message, error) {
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 	condition := sr.fmtCondition(rpm)
-	query := fmt.Sprintf(`SELECT * FROM messages %s ORDER BY time DESC %s;`, condition, olq)
+	query := fmt.Sprintf(`SELECT * FROM senml %s ORDER BY time DESC %s;`, condition, olq)
 
 	rows, err := sr.executeQuery(query, params)
 	if err != nil {
@@ -134,7 +134,7 @@ func (sr *senmlRepository) readMessages(rpm readers.SenMLMetadata, params map[st
 
 func (sr *senmlRepository) readCount(rpm readers.SenMLMetadata, params map[string]interface{}) (uint64, error) {
 	condition := sr.fmtCondition(rpm)
-	query := fmt.Sprintf(`SELECT COUNT(*) FROM messages %s;`, condition)
+	query := fmt.Sprintf(`SELECT COUNT(*) FROM senml %s;`, condition)
 
 	rows, err := sr.executeQuery(query, params)
 	if err != nil {
@@ -260,7 +260,7 @@ func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Mess
 		}
 	}()
 
-	q := `INSERT INTO messages (subtopic, publisher, protocol,
+	q := `INSERT INTO senml (subtopic, publisher, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
           time, update_time)
           VALUES (:subtopic, :publisher, :protocol, :name, :unit,
