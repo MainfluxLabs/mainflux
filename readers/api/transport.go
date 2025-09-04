@@ -199,6 +199,7 @@ func decodeRestoreMessages(_ context.Context, r *http.Request) (interface{}, err
 		Messages: data,
 	}, nil
 }
+
 func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, error) {
 	pageMeta, err := BuildMessagePageMetadata(r)
 	if err != nil {
