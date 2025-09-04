@@ -236,28 +236,12 @@ func buildConfigResponse(conf map[string]interface{}) (*protomfx.Config, error) 
 
 func getGroupIDsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(orgIDReq)
+		req := request.(orgAccessReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		groupIDs, err := svc.GetGroupIDsByOrg(ctx, req.orgID)
-		if err != nil {
-			return groupIDsRes{}, err
-		}
-
-		return groupIDsRes{groupIDs: groupIDs}, nil
-	}
-}
-
-func getGroupIDsByOrgMembershipEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(orgMembershipReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		groupIDs, err := svc.GetGroupIDsByOrgMembership(ctx, req.orgID, req.memberID)
+		groupIDs, err := svc.GetGroupIDsByOrg(ctx, req.orgID, req.token)
 		if err != nil {
 			return groupIDsRes{}, err
 		}

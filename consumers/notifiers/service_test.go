@@ -45,7 +45,7 @@ var (
 )
 
 func newService() notifiers.Service {
-	thingsC := mocks.NewThingsServiceClient(nil, nil, map[string]things.Group{token: {ID: groupID}}, nil)
+	thingsC := mocks.NewThingsServiceClient(nil, nil, map[string]things.Group{token: {ID: groupID}})
 	notifier := ntmocks.NewNotifier()
 	notifierRepo := ntmocks.NewNotifierRepository()
 	idp := uuid.NewMock()

@@ -139,10 +139,7 @@ type Service interface {
 	GetProfileIDByThingID(ctx context.Context, thingID string) (string, error)
 
 	// GetGroupIDsByOrg returns all group IDs belonging to an org.
-	GetGroupIDsByOrg(ctx context.Context, orgID string) ([]string, error)
-
-	// GetGroupIDsByOrgMembership returns group IDs by org membership.
-	GetGroupIDsByOrgMembership(ctx context.Context, orgID, memberID string) ([]string, error)
+	GetGroupIDsByOrg(ctx context.Context, orgID string, token string) ([]string, error)
 
 	// Backup retrieves all things, profiles, groups, and groups memberships for all users. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
@@ -1092,10 +1089,15 @@ func (ts *thingsService) getGroupIDsByMemberID(ctx context.Context, memberID str
 	return grIDs, nil
 }
 
-func (ts *thingsService) GetGroupIDsByOrg(ctx context.Context, orgID string) ([]string, error) {
-	return ts.groups.RetrieveIDsByOrg(ctx, orgID)
-}
+func (ts *thingsService) GetGroupIDsByOrg(ctx context.Context, orgID string, token string) ([]string, error) {
+	if err := ts.isAdmin(ctx, token); err == nil {
+		return ts.groups.RetrieveIDsByOrg(ctx, orgID)
+	}
 
-func (ts *thingsService) GetGroupIDsByOrgMembership(ctx context.Context, orgID, memberID string) ([]string, error) {
-	return ts.groups.RetrieveIDsByOrgMembership(ctx, orgID, memberID)
+	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrAuthentication, err)
+	}
+
+	return ts.groups.RetrieveIDsByOrgMembership(ctx, orgID, user.GetId())
 }

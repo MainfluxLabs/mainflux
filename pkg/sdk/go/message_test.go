@@ -36,7 +36,7 @@ func TestSendMessage(t *testing.T) {
 	atoken := "auth_token"
 	invalidToken := "invalid"
 	msg := `[{"n":"current","t":-1,"v":1.6}]`
-	thingsClient := mocks.NewThingsServiceClient(map[string]things.Profile{atoken: {ID: profileID}}, nil, nil, nil)
+	thingsClient := mocks.NewThingsServiceClient(map[string]things.Profile{atoken: {ID: profileID}}, nil, nil)
 	rulesClient := mocks.NewRulesServiceClient()
 	logger := logger.NewMock()
 	pub := newMessageService(thingsClient, rulesClient, logger)
@@ -96,7 +96,7 @@ func TestSendMessage(t *testing.T) {
 func TestValidateContentType(t *testing.T) {
 	profileID := "1"
 	atoken := "auth_token"
-	thingsClient := mocks.NewThingsServiceClient(map[string]things.Profile{atoken: {ID: profileID}}, nil, nil, nil)
+	thingsClient := mocks.NewThingsServiceClient(map[string]things.Profile{atoken: {ID: profileID}}, nil, nil)
 	rulesClient := mocks.NewRulesServiceClient()
 	logger := logger.NewMock()
 	pub := newMessageService(thingsClient, rulesClient, logger)

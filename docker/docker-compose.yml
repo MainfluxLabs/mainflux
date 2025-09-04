@@ -203,7 +203,7 @@ services:
       - mainfluxlabs-auth-redis-volume:/data
 
   things:
-    image: ${MF_RELEASE_PREFIX}/things:${MF_RELEASE_TAG}
+    image: ${MF_RELEASE_PREFIX}/things:v0.30.0
     container_name: mainfluxlabs-things
     depends_on:
       - things-db
@@ -428,7 +428,7 @@ services:
       - mainfluxlabs-base-net
 
   postgres-reader:
-    image: ${MF_RELEASE_PREFIX}/postgres-reader:${MF_RELEASE_TAG}
+    image: ${MF_RELEASE_PREFIX}/postgres-reader:v0.30.0
     container_name: mainfluxlabs-postgres-reader
     restart: on-failure
     environment:
@@ -709,11 +709,10 @@ services:
       - mainfluxlabs-alarms-db-volume:/var/lib/postgresql/data
 
   alarms:
-    image: ${MF_RELEASE_PREFIX}/alarms:${MF_RELEASE_TAG}
+    image: ${MF_RELEASE_PREFIX}/alarms:v0.30.0
     container_name: mainfluxlabs-alarms
     depends_on:
       - things
-      - auth
       - alarms-db
     restart: on-failure
     environment:
@@ -730,8 +729,6 @@ services:
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
-      MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
-      MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
     ports:
       - ${MF_ALARMS_HTTP_PORT}:${MF_ALARMS_HTTP_PORT}
     networks:

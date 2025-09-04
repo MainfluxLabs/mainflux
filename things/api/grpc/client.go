@@ -20,19 +20,18 @@ import (
 var _ protomfx.ThingsServiceClient = (*grpcClient)(nil)
 
 type grpcClient struct {
-	timeout                time.Duration
-	getPubConfByKey        endpoint.Endpoint
-	getConfigByThingID     endpoint.Endpoint
-	canUserAccessThing     endpoint.Endpoint
-	canUserAccessProfile   endpoint.Endpoint
-	canUserAccessGroup     endpoint.Endpoint
-	canThingAccessGroup    endpoint.Endpoint
-	identify               endpoint.Endpoint
-	getGroupIDByThingID    endpoint.Endpoint
-	getGroupIDByProfileID  endpoint.Endpoint
-	getProfileIDByThingID  endpoint.Endpoint
-	getGroupIDsByOrg       endpoint.Endpoint
-	getGroupIDsByOrgMember endpoint.Endpoint
+	timeout               time.Duration
+	getPubConfByKey       endpoint.Endpoint
+	getConfigByThingID    endpoint.Endpoint
+	canUserAccessThing    endpoint.Endpoint
+	canUserAccessProfile  endpoint.Endpoint
+	canUserAccessGroup    endpoint.Endpoint
+	canThingAccessGroup   endpoint.Endpoint
+	identify              endpoint.Endpoint
+	getGroupIDByThingID   endpoint.Endpoint
+	getGroupIDByProfileID endpoint.Endpoint
+	getProfileIDByThingID endpoint.Endpoint
+	getGroupIDsByOrg      endpoint.Endpoint
 }
 
 // NewClient returns new gRPC client instance.
@@ -126,15 +125,6 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			svcName,
 			"GetGroupIDsByOrg",
 			encodeGetGroupIDsByOrgRequest,
-			decodeGetGroupIDsResponse,
-			protomfx.GroupIDs{},
-		).Endpoint()),
-
-		getGroupIDsByOrgMember: kitot.TraceClient(tracer, "get_group_ids_by_org_membership")(kitgrpc.NewClient(
-			conn,
-			svcName,
-			"GetGroupIDsByOrgMembership",
-			encodeGetGroupIDsByOrgMembershipRequest,
 			decodeGetGroupIDsResponse,
 			protomfx.GroupIDs{},
 		).Endpoint()),
@@ -264,27 +254,11 @@ func (client grpcClient) GetProfileIDByThingID(ctx context.Context, req *protomf
 	return &protomfx.ProfileID{Value: tp.profileID}, nil
 }
 
-func (c grpcClient) GetGroupIDsByOrg(ctx context.Context, req *protomfx.OrgID, _ ...grpc.CallOption) (*protomfx.GroupIDs, error) {
+func (c grpcClient) GetGroupIDsByOrg(ctx context.Context, req *protomfx.OrgAccessReq, _ ...grpc.CallOption) (*protomfx.GroupIDs, error) {
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 
-	res, err := c.getGroupIDsByOrg(ctx, orgIDReq{orgID: req.GetValue()})
-	if err != nil {
-		return nil, err
-	}
-
-	ids := res.(groupIDsRes)
-	return &protomfx.GroupIDs{Ids: ids.groupIDs}, nil
-}
-
-func (c grpcClient) GetGroupIDsByOrgMembership(ctx context.Context, req *protomfx.OrgMembershipReq, _ ...grpc.CallOption) (*protomfx.GroupIDs, error) {
-	ctx, cancel := context.WithTimeout(ctx, c.timeout)
-	defer cancel()
-
-	res, err := c.getGroupIDsByOrgMember(ctx, orgMembershipReq{
-		orgID:    req.GetOrgId(),
-		memberID: req.GetUserId(),
-	})
+	res, err := c.getGroupIDsByOrg(ctx, orgAccessReq{orgID: req.GetOrgId(), token: req.GetToken()})
 	if err != nil {
 		return nil, err
 	}
@@ -344,15 +318,10 @@ func encodeGetProfileIDByThingIDRequest(_ context.Context, grpcReq interface{}) 
 }
 
 func encodeGetGroupIDsByOrgRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(orgIDReq)
-	return &protomfx.OrgID{Value: req.orgID}, nil
-}
-
-func encodeGetGroupIDsByOrgMembershipRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(orgMembershipReq)
-	return &protomfx.OrgMembershipReq{
-		OrgId:  req.orgID,
-		UserId: req.memberID,
+	req := grpcReq.(orgAccessReq)
+	return &protomfx.OrgAccessReq{
+		OrgId: req.orgID,
+		Token: req.token,
 	}, nil
 }
 

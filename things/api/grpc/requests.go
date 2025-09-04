@@ -129,28 +129,17 @@ func (req profileIDReq) validate() error {
 	return nil
 }
 
-type orgIDReq struct {
+type orgAccessReq struct {
 	orgID string
+	token string
 }
 
-func (req orgIDReq) validate() error {
+func (req orgAccessReq) validate() error {
 	if req.orgID == "" {
 		return apiutil.ErrMissingOrgID
 	}
-	return nil
-}
-
-type orgMembershipReq struct {
-	orgID    string
-	memberID string
-}
-
-func (req orgMembershipReq) validate() error {
-	if req.orgID == "" {
-		return apiutil.ErrMissingOrgID
-	}
-	if req.memberID == "" {
-		return apiutil.ErrMissingMemberID
+	if req.token == "" {
+		return apiutil.ErrBearerToken
 	}
 	return nil
 }

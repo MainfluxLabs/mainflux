@@ -142,7 +142,7 @@ func TestListSenMLMessages(t *testing.T) {
 		messages = append(messages, msg)
 	}
 
-	thSvc := thmocks.NewThingsServiceClient(nil, nil, nil, nil)
+	thSvc := thmocks.NewThingsServiceClient(nil, nil, nil)
 	authSvc := newAuthService()
 
 	adminTok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
@@ -510,7 +510,7 @@ func TestListJSONMessages(t *testing.T) {
 		messages = append(messages, msg)
 	}
 
-	thSvc := thmocks.NewThingsServiceClient(nil, nil, nil, nil)
+	thSvc := thmocks.NewThingsServiceClient(nil, nil, nil)
 	authSvc := newAuthService()
 
 	adminTok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})

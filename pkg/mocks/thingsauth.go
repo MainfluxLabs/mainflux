@@ -20,15 +20,14 @@ import (
 var _ protomfx.ThingsServiceClient = (*thingsServiceMock)(nil)
 
 type thingsServiceMock struct {
-	profiles    map[string]things.Profile
-	things      map[string]things.Thing
-	groups      map[string]things.Group
-	memberships map[string][]things.GroupMembership
+	profiles map[string]things.Profile
+	things   map[string]things.Thing
+	groups   map[string]things.Group
 }
 
 // NewThingsServiceClient returns mock implementation of things service
-func NewThingsServiceClient(profiles map[string]things.Profile, things map[string]things.Thing, groups map[string]things.Group, memberships map[string][]things.GroupMembership) protomfx.ThingsServiceClient {
-	return &thingsServiceMock{profiles, things, groups, memberships}
+func NewThingsServiceClient(profiles map[string]things.Profile, things map[string]things.Thing, groups map[string]things.Group) protomfx.ThingsServiceClient {
+	return &thingsServiceMock{profiles, things, groups}
 }
 
 func (svc thingsServiceMock) GetPubConfByKey(_ context.Context, in *protomfx.PubConfByKeyReq, _ ...grpc.CallOption) (*protomfx.PubConfByKeyRes, error) {
@@ -139,25 +138,11 @@ func (svc thingsServiceMock) GetProfileIDByThingID(_ context.Context, in *protom
 	return nil, dbutil.ErrNotFound
 }
 
-func (svc thingsServiceMock) GetGroupIDsByOrg(_ context.Context, in *protomfx.OrgID, _ ...grpc.CallOption) (*protomfx.GroupIDs, error) {
-	var ids []string
-	for _, g := range svc.groups {
-		if g.OrgID == in.GetValue() {
-			ids = append(ids, g.ID)
-		}
-	}
-	return &protomfx.GroupIDs{Ids: ids}, nil
-}
-
-func (svc *thingsServiceMock) GetGroupIDsByOrgMembership(_ context.Context, in *protomfx.OrgMembershipReq, _ ...grpc.CallOption) (*protomfx.GroupIDs, error) {
+func (svc thingsServiceMock) GetGroupIDsByOrg(_ context.Context, in *protomfx.OrgAccessReq, _ ...grpc.CallOption) (*protomfx.GroupIDs, error) {
 	var ids []string
 	for _, g := range svc.groups {
 		if g.OrgID == in.GetOrgId() {
-			for _, m := range svc.memberships[g.OrgID] {
-				if m.MemberID == in.GetUserId() {
-					ids = append(ids, g.ID)
-				}
-			}
+			ids = append(ids, g.ID)
 		}
 	}
 	return &protomfx.GroupIDs{Ids: ids}, nil

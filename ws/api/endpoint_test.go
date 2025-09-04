@@ -74,7 +74,7 @@ func handshake(tsURL, subtopic, thingKey string, addHeader bool) (*websocket.Con
 }
 
 func TestHandshake(t *testing.T) {
-	thingsClient := pkgmocks.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil, nil)
+	thingsClient := pkgmocks.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
 	rulesClient := pkgmocks.NewRulesServiceClient()
 	logger := logger.NewMock()
 	svc, _ := newService(thingsClient, rulesClient, logger)
