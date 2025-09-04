@@ -107,18 +107,10 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
-	case errors.Contains(err, errors.ErrAuthentication),
-		err == apiutil.ErrBearerToken:
-		w.WriteHeader(http.StatusUnauthorized)
-	case errors.Contains(err, errors.ErrAuthorization):
-		w.WriteHeader(http.StatusForbidden)
-	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
-		w.WriteHeader(http.StatusUnsupportedMediaType)
-	case errors.Contains(err, messaging.ErrMalformedSubtopic),
-		errors.Contains(err, apiutil.ErrMalformedEntity):
+	case errors.Contains(err, messaging.ErrMalformedSubtopic):
 		w.WriteHeader(http.StatusBadRequest)
 	default:
-		w.WriteHeader(http.StatusInternalServerError)
+		apiutil.EncodeError(err, w)
 	}
 
 	apiutil.WriteErrorResponse(err, w)
