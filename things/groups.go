@@ -192,23 +192,7 @@ func (ts *thingsService) ListGroups(ctx context.Context, token string, pm apiuti
 }
 
 func (ts *thingsService) ListGroupsByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (GroupPage, error) {
-	if err := ts.isAdmin(ctx, token); err == nil {
-		if grIDs, err := ts.groups.RetrieveIDsByOrg(ctx, orgID); err == nil {
-			return ts.groups.RetrieveByIDs(ctx, grIDs, pm)
-		}
-		return GroupPage{}, err
-	}
-
-	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Viewer); err != nil {
-		return GroupPage{}, err
-	}
-
-	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return GroupPage{}, errors.Wrap(errors.ErrAuthentication, err)
-	}
-
-	grIDs, err := ts.groups.RetrieveIDsByOrgMembership(ctx, orgID, user.GetId())
+	grIDs, err := ts.GetGroupIDsByOrg(ctx, orgID, token)
 	if err != nil {
 		return GroupPage{}, err
 	}
