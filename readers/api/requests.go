@@ -10,13 +10,13 @@ import (
 
 const maxLimitSize = 1000
 
-type listMessagesReq struct {
+type listSenMLMessagesReq struct {
 	token    string
 	key      string
-	pageMeta readers.PageMetadata
+	pageMeta readers.SenMLMetadata
 }
 
-func (req listMessagesReq) validate() error {
+func (req listSenMLMessagesReq) validate() error {
 	if req.token == "" && req.key == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -49,13 +49,61 @@ func (req listMessagesReq) validate() error {
 	return nil
 }
 
-type backupMessagesReq struct {
-	token         string
-	convertFormat string
-	pageMeta      readers.PageMetadata
+type listJSONMessagesReq struct {
+	token    string
+	key      string
+	pageMeta readers.JSONMetadata
 }
 
-func (req backupMessagesReq) validate() error {
+func (req listJSONMessagesReq) validate() error {
+	if req.token == "" && req.key == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.pageMeta.Limit > maxLimitSize {
+		return apiutil.ErrLimitSize
+	}
+
+	if req.pageMeta.Offset < 0 {
+		return apiutil.ErrOffsetSize
+	}
+
+	if req.pageMeta.AggType != "" {
+		switch req.pageMeta.AggType {
+		case readers.AggregationMin, readers.AggregationMax, readers.AggregationAvg, readers.AggregationCount:
+		default:
+			return apiutil.ErrInvalidAggType
+		}
+	}
+
+	return nil
+}
+
+type backupSenMLMessagesReq struct {
+	token         string
+	convertFormat string
+	pageMeta      readers.SenMLMetadata
+}
+
+func (req backupSenMLMessagesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.convertFormat != jsonFormat && req.convertFormat != csvFormat {
+		return apiutil.ErrInvalidQueryParams
+	}
+
+	return nil
+}
+
+type backupJSONMessagesReq struct {
+	token         string
+	convertFormat string
+	pageMeta      readers.JSONMetadata
+}
+
+func (req backupJSONMessagesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -86,13 +134,26 @@ func (req restoreMessagesReq) validate() error {
 	return nil
 }
 
-type deleteMessagesReq struct {
+type deleteSenMLMessagesReq struct {
 	token    string
 	key      string
-	pageMeta readers.PageMetadata
+	pageMeta readers.SenMLMetadata
 }
 
-func (req deleteMessagesReq) validate() error {
+func (req deleteSenMLMessagesReq) validate() error {
+	if req.token == "" && req.key == "" {
+		return apiutil.ErrBearerToken
+	}
+	return nil
+}
+
+type deleteJSONMessagesReq struct {
+	token    string
+	key      string
+	pageMeta readers.JSONMetadata
+}
+
+func (req deleteJSONMessagesReq) validate() error {
 	if req.token == "" && req.key == "" {
 		return apiutil.ErrBearerToken
 	}
