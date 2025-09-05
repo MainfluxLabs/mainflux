@@ -138,6 +138,9 @@ type Service interface {
 	// GetProfileIDByThingID returns a thing's profile ID for given thing ID.
 	GetProfileIDByThingID(ctx context.Context, thingID string) (string, error)
 
+	// GetGroupIDsByOrg returns all group IDs belonging to an org.
+	GetGroupIDsByOrg(ctx context.Context, orgID string, token string) ([]string, error)
+
 	// Backup retrieves all things, profiles, groups, and groups memberships for all users. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
@@ -1084,4 +1087,21 @@ func (ts *thingsService) getGroupIDsByMemberID(ctx context.Context, memberID str
 		}
 	}
 	return grIDs, nil
+}
+
+func (ts *thingsService) GetGroupIDsByOrg(ctx context.Context, orgID string, token string) ([]string, error) {
+	if err := ts.isAdmin(ctx, token); err == nil {
+		return ts.groups.RetrieveIDsByOrg(ctx, orgID)
+	}
+
+	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Viewer); err != nil {
+		return []string{}, err
+	}
+
+	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
+	if err != nil {
+		return nil, err
+	}
+
+	return ts.groups.RetrieveIDsByOrgMembership(ctx, orgID, user.GetId())
 }

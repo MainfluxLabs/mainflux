@@ -247,6 +247,10 @@ func (svc *mainfluxThings) GetProfileIDByThingID(_ context.Context, thingID stri
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) GetGroupIDsByOrg(_ context.Context, orgID string, token string) ([]string, error) {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) ListThingsByGroup(_ context.Context, token, groupID string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
 	panic("not implemented")
 }

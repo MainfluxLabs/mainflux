@@ -44,6 +44,15 @@ func (ms *metricsMiddleware) ListAlarmsByThing(ctx context.Context, token, thing
 	return ms.svc.ListAlarmsByThing(ctx, token, thingID, pm)
 }
 
+func (ms *metricsMiddleware) ListAlarmsByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_alarms_by_org").Add(1)
+		ms.latency.With("method", "list_alarms_by_org").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListAlarmsByOrg(ctx, token, orgID, pm)
+}
+
 func (ms *metricsMiddleware) ViewAlarm(ctx context.Context, token, id string) (alarms.Alarm, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_alarm").Add(1)

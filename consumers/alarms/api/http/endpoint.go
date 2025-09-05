@@ -42,6 +42,22 @@ func listAlarmsByThingEndpoint(svc alarms.Service) endpoint.Endpoint {
 	}
 }
 
+func listAlarmsByOrgEndpoint(svc alarms.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listAlarmsByOrgReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		page, err := svc.ListAlarmsByOrg(ctx, req.token, req.orgID, req.pageMetadata)
+		if err != nil {
+			return nil, err
+		}
+
+		return buildAlarmsResponse(page), nil
+	}
+}
+
 func viewAlarmEndpoint(svc alarms.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(alarmReq)

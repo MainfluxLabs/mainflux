@@ -31,3 +31,7 @@ type groupIDRes struct {
 type profileIDRes struct {
 	profileID string
 }
+
+type groupIDsRes struct {
+	groupIDs []string
+}

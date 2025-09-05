@@ -9,11 +9,12 @@ import (
 )
 
 const (
-	saveAlarms            = "save_alarms"
-	retrieveAlarmsByGroup = "retrieve_alarms_by_group"
-	retrieveAlarmsByThing = "retrieve_alarms_by_thing"
-	retrieveAlarmByID     = "retrieve_alarm_by_id"
-	removeAlarms          = "remove_alarms"
+	saveAlarms             = "save_alarms"
+	retrieveAlarmsByGroup  = "retrieve_alarms_by_group"
+	retrieveAlarmsByThing  = "retrieve_alarms_by_thing"
+	retrieveAlarmsByGroups = "retrieve_alarms_by_groups"
+	retrieveAlarmByID      = "retrieve_alarm_by_id"
+	removeAlarms           = "remove_alarms"
 )
 
 var (
@@ -56,6 +57,14 @@ func (arm alarmRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingI
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return arm.repo.RetrieveByThing(ctx, thingID, pm)
+}
+
+func (arm alarmRepositoryMiddleware) RetrieveByGroups(ctx context.Context, ids []string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+	span := createSpan(ctx, arm.tracer, retrieveAlarmsByGroups)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return arm.repo.RetrieveByGroups(ctx, ids, pm)
 }
 
 func (arm alarmRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (alarms.Alarm, error) {
