@@ -36,137 +36,59 @@ func New(db *mongo.Database) readers.MessageRepository {
 	}
 }
 
-func (repo mongoRepository) ListAllMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return repo.readAll("", rpm)
+type PageMetadata struct {
+	Offset      uint64  `json:"offset"`
+	Limit       uint64  `json:"limit"`
+	Subtopic    string  `json:"subtopic,omitempty"`
+	Publisher   string  `json:"publisher,omitempty"`
+	Protocol    string  `json:"protocol,omitempty"`
+	Name        string  `json:"name,omitempty"`
+	Value       float64 `json:"v,omitempty"`
+	Comparator  string  `json:"comparator,omitempty"`
+	BoolValue   bool    `json:"vb,omitempty"`
+	StringValue string  `json:"vs,omitempty"`
+	DataValue   string  `json:"vd,omitempty"`
+	From        int64   `json:"from,omitempty"`
+	To          int64   `json:"to,omitempty"`
+	Format      string  `json:"format,omitempty"`
+	AggInterval string  `json:"agg_interval,omitempty"`
+	AggType     string  `json:"agg_type,omitempty"`
+	AggField    string  `json:"agg_field,omitempty"`
 }
 
-func (repo mongoRepository) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return repo.readAll("", rpm)
+func jsonMetadataToPageMetadata(jm readers.JSONMetadata) PageMetadata {
+	return PageMetadata{
+		Offset:    jm.Offset,
+		Limit:     jm.Limit,
+		Subtopic:  jm.Subtopic,
+		Publisher: jm.Publisher,
+		Protocol:  jm.Protocol,
+		From:      jm.From,
+		To:        jm.To,
+		Format:    jsonCollection,
+	}
 }
 
-func (repo mongoRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) error {
-	return nil
+func senMLMetadataToPageMetadata(sm readers.SenMLMetadata) PageMetadata {
+	return PageMetadata{
+		Offset:      sm.Offset,
+		Limit:       sm.Limit,
+		Subtopic:    sm.Subtopic,
+		Publisher:   sm.Publisher,
+		Protocol:    sm.Protocol,
+		Name:        sm.Name,
+		Value:       sm.Value,
+		Comparator:  sm.Comparator,
+		BoolValue:   sm.BoolValue,
+		StringValue: sm.StringValue,
+		DataValue:   sm.DataValue,
+		From:        sm.From,
+		To:          sm.To,
+		Format:      defCollection,
+	}
 }
 
-func (repo mongoRepository) Restore(ctx context.Context, format string, messages ...readers.Message) error {
-	coll := repo.db.Collection(defCollection)
-	var dbMsgs []interface{}
-	for _, msg := range messages {
-		dbMsgs = append(dbMsgs, msg)
-	}
-
-	_, err := coll.InsertMany(context.Background(), dbMsgs)
-	if err != nil {
-		return errors.Wrap(errors.ErrSaveMessages, err)
-	}
-
-	return nil
-}
-
-func (repo mongoRepository) readAll(profileID string, rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	format := defCollection
-	order := "time"
-	if rpm.Format == jsonCollection {
-		order = "created"
-		format = rpm.Format
-	}
-
-	col := repo.db.Collection(format)
-
-	sortMap := map[string]interface{}{
-		order: -1,
-	}
-	// Remove format filter and format the rest properly.
-	filter := fmtCondition(profileID, rpm)
-	var cursor *mongo.Cursor
-	var err error
-	switch rpm.Limit {
-	case noLimit:
-		cursor, err = col.Find(context.Background(), filter, options.Find().SetSort(sortMap))
-	default:
-		cursor, err = col.Find(context.Background(), filter, options.Find().SetSort(sortMap).SetLimit(int64(rpm.Limit)).SetSkip(int64(rpm.Offset)))
-	}
-	if err != nil {
-		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-
-	}
-	defer cursor.Close(context.Background())
-
-	var messages []readers.Message
-	switch format {
-	case defCollection:
-		for cursor.Next(context.Background()) {
-			var m senml.Message
-			if err := cursor.Decode(&m); err != nil {
-				return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-			}
-
-			messages = append(messages, m)
-		}
-	default:
-		for cursor.Next(context.Background()) {
-			var m map[string]interface{}
-			if err := cursor.Decode(&m); err != nil {
-				return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-			}
-
-			messages = append(messages, m)
-		}
-	}
-
-	total, err := col.CountDocuments(context.Background(), filter)
-	if err != nil {
-		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-
-	}
-
-	var messagesPage readers.MessagesPage
-
-	switch rpm.Format {
-	case "json":
-		jsonMeta := readers.JSONMetadata{
-			Offset:    rpm.Offset,
-			Limit:     rpm.Limit,
-			Subtopic:  rpm.Subtopic,
-			Publisher: rpm.Publisher,
-			Protocol:  rpm.Protocol,
-			From:      rpm.From,
-			To:        rpm.To,
-		}
-		messagesPage = readers.MessagesPage{
-			JSONMetadata: jsonMeta,
-			Total:        uint64(total),
-			Messages:     messages,
-		}
-	default:
-		senmlMeta := readers.SenMLMetadata{
-			Offset:      rpm.Offset,
-			Limit:       rpm.Limit,
-			Subtopic:    rpm.Subtopic,
-			Publisher:   rpm.Publisher,
-			Protocol:    rpm.Protocol,
-			Name:        rpm.Name,
-			Value:       rpm.Value,
-			BoolValue:   rpm.BoolValue,
-			StringValue: rpm.StringValue,
-			DataValue:   rpm.DataValue,
-			From:        rpm.From,
-			To:          rpm.To,
-			Format:      "messages",
-			Comparator:  rpm.Comparator,
-		}
-
-		messagesPage = readers.MessagesPage{
-			SenMLMetadata: senmlMeta,
-			Total:         uint64(total),
-			Messages:      messages,
-		}
-	}
-
-	return messagesPage, nil
-}
-
-func fmtCondition(profileID string, rpm readers.PageMetadata) bson.D {
+func fmtCondition(profileID string, rpm PageMetadata) bson.D {
 	filter := bson.D{}
 
 	if profileID != "" {
@@ -180,17 +102,17 @@ func fmtCondition(profileID string, rpm readers.PageMetadata) bson.D {
 	}
 	json.Unmarshal(meta, &query)
 
+	timeField := "time"
+	if rpm.Format == jsonCollection {
+		timeField = "created"
+	}
+
 	for name, value := range query {
 		switch name {
-		case
-			"profile",
-			"subtopic",
-			"publisher",
-			"name",
-			"protocol":
+		case "profile", "subtopic", "publisher", "name", "protocol":
 			filter = append(filter, bson.E{Key: name, Value: value})
 		case "v":
-			bsonFilter := value
+			var bsonFilter interface{} = value
 			val, ok := query["comparator"]
 			if ok {
 				switch val.(string) {
@@ -214,86 +136,187 @@ func fmtCondition(profileID string, rpm readers.PageMetadata) bson.D {
 		case "vd":
 			filter = append(filter, bson.E{Key: "data_value", Value: value})
 		case "from":
-			filter = append(filter, bson.E{Key: "time", Value: bson.M{"$gte": value}})
+			filter = append(filter, bson.E{Key: timeField, Value: bson.M{"$gte": value}})
 		case "to":
-			filter = append(filter, bson.E{Key: "time", Value: bson.M{"$lt": value}})
+			filter = append(filter, bson.E{Key: timeField, Value: bson.M{"$lt": value}})
 		}
 	}
 
 	return filter
 }
 
-func (repo mongoRepository) ListJSONMessages(rpm readers.JSONMetadata) (readers.MessagesPage, error) {
-	pageMetadata := readers.PageMetadata{
-		Offset:    rpm.Offset,
-		Limit:     rpm.Limit,
-		Subtopic:  rpm.Subtopic,
-		Publisher: rpm.Publisher,
-		Protocol:  rpm.Protocol,
-		From:      rpm.From,
-		To:        rpm.To,
+func (repo mongoRepository) readAllJSON(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+	col := repo.db.Collection(jsonCollection)
+
+	pageMetadata := jsonMetadataToPageMetadata(rpm)
+	filter := fmtCondition("", pageMetadata)
+
+	sortMap := bson.D{{Key: "created", Value: -1}}
+
+	findOpts := options.Find().SetSort(sortMap)
+	if rpm.Limit != noLimit {
+		findOpts.SetLimit(int64(rpm.Limit)).SetSkip(int64(rpm.Offset))
 	}
 
-	pageMetadata.Format = "json"
-
-	page, err := repo.readAll("", pageMetadata)
+	cursor, err := col.Find(context.Background(), filter, findOpts)
 	if err != nil {
-		return page, err
+		return readers.JSONMessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+	}
+	defer cursor.Close(context.Background())
+
+	var messages []readers.Message
+	for cursor.Next(context.Background()) {
+		var m map[string]interface{}
+		if err := cursor.Decode(&m); err != nil {
+			return readers.JSONMessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+		}
+		messages = append(messages, m)
 	}
 
-	page.JSONMetadata = rpm
-	return page, nil
-}
-
-func (repo mongoRepository) ListSenMLMessages(rpm readers.SenMLMetadata) (readers.MessagesPage, error) {
-	pageMetadata := readers.PageMetadata{
-		Offset:      rpm.Offset,
-		Limit:       rpm.Limit,
-		Subtopic:    rpm.Subtopic,
-		Publisher:   rpm.Publisher,
-		Protocol:    rpm.Protocol,
-		Name:        rpm.Name,
-		Value:       rpm.Value,
-		BoolValue:   rpm.BoolValue,
-		StringValue: rpm.StringValue,
-		DataValue:   rpm.DataValue,
-		From:        rpm.From,
-		To:          rpm.To,
-		Format:      rpm.Format,
-		Comparator:  rpm.Comparator,
-	}
-
-	pageMetadata.Format = "messages"
-
-	page, err := repo.readAll("", pageMetadata)
+	total, err := col.CountDocuments(context.Background(), filter)
 	if err != nil {
-		return page, err
+		return readers.JSONMessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
 	}
 
-	page.SenMLMetadata = rpm
-	return page, nil
+	return readers.JSONMessagesPage{
+		JSONMetadata: rpm,
+		Total:        uint64(total),
+		Messages:     messages,
+	}, nil
 }
 
-func (repo mongoRepository) BackupJSONMessages(rpm readers.JSONMetadata) (readers.MessagesPage, error) {
-	return readers.MessagesPage{}, nil
+func (repo mongoRepository) readAllSenML(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+	col := repo.db.Collection(defCollection)
+
+	pageMetadata := senMLMetadataToPageMetadata(rpm)
+	filter := fmtCondition("", pageMetadata)
+
+	sortMap := bson.D{{Key: "time", Value: -1}}
+
+	findOpts := options.Find().SetSort(sortMap)
+	if rpm.Limit != noLimit {
+		findOpts.SetLimit(int64(rpm.Limit)).SetSkip(int64(rpm.Offset))
+	}
+
+	cursor, err := col.Find(context.Background(), filter, findOpts)
+	if err != nil {
+		return readers.SenMLMessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+	}
+	defer cursor.Close(context.Background())
+
+	var messages []readers.Message
+	for cursor.Next(context.Background()) {
+		var m senml.Message
+		if err := cursor.Decode(&m); err != nil {
+			return readers.SenMLMessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+		}
+		messages = append(messages, m)
+	}
+
+	total, err := col.CountDocuments(context.Background(), filter)
+	if err != nil {
+		return readers.SenMLMessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+	}
+
+	return readers.SenMLMessagesPage{
+		SenMLMetadata: rpm,
+		Total:         uint64(total),
+		Messages:      messages,
+	}, nil
 }
 
-func (repo mongoRepository) BackupSenMLMessages(rpm readers.SenMLMetadata) (readers.MessagesPage, error) {
-	return readers.MessagesPage{}, nil
+func (repo mongoRepository) ListJSONMessages(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+	return repo.readAllJSON(rpm)
+}
+
+func (repo mongoRepository) ListSenMLMessages(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+	return repo.readAllSenML(rpm)
+}
+
+func (repo mongoRepository) BackupJSONMessages(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+	backupMetadata := rpm
+	backupMetadata.Limit = noLimit
+	backupMetadata.Offset = 0
+	return repo.readAllJSON(backupMetadata)
+}
+
+func (repo mongoRepository) BackupSenMLMessages(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+	backupMetadata := rpm
+	backupMetadata.Limit = noLimit
+	backupMetadata.Offset = 0
+	return repo.readAllSenML(backupMetadata)
 }
 
 func (repo mongoRepository) RestoreJSONMessages(ctx context.Context, messages ...readers.Message) error {
+	if len(messages) == 0 {
+		return nil
+	}
+
+	coll := repo.db.Collection(jsonCollection)
+	var docs []interface{}
+	for _, msg := range messages {
+		docs = append(docs, msg)
+	}
+
+	_, err := coll.InsertMany(ctx, docs)
+	if err != nil {
+		return errors.Wrap(errors.ErrSaveMessages, err)
+	}
+
 	return nil
 }
 
-func (repo mongoRepository) RestoreSenMLMessageS(ctx context.Context, messages ...readers.Message) error {
+func (repo mongoRepository) RestoreSenMLMessages(ctx context.Context, messages ...readers.Message) error {
+	if len(messages) == 0 {
+		return nil
+	}
+
+	coll := repo.db.Collection(defCollection)
+	var docs []interface{}
+	for _, msg := range messages {
+		docs = append(docs, msg)
+	}
+
+	_, err := coll.InsertMany(ctx, docs)
+	if err != nil {
+		return errors.Wrap(errors.ErrSaveMessages, err)
+	}
+
 	return nil
 }
 
 func (repo mongoRepository) DeleteJSONMessages(ctx context.Context, rpm readers.JSONMetadata) error {
+	coll := repo.db.Collection(jsonCollection)
+
+	pageMetadata := jsonMetadataToPageMetadata(rpm)
+	filter := fmtCondition("", pageMetadata)
+
+	if len(filter) == 0 {
+		return errors.Wrap(errors.ErrDeleteMessages, errors.New("no delete criteria specified"))
+	}
+
+	_, err := coll.DeleteMany(ctx, filter)
+	if err != nil {
+		return errors.Wrap(errors.ErrDeleteMessages, err)
+	}
+
 	return nil
 }
 
 func (repo mongoRepository) DeleteSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) error {
+	coll := repo.db.Collection(defCollection)
+
+	pageMetadata := senMLMetadataToPageMetadata(rpm)
+	filter := fmtCondition("", pageMetadata)
+
+	if len(filter) == 0 {
+		return errors.Wrap(errors.ErrDeleteMessages, errors.New("no delete criteria specified"))
+	}
+
+	_, err := coll.DeleteMany(ctx, filter)
+	if err != nil {
+		return errors.Wrap(errors.ErrDeleteMessages, err)
+	}
+
 	return nil
 }
