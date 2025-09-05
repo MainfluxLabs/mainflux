@@ -7,7 +7,6 @@ import (
 const (
 	minLen       = 1
 	maxLimitSize = 200
-	maxNameSize  = 1024
 )
 
 type alarmReq struct {
@@ -86,7 +85,11 @@ func (req listAlarmsByOrgReq) validate() error {
 		return apiutil.ErrMissingOrgID
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	if req.pageMetadata.Limit > maxLimitSize {
+		return apiutil.ErrLimitSize
+	}
+
+	return nil
 }
 
 type removeAlarmsReq struct {
