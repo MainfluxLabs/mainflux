@@ -34,17 +34,17 @@ var ErrReadMessages = errors.New("failed to read messages from database")
 
 // MessageRepository specifies message reader API.
 type MessageRepository interface {
-	// ListAllMessages retrieves all messages from database.
-	ListAllMessages(rpm PageMetadata) (MessagesPage, error)
+	ListJSONMessages(rpm JSONMetadata) (JSONMessagesPage, error)
+	ListSenMLMessages(rpm SenMLMetadata) (SenMLMessagesPage, error)
 
-	// Restore restores message database from a backup.
-	Restore(ctx context.Context, format string, messages ...Message) error
+	BackupJSONMessages(rpm JSONMetadata) (JSONMessagesPage, error)
+	BackupSenMLMessages(rpm SenMLMetadata) (SenMLMessagesPage, error)
 
-	// Backup retrieves all messages from database.
-	Backup(rpm PageMetadata) (MessagesPage, error)
+	RestoreJSONMessages(ctx context.Context, messages ...Message) error
+	RestoreSenMLMessages(ctx context.Context, messages ...Message) error
 
-	// Deletes messages for a specific publisher within a time range.
-	DeleteMessages(ctx context.Context, rpm PageMetadata) error
+	DeleteJSONMessages(ctx context.Context, rpm JSONMetadata) error
+	DeleteSenMLMessages(ctx context.Context, rpm SenMLMetadata) error
 }
 
 // Message represents any message format.
@@ -52,14 +52,41 @@ type Message interface{}
 
 // MessagesPage contains page related metadata as well as list of messages that
 // belong to this page.
-type MessagesPage struct {
-	PageMetadata
+type MessagesPage interface {
+	GetMessages() []Message
+	GetTotal() uint64
+}
+
+type JSONMessagesPage struct {
+	JSONMetadata
 	Total    uint64
 	Messages []Message
 }
 
-// PageMetadata represents the parameters used to create database queries
-type PageMetadata struct {
+type SenMLMessagesPage struct {
+	SenMLMetadata
+	Total    uint64
+	Messages []Message
+}
+
+func (p JSONMessagesPage) GetMessages() []Message {
+	return p.Messages
+}
+
+func (p JSONMessagesPage) GetTotal() uint64 {
+	return p.Total
+}
+
+func (p SenMLMessagesPage) GetMessages() []Message {
+	return p.Messages
+}
+
+func (p SenMLMessagesPage) GetTotal() uint64 {
+	return p.Total
+}
+
+// SenMLMetadata represents the parameters used to create database queries
+type SenMLMetadata struct {
 	Offset      uint64  `json:"offset"`
 	Limit       uint64  `json:"limit"`
 	Subtopic    string  `json:"subtopic,omitempty"`
@@ -77,6 +104,20 @@ type PageMetadata struct {
 	AggInterval string  `json:"agg_interval,omitempty"`
 	AggType     string  `json:"agg_type,omitempty"`
 	AggField    string  `json:"agg_field,omitempty"`
+}
+
+// JSONMetadata represents the parameters used to create database queries
+type JSONMetadata struct {
+	Offset      uint64 `json:"offset"`
+	Limit       uint64 `json:"limit"`
+	Subtopic    string `json:"subtopic,omitempty"`
+	Publisher   string `json:"publisher,omitempty"`
+	Protocol    string `json:"protocol,omitempty"`
+	From        int64  `json:"from,omitempty"`
+	To          int64  `json:"to,omitempty"`
+	AggInterval string `json:"agg_interval,omitempty"`
+	AggType     string `json:"agg_type,omitempty"`
+	AggField    string `json:"agg_field,omitempty"`
 }
 
 // ParseValueComparator convert comparison operator keys into mathematic anotation

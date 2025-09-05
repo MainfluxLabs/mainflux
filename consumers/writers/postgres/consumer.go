@@ -50,7 +50,7 @@ func (pr postgresRepo) Consume(message interface{}) error {
 }
 
 func (pr postgresRepo) saveSenML(msgs []protomfx.Message) (err error) {
-	q := `INSERT INTO messages (subtopic, publisher, protocol,
+	q := `INSERT INTO senml (subtopic, publisher, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
           time, update_time)
           VALUES (:subtopic, :publisher, :protocol, :name, :unit,

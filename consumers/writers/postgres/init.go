@@ -96,6 +96,12 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE messages ALTER COLUMN time TYPE BIGINT USING CAST(time AS BIGINT);`,
 				},
 			},
+			{
+				Id: "messages_5",
+				Up: []string{
+					`ALTER TABLE messages RENAME TO senml;`,
+				},
+			},
 		},
 	}
 

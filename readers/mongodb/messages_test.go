@@ -138,208 +138,190 @@ func TestListAllMessagesSenML(t *testing.T) {
 	}
 
 	cases := map[string]struct {
-		pageMeta readers.PageMetadata
-		page     readers.MessagesPage
+		pageMeta readers.SenMLMetadata
+		page     readers.SenMLMessagesPage
 	}{
 		"read all messages": {
-			pageMeta: readers.PageMetadata{
-				Limit:  noLimit,
-				Format: senmlFormat,
+			pageMeta: readers.SenMLMetadata{
+				Limit: noLimit,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    msgsNum,
 				Messages: fromSenml(messages),
 			},
 		},
 		"read messages with non-existent subtopic": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLMetadata{
 				Limit:    noLimit,
 				Subtopic: "not-present",
-				Format:   senmlFormat,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Messages: []readers.Message{},
 			},
 		},
 		"read messages with subtopic": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLMetadata{
 				Limit:    noLimit,
 				Subtopic: subtopic,
-				Format:   senmlFormat,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(queryMsgs)),
 				Messages: fromSenml(queryMsgs),
 			},
 		},
 		"read messages with publisher": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLMetadata{
 				Limit:     noLimit,
 				Publisher: pubID2,
-				Format:    senmlFormat,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(queryMsgs)),
 				Messages: fromSenml(queryMsgs),
 			},
 		},
 
 		"read messages with protocol": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLMetadata{
 				Limit:    noLimit,
 				Protocol: httpProt,
-				Format:   senmlFormat,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(queryMsgs)),
 				Messages: fromSenml(queryMsgs),
 			},
 		},
 		"read messages with name": {
-			pageMeta: readers.PageMetadata{
-				Limit:  noLimit,
-				Name:   msgName,
-				Format: senmlFormat,
+			pageMeta: readers.SenMLMetadata{
+				Limit: noLimit,
+				Name:  msgName,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(queryMsgs)),
 				Messages: fromSenml(queryMsgs),
 			},
 		},
 		"read messages with value": {
-			pageMeta: readers.PageMetadata{
-				Limit:  noLimit,
-				Value:  v,
-				Format: senmlFormat,
+			pageMeta: readers.SenMLMetadata{
+				Limit: noLimit,
+				Value: v,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(valueMsgs)),
 				Messages: fromSenml(valueMsgs),
 			},
 		},
 		"read messages with value and equal comparator": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLMetadata{
 				Limit:      noLimit,
 				Value:      v,
 				Comparator: readers.EqualKey,
-				Format:     senmlFormat,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(valueMsgs)),
 				Messages: fromSenml(valueMsgs),
 			},
 		},
 		"read messages with value and lower-than comparator": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLMetadata{
 				Limit:      noLimit,
 				Value:      v + 1,
 				Comparator: readers.LowerThanKey,
-				Format:     senmlFormat,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(valueMsgs)),
 				Messages: fromSenml(valueMsgs),
 			},
 		},
 		"read messages with value and lower-than-or-equal comparator": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLMetadata{
 				Limit:      noLimit,
 				Value:      v + 1,
 				Comparator: readers.LowerThanEqualKey,
-				Format:     senmlFormat,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(valueMsgs)),
 				Messages: fromSenml(valueMsgs),
 			},
 		},
 		"read messages with value and greater-than comparator": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLMetadata{
 				Limit:      noLimit,
 				Value:      v - 1,
 				Comparator: readers.GreaterThanKey,
-				Format:     senmlFormat,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(valueMsgs)),
 				Messages: fromSenml(valueMsgs),
 			},
 		},
 		"read messages with value and greater-than-or-equal comparator": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLMetadata{
 				Limit:      noLimit,
 				Value:      v - 1,
 				Comparator: readers.GreaterThanEqualKey,
-				Format:     senmlFormat,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(valueMsgs)),
 				Messages: fromSenml(valueMsgs),
 			},
 		},
 		"read messages with boolean value": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLMetadata{
 				Limit:     noLimit,
 				BoolValue: vb,
-				Format:    senmlFormat,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(boolMsgs)),
 				Messages: fromSenml(boolMsgs),
 			},
 		},
 		"read messages with string value": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLMetadata{
 				Limit:       noLimit,
 				StringValue: vs,
-				Format:      senmlFormat,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(stringMsgs)),
 				Messages: fromSenml(stringMsgs),
 			},
 		},
 		"read messages with data value": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLMetadata{
 				Limit:     noLimit,
 				DataValue: vd,
-				Format:    senmlFormat,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(dataMsgs)),
 				Messages: fromSenml(dataMsgs),
 			},
 		},
 		"read messages with from": {
-			pageMeta: readers.PageMetadata{
-				Limit:  noLimit,
-				From:   messages[20].Time,
-				Format: senmlFormat,
+			pageMeta: readers.SenMLMetadata{
+				Limit: noLimit,
+				From:  messages[20].Time,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(messages[0:21])),
 				Messages: fromSenml(messages[0:21]),
 			},
 		},
 		"read messages with to": {
-			pageMeta: readers.PageMetadata{
-				Limit:  noLimit,
-				To:     messages[20].Time,
-				Format: senmlFormat,
+			pageMeta: readers.SenMLMetadata{
+				Limit: noLimit,
+				To:    messages[20].Time,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(messages[21:])),
 				Messages: fromSenml(messages[21:]),
 			},
 		},
 		"read messages with from/to": {
-			pageMeta: readers.PageMetadata{
-				Limit:  noLimit,
-				From:   messages[5].Time,
-				To:     messages[0].Time,
-				Format: senmlFormat,
+			pageMeta: readers.SenMLMetadata{
+				Limit: noLimit,
+				From:  messages[5].Time,
+				To:    messages[0].Time,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    5,
 				Messages: fromSenml(messages[1:6]),
 			},
@@ -347,7 +329,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ListAllMessages(tc.pageMeta)
+		result, err := reader.ListSenMLMessages(tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Messages, result.Messages))
 		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Total, result.Total))
@@ -434,26 +416,24 @@ func TestListAllMessagesJSON(t *testing.T) {
 	}
 
 	cases := map[string]struct {
-		pageMeta readers.PageMetadata
-		page     readers.MessagesPage
+		pageMeta readers.JSONMetadata
+		page     readers.JSONMessagesPage
 	}{
 		"read all messages": {
-			pageMeta: readers.PageMetadata{
-				Format: jsonFormat,
-				Limit:  noLimit,
+			pageMeta: readers.JSONMetadata{
+				Limit: noLimit,
 			},
-			page: readers.MessagesPage{
+			page: readers.JSONMessagesPage{
 				Total:    uint64(len(msgs)),
 				Messages: fromJSON(msgs),
 			},
 		},
 		"read messages with protocol": {
-			pageMeta: readers.PageMetadata{
-				Format:   jsonFormat,
+			pageMeta: readers.JSONMetadata{
 				Limit:    noLimit,
 				Protocol: httpProt,
 			},
-			page: readers.MessagesPage{
+			page: readers.JSONMessagesPage{
 				Total:    uint64(len(httpMsgs)),
 				Messages: fromJSON(httpMsgs),
 			},
@@ -461,7 +441,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ListAllMessages(tc.pageMeta)
+		result, err := reader.ListJSONMessages(tc.pageMeta)
 		require.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
 		for i := 0; i < len(result.Messages); i++ {
