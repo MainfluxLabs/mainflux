@@ -26,11 +26,11 @@ func newSenMLRepository(db *sqlx.DB) *senmlRepository {
 	}
 }
 
-func (sr *senmlRepository) ListMessages(rpm readers.SenMLMetadata) (readers.MessagesPage, error) {
+func (sr *senmlRepository) ListMessages(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
 	return sr.readAll(rpm)
 }
 
-func (sr *senmlRepository) Backup(rpm readers.SenMLMetadata) (readers.MessagesPage, error) {
+func (sr *senmlRepository) Backup(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
 	return sr.readAll(rpm)
 }
 
@@ -76,8 +76,8 @@ func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenML
 	return nil
 }
 
-func (sr *senmlRepository) readAll(rpm readers.SenMLMetadata) (readers.MessagesPage, error) {
-	page := readers.MessagesPage{
+func (sr *senmlRepository) readAll(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+	page := readers.SenMLMessagesPage{
 		SenMLMetadata: rpm,
 		Messages:      []readers.Message{},
 	}
