@@ -30,19 +30,19 @@ func New(db *sqlx.DB) readers.MessageRepository {
 	}
 }
 
-func (tr postgresRepository) ListJSONMessages(rpm readers.JSONMetadata) (readers.MessagesPage, error) {
+func (tr postgresRepository) ListJSONMessages(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
 	return tr.jsonRepository.ListMessages(rpm)
 }
 
-func (tr postgresRepository) ListSenMLMessages(rpm readers.SenMLMetadata) (readers.MessagesPage, error) {
+func (tr postgresRepository) ListSenMLMessages(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
 	return tr.senmlRepository.ListMessages(rpm)
 }
 
-func (tr postgresRepository) BackupJSONMessages(rpm readers.JSONMetadata) (readers.MessagesPage, error) {
+func (tr postgresRepository) BackupJSONMessages(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
 	return tr.jsonRepository.Backup(rpm)
 }
 
-func (tr postgresRepository) BackupSenMLMessages(rpm readers.SenMLMetadata) (readers.MessagesPage, error) {
+func (tr postgresRepository) BackupSenMLMessages(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
 	return tr.senmlRepository.Backup(rpm)
 }
 
@@ -50,7 +50,7 @@ func (tr postgresRepository) RestoreJSONMessages(ctx context.Context, messages .
 	return tr.jsonRepository.Restore(ctx, messages...)
 }
 
-func (tr postgresRepository) RestoreSenMLMessageS(ctx context.Context, messages ...readers.Message) error {
+func (tr postgresRepository) RestoreSenMLMessages(ctx context.Context, messages ...readers.Message) error {
 	return tr.senmlRepository.Restore(ctx, messages...)
 }
 
