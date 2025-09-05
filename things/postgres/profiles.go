@@ -144,7 +144,7 @@ func (pr profileRepository) BackupByGroups(ctx context.Context, groupIDs []strin
 		return []things.Profile{}, nil
 	}
 
-	giq := getGroupIDsQuery(groupIDs)
+	giq := dbutil.GetGroupIDsQuery(groupIDs)
 	whereClause := dbutil.BuildWhereClause(giq)
 	query := fmt.Sprintf("SELECT id, group_id, name, metadata, config FROM profiles %s", whereClause)
 
@@ -248,7 +248,7 @@ func (pr profileRepository) RetrieveByGroups(ctx context.Context, groupIDs []str
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	giq := getGroupIDsQuery(groupIDs)
+	giq := dbutil.GetGroupIDsQuery(groupIDs)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
@@ -368,13 +368,6 @@ func toProfile(pr dbProfile) things.Profile {
 		Config:   pr.Config,
 		Metadata: pr.Metadata,
 	}
-}
-
-func getGroupIDsQuery(ids []string) string {
-	if len(ids) == 0 {
-		return ""
-	}
-	return fmt.Sprintf("group_id IN ('%s') ", strings.Join(ids, "','"))
 }
 
 func getIDsQuery(ids []string) string {
