@@ -128,13 +128,13 @@ func TestListAllMessagesSenML(t *testing.T) {
 	// checking data result set size, but not content.
 	cases := map[string]struct {
 		pageMeta readers.SenMLMetadata
-		page     readers.MessagesPage
+		page     readers.SenMLMessagesPage
 	}{
 		"read all messages": {
 			pageMeta: readers.SenMLMetadata{
 				Limit: noLimit,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    msgsNum,
 				Messages: fromSenml(messages),
 			},
@@ -144,7 +144,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit:    noLimit,
 				Subtopic: "not-present",
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Messages: []readers.Message{},
 			},
 		},
@@ -153,7 +153,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit:    noLimit,
 				Subtopic: subtopic,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(queryMsgs)),
 				Messages: fromSenml(queryMsgs),
 			},
@@ -163,7 +163,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit:     noLimit,
 				Publisher: pubID2,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(queryMsgs)),
 				Messages: fromSenml(queryMsgs),
 			},
@@ -173,7 +173,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit:    noLimit,
 				Protocol: httpProt,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(queryMsgs)),
 				Messages: fromSenml(queryMsgs),
 			},
@@ -183,7 +183,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit: noLimit,
 				Name:  msgName,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(queryMsgs)),
 				Messages: fromSenml(queryMsgs),
 			},
@@ -193,7 +193,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit: noLimit,
 				Value: v,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(valueMsgs)),
 				Messages: fromSenml(valueMsgs),
 			},
@@ -204,7 +204,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Value:      v,
 				Comparator: readers.EqualKey,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(valueMsgs)),
 				Messages: fromSenml(valueMsgs),
 			},
@@ -215,7 +215,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Value:      v + 1,
 				Comparator: readers.LowerThanKey,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(valueMsgs)),
 				Messages: fromSenml(valueMsgs),
 			},
@@ -226,7 +226,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Value:      v + 1,
 				Comparator: readers.LowerThanEqualKey,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(valueMsgs)),
 				Messages: fromSenml(valueMsgs),
 			},
@@ -237,7 +237,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Value:      v - 1,
 				Comparator: readers.GreaterThanKey,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(valueMsgs)),
 				Messages: fromSenml(valueMsgs),
 			},
@@ -248,7 +248,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Value:      v - 1,
 				Comparator: readers.GreaterThanEqualKey,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(valueMsgs)),
 				Messages: fromSenml(valueMsgs),
 			},
@@ -258,7 +258,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit:     noLimit,
 				BoolValue: vb,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(boolMsgs)),
 				Messages: fromSenml(boolMsgs),
 			},
@@ -268,7 +268,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit:       noLimit,
 				StringValue: vs,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(stringMsgs)),
 				Messages: fromSenml(stringMsgs),
 			},
@@ -278,7 +278,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit:     noLimit,
 				DataValue: vd,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(dataMsgs)),
 				Messages: fromSenml(dataMsgs),
 			},
@@ -288,7 +288,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit: noLimit,
 				From:  messages[20].Time,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(messages[0:21])),
 				Messages: fromSenml(messages[0:21]),
 			},
@@ -298,7 +298,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				Limit: noLimit,
 				To:    messages[20].Time,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    uint64(len(messages[20:])),
 				Messages: fromSenml(messages[20:]),
 			},
@@ -309,7 +309,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 				From:  messages[5].Time,
 				To:    messages[0].Time,
 			},
-			page: readers.MessagesPage{
+			page: readers.SenMLMessagesPage{
 				Total:    6,
 				Messages: fromSenml(messages[0:6]),
 			},
@@ -403,13 +403,13 @@ func TestListAllMessagesJSON(t *testing.T) {
 
 	cases := map[string]struct {
 		pageMeta readers.JSONMetadata
-		page     readers.MessagesPage
+		page     readers.JSONMessagesPage
 	}{
 		"read all messages": {
 			pageMeta: readers.JSONMetadata{
 				Limit: noLimit,
 			},
-			page: readers.MessagesPage{
+			page: readers.JSONMessagesPage{
 				Total:    uint64(len(msgs)),
 				Messages: fromJSON(msgs),
 			},
@@ -419,7 +419,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 				Limit:    noLimit,
 				Protocol: httpProt,
 			},
-			page: readers.MessagesPage{
+			page: readers.JSONMessagesPage{
 				Total:    uint64(len(httpMsgs)),
 				Messages: fromJSON(httpMsgs),
 			},
