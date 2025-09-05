@@ -4,9 +4,12 @@ import (
 	"context"
 	"strings"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/users"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var _ protomfx.UsersServiceClient = (*usersServiceClientMock)(nil)
@@ -63,9 +66,13 @@ func (svc *usersServiceClientMock) GetUsersByIDs(_ context.Context, in *protomfx
 func (svc *usersServiceClientMock) GetUsersByEmails(_ context.Context, in *protomfx.UsersByEmailsReq, _ ...grpc.CallOption) (*protomfx.UsersRes, error) {
 	var users []*protomfx.User
 	for _, email := range in.Emails {
-		if user, ok := svc.usersByEmails[email]; ok {
-			users = append(users, &protomfx.User{Id: user.ID, Email: user.Email})
+		if _, ok := svc.usersByEmails[email]; !ok {
+			return nil, status.Error(codes.NotFound, dbutil.ErrNotFound.Error())
 		}
+
+		user := svc.usersByEmails[email]
+
+		users = append(users, &protomfx.User{Id: user.ID, Email: user.Email})
 	}
 
 	return &protomfx.UsersRes{Users: users}, nil

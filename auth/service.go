@@ -7,6 +7,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -72,36 +73,43 @@ type Service interface {
 	Roles
 	Orgs
 	OrgMemberships
+	Invites
 	Keys
 }
 
 var _ Service = (*service)(nil)
 
 type service struct {
-	orgs          OrgRepository
-	users         protomfx.UsersServiceClient
-	things        protomfx.ThingsServiceClient
-	keys          KeyRepository
-	roles         RolesRepository
-	memberships   OrgMembershipsRepository
-	idProvider    uuid.IDProvider
-	tokenizer     Tokenizer
-	loginDuration time.Duration
+	orgs           OrgRepository
+	users          protomfx.UsersServiceClient
+	things         protomfx.ThingsServiceClient
+	keys           KeyRepository
+	roles          RolesRepository
+	memberships    OrgMembershipsRepository
+	invites        OrgInvitesRepository
+	email          Emailer
+	idProvider     uuid.IDProvider
+	tokenizer      Tokenizer
+	loginDuration  time.Duration
+	inviteDuration time.Duration
 }
 
 // New instantiates the auth service implementation.
 func New(orgs OrgRepository, tc protomfx.ThingsServiceClient, uc protomfx.UsersServiceClient, keys KeyRepository, roles RolesRepository,
-	memberships OrgMembershipsRepository, idp uuid.IDProvider, tokenizer Tokenizer, duration time.Duration) Service {
+	memberships OrgMembershipsRepository, invites OrgInvitesRepository, emailer Emailer, idp uuid.IDProvider, tokenizer Tokenizer, loginDuration time.Duration, inviteDuration time.Duration) Service {
 	return &service{
-		tokenizer:     tokenizer,
-		things:        tc,
-		orgs:          orgs,
-		users:         uc,
-		keys:          keys,
-		roles:         roles,
-		memberships:   memberships,
-		idProvider:    idp,
-		loginDuration: duration,
+		tokenizer:      tokenizer,
+		things:         tc,
+		orgs:           orgs,
+		users:          uc,
+		keys:           keys,
+		roles:          roles,
+		memberships:    memberships,
+		invites:        invites,
+		email:          emailer,
+		idProvider:     idp,
+		loginDuration:  loginDuration,
+		inviteDuration: inviteDuration,
 	}
 }
 
@@ -223,6 +231,14 @@ func (svc service) isAdmin(ctx context.Context, token string) error {
 
 	if role != RoleAdmin && role != RoleRootAdmin {
 		return errors.ErrAuthorization
+	}
+
+	return nil
+}
+
+func ValidateRole(role string) error {
+	if role != Owner && role != Admin && role != Editor && role != Viewer {
+		return apiutil.ErrInvalidRole
 	}
 
 	return nil
