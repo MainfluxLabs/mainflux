@@ -61,42 +61,42 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 
 	mux.Get("/json", kithttp.NewServer(
 		listJSONMessagesEndpoint(svc),
-		decodeListAllMessages,
+		decodeListJSONMessages,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/senml", kithttp.NewServer(
 		listSenMLMessagesEndpoint(svc),
-		decodeListAllMessages,
+		decodeListSenMLMessages,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/json", kithttp.NewServer(
 		deleteJSONMessagesEndpoint(svc),
-		decodeDeleteMessages,
+		decodeDeleteJSONMessages,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/senml", kithttp.NewServer(
 		deleteSenMLMessagesEndpoint(svc),
-		decodeDeleteMessages,
+		decodeDeleteSenMLMessages,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/json/backup", kithttp.NewServer(
 		backupJSONMessagesEndpoint(svc),
-		decodeBackupMessages,
+		decodeBackupJSONMessages,
 		encodeBackupFileResponse,
 		opts...,
 	))
 
 	mux.Get("/senml/backup", kithttp.NewServer(
 		backupSenMLMessagesEndpoint(svc),
-		decodeBackupMessages,
+		decodeBackupSenMLMessages,
 		encodeBackupFileResponse,
 		opts...,
 	))
@@ -121,8 +121,33 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 	return mux
 }
 
-func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, error) {
-	pageMeta, err := BuildMessagePageMetadata(r)
+func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
+	if err != nil {
+		return nil, err
+	}
+
+	limit, err := apiutil.ReadLimitQuery(r, apiutil.LimitKey, apiutil.DefLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	to, err := apiutil.ReadIntQuery(r, toKey, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -142,18 +167,70 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 		return nil, err
 	}
 
-	pageMeta.AggInterval = ai
-	pageMeta.AggType = at
-	pageMeta.AggField = af
+	pageMeta := readers.JSONMetadata{
+		Offset:      offset,
+		Limit:       limit,
+		Subtopic:    subtopic,
+		Protocol:    protocol,
+		From:        from,
+		To:          to,
+		AggInterval: ai,
+		AggType:     at,
+		AggField:    af,
+	}
 
-	return listMessagesReq{
+	return listJSONMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
-		key:      apiutil.ExtractThingKey(r),
 		pageMeta: pageMeta,
 	}, nil
 }
 
-func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListSenMLMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
+	if err != nil {
+		return nil, err
+	}
+
+	limit, err := apiutil.ReadLimitQuery(r, apiutil.LimitKey, apiutil.DefLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	name, err := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	v, err := apiutil.ReadFloatQuery(r, valueKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	comparator, err := apiutil.ReadStringQuery(r, comparatorKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	vs, err := apiutil.ReadStringQuery(r, stringValueKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	vd, err := apiutil.ReadStringQuery(r, dataValueKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
 	if err != nil {
 		return nil, err
@@ -164,10 +241,89 @@ func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, erro
 		return nil, err
 	}
 
-	req := deleteMessagesReq{
+	ai, err := apiutil.ReadStringQuery(r, aggIntervalKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	at, err := apiutil.ReadStringQuery(r, aggTypeKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	af, err := apiutil.ReadStringQuery(r, aggFieldKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	vb, err := apiutil.ReadBoolQuery(r, boolValueKey, false)
+	if err != nil && err != apiutil.ErrNotFoundParam {
+		return nil, err
+	}
+
+	pageMeta := readers.SenMLMetadata{
+		Offset:      offset,
+		Limit:       limit,
+		Subtopic:    subtopic,
+		Protocol:    protocol,
+		Value:       v,
+		Name:        name,
+		StringValue: vs,
+		DataValue:   vd,
+		BoolValue:   vb,
+		Comparator:  comparator,
+		From:        from,
+		To:          to,
+		AggInterval: ai,
+		AggType:     at,
+		AggField:    af,
+	}
+
+	return listSenMLMessagesReq{
+		token:    apiutil.ExtractBearerToken(r),
+		key:      apiutil.ExtractThingKey(r),
+		pageMeta: pageMeta,
+	}, nil
+}
+
+func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	to, err := apiutil.ReadIntQuery(r, toKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	req := deleteJSONMessagesReq{
 		token: apiutil.ExtractBearerToken(r),
 		key:   apiutil.ExtractThingKey(r),
-		pageMeta: readers.PageMetadata{
+		pageMeta: readers.JSONMetadata{
+			From: from,
+			To:   to,
+		},
+	}
+
+	return req, nil
+}
+
+func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	to, err := apiutil.ReadIntQuery(r, toKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	req := deleteSenMLMessagesReq{
+		token: apiutil.ExtractBearerToken(r),
+		key:   apiutil.ExtractThingKey(r),
+		pageMeta: readers.SenMLMetadata{
 			From: from,
 			To:   to,
 		},
@@ -200,7 +356,65 @@ func decodeRestoreMessages(_ context.Context, r *http.Request) (interface{}, err
 	}, nil
 }
 
-func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeBackupJSONMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, jsonFormat)
+	if err != nil {
+		return nil, err
+	}
+
+	subtopic, err := apiutil.ReadStringQuery(r, apiutil.SubtopicKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	protocol, err := apiutil.ReadStringQuery(r, apiutil.ProtocolKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	from, err := apiutil.ReadIntQuery(r, apiutil.FromKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	to, err := apiutil.ReadIntQuery(r, apiutil.ToKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	ai, err := apiutil.ReadStringQuery(r, aggIntervalKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	at, err := apiutil.ReadStringQuery(r, aggTypeKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	af, err := apiutil.ReadStringQuery(r, aggFieldKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	pageMeta := readers.JSONMetadata{
+		Subtopic:    subtopic,
+		Protocol:    protocol,
+		From:        from,
+		To:          to,
+		AggInterval: ai,
+		AggType:     at,
+		AggField:    af,
+	}
+
+	return backupJSONMessagesReq{
+		token:         apiutil.ExtractBearerToken(r),
+		convertFormat: convertFormat,
+		pageMeta:      pageMeta,
+	}, nil
+}
+
+func decodeBackupSenMLMessages(_ context.Context, r *http.Request) (interface{}, error) {
 	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, jsonFormat)
 	if err != nil {
 		return nil, err
@@ -208,55 +422,70 @@ func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, erro
 
 	name, err := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
 	if err != nil {
-		return readers.PageMetadata{}, err
+		return nil, err
 	}
 
 	subtopic, err := apiutil.ReadStringQuery(r, apiutil.SubtopicKey, "")
 	if err != nil {
-		return readers.PageMetadata{}, err
+		return nil, err
 	}
 
 	protocol, err := apiutil.ReadStringQuery(r, apiutil.ProtocolKey, "")
 	if err != nil {
-		return readers.PageMetadata{}, err
+		return nil, err
 	}
 
 	v, err := apiutil.ReadFloatQuery(r, apiutil.ValueKey, 0)
 	if err != nil {
-		return readers.PageMetadata{}, err
+		return nil, err
 	}
 
 	comparator, err := apiutil.ReadStringQuery(r, apiutil.ComparatorKey, "")
 	if err != nil {
-		return readers.PageMetadata{}, err
+		return nil, err
 	}
 
 	vs, err := apiutil.ReadStringQuery(r, apiutil.StringValueKey, "")
 	if err != nil {
-		return readers.PageMetadata{}, err
+		return nil, err
 	}
 
 	vd, err := apiutil.ReadStringQuery(r, apiutil.DataValueKey, "")
 	if err != nil {
-		return readers.PageMetadata{}, err
+		return nil, err
 	}
 
 	vb, err := apiutil.ReadBoolQuery(r, apiutil.BoolValueKey, false)
 	if err != nil && err != apiutil.ErrNotFoundParam {
-		return readers.PageMetadata{}, err
+		return nil, err
 	}
 
 	from, err := apiutil.ReadIntQuery(r, apiutil.FromKey, 0)
 	if err != nil {
-		return readers.PageMetadata{}, err
+		return nil, err
 	}
 
 	to, err := apiutil.ReadIntQuery(r, apiutil.ToKey, 0)
 	if err != nil {
-		return readers.PageMetadata{}, err
+		return nil, err
 	}
 
-	pageMeta := readers.PageMetadata{
+	ai, err := apiutil.ReadStringQuery(r, aggIntervalKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	at, err := apiutil.ReadStringQuery(r, aggTypeKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	af, err := apiutil.ReadStringQuery(r, aggFieldKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	pageMeta := readers.SenMLMetadata{
 		Name:        name,
 		Subtopic:    subtopic,
 		Protocol:    protocol,
@@ -267,9 +496,12 @@ func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, erro
 		BoolValue:   vb,
 		From:        from,
 		To:          to,
+		AggInterval: ai,
+		AggType:     at,
+		AggField:    af,
 	}
 
-	return backupMessagesReq{
+	return backupSenMLMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
 		convertFormat: convertFormat,
 		pageMeta:      pageMeta,
@@ -367,85 +599,4 @@ func isAdmin(ctx context.Context, token string) error {
 	}
 
 	return nil
-}
-
-func BuildMessagePageMetadata(r *http.Request) (readers.PageMetadata, error) {
-	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	limit, err := apiutil.ReadLimitQuery(r, apiutil.LimitKey, apiutil.DefLimit)
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	name, err := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	v, err := apiutil.ReadFloatQuery(r, valueKey, 0)
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	comparator, err := apiutil.ReadStringQuery(r, comparatorKey, "")
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	vs, err := apiutil.ReadStringQuery(r, stringValueKey, "")
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	vd, err := apiutil.ReadStringQuery(r, dataValueKey, "")
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	to, err := apiutil.ReadIntQuery(r, toKey, 0)
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	pageMeta := readers.PageMetadata{
-		Offset:      offset,
-		Limit:       limit,
-		Name:        name,
-		Subtopic:    subtopic,
-		Protocol:    protocol,
-		Value:       v,
-		Comparator:  comparator,
-		StringValue: vs,
-		DataValue:   vd,
-		From:        from,
-		To:          to,
-	}
-
-	vb, err := apiutil.ReadBoolQuery(r, boolValueKey, false)
-	if err != nil && err != apiutil.ErrNotFoundParam {
-		return readers.PageMetadata{}, err
-	}
-	if err == nil {
-		pageMeta.BoolValue = vb
-	}
-
-	return pageMeta, nil
 }
