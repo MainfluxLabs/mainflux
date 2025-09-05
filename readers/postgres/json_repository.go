@@ -26,12 +26,12 @@ func newJSONRepository(db *sqlx.DB) *jsonRepository {
 	}
 }
 
-func (jr *jsonRepository) ListMessages(rpm readers.JSONMetadata) (readers.MessagesPage, error) {
+func (jr *jsonRepository) ListMessages(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
 	return jr.readAll(rpm)
 }
 
-func (jr *jsonRepository) readAll(rpm readers.JSONMetadata) (readers.MessagesPage, error) {
-	page := readers.MessagesPage{
+func (jr *jsonRepository) readAll(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+	page := readers.JSONMessagesPage{
 		JSONMetadata: rpm,
 		Messages:     []readers.Message{},
 	}
@@ -181,7 +181,7 @@ func (jr *jsonRepository) buildQueryParams(rpm readers.JSONMetadata) map[string]
 	}
 }
 
-func (jr *jsonRepository) Backup(rpm readers.JSONMetadata) (readers.MessagesPage, error) {
+func (jr *jsonRepository) Backup(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
 	return jr.readAll(rpm)
 }
 
