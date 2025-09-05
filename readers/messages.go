@@ -34,14 +34,14 @@ var ErrReadMessages = errors.New("failed to read messages from database")
 
 // MessageRepository specifies message reader API.
 type MessageRepository interface {
-	ListJSONMessages(rpm JSONMetadata) (MessagesPage, error)
-	ListSenMLMessages(rpm SenMLMetadata) (MessagesPage, error)
+	ListJSONMessages(rpm JSONMetadata) (JSONMessagesPage, error)
+	ListSenMLMessages(rpm SenMLMetadata) (SenMLMessagesPage, error)
 
-	BackupJSONMessages(rpm JSONMetadata) (MessagesPage, error)
-	BackupSenMLMessages(rpm SenMLMetadata) (MessagesPage, error)
+	BackupJSONMessages(rpm JSONMetadata) (JSONMessagesPage, error)
+	BackupSenMLMessages(rpm SenMLMetadata) (SenMLMessagesPage, error)
 
 	RestoreJSONMessages(ctx context.Context, messages ...Message) error
-	RestoreSenMLMessageS(ctx context.Context, messages ...Message) error
+	RestoreSenMLMessages(ctx context.Context, messages ...Message) error
 
 	DeleteJSONMessages(ctx context.Context, rpm JSONMetadata) error
 	DeleteSenMLMessages(ctx context.Context, rpm SenMLMetadata) error
@@ -52,32 +52,37 @@ type Message interface{}
 
 // MessagesPage contains page related metadata as well as list of messages that
 // belong to this page.
-type MessagesPage struct {
-	JSONMetadata  `json:"json_metadata, omitempty"`
-	SenMLMetadata `json:"senml_metadata, omitempty"`
-	Total         uint64
-	Messages      []Message
+type MessagesPage interface {
+	GetMessages() []Message
+	GetTotal() uint64
 }
 
-// PageMetadata represents the parameters used to create database queries
-type PageMetadata struct {
-	Offset      uint64  `json:"offset"`
-	Limit       uint64  `json:"limit"`
-	Subtopic    string  `json:"subtopic,omitempty"`
-	Publisher   string  `json:"publisher,omitempty"`
-	Protocol    string  `json:"protocol,omitempty"`
-	Name        string  `json:"name,omitempty"`
-	Value       float64 `json:"v,omitempty"`
-	Comparator  string  `json:"comparator,omitempty"`
-	BoolValue   bool    `json:"vb,omitempty"`
-	StringValue string  `json:"vs,omitempty"`
-	DataValue   string  `json:"vd,omitempty"`
-	From        int64   `json:"from,omitempty"`
-	To          int64   `json:"to,omitempty"`
-	Format      string  `json:"format,omitempty"`
-	AggInterval string  `json:"agg_interval,omitempty"`
-	AggType     string  `json:"agg_type,omitempty"`
-	AggField    string  `json:"agg_field,omitempty"`
+type JSONMessagesPage struct {
+	JSONMetadata
+	Total    uint64
+	Messages []Message
+}
+
+type SenMLMessagesPage struct {
+	SenMLMetadata
+	Total    uint64
+	Messages []Message
+}
+
+func (p JSONMessagesPage) GetMessages() []Message {
+	return p.Messages
+}
+
+func (p JSONMessagesPage) GetTotal() uint64 {
+	return p.Total
+}
+
+func (p SenMLMessagesPage) GetMessages() []Message {
+	return p.Messages
+}
+
+func (p SenMLMessagesPage) GetTotal() uint64 {
+	return p.Total
 }
 
 // SenMLMetadata represents the parameters used to create database queries
