@@ -51,12 +51,13 @@ func (req listMessagesReq) validate() error {
 
 type backupMessagesReq struct {
 	token         string
+	key           string
 	convertFormat string
 	pageMeta      readers.PageMetadata
 }
 
 func (req backupMessagesReq) validate() error {
-	if req.token == "" {
+	if req.token == "" && req.key == "" {
 		return apiutil.ErrBearerToken
 	}
 

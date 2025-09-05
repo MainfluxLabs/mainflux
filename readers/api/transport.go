@@ -271,6 +271,7 @@ func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, erro
 
 	return backupMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
+		key:           apiutil.ExtractThingKey(r),
 		convertFormat: convertFormat,
 		pageMeta:      pageMeta,
 	}, nil
