@@ -201,73 +201,34 @@ func decodeRestoreMessages(_ context.Context, r *http.Request) (interface{}, err
 }
 
 func decodeBackupMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	pageMeta, err := BuildMessagePageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
 	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, jsonFormat)
 	if err != nil {
 		return nil, err
 	}
 
-	name, err := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	ai, err := apiutil.ReadStringQuery(r, aggIntervalKey, "")
 	if err != nil {
-		return readers.PageMetadata{}, err
+		return nil, err
 	}
 
-	subtopic, err := apiutil.ReadStringQuery(r, apiutil.SubtopicKey, "")
+	at, err := apiutil.ReadStringQuery(r, aggTypeKey, "")
 	if err != nil {
-		return readers.PageMetadata{}, err
+		return nil, err
 	}
 
-	protocol, err := apiutil.ReadStringQuery(r, apiutil.ProtocolKey, "")
+	af, err := apiutil.ReadStringQuery(r, aggFieldKey, "")
 	if err != nil {
-		return readers.PageMetadata{}, err
+		return nil, err
 	}
 
-	v, err := apiutil.ReadFloatQuery(r, apiutil.ValueKey, 0)
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	comparator, err := apiutil.ReadStringQuery(r, apiutil.ComparatorKey, "")
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	vs, err := apiutil.ReadStringQuery(r, apiutil.StringValueKey, "")
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	vd, err := apiutil.ReadStringQuery(r, apiutil.DataValueKey, "")
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	vb, err := apiutil.ReadBoolQuery(r, apiutil.BoolValueKey, false)
-	if err != nil && err != apiutil.ErrNotFoundParam {
-		return readers.PageMetadata{}, err
-	}
-
-	from, err := apiutil.ReadIntQuery(r, apiutil.FromKey, 0)
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	to, err := apiutil.ReadIntQuery(r, apiutil.ToKey, 0)
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	pageMeta := readers.PageMetadata{
-		Name:        name,
-		Subtopic:    subtopic,
-		Protocol:    protocol,
-		Value:       v,
-		Comparator:  comparator,
-		StringValue: vs,
-		DataValue:   vd,
-		BoolValue:   vb,
-		From:        from,
-		To:          to,
-	}
+	pageMeta.AggInterval = ai
+	pageMeta.AggType = at
+	pageMeta.AggField = af
 
 	return backupMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
