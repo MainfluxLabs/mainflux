@@ -74,7 +74,7 @@ func GenerateCSV(page readers.MessagesPage, table string) ([]byte, error) {
 }
 
 func convertJSONMessagesToCSV(page readers.MessagesPage, writer *csv.Writer) error {
-	for _, msg := range page.Messages {
+	for _, msg := range page.GetMessages() {
 		if m, ok := msg.(map[string]interface{}); ok {
 			created := ""
 			if v, ok := m["created"].(int64); ok {
@@ -110,7 +110,7 @@ func convertJSONMessagesToCSV(page readers.MessagesPage, writer *csv.Writer) err
 }
 
 func convertSenMLMessagesToCSV(page readers.MessagesPage, writer *csv.Writer) error {
-	for _, msg := range page.Messages {
+	for _, msg := range page.GetMessages() {
 		if m, ok := msg.(senml.Message); ok {
 			row := []string{
 				m.Subtopic,
@@ -161,11 +161,11 @@ func getValue(ptr interface{}, defaultValue string) string {
 }
 
 func GenerateJSON(page readers.MessagesPage) ([]byte, error) {
-	if len(page.Messages) == 0 {
+	if page.GetTotal() == 0 {
 		return []byte("[]"), nil
 	}
 
-	data, err := json.Marshal(page.Messages)
+	data, err := json.Marshal(page.GetMessages())
 	if err != nil {
 		return nil, err
 	}
@@ -326,40 +326,4 @@ func ConvertCSVToJSONMessages(csvMessages []byte) ([]mfjson.Message, error) {
 	}
 
 	return messages, nil
-}
-
-func ConvertPageMetaToJSONMeta(metadata readers.PageMetadata) readers.JSONMetadata {
-	return readers.JSONMetadata{
-		Offset:      metadata.Offset,
-		Limit:       metadata.Limit,
-		Subtopic:    metadata.Subtopic,
-		Publisher:   metadata.Publisher,
-		Protocol:    metadata.Protocol,
-		From:        metadata.From,
-		To:          metadata.To,
-		AggField:    metadata.AggInterval,
-		AggType:     metadata.AggType,
-		AggInterval: metadata.AggField,
-	}
-}
-
-func ConvertPageMetaToSenMLMeta(metadata readers.PageMetadata) readers.SenMLMetadata {
-	return readers.SenMLMetadata{
-		Offset:      metadata.Offset,
-		Limit:       metadata.Limit,
-		Subtopic:    metadata.Subtopic,
-		Publisher:   metadata.Publisher,
-		Protocol:    metadata.Protocol,
-		Name:        metadata.Name,
-		Value:       metadata.Value,
-		Comparator:  metadata.Comparator,
-		BoolValue:   metadata.BoolValue,
-		StringValue: metadata.StringValue,
-		DataValue:   metadata.DataValue,
-		From:        metadata.From,
-		To:          metadata.To,
-		AggInterval: metadata.AggInterval,
-		AggField:    metadata.AggField,
-		AggType:     metadata.AggType,
-	}
 }
