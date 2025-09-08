@@ -112,6 +112,14 @@ func (req backupJSONMessagesReq) validate() error {
 		return apiutil.ErrInvalidQueryParams
 	}
 
+	if req.pageMeta.AggType != "" {
+		switch req.pageMeta.AggType {
+		case readers.AggregationMin, readers.AggregationMax, readers.AggregationAvg, readers.AggregationCount:
+		default:
+			return apiutil.ErrInvalidAggType
+		}
+	}
+
 	return nil
 }
 

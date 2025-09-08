@@ -15,6 +15,7 @@ import (
 type Service interface {
 	ListAlarmsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (AlarmsPage, error)
 	ListAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error)
+	ListAlarmsByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (AlarmsPage, error)
 	ViewAlarm(ctx context.Context, token, id string) (Alarm, error)
 	RemoveAlarms(ctx context.Context, token string, id ...string) error
 	consumers.Consumer
@@ -62,6 +63,18 @@ func (as *alarmService) ListAlarmsByThing(ctx context.Context, token, thingID st
 	}
 
 	return alarms, nil
+}
+
+func (as *alarmService) ListAlarmsByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
+	res, err := as.things.GetGroupIDsByOrg(ctx, &protomfx.OrgAccessReq{
+		OrgId: orgID,
+		Token: token,
+	})
+	if err != nil {
+		return AlarmsPage{}, err
+	}
+
+	return as.alarms.RetrieveByGroups(ctx, res.GetIds(), pm)
 }
 
 func (as *alarmService) ViewAlarm(ctx context.Context, token, id string) (Alarm, error) {

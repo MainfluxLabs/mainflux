@@ -70,6 +70,28 @@ func (req listAlarmsByThingReq) validate() error {
 	return nil
 }
 
+type listAlarmsByOrgReq struct {
+	token        string
+	orgID        string
+	pageMetadata apiutil.PageMetadata
+}
+
+func (req listAlarmsByOrgReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.orgID == "" {
+		return apiutil.ErrMissingOrgID
+	}
+
+	if req.pageMetadata.Limit > maxLimitSize {
+		return apiutil.ErrLimitSize
+	}
+
+	return nil
+}
+
 type removeAlarmsReq struct {
 	token    string
 	AlarmIDs []string `json:"alarm_ids,omitempty"`

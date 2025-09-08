@@ -273,6 +273,15 @@ func (ms *metricsMiddleware) GetProfileIDByThingID(ctx context.Context, thingID 
 	return ms.svc.GetProfileIDByThingID(ctx, thingID)
 }
 
+func (ms *metricsMiddleware) GetGroupIDsByOrg(ctx context.Context, orgID string, token string) ([]string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "get_group_ids_by_org").Add(1)
+		ms.latency.With("method", "get_group_ids_by_org").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.GetGroupIDsByOrg(ctx, orgID, token)
+}
+
 func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (bk things.Backup, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "backup").Add(1)

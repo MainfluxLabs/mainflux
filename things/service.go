@@ -138,6 +138,9 @@ type Service interface {
 	// GetProfileIDByThingID returns a thing's profile ID for given thing ID.
 	GetProfileIDByThingID(ctx context.Context, thingID string) (string, error)
 
+	// GetGroupIDsByOrg returns all group IDs belonging to an org.
+	GetGroupIDsByOrg(ctx context.Context, orgID string, token string) ([]string, error)
+
 	// Backup retrieves all things, profiles, groups, and groups memberships for all users. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
@@ -405,23 +408,7 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm apiuti
 }
 
 func (ts *thingsService) ListThingsByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (ThingsPage, error) {
-	if err := ts.isAdmin(ctx, token); err == nil {
-		if grIDs, err := ts.groups.RetrieveIDsByOrg(ctx, orgID); err == nil {
-			return ts.things.RetrieveByGroups(ctx, grIDs, pm)
-		}
-		return ThingsPage{}, err
-	}
-
-	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Viewer); err != nil {
-		return ThingsPage{}, err
-	}
-
-	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return ThingsPage{}, errors.Wrap(errors.ErrAuthentication, err)
-	}
-
-	grIDs, err := ts.groups.RetrieveIDsByOrgMembership(ctx, orgID, user.GetId())
+	grIDs, err := ts.GetGroupIDsByOrg(ctx, orgID, token)
 	if err != nil {
 		return ThingsPage{}, err
 	}
@@ -612,23 +599,7 @@ func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm apiu
 }
 
 func (ts *thingsService) ListProfilesByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (ProfilesPage, error) {
-	if err := ts.isAdmin(ctx, token); err == nil {
-		if grIDs, err := ts.groups.RetrieveIDsByOrg(ctx, orgID); err == nil {
-			return ts.profiles.RetrieveByGroups(ctx, grIDs, pm)
-		}
-		return ProfilesPage{}, err
-	}
-
-	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Viewer); err != nil {
-		return ProfilesPage{}, err
-	}
-
-	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return ProfilesPage{}, errors.Wrap(errors.ErrAuthentication, err)
-	}
-
-	grIDs, err := ts.groups.RetrieveIDsByOrgMembership(ctx, orgID, user.GetId())
+	grIDs, err := ts.GetGroupIDsByOrg(ctx, orgID, token)
 	if err != nil {
 		return ProfilesPage{}, err
 	}
@@ -1084,4 +1055,21 @@ func (ts *thingsService) getGroupIDsByMemberID(ctx context.Context, memberID str
 		}
 	}
 	return grIDs, nil
+}
+
+func (ts *thingsService) GetGroupIDsByOrg(ctx context.Context, orgID string, token string) ([]string, error) {
+	if err := ts.isAdmin(ctx, token); err == nil {
+		return ts.groups.RetrieveIDsByOrg(ctx, orgID)
+	}
+
+	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Viewer); err != nil {
+		return []string{}, err
+	}
+
+	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
+	if err != nil {
+		return nil, err
+	}
+
+	return ts.groups.RetrieveIDsByOrgMembership(ctx, orgID, user.GetId())
 }

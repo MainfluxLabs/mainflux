@@ -128,3 +128,18 @@ func (req profileIDReq) validate() error {
 
 	return nil
 }
+
+type orgAccessReq struct {
+	orgID string
+	token string
+}
+
+func (req orgAccessReq) validate() error {
+	if req.orgID == "" {
+		return apiutil.ErrMissingOrgID
+	}
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	return nil
+}

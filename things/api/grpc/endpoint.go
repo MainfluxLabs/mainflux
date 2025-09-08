@@ -233,3 +233,19 @@ func buildConfigResponse(conf map[string]interface{}) (*protomfx.Config, error) 
 
 	return profileConfig, nil
 }
+
+func getGroupIDsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(orgAccessReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		groupIDs, err := svc.GetGroupIDsByOrg(ctx, req.orgID, req.token)
+		if err != nil {
+			return groupIDsRes{}, err
+		}
+
+		return groupIDsRes{groupIDs: groupIDs}, nil
+	}
+}

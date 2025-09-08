@@ -548,32 +548,12 @@ func encodeBackupFileResponse(_ context.Context, w http.ResponseWriter, response
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
-	case errors.Contains(err, nil):
-	case errors.Contains(err, apiutil.ErrInvalidQueryParams),
-		errors.Contains(err, apiutil.ErrMalformedEntity),
-		err == apiutil.ErrLimitSize,
-		err == apiutil.ErrOffsetSize,
-		err == apiutil.ErrEmptyList,
-		err == apiutil.ErrInvalidComparator:
-		w.WriteHeader(http.StatusBadRequest)
-	case errors.Contains(err, errors.ErrAuthentication),
-		err == apiutil.ErrBearerToken:
-		w.WriteHeader(http.StatusUnauthorized)
-	case errors.Contains(err, errors.ErrAuthorization):
-		w.WriteHeader(http.StatusForbidden)
-	case errors.Contains(err, dbutil.ErrNotFound):
-		w.WriteHeader(http.StatusNotFound)
-	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
-		w.WriteHeader(http.StatusUnsupportedMediaType)
-	case errors.Contains(err, dbutil.ErrConflict):
-		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, dbutil.ErrScanMetadata):
 		w.WriteHeader(http.StatusUnprocessableEntity)
-	case errors.Contains(err, readers.ErrReadMessages),
-		errors.Contains(err, dbutil.ErrCreateEntity):
+	case errors.Contains(err, readers.ErrReadMessages):
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
-		w.WriteHeader(http.StatusInternalServerError)
+		apiutil.EncodeError(err, w)
 	}
 
 	apiutil.WriteErrorResponse(err, w)
