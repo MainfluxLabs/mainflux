@@ -18,7 +18,6 @@ import (
 
 const (
 	userIDKey             = "userID"
-	inviteIDKey           = "inviteID"
 	inviteResponseVerbKey = "responseVerb"
 	stateKey              = "state"
 )
@@ -42,21 +41,21 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
-	mux.Get("/invites/:inviteID", kithttp.NewServer(
+	mux.Get("/invites/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_org_invite")(viewOrgInviteEndpoint(svc)),
 		decodeInviteRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Delete("/invites/:inviteID", kithttp.NewServer(
+	mux.Delete("/invites/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "revoke_org_invite")(revokeOrgInviteEndpoint(svc)),
 		decodeInviteRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Post("/invites/:inviteID/:responseVerb", kithttp.NewServer(
+	mux.Post("/invites/:id/:responseVerb", kithttp.NewServer(
 		kitot.TraceServer(tracer, "respond_org_invite")(respondOrgInviteEndpoint(svc)),
 		decodeRespondOrgInviteRequest,
 		encodeResponse,
@@ -100,7 +99,7 @@ func decodeCreateOrgInviteRequest(_ context.Context, r *http.Request) (any, erro
 func decodeRespondOrgInviteRequest(_ context.Context, r *http.Request) (any, error) {
 	req := respondOrgInviteReq{
 		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, inviteIDKey),
+		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
 	inviteResponseVerb := bone.GetValue(r, inviteResponseVerbKey)
@@ -135,7 +134,7 @@ func decodeListOrgInvitesByUserRequest(_ context.Context, r *http.Request) (any,
 func decodeInviteRequest(_ context.Context, r *http.Request) (any, error) {
 	req := inviteReq{
 		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, inviteIDKey),
+		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
 	return req, nil
