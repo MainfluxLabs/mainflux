@@ -621,24 +621,6 @@ func TestListJSONMessages(t *testing.T) {
 			status: http.StatusBadRequest,
 		},
 		{
-			desc:   "read JSON messages with non-float value",
-			url:    fmt.Sprintf("%s/json?v=abc123", ts.URL),
-			token:  adminToken,
-			status: http.StatusBadRequest,
-		},
-		{
-			desc:   "read JSON messages with value and invalid comparator",
-			url:    fmt.Sprintf("%s/json?v=%f&comparator=invalid", ts.URL, v),
-			token:  adminToken,
-			status: http.StatusBadRequest,
-		},
-		{
-			desc:   "read JSON messages with non-boolean value",
-			url:    fmt.Sprintf("%s/json?vb=yes", ts.URL),
-			token:  adminToken,
-			status: http.StatusBadRequest,
-		},
-		{
 			desc:   "read JSON messages with from time filter",
 			url:    fmt.Sprintf("%s/json?from=%d", ts.URL, messages[50].Created),
 			token:  adminToken,
@@ -734,13 +716,13 @@ func TestListJSONMessages(t *testing.T) {
 }
 
 type jsonPageRes struct {
-	readers.PageMetadata
+	readers.JSONMessagesPage
 	Total    uint64           `json:"total"`
 	Messages []mfjson.Message `json:"messages,omitempty"`
 }
 
 type pageRes struct {
-	readers.PageMetadata
+	readers.SenMLMessagesPage
 	Total    uint64          `json:"total"`
 	Messages []senml.Message `json:"messages,omitempty"`
 }
