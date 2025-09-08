@@ -80,14 +80,14 @@ func (sdk mfSDK) RevokeInvite(inviteID string, token string) error {
 }
 
 func (sdk mfSDK) InviteRespond(inviteID string, accept bool, token string) error {
-	var responseVerb string
+	var responseAction string
 	if accept {
-		responseVerb = "accept"
+		responseAction = "accept"
 	} else {
-		responseVerb = "decline"
+		responseAction = "decline"
 	}
 
-	url := fmt.Sprintf("%s/invites/%s/%s", sdk.authURL, inviteID, responseVerb)
+	url := fmt.Sprintf("%s/invites/%s/%s", sdk.authURL, inviteID, responseAction)
 
 	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {

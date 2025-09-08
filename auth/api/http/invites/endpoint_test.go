@@ -400,7 +400,7 @@ func TestRespondInvite(t *testing.T) {
 			status:   http.StatusNoContent,
 		},
 		{
-			desc:     "respond to invite with invalid response verb",
+			desc:     "respond to invite with invalid response action",
 			inviteID: invites[2].ID,
 			response: invalidResponse,
 			token:    adminToken,
