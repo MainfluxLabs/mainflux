@@ -468,7 +468,7 @@ paths:
     get:
       summary: Retrieve pending Invites sent to specific user.
       description: |
-        Retreieve a list of pending Invites send to a specific user, i.e. invitee, denoted by their
+        Retrieve a list of pending Invites send to a specific user, i.e. invitee, denoted by their
         user ID.
       tags:
         - org invites
@@ -491,7 +491,7 @@ paths:
     get:
       summary: Retrieve pending Invites sent by a specific user.
       description: |
-        Retreieve a list of pending Invites send by a specific user, i.e. inviter, denoted by their
+        Retrieve a list of pending Invites send by a specific user, i.e. inviter, denoted by their
         user ID.
       tags:
         - org invites
