@@ -366,7 +366,7 @@ paths:
         '401':
           description: Missing or invalid access token provided.
         '403':
-          description: Unauthorized.
+          description: Failed to perform authorization over the entity.
         '415':
           description: Missing or invalid content type.
         '500':
@@ -383,7 +383,7 @@ paths:
         '200':
           $ref: "#/components/responses/InvitesPageRes"
         '403':
-          description: Unauthorized.
+          description: Failed to perform authorization over the entity
         '415':
           description: Missing or invalid content type.
         '500':
@@ -403,7 +403,7 @@ paths:
         '404':
           description: Failed due to non existing Invite.
         '403':
-          description: Unauthorized.
+          description: Failed to perform authorization over the entity.
         '500':
           $ref: "#/components/responses/ServiceError"
     delete:
@@ -419,7 +419,7 @@ paths:
         '204':
           description: Invite revoked.
         '403':
-          description: Unauthorized.
+          description: Failed to perform authorization over the entity.
         '404':
           description: Failed due to non existing Invite.
         '500':
@@ -438,7 +438,7 @@ paths:
         '201':
           description: Invite accepted and invitee added as a member of the organization.
         '403':
-          description: Unauthorized.
+          description: Failed to perform authorization over the entity.
         '404':
           description: Failed due to non existing Invite.
         '500':
@@ -459,7 +459,7 @@ paths:
         '401':
           description: Missing or invalid access token provided.
         '403':
-          description: Unauthorized.
+          description: Failed to perform authorization over the entity.
         '404':
           description: Failed due to non existing Invite.
         '500':
