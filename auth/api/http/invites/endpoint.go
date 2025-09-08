@@ -38,16 +38,9 @@ func viewOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return orgInviteRes{
-			ID:          invite.ID,
-			InviteeID:   invite.InviteeID,
-			OrgID:       invite.OrgID,
-			InviterID:   invite.InviterID,
-			InviteeRole: invite.InviteeRole,
-			CreatedAt:   invite.CreatedAt,
-			ExpiresAt:   invite.ExpiresAt,
-			State:       invite.State,
-		}, nil
+		res := buildOrgInviteRes(invite)
+
+		return res, nil
 	}
 }
 
@@ -93,29 +86,7 @@ func listOrgInvitesByUserEndpoint(svc auth.Service, userType string) endpoint.En
 			return nil, err
 		}
 
-		response := orgInvitePageRes{
-			pageRes: pageRes{
-				Limit:  page.Limit,
-				Offset: page.Offset,
-				Total:  page.Total,
-			},
-			Invites: []orgInviteRes{},
-		}
-
-		for _, inv := range page.Invites {
-			resInv := orgInviteRes{
-				ID:          inv.ID,
-				InviteeID:   inv.InviteeID,
-				InviteeRole: inv.InviteeRole,
-				InviterID:   inv.InviterID,
-				OrgID:       inv.OrgID,
-				CreatedAt:   inv.CreatedAt,
-				ExpiresAt:   inv.ExpiresAt,
-				State:       inv.State,
-			}
-
-			response.Invites = append(response.Invites, resInv)
-		}
+		response := buildOrgInvitesPageRes(page)
 
 		return response, nil
 	}
@@ -133,30 +104,38 @@ func listOrgInvitesByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		response := orgInvitePageRes{
-			pageRes: pageRes{
-				Limit:  page.Limit,
-				Offset: page.Offset,
-				Total:  page.Total,
-			},
-			Invites: []orgInviteRes{},
-		}
-
-		for _, inv := range page.Invites {
-			resInv := orgInviteRes{
-				ID:          inv.ID,
-				InviteeID:   inv.InviteeID,
-				InviteeRole: inv.InviteeRole,
-				InviterID:   inv.InviterID,
-				OrgID:       inv.OrgID,
-				CreatedAt:   inv.CreatedAt,
-				ExpiresAt:   inv.ExpiresAt,
-				State:       inv.State,
-			}
-
-			response.Invites = append(response.Invites, resInv)
-		}
+		response := buildOrgInvitesPageRes(page)
 
 		return response, nil
+	}
+}
+
+func buildOrgInvitesPageRes(page auth.OrgInvitesPage) orgInvitePageRes {
+	response := orgInvitePageRes{
+		pageRes: pageRes{
+			Limit:  page.Limit,
+			Offset: page.Offset,
+			Total:  page.Total,
+		},
+		Invites: make([]orgInviteRes, 0, len(page.Invites)),
+	}
+
+	for _, inv := range page.Invites {
+		response.Invites = append(response.Invites, buildOrgInviteRes(inv))
+	}
+
+	return response
+}
+
+func buildOrgInviteRes(inv auth.OrgInvite) orgInviteRes {
+	return orgInviteRes{
+		ID:          inv.ID,
+		InviteeID:   inv.InviteeID,
+		InviteeRole: inv.InviteeRole,
+		InviterID:   inv.InviterID,
+		OrgID:       inv.OrgID,
+		CreatedAt:   inv.CreatedAt,
+		ExpiresAt:   inv.ExpiresAt,
+		State:       inv.State,
 	}
 }
