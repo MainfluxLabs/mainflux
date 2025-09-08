@@ -48,9 +48,9 @@ const (
 )
 
 type Invites interface {
-	// InviteOrgMember creates a pending Invite on behalf of the User authenticated by `token`,
+	// CreateOrgInvite creates a pending Invite on behalf of the User authenticated by `token`,
 	// towards the user in `om`, to join the Org identified by `orgID` with an appropriate role.
-	InviteOrgMember(ctx context.Context, token, orgID, invRedirectPath string, om OrgMembership) (OrgInvite, error)
+	CreateOrgInvite(ctx context.Context, token, orgID, invRedirectPath string, om OrgMembership) (OrgInvite, error)
 
 	// RevokeOrgInvite revokes a specific pending Invite. An existing pending Invite can only be revoked
 	// by its original inviter (creator).
@@ -101,7 +101,7 @@ type OrgInvitesRepository interface {
 	UpdateOrgInviteState(ctx context.Context, inviteID, state string) error
 }
 
-func (svc service) InviteOrgMember(ctx context.Context, token, orgID, invRedirectPath string, om OrgMembership) (OrgInvite, error) {
+func (svc service) CreateOrgInvite(ctx context.Context, token, orgID, invRedirectPath string, om OrgMembership) (OrgInvite, error) {
 	// Check if currently authenticated User has "admin" or higher privileges within Org (required to make invitations)
 	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
 		return OrgInvite{}, err
