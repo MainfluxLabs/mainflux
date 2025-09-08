@@ -1,8 +1,6 @@
 package auth
 
-import (
-	"context"
-)
+import "context"
 
 const (
 	// RoleRootAdmin is the super admin role.
