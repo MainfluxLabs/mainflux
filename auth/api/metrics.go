@@ -225,13 +225,13 @@ func (ms *metricsMiddleware) RetrieveRole(ctx context.Context, id string) (strin
 	return ms.svc.RetrieveRole(ctx, id)
 }
 
-func (ms *metricsMiddleware) CreateOrgInvite(ctx context.Context, token, orgID, invRedirectPath string, om auth.OrgMembership) (auth.OrgInvite, error) {
+func (ms *metricsMiddleware) CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string) (auth.OrgInvite, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "invite_org_member").Add(1)
 		ms.latency.With("method", "invite_org_member").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateOrgInvite(ctx, token, orgID, invRedirectPath, om)
+	return ms.svc.CreateOrgInvite(ctx, token, email, role, orgID, invRedirectPath)
 }
 
 func (ms *metricsMiddleware) ViewOrgInvite(ctx context.Context, token, inviteID string) (auth.OrgInvite, error) {

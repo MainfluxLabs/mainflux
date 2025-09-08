@@ -923,17 +923,13 @@ components:
           type: string
           example: "/invite-view"
           description: The path portion of the Invite view URL that the end user receives in the Invite notification.
-        org_membership:
-          type: object
-          properties:
-              email:
-                type: string
-                example: "user@test.com"
-              role:
-                type: string
-                example: "editor"
-                description: The user's proposed role in the organization.
-          description: Essential information needed for creating the Invite.
+        email:
+          type: string
+          example: "user@test.com"
+        role:
+          type: string
+          example: "editor"
+          description: The user's proposed role in the organization.
         
   parameters:
     ApiKeyId:

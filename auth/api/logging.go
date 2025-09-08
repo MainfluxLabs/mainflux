@@ -314,7 +314,7 @@ func (lm *loggingMiddleware) RetrieveRole(ctx context.Context, id string) (role 
 	return lm.svc.RetrieveRole(ctx, id)
 }
 
-func (lm *loggingMiddleware) CreateOrgInvite(ctx context.Context, token, orgID, invRedirectPath string, om auth.OrgMembership) (invite auth.OrgInvite, err error) {
+func (lm *loggingMiddleware) CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string) (invite auth.OrgInvite, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method invite_org_member took %s to complete", time.Since(begin))
 		if err != nil {
@@ -325,7 +325,7 @@ func (lm *loggingMiddleware) CreateOrgInvite(ctx context.Context, token, orgID, 
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CreateOrgInvite(ctx, token, orgID, invRedirectPath, om)
+	return lm.svc.CreateOrgInvite(ctx, token, email, role, orgID, invRedirectPath)
 }
 
 func (lm *loggingMiddleware) RevokeOrgInvite(ctx context.Context, token, inviteID string) (err error) {

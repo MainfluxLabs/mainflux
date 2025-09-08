@@ -49,8 +49,8 @@ const (
 
 type Invites interface {
 	// CreateOrgInvite creates a pending Invite on behalf of the User authenticated by `token`,
-	// towards the user in `om`, to join the Org identified by `orgID` with an appropriate role.
-	CreateOrgInvite(ctx context.Context, token, orgID, invRedirectPath string, om OrgMembership) (OrgInvite, error)
+	// towards the user identified by `email`, to join the Org identified by `orgID` with an appropriate role.
+	CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string) (OrgInvite, error)
 
 	// RevokeOrgInvite revokes a specific pending Invite. An existing pending Invite can only be revoked
 	// by its original inviter (creator).
@@ -101,7 +101,7 @@ type OrgInvitesRepository interface {
 	UpdateOrgInviteState(ctx context.Context, inviteID, state string) error
 }
 
-func (svc service) CreateOrgInvite(ctx context.Context, token, orgID, invRedirectPath string, om OrgMembership) (OrgInvite, error) {
+func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string) (OrgInvite, error) {
 	// Check if currently authenticated User has "admin" or higher privileges within Org (required to make invitations)
 	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
 		return OrgInvite{}, err
@@ -118,7 +118,7 @@ func (svc service) CreateOrgInvite(ctx context.Context, token, orgID, invRedirec
 		return OrgInvite{}, err
 	}
 
-	muReq := protomfx.UsersByEmailsReq{Emails: []string{om.Email}}
+	muReq := protomfx.UsersByEmailsReq{Emails: []string{email}}
 	users, err := svc.users.GetUsersByEmails(ctx, &muReq)
 
 	if err != nil {
@@ -157,7 +157,7 @@ func (svc service) CreateOrgInvite(ctx context.Context, token, orgID, invRedirec
 		InviteeID:   inviteeID,
 		InviterID:   inviterIdentity.ID,
 		OrgID:       orgID,
-		InviteeRole: om.Role,
+		InviteeRole: role,
 		CreatedAt:   createdAt,
 		ExpiresAt:   createdAt.Add(svc.inviteDuration),
 		State:       InviteStatePending,
@@ -168,7 +168,7 @@ func (svc service) CreateOrgInvite(ctx context.Context, token, orgID, invRedirec
 	}
 
 	go func() {
-		svc.SendOrgInviteEmail(ctx, invite, om.Email, org.Name, invRedirectPath)
+		svc.SendOrgInviteEmail(ctx, invite, email, org.Name, invRedirectPath)
 	}()
 
 	return invite, nil
