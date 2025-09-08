@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -328,8 +329,35 @@ func findPayloadParam(payload map[string]interface{}, param string, contentType 
 		}
 		return nil
 	case messaging.JSONContentType:
-		return messaging.FindParam(payload, param)
+		return findParam(payload, param)
 	default:
 		return nil
 	}
+}
+
+func findParam(payload map[string]interface{}, param string) interface{} {
+	if param == "" {
+		return nil
+	}
+
+	parts := strings.Split(param, ".")
+	current := payload
+
+	for i, key := range parts {
+		val, ok := current[key]
+		if !ok {
+			return nil
+		}
+
+		if i < len(parts)-1 {
+			nested, ok := val.(map[string]interface{})
+			if !ok {
+				return nil
+			}
+			current = nested
+		} else {
+			return val
+		}
+	}
+	return nil
 }

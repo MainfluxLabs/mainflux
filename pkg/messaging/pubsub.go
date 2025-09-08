@@ -166,22 +166,6 @@ func FormatMessage(pc *protomfx.PubConfByKeyRes, msg *protomfx.Message) error {
 	return nil
 }
 
-func FindParam(payload map[string]interface{}, param string) interface{} {
-	for key, value := range payload {
-		if key == param {
-			return value
-		}
-
-		if data, ok := value.(map[string]interface{}); ok {
-			if value := FindParam(data, param); value != nil {
-				return value
-			}
-		}
-	}
-
-	return nil
-}
-
 func ToJSONMessage(message protomfx.Message) mfjson.Message {
 	created := message.Created
 	var payload map[string]interface{}
