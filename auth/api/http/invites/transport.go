@@ -17,7 +17,6 @@ import (
 )
 
 const (
-	userIDKey               = "userID"
 	inviteResponseActionKey = "action"
 	stateKey                = "state"
 )
@@ -62,14 +61,14 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
-	mux.Get("/users/:userID/invites/received", kithttp.NewServer(
+	mux.Get("/users/:id/invites/received", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_org_invites_by_invitee")(listOrgInvitesByUserEndpoint(svc, auth.UserTypeInvitee)),
 		decodeListOrgInvitesByUserRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Get("/users/:userID/invites/sent", kithttp.NewServer(
+	mux.Get("/users/:id/invites/sent", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_org_invites_by_inviter")(listOrgInvitesByUserEndpoint(svc, auth.UserTypeInviter)),
 		decodeListOrgInvitesByUserRequest,
 		encodeResponse,
@@ -118,7 +117,7 @@ func decodeRespondOrgInviteRequest(_ context.Context, r *http.Request) (any, err
 func decodeListOrgInvitesByUserRequest(_ context.Context, r *http.Request) (any, error) {
 	req := listOrgInvitesByUserReq{
 		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, userIDKey),
+		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
 	pm, err := buildPageMetadataInvites(r)
