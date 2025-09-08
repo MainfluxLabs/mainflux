@@ -58,7 +58,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 
 	mux.Post("/invites/:inviteID/:responseVerb", kithttp.NewServer(
 		kitot.TraceServer(tracer, "respond_org_invite")(respondOrgInviteEndpoint(svc)),
-		decodeOrgInviteResponseRequest,
+		decodeRespondOrgInviteRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -97,8 +97,8 @@ func decodeCreateOrgInviteRequest(_ context.Context, r *http.Request) (any, erro
 	return req, nil
 }
 
-func decodeOrgInviteResponseRequest(_ context.Context, r *http.Request) (any, error) {
-	req := orgInviteResponseReq{
+func decodeRespondOrgInviteRequest(_ context.Context, r *http.Request) (any, error) {
+	req := respondOrgInviteReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, inviteIDKey),
 	}
@@ -110,7 +110,7 @@ func decodeOrgInviteResponseRequest(_ context.Context, r *http.Request) (any, er
 	case "decline":
 		req.accepted = false
 	default:
-		return orgInviteResponseReq{}, auth.ErrInvalidInviteResponse
+		return respondOrgInviteReq{}, auth.ErrInvalidInviteResponse
 	}
 
 	return req, nil

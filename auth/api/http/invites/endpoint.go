@@ -68,7 +68,7 @@ func revokeOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 
 func respondOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(orgInviteResponseReq)
+		req := request.(respondOrgInviteReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}

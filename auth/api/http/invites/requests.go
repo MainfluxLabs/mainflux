@@ -62,13 +62,13 @@ func (req inviteReq) validate() error {
 	return nil
 }
 
-type orgInviteResponseReq struct {
+type respondOrgInviteReq struct {
 	token    string
 	id       string
 	accepted bool
 }
 
-func (req orgInviteResponseReq) validate() error {
+func (req respondOrgInviteReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
