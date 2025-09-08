@@ -17,9 +17,9 @@ import (
 )
 
 const (
-	userIDKey             = "userID"
-	inviteResponseVerbKey = "responseVerb"
-	stateKey              = "state"
+	userIDKey               = "userID"
+	inviteResponseActionKey = "action"
+	stateKey                = "state"
 )
 
 func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
@@ -55,7 +55,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
-	mux.Post("/invites/:id/:responseVerb", kithttp.NewServer(
+	mux.Post("/invites/:id/:action", kithttp.NewServer(
 		kitot.TraceServer(tracer, "respond_org_invite")(respondOrgInviteEndpoint(svc)),
 		decodeRespondOrgInviteRequest,
 		encodeResponse,
@@ -102,8 +102,8 @@ func decodeRespondOrgInviteRequest(_ context.Context, r *http.Request) (any, err
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
-	inviteResponseVerb := bone.GetValue(r, inviteResponseVerbKey)
-	switch inviteResponseVerb {
+	action := bone.GetValue(r, inviteResponseActionKey)
+	switch action {
 	case "accept":
 		req.accepted = true
 	case "decline":
