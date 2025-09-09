@@ -167,21 +167,19 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, er
 		return nil, err
 	}
 
-	pageMeta := readers.JSONMetadata{
-		Offset:      offset,
-		Limit:       limit,
-		Subtopic:    subtopic,
-		Protocol:    protocol,
-		From:        from,
-		To:          to,
-		AggInterval: ai,
-		AggType:     at,
-		AggField:    af,
-	}
-
 	return listJSONMessagesReq{
-		token:    apiutil.ExtractBearerToken(r),
-		pageMeta: pageMeta,
+		token: apiutil.ExtractBearerToken(r),
+		pageMeta: readers.JSONMetadata{
+			Offset:      offset,
+			Limit:       limit,
+			Subtopic:    subtopic,
+			Protocol:    protocol,
+			From:        from,
+			To:          to,
+			AggInterval: ai,
+			AggType:     at,
+			AggField:    af,
+		},
 	}, nil
 }
 
@@ -261,28 +259,26 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (interface{}, e
 		return nil, err
 	}
 
-	pageMeta := readers.SenMLMetadata{
-		Offset:      offset,
-		Limit:       limit,
-		Subtopic:    subtopic,
-		Protocol:    protocol,
-		Value:       v,
-		Name:        name,
-		StringValue: vs,
-		DataValue:   vd,
-		BoolValue:   vb,
-		Comparator:  comparator,
-		From:        from,
-		To:          to,
-		AggInterval: ai,
-		AggType:     at,
-		AggField:    af,
-	}
-
 	return listSenMLMessagesReq{
-		token:    apiutil.ExtractBearerToken(r),
-		key:      apiutil.ExtractThingKey(r),
-		pageMeta: pageMeta,
+		token: apiutil.ExtractBearerToken(r),
+		key:   apiutil.ExtractThingKey(r),
+		pageMeta: readers.SenMLMetadata{
+			Offset:      offset,
+			Limit:       limit,
+			Subtopic:    subtopic,
+			Protocol:    protocol,
+			Value:       v,
+			Name:        name,
+			StringValue: vs,
+			DataValue:   vd,
+			BoolValue:   vb,
+			Comparator:  comparator,
+			From:        from,
+			To:          to,
+			AggInterval: ai,
+			AggType:     at,
+			AggField:    af,
+		},
 	}, nil
 }
 
@@ -397,20 +393,18 @@ func decodeBackupJSONMessages(_ context.Context, r *http.Request) (interface{}, 
 		return nil, err
 	}
 
-	pageMeta := readers.JSONMetadata{
-		Subtopic:    subtopic,
-		Protocol:    protocol,
-		From:        from,
-		To:          to,
-		AggInterval: ai,
-		AggType:     at,
-		AggField:    af,
-	}
-
 	return backupJSONMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
 		convertFormat: convertFormat,
-		pageMeta:      pageMeta,
+		pageMeta: readers.JSONMetadata{
+			Subtopic:    subtopic,
+			Protocol:    protocol,
+			From:        from,
+			To:          to,
+			AggInterval: ai,
+			AggType:     at,
+			AggField:    af,
+		},
 	}, nil
 }
 
@@ -485,26 +479,24 @@ func decodeBackupSenMLMessages(_ context.Context, r *http.Request) (interface{},
 		return nil, err
 	}
 
-	pageMeta := readers.SenMLMetadata{
-		Name:        name,
-		Subtopic:    subtopic,
-		Protocol:    protocol,
-		Value:       v,
-		Comparator:  comparator,
-		StringValue: vs,
-		DataValue:   vd,
-		BoolValue:   vb,
-		From:        from,
-		To:          to,
-		AggInterval: ai,
-		AggType:     at,
-		AggField:    af,
-	}
-
 	return backupSenMLMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
 		convertFormat: convertFormat,
-		pageMeta:      pageMeta,
+		pageMeta: readers.SenMLMetadata{
+			Name:        name,
+			Subtopic:    subtopic,
+			Protocol:    protocol,
+			Value:       v,
+			Comparator:  comparator,
+			StringValue: vs,
+			DataValue:   vd,
+			BoolValue:   vb,
+			From:        from,
+			To:          to,
+			AggInterval: ai,
+			AggType:     at,
+			AggField:    af,
+		},
 	}, nil
 }
 
