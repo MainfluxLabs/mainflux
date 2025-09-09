@@ -50,8 +50,6 @@ type MessageRepository interface {
 // Message represents any message format.
 type Message interface{}
 
-// MessagesPage contains page related metadata as well as list of messages that
-// belong to this page.
 type MessagesPage interface {
 	GetMessages() []Message
 	GetTotal() uint64
