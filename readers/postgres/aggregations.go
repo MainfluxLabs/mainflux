@@ -459,12 +459,7 @@ func buildAggregatedJSONSelect(aggField string, aggAlias string) string {
 			parts[0], aggAlias)
 	}
 
-	pathParts := make([]string, len(parts))
-	for i, part := range parts {
-		pathParts[i] = part
-	}
-
-	pathArray := "{" + strings.Join(pathParts, ",") + "}"
+	pathArray := "{" + strings.Join(parts, ",") + "}"
 	return fmt.Sprintf(`m.created, m.subtopic, m.publisher, m.protocol,
 			jsonb_set(m.payload, '%s', to_jsonb(ia.%s)) as payload`,
 		pathArray, aggAlias)
