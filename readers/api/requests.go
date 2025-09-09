@@ -25,10 +25,6 @@ func (req listSenMLMessagesReq) validate() error {
 		return apiutil.ErrLimitSize
 	}
 
-	if req.pageMeta.Offset < 0 {
-		return apiutil.ErrOffsetSize
-	}
-
 	if req.pageMeta.Comparator != "" &&
 		req.pageMeta.Comparator != readers.EqualKey &&
 		req.pageMeta.Comparator != readers.LowerThanKey &&
@@ -62,10 +58,6 @@ func (req listJSONMessagesReq) validate() error {
 
 	if req.pageMeta.Limit > maxLimitSize {
 		return apiutil.ErrLimitSize
-	}
-
-	if req.pageMeta.Offset < 0 {
-		return apiutil.ErrOffsetSize
 	}
 
 	if req.pageMeta.AggType != "" {
