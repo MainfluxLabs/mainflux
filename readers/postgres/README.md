@@ -13,7 +13,7 @@ CREATE TABLE json (
     payload   JSONB
 );
 
-CREATE TABLE messages (
+CREATE TABLE senml (
     subtopic     VARCHAR(254) NOT NULL,
     publisher    UUID NOT NULL,
     protocol     TEXT,
@@ -45,7 +45,7 @@ default values.
 | MF_POSTGRES_READER_DB_PORT          | Postgres DB port                             | 5432           |
 | MF_POSTGRES_READER_DB_USER          | Postgres user                                | mainflux       |
 | MF_POSTGRES_READER_DB_PASS          | Postgres password                            | mainflux       |
-| MF_POSTGRES_READER_DB               | Postgres database name                       | messages       |
+| MF_POSTGRES_READER_DB               | Postgres database name                       | senml            |
 | MF_POSTGRES_READER_DB_SSL_MODE      | Postgres SSL mode                            | disabled       |
 | MF_POSTGRES_READER_DB_SSL_CERT      | Postgres SSL certificate path                | ""             |
 | MF_POSTGRES_READER_DB_SSL_KEY       | Postgres SSL key                             | ""             |
