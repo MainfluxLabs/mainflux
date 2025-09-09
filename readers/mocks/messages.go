@@ -128,7 +128,6 @@ func (repo *messageRepositoryMock) readAllJSON(rpm readers.JSONMetadata) (reader
 				case mfjson.Message:
 					filteredMessages = append(filteredMessages, msg)
 				case map[string]interface{}:
-					// Convert map to mfjson.Message
 					jsonMsg := mfjson.Message{
 						Created:   repo.getCreatedTime(msg),
 						Subtopic:  repo.getStringField(msg, "subtopic"),
@@ -138,7 +137,6 @@ func (repo *messageRepositoryMock) readAllJSON(rpm readers.JSONMetadata) (reader
 					}
 					filteredMessages = append(filteredMessages, jsonMsg)
 				default:
-					// Skip unsupported message types
 					continue
 				}
 			}
@@ -153,10 +151,6 @@ func (repo *messageRepositoryMock) readAllJSON(rpm readers.JSONMetadata) (reader
 			Total:        numOfMessages,
 			Messages:     []readers.Message{},
 		}, nil
-	}
-
-	if rpm.Limit < 0 {
-		return readers.JSONMessagesPage{}, nil
 	}
 
 	end := rpm.Offset + rpm.Limit
@@ -180,7 +174,6 @@ func (repo *messageRepositoryMock) readAllSenML(rpm readers.SenMLMetadata) (read
 	json.Unmarshal(meta, &query)
 
 	var msgs []readers.Message
-	// Read from all profiles
 	for _, profileMessages := range repo.messages {
 		for _, m := range profileMessages {
 			if repo.senmlMessageMatchesFilter(m, query, rpm) {
@@ -197,10 +190,6 @@ func (repo *messageRepositoryMock) readAllSenML(rpm readers.SenMLMetadata) (read
 			Total:         numOfMessages,
 			Messages:      []readers.Message{},
 		}, nil
-	}
-
-	if rpm.Limit < 0 {
-		return readers.SenMLMessagesPage{}, nil
 	}
 
 	end := rpm.Offset + rpm.Limit
@@ -256,28 +245,24 @@ func (repo *messageRepositoryMock) checkJSONMessageFilter(jsonMsg mfjson.Message
 }
 
 func (repo *messageRepositoryMock) checkJSONMapFilter(jsonMap map[string]interface{}, query map[string]interface{}, rpm readers.JSONMetadata) bool {
-	// Check subtopic
 	if rpm.Subtopic != "" {
 		if subtopic, ok := jsonMap["subtopic"].(string); !ok || subtopic != rpm.Subtopic {
 			return false
 		}
 	}
 
-	// Check publisher
 	if rpm.Publisher != "" {
 		if publisher, ok := jsonMap["publisher"].(string); !ok || publisher != rpm.Publisher {
 			return false
 		}
 	}
 
-	// Check protocol
 	if rpm.Protocol != "" {
 		if protocol, ok := jsonMap["protocol"].(string); !ok || protocol != rpm.Protocol {
 			return false
 		}
 	}
 
-	// Check from time
 	if rpm.From != 0 {
 		created := repo.getCreatedTime(jsonMap)
 		if created < rpm.From {
@@ -285,7 +270,6 @@ func (repo *messageRepositoryMock) checkJSONMapFilter(jsonMap map[string]interfa
 		}
 	}
 
-	// Check to time
 	if rpm.To != 0 {
 		created := repo.getCreatedTime(jsonMap)
 		if created >= rpm.To {
@@ -321,11 +305,9 @@ func (repo *messageRepositoryMock) getPayload(jsonMap map[string]interface{}) []
 		case string:
 			return []byte(p)
 		case map[string]interface{}, []interface{}:
-			// Convert complex types to JSON
 			data, _ := json.Marshal(p)
 			return data
 		default:
-			// Convert other types to JSON
 			data, _ := json.Marshal(p)
 			return data
 		}
@@ -334,7 +316,6 @@ func (repo *messageRepositoryMock) getPayload(jsonMap map[string]interface{}) []
 }
 
 func (repo *messageRepositoryMock) checkSenMLMessageFilter(senmlMsg senml.Message, query map[string]interface{}, rpm readers.SenMLMetadata) bool {
-	// Check all filters
 	if rpm.Subtopic != "" && rpm.Subtopic != senmlMsg.Subtopic {
 		return false
 	}
@@ -354,7 +335,6 @@ func (repo *messageRepositoryMock) checkSenMLMessageFilter(senmlMsg senml.Messag
 		return false
 	}
 
-	// Check value filters
 	if !repo.checkSenMLValueFilters(senmlMsg, query, rpm) {
 		return false
 	}
@@ -363,7 +343,6 @@ func (repo *messageRepositoryMock) checkSenMLMessageFilter(senmlMsg senml.Messag
 }
 
 func (repo *messageRepositoryMock) checkSenMLValueFilters(senmlMsg senml.Message, query map[string]interface{}, rpm readers.SenMLMetadata) bool {
-	// Check numeric value with comparator
 	if _, hasValue := query["v"]; hasValue && senmlMsg.Value != nil {
 		comparator, hasComparator := query["comparator"]
 		if !hasComparator {
@@ -386,22 +365,18 @@ func (repo *messageRepositoryMock) checkSenMLValueFilters(senmlMsg senml.Message
 		}
 	}
 
-	// Check boolean value
 	if _, hasBool := query["vb"]; hasBool && senmlMsg.BoolValue != nil {
 		return *senmlMsg.BoolValue == rpm.BoolValue
 	}
 
-	// Check string value
 	if _, hasString := query["vs"]; hasString && senmlMsg.StringValue != nil {
 		return *senmlMsg.StringValue == rpm.StringValue
 	}
 
-	// Check data value
 	if _, hasData := query["vd"]; hasData && senmlMsg.DataValue != nil {
 		return *senmlMsg.DataValue == rpm.DataValue
 	}
 
-	// If no value filter is specified, include the message
 	if _, hasValue := query["v"]; !hasValue {
 		if _, hasBool := query["vb"]; !hasBool {
 			if _, hasString := query["vs"]; !hasString {
