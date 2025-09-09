@@ -96,8 +96,8 @@ func (mm *metricsMiddleware) DeleteJSONMessages(ctx context.Context, rpm readers
 
 func (mm *metricsMiddleware) DeleteSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) error {
 	defer func(begin time.Time) {
-		mm.counter.With("method", "delete_json_messages").Add(1)
-		mm.latency.With("method", "delete_json_messages").Observe(time.Since(begin).Seconds())
+		mm.counter.With("method", "delete_senml_messages").Add(1)
+		mm.latency.With("method", "delete_senml_messages").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return mm.svc.DeleteSenMLMessages(ctx, rpm)
