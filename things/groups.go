@@ -148,6 +148,7 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token, orgID string, 
 			return []Group{}, err
 		}
 		group.ID = id
+		group.OrgID = orgID
 
 		grs = append(grs, group)
 	}
