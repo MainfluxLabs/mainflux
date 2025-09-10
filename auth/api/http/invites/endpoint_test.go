@@ -122,7 +122,7 @@ func toJSON(data interface{}) string {
 	return string(jsonData)
 }
 
-func TestInviteMembers(t *testing.T) {
+func TestCreateOrgInvite(t *testing.T) {
 	svc := newService()
 
 	_, ownerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
@@ -144,49 +144,49 @@ func TestInviteMembers(t *testing.T) {
 		status int
 	}{
 		{
-			desc:   "invite single member",
+			desc:   "create org invite",
 			req:    toJSON(invitesReq{Email: viewer.Email, Role: viewer.Role, RedirectPath: redirectPathInvite}),
 			ct:     contentType,
 			token:  ownerToken,
 			status: http.StatusCreated,
 		},
 		{
-			desc:   "invite member with invalid auth token",
+			desc:   "create org invite with invalid auth token",
 			req:    toJSON(invitesReq{Email: viewer.Email, Role: viewer.Role, RedirectPath: redirectPathInvite}),
 			ct:     contentType,
 			token:  "invalid-token",
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "invite member with empty auth token",
+			desc:   "create org invite with empty auth token",
 			req:    toJSON(invitesReq{Email: viewer.Email, Role: viewer.Role, RedirectPath: redirectPathInvite}),
 			ct:     contentType,
 			token:  "",
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "invite member with empty request",
+			desc:   "create org invite with empty request",
 			req:    "",
 			ct:     contentType,
 			token:  "",
 			status: http.StatusBadRequest,
 		},
 		{
-			desc:   "invite member with empty JSON array",
+			desc:   "create org invite with empty JSON array",
 			req:    "[]",
 			ct:     contentType,
 			token:  "",
 			status: http.StatusBadRequest,
 		},
 		{
-			desc:   "invite member with invalid request format",
+			desc:   "create org invite with invalid request format",
 			req:    "{",
 			ct:     contentType,
 			token:  ownerToken,
 			status: http.StatusBadRequest,
 		},
 		{
-			desc:   "create org without content type",
+			desc:   "create org invite without content type",
 			req:    toJSON(invitesReq{Email: viewer.Email, Role: viewer.Role, RedirectPath: redirectPathInvite}),
 			ct:     "",
 			token:  ownerToken,
