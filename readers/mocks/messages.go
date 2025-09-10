@@ -148,8 +148,10 @@ func (repo *messageRepositoryMock) readAllJSON(rpm readers.JSONMetadata) (reader
 	if rpm.Offset >= numOfMessages {
 		return readers.JSONMessagesPage{
 			JSONMetadata: rpm,
-			Total:        numOfMessages,
-			Messages:     []readers.Message{},
+			MessagesPage: readers.MessagesPage{
+				Total:    numOfMessages,
+				Messages: []readers.Message{},
+			},
 		}, nil
 	}
 
@@ -160,8 +162,10 @@ func (repo *messageRepositoryMock) readAllJSON(rpm readers.JSONMetadata) (reader
 
 	return readers.JSONMessagesPage{
 		JSONMetadata: rpm,
-		Total:        numOfMessages,
-		Messages:     filteredMessages[rpm.Offset:end],
+		MessagesPage: readers.MessagesPage{
+			Total:    numOfMessages,
+			Messages: filteredMessages[rpm.Offset:end],
+		},
 	}, nil
 }
 
@@ -187,8 +191,10 @@ func (repo *messageRepositoryMock) readAllSenML(rpm readers.SenMLMetadata) (read
 	if rpm.Offset >= numOfMessages {
 		return readers.SenMLMessagesPage{
 			SenMLMetadata: rpm,
-			Total:         numOfMessages,
-			Messages:      []readers.Message{},
+			MessagesPage: readers.MessagesPage{
+				Total:    numOfMessages,
+				Messages: []readers.Message{},
+			},
 		}, nil
 	}
 
@@ -199,8 +205,10 @@ func (repo *messageRepositoryMock) readAllSenML(rpm readers.SenMLMetadata) (read
 
 	return readers.SenMLMessagesPage{
 		SenMLMetadata: rpm,
-		Total:         numOfMessages,
-		Messages:      msgs[rpm.Offset:end],
+		MessagesPage: readers.MessagesPage{
+			Total:    numOfMessages,
+			Messages: msgs[rpm.Offset:end],
+		},
 	}, nil
 }
 

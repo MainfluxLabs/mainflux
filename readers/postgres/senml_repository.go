@@ -79,7 +79,10 @@ func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenML
 func (sr *senmlRepository) readAll(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
 	page := readers.SenMLMessagesPage{
 		SenMLMetadata: rpm,
-		Messages:      []readers.Message{},
+		MessagesPage: readers.MessagesPage{
+			Messages: []readers.Message{},
+			Total:    0,
+		},
 	}
 
 	params := sr.buildQueryParams(rpm)

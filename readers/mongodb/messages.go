@@ -180,8 +180,10 @@ func (repo mongoRepository) readAllJSON(rpm readers.JSONMetadata) (readers.JSONM
 
 	return readers.JSONMessagesPage{
 		JSONMetadata: rpm,
-		Total:        uint64(total),
-		Messages:     messages,
+		MessagesPage: readers.MessagesPage{
+			Total:    uint64(total),
+			Messages: messages,
+		},
 	}, nil
 }
 
@@ -220,8 +222,10 @@ func (repo mongoRepository) readAllSenML(rpm readers.SenMLMetadata) (readers.Sen
 
 	return readers.SenMLMessagesPage{
 		SenMLMetadata: rpm,
-		Total:         uint64(total),
-		Messages:      messages,
+		MessagesPage: readers.MessagesPage{
+			Total:    uint64(total),
+			Messages: messages,
+		},
 	}, nil
 }
 

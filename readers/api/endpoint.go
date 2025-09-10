@@ -168,9 +168,9 @@ func backupJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint
 		outputFormat := strings.ToLower(strings.TrimSpace(req.convertFormat))
 		switch outputFormat {
 		case jsonFormat:
-			data, err = apiutil.GenerateJSON(page)
+			data, err = apiutil.GenerateJSON(page.MessagesPage)
 		case csvFormat:
-			data, err = apiutil.GenerateCSV(page, "json")
+			data, err = apiutil.GenerateCSV(page.MessagesPage, "json")
 		default:
 			return nil, errors.Wrap(errors.ErrBackupMessages, err)
 		}
@@ -206,11 +206,11 @@ func backupSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 		outputFormat := strings.ToLower(strings.TrimSpace(req.convertFormat))
 		switch outputFormat {
 		case jsonFormat:
-			if data, err = apiutil.GenerateJSON(page); err != nil {
+			if data, err = apiutil.GenerateJSON(page.MessagesPage); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
 		case csvFormat:
-			if data, err = apiutil.GenerateCSV(page, "senml"); err != nil {
+			if data, err = apiutil.GenerateCSV(page.MessagesPage, "senml"); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
 		default:

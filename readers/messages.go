@@ -62,37 +62,19 @@ type MessageRepository interface {
 // Message represents any message format.
 type Message interface{}
 
-type MessagesPage interface {
-	GetMessages() []Message
-	GetTotal() uint64
+type MessagesPage struct {
+	Total    uint64
+	Messages []Message
 }
 
 type JSONMessagesPage struct {
 	JSONMetadata
-	Total    uint64
-	Messages []Message
+	MessagesPage
 }
 
 type SenMLMessagesPage struct {
 	SenMLMetadata
-	Total    uint64
-	Messages []Message
-}
-
-func (p JSONMessagesPage) GetMessages() []Message {
-	return p.Messages
-}
-
-func (p JSONMessagesPage) GetTotal() uint64 {
-	return p.Total
-}
-
-func (p SenMLMessagesPage) GetMessages() []Message {
-	return p.Messages
-}
-
-func (p SenMLMessagesPage) GetTotal() uint64 {
-	return p.Total
+	MessagesPage
 }
 
 // SenMLMetadata represents the parameters used to create database queries

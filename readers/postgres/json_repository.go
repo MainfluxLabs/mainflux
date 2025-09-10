@@ -33,7 +33,10 @@ func (jr *jsonRepository) ListMessages(rpm readers.JSONMetadata) (readers.JSONMe
 func (jr *jsonRepository) readAll(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
 	page := readers.JSONMessagesPage{
 		JSONMetadata: rpm,
-		Messages:     []readers.Message{},
+		MessagesPage: readers.MessagesPage{
+			Messages: []readers.Message{},
+			Total:    0,
+		},
 	}
 
 	params := jr.buildQueryParams(rpm)

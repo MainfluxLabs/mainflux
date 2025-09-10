@@ -243,8 +243,10 @@ func (tr timescaleRepository) readAllSenML(rpm readers.SenMLMetadata) (readers.S
 
 	return readers.SenMLMessagesPage{
 		SenMLMetadata: rpm,
-		Total:         total,
-		Messages:      messages,
+		MessagesPage: readers.MessagesPage{
+			Total:    total,
+			Messages: messages,
+		},
 	}, nil
 }
 
@@ -305,8 +307,10 @@ func (tr timescaleRepository) readAllJSON(rpm readers.JSONMetadata) (readers.JSO
 
 	return readers.JSONMessagesPage{
 		JSONMetadata: rpm,
-		Total:        total,
-		Messages:     messages,
+		MessagesPage: readers.MessagesPage{
+			Total:    total,
+			Messages: messages,
+		},
 	}, nil
 }
 
