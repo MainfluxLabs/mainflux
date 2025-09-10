@@ -71,9 +71,9 @@ type Invites interface {
 	// must be either 'invitee' or 'inviter'.
 	ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm PageMetadataInvites) (OrgInvitesPage, error)
 
-	// ListOrgInvitesByOrgID retrieves a list of invites towards any user(s) to join the org identified
+	// ListOrgInvitesByOrg retrieves a list of invites towards any user(s) to join the org identified
 	// by its ID
-	ListOrgInvitesByOrgID(ctx context.Context, token, orgID string, pm PageMetadataInvites) (OrgInvitesPage, error)
+	ListOrgInvitesByOrg(ctx context.Context, token, orgID string, pm PageMetadataInvites) (OrgInvitesPage, error)
 
 	// SendOrgInviteEmail sends an e-mail notifying the invitee of the corresponding Invite.
 	SendOrgInviteEmail(ctx context.Context, invite OrgInvite, email, orgName, invRedirectPath string) error
@@ -290,7 +290,7 @@ func (svc service) RespondOrgInvite(ctx context.Context, token, inviteID string,
 	return nil
 }
 
-func (svc service) ListOrgInvitesByOrgID(ctx context.Context, token, orgID string, pm PageMetadataInvites) (OrgInvitesPage, error) {
+func (svc service) ListOrgInvitesByOrg(ctx context.Context, token, orgID string, pm PageMetadataInvites) (OrgInvitesPage, error) {
 	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
 		return OrgInvitesPage{}, err
 	}

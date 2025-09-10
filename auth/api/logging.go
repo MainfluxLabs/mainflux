@@ -370,7 +370,7 @@ func (lm *loggingMiddleware) ListOrgInvitesByUser(ctx context.Context, token, us
 	return lm.svc.ListOrgInvitesByUser(ctx, token, userType, userID, pm)
 }
 
-func (lm *loggingMiddleware) ListOrgInvitesByOrgID(ctx context.Context, token string, orgID string, pm auth.PageMetadataInvites) (invPage auth.OrgInvitesPage, err error) {
+func (lm *loggingMiddleware) ListOrgInvitesByOrg(ctx context.Context, token string, orgID string, pm auth.PageMetadataInvites) (invPage auth.OrgInvitesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_org_invites_by_org_id took %s to complete", time.Since(begin))
 		if err != nil {
@@ -381,7 +381,7 @@ func (lm *loggingMiddleware) ListOrgInvitesByOrgID(ctx context.Context, token st
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListOrgInvitesByOrgID(ctx, token, orgID, pm)
+	return lm.svc.ListOrgInvitesByOrg(ctx, token, orgID, pm)
 }
 
 func (lm *loggingMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth.OrgInvite, email, orgName, invRedirectPath string) (err error) {

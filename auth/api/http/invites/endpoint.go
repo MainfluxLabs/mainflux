@@ -99,7 +99,7 @@ func listOrgInvitesByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.ListOrgInvitesByOrgID(ctx, req.token, req.id, req.pm)
+		page, err := svc.ListOrgInvitesByOrg(ctx, req.token, req.id, req.pm)
 		if err != nil {
 			return nil, err
 		}
