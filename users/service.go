@@ -147,7 +147,7 @@ var _ Service = (*usersService)(nil)
 type usersService struct {
 	users               UserRepository
 	emailVerifications  EmailVerificationRepository
-	platformInvites     PlatformInvitesRepository
+	invites             PlatformInvitesRepository
 	inviteDuration      time.Duration
 	emailVerifyEnabled  bool
 	selfRegisterEnabled bool
@@ -162,7 +162,7 @@ func New(users UserRepository, verifications EmailVerificationRepository, invite
 	return &usersService{
 		users:               users,
 		emailVerifications:  verifications,
-		platformInvites:     invites,
+		invites:             invites,
 		inviteDuration:      inviteDuration,
 		emailVerifyEnabled:  emailVerifyEnabled,
 		selfRegisterEnabled: selfRegisterEnabled,

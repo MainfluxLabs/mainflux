@@ -105,7 +105,7 @@ func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirec
 		State:        InviteStatePending,
 	}
 
-	if err := svc.platformInvites.SavePlatformInvite(ctx, invite); err != nil {
+	if err := svc.invites.SavePlatformInvite(ctx, invite); err != nil {
 		return PlatformInvite{}, err
 	}
 
@@ -121,7 +121,7 @@ func (svc usersService) RevokePlatformInvite(ctx context.Context, token, inviteI
 		return err
 	}
 
-	invite, err := svc.platformInvites.RetrievePlatformInviteByID(ctx, inviteID)
+	invite, err := svc.invites.RetrievePlatformInviteByID(ctx, inviteID)
 	if err != nil {
 		return err
 	}
@@ -134,7 +134,7 @@ func (svc usersService) RevokePlatformInvite(ctx context.Context, token, inviteI
 		return apiutil.ErrInvalidInviteState
 	}
 
-	if err := svc.platformInvites.UpdatePlatformInviteState(ctx, inviteID, InviteStateRevoked); err != nil {
+	if err := svc.invites.UpdatePlatformInviteState(ctx, inviteID, InviteStateRevoked); err != nil {
 		return err
 	}
 
@@ -146,7 +146,7 @@ func (svc usersService) ViewPlatformInvite(ctx context.Context, token, inviteID 
 		return PlatformInvite{}, err
 	}
 
-	invite, err := svc.platformInvites.RetrievePlatformInviteByID(ctx, inviteID)
+	invite, err := svc.invites.RetrievePlatformInviteByID(ctx, inviteID)
 	if err != nil {
 		return PlatformInvite{}, err
 	}
@@ -159,7 +159,7 @@ func (svc usersService) ListPlatformInvites(ctx context.Context, token string, p
 		return PlatformInvitesPage{}, err
 	}
 
-	invitesPage, err := svc.platformInvites.RetrievePlatformInvites(ctx, pm)
+	invitesPage, err := svc.invites.RetrievePlatformInvites(ctx, pm)
 	if err != nil {
 		return PlatformInvitesPage{}, err
 	}
@@ -168,7 +168,7 @@ func (svc usersService) ListPlatformInvites(ctx context.Context, token string, p
 }
 
 func (svc usersService) ValidatePlatformInvite(ctx context.Context, inviteID, email string) error {
-	invite, err := svc.platformInvites.RetrievePlatformInviteByID(ctx, inviteID)
+	invite, err := svc.invites.RetrievePlatformInviteByID(ctx, inviteID)
 	if err != nil {
 		if errors.Contains(err, dbutil.ErrNotFound) {
 			return errors.Wrap(errors.ErrAuthorization, err)
@@ -189,7 +189,7 @@ func (svc usersService) ValidatePlatformInvite(ctx context.Context, inviteID, em
 		return errors.Wrap(errors.ErrAuthorization, apiutil.ErrInvalidInviteState)
 	}
 
-	if err := svc.platformInvites.UpdatePlatformInviteState(ctx, inviteID, InviteStateAccepted); err != nil {
+	if err := svc.invites.UpdatePlatformInviteState(ctx, inviteID, InviteStateAccepted); err != nil {
 		return err
 	}
 
