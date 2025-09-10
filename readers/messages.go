@@ -49,7 +49,7 @@ type MessageRepository interface {
 	// RestoreJSONMessages restores the json messages with given filters.
 	RestoreJSONMessages(ctx context.Context, messages ...Message) error
 
-	// RestoreSenMLMessages backups the senml messages with given filters.
+	// RestoreSenMLMessages restores the senml messages with given filters.
 	RestoreSenMLMessages(ctx context.Context, messages ...Message) error
 
 	// DeleteJSONMessages deletes the json messages with given filters.
