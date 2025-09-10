@@ -316,7 +316,7 @@ func (lm *loggingMiddleware) RetrieveRole(ctx context.Context, id string) (role 
 
 func (lm *loggingMiddleware) CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string) (invite auth.OrgInvite, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method invite_org_member took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method create_org_invite took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
