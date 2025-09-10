@@ -248,7 +248,6 @@ func (svc usersService) PlatformInviteRegister(ctx context.Context, user User, i
 		return "", dbutil.ErrConflict
 	}
 
-	// Validate platform invite
 	err = svc.ValidatePlatformInvite(ctx, inviteID, user.Email)
 	if err != nil {
 		return "", err
