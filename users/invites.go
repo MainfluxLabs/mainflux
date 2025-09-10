@@ -82,11 +82,13 @@ func (svc usersService) InvitePlatformMember(ctx context.Context, token, redirec
 
 	_, err := svc.ListUsersByEmails(ctx, []string{email})
 
+	if err != nil && !errors.Contains(err, dbutil.ErrNotFound) {
+		return PlatformInvite{}, err
+	}
+
 	// User with e-mail already registered
 	if err == nil {
 		return PlatformInvite{}, dbutil.ErrConflict
-	} else if !errors.Contains(err, dbutil.ErrNotFound) {
-		return PlatformInvite{}, err
 	}
 
 	createdAt := time.Now()
