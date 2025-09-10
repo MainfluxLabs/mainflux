@@ -90,12 +90,12 @@ func migrateDB(db *sqlx.DB) error {
  					)
 					`,
 					`
-					CREATE UNIQUE INDEX ux_invites_platform_invitee_email on invites_platform (invitee_email) WHERE state='pending'
+					CREATE UNIQUE INDEX unique_invitee_email_pending on invites_platform (invitee_email) WHERE state='pending'
 					`,
 				},
 				Down: []string{
 					`DROP TABLE IF EXISTS invites_platform`,
-					`DROP INDEX IF EXISTS ux_invites_platform_invitee_email`,
+					`DROP INDEX IF EXISTS unique_invitee_email_pending`,
 				},
 			},
 		},

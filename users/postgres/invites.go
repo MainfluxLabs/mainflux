@@ -54,12 +54,7 @@ func (ir invitesRepository) SavePlatformInvite(ctx context.Context, invites ...u
 				case pgerrcode.InvalidTextRepresentation:
 					return errors.Wrap(dbutil.ErrMalformedEntity, err)
 				case pgerrcode.UniqueViolation:
-					var e = dbutil.ErrConflict
-					if pgErr.ConstraintName == "ux_invites_platform_invitee_email" {
-						e = apiutil.ErrUserAlreadyInvited
-					}
-
-					return errors.Wrap(e, errors.New(pgErr.Detail))
+					return errors.Wrap(apiutil.ErrUserAlreadyInvited, err)
 				}
 			}
 

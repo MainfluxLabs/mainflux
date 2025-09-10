@@ -28,5 +28,5 @@ CREATE TABLE IF NOT EXISTS invites_platform (
     state         VARCHAR DEFAULT 'pending' NOT NULL
 );
 
-CREATE UNIQUE INDEX ux_invites_platform_invitee_email on invites_platform (invitee_email) WHERE state='pending';
+CREATE UNIQUE INDEX unique_invitee_email_pending on invites_platform (invitee_email) WHERE state='pending';
 ```
