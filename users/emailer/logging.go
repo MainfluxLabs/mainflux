@@ -47,7 +47,7 @@ func (lm *loggingMiddleware) SendEmailVerification(To []string, redirectPath, to
 	return lm.emailer.SendEmailVerification(To, redirectPath, token)
 }
 
-func (lm *loggingMiddleware) SendPlatformInvite(To []string, invite users.PlatformInvite, redirectPath string) (err error) {
+func (lm *loggingMiddleware) SendPlatformInvite(to []string, invite users.PlatformInvite, redirectPath string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Emailer method send_platform_invite took %s to complete", time.Since(begin))
 		if err != nil {
@@ -58,5 +58,5 @@ func (lm *loggingMiddleware) SendPlatformInvite(To []string, invite users.Platfo
 
 	}(time.Now())
 
-	return lm.emailer.SendPlatformInvite(To, invite, redirectPath)
+	return lm.emailer.SendPlatformInvite(to, invite, redirectPath)
 }

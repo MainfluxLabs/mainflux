@@ -42,11 +42,11 @@ func (ms *metricsMiddleware) SendEmailVerification(To []string, redirectPath, to
 	return ms.emailer.SendEmailVerification(To, redirectPath, token)
 }
 
-func (ms *metricsMiddleware) SendPlatformInvite(To []string, invite users.PlatformInvite, redirectPath string) error {
+func (ms *metricsMiddleware) SendPlatformInvite(to []string, invite users.PlatformInvite, redirectPath string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "send_platform_invite").Add(1)
 		ms.latency.With("method", "send_platform_invite").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.emailer.SendPlatformInvite(To, invite, redirectPath)
+	return ms.emailer.SendPlatformInvite(to, invite, redirectPath)
 }

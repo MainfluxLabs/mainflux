@@ -23,6 +23,6 @@ func (e *emailerMock) SendEmailVerification(To []string, redirectPath, token str
 	return nil
 }
 
-func (e *emailerMock) SendPlatformInvite(To []string, inv users.PlatformInvite, redirectPath string) error {
+func (e *emailerMock) SendPlatformInvite(to []string, inv users.PlatformInvite, redirectPath string) error {
 	return nil
 }

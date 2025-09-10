@@ -102,13 +102,13 @@ type OrgInvitesRepository interface {
 }
 
 func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string) (OrgInvite, error) {
-	// Check if currently authenticated User has "admin" or higher privileges within Org (required to make invitations)
+	// Check if currently authenticated User has "admin" or higher privileges within Org
 	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
 		return OrgInvite{}, err
 	}
 
 	// Get userID of inviter
-	inviterIdentity, err := svc.identify(ctx, token)
+	inviter, err := svc.identify(ctx, token)
 	if err != nil {
 		return OrgInvite{}, err
 	}
@@ -155,7 +155,7 @@ func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgI
 	invite := OrgInvite{
 		ID:          inviteID,
 		InviteeID:   inviteeID,
-		InviterID:   inviterIdentity.ID,
+		InviterID:   inviter.ID,
 		OrgID:       orgID,
 		InviteeRole: role,
 		CreatedAt:   createdAt,
@@ -176,19 +176,18 @@ func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgI
 
 func (svc service) RevokeOrgInvite(ctx context.Context, token, inviteID string) error {
 	// Identify User attempting to revoke invite
-	currentUser, err := svc.identify(ctx, token)
+	user, err := svc.identify(ctx, token)
 	if err != nil {
 		return err
 	}
 
-	// Obtain full invite from db based on inviteID
 	invite, err := svc.invites.RetrieveOrgInviteByID(ctx, inviteID)
 	if err != nil {
 		return err
 	}
 
 	// An Invite can only be revoked by its issuer
-	if invite.InviterID != currentUser.ID {
+	if invite.InviterID != user.ID {
 		return errors.ErrAuthorization
 	}
 
@@ -224,12 +223,12 @@ func (svc service) ViewOrgInvite(ctx context.Context, token, inviteID string) (O
 		return invite, nil
 	}
 
-	currentUser, err := svc.identify(ctx, token)
+	user, err := svc.identify(ctx, token)
 	if err != nil {
 		return OrgInvite{}, err
 	}
 
-	if currentUser.ID == invite.InviteeID {
+	if user.ID == invite.InviteeID {
 		return invite, nil
 	}
 
@@ -237,8 +236,7 @@ func (svc service) ViewOrgInvite(ctx context.Context, token, inviteID string) (O
 }
 
 func (svc service) RespondOrgInvite(ctx context.Context, token, inviteID string, accept bool) error {
-	// Identify User attempting to respond to Invite
-	currentUser, err := svc.identify(ctx, token)
+	user, err := svc.identify(ctx, token)
 	if err != nil {
 		return err
 	}
@@ -258,7 +256,7 @@ func (svc service) RespondOrgInvite(ctx context.Context, token, inviteID string,
 	}
 
 	// An Invite can only be responded to by the invitee
-	if currentUser.ID != invite.InviteeID {
+	if user.ID != invite.InviteeID {
 		return errors.ErrAuthorization
 	}
 
@@ -270,15 +268,15 @@ func (svc service) RespondOrgInvite(ctx context.Context, token, inviteID string,
 		newState = InviteStateAccepted
 		ts := getTimestmap()
 
-		newOrgMember := OrgMembership{
-			MemberID:  currentUser.ID,
+		membership := OrgMembership{
+			MemberID:  user.ID,
 			OrgID:     invite.OrgID,
 			Role:      invite.InviteeRole,
 			CreatedAt: ts,
 			UpdatedAt: ts,
 		}
 
-		if err := svc.memberships.Save(ctx, newOrgMember); err != nil {
+		if err := svc.memberships.Save(ctx, membership); err != nil {
 			return err
 		}
 	}
@@ -295,12 +293,12 @@ func (svc service) ListOrgInvitesByOrg(ctx context.Context, token, orgID string,
 		return OrgInvitesPage{}, err
 	}
 
-	invitesPage, err := svc.invites.RetrieveOrgInvitesByOrg(ctx, orgID, pm)
+	page, err := svc.invites.RetrieveOrgInvitesByOrg(ctx, orgID, pm)
 	if err != nil {
 		return OrgInvitesPage{}, err
 	}
 
-	return invitesPage, nil
+	return page, nil
 }
 
 func (svc service) ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm PageMetadataInvites) (OrgInvitesPage, error) {
@@ -310,12 +308,12 @@ func (svc service) ListOrgInvitesByUser(ctx context.Context, token, userType, us
 		}
 
 		// Current User is not Root Admin - must be either the Invitee or Inviter
-		currentUser, err := svc.identify(ctx, token)
+		user, err := svc.identify(ctx, token)
 		if err != nil {
 			return OrgInvitesPage{}, err
 		}
 
-		if currentUser.ID != userID {
+		if user.ID != userID {
 			return OrgInvitesPage{}, errors.ErrAuthorization
 		}
 	}

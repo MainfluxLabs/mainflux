@@ -53,7 +53,7 @@ func (e *emailer) SendEmailVerification(To []string, redirectPath, token string)
 	return e.agent.Send(To, "", subject, "", content, "")
 }
 
-func (e *emailer) SendPlatformInvite(To []string, inv users.PlatformInvite, redirectPath string) error {
+func (e *emailer) SendPlatformInvite(to []string, inv users.PlatformInvite, redirectPath string) error {
 	redirectURL := fmt.Sprintf("%s%s/%s", e.host, redirectPath, inv.ID)
 
 	emailContent := fmt.Sprintf(`
@@ -65,5 +65,5 @@ func (e *emailer) SendPlatformInvite(To []string, inv users.PlatformInvite, redi
 		%s
 	`, redirectURL)
 
-	return e.agent.Send(To, "", subjectPlatformInvite, "", emailContent, "")
+	return e.agent.Send(to, "", subjectPlatformInvite, "", emailContent, "")
 }
