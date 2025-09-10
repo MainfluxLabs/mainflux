@@ -210,13 +210,13 @@ func (ms *metricsMiddleware) Restore(ctx context.Context, token string, admin us
 	return ms.svc.Restore(ctx, token, admin, users)
 }
 
-func (ms *metricsMiddleware) InvitePlatformMember(ctx context.Context, token string, redirectPath string, email string) (users.PlatformInvite, error) {
+func (ms *metricsMiddleware) CreatePlatformInvite(ctx context.Context, token string, redirectPath string, email string) (users.PlatformInvite, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "invite_platform_member").Add(1)
-		ms.latency.With("method", "invite_platform_member").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "create_platform_invite").Add(1)
+		ms.latency.With("method", "create_platform_invite").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.InvitePlatformMember(ctx, token, redirectPath, email)
+	return ms.svc.CreatePlatformInvite(ctx, token, redirectPath, email)
 }
 
 func (ms *metricsMiddleware) RevokePlatformInvite(ctx context.Context, token string, inviteID string) error {

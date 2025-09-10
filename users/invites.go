@@ -39,9 +39,9 @@ type PageMetadataInvites struct {
 }
 
 type PlatformInvites interface {
-	// InvitePlatformMember creates a pending platform Invite for the appropriate email address.
+	// CreatePlatformInvite creates a pending platform Invite for the appropriate email address.
 	// Only usable by the platform Root Admin.
-	InvitePlatformMember(ctx context.Context, token, redirectPath, email string) (PlatformInvite, error)
+	CreatePlatformInvite(ctx context.Context, token, redirectPath, email string) (PlatformInvite, error)
 
 	// RevokePlatformInvite revokes a specific pending PlatformInvite. Only usable by the platform Root Admin.
 	RevokePlatformInvite(ctx context.Context, token, inviteID string) error
@@ -75,7 +75,7 @@ type PlatformInvitesRepository interface {
 	UpdatePlatformInviteState(ctx context.Context, inviteID, state string) error
 }
 
-func (svc usersService) InvitePlatformMember(ctx context.Context, token, redirectPath, email string) (PlatformInvite, error) {
+func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string) (PlatformInvite, error) {
 	if err := svc.isAdmin(ctx, token); err != nil {
 		return PlatformInvite{}, err
 	}
