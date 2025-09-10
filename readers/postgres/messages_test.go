@@ -569,7 +569,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 		expectedCount uint64
 		description   string
 	}{
-		"delete messages with subtopic": {
+		"delete senml messages with subtopic": {
 			pageMeta: readers.SenMLMetadata{
 				Publisher: pubID2,
 				Subtopic:  subtopic,
@@ -579,7 +579,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 			expectedCount: uint64(len(queryMsgs)),
 			description:   "should delete messages with specific subtopic",
 		},
-		"delete messages with protocol": {
+		"delete senml messages with protocol": {
 			pageMeta: readers.SenMLMetadata{
 				Publisher: pubID2,
 				Protocol:  httpProt,
@@ -589,7 +589,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 			expectedCount: uint64(len(queryMsgs)),
 			description:   "should delete messages with specific protocol",
 		},
-		"delete messages with time range from": {
+		"delete senml messages with time range from": {
 			pageMeta: readers.SenMLMetadata{
 				Publisher: pubID,
 				From:      messages[20].Time,
@@ -598,7 +598,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 			expectedCount: 17,
 			description:   "should delete messages from specific time",
 		},
-		"delete messages with time range to": {
+		"delete senml messages with time range to": {
 			pageMeta: readers.SenMLMetadata{
 				Publisher: pubID,
 				From:      0,
@@ -607,7 +607,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 			expectedCount: 65,
 			description:   "should delete messages to specific time",
 		},
-		"delete messages with time range from/to": {
+		"delete senml messages with time range from/to": {
 			pageMeta: readers.SenMLMetadata{
 				Publisher: pubID,
 				From:      messages[50].Time,
@@ -616,7 +616,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 			expectedCount: 25,
 			description:   "should delete messages within time range",
 		},
-		"delete all messages for publisher": {
+		"delete all senml messages for publisher": {
 			pageMeta: readers.SenMLMetadata{
 				Publisher: pubID,
 				From:      0,
