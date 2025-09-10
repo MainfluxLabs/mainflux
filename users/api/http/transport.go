@@ -27,7 +27,6 @@ const (
 	emailKey      = "email"
 	statusKey     = "status"
 	emailTokenKey = "token"
-	inviteIDKey   = "inviteID"
 	stateKey      = "state"
 )
 
@@ -62,7 +61,7 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 		opts...,
 	))
 
-	mux.Post("/register/invite/:inviteID", kithttp.NewServer(
+	mux.Post("/register/invite/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "register_by_invite")(platformInviteRegistrationEndpoint(svc)),
 		decodePlatformInviteRegister,
 		encodeResponse,
@@ -160,14 +159,14 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 		opts...,
 	))
 
-	mux.Get("/invites-platform/:inviteID", kithttp.NewServer(
+	mux.Get("/invites-platform/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_platform_invite")(viewPlatformInviteEndpoint(svc)),
 		decodeInviteRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Delete("/invites-platform/:inviteID", kithttp.NewServer(
+	mux.Delete("/invites-platform/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "revoke_platform_invite")(revokePlatformInviteEndpoint(svc)),
 		decodeInviteRequest,
 		encodeResponse,
@@ -373,7 +372,7 @@ func decodeVerifyEmail(_ context.Context, r *http.Request) (any, error) {
 
 func decodePlatformInviteRegister(_ context.Context, r *http.Request) (any, error) {
 	req := platformInviteRegisterUserReq{
-		inviteID: bone.GetValue(r, inviteIDKey),
+		inviteID: bone.GetValue(r, apiutil.IDKey),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req.User); err != nil {
@@ -454,7 +453,7 @@ func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
 func decodeInviteRequest(_ context.Context, r *http.Request) (any, error) {
 	req := inviteReq{
 		token:    apiutil.ExtractBearerToken(r),
-		inviteID: bone.GetValue(r, inviteIDKey),
+		inviteID: bone.GetValue(r, apiutil.IDKey),
 	}
 
 	return req, nil
