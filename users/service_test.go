@@ -477,7 +477,7 @@ func TestSendPasswordReset(t *testing.T) {
 	}
 }
 
-func TestInvitePlatformMember(t *testing.T) {
+func TestCreatePlatformInvite(t *testing.T) {
 	svc := newService()
 	tokenAdmin, err := svc.Login(context.Background(), admin)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
@@ -493,9 +493,9 @@ func TestInvitePlatformMember(t *testing.T) {
 		email string
 		err   error
 	}{
-		"create valid platform invite":                  {tokenAdmin, "newUser@example.com", nil},
-		"invite already reigstered user to platform":    {tokenAdmin, existingInvite.InviteeEmail, dbutil.ErrConflict},
-		"create platform invite as non-root-admin user": {tokenUser, "brandNewUser@example.com", errors.ErrAuthorization},
+		"create valid platform invite":                               {tokenAdmin, "newUser@example.com", nil},
+		"create platform invite towards reigstered user to platform": {tokenAdmin, existingInvite.InviteeEmail, dbutil.ErrConflict},
+		"create platform invite as non-root-admin user":              {tokenUser, "brandNewUser@example.com", errors.ErrAuthorization},
 	}
 
 	for desc, tc := range cases {
