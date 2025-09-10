@@ -122,7 +122,7 @@ func (lm *loggingMiddleware) DeleteJSONMessages(ctx context.Context, rpm readers
 
 func (lm *loggingMiddleware) DeleteSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method delete_messages took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method delete_senml_messages took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
