@@ -54,9 +54,9 @@ func (lm *loggingMiddleware) VerifyEmail(ctx context.Context, confirmationToken 
 	return lm.svc.VerifyEmail(ctx, confirmationToken)
 }
 
-func (lm *loggingMiddleware) PlatformInviteRegister(ctx context.Context, user users.User, inviteID string) (id string, err error) {
+func (lm *loggingMiddleware) RegisterByInvite(ctx context.Context, user users.User, inviteID string) (id string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method platform_invite_register for user: %s, inviteID: %s took %s to complete", user.Email, inviteID, time.Since(begin))
+		message := fmt.Sprintf("Method register_by_invite for user: %s, inviteID: %s took %s to complete", user.Email, inviteID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -65,7 +65,7 @@ func (lm *loggingMiddleware) PlatformInviteRegister(ctx context.Context, user us
 
 	}(time.Now())
 
-	return lm.svc.PlatformInviteRegister(ctx, user, inviteID)
+	return lm.svc.RegisterByInvite(ctx, user, inviteID)
 }
 
 func (lm *loggingMiddleware) RegisterAdmin(ctx context.Context, user users.User) (err error) {

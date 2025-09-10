@@ -57,11 +57,11 @@ type Service interface {
 	// Returns the ID of the newly-registered User upon success.
 	VerifyEmail(ctx context.Context, confirmationToken string) (string, error)
 
-	// PlatformInviteRegister performs user registration based on a platform invite.
+	// RegisterByInvite performs user registration based on a platform invite.
 	// inviteID must correspond to a valid, pending and non-expired platform invite, and the user's supplied
 	// e-mail address must match the e-mail address of that platform invite. Upon success, marks the associated
 	// invite's state as 'accepted'. Returns the ID of the newly registered user.
-	PlatformInviteRegister(ctx context.Context, user User, inviteID string) (string, error)
+	RegisterByInvite(ctx context.Context, user User, inviteID string) (string, error)
 
 	// Register creates new user account. In case of the failed registration, a
 	// non-nil error value is returned. The user registration is only allowed
@@ -237,7 +237,7 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, redirectPat
 	return token, nil
 }
 
-func (svc usersService) PlatformInviteRegister(ctx context.Context, user User, inviteID string) (string, error) {
+func (svc usersService) RegisterByInvite(ctx context.Context, user User, inviteID string) (string, error) {
 	// Make sure user with same e-mail isn't registered already
 	_, err := svc.users.RetrieveByEmail(ctx, user.Email)
 	if err != nil && !errors.Contains(err, dbutil.ErrNotFound) {

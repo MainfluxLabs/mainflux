@@ -33,7 +33,7 @@ func platformInviteRegistrationEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		userID, err := svc.PlatformInviteRegister(ctx, req.User, req.inviteID)
+		userID, err := svc.RegisterByInvite(ctx, req.User, req.inviteID)
 		if err != nil {
 			return nil, err
 		}

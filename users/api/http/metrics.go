@@ -48,13 +48,13 @@ func (ms *metricsMiddleware) VerifyEmail(ctx context.Context, token string) (str
 	return ms.svc.VerifyEmail(ctx, token)
 }
 
-func (ms *metricsMiddleware) PlatformInviteRegister(ctx context.Context, user users.User, inviteID string) (string, error) {
+func (ms *metricsMiddleware) RegisterByInvite(ctx context.Context, user users.User, inviteID string) (string, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "platform_invite_register").Add(1)
-		ms.latency.With("method", "platform_invite_register").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "register_by_invite").Add(1)
+		ms.latency.With("method", "register_by_invite").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.PlatformInviteRegister(ctx, user, inviteID)
+	return ms.svc.RegisterByInvite(ctx, user, inviteID)
 }
 
 func (ms *metricsMiddleware) RegisterAdmin(ctx context.Context, user users.User) error {
