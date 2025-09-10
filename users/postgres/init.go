@@ -80,17 +80,17 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				Id: "users_3",
 				Up: []string{
-					`CREATE TABLE IF NOT EXISTS invites_platform (
+					`CREATE TABLE IF NOT EXISTS platform_invites (
 						id            UUID NOT NULL,
 						invitee_email VARCHAR NOT NULL,
 						created_at    TIMESTAMPTZ,
 						expires_at    TIMESTAMPTZ,
 						state         VARCHAR DEFAULT 'pending' NOT NULL
  					)`,
-					`CREATE UNIQUE INDEX unique_invitee_email_pending on invites_platform (invitee_email) WHERE state='pending'`,
+					`CREATE UNIQUE INDEX unique_invitee_email_pending on platform_invites (invitee_email) WHERE state='pending'`,
 				},
 				Down: []string{
-					`DROP TABLE IF EXISTS invites_platform`,
+					`DROP TABLE IF EXISTS platform_invites`,
 					`DROP INDEX IF EXISTS unique_invitee_email_pending`,
 				},
 			},

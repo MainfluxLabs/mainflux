@@ -34,7 +34,7 @@ func (ir invitesRepository) SaveOrgInvite(ctx context.Context, invites ...auth.O
 	}
 
 	qIns := `
-		INSERT INTO invites_org (id, invitee_id, inviter_id, org_id, invitee_role, created_at, expires_at, state)	
+		INSERT INTO org_invites (id, invitee_id, inviter_id, org_id, invitee_role, created_at, expires_at, state)	
 		VALUES (:id, :invitee_id, :inviter_id, :org_id, :invitee_role, :created_at, :expires_at, :state)
 	`
 
@@ -76,7 +76,7 @@ func (ir invitesRepository) RetrieveOrgInviteByID(ctx context.Context, inviteID 
 
 	q := `
 		SELECT invitee_id, inviter_id, org_id, invitee_role, created_at, expires_at, state
-		FROM invites_org
+		FROM org_invites
 		WHERE id = $1
 	`
 
@@ -102,7 +102,7 @@ func (ir invitesRepository) RetrieveOrgInviteByID(ctx context.Context, inviteID 
 }
 
 func (ir invitesRepository) RemoveOrgInvite(ctx context.Context, inviteID string) error {
-	qDel := `DELETE FROM invites_org WHERE id = :id`
+	qDel := `DELETE FROM org_invites WHERE id = :id`
 	invite := dbOrgInvite{
 		ID: inviteID,
 	}
@@ -133,7 +133,7 @@ func (ir invitesRepository) RemoveOrgInvite(ctx context.Context, inviteID string
 
 func (ir invitesRepository) UpdateOrgInviteState(ctx context.Context, inviteID, state string) error {
 	query := `
-		UPDATE invites_org
+		UPDATE org_invites
 		SET state=:state
 		WHERE id=:inviteID
 	`
@@ -159,10 +159,10 @@ func (ir invitesRepository) UpdateOrgInviteState(ctx context.Context, inviteID, 
 func (ir invitesRepository) RetrieveOrgInvitesByOrg(ctx context.Context, orgID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
 	query := `
 		SELECT id, invitee_id, inviter_id, org_id, invitee_role, created_at, expires_at, state
-		FROM invites_org %s ORDER BY %s %s %s
+		FROM org_invites %s ORDER BY %s %s %s
 	`
 
-	queryCount := `SELECT COUNT(*) FROM invites_org %s`
+	queryCount := `SELECT COUNT(*) FROM org_invites %s`
 
 	filterOrgID := `org_id = :orgID`
 	filterState := ``
@@ -224,10 +224,10 @@ func (ir invitesRepository) RetrieveOrgInvitesByOrg(ctx context.Context, orgID s
 func (ir invitesRepository) RetrieveOrgInvitesByUser(ctx context.Context, userType, userID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
 	query := `
 		SELECT id, invitee_id, inviter_id, org_id, invitee_role, created_at, expires_at, state
-		FROM invites_org %s ORDER BY %s %s %s
+		FROM org_invites %s ORDER BY %s %s %s
 	`
 
-	queryCount := `SELECT COUNT(*) FROM invites_org %s`
+	queryCount := `SELECT COUNT(*) FROM org_invites %s`
 
 	filterUserType := `%s = :userID`
 	switch userType {
@@ -304,7 +304,7 @@ func (ir invitesRepository) RetrieveOrgInvitesByUser(ctx context.Context, userTy
 // state='pending' and expires_at < now().
 func (ir invitesRepository) syncOrgInviteStateByUserID(ctx context.Context, userType, userID string) error {
 	query := `
-		UPDATE invites_org
+		UPDATE org_invites
 		SET state='expired'
 		WHERE %s=:userID AND state='pending' AND expires_at < NOW()
 	`
@@ -340,7 +340,7 @@ func (ir invitesRepository) syncOrgInviteStateByUserID(ctx context.Context, user
 // from being preserved. That is, sets state='expired' for invites where state='pending' and expires_at < now().
 func (ir invitesRepository) syncOrgInviteStateByInvite(ctx context.Context, invite auth.OrgInvite) error {
 	query := `
-		UPDATE invites_org
+		UPDATE org_invites
 		SET state='expired'
 		WHERE invitee_id=:invitee_id AND org_id=:org_id AND inviter_id=:inviter_id AND state='pending' AND expires_at < NOW()
 	`
@@ -365,7 +365,7 @@ func (ir invitesRepository) syncOrgInviteStateByInvite(ctx context.Context, invi
 // Syncs the state of the Invite with the passed inviteID. That is, sets state='expired' if state='pending' and expires_at < now().
 func (ir invitesRepository) syncOrgInviteStateByID(ctx context.Context, inviteID string) error {
 	query := `
-		UPDATE invites_org
+		UPDATE org_invites
 		SET state='expired'
 		WHERE id=:inviteID AND state='pending' AND expires_at < NOW()
 	`

@@ -34,7 +34,7 @@ func (ir invitesRepository) SavePlatformInvite(ctx context.Context, invites ...u
 	}
 
 	qIns := `
-		INSERT INTO invites_platform (id, invitee_email, created_at, expires_at, state)	
+		INSERT INTO platform_invites (id, invitee_email, created_at, expires_at, state)	
 		VALUES (:id, :invitee_email, :created_at, :expires_at, :state)
 	`
 
@@ -76,7 +76,7 @@ func (ir invitesRepository) RetrievePlatformInviteByID(ctx context.Context, invi
 
 	q := `
 		SELECT id, invitee_email, created_at, expires_at, state
-		FROM invites_platform
+		FROM platform_invites
 		WHERE id = $1
 	`
 
@@ -104,10 +104,10 @@ func (ir invitesRepository) RetrievePlatformInviteByID(ctx context.Context, invi
 func (ir invitesRepository) RetrievePlatformInvites(ctx context.Context, pm users.PageMetadataInvites) (users.PlatformInvitesPage, error) {
 	query := `
 		SELECT id, invitee_email, created_at, expires_at, state
-		FROM invites_platform %s ORDER BY %s %s %s
+		FROM platform_invites %s ORDER BY %s %s %s
 	`
 
-	queryCount := `SELECT COUNT(*) FROM invites_platform %s`
+	queryCount := `SELECT COUNT(*) FROM platform_invites %s`
 
 	filterState := ``
 	if pm.State != "" {
@@ -170,7 +170,7 @@ func (ir invitesRepository) RetrievePlatformInvites(ctx context.Context, pm user
 
 func (ir invitesRepository) UpdatePlatformInviteState(ctx context.Context, inviteID, state string) error {
 	query := `
-		UPDATE invites_platform
+		UPDATE platform_invites
 		SET state=:state
 		WHERE id=:inviteID
 	`
@@ -197,7 +197,7 @@ func (ir invitesRepository) UpdatePlatformInviteState(ctx context.Context, invit
 // state='expired' where state='pending' and expires_at < now().
 func (ir invitesRepository) syncPlatformInviteStateByEmail(ctx context.Context, email string) error {
 	query := `
-		UPDATE invites_platform
+		UPDATE platform_invites
 		SET state='expired'
 		WHERE invitee_email=:email AND state='pending' AND expires_at < NOW()
 	`
@@ -221,7 +221,7 @@ func (ir invitesRepository) syncPlatformInviteStateByEmail(ctx context.Context, 
 // and expires_at < now().
 func (ir invitesRepository) syncPlatformInviteStateByID(ctx context.Context, inviteID string) error {
 	query := `
-		UPDATE invites_platform
+		UPDATE platform_invites
 		SET state='expired'
 		WHERE id=:inviteID AND state='pending' AND expires_at < NOW()
 	`
@@ -245,7 +245,7 @@ func (ir invitesRepository) syncPlatformInviteStateByID(ctx context.Context, inv
 // and expires_at < now().
 func (ir invitesRepository) syncPlatformInviteState(ctx context.Context) error {
 	query := `
-		UPDATE invites_platform
+		UPDATE platform_invites
 		SET state='expired'
 		WHERE state='pending' AND expires_at < NOW()
 	`
