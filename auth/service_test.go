@@ -1203,7 +1203,7 @@ func TestListOrgMemberships(t *testing.T) {
 	}
 }
 
-func TestInviteMembers(t *testing.T) {
+func TestCreateOrgInvite(t *testing.T) {
 	svc := newService()
 
 	_, ownerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
@@ -1234,7 +1234,7 @@ func TestInviteMembers(t *testing.T) {
 		err        error
 	}{
 		{
-			desc:  "invite member as root admin",
+			desc:  "create org invite as root admin",
 			token: superAdminToken,
 			orgID: or.ID,
 			membership: auth.OrgMembership{
@@ -1244,7 +1244,7 @@ func TestInviteMembers(t *testing.T) {
 			err: nil,
 		},
 		{
-			desc:  "invite member as owner",
+			desc:  "create org invite as org owner",
 			token: ownerToken,
 			orgID: or.ID,
 			membership: auth.OrgMembership{
@@ -1254,7 +1254,7 @@ func TestInviteMembers(t *testing.T) {
 			err: nil,
 		},
 		{
-			desc:  "invite member as admin",
+			desc:  "create org invite as org admin",
 			token: adminToken,
 			orgID: or.ID,
 			membership: auth.OrgMembership{
@@ -1264,7 +1264,7 @@ func TestInviteMembers(t *testing.T) {
 			err: nil,
 		},
 		{
-			desc:  "invite member as editor",
+			desc:  "create org invite as org editor",
 			token: editorToken,
 			orgID: or.ID,
 			membership: auth.OrgMembership{
@@ -1274,7 +1274,7 @@ func TestInviteMembers(t *testing.T) {
 			err: errors.ErrAuthorization,
 		},
 		{
-			desc:  "invite member as viewer",
+			desc:  "create org invite as org viewer",
 			token: viewerToken,
 			orgID: or.ID,
 			membership: auth.OrgMembership{
@@ -1284,7 +1284,7 @@ func TestInviteMembers(t *testing.T) {
 			err: errors.ErrAuthorization,
 		},
 		{
-			desc:  "invite member with pending invitation for same org",
+			desc:  "create org invite with pending invite to same org",
 			token: adminToken,
 			orgID: or.ID,
 			membership: auth.OrgMembership{
@@ -1294,7 +1294,7 @@ func TestInviteMembers(t *testing.T) {
 			err: dbutil.ErrConflict,
 		},
 		{
-			desc:  "invite member who is already a member of org",
+			desc:  "create org invite towards invitee who is already a member of org",
 			token: adminToken,
 			orgID: or.ID,
 			membership: auth.OrgMembership{
@@ -1304,7 +1304,7 @@ func TestInviteMembers(t *testing.T) {
 			err: auth.ErrOrgMembershipExists,
 		},
 		{
-			desc:  "invite member with unregistered e-mail",
+			desc:  "create org invite towards invitee with unregistered e-mail",
 			token: adminToken,
 			orgID: or.ID,
 			membership: auth.OrgMembership{
@@ -1363,7 +1363,7 @@ func TestRevokeInvite(t *testing.T) {
 
 }
 
-func TestInviteRespond(t *testing.T) {
+func TestRespondInvite(t *testing.T) {
 	svc := newService()
 
 	_, ownerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
