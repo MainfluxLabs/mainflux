@@ -216,7 +216,7 @@ func (res createdPlatformInviteRes) Code() int {
 func (res createdPlatformInviteRes) Headers() map[string]string {
 	if res.created {
 		return map[string]string{
-			"Location": fmt.Sprintf("/invites-platform/%s", res.ID),
+			"Location": fmt.Sprintf("/invites/%s", res.ID),
 		}
 	}
 

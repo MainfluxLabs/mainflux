@@ -194,7 +194,7 @@ paths:
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /invites-platform:
+  /invites:
     post:
       summary: Create new Platform Invite.
       description: |
@@ -232,7 +232,7 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
 
-  /invites-platform/{inviteId}:
+  /invites/{inviteId}:
     get:
       summary: Retrieve a specific Platform Invite.
       description: |

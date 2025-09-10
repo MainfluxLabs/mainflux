@@ -1099,7 +1099,7 @@ func TestCreatePlatformInvite(t *testing.T) {
 		req := testRequest{
 			client:      client,
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/invites-platform", ts.URL),
+			url:         fmt.Sprintf("%s/invites", ts.URL),
 			contentType: tc.contentType,
 			body:        strings.NewReader(tc.req),
 			token:       tc.token,
@@ -1170,7 +1170,7 @@ func TestViewPlatformInvite(t *testing.T) {
 		req := testRequest{
 			client: client,
 			method: http.MethodGet,
-			url:    fmt.Sprintf("%s/invites-platform/%s", ts.URL, tc.inviteID),
+			url:    fmt.Sprintf("%s/invites/%s", ts.URL, tc.inviteID),
 			token:  tc.token,
 		}
 
@@ -1231,7 +1231,7 @@ func TestListPlatformInvites(t *testing.T) {
 		req := testRequest{
 			client: client,
 			method: http.MethodGet,
-			url:    fmt.Sprintf("%s/invites-platform", ts.URL),
+			url:    fmt.Sprintf("%s/invites", ts.URL),
 			token:  tc.token,
 		}
 
@@ -1300,7 +1300,7 @@ func TestRevokePlatformInvite(t *testing.T) {
 		req := testRequest{
 			client: client,
 			method: http.MethodDelete,
-			url:    fmt.Sprintf("%s/invites-platform/%s", ts.URL, tc.inviteID),
+			url:    fmt.Sprintf("%s/invites/%s", ts.URL, tc.inviteID),
 			token:  tc.token,
 		}
 

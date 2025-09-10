@@ -145,28 +145,28 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 		opts...,
 	))
 
-	mux.Post("/invites-platform", kithttp.NewServer(
+	mux.Post("/invites", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_platform_invite")(createPlatformInviteEndpoint(svc)),
 		decodeCreatePlatformInviteRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Get("/invites-platform", kithttp.NewServer(
+	mux.Get("/invites", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_platform_invites")(listPlatformInvitesEndpoint(svc)),
 		decodeListPlatformInvitesRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Get("/invites-platform/:id", kithttp.NewServer(
+	mux.Get("/invites/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_platform_invite")(viewPlatformInviteEndpoint(svc)),
 		decodeInviteRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Delete("/invites-platform/:id", kithttp.NewServer(
+	mux.Delete("/invites/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "revoke_platform_invite")(revokePlatformInviteEndpoint(svc)),
 		decodeInviteRequest,
 		encodeResponse,
