@@ -74,7 +74,7 @@ func GenerateCSV(page readers.MessagesPage, table string) ([]byte, error) {
 }
 
 func convertJSONMessagesToCSV(page readers.MessagesPage, writer *csv.Writer) error {
-	for _, msg := range page.GetMessages() {
+	for _, msg := range page.Messages {
 		if m, ok := msg.(map[string]interface{}); ok {
 			created := ""
 			if v, ok := m["created"].(int64); ok {
@@ -110,7 +110,7 @@ func convertJSONMessagesToCSV(page readers.MessagesPage, writer *csv.Writer) err
 }
 
 func convertSenMLMessagesToCSV(page readers.MessagesPage, writer *csv.Writer) error {
-	for _, msg := range page.GetMessages() {
+	for _, msg := range page.Messages {
 		if m, ok := msg.(senml.Message); ok {
 			row := []string{
 				m.Subtopic,
@@ -161,11 +161,11 @@ func getValue(ptr interface{}, defaultValue string) string {
 }
 
 func GenerateJSON(page readers.MessagesPage) ([]byte, error) {
-	if page.GetTotal() == 0 {
+	if page.Total == 0 {
 		return []byte("[]"), nil
 	}
 
-	data, err := json.Marshal(page.GetMessages())
+	data, err := json.Marshal(page.Messages)
 	if err != nil {
 		return nil, err
 	}
