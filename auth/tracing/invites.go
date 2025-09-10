@@ -12,11 +12,11 @@ import (
 )
 
 const (
-	saveOrgInvite              = "save_org_invite"
-	retrieveOrgInviteByID      = "retrieve_org_invite_by_id"
-	removeOrgInvite            = "remove_org_invite"
-	retrieveOrgInvitesByUserID = "retrieve_org_invites_by_user_id"
-	updateOrgInviteState       = "update_org_invite_state"
+	saveOrgInvite            = "save_org_invite"
+	retrieveOrgInviteByID    = "retrieve_org_invite_by_id"
+	removeOrgInvite          = "remove_org_invite"
+	retrieveOrgInvitesByUser = "retrieve_org_invites_by_user"
+	updateOrgInviteState     = "update_org_invite_state"
 )
 
 var _ auth.OrgInvitesRepository = (*invitesRepositoryMiddleware)(nil)
@@ -58,7 +58,7 @@ func (irm invitesRepositoryMiddleware) RemoveOrgInvite(ctx context.Context, invi
 }
 
 func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByUser(ctx context.Context, userType string, userID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
-	span := createSpan(ctx, irm.tracer, retrieveOrgInvitesByUserID)
+	span := createSpan(ctx, irm.tracer, retrieveOrgInvitesByUser)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -66,7 +66,7 @@ func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByUser(ctx context.Cont
 }
 
 func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByOrg(ctx context.Context, orgID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
-	span := createSpan(ctx, irm.tracer, retrieveOrgInvitesByUserID)
+	span := createSpan(ctx, irm.tracer, retrieveOrgInvitesByUser)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
