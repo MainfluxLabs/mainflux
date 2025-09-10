@@ -57,20 +57,20 @@ func (irm invitesRepositoryMiddleware) RemoveOrgInvite(ctx context.Context, invi
 	return irm.repo.RemoveOrgInvite(ctx, inviteID)
 }
 
-func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByUserID(ctx context.Context, userType string, userID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
+func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByUser(ctx context.Context, userType string, userID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
 	span := createSpan(ctx, irm.tracer, retrieveOrgInvitesByUserID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return irm.repo.RetrieveOrgInvitesByUserID(ctx, userType, userID, pm)
+	return irm.repo.RetrieveOrgInvitesByUser(ctx, userType, userID, pm)
 }
 
-func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByOrgID(ctx context.Context, orgID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
+func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByOrg(ctx context.Context, orgID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
 	span := createSpan(ctx, irm.tracer, retrieveOrgInvitesByUserID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return irm.repo.RetrieveOrgInvitesByOrgID(ctx, orgID, pm)
+	return irm.repo.RetrieveOrgInvitesByOrg(ctx, orgID, pm)
 }
 
 func (irm invitesRepositoryMiddleware) UpdateOrgInviteState(ctx context.Context, inviteID string, state string) error {

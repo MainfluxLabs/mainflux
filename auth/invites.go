@@ -91,11 +91,11 @@ type OrgInvitesRepository interface {
 
 	// RetrieveOrgInviteByUserID retrieves a list of invites either directed towards a specific Invitee, or sent out by a
 	// specific Inviter, depending on the value of the `userType` argument, which must be either 'invitee' or 'inviter'.
-	RetrieveOrgInvitesByUserID(ctx context.Context, userType, userID string, pm PageMetadataInvites) (OrgInvitesPage, error)
+	RetrieveOrgInvitesByUser(ctx context.Context, userType, userID string, pm PageMetadataInvites) (OrgInvitesPage, error)
 
-	// RetrieveOrgInvitesByOrgID retrieves a list of invites towards any user(s) to join the Org identified
+	// RetrieveOrgInvitesByOrg retrieves a list of invites towards any user(s) to join the Org identified
 	// by its ID.
-	RetrieveOrgInvitesByOrgID(ctx context.Context, orgID string, pm PageMetadataInvites) (OrgInvitesPage, error)
+	RetrieveOrgInvitesByOrg(ctx context.Context, orgID string, pm PageMetadataInvites) (OrgInvitesPage, error)
 
 	// UpdateOrgInviteState updates the state of a specific Invite denoted by its ID.
 	UpdateOrgInviteState(ctx context.Context, inviteID, state string) error
@@ -295,7 +295,7 @@ func (svc service) ListOrgInvitesByOrg(ctx context.Context, token, orgID string,
 		return OrgInvitesPage{}, err
 	}
 
-	invitesPage, err := svc.invites.RetrieveOrgInvitesByOrgID(ctx, orgID, pm)
+	invitesPage, err := svc.invites.RetrieveOrgInvitesByOrg(ctx, orgID, pm)
 	if err != nil {
 		return OrgInvitesPage{}, err
 	}
@@ -320,7 +320,7 @@ func (svc service) ListOrgInvitesByUser(ctx context.Context, token, userType, us
 		}
 	}
 
-	invitesPage, err := svc.invites.RetrieveOrgInvitesByUserID(ctx, userType, userID, pm)
+	invitesPage, err := svc.invites.RetrieveOrgInvitesByUser(ctx, userType, userID, pm)
 	if err != nil {
 		return OrgInvitesPage{}, err
 	}

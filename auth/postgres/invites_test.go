@@ -427,7 +427,7 @@ func TestRetrieveByUserID(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		invPage, err := repoInvites.RetrieveOrgInvitesByUserID(context.Background(), tc.userType, tc.userID, tc.pm)
+		invPage, err := repoInvites.RetrieveOrgInvitesByUser(context.Background(), tc.userType, tc.userID, tc.pm)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s, got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.size, len(invPage.Invites), fmt.Sprintf("%s: expected size %d got %d\n", tc.desc, tc.size, len(invPage.Invites)))
 	}
