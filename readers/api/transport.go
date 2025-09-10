@@ -352,7 +352,6 @@ func isAdmin(ctx context.Context, token string) error {
 }
 
 func BuildJSONPageMetadata(r *http.Request) (readers.JSONMetadata, error) {
-
 	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
 	if err != nil {
 		return readers.JSONMetadata{}, err
