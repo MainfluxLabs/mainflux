@@ -37,25 +37,25 @@ type MessageRepository interface {
 	// ListJSONMessages retrives the json messages with given filters.
 	ListJSONMessages(rpm JSONMetadata) (JSONMessagesPage, error)
 
-	// ListJSONMessages retrives the senml messages with given filters.
+	// ListSenMLMessages retrives the senml messages with given filters.
 	ListSenMLMessages(rpm SenMLMetadata) (SenMLMessagesPage, error)
 
 	// BackupJSONMessages backups the json messages with given filters.
 	BackupJSONMessages(rpm JSONMetadata) (JSONMessagesPage, error)
 
-	// BackupJSONMessages backups the senml messages with given filters.
+	// BackupSenMLMessages backups the senml messages with given filters.
 	BackupSenMLMessages(rpm SenMLMetadata) (SenMLMessagesPage, error)
 
 	// RestoreJSONMessages backups the json messages with given filters.
 	RestoreJSONMessages(ctx context.Context, messages ...Message) error
 
-	// RestoreJSONMessages backups the senml messages with given filters.
+	// RestoreSenMLMessages backups the senml messages with given filters.
 	RestoreSenMLMessages(ctx context.Context, messages ...Message) error
 
-	// RestoreJSONMessages deletes the json messages with given filters.
+	// DeleteJSONMessages deletes the json messages with given filters.
 	DeleteJSONMessages(ctx context.Context, rpm JSONMetadata) error
 
-	// RestoreJSONMessages deletes the json messages with given filters.
+	// DeleteSenMLMessages deletes the json messages with given filters.
 	DeleteSenMLMessages(ctx context.Context, rpm SenMLMetadata) error
 }
 
