@@ -33,12 +33,12 @@ func (irm *invitesRepositoryMock) SaveOrgInvite(ctx context.Context, invites ...
 			return dbutil.ErrConflict
 		}
 
-		for _, iInv := range irm.orgInvites {
-			if iInv.InviteeID == invite.InviteeID &&
-				iInv.OrgID == invite.OrgID &&
-				iInv.InviterID == invite.InviterID &&
-				iInv.State == "pending" &&
-				iInv.ExpiresAt.After(time.Now()) {
+		for _, existingInvite := range irm.orgInvites {
+			if existingInvite.InviteeID == invite.InviteeID &&
+				existingInvite.OrgID == invite.OrgID &&
+				existingInvite.InviterID == invite.InviterID &&
+				existingInvite.State == "pending" &&
+				existingInvite.ExpiresAt.After(time.Now()) {
 				return dbutil.ErrConflict
 			}
 		}

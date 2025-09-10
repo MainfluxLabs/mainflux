@@ -33,10 +33,10 @@ func (irm *platformInvitesRepositoryMock) SavePlatformInvite(ctx context.Context
 			return dbutil.ErrConflict
 		}
 
-		for _, iInv := range irm.platformInvites {
-			if iInv.InviteeEmail == invite.InviteeEmail &&
-				iInv.State == "pending" &&
-				iInv.ExpiresAt.After(time.Now()) {
+		for _, existingInvite := range irm.platformInvites {
+			if existingInvite.InviteeEmail == invite.InviteeEmail &&
+				existingInvite.State == "pending" &&
+				existingInvite.ExpiresAt.After(time.Now()) {
 				return dbutil.ErrConflict
 			}
 		}
