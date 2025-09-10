@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	inviteResponseActionKey = "action"
-	stateKey                = "state"
+	responseActionKey = "action"
+	stateKey          = "state"
 )
 
 func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
@@ -101,7 +101,7 @@ func decodeRespondOrgInviteRequest(_ context.Context, r *http.Request) (any, err
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
-	action := bone.GetValue(r, inviteResponseActionKey)
+	action := bone.GetValue(r, responseActionKey)
 	switch action {
 	case "accept":
 		req.accepted = true
