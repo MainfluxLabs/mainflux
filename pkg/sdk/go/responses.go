@@ -26,10 +26,6 @@ type createGroupsRes struct {
 	Groups []Group `json:"groups"`
 }
 
-type createWebhooksRes struct {
-	Webhooks []Webhook `json:"webhooks"`
-}
-
 type pageRes struct {
 	Total  uint64 `json:"total"`
 	Offset uint64 `json:"offset"`
@@ -82,10 +78,6 @@ type OrgMembershipsPage struct {
 type UsersPage struct {
 	Users []User `json:"users"`
 	pageRes
-}
-
-type Webhooks struct {
-	Webhooks []Webhook `json:"webhooks"`
 }
 
 type KeyRes struct {
