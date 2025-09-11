@@ -107,7 +107,6 @@ func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgI
 		return OrgInvite{}, err
 	}
 
-	// Get userID of inviter
 	inviter, err := svc.identify(ctx, token)
 	if err != nil {
 		return OrgInvite{}, err
@@ -175,7 +174,6 @@ func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgI
 }
 
 func (svc service) RevokeOrgInvite(ctx context.Context, token, inviteID string) error {
-	// Identify User attempting to revoke invite
 	user, err := svc.identify(ctx, token)
 	if err != nil {
 		return err
@@ -212,9 +210,6 @@ func (svc service) ViewOrgInvite(ctx context.Context, token, inviteID string) (O
 		return OrgInvite{}, err
 	}
 
-	// A specific Invite can only be retrieved by the platform Root Admin, the Invitee towards who
-	// the Invite is directed, or any person with admin (or higher) rights in the Org to which
-	// the invite belongs
 	if err := svc.isAdmin(ctx, token); err == nil {
 		return invite, nil
 	}
@@ -241,7 +236,6 @@ func (svc service) RespondOrgInvite(ctx context.Context, token, inviteID string,
 		return err
 	}
 
-	// Obtain detailed information about the Invite
 	invite, err := svc.invites.RetrieveOrgInviteByID(ctx, inviteID)
 	if err != nil {
 		return err
