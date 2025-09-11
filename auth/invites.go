@@ -113,7 +113,7 @@ func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgI
 		return OrgInvite{}, err
 	}
 
-	org, err := svc.ViewOrg(ctx, token, orgID)
+	org, err := svc.orgs.RetrieveByID(ctx, orgID)
 	if err != nil {
 		return OrgInvite{}, err
 	}
@@ -137,7 +137,7 @@ func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgI
 
 	inviteeID := users.Users[0].Id
 
-	_, err = svc.ViewOrgMembership(ctx, token, orgID, inviteeID)
+	_, err = svc.memberships.RetrieveRole(ctx, inviteeID, orgID)
 	if err != nil && !errors.Contains(err, dbutil.ErrNotFound) {
 		return OrgInvite{}, err
 	}
