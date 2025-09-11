@@ -170,7 +170,7 @@ func backupJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint
 		case jsonFormat:
 			data, err = apiutil.GenerateJSON(page.MessagesPage)
 		case csvFormat:
-			data, err = apiutil.GenerateCSV(page.MessagesPage, "json")
+			data, err = apiutil.GenerateCSVFromJSON(page.MessagesPage)
 		default:
 			return nil, errors.Wrap(errors.ErrBackupMessages, err)
 		}
@@ -210,7 +210,7 @@ func backupSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
 		case csvFormat:
-			if data, err = apiutil.GenerateCSV(page.MessagesPage, "senml"); err != nil {
+			if data, err = apiutil.GenerateCSVFromSenML(page.MessagesPage); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
 		default:
