@@ -112,7 +112,6 @@ func (jr *jsonRepository) readCount(rpm readers.JSONMetadata, params map[string]
 	}
 
 	return total, nil
-
 }
 
 func (jr *jsonRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, error) {
