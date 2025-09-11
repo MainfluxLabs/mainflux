@@ -89,7 +89,7 @@ type OrgInvitesRepository interface {
 	// RemoveOrgInvite removes a specific pending OrgInvite.
 	RemoveOrgInvite(ctx context.Context, inviteID string) error
 
-	// RetrieveOrgInviteByUserID retrieves a list of invites either directed towards a specific Invitee, or sent out by a
+	// RetrieveOrgInviteByUser retrieves a list of invites either directed towards a specific Invitee, or sent out by a
 	// specific Inviter, depending on the value of the `userType` argument, which must be either 'invitee' or 'inviter'.
 	RetrieveOrgInvitesByUser(ctx context.Context, userType, userID string, pm PageMetadataInvites) (OrgInvitesPage, error)
 
