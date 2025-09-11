@@ -188,6 +188,20 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE group_memberships RENAME CONSTRAINT group_policies_group_id_fkey TO group_memberships_group_id_fkey`,
 				},
 			},
+			{
+				Id: "things_9",
+				Up: []string{
+					`CREATE TABLE IF NOT EXISTS key_external (
+					    thing_id UUID NOT NULL,
+						key      VARCHAR NOT NULL,
+						PRIMARY KEY (thing_id, key),
+						FOREIGN KEY (thing_id) REFERENCES things (id) ON DELETE CASCADE ON UPDATE CASCADE
+					)`,
+				},
+				Down: []string{
+					`DROP TABLE IF EXISTS key_external`,
+				},
+			},
 		},
 	}
 
