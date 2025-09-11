@@ -170,12 +170,24 @@ func (tr thingRepository) RetrieveByID(ctx context.Context, id string) (things.T
 
 func (tr thingRepository) RetrieveByKey(ctx context.Context, key string) (string, error) {
 	q := `SELECT id FROM things WHERE key = $1;`
+	q_external := `SELECT thing_id FROM key_external WHERE key = $1;`
 
 	var id string
 	if err := tr.db.QueryRowxContext(ctx, q, key).Scan(&id); err != nil {
 		if err == sql.ErrNoRows {
-			return "", errors.Wrap(dbutil.ErrNotFound, err)
+			// Key doesn't correspond to an existing "Thing Key", attempting to match it against
+			// the database of external thing keys:
+			if err := tr.db.QueryRowxContext(ctx, q_external, key).Scan(&id); err != nil {
+				if err == sql.ErrNoRows {
+					return "", errors.Wrap(dbutil.ErrNotFound, err)
+				}
+
+				return "", errors.Wrap(dbutil.ErrRetrieveEntity, err)
+			}
+
+			return id, nil
 		}
+
 		return "", errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
