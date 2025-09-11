@@ -200,12 +200,12 @@ func (res platformInviteRes) Empty() bool {
 	return false
 }
 
-type createdPlatformInviteRes struct {
+type createPlatformInviteRes struct {
 	ID      string
 	created bool
 }
 
-func (res createdPlatformInviteRes) Code() int {
+func (res createPlatformInviteRes) Code() int {
 	if res.created {
 		return http.StatusCreated
 	}
@@ -213,7 +213,7 @@ func (res createdPlatformInviteRes) Code() int {
 	return http.StatusOK
 }
 
-func (res createdPlatformInviteRes) Headers() map[string]string {
+func (res createPlatformInviteRes) Headers() map[string]string {
 	if res.created {
 		return map[string]string{
 			"Location": fmt.Sprintf("/invites/%s", res.ID),
@@ -223,7 +223,7 @@ func (res createdPlatformInviteRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res createdPlatformInviteRes) Empty() bool {
+func (res createPlatformInviteRes) Empty() bool {
 	return true
 }
 

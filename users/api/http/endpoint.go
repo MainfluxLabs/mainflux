@@ -366,7 +366,7 @@ func createPlatformInviteEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return createdPlatformInviteRes{
+		return createPlatformInviteRes{
 			ID:      invite.ID,
 			created: true,
 		}, nil
