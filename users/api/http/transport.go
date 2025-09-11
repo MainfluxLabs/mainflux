@@ -371,7 +371,7 @@ func decodeVerifyEmail(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodePlatformInviteRegister(_ context.Context, r *http.Request) (any, error) {
-	req := platformInviteRegisterUserReq{
+	req := registerByInviteReq{
 		inviteID: bone.GetValue(r, apiutil.IDKey),
 	}
 

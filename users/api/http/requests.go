@@ -44,12 +44,12 @@ func (req selfRegisterUserReq) validate() error {
 	return req.User.Validate(userPasswordRegex)
 }
 
-type platformInviteRegisterUserReq struct {
+type registerByInviteReq struct {
 	User     users.User `json:"user"`
 	inviteID string
 }
 
-func (req platformInviteRegisterUserReq) validate() error {
+func (req registerByInviteReq) validate() error {
 	if req.inviteID == "" {
 		return apiutil.ErrMissingInviteID
 	}
