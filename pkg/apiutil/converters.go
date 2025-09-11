@@ -41,27 +41,35 @@ const (
 	jsonTable = "json"
 )
 
-func GenerateCSV(page readers.MessagesPage, table string) ([]byte, error) {
+func GenerateCSVFromSenML(page readers.MessagesPage) ([]byte, error) {
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
 
 	header := senmlHeader
-	if table == jsonTable {
-		header = jsonHeader
-	}
-
 	if err := writer.Write(header); err != nil {
 		return nil, err
 	}
 
-	switch table {
-	case jsonTable:
-		if err := convertJSONMessagesToCSV(page, writer); err != nil {
-			return nil, err
-		}
-	default:
-		if err := convertSenMLMessagesToCSV(page, writer); err != nil {
-			return nil, err
+	for _, msg := range page.Messages {
+		if m, ok := msg.(senml.Message); ok {
+			row := []string{
+				m.Subtopic,
+				m.Publisher,
+				m.Protocol,
+				m.Name,
+				m.Unit,
+				getValue(m.Value, ""),
+				getValue(m.StringValue, ""),
+				getValue(m.BoolValue, ""),
+				getValue(m.DataValue, ""),
+				getValue(m.Sum, ""),
+				fmt.Sprintf("%v", m.Time),
+				fmt.Sprintf("%v", m.UpdateTime),
+			}
+
+			if err := writer.Write(row); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -73,7 +81,16 @@ func GenerateCSV(page readers.MessagesPage, table string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func convertJSONMessagesToCSV(page readers.MessagesPage, writer *csv.Writer) error {
+func GenerateCSVFromJSON(page readers.MessagesPage) ([]byte, error) {
+	var buf bytes.Buffer
+	writer := csv.NewWriter(&buf)
+
+	header := jsonHeader
+
+	if err := writer.Write(header); err != nil {
+		return nil, err
+	}
+
 	for _, msg := range page.Messages {
 		if m, ok := msg.(map[string]interface{}); ok {
 			created := ""
@@ -101,38 +118,18 @@ func convertJSONMessagesToCSV(page readers.MessagesPage, writer *csv.Writer) err
 			}
 
 			if err := writer.Write(row); err != nil {
-				return err
+				return nil, err
 			}
 		}
 	}
 
-	return nil
-}
-
-func convertSenMLMessagesToCSV(page readers.MessagesPage, writer *csv.Writer) error {
-	for _, msg := range page.Messages {
-		if m, ok := msg.(senml.Message); ok {
-			row := []string{
-				m.Subtopic,
-				m.Publisher,
-				m.Protocol,
-				m.Name,
-				m.Unit,
-				getValue(m.Value, ""),
-				getValue(m.StringValue, ""),
-				getValue(m.BoolValue, ""),
-				getValue(m.DataValue, ""),
-				getValue(m.Sum, ""),
-				fmt.Sprintf("%v", m.Time),
-				fmt.Sprintf("%v", m.UpdateTime),
-			}
-
-			if err := writer.Write(row); err != nil {
-				return err
-			}
-		}
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		return nil, err
 	}
-	return nil
+
+	return buf.Bytes(), nil
+
 }
 
 func getStringValue(m map[string]interface{}, key string) string {
