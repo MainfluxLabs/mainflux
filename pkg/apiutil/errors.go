@@ -30,9 +30,6 @@ var (
 	// ErrMissingMemberID indicates missing member ID.
 	ErrMissingMemberID = errors.New("missing member id")
 
-	// ErrMissingWebhookID indicates missing webhook ID.
-	ErrMissingWebhookID = errors.New("missing webhook id")
-
 	// ErrMissingNotifierID indicates missing notifier ID.
 	ErrMissingNotifierID = errors.New("missing notifier id")
 

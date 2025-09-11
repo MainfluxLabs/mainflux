@@ -267,32 +267,6 @@ mainfluxlabs-cli org_memberships update '[{"member_id":"<member_id>","role":"<ne
 mainfluxlabs-cli org_memberships members <org_id> <user_token>
 ```
 
-### Webhooks
-#### Create Webhooks
-```bash
-mainfluxlabs-cli webhooks create '[{"name":"<webhook_name>","url":"<http://webhook-url.com>","headers":{"key":"value",...}}]' <thing_id> <user_token>
-```
-
-#### Get Webhook by ID
-```bash
-mainfluxlabs-cli webhooks get by-id <id> <user_token>
-```
-
-#### Get Webhooks by Group
-```bash
-mainfluxlabs-cli webhooks get by-group <group_id> <user_token>
-```
-
-#### Update Webhook
-```bash
-mainfluxlabs-cli webhooks update '{"name":"<new_name>","url":"<http://webhook-url.com>"}' <webhook_id> <user_token>
-```
-
-#### Delete Webhooks
-```bash
-mainfluxlabs-cli webhooks delete '["<webhook_id>"]' <user_token>
-```
-
 ### Keys management
 #### Issue a new Key
 ```bash

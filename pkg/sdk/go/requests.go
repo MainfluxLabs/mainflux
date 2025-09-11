@@ -24,11 +24,6 @@ type deleteGroupsReq struct {
 	GroupIDs []string `json:"group_ids"`
 }
 
-// deleteWebhooksReq contains IDs of webhooks to be deleted
-type deleteWebhooksReq struct {
-	WebhookIDs []string `json:"webhook_ids"`
-}
-
 // orgMembershipsReq contains org memberships to be created or updated
 type orgMembershipsReq struct {
 	OrgMemberships []OrgMembership `json:"org_memberships"`

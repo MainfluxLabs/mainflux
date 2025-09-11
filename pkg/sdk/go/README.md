@@ -166,21 +166,6 @@ func (sdk mfSDK) UpdateOrgMemberships(oms []OrgMembership, orgID, token string) 
 func (sdk mfSDK) ListOrgMemberships(orgID string, meta PageMetadata, token string) (OrgMembershipsPage, error)
     ListOrgMemberships - lists memberships created for a specified org
 	
-func (sdk mfSDK) CreateWebhooks(whs []Webhook, groupID, token string) ([]Webhook, error)
-    CreateWebhooks - creates new webhooks
-	
-func (sdk mfSDK) ListWebhooksByGroup(groupID, token string) (Webhooks, error)
-    ListWebhooksByGroup - lists webhooks by group
-	
-func (sdk mfSDK) Webhook(webhookID, token string) (Webhook, error)
-    Webhook - returns webhook by id
-	
-func (sdk mfSDK) UpdateWebhook(wh Webhook, token string) error
-    UpdateWebhook - updates existing webhook
-	
-func (sdk mfSDK) DeleteWebhooks(ids []string, groupID, token string) error
-    DeleteWebhooks - removes existing webhooks
-    
 func (sdk mfSDK) SendMessage(profileID, msg, token string) error
     SendMessage - send message on Mainflux Profile
 
