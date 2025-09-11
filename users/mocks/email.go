@@ -22,3 +22,7 @@ func (e *emailerMock) SendPasswordReset([]string, string, string) error {
 func (e *emailerMock) SendEmailVerification(To []string, redirectPath, token string) error {
 	return nil
 }
+
+func (e *emailerMock) SendPlatformInvite(to []string, inv users.PlatformInvite, redirectPath string) error {
+	return nil
+}

@@ -346,6 +346,171 @@ paths:
           description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /orgs/{orgId}/invites:
+    post:
+      summary: Creates new organization Invite.
+      description: |
+        Creates a new Invite on behalf of the currently authenticated User, towards the user identified by the supplied
+        e-mail, to join the specified organization with the specified role.
+      tags:
+        - org invites
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      requestBody:
+        $ref: "#/components/requestBodies/InviteReq"
+      responses:
+        '201':
+          description: Invite created.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    get:
+      summary: List all organization Invites.
+      description: |
+        Retrieve a list of all existing Invites for any user to join the Organization identified by its ID.
+      tags:
+        - org invites
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      responses:
+        '200':
+          $ref: "#/components/responses/InvitesPageRes"
+        '403':
+          description: Failed to perform authorization over the entity
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /invites/{inviteId}:
+    get:
+      summary: Retrieve a specific Org Invite.
+      description: |
+        Retrieve detailed information about a specific organization invite denoted by its ID.
+      tags:
+        - org invites
+      parameters:
+          - $ref: "#/components/parameters/InviteId"
+      responses:
+        '200':
+          $ref: "#/components/responses/InviteRes"
+        '404':
+          description: Failed due to non existing Invite.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    delete:
+      summary: Revoke a specific Org Invite.
+      description: |
+        Revoke a specific pending Invite denoted by its ID. An Invite can only be revoked by its original
+        Inviter, i.e. the user who sent it.
+      tags:
+        - org invites
+      parameters:
+        - $ref: "#/components/parameters/InviteId"
+      responses:
+        '204':
+          description: Invite revoked.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Failed due to non existing Invite.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /invites/{inviteId}/accept:
+    post:
+      summary: Accept an Invite.
+      description: |
+        Accept a specific Invite denoted by its ID. An Invite can only be responded to by the invitee,
+        i.e. the user being invited.
+      tags:
+        - org invites
+      parameters:
+        - $ref: "#/components/parameters/InviteId"
+      responses:
+        '201':
+          description: Invite accepted and invitee added as a member of the organization.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Failed due to non existing Invite.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /invites/{inviteId}/decline:
+    post:
+      summary: Decline an Organization Invite.
+      description: |
+        Decline a specific organization Invite denoted by its ID. An Invite can only be responded to by the invitee,
+        i.e. the user being invited.
+      tags:
+        - org invites
+      parameters:
+        - $ref: "#/components/parameters/InviteId"
+      responses:
+        '204':
+          description: Invite declined and removed from the database.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Failed due to non existing Invite.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /users/{userId}/invites/received:
+    get:
+      summary: Retrieve pending Invites sent to specific user.
+      description: |
+        Retrieve a list of pending Invites send to a specific user, i.e. invitee, denoted by their
+        user ID.
+      tags:
+        - org invites
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        '200':
+          $ref: "#/components/responses/InvitesPageRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /users/{userId}/invites/sent:
+    get:
+      summary: Retrieve pending Invites sent by a specific user.
+      description: |
+        Retrieve a list of pending Invites send by a specific user, i.e. inviter, denoted by their
+        user ID.
+      tags:
+        - org invites
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        '200':
+          $ref: "#/components/responses/InvitesPageRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
   /backup:
     get:
       summary: Retrieves backup of orgs service.
@@ -698,6 +863,74 @@ components:
         - org_memberships
         - org_groups
 
+    InviteSchema:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Invite's unique identifier
+        invitee_id:
+          type: string
+          format: uuid
+          description: The receiving Invitee's unique user identifier
+        inviter_id:
+          type: string
+          format: uuid
+          description: The sending Inviter's unique user identifier
+        org_id:
+          type: string
+          format: uuid
+          description: The organization's unique identifier
+        invitee_role:
+          type: string
+          description: The invitee's proposed role within the organization.
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-05-16 16:05:01"
+          description: Time at which the Invite was created.
+        expires_at:
+          type: string
+          format: date-time
+          example: "2024-05-23 16:05:01"
+          description: Time at which the Invite expires.
+        state:
+          type: string
+          enum: [pending, expired, revoked, accepted, declined]
+
+    InvitesPageSchema:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of Invites.
+        offset:
+          type: integer
+          description: Offset of the page.
+        limit:
+          type: integer
+          description: Limit of the page.
+        invites:
+          type: array
+          items:
+            $ref: "#/components/schemas/InviteSchema"
+
+    CreateInviteSchema:
+      type: object
+      properties:
+        redirect_path:
+          type: string
+          example: "/invite-view"
+          description: The path portion of the Invite view URL that the end user receives in the Invite notification.
+        email:
+          type: string
+          example: "user@test.com"
+        role:
+          type: string
+          example: "editor"
+          description: The user's proposed role in the organization.
+        
   parameters:
     ApiKeyId:
       name: id
@@ -710,6 +943,22 @@ components:
     OrgId:
       name: orgId
       description: Organization ID.
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+    InviteId:
+      name: inviteId
+      description: Invite ID.
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+    UserId:
+      name: userId
+      description: User ID.
       in: path
       schema:
         type: string
@@ -831,6 +1080,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/BackupAndResponseSchema"
+    InviteReq:
+      description: JSON-formatted document describing a request to create a new Invite.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CreateInviteSchema"
   responses:
     ServiceError:
       description: Unexpected server-side error occurred.
@@ -870,6 +1126,18 @@ components:
         application/octet-stream:
           schema:
             $ref: "#/components/schemas/BackupAndRestoreOrgMembershipsSchema"
+    InvitesPageRes:
+      description: Data retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/InvitesPageSchema"
+    InviteRes:
+      description: Data retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/InviteSchema"
     HealthRes:
       description: Service Health Check.
       content:

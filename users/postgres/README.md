@@ -19,4 +19,14 @@ CREATE TABLE IF NOT EXISTS verifications (
     created_at TIMESTAMPTZ NOT NULL,
     expires_at TIMESTAMPTZ NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS platform_invites (
+    id            UUID NOT NULL,
+    invitee_email VARCHAR NOT NULL,
+    created_at    TIMESTAMPTZ,
+    expires_at    TIMESTAMPTZ,
+    state         VARCHAR DEFAULT 'pending' NOT NULL
+);
+
+CREATE UNIQUE INDEX unique_invitee_email_pending on platform_invites (invitee_email) WHERE state='pending';
 ```

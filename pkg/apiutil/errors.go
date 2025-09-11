@@ -54,6 +54,9 @@ var (
 	// ErrMissingKeyID indicates missing ID of key.
 	ErrMissingKeyID = errors.New("missing key ID")
 
+	// ErrMissingInviteID incidates missing ID of Invite.
+	ErrMissingInviteID = errors.New("missing invite ID")
+
 	// ErrInvalidSubject indicates invalid subject.
 	ErrInvalidSubject = errors.New("invalid subject")
 
@@ -158,4 +161,13 @@ var (
 
 	// ErrInvalidOperator indicates an invalid logical operator
 	ErrInvalidOperator = errors.New("missing or invalid logical operator")
+
+	// ErrInviteExpired indicates that an invite has expired
+	ErrInviteExpired = errors.New("invite expired")
+
+	// ErrInviteExpired indicates that an invite is in an invalid state for a certain action to be performed on it
+	ErrInvalidInviteState = errors.New("invalid invite state")
+
+	// ErrUserAlreadyInvited indicates that the invitee already has a pending invitation to join the same Org
+	ErrUserAlreadyInvited = errors.New("user already has pending invite to org")
 )
