@@ -7,7 +7,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -231,14 +230,6 @@ func (svc service) isAdmin(ctx context.Context, token string) error {
 
 	if role != RoleAdmin && role != RoleRootAdmin {
 		return errors.ErrAuthorization
-	}
-
-	return nil
-}
-
-func ValidateRole(role string) error {
-	if role != Owner && role != Admin && role != Editor && role != Viewer {
-		return apiutil.ErrInvalidRole
 	}
 
 	return nil

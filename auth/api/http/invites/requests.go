@@ -35,7 +35,7 @@ func (req createOrgInviteReq) validate() error {
 		return apiutil.ErrMissingEmail
 	}
 
-	if err := auth.ValidateRole(req.Role); err != nil {
+	if err := validateRole(req.Role); err != nil {
 		return err
 	}
 
@@ -120,6 +120,14 @@ func (req listOrgInvitesByOrgReq) validate() error {
 
 	if err := apiutil.ValidatePageMetadata(req.pm.PageMetadata, maxLimitSize, maxNameSize); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func validateRole(role string) error {
+	if role != auth.Owner && role != auth.Admin && role != auth.Editor && role != auth.Viewer {
+		return apiutil.ErrInvalidRole
 	}
 
 	return nil
