@@ -26,7 +26,7 @@ func selfRegistrationEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
-func platformInviteRegistrationEndpoint(svc users.Service) endpoint.Endpoint {
+func inviteRegistrationEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(registerByInviteReq)
 		if err := req.validate(); err != nil {

@@ -62,7 +62,7 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 	))
 
 	mux.Post("/register/invite/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "register_by_invite")(platformInviteRegistrationEndpoint(svc)),
+		kitot.TraceServer(tracer, "register_by_invite")(inviteRegistrationEndpoint(svc)),
 		decodePlatformInviteRegister,
 		encodeResponse,
 		opts...,
