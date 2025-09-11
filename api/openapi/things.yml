@@ -1432,7 +1432,13 @@ components:
             type: string
           example:
             content_type: "application/json"
-            webhook_id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+            write: true
+            transformer:
+              data_filters: [ "temperature", "humidity" ]
+              data_field: "payload.data"
+              time_field: "timestamp"
+              time_format: "unix"
+              time_location: "UTC"
         metadata:
           type: object
           example: { "key": "value" }
