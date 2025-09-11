@@ -134,8 +134,8 @@ func (ir invitesRepository) RemoveOrgInvite(ctx context.Context, inviteID string
 func (ir invitesRepository) UpdateOrgInviteState(ctx context.Context, inviteID, state string) error {
 	query := `
 		UPDATE org_invites
-		SET state=:state
-		WHERE id=:inviteID
+		SET state = :state
+		WHERE id = :inviteID
 	`
 	_, err := ir.db.NamedExecContext(ctx, query, map[string]any{
 		"inviteID": inviteID,
