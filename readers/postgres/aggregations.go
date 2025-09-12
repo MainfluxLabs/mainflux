@@ -56,8 +56,24 @@ func newAggregationService(db *sqlx.DB) *aggregationService {
 }
 
 func (as *aggregationService) readAggregatedJSONMessages(rpm readers.JSONMetadata) ([]readers.Message, error) {
-	params := as.buildJSONQueryParams(rpm)
-	config := as.buildJSONQueryConfig(rpm)
+	params := map[string]interface{}{
+		"limit":     rpm.Limit,
+		"offset":    rpm.Offset,
+		"subtopic":  rpm.Subtopic,
+		"publisher": rpm.Publisher,
+		"protocol":  rpm.Protocol,
+		"from":      rpm.From,
+		"to":        rpm.To,
+	}
+
+	config := QueryConfig{
+		Table:       jsonTable,
+		TimeColumn:  jsonOrder,
+		AggField:    rpm.AggField,
+		AggInterval: rpm.AggInterval,
+		AggType:     rpm.AggType,
+		Limit:       rpm.Limit,
+	}
 
 	conditions := as.getJSONConditions(rpm)
 	if len(conditions) > 0 {
@@ -84,8 +100,29 @@ func (as *aggregationService) readAggregatedJSONMessages(rpm readers.JSONMetadat
 }
 
 func (as *aggregationService) readAggregatedSenMLMessages(rpm readers.SenMLMetadata) ([]readers.Message, error) {
-	params := as.buildSenMLQueryParams(rpm)
-	config := as.buildSenMLQueryConfig(rpm)
+	params := map[string]interface{}{
+		"limit":        rpm.Limit,
+		"offset":       rpm.Offset,
+		"subtopic":     rpm.Subtopic,
+		"publisher":    rpm.Publisher,
+		"name":         rpm.Name,
+		"protocol":     rpm.Protocol,
+		"value":        rpm.Value,
+		"bool_value":   rpm.BoolValue,
+		"string_value": rpm.StringValue,
+		"data_value":   rpm.DataValue,
+		"from":         rpm.From,
+		"to":           rpm.To,
+	}
+
+	config := QueryConfig{
+		Table:       senmlTable,
+		TimeColumn:  senmlOrder,
+		AggField:    rpm.AggField,
+		AggInterval: rpm.AggInterval,
+		AggType:     rpm.AggType,
+		Limit:       rpm.Limit,
+	}
 
 	conditions := as.getSenMLConditions(rpm)
 	if rpm.AggField != "" {
@@ -117,7 +154,16 @@ func (as *aggregationService) readAggregatedSenMLMessages(rpm readers.SenMLMetad
 }
 
 func (as *aggregationService) readAggregatedJSONCount(rpm readers.JSONMetadata) (uint64, error) {
-	params := as.buildJSONQueryParams(rpm)
+	params := map[string]interface{}{
+		"limit":     rpm.Limit,
+		"offset":    rpm.Offset,
+		"subtopic":  rpm.Subtopic,
+		"publisher": rpm.Publisher,
+		"protocol":  rpm.Protocol,
+		"from":      rpm.From,
+		"to":        rpm.To,
+	}
+
 	conditions := as.getJSONConditions(rpm)
 
 	condition := ""
@@ -151,7 +197,21 @@ func (as *aggregationService) readAggregatedJSONCount(rpm readers.JSONMetadata) 
 }
 
 func (as *aggregationService) readAggregatedSenMLCount(rpm readers.SenMLMetadata) (uint64, error) {
-	params := as.buildSenMLQueryParams(rpm)
+	params := map[string]interface{}{
+		"limit":        rpm.Limit,
+		"offset":       rpm.Offset,
+		"subtopic":     rpm.Subtopic,
+		"publisher":    rpm.Publisher,
+		"name":         rpm.Name,
+		"protocol":     rpm.Protocol,
+		"value":        rpm.Value,
+		"bool_value":   rpm.BoolValue,
+		"string_value": rpm.StringValue,
+		"data_value":   rpm.DataValue,
+		"from":         rpm.From,
+		"to":           rpm.To,
+	}
+
 	conditions := as.getSenMLConditions(rpm)
 
 	if rpm.AggField != "" {
@@ -505,57 +565,6 @@ func (as *aggregationService) executeQuery(query string, params map[string]inter
 		return nil, errors.Wrap(readers.ErrReadMessages, err)
 	}
 	return rows, nil
-}
-
-func (as *aggregationService) buildJSONQueryParams(rpm readers.JSONMetadata) map[string]interface{} {
-	return map[string]interface{}{
-		"limit":     rpm.Limit,
-		"offset":    rpm.Offset,
-		"subtopic":  rpm.Subtopic,
-		"publisher": rpm.Publisher,
-		"protocol":  rpm.Protocol,
-		"from":      rpm.From,
-		"to":        rpm.To,
-	}
-}
-
-func (as *aggregationService) buildSenMLQueryParams(rpm readers.SenMLMetadata) map[string]interface{} {
-	return map[string]interface{}{
-		"limit":        rpm.Limit,
-		"offset":       rpm.Offset,
-		"subtopic":     rpm.Subtopic,
-		"publisher":    rpm.Publisher,
-		"name":         rpm.Name,
-		"protocol":     rpm.Protocol,
-		"value":        rpm.Value,
-		"bool_value":   rpm.BoolValue,
-		"string_value": rpm.StringValue,
-		"data_value":   rpm.DataValue,
-		"from":         rpm.From,
-		"to":           rpm.To,
-	}
-}
-
-func (as *aggregationService) buildJSONQueryConfig(rpm readers.JSONMetadata) QueryConfig {
-	return QueryConfig{
-		Table:       jsonTable,
-		TimeColumn:  jsonOrder,
-		AggField:    rpm.AggField,
-		AggInterval: rpm.AggInterval,
-		AggType:     rpm.AggType,
-		Limit:       rpm.Limit,
-	}
-}
-
-func (as *aggregationService) buildSenMLQueryConfig(rpm readers.SenMLMetadata) QueryConfig {
-	return QueryConfig{
-		Table:       senmlTable,
-		TimeColumn:  senmlOrder,
-		AggField:    rpm.AggField,
-		AggInterval: rpm.AggInterval,
-		AggType:     rpm.AggType,
-		Limit:       rpm.Limit,
-	}
 }
 
 func (as *aggregationService) getJSONConditions(rpm readers.JSONMetadata) []string {
