@@ -19,6 +19,10 @@ import (
 const (
 	timeIntervals        = "ti"
 	intervalAggregations = "ia"
+	jsonTable            = "json"
+	jsonOrder            = "created"
+	senmlTable           = "senml"
+	senmlOrder           = "time"
 )
 
 type QueryConfig struct {
@@ -52,50 +56,16 @@ func newAggregationService(db *sqlx.DB) *aggregationService {
 }
 
 func (as *aggregationService) readAggregatedJSONMessages(rpm readers.JSONMetadata) ([]readers.Message, error) {
-	adapter := NewJSONAdapter(rpm)
-	return as.readAggregatedMessages(adapter)
-}
+	params := as.buildJSONQueryParams(rpm)
+	config := as.buildJSONQueryConfig(rpm)
 
-func (as *aggregationService) readAggregatedSenMLMessages(rpm readers.SenMLMetadata) ([]readers.Message, error) {
-	adapter := NewSenMLAdapter(rpm)
-	return as.readAggregatedMessages(adapter)
-}
-
-func (as *aggregationService) readAggregatedJSONCount(rpm readers.JSONMetadata) (uint64, error) {
-	adapter := NewJSONAdapter(rpm)
-	return as.readAggregatedCount(adapter)
-}
-
-func (as *aggregationService) readAggregatedSenMLCount(rpm readers.SenMLMetadata) (uint64, error) {
-	adapter := NewSenMLAdapter(rpm)
-	return as.readAggregatedCount(adapter)
-}
-
-func (as *aggregationService) readAggregatedMessages(adapter PageMetadataAdapter) ([]readers.Message, error) {
-	params := adapter.GetQueryParams()
-
-	config := QueryConfig{
-		Table:       adapter.GetTable(),
-		TimeColumn:  adapter.GetTimeColumn(),
-		AggField:    adapter.GetAggField(),
-		AggInterval: adapter.GetAggInterval(),
-		AggType:     adapter.GetAggType(),
-		Limit:       adapter.GetLimit(),
-	}
-
-	conditions := adapter.GetConditions()
-
-	if adapter.GetTable() == senmlTable && adapter.GetAggField() != "" {
-		conditions = append(conditions, "name = :agg_field")
-		params["agg_field"] = adapter.GetAggField()
-	}
-
+	conditions := as.getJSONConditions(rpm)
 	if len(conditions) > 0 {
 		config.Condition = "WHERE " + strings.Join(conditions, " AND ")
 		config.ConditionForJoin = "AND " + strings.Join(conditions, " AND ")
 	}
 
-	strategy := as.getAggregateStrategy(adapter.GetAggType())
+	strategy := as.getAggregateStrategy(rpm.AggType)
 	if strategy == nil {
 		return []readers.Message{}, nil
 	}
@@ -105,18 +75,118 @@ func (as *aggregationService) readAggregatedMessages(adapter PageMetadataAdapter
 	if err != nil {
 		return nil, err
 	}
-
 	if rows == nil {
 		return []readers.Message{}, nil
 	}
 	defer rows.Close()
 
-	messages, err := as.scanAggregatedMessages(rows, adapter.GetTable())
+	return as.scanAggregatedMessages(rows, jsonTable)
+}
+
+func (as *aggregationService) readAggregatedSenMLMessages(rpm readers.SenMLMetadata) ([]readers.Message, error) {
+	params := as.buildSenMLQueryParams(rpm)
+	config := as.buildSenMLQueryConfig(rpm)
+
+	conditions := as.getSenMLConditions(rpm)
+	if rpm.AggField != "" {
+		conditions = append(conditions, "name = :agg_field")
+		params["agg_field"] = rpm.AggField
+	}
+
+	if len(conditions) > 0 {
+		config.Condition = "WHERE " + strings.Join(conditions, " AND ")
+		config.ConditionForJoin = "AND " + strings.Join(conditions, " AND ")
+	}
+
+	strategy := as.getAggregateStrategy(rpm.AggType)
+	if strategy == nil {
+		return []readers.Message{}, nil
+	}
+
+	query := strategy.BuildQuery(config)
+	rows, err := as.executeQuery(query, params)
 	if err != nil {
 		return nil, err
 	}
+	if rows == nil {
+		return []readers.Message{}, nil
+	}
+	defer rows.Close()
 
-	return messages, nil
+	return as.scanAggregatedMessages(rows, senmlTable)
+}
+
+func (as *aggregationService) readAggregatedJSONCount(rpm readers.JSONMetadata) (uint64, error) {
+	params := as.buildJSONQueryParams(rpm)
+	conditions := as.getJSONConditions(rpm)
+
+	condition := ""
+	if len(conditions) > 0 {
+		condition = "WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	query := fmt.Sprintf(`
+        SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000)))
+        FROM %s
+        %s`,
+		rpm.AggInterval, jsonOrder, jsonTable, condition)
+
+	rows, err := as.db.NamedQuery(query, params)
+	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
+			return 0, nil
+		}
+		return 0, errors.Wrap(readers.ErrReadMessages, err)
+	}
+	defer rows.Close()
+
+	var total uint64
+	if rows.Next() {
+		if err := rows.Scan(&total); err != nil {
+			return 0, err
+		}
+	}
+
+	return total, nil
+}
+
+func (as *aggregationService) readAggregatedSenMLCount(rpm readers.SenMLMetadata) (uint64, error) {
+	params := as.buildSenMLQueryParams(rpm)
+	conditions := as.getSenMLConditions(rpm)
+
+	if rpm.AggField != "" {
+		conditions = append(conditions, "name = :agg_field")
+		params["agg_field"] = rpm.AggField
+	}
+
+	condition := ""
+	if len(conditions) > 0 {
+		condition = "WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	query := fmt.Sprintf(`
+        SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000)))
+        FROM %s
+        %s`,
+		rpm.AggInterval, senmlOrder, senmlTable, condition)
+
+	rows, err := as.db.NamedQuery(query, params)
+	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
+			return 0, nil
+		}
+		return 0, errors.Wrap(readers.ErrReadMessages, err)
+	}
+	defer rows.Close()
+
+	var total uint64
+	if rows.Next() {
+		if err := rows.Scan(&total); err != nil {
+			return 0, err
+		}
+	}
+
+	return total, nil
 }
 
 func (as aggregationService) getAggregateStrategy(aggType string) AggStrategy {
@@ -362,45 +432,6 @@ func buildValueCondition(config QueryConfig) string {
 	}
 }
 
-func (as *aggregationService) readAggregatedCount(rpm PageMetadataAdapter) (uint64, error) {
-	params := rpm.GetQueryParams()
-	conditions := rpm.GetConditions()
-
-	if rpm.GetTable() == senmlTable && rpm.GetAggField() != "" {
-		conditions = append(conditions, "name = :agg_field")
-		params["agg_field"] = rpm.GetAggField()
-	}
-
-	condition := ""
-	if len(conditions) > 0 {
-		condition = "WHERE " + strings.Join(conditions, " AND ")
-	}
-
-	query := fmt.Sprintf(`
-        SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000)))
-        FROM %s
-        %s`,
-		rpm.GetAggInterval(), rpm.GetTimeColumn(), rpm.GetTable(), condition)
-
-	rows, err := as.db.NamedQuery(query, params)
-	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
-			return 0, nil
-		}
-		return 0, errors.Wrap(readers.ErrReadMessages, err)
-	}
-	defer rows.Close()
-
-	var total uint64
-	if rows.Next() {
-		if err := rows.Scan(&total); err != nil {
-			return 0, err
-		}
-	}
-
-	return total, nil
-}
-
 func (as *aggregationService) scanAggregatedMessages(rows *sqlx.Rows, format string) ([]readers.Message, error) {
 	var messages []readers.Message
 
@@ -474,4 +505,132 @@ func (as *aggregationService) executeQuery(query string, params map[string]inter
 		return nil, errors.Wrap(readers.ErrReadMessages, err)
 	}
 	return rows, nil
+}
+
+func (as *aggregationService) buildJSONQueryParams(rpm readers.JSONMetadata) map[string]interface{} {
+	return map[string]interface{}{
+		"limit":     rpm.Limit,
+		"offset":    rpm.Offset,
+		"subtopic":  rpm.Subtopic,
+		"publisher": rpm.Publisher,
+		"protocol":  rpm.Protocol,
+		"from":      rpm.From,
+		"to":        rpm.To,
+	}
+}
+
+func (as *aggregationService) buildSenMLQueryParams(rpm readers.SenMLMetadata) map[string]interface{} {
+	return map[string]interface{}{
+		"limit":        rpm.Limit,
+		"offset":       rpm.Offset,
+		"subtopic":     rpm.Subtopic,
+		"publisher":    rpm.Publisher,
+		"name":         rpm.Name,
+		"protocol":     rpm.Protocol,
+		"value":        rpm.Value,
+		"bool_value":   rpm.BoolValue,
+		"string_value": rpm.StringValue,
+		"data_value":   rpm.DataValue,
+		"from":         rpm.From,
+		"to":           rpm.To,
+	}
+}
+
+func (as *aggregationService) buildJSONQueryConfig(rpm readers.JSONMetadata) QueryConfig {
+	return QueryConfig{
+		Table:       jsonTable,
+		TimeColumn:  jsonOrder,
+		AggField:    rpm.AggField,
+		AggInterval: rpm.AggInterval,
+		AggType:     rpm.AggType,
+		Limit:       rpm.Limit,
+	}
+}
+
+func (as *aggregationService) buildSenMLQueryConfig(rpm readers.SenMLMetadata) QueryConfig {
+	return QueryConfig{
+		Table:       senmlTable,
+		TimeColumn:  senmlOrder,
+		AggField:    rpm.AggField,
+		AggInterval: rpm.AggInterval,
+		AggType:     rpm.AggType,
+		Limit:       rpm.Limit,
+	}
+}
+
+func (as *aggregationService) getJSONConditions(rpm readers.JSONMetadata) []string {
+	var conditions []string
+
+	if rpm.Subtopic != "" {
+		conditions = append(conditions, "subtopic = :subtopic")
+	}
+	if rpm.Publisher != "" {
+		conditions = append(conditions, "publisher = :publisher")
+	}
+	if rpm.Protocol != "" {
+		conditions = append(conditions, "protocol = :protocol")
+	}
+	if rpm.From != 0 {
+		conditions = append(conditions, fmt.Sprintf("%s >= :from", jsonOrder))
+	}
+	if rpm.To != 0 {
+		conditions = append(conditions, fmt.Sprintf("%s <= :to", jsonOrder))
+	}
+
+	return conditions
+}
+
+func (as *aggregationService) getSenMLConditions(rpm readers.SenMLMetadata) []string {
+	var conditions []string
+
+	if rpm.Subtopic != "" {
+		conditions = append(conditions, "subtopic = :subtopic")
+	}
+	if rpm.Publisher != "" {
+		conditions = append(conditions, "publisher = :publisher")
+	}
+	if rpm.Protocol != "" {
+		conditions = append(conditions, "protocol = :protocol")
+	}
+	if rpm.Name != "" {
+		conditions = append(conditions, "name = :name")
+	}
+	if rpm.Value != 0 {
+		comparator := as.parseComparator(rpm.Comparator)
+		conditions = append(conditions, fmt.Sprintf("value %s :value", comparator))
+	}
+	if rpm.BoolValue {
+		conditions = append(conditions, "bool_value = :bool_value")
+	}
+	if rpm.StringValue != "" {
+		conditions = append(conditions, "string_value = :string_value")
+	}
+	if rpm.DataValue != "" {
+		conditions = append(conditions, "data_value = :data_value")
+	}
+	if rpm.From != 0 {
+		conditions = append(conditions, fmt.Sprintf("%s >= :from", senmlOrder))
+	}
+	if rpm.To != 0 {
+		conditions = append(conditions, fmt.Sprintf("%s <= :to", senmlOrder))
+	}
+
+	return conditions
+}
+
+func (as *aggregationService) parseComparator(comparator string) string {
+	switch comparator {
+	case readers.EqualKey:
+		return "="
+	case readers.LowerThanKey:
+		return "<"
+	case readers.LowerThanEqualKey:
+		return "<="
+	case readers.GreaterThanKey:
+		return ">"
+	case readers.GreaterThanEqualKey:
+		return ">="
+	default:
+		return "="
+	}
 }
