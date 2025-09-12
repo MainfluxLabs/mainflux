@@ -42,16 +42,11 @@ func (jr *jsonRepository) readAll(rpm readers.JSONMetadata) (readers.JSONMessage
 	params := jr.buildQueryParams(rpm)
 
 	if rpm.AggType != "" && rpm.AggInterval != "" {
-		messages, err := jr.aggregator.readAggregatedJSONMessages(rpm)
+		messages, total, err := jr.aggregator.readAggregatedJSONMessages(rpm)
 		if err != nil {
 			return page, err
 		}
 		page.Messages = messages
-
-		total, err := jr.aggregator.readAggregatedJSONCount(rpm)
-		if err != nil {
-			return page, err
-		}
 		page.Total = total
 
 		return page, nil

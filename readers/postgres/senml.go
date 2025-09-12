@@ -88,16 +88,11 @@ func (sr *senmlRepository) readAll(rpm readers.SenMLMetadata) (readers.SenMLMess
 	params := sr.buildQueryParams(rpm)
 
 	if rpm.AggType != "" && rpm.AggInterval != "" {
-		messages, err := sr.aggregator.readAggregatedSenMLMessages(rpm)
+		messages, total, err := sr.aggregator.readAggregatedSenMLMessages(rpm)
 		if err != nil {
 			return page, err
 		}
 		page.Messages = messages
-
-		total, err := sr.aggregator.readAggregatedSenMLCount(rpm)
-		if err != nil {
-			return page, err
-		}
 		page.Total = total
 
 		return page, nil

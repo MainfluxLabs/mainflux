@@ -55,7 +55,7 @@ func newAggregationService(db *sqlx.DB) *aggregationService {
 	return &aggregationService{db: db}
 }
 
-func (as *aggregationService) readAggregatedJSONMessages(rpm readers.JSONMetadata) ([]readers.Message, error) {
+func (as *aggregationService) readAggregatedJSONMessages(rpm readers.JSONMetadata) ([]readers.Message, uint64, error) {
 	params := map[string]interface{}{
 		"limit":     rpm.Limit,
 		"offset":    rpm.Offset,
@@ -83,23 +83,52 @@ func (as *aggregationService) readAggregatedJSONMessages(rpm readers.JSONMetadat
 
 	strategy := as.getAggregateStrategy(rpm.AggType)
 	if strategy == nil {
-		return []readers.Message{}, nil
+		return []readers.Message{}, 0, nil
 	}
 
 	query := strategy.BuildQuery(config)
 	rows, err := as.executeQuery(query, params)
 	if err != nil {
-		return nil, err
+		return []readers.Message{}, 0, err
 	}
 	if rows == nil {
-		return []readers.Message{}, nil
+		return []readers.Message{}, 0, nil
 	}
 	defer rows.Close()
 
-	return as.scanAggregatedMessages(rows, jsonTable)
+	messages, err := as.scanAggregatedMessages(rows, jsonTable)
+
+	condition := ""
+	if len(conditions) > 0 {
+		condition = "WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	query = fmt.Sprintf(`
+        SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000)))
+        FROM %s
+        %s`,
+		rpm.AggInterval, jsonOrder, jsonTable, condition)
+
+	rows, err = as.db.NamedQuery(query, params)
+	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
+			return []readers.Message{}, 0, nil
+		}
+		return []readers.Message{}, 0, errors.Wrap(readers.ErrReadMessages, err)
+	}
+	defer rows.Close()
+
+	var total uint64
+	if rows.Next() {
+		if err := rows.Scan(&total); err != nil {
+			return []readers.Message{}, 0, err
+		}
+	}
+
+	return messages, total, nil
 }
 
-func (as *aggregationService) readAggregatedSenMLMessages(rpm readers.SenMLMetadata) ([]readers.Message, error) {
+func (as *aggregationService) readAggregatedSenMLMessages(rpm readers.SenMLMetadata) ([]readers.Message, uint64, error) {
 	params := map[string]interface{}{
 		"limit":        rpm.Limit,
 		"offset":       rpm.Offset,
@@ -137,86 +166,22 @@ func (as *aggregationService) readAggregatedSenMLMessages(rpm readers.SenMLMetad
 
 	strategy := as.getAggregateStrategy(rpm.AggType)
 	if strategy == nil {
-		return []readers.Message{}, nil
+		return []readers.Message{}, 0, nil
 	}
 
 	query := strategy.BuildQuery(config)
 	rows, err := as.executeQuery(query, params)
 	if err != nil {
-		return nil, err
+		return []readers.Message{}, 0, err
 	}
 	if rows == nil {
-		return []readers.Message{}, nil
+		return []readers.Message{}, 0, nil
 	}
 	defer rows.Close()
 
-	return as.scanAggregatedMessages(rows, senmlTable)
-}
-
-func (as *aggregationService) readAggregatedJSONCount(rpm readers.JSONMetadata) (uint64, error) {
-	params := map[string]interface{}{
-		"limit":     rpm.Limit,
-		"offset":    rpm.Offset,
-		"subtopic":  rpm.Subtopic,
-		"publisher": rpm.Publisher,
-		"protocol":  rpm.Protocol,
-		"from":      rpm.From,
-		"to":        rpm.To,
-	}
-
-	conditions := as.getJSONConditions(rpm)
-
-	condition := ""
-	if len(conditions) > 0 {
-		condition = "WHERE " + strings.Join(conditions, " AND ")
-	}
-
-	query := fmt.Sprintf(`
-        SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000)))
-        FROM %s
-        %s`,
-		rpm.AggInterval, jsonOrder, jsonTable, condition)
-
-	rows, err := as.db.NamedQuery(query, params)
+	messages, err := as.scanAggregatedMessages(rows, senmlTable)
 	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
-			return 0, nil
-		}
-		return 0, errors.Wrap(readers.ErrReadMessages, err)
-	}
-	defer rows.Close()
-
-	var total uint64
-	if rows.Next() {
-		if err := rows.Scan(&total); err != nil {
-			return 0, err
-		}
-	}
-
-	return total, nil
-}
-
-func (as *aggregationService) readAggregatedSenMLCount(rpm readers.SenMLMetadata) (uint64, error) {
-	params := map[string]interface{}{
-		"limit":        rpm.Limit,
-		"offset":       rpm.Offset,
-		"subtopic":     rpm.Subtopic,
-		"publisher":    rpm.Publisher,
-		"name":         rpm.Name,
-		"protocol":     rpm.Protocol,
-		"value":        rpm.Value,
-		"bool_value":   rpm.BoolValue,
-		"string_value": rpm.StringValue,
-		"data_value":   rpm.DataValue,
-		"from":         rpm.From,
-		"to":           rpm.To,
-	}
-
-	conditions := as.getSenMLConditions(rpm)
-
-	if rpm.AggField != "" {
-		conditions = append(conditions, "name = :agg_field")
-		params["agg_field"] = rpm.AggField
+		return []readers.Message{}, 0, err
 	}
 
 	condition := ""
@@ -224,29 +189,29 @@ func (as *aggregationService) readAggregatedSenMLCount(rpm readers.SenMLMetadata
 		condition = "WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	query := fmt.Sprintf(`
+	query = fmt.Sprintf(`
         SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000)))
         FROM %s
         %s`,
 		rpm.AggInterval, senmlOrder, senmlTable, condition)
 
-	rows, err := as.db.NamedQuery(query, params)
+	rows, err = as.db.NamedQuery(query, params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
-			return 0, nil
+			return []readers.Message{}, 0, nil
 		}
-		return 0, errors.Wrap(readers.ErrReadMessages, err)
+		return []readers.Message{}, 0, errors.Wrap(readers.ErrReadMessages, err)
 	}
 	defer rows.Close()
 
 	var total uint64
 	if rows.Next() {
 		if err := rows.Scan(&total); err != nil {
-			return 0, err
+			return []readers.Message{}, 0, err
 		}
 	}
 
-	return total, nil
+	return messages, total, nil
 }
 
 func (as aggregationService) getAggregateStrategy(aggType string) AggStrategy {
