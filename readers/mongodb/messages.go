@@ -229,22 +229,22 @@ func (repo mongoRepository) readAllSenML(rpm readers.SenMLMetadata) (readers.Sen
 	}, nil
 }
 
-func (repo mongoRepository) ListJSONMessages(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (repo mongoRepository) ListJSONMessages(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
 	return repo.readAllJSON(rpm)
 }
 
-func (repo mongoRepository) ListSenMLMessages(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (repo mongoRepository) ListSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
 	return repo.readAllSenML(rpm)
 }
 
-func (repo mongoRepository) BackupJSONMessages(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (repo mongoRepository) BackupJSONMessages(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
 	backupMetadata := rpm
 	backupMetadata.Limit = noLimit
 	backupMetadata.Offset = 0
 	return repo.readAllJSON(backupMetadata)
 }
 
-func (repo mongoRepository) BackupSenMLMessages(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (repo mongoRepository) BackupSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
 	backupMetadata := rpm
 	backupMetadata.Limit = noLimit
 	backupMetadata.Offset = 0
