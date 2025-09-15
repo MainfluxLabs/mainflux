@@ -29,7 +29,7 @@ func LoggingMiddleware(svc readers.MessageRepository, logger logger.Logger) read
 	}
 }
 
-func (lm *loggingMiddleware) ListJSONMessages(rpm readers.JSONMetadata) (page readers.JSONMessagesPage, err error) {
+func (lm *loggingMiddleware) ListJSONMessages(ctx context.Context, rpm readers.JSONMetadata) (page readers.JSONMessagesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_json_messages took %s to complete", time.Since(begin))
 		if err != nil {
@@ -39,10 +39,10 @@ func (lm *loggingMiddleware) ListJSONMessages(rpm readers.JSONMetadata) (page re
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListJSONMessages(rpm)
+	return lm.svc.ListJSONMessages(ctx, rpm)
 }
 
-func (lm *loggingMiddleware) ListSenMLMessages(rpm readers.SenMLMetadata) (page readers.SenMLMessagesPage, err error) {
+func (lm *loggingMiddleware) ListSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) (page readers.SenMLMessagesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_senml_messages took %s to complete", time.Since(begin))
 		if err != nil {
@@ -52,10 +52,10 @@ func (lm *loggingMiddleware) ListSenMLMessages(rpm readers.SenMLMetadata) (page 
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListSenMLMessages(rpm)
+	return lm.svc.ListSenMLMessages(ctx, rpm)
 }
 
-func (lm *loggingMiddleware) BackupJSONMessages(rpm readers.JSONMetadata) (page readers.JSONMessagesPage, err error) {
+func (lm *loggingMiddleware) BackupJSONMessages(ctx context.Context, rpm readers.JSONMetadata) (page readers.JSONMessagesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method backup_json_messages took %s to complete", time.Since(begin))
 		if err != nil {
@@ -65,10 +65,10 @@ func (lm *loggingMiddleware) BackupJSONMessages(rpm readers.JSONMetadata) (page 
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.BackupJSONMessages(rpm)
+	return lm.svc.BackupJSONMessages(ctx, rpm)
 }
 
-func (lm *loggingMiddleware) BackupSenMLMessages(rpm readers.SenMLMetadata) (page readers.SenMLMessagesPage, err error) {
+func (lm *loggingMiddleware) BackupSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) (page readers.SenMLMessagesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method backup_senml_messages took %s to complete", time.Since(begin))
 		if err != nil {
@@ -78,7 +78,7 @@ func (lm *loggingMiddleware) BackupSenMLMessages(rpm readers.SenMLMetadata) (pag
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.BackupSenMLMessages(rpm)
+	return lm.svc.BackupSenMLMessages(ctx, rpm)
 }
 
 func (lm *loggingMiddleware) RestoreJSONMessages(ctx context.Context, messages ...readers.Message) (err error) {
