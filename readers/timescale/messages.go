@@ -344,21 +344,21 @@ func (msg jsonMessage) toMap() (map[string]interface{}, error) {
 
 }
 
-func (tr timescaleRepository) ListJSONMessages(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (tr timescaleRepository) ListJSONMessages(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
 	return tr.readAllJSON(rpm)
 }
-func (tr timescaleRepository) ListSenMLMessages(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (tr timescaleRepository) ListSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
 	return tr.readAllSenML(rpm)
 }
 
-func (tr timescaleRepository) BackupJSONMessages(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (tr timescaleRepository) BackupJSONMessages(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
 	backup := rpm
 	backup.Limit = 0
 	backup.Offset = 0
 	return tr.readAllJSON(backup)
 }
 
-func (tr timescaleRepository) BackupSenMLMessages(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (tr timescaleRepository) BackupSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
 	backup := rpm
 	backup.Limit = 0
 	backup.Offset = 0
