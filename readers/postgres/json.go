@@ -15,11 +15,11 @@ import (
 )
 
 type jsonRepository struct {
-	db         *sqlx.DB
+	db         dbutil.Database
 	aggregator *aggregationService
 }
 
-func newJSONRepository(db *sqlx.DB) *jsonRepository {
+func newJSONRepository(db dbutil.Database) *jsonRepository {
 	return &jsonRepository{
 		db:         db,
 		aggregator: newAggregationService(db),
@@ -52,13 +52,15 @@ func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONMetadata)
 		return page, nil
 	}
 
-	messages, err := jr.readMessages(rpm, params)
+	messages, err := jr.readMessages(ctx, rpm, params)
 	if err != nil {
 		return page, err
 	}
 	page.Messages = messages
 
-	total, err := jr.readCount(rpm, params)
+	condition := jr.fmtCondition(rpm)
+	query := fmt.Sprintf(`SELECT COUNT(*) FROM json %s;`, condition)
+	total, err := dbutil.Total(ctx, jr.db, query, params)
 	if err != nil {
 		return page, err
 	}
@@ -67,14 +69,17 @@ func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONMetadata)
 	return page, nil
 }
 
-func (jr *jsonRepository) readMessages(rpm readers.JSONMetadata, params map[string]interface{}) ([]readers.Message, error) {
+func (jr *jsonRepository) readMessages(ctx context.Context, rpm readers.JSONMetadata, params map[string]interface{}) ([]readers.Message, error) {
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 	condition := jr.fmtCondition(rpm)
 
 	query := fmt.Sprintf(`SELECT * FROM json %s ORDER BY created DESC %s;`, condition, olq)
-	rows, err := jr.executeQuery(query, params)
+	rows, err := jr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return nil, err
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
+			return []readers.Message{}, nil
+		}
+		return nil, errors.Wrap(readers.ErrReadMessages, err)
 	}
 
 	if rows == nil {
@@ -83,30 +88,6 @@ func (jr *jsonRepository) readMessages(rpm readers.JSONMetadata, params map[stri
 	defer rows.Close()
 
 	return jr.scanMessages(rows)
-}
-
-func (jr *jsonRepository) readCount(rpm readers.JSONMetadata, params map[string]interface{}) (uint64, error) {
-	condition := jr.fmtCondition(rpm)
-	query := fmt.Sprintf(`SELECT COUNT(*) FROM json %s;`, condition)
-
-	rows, err := jr.executeQuery(query, params)
-	if err != nil {
-		return 0, err
-	}
-
-	if rows == nil {
-		return 0, nil
-	}
-	defer rows.Close()
-
-	var total uint64
-	if rows.Next() {
-		if err := rows.Scan(&total); err != nil {
-			return 0, err
-		}
-	}
-
-	return total, nil
 }
 
 func (jr *jsonRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, error) {
@@ -126,17 +107,6 @@ func (jr *jsonRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, erro
 	}
 
 	return messages, nil
-}
-
-func (jr *jsonRepository) executeQuery(query string, params map[string]interface{}) (*sqlx.Rows, error) {
-	rows, err := jr.db.NamedQuery(query, params)
-	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
-			return nil, nil
-		}
-		return nil, errors.Wrap(readers.ErrReadMessages, err)
-	}
-	return rows, nil
 }
 
 func (jr *jsonRepository) fmtCondition(rpm readers.JSONMetadata) string {
