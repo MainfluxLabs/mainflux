@@ -116,7 +116,6 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 	}
 
 	return messages, total, nil
-
 }
 
 func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) ([]readers.Message, uint64, error) {
