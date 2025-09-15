@@ -137,7 +137,6 @@ func deleteSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 			return nil, errors.ErrAuthentication
 		}
 
-		req.pageMeta.Format = defFormat
 		err := svc.DeleteSenMLMessages(ctx, req.pageMeta)
 		if err != nil {
 			return nil, err
