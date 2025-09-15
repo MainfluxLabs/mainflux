@@ -8,6 +8,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
@@ -49,10 +50,10 @@ type AggStrategy interface {
 }
 
 type aggregationService struct {
-	db *sqlx.DB
+	db dbutil.Database
 }
 
-func newAggregationService(db *sqlx.DB) *aggregationService {
+func newAggregationService(db dbutil.Database) *aggregationService {
 	return &aggregationService{db: db}
 }
 
@@ -88,37 +89,34 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 	}
 
 	query := strategy.BuildQuery(config)
-	rows, err := as.executeQuery(query, params)
-	if err != nil {
-		return []readers.Message{}, 0, err
-	}
-	if rows == nil {
-		return []readers.Message{}, 0, nil
-	}
-	defer rows.Close()
-
-	messages, err := as.scanAggregatedMessages(rows, jsonTable)
-
-	query = fmt.Sprintf(` SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000))) FROM %s %s`,
-		rpm.AggInterval, jsonOrder, jsonTable, config.Condition)
-
-	rows, err = as.db.NamedQuery(query, params)
+	rows, err := as.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
 			return []readers.Message{}, 0, nil
 		}
 		return []readers.Message{}, 0, errors.Wrap(readers.ErrReadMessages, err)
 	}
+
+	if rows == nil {
+		return []readers.Message{}, 0, nil
+	}
 	defer rows.Close()
 
-	var total uint64
-	if rows.Next() {
-		if err := rows.Scan(&total); err != nil {
-			return []readers.Message{}, 0, err
-		}
+	messages, err := as.scanAggregatedMessages(rows, jsonTable)
+	if err != nil {
+		return []readers.Message{}, 0, err
+	}
+
+	countQuery := fmt.Sprintf(` SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000))) FROM %s %s`,
+		rpm.AggInterval, jsonOrder, jsonTable, config.Condition)
+
+	total, err := dbutil.Total(ctx, as.db, countQuery, params)
+	if err != nil {
+		return []readers.Message{}, 0, err
 	}
 
 	return messages, total, nil
+
 }
 
 func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) ([]readers.Message, uint64, error) {
@@ -163,13 +161,17 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 	}
 
 	query := strategy.BuildQuery(config)
-	rows, err := as.executeQuery(query, params)
+	rows, err := as.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return []readers.Message{}, 0, err
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
+			return []readers.Message{}, 0, nil
+		}
+		return []readers.Message{}, 0, errors.Wrap(readers.ErrReadMessages, err)
 	}
 	if rows == nil {
 		return []readers.Message{}, 0, nil
 	}
+
 	defer rows.Close()
 
 	messages, err := as.scanAggregatedMessages(rows, senmlTable)
@@ -177,24 +179,12 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 		return []readers.Message{}, 0, err
 	}
 
-	query = fmt.Sprintf(`
-        SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000))) FROM %s %s`,
+	countQuery := fmt.Sprintf(` SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000))) FROM %s %s`,
 		rpm.AggInterval, senmlOrder, senmlTable, config.Condition)
 
-	rows, err = as.db.NamedQuery(query, params)
+	total, err := dbutil.Total(ctx, as.db, countQuery, params)
 	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
-			return []readers.Message{}, 0, nil
-		}
-		return []readers.Message{}, 0, errors.Wrap(readers.ErrReadMessages, err)
-	}
-	defer rows.Close()
-
-	var total uint64
-	if rows.Next() {
-		if err := rows.Scan(&total); err != nil {
-			return []readers.Message{}, 0, err
-		}
+		return []readers.Message{}, 0, err
 	}
 
 	return messages, total, nil
@@ -505,17 +495,6 @@ func buildAggregatedJSONSelect(aggField string, aggAlias string) string {
 	return fmt.Sprintf(`m.created, m.subtopic, m.publisher, m.protocol,
 			jsonb_set(m.payload, '%s', to_jsonb(ia.%s)) as payload`,
 		pathArray, aggAlias)
-}
-
-func (as *aggregationService) executeQuery(query string, params map[string]interface{}) (*sqlx.Rows, error) {
-	rows, err := as.db.NamedQuery(query, params)
-	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
-			return nil, nil
-		}
-		return nil, errors.Wrap(readers.ErrReadMessages, err)
-	}
-	return rows, nil
 }
 
 func (as *aggregationService) getJSONConditions(rpm readers.JSONMetadata) []string {
