@@ -26,11 +26,11 @@ func newJSONRepository(db *sqlx.DB) *jsonRepository {
 	}
 }
 
-func (jr *jsonRepository) ListMessages(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
-	return jr.readAll(rpm)
+func (jr *jsonRepository) ListMessages(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+	return jr.readAll(ctx, rpm)
 }
 
-func (jr *jsonRepository) readAll(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
 	page := readers.JSONMessagesPage{
 		JSONMetadata: rpm,
 		MessagesPage: readers.MessagesPage{
@@ -42,7 +42,7 @@ func (jr *jsonRepository) readAll(rpm readers.JSONMetadata) (readers.JSONMessage
 	params := jr.buildQueryParams(rpm)
 
 	if rpm.AggType != "" && rpm.AggInterval != "" {
-		messages, total, err := jr.aggregator.readAggregatedJSONMessages(rpm)
+		messages, total, err := jr.aggregator.readAggregatedJSONMessages(ctx, rpm)
 		if err != nil {
 			return page, err
 		}
@@ -178,8 +178,8 @@ func (jr *jsonRepository) buildQueryParams(rpm readers.JSONMetadata) map[string]
 	}
 }
 
-func (jr *jsonRepository) Backup(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
-	return jr.readAll(rpm)
+func (jr *jsonRepository) Backup(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+	return jr.readAll(ctx, rpm)
 }
 
 func (jr *jsonRepository) DeleteMessages(ctx context.Context, rpm readers.JSONMetadata) error {
