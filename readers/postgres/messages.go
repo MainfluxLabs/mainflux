@@ -4,6 +4,8 @@ package postgres
 
 import (
 	"context"
+
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/jmoiron/sqlx"
@@ -17,14 +19,14 @@ var (
 )
 
 type postgresRepository struct {
-	db              *sqlx.DB
+	db              dbutil.Database
 	jsonRepository  *jsonRepository
 	senmlRepository *senmlRepository
 }
 
 func New(db *sqlx.DB) readers.MessageRepository {
 	return &postgresRepository{
-		db:              db,
+		db:              dbutil.NewDatabase(db),
 		jsonRepository:  newJSONRepository(db),
 		senmlRepository: newSenMLRepository(db),
 	}
