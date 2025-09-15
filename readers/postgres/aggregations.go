@@ -98,13 +98,8 @@ func (as *aggregationService) readAggregatedJSONMessages(rpm readers.JSONMetadat
 
 	messages, err := as.scanAggregatedMessages(rows, jsonTable)
 
-	condition := ""
-	if len(conditions) > 0 {
-		condition = "WHERE " + strings.Join(conditions, " AND ")
-	}
-
 	query = fmt.Sprintf(` SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000))) FROM %s %s`,
-		rpm.AggInterval, jsonOrder, jsonTable, condition)
+		rpm.AggInterval, jsonOrder, jsonTable, config.Condition)
 
 	rows, err = as.db.NamedQuery(query, params)
 	if err != nil {
@@ -181,16 +176,9 @@ func (as *aggregationService) readAggregatedSenMLMessages(rpm readers.SenMLMetad
 		return []readers.Message{}, 0, err
 	}
 
-	condition := ""
-	if len(conditions) > 0 {
-		condition = "WHERE " + strings.Join(conditions, " AND ")
-	}
-
 	query = fmt.Sprintf(`
-        SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000)))
-        FROM %s
-        %s`,
-		rpm.AggInterval, senmlOrder, senmlTable, condition)
+        SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000))) FROM %s %s`,
+		rpm.AggInterval, senmlOrder, senmlTable, config.Condition)
 
 	rows, err = as.db.NamedQuery(query, params)
 	if err != nil {
