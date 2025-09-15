@@ -35,16 +35,16 @@ var ErrReadMessages = errors.New("failed to read messages from database")
 // MessageRepository specifies message reader API.
 type MessageRepository interface {
 	// ListJSONMessages retrieves the json messages with given filters.
-	ListJSONMessages(rpm JSONMetadata) (JSONMessagesPage, error)
+	ListJSONMessages(ctx context.Context, rpm JSONMetadata) (JSONMessagesPage, error)
 
 	// ListSenMLMessages retrieves the senml messages with given filters.
-	ListSenMLMessages(rpm SenMLMetadata) (SenMLMessagesPage, error)
+	ListSenMLMessages(ctx context.Context, rpm SenMLMetadata) (SenMLMessagesPage, error)
 
 	// BackupJSONMessages backups the json messages with given filters.
-	BackupJSONMessages(rpm JSONMetadata) (JSONMessagesPage, error)
+	BackupJSONMessages(ctx context.Context, rpm JSONMetadata) (JSONMessagesPage, error)
 
 	// BackupSenMLMessages backups the senml messages with given filters.
-	BackupSenMLMessages(rpm SenMLMetadata) (SenMLMessagesPage, error)
+	BackupSenMLMessages(ctx context.Context, rpm SenMLMetadata) (SenMLMessagesPage, error)
 
 	// RestoreJSONMessages restores the json messages with given filters.
 	RestoreJSONMessages(ctx context.Context, messages ...Message) error
