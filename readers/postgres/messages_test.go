@@ -412,7 +412,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ListSenMLMessages(tc.pageMeta)
+		result, err := reader.ListSenMLMessages(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Messages, result.Messages))
 		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Total, result.Total))
@@ -526,7 +526,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ListJSONMessages(tc.pageMeta)
+		result, err := reader.ListJSONMessages(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Messages, result.Messages))
 		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Total, result.Total))
@@ -714,7 +714,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 			require.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 		}
 
-		beforePage, err := reader.ListSenMLMessages(readers.SenMLMetadata{
+		beforePage, err := reader.ListSenMLMessages(context.Background(), readers.SenMLMetadata{
 			Publisher: tc.pageMeta.Publisher,
 			Subtopic:  tc.pageMeta.Subtopic,
 			Protocol:  tc.pageMeta.Protocol,
@@ -730,7 +730,7 @@ func TestDeleteMessagesSenML(t *testing.T) {
 		err = reader.DeleteSenMLMessages(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
-		afterPage, err := reader.ListSenMLMessages(readers.SenMLMetadata{
+		afterPage, err := reader.ListSenMLMessages(context.Background(), readers.SenMLMetadata{
 			Publisher: tc.pageMeta.Publisher,
 			Subtopic:  tc.pageMeta.Subtopic,
 			Protocol:  tc.pageMeta.Protocol,
@@ -887,7 +887,7 @@ func TestDeleteMessagesJSON(t *testing.T) {
 			require.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 		}
 
-		beforePage, err := reader.ListJSONMessages(readers.JSONMetadata{
+		beforePage, err := reader.ListJSONMessages(context.Background(), readers.JSONMetadata{
 			Publisher: tc.pageMeta.Publisher,
 			Subtopic:  tc.pageMeta.Subtopic,
 			Protocol:  tc.pageMeta.Protocol,
@@ -901,7 +901,7 @@ func TestDeleteMessagesJSON(t *testing.T) {
 		err = reader.DeleteJSONMessages(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
-		afterPage, err := reader.ListJSONMessages(readers.JSONMetadata{
+		afterPage, err := reader.ListJSONMessages(context.Background(), readers.JSONMetadata{
 			Publisher: tc.pageMeta.Publisher,
 			Subtopic:  tc.pageMeta.Subtopic,
 			Protocol:  tc.pageMeta.Protocol,
