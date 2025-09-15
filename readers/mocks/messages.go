@@ -33,19 +33,19 @@ func NewMessageRepository(profileID string, messages []readers.Message) readers.
 	}
 }
 
-func (repo *messageRepositoryMock) ListJSONMessages(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (repo *messageRepositoryMock) ListJSONMessages(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
 	return repo.readAllJSON(rpm)
 }
 
-func (repo *messageRepositoryMock) ListSenMLMessages(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (repo *messageRepositoryMock) ListSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
 	return repo.readAllSenML(rpm)
 }
 
-func (repo *messageRepositoryMock) BackupJSONMessages(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (repo *messageRepositoryMock) BackupJSONMessages(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
 	return repo.readAllJSON(rpm)
 }
 
-func (repo *messageRepositoryMock) BackupSenMLMessages(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (repo *messageRepositoryMock) BackupSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
 	return repo.readAllSenML(rpm)
 }
 
