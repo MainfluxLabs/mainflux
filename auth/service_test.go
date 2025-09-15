@@ -24,25 +24,29 @@ import (
 )
 
 const (
-	secret          = "secret"
-	email           = "test@example.com"
-	superAdminEmail = "admin@example.com"
-	ownerEmail      = "owner@test.com"
-	viewerEmail     = "viewer@test.com"
-	editorEmail     = "editor@test.com"
-	adminEmail      = "admin@test.com"
-	id              = "testID"
-	ownerID         = "ownerID"
-	adminID         = "adminID"
-	editorID        = "editorID"
-	viewerID        = "viewerID"
-	rootAdminID     = "rootAdminID"
-	description     = "description"
-	name            = "name"
-	invalid         = "invalid"
-	n               = 10
+	redirectPathInvite = "/view-invite"
 
-	loginDuration = 30 * time.Minute
+	secret            = "secret"
+	email             = "test@example.com"
+	superAdminEmail   = "admin@example.com"
+	ownerEmail        = "owner@test.com"
+	viewerEmail       = "viewer@test.com"
+	editorEmail       = "editor@test.com"
+	adminEmail        = "admin@test.com"
+	unregisteredEmail = "unregistered@test.com"
+	id                = "testID"
+	ownerID           = "ownerID"
+	adminID           = "adminID"
+	editorID          = "editorID"
+	viewerID          = "viewerID"
+	rootAdminID       = "rootAdminID"
+	description       = "description"
+	name              = "name"
+	invalid           = "invalid"
+	n                 = 10
+
+	loginDuration  = 30 * time.Minute
+	inviteDuration = 7 * 24 * time.Hour
 )
 
 var (
@@ -59,10 +63,27 @@ func newService() auth.Service {
 	membsRepo := mocks.NewOrgMembershipsRepository()
 	orgRepo := mocks.NewOrgRepository(membsRepo)
 	roleRepo := mocks.NewRolesRepository()
+	invitesRepo := mocks.NewInvitesRepository()
+	emailerMock := mocks.NewEmailer()
+
+	for i := 1; i <= 10; i++ {
+		uEmail := fmt.Sprintf("example%d@test.com", i)
+		uID := fmt.Sprintf("example%d", i)
+
+		user := users.User{
+			ID:    uID,
+			Email: uEmail,
+		}
+
+		usersByEmails[uEmail] = user
+		usersByIDs[uID] = user
+	}
+
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
 	tc := thmocks.NewThingsServiceClient(nil, nil, createGroups())
 	t := jwt.New(secret)
-	return auth.New(orgRepo, tc, uc, keyRepo, roleRepo, membsRepo, idMockProvider, t, loginDuration)
+
+	return auth.New(orgRepo, tc, uc, keyRepo, roleRepo, membsRepo, invitesRepo, emailerMock, idMockProvider, t, loginDuration, inviteDuration)
 }
 
 func createGroups() map[string]things.Group {
@@ -778,11 +799,13 @@ func TestCreateOrgMemberships(t *testing.T) {
 
 	mb := []auth.OrgMembership{
 		{
-			MemberID: "member1",
+			MemberID: "example1",
+			Email:    "example1@test.com",
 			Role:     auth.Viewer,
 		},
 		{
-			MemberID: "member2",
+			MemberID: "example2",
+			Email:    "example2@test.com",
 			Role:     auth.Viewer,
 		},
 	}
@@ -1177,6 +1200,453 @@ func TestListOrgMemberships(t *testing.T) {
 		size := uint64(len(page.OrgMemberships))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestCreateOrgInvite(t *testing.T) {
+	svc := newService()
+
+	_, ownerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	_, viewerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	_, editorToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: editorID, Subject: editorEmail})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	_, adminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	_, superAdminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: rootAdminID, Subject: superAdminEmail})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	or, err := svc.CreateOrg(context.Background(), ownerToken, org)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	err = svc.CreateOrgMemberships(context.Background(), ownerToken, or.ID, memberships...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	err = svc.AssignRole(context.Background(), rootAdminID, auth.RoleRootAdmin)
+	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
+
+	cases := []struct {
+		desc       string
+		token      string
+		orgID      string
+		membership auth.OrgMembership
+		err        error
+	}{
+		{
+			desc:  "create org invite as root admin",
+			token: superAdminToken,
+			orgID: or.ID,
+			membership: auth.OrgMembership{
+				Role:  auth.Viewer,
+				Email: "example1@test.com",
+			},
+			err: nil,
+		},
+		{
+			desc:  "create org invite as org owner",
+			token: ownerToken,
+			orgID: or.ID,
+			membership: auth.OrgMembership{
+				Role:  auth.Viewer,
+				Email: "example2@test.com",
+			},
+			err: nil,
+		},
+		{
+			desc:  "create org invite as org admin",
+			token: adminToken,
+			orgID: or.ID,
+			membership: auth.OrgMembership{
+				Role:  auth.Viewer,
+				Email: "example3@test.com",
+			},
+			err: nil,
+		},
+		{
+			desc:  "create org invite as org editor",
+			token: editorToken,
+			orgID: or.ID,
+			membership: auth.OrgMembership{
+				Role:  auth.Viewer,
+				Email: "example4@test.com",
+			},
+			err: errors.ErrAuthorization,
+		},
+		{
+			desc:  "create org invite as org viewer",
+			token: viewerToken,
+			orgID: or.ID,
+			membership: auth.OrgMembership{
+				Role:  auth.Viewer,
+				Email: "example5@test.com",
+			},
+			err: errors.ErrAuthorization,
+		},
+		{
+			desc:  "create org invite with pending invite to same org",
+			token: adminToken,
+			orgID: or.ID,
+			membership: auth.OrgMembership{
+				Role:  auth.Viewer,
+				Email: "example3@test.com",
+			},
+			err: dbutil.ErrConflict,
+		},
+		{
+			desc:  "create org invite towards invitee who is already a member of org",
+			token: adminToken,
+			orgID: or.ID,
+			membership: auth.OrgMembership{
+				Role:  auth.Viewer,
+				Email: editorEmail,
+			},
+			err: auth.ErrOrgMembershipExists,
+		},
+		{
+			desc:  "create org invite towards invitee with unregistered e-mail",
+			token: adminToken,
+			orgID: or.ID,
+			membership: auth.OrgMembership{
+				Role:  auth.Editor,
+				Email: unregisteredEmail,
+			},
+			err: dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		_, err := svc.CreateOrgInvite(context.Background(), tc.token, tc.membership.Email, tc.membership.Role, tc.orgID, redirectPathInvite)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestRevokeInvite(t *testing.T) {
+	svc := newService()
+
+	_, ownerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	invitee := usersByEmails["example1@test.com"]
+
+	_, thirdToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: usersByEmails["example2@test.com"].ID, Subject: ownerEmail})
+	assert.Nil(t, err, fmt.Sprintf("unexpected error issuing login token: %s\n", err))
+
+	testOrg, err := svc.CreateOrg(context.Background(), ownerToken, org)
+	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	testInvite, err := svc.CreateOrgInvite(context.Background(), ownerToken, invitee.Email, auth.Viewer, testOrg.ID, redirectPathInvite)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	testInviteID := testInvite.ID
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+	}{
+		{
+			desc:  "revoke invite as unauthorized user",
+			token: thirdToken,
+			err:   errors.ErrAuthorization,
+		},
+		{
+			desc:  "revoke invite as inviter",
+			token: ownerToken,
+			err:   nil,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.RevokeOrgInvite(context.Background(), tc.token, testInviteID)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
+	}
+
+}
+
+func TestRespondInvite(t *testing.T) {
+	svc := newService()
+
+	_, ownerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	_, unauthToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: "example4", Subject: "example4@test.com"})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	_, example1Token, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: "example1", Subject: "example1@test.com"})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	_, example2Token, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: "example2", Subject: "example2@test.com"})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	testOrg, err := svc.CreateOrg(context.Background(), ownerToken, org)
+	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	testInvites := []auth.OrgInvite{}
+	for i := range 3 {
+		inv, err := svc.CreateOrgInvite(
+			context.Background(),
+			ownerToken,
+			fmt.Sprintf("example%d@test.com", i+1),
+			auth.Viewer,
+			testOrg.ID,
+			redirectPathInvite,
+		)
+
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+		testInvites = append(testInvites, inv)
+	}
+
+	cases := []struct {
+		desc     string
+		token    string
+		inviteID string
+		accept   bool
+		err      error
+	}{
+		{
+			desc:     "respond to invite as unauthorized user",
+			token:    unauthToken,
+			inviteID: testInvites[0].ID,
+			accept:   true,
+			err:      errors.ErrAuthorization,
+		},
+		{
+			desc:     "accept invite",
+			token:    example1Token,
+			inviteID: testInvites[0].ID,
+			accept:   true,
+			err:      nil,
+		},
+		{
+			desc:     "decline invite",
+			token:    example2Token,
+			inviteID: testInvites[1].ID,
+			accept:   false,
+			err:      nil,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.RespondOrgInvite(context.Background(), tc.token, tc.inviteID, tc.accept)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected: %s, got: %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestViewInvite(t *testing.T) {
+	svc := newService()
+
+	_, ownerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	err = svc.AssignRole(context.Background(), rootAdminID, auth.RoleRootAdmin)
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	_, rootAdminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: rootAdminID, Subject: superAdminEmail})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	testOrg, err := svc.CreateOrg(context.Background(), ownerToken, org)
+	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	inviter := usersByEmails["example1@test.com"]
+	invitee := usersByEmails["example2@test.com"]
+
+	_, inviterToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: inviter.ID, Subject: inviter.Email})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	_, inviteeToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: invitee.ID, Subject: invitee.Email})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	_, unauthToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: "example3", Subject: "example3@email.com"})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	err = svc.CreateOrgMemberships(context.Background(), ownerToken, testOrg.ID, auth.OrgMembership{
+		MemberID: inviter.ID,
+		Email:    inviter.Email,
+		Role:     auth.RoleAdmin,
+	})
+
+	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	invite, err := svc.CreateOrgInvite(context.Background(), inviterToken, invitee.Email, auth.Viewer, testOrg.ID, redirectPathInvite)
+
+	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+	}{
+		{
+			desc:  "view invite as invitee",
+			token: inviteeToken,
+			err:   nil,
+		},
+		{
+			desc:  "view invite as inviter",
+			token: inviterToken,
+			err:   nil,
+		},
+		{
+			desc:  "view invite as root admin",
+			token: rootAdminToken,
+			err:   nil,
+		},
+		{
+			desc:  "view invite as unauthorized user",
+			token: unauthToken,
+			err:   errors.ErrAuthorization,
+		},
+	}
+
+	for _, tc := range cases {
+		_, err := svc.ViewOrgInvite(context.Background(), tc.token, invite.ID)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected :%s, got :%s\n", tc.desc, tc.err, err))
+	}
+
+}
+
+func TestListInvitesByUser(t *testing.T) {
+	svc := newService()
+
+	_, ownerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	err = svc.AssignRole(context.Background(), rootAdminID, auth.RoleRootAdmin)
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	_, rootAdminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: rootAdminID, Subject: superAdminEmail})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	invitee := usersByEmails["example1@test.com"]
+
+	_, inviteeToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: invitee.ID, Subject: invitee.Email})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	_, unauthToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: "example3", Subject: "example3@test.com"})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	n := uint64(5)
+
+	for i := uint64(1); i <= n; i++ {
+		org, err := svc.CreateOrg(context.Background(), ownerToken, auth.Org{
+			Name: fmt.Sprintf("org%d", i),
+		})
+
+		assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
+
+		_, err = svc.CreateOrgInvite(context.Background(), ownerToken, invitee.Email, auth.Viewer, org.ID, redirectPathInvite)
+
+		assert.Nil(t, err, fmt.Sprintf("Unexpected error inviting Org member: %s", err))
+	}
+
+	cases := []struct {
+		desc     string
+		token    string
+		pm       auth.PageMetadataInvites
+		userID   string
+		userType string
+		size     uint64
+		err      error
+	}{
+		{
+			desc:     "list all pending invites as invitee",
+			token:    inviteeToken,
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
+			userID:   invitee.ID,
+			userType: auth.UserTypeInvitee,
+			size:     n,
+			err:      nil,
+		},
+		{
+			desc:     "list all pending invites as root admin",
+			token:    rootAdminToken,
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
+			userID:   invitee.ID,
+			userType: auth.UserTypeInvitee,
+			size:     n,
+			err:      nil,
+		},
+		{
+			desc:     "list all pending invites as unauthorized user",
+			token:    unauthToken,
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
+			userID:   invitee.ID,
+			userType: auth.UserTypeInvitee,
+			size:     0,
+			err:      errors.ErrAuthorization,
+		},
+		{
+			desc:     "list half of pending invites as invitee",
+			token:    inviteeToken,
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n / 2, Offset: 0}},
+			userID:   invitee.ID,
+			userType: auth.UserTypeInvitee,
+			size:     n / 2,
+			err:      nil,
+		},
+		{
+			desc:     "list last pending invite as invitee",
+			token:    inviteeToken,
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: n - 1}},
+			userID:   invitee.ID,
+			userType: auth.UserTypeInvitee,
+			size:     1,
+			err:      nil,
+		},
+		{
+			desc:     "list all sent invites as inviter",
+			token:    ownerToken,
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
+			userID:   ownerID,
+			userType: auth.UserTypeInviter,
+			size:     n,
+			err:      nil,
+		},
+		{
+			desc:     "list all sent invites as root admin",
+			token:    rootAdminToken,
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
+			userID:   ownerID,
+			userType: auth.UserTypeInviter,
+			size:     n,
+			err:      nil,
+		},
+		{
+			desc:     "list all sent invites as unauthorized user",
+			token:    unauthToken,
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
+			userID:   ownerID,
+			userType: auth.UserTypeInviter,
+			size:     0,
+			err:      errors.ErrAuthorization,
+		},
+		{
+			desc:     "list half of sent invites as inviter",
+			token:    ownerToken,
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n / 2, Offset: 0}},
+			userID:   ownerID,
+			userType: auth.UserTypeInviter,
+			size:     n / 2,
+			err:      nil,
+		},
+		{
+			desc:     "list last sent invite as inviter",
+			token:    ownerToken,
+			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: n - 1}},
+			userID:   ownerID,
+			userType: auth.UserTypeInviter,
+			size:     1,
+			err:      nil,
+		},
+	}
+
+	for _, tc := range cases {
+		invitesPage, err := svc.ListOrgInvitesByUser(context.Background(), tc.token, tc.userType, tc.userID, tc.pm)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
+
+		invCount := uint64(len(invitesPage.Invites))
+
+		assert.Equal(t, invCount, tc.size, fmt.Sprintf("%s: expected %d elements, got %d\n", tc.desc, tc.size, invCount))
 	}
 }
 
