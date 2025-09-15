@@ -26,12 +26,12 @@ func newSenMLRepository(db *sqlx.DB) *senmlRepository {
 	}
 }
 
-func (sr *senmlRepository) ListMessages(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
-	return sr.readAll(rpm)
+func (sr *senmlRepository) ListMessages(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+	return sr.readAll(ctx, rpm)
 }
 
-func (sr *senmlRepository) Backup(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
-	return sr.readAll(rpm)
+func (sr *senmlRepository) Backup(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+	return sr.readAll(ctx, rpm)
 }
 
 func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenMLMetadata) error {
@@ -76,7 +76,7 @@ func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenML
 	return nil
 }
 
-func (sr *senmlRepository) readAll(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
 	page := readers.SenMLMessagesPage{
 		SenMLMetadata: rpm,
 		MessagesPage: readers.MessagesPage{
@@ -88,7 +88,7 @@ func (sr *senmlRepository) readAll(rpm readers.SenMLMetadata) (readers.SenMLMess
 	params := sr.buildQueryParams(rpm)
 
 	if rpm.AggType != "" && rpm.AggInterval != "" {
-		messages, total, err := sr.aggregator.readAggregatedSenMLMessages(rpm)
+		messages, total, err := sr.aggregator.readAggregatedSenMLMessages(ctx, rpm)
 		if err != nil {
 			return page, err
 		}
