@@ -36,7 +36,7 @@ func listJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			}
 		}
 
-		page, err := svc.ListJSONMessages(req.pageMeta)
+		page, err := svc.ListJSONMessages(ctx, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -70,7 +70,7 @@ func listSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint 
 			}
 		}
 
-		page, err := svc.ListSenMLMessages(req.pageMeta)
+		page, err := svc.ListSenMLMessages(ctx, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -158,7 +158,7 @@ func backupJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint
 			return nil, err
 		}
 
-		page, err := svc.BackupJSONMessages(req.pageMeta)
+		page, err := svc.BackupJSONMessages(ctx, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -196,7 +196,7 @@ func backupSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 			return nil, err
 		}
 
-		page, err := svc.BackupSenMLMessages(req.pageMeta)
+		page, err := svc.BackupSenMLMessages(ctx, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
