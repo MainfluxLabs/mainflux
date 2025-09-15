@@ -103,10 +103,7 @@ func (as *aggregationService) readAggregatedJSONMessages(rpm readers.JSONMetadat
 		condition = "WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	query = fmt.Sprintf(`
-        SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000)))
-        FROM %s
-        %s`,
+	query = fmt.Sprintf(` SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000))) FROM %s %s`,
 		rpm.AggInterval, jsonOrder, jsonTable, condition)
 
 	rows, err = as.db.NamedQuery(query, params)
