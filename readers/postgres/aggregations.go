@@ -3,6 +3,7 @@
 package postgres
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"text/template"
@@ -55,7 +56,7 @@ func newAggregationService(db *sqlx.DB) *aggregationService {
 	return &aggregationService{db: db}
 }
 
-func (as *aggregationService) readAggregatedJSONMessages(rpm readers.JSONMetadata) ([]readers.Message, uint64, error) {
+func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rpm readers.JSONMetadata) ([]readers.Message, uint64, error) {
 	params := map[string]interface{}{
 		"limit":     rpm.Limit,
 		"offset":    rpm.Offset,
@@ -120,7 +121,7 @@ func (as *aggregationService) readAggregatedJSONMessages(rpm readers.JSONMetadat
 	return messages, total, nil
 }
 
-func (as *aggregationService) readAggregatedSenMLMessages(rpm readers.SenMLMetadata) ([]readers.Message, uint64, error) {
+func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) ([]readers.Message, uint64, error) {
 	params := map[string]interface{}{
 		"limit":        rpm.Limit,
 		"offset":       rpm.Offset,
