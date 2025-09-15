@@ -15,11 +15,11 @@ import (
 )
 
 type senmlRepository struct {
-	db         *sqlx.DB
+	db         dbutil.Database
 	aggregator *aggregationService
 }
 
-func newSenMLRepository(db *sqlx.DB) *senmlRepository {
+func newSenMLRepository(db dbutil.Database) *senmlRepository {
 	return &senmlRepository{
 		db:         db,
 		aggregator: newAggregationService(db),
@@ -98,13 +98,15 @@ func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLMetadat
 		return page, nil
 	}
 
-	messages, err := sr.readMessages(rpm, params)
+	messages, err := sr.readMessages(ctx, rpm, params)
 	if err != nil {
 		return page, err
 	}
 	page.Messages = messages
 
-	total, err := sr.readCount(rpm, params)
+	condition := sr.fmtCondition(rpm)
+	query := fmt.Sprintf(`SELECT COUNT(*) FROM senml %s;`, condition)
+	total, err := dbutil.Total(ctx, sr.db, query, params)
 	if err != nil {
 		return page, err
 	}
@@ -113,45 +115,25 @@ func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLMetadat
 	return page, nil
 }
 
-func (sr *senmlRepository) readMessages(rpm readers.SenMLMetadata, params map[string]interface{}) ([]readers.Message, error) {
+func (sr *senmlRepository) readMessages(ctx context.Context, rpm readers.SenMLMetadata, params map[string]interface{}) ([]readers.Message, error) {
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 	condition := sr.fmtCondition(rpm)
-	query := fmt.Sprintf(`SELECT * FROM senml %s ORDER BY time DESC %s;`, condition, olq)
 
-	rows, err := sr.executeQuery(query, params)
+	query := fmt.Sprintf(`SELECT * FROM senml %s ORDER BY time DESC %s;`, condition, olq)
+	rows, err := sr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return nil, err
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
+			return []readers.Message{}, nil
+		}
+		return nil, errors.Wrap(readers.ErrReadMessages, err)
 	}
+
 	if rows == nil {
 		return []readers.Message{}, nil
 	}
 	defer rows.Close()
 
 	return sr.scanMessages(rows)
-}
-
-func (sr *senmlRepository) readCount(rpm readers.SenMLMetadata, params map[string]interface{}) (uint64, error) {
-	condition := sr.fmtCondition(rpm)
-	query := fmt.Sprintf(`SELECT COUNT(*) FROM senml %s;`, condition)
-
-	rows, err := sr.executeQuery(query, params)
-	if err != nil {
-		return 0, err
-	}
-
-	if rows == nil {
-		return 0, nil
-	}
-	defer rows.Close()
-
-	var total uint64
-	if rows.Next() {
-		if err := rows.Scan(&total); err != nil {
-			return 0, err
-		}
-	}
-
-	return total, nil
 }
 
 func (sr *senmlRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, error) {
@@ -166,17 +148,6 @@ func (sr *senmlRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, err
 	}
 
 	return messages, nil
-}
-
-func (sr *senmlRepository) executeQuery(query string, params map[string]interface{}) (*sqlx.Rows, error) {
-	rows, err := sr.db.NamedQuery(query, params)
-	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
-			return nil, nil
-		}
-		return nil, errors.Wrap(readers.ErrReadMessages, err)
-	}
-	return rows, nil
 }
 
 func (sr *senmlRepository) fmtCondition(rpm readers.SenMLMetadata) string {
