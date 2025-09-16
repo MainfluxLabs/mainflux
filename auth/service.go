@@ -174,7 +174,7 @@ func (svc service) login(token string) (string, string, error) {
 	return key.IssuerID, key.Subject, nil
 }
 
-func getTimestmap() time.Time {
+func getTimestamp() time.Time {
 	return time.Now().UTC().Round(time.Millisecond)
 }
 

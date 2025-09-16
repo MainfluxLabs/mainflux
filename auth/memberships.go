@@ -106,7 +106,7 @@ func (svc service) CreateOrgMemberships(ctx context.Context, token, orgID string
 		return err
 	}
 
-	timestamp := getTimestmap()
+	timestamp := getTimestamp()
 	var memberships []OrgMembership
 	for _, user := range usr.Users {
 		membership := OrgMembership{
@@ -251,7 +251,7 @@ func (svc service) UpdateOrgMemberships(ctx context.Context, token, orgID string
 			OrgID:     orgID,
 			MemberID:  user.Id,
 			Role:      roleByEmail[user.Email],
-			UpdatedAt: getTimestmap(),
+			UpdatedAt: getTimestamp(),
 		}
 
 		oms = append(oms, om)

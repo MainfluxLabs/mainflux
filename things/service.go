@@ -954,7 +954,7 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 	return nil
 }
 
-func getTimestmap() time.Time {
+func getTimestamp() time.Time {
 	return time.Now().UTC().Round(time.Millisecond)
 }
 
