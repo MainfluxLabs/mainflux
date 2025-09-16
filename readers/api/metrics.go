@@ -30,7 +30,7 @@ func MetricsMiddleware(svc readers.MessageRepository, counter metrics.Counter, l
 	}
 }
 
-func (mm *metricsMiddleware) ListJSONMessages(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (mm *metricsMiddleware) ListJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "list_json_messages").Add(1)
 		mm.latency.With("method", "list_json_messages").Observe(time.Since(begin).Seconds())
@@ -39,7 +39,7 @@ func (mm *metricsMiddleware) ListJSONMessages(ctx context.Context, rpm readers.J
 	return mm.svc.ListJSONMessages(ctx, rpm)
 }
 
-func (mm *metricsMiddleware) ListSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (mm *metricsMiddleware) ListSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "list_senml_messages").Add(1)
 		mm.latency.With("method", "list_senml_messages").Observe(time.Since(begin).Seconds())
@@ -48,7 +48,7 @@ func (mm *metricsMiddleware) ListSenMLMessages(ctx context.Context, rpm readers.
 	return mm.svc.ListSenMLMessages(ctx, rpm)
 }
 
-func (mm *metricsMiddleware) BackupJSONMessages(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (mm *metricsMiddleware) BackupJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "backup_json_messages").Add(1)
 		mm.latency.With("method", "backup_json_messages").Observe(time.Since(begin).Seconds())
@@ -58,7 +58,7 @@ func (mm *metricsMiddleware) BackupJSONMessages(ctx context.Context, rpm readers
 
 }
 
-func (mm *metricsMiddleware) BackupSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (mm *metricsMiddleware) BackupSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "backup_senml_messages").Add(1)
 		mm.latency.With("method", "backup_senml_messages").Observe(time.Since(begin).Seconds())
@@ -85,7 +85,7 @@ func (mm *metricsMiddleware) RestoreSenMLMessages(ctx context.Context, messages 
 	return mm.svc.RestoreSenMLMessages(ctx, messages...)
 }
 
-func (mm *metricsMiddleware) DeleteJSONMessages(ctx context.Context, rpm readers.JSONMetadata) error {
+func (mm *metricsMiddleware) DeleteJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "delete_json_messages").Add(1)
 		mm.latency.With("method", "delete_json_messages").Observe(time.Since(begin).Seconds())
@@ -94,7 +94,7 @@ func (mm *metricsMiddleware) DeleteJSONMessages(ctx context.Context, rpm readers
 	return mm.svc.DeleteJSONMessages(ctx, rpm)
 }
 
-func (mm *metricsMiddleware) DeleteSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) error {
+func (mm *metricsMiddleware) DeleteSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "delete_senml_messages").Add(1)
 		mm.latency.With("method", "delete_senml_messages").Observe(time.Since(begin).Seconds())

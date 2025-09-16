@@ -13,7 +13,7 @@ const maxLimitSize = 1000
 type listSenMLMessagesReq struct {
 	token    string
 	key      string
-	pageMeta readers.SenMLMetadata
+	pageMeta readers.SenMLPageMetadata
 }
 
 func (req listSenMLMessagesReq) validate() error {
@@ -48,7 +48,7 @@ func (req listSenMLMessagesReq) validate() error {
 type listJSONMessagesReq struct {
 	token    string
 	key      string
-	pageMeta readers.JSONMetadata
+	pageMeta readers.JSONPageMetadata
 }
 
 func (req listJSONMessagesReq) validate() error {
@@ -74,7 +74,7 @@ func (req listJSONMessagesReq) validate() error {
 type backupSenMLMessagesReq struct {
 	token         string
 	convertFormat string
-	pageMeta      readers.SenMLMetadata
+	pageMeta      readers.SenMLPageMetadata
 }
 
 func (req backupSenMLMessagesReq) validate() error {
@@ -100,7 +100,7 @@ func (req backupSenMLMessagesReq) validate() error {
 type backupJSONMessagesReq struct {
 	token         string
 	convertFormat string
-	pageMeta      readers.JSONMetadata
+	pageMeta      readers.JSONPageMetadata
 }
 
 func (req backupJSONMessagesReq) validate() error {
@@ -145,7 +145,7 @@ func (req restoreMessagesReq) validate() error {
 type deleteSenMLMessagesReq struct {
 	token    string
 	key      string
-	pageMeta readers.SenMLMetadata
+	pageMeta readers.SenMLPageMetadata
 }
 
 func (req deleteSenMLMessagesReq) validate() error {
@@ -158,7 +158,7 @@ func (req deleteSenMLMessagesReq) validate() error {
 type deleteJSONMessagesReq struct {
 	token    string
 	key      string
-	pageMeta readers.JSONMetadata
+	pageMeta readers.JSONPageMetadata
 }
 
 func (req deleteJSONMessagesReq) validate() error {

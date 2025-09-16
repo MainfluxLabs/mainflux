@@ -32,19 +32,19 @@ func New(db *sqlx.DB) readers.MessageRepository {
 	}
 }
 
-func (tr postgresRepository) ListJSONMessages(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (tr postgresRepository) ListJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	return tr.jsonRepository.ListMessages(ctx, rpm)
 }
 
-func (tr postgresRepository) ListSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (tr postgresRepository) ListSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	return tr.senmlRepository.ListMessages(ctx, rpm)
 }
 
-func (tr postgresRepository) BackupJSONMessages(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (tr postgresRepository) BackupJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	return tr.jsonRepository.Backup(ctx, rpm)
 }
 
-func (tr postgresRepository) BackupSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (tr postgresRepository) BackupSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	return tr.senmlRepository.Backup(ctx, rpm)
 }
 
@@ -56,10 +56,10 @@ func (tr postgresRepository) RestoreSenMLMessages(ctx context.Context, messages 
 	return tr.senmlRepository.Restore(ctx, messages...)
 }
 
-func (tr postgresRepository) DeleteJSONMessages(ctx context.Context, rpm readers.JSONMetadata) error {
+func (tr postgresRepository) DeleteJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) error {
 	return tr.jsonRepository.DeleteMessages(ctx, rpm)
 }
 
-func (tr postgresRepository) DeleteSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) error {
+func (tr postgresRepository) DeleteSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) error {
 	return tr.senmlRepository.DeleteMessages(ctx, rpm)
 }

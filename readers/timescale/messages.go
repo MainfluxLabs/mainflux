@@ -62,8 +62,8 @@ type PageMetadata struct {
 	AggField    string  `json:"agg_field,omitempty"`
 }
 
-// Convert JSONMetadata to PageMetadata
-func jsonMetadataToPageMetadata(jm readers.JSONMetadata) PageMetadata {
+// Convert JSONPageMetadata to PageMetadata
+func jsonMetadataToPageMetadata(jm readers.JSONPageMetadata) PageMetadata {
 	return PageMetadata{
 		Offset:    jm.Offset,
 		Limit:     jm.Limit,
@@ -75,8 +75,8 @@ func jsonMetadataToPageMetadata(jm readers.JSONMetadata) PageMetadata {
 	}
 }
 
-// Convert SenMLMetadata to PageMetadata
-func senMLMetadataToPageMetadata(sm readers.SenMLMetadata) PageMetadata {
+// Convert SenMLPageMetadata to PageMetadata
+func senMLMetadataToPageMetadata(sm readers.SenMLPageMetadata) PageMetadata {
 	return PageMetadata{
 		Offset:      sm.Offset,
 		Limit:       sm.Limit,
@@ -185,7 +185,7 @@ func (tr timescaleRepository) Restore(ctx context.Context, format string, messag
 	return err
 }
 
-func (tr timescaleRepository) readAllSenML(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (tr timescaleRepository) readAllSenML(rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	pageMetadata := senMLMetadataToPageMetadata(rpm)
 
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
@@ -242,7 +242,7 @@ func (tr timescaleRepository) readAllSenML(rpm readers.SenMLMetadata) (readers.S
 	}
 
 	return readers.SenMLMessagesPage{
-		SenMLMetadata: rpm,
+		SenMLPageMetadata: rpm,
 		MessagesPage: readers.MessagesPage{
 			Total:    total,
 			Messages: messages,
@@ -250,7 +250,7 @@ func (tr timescaleRepository) readAllSenML(rpm readers.SenMLMetadata) (readers.S
 	}, nil
 }
 
-func (tr timescaleRepository) readAllJSON(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (tr timescaleRepository) readAllJSON(rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	pageMetadata := jsonMetadataToPageMetadata(rpm)
 
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
@@ -306,7 +306,7 @@ func (tr timescaleRepository) readAllJSON(rpm readers.JSONMetadata) (readers.JSO
 	}
 
 	return readers.JSONMessagesPage{
-		JSONMetadata: rpm,
+		JSONPageMetadata: rpm,
 		MessagesPage: readers.MessagesPage{
 			Total:    total,
 			Messages: messages,
@@ -344,21 +344,21 @@ func (msg jsonMessage) toMap() (map[string]interface{}, error) {
 
 }
 
-func (tr timescaleRepository) ListJSONMessages(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (tr timescaleRepository) ListJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	return tr.readAllJSON(rpm)
 }
-func (tr timescaleRepository) ListSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (tr timescaleRepository) ListSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	return tr.readAllSenML(rpm)
 }
 
-func (tr timescaleRepository) BackupJSONMessages(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (tr timescaleRepository) BackupJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	backup := rpm
 	backup.Limit = 0
 	backup.Offset = 0
 	return tr.readAllJSON(backup)
 }
 
-func (tr timescaleRepository) BackupSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (tr timescaleRepository) BackupSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	backup := rpm
 	backup.Limit = 0
 	backup.Offset = 0
@@ -373,10 +373,10 @@ func (tr timescaleRepository) RestoreSenMLMessages(ctx context.Context, messages
 	return nil
 }
 
-func (tr timescaleRepository) DeleteJSONMessages(ctx context.Context, rpm readers.JSONMetadata) error {
+func (tr timescaleRepository) DeleteJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) error {
 	return nil
 }
 
-func (tr timescaleRepository) DeleteSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) error {
+func (tr timescaleRepository) DeleteSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) error {
 	return nil
 }

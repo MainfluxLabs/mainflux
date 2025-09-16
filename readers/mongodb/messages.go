@@ -56,7 +56,7 @@ type PageMetadata struct {
 	AggField    string  `json:"agg_field,omitempty"`
 }
 
-func jsonMetadataToPageMetadata(jm readers.JSONMetadata) PageMetadata {
+func jsonMetadataToPageMetadata(jm readers.JSONPageMetadata) PageMetadata {
 	return PageMetadata{
 		Offset:    jm.Offset,
 		Limit:     jm.Limit,
@@ -69,7 +69,7 @@ func jsonMetadataToPageMetadata(jm readers.JSONMetadata) PageMetadata {
 	}
 }
 
-func senMLMetadataToPageMetadata(sm readers.SenMLMetadata) PageMetadata {
+func senMLMetadataToPageMetadata(sm readers.SenMLPageMetadata) PageMetadata {
 	return PageMetadata{
 		Offset:      sm.Offset,
 		Limit:       sm.Limit,
@@ -145,7 +145,7 @@ func fmtCondition(profileID string, rpm PageMetadata) bson.D {
 	return filter
 }
 
-func (repo mongoRepository) readAllJSON(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (repo mongoRepository) readAllJSON(rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	col := repo.db.Collection(jsonCollection)
 
 	pageMetadata := jsonMetadataToPageMetadata(rpm)
@@ -179,7 +179,7 @@ func (repo mongoRepository) readAllJSON(rpm readers.JSONMetadata) (readers.JSONM
 	}
 
 	return readers.JSONMessagesPage{
-		JSONMetadata: rpm,
+		JSONPageMetadata: rpm,
 		MessagesPage: readers.MessagesPage{
 			Total:    uint64(total),
 			Messages: messages,
@@ -187,7 +187,7 @@ func (repo mongoRepository) readAllJSON(rpm readers.JSONMetadata) (readers.JSONM
 	}, nil
 }
 
-func (repo mongoRepository) readAllSenML(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (repo mongoRepository) readAllSenML(rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	col := repo.db.Collection(defCollection)
 
 	pageMetadata := senMLMetadataToPageMetadata(rpm)
@@ -221,7 +221,7 @@ func (repo mongoRepository) readAllSenML(rpm readers.SenMLMetadata) (readers.Sen
 	}
 
 	return readers.SenMLMessagesPage{
-		SenMLMetadata: rpm,
+		SenMLPageMetadata: rpm,
 		MessagesPage: readers.MessagesPage{
 			Total:    uint64(total),
 			Messages: messages,
@@ -229,22 +229,22 @@ func (repo mongoRepository) readAllSenML(rpm readers.SenMLMetadata) (readers.Sen
 	}, nil
 }
 
-func (repo mongoRepository) ListJSONMessages(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (repo mongoRepository) ListJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	return repo.readAllJSON(rpm)
 }
 
-func (repo mongoRepository) ListSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (repo mongoRepository) ListSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	return repo.readAllSenML(rpm)
 }
 
-func (repo mongoRepository) BackupJSONMessages(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (repo mongoRepository) BackupJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	backupMetadata := rpm
 	backupMetadata.Limit = noLimit
 	backupMetadata.Offset = 0
 	return repo.readAllJSON(backupMetadata)
 }
 
-func (repo mongoRepository) BackupSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (repo mongoRepository) BackupSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	backupMetadata := rpm
 	backupMetadata.Limit = noLimit
 	backupMetadata.Offset = 0
@@ -289,7 +289,7 @@ func (repo mongoRepository) RestoreSenMLMessages(ctx context.Context, messages .
 	return nil
 }
 
-func (repo mongoRepository) DeleteJSONMessages(ctx context.Context, rpm readers.JSONMetadata) error {
+func (repo mongoRepository) DeleteJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) error {
 	coll := repo.db.Collection(jsonCollection)
 
 	pageMetadata := jsonMetadataToPageMetadata(rpm)
@@ -307,7 +307,7 @@ func (repo mongoRepository) DeleteJSONMessages(ctx context.Context, rpm readers.
 	return nil
 }
 
-func (repo mongoRepository) DeleteSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) error {
+func (repo mongoRepository) DeleteSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) error {
 	coll := repo.db.Collection(defCollection)
 
 	pageMetadata := senMLMetadataToPageMetadata(rpm)

@@ -26,15 +26,15 @@ func newSenMLRepository(db dbutil.Database) *senmlRepository {
 	}
 }
 
-func (sr *senmlRepository) ListMessages(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (sr *senmlRepository) ListMessages(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	return sr.readAll(ctx, rpm)
 }
 
-func (sr *senmlRepository) Backup(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (sr *senmlRepository) Backup(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	return sr.readAll(ctx, rpm)
 }
 
-func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenMLMetadata) error {
+func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenMLPageMetadata) error {
 	tx, err := sr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(errors.ErrSaveMessages, err)
@@ -76,9 +76,9 @@ func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenML
 	return nil
 }
 
-func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	page := readers.SenMLMessagesPage{
-		SenMLMetadata: rpm,
+		SenMLPageMetadata: rpm,
 		MessagesPage: readers.MessagesPage{
 			Messages: []readers.Message{},
 			Total:    0,
@@ -115,7 +115,7 @@ func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLMetadat
 	return page, nil
 }
 
-func (sr *senmlRepository) readMessages(ctx context.Context, rpm readers.SenMLMetadata, params map[string]interface{}) ([]readers.Message, error) {
+func (sr *senmlRepository) readMessages(ctx context.Context, rpm readers.SenMLPageMetadata, params map[string]interface{}) ([]readers.Message, error) {
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 	condition := sr.fmtCondition(rpm)
 
@@ -150,7 +150,7 @@ func (sr *senmlRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, err
 	return messages, nil
 }
 
-func (sr *senmlRepository) fmtCondition(rpm readers.SenMLMetadata) string {
+func (sr *senmlRepository) fmtCondition(rpm readers.SenMLPageMetadata) string {
 	var query map[string]interface{}
 	meta, err := json.Marshal(rpm)
 	if err != nil {
@@ -193,7 +193,7 @@ func (sr *senmlRepository) fmtCondition(rpm readers.SenMLMetadata) string {
 	return condition
 }
 
-func (sr *senmlRepository) buildQueryParams(rpm readers.SenMLMetadata) map[string]interface{} {
+func (sr *senmlRepository) buildQueryParams(rpm readers.SenMLPageMetadata) map[string]interface{} {
 	return map[string]interface{}{
 		"limit":        rpm.Limit,
 		"offset":       rpm.Offset,

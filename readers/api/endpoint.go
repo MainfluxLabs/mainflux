@@ -42,9 +42,9 @@ func listJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 		}
 
 		return listJSONMessagesRes{
-			JSONMetadata: page.JSONMetadata,
-			Total:        page.Total,
-			Messages:     page.Messages,
+			JSONPageMetadata: page.JSONPageMetadata,
+			Total:            page.Total,
+			Messages:         page.Messages,
 		}, nil
 	}
 }
@@ -76,9 +76,9 @@ func listSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint 
 		}
 
 		return listSenMLMessagesRes{
-			SenMLMetadata: page.SenMLMetadata,
-			Total:         page.Total,
-			Messages:      page.Messages,
+			SenMLPageMetadata: page.SenMLPageMetadata,
+			Total:             page.Total,
+			Messages:          page.Messages,
 		}, nil
 	}
 }

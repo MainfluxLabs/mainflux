@@ -17,9 +17,9 @@ var (
 )
 
 type listJSONMessagesRes struct {
-	JSONMetadata readers.JSONMetadata
-	Total        uint64            `json:"total"`
-	Messages     []readers.Message `json:"messages"`
+	JSONPageMetadata readers.JSONPageMetadata
+	Total            uint64            `json:"total"`
+	Messages         []readers.Message `json:"messages"`
 }
 
 func (res listJSONMessagesRes) Headers() map[string]string {
@@ -35,9 +35,9 @@ func (res listJSONMessagesRes) Empty() bool {
 }
 
 type listSenMLMessagesRes struct {
-	SenMLMetadata readers.SenMLMetadata
-	Total         uint64            `json:"total"`
-	Messages      []readers.Message `json:"messages"`
+	SenMLPageMetadata readers.SenMLPageMetadata
+	Total             uint64            `json:"total"`
+	Messages          []readers.Message `json:"messages"`
 }
 
 func (res listSenMLMessagesRes) Headers() map[string]string {

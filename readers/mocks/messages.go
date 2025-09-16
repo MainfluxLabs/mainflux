@@ -33,19 +33,19 @@ func NewMessageRepository(profileID string, messages []readers.Message) readers.
 	}
 }
 
-func (repo *messageRepositoryMock) ListJSONMessages(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (repo *messageRepositoryMock) ListJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	return repo.readAllJSON(rpm)
 }
 
-func (repo *messageRepositoryMock) ListSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (repo *messageRepositoryMock) ListSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	return repo.readAllSenML(rpm)
 }
 
-func (repo *messageRepositoryMock) BackupJSONMessages(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (repo *messageRepositoryMock) BackupJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	return repo.readAllJSON(rpm)
 }
 
-func (repo *messageRepositoryMock) BackupSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (repo *messageRepositoryMock) BackupSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	return repo.readAllSenML(rpm)
 }
 
@@ -69,7 +69,7 @@ func (repo *messageRepositoryMock) RestoreSenMLMessages(ctx context.Context, mes
 	return nil
 }
 
-func (repo *messageRepositoryMock) DeleteJSONMessages(ctx context.Context, rpm readers.JSONMetadata) error {
+func (repo *messageRepositoryMock) DeleteJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) error {
 	repo.mutex.Lock()
 	defer repo.mutex.Unlock()
 
@@ -89,7 +89,7 @@ func (repo *messageRepositoryMock) DeleteJSONMessages(ctx context.Context, rpm r
 	return nil
 }
 
-func (repo *messageRepositoryMock) DeleteSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) error {
+func (repo *messageRepositoryMock) DeleteSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) error {
 	repo.mutex.Lock()
 	defer repo.mutex.Unlock()
 
@@ -109,7 +109,7 @@ func (repo *messageRepositoryMock) DeleteSenMLMessages(ctx context.Context, rpm 
 	return nil
 }
 
-func (repo *messageRepositoryMock) readAllJSON(rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (repo *messageRepositoryMock) readAllJSON(rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	repo.mutex.Lock()
 	defer repo.mutex.Unlock()
 
@@ -147,7 +147,7 @@ func (repo *messageRepositoryMock) readAllJSON(rpm readers.JSONMetadata) (reader
 
 	if rpm.Offset >= numOfMessages {
 		return readers.JSONMessagesPage{
-			JSONMetadata: rpm,
+			JSONPageMetadata: rpm,
 			MessagesPage: readers.MessagesPage{
 				Total:    numOfMessages,
 				Messages: []readers.Message{},
@@ -161,7 +161,7 @@ func (repo *messageRepositoryMock) readAllJSON(rpm readers.JSONMetadata) (reader
 	}
 
 	return readers.JSONMessagesPage{
-		JSONMetadata: rpm,
+		JSONPageMetadata: rpm,
 		MessagesPage: readers.MessagesPage{
 			Total:    numOfMessages,
 			Messages: filteredMessages[rpm.Offset:end],
@@ -169,7 +169,7 @@ func (repo *messageRepositoryMock) readAllJSON(rpm readers.JSONMetadata) (reader
 	}, nil
 }
 
-func (repo *messageRepositoryMock) readAllSenML(rpm readers.SenMLMetadata) (readers.SenMLMessagesPage, error) {
+func (repo *messageRepositoryMock) readAllSenML(rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	repo.mutex.Lock()
 	defer repo.mutex.Unlock()
 
@@ -190,7 +190,7 @@ func (repo *messageRepositoryMock) readAllSenML(rpm readers.SenMLMetadata) (read
 
 	if rpm.Offset >= numOfMessages {
 		return readers.SenMLMessagesPage{
-			SenMLMetadata: rpm,
+			SenMLPageMetadata: rpm,
 			MessagesPage: readers.MessagesPage{
 				Total:    numOfMessages,
 				Messages: []readers.Message{},
@@ -204,7 +204,7 @@ func (repo *messageRepositoryMock) readAllSenML(rpm readers.SenMLMetadata) (read
 	}
 
 	return readers.SenMLMessagesPage{
-		SenMLMetadata: rpm,
+		SenMLPageMetadata: rpm,
 		MessagesPage: readers.MessagesPage{
 			Total:    numOfMessages,
 			Messages: msgs[rpm.Offset:end],
@@ -212,7 +212,7 @@ func (repo *messageRepositoryMock) readAllSenML(rpm readers.SenMLMetadata) (read
 	}, nil
 }
 
-func (repo *messageRepositoryMock) jsonMessageMatchesFilter(msg readers.Message, query map[string]interface{}, rpm readers.JSONMetadata) bool {
+func (repo *messageRepositoryMock) jsonMessageMatchesFilter(msg readers.Message, query map[string]interface{}, rpm readers.JSONPageMetadata) bool {
 	switch m := msg.(type) {
 	case mfjson.Message:
 		return repo.checkJSONMessageFilter(m, query, rpm)
@@ -223,7 +223,7 @@ func (repo *messageRepositoryMock) jsonMessageMatchesFilter(msg readers.Message,
 	}
 }
 
-func (repo *messageRepositoryMock) senmlMessageMatchesFilter(msg readers.Message, query map[string]interface{}, rpm readers.SenMLMetadata) bool {
+func (repo *messageRepositoryMock) senmlMessageMatchesFilter(msg readers.Message, query map[string]interface{}, rpm readers.SenMLPageMetadata) bool {
 	switch m := msg.(type) {
 	case senml.Message:
 		return repo.checkSenMLMessageFilter(m, query, rpm)
@@ -232,7 +232,7 @@ func (repo *messageRepositoryMock) senmlMessageMatchesFilter(msg readers.Message
 	}
 }
 
-func (repo *messageRepositoryMock) checkJSONMessageFilter(jsonMsg mfjson.Message, query map[string]interface{}, rpm readers.JSONMetadata) bool {
+func (repo *messageRepositoryMock) checkJSONMessageFilter(jsonMsg mfjson.Message, query map[string]interface{}, rpm readers.JSONPageMetadata) bool {
 	// Check all filters
 	if rpm.Subtopic != "" && rpm.Subtopic != jsonMsg.Subtopic {
 		return false
@@ -252,7 +252,7 @@ func (repo *messageRepositoryMock) checkJSONMessageFilter(jsonMsg mfjson.Message
 	return true
 }
 
-func (repo *messageRepositoryMock) checkJSONMapFilter(jsonMap map[string]interface{}, query map[string]interface{}, rpm readers.JSONMetadata) bool {
+func (repo *messageRepositoryMock) checkJSONMapFilter(jsonMap map[string]interface{}, query map[string]interface{}, rpm readers.JSONPageMetadata) bool {
 	if rpm.Subtopic != "" {
 		if subtopic, ok := jsonMap["subtopic"].(string); !ok || subtopic != rpm.Subtopic {
 			return false
@@ -323,7 +323,7 @@ func (repo *messageRepositoryMock) getPayload(jsonMap map[string]interface{}) []
 	return nil
 }
 
-func (repo *messageRepositoryMock) checkSenMLMessageFilter(senmlMsg senml.Message, query map[string]interface{}, rpm readers.SenMLMetadata) bool {
+func (repo *messageRepositoryMock) checkSenMLMessageFilter(senmlMsg senml.Message, query map[string]interface{}, rpm readers.SenMLPageMetadata) bool {
 	if rpm.Subtopic != "" && rpm.Subtopic != senmlMsg.Subtopic {
 		return false
 	}
@@ -350,7 +350,7 @@ func (repo *messageRepositoryMock) checkSenMLMessageFilter(senmlMsg senml.Messag
 	return true
 }
 
-func (repo *messageRepositoryMock) checkSenMLValueFilters(senmlMsg senml.Message, query map[string]interface{}, rpm readers.SenMLMetadata) bool {
+func (repo *messageRepositoryMock) checkSenMLValueFilters(senmlMsg senml.Message, query map[string]interface{}, rpm readers.SenMLPageMetadata) bool {
 	if _, hasValue := query["v"]; hasValue && senmlMsg.Value != nil {
 		comparator, hasComparator := query["comparator"]
 		if !hasComparator {

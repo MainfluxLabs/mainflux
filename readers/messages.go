@@ -35,16 +35,16 @@ var ErrReadMessages = errors.New("failed to read messages from database")
 // MessageRepository specifies message reader API.
 type MessageRepository interface {
 	// ListJSONMessages retrieves the json messages with given filters.
-	ListJSONMessages(ctx context.Context, rpm JSONMetadata) (JSONMessagesPage, error)
+	ListJSONMessages(ctx context.Context, rpm JSONPageMetadata) (JSONMessagesPage, error)
 
 	// ListSenMLMessages retrieves the senml messages with given filters.
-	ListSenMLMessages(ctx context.Context, rpm SenMLMetadata) (SenMLMessagesPage, error)
+	ListSenMLMessages(ctx context.Context, rpm SenMLPageMetadata) (SenMLMessagesPage, error)
 
 	// BackupJSONMessages backups the json messages with given filters.
-	BackupJSONMessages(ctx context.Context, rpm JSONMetadata) (JSONMessagesPage, error)
+	BackupJSONMessages(ctx context.Context, rpm JSONPageMetadata) (JSONMessagesPage, error)
 
 	// BackupSenMLMessages backups the senml messages with given filters.
-	BackupSenMLMessages(ctx context.Context, rpm SenMLMetadata) (SenMLMessagesPage, error)
+	BackupSenMLMessages(ctx context.Context, rpm SenMLPageMetadata) (SenMLMessagesPage, error)
 
 	// RestoreJSONMessages restores the json messages with given filters.
 	RestoreJSONMessages(ctx context.Context, messages ...Message) error
@@ -53,10 +53,10 @@ type MessageRepository interface {
 	RestoreSenMLMessages(ctx context.Context, messages ...Message) error
 
 	// DeleteJSONMessages deletes the json messages within a time range.
-	DeleteJSONMessages(ctx context.Context, rpm JSONMetadata) error
+	DeleteJSONMessages(ctx context.Context, rpm JSONPageMetadata) error
 
 	// DeleteSenMLMessages deletes the json messages within a time range.
-	DeleteSenMLMessages(ctx context.Context, rpm SenMLMetadata) error
+	DeleteSenMLMessages(ctx context.Context, rpm SenMLPageMetadata) error
 }
 
 // Message represents any message format.
@@ -68,17 +68,17 @@ type MessagesPage struct {
 }
 
 type JSONMessagesPage struct {
-	JSONMetadata
+	JSONPageMetadata
 	MessagesPage
 }
 
 type SenMLMessagesPage struct {
-	SenMLMetadata
+	SenMLPageMetadata
 	MessagesPage
 }
 
-// SenMLMetadata represents the parameters used to create database queries
-type SenMLMetadata struct {
+// SenMLPageMetadata represents the parameters used to create database queries
+type SenMLPageMetadata struct {
 	Offset      uint64  `json:"offset"`
 	Limit       uint64  `json:"limit"`
 	Subtopic    string  `json:"subtopic,omitempty"`
@@ -98,8 +98,8 @@ type SenMLMetadata struct {
 	AggField    string  `json:"agg_field,omitempty"`
 }
 
-// JSONMetadata represents the parameters used to create database queries
-type JSONMetadata struct {
+// JSONPageMetadata represents the parameters used to create database queries
+type JSONPageMetadata struct {
 	Offset      uint64 `json:"offset"`
 	Limit       uint64 `json:"limit"`
 	Subtopic    string `json:"subtopic,omitempty"`

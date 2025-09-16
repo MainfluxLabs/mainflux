@@ -128,11 +128,11 @@ func TestListAllMessagesSenML(t *testing.T) {
 	// cases that return subset of messages are only
 	// checking data result set size, but not content.
 	cases := map[string]struct {
-		pageMeta readers.SenMLMetadata
+		pageMeta readers.SenMLPageMetadata
 		page     readers.SenMLMessagesPage
 	}{
 		"read all senml messages": {
-			pageMeta: readers.SenMLMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit: noLimit,
 			},
 			page: readers.SenMLMessagesPage{
@@ -143,7 +143,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			},
 		},
 		"read senml messages with non-existent subtopic": {
-			pageMeta: readers.SenMLMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:    noLimit,
 				Subtopic: "not-present",
 			},
@@ -154,7 +154,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			},
 		},
 		"read senml messages with subtopic": {
-			pageMeta: readers.SenMLMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:    noLimit,
 				Subtopic: subtopic,
 			},
@@ -166,7 +166,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			},
 		},
 		"read senml messages with publisher": {
-			pageMeta: readers.SenMLMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:     noLimit,
 				Publisher: pubID2,
 			},
@@ -178,7 +178,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			},
 		},
 		"read senml messages with protocol": {
-			pageMeta: readers.SenMLMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:    noLimit,
 				Protocol: httpProt,
 			},
@@ -190,7 +190,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			},
 		},
 		"read senml messages with name": {
-			pageMeta: readers.SenMLMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit: noLimit,
 				Name:  msgName,
 			},
@@ -202,7 +202,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			},
 		},
 		"read senml messages with value": {
-			pageMeta: readers.SenMLMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit: noLimit,
 				Value: v,
 			},
@@ -214,7 +214,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			},
 		},
 		"read senml messages with value and equal comparator": {
-			pageMeta: readers.SenMLMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:      noLimit,
 				Value:      v,
 				Comparator: readers.EqualKey,
@@ -227,7 +227,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			},
 		},
 		"read senml messages with value and lower-than comparator": {
-			pageMeta: readers.SenMLMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:      noLimit,
 				Value:      v + 1,
 				Comparator: readers.LowerThanKey,
@@ -240,7 +240,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			},
 		},
 		"read senml messages with value and lower-than-or-equal comparator": {
-			pageMeta: readers.SenMLMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:      noLimit,
 				Value:      v + 1,
 				Comparator: readers.LowerThanEqualKey,
@@ -253,7 +253,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			},
 		},
 		"read senml messages with value and greater-than comparator": {
-			pageMeta: readers.SenMLMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:      noLimit,
 				Value:      v - 1,
 				Comparator: readers.GreaterThanKey,
@@ -266,7 +266,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			},
 		},
 		"read senml messages with value and greater-than-or-equal comparator": {
-			pageMeta: readers.SenMLMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:      noLimit,
 				Value:      v - 1,
 				Comparator: readers.GreaterThanEqualKey,
@@ -279,7 +279,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			},
 		},
 		"read senml messages with boolean value": {
-			pageMeta: readers.SenMLMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:     noLimit,
 				BoolValue: vb,
 			},
@@ -291,7 +291,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			},
 		},
 		"read senml messages with string value": {
-			pageMeta: readers.SenMLMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:       noLimit,
 				StringValue: vs,
 			},
@@ -303,7 +303,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			},
 		},
 		"read senml messages with data value": {
-			pageMeta: readers.SenMLMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:     noLimit,
 				DataValue: vd,
 			},
@@ -315,7 +315,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			},
 		},
 		"read senml messages with from": {
-			pageMeta: readers.SenMLMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit: noLimit,
 				From:  messages[20].Time,
 			},
@@ -327,7 +327,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			},
 		},
 		"read senml messages with to": {
-			pageMeta: readers.SenMLMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit: noLimit,
 				To:    messages[20].Time,
 			},
@@ -339,7 +339,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 			},
 		},
 		"read senml messages with from/to": {
-			pageMeta: readers.SenMLMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit: noLimit,
 				From:  messages[5].Time,
 				To:    messages[0].Time,
@@ -439,11 +439,11 @@ func TestListAllMessagesJSON(t *testing.T) {
 	}
 
 	cases := map[string]struct {
-		pageMeta readers.JSONMetadata
+		pageMeta readers.JSONPageMetadata
 		page     readers.JSONMessagesPage
 	}{
 		"read all json messages": {
-			pageMeta: readers.JSONMetadata{
+			pageMeta: readers.JSONPageMetadata{
 				Limit: noLimit,
 			},
 			page: readers.JSONMessagesPage{
@@ -454,7 +454,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 			},
 		},
 		"read json messages with protocol": {
-			pageMeta: readers.JSONMetadata{
+			pageMeta: readers.JSONPageMetadata{
 				Limit:    noLimit,
 				Protocol: httpProt,
 			},

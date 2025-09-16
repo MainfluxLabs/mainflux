@@ -26,13 +26,13 @@ func newJSONRepository(db dbutil.Database) *jsonRepository {
 	}
 }
 
-func (jr *jsonRepository) ListMessages(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (jr *jsonRepository) ListMessages(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	return jr.readAll(ctx, rpm)
 }
 
-func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	page := readers.JSONMessagesPage{
-		JSONMetadata: rpm,
+		JSONPageMetadata: rpm,
 		MessagesPage: readers.MessagesPage{
 			Messages: []readers.Message{},
 			Total:    0,
@@ -69,7 +69,7 @@ func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONMetadata)
 	return page, nil
 }
 
-func (jr *jsonRepository) readMessages(ctx context.Context, rpm readers.JSONMetadata, params map[string]interface{}) ([]readers.Message, error) {
+func (jr *jsonRepository) readMessages(ctx context.Context, rpm readers.JSONPageMetadata, params map[string]interface{}) ([]readers.Message, error) {
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 	condition := jr.fmtCondition(rpm)
 
@@ -109,7 +109,7 @@ func (jr *jsonRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, erro
 	return messages, nil
 }
 
-func (jr *jsonRepository) fmtCondition(rpm readers.JSONMetadata) string {
+func (jr *jsonRepository) fmtCondition(rpm readers.JSONPageMetadata) string {
 	var query map[string]interface{}
 	meta, err := json.Marshal(rpm)
 	if err != nil {
@@ -136,7 +136,7 @@ func (jr *jsonRepository) fmtCondition(rpm readers.JSONMetadata) string {
 	return condition
 }
 
-func (jr *jsonRepository) buildQueryParams(rpm readers.JSONMetadata) map[string]interface{} {
+func (jr *jsonRepository) buildQueryParams(rpm readers.JSONPageMetadata) map[string]interface{} {
 	return map[string]interface{}{
 		"limit":     rpm.Limit,
 		"offset":    rpm.Offset,
@@ -148,11 +148,11 @@ func (jr *jsonRepository) buildQueryParams(rpm readers.JSONMetadata) map[string]
 	}
 }
 
-func (jr *jsonRepository) Backup(ctx context.Context, rpm readers.JSONMetadata) (readers.JSONMessagesPage, error) {
+func (jr *jsonRepository) Backup(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	return jr.readAll(ctx, rpm)
 }
 
-func (jr *jsonRepository) DeleteMessages(ctx context.Context, rpm readers.JSONMetadata) error {
+func (jr *jsonRepository) DeleteMessages(ctx context.Context, rpm readers.JSONPageMetadata) error {
 	tx, err := jr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(errors.ErrSaveMessages, err)

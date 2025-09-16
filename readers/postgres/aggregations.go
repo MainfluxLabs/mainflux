@@ -57,7 +57,7 @@ func newAggregationService(db dbutil.Database) *aggregationService {
 	return &aggregationService{db: db}
 }
 
-func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rpm readers.JSONMetadata) ([]readers.Message, uint64, error) {
+func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) ([]readers.Message, uint64, error) {
 	params := map[string]interface{}{
 		"limit":     rpm.Limit,
 		"offset":    rpm.Offset,
@@ -118,7 +118,7 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 	return messages, total, nil
 }
 
-func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, rpm readers.SenMLMetadata) ([]readers.Message, uint64, error) {
+func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) ([]readers.Message, uint64, error) {
 	params := map[string]interface{}{
 		"limit":        rpm.Limit,
 		"offset":       rpm.Offset,
@@ -496,7 +496,7 @@ func buildAggregatedJSONSelect(aggField string, aggAlias string) string {
 		pathArray, aggAlias)
 }
 
-func (as *aggregationService) getJSONConditions(rpm readers.JSONMetadata) []string {
+func (as *aggregationService) getJSONConditions(rpm readers.JSONPageMetadata) []string {
 	var conditions []string
 
 	if rpm.Subtopic != "" {
@@ -518,7 +518,7 @@ func (as *aggregationService) getJSONConditions(rpm readers.JSONMetadata) []stri
 	return conditions
 }
 
-func (as *aggregationService) getSenMLConditions(rpm readers.SenMLMetadata) []string {
+func (as *aggregationService) getSenMLConditions(rpm readers.SenMLPageMetadata) []string {
 	var conditions []string
 
 	if rpm.Subtopic != "" {
