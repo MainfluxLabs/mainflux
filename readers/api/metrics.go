@@ -55,7 +55,6 @@ func (mm *metricsMiddleware) BackupJSONMessages(ctx context.Context, rpm readers
 	}(time.Now())
 
 	return mm.svc.BackupJSONMessages(ctx, rpm)
-
 }
 
 func (mm *metricsMiddleware) BackupSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
