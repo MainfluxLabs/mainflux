@@ -95,6 +95,11 @@ type KeyRes struct {
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 }
 
+type InvitesPage struct {
+	Invites []Invite `json:"invites,omitempty"`
+	pageRes
+}
+
 func (res KeyRes) Code() int {
 	return http.StatusCreated
 }

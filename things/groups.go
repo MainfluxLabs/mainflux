@@ -140,7 +140,7 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token, orgID string, 
 
 	grs := []Group{}
 	for _, group := range groups {
-		timestamp := getTimestmap()
+		timestamp := getTimestamp()
 		group.CreatedAt, group.UpdatedAt = timestamp, timestamp
 
 		id, err := ts.idProvider.ID()
@@ -229,7 +229,7 @@ func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Gr
 	if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
 		return Group{}, err
 	}
-	group.UpdatedAt = getTimestmap()
+	group.UpdatedAt = getTimestamp()
 
 	return ts.groups.Update(ctx, group)
 }

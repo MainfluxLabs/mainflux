@@ -20,7 +20,7 @@ const (
 	tokensEndpoint       = "tokens"
 	passwordEndpoint     = "password"
 
-	registerUserPath = "/auth/email-verify"
+	redirectPathEmailVerify = "/auth/email-verify"
 )
 
 func (sdk mfSDK) CreateUser(u User, token string) (string, error) {
@@ -54,7 +54,7 @@ func (sdk mfSDK) RegisterUser(u User) (string, error) {
 		RedirectPath string `json:"redirect_path"`
 	}{
 		u,
-		registerUserPath,
+		redirectPathEmailVerify,
 	})
 
 	if err != nil {

@@ -26,11 +26,12 @@ import (
 )
 
 const (
-	secret        = "secret"
-	contentType   = "application/json"
-	id            = "123e4567-e89b-12d3-a456-000000000001"
-	email         = "user@example.com"
-	loginDuration = 30 * time.Minute
+	secret         = "secret"
+	contentType    = "application/json"
+	id             = "123e4567-e89b-12d3-a456-000000000001"
+	email          = "user@example.com"
+	loginDuration  = 30 * time.Minute
+	inviteDuration = 7 * 24 * time.Hour
 )
 
 type issueRequest struct {
@@ -68,7 +69,7 @@ func newService() auth.Service {
 	idProvider := uuid.NewMock()
 	t := jwt.New(secret)
 
-	return auth.New(nil, nil, nil, repo, nil, nil, idProvider, t, loginDuration)
+	return auth.New(nil, nil, nil, repo, nil, nil, nil, nil, idProvider, t, loginDuration, inviteDuration)
 }
 
 func newServer(svc auth.Service) *httptest.Server {

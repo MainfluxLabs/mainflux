@@ -108,7 +108,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, err
 		return Org{}, err
 	}
 
-	timestamp := getTimestmap()
+	timestamp := getTimestamp()
 
 	org := Org{
 		ID:          id,
@@ -183,7 +183,7 @@ func (svc service) UpdateOrg(ctx context.Context, token string, o Org) (Org, err
 		Name:        o.Name,
 		Description: o.Description,
 		Metadata:    o.Metadata,
-		UpdatedAt:   getTimestmap(),
+		UpdatedAt:   getTimestamp(),
 	}
 
 	if err := svc.orgs.Update(ctx, org); err != nil {

@@ -80,6 +80,7 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrInvalidSubject),
 			errors.Contains(err, ErrMissingObject),
 			errors.Contains(err, ErrMissingKeyID),
+			errors.Contains(err, ErrMissingInviteID),
 			errors.Contains(err, ErrInvalidAction),
 			errors.Contains(err, ErrBearerKey),
 			errors.Contains(err, ErrInvalidAuthKey),
@@ -136,6 +137,7 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrMissingRole),
 		errors.Contains(err, ErrMissingObject),
 		errors.Contains(err, ErrMissingKeyID),
+		errors.Contains(err, ErrMissingInviteID),
 		errors.Contains(err, ErrInvalidIDFormat),
 		errors.Contains(err, ErrNameSize),
 		errors.Contains(err, ErrEmailSize),
@@ -167,11 +169,14 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrMissingActionID),
 		errors.Contains(err, ErrInvalidOperator):
 		w.WriteHeader(http.StatusBadRequest)
-	case errors.Contains(err, errors.ErrAuthorization):
+	case errors.Contains(err, errors.ErrAuthorization),
+		errors.Contains(err, ErrInviteExpired),
+		errors.Contains(err, ErrInvalidInviteState):
 		w.WriteHeader(http.StatusForbidden)
 	case errors.Contains(err, dbutil.ErrNotFound):
 		w.WriteHeader(http.StatusNotFound)
-	case errors.Contains(err, dbutil.ErrConflict):
+	case errors.Contains(err, dbutil.ErrConflict),
+		errors.Contains(err, ErrUserAlreadyInvited):
 		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)
