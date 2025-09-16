@@ -46,10 +46,10 @@ type MessageRepository interface {
 	// BackupSenMLMessages backups the senml messages with given filters.
 	BackupSenMLMessages(ctx context.Context, rpm SenMLPageMetadata) (SenMLMessagesPage, error)
 
-	// RestoreJSONMessages restores the json messages with given filters.
+	// RestoreJSONMessages restores the json messages.
 	RestoreJSONMessages(ctx context.Context, messages ...Message) error
 
-	// RestoreSenMLMessages restores the senml messages with given filters.
+	// RestoreSenMLMessages restores the senml messages.
 	RestoreSenMLMessages(ctx context.Context, messages ...Message) error
 
 	// DeleteJSONMessages deletes the json messages within a time range.
