@@ -721,7 +721,6 @@ func TestDeleteMessagesSenML(t *testing.T) {
 			From:      tc.pageMeta.From,
 			To:        tc.pageMeta.To,
 			Limit:     noLimit,
-			Format:    senmlFormat,
 		})
 
 		require.Nil(t, err)

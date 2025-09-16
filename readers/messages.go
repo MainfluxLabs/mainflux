@@ -92,7 +92,6 @@ type SenMLPageMetadata struct {
 	DataValue   string  `json:"vd,omitempty"`
 	From        int64   `json:"from,omitempty"`
 	To          int64   `json:"to,omitempty"`
-	Format      string  `json:"format,omitempty"`
 	AggInterval string  `json:"agg_interval,omitempty"`
 	AggType     string  `json:"agg_type,omitempty"`
 	AggField    string  `json:"agg_field,omitempty"`
