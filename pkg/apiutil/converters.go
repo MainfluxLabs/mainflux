@@ -45,8 +45,7 @@ func GenerateCSVFromSenML(page readers.MessagesPage) ([]byte, error) {
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
 
-	header := senmlHeader
-	if err := writer.Write(header); err != nil {
+	if err := writer.Write(senmlHeader); err != nil {
 		return nil, err
 	}
 
@@ -85,9 +84,7 @@ func GenerateCSVFromJSON(page readers.MessagesPage) ([]byte, error) {
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
 
-	header := jsonHeader
-
-	if err := writer.Write(header); err != nil {
+	if err := writer.Write(jsonHeader); err != nil {
 		return nil, err
 	}
 
