@@ -398,7 +398,6 @@ func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
 	}
 
 	return pageMeta, nil
-
 }
 
 func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) {
