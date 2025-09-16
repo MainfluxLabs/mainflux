@@ -164,6 +164,17 @@ type Key struct {
 	ExpiresAt time.Time
 }
 
+type Invite struct {
+	ID           string    `json:"id"`
+	InviteeID    string    `json:"invitee_id"`
+	InviteeEmail string    `json:"invitee_email"`
+	InviterID    string    `json:"inviter_id"`
+	OrgID        string    `json:"org_id"`
+	InviteeRole  string    `json:"invitee_role"`
+	CreatedAt    time.Time `json:"created_at"`
+	ExpiresAt    time.Time `json:"expires_at"`
+}
+
 type Metadata map[string]interface{}
 
 // SDK contains Mainflux API.
@@ -365,6 +376,22 @@ type SDK interface {
 
 	// RetrieveKey retrieves data for the key identified by the provided ID, that is issued by the user identified by the provided key.
 	RetrieveKey(id, token string) (retrieveKeyRes, error)
+
+	// CreateInvite creates and sends a new Invite.
+	CreateInvite(orgID string, om OrgMembership, token string) (Invite, error)
+
+	// RevokeInvite revokes a specific Invite.
+	RevokeInvite(inviteID string, token string) error
+
+	// InviteRespond responds to a specific Invite either accepting or declining it.
+	InviteRespond(inviteID string, accept bool, token string) error
+
+	// GetInvite retrieves a specific Invite.
+	GetInvite(inviteID string, token string) (Invite, error)
+
+	// ListInvitesByUser retrieves a list of Invites either sent out by, or sent to the user identifed by
+	// the specific userID.
+	ListInvitesByUser(userID string, userType string, pm PageMetadata, token string) (InvitesPage, error)
 }
 
 type mfSDK struct {
