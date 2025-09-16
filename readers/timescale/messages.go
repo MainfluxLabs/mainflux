@@ -62,7 +62,6 @@ type PageMetadata struct {
 	AggField    string  `json:"agg_field,omitempty"`
 }
 
-// Convert JSONPageMetadata to PageMetadata
 func jsonMetadataToPageMetadata(jm readers.JSONPageMetadata) PageMetadata {
 	return PageMetadata{
 		Offset:    jm.Offset,
@@ -75,7 +74,6 @@ func jsonMetadataToPageMetadata(jm readers.JSONPageMetadata) PageMetadata {
 	}
 }
 
-// Convert SenMLPageMetadata to PageMetadata
 func senMLMetadataToPageMetadata(sm readers.SenMLPageMetadata) PageMetadata {
 	return PageMetadata{
 		Offset:      sm.Offset,
@@ -226,7 +224,6 @@ func (tr timescaleRepository) readAllSenML(rpm readers.SenMLPageMetadata) (reade
 		messages = append(messages, msg.Message)
 	}
 
-	// count total
 	q = fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, defTable, fmtCondition(pageMetadata))
 	rows, err = tr.db.NamedQuery(q, params)
 	if err != nil {
@@ -290,7 +287,6 @@ func (tr timescaleRepository) readAllJSON(rpm readers.JSONPageMetadata) (readers
 		messages = append(messages, m)
 	}
 
-	// count total
 	q = fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, jsonTable, fmtCondition(pageMetadata))
 	rows, err = tr.db.NamedQuery(q, params)
 	if err != nil {

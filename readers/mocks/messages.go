@@ -233,7 +233,6 @@ func (repo *messageRepositoryMock) senmlMessageMatchesFilter(msg readers.Message
 }
 
 func (repo *messageRepositoryMock) checkJSONMessageFilter(jsonMsg mfjson.Message, query map[string]interface{}, rpm readers.JSONPageMetadata) bool {
-	// Check all filters
 	if rpm.Subtopic != "" && rpm.Subtopic != jsonMsg.Subtopic {
 		return false
 	}
