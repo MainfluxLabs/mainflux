@@ -145,7 +145,7 @@ func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgI
 		return OrgInvite{}, ErrOrgMembershipExists
 	}
 
-	createdAt := getTimestmap()
+	createdAt := getTimestamp()
 	inviteID, err := svc.idProvider.ID()
 	if err != nil {
 		return OrgInvite{}, err
@@ -260,7 +260,7 @@ func (svc service) RespondOrgInvite(ctx context.Context, token, inviteID string,
 		// User has accepted the Invite, assign them as a member of the appropriate Org
 		// with the appropriate role
 		newState = InviteStateAccepted
-		ts := getTimestmap()
+		ts := getTimestamp()
 
 		membership := OrgMembership{
 			MemberID:  user.ID,
