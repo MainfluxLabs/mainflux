@@ -23,6 +23,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	mqttpub "github.com/MainfluxLabs/mainflux/pkg/messaging/mqtt"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
@@ -205,8 +206,8 @@ func main() {
 
 	if cfg.forwarder == "true" {
 		subjects := []string{
-			brokers.SubjectSenML,
-			brokers.SubjectJSON,
+			nats.SubjectSenML,
+			nats.SubjectJSON,
 		}
 
 		fwd := mqtt.NewForwarder(subjects, logger)
