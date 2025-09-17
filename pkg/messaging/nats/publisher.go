@@ -25,9 +25,9 @@ const (
 	// SubjectJSON represents subject used to subscribe to JSON messages.
 	SubjectJSON = "json.>"
 	// SubjectSmtp represents subject used to subscribe to SMTP notifications.
-	SubjectSmtp = "smtp"
+	SubjectSmtp = "smtp.*"
 	// SubjectSmpp represents subject used to subscribe to SMPP notifications.
-	SubjectSmpp = "smpp"
+	SubjectSmpp = "smpp.*"
 	// SubjectAlarm represents subject used to subscribe to alarms.
 	SubjectAlarm = "alarms"
 )
