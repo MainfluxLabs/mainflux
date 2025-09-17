@@ -34,12 +34,8 @@ func (req listSenMLMessagesReq) validate() error {
 		return apiutil.ErrInvalidComparator
 	}
 
-	if req.pageMeta.AggType != "" {
-		switch req.pageMeta.AggType {
-		case readers.AggregationMin, readers.AggregationMax, readers.AggregationAvg, readers.AggregationCount:
-		default:
-			return apiutil.ErrInvalidAggType
-		}
+	if err := validateAggregation(req.pageMeta.AggType); err != nil {
+		return err
 	}
 
 	return nil
@@ -60,12 +56,8 @@ func (req listJSONMessagesReq) validate() error {
 		return apiutil.ErrLimitSize
 	}
 
-	if req.pageMeta.AggType != "" {
-		switch req.pageMeta.AggType {
-		case readers.AggregationMin, readers.AggregationMax, readers.AggregationAvg, readers.AggregationCount:
-		default:
-			return apiutil.ErrInvalidAggType
-		}
+	if err := validateAggregation(req.pageMeta.AggType); err != nil {
+		return err
 	}
 
 	return nil
@@ -86,12 +78,8 @@ func (req backupSenMLMessagesReq) validate() error {
 		return apiutil.ErrInvalidQueryParams
 	}
 
-	if req.pageMeta.AggType != "" {
-		switch req.pageMeta.AggType {
-		case readers.AggregationMin, readers.AggregationMax, readers.AggregationAvg, readers.AggregationCount:
-		default:
-			return apiutil.ErrInvalidAggType
-		}
+	if err := validateAggregation(req.pageMeta.AggType); err != nil {
+		return err
 	}
 
 	return nil
@@ -112,12 +100,8 @@ func (req backupJSONMessagesReq) validate() error {
 		return apiutil.ErrInvalidQueryParams
 	}
 
-	if req.pageMeta.AggType != "" {
-		switch req.pageMeta.AggType {
-		case readers.AggregationMin, readers.AggregationMax, readers.AggregationAvg, readers.AggregationCount:
-		default:
-			return apiutil.ErrInvalidAggType
-		}
+	if err := validateAggregation(req.pageMeta.AggType); err != nil {
+		return err
 	}
 
 	return nil
@@ -166,4 +150,17 @@ func (req deleteJSONMessagesReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 	return nil
+}
+
+func validateAggregation(aggType string) error {
+	if aggType == "" {
+		return nil
+	}
+
+	switch aggType {
+	case readers.AggregationMin, readers.AggregationMax, readers.AggregationAvg, readers.AggregationCount:
+		return nil
+	default:
+		return apiutil.ErrInvalidAggType
+	}
 }
