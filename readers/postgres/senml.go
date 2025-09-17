@@ -56,16 +56,8 @@ func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenML
 	condition := sr.fmtCondition(rpm)
 	q := fmt.Sprintf("DELETE FROM senml %s", condition)
 	params := map[string]interface{}{
-		"subtopic":     rpm.Subtopic,
-		"publisher":    rpm.Publisher,
-		"name":         rpm.Name,
-		"protocol":     rpm.Protocol,
-		"value":        rpm.Value,
-		"bool_value":   rpm.BoolValue,
-		"string_value": rpm.StringValue,
-		"data_value":   rpm.DataValue,
-		"from":         rpm.From,
-		"to":           rpm.To,
+		"from": rpm.From,
+		"to":   rpm.To,
 	}
 
 	_, err = tx.NamedExecContext(ctx, q, params)

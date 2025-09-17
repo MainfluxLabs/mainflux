@@ -174,11 +174,8 @@ func (jr *jsonRepository) DeleteMessages(ctx context.Context, rpm readers.JSONPa
 	condition := jr.fmtCondition(rpm)
 	q := fmt.Sprintf("DELETE FROM json %s", condition)
 	params := map[string]interface{}{
-		"subtopic":  rpm.Subtopic,
-		"publisher": rpm.Publisher,
-		"protocol":  rpm.Protocol,
-		"from":      rpm.From,
-		"to":        rpm.To,
+		"from": rpm.From,
+		"to":   rpm.To,
 	}
 
 	_, err = tx.NamedExecContext(ctx, q, params)
