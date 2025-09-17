@@ -5,6 +5,7 @@ package notifiers
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
@@ -39,11 +40,6 @@ type Service interface {
 	consumers.Consumer
 }
 
-const (
-	notifierSMTP = "smtp"
-	notifierSMPP = "smpp"
-)
-
 var _ Service = (*notifierService)(nil)
 
 type notifierService struct {
@@ -72,26 +68,18 @@ func (ns *notifierService) Consume(message interface{}) error {
 	}
 
 	subject := strings.Split(msg.Subject, ".")
-	notifierType := subject[0]
+	if len(subject) < 2 {
+		return errors.Wrap(ErrNotify, fmt.Errorf("invalid subject: %s", msg.Subject))
+	}
 	notifierID := subject[1]
 
-	switch notifierType {
-	case notifierSMTP:
-		smtp, err := ns.notifierRepo.RetrieveByID(ctx, notifierID)
-		if err != nil {
-			return errors.Wrap(ErrNotify, err)
-		}
-		if err = ns.sender.Send(smtp.Contacts, msg); err != nil {
-			return err
-		}
-	case notifierSMPP:
-		smpp, err := ns.notifierRepo.RetrieveByID(ctx, notifierID)
-		if err != nil {
-			return errors.Wrap(ErrNotify, err)
-		}
-		if err = ns.sender.Send(smpp.Contacts, msg); err != nil {
-			return err
-		}
+	notifier, err := ns.notifierRepo.RetrieveByID(ctx, notifierID)
+	if err != nil {
+		return errors.Wrap(ErrNotify, err)
+	}
+
+	if err = ns.sender.Send(notifier.Contacts, msg); err != nil {
+		return errors.Wrap(ErrNotify, err)
 	}
 
 	return nil
