@@ -74,7 +74,7 @@ func jsonPageMetaToPageMeta(jm readers.JSONPageMetadata) PageMetadata {
 	}
 }
 
-func senMLPageMetaToPageMeta(sm readers.SenMLPageMetadata) PageMetadata {
+func senmlPageMetaToPageMeta(sm readers.SenMLPageMetadata) PageMetadata {
 	return PageMetadata{
 		Offset:      sm.Offset,
 		Limit:       sm.Limit,
@@ -184,7 +184,7 @@ func (tr timescaleRepository) Restore(ctx context.Context, format string, messag
 }
 
 func (tr timescaleRepository) readAllSenML(rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
-	pageMetadata := senMLPageMetaToPageMeta(rpm)
+	pageMetadata := senmlPageMetaToPageMeta(rpm)
 
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 	q := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY time DESC %s;`, defTable, fmtCondition(pageMetadata), olq)
