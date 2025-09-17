@@ -19,6 +19,8 @@ import (
 const (
 	defCollection  = "messages"
 	jsonCollection = "json"
+	jsonOrder      = "created"
+	senmlOrder     = "time"
 	// noLimit is used to indicate that there is no limit for the number of results.
 	noLimit = 0
 )
@@ -102,9 +104,9 @@ func fmtCondition(profileID string, rpm PageMetadata) bson.D {
 	}
 	json.Unmarshal(meta, &query)
 
-	timeField := "time"
+	timeField := senmlOrder
 	if rpm.Format == jsonCollection {
-		timeField = "created"
+		timeField = jsonOrder
 	}
 
 	for name, value := range query {
