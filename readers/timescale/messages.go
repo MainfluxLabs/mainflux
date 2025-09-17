@@ -62,7 +62,7 @@ type PageMetadata struct {
 	AggField    string  `json:"agg_field,omitempty"`
 }
 
-func jsonMetadataToPageMetadata(jm readers.JSONPageMetadata) PageMetadata {
+func jsonPageMetaToPageMeta(jm readers.JSONPageMetadata) PageMetadata {
 	return PageMetadata{
 		Offset:    jm.Offset,
 		Limit:     jm.Limit,
@@ -74,7 +74,7 @@ func jsonMetadataToPageMetadata(jm readers.JSONPageMetadata) PageMetadata {
 	}
 }
 
-func senMLMetadataToPageMetadata(sm readers.SenMLPageMetadata) PageMetadata {
+func senMLPageMetaToPageMeta(sm readers.SenMLPageMetadata) PageMetadata {
 	return PageMetadata{
 		Offset:      sm.Offset,
 		Limit:       sm.Limit,
@@ -184,7 +184,7 @@ func (tr timescaleRepository) Restore(ctx context.Context, format string, messag
 }
 
 func (tr timescaleRepository) readAllSenML(rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
-	pageMetadata := senMLMetadataToPageMetadata(rpm)
+	pageMetadata := senMLPageMetaToPageMeta(rpm)
 
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 	q := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY time DESC %s;`, defTable, fmtCondition(pageMetadata), olq)
@@ -248,7 +248,7 @@ func (tr timescaleRepository) readAllSenML(rpm readers.SenMLPageMetadata) (reade
 }
 
 func (tr timescaleRepository) readAllJSON(rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
-	pageMetadata := jsonMetadataToPageMetadata(rpm)
+	pageMetadata := jsonPageMetaToPageMeta(rpm)
 
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 	q := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY created DESC %s;`, jsonTable, fmtCondition(pageMetadata), olq)

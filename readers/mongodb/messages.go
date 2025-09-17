@@ -58,7 +58,7 @@ type PageMetadata struct {
 	AggField    string  `json:"agg_field,omitempty"`
 }
 
-func jsonMetadataToPageMetadata(jm readers.JSONPageMetadata) PageMetadata {
+func jsonPageMetaToPageMeta(jm readers.JSONPageMetadata) PageMetadata {
 	return PageMetadata{
 		Offset:    jm.Offset,
 		Limit:     jm.Limit,
@@ -71,7 +71,7 @@ func jsonMetadataToPageMetadata(jm readers.JSONPageMetadata) PageMetadata {
 	}
 }
 
-func senMLMetadataToPageMetadata(sm readers.SenMLPageMetadata) PageMetadata {
+func senMLPageMetaToPageMeta(sm readers.SenMLPageMetadata) PageMetadata {
 	return PageMetadata{
 		Offset:      sm.Offset,
 		Limit:       sm.Limit,
@@ -146,7 +146,7 @@ func fmtCondition(rpm PageMetadata) bson.D {
 func (repo mongoRepository) readAllJSON(rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	col := repo.db.Collection(jsonCollection)
 
-	pageMetadata := jsonMetadataToPageMetadata(rpm)
+	pageMetadata := jsonPageMetaToPageMeta(rpm)
 	filter := fmtCondition(pageMetadata)
 
 	sortMap := bson.D{{Key: "created", Value: -1}}
@@ -188,7 +188,7 @@ func (repo mongoRepository) readAllJSON(rpm readers.JSONPageMetadata) (readers.J
 func (repo mongoRepository) readAllSenML(rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	col := repo.db.Collection(defCollection)
 
-	pageMetadata := senMLMetadataToPageMetadata(rpm)
+	pageMetadata := senMLPageMetaToPageMeta(rpm)
 	filter := fmtCondition(pageMetadata)
 
 	sortMap := bson.D{{Key: "time", Value: -1}}
@@ -290,7 +290,7 @@ func (repo mongoRepository) RestoreSenMLMessages(ctx context.Context, messages .
 func (repo mongoRepository) DeleteJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) error {
 	coll := repo.db.Collection(jsonCollection)
 
-	pageMetadata := jsonMetadataToPageMetadata(rpm)
+	pageMetadata := jsonPageMetaToPageMeta(rpm)
 	filter := fmtCondition(pageMetadata)
 
 	if len(filter) == 0 {
@@ -308,7 +308,7 @@ func (repo mongoRepository) DeleteJSONMessages(ctx context.Context, rpm readers.
 func (repo mongoRepository) DeleteSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) error {
 	coll := repo.db.Collection(defCollection)
 
-	pageMetadata := senMLMetadataToPageMetadata(rpm)
+	pageMetadata := senMLPageMetaToPageMeta(rpm)
 	filter := fmtCondition(pageMetadata)
 
 	if len(filter) == 0 {
