@@ -173,6 +173,16 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (interface{}, e
 }
 
 func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
+	if err != nil {
+		return readers.JSONPageMetadata{}, err
+	}
+
+	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
+	if err != nil {
+		return readers.JSONPageMetadata{}, err
+	}
+
 	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
 	if err != nil {
 		return nil, err
@@ -187,8 +197,10 @@ func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (interface{}, 
 		token: apiutil.ExtractBearerToken(r),
 		key:   apiutil.ExtractThingKey(r),
 		pageMeta: readers.JSONPageMetadata{
-			From: from,
-			To:   to,
+			Subtopic: subtopic,
+			Protocol: protocol,
+			From:     from,
+			To:       to,
 		},
 	}
 
