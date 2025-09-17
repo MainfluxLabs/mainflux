@@ -90,12 +90,8 @@ func senMLMetadataToPageMetadata(sm readers.SenMLPageMetadata) PageMetadata {
 	}
 }
 
-func fmtCondition(profileID string, rpm PageMetadata) bson.D {
+func fmtCondition(rpm PageMetadata) bson.D {
 	filter := bson.D{}
-
-	if profileID != "" {
-		filter = append(filter, bson.E{Key: "profile", Value: profileID})
-	}
 
 	var query map[string]interface{}
 	meta, err := json.Marshal(rpm)
@@ -151,7 +147,7 @@ func (repo mongoRepository) readAllJSON(rpm readers.JSONPageMetadata) (readers.J
 	col := repo.db.Collection(jsonCollection)
 
 	pageMetadata := jsonMetadataToPageMetadata(rpm)
-	filter := fmtCondition("", pageMetadata)
+	filter := fmtCondition(pageMetadata)
 
 	sortMap := bson.D{{Key: "created", Value: -1}}
 
@@ -193,7 +189,7 @@ func (repo mongoRepository) readAllSenML(rpm readers.SenMLPageMetadata) (readers
 	col := repo.db.Collection(defCollection)
 
 	pageMetadata := senMLMetadataToPageMetadata(rpm)
-	filter := fmtCondition("", pageMetadata)
+	filter := fmtCondition(pageMetadata)
 
 	sortMap := bson.D{{Key: "time", Value: -1}}
 
@@ -295,7 +291,7 @@ func (repo mongoRepository) DeleteJSONMessages(ctx context.Context, rpm readers.
 	coll := repo.db.Collection(jsonCollection)
 
 	pageMetadata := jsonMetadataToPageMetadata(rpm)
-	filter := fmtCondition("", pageMetadata)
+	filter := fmtCondition(pageMetadata)
 
 	if len(filter) == 0 {
 		return errors.Wrap(errors.ErrDeleteMessages, errors.New("no delete criteria specified"))
@@ -313,7 +309,7 @@ func (repo mongoRepository) DeleteSenMLMessages(ctx context.Context, rpm readers
 	coll := repo.db.Collection(defCollection)
 
 	pageMetadata := senMLMetadataToPageMetadata(rpm)
-	filter := fmtCondition("", pageMetadata)
+	filter := fmtCondition(pageMetadata)
 
 	if len(filter) == 0 {
 		return errors.Wrap(errors.ErrDeleteMessages, errors.New("no delete criteria specified"))
