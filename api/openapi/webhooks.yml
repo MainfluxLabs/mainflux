@@ -420,5 +420,6 @@ components:
       bearerFormat: JWT
       description: |
         * Users access: "Authorization: Bearer <user_token>"
+
 security:
   - bearerAuth: [ ]

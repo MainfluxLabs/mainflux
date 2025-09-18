@@ -166,7 +166,7 @@ func (sdk mfSDK) UpdateOrgMemberships(oms []OrgMembership, orgID, token string) 
 func (sdk mfSDK) ListOrgMemberships(orgID string, meta PageMetadata, token string) (OrgMembershipsPage, error)
     ListOrgMemberships - lists memberships created for a specified org
 	
-	func (sdk mfSDK) CreateWebhooks(whs []Webhook, groupID, token string) ([]Webhook, error)
+func (sdk mfSDK) CreateWebhooks(whs []Webhook, groupID, token string) ([]Webhook, error)
     CreateWebhooks - creates new webhooks
 	
 func (sdk mfSDK) ListWebhooksByGroup(groupID, token string) (Webhooks, error)
