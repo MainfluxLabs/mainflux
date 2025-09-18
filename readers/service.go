@@ -67,9 +67,9 @@ func (rs *readersService) RestoreSenMLMessages(ctx context.Context, messages ...
 }
 
 func (rs *readersService) DeleteJSONMessages(ctx context.Context, rpm JSONPageMetadata) error {
-	return rs.json.Delete(ctx, rpm)
+	return rs.json.DeleteMessages(ctx, rpm)
 }
 
 func (rs *readersService) DeleteSenMLMessages(ctx context.Context, rpm SenMLPageMetadata) error {
-	return rs.senml.Delete(ctx, rpm)
+	return rs.senml.DeleteMessages(ctx, rpm)
 }
