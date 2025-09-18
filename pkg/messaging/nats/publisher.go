@@ -12,13 +12,24 @@ import (
 	broker "github.com/nats-io/nats.go"
 )
 
-// A maximum number of reconnect attempts before NATS connection closes permanently.
-// Value -1 represents an unlimited number of reconnect retries, i.e. the client
-// will never give up on retrying to re-establish connection to NATS server.
 const (
-	maxReconnects  = -1
-	messagesSuffix = "messages"
-	subjectWebhook = "webhooks"
+	// A maximum number of reconnect attempts before NATS connection closes permanently.
+	// Value -1 represents an unlimited number of reconnect retries, i.e. the client
+	// will never give up on retrying to re-establish connection to NATS server.
+	maxReconnects = -1
+
+	// SubjectMessages represents subject used to subscribe to all messages.
+	SubjectMessages = "messages"
+	// SubjectSenML represents subject used to subscribe to SenML messages.
+	SubjectSenML = "senml.>"
+	// SubjectJSON represents subject used to subscribe to JSON messages.
+	SubjectJSON = "json.>"
+	// SubjectSmtp represents subject used to subscribe to SMTP notifications.
+	SubjectSmtp = "smtp.*"
+	// SubjectSmpp represents subject used to subscribe to SMPP notifications.
+	SubjectSmpp = "smpp.*"
+	// SubjectAlarm represents subject used to subscribe to alarms.
+	SubjectAlarm = "alarms"
 )
 
 var _ messaging.Publisher = (*publisher)(nil)
@@ -57,11 +68,12 @@ func (pub *publisher) Close() error {
 }
 
 func GetSubjects(pc *protomfx.Config, subtopic string) []string {
-	subjects := []string{subjectWebhook}
+	subjects := []string{SubjectMessages}
 
 	if pc.GetWrite() {
 		format := getFormat(pc.ContentType)
-		subject := fmt.Sprintf("%s.%s", format, messagesSuffix)
+		subject := fmt.Sprintf("%s.%s", format, SubjectMessages)
+
 		if subtopic != "" {
 			subject = fmt.Sprintf("%s.%s", subject, subtopic)
 		}

@@ -24,6 +24,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
@@ -132,7 +133,7 @@ func main() {
 
 	svc := newService(things, dbTracer, db, logger)
 
-	if err = consumers.Start(svcName, pubSub, svc, brokers.SubjectWebhook); err != nil {
+	if err = consumers.Start(svcName, pubSub, svc, nats.SubjectMessages); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Webhook: %s", err))
 	}
 

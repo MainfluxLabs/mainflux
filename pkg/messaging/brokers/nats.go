@@ -14,21 +14,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 )
 
-const (
-	// SubjectSenML represents subject to subscribe for the SenML messages.
-	SubjectSenML = "senml.>"
-	// SubjectJSON represents subject to subscribe for the JSON messages.
-	SubjectJSON = "json.>"
-	// SubjectSmtp represents subject to subscribe for the SMTP notifications.
-	SubjectSmtp = "smtp"
-	// SubjectSmpp represents subject to subscribe for the SMPP notifications.
-	SubjectSmpp = "smpp"
-	// SubjectWebhook represents subject to subscribe for sending the Webhooks.
-	SubjectWebhook = "webhooks"
-	// SubjectAlarm represents subject to subscribe for the alarms.
-	SubjectAlarm = "alarms"
-)
-
 func init() {
 	log.Println("The binary was build using Nats as the message broker")
 }
