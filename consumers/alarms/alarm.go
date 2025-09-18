@@ -17,7 +17,7 @@ type Alarm struct {
 }
 
 type AlarmsPage struct {
-	apiutil.PageMetadata
+	Total  uint64
 	Alarms []Alarm
 }
 

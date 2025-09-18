@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -120,7 +121,7 @@ func listOrgsEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildOrgsResponse(page), nil
+		return buildOrgsResponse(page, req.pageMetadata), nil
 	}
 }
 
@@ -158,12 +159,12 @@ func restoreEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func buildOrgsResponse(op auth.OrgsPage) orgsPageRes {
+func buildOrgsResponse(op auth.OrgsPage, pm apiutil.PageMetadata) orgsPageRes {
 	res := orgsPageRes{
 		pageRes: pageRes{
 			Total:  op.Total,
-			Limit:  op.Limit,
-			Offset: op.Offset,
+			Limit:  pm.Limit,
+			Offset: pm.Offset,
 		},
 		Orgs: []viewOrgRes{},
 	}

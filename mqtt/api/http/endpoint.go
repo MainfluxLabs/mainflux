@@ -25,8 +25,8 @@ func listSubscriptions(svc mqtt.Service) endpoint.Endpoint {
 		res := listSubscriptionsRes{
 			pageRes: pageRes{
 				Total:  subs.Total,
-				Offset: subs.Offset,
-				Limit:  subs.Limit,
+				Offset: req.pageMetadata.Offset,
+				Limit:  req.pageMetadata.Limit,
 			},
 			Subscriptions: []viewSubRes{},
 		}

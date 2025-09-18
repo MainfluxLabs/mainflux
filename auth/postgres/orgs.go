@@ -260,12 +260,8 @@ func (or orgRepository) retrieve(ctx context.Context, query, cquery string, para
 	}
 
 	page := auth.OrgsPage{
-		Orgs: items,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  total,
-			Offset: params["offset"].(uint64),
-			Limit:  params["limit"].(uint64),
-		},
+		Orgs:  items,
+		Total: total,
 	}
 
 	return page, nil

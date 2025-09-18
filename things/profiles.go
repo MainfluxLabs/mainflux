@@ -36,7 +36,7 @@ type Transformer struct {
 // ProfilesPage contains page related metadata as well as list of profiles that
 // belong to this page.
 type ProfilesPage struct {
-	apiutil.PageMetadata
+	Total    uint64
 	Profiles []Profile
 }
 

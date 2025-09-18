@@ -44,7 +44,7 @@ func (srm *subRepoMock) RetrieveByGroupID(_ context.Context, pm mqtt.PageMetadat
 	}
 
 	return mqtt.Page{
-		PageMetadata:  pm,
+		Total:         pm.Total,
 		Subscriptions: subs,
 	}, nil
 }

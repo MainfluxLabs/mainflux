@@ -145,7 +145,7 @@ func listGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildGroupsResponse(page), nil
+		return buildGroupsResponse(page, req.pageMetadata), nil
 	}
 }
 
@@ -161,7 +161,7 @@ func listGroupsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildGroupsResponse(page), nil
+		return buildGroupsResponse(page, req.pageMetadata), nil
 	}
 }
 
@@ -253,12 +253,12 @@ func removeGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func buildGroupsResponse(gp things.GroupPage) groupPageRes {
+func buildGroupsResponse(gp things.GroupPage, pm apiutil.PageMetadata) groupPageRes {
 	res := groupPageRes{
 		pageRes: pageRes{
 			Total:  gp.Total,
-			Limit:  gp.Limit,
-			Offset: gp.Offset,
+			Limit:  pm.Limit,
+			Offset: pm.Offset,
 		},
 		Groups: []viewGroupRes{},
 	}
