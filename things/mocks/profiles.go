@@ -113,11 +113,7 @@ func (prm *profileRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs [
 
 	page := things.ProfilesPage{
 		Profiles: items,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  prm.counter,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Total:    prm.counter,
 	}
 
 	return page, nil
@@ -138,11 +134,7 @@ func (prm *profileRepositoryMock) RetrieveAll(_ context.Context, pm apiutil.Page
 
 	page := things.ProfilesPage{
 		Profiles: prs,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  prm.counter,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Total:    prm.counter,
 	}
 
 	return page, nil

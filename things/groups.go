@@ -30,7 +30,7 @@ type Group struct {
 // GroupPage contains page related metadata as well as list of groups that
 // belong to this page.
 type GroupPage struct {
-	apiutil.PageMetadata
+	Total  uint64
 	Groups []Group
 }
 

@@ -69,11 +69,7 @@ func (gmr *groupMembershipsRepositoryMock) RetrieveByGroup(_ context.Context, gr
 
 	return things.GroupMembershipsPage{
 		GroupMemberships: gms,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  uint64(len(gmr.groupMemberships[groupID])),
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Total:            uint64(len(gmr.groupMemberships[groupID])),
 	}, nil
 
 }

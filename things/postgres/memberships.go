@@ -112,11 +112,7 @@ func (mr groupMembershipsRepository) RetrieveByGroup(ctx context.Context, groupI
 
 	page := things.GroupMembershipsPage{
 		GroupMemberships: items,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Total:            total,
 	}
 
 	return page, nil
