@@ -19,7 +19,7 @@ type jsonRepository struct {
 	aggregator *aggregationService
 }
 
-func newJSONRepository(db dbutil.Database) *jsonRepository {
+func NewJSONRepository(db dbutil.Database) readers.JSONMessaageRepository {
 	return &jsonRepository{
 		db:         db,
 		aggregator: newAggregationService(db),
@@ -161,7 +161,7 @@ func (jr *jsonRepository) DeleteMessages(ctx context.Context, rpm readers.JSONPa
 	defer func() {
 		if err != nil {
 			if txErr := tx.Rollback(); txErr != nil {
-				err = errors.Wrap(err, errors.Wrap(errTransRollback, txErr))
+				err = errors.Wrap(err, errors.Wrap(errors.ErrTransRollback, txErr))
 			}
 			return
 		}
@@ -197,7 +197,7 @@ func (jr *jsonRepository) handlePgError(err error, wrapErr error) error {
 		case pgerrcode.UndefinedTable:
 			return errors.Wrap(wrapErr, err)
 		case pgerrcode.InvalidTextRepresentation:
-			return errors.Wrap(wrapErr, errInvalidMessage)
+			return errors.Wrap(wrapErr, errors.ErrInvalidMessage)
 		default:
 			return errors.Wrap(wrapErr, err)
 		}
@@ -214,7 +214,7 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 	defer func() {
 		if err != nil {
 			if txErr := tx.Rollback(); txErr != nil {
-				err = errors.Wrap(err, errors.Wrap(errTransRollback, txErr))
+				err = errors.Wrap(err, errors.Wrap(errors.ErrTransRollback, txErr))
 			}
 			return
 		}
@@ -230,7 +230,7 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 	for _, msg := range messages {
 		jsonMsg, ok := msg.(mfjson.Message)
 		if !ok {
-			return errors.Wrap(errors.ErrSaveMessages, errInvalidMessage)
+			return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
 		}
 
 		if _, err := tx.NamedExecContext(ctx, q, jsonMsg); err != nil {
