@@ -49,7 +49,7 @@ var (
 	authc  protomfx.AuthServiceClient
 )
 
-func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient, ac protomfx.AuthServiceClient, svcName string, logger logger.Logger) http.Handler {
+func MakeHandler(svc readers.Service, tc protomfx.ThingsServiceClient, ac protomfx.AuthServiceClient, svcName string, logger logger.Logger) http.Handler {
 	thingc = tc
 	authc = ac
 
