@@ -45,7 +45,7 @@ var (
 )
 
 func TestListAllMessagesSenML(t *testing.T) {
-	reader := treader.New(db)
+	reader := treader.NewSenMLRepository(db)
 	writer := twriter.New(db)
 
 	pubID, err := idProvider.ID()
@@ -354,7 +354,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ListSenMLMessages(context.Background(), tc.pageMeta)
+		result, err := reader.ListMessages(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Messages, result.Messages))
 		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Total, result.Total))
@@ -362,7 +362,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 }
 
 func TestListAllMessagesJSON(t *testing.T) {
-	reader := treader.New(db)
+	reader := treader.NewJSONRepository(db)
 	writer := twriter.New(db)
 
 	id1, err := idProvider.ID()
@@ -468,7 +468,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ListJSONMessages(context.Background(), tc.pageMeta)
+		result, err := reader.ListMessages(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Messages, result.Messages))
 		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Total, result.Total))
