@@ -16,6 +16,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
@@ -201,8 +202,13 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, logger logger.Logger) readers.MessageRepository {
-	svc := postgres.New(db)
+func newService(db *sqlx.DB, logger logger.Logger) readers.Service {
+	database := dbutil.NewDatabase(db)
+
+	jsonRepo := postgres.NewJSONRepository(database)
+	senmlRepo := postgres.NewSenMLRepository(database)
+
+	svc := readers.New(jsonRepo, senmlRepo)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
