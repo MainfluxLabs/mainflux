@@ -6,6 +6,7 @@ package http
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -49,7 +50,7 @@ func listWebhooksByGroupEndpoint(svc webhooks.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildWebhooksByGroupResponse(page), nil
+		return buildWebhooksByGroupResponse(page, req.pageMetadata), nil
 	}
 }
 
@@ -65,7 +66,7 @@ func listWebhooksByThingEndpoint(svc webhooks.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildWebhooksByGroupResponse(page), nil
+		return buildWebhooksByGroupResponse(page, req.pageMetadata), nil
 	}
 }
 
@@ -123,12 +124,12 @@ func removeWebhooksEndpoint(svc webhooks.Service) endpoint.Endpoint {
 	}
 }
 
-func buildWebhooksByGroupResponse(wp webhooks.WebhooksPage) WebhooksPageRes {
+func buildWebhooksByGroupResponse(wp webhooks.WebhooksPage, pm apiutil.PageMetadata) WebhooksPageRes {
 	res := WebhooksPageRes{
 		pageRes: pageRes{
 			Total:  wp.Total,
-			Offset: wp.Offset,
-			Limit:  wp.Limit,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
 		},
 		Webhooks: []webhookResponse{},
 	}

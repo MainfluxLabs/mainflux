@@ -59,11 +59,7 @@ func (wrm *webhookRepositoryMock) RetrieveByGroup(_ context.Context, groupID str
 
 	return webhooks.WebhooksPage{
 		Webhooks: items,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  uint64(len(items)),
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Total:    uint64(len(items)),
 	}, nil
 }
 
@@ -86,11 +82,7 @@ func (wrm *webhookRepositoryMock) RetrieveByThing(_ context.Context, thingID str
 
 	return webhooks.WebhooksPage{
 		Webhooks: items,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  uint64(len(items)),
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Total:    uint64(len(items)),
 	}, nil
 }
 

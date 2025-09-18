@@ -19,7 +19,7 @@ type Webhook struct {
 }
 
 type WebhooksPage struct {
-	apiutil.PageMetadata
+	Total    uint64
 	Webhooks []Webhook
 }
 
