@@ -32,7 +32,7 @@ type OrgMembership struct {
 // OrgMembershipsPage contains page related metadata as well as list of memberships that
 // belong to this page.
 type OrgMembershipsPage struct {
-	apiutil.PageMetadata
+	Total          uint64
 	OrgMemberships []OrgMembership
 }
 
@@ -165,12 +165,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 	if len(memberships) == 0 {
 		return OrgMembershipsPage{
 			OrgMemberships: []OrgMembership{},
-			PageMetadata: apiutil.PageMetadata{
-				Total:  0,
-				Offset: pm.Offset,
-				Limit:  pm.Limit,
-				Email:  pm.Email,
-			},
+			Total:          0,
 		}, nil
 	}
 
@@ -207,14 +202,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 
 	return OrgMembershipsPage{
 		OrgMemberships: oms,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  res.PageMetadata.Total,
-			Offset: res.PageMetadata.Offset,
-			Limit:  res.PageMetadata.Limit,
-			Email:  res.PageMetadata.Email,
-			Order:  res.PageMetadata.Order,
-			Dir:    res.PageMetadata.Dir,
-		},
+		Total:          res.PageMetadata.Total,
 	}, nil
 }
 

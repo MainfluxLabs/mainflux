@@ -68,11 +68,7 @@ func (omr orgMembershipsRepository) RetrieveByOrg(ctx context.Context, orgID str
 
 	page := auth.OrgMembershipsPage{
 		OrgMemberships: oms,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Total:          total,
 	}
 
 	return page, nil
