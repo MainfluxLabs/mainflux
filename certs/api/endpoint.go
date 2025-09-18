@@ -46,8 +46,8 @@ func listSerials(svc certs.Service) endpoint.Endpoint {
 		res := certsPageRes{
 			pageRes: pageRes{
 				Total:  page.Total,
-				Offset: page.Offset,
-				Limit:  page.Limit,
+				Offset: req.offset,
+				Limit:  req.limit,
 			},
 			Certs: []certsRes{},
 		}

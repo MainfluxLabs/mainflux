@@ -7,10 +7,8 @@ import "context"
 
 // ConfigsPage contains page related metadata as well as list
 type Page struct {
-	Total  uint64
-	Offset uint64
-	Limit  uint64
-	Certs  []Cert
+	Total uint64
+	Certs []Cert
 }
 
 // Repository specifies a Config persistence API.

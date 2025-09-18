@@ -67,10 +67,8 @@ func (cr certsRepository) RetrieveAll(ctx context.Context, ownerID string, offse
 	}
 
 	return certs.Page{
-		Total:  total,
-		Limit:  limit,
-		Offset: offset,
-		Certs:  certificates,
+		Total: total,
+		Certs: certificates,
 	}, nil
 }
 
@@ -144,10 +142,8 @@ func (cr certsRepository) RetrieveByThing(ctx context.Context, ownerID, thingID 
 	}
 
 	return certs.Page{
-		Total:  total,
-		Limit:  limit,
-		Offset: offset,
-		Certs:  certificates,
+		Total: total,
+		Certs: certificates,
 	}, nil
 }
 
