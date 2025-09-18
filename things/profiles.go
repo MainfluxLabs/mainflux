@@ -21,7 +21,6 @@ type Profile struct {
 
 type Config struct {
 	ContentType string      `json:"content_type"`
-	Write       bool        `json:"write"`
 	Transformer Transformer `json:"transformer"`
 }
 
