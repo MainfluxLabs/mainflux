@@ -138,7 +138,7 @@ type PageMetadata struct {
 
 // UserPage contains a page of users.
 type UserPage struct {
-	PageMetadata
+	Total uint64
 	Users []User
 }
 
