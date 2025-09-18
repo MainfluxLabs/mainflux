@@ -19,7 +19,7 @@ type senmlRepository struct {
 	aggregator *aggregationService
 }
 
-func newSenMLRepository(db dbutil.Database) *senmlRepository {
+func NewSenMLRepository(db dbutil.Database) readers.SenMLMessageRepository {
 	return &senmlRepository{
 		db:         db,
 		aggregator: newAggregationService(db),
@@ -43,7 +43,7 @@ func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenML
 	defer func() {
 		if err != nil {
 			if txErr := tx.Rollback(); txErr != nil {
-				err = errors.Wrap(err, errors.Wrap(errTransRollback, txErr))
+				err = errors.Wrap(err, errors.Wrap(errors.ErrTransRollback, txErr))
 			}
 			return
 		}
@@ -219,7 +219,7 @@ func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Mess
 	defer func() {
 		if err != nil {
 			if txErr := tx.Rollback(); txErr != nil {
-				err = errors.Wrap(err, errors.Wrap(errTransRollback, txErr))
+				err = errors.Wrap(err, errors.Wrap(errors.ErrTransRollback, txErr))
 			}
 			return
 		}
@@ -239,7 +239,7 @@ func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Mess
 	for _, msg := range messages {
 		senmlMesage, ok := msg.(senml.Message)
 		if !ok {
-			return errors.Wrap(errors.ErrSaveMessages, errInvalidMessage)
+			return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
 		}
 
 		if _, err := tx.NamedExecContext(ctx, q, senmlMesage); err != nil {
@@ -258,7 +258,7 @@ func (sr *senmlRepository) handlePgError(err error, wrapErr error) error {
 		case pgerrcode.UndefinedTable:
 			return errors.Wrap(wrapErr, err)
 		case pgerrcode.InvalidTextRepresentation:
-			return errors.Wrap(wrapErr, errInvalidMessage)
+			return errors.Wrap(wrapErr, errors.ErrInvalidMessage)
 		default:
 			return errors.Wrap(wrapErr, err)
 		}
