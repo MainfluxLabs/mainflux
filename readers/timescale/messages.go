@@ -19,7 +19,7 @@ import (
 
 const (
 	// Table for SenML messages
-	defTable = "messages"
+	defTable = "senml"
 	// Table for JSON messages
 	jsonTable = "json"
 )
@@ -41,147 +41,58 @@ func New(db *sqlx.DB) readers.MessageRepository {
 		db: db,
 	}
 }
-func (tr timescaleRepository) ListAllMessages(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return tr.readAll(rpm)
+
+type PageMetadata struct {
+	Offset      uint64  `json:"offset"`
+	Limit       uint64  `json:"limit"`
+	Subtopic    string  `json:"subtopic,omitempty"`
+	Publisher   string  `json:"publisher,omitempty"`
+	Protocol    string  `json:"protocol,omitempty"`
+	Name        string  `json:"name,omitempty"`
+	Value       float64 `json:"v,omitempty"`
+	Comparator  string  `json:"comparator,omitempty"`
+	BoolValue   bool    `json:"vb,omitempty"`
+	StringValue string  `json:"vs,omitempty"`
+	DataValue   string  `json:"vd,omitempty"`
+	From        int64   `json:"from,omitempty"`
+	To          int64   `json:"to,omitempty"`
+	Format      string  `json:"format,omitempty"`
+	AggInterval string  `json:"agg_interval,omitempty"`
+	AggType     string  `json:"agg_type,omitempty"`
+	AggField    string  `json:"agg_field,omitempty"`
 }
 
-func (tr timescaleRepository) DeleteMessages(ctx context.Context, rpm readers.PageMetadata) error {
-	return nil
+func jsonPageMetaToPageMeta(jm readers.JSONPageMetadata) PageMetadata {
+	return PageMetadata{
+		Offset:    jm.Offset,
+		Limit:     jm.Limit,
+		Subtopic:  jm.Subtopic,
+		Publisher: jm.Publisher,
+		Protocol:  jm.Protocol,
+		From:      jm.From,
+		To:        jm.To,
+	}
 }
 
-func (tr timescaleRepository) Backup(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	return tr.readAll(rpm)
+func senmlPageMetaToPageMeta(sm readers.SenMLPageMetadata) PageMetadata {
+	return PageMetadata{
+		Offset:      sm.Offset,
+		Limit:       sm.Limit,
+		Subtopic:    sm.Subtopic,
+		Publisher:   sm.Publisher,
+		Protocol:    sm.Protocol,
+		Name:        sm.Name,
+		Value:       sm.Value,
+		Comparator:  sm.Comparator,
+		BoolValue:   sm.BoolValue,
+		StringValue: sm.StringValue,
+		DataValue:   sm.DataValue,
+		From:        sm.From,
+		To:          sm.To,
+	}
 }
 
-func (tr timescaleRepository) Restore(ctx context.Context, format string, messages ...readers.Message) error {
-	q := `INSERT INTO messages (subtopic, publisher, protocol,
-		name, unit, value, string_value, bool_value, data_value, sum,
-		time, update_time)
-		VALUES (:subtopic, :publisher, :protocol, :name, :unit,
-		:value, :string_value, :bool_value, :data_value, :sum,
-		:time, :update_time);`
-
-	tx, err := tr.db.BeginTxx(context.Background(), nil)
-	if err != nil {
-		return errors.Wrap(errors.ErrSaveMessages, err)
-	}
-
-	defer func() {
-		if err != nil {
-			if txErr := tx.Rollback(); txErr != nil {
-				err = errors.Wrap(err, errors.Wrap(errTransRollback, txErr))
-			}
-			return
-		}
-
-		if err = tx.Commit(); err != nil {
-			err = errors.Wrap(errors.ErrSaveMessages, err)
-		}
-	}()
-
-	for _, msg := range messages {
-		m := senmlMessage{Message: msg.(senml.Message)}
-		if _, err := tx.NamedExec(q, m); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrSaveMessages, errInvalidMessage)
-				}
-			}
-
-			return errors.Wrap(errors.ErrSaveMessages, err)
-		}
-	}
-
-	return err
-}
-
-func (tr timescaleRepository) readAll(rpm readers.PageMetadata) (readers.MessagesPage, error) {
-	order := "time"
-	format := defTable
-	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
-
-	if rpm.Format == jsonTable {
-		order = "created"
-		format = rpm.Format
-	}
-
-	q := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY %s DESC %s;`, format, fmtCondition(rpm), order, olq)
-
-	params := map[string]interface{}{
-		"limit":        rpm.Limit,
-		"offset":       rpm.Offset,
-		"subtopic":     rpm.Subtopic,
-		"publisher":    rpm.Publisher,
-		"name":         rpm.Name,
-		"protocol":     rpm.Protocol,
-		"value":        rpm.Value,
-		"bool_value":   rpm.BoolValue,
-		"string_value": rpm.StringValue,
-		"data_value":   rpm.DataValue,
-		"from":         rpm.From,
-		"to":           rpm.To,
-	}
-
-	rows, err := tr.db.NamedQuery(q, params)
-	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok {
-			if pgErr.Code == pgerrcode.UndefinedTable {
-				return readers.MessagesPage{}, nil
-			}
-		}
-		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-	}
-	defer rows.Close()
-
-	page := readers.MessagesPage{
-		Messages: []readers.Message{},
-	}
-	switch format {
-	case defTable:
-		for rows.Next() {
-			msg := senmlMessage{Message: senml.Message{}}
-			if err := rows.StructScan(&msg); err != nil {
-				return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-			}
-
-			page.Messages = append(page.Messages, msg.Message)
-		}
-	default:
-		for rows.Next() {
-			msg := jsonMessage{}
-			if err := rows.StructScan(&msg); err != nil {
-				return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-			}
-			m, err := msg.toMap()
-			if err != nil {
-				return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-			}
-			page.Messages = append(page.Messages, m)
-		}
-
-	}
-
-	q = fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, format, fmtCondition(rpm))
-	rows, err = tr.db.NamedQuery(q, params)
-	if err != nil {
-		return readers.MessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
-	}
-	defer rows.Close()
-
-	total := uint64(0)
-	if rows.Next() {
-		if err := rows.Scan(&total); err != nil {
-			return page, err
-		}
-	}
-	page.Total = total
-
-	return page, nil
-}
-
-func fmtCondition(rpm readers.PageMetadata) string {
+func fmtCondition(rpm PageMetadata) string {
 	var query map[string]interface{}
 	meta, err := json.Marshal(rpm)
 	if err != nil {
@@ -224,6 +135,181 @@ func fmtCondition(rpm readers.PageMetadata) string {
 	return condition
 }
 
+func (tr timescaleRepository) DeleteMessages(ctx context.Context, rpm PageMetadata) error {
+	return nil
+}
+
+func (tr timescaleRepository) Restore(ctx context.Context, format string, messages ...readers.Message) error {
+	q := `INSERT INTO senml (subtopic, publisher, protocol,
+		name, unit, value, string_value, bool_value, data_value, sum,
+		time, update_time)
+		VALUES (:subtopic, :publisher, :protocol, :name, :unit,
+		:value, :string_value, :bool_value, :data_value, :sum,
+		:time, :update_time);`
+
+	tx, err := tr.db.BeginTxx(context.Background(), nil)
+	if err != nil {
+		return errors.Wrap(errors.ErrSaveMessages, err)
+	}
+
+	defer func() {
+		if err != nil {
+			if txErr := tx.Rollback(); txErr != nil {
+				err = errors.Wrap(err, errors.Wrap(errTransRollback, txErr))
+			}
+			return
+		}
+
+		if err = tx.Commit(); err != nil {
+			err = errors.Wrap(errors.ErrSaveMessages, err)
+		}
+	}()
+
+	for _, msg := range messages {
+		m := senmlMessage{Message: msg.(senml.Message)}
+		if _, err := tx.NamedExec(q, m); err != nil {
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(errors.ErrSaveMessages, errInvalidMessage)
+				}
+			}
+
+			return errors.Wrap(errors.ErrSaveMessages, err)
+		}
+	}
+
+	return err
+}
+
+func (tr timescaleRepository) readAllSenML(rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
+	pageMetadata := senmlPageMetaToPageMeta(rpm)
+
+	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
+	q := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY time DESC %s;`, defTable, fmtCondition(pageMetadata), olq)
+
+	params := map[string]interface{}{
+		"limit":        rpm.Limit,
+		"offset":       rpm.Offset,
+		"subtopic":     rpm.Subtopic,
+		"publisher":    rpm.Publisher,
+		"name":         rpm.Name,
+		"protocol":     rpm.Protocol,
+		"value":        rpm.Value,
+		"bool_value":   rpm.BoolValue,
+		"string_value": rpm.StringValue,
+		"data_value":   rpm.DataValue,
+		"from":         rpm.From,
+		"to":           rpm.To,
+	}
+
+	rows, err := tr.db.NamedQuery(q, params)
+	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok {
+			if pgErr.Code == pgerrcode.UndefinedTable {
+				return readers.SenMLMessagesPage{}, nil
+			}
+		}
+		return readers.SenMLMessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+	}
+	defer rows.Close()
+
+	messages := []readers.Message{}
+	for rows.Next() {
+		msg := senmlMessage{Message: senml.Message{}}
+		if err := rows.StructScan(&msg); err != nil {
+			return readers.SenMLMessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+		}
+		messages = append(messages, msg.Message)
+	}
+
+	q = fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, defTable, fmtCondition(pageMetadata))
+	rows, err = tr.db.NamedQuery(q, params)
+	if err != nil {
+		return readers.SenMLMessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+	}
+	defer rows.Close()
+
+	total := uint64(0)
+	if rows.Next() {
+		if err := rows.Scan(&total); err != nil {
+			return readers.SenMLMessagesPage{}, err
+		}
+	}
+
+	return readers.SenMLMessagesPage{
+		SenMLPageMetadata: rpm,
+		MessagesPage: readers.MessagesPage{
+			Total:    total,
+			Messages: messages,
+		},
+	}, nil
+}
+
+func (tr timescaleRepository) readAllJSON(rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
+	pageMetadata := jsonPageMetaToPageMeta(rpm)
+
+	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
+	q := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY created DESC %s;`, jsonTable, fmtCondition(pageMetadata), olq)
+
+	params := map[string]interface{}{
+		"limit":     rpm.Limit,
+		"offset":    rpm.Offset,
+		"subtopic":  rpm.Subtopic,
+		"publisher": rpm.Publisher,
+		"protocol":  rpm.Protocol,
+		"from":      rpm.From,
+		"to":        rpm.To,
+	}
+
+	rows, err := tr.db.NamedQuery(q, params)
+	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok {
+			if pgErr.Code == pgerrcode.UndefinedTable {
+				return readers.JSONMessagesPage{}, nil
+			}
+		}
+		return readers.JSONMessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+	}
+	defer rows.Close()
+
+	messages := []readers.Message{}
+	for rows.Next() {
+		msg := jsonMessage{}
+		if err := rows.StructScan(&msg); err != nil {
+			return readers.JSONMessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+		}
+		m, err := msg.toMap()
+		if err != nil {
+			return readers.JSONMessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+		}
+		messages = append(messages, m)
+	}
+
+	q = fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, jsonTable, fmtCondition(pageMetadata))
+	rows, err = tr.db.NamedQuery(q, params)
+	if err != nil {
+		return readers.JSONMessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
+	}
+	defer rows.Close()
+
+	total := uint64(0)
+	if rows.Next() {
+		if err := rows.Scan(&total); err != nil {
+			return readers.JSONMessagesPage{}, err
+		}
+	}
+
+	return readers.JSONMessagesPage{
+		JSONPageMetadata: rpm,
+		MessagesPage: readers.MessagesPage{
+			Total:    total,
+			Messages: messages,
+		},
+	}, nil
+}
+
 type senmlMessage struct {
 	ID string `db:"id"`
 	senml.Message
@@ -251,4 +337,42 @@ func (msg jsonMessage) toMap() (map[string]interface{}, error) {
 	}
 	ret["payload"] = pld
 	return ret, nil
+
+}
+
+func (tr timescaleRepository) ListJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
+	return tr.readAllJSON(rpm)
+}
+func (tr timescaleRepository) ListSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
+	return tr.readAllSenML(rpm)
+}
+
+func (tr timescaleRepository) BackupJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
+	backup := rpm
+	backup.Limit = 0
+	backup.Offset = 0
+	return tr.readAllJSON(backup)
+}
+
+func (tr timescaleRepository) BackupSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
+	backup := rpm
+	backup.Limit = 0
+	backup.Offset = 0
+	return tr.readAllSenML(backup)
+}
+
+func (tr timescaleRepository) RestoreJSONMessages(ctx context.Context, messages ...readers.Message) error {
+	return nil
+}
+
+func (tr timescaleRepository) RestoreSenMLMessages(ctx context.Context, messages ...readers.Message) error {
+	return nil
+}
+
+func (tr timescaleRepository) DeleteJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) error {
+	return nil
+}
+
+func (tr timescaleRepository) DeleteSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) error {
+	return nil
 }
