@@ -88,9 +88,8 @@ func (repo *messageRepositoryMock) readAll(profileID string, rpm readers.PageMet
 	}
 
 	return readers.MessagesPage{
-		PageMetadata: rpm,
-		Total:        uint64(len(msgs)),
-		Messages:     msgs[rpm.Offset:end],
+		Total:    uint64(len(msgs)),
+		Messages: msgs[rpm.Offset:end],
 	}, nil
 }
 

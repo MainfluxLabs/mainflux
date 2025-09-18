@@ -53,7 +53,6 @@ type Message interface{}
 // MessagesPage contains page related metadata as well as list of messages that
 // belong to this page.
 type MessagesPage struct {
-	PageMetadata
 	Total    uint64
 	Messages []Message
 }

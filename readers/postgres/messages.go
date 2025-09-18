@@ -162,8 +162,7 @@ func (tr postgresRepository) restoreSenMLMessages(ctx context.Context, tx *sqlx.
 
 func (tr postgresRepository) readAll(rpm readers.PageMetadata) (readers.MessagesPage, error) {
 	page := readers.MessagesPage{
-		PageMetadata: rpm,
-		Messages:     []readers.Message{},
+		Messages: []readers.Message{},
 	}
 
 	order := tr.getOrder(rpm)

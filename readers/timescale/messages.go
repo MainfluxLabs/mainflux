@@ -136,8 +136,7 @@ func (tr timescaleRepository) readAll(rpm readers.PageMetadata) (readers.Message
 	defer rows.Close()
 
 	page := readers.MessagesPage{
-		PageMetadata: rpm,
-		Messages:     []readers.Message{},
+		Messages: []readers.Message{},
 	}
 	switch format {
 	case defTable:

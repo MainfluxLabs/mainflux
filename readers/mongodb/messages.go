@@ -120,9 +120,8 @@ func (repo mongoRepository) readAll(profileID string, rpm readers.PageMetadata) 
 	}
 
 	mp := readers.MessagesPage{
-		PageMetadata: rpm,
-		Total:        uint64(total),
-		Messages:     messages,
+		Total:    uint64(total),
+		Messages: messages,
 	}
 
 	return mp, nil

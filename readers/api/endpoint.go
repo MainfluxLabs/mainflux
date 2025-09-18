@@ -44,7 +44,7 @@ func listJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 		}
 
 		return listMessagesRes{
-			PageMetadata: page.PageMetadata,
+			PageMetadata: req.pageMeta,
 			Total:        page.Total,
 			Messages:     page.Messages,
 		}, nil
@@ -80,7 +80,7 @@ func listSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint 
 		}
 
 		return listMessagesRes{
-			PageMetadata: page.PageMetadata,
+			PageMetadata: req.pageMeta,
 			Total:        page.Total,
 			Messages:     page.Messages,
 		}, nil
