@@ -213,11 +213,7 @@ func (ar *alarmRepository) retrieve(ctx context.Context, query, cquery string, p
 
 	page := alarms.AlarmsPage{
 		Alarms: items,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  total,
-			Offset: params["offset"].(uint64),
-			Limit:  params["limit"].(uint64),
-		},
+		Total:  total,
 	}
 
 	return page, nil
