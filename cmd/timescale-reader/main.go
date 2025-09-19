@@ -200,7 +200,7 @@ func connectToDB(dbConfig timescale.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, logger logger.Logger) readers.MessageRepository {
+func newService(db *sqlx.DB, logger logger.Logger) readers.Service {
 	jsonRepo := timescale.NewJSONRepository(db)
 	senmlRepo := timescale.NewSenMLRepository(db)
 
