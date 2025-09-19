@@ -73,7 +73,9 @@ type pageRes struct {
 	Limit  uint64 `json:"limit"`
 	Offset uint64 `json:"offset"`
 	Total  uint64 `json:"total"`
-	Name   string `json:"name"`
+	Ord    string `json:"order,omitempty"`
+	Dir    string `json:"direction,omitempty"`
+	Name   string `json:"name,omitempty"`
 }
 
 func (res orgsPageRes) Code() int {

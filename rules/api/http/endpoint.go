@@ -153,6 +153,9 @@ func buildRulesPageResponse(page rules.RulesPage, pm apiutil.PageMetadata) Rules
 			Total:  page.Total,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
+			Ord:    pm.Order,
+			Dir:    pm.Dir,
+			Name:   pm.Name,
 		},
 		Rules: []ruleResponse{},
 	}

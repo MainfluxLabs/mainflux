@@ -112,6 +112,9 @@ func buildNotifiersByGroupResponse(nf notifiers.NotifiersPage, pm apiutil.PageMe
 			Total:  nf.Total,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
+			Name:   pm.Name,
 		},
 		Notifiers: []notifierResponse{},
 	}

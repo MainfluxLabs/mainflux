@@ -95,6 +95,8 @@ func buildAlarmsResponse(ap alarms.AlarmsPage, pm apiutil.PageMetadata) AlarmsPa
 		Total:  ap.Total,
 		Offset: pm.Offset,
 		Limit:  pm.Limit,
+		Order:  pm.Order,
+		Dir:    pm.Dir,
 		Alarms: []alarmResponse{},
 	}
 

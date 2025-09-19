@@ -17,6 +17,9 @@ type pageRes struct {
 	Total  uint64 `json:"total"`
 	Offset uint64 `json:"offset"`
 	Limit  uint64 `json:"limit"`
+	Ord    string `json:"order,omitempty"`
+	Dir    string `json:"direction,omitempty"`
+	Name   string `json:"name,omitempty"`
 }
 
 type ruleResponse struct {
