@@ -201,7 +201,10 @@ func connectToDB(dbConfig timescale.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func newService(db *sqlx.DB, logger logger.Logger) readers.MessageRepository {
-	svc := timescale.New(db)
+	jsonRepo := timescale.NewJSONRepository(db)
+	senmlRepo := timescale.NewSenMLRepository(db)
+
+	svc := readers.New(jsonRepo, senmlRepo)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
