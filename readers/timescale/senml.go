@@ -262,3 +262,8 @@ func (sr *senmlRepository) handlePgError(err error, wrapErr error) error {
 	}
 	return errors.Wrap(wrapErr, err)
 }
+
+type senmlMessage struct {
+	ID string `db:"id"`
+	senml.Message
+}
