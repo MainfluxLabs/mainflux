@@ -20,10 +20,6 @@ const (
 
 	// SubjectMessages represents subject used to subscribe to all messages.
 	SubjectMessages = "messages"
-	// SubjectSenML represents subject used to subscribe to SenML messages.
-	SubjectSenML = "senml.>"
-	// SubjectJSON represents subject used to subscribe to JSON messages.
-	SubjectJSON = "json.>"
 	// SubjectSmtp represents subject used to subscribe to SMTP notifications.
 	SubjectSmtp = "smtp.*"
 	// SubjectSmpp represents subject used to subscribe to SMPP notifications.
@@ -67,31 +63,12 @@ func (pub *publisher) Close() error {
 	return nil
 }
 
-func GetSubjects(pc *protomfx.Config, subtopic string) []string {
+func GetSubjects(subtopic string) []string {
 	subjects := []string{SubjectMessages}
 
-	if pc.GetWrite() {
-		format := getFormat(pc.ContentType)
-		subject := fmt.Sprintf("%s.%s", format, SubjectMessages)
-
-		if subtopic != "" {
-			subject = fmt.Sprintf("%s.%s", subject, subtopic)
-		}
-		subjects = append(subjects, subject)
+	if subtopic != "" {
+		subjects = append(subjects, fmt.Sprintf("%s.%s", SubjectMessages, subtopic))
 	}
 
 	return subjects
-}
-
-func getFormat(ct string) string {
-	switch ct {
-	case messaging.JSONContentType:
-		return messaging.JSONFormat
-	case messaging.SenMLContentType:
-		return messaging.SenMLFormat
-	case messaging.CBORContentType:
-		return messaging.CBORFormat
-	default:
-		return messaging.SenMLFormat
-	}
 }
