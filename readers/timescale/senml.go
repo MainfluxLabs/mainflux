@@ -1,0 +1,264 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
+package timescale
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
+	"github.com/MainfluxLabs/mainflux/readers"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jmoiron/sqlx"
+)
+
+const senmlTable = "senml"
+
+var _ readers.SenMLMessageRepository = (*senmlRepository)(nil)
+
+type senmlRepository struct {
+	db *sqlx.DB
+}
+
+// NewSenMLRepository returns new TimescaleDB SenML repository.
+func NewSenMLRepository(db *sqlx.DB) readers.SenMLMessageRepository {
+	return &senmlRepository{
+		db: db,
+	}
+}
+
+func (sr *senmlRepository) ListMessages(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
+	return sr.readAll(ctx, rpm)
+}
+
+func (sr *senmlRepository) Backup(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
+	backup := rpm
+	backup.Limit = 0
+	backup.Offset = 0
+	return sr.readAll(ctx, backup)
+}
+
+func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenMLPageMetadata) error {
+	tx, err := sr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(errors.ErrDeleteMessages, err)
+	}
+
+	defer func() {
+		if err != nil {
+			if txErr := tx.Rollback(); txErr != nil {
+				err = errors.Wrap(err, errors.Wrap(errors.ErrTransRollback, txErr))
+			}
+			return
+		}
+
+		if err = tx.Commit(); err != nil {
+			err = errors.Wrap(errors.ErrDeleteMessages, err)
+		}
+	}()
+
+	condition := sr.fmtCondition(rpm)
+	q := fmt.Sprintf("DELETE FROM %s %s", senmlTable, condition)
+	params := map[string]interface{}{
+		"subtopic":     rpm.Subtopic,
+		"publisher":    rpm.Publisher,
+		"name":         rpm.Name,
+		"protocol":     rpm.Protocol,
+		"value":        rpm.Value,
+		"bool_value":   rpm.BoolValue,
+		"string_value": rpm.StringValue,
+		"data_value":   rpm.DataValue,
+		"from":         rpm.From,
+		"to":           rpm.To,
+	}
+
+	_, err = tx.NamedExecContext(ctx, q, params)
+	if err != nil {
+		return sr.handlePgError(err, errors.ErrDeleteMessages)
+	}
+
+	return nil
+}
+
+func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Message) error {
+	tx, err := sr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(errors.ErrSaveMessages, err)
+	}
+
+	defer func() {
+		if err != nil {
+			if txErr := tx.Rollback(); txErr != nil {
+				err = errors.Wrap(err, errors.Wrap(errors.ErrTransRollback, txErr))
+			}
+			return
+		}
+
+		if err = tx.Commit(); err != nil {
+			err = errors.Wrap(errors.ErrSaveMessages, err)
+		}
+	}()
+
+	q := `INSERT INTO senml (subtopic, publisher, protocol,
+          name, unit, value, string_value, bool_value, data_value, sum,
+          time, update_time)
+          VALUES (:subtopic, :publisher, :protocol, :name, :unit,
+          :value, :string_value, :bool_value, :data_value, :sum,
+          :time, :update_time);`
+
+	for _, msg := range messages {
+		senmlMsg, ok := msg.(senml.Message)
+		if !ok {
+			return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
+		}
+
+		if _, err := tx.NamedExecContext(ctx, q, senmlMsg); err != nil {
+			return sr.handlePgError(err, errors.ErrSaveMessages)
+		}
+	}
+
+	return nil
+}
+
+func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
+	page := readers.SenMLMessagesPage{
+		SenMLPageMetadata: rpm,
+		MessagesPage: readers.MessagesPage{
+			Messages: []readers.Message{},
+			Total:    0,
+		},
+	}
+
+	params := sr.buildQueryParams(rpm)
+
+	messages, err := sr.readMessages(ctx, rpm, params)
+	if err != nil {
+		return page, err
+	}
+	page.Messages = messages
+
+	condition := sr.fmtCondition(rpm)
+	q := fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, senmlTable, condition)
+	total, err := dbutil.Total(ctx, sr.db, q, params)
+	if err != nil {
+		return page, err
+	}
+	page.Total = total
+
+	return page, nil
+}
+
+func (sr *senmlRepository) readMessages(ctx context.Context, rpm readers.SenMLPageMetadata, params map[string]interface{}) ([]readers.Message, error) {
+	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
+	condition := sr.fmtCondition(rpm)
+
+	q := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY time DESC %s;`, senmlTable, condition, olq)
+	rows, err := sr.db.NamedQueryContext(ctx, q, params)
+	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
+			return []readers.Message{}, nil
+		}
+		return nil, errors.Wrap(readers.ErrReadMessages, err)
+	}
+
+	if rows == nil {
+		return []readers.Message{}, nil
+	}
+	defer rows.Close()
+
+	return sr.scanMessages(rows)
+}
+
+func (sr *senmlRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, error) {
+	var messages []readers.Message
+
+	for rows.Next() {
+		msg := senmlMessage{Message: senml.Message{}}
+		if err := rows.StructScan(&msg); err != nil {
+			return nil, errors.Wrap(readers.ErrReadMessages, err)
+		}
+		messages = append(messages, msg.Message)
+	}
+
+	return messages, nil
+}
+
+func (sr *senmlRepository) fmtCondition(rpm readers.SenMLPageMetadata) string {
+	var query map[string]interface{}
+	meta, err := json.Marshal(rpm)
+	if err != nil {
+		return ""
+	}
+	json.Unmarshal(meta, &query)
+
+	condition := ""
+	op := "WHERE"
+
+	for name := range query {
+		switch name {
+		case "subtopic", "publisher", "protocol":
+			condition = fmt.Sprintf(`%s %s %s = :%s`, condition, op, name, name)
+			op = "AND"
+		case "name":
+			condition = fmt.Sprintf(`%s %s name = :name`, condition, op)
+			op = "AND"
+		case "v":
+			comparator := readers.ParseValueComparator(query)
+			condition = fmt.Sprintf(`%s %s value %s :value`, condition, op, comparator)
+			op = "AND"
+		case "vb":
+			condition = fmt.Sprintf(`%s %s bool_value = :bool_value`, condition, op)
+			op = "AND"
+		case "vs":
+			condition = fmt.Sprintf(`%s %s string_value = :string_value`, condition, op)
+			op = "AND"
+		case "vd":
+			condition = fmt.Sprintf(`%s %s data_value = :data_value`, condition, op)
+			op = "AND"
+		case "from":
+			condition = fmt.Sprintf(`%s %s time >= :from`, condition, op)
+			op = "AND"
+		case "to":
+			condition = fmt.Sprintf(`%s %s time <= :to`, condition, op)
+			op = "AND"
+		}
+	}
+	return condition
+}
+
+func (sr *senmlRepository) buildQueryParams(rpm readers.SenMLPageMetadata) map[string]interface{} {
+	return map[string]interface{}{
+		"limit":        rpm.Limit,
+		"offset":       rpm.Offset,
+		"subtopic":     rpm.Subtopic,
+		"publisher":    rpm.Publisher,
+		"name":         rpm.Name,
+		"protocol":     rpm.Protocol,
+		"value":        rpm.Value,
+		"bool_value":   rpm.BoolValue,
+		"string_value": rpm.StringValue,
+		"data_value":   rpm.DataValue,
+		"from":         rpm.From,
+		"to":           rpm.To,
+	}
+}
+
+func (sr *senmlRepository) handlePgError(err error, wrapErr error) error {
+	pgErr, ok := err.(*pgconn.PgError)
+	if ok {
+		switch pgErr.Code {
+		case pgerrcode.UndefinedTable:
+			return errors.Wrap(wrapErr, err)
+		case pgerrcode.InvalidTextRepresentation:
+			return errors.Wrap(wrapErr, errors.ErrInvalidMessage)
+		default:
+			return errors.Wrap(wrapErr, err)
+		}
+	}
+	return errors.Wrap(wrapErr, err)
+}
