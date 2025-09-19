@@ -259,6 +259,9 @@ func buildGroupsResponse(gp things.GroupPage, pm apiutil.PageMetadata) groupPage
 			Total:  gp.Total,
 			Limit:  pm.Limit,
 			Offset: pm.Offset,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
+			Name:   pm.Name,
 		},
 		Groups: []viewGroupRes{},
 	}

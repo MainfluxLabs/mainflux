@@ -165,6 +165,9 @@ func buildOrgsResponse(op auth.OrgsPage, pm apiutil.PageMetadata) orgsPageRes {
 			Total:  op.Total,
 			Limit:  pm.Limit,
 			Offset: pm.Offset,
+			Ord:    pm.Order,
+			Dir:    pm.Dir,
+			Name:   pm.Name,
 		},
 		Orgs: []viewOrgRes{},
 	}

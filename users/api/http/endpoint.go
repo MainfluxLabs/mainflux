@@ -291,6 +291,10 @@ func buildUsersResponse(up users.UserPage, pm users.PageMetadata) userPageRes {
 			Total:  up.Total,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
+			Email:  pm.Email,
+			Status: pm.Status,
 		},
 		Users: []viewUserRes{},
 	}

@@ -130,6 +130,9 @@ func buildWebhooksByGroupResponse(wp webhooks.WebhooksPage, pm apiutil.PageMetad
 			Total:  wp.Total,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
+			Name:   pm.Name,
 		},
 		Webhooks: []webhookResponse{},
 	}

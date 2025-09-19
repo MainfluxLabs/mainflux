@@ -116,6 +116,9 @@ func buildOrgInvitesPageRes(page auth.OrgInvitesPage, pm auth.PageMetadataInvite
 			Limit:  pm.Limit,
 			Offset: pm.Offset,
 			Total:  page.Total,
+			Ord:    pm.Order,
+			Dir:    pm.Dir,
+			State:  pm.State,
 		},
 		Invites: make([]orgInviteRes, 0, len(page.Invites)),
 	}
