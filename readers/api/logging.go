@@ -14,15 +14,15 @@ import (
 	"github.com/MainfluxLabs/mainflux/readers"
 )
 
-var _ readers.MessageRepository = (*loggingMiddleware)(nil)
+var _ readers.Service = (*loggingMiddleware)(nil)
 
 type loggingMiddleware struct {
 	logger logger.Logger
-	svc    readers.MessageRepository
+	svc    readers.Service
 }
 
 // LoggingMiddleware adds logging facilities to the core service.
-func LoggingMiddleware(svc readers.MessageRepository, logger logger.Logger) readers.MessageRepository {
+func LoggingMiddleware(svc readers.Service, logger logger.Logger) readers.Service {
 	return &loggingMiddleware{
 		logger: logger,
 		svc:    svc,
