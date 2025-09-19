@@ -146,15 +146,6 @@ type GroupMembership struct {
 	Email    string `json:"email,omitempty"`
 }
 
-// Webhook represents mainflux Webhook.
-type Webhook struct {
-	ID      string            `json:"id"`
-	GroupID string            `json:"group_id"`
-	Name    string            `json:"name"`
-	Url     string            `json:"url"`
-	Headers map[string]string `json:"headers"`
-}
-
 type Key struct {
 	ID        string
 	Type      uint32
@@ -329,24 +320,6 @@ type SDK interface {
 	// RemoveOrgMemberships removes memberships from the specified org.
 	RemoveOrgMemberships(memberIDs []string, orgID, token string) error
 
-	// CreateWebhooks creates new webhooks.
-	CreateWebhooks(whs []Webhook, groupID, token string) ([]Webhook, error)
-
-	// ListWebhooksByGroup lists webhooks who belong to a specified group.
-	ListWebhooksByGroup(groupID, token string) (Webhooks, error)
-
-	// ListWebhooksByThing lists webhooks who belong to a specified tthing.
-	ListWebhooksByThing(thingID, token string) (Webhooks, error)
-
-	// GetWebhook returns webhook data by id.
-	GetWebhook(webhookID, token string) (Webhook, error)
-
-	// UpdateWebhook updates existing webhook.
-	UpdateWebhook(wh Webhook, webhookID, token string) error
-
-	// DeleteWebhooks removes existing webhooks.
-	DeleteWebhooks(ids []string, token string) error
-
 	// SendMessage send message.
 	SendMessage(subtopic, msg, token string) error
 
@@ -400,7 +373,6 @@ type mfSDK struct {
 	httpAdapterURL string
 	readerURL      string
 	thingsURL      string
-	webhooksURL    string
 	usersURL       string
 
 	msgContentType ContentType
@@ -414,7 +386,6 @@ type Config struct {
 	HTTPAdapterURL string
 	ReaderURL      string
 	ThingsURL      string
-	WebhooksURL    string
 	UsersURL       string
 
 	MsgContentType  ContentType
@@ -429,7 +400,6 @@ func NewSDK(conf Config) SDK {
 		httpAdapterURL: conf.HTTPAdapterURL,
 		readerURL:      conf.ReaderURL,
 		thingsURL:      conf.ThingsURL,
-		webhooksURL:    conf.WebhooksURL,
 		usersURL:       conf.UsersURL,
 
 		msgContentType: conf.MsgContentType,
