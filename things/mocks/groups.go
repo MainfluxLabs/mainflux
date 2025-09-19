@@ -211,11 +211,7 @@ func (grm *groupRepositoryMock) RetrieveByIDs(_ context.Context, ids []string, p
 
 	page := things.GroupPage{
 		Groups: items,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  uint64(len(items)),
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Total:  uint64(len(items)),
 	}
 
 	return page, nil
@@ -257,11 +253,7 @@ func (grm *groupRepositoryMock) RetrieveAll(_ context.Context, pm apiutil.PageMe
 
 	page := things.GroupPage{
 		Groups: items,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  uint64(len(items)),
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Total:  uint64(len(items)),
 	}
 
 	return page, nil

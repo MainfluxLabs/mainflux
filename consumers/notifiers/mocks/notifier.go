@@ -108,11 +108,7 @@ func (nrm *notifierRepositoryMock) RetrieveByGroup(_ context.Context, groupID st
 
 	return notifiers.NotifiersPage{
 		Notifiers: items,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  uint64(len(items)),
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Total:     uint64(len(items)),
 	}, nil
 }
 

@@ -122,12 +122,7 @@ func (nr notifierRepository) RetrieveByGroup(ctx context.Context, groupID string
 
 	page := notifiers.NotifiersPage{
 		Notifiers: items,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-			Name:   pm.Name,
-		},
+		Total:     total,
 	}
 	return page, nil
 }

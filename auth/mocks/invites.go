@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 )
 
@@ -98,11 +97,7 @@ func (irm *invitesRepositoryMock) RetrieveOrgInvitesByOrg(ctx context.Context, o
 
 	return auth.OrgInvitesPage{
 		Invites: invites,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  uint64(len(irm.orgInvites)),
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Total:   uint64(len(irm.orgInvites)),
 	}, nil
 }
 
@@ -138,11 +133,7 @@ func (irm *invitesRepositoryMock) RetrieveOrgInvitesByUser(ctx context.Context, 
 
 	return auth.OrgInvitesPage{
 		Invites: invites,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  uint64(len(irm.orgInvites)),
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Total:   uint64(len(irm.orgInvites)),
 	}, nil
 }
 

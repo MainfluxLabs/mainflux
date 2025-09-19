@@ -142,11 +142,7 @@ func (trm *thingRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs []s
 
 	page := things.ThingsPage{
 		Things: items,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  trm.counter,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Total:  trm.counter,
 	}
 
 	return page, nil
@@ -177,11 +173,7 @@ func (trm *thingRepositoryMock) RetrieveByProfile(_ context.Context, chID string
 
 	page := things.ThingsPage{
 		Things: ths,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  uint64(len(ths)),
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Total:  uint64(len(ths)),
 	}
 
 	return page, nil
@@ -241,11 +233,7 @@ func (trm *thingRepositoryMock) RetrieveAll(_ context.Context, pm apiutil.PageMe
 
 	page := things.ThingsPage{
 		Things: ths,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  trm.counter,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Total:  trm.counter,
 	}
 
 	return page, nil

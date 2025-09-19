@@ -68,7 +68,7 @@ func listOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildOrgMembershipsResponse(page), nil
+		return buildOrgMembershipsResponse(page, pm), nil
 	}
 }
 
@@ -136,15 +136,15 @@ func restoreOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func buildOrgMembershipsResponse(omp auth.OrgMembershipsPage) orgMembershipPageRes {
+func buildOrgMembershipsResponse(omp auth.OrgMembershipsPage, pm apiutil.PageMetadata) orgMembershipPageRes {
 	res := orgMembershipPageRes{
 		pageRes: pageRes{
 			Total:  omp.Total,
-			Offset: omp.Offset,
-			Limit:  omp.Limit,
-			Email:  omp.Email,
-			Order:  omp.Order,
-			Dir:    omp.Dir,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+			Email:  pm.Email,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
 		},
 		OrgMemberships: []viewOrgMembershipRes{},
 	}

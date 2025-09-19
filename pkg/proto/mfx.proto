@@ -64,8 +64,7 @@ message PubConfByKeyRes {
 
 message Config {
     string          contentType = 1;
-    bool            write       = 2;
-    Transformer     transformer = 3;
+    Transformer     transformer = 2;
 }
 
 message ConfigByThingIDRes{

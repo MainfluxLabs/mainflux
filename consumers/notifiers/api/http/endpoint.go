@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -48,7 +49,7 @@ func listNotifiersByGroupEndpoint(svc notifiers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildNotifiersByGroupResponse(nfs), nil
+		return buildNotifiersByGroupResponse(nfs, req.pageMetadata), nil
 	}
 }
 
@@ -105,12 +106,12 @@ func removeNotifiersEndpoint(svc notifiers.Service) endpoint.Endpoint {
 	}
 }
 
-func buildNotifiersByGroupResponse(nf notifiers.NotifiersPage) NotifiersPageRes {
+func buildNotifiersByGroupResponse(nf notifiers.NotifiersPage, pm apiutil.PageMetadata) NotifiersPageRes {
 	res := NotifiersPageRes{
 		pageRes: pageRes{
 			Total:  nf.Total,
-			Offset: nf.Offset,
-			Limit:  nf.Limit,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
 		},
 		Notifiers: []notifierResponse{},
 	}

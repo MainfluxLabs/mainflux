@@ -19,7 +19,7 @@ type GroupMembership struct {
 }
 
 type GroupMembershipsPage struct {
-	apiutil.PageMetadata
+	Total            uint64
 	GroupMemberships []GroupMembership
 }
 
@@ -107,12 +107,7 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 	if len(memberships) == 0 {
 		return GroupMembershipsPage{
 			GroupMemberships: []GroupMembership{},
-			PageMetadata: apiutil.PageMetadata{
-				Total:  0,
-				Offset: pm.Offset,
-				Limit:  pm.Limit,
-				Email:  pm.Email,
-			},
+			Total:            0,
 		}, nil
 	}
 
@@ -149,14 +144,7 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 
 	return GroupMembershipsPage{
 		GroupMemberships: gms,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  res.PageMetadata.Total,
-			Offset: res.PageMetadata.Offset,
-			Limit:  res.PageMetadata.Limit,
-			Email:  res.PageMetadata.Email,
-			Order:  res.PageMetadata.Order,
-			Dir:    res.PageMetadata.Dir,
-		},
+		Total:            res.PageMetadata.Total,
 	}, nil
 }
 

@@ -78,6 +78,12 @@ func migrateDB(db *sqlx.DB) error {
 					"DROP TABLE json",
 				},
 			},
+			{
+				Id: "messages_2",
+				Up: []string{
+					`ALTER TABLE messages RENAME TO senml;`,
+				},
+			},
 		},
 	}
 
