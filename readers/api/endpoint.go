@@ -15,7 +15,7 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-func listJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func listJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listJSONMessagesReq)
 		if err := req.validate(); err != nil {
@@ -49,7 +49,7 @@ func listJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 	}
 }
 
-func listSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func listSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listSenMLMessagesReq)
 		if err := req.validate(); err != nil {
@@ -83,7 +83,7 @@ func listSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint 
 	}
 }
 
-func deleteJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func deleteJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(deleteJSONMessagesReq)
 		if err := req.validate(); err != nil {
@@ -114,7 +114,7 @@ func deleteJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint
 	}
 }
 
-func deleteSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func deleteSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(deleteSenMLMessagesReq)
 		if err := req.validate(); err != nil {
@@ -146,7 +146,7 @@ func deleteSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 	}
 }
 
-func backupJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func backupJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(backupJSONMessagesReq)
 
@@ -184,7 +184,7 @@ func backupJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint
 	}
 }
 
-func backupSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func backupSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(backupSenMLMessagesReq)
 
@@ -222,7 +222,7 @@ func backupSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 	}
 }
 
-func restoreJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func restoreJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(restoreMessagesReq)
 		if err := req.validate(); err != nil {
@@ -264,7 +264,7 @@ func restoreJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 	}
 }
 
-func restoreSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func restoreSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(restoreMessagesReq)
 		if err := req.validate(); err != nil {

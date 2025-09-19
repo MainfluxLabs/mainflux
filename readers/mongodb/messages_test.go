@@ -57,7 +57,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("Creating new MongoDB client expected to succeed: %s.\n", err))
 
 	db := client.Database(testDB)
-	reader := mreader.New(db)
+	reader := mreader.NewSenMLRepository(db)
 	writer := mwriter.New(db)
 
 	err = db.Drop(context.Background())
@@ -365,7 +365,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ListSenMLMessages(context.Background(), tc.pageMeta)
+		result, err := reader.ListMessages(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Messages, result.Messages))
 		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Total, result.Total))
@@ -377,7 +377,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("Creating new MongoDB client expected to succeed: %s.\n", err))
 
 	db := client.Database(testDB)
-	reader := mreader.New(db)
+	reader := mreader.NewJSONRepository(db)
 	writer := mwriter.New(db)
 
 	id1, err := idProvider.ID()
@@ -481,7 +481,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ListJSONMessages(context.Background(), tc.pageMeta)
+		result, err := reader.ListMessages(context.Background(), tc.pageMeta)
 		require.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
 		for i := 0; i < len(result.Messages); i++ {

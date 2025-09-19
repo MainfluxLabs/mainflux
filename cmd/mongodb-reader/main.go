@@ -106,10 +106,10 @@ func main() {
 
 	db := connectToMongoDB(cfg.dbHost, cfg.dbPort, cfg.dbName, logger)
 
-	repo := newService(db, logger)
+	svc := newService(db, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, api.MakeHandler(repo, tc, auth, svcName, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, api.MakeHandler(svc, tc, auth, svcName, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -188,11 +188,14 @@ func connectToMongoDB(host, port, name string, logger logger.Logger) *mongo.Data
 	return client.Database(name)
 }
 
-func newService(db *mongo.Database, logger logger.Logger) readers.MessageRepository {
-	repo := mongodb.New(db)
-	repo = api.LoggingMiddleware(repo, logger)
-	repo = api.MetricsMiddleware(
-		repo,
+func newService(db *mongo.Database, logger logger.Logger) readers.Service {
+	jsonRepo := mongodb.NewJSONRepository(db)
+	senmlRepo := mongodb.NewSenMLRepository(db)
+
+	svc := readers.New(jsonRepo, senmlRepo)
+	svc = api.LoggingMiddleware(svc, logger)
+	svc = api.MetricsMiddleware(
+		svc,
 		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: "mongodb",
 			Subsystem: "message_reader",
@@ -207,5 +210,5 @@ func newService(db *mongo.Database, logger logger.Logger) readers.MessageReposit
 		}, []string{"method"}),
 	)
 
-	return repo
+	return svc
 }

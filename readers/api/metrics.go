@@ -13,16 +13,16 @@ import (
 	"github.com/go-kit/kit/metrics"
 )
 
-var _ readers.MessageRepository = (*metricsMiddleware)(nil)
+var _ readers.Service = (*metricsMiddleware)(nil)
 
 type metricsMiddleware struct {
 	counter metrics.Counter
 	latency metrics.Histogram
-	svc     readers.MessageRepository
+	svc     readers.Service
 }
 
 // MetricsMiddleware instruments core service by tracking request count and latency.
-func MetricsMiddleware(svc readers.MessageRepository, counter metrics.Counter, latency metrics.Histogram) readers.MessageRepository {
+func MetricsMiddleware(svc readers.Service, counter metrics.Counter, latency metrics.Histogram) readers.Service {
 	return &metricsMiddleware{
 		counter: counter,
 		latency: latency,
