@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"sync"
 
-	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
 )
@@ -70,65 +69,6 @@ func (repo *senmlRepositoryMock) DeleteMessages(ctx context.Context, rpm readers
 	return nil
 }
 
-func (repo *senmlRepositoryMock) readAllJSON(rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-
-	var query map[string]interface{}
-	meta, _ := json.Marshal(rpm)
-	json.Unmarshal(meta, &query)
-
-	var filteredMessages []readers.Message
-
-	// Read from all profiles
-	for _, profileMessages := range repo.messages {
-		for _, m := range profileMessages {
-			if repo.jsonMessageMatchesFilter(m, query, rpm) {
-				switch msg := m.(type) {
-				case mfjson.Message:
-					filteredMessages = append(filteredMessages, msg)
-				case map[string]interface{}:
-					jsonMsg := mfjson.Message{
-						Created:   repo.getCreatedTime(msg),
-						Subtopic:  repo.getStringField(msg, "subtopic"),
-						Publisher: repo.getStringField(msg, "publisher"),
-						Protocol:  repo.getStringField(msg, "protocol"),
-						Payload:   repo.getPayload(msg),
-					}
-					filteredMessages = append(filteredMessages, jsonMsg)
-				default:
-					continue
-				}
-			}
-		}
-	}
-
-	total := uint64(len(filteredMessages))
-
-	if rpm.Offset >= total {
-		return readers.JSONMessagesPage{
-			JSONPageMetadata: rpm,
-			MessagesPage: readers.MessagesPage{
-				Total:    total,
-				Messages: []readers.Message{},
-			},
-		}, nil
-	}
-
-	end := rpm.Offset + rpm.Limit
-	if end > total || rpm.Limit == noLimit {
-		end = total
-	}
-
-	return readers.JSONMessagesPage{
-		JSONPageMetadata: rpm,
-		MessagesPage: readers.MessagesPage{
-			Total:    total,
-			Messages: filteredMessages[rpm.Offset:end],
-		},
-	}, nil
-}
-
 func (repo *senmlRepositoryMock) readAll(rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
@@ -172,17 +112,6 @@ func (repo *senmlRepositoryMock) readAll(rpm readers.SenMLPageMetadata) (readers
 	}, nil
 }
 
-func (repo *senmlRepositoryMock) jsonMessageMatchesFilter(msg readers.Message, query map[string]interface{}, rpm readers.JSONPageMetadata) bool {
-	switch m := msg.(type) {
-	case mfjson.Message:
-		return repo.checkJSONMessageFilter(m, query, rpm)
-	case map[string]interface{}:
-		return repo.checkJSONMapFilter(m, query, rpm)
-	default:
-		return false
-	}
-}
-
 func (repo *senmlRepositoryMock) senmlMessageMatchesFilter(msg readers.Message, query map[string]interface{}, rpm readers.SenMLPageMetadata) bool {
 	switch m := msg.(type) {
 	case senml.Message:
@@ -190,25 +119,6 @@ func (repo *senmlRepositoryMock) senmlMessageMatchesFilter(msg readers.Message, 
 	default:
 		return false
 	}
-}
-
-func (repo *senmlRepositoryMock) checkJSONMessageFilter(jsonMsg mfjson.Message, query map[string]interface{}, rpm readers.JSONPageMetadata) bool {
-	if rpm.Subtopic != "" && rpm.Subtopic != jsonMsg.Subtopic {
-		return false
-	}
-	if rpm.Publisher != "" && rpm.Publisher != jsonMsg.Publisher {
-		return false
-	}
-	if rpm.Protocol != "" && rpm.Protocol != jsonMsg.Protocol {
-		return false
-	}
-	if rpm.From != 0 && jsonMsg.Created < rpm.From {
-		return false
-	}
-	if rpm.To != 0 && jsonMsg.Created >= rpm.To {
-		return false
-	}
-	return true
 }
 
 func (repo *senmlRepositoryMock) checkJSONMapFilter(jsonMap map[string]interface{}, query map[string]interface{}, rpm readers.JSONPageMetadata) bool {
