@@ -71,20 +71,18 @@ func (repo *jsonRepositoryMock) readAll(rpm readers.JSONPageMetadata) (readers.J
 
 	for _, profileMessages := range repo.messages {
 		for _, m := range profileMessages {
-			if repo.messageMatchesFilter(m, rpm) { // Remove the query parameter
+			if repo.messageMatchesFilter(m, rpm) {
 				switch msg := m.(type) {
 				case mfjson.Message:
-					// Convert mfjson.Message to map for consistent response
 					msgMap := map[string]interface{}{
 						"created":   msg.Created,
 						"subtopic":  msg.Subtopic,
 						"publisher": msg.Publisher,
 						"protocol":  msg.Protocol,
-						"payload":   msg.Payload, // Include actual payload, not empty map
+						"payload":   msg.Payload,
 					}
 					filteredMessages = append(filteredMessages, msgMap)
 				case map[string]interface{}:
-					// Use the map as-is, don't create a new one with empty payload
 					filteredMessages = append(filteredMessages, msg)
 				default:
 					continue
