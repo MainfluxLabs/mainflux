@@ -57,9 +57,14 @@ var (
 	usersList = []users.User{user, admin}
 )
 
-func newServer(repo readers.MessageRepository, tc protomfx.ThingsServiceClient, ac protomfx.AuthServiceClient) *httptest.Server {
+func newServer(jsonMessages []readers.Message, senmlMessaages []senml.Message, tc protomfx.ThingsServiceClient, ac protomfx.AuthServiceClient) *httptest.Server {
 	logger := logger.NewMock()
-	mux := api.MakeHandler(repo, tc, ac, svcName, logger)
+
+	jsonRepo := rmocks.NewJSONRepository("", jsonMessages)
+	senmlRepo := rmocks.NewSenMLRepository("", fromSenml(senmlMessaages))
+	svc := readers.New(jsonRepo, senmlRepo)
+
+	mux := api.MakeHandler(svc, tc, ac, svcName, logger)
 
 	id, _ := idProvider.ID()
 	user.ID = id
@@ -150,8 +155,7 @@ func TestListSenMLMessages(t *testing.T) {
 
 	adminToken := adminTok.GetValue()
 
-	repo := rmocks.NewMessageRepository("", fromSenml(messages))
-	ts := newServer(repo, thSvc, authSvc)
+	ts := newServer(nil, messages, thSvc, authSvc)
 	defer ts.Close()
 
 	cases := []struct {
@@ -520,12 +524,10 @@ func TestListJSONMessages(t *testing.T) {
 
 	repoMessages := make([]readers.Message, len(messages))
 	for i, msg := range messages {
-		msgMap, _ := msg.ToMap()
-		repoMessages[i] = msgMap
+		repoMessages[i] = msg
 	}
 
-	repo := rmocks.NewMessageRepository("", repoMessages)
-	ts := newServer(repo, thSvc, authSvc)
+	ts := newServer(repoMessages, nil, thSvc, authSvc)
 	defer ts.Close()
 
 	cases := []struct {
