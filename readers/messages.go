@@ -42,12 +42,12 @@ type JSONMessaageRepository interface {
 	// Restore restores the json messages.
 	Restore(ctx context.Context, messages ...Message) error
 
-	// Delete deletes the json messages within a time range.
+	// DeleteMessages deletes the json messages within a time range.
 	DeleteMessages(ctx context.Context, rpm JSONPageMetadata) error
 }
 
 type SenMLMessageRepository interface {
-	// ListSenMLMessages retrieves the senml messages with given filters.
+	// ListMessages retrieves the senml messages with given filters.
 	ListMessages(ctx context.Context, rpm SenMLPageMetadata) (SenMLMessagesPage, error)
 
 	// Backup backups the senml messages with given filters.
@@ -56,7 +56,7 @@ type SenMLMessageRepository interface {
 	// Restore restores the senml messages.
 	Restore(ctx context.Context, messages ...Message) error
 
-	// Delete deletes the json messages within a time range.
+	// DeleteMessages deletes the json messages within a time range.
 	DeleteMessages(ctx context.Context, rpm SenMLPageMetadata) error
 }
 
