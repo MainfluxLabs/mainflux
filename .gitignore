@@ -5,3 +5,4 @@
 # https://digitalfortress.tech/tricks/creating-a-global-gitignore/
 
 build
+temp.sql

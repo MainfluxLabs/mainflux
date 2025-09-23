@@ -168,24 +168,21 @@ func (tr thingRepository) RetrieveByID(ctx context.Context, id string) (things.T
 	return toThing(dbth)
 }
 
-func (tr thingRepository) RetrieveByKey(ctx context.Context, key string) (string, error) {
-	q := `SELECT id FROM things WHERE key = $1;`
-	q_external := `SELECT thing_id FROM key_external WHERE key = $1;`
+func (tr thingRepository) RetrieveByKey(ctx context.Context, keyType string, key string) (string, error) {
+	var query string
+	switch keyType {
+	case things.KeyTypeInline:
+		query = `SELECT id FROM things WHERE key = $1;`
+	case things.KeyTypeExternal:
+		query = `SELECT thing_id FROM key_external WHERE key = $1;`
+	default:
+		return "", errors.New("invalid thing key type")
+	}
 
 	var id string
-	if err := tr.db.QueryRowxContext(ctx, q, key).Scan(&id); err != nil {
+	if err := tr.db.QueryRowxContext(ctx, query, key).Scan(&id); err != nil {
 		if err == sql.ErrNoRows {
-			// Key doesn't correspond to an existing "Thing Key", attempting to match it against
-			// the database of external thing keys:
-			if err := tr.db.QueryRowxContext(ctx, q_external, key).Scan(&id); err != nil {
-				if err == sql.ErrNoRows {
-					return "", errors.Wrap(dbutil.ErrNotFound, err)
-				}
-
-				return "", errors.Wrap(dbutil.ErrRetrieveEntity, err)
-			}
-
-			return id, nil
+			return "", errors.Wrap(dbutil.ErrNotFound, err)
 		}
 
 		return "", errors.Wrap(dbutil.ErrRetrieveEntity, err)

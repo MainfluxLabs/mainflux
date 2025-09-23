@@ -99,7 +99,7 @@ func (tr testRequest) make() (*http.Response, error) {
 		return nil, err
 	}
 	if tr.key != "" {
-		req.Header.Set("Authorization", apiutil.ThingPrefix+tr.key)
+		req.Header.Set("Authorization", apiutil.ThingKeyPrefixInline+tr.key)
 	}
 	if tr.token != "" {
 		req.Header.Set("Authorization", apiutil.BearerPrefix+tr.token)
@@ -653,7 +653,7 @@ func TestViewMetadataByKey(t *testing.T) {
 		{
 			desc:   "view thing metadata with empty key",
 			auth:   emptyValue,
-			status: http.StatusUnauthorized,
+			status: http.StatusBadRequest,
 			res:    viewMetadataRes{},
 		},
 	}
@@ -2784,10 +2784,12 @@ func TestIdentify(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("failed to create thing: %s", err))
 	th := ths[0]
 
-	ir := identifyReq{Token: th.Key}
+	ir := identifyReq{Key: th.Key, Type: "inline"}
 	data := toJSON(ir)
 
-	nonexistentData := toJSON(identifyReq{Token: wrongValue})
+	nonexistentData := toJSON(identifyReq{Key: wrongValue, Type: "inline"})
+
+	// TODO: add support for and tests for external keys as well
 
 	cases := map[string]struct {
 		contentType string
@@ -2812,7 +2814,7 @@ func TestIdentify(t *testing.T) {
 		"identify with empty JSON request": {
 			contentType: contentTypeJSON,
 			req:         "{}",
-			status:      http.StatusUnauthorized,
+			status:      http.StatusBadRequest,
 		},
 		"identify with invalid JSON request": {
 			contentType: contentTypeJSON,
@@ -2836,7 +2838,8 @@ func TestIdentify(t *testing.T) {
 }
 
 type identifyReq struct {
-	Token string `json:"token"`
+	Key  string `json:"key"`
+	Type string `json:"type"`
 }
 
 type viewMetadataRes struct {

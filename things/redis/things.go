@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	keyByIDPrefix       = "key_by_id"
+	keysByIDPrefix      = "keys_by_id"
 	idByKeyPrefix       = "id_by_key"
 	groupByThingPrefix  = "gr_by_th"
 	thingsByGroupPrefix = "ths_by_gr"
@@ -33,21 +33,26 @@ func NewThingCache(client *redis.Client) things.ThingCache {
 	}
 }
 
-func (tc *thingCache) Save(ctx context.Context, thingKey string, thingID string) error {
-	ik := idByThingKeyKey(thingKey)
-	if err := tc.client.Set(ctx, ik, thingID, 0).Err(); err != nil {
+func (tc *thingCache) Save(ctx context.Context, keyType, thingKey string, thingID string) error {
+	// Associate the given thing key with the given thing ID
+	idKey := idByThingKeyKey(keyType, thingKey)
+	if err := tc.client.Set(ctx, idKey, thingID, 0).Err(); err != nil {
 		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
-	kk := keyByThingIDKey(thingID)
-	if err := tc.client.Set(ctx, kk, thingKey, 0).Err(); err != nil {
+	// Add the given thing key to the set containing thing keys associated with
+	// this particular thing
+	keysSetKey := keysByThingIDKey(thingID)
+	thingKeyVal := fmt.Sprintf("%s:%s", keyType, thingKey)
+	if err := tc.client.SAdd(ctx, keysSetKey, thingKeyVal).Err(); err != nil {
 		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
+
 	return nil
 }
 
-func (tc *thingCache) ID(ctx context.Context, thingKey string) (string, error) {
-	ik := idByThingKeyKey(thingKey)
+func (tc *thingCache) ID(ctx context.Context, keyType, thingKey string) (string, error) {
+	ik := idByThingKeyKey(keyType, thingKey)
 	thingID, err := tc.client.Get(ctx, ik).Result()
 	if err != nil {
 		return "", errors.Wrap(dbutil.ErrNotFound, err)
@@ -57,18 +62,28 @@ func (tc *thingCache) ID(ctx context.Context, thingKey string) (string, error) {
 }
 
 func (tc *thingCache) Remove(ctx context.Context, thingID string) error {
-	kk := keyByThingIDKey(thingID)
-	thingKey, err := tc.client.Get(ctx, kk).Result()
-	// Redis returns Nil Reply when key does not exist.
-	if err == redis.Nil {
-		return nil
-	}
+	// Retrieve all thing keys associated with the given thing ID
+	keysSetKey := keysByThingIDKey(thingID)
+	thingKeys, err := tc.client.SMembers(ctx, keysSetKey).Result()
+
 	if err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
-	ik := idByThingKeyKey(thingKey)
-	if err := tc.client.Del(ctx, ik, kk).Err(); err != nil {
+	if len(thingKeys) == 0 {
+		return nil
+	}
+
+	// Append prefix to each key
+	for idx, keyVal := range thingKeys {
+		thingKeys[idx] = fmt.Sprintf("%s:%s", idByKeyPrefix, keyVal)
+	}
+
+	if err := tc.client.Del(ctx, thingKeys...).Err(); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	if err := tc.client.Del(ctx, keysSetKey).Err(); err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 	return nil
@@ -121,12 +136,12 @@ func (tc *thingCache) RemoveGroup(ctx context.Context, thingID string) error {
 	return nil
 }
 
-func idByThingKeyKey(thingKey string) string {
-	return fmt.Sprintf("%s:%s", idByKeyPrefix, thingKey)
+func idByThingKeyKey(keyType, thingKey string) string {
+	return fmt.Sprintf("%s:%s:%s", idByKeyPrefix, keyType, thingKey)
 }
 
-func keyByThingIDKey(thingID string) string {
-	return fmt.Sprintf("%s:%s", keyByIDPrefix, thingID)
+func keysByThingIDKey(thingID string) string {
+	return fmt.Sprintf("%s:%s", keysByIDPrefix, thingID)
 }
 
 func groupByThingIDKey(thingID string) string {

@@ -81,12 +81,12 @@ func (trm thingRepositoryMiddleware) RetrieveByID(ctx context.Context, id string
 	return trm.repo.RetrieveByID(ctx, id)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveByKey(ctx context.Context, key string) (string, error) {
+func (trm thingRepositoryMiddleware) RetrieveByKey(ctx context.Context, keyType, key string) (string, error) {
 	span := createSpan(ctx, trm.tracer, retrieveThingByKey)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.RetrieveByKey(ctx, key)
+	return trm.repo.RetrieveByKey(ctx, keyType, key)
 }
 
 func (trm thingRepositoryMiddleware) RetrieveByGroups(ctx context.Context, ids []string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
@@ -151,20 +151,20 @@ func ThingCacheMiddleware(tracer opentracing.Tracer, cache things.ThingCache) th
 	}
 }
 
-func (tcm thingCacheMiddleware) Save(ctx context.Context, thingKey string, thingID string) error {
+func (tcm thingCacheMiddleware) Save(ctx context.Context, keyType, thingKey string, thingID string) error {
 	span := createSpan(ctx, tcm.tracer, saveThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return tcm.cache.Save(ctx, thingKey, thingID)
+	return tcm.cache.Save(ctx, keyType, thingKey, thingID)
 }
 
-func (tcm thingCacheMiddleware) ID(ctx context.Context, thingKey string) (string, error) {
+func (tcm thingCacheMiddleware) ID(ctx context.Context, keyType, thingKey string) (string, error) {
 	span := createSpan(ctx, tcm.tracer, retrieveThingIDByKey)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return tcm.cache.ID(ctx, thingKey)
+	return tcm.cache.ID(ctx, keyType, thingKey)
 }
 
 func (tcm thingCacheMiddleware) Remove(ctx context.Context, thingID string) error {

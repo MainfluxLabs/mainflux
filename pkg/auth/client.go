@@ -12,8 +12,8 @@ import (
 
 // Client represents Auth cache.
 type Client interface {
-	Identify(ctx context.Context, thingKey string) (string, error)
-	GetPubConfByKey(ctx context.Context, thingKey string) (protomfx.PubConfByKeyRes, error)
+	Identify(ctx context.Context, thingKeytype, thingKey string) (string, error)
+	GetPubConfByKey(ctx context.Context, thingKeyType, thingKey string) (protomfx.PubConfByKeyRes, error)
 }
 
 const (
@@ -34,12 +34,14 @@ func New(redisClient *redis.Client, things protomfx.ThingsServiceClient) Client 
 	}
 }
 
-func (c client) Identify(ctx context.Context, thingKey string) (string, error) {
+func (c client) Identify(ctx context.Context, keyType, thingKey string) (string, error) {
+	// TODO: where in the auth service's redis client are thing keys cached? -- cache them by type once i figure it out
 	tkey := keyPrefix + ":" + thingKey
 	thingID, err := c.redisClient.Get(ctx, tkey).Result()
 	if err != nil {
-		t := &protomfx.Token{
-			Value: string(thingKey),
+		t := &protomfx.ThingKey{
+			Key:     string(thingKey),
+			KeyType: keyType,
 		}
 
 		thid, err := c.things.Identify(context.TODO(), t)
@@ -51,9 +53,10 @@ func (c client) Identify(ctx context.Context, thingKey string) (string, error) {
 	return thingID, nil
 }
 
-func (c client) GetPubConfByKey(ctx context.Context, thingKey string) (protomfx.PubConfByKeyRes, error) {
-	req := &protomfx.PubConfByKeyReq{
-		Key: thingKey,
+func (c client) GetPubConfByKey(ctx context.Context, thingKeyType, thingKey string) (protomfx.PubConfByKeyRes, error) {
+	req := &protomfx.ThingKey{
+		Key:     thingKey,
+		KeyType: thingKeyType,
 	}
 
 	pc, err := c.things.GetPubConfByKey(ctx, req)

@@ -129,12 +129,12 @@ func (req updateKeyReq) validate() error {
 }
 
 type viewMetadataReq struct {
-	key string
+	apiutil.ThingKey
 }
 
 func (req viewMetadataReq) validate() error {
-	if req.key == "" {
-		return apiutil.ErrBearerKey
+	if err := req.ThingKey.Validate(); err != nil {
+		return err
 	}
 
 	return nil
@@ -350,12 +350,16 @@ func (req restoreReq) validate() error {
 }
 
 type identifyReq struct {
-	Token string `json:"token"`
+	// TODO: previously this structure had a "Token" field which was encoded
+	// in a JSON "token" property -- change the docs and OpenAPI docs to
+	// reflect this change, and check if any other services or TESTS
+	// made calls to this endpoint and change the name of the JSON property
+	apiutil.ThingKey
 }
 
 func (req identifyReq) validate() error {
-	if req.Token == "" {
-		return apiutil.ErrBearerToken
+	if err := req.ThingKey.Validate(); err != nil {
+		return err
 	}
 
 	return nil

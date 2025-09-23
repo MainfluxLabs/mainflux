@@ -19,7 +19,8 @@ const (
 )
 
 type identifyThingReq struct {
-	Token string `json:"token,omitempty"`
+	Key  string `json:"key,omitempty"`
+	Type string `json:"type,omitempty"`
 }
 
 type identifyThingResp struct {
@@ -272,8 +273,8 @@ func (sdk mfSDK) DeleteThings(ids []string, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) IdentifyThing(key string) (string, error) {
-	idReq := identifyThingReq{Token: key}
+func (sdk mfSDK) IdentifyThing(keyType, key string) (string, error) {
+	idReq := identifyThingReq{Key: key, Type: keyType}
 	data, err := json.Marshal(idReq)
 	if err != nil {
 		return "", err

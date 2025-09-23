@@ -12,12 +12,12 @@ const maxLimitSize = 1000
 
 type listMessagesReq struct {
 	token    string
-	key      string
+	thingKey apiutil.ThingKey
 	pageMeta readers.PageMetadata
 }
 
 func (req listMessagesReq) validate() error {
-	if req.token == "" && req.key == "" {
+	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 
@@ -96,13 +96,18 @@ func (req restoreMessagesReq) validate() error {
 
 type deleteMessagesReq struct {
 	token    string
-	key      string
+	thingKey apiutil.ThingKey
 	pageMeta readers.PageMetadata
 }
 
 func (req deleteMessagesReq) validate() error {
-	if req.token == "" && req.key == "" {
+	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
+
+	if err := req.thingKey.Validate(); err != nil {
+		return err
+	}
+
 	return nil
 }

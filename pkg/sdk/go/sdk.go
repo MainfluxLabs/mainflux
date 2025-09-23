@@ -228,7 +228,7 @@ type SDK interface {
 	DeleteThings(ids []string, token string) error
 
 	// IdentifyThing validates thing's key and returns its ID
-	IdentifyThing(key string) (string, error)
+	IdentifyThing(keyType, key string) (string, error)
 
 	// CreateGroup creates new group and returns its id.
 	CreateGroup(group Group, orgID, token string) (string, error)
@@ -457,7 +457,7 @@ func (sdk mfSDK) sendRequest(req *http.Request, token, contentType string) (*htt
 
 func (sdk mfSDK) sendThingRequest(req *http.Request, key, contentType string) (*http.Response, error) {
 	if key != "" {
-		req.Header.Set("Authorization", apiutil.ThingPrefix+key)
+		req.Header.Set("Authorization", apiutil.ThingKeyPrefixInline+key)
 	}
 
 	if contentType != "" {

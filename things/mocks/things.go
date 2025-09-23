@@ -5,6 +5,7 @@ package mocks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -18,15 +19,17 @@ import (
 var _ things.ThingRepository = (*thingRepositoryMock)(nil)
 
 type thingRepositoryMock struct {
-	mu      sync.Mutex
-	counter uint64
-	things  map[string]things.Thing
+	mu           sync.Mutex
+	counter      uint64
+	things       map[string]things.Thing
+	externalKeys map[string]string
 }
 
 // NewThingRepository creates in-memory thing repository.
 func NewThingRepository() things.ThingRepository {
 	repo := &thingRepositoryMock{
-		things: make(map[string]things.Thing),
+		things:       make(map[string]things.Thing),
+		externalKeys: make(map[string]string),
 	}
 
 	return repo
@@ -201,14 +204,25 @@ func (trm *thingRepositoryMock) Remove(_ context.Context, ids ...string) error {
 	return nil
 }
 
-func (trm *thingRepositoryMock) RetrieveByKey(_ context.Context, key string) (string, error) {
+func (trm *thingRepositoryMock) RetrieveByKey(_ context.Context, keyType, key string) (string, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
-	for _, thing := range trm.things {
-		if thing.Key == key {
-			return thing.ID, nil
+	switch keyType {
+	case things.KeyTypeInline:
+		for _, thing := range trm.things {
+			if thing.Key == key {
+				return thing.ID, nil
+			}
 		}
+	case things.KeyTypeExternal:
+		if _, ok := trm.externalKeys[key]; !ok {
+			return "", dbutil.ErrNotFound
+		}
+
+		return trm.externalKeys[key], nil
+	default:
+		return "", errors.New("invalid thing key type")
 	}
 
 	return "", dbutil.ErrNotFound

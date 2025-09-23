@@ -170,4 +170,7 @@ var (
 
 	// ErrUserAlreadyInvited indicates that the invitee already has a pending invitation to join the same Org
 	ErrUserAlreadyInvited = errors.New("user already has pending invite to org")
+
+	// ErrInvalidThingKeyType indicates an invalid or missing type of thing authentication key
+	ErrInvalidThingKeyType = errors.New("invalid thing key type")
 )

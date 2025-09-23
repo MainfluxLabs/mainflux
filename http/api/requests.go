@@ -9,13 +9,13 @@ import (
 )
 
 type publishReq struct {
-	msg   protomfx.Message
-	token string
+	msg protomfx.Message
+	apiutil.ThingKey
 }
 
 func (req publishReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
+	if err := req.ThingKey.Validate(); err != nil {
+		return err
 	}
 
 	return nil

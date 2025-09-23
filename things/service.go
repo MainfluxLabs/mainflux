@@ -101,7 +101,7 @@ type Service interface {
 	ViewProfileByThing(ctx context.Context, token, thID string) (Profile, error)
 
 	// ViewMetadataByKey retrieves metadata about the thing identified by the given key.
-	ViewMetadataByKey(ctx context.Context, thingKey string) (Metadata, error)
+	ViewMetadataByKey(ctx context.Context, keyType string, thingKey string) (Metadata, error)
 
 	// RemoveProfiles removes the things identified by the provided IDs, that
 	// belongs to the user identified by the provided key.
@@ -109,7 +109,7 @@ type Service interface {
 
 	// GetPubConfByKey determines whether the profile can be accessed using the
 	// provided key and returns thing's id if access is allowed.
-	GetPubConfByKey(ctx context.Context, key string) (PubConfInfo, error)
+	GetPubConfByKey(ctx context.Context, keyType, key string) (PubConfInfo, error)
 
 	// GetConfigByThingID returns profile config for given thing ID.
 	GetConfigByThingID(ctx context.Context, thingID string) (map[string]interface{}, error)
@@ -127,7 +127,7 @@ type Service interface {
 	CanThingAccessGroup(ctx context.Context, req ThingAccessReq) error
 
 	// Identify returns thing ID for given thing key.
-	Identify(ctx context.Context, key string) (string, error)
+	Identify(ctx context.Context, keyType, key string) (string, error)
 
 	// GetGroupIDByThingID returns a thing's group ID for given thing ID.
 	GetGroupIDByThingID(ctx context.Context, thingID string) (string, error)
@@ -206,8 +206,9 @@ type UserAccessReq struct {
 }
 
 type ThingAccessReq struct {
-	Key string
-	ID  string
+	Key     string
+	KeyType string
+	ID      string
 }
 
 type PubConfInfo struct {
@@ -375,8 +376,8 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 	return thing, nil
 }
 
-func (ts *thingsService) ViewMetadataByKey(ctx context.Context, thingKey string) (Metadata, error) {
-	thingID, err := ts.Identify(ctx, thingKey)
+func (ts *thingsService) ViewMetadataByKey(ctx context.Context, keyType, thingKey string) (Metadata, error) {
+	thingID, err := ts.Identify(ctx, keyType, thingKey)
 	if err != nil {
 		return Metadata{}, err
 	}
@@ -645,16 +646,16 @@ func (ts *thingsService) RemoveProfiles(ctx context.Context, token string, ids .
 	return ts.profiles.Remove(ctx, ids...)
 }
 
-func (ts *thingsService) GetPubConfByKey(ctx context.Context, thingKey string) (PubConfInfo, error) {
-	thID, err := ts.thingCache.ID(ctx, thingKey)
+func (ts *thingsService) GetPubConfByKey(ctx context.Context, keyType, thingKey string) (PubConfInfo, error) {
+	thID, err := ts.thingCache.ID(ctx, keyType, thingKey)
 	if err != nil {
-		id, err := ts.things.RetrieveByKey(ctx, thingKey)
+		id, err := ts.things.RetrieveByKey(ctx, keyType, thingKey)
 		if err != nil {
 			return PubConfInfo{}, err
 		}
 		thID = id
 
-		if err := ts.thingCache.Save(ctx, thingKey, thID); err != nil {
+		if err := ts.thingCache.Save(ctx, keyType, thingKey, thID); err != nil {
 			return PubConfInfo{}, err
 		}
 	}
@@ -699,7 +700,7 @@ func (ts *thingsService) CanUserAccessGroup(ctx context.Context, req UserAccessR
 }
 
 func (ts *thingsService) CanThingAccessGroup(ctx context.Context, req ThingAccessReq) error {
-	thID, err := ts.Identify(ctx, req.Key)
+	thID, err := ts.Identify(ctx, req.KeyType, req.Key)
 	if err != nil {
 		return err
 	}
@@ -716,18 +717,18 @@ func (ts *thingsService) CanThingAccessGroup(ctx context.Context, req ThingAcces
 	return nil
 }
 
-func (ts *thingsService) Identify(ctx context.Context, key string) (string, error) {
-	id, err := ts.thingCache.ID(ctx, key)
+func (ts *thingsService) Identify(ctx context.Context, keyType, key string) (string, error) {
+	id, err := ts.thingCache.ID(ctx, keyType, key)
 	if err == nil {
 		return id, nil
 	}
 
-	id, err = ts.things.RetrieveByKey(ctx, key)
+	id, err = ts.things.RetrieveByKey(ctx, keyType, key)
 	if err != nil {
 		return "", err
 	}
 
-	if err := ts.thingCache.Save(ctx, key, id); err != nil {
+	if err := ts.thingCache.Save(ctx, keyType, key, id); err != nil {
 		return "", err
 	}
 	return id, nil

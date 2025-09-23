@@ -8,15 +8,18 @@ import (
 	"fmt"
 	"testing"
 
-	r "github.com/go-redis/redis/v8"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/redis"
+	r "github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 var idProvider = uuid.New()
+
+// TODO: update these tests to also test against external things keys
 
 func TestThingSave(t *testing.T) {
 	thingCache := redis.NewThingCache(redisClient)
@@ -25,7 +28,7 @@ func TestThingSave(t *testing.T) {
 	id := "123"
 	id2 := "124"
 
-	err = thingCache.Save(context.Background(), key, id2)
+	err = thingCache.Save(context.Background(), things.KeyTypeInline, key, id2)
 	require.Nil(t, err, fmt.Sprintf("Save thing to cache: expected nil got %s", err))
 
 	cases := []struct {
@@ -49,7 +52,7 @@ func TestThingSave(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := thingCache.Save(context.Background(), tc.key, tc.ID)
+		err := thingCache.Save(context.Background(), things.KeyTypeInline, tc.key, tc.ID)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 
 	}
@@ -61,7 +64,7 @@ func TestThingID(t *testing.T) {
 	key, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	id := "123"
-	err = thingCache.Save(context.Background(), key, id)
+	err = thingCache.Save(context.Background(), things.KeyTypeInline, key, id)
 	require.Nil(t, err, fmt.Sprintf("Save thing to cache: expected nil got %s", err))
 
 	cases := map[string]struct {
@@ -82,7 +85,7 @@ func TestThingID(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		cacheID, err := thingCache.ID(context.Background(), tc.key)
+		cacheID, err := thingCache.ID(context.Background(), things.KeyTypeInline, tc.key)
 		assert.Equal(t, tc.ID, cacheID, fmt.Sprintf("%s: expected %s got %s\n", desc, tc.ID, cacheID))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
@@ -95,7 +98,7 @@ func TestThingRemove(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	id := "123"
 	id2 := "321"
-	thingCache.Save(context.Background(), key, id)
+	thingCache.Save(context.Background(), things.KeyTypeInline, key, id)
 
 	cases := []struct {
 		desc string

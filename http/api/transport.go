@@ -17,6 +17,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/things"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -72,13 +73,13 @@ func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
-	var token string
+	var thingKey apiutil.ThingKey
 	_, pass, ok := r.BasicAuth()
 	switch {
 	case ok:
-		token = pass
+		thingKey = apiutil.ThingKey{Type: things.KeyTypeInline, Key: pass}
 	case !ok:
-		token = apiutil.ExtractThingKey(r)
+		thingKey = apiutil.ExtractThingKey(r)
 	}
 
 	payload, err := ioutil.ReadAll(r.Body)
@@ -94,7 +95,7 @@ func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 			Payload:  payload,
 			Created:  time.Now().UnixNano(),
 		},
-		token: token,
+		ThingKey: thingKey,
 	}
 
 	return req, nil

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	pkgmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -89,7 +90,7 @@ func TestPublish(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.Publish(context.Background(), tc.thingKey, tc.msg)
+		err := svc.Publish(context.Background(), apiutil.ThingKeyTypeInline, tc.thingKey, tc.msg)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -148,7 +149,7 @@ func TestSubscribe(t *testing.T) {
 
 	for _, tc := range cases {
 		pubsub.SetFail(tc.fail)
-		err := svc.Subscribe(context.Background(), tc.thingKey, tc.subtopic, c)
+		err := svc.Subscribe(context.Background(), apiutil.ThingKeyTypeInline, tc.thingKey, tc.subtopic, c)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -198,7 +199,7 @@ func TestUnsubscribe(t *testing.T) {
 
 	for _, tc := range cases {
 		pubsub.SetFail(tc.fail)
-		err := svc.Unsubscribe(context.Background(), tc.thingKey, tc.subtopic)
+		err := svc.Unsubscribe(context.Background(), apiutil.ThingKeyTypeInline, tc.thingKey, tc.subtopic)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

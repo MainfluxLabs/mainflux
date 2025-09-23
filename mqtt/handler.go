@@ -86,7 +86,7 @@ func (h *handler) AuthConnect(c *session.Client) error {
 		return ErrMissingClientID
 	}
 
-	thid, err := h.things.Identify(context.Background(), &protomfx.Token{Value: string(c.Password)})
+	thid, err := h.things.Identify(context.Background(), &protomfx.ThingKey{Key: string(c.Password)})
 	if err != nil {
 		return err
 	}
@@ -160,7 +160,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		return
 	}
 
-	pc, err := h.things.GetPubConfByKey(context.Background(), &protomfx.PubConfByKeyReq{Key: string(c.Password)})
+	pc, err := h.things.GetPubConfByKey(context.Background(), &protomfx.ThingKey{Key: string(c.Password)})
 	if err != nil {
 		h.logger.Error(LogErrFailedPublish + (ErrAuthentication).Error())
 	}
@@ -255,7 +255,7 @@ func (h *handler) Disconnect(c *session.Client) {
 }
 
 func (h *handler) authAccess(c *session.Client) (protomfx.PubConfByKeyRes, error) {
-	pc, err := h.things.GetPubConfByKey(context.Background(), &protomfx.PubConfByKeyReq{Key: string(c.Password)})
+	pc, err := h.things.GetPubConfByKey(context.Background(), &protomfx.ThingKey{Key: string(c.Password)})
 	if err != nil {
 		return protomfx.PubConfByKeyRes{}, err
 	}

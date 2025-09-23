@@ -96,7 +96,7 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 	}
 }
 
-func (gs *grpcServer) GetPubConfByKey(ctx context.Context, req *protomfx.PubConfByKeyReq) (*protomfx.PubConfByKeyRes, error) {
+func (gs *grpcServer) GetPubConfByKey(ctx context.Context, req *protomfx.ThingKey) (*protomfx.PubConfByKeyRes, error) {
 	_, res, err := gs.getPubConfByKey.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
@@ -149,7 +149,7 @@ func (gs *grpcServer) CanThingAccessGroup(ctx context.Context, req *protomfx.Thi
 	return res.(*empty.Empty), nil
 }
 
-func (gs *grpcServer) Identify(ctx context.Context, req *protomfx.Token) (*protomfx.ThingID, error) {
+func (gs *grpcServer) Identify(ctx context.Context, req *protomfx.ThingKey) (*protomfx.ThingID, error) {
 	_, res, err := gs.identify.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
@@ -194,8 +194,8 @@ func (gs *grpcServer) GetGroupIDsByOrg(ctx context.Context, req *protomfx.OrgAcc
 }
 
 func decodeGetPubConfByKeyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*protomfx.PubConfByKeyReq)
-	return pubConfByKeyReq{key: req.GetKey()}, nil
+	req := grpcReq.(*protomfx.ThingKey)
+	return thingKey{key: req.GetKey(), keyType: req.GetKeyType()}, nil
 }
 
 func decodeGetConfigByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
@@ -224,8 +224,8 @@ func decodeThingAccessGroupRequest(_ context.Context, grpcReq interface{}) (inte
 }
 
 func decodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*protomfx.Token)
-	return identifyReq{key: req.GetValue()}, nil
+	req := grpcReq.(*protomfx.ThingKey)
+	return identifyReq{key: req.GetKey(), keyType: req.GetKeyType()}, nil
 }
 
 func decodeGetGroupIDByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

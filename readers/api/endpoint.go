@@ -25,8 +25,8 @@ func listJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 
 		var page readers.MessagesPage
 		switch {
-		case req.key != "":
-			pc, err := getPubConfByKey(ctx, req.key)
+		case req.thingKey.Key != "":
+			pc, err := getPubConfByKey(ctx, req.thingKey.Type, req.thingKey.Key)
 			if err != nil {
 				return nil, err
 			}
@@ -60,13 +60,16 @@ func listSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint 
 
 		var page readers.MessagesPage
 		switch {
-		case req.key != "":
-			pc, err := getPubConfByKey(ctx, req.key)
+		case req.thingKey.Key != "":
+			pc, err := getPubConfByKey(ctx, req.thingKey.Type, req.thingKey.Key)
 			if err != nil {
 				return nil, err
 			}
 			req.pageMeta.Publisher = pc.PublisherID
 		default:
+			// TODO: this case can't happen currently - the request's
+			// .validate() method calls apiutil.ThingKey's .Validate() method
+			// which makes sure that the key must be supplied
 			if err := isAdmin(ctx, req.token); err != nil {
 				return nil, err
 			}
@@ -95,8 +98,8 @@ func deleteJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint
 		}
 
 		switch {
-		case req.key != "":
-			pc, err := getPubConfByKey(ctx, req.key)
+		case req.thingKey.Key != "":
+			pc, err := getPubConfByKey(ctx, req.thingKey.Type, req.thingKey.Key)
 			if err != nil {
 				return nil, errors.Wrap(errors.ErrAuthentication, err)
 			}
@@ -127,8 +130,8 @@ func deleteSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 		}
 
 		switch {
-		case req.key != "":
-			pc, err := getPubConfByKey(ctx, req.key)
+		case req.thingKey.Key != "":
+			pc, err := getPubConfByKey(ctx, req.thingKey.Type, req.thingKey.Key)
 			if err != nil {
 				return nil, errors.Wrap(errors.ErrAuthentication, err)
 			}

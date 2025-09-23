@@ -47,6 +47,9 @@ const (
 	ContentTypeOctetStream = "application/octet-stream"
 	DefOffset              = 0
 	DefLimit               = 10
+
+	ThingKeyTypeInline   = "inline"
+	ThingKeyTypeExternal = "external"
 )
 
 // PageMetadata contains page metadata that helps navigation.
@@ -167,7 +170,8 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrMissingConditionThreshold),
 		errors.Contains(err, ErrInvalidActionType),
 		errors.Contains(err, ErrMissingActionID),
-		errors.Contains(err, ErrInvalidOperator):
+		errors.Contains(err, ErrInvalidOperator),
+		errors.Contains(err, ErrInvalidThingKeyType):
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, errors.ErrAuthorization),
 		errors.Contains(err, ErrInviteExpired),

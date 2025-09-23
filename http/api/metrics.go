@@ -31,11 +31,11 @@ func MetricsMiddleware(svc http.Service, counter metrics.Counter, latency metric
 	}
 }
 
-func (mm *metricsMiddleware) Publish(ctx context.Context, token string, msg protomfx.Message) (err error) {
+func (mm *metricsMiddleware) Publish(ctx context.Context, keyType, key string, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "publish").Add(1)
 		mm.latency.With("method", "publish").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.Publish(ctx, token, msg)
+	return mm.svc.Publish(ctx, keyType, key, msg)
 }

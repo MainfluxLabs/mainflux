@@ -9,52 +9,74 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
 type thingCacheMock struct {
-	mu     sync.Mutex
-	things map[string]string
-	groups map[string]string
+	mu                  sync.Mutex
+	thingsByKey         map[string]string
+	thingsByKeyExternal map[string]string
+	groups              map[string]string
 }
 
 // NewThingCache returns mock cache instance.
 func NewThingCache() things.ThingCache {
 	return &thingCacheMock{
-		things: make(map[string]string),
-		groups: make(map[string]string),
+		thingsByKey:         make(map[string]string),
+		thingsByKeyExternal: make(map[string]string),
+		groups:              make(map[string]string),
 	}
 }
 
-func (tcm *thingCacheMock) Save(_ context.Context, key, id string) error {
+func (tcm *thingCacheMock) Save(_ context.Context, keyType, key, id string) error {
 	tcm.mu.Lock()
 	defer tcm.mu.Unlock()
 
-	tcm.things[key] = id
+	switch keyType {
+	case things.KeyTypeInline:
+		tcm.thingsByKey[key] = id
+	case things.KeyTypeExternal:
+		tcm.thingsByKeyExternal[key] = id
+	}
+
 	return nil
 }
 
-func (tcm *thingCacheMock) ID(_ context.Context, key string) (string, error) {
+func (tcm *thingCacheMock) ID(_ context.Context, keyType, key string) (string, error) {
 	tcm.mu.Lock()
 	defer tcm.mu.Unlock()
 
-	id, ok := tcm.things[key]
-	if !ok {
-		return "", dbutil.ErrNotFound
+	switch keyType {
+	case things.KeyTypeInline:
+		if id, ok := tcm.thingsByKey[key]; ok {
+			return id, nil
+		}
+	case things.KeyTypeExternal:
+		if id, ok := tcm.thingsByKeyExternal[key]; ok {
+			return id, nil
+		}
+	default:
+		return "", apiutil.ErrInvalidThingKeyType
 	}
 
-	return id, nil
+	return "", dbutil.ErrNotFound
 }
 
 func (tcm *thingCacheMock) Remove(_ context.Context, id string) error {
 	tcm.mu.Lock()
 	defer tcm.mu.Unlock()
 
-	for key, val := range tcm.things {
+	for key, val := range tcm.thingsByKey {
 		if val == id {
-			delete(tcm.things, key)
-			return nil
+			delete(tcm.thingsByKey, key)
+		}
+	}
+
+	for key, val := range tcm.thingsByKeyExternal {
+		if val == id {
+			delete(tcm.thingsByKey, key)
 		}
 	}
 

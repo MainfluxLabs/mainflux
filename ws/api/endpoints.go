@@ -13,7 +13,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/ws"
-	"github.com/go-zoo/bone"
 	"github.com/gorilla/websocket"
 )
 
@@ -32,7 +31,7 @@ func handshake(svc ws.Service) http.HandlerFunc {
 		req.conn = conn
 		client := ws.NewClient(conn)
 
-		if err := svc.Subscribe(context.Background(), req.thingKey, req.subtopic, client); err != nil {
+		if err := svc.Subscribe(context.Background(), req.ThingKey.Type, req.ThingKey.Key, req.subtopic, client); err != nil {
 			req.conn.Close()
 			return
 		}
@@ -47,18 +46,19 @@ func handshake(svc ws.Service) http.HandlerFunc {
 }
 
 func decodeRequest(r *http.Request) (getConnByKey, error) {
-	authKey := r.Header.Get("Authorization")
-	if authKey == "" {
-		authKeys := bone.GetQuery(r, "authorization")
-		if len(authKeys) == 0 {
-			logger.Debug("Missing authorization key.")
-			return getConnByKey{}, errUnauthorizedAccess
-		}
-		authKey = authKeys[0]
+	authKey := apiutil.ExtractThingKey(r)
+	if authKey.Key == "" || authKey.Type == "" {
+		// Thing key not present in Authorization HTTP header, attempt to extract it from query params
+		// TODO: handle extracting thing key from query params. perhaps from separate ones:
+		// one for the key and one for the type? or maybe one param with a prefix denoting the type of key?
+	}
+
+	if err := authKey.Validate(); err != nil {
+		return getConnByKey{}, err
 	}
 
 	req := getConnByKey{
-		thingKey: authKey,
+		ThingKey: authKey,
 	}
 
 	subject, err := messaging.CreateSubject(r.RequestURI)
@@ -100,17 +100,20 @@ func process(svc ws.Service, req getConnByKey, msgs <-chan []byte) {
 			Payload:  msg,
 			Created:  time.Now().UnixNano(),
 		}
-		svc.Publish(context.Background(), req.thingKey, m)
+		svc.Publish(context.Background(), req.ThingKey.Type, req.ThingKey.Key, m)
 	}
-	if err := svc.Unsubscribe(context.Background(), req.thingKey, req.subtopic); err != nil {
+	if err := svc.Unsubscribe(context.Background(), req.ThingKey.Type, req.ThingKey.Key, req.subtopic); err != nil {
 		req.conn.Close()
 	}
 }
 
 func encodeError(w http.ResponseWriter, err error) {
-	statusCode := http.StatusUnauthorized
+	var statusCode int
 
 	switch err {
+	case apiutil.ErrBearerKey,
+		apiutil.ErrInvalidThingKeyType:
+		statusCode = http.StatusUnauthorized
 	case ws.ErrEmptyTopic:
 		statusCode = http.StatusBadRequest
 	case errUnauthorizedAccess:

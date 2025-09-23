@@ -11,6 +11,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -339,7 +340,7 @@ func TestMetadataByKey(t *testing.T) {
 		{
 			desc:     "get thing metadata with empty key",
 			key:      "",
-			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
+			err:      createError(sdk.ErrFailedFetch, http.StatusBadRequest),
 			response: sdk.Metadata{},
 		},
 	}
@@ -887,7 +888,7 @@ func TestIdentifyThing(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		thingID, err := mainfluxAuthSDK.IdentifyThing(tc.thingKey)
+		thingID, err := mainfluxAuthSDK.IdentifyThing(apiutil.ThingKeyTypeInline, tc.thingKey)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, thingID, fmt.Sprintf("%s: expected response id %s, got %s", tc.desc, tc.response, thingID))
 	}

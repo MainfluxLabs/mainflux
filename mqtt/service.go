@@ -12,7 +12,7 @@ import (
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
 	// ListSubscriptions lists all subscriptions that belong to the specified group.
-	ListSubscriptions(ctx context.Context, groupID, token, key string, pm PageMetadata) (Page, error)
+	ListSubscriptions(ctx context.Context, groupID, token, keyType, key string, pm PageMetadata) (Page, error)
 
 	// CreateSubscription create a subscription.
 	CreateSubscription(ctx context.Context, sub Subscription) error
@@ -57,13 +57,13 @@ func (ms *mqttService) RemoveSubscription(ctx context.Context, sub Subscription)
 	return nil
 }
 
-func (ms *mqttService) ListSubscriptions(ctx context.Context, groupID, token, key string, pm PageMetadata) (Page, error) {
+func (ms *mqttService) ListSubscriptions(ctx context.Context, groupID, token, keyType, key string, pm PageMetadata) (Page, error) {
 	subs, err := ms.subscriptions.RetrieveByGroupID(ctx, pm, groupID)
 	if err != nil {
 		return Page{}, err
 	}
 
-	if err := ms.authorize(ctx, token, key, groupID); err != nil {
+	if err := ms.authorize(ctx, token, keyType, key, groupID); err != nil {
 		return Page{}, err
 	}
 
@@ -78,7 +78,7 @@ func (ms *mqttService) HasClientID(ctx context.Context, clientID string) error {
 	return ms.subscriptions.HasClientID(ctx, clientID)
 }
 
-func (ms *mqttService) authorize(ctx context.Context, token, key, groupID string) (err error) {
+func (ms *mqttService) authorize(ctx context.Context, token, keyType, key, groupID string) (err error) {
 	switch {
 	case token != "":
 		if _, err := ms.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer}); err != nil {
@@ -86,7 +86,7 @@ func (ms *mqttService) authorize(ctx context.Context, token, key, groupID string
 		}
 		return nil
 	default:
-		if _, err := ms.things.GetPubConfByKey(ctx, &protomfx.PubConfByKeyReq{Key: key}); err != nil {
+		if _, err := ms.things.GetPubConfByKey(ctx, &protomfx.ThingKey{Key: key, KeyType: keyType}); err != nil {
 			return err
 		}
 		return nil

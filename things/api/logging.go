@@ -96,7 +96,7 @@ func (lm *loggingMiddleware) ViewThing(ctx context.Context, token, id string) (t
 	return lm.svc.ViewThing(ctx, token, id)
 }
 
-func (lm *loggingMiddleware) ViewMetadataByKey(ctx context.Context, thingKey string) (metadata things.Metadata, err error) {
+func (lm *loggingMiddleware) ViewMetadataByKey(ctx context.Context, keyType, thingKey string) (metadata things.Metadata, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view_metadata_by_key took %s to complete", time.Since(begin))
 		if err != nil {
@@ -106,7 +106,7 @@ func (lm *loggingMiddleware) ViewMetadataByKey(ctx context.Context, thingKey str
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ViewMetadataByKey(ctx, thingKey)
+	return lm.svc.ViewMetadataByKey(ctx, keyType, thingKey)
 }
 
 func (lm *loggingMiddleware) ListThings(ctx context.Context, token string, pm apiutil.PageMetadata) (_ things.ThingsPage, err error) {
@@ -300,7 +300,7 @@ func (lm *loggingMiddleware) RemoveProfiles(ctx context.Context, token string, i
 	return lm.svc.RemoveProfiles(ctx, token, ids...)
 }
 
-func (lm *loggingMiddleware) GetPubConfByKey(ctx context.Context, key string) (pc things.PubConfInfo, err error) {
+func (lm *loggingMiddleware) GetPubConfByKey(ctx context.Context, keyType, key string) (pc things.PubConfInfo, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method get_pub_conf_by_key for thing %s took %s to complete", pc.PublisherID, time.Since(begin))
 		if err != nil {
@@ -310,7 +310,7 @@ func (lm *loggingMiddleware) GetPubConfByKey(ctx context.Context, key string) (p
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.GetPubConfByKey(ctx, key)
+	return lm.svc.GetPubConfByKey(ctx, keyType, key)
 }
 
 func (lm *loggingMiddleware) GetConfigByThingID(ctx context.Context, thingID string) (config map[string]interface{}, err error) {
@@ -377,7 +377,7 @@ func (lm *loggingMiddleware) CanThingAccessGroup(ctx context.Context, req things
 	return lm.svc.CanThingAccessGroup(ctx, req)
 }
 
-func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (id string, err error) {
+func (lm *loggingMiddleware) Identify(ctx context.Context, keyType, key string) (id string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method identify for thing %s took %s to complete", id, time.Since(begin))
 		if err != nil {
@@ -387,7 +387,7 @@ func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (id strin
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Identify(ctx, key)
+	return lm.svc.Identify(ctx, keyType, key)
 }
 
 func (lm *loggingMiddleware) GetGroupIDByThingID(ctx context.Context, thingID string) (_ string, err error) {

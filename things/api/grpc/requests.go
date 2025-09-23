@@ -8,11 +8,16 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
-type pubConfByKeyReq struct {
-	key string
+type thingKey struct {
+	key     string
+	keyType string
 }
 
-func (req pubConfByKeyReq) validate() error {
+func (req thingKey) validate() error {
+	if req.keyType != apiutil.ThingKeyTypeInline && req.keyType != apiutil.ThingKeyTypeExternal {
+		return apiutil.ErrInvalidThingKeyType
+	}
+
 	if req.key == "" {
 		return apiutil.ErrBearerKey
 	}
@@ -89,13 +94,18 @@ func (req userAccessGroupReq) validate() error {
 }
 
 type thingAccessGroupReq struct {
-	key string
-	id  string
+	key     string
+	keyType string
+	id      string
 }
 
 func (req thingAccessGroupReq) validate() error {
 	if req.key == "" {
 		return apiutil.ErrBearerKey
+	}
+
+	if req.keyType != apiutil.ThingKeyTypeInline && req.keyType != apiutil.ThingKeyTypeExternal {
+		return apiutil.ErrInvalidThingKeyType
 	}
 
 	if req.id == "" {
@@ -106,12 +116,17 @@ func (req thingAccessGroupReq) validate() error {
 }
 
 type identifyReq struct {
-	key string
+	key     string
+	keyType string
 }
 
 func (req identifyReq) validate() error {
 	if req.key == "" {
 		return apiutil.ErrBearerKey
+	}
+
+	if req.keyType != apiutil.ThingKeyTypeInline && req.keyType != apiutil.ThingKeyTypeExternal {
+		return apiutil.ErrInvalidThingKeyType
 	}
 
 	return nil

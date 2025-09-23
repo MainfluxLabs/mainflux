@@ -56,7 +56,7 @@ func New(things protomfx.ThingsServiceClient, rules protomfx.RulesServiceClient,
 }
 
 func (svc *adapterService) Publish(ctx context.Context, key string, message protomfx.Message) error {
-	cr := &protomfx.PubConfByKeyReq{Key: key}
+	cr := &protomfx.ThingKey{Key: key}
 	pc, err := svc.things.GetPubConfByKey(ctx, cr)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
@@ -90,7 +90,7 @@ func (svc *adapterService) Publish(ctx context.Context, key string, message prot
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key, subtopic string, c Client) error {
-	cr := &protomfx.PubConfByKeyReq{
+	cr := &protomfx.ThingKey{
 		Key: key,
 	}
 	if _, err := svc.things.GetPubConfByKey(ctx, cr); err != nil {
@@ -101,7 +101,7 @@ func (svc *adapterService) Subscribe(ctx context.Context, key, subtopic string, 
 }
 
 func (svc *adapterService) Unsubscribe(ctx context.Context, key, subtopic, token string) error {
-	cr := &protomfx.PubConfByKeyReq{
+	cr := &protomfx.ThingKey{
 		Key: key,
 	}
 	_, err := svc.things.GetPubConfByKey(ctx, cr)

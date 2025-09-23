@@ -148,7 +148,7 @@ func decodeListAllMessages(_ context.Context, r *http.Request) (interface{}, err
 
 	return listMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
-		key:      apiutil.ExtractThingKey(r),
+		thingKey: apiutil.ExtractThingKey(r),
 		pageMeta: pageMeta,
 	}, nil
 }
@@ -165,8 +165,8 @@ func decodeDeleteMessages(_ context.Context, r *http.Request) (interface{}, erro
 	}
 
 	req := deleteMessagesReq{
-		token: apiutil.ExtractBearerToken(r),
-		key:   apiutil.ExtractThingKey(r),
+		token:    apiutil.ExtractBearerToken(r),
+		thingKey: apiutil.ExtractThingKey(r),
 		pageMeta: readers.PageMetadata{
 			From: from,
 			To:   to,
@@ -288,8 +288,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	apiutil.WriteErrorResponse(err, w)
 }
 
-func getPubConfByKey(ctx context.Context, key string) (*protomfx.PubConfByKeyRes, error) {
-	pc, err := thingc.GetPubConfByKey(ctx, &protomfx.PubConfByKeyReq{Key: key})
+func getPubConfByKey(ctx context.Context, keyType, key string) (*protomfx.PubConfByKeyRes, error) {
+	pc, err := thingc.GetPubConfByKey(ctx, &protomfx.ThingKey{Key: key, KeyType: keyType})
 	if err != nil {
 		return nil, err
 	}

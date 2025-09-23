@@ -52,7 +52,7 @@ func (tr testRequest) make() (*http.Response, error) {
 	}
 
 	if tr.token != "" {
-		req.Header.Set("Authorization", apiutil.ThingPrefix+tr.token)
+		req.Header.Set("Authorization", apiutil.ThingKeyPrefixInline+tr.token)
 	}
 	if tr.basicAuth && tr.token != "" {
 		req.SetBasicAuth("", tr.token)
@@ -109,7 +109,7 @@ func TestPublish(t *testing.T) {
 			msg:         msg,
 			contentType: ctSenmlJSON,
 			key:         "",
-			status:      http.StatusUnauthorized,
+			status:      http.StatusBadRequest,
 		},
 		"publish message with basic auth": {
 			msg:         msg,

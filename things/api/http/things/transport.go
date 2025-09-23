@@ -248,7 +248,7 @@ func decodeUpdateKey(_ context.Context, r *http.Request) (interface{}, error) {
 
 func decodeViewMetadata(_ context.Context, r *http.Request) (interface{}, error) {
 	req := viewMetadataReq{
-		key: apiutil.ExtractThingKey(r),
+		ThingKey: apiutil.ExtractThingKey(r),
 	}
 
 	return req, nil

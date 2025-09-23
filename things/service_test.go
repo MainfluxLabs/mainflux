@@ -364,7 +364,7 @@ func TestViewMetadataByKey(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, err := svc.ViewMetadataByKey(context.Background(), tc.key)
+		_, err := svc.ViewMetadataByKey(context.Background(), things.KeyTypeInline, tc.key)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }
@@ -1535,7 +1535,7 @@ func TestGetPubConfByKey(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, err := svc.GetPubConfByKey(context.Background(), tc.key)
+		_, err := svc.GetPubConfByKey(context.Background(), things.KeyTypeInline, tc.key)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected '%s' got '%s'\n", desc, tc.err, err))
 	}
 }
@@ -1573,7 +1573,7 @@ func TestIdentify(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		id, err := svc.Identify(context.Background(), tc.token)
+		id, err := svc.Identify(context.Background(), things.KeyTypeInline, tc.token)
 		assert.Equal(t, tc.id, id, fmt.Sprintf("%s: expected %s got %s\n", desc, tc.id, id))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}

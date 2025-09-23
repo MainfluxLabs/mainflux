@@ -66,7 +66,7 @@ func TestSendMessage(t *testing.T) {
 			profileID: profileID,
 			msg:       msg,
 			auth:      "",
-			err:       createError(sdk.ErrFailedPublish, http.StatusUnauthorized),
+			err:       createError(sdk.ErrFailedPublish, http.StatusBadRequest),
 		},
 		"publish message with invalid authorization token": {
 			profileID: profileID,
