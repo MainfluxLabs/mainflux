@@ -161,14 +161,14 @@ func TestListSenMLMessages(t *testing.T) {
 		token  string
 		key    string
 		status int
-		res    pageRes
+		res    senmlPageRes
 	}{
 		{
 			desc:   "read page with valid offset and limit",
 			url:    fmt.Sprintf("%s/senml?offset=0&limit=10", ts.URL),
 			token:  adminToken,
 			status: http.StatusOK,
-			res: pageRes{
+			res: senmlPageRes{
 				Total:    uint64(len(messages)),
 				Messages: messages[0:10],
 			},
@@ -178,7 +178,7 @@ func TestListSenMLMessages(t *testing.T) {
 			url:    fmt.Sprintf("%s/senml?offset=0&limit=10", ts.URL),
 			token:  adminToken,
 			status: http.StatusOK,
-			res: pageRes{
+			res: senmlPageRes{
 				Total:    uint64(len(messages)),
 				Messages: messages[0:10],
 			},
@@ -242,7 +242,7 @@ func TestListSenMLMessages(t *testing.T) {
 			url:    fmt.Sprintf("%s/senml?limit=10", ts.URL),
 			token:  adminToken,
 			status: http.StatusOK,
-			res: pageRes{
+			res: senmlPageRes{
 				Total:    uint64(len(messages)),
 				Messages: messages[0:10],
 			},
@@ -252,7 +252,7 @@ func TestListSenMLMessages(t *testing.T) {
 			url:    fmt.Sprintf("%s/senml?offset=0", ts.URL),
 			token:  adminToken,
 			status: http.StatusOK,
-			res: pageRes{
+			res: senmlPageRes{
 				Total:    uint64(len(messages)),
 				Messages: messages[0:10],
 			},
@@ -262,7 +262,7 @@ func TestListSenMLMessages(t *testing.T) {
 			url:    fmt.Sprintf("%s/senml?format=messages", ts.URL),
 			token:  adminToken,
 			status: http.StatusOK,
-			res: pageRes{
+			res: senmlPageRes{
 				Total:    uint64(len(messages)),
 				Messages: messages[0:10],
 			},
@@ -272,7 +272,7 @@ func TestListSenMLMessages(t *testing.T) {
 			url:    fmt.Sprintf("%s/senml?subtopic=%s&protocol=%s", ts.URL, subtopic, httpProt),
 			token:  adminToken,
 			status: http.StatusOK,
-			res: pageRes{
+			res: senmlPageRes{
 				Total:    uint64(len(queryMsgs)),
 				Messages: queryMsgs[0:10],
 			},
@@ -282,7 +282,7 @@ func TestListSenMLMessages(t *testing.T) {
 			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v-1, readers.GreaterThanKey),
 			token:  adminToken,
 			status: http.StatusOK,
-			res: pageRes{
+			res: senmlPageRes{
 				Total:    uint64(len(valueMsgs)),
 				Messages: valueMsgs[0:10],
 			},
@@ -292,7 +292,7 @@ func TestListSenMLMessages(t *testing.T) {
 			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v-1, readers.GreaterThanEqualKey),
 			token:  adminToken,
 			status: http.StatusOK,
-			res: pageRes{
+			res: senmlPageRes{
 				Total:    uint64(len(valueMsgs)),
 				Messages: valueMsgs[0:10],
 			},
@@ -302,7 +302,7 @@ func TestListSenMLMessages(t *testing.T) {
 			url:    fmt.Sprintf("%s/senml?subtopic=%s&protocol=%s", ts.URL, subtopic, httpProt),
 			token:  adminToken,
 			status: http.StatusOK,
-			res: pageRes{
+			res: senmlPageRes{
 				Total:    uint64(len(queryMsgs)),
 				Messages: queryMsgs[0:10],
 			},
@@ -312,7 +312,7 @@ func TestListSenMLMessages(t *testing.T) {
 			url:    fmt.Sprintf("%s/senml?protocol=http", ts.URL),
 			token:  adminToken,
 			status: http.StatusOK,
-			res: pageRes{
+			res: senmlPageRes{
 				Total:    uint64(len(queryMsgs)),
 				Messages: queryMsgs[0:10],
 			},
@@ -322,7 +322,7 @@ func TestListSenMLMessages(t *testing.T) {
 			url:    fmt.Sprintf("%s/senml?name=%s", ts.URL, msgName),
 			token:  adminToken,
 			status: http.StatusOK,
-			res: pageRes{
+			res: senmlPageRes{
 				Total:    uint64(len(queryMsgs)),
 				Messages: queryMsgs[0:10],
 			},
@@ -332,7 +332,7 @@ func TestListSenMLMessages(t *testing.T) {
 			url:    fmt.Sprintf("%s/senml?v=%f", ts.URL, v),
 			token:  adminToken,
 			status: http.StatusOK,
-			res: pageRes{
+			res: senmlPageRes{
 				Total:    uint64(len(valueMsgs)),
 				Messages: valueMsgs[0:10],
 			},
@@ -342,7 +342,7 @@ func TestListSenMLMessages(t *testing.T) {
 			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v, readers.EqualKey),
 			token:  adminToken,
 			status: http.StatusOK,
-			res: pageRes{
+			res: senmlPageRes{
 				Total:    uint64(len(valueMsgs)),
 				Messages: valueMsgs[0:10],
 			},
@@ -352,7 +352,7 @@ func TestListSenMLMessages(t *testing.T) {
 			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v+1, readers.LowerThanKey),
 			token:  adminToken,
 			status: http.StatusOK,
-			res: pageRes{
+			res: senmlPageRes{
 				Total:    uint64(len(valueMsgs)),
 				Messages: valueMsgs[0:10],
 			},
@@ -362,7 +362,7 @@ func TestListSenMLMessages(t *testing.T) {
 			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v+1, readers.LowerThanEqualKey),
 			token:  adminToken,
 			status: http.StatusOK,
-			res: pageRes{
+			res: senmlPageRes{
 				Total:    uint64(len(valueMsgs)),
 				Messages: valueMsgs[0:10],
 			},
@@ -384,7 +384,7 @@ func TestListSenMLMessages(t *testing.T) {
 			url:    fmt.Sprintf("%s/senml?vb=true", ts.URL),
 			token:  adminToken,
 			status: http.StatusOK,
-			res: pageRes{
+			res: senmlPageRes{
 				Total:    uint64(len(boolMsgs)),
 				Messages: boolMsgs[0:10],
 			},
@@ -400,7 +400,7 @@ func TestListSenMLMessages(t *testing.T) {
 			url:    fmt.Sprintf("%s/senml?vs=%s", ts.URL, vs),
 			token:  adminToken,
 			status: http.StatusOK,
-			res: pageRes{
+			res: senmlPageRes{
 				Total:    uint64(len(stringMsgs)),
 				Messages: stringMsgs[0:10],
 			},
@@ -410,7 +410,7 @@ func TestListSenMLMessages(t *testing.T) {
 			url:    fmt.Sprintf("%s/senml?vd=%s", ts.URL, vd),
 			token:  adminToken,
 			status: http.StatusOK,
-			res: pageRes{
+			res: senmlPageRes{
 				Total:    uint64(len(dataMsgs)),
 				Messages: dataMsgs[0:10],
 			},
@@ -433,7 +433,7 @@ func TestListSenMLMessages(t *testing.T) {
 			url:    fmt.Sprintf("%s/senml?from=%d&to=%d", ts.URL, messages[19].Time, messages[4].Time),
 			token:  adminToken,
 			status: http.StatusOK,
-			res: pageRes{
+			res: senmlPageRes{
 				Total:    uint64(len(messages[5:20])),
 				Messages: messages[5:15],
 			},
@@ -452,7 +452,7 @@ func TestListSenMLMessages(t *testing.T) {
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 
-		var page pageRes
+		var page senmlPageRes
 		json.NewDecoder(res.Body).Decode(&page)
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected %d got %d", tc.desc, tc.status, res.StatusCode))
@@ -621,24 +621,6 @@ func TestListJSONMessages(t *testing.T) {
 			status: http.StatusBadRequest,
 		},
 		{
-			desc:   "read JSON messages with non-float value",
-			url:    fmt.Sprintf("%s/json?v=abc123", ts.URL),
-			token:  adminToken,
-			status: http.StatusBadRequest,
-		},
-		{
-			desc:   "read JSON messages with value and invalid comparator",
-			url:    fmt.Sprintf("%s/json?v=%f&comparator=invalid", ts.URL, v),
-			token:  adminToken,
-			status: http.StatusBadRequest,
-		},
-		{
-			desc:   "read JSON messages with non-boolean value",
-			url:    fmt.Sprintf("%s/json?vb=yes", ts.URL),
-			token:  adminToken,
-			status: http.StatusBadRequest,
-		},
-		{
 			desc:   "read JSON messages with from time filter",
 			url:    fmt.Sprintf("%s/json?from=%d", ts.URL, messages[50].Created),
 			token:  adminToken,
@@ -734,13 +716,13 @@ func TestListJSONMessages(t *testing.T) {
 }
 
 type jsonPageRes struct {
-	readers.PageMetadata
+	readers.JSONMessagesPage
 	Total    uint64           `json:"total"`
 	Messages []mfjson.Message `json:"messages,omitempty"`
 }
 
-type pageRes struct {
-	readers.PageMetadata
+type senmlPageRes struct {
+	readers.SenMLMessagesPage
 	Total    uint64          `json:"total"`
 	Messages []senml.Message `json:"messages,omitempty"`
 }

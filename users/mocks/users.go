@@ -111,8 +111,6 @@ func (urm *userRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string, 
 		if !ok {
 			return users.UserPage{}, dbutil.ErrNotFound
 		}
-		up.Offset = pm.Offset
-		up.Limit = pm.Limit
 		up.Total = uint64(i)
 		up.Users = []users.User{val}
 		return up, nil
@@ -142,8 +140,6 @@ func (urm *userRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string, 
 		i++
 	}
 
-	up.Offset = pm.Offset
-	up.Limit = pm.Limit
 	up.Total = uint64(i)
 
 	return up, nil

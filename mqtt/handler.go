@@ -183,7 +183,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		}
 	}(msg)
 
-	subjects := nats.GetSubjects(pc.GetProfileConfig(), message.Subtopic)
+	subjects := nats.GetSubjects(message.Subtopic)
 	for _, sub := range subjects {
 		msg := message
 		msg.Subject = sub

@@ -27,7 +27,7 @@ type Thing struct {
 // ThingsPage contains page related metadata as well as list of things that
 // belong to this page.
 type ThingsPage struct {
-	apiutil.PageMetadata
+	Total  uint64
 	Things []Thing
 }
 

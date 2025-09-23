@@ -50,7 +50,7 @@ func listGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildGroupMembershipsResponse(gmp), nil
+		return buildGroupMembershipsResponse(gmp, req.pageMetadata), nil
 	}
 }
 
@@ -128,15 +128,15 @@ func restoreGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func buildGroupMembershipsResponse(gpp things.GroupMembershipsPage) listGroupMembershipsRes {
+func buildGroupMembershipsResponse(gpp things.GroupMembershipsPage, pm apiutil.PageMetadata) listGroupMembershipsRes {
 	res := listGroupMembershipsRes{
 		pageRes: pageRes{
 			Total:  gpp.Total,
-			Limit:  gpp.Limit,
-			Offset: gpp.Offset,
-			Email:  gpp.Email,
-			Order:  gpp.Order,
-			Dir:    gpp.Dir,
+			Limit:  pm.Limit,
+			Offset: pm.Offset,
+			Email:  pm.Email,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
 		},
 		GroupMemberships: []groupMembership{},
 	}

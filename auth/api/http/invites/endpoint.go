@@ -86,7 +86,7 @@ func listOrgInvitesByUserEndpoint(svc auth.Service, userType string) endpoint.En
 			return nil, err
 		}
 
-		response := buildOrgInvitesPageRes(page)
+		response := buildOrgInvitesPageRes(page, req.pm)
 
 		return response, nil
 	}
@@ -104,18 +104,21 @@ func listOrgInvitesByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		response := buildOrgInvitesPageRes(page)
+		response := buildOrgInvitesPageRes(page, req.pm)
 
 		return response, nil
 	}
 }
 
-func buildOrgInvitesPageRes(page auth.OrgInvitesPage) orgInvitePageRes {
+func buildOrgInvitesPageRes(page auth.OrgInvitesPage, pm auth.PageMetadataInvites) orgInvitePageRes {
 	response := orgInvitePageRes{
 		pageRes: pageRes{
-			Limit:  page.Limit,
-			Offset: page.Offset,
+			Limit:  pm.Limit,
+			Offset: pm.Offset,
 			Total:  page.Total,
+			Ord:    pm.Order,
+			Dir:    pm.Dir,
+			State:  pm.State,
 		},
 		Invites: make([]orgInviteRes, 0, len(page.Invites)),
 	}

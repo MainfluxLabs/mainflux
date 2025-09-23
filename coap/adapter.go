@@ -74,7 +74,7 @@ func (svc *adapterService) Publish(ctx context.Context, key string, message prot
 		}
 	}(msg)
 
-	subjects := nats.GetSubjects(pc.GetProfileConfig(), message.Subtopic)
+	subjects := nats.GetSubjects(message.Subtopic)
 	for _, sub := range subjects {
 		msg := message
 		msg.Subject = sub

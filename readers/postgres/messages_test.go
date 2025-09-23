@@ -134,263 +134,285 @@ func TestListAllMessagesSenML(t *testing.T) {
 	// cases that return subset of messages are only
 	// checking data result set size, but not content.
 	cases := map[string]struct {
-		pageMeta readers.PageMetadata
-		page     readers.MessagesPage
+		pageMeta readers.SenMLPageMetadata
+		page     readers.SenMLMessagesPage
 	}{
 		"read all messages": {
-			pageMeta: readers.PageMetadata{
-				Limit:  noLimit,
-				Format: senmlFormat,
+			pageMeta: readers.SenMLPageMetadata{
+				Limit: noLimit,
 			},
-			page: readers.MessagesPage{
-				Total:    msgsNum,
-				Messages: fromSenml(messages),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    msgsNum,
+					Messages: fromSenml(messages),
+				},
 			},
 		},
 		"read messages with non-existent subtopic": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:    noLimit,
 				Subtopic: "not-present",
-				Format:   senmlFormat,
 			},
-			page: readers.MessagesPage{
-				Messages: []readers.Message{},
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Messages: []readers.Message{},
+				},
 			},
 		},
 		"read messages with subtopic": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:    noLimit,
 				Subtopic: subtopic,
-				Format:   senmlFormat,
 			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(queryMsgs)),
-				Messages: fromSenml(queryMsgs),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(queryMsgs)),
+					Messages: fromSenml(queryMsgs),
+				},
 			},
 		},
 		"read messages with publisher": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:     noLimit,
 				Publisher: pubID2,
-				Format:    senmlFormat,
 			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(queryMsgs)),
-				Messages: fromSenml(queryMsgs),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(queryMsgs)),
+					Messages: fromSenml(queryMsgs),
+				},
 			},
 		},
 		"read messages with protocol": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:    noLimit,
 				Protocol: httpProt,
-				Format:   senmlFormat,
 			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(queryMsgs)),
-				Messages: fromSenml(queryMsgs),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(queryMsgs)),
+					Messages: fromSenml(queryMsgs),
+				},
 			},
 		},
 		"read messages with name": {
-			pageMeta: readers.PageMetadata{
-				Limit:  noLimit,
-				Name:   msgName,
-				Format: senmlFormat,
+			pageMeta: readers.SenMLPageMetadata{
+				Limit: noLimit,
+				Name:  msgName,
 			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(queryMsgs)),
-				Messages: fromSenml(queryMsgs),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(queryMsgs)),
+					Messages: fromSenml(queryMsgs),
+				},
 			},
 		},
 		"read messages with value": {
-			pageMeta: readers.PageMetadata{
-				Limit:  noLimit,
-				Value:  v,
-				Format: senmlFormat,
+			pageMeta: readers.SenMLPageMetadata{
+				Limit: noLimit,
+				Value: v,
 			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(valueMsgs)),
-				Messages: fromSenml(valueMsgs),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(valueMsgs)),
+					Messages: fromSenml(valueMsgs),
+				},
 			},
 		},
 		"read messages with value and equal comparator": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:      noLimit,
 				Value:      v,
 				Comparator: readers.EqualKey,
-				Format:     senmlFormat,
 			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(valueMsgs)),
-				Messages: fromSenml(valueMsgs),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(valueMsgs)),
+					Messages: fromSenml(valueMsgs),
+				},
 			},
 		},
 		"read messages with value and lower-than comparator": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:      noLimit,
 				Value:      v + 1,
 				Comparator: readers.LowerThanKey,
-				Format:     senmlFormat,
 			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(valueMsgs)),
-				Messages: fromSenml(valueMsgs),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(valueMsgs)),
+					Messages: fromSenml(valueMsgs),
+				},
 			},
 		},
 		"read messages with value and lower-than-or-equal comparator": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:      noLimit,
 				Value:      v + 1,
 				Comparator: readers.LowerThanEqualKey,
-				Format:     senmlFormat,
 			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(valueMsgs)),
-				Messages: fromSenml(valueMsgs),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(valueMsgs)),
+					Messages: fromSenml(valueMsgs),
+				},
 			},
 		},
 		"read messages with value and greater-than comparator": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:      noLimit,
 				Value:      v - 1,
 				Comparator: readers.GreaterThanKey,
-				Format:     senmlFormat,
 			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(valueMsgs)),
-				Messages: fromSenml(valueMsgs),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(valueMsgs)),
+					Messages: fromSenml(valueMsgs),
+				},
 			},
 		},
 		"read messages with value and greater-than-or-equal comparator": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:      noLimit,
 				Value:      v - 1,
 				Comparator: readers.GreaterThanEqualKey,
-				Format:     senmlFormat,
 			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(valueMsgs)),
-				Messages: fromSenml(valueMsgs),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(valueMsgs)),
+					Messages: fromSenml(valueMsgs),
+				},
 			},
 		},
 		"read messages with boolean value": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:     noLimit,
 				BoolValue: vb,
-				Format:    senmlFormat,
 			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(boolMsgs)),
-				Messages: fromSenml(boolMsgs),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(boolMsgs)),
+					Messages: fromSenml(boolMsgs),
+				},
 			},
 		},
 		"read messages with string value": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:       noLimit,
 				StringValue: vs,
-				Format:      senmlFormat,
 			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(stringMsgs)),
-				Messages: fromSenml(stringMsgs),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(stringMsgs)),
+					Messages: fromSenml(stringMsgs),
+				},
 			},
 		},
 		"read messages with data value": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:     noLimit,
 				DataValue: vd,
-				Format:    senmlFormat,
 			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(dataMsgs)),
-				Messages: fromSenml(dataMsgs),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(dataMsgs)),
+					Messages: fromSenml(dataMsgs),
+				},
 			},
 		},
 		"read messages with from": {
-			pageMeta: readers.PageMetadata{
-				Limit:  noLimit,
-				From:   messages[20].Time,
-				Format: senmlFormat,
+			pageMeta: readers.SenMLPageMetadata{
+				Limit: noLimit,
+				From:  messages[20].Time,
 			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(messages[0:21])),
-				Messages: fromSenml(messages[0:21]),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(messages[0:21])),
+					Messages: fromSenml(messages[0:21]),
+				},
 			},
 		},
 		"read messages with to": {
-			pageMeta: readers.PageMetadata{
-				Limit:  noLimit,
-				To:     messages[20].Time,
-				Format: senmlFormat,
+			pageMeta: readers.SenMLPageMetadata{
+				Limit: noLimit,
+				To:    messages[20].Time,
 			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(messages[20:])),
-				Messages: fromSenml(messages[20:]),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(messages[20:])),
+					Messages: fromSenml(messages[20:]),
+				},
 			},
 		},
 		"read messages with from/to": {
-			pageMeta: readers.PageMetadata{
-				Limit:  noLimit,
-				From:   messages[5].Time,
-				To:     messages[0].Time,
-				Format: senmlFormat,
+			pageMeta: readers.SenMLPageMetadata{
+				Limit: noLimit,
+				From:  messages[5].Time,
+				To:    messages[0].Time,
 			},
-			page: readers.MessagesPage{
-				Total:    6,
-				Messages: fromSenml(messages[0:6]),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    6,
+					Messages: fromSenml(messages[0:6]),
+				},
 			},
 		},
 		"count aggregation": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:   noLimit,
 				AggType: countAgg,
-				Format:  senmlFormat,
 			},
-			page: readers.MessagesPage{
-				Total:    msgsNum,
-				Messages: fromSenml(messages),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    msgsNum,
+					Messages: fromSenml(messages),
+				},
 			},
 		},
 		"min aggregation with name filter": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:   noLimit,
 				Name:    msgName,
 				AggType: minAgg,
-				Format:  senmlFormat,
 			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(queryMsgs)),
-				Messages: fromSenml(queryMsgs),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(queryMsgs)),
+					Messages: fromSenml(queryMsgs),
+				},
 			},
 		},
 		"max aggregation with name filter": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:   noLimit,
 				Name:    msgName,
 				AggType: maxAgg,
-				Format:  senmlFormat,
 			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(queryMsgs)),
-				Messages: fromSenml(queryMsgs),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(queryMsgs)),
+					Messages: fromSenml(queryMsgs),
+				},
 			},
 		},
 		"avg aggregation on sum field": {
-			pageMeta: readers.PageMetadata{
+			pageMeta: readers.SenMLPageMetadata{
 				Limit:    noLimit,
 				Name:     msgName,
 				AggType:  avgAgg,
 				AggField: "sum",
-				Format:   senmlFormat,
 			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(queryMsgs)),
-				Messages: fromSenml(queryMsgs),
+			page: readers.SenMLMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(queryMsgs)),
+					Messages: fromSenml(queryMsgs),
+				},
 			},
 		},
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ListAllMessages(tc.pageMeta)
+		result, err := reader.ListSenMLMessages(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Messages, result.Messages))
 		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Total, result.Total))
@@ -475,34 +497,36 @@ func TestListAllMessagesJSON(t *testing.T) {
 	}
 
 	cases := map[string]struct {
-		pageMeta readers.PageMetadata
-		page     readers.MessagesPage
+		pageMeta readers.JSONPageMetadata
+		page     readers.JSONMessagesPage
 	}{
 		"read all messages": {
-			pageMeta: readers.PageMetadata{
-				Format: jsonFormat,
-				Limit:  noLimit,
+			pageMeta: readers.JSONPageMetadata{
+				Limit: noLimit,
 			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(msgs)),
-				Messages: fromJSON(msgs),
+			page: readers.JSONMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(msgs)),
+					Messages: fromJSON(msgs),
+				},
 			},
 		},
 		"read messages with protocol": {
-			pageMeta: readers.PageMetadata{
-				Format:   jsonFormat,
+			pageMeta: readers.JSONPageMetadata{
 				Limit:    noLimit,
 				Protocol: httpProt,
 			},
-			page: readers.MessagesPage{
-				Total:    uint64(len(httpMsgs)),
-				Messages: fromJSON(httpMsgs),
+			page: readers.JSONMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(httpMsgs)),
+					Messages: fromJSON(httpMsgs),
+				},
 			},
 		},
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ListAllMessages(tc.pageMeta)
+		result, err := reader.ListJSONMessages(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Messages, result.Messages))
 		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Total, result.Total))
@@ -589,68 +613,62 @@ func TestDeleteMessagesSenML(t *testing.T) {
 	}
 
 	cases := map[string]struct {
-		pageMeta      readers.PageMetadata
+		pageMeta      readers.SenMLPageMetadata
 		expectedCount uint64
 		description   string
 	}{
-		"delete messages with subtopic": {
-			pageMeta: readers.PageMetadata{
+		"delete senml messages with subtopic": {
+			pageMeta: readers.SenMLPageMetadata{
 				Publisher: pubID2,
 				Subtopic:  subtopic,
 				From:      0,
 				To:        now + 1,
-				Format:    senmlFormat,
 			},
 			expectedCount: uint64(len(queryMsgs)),
 			description:   "should delete messages with specific subtopic",
 		},
-		"delete messages with protocol": {
-			pageMeta: readers.PageMetadata{
+		"delete senml messages with protocol": {
+			pageMeta: readers.SenMLPageMetadata{
 				Publisher: pubID2,
 				Protocol:  httpProt,
 				From:      0,
 				To:        now + 1,
-				Format:    senmlFormat,
 			},
 			expectedCount: uint64(len(queryMsgs)),
 			description:   "should delete messages with specific protocol",
 		},
-		"delete messages with time range from": {
-			pageMeta: readers.PageMetadata{
+		"delete senml messages with time range from": {
+			pageMeta: readers.SenMLPageMetadata{
 				Publisher: pubID,
 				From:      messages[20].Time,
 				To:        now + 1,
-				Format:    senmlFormat,
 			},
 			expectedCount: 17,
 			description:   "should delete messages from specific time",
 		},
-		"delete messages with time range to": {
-			pageMeta: readers.PageMetadata{
+		"delete senml messages with time range to": {
+			pageMeta: readers.SenMLPageMetadata{
 				Publisher: pubID,
 				From:      0,
 				To:        messages[20].Time,
-				Format:    senmlFormat,
 			},
 			expectedCount: 65,
 			description:   "should delete messages to specific time",
 		},
-		"delete messages with time range from/to": {
-			pageMeta: readers.PageMetadata{
+		"delete senml messages with time range from/to": {
+			pageMeta: readers.SenMLPageMetadata{
 				Publisher: pubID,
 				From:      messages[50].Time,
 				To:        messages[20].Time,
-				Format:    senmlFormat,
 			},
 			expectedCount: 25,
 			description:   "should delete messages within time range",
 		},
-		"delete all messages for publisher": {
-			pageMeta: readers.PageMetadata{
+		"delete all senml messages for publisher": {
+			pageMeta: readers.SenMLPageMetadata{
 				Publisher: pubID,
 				From:      0,
 				To:        now + 1,
-				Format:    senmlFormat,
 			},
 			expectedCount: uint64(msgsNum - len(queryMsgs)),
 			description:   "should delete all messages for specific publisher",
@@ -658,17 +676,15 @@ func TestDeleteMessagesSenML(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
+		_ = reader.DeleteSenMLMessages(context.Background(), readers.SenMLPageMetadata{
 			Publisher: pubID,
 			From:      0,
 			To:        now,
-			Format:    senmlFormat,
 		})
-		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
+		_ = reader.DeleteSenMLMessages(context.Background(), readers.SenMLPageMetadata{
 			Publisher: pubID2,
 			From:      0,
 			To:        now,
-			Format:    senmlFormat,
 		})
 
 		for _, m := range messages {
@@ -698,30 +714,28 @@ func TestDeleteMessagesSenML(t *testing.T) {
 			require.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 		}
 
-		beforePage, err := reader.ListAllMessages(readers.PageMetadata{
+		beforePage, err := reader.ListSenMLMessages(context.Background(), readers.SenMLPageMetadata{
 			Publisher: tc.pageMeta.Publisher,
 			Subtopic:  tc.pageMeta.Subtopic,
 			Protocol:  tc.pageMeta.Protocol,
 			From:      tc.pageMeta.From,
 			To:        tc.pageMeta.To,
 			Limit:     noLimit,
-			Format:    senmlFormat,
 		})
 
 		require.Nil(t, err)
 		beforeCount := beforePage.Total
 
-		err = reader.DeleteMessages(context.Background(), tc.pageMeta)
+		err = reader.DeleteSenMLMessages(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
-		afterPage, err := reader.ListAllMessages(readers.PageMetadata{
+		afterPage, err := reader.ListSenMLMessages(context.Background(), readers.SenMLPageMetadata{
 			Publisher: tc.pageMeta.Publisher,
 			Subtopic:  tc.pageMeta.Subtopic,
 			Protocol:  tc.pageMeta.Protocol,
 			From:      tc.pageMeta.From,
 			To:        tc.pageMeta.To,
 			Limit:     noLimit,
-			Format:    senmlFormat,
 		})
 		require.Nil(t, err)
 		afterCount := afterPage.Total
@@ -801,13 +815,12 @@ func TestDeleteMessagesJSON(t *testing.T) {
 	}
 
 	cases := map[string]struct {
-		pageMeta      readers.PageMetadata
+		pageMeta      readers.JSONPageMetadata
 		expectedCount uint64
 		description   string
 	}{
 		"delete JSON messages with publisher id1": {
-			pageMeta: readers.PageMetadata{
-				Format:    jsonFormat,
+			pageMeta: readers.JSONPageMetadata{
 				Publisher: id1,
 				From:      0,
 				To:        int64(created + int64(msgsNum)),
@@ -816,8 +829,7 @@ func TestDeleteMessagesJSON(t *testing.T) {
 			description:   "should delete JSON messages from specific publisher id1",
 		},
 		"delete JSON messages with publisher id2": {
-			pageMeta: readers.PageMetadata{
-				Format:    jsonFormat,
+			pageMeta: readers.JSONPageMetadata{
 				Publisher: id2,
 				From:      0,
 				To:        int64(created + int64(msgsNum)),
@@ -826,8 +838,7 @@ func TestDeleteMessagesJSON(t *testing.T) {
 			description:   "should delete JSON messages from specific publisher id2",
 		},
 		"delete JSON messages with protocol": {
-			pageMeta: readers.PageMetadata{
-				Format:    jsonFormat,
+			pageMeta: readers.JSONPageMetadata{
 				Publisher: id2,
 				Protocol:  httpProt,
 				From:      0,
@@ -837,8 +848,7 @@ func TestDeleteMessagesJSON(t *testing.T) {
 			description:   "should delete JSON messages with HTTP protocol",
 		},
 		"delete JSON messages with subtopic": {
-			pageMeta: readers.PageMetadata{
-				Format:    jsonFormat,
+			pageMeta: readers.JSONPageMetadata{
 				Publisher: id1,
 				Subtopic:  subtopic,
 				From:      0,
@@ -848,8 +858,7 @@ func TestDeleteMessagesJSON(t *testing.T) {
 			description:   "should delete JSON messages with specific subtopic",
 		},
 		"delete JSON messages with time range": {
-			pageMeta: readers.PageMetadata{
-				Format:    jsonFormat,
+			pageMeta: readers.JSONPageMetadata{
 				Publisher: id1,
 				From:      int64(created + 20),
 				To:        int64(created + 50),
@@ -860,18 +869,16 @@ func TestDeleteMessagesJSON(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
+		_ = reader.DeleteJSONMessages(context.Background(), readers.JSONPageMetadata{
 			Publisher: id1,
 			From:      0,
 			To:        int64(created + int64(msgsNum)),
-			Format:    jsonTable,
 		})
 
-		_ = reader.DeleteMessages(context.Background(), readers.PageMetadata{
+		_ = reader.DeleteJSONMessages(context.Background(), readers.JSONPageMetadata{
 			Publisher: id2,
 			From:      0,
 			To:        int64(created + int64(msgsNum)),
-			Format:    jsonTable,
 		})
 
 		for _, m := range messages {
@@ -879,27 +886,25 @@ func TestDeleteMessagesJSON(t *testing.T) {
 			require.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 		}
 
-		beforePage, err := reader.ListAllMessages(readers.PageMetadata{
+		beforePage, err := reader.ListJSONMessages(context.Background(), readers.JSONPageMetadata{
 			Publisher: tc.pageMeta.Publisher,
 			Subtopic:  tc.pageMeta.Subtopic,
 			Protocol:  tc.pageMeta.Protocol,
 			From:      tc.pageMeta.From,
 			To:        tc.pageMeta.To,
 			Limit:     noLimit,
-			Format:    tc.pageMeta.Format,
 		})
 		require.Nil(t, err)
 		beforeCount := beforePage.Total
 
-		err = reader.DeleteMessages(context.Background(), tc.pageMeta)
+		err = reader.DeleteJSONMessages(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
-		afterPage, err := reader.ListAllMessages(readers.PageMetadata{
+		afterPage, err := reader.ListJSONMessages(context.Background(), readers.JSONPageMetadata{
 			Publisher: tc.pageMeta.Publisher,
 			Subtopic:  tc.pageMeta.Subtopic,
 			Protocol:  tc.pageMeta.Protocol,
 			From:      tc.pageMeta.From,
-			Format:    tc.pageMeta.Format,
 			To:        tc.pageMeta.To,
 			Limit:     noLimit,
 		})

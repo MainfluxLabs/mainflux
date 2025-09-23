@@ -76,10 +76,8 @@ func (c *certsRepoMock) RetrieveAll(ctx context.Context, ownerID string, offset,
 	}
 
 	page := certs.Page{
-		Certs:  crts,
-		Total:  c.counter,
-		Offset: offset,
-		Limit:  limit,
+		Certs: crts,
+		Total: c.counter,
 	}
 	return page, nil
 }
@@ -116,10 +114,8 @@ func (c *certsRepoMock) RetrieveByThing(ctx context.Context, ownerID, thingID st
 	}
 
 	page := certs.Page{
-		Certs:  crts,
-		Total:  c.counter,
-		Offset: offset,
-		Limit:  limit,
+		Certs: crts,
+		Total: c.counter,
 	}
 	return page, nil
 }

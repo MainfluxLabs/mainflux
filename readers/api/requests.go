@@ -10,23 +10,19 @@ import (
 
 const maxLimitSize = 1000
 
-type listMessagesReq struct {
+type listSenMLMessagesReq struct {
 	token    string
 	thingKey apiutil.ThingKey
-	pageMeta readers.PageMetadata
+	pageMeta readers.SenMLPageMetadata
 }
 
-func (req listMessagesReq) validate() error {
-	if req.token == "" {
+func (req listSenMLMessagesReq) validate() error {
+	if req.token == "" && req.thingKey.Key == "" {
 		return apiutil.ErrBearerToken
 	}
 
 	if req.pageMeta.Limit > maxLimitSize {
 		return apiutil.ErrLimitSize
-	}
-
-	if req.pageMeta.Offset < 0 {
-		return apiutil.ErrOffsetSize
 	}
 
 	if req.pageMeta.Comparator != "" &&
@@ -38,24 +34,42 @@ func (req listMessagesReq) validate() error {
 		return apiutil.ErrInvalidComparator
 	}
 
-	if req.pageMeta.AggType != "" {
-		switch req.pageMeta.AggType {
-		case readers.AggregationMin, readers.AggregationMax, readers.AggregationAvg, readers.AggregationCount:
-		default:
-			return apiutil.ErrInvalidAggType
-		}
+	if err := validateAggregation(req.pageMeta.AggType); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-type backupMessagesReq struct {
-	token         string
-	convertFormat string
-	pageMeta      readers.PageMetadata
+type listJSONMessagesReq struct {
+	token    string
+	thingKey apiutil.ThingKey
+	pageMeta readers.JSONPageMetadata
 }
 
-func (req backupMessagesReq) validate() error {
+func (req listJSONMessagesReq) validate() error {
+	if req.token == "" && req.thingKey.Key == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.pageMeta.Limit > maxLimitSize {
+		return apiutil.ErrLimitSize
+	}
+
+	if err := validateAggregation(req.pageMeta.AggType); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type backupSenMLMessagesReq struct {
+	token         string
+	convertFormat string
+	pageMeta      readers.SenMLPageMetadata
+}
+
+func (req backupSenMLMessagesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -64,12 +78,30 @@ func (req backupMessagesReq) validate() error {
 		return apiutil.ErrInvalidQueryParams
 	}
 
-	if req.pageMeta.AggType != "" {
-		switch req.pageMeta.AggType {
-		case readers.AggregationMin, readers.AggregationMax, readers.AggregationAvg, readers.AggregationCount:
-		default:
-			return apiutil.ErrInvalidAggType
-		}
+	if err := validateAggregation(req.pageMeta.AggType); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type backupJSONMessagesReq struct {
+	token         string
+	convertFormat string
+	pageMeta      readers.JSONPageMetadata
+}
+
+func (req backupJSONMessagesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.convertFormat != jsonFormat && req.convertFormat != csvFormat {
+		return apiutil.ErrInvalidQueryParams
+	}
+
+	if err := validateAggregation(req.pageMeta.AggType); err != nil {
+		return err
 	}
 
 	return nil
@@ -94,20 +126,42 @@ func (req restoreMessagesReq) validate() error {
 	return nil
 }
 
-type deleteMessagesReq struct {
+type deleteSenMLMessagesReq struct {
 	token    string
 	thingKey apiutil.ThingKey
-	pageMeta readers.PageMetadata
+	pageMeta readers.SenMLPageMetadata
 }
 
-func (req deleteMessagesReq) validate() error {
-	if req.token == "" {
+func (req deleteSenMLMessagesReq) validate() error {
+	if req.token == "" && req.thingKey.Key == "" {
 		return apiutil.ErrBearerToken
 	}
 
-	if err := req.thingKey.Validate(); err != nil {
-		return err
+	return nil
+}
+
+type deleteJSONMessagesReq struct {
+	token    string
+	thingKey apiutil.ThingKey
+	pageMeta readers.JSONPageMetadata
+}
+
+func (req deleteJSONMessagesReq) validate() error {
+	if req.token == "" && req.thingKey.Key == "" {
+		return apiutil.ErrBearerToken
+	}
+	return nil
+}
+
+func validateAggregation(aggType string) error {
+	if aggType == "" {
+		return nil
 	}
 
-	return nil
+	switch aggType {
+	case readers.AggregationMin, readers.AggregationMax, readers.AggregationAvg, readers.AggregationCount:
+		return nil
+	default:
+		return apiutil.ErrInvalidAggType
+	}
 }

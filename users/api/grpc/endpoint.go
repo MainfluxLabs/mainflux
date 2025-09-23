@@ -26,11 +26,11 @@ func listUsersByIDsEndpoint(svc users.Service) endpoint.Endpoint {
 		res := getUsersRes{
 			pageMetadata: &protomfx.PageMetadata{
 				Total:  up.Total,
-				Offset: up.Offset,
-				Limit:  up.Limit,
-				Email:  up.Email,
-				Order:  up.Order,
-				Dir:    up.Dir,
+				Offset: req.pageMetadata.Offset,
+				Limit:  req.pageMetadata.Limit,
+				Email:  req.pageMetadata.Email,
+				Order:  req.pageMetadata.Order,
+				Dir:    req.pageMetadata.Dir,
 			},
 		}
 

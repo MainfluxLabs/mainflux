@@ -120,7 +120,7 @@ func listProfilesEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildProfilesResponse(page), nil
+		return buildProfilesResponse(page, req.pageMetadata), nil
 	}
 }
 
@@ -136,7 +136,7 @@ func listProfilesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildProfilesResponse(page), nil
+		return buildProfilesResponse(page, req.pageMetadata), nil
 	}
 }
 
@@ -152,7 +152,7 @@ func listProfilesByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildProfilesResponse(page), nil
+		return buildProfilesResponse(page, req.pageMetadata), nil
 	}
 }
 
@@ -282,15 +282,15 @@ func removeProfilesEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func buildProfilesResponse(pp things.ProfilesPage) profilesPageRes {
+func buildProfilesResponse(pp things.ProfilesPage, pm apiutil.PageMetadata) profilesPageRes {
 	res := profilesPageRes{
 		pageRes: pageRes{
 			Total:  pp.Total,
-			Offset: pp.Offset,
-			Limit:  pp.Limit,
-			Order:  pp.Order,
-			Dir:    pp.Dir,
-			Name:   pp.Name,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
+			Name:   pm.Name,
 		},
 		Profiles: []profileRes{},
 	}
