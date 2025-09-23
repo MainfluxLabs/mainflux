@@ -121,16 +121,6 @@ func (repo *senmlRepositoryMock) senmlMessageMatchesFilter(msg readers.Message, 
 	}
 }
 
-func (repo *senmlRepositoryMock) getCreatedTime(jsonMap map[string]interface{}) int64 {
-	if created, ok := jsonMap["created"].(float64); ok {
-		return int64(created)
-	}
-	if created, ok := jsonMap["created"].(int64); ok {
-		return created
-	}
-	return 0
-}
-
 func (repo *senmlRepositoryMock) checkSenMLMessageFilter(senmlMsg senml.Message, query map[string]interface{}, rpm readers.SenMLPageMetadata) bool {
 	if rpm.Subtopic != "" && rpm.Subtopic != senmlMsg.Subtopic {
 		return false
