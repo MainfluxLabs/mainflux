@@ -17,13 +17,13 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-var _ readers.JSONMessaageRepository = (*jsonRepository)(nil)
+var _ readers.JSONMessageRepository = (*jsonRepository)(nil)
 
 type jsonRepository struct {
 	db *sqlx.DB
 }
 
-func NewJSONRepository(db *sqlx.DB) readers.JSONMessaageRepository {
+func NewJSONRepository(db *sqlx.DB) readers.JSONMessageRepository {
 	return &jsonRepository{
 		db: db,
 	}

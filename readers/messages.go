@@ -32,7 +32,7 @@ const (
 // ErrReadMessages indicates failure occurred while reading messages from database.
 var ErrReadMessages = errors.New("failed to read messages from database")
 
-type JSONMessaageRepository interface {
+type JSONMessageRepository interface {
 	// ListMessages retrieves the json messages with given filters.
 	ListMessages(ctx context.Context, rpm JSONPageMetadata) (JSONMessagesPage, error)
 

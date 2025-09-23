@@ -19,7 +19,7 @@ type jsonRepository struct {
 	aggregator *aggregationService
 }
 
-func NewJSONRepository(db dbutil.Database) readers.JSONMessaageRepository {
+func NewJSONRepository(db dbutil.Database) readers.JSONMessageRepository {
 	return &jsonRepository{
 		db:         db,
 		aggregator: newAggregationService(db),

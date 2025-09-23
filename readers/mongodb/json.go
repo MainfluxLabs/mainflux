@@ -20,13 +20,13 @@ const (
 	noLimit        = 0
 )
 
-var _ readers.JSONMessaageRepository = (*jsonRepository)(nil)
+var _ readers.JSONMessageRepository = (*jsonRepository)(nil)
 
 type jsonRepository struct {
 	db *mongo.Database
 }
 
-func NewJSONRepository(db *mongo.Database) readers.JSONMessaageRepository {
+func NewJSONRepository(db *mongo.Database) readers.JSONMessageRepository {
 	return &jsonRepository{
 		db: db,
 	}

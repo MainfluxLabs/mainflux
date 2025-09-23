@@ -31,11 +31,11 @@ type Service interface {
 }
 
 type readersService struct {
-	json  JSONMessaageRepository
+	json  JSONMessageRepository
 	senml SenMLMessageRepository
 }
 
-func New(json JSONMessaageRepository, senml SenMLMessageRepository) Service {
+func New(json JSONMessageRepository, senml SenMLMessageRepository) Service {
 	return &readersService{
 		json:  json,
 		senml: senml,
