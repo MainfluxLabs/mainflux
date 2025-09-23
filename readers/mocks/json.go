@@ -11,14 +11,14 @@ import (
 	"github.com/MainfluxLabs/mainflux/readers"
 )
 
-var _ readers.JSONMessaageRepository = (*jsonRepositoryMock)(nil)
+var _ readers.JSONMessageRepository = (*jsonRepositoryMock)(nil)
 
 type jsonRepositoryMock struct {
 	mu       sync.Mutex
 	messages map[string][]readers.Message
 }
 
-func NewJSONRepository(profileID string, messages []readers.Message) readers.JSONMessaageRepository {
+func NewJSONRepository(profileID string, messages []readers.Message) readers.JSONMessageRepository {
 
 	repo := map[string][]readers.Message{
 		profileID: messages,
