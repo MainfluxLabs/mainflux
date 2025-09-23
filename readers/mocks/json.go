@@ -117,16 +117,6 @@ func (repo *jsonRepositoryMock) readAll(rpm readers.JSONPageMetadata) (readers.J
 	}, nil
 }
 
-func (repo *jsonRepositoryMock) getCreatedTime(jsonMap map[string]interface{}) int64 {
-	if created, ok := jsonMap["created"].(float64); ok {
-		return int64(created)
-	}
-	if created, ok := jsonMap["created"].(int64); ok {
-		return created
-	}
-	return 0
-}
-
 func (repo *jsonRepositoryMock) messageMatchesFilter(msg readers.Message, rpm readers.JSONPageMetadata) bool {
 	switch m := msg.(type) {
 	case mfjson.Message:
@@ -174,14 +164,12 @@ func (repo *jsonRepositoryMock) checkJSONMapFilter(jsonMap map[string]interface{
 		}
 	}
 	if rpm.From != 0 {
-		created := repo.getCreatedTime(jsonMap)
-		if created < rpm.From {
+		if created, ok := jsonMap["created"].(int64); !ok || created < rpm.From {
 			return false
 		}
 	}
 	if rpm.To != 0 {
-		created := repo.getCreatedTime(jsonMap)
-		if created >= rpm.To {
+		if created, ok := jsonMap["created"].(int64); !ok || created >= rpm.From {
 			return false
 		}
 	}
