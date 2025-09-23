@@ -121,42 +121,6 @@ func (repo *senmlRepositoryMock) senmlMessageMatchesFilter(msg readers.Message, 
 	}
 }
 
-func (repo *senmlRepositoryMock) checkJSONMapFilter(jsonMap map[string]interface{}, query map[string]interface{}, rpm readers.JSONPageMetadata) bool {
-	if rpm.Subtopic != "" {
-		if subtopic, ok := jsonMap["subtopic"].(string); !ok || subtopic != rpm.Subtopic {
-			return false
-		}
-	}
-
-	if rpm.Publisher != "" {
-		if publisher, ok := jsonMap["publisher"].(string); !ok || publisher != rpm.Publisher {
-			return false
-		}
-	}
-
-	if rpm.Protocol != "" {
-		if protocol, ok := jsonMap["protocol"].(string); !ok || protocol != rpm.Protocol {
-			return false
-		}
-	}
-
-	if rpm.From != 0 {
-		created := repo.getCreatedTime(jsonMap)
-		if created < rpm.From {
-			return false
-		}
-	}
-
-	if rpm.To != 0 {
-		created := repo.getCreatedTime(jsonMap)
-		if created >= rpm.To {
-			return false
-		}
-	}
-
-	return true
-}
-
 func (repo *senmlRepositoryMock) getCreatedTime(jsonMap map[string]interface{}) int64 {
 	if created, ok := jsonMap["created"].(float64); ok {
 		return int64(created)
@@ -165,31 +129,6 @@ func (repo *senmlRepositoryMock) getCreatedTime(jsonMap map[string]interface{}) 
 		return created
 	}
 	return 0
-}
-
-func (repo *senmlRepositoryMock) getStringField(jsonMap map[string]interface{}, field string) string {
-	if value, ok := jsonMap[field].(string); ok {
-		return value
-	}
-	return ""
-}
-
-func (repo *senmlRepositoryMock) getPayload(jsonMap map[string]interface{}) []byte {
-	if payload, ok := jsonMap["payload"]; ok {
-		switch p := payload.(type) {
-		case []byte:
-			return p
-		case string:
-			return []byte(p)
-		case map[string]interface{}, []interface{}:
-			data, _ := json.Marshal(p)
-			return data
-		default:
-			data, _ := json.Marshal(p)
-			return data
-		}
-	}
-	return nil
 }
 
 func (repo *senmlRepositoryMock) checkSenMLMessageFilter(senmlMsg senml.Message, query map[string]interface{}, rpm readers.SenMLPageMetadata) bool {

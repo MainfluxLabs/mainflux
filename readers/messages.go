@@ -56,7 +56,7 @@ type SenMLMessageRepository interface {
 	// Restore restores the senml messages.
 	Restore(ctx context.Context, messages ...Message) error
 
-	// DeleteMessages deletes the json messages within a time range.
+	// DeleteMessages deletes the senml messages within a time range.
 	DeleteMessages(ctx context.Context, rpm SenMLPageMetadata) error
 }
 
