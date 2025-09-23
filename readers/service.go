@@ -26,7 +26,7 @@ type Service interface {
 	// DeleteJSONMessages deletes the json messages within a time range.
 	DeleteJSONMessages(ctx context.Context, rpm JSONPageMetadata) error
 
-	// DeleteSenMLMessages deletes the json messages within a time range.
+	// DeleteSenMLMessages deletes the senml messages within a time range.
 	DeleteSenMLMessages(ctx context.Context, rpm SenMLPageMetadata) error
 }
 
