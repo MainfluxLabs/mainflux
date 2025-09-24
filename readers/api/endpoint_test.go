@@ -57,10 +57,10 @@ var (
 	usersList = []users.User{user, admin}
 )
 
-func newServer(jsonMessages []readers.Message, senmlMessaages []senml.Message, tc protomfx.ThingsServiceClient, ac protomfx.AuthServiceClient) *httptest.Server {
+func newServer(jsonMessages []mfjson.Message, senmlMessaages []senml.Message, tc protomfx.ThingsServiceClient, ac protomfx.AuthServiceClient) *httptest.Server {
 	logger := logger.NewMock()
 
-	jsonRepo := rmocks.NewJSONRepository("", jsonMessages)
+	jsonRepo := rmocks.NewJSONRepository("", fromJSON(jsonMessages))
 	senmlRepo := rmocks.NewSenMLRepository("", fromSenml(senmlMessaages))
 	svc := readers.New(jsonRepo, senmlRepo)
 
@@ -522,12 +522,7 @@ func TestListJSONMessages(t *testing.T) {
 
 	adminToken := adminTok.GetValue()
 
-	repoMessages := make([]readers.Message, len(messages))
-	for i, msg := range messages {
-		repoMessages[i] = msg
-	}
-
-	ts := newServer(repoMessages, nil, thSvc, authSvc)
+	ts := newServer(messages, nil, thSvc, authSvc)
 	defer ts.Close()
 
 	cases := []struct {
@@ -730,6 +725,14 @@ type senmlPageRes struct {
 }
 
 func fromSenml(in []senml.Message) []readers.Message {
+	var ret []readers.Message
+	for _, m := range in {
+		ret = append(ret, m)
+	}
+	return ret
+}
+
+func fromJSON(in []mfjson.Message) []readers.Message {
 	var ret []readers.Message
 	for _, m := range in {
 		ret = append(ret, m)
