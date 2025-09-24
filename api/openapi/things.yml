@@ -1963,17 +1963,20 @@ components:
                   type: string
                   format: uuid
     IdentityReq:
-      description: JSON-formatted document that contains thing key.
+      description: JSON-formatted document that contains the thing key and its type.
       required: true
       content:
         application/json:
           schema:
             type: object
             properties:
-              token:
+              key:
                 type: string
-                format: uuid
                 description: Thing key that is used for thing auth.
+              type:
+                type: string
+                enum: [inline, external]
+                description: Thing key type.
             required:
               - token
     CreateGroupsReq:
