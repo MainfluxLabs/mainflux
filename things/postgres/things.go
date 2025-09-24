@@ -345,7 +345,7 @@ func (tr thingRepository) SaveExternalKey(ctx context.Context, key, thingID stri
 		VALUES (:thingID, :key)
 	`
 
-	params := map[string]string{
+	params := map[string]any{
 		"thingID": thingID,
 		"key":     key,
 	}
@@ -373,7 +373,7 @@ func (tr thingRepository) RemoveExternalKey(ctx context.Context, key string) err
 		WHERE key = :key
 	`
 
-	params := map[string]string{
+	params := map[string]any{
 		"key": key,
 	}
 
@@ -399,7 +399,7 @@ func (tr thingRepository) RetrieveExternalKeysByThing(ctx context.Context, thing
 		WHERE thingID = :thingID
 	`
 
-	params := map[string]string{
+	params := map[string]any{
 		"thingID": thingID,
 	}
 
