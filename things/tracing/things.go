@@ -21,6 +21,7 @@ const (
 	retrieveThingsByProfile     = "retrieve_things_by_profile"
 	retrieveThingsByGroups      = "retrieve_things_by_groups"
 	removeThing                 = "remove_thing"
+	removeKey                   = "remove_key"
 	retrieveThingIDByKey        = "retrieve_id_by_key"
 	retrieveAllThings           = "retrieve_all_things"
 	backupAllThings             = "backup_all_things"
@@ -200,6 +201,14 @@ func (tcm thingCacheMiddleware) RemoveThing(ctx context.Context, thingID string)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return tcm.cache.RemoveThing(ctx, thingID)
+}
+
+func (tcm thingCacheMiddleware) RemoveKey(ctx context.Context, keyType, thingKey string) error {
+	span := createSpan(ctx, tcm.tracer, removeKey)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return tcm.cache.RemoveKey(ctx, keyType, thingKey)
 }
 
 func (tcm thingCacheMiddleware) SaveGroup(ctx context.Context, thingID string, groupID string) error {

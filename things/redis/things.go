@@ -89,6 +89,29 @@ func (tc *thingCache) RemoveThing(ctx context.Context, thingID string) error {
 	return nil
 }
 
+func (tc *thingCache) RemoveKey(ctx context.Context, keyType, thingKey string) error {
+	// Obtain id of thing represented by this particular key
+	thingIdKey := idByThingKeyKey(keyType, thingKey)
+	thingID, err := tc.client.Get(ctx, thingIdKey).Result()
+	if err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	// Remove thing key key from cache
+	if err := tc.client.Del(ctx, thingIdKey).Err(); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	// Remove thing key from set associating thing ID with all of its keys
+	keysSetKey := keysByThingIDKey(thingID)
+	thingKeyVal := fmt.Sprintf("%s:%s", keyType, thingKey)
+	if err := tc.client.SRem(ctx, keysSetKey, thingKeyVal).Err(); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
 func (tc *thingCache) SaveGroup(ctx context.Context, thingID string, groupID string) error {
 	gk := groupByThingIDKey(thingID)
 	if err := tc.client.Set(ctx, gk, groupID, 0).Err(); err != nil {

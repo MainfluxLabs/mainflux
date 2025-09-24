@@ -98,6 +98,9 @@ type ThingCache interface {
 	// RemoveThing removes thing from cache.
 	RemoveThing(context.Context, string) error
 
+	// RemoveKey removes a specific thing key from the cache.
+	RemoveKey(ctx context.Context, keyType, thingKey string) error
+
 	// SaveGroup stores group ID by given thing ID.
 	SaveGroup(context.Context, string, string) error
 

@@ -83,6 +83,22 @@ func (tcm *thingCacheMock) RemoveThing(_ context.Context, id string) error {
 	return nil
 }
 
+func (tcm *thingCacheMock) RemoveKey(_ context.Context, keyType, thingKey string) error {
+	tcm.mu.Lock()
+	defer tcm.mu.Unlock()
+
+	switch keyType {
+	case things.KeyTypeInline:
+		delete(tcm.thingsByKey, thingKey)
+	case things.KeyTypeExternal:
+		delete(tcm.thingsByKeyExternal, thingKey)
+	default:
+		return apiutil.ErrInvalidThingKeyType
+	}
+
+	return nil
+}
+
 func (tcm *thingCacheMock) SaveGroup(_ context.Context, thingID string, groupID string) error {
 	tcm.mu.Lock()
 	defer tcm.mu.Unlock()
