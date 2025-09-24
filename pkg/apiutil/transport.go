@@ -168,7 +168,8 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrInvalidActionType),
 		errors.Contains(err, ErrMissingActionID),
 		errors.Contains(err, ErrInvalidOperator),
-		errors.Contains(err, ErrInvalidThingKeyType):
+		errors.Contains(err, ErrInvalidThingKeyType),
+		errors.Contains(err, ErrMissingExternalThingKey):
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, errors.ErrAuthorization),
 		errors.Contains(err, ErrInviteExpired),

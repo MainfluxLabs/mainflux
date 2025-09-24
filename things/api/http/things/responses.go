@@ -210,3 +210,34 @@ func (res identityRes) Headers() map[string]string {
 func (res identityRes) Empty() bool {
 	return false
 }
+
+type createExternalKeyRes struct {
+}
+
+func (res createExternalKeyRes) Code() int {
+	return http.StatusCreated
+}
+
+func (res createExternalKeyRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res createExternalKeyRes) Empty() bool {
+	return true
+}
+
+type listExternalKeysByThingRes struct {
+	Keys []string `json:"keys"`
+}
+
+func (res listExternalKeysByThingRes) Code() int {
+	return http.StatusOK
+}
+
+func (res listExternalKeysByThingRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res listExternalKeysByThingRes) Empty() bool {
+	return false
+}

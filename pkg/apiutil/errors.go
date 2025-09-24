@@ -51,6 +51,9 @@ var (
 	// ErrMissingKeyID indicates missing ID of key.
 	ErrMissingKeyID = errors.New("missing key ID")
 
+	// ErrMissingExternalThingKey indicates missing external thing key
+	ErrMissingExternalThingKey = errors.New("missing external thing key")
+
 	// ErrMissingInviteID incidates missing ID of Invite.
 	ErrMissingInviteID = errors.New("missing invite ID")
 

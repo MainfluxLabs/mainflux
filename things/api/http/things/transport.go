@@ -24,6 +24,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+const (
+	keyKey = "key"
+)
+
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, logger log.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
@@ -166,6 +170,27 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 	mux.Patch("/things", kithttp.NewServer(
 		kitot.TraceServer(tracer, "remove_things")(removeThingsEndpoint(svc)),
 		decodeRemoveThings,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/things/:id/external-keys", kithttp.NewServer(
+		kitot.TraceServer(tracer, "create_external_key")(createExternalKeyEndpoint(svc)),
+		decodeCreateExternalKey,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Get("/things/:id/external-keys", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_external_keys_by_thing")(listExternalKeysByThingEndpoint(svc)),
+		decodeListExternalKeysByThing,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Delete("/external-keys/:key", kithttp.NewServer(
+		kitot.TraceServer(tracer, "remove_external_key")(removeExternalKeyEndpoint(svc)),
+		decodeRemoveExternalKey,
 		encodeResponse,
 		opts...,
 	))
@@ -500,6 +525,40 @@ func decodeIdentify(_ context.Context, r *http.Request) (interface{}, error) {
 	req := identifyReq{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeCreateExternalKey(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := createExternalKeyReq{
+		token:   apiutil.ExtractBearerToken(r),
+		thingID: bone.GetValue(r, apiutil.IDKey),
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeListExternalKeysByThing(_ context.Context, r *http.Request) (any, error) {
+	req := listExternalKeysByThingReq{
+		token:   apiutil.ExtractBearerToken(r),
+		thingID: bone.GetValue(r, apiutil.IDKey),
+	}
+
+	return req, nil
+}
+
+func decodeRemoveExternalKey(_ context.Context, r *http.Request) (any, error) {
+	req := removeExternalKeyReq{
+		token: apiutil.ExtractBearerToken(r),
+		key:   bone.GetValue(r, keyKey),
 	}
 
 	return req, nil

@@ -364,3 +364,51 @@ func (req identifyReq) validate() error {
 
 	return nil
 }
+
+type createExternalKeyReq struct {
+	thingID string
+	Key     string `json:"key"`
+	token   string
+}
+
+func (req createExternalKeyReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.Key == "" {
+		return apiutil.ErrMissingExternalThingKey
+	}
+
+	return nil
+}
+
+type listExternalKeysByThingReq struct {
+	token   string
+	thingID string
+}
+
+func (req listExternalKeysByThingReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	return nil
+}
+
+type removeExternalKeyReq struct {
+	token string
+	key   string
+}
+
+func (req removeExternalKeyReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.key == "" {
+		return apiutil.ErrMissingExternalThingKey
+	}
+
+	return nil
+}

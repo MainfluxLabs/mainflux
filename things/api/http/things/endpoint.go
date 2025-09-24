@@ -360,6 +360,52 @@ func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func createExternalKeyEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(createExternalKeyReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.CreateExternalThingKey(ctx, req.token, req.Key, req.thingID); err != nil {
+			return nil, err
+		}
+
+		return createExternalKeyRes{}, nil
+	}
+}
+
+func listExternalKeysByThingEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(listExternalKeysByThingReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		keys, err := svc.ListExternalKeysByThing(ctx, req.token, req.thingID)
+		if err != nil {
+			return nil, err
+		}
+
+		return listExternalKeysByThingRes{Keys: keys}, nil
+	}
+}
+
+func removeExternalKeyEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(removeExternalKeyReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.RemoveExternalThingKey(ctx, req.token, req.key); err != nil {
+			return nil, err
+		}
+
+		return removeRes{}, nil
+	}
+}
+
 func backupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(backupReq)
