@@ -89,6 +89,18 @@ func (es eventStore) UpdateKey(ctx context.Context, token, id, key string) error
 	return es.svc.UpdateKey(ctx, token, id, key)
 }
 
+func (es eventStore) CreateExternalThingKey(ctx context.Context, token, key, thingID string) error {
+	return es.svc.CreateExternalThingKey(ctx, token, key, thingID)
+}
+
+func (es eventStore) RemoveExternalThingKey(ctx context.Context, token, key string) error {
+	return es.svc.RemoveExternalThingKey(ctx, token, key)
+}
+
+func (es eventStore) ListExternalKeysByThing(ctx context.Context, token, thingID string) ([]string, error) {
+	return es.svc.ListExternalKeysByThing(ctx, token, thingID)
+}
+
 func (es eventStore) ViewThing(ctx context.Context, token, id string) (things.Thing, error) {
 	return es.svc.ViewThing(ctx, token, id)
 }

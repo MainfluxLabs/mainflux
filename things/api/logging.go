@@ -749,3 +749,39 @@ func (lm *loggingMiddleware) RemoveGroupMemberships(ctx context.Context, token, 
 
 	return lm.svc.RemoveGroupMemberships(ctx, token, groupID, memberIDs...)
 }
+
+func (lm *loggingMiddleware) CreateExternalThingKey(ctx context.Context, token, key, thingID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method create_external_thing_key for thing id %s took %s to complete", thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+	}(time.Now())
+
+	return lm.svc.CreateExternalThingKey(ctx, token, key, thingID)
+}
+
+func (lm *loggingMiddleware) RemoveExternalThingKey(ctx context.Context, token, key string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_external_thing_key for thing key %s took %s to complete", key, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+	}(time.Now())
+
+	return lm.svc.RemoveExternalThingKey(ctx, token, key)
+}
+
+func (lm *loggingMiddleware) ListExternalKeysByThing(ctx context.Context, token, thingID string) (keys []string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_external_keys_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+	}(time.Now())
+
+	return lm.svc.ListExternalKeysByThing(ctx, token, thingID)
+}

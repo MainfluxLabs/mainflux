@@ -141,6 +141,16 @@ type Service interface {
 	// GetGroupIDsByOrg returns all group IDs belonging to an org.
 	GetGroupIDsByOrg(ctx context.Context, orgID string, token string) ([]string, error)
 
+	// CreateExternalThingKey creates a new external thing key. The authenticated user must have Editor rights within the Thing's belonging Group.
+	CreateExternalThingKey(ctx context.Context, token, key, thingID string) error
+
+	// RemoveExternalThingKey removes the appropriate external thing key. The authenticated user must have Editor rights within the Thing's belonging Group.
+	RemoveExternalThingKey(ctx context.Context, token, key string) error
+
+	// ListExternalKeysByThingID retrieves a list of all external keys associated with the given Thing.
+	// The authenticated user must have Viewer rights within the Thing's belonging group.
+	ListExternalKeysByThing(ctx context.Context, token, thingID string) ([]string, error)
+
 	// Backup retrieves all things, profiles, groups, and groups memberships for all users. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
@@ -732,6 +742,66 @@ func (ts *thingsService) Identify(ctx context.Context, keyType, key string) (str
 		return "", err
 	}
 	return id, nil
+}
+
+func (ts *thingsService) CreateExternalThingKey(ctx context.Context, token, key, thingID string) error {
+	accessReq := UserAccessReq{
+		Token:  token,
+		ID:     thingID,
+		Action: Editor,
+	}
+
+	if err := ts.CanUserAccessThing(ctx, accessReq); err != nil {
+		return err
+	}
+
+	if err := ts.things.SaveExternalKey(ctx, key, thingID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ts *thingsService) RemoveExternalThingKey(ctx context.Context, token, key string) error {
+	thingID, err := ts.Identify(ctx, KeyTypeExternal, key)
+	if err != nil {
+		return err
+	}
+
+	accessReq := UserAccessReq{
+		Token:  token,
+		ID:     thingID,
+		Action: Editor,
+	}
+
+	if err := ts.CanUserAccessThing(ctx, accessReq); err != nil {
+		return err
+	}
+
+	if err := ts.things.RemoveExternalKey(ctx, key); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ts *thingsService) ListExternalKeysByThing(ctx context.Context, token, thingID string) ([]string, error) {
+	accessReq := UserAccessReq{
+		Token:  token,
+		ID:     thingID,
+		Action: Viewer,
+	}
+
+	if err := ts.CanUserAccessThing(ctx, accessReq); err != nil {
+		return nil, err
+	}
+
+	keys, err := ts.things.RetrieveExternalKeysByThing(ctx, thingID)
+	if err != nil {
+		return nil, err
+	}
+
+	return keys, nil
 }
 
 func (ts *thingsService) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {

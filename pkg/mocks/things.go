@@ -306,3 +306,16 @@ func (svc *mainfluxThings) UpdateGroupMemberships(_ context.Context, token strin
 func (svc *mainfluxThings) RemoveGroupMemberships(_ context.Context, token, groupID string, memberIDs ...string) error {
 	panic("not implemented")
 }
+
+func (svc *mainfluxThings) CreateExternalThingKey(ctx context.Context, token, key, thingID string) error {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) RemoveExternalThingKey(ctx context.Context, token, key string) error {
+	panic("not implemented")
+
+}
+
+func (svc *mainfluxThings) ListExternalKeysByThing(ctx context.Context, token, thingID string) ([]string, error) {
+	panic("not implemented")
+}

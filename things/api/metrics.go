@@ -533,3 +533,30 @@ func (ms *metricsMiddleware) RemoveGroupMemberships(ctx context.Context, token, 
 
 	return ms.svc.RemoveGroupMemberships(ctx, token, groupID, memberIDs...)
 }
+
+func (ms *metricsMiddleware) CreateExternalThingKey(ctx context.Context, token, key, thingID string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "create_external_thing_key").Add(1)
+		ms.latency.With("method", "create_external_thing_key").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.CreateExternalThingKey(ctx, token, key, thingID)
+}
+
+func (ms *metricsMiddleware) RemoveExternalThingKey(ctx context.Context, token, key string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "remove_external_thing_key").Add(1)
+		ms.latency.With("method", "remove_external_thing_key").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RemoveExternalThingKey(ctx, token, key)
+}
+
+func (ms *metricsMiddleware) ListExternalKeysByThing(ctx context.Context, token, thingID string) ([]string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_external_keys_by_thing").Add(1)
+		ms.latency.With("method", "list_external_keys_by_thing").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListExternalKeysByThing(ctx, token, thingID)
+}
