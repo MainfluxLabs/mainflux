@@ -76,6 +76,15 @@ type ThingRepository interface {
 
 	// RetrieveAll retrieves all things for all users with pagination.
 	RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (ThingsPage, error)
+
+	// SaveExternalKey creates an external thing key associated with a particular Thing.
+	SaveExternalKey(ctx context.Context, key, thingID string) error
+
+	// RemoveExternalKey removes an external key.
+	RemoveExternalKey(ctx context.Context, key string) error
+
+	// RetrieveExternalKeysByThing retrieves all external keys associated with a particular Thing.
+	RetrieveExternalKeysByThing(ctx context.Context, thingID string) ([]string, error)
 }
 
 // ThingCache contains thing caching interface.

@@ -339,6 +339,90 @@ func (tr thingRepository) Remove(ctx context.Context, ids ...string) error {
 	return nil
 }
 
+func (tr thingRepository) SaveExternalKey(ctx context.Context, key, thingID string) error {
+	query := `
+		INSERT INTO key_external (thing_id, key)
+		VALUES (:thingID, :key)
+	`
+
+	params := map[string]string{
+		"thingID": thingID,
+		"key":     key,
+	}
+
+	if _, err := tr.db.NamedExecContext(ctx, query, params); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return errors.Wrap(dbutil.ErrConflict, err)
+			}
+		}
+
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
+	}
+
+	return nil
+}
+
+func (tr thingRepository) RemoveExternalKey(ctx context.Context, key string) error {
+	query := `
+		DELETE FROM key_external
+		WHERE key = :key
+	`
+
+	params := map[string]string{
+		"key": key,
+	}
+
+	if _, err := tr.db.NamedExecContext(ctx, query, params); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			}
+		}
+
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
+func (tr thingRepository) RetrieveExternalKeysByThing(ctx context.Context, thingID string) ([]string, error) {
+	query := `
+		SELECT key
+		FROM key_external	
+		WHERE thingID = :thingID
+	`
+
+	params := map[string]string{
+		"thingID": thingID,
+	}
+
+	rows, err := tr.db.NamedQueryContext(ctx, query, params)
+	if err != nil {
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	defer rows.Close()
+
+	var keys []string
+	for rows.Next() {
+		var key string
+		if err := rows.Scan(&key); err != nil {
+			return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		}
+
+		keys = append(keys, key)
+	}
+
+	return keys, nil
+}
+
 func (tr thingRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (things.ThingsPage, error) {
 	rows, err := tr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {

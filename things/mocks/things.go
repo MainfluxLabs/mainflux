@@ -220,6 +220,51 @@ func (trm *thingRepositoryMock) RetrieveByKey(_ context.Context, keyType, key st
 	return "", dbutil.ErrNotFound
 }
 
+func (trm *thingRepositoryMock) SaveExternalKey(_ context.Context, key, thingID string) error {
+	trm.mu.Lock()
+	defer trm.mu.Unlock()
+
+	if _, ok := trm.externalKeys[key]; ok {
+		return dbutil.ErrConflict
+	}
+
+	if _, ok := trm.things[thingID]; !ok {
+		return dbutil.ErrNotFound
+	}
+
+	trm.externalKeys[key] = thingID
+
+	return nil
+}
+
+func (trm *thingRepositoryMock) RemoveExternalKey(_ context.Context, key string) error {
+	trm.mu.Lock()
+	defer trm.mu.Unlock()
+
+	if _, ok := trm.externalKeys[key]; !ok {
+		return dbutil.ErrNotFound
+	}
+
+	delete(trm.externalKeys, key)
+
+	return nil
+}
+
+func (trm *thingRepositoryMock) RetrieveExternalKeysByThing(_ context.Context, thingID string) ([]string, error) {
+	trm.mu.Lock()
+	defer trm.mu.Unlock()
+
+	var keys []string
+
+	for key, keyThingID := range trm.externalKeys {
+		if keyThingID == thingID {
+			keys = append(keys, key)
+		}
+	}
+
+	return keys, nil
+}
+
 func (trm *thingRepositoryMock) BackupAll(_ context.Context) ([]things.Thing, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
