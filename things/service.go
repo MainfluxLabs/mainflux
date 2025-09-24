@@ -782,6 +782,10 @@ func (ts *thingsService) RemoveExternalThingKey(ctx context.Context, token, key 
 		return err
 	}
 
+	if err := ts.thingCache.RemoveKey(ctx, KeyTypeExternal, key); err != nil {
+		return err
+	}
+
 	return nil
 }
 
