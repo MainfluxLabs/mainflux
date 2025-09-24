@@ -350,10 +350,6 @@ func (req restoreReq) validate() error {
 }
 
 type identifyReq struct {
-	// TODO: previously this structure had a "Token" field which was encoded
-	// in a JSON "token" property -- change the docs and OpenAPI docs to
-	// reflect this change, and check if any other services or TESTS
-	// made calls to this endpoint and change the name of the JSON property
 	apiutil.ThingKey
 }
 
