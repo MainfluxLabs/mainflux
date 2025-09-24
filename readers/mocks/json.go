@@ -19,7 +19,6 @@ type jsonRepositoryMock struct {
 }
 
 func NewJSONRepository(profileID string, messages []readers.Message) readers.JSONMessageRepository {
-
 	repo := map[string][]readers.Message{
 		profileID: messages,
 	}
