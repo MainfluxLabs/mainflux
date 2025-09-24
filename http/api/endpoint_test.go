@@ -109,7 +109,7 @@ func TestPublish(t *testing.T) {
 			msg:         msg,
 			contentType: ctSenmlJSON,
 			key:         "",
-			status:      http.StatusBadRequest,
+			status:      http.StatusUnauthorized,
 		},
 		"publish message with basic auth": {
 			msg:         msg,

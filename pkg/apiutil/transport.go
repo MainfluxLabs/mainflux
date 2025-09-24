@@ -123,7 +123,9 @@ func EncodeError(err error, w http.ResponseWriter) {
 	switch {
 	case errors.Contains(err, errors.ErrAuthentication),
 		errors.Contains(err, ErrBearerToken),
-		errors.Contains(err, ErrBearerKey):
+		errors.Contains(err, ErrBearerKey),
+		errors.Contains(err, ErrInvalidThingKeyType),
+		errors.Contains(err, ErrMissingExternalThingKey):
 		w.WriteHeader(http.StatusUnauthorized)
 	case errors.Contains(err, ErrMissingGroupID),
 		errors.Contains(err, ErrMissingOrgID),
@@ -167,9 +169,7 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrMissingConditionThreshold),
 		errors.Contains(err, ErrInvalidActionType),
 		errors.Contains(err, ErrMissingActionID),
-		errors.Contains(err, ErrInvalidOperator),
-		errors.Contains(err, ErrInvalidThingKeyType),
-		errors.Contains(err, ErrMissingExternalThingKey):
+		errors.Contains(err, ErrInvalidOperator):
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, errors.ErrAuthorization),
 		errors.Contains(err, ErrInviteExpired),

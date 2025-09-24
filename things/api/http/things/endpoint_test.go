@@ -653,7 +653,7 @@ func TestViewMetadataByKey(t *testing.T) {
 		{
 			desc:   "view thing metadata with empty key",
 			auth:   emptyValue,
-			status: http.StatusBadRequest,
+			status: http.StatusUnauthorized,
 			res:    viewMetadataRes{},
 		},
 	}
@@ -2814,7 +2814,7 @@ func TestIdentify(t *testing.T) {
 		"identify with empty JSON request": {
 			contentType: contentTypeJSON,
 			req:         "{}",
-			status:      http.StatusBadRequest,
+			status:      http.StatusUnauthorized,
 		},
 		"identify with invalid JSON request": {
 			contentType: contentTypeJSON,

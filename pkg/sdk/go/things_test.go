@@ -340,7 +340,7 @@ func TestMetadataByKey(t *testing.T) {
 		{
 			desc:     "get thing metadata with empty key",
 			key:      "",
-			err:      createError(sdk.ErrFailedFetch, http.StatusBadRequest),
+			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: sdk.Metadata{},
 		},
 	}
