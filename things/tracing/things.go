@@ -194,12 +194,12 @@ func (tcm thingCacheMiddleware) ID(ctx context.Context, keyType, thingKey string
 	return tcm.cache.ID(ctx, keyType, thingKey)
 }
 
-func (tcm thingCacheMiddleware) Remove(ctx context.Context, thingID string) error {
+func (tcm thingCacheMiddleware) RemoveThing(ctx context.Context, thingID string) error {
 	span := createSpan(ctx, tcm.tracer, removeThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return tcm.cache.Remove(ctx, thingID)
+	return tcm.cache.RemoveThing(ctx, thingID)
 }
 
 func (tcm thingCacheMiddleware) SaveGroup(ctx context.Context, thingID string, groupID string) error {

@@ -118,7 +118,7 @@ func TestThingRemove(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := thingCache.Remove(context.Background(), tc.ID)
+		err := thingCache.RemoveThing(context.Background(), tc.ID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 

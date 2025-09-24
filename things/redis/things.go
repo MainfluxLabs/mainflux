@@ -61,7 +61,7 @@ func (tc *thingCache) ID(ctx context.Context, keyType, thingKey string) (string,
 	return thingID, nil
 }
 
-func (tc *thingCache) Remove(ctx context.Context, thingID string) error {
+func (tc *thingCache) RemoveThing(ctx context.Context, thingID string) error {
 	// Retrieve all thing keys associated with the given thing ID
 	keysSetKey := keysByThingIDKey(thingID)
 	thingKeys, err := tc.client.SMembers(ctx, keysSetKey).Result()

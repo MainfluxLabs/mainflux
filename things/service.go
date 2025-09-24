@@ -515,7 +515,7 @@ func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...
 			return err
 		}
 
-		if err := ts.thingCache.Remove(ctx, id); err != nil {
+		if err := ts.thingCache.RemoveThing(ctx, id); err != nil {
 			return err
 		}
 

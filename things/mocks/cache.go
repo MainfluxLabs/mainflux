@@ -64,7 +64,7 @@ func (tcm *thingCacheMock) ID(_ context.Context, keyType, key string) (string, e
 	return "", dbutil.ErrNotFound
 }
 
-func (tcm *thingCacheMock) Remove(_ context.Context, id string) error {
+func (tcm *thingCacheMock) RemoveThing(_ context.Context, id string) error {
 	tcm.mu.Lock()
 	defer tcm.mu.Unlock()
 
