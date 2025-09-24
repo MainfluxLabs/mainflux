@@ -48,4 +48,12 @@ CREATE TABLE things (
     CONSTRAINT fk_things_profile_id FOREIGN KEY (profile_id) REFERENCES profiles(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT things_group_id_fkey FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS key_external (
+    thing_id UUID NOT NULL,
+    key      VARCHAR UNIQUE NOT NULL,
+
+    PRIMARY KEY (thing_id, key),
+    FOREIGN KEY (thing_id) REFERENCES things (id) ON DELETE CASCADE ON UPDATE CASCADE
+);
 ```
