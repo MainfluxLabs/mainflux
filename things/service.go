@@ -752,7 +752,7 @@ func (ts *thingsService) CreateExternalThingKey(ctx context.Context, token, key,
 	}
 
 	if err := ts.CanUserAccessThing(ctx, accessReq); err != nil {
-		return err
+		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
 	if err := ts.things.SaveExternalKey(ctx, key, thingID); err != nil {
@@ -775,7 +775,7 @@ func (ts *thingsService) RemoveExternalThingKey(ctx context.Context, token, key 
 	}
 
 	if err := ts.CanUserAccessThing(ctx, accessReq); err != nil {
-		return err
+		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
 	if err := ts.things.RemoveExternalKey(ctx, key); err != nil {
