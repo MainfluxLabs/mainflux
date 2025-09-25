@@ -191,7 +191,6 @@ func connectToMongoDB(host, port, name string, logger logger.Logger) *mongo.Data
 func newService(db *mongo.Database, logger logger.Logger) readers.Service {
 	jsonRepo := mongodb.NewJSONRepository(db)
 	senmlRepo := mongodb.NewSenMLRepository(db)
-
 	svc := readers.New(jsonRepo, senmlRepo)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(

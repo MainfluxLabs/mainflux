@@ -45,7 +45,6 @@ func (sr *senmlRepository) Backup(ctx context.Context, rpm readers.SenMLPageMeta
 
 func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenMLPageMetadata) error {
 	coll := sr.db.Collection(senmlCollection)
-
 	filter := sr.fmtCondition(rpm)
 
 	if len(filter) == 0 {

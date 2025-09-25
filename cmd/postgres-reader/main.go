@@ -204,10 +204,8 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 
 func newService(db *sqlx.DB, logger logger.Logger) readers.Service {
 	database := dbutil.NewDatabase(db)
-
 	jsonRepo := postgres.NewJSONRepository(database)
 	senmlRepo := postgres.NewSenMLRepository(database)
-
 	svc := readers.New(jsonRepo, senmlRepo)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
