@@ -358,6 +358,8 @@ func (tr thingRepository) SaveExternalKey(ctx context.Context, key, thingID stri
 				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			case pgerrcode.UniqueViolation:
 				return errors.Wrap(dbutil.ErrConflict, err)
+			case pgerrcode.ForeignKeyViolation:
+				return errors.Wrap(dbutil.ErrNotFound, err)
 			}
 		}
 
