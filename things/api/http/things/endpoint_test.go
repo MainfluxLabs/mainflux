@@ -1902,6 +1902,261 @@ func TestListThingsByOrg(t *testing.T) {
 	}
 }
 
+func TestCreateExternalThingKey(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	createdGroups, err := svc.CreateGroups(context.Background(), token, orgID, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	createdGroup := createdGroups[0]
+
+	createdProfiles, err := svc.CreateProfiles(context.Background(), token, createdGroup.ID, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	createdProfile := createdProfiles[0]
+
+	createdThings, err := svc.CreateThings(context.Background(), token, createdProfile.ID, thing)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	createdThing := createdThings[0]
+
+	cases := []struct {
+		desc        string
+		data        string
+		thingID     string
+		contentType string
+		auth        string
+		status      int
+	}{
+		{
+			"create external key",
+			`{"key": "abc123"}`,
+			createdThing.ID,
+			contentTypeJSON,
+			token,
+			http.StatusCreated,
+		},
+		{
+			"create external key with invalid auth token",
+			`{"key": "abc123"}`,
+			createdThing.ID,
+			contentTypeJSON,
+			wrongValue,
+			http.StatusUnauthorized,
+		},
+		{
+			"create external key with empty auth token",
+			`{"key": "abc123"}`,
+			createdThing.ID,
+			contentTypeJSON,
+			emptyValue,
+			http.StatusUnauthorized,
+		},
+		{
+			"create external key as unauthorized user",
+			`{"key": "abcd123"}`,
+			createdThing.ID,
+			contentTypeJSON,
+			otherToken,
+			http.StatusForbidden,
+		},
+		{
+			"create external key to nonexistent thing",
+			`{"key": "abc123"}`,
+			"nonexistent",
+			contentTypeJSON,
+			token,
+			http.StatusForbidden,
+		},
+		{
+			"create external key with empty request body",
+			emptyValue,
+			createdThing.ID,
+			contentTypeJSON,
+			token,
+			http.StatusBadRequest,
+		},
+		{
+			"create external key with empty JSON object in request body",
+			emptyJson,
+			createdThing.ID,
+			contentTypeJSON,
+			token,
+			http.StatusUnauthorized,
+		},
+		{
+			"create external key without content type",
+			`{"key": "abc123"}`,
+			createdThing.ID,
+			emptyValue,
+			token,
+			http.StatusUnsupportedMediaType,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPost,
+			url:         fmt.Sprintf("%s/things/%s/external-keys", ts.URL, tc.thingID),
+			contentType: tc.contentType,
+			token:       tc.auth,
+			body:        strings.NewReader(tc.data),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestListExternalKeysByThing(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	createdGroups, err := svc.CreateGroups(context.Background(), token, orgID, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	createdGroup := createdGroups[0]
+
+	createdProfiles, err := svc.CreateProfiles(context.Background(), token, createdGroup.ID, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	createdProfile := createdProfiles[0]
+
+	createdThings, err := svc.CreateThings(context.Background(), token, createdProfile.ID, thing)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	createdThing := createdThings[0]
+
+	externalKeys := []string{"abc123", "def456", "ghi789"}
+	for _, key := range externalKeys {
+		err := svc.CreateExternalThingKey(context.Background(), token, key, createdThing.ID)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	}
+
+	cases := []struct {
+		desc         string
+		thingID      string
+		auth         string
+		status       int
+		responseKeys []string
+	}{
+		{
+			desc:         "list external keys for existing thing",
+			thingID:      createdThing.ID,
+			auth:         token,
+			status:       http.StatusOK,
+			responseKeys: externalKeys,
+		},
+		{
+			desc:         "list external keys for non-existent thing",
+			thingID:      "nonexistent",
+			auth:         token,
+			status:       http.StatusForbidden,
+			responseKeys: nil,
+		},
+		{
+			desc:         "list external keys with invalid token",
+			thingID:      createdThing.ID,
+			auth:         wrongValue,
+			status:       http.StatusUnauthorized,
+			responseKeys: nil,
+		},
+		{
+			desc:         "list external keys with empty token",
+			thingID:      createdThing.ID,
+			auth:         emptyValue,
+			status:       http.StatusUnauthorized,
+			responseKeys: nil,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodGet,
+			url:    fmt.Sprintf("%s/things/%s/external-keys", ts.URL, tc.thingID),
+			token:  tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
+		var body listExternalKeysByThingRes
+		err = json.NewDecoder(res.Body).Decode(&body)
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.ElementsMatch(t, tc.responseKeys, body.Keys, fmt.Sprintf("%s: expected keys %v got %v", tc.desc, tc.responseKeys, body.Keys))
+	}
+}
+
+func TestRemoveExternalKey(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+
+	createdGroups, err := svc.CreateGroups(context.Background(), token, orgID, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	createdGroup := createdGroups[0]
+
+	createdProfiles, err := svc.CreateProfiles(context.Background(), token, createdGroup.ID, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	createdProfile := createdProfiles[0]
+
+	createdThings, err := svc.CreateThings(context.Background(), token, createdProfile.ID, thing)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	createdThing := createdThings[0]
+
+	externalKeys := []string{"abc123", "def456", "ghi789"}
+	for _, externalKey := range externalKeys {
+		err := svc.CreateExternalThingKey(context.Background(), token, externalKey, createdThing.ID)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	}
+
+	cases := []struct {
+		desc   string
+		key    string
+		auth   string
+		status int
+	}{
+		{
+			"remove external key",
+			externalKeys[0],
+			token,
+			http.StatusNoContent,
+		},
+		{
+			"remove external key with invalid key",
+			"invalid",
+			token,
+			http.StatusNotFound,
+		},
+		{
+			"remove external key as unauthorized user",
+			externalKeys[1],
+			"invalid",
+			http.StatusUnauthorized,
+		},
+		{
+			"remove external key with empty auth token",
+			externalKeys[1],
+			emptyValue,
+			http.StatusUnauthorized,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodDelete,
+			url:    fmt.Sprintf("%s/external-keys/%s", ts.URL, tc.key),
+			token:  tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
 func TestBackupThingsByGroup(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
@@ -2853,6 +3108,10 @@ type thingRes struct {
 	Name      string                 `json:"name,omitempty"`
 	Key       string                 `json:"key"`
 	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+}
+
+type listExternalKeysByThingRes struct {
+	Keys []string `json:"keys"`
 }
 
 type thingsPageRes struct {
