@@ -22,19 +22,17 @@ type Service interface {
 var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
-	publisher messaging.Publisher
-	things    protomfx.ThingsServiceClient
-	rules     protomfx.RulesServiceClient
-	logger    logger.Logger
+	things protomfx.ThingsServiceClient
+	rules  protomfx.RulesServiceClient
+	logger logger.Logger
 }
 
 // New instantiates the HTTP adapter implementation.
-func New(publisher messaging.Publisher, things protomfx.ThingsServiceClient, rules protomfx.RulesServiceClient, logger logger.Logger) Service {
+func New(things protomfx.ThingsServiceClient, rules protomfx.RulesServiceClient, logger logger.Logger) Service {
 	return &adapterService{
-		publisher: publisher,
-		things:    things,
-		rules:     rules,
-		logger:    logger,
+		things: things,
+		rules:  rules,
+		logger: logger,
 	}
 }
 
