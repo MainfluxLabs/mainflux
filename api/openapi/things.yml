@@ -400,6 +400,7 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
   /orgs/{orgId}/things:
+  
     get:
       summary: Retrieves things by org
       description: |
@@ -416,6 +417,83 @@ paths:
           $ref: "#/components/responses/ThingsPageRes"
         '401':
           description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /things/{thingId}/external-keys:
+    post:
+      summary: Create a new external Thing key.
+      description: Creates a new external key associated with a thing identified by thingId
+      tags:
+        - things
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      requestBody:
+        description: The external key to create.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateExternalKeyReq"
+      responses:
+        '201':
+          description: External key created.
+        '400':
+          description: Bad request.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Thing does not exist.
+        '409':
+          description: External key already exists.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    get:
+      summary: Lists external keys associated with a Thing.
+      description: Retrieves all external keys associated with the thing identified by thingId.
+      tags:
+        - things
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      responses:
+        '200':
+          description: List of external keys.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListExternalKeysByThingRes"
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Thing does not exist.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /external-keys/{key}:
+    delete:
+      summary: Remove an external thing key.
+      description: Remove the specified external thing key from the thing it's associated with.
+      tags:
+        - things
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+          description: External key to removed.
+      responses:
+        '204':
+          description: External key removed.
+        '400':
+          description: Bad request.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Key not found.
         '500':
           $ref: "#/components/responses/ServiceError"
 
@@ -1757,6 +1835,23 @@ components:
         - groups
         - things
         - profiles
+    CreateExternalKeyReq:
+      type: object
+      properties:
+        key:
+          type: string
+          description: External key to create.
+      required:
+        - key
+
+    ListExternalKeysByThingRes:
+      type: object
+      properties:
+        keys:
+          type: array
+          items:
+            type: string
+          description: List of external keys.
 
   parameters:
     ProfileId:
