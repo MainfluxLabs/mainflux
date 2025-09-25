@@ -81,7 +81,6 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 
 func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	col := jr.db.Collection(jsonCollection)
-
 	filter := jr.fmtCondition(rpm)
 
 	sortMap := bson.D{{Key: jsonOrder, Value: -1}}

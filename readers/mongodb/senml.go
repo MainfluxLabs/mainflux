@@ -84,7 +84,6 @@ func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Mess
 
 func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	col := sr.db.Collection(senmlCollection)
-
 	filter := sr.fmtCondition(rpm)
 
 	sortMap := bson.D{{Key: senmlOrder, Value: -1}}
