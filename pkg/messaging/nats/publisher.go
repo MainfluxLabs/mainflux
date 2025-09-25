@@ -4,8 +4,6 @@
 package nats
 
 import (
-	"fmt"
-
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/gogo/protobuf/proto"
@@ -24,8 +22,8 @@ const (
 	SubjectSmtp = "smtp.*"
 	// SubjectSmpp represents subject used to subscribe to SMPP notifications.
 	SubjectSmpp = "smpp.*"
-	// SubjectAlarm represents subject used to subscribe to alarms.
-	SubjectAlarm = "alarms"
+	// SubjectAlarms represents subject used to subscribe to alarms.
+	SubjectAlarms = "alarms"
 )
 
 var _ messaging.Publisher = (*publisher)(nil)
@@ -61,14 +59,4 @@ func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 func (pub *publisher) Close() error {
 	pub.conn.Close()
 	return nil
-}
-
-func GetSubjects(subtopic string) []string {
-	subjects := []string{SubjectMessages}
-
-	if subtopic != "" {
-		subjects = append(subjects, fmt.Sprintf("%s.%s", SubjectMessages, subtopic))
-	}
-
-	return subjects
 }

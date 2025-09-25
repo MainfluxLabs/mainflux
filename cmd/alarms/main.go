@@ -134,7 +134,7 @@ func main() {
 
 	svc := newService(things, dbTracer, db, logger)
 
-	if err = consumers.Start(svcName, pubSub, svc, nats.SubjectAlarm); err != nil {
+	if err = consumers.Start(svcName, pubSub, svc, nats.SubjectAlarms); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Alarm: %s", err))
 	}
 
