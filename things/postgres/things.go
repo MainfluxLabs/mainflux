@@ -379,7 +379,8 @@ func (tr thingRepository) RemoveExternalKey(ctx context.Context, key string) err
 		"key": key,
 	}
 
-	if _, err := tr.db.NamedExecContext(ctx, query, params); err != nil {
+	res, err := tr.db.NamedExecContext(ctx, query, params)
+	if err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
 			switch pgErr.Code {
@@ -388,6 +389,15 @@ func (tr thingRepository) RemoveExternalKey(ctx context.Context, key string) err
 			}
 		}
 
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	cnt, err := res.RowsAffected()
+	if err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	if cnt != 1 {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
