@@ -408,7 +408,7 @@ func (tr thingRepository) RetrieveExternalKeysByThing(ctx context.Context, thing
 	query := `
 		SELECT key
 		FROM key_external	
-		WHERE thingID = :thingID
+		WHERE thing_id = :thingID
 	`
 
 	params := map[string]any{
