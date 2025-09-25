@@ -797,7 +797,7 @@ func (ts *thingsService) ListExternalKeysByThing(ctx context.Context, token, thi
 	}
 
 	if err := ts.CanUserAccessThing(ctx, accessReq); err != nil {
-		return nil, err
+		return nil, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
 	keys, err := ts.things.RetrieveExternalKeysByThing(ctx, thingID)
