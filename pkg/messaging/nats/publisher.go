@@ -15,15 +15,6 @@ const (
 	// Value -1 represents an unlimited number of reconnect retries, i.e. the client
 	// will never give up on retrying to re-establish connection to NATS server.
 	maxReconnects = -1
-
-	// SubjectMessages represents subject used to subscribe to all messages.
-	SubjectMessages = "messages"
-	// SubjectSmtp represents subject used to subscribe to SMTP notifications.
-	SubjectSmtp = "smtp.*"
-	// SubjectSmpp represents subject used to subscribe to SMPP notifications.
-	SubjectSmpp = "smpp.*"
-	// SubjectAlarms represents subject used to subscribe to alarms.
-	SubjectAlarms = "alarms"
 )
 
 var _ messaging.Publisher = (*publisher)(nil)
