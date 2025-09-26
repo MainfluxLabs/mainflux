@@ -10,12 +10,10 @@ import (
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux"
-	auth "github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/readers"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -44,14 +42,7 @@ const (
 	defFormat              = "messages"
 )
 
-var (
-	thingc protomfx.ThingsServiceClient
-	authc  protomfx.AuthServiceClient
-)
-
-func MakeHandler(svc readers.Service, tc protomfx.ThingsServiceClient, ac protomfx.AuthServiceClient, svcName string, logger logger.Logger) http.Handler {
-	thingc = tc
-	authc = ac
+func MakeHandler(svc readers.Service, svcName string, logger logger.Logger) http.Handler {
 
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(encodeError),
@@ -339,28 +330,6 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	}
 
 	apiutil.WriteErrorResponse(err, w)
-}
-
-func getPubConfByKey(ctx context.Context, key string) (*protomfx.PubConfByKeyRes, error) {
-	pc, err := thingc.GetPubConfByKey(ctx, &protomfx.PubConfByKeyReq{Key: key})
-	if err != nil {
-		return nil, err
-	}
-
-	return pc, nil
-}
-
-func isAdmin(ctx context.Context, token string) error {
-	req := &protomfx.AuthorizeReq{
-		Token:   token,
-		Subject: auth.RootSub,
-	}
-
-	if _, err := authc.Authorize(ctx, req); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
