@@ -2,13 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 package readers
 
-import "context"
+import (
+	"context"
+
+	"github.com/MainfluxLabs/mainflux/auth"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+)
 
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
 	// ListJSONMessages retrieves the json messages with given filters.
-	ListJSONMessages(ctx context.Context, rpm JSONPageMetadata) (JSONMessagesPage, error)
+	ListJSONMessages(ctx context.Context, rpm JSONPageMetadata, token, key string) (JSONMessagesPage, error)
 
 	// ListSenMLMessages retrieves the senml messages with given filters.
 	ListSenMLMessages(ctx context.Context, rpm SenMLPageMetadata) (SenMLMessagesPage, error)
@@ -33,18 +38,35 @@ type Service interface {
 }
 
 type readersService struct {
-	json  JSONMessageRepository
-	senml SenMLMessageRepository
+	authc  protomfx.AuthServiceClient
+	thingc protomfx.ThingsServiceClient
+	json   JSONMessageRepository
+	senml  SenMLMessageRepository
 }
 
-func New(json JSONMessageRepository, senml SenMLMessageRepository) Service {
+func New(auth protomfx.AuthServiceClient, things protomfx.ThingsServiceClient, json JSONMessageRepository, senml SenMLMessageRepository) Service {
 	return &readersService{
-		json:  json,
-		senml: senml,
+		authc:  auth,
+		thingc: things,
+		json:   json,
+		senml:  senml,
 	}
 }
 
-func (rs *readersService) ListJSONMessages(ctx context.Context, rpm JSONPageMetadata) (JSONMessagesPage, error) {
+func (rs *readersService) ListJSONMessages(ctx context.Context, rpm JSONPageMetadata, token, key string) (JSONMessagesPage, error) {
+	switch {
+	case key != "":
+		pc, err := rs.getPubConfByKey(ctx, key)
+		if err != nil {
+			return JSONMessagesPage{}, err
+		}
+		rpm.Publisher = pc.PublisherID
+	default:
+		if err := rs.isAdmin(ctx, token); err != nil {
+			return JSONMessagesPage{}, err
+		}
+	}
+
 	return rs.json.ListMessages(ctx, rpm)
 }
 
@@ -74,4 +96,26 @@ func (rs *readersService) DeleteJSONMessages(ctx context.Context, rpm JSONPageMe
 
 func (rs *readersService) DeleteSenMLMessages(ctx context.Context, rpm SenMLPageMetadata) error {
 	return rs.senml.DeleteMessages(ctx, rpm)
+}
+
+func (rs *readersService) isAdmin(ctx context.Context, token string) error {
+	req := &protomfx.AuthorizeReq{
+		Token:   token,
+		Subject: auth.RootSub,
+	}
+
+	if _, err := rs.authc.Authorize(ctx, req); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (rs *readersService) getPubConfByKey(ctx context.Context, key string) (*protomfx.PubConfByKeyRes, error) {
+	pc, err := rs.thingc.GetPubConfByKey(ctx, &protomfx.PubConfByKeyReq{Key: key})
+	if err != nil {
+		return nil, err
+	}
+
+	return pc, nil
 }
