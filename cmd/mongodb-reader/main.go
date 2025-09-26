@@ -18,6 +18,7 @@ import (
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -106,10 +107,10 @@ func main() {
 
 	db := connectToMongoDB(cfg.dbHost, cfg.dbPort, cfg.dbName, logger)
 
-	svc := newService(db, logger)
+	svc := newService(auth, tc, db, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, api.MakeHandler(svc, tc, auth, svcName, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, api.MakeHandler(svc, svcName, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -188,10 +189,10 @@ func connectToMongoDB(host, port, name string, logger logger.Logger) *mongo.Data
 	return client.Database(name)
 }
 
-func newService(db *mongo.Database, logger logger.Logger) readers.Service {
+func newService(ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, db *mongo.Database, logger logger.Logger) readers.Service {
 	jsonRepo := mongodb.NewJSONRepository(db)
 	senmlRepo := mongodb.NewSenMLRepository(db)
-	svc := readers.New(jsonRepo, senmlRepo)
+	svc := readers.New(ac, tc, jsonRepo, senmlRepo)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

@@ -19,6 +19,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -114,10 +115,10 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	repo := newService(db, logger)
+	repo := newService(auth, tc, db, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, api.MakeHandler(repo, tc, auth, svcName, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, api.MakeHandler(repo, svcName, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -202,11 +203,11 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, logger logger.Logger) readers.Service {
+func newService(ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, db *sqlx.DB, logger logger.Logger) readers.Service {
 	database := dbutil.NewDatabase(db)
 	jsonRepo := postgres.NewJSONRepository(database)
 	senmlRepo := postgres.NewSenMLRepository(database)
-	svc := readers.New(jsonRepo, senmlRepo)
+	svc := readers.New(ac, tc, jsonRepo, senmlRepo)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
