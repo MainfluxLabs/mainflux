@@ -174,7 +174,6 @@ func (rs *readersService) DeleteSenMLMessages(ctx context.Context, token, key st
 	}
 
 	return rs.senml.DeleteMessages(ctx, rpm)
-
 }
 
 func (rs *readersService) isAdmin(ctx context.Context, token string) error {
