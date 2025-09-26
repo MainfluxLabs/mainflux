@@ -5,36 +5,42 @@ package readers
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+)
+
+const (
+	jsonFormat  = "json"
+	senmlFormat = "senml"
+	csvFormat   = "csv"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
 	// ListJSONMessages retrieves the json messages with given filters.
-	ListJSONMessages(ctx context.Context, rpm JSONPageMetadata, token, key string) (JSONMessagesPage, error)
+	ListJSONMessages(ctx context.Context, token, key string, rpm JSONPageMetadata) (JSONMessagesPage, error)
 
 	// ListSenMLMessages retrieves the senml messages with given filters.
-	ListSenMLMessages(ctx context.Context, rpm SenMLPageMetadata) (SenMLMessagesPage, error)
+	ListSenMLMessages(ctx context.Context, token, key string, rpm SenMLPageMetadata) (SenMLMessagesPage, error)
 
 	// BackupJSONMessages backups the json messages with given filters.
-	BackupJSONMessages(ctx context.Context, rpm JSONPageMetadata) (JSONMessagesPage, error)
+	BackupJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) (JSONMessagesPage, error)
 
 	// BackupSenMLMessages backups the senml messages with given filters.
-	BackupSenMLMessages(ctx context.Context, rpm SenMLPageMetadata) (SenMLMessagesPage, error)
+	BackupSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) (SenMLMessagesPage, error)
 
 	// RestoreJSONMessages restores the json messages.
-	RestoreJSONMessages(ctx context.Context, messages ...Message) error
+	RestoreJSONMessages(ctx context.Context, token string, messages ...Message) error
 
 	// RestoreSenMLMessages restores the senml messages.
-	RestoreSenMLMessages(ctx context.Context, messages ...Message) error
+	RestoreSenMLMessages(ctx context.Context, token string, messages ...Message) error
 
 	// DeleteJSONMessages deletes the json messages within a time range.
-	DeleteJSONMessages(ctx context.Context, rpm JSONPageMetadata) error
+	DeleteJSONMessages(ctx context.Context, token, key string, rpm JSONPageMetadata) error
 
 	// DeleteSenMLMessages deletes the senml messages within a time range.
-	DeleteSenMLMessages(ctx context.Context, rpm SenMLPageMetadata) error
+	DeleteSenMLMessages(ctx context.Context, token, key string, rpm SenMLPageMetadata) error
 }
 
 type readersService struct {
@@ -53,7 +59,7 @@ func New(auth protomfx.AuthServiceClient, things protomfx.ThingsServiceClient, j
 	}
 }
 
-func (rs *readersService) ListJSONMessages(ctx context.Context, rpm JSONPageMetadata, token, key string) (JSONMessagesPage, error) {
+func (rs *readersService) ListJSONMessages(ctx context.Context, token, key string, rpm JSONPageMetadata) (JSONMessagesPage, error) {
 	switch {
 	case key != "":
 		pc, err := rs.getPubConfByKey(ctx, key)
@@ -70,38 +76,109 @@ func (rs *readersService) ListJSONMessages(ctx context.Context, rpm JSONPageMeta
 	return rs.json.ListMessages(ctx, rpm)
 }
 
-func (rs *readersService) ListSenMLMessages(ctx context.Context, rpm SenMLPageMetadata) (SenMLMessagesPage, error) {
+func (rs *readersService) ListSenMLMessages(ctx context.Context, token, key string, rpm SenMLPageMetadata) (SenMLMessagesPage, error) {
+	switch {
+	case key != "":
+		pc, err := rs.getPubConfByKey(ctx, key)
+		if err != nil {
+			return SenMLMessagesPage{}, err
+		}
+		rpm.Publisher = pc.PublisherID
+	default:
+		if err := rs.isAdmin(ctx, token); err != nil {
+			return SenMLMessagesPage{}, err
+		}
+	}
+
 	return rs.senml.ListMessages(ctx, rpm)
 }
 
-func (rs *readersService) BackupJSONMessages(ctx context.Context, rpm JSONPageMetadata) (JSONMessagesPage, error) {
-	return rs.json.Backup(ctx, rpm)
+func (rs *readersService) BackupJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) (JSONMessagesPage, error) {
+	if err := rs.isAdmin(ctx, token); err != nil {
+		return JSONMessagesPage{}, err
+	}
+
+	page, err := rs.json.Backup(ctx, rpm)
+	if err != nil {
+		return JSONMessagesPage{}, err
+	}
+
+	return page, nil
 }
 
-func (rs *readersService) BackupSenMLMessages(ctx context.Context, rpm SenMLPageMetadata) (SenMLMessagesPage, error) {
-	return rs.senml.Backup(ctx, rpm)
+func (rs *readersService) BackupSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) (SenMLMessagesPage, error) {
+	if err := rs.isAdmin(ctx, token); err != nil {
+		return SenMLMessagesPage{}, err
+	}
+
+	page, err := rs.senml.Backup(ctx, rpm)
+	if err != nil {
+		return SenMLMessagesPage{}, err
+	}
+
+	return page, nil
 }
 
-func (rs *readersService) RestoreJSONMessages(ctx context.Context, messages ...Message) error {
+func (rs *readersService) RestoreJSONMessages(ctx context.Context, token string, messages ...Message) error {
+	if err := rs.isAdmin(ctx, token); err != nil {
+		return err
+	}
+
 	return rs.json.Restore(ctx, messages...)
 }
 
-func (rs *readersService) RestoreSenMLMessages(ctx context.Context, messages ...Message) error {
+func (rs *readersService) RestoreSenMLMessages(ctx context.Context, token string, messages ...Message) error {
+	if err := rs.isAdmin(ctx, token); err != nil {
+		return err
+	}
+
 	return rs.senml.Restore(ctx, messages...)
 }
 
-func (rs *readersService) DeleteJSONMessages(ctx context.Context, rpm JSONPageMetadata) error {
+func (rs *readersService) DeleteJSONMessages(ctx context.Context, token, key string, rpm JSONPageMetadata) error {
+	switch {
+	case key != "":
+		pc, err := rs.getPubConfByKey(ctx, key)
+		if err != nil {
+			return errors.Wrap(errors.ErrAuthentication, err)
+		}
+		rpm.Publisher = pc.PublisherID
+
+	case token != "":
+		if err := rs.isAdmin(ctx, token); err != nil {
+			return err
+		}
+	default:
+		return errors.ErrAuthentication
+	}
+
 	return rs.json.DeleteMessages(ctx, rpm)
 }
 
-func (rs *readersService) DeleteSenMLMessages(ctx context.Context, rpm SenMLPageMetadata) error {
+func (rs *readersService) DeleteSenMLMessages(ctx context.Context, token, key string, rpm SenMLPageMetadata) error {
+	switch {
+	case key != "":
+		pc, err := rs.getPubConfByKey(ctx, key)
+		if err != nil {
+			return errors.Wrap(errors.ErrAuthentication, err)
+		}
+		rpm.Publisher = pc.PublisherID
+
+	case token != "":
+		if err := rs.isAdmin(ctx, token); err != nil {
+			return err
+		}
+	default:
+		return errors.ErrAuthentication
+	}
+
 	return rs.senml.DeleteMessages(ctx, rpm)
+
 }
 
 func (rs *readersService) isAdmin(ctx context.Context, token string) error {
 	req := &protomfx.AuthorizeReq{
-		Token:   token,
-		Subject: auth.RootSub,
+		Token: token,
 	}
 
 	if _, err := rs.authc.Authorize(ctx, req); err != nil {
