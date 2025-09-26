@@ -43,7 +43,6 @@ const (
 )
 
 func MakeHandler(svc readers.Service, svcName string, logger logger.Logger) http.Handler {
-
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(encodeError),
 	}
