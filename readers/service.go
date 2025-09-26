@@ -13,6 +13,7 @@ const (
 	jsonFormat  = "json"
 	senmlFormat = "senml"
 	csvFormat   = "csv"
+	rootSubject = "root"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -178,7 +179,8 @@ func (rs *readersService) DeleteSenMLMessages(ctx context.Context, token, key st
 
 func (rs *readersService) isAdmin(ctx context.Context, token string) error {
 	req := &protomfx.AuthorizeReq{
-		Token: token,
+		Token:   token,
+		Subject: rootSubject,
 	}
 
 	if _, err := rs.authc.Authorize(ctx, req); err != nil {
