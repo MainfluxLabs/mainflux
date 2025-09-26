@@ -62,9 +62,9 @@ func newServer(jsonMessages []mfjson.Message, senmlMessaages []senml.Message, tc
 
 	jsonRepo := rmocks.NewJSONRepository("", fromJSON(jsonMessages))
 	senmlRepo := rmocks.NewSenMLRepository("", fromSenml(senmlMessaages))
-	svc := readers.New(jsonRepo, senmlRepo)
+	svc := readers.New(ac, tc, jsonRepo, senmlRepo)
 
-	mux := api.MakeHandler(svc, tc, ac, svcName, logger)
+	mux := api.MakeHandler(svc, svcName, logger)
 
 	id, _ := idProvider.ID()
 	user.ID = id
