@@ -176,7 +176,7 @@ func (tr thingRepository) RetrieveByKey(ctx context.Context, keyType string, key
 	case things.KeyTypeExternal:
 		query = `SELECT thing_id FROM key_external WHERE key = $1;`
 	default:
-		return "", errors.New("invalid thing key type")
+		return "", apiutil.ErrInvalidThingKeyType
 	}
 
 	var id string
