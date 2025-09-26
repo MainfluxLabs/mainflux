@@ -7,10 +7,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
+	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
@@ -70,17 +70,19 @@ type rulesService struct {
 	things     protomfx.ThingsServiceClient
 	publisher  messaging.Publisher
 	idProvider uuid.IDProvider
+	logger     logger.Logger
 }
 
 var _ Service = (*rulesService)(nil)
 
 // New instantiates the rules service implementation.
-func New(rules RuleRepository, things protomfx.ThingsServiceClient, publisher messaging.Publisher, idp uuid.IDProvider) Service {
+func New(rules RuleRepository, things protomfx.ThingsServiceClient, publisher messaging.Publisher, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &rulesService{
 		rules:      rules,
 		things:     things,
 		publisher:  publisher,
 		idProvider: idp,
+		logger:     logger,
 	}
 }
 
@@ -187,7 +189,7 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 	// publish a message to default subjects independently of rule check
 	go func(msg protomfx.Message) {
 		if err := rs.publishToDefaultSubjects(msg); err != nil {
-			log.Printf(err.Error())
+			rs.logger.Error(err.Error())
 		}
 	}(message)
 
