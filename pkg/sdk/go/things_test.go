@@ -861,34 +861,64 @@ func TestIdentifyThing(t *testing.T) {
 	thing, err := mainfluxSDK.GetThing(th.ID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	externalKey := "abc123"
+
+	err = mainfluxSDK.CreateExternalThingKey(externalKey, thing.ID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	cases := []struct {
 		desc     string
 		thingKey string
+		keyType  string
 		err      error
 		response string
 	}{
 		{
-			desc:     "identify thing with valid key",
+			desc:     "identify thing with valid inline key",
 			thingKey: thing.Key,
+			keyType:  apiutil.ThingKeyTypeInline,
 			err:      nil,
 			response: id,
 		},
 		{
-			desc:     "identify thing with invalid key",
+			desc:     "identify thing with invalid inline key",
 			thingKey: badKey,
+			keyType:  apiutil.ThingKeyTypeInline,
 			err:      createError(sdk.ErrFailedFetch, http.StatusNotFound),
 			response: emptyValue,
 		},
 		{
-			desc:     "identify thing with empty key",
+			desc:     "identify thing with empty inline key",
 			thingKey: emptyValue,
+			keyType:  apiutil.ThingKeyTypeInline,
+			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
+			response: emptyValue,
+		},
+		{
+			desc:     "identify thing with valid external key",
+			thingKey: externalKey,
+			keyType:  apiutil.ThingKeyTypeExternal,
+			err:      nil,
+			response: id,
+		},
+		{
+			desc:     "identify thing with invalid external key",
+			thingKey: badKey,
+			keyType:  apiutil.ThingKeyTypeExternal,
+			err:      createError(sdk.ErrFailedFetch, http.StatusNotFound),
+			response: emptyValue,
+		},
+		{
+			desc:     "identify thing with empty external key",
+			thingKey: emptyValue,
+			keyType:  apiutil.ThingKeyTypeExternal,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: emptyValue,
 		},
 	}
 
 	for _, tc := range cases {
-		thingID, err := mainfluxAuthSDK.IdentifyThing(apiutil.ThingKeyTypeInline, tc.thingKey)
+		thingID, err := mainfluxAuthSDK.IdentifyThing(tc.keyType, tc.thingKey)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, thingID, fmt.Sprintf("%s: expected response id %s, got %s", tc.desc, tc.response, thingID))
 	}
