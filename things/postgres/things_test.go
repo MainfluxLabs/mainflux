@@ -374,25 +374,44 @@ func TestRetrieveByKey(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th.ID = ths[0].ID
 
+	externalKey := "abc123"
+	err = thingRepo.SaveExternalKey(context.Background(), externalKey, th.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
 	cases := map[string]struct {
-		key string
-		ID  string
-		err error
+		key     string
+		keyType string
+		ID      string
+		err     error
 	}{
-		"retrieve existing thing by key": {
-			key: th.Key,
-			ID:  th.ID,
-			err: nil,
+		"retrieve existing thing by inline key": {
+			key:     th.Key,
+			keyType: things.KeyTypeInline,
+			ID:      th.ID,
+			err:     nil,
 		},
-		"retrieve non-existent thing by key": {
-			key: wrongID,
-			ID:  "",
-			err: dbutil.ErrNotFound,
+		"retrieve non-existent thing by inline key": {
+			key:     wrongID,
+			keyType: things.KeyTypeInline,
+			ID:      "",
+			err:     dbutil.ErrNotFound,
+		},
+		"retrieve existing thing by external key": {
+			key:     externalKey,
+			keyType: things.KeyTypeExternal,
+			ID:      th.ID,
+			err:     nil,
+		},
+		"retrieve non-existent thing by external key": {
+			key:     wrongID,
+			keyType: things.KeyTypeExternal,
+			ID:      "",
+			err:     dbutil.ErrNotFound,
 		},
 	}
 
 	for desc, tc := range cases {
-		id, err := thingRepo.RetrieveByKey(context.Background(), things.KeyTypeInline, tc.key)
+		id, err := thingRepo.RetrieveByKey(context.Background(), tc.keyType, tc.key)
 		assert.Equal(t, tc.ID, id, fmt.Sprintf("%s: expected %s got %s\n", desc, tc.ID, id))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
