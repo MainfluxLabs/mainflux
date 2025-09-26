@@ -27,6 +27,10 @@ type identifyThingResp struct {
 	ID string `json:"id,omitempty"`
 }
 
+type createExternalThingKeyReq struct {
+	Key string `json:"key,omitempty"`
+}
+
 func (sdk mfSDK) CreateThing(t Thing, profileID, token string) (string, error) {
 	things, err := sdk.CreateThings([]Thing{t}, profileID, token)
 	if err != nil {
@@ -307,4 +311,31 @@ func (sdk mfSDK) IdentifyThing(keyType, key string) (string, error) {
 	}
 
 	return i.ID, err
+}
+
+func (sdk mfSDK) CreateExternalThingKey(key, thingID, token string) error {
+	createReq := createExternalThingKeyReq{Key: key}
+	data, err := json.Marshal(createReq)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s/things/%s/external-keys", sdk.thingsURL, thingID)
+
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+	if err != nil {
+		return err
+	}
+
+	resp, err := sdk.sendRequest(req, token, string(CTJSON))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
+	}
+
+	return nil
 }
