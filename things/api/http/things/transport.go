@@ -475,7 +475,7 @@ func decodeRestoreThingsByGroup(ctx context.Context, r *http.Request) (interface
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	if err := json.Unmarshal(data, &req.Things); err != nil {
+	if err := json.Unmarshal(data, &req.Backup); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
@@ -497,7 +497,7 @@ func decodeRestoreThingsByOrg(ctx context.Context, r *http.Request) (interface{}
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	if err := json.Unmarshal(data, &req.Things); err != nil {
+	if err := json.Unmarshal(data, &req.Backup); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 

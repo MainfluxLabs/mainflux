@@ -2170,7 +2170,9 @@ func TestBackupThingsByGroup(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	pr := prs[0]
 
-	data := []viewThingRes{}
+	data := backupThingsRes{
+		ExternalKeys: make(map[string][]string),
+	}
 
 	for i := 0; i < n; i++ {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
@@ -2181,7 +2183,11 @@ func TestBackupThingsByGroup(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := ths[0]
 
-		data = append(data, viewThingRes{
+		externalKey := fmt.Sprintf("external_key_%d", i+1)
+		err = svc.CreateExternalThingKey(context.Background(), token, externalKey, th.ID)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+		data.Things = append(data.Things, viewThingRes{
 			ID:        th.ID,
 			GroupID:   th.GroupID,
 			ProfileID: th.ProfileID,
@@ -2189,58 +2195,46 @@ func TestBackupThingsByGroup(t *testing.T) {
 			Key:       th.Key,
 			Metadata:  th.Metadata,
 		})
-	}
 
-	thingURL := fmt.Sprintf("%s/groups", ts.URL)
+		data.ExternalKeys[th.ID] = append(data.ExternalKeys[th.ID], externalKey)
+	}
 
 	cases := []struct {
 		desc   string
 		auth   string
 		status int
 		url    string
-		res    []viewThingRes
+		res    backupThingsRes
 	}{
 		{
 			desc:   "backup things by group as group owner",
 			auth:   token,
 			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, gr.ID),
 			res:    data,
 		},
 		{
 			desc:   "backup things by group the user belongs to",
 			auth:   otherToken,
 			status: http.StatusForbidden,
-			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, gr.ID),
-			res:    nil,
+			res:    backupThingsRes{},
 		},
 		{
 			desc:   "backup things by group as admin",
 			auth:   adminToken,
 			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, gr.ID),
 			res:    data,
-		},
-		{
-			desc:   "backup things by group without group id",
-			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, emptyValue),
-			res:    nil,
 		},
 		{
 			desc:   "backup things by group with invalid token",
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
-			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, gr.ID),
-			res:    nil,
+			res:    backupThingsRes{},
 		},
 		{
 			desc:   "backup things by group with empty token",
 			auth:   emptyValue,
 			status: http.StatusUnauthorized,
-			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, gr.ID),
-			res:    nil,
+			res:    backupThingsRes{},
 		},
 	}
 
@@ -2248,15 +2242,21 @@ func TestBackupThingsByGroup(t *testing.T) {
 		req := testRequest{
 			client: ts.Client(),
 			method: http.MethodGet,
-			url:    tc.url,
+			url:    fmt.Sprintf("%s/groups/%s/things/backup", ts.URL, gr.ID),
 			token:  tc.auth,
 		}
+
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		var body []viewThingRes
-		json.NewDecoder(res.Body).Decode(&body)
+
+		var body backupThingsRes
+		err = json.NewDecoder(res.Body).Decode(&body)
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
-		assert.ElementsMatch(t, tc.res, body, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body))
+
+		assert.ElementsMatch(t, tc.res.Things, body.Things, fmt.Sprintf("%s: expected Things %v got %v", tc.desc, tc.res.Things, body.Things))
+		assert.Equal(t, tc.res.ExternalKeys, body.ExternalKeys, fmt.Sprintf("%s: expected ExternalKeys %v got %v", tc.desc, tc.res.ExternalKeys, body.ExternalKeys))
 	}
 }
 
@@ -2266,7 +2266,9 @@ func TestRestoreThingsByGroup(t *testing.T) {
 	defer ts.Close()
 	idProvider := uuid.New()
 
-	data := []viewThingRes{}
+	backup := backupThingsRes{
+		ExternalKeys: make(map[string][]string),
+	}
 
 	grs, err := svc.CreateGroups(context.Background(), otherToken, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -2281,7 +2283,7 @@ func TestRestoreThingsByGroup(t *testing.T) {
 		thKey, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		data = append(data, viewThingRes{
+		backup.Things = append(backup.Things, viewThingRes{
 			ID:        thId,
 			GroupID:   gr.ID,
 			ProfileID: prID,
@@ -2289,13 +2291,17 @@ func TestRestoreThingsByGroup(t *testing.T) {
 			Key:       thKey,
 			Metadata:  metadata,
 		})
+
+		externalKey, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		backup.ExternalKeys[thId] = append(backup.ExternalKeys[thId], externalKey)
 	}
 
-	dataBytes, err := json.Marshal(data)
+	backupBytes, err := json.Marshal(backup)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	dataString := string(dataBytes)
 
-	thingURL := fmt.Sprintf("%s/groups", ts.URL)
+	backupString := string(backupBytes)
 
 	cases := []struct {
 		desc        string
@@ -2303,52 +2309,38 @@ func TestRestoreThingsByGroup(t *testing.T) {
 		contentType string
 		data        string
 		status      int
-		url         string
 		res         string
 	}{
 		{
 			desc:        "restore things by group as group owner",
 			auth:        token,
-			data:        dataString,
+			data:        backupString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusCreated,
-			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, gr.ID),
 			res:         emptyValue,
 		},
 		{
 			desc:        "restore things by group the user belongs to",
 			auth:        otherToken,
-			data:        dataString,
+			data:        backupString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusForbidden,
-			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, gr.ID),
-			res:         emptyValue,
-		},
-		{
-			desc:        "restore things by group without group id",
-			auth:        token,
-			data:        dataString,
-			contentType: contentTypeOctetStream,
-			status:      http.StatusBadRequest,
-			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, emptyValue),
 			res:         emptyValue,
 		},
 		{
 			desc:        "restore things by group with invalid token",
 			auth:        wrongValue,
-			data:        dataString,
+			data:        backupString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusUnauthorized,
-			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, gr.ID),
 			res:         emptyValue,
 		},
 		{
 			desc:        "restore things by group with empty token",
 			auth:        emptyValue,
-			data:        dataString,
+			data:        backupString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusUnauthorized,
-			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, gr.ID),
 			res:         emptyValue,
 		},
 	}
@@ -2357,7 +2349,7 @@ func TestRestoreThingsByGroup(t *testing.T) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPost,
-			url:         tc.url,
+			url:         fmt.Sprintf("%s/groups/%s/things/restore", ts.URL, gr.ID),
 			contentType: tc.contentType,
 			token:       tc.auth,
 			body:        strings.NewReader(tc.data),
@@ -2381,7 +2373,9 @@ func TestBackupThingsByOrg(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	pr := prs[0]
 
-	data := []viewThingRes{}
+	data := backupThingsRes{
+		ExternalKeys: make(map[string][]string),
+	}
 
 	for i := 0; i < n; i++ {
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
@@ -2392,7 +2386,11 @@ func TestBackupThingsByOrg(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := ths[0]
 
-		data = append(data, viewThingRes{
+		externalKey := fmt.Sprintf("external_key_%d", i+1)
+		err = svc.CreateExternalThingKey(context.Background(), token, externalKey, th.ID)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+		data.Things = append(data.Things, viewThingRes{
 			ID:        th.ID,
 			GroupID:   th.GroupID,
 			ProfileID: th.ProfileID,
@@ -2400,58 +2398,45 @@ func TestBackupThingsByOrg(t *testing.T) {
 			Key:       th.Key,
 			Metadata:  th.Metadata,
 		})
-	}
 
-	thingURL := fmt.Sprintf("%s/orgs", ts.URL)
+		data.ExternalKeys[th.ID] = append(data.ExternalKeys[th.ID], externalKey)
+	}
 
 	cases := []struct {
 		desc   string
 		auth   string
 		status int
-		url    string
-		res    []viewThingRes
+		res    backupThingsRes
 	}{
 		{
 			desc:   "backup things by org as org owner",
 			auth:   token,
 			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
 			res:    data,
 		},
 		{
 			desc:   "backup things by org the user belongs to",
 			auth:   otherToken,
 			status: http.StatusForbidden,
-			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
-			res:    nil,
+			res:    backupThingsRes{},
 		},
 		{
 			desc:   "backup things by org as admin",
 			auth:   adminToken,
 			status: http.StatusOK,
-			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
 			res:    data,
-		},
-		{
-			desc:   "backup things by org without org id",
-			auth:   token,
-			status: http.StatusBadRequest,
-			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, emptyValue),
-			res:    nil,
 		},
 		{
 			desc:   "backup things by org with invalid token",
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
-			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
-			res:    nil,
+			res:    backupThingsRes{},
 		},
 		{
 			desc:   "backup things by org with empty token",
 			auth:   emptyValue,
 			status: http.StatusUnauthorized,
-			url:    fmt.Sprintf("%s/%s/things/backup", thingURL, orgID),
-			res:    nil,
+			res:    backupThingsRes{},
 		},
 	}
 
@@ -2459,17 +2444,22 @@ func TestBackupThingsByOrg(t *testing.T) {
 		req := testRequest{
 			client: ts.Client(),
 			method: http.MethodGet,
-			url:    tc.url,
+			url:    fmt.Sprintf("%s/orgs/%s/things/backup", ts.URL, orgID),
 			token:  tc.auth,
 		}
+
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-
 		defer res.Body.Close()
-		var body []viewThingRes
-		json.NewDecoder(res.Body).Decode(&body)
+
+		var body backupThingsRes
+		err = json.NewDecoder(res.Body).Decode(&body)
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
-		assert.ElementsMatch(t, tc.res, body, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res, body))
+
+		assert.ElementsMatch(t, tc.res.Things, body.Things, fmt.Sprintf("%s: expected Things %v got %v", tc.desc, tc.res.Things, body.Things))
+		assert.Equal(t, tc.res.ExternalKeys, body.ExternalKeys, fmt.Sprintf("%s: expected ExternalKeys %v got %v", tc.desc, tc.res.ExternalKeys, body.ExternalKeys))
 	}
 }
 
@@ -2479,7 +2469,9 @@ func TestRestoreThingsByOrg(t *testing.T) {
 	defer ts.Close()
 	idProvider := uuid.New()
 
-	data := []viewThingRes{}
+	backup := backupThingsRes{
+		ExternalKeys: make(map[string][]string),
+	}
 
 	grID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -2492,7 +2484,7 @@ func TestRestoreThingsByOrg(t *testing.T) {
 		thKey, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-		data = append(data, viewThingRes{
+		backup.Things = append(backup.Things, viewThingRes{
 			ID:        thId,
 			GroupID:   grID,
 			ProfileID: prID,
@@ -2500,13 +2492,17 @@ func TestRestoreThingsByOrg(t *testing.T) {
 			Key:       thKey,
 			Metadata:  metadata,
 		})
+
+		externalKey, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		backup.ExternalKeys[thId] = append(backup.ExternalKeys[thId], externalKey)
 	}
 
-	dataBytes, err := json.Marshal(data)
+	backupBytes, err := json.Marshal(backup)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	dataString := string(dataBytes)
 
-	thingURL := fmt.Sprintf("%s/orgs", ts.URL)
+	backupString := string(backupBytes)
 
 	cases := []struct {
 		desc        string
@@ -2514,52 +2510,38 @@ func TestRestoreThingsByOrg(t *testing.T) {
 		contentType string
 		data        string
 		status      int
-		url         string
 		res         string
 	}{
 		{
 			desc:        "restore things by org as org owner",
 			auth:        token,
-			data:        dataString,
+			data:        backupString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusCreated,
-			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, orgID),
 			res:         emptyValue,
 		},
 		{
 			desc:        "restore things by org the user belongs to",
 			auth:        otherToken,
-			data:        dataString,
+			data:        backupString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusForbidden,
-			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, orgID),
-			res:         emptyValue,
-		},
-		{
-			desc:        "restore things by org without org id",
-			auth:        token,
-			data:        dataString,
-			contentType: contentTypeOctetStream,
-			status:      http.StatusBadRequest,
-			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, emptyValue),
 			res:         emptyValue,
 		},
 		{
 			desc:        "restore things by org with invalid token",
 			auth:        wrongValue,
-			data:        dataString,
+			data:        backupString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusUnauthorized,
-			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, orgID),
 			res:         emptyValue,
 		},
 		{
 			desc:        "restore things by org with empty token",
 			auth:        emptyValue,
-			data:        dataString,
+			data:        backupString,
 			contentType: contentTypeOctetStream,
 			status:      http.StatusUnauthorized,
-			url:         fmt.Sprintf("%s/%s/things/restore", thingURL, orgID),
 			res:         emptyValue,
 		},
 	}
@@ -2568,11 +2550,12 @@ func TestRestoreThingsByOrg(t *testing.T) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPost,
-			url:         tc.url,
+			url:         fmt.Sprintf("%s/orgs/%s/things/restore", ts.URL, orgID),
 			contentType: tc.contentType,
 			token:       tc.auth,
 			body:        strings.NewReader(tc.data),
 		}
+
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
@@ -2780,6 +2763,8 @@ func TestBackup(t *testing.T) {
 	pr := profiles[0]
 
 	ths := []things.Thing{}
+	externalKeys := make(things.ExternalKeysBackup)
+
 	for i := 0; i < 10; i++ {
 		name := "name_" + fmt.Sprintf("%03d", i+1)
 		things, err := svc.CreateThings(context.Background(), token, pr.ID,
@@ -2789,6 +2774,12 @@ func TestBackup(t *testing.T) {
 			})
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := things[0]
+
+		externalKey := fmt.Sprintf("external_key_%d", i)
+		err = svc.CreateExternalThingKey(context.Background(), token, externalKey, th.ID)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+		externalKeys[th.ID] = []string{externalKey}
 
 		ths = append(ths, th)
 	}
@@ -2827,12 +2818,13 @@ func TestBackup(t *testing.T) {
 	}
 
 	backup := backupRes{
-		Groups:   groupsRes,
-		Things:   thingsRes,
+		Groups: groupsRes,
+		Things: backupThingsRes{
+			Things:       thingsRes,
+			ExternalKeys: externalKeys,
+		},
 		Profiles: profilesRes,
 	}
-
-	backupURL := fmt.Sprintf("%s/backup", ts.URL)
 
 	cases := []struct {
 		desc   string
@@ -2845,21 +2837,18 @@ func TestBackup(t *testing.T) {
 			desc:   "backup all things, profiles and groups",
 			auth:   adminToken,
 			status: http.StatusOK,
-			url:    backupURL,
 			res:    backup,
 		},
 		{
 			desc:   "backup with invalid token",
 			auth:   wrongValue,
 			status: http.StatusUnauthorized,
-			url:    backupURL,
 			res:    backupRes{},
 		},
 		{
 			desc:   "backup with empty token",
 			auth:   emptyValue,
 			status: http.StatusUnauthorized,
-			url:    backupURL,
 			res:    backupRes{},
 		},
 	}
@@ -2868,17 +2857,22 @@ func TestBackup(t *testing.T) {
 		req := testRequest{
 			client: ts.Client(),
 			method: http.MethodGet,
-			url:    tc.url,
+			url:    fmt.Sprintf("%s/backup", ts.URL),
 			token:  tc.auth,
 		}
+
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
 		var body backupRes
-		json.NewDecoder(res.Body).Decode(&body)
+		err = json.NewDecoder(res.Body).Decode(&body)
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 		assert.ElementsMatch(t, tc.res.Profiles, body.Profiles, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.Profiles, body.Profiles))
-		assert.ElementsMatch(t, tc.res.Things, body.Things, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.Things, body.Things))
+		assert.ElementsMatch(t, tc.res.Things.Things, body.Things.Things, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.Things, body.Things))
 		assert.ElementsMatch(t, tc.res.Groups, body.Groups, fmt.Sprintf("%s: expected body %v got %v", tc.desc, tc.res.Groups, body.Groups))
+		assert.Equal(t, tc.res.Things.ExternalKeys, body.Things.ExternalKeys, fmt.Sprintf("%s: expected ExternalKeys %v got %v", tc.desc, tc.res.Things.ExternalKeys, body.Things.ExternalKeys))
 	}
 }
 
@@ -2926,7 +2920,7 @@ func TestRestore(t *testing.T) {
 		})
 	}
 
-	thr := []restoreThingReq{
+	thr := []viewThingRes{
 		{
 			ID:       testThing.ID,
 			Name:     testThing.Name,
@@ -2955,20 +2949,20 @@ func TestRestore(t *testing.T) {
 	}
 
 	resReq := restoreReq{
-		Things:   thr,
+		Things: backupThingsRes{
+			Things: thr,
+		},
 		Profiles: prr,
 		Groups:   gr,
 	}
 
 	data := toJSON(resReq)
 	invalidData := toJSON(restoreReq{})
-	restoreURL := fmt.Sprintf("%s/restore", ts.URL)
 
 	cases := []struct {
 		desc        string
 		auth        string
 		status      int
-		url         string
 		req         string
 		contentType string
 	}{
@@ -2976,7 +2970,6 @@ func TestRestore(t *testing.T) {
 			desc:        "restore all things, profiles and groups",
 			auth:        adminToken,
 			status:      http.StatusCreated,
-			url:         restoreURL,
 			req:         data,
 			contentType: contentTypeJSON,
 		},
@@ -2984,7 +2977,6 @@ func TestRestore(t *testing.T) {
 			desc:        "restore with invalid token",
 			auth:        wrongValue,
 			status:      http.StatusUnauthorized,
-			url:         restoreURL,
 			req:         data,
 			contentType: contentTypeJSON,
 		},
@@ -2992,7 +2984,6 @@ func TestRestore(t *testing.T) {
 			desc:        "restore with empty token",
 			auth:        emptyValue,
 			status:      http.StatusUnauthorized,
-			url:         restoreURL,
 			req:         data,
 			contentType: contentTypeJSON,
 		},
@@ -3000,7 +2991,6 @@ func TestRestore(t *testing.T) {
 			desc:        "restore with invalid request",
 			auth:        token,
 			status:      http.StatusBadRequest,
-			url:         restoreURL,
 			req:         invalidData,
 			contentType: contentTypeJSON,
 		},
@@ -3010,11 +3000,12 @@ func TestRestore(t *testing.T) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPost,
-			url:         tc.url,
+			url:         fmt.Sprintf("%s/restore", ts.URL),
 			token:       tc.auth,
 			contentType: tc.contentType,
 			body:        strings.NewReader(tc.req),
 		}
+
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
@@ -3146,16 +3137,14 @@ type viewGroupRes struct {
 }
 
 type backupRes struct {
-	Things   []viewThingRes     `json:"things"`
+	Things   backupThingsRes    `json:"things"`
 	Profiles []backupProfileRes `json:"profiles"`
 	Groups   []viewGroupRes     `json:"groups"`
 }
 
-type restoreThingReq struct {
-	ID       string                 `json:"id"`
-	Name     string                 `json:"name"`
-	Key      string                 `json:"key"`
-	Metadata map[string]interface{} `json:"metadata"`
+type backupThingsRes struct {
+	Things       []viewThingRes      `json:"things,omitempty"`
+	ExternalKeys map[string][]string `json:"external_keys,omitempty"`
 }
 
 type restoreProfileReq struct {
@@ -3174,7 +3163,7 @@ type restoreGroupReq struct {
 }
 
 type restoreReq struct {
-	Things   []restoreThingReq   `json:"things"`
+	Things   backupThingsRes     `json:"things"`
 	Profiles []restoreProfileReq `json:"profiles"`
 	Groups   []restoreGroupReq   `json:"groups"`
 }

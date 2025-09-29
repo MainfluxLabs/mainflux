@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/api/http/memberships"
 )
 
@@ -136,8 +137,13 @@ type backupGroup struct {
 	UpdatedAt   time.Time              `json:"updated_at"`
 }
 
+type backupThings struct {
+	Things       []viewThingRes            `json:"things"`
+	ExternalKeys things.ExternalKeysBackup `json:"external_keys"`
+}
+
 type backupRes struct {
-	Things           []viewThingRes                       `json:"things"`
+	Things           backupThings                         `json:"things"`
 	Profiles         []backupProfile                      `json:"profiles"`
 	Groups           []backupGroup                        `json:"groups"`
 	GroupMemberships []memberships.ViewGroupMembershipRes `json:"group_memberships"`

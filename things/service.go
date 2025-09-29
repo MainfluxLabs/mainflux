@@ -187,7 +187,7 @@ type Service interface {
 }
 
 type Backup struct {
-	Things           []Thing
+	Things           ThingsBackup
 	Profiles         []Profile
 	Groups           []Group
 	GroupMemberships []GroupMembership
@@ -205,8 +205,12 @@ type ProfilesBackup struct {
 	Profiles []Profile
 }
 
+// Map of Thind ID to a slice of all external keys associated with that Thing.
+type ExternalKeysBackup map[string][]string
+
 type ThingsBackup struct {
-	Things []Thing
+	Things       []Thing
+	ExternalKeys ExternalKeysBackup
 }
 
 type UserAccessReq struct {
@@ -455,8 +459,14 @@ func (ts *thingsService) BackupThingsByGroup(ctx context.Context, token string, 
 		return ThingsBackup{}, err
 	}
 
+	externalKeys, err := ts.generateExternalKeysBackupForThings(ctx, things...)
+	if err != nil {
+		return ThingsBackup{}, err
+	}
+
 	return ThingsBackup{
-		Things: things,
+		Things:       things,
+		ExternalKeys: externalKeys,
 	}, nil
 }
 
@@ -466,6 +476,10 @@ func (ts *thingsService) RestoreThingsByGroup(ctx context.Context, token string,
 	}
 
 	if _, err := ts.things.Save(ctx, backup.Things...); err != nil {
+		return err
+	}
+
+	if err := ts.restoreExternalKeysBackup(ctx, backup.ExternalKeys); err != nil {
 		return err
 	}
 
@@ -487,8 +501,14 @@ func (ts *thingsService) BackupThingsByOrg(ctx context.Context, token string, or
 		return ThingsBackup{}, err
 	}
 
+	externalKeys, err := ts.generateExternalKeysBackupForThings(ctx, things...)
+	if err != nil {
+		return ThingsBackup{}, err
+	}
+
 	return ThingsBackup{
-		Things: things,
+		Things:       things,
+		ExternalKeys: externalKeys,
 	}, nil
 }
 
@@ -498,6 +518,10 @@ func (ts *thingsService) RestoreThingsByOrg(ctx context.Context, token string, o
 	}
 
 	if _, err := ts.things.Save(ctx, backup.Things...); err != nil {
+		return err
+	}
+
+	if err := ts.restoreExternalKeysBackup(ctx, backup.ExternalKeys); err != nil {
 		return err
 	}
 
@@ -845,13 +869,21 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
+	externalKeys, err := ts.generateExternalKeysBackupForThings(ctx, things...)
+	if err != nil {
+		return Backup{}, err
+	}
+
 	profiles, err := ts.profiles.BackupAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
 	return Backup{
-		Things:           things,
+		Things: ThingsBackup{
+			Things:       things,
+			ExternalKeys: externalKeys,
+		},
 		Profiles:         profiles,
 		Groups:           groups,
 		GroupMemberships: groupMemberships,
@@ -1010,7 +1042,11 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 		return err
 	}
 
-	if _, err := ts.things.Save(ctx, backup.Things...); err != nil {
+	if _, err := ts.things.Save(ctx, backup.Things.Things...); err != nil {
+		return err
+	}
+
+	if err := ts.restoreExternalKeysBackup(ctx, backup.Things.ExternalKeys); err != nil {
 		return err
 	}
 
@@ -1147,4 +1183,37 @@ func (ts *thingsService) GetGroupIDsByOrg(ctx context.Context, orgID string, tok
 	}
 
 	return ts.groups.RetrieveIDsByOrgMembership(ctx, orgID, user.GetId())
+}
+
+func (ts *thingsService) generateExternalKeysBackupForThings(ctx context.Context, things ...Thing) (ExternalKeysBackup, error) {
+	externalKeys := make(ExternalKeysBackup, len(things))
+
+	for _, thing := range things {
+		thingExternalKeys, err := ts.things.RetrieveExternalKeysByThing(ctx, thing.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(thingExternalKeys) == 0 {
+			continue
+		}
+
+		externalKeys[thing.ID] = thingExternalKeys
+	}
+
+	return externalKeys, nil
+}
+
+// Helper for restoring all keys in an ExternalKeysBackup to the ThingRepository. Note that it assumes that
+// all Things referenced by keys in the ExternalKeysBackup already exist in the repository.
+func (ts *thingsService) restoreExternalKeysBackup(ctx context.Context, externalKeys ExternalKeysBackup) error {
+	for thingID, keys := range externalKeys {
+		for _, key := range keys {
+			if err := ts.things.SaveExternalKey(ctx, key, thingID); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }

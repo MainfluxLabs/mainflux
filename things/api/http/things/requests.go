@@ -292,17 +292,19 @@ func (req backupReq) validate() error {
 type restoreThingsByGroupReq struct {
 	id     string
 	token  string
-	Things []viewThingRes
+	Backup backupThings
 }
 
 func (req restoreThingsByGroupReq) validate() error {
 	if req.id == "" {
 		return apiutil.ErrMissingGroupID
 	}
+
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
-	if len(req.Things) == 0 {
+
+	if len(req.Backup.Things) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
@@ -312,7 +314,7 @@ func (req restoreThingsByGroupReq) validate() error {
 type restoreThingsByOrgReq struct {
 	id     string
 	token  string
-	Things []viewThingRes
+	Backup backupThings
 }
 
 func (req restoreThingsByOrgReq) validate() error {
@@ -322,7 +324,7 @@ func (req restoreThingsByOrgReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
-	if len(req.Things) == 0 {
+	if len(req.Backup.Things) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
@@ -331,7 +333,7 @@ func (req restoreThingsByOrgReq) validate() error {
 
 type restoreReq struct {
 	token            string
-	Things           []viewThingRes                       `json:"things"`
+	Things           backupThings                         `json:"things"`
 	Profiles         []backupProfile                      `json:"profiles"`
 	Groups           []backupGroup                        `json:"groups"`
 	GroupMemberships []memberships.ViewGroupMembershipRes `json:"group_memberships"`
@@ -342,7 +344,8 @@ func (req restoreReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.Things) == 0 {
+	// FIXME: Why do we only validate only the existence of Things in the restore request?
+	if len(req.Things.Things) == 0 {
 		return apiutil.ErrEmptyList
 	}
 

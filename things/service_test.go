@@ -2879,6 +2879,8 @@ func TestBackup(t *testing.T) {
 	pr := prsc[0]
 
 	ths := []things.Thing{}
+	externalKeys := make(things.ExternalKeysBackup)
+
 	for i := 0; i < 10; i++ {
 		name := "name_" + fmt.Sprintf("%03d", i+1)
 		things, err := svc.CreateThings(context.Background(), token, pr.ID,
@@ -2889,12 +2891,23 @@ func TestBackup(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := things[0]
 
+		for j := range 2 {
+			externalKey := fmt.Sprintf("external_key_%d_%d", i, j)
+			err := svc.CreateExternalThingKey(context.Background(), token, externalKey, th.ID)
+			require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+			externalKeys[th.ID] = append(externalKeys[th.ID], externalKey)
+		}
+
 		ths = append(ths, th)
 	}
 
 	backup := things.Backup{
-		Groups:   groups,
-		Things:   ths,
+		Groups: groups,
+		Things: things.ThingsBackup{
+			Things:       ths,
+			ExternalKeys: externalKeys,
+		},
 		Profiles: prsc,
 	}
 
@@ -2923,11 +2936,17 @@ func TestBackup(t *testing.T) {
 	for desc, tc := range cases {
 		backup, err := svc.Backup(context.Background(), tc.token)
 		groupSize := len(backup.Groups)
-		thingsSize := len(backup.Things)
+		thingsSize := len(backup.Things.Things)
 		profilesSize := len(backup.Profiles)
+
 		assert.Equal(t, len(tc.backup.Groups), groupSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Groups), groupSize))
-		assert.Equal(t, len(tc.backup.Things), thingsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Things), thingsSize))
+		assert.Equal(t, len(tc.backup.Things.Things), thingsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Things.Things), thingsSize))
 		assert.Equal(t, len(tc.backup.Profiles), profilesSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Profiles), profilesSize))
+
+		for thingID, thingExternalKeys := range backup.Things.ExternalKeys {
+			assert.Equal(t, len(thingExternalKeys), len(tc.backup.Things.ExternalKeys[thingID]))
+		}
+
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }
@@ -2964,6 +2983,11 @@ func TestRestore(t *testing.T) {
 		},
 	}
 
+	externalKeys := make(things.ExternalKeysBackup)
+	for idx, thing := range ths {
+		externalKeys[thing.ID] = []string{fmt.Sprintf("external_key_%d", idx)}
+	}
+
 	var prs []things.Profile
 	n := uint64(10)
 	for i := uint64(0); i < n; i++ {
@@ -2977,8 +3001,11 @@ func TestRestore(t *testing.T) {
 	}
 
 	backup := things.Backup{
-		Groups:   groups,
-		Things:   ths,
+		Groups: groups,
+		Things: things.ThingsBackup{
+			Things:       ths,
+			ExternalKeys: externalKeys,
+		},
 		Profiles: prs,
 	}
 
