@@ -164,6 +164,9 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, er
 
 func decodeListJSONMessagesByAdmin(_ context.Context, r *http.Request) (interface{}, error) {
 	publisherID := bone.GetValue(r, publisherIDKey)
+	if publisherID == "" {
+		return nil, errors.New("publisherID path parameter is required")
+	}
 
 	pageMeta, err := BuildJSONPageMetadata(r)
 	if err != nil {
@@ -186,7 +189,6 @@ func decodeListJSONMessagesByAdmin(_ context.Context, r *http.Request) (interfac
 
 	return listJSONMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
-		key:      apiutil.ExtractThingKey(r),
 		pageMeta: pageMeta,
 	}, nil
 }
@@ -219,6 +221,9 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (interface{}, e
 
 func decodeListSenMLMessagesByAdmin(_ context.Context, r *http.Request) (interface{}, error) {
 	publisherID := bone.GetValue(r, publisherIDKey)
+	if publisherID == "" {
+		return nil, errors.New("publisherID path parameter is required")
+	}
 
 	pageMeta, err := BuildSenMLPageMetadata(r)
 	if err != nil {
@@ -241,7 +246,6 @@ func decodeListSenMLMessagesByAdmin(_ context.Context, r *http.Request) (interfa
 
 	return listSenMLMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
-		key:      apiutil.ExtractThingKey(r),
 		pageMeta: pageMeta,
 	}, nil
 }

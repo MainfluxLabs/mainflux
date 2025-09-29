@@ -52,6 +52,10 @@ func listAdminJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpo
 			return nil, err
 		}
 
+		if req.pageMeta.Publisher == "" {
+			return nil, errors.New("publisherID is required for admin query")
+		}
+
 		page, err := svc.ListJSONMessages(ctx, req.pageMeta)
 		if err != nil {
 			return nil, err
@@ -63,7 +67,6 @@ func listAdminJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpo
 			Messages:         page.Messages,
 		}, nil
 	}
-
 }
 
 func listSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
@@ -73,19 +76,11 @@ func listSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint 
 			return nil, err
 		}
 
-		var page readers.SenMLMessagesPage
-		switch {
-		case req.key != "":
-			pc, err := getPubConfByKey(ctx, req.key)
-			if err != nil {
-				return nil, err
-			}
-			req.pageMeta.Publisher = pc.PublisherID
-		default:
-			if err := isAdmin(ctx, req.token); err != nil {
-				return nil, err
-			}
+		pc, err := getPubConfByKey(ctx, req.key)
+		if err != nil {
+			return nil, err
 		}
+		req.pageMeta.Publisher = pc.PublisherID
 
 		page, err := svc.ListSenMLMessages(ctx, req.pageMeta)
 		if err != nil {
@@ -111,6 +106,10 @@ func listAdminSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endp
 			return nil, err
 		}
 
+		if req.pageMeta.Publisher == "" {
+			return nil, errors.New("publisherID is required for admin query")
+		}
+
 		page, err := svc.ListSenMLMessages(ctx, req.pageMeta)
 		if err != nil {
 			return nil, err
@@ -121,7 +120,6 @@ func listAdminSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endp
 			Total:             page.Total,
 			Messages:          page.Messages,
 		}, nil
-
 	}
 }
 
