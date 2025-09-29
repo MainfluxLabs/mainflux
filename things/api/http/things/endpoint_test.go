@@ -3047,12 +3047,12 @@ func TestIdentify(t *testing.T) {
 		req         string
 		status      int
 	}{
-		"identify existing thing": {
+		"identify thing using inline key": {
 			contentType: contentTypeJSON,
 			req:         dataInline,
 			status:      http.StatusOK,
 		},
-		"identify non-existent thing": {
+		"identify thing using invalid iline key": {
 			contentType: contentTypeJSON,
 			req:         nonexistentData,
 			status:      http.StatusNotFound,
@@ -3072,7 +3072,7 @@ func TestIdentify(t *testing.T) {
 			req:         emptyValue,
 			status:      http.StatusBadRequest,
 		},
-		"identify thing with external key": {
+		"identify thing using external key": {
 			contentType: contentTypeJSON,
 			req:         dataExternal,
 			status:      http.StatusOK,

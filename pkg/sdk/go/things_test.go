@@ -874,42 +874,42 @@ func TestIdentifyThing(t *testing.T) {
 		response string
 	}{
 		{
-			desc:     "identify thing with valid inline key",
+			desc:     "identify thing using valid inline key",
 			thingKey: thing.Key,
 			keyType:  apiutil.ThingKeyTypeInline,
 			err:      nil,
 			response: id,
 		},
 		{
-			desc:     "identify thing with invalid inline key",
+			desc:     "identify thing using invalid inline key",
 			thingKey: badKey,
 			keyType:  apiutil.ThingKeyTypeInline,
 			err:      createError(sdk.ErrFailedFetch, http.StatusNotFound),
 			response: emptyValue,
 		},
 		{
-			desc:     "identify thing with empty inline key",
+			desc:     "identify thing using empty inline key",
 			thingKey: emptyValue,
 			keyType:  apiutil.ThingKeyTypeInline,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: emptyValue,
 		},
 		{
-			desc:     "identify thing with valid external key",
+			desc:     "identify thing using valid external key",
 			thingKey: externalKey,
 			keyType:  apiutil.ThingKeyTypeExternal,
 			err:      nil,
 			response: id,
 		},
 		{
-			desc:     "identify thing with invalid external key",
+			desc:     "identify thing using invalid external key",
 			thingKey: badKey,
 			keyType:  apiutil.ThingKeyTypeExternal,
 			err:      createError(sdk.ErrFailedFetch, http.StatusNotFound),
 			response: emptyValue,
 		},
 		{
-			desc:     "identify thing with empty external key",
+			desc:     "identify thing using empty external key",
 			thingKey: emptyValue,
 			keyType:  apiutil.ThingKeyTypeExternal,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),

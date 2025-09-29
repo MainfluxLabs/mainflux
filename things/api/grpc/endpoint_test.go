@@ -103,25 +103,25 @@ func TestIdentify(t *testing.T) {
 		id      string
 		code    codes.Code
 	}{
-		"identify existing thing using inline key": {
+		"identify thing using inline key": {
 			key:     sth.Key,
 			keyType: things.KeyTypeInline,
 			id:      sth.ID,
 			code:    codes.OK,
 		},
-		"identify non-existent thing using inline key": {
+		"identify thing using invalid inline key": {
 			key:     wrong,
 			keyType: things.KeyTypeInline,
 			id:      wrongID,
 			code:    codes.NotFound,
 		},
-		"identify existing thing using external key": {
+		"identify thing using external key": {
 			key:     externalKey,
 			keyType: things.KeyTypeExternal,
 			id:      sth.ID,
 			code:    codes.OK,
 		},
-		"identify non-existent thing using external key": {
+		"identify thing using invalid external key": {
 			key:     wrong,
 			keyType: things.KeyTypeExternal,
 			id:      wrongID,
