@@ -69,7 +69,7 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 
 	mux.Get("/json/:publisherID", kithttp.NewServer(
 		listAdminJSONMessagesEndpoint(svc),
-		decodeListJSONMessages,
+		decodeListJSONMessagesByAdmin,
 		encodeResponse,
 		opts...,
 	))
@@ -154,6 +154,35 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, er
 
 	pageMeta.Offset = offset
 	pageMeta.Limit = limit
+
+	return listJSONMessagesReq{
+		token:    apiutil.ExtractBearerToken(r),
+		key:      apiutil.ExtractThingKey(r),
+		pageMeta: pageMeta,
+	}, nil
+}
+
+func decodeListJSONMessagesByAdmin(_ context.Context, r *http.Request) (interface{}, error) {
+	publisherID := bone.GetValue(r, publisherIDKey)
+
+	pageMeta, err := BuildJSONPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
+	if err != nil {
+		return nil, err
+	}
+
+	limit, err := apiutil.ReadLimitQuery(r, apiutil.LimitKey, apiutil.DefLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	pageMeta.Offset = offset
+	pageMeta.Limit = limit
+	pageMeta.Publisher = publisherID
 
 	return listJSONMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
