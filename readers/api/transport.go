@@ -38,6 +38,7 @@ const (
 	aggIntervalKey         = "agg_interval"
 	aggTypeKey             = "agg_type"
 	aggFieldKey            = "agg_field"
+	publisherIDKey         = "publisherID"
 	jsonFormat             = "json"
 	senmlFormat            = "senml"
 	csvFormat              = "csv"
@@ -66,9 +67,23 @@ func MakeHandler(svc readers.MessageRepository, tc protomfx.ThingsServiceClient,
 		opts...,
 	))
 
+	mux.Get("/json/:publisherID", kithttp.NewServer(
+		listAdminJSONMessagesEndpoint(svc),
+		decodeListJSONMessages,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Get("/senml", kithttp.NewServer(
 		listSenMLMessagesEndpoint(svc),
 		decodeListSenMLMessages,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Get("/senml/:publisherID", kithttp.NewServer(
+		listAdminSenMLMessagesEndpoint(svc),
+		decodeListSenMLMessagesByAdmin,
 		encodeResponse,
 		opts...,
 	))
@@ -165,6 +180,35 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (interface{}, e
 
 	pageMeta.Offset = offset
 	pageMeta.Limit = limit
+
+	return listSenMLMessagesReq{
+		token:    apiutil.ExtractBearerToken(r),
+		key:      apiutil.ExtractThingKey(r),
+		pageMeta: pageMeta,
+	}, nil
+}
+
+func decodeListSenMLMessagesByAdmin(_ context.Context, r *http.Request) (interface{}, error) {
+	publisherID := bone.GetValue(r, publisherIDKey)
+
+	pageMeta, err := BuildSenMLPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
+	if err != nil {
+		return nil, err
+	}
+
+	limit, err := apiutil.ReadLimitQuery(r, apiutil.LimitKey, apiutil.DefLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	pageMeta.Offset = offset
+	pageMeta.Limit = limit
+	pageMeta.Publisher = publisherID
 
 	return listSenMLMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
