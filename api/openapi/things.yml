@@ -1410,11 +1410,14 @@ components:
         - key
         - group_id
     BackupAndRestoreThingsSchema:
-      type: array
-      minItems: 0
-      uniqueItems: true
-      items:
-        $ref: "#/components/schemas/ThingResSchema"
+      type: object
+      properties:
+        things:
+          type: array
+          items:
+            $ref: "#/components/schemas/ThingResSchema"
+        external_keys:
+          $ref: "#/components/schemas/ExternalKeysBackup"
     ThingsPage:
       type: object
       properties:
@@ -1820,11 +1823,7 @@ components:
           items:
             $ref: "#/components/schemas/GroupResSchema"
         things:
-          type: array
-          minItems: 1
-          uniqueItems: true
-          items:
-            $ref: "#/components/schemas/ThingResSchema"
+          $ref: "#/components/schemas/BackupAndRestoreThingsSchema"
         profiles:
           type: array
           minItems: 1
@@ -1852,6 +1851,15 @@ components:
           items:
             type: string
           description: List of external keys.
+
+    ExternalKeysBackup:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          type: string
+      example:
+        thing_id_1: ['external_key_1', 'external_key_2']
 
   parameters:
     ProfileId:
