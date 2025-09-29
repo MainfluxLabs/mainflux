@@ -23,7 +23,7 @@ type Notifier struct {
 }
 
 type NotifiersPage struct {
-	apiutil.PageMetadata
+	Total     uint64
 	Notifiers []Notifier
 }
 

@@ -14,9 +14,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/rabbitmq"
 )
 
-// SubjectAllProfiles represents subject to subscribe for all the profiles.
-const SubjectAllProfiles = "profiles.#"
-
 func init() {
 	log.Println("The binary was build using RabbitMQ as the message broker")
 }

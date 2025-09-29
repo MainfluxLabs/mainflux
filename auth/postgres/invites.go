@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/jackc/pgerrcode"
@@ -211,11 +210,7 @@ func (ir invitesRepository) RetrieveOrgInvitesByOrg(ctx context.Context, orgID s
 
 	page := auth.OrgInvitesPage{
 		Invites: invites,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Total:   total,
 	}
 
 	return page, nil
@@ -289,11 +284,7 @@ func (ir invitesRepository) RetrieveOrgInvitesByUser(ctx context.Context, userTy
 
 	page := auth.OrgInvitesPage{
 		Invites: invites,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Total:   total,
 	}
 
 	return page, nil

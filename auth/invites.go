@@ -28,7 +28,7 @@ type OrgInvite struct {
 
 type OrgInvitesPage struct {
 	Invites []OrgInvite
-	apiutil.PageMetadata
+	Total   uint64
 }
 
 type PageMetadataInvites struct {

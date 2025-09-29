@@ -21,6 +21,8 @@ type AlarmsPageRes struct {
 	Total  uint64          `json:"total"`
 	Offset uint64          `json:"offset"`
 	Limit  uint64          `json:"limit"`
+	Order  string          `json:"order,omitempty"`
+	Dir    string          `json:"direction,omitempty"`
 	Alarms []alarmResponse `json:"alarms"`
 }
 

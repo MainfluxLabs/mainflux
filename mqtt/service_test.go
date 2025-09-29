@@ -155,11 +155,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 				Limit:  10,
 			},
 			page: mqtt.Page{
-				PageMetadata: mqtt.PageMetadata{
-					Total:  total,
-					Offset: 0,
-					Limit:  10,
-				},
+				Total:         total,
 				Subscriptions: subs[:10],
 			},
 			err: nil,
@@ -174,11 +170,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 				Limit:  noLimit,
 			},
 			page: mqtt.Page{
-				PageMetadata: mqtt.PageMetadata{
-					Total:  total,
-					Offset: 0,
-					Limit:  noLimit,
-				},
+				Total:         total,
 				Subscriptions: subs,
 			},
 			err: nil,
@@ -191,9 +183,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 				Total: 0,
 			},
 			page: mqtt.Page{
-				PageMetadata: mqtt.PageMetadata{
-					Total: 0,
-				},
+				Total:         0,
 				Subscriptions: nil,
 			},
 			err: errors.ErrAuthentication,
@@ -206,9 +196,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 				Total: 0,
 			},
 			page: mqtt.Page{
-				PageMetadata: mqtt.PageMetadata{
-					Total: 0,
-				},
+				Total:         0,
 				Subscriptions: nil,
 			},
 			err: errors.ErrAuthentication,
@@ -223,11 +211,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 				Limit:  10,
 			},
 			page: mqtt.Page{
-				PageMetadata: mqtt.PageMetadata{
-					Total:  total,
-					Offset: 0,
-					Limit:  10,
-				},
+				Total:         total,
 				Subscriptions: subs[:10],
 			},
 			err: nil,
@@ -242,11 +226,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 				Limit:  noLimit,
 			},
 			page: mqtt.Page{
-				PageMetadata: mqtt.PageMetadata{
-					Total:  total,
-					Offset: 0,
-					Limit:  noLimit,
-				},
+				Total:         total,
 				Subscriptions: subs,
 			},
 			err: nil,
@@ -259,9 +239,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 				Total: 0,
 			},
 			page: mqtt.Page{
-				PageMetadata: mqtt.PageMetadata{
-					Total: 0,
-				},
+				Total:         0,
 				Subscriptions: nil,
 			},
 			err: dbutil.ErrNotFound,
@@ -273,9 +251,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 				Total: 0,
 			},
 			page: mqtt.Page{
-				PageMetadata: mqtt.PageMetadata{
-					Total: 0,
-				},
+				Total:         0,
 				Subscriptions: nil,
 			},
 			err: errors.ErrAuthentication,

@@ -118,7 +118,7 @@ func listThingsEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildThingsResponse(page), nil
+		return buildThingsResponse(page, req.pageMetadata), nil
 	}
 }
 
@@ -135,7 +135,7 @@ func listThingsByProfileEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildThingsResponse(page), nil
+		return buildThingsResponse(page, req.pageMetadata), nil
 	}
 }
 
@@ -151,7 +151,7 @@ func listThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildThingsResponse(page), nil
+		return buildThingsResponse(page, req.pageMetadata), nil
 	}
 }
 
@@ -167,7 +167,7 @@ func listThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildThingsResponse(page), nil
+		return buildThingsResponse(page, req.pageMetadata), nil
 	}
 }
 
@@ -393,15 +393,15 @@ func restoreEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func buildThingsResponse(tp things.ThingsPage) ThingsPageRes {
+func buildThingsResponse(tp things.ThingsPage, pm apiutil.PageMetadata) ThingsPageRes {
 	res := ThingsPageRes{
 		pageRes: pageRes{
 			Total:  tp.Total,
-			Offset: tp.Offset,
-			Limit:  tp.Limit,
-			Order:  tp.Order,
-			Dir:    tp.Dir,
-			Name:   tp.Name,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
+			Name:   pm.Name,
 		},
 		Things: []thingRes{},
 	}

@@ -227,7 +227,6 @@ func buildConfigResponse(conf map[string]interface{}) (*protomfx.Config, error) 
 
 	profileConfig := &protomfx.Config{
 		ContentType: config.ContentType,
-		Write:       config.Write,
 		Transformer: transformer,
 	}
 

@@ -132,6 +132,7 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, er
 
 	return listJSONMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
+		key:      apiutil.ExtractThingKey(r),
 		pageMeta: pageMeta,
 	}, nil
 }

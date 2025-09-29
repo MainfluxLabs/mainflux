@@ -170,7 +170,7 @@ func main() {
 
 	tc := thingsapi.NewClient(thConn, thingsTracer, cfg.timeout)
 
-	svc := newService(db, tc, uc, dbTracer, &cfg.emailConfig, cfg.secret, logger, cfg.loginDuration, cfg.inviteDuration, cfg.host)
+	svc := newService(db, tc, uc, dbTracer, logger, cfg)
 
 	g.Go(func() error {
 		return servershttp.Start(ctx, httpapi.MakeHandler(svc, authHttpTracer, logger), cfg.httpConfig, logger)
@@ -298,7 +298,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersServiceClient, tracer opentracing.Tracer, emailConfig *email.Config, secret string, logger logger.Logger, loginDuration time.Duration, inviteDuration time.Duration, host string) auth.Service {
+func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersServiceClient, tracer opentracing.Tracer, logger logger.Logger, cfg config) auth.Service {
 	orgsRepo := postgres.NewOrgRepo(db)
 	orgsRepo = tracing.OrgRepositoryMiddleware(tracer, orgsRepo)
 
@@ -315,9 +315,9 @@ func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersS
 	invitesRepo = tracing.InvitesRepositoryMiddleware(tracer, invitesRepo)
 
 	idProvider := uuid.New()
-	t := jwt.New(secret)
+	t := jwt.New(cfg.secret)
 
-	authEmailer, err := emailer.New(host, emailConfig)
+	authEmailer, err := emailer.New(cfg.host, &cfg.emailConfig)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to configure e-mailing util: %s", err.Error()))
 	}
@@ -339,7 +339,7 @@ func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersS
 		}, []string{"method"}),
 	)
 
-	svc := auth.New(orgsRepo, tc, uc, keysRepo, rolesRepo, membsRepo, invitesRepo, authEmailer, idProvider, t, loginDuration, inviteDuration)
+	svc := auth.New(orgsRepo, tc, uc, keysRepo, rolesRepo, membsRepo, invitesRepo, authEmailer, idProvider, t, cfg.loginDuration, cfg.inviteDuration)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

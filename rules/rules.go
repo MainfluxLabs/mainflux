@@ -29,7 +29,7 @@ type Action struct {
 }
 
 type RulesPage struct {
-	apiutil.PageMetadata
+	Total uint64
 	Rules []Rule
 }
 

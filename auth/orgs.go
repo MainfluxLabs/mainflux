@@ -30,8 +30,8 @@ type Org struct {
 // OrgsPage contains page related metadata as well as list of orgs that
 // belong to this page.
 type OrgsPage struct {
-	apiutil.PageMetadata
-	Orgs []Org
+	Total uint64
+	Orgs  []Org
 }
 
 type User struct {

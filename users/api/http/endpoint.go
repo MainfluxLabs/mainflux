@@ -174,7 +174,8 @@ func listUsersEndpoint(svc users.Service) endpoint.Endpoint {
 		if err != nil {
 			return users.UserPage{}, err
 		}
-		return buildUsersResponse(up), nil
+
+		return buildUsersResponse(up, pm), nil
 	}
 }
 
@@ -284,12 +285,16 @@ func restoreEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
-func buildUsersResponse(up users.UserPage) userPageRes {
+func buildUsersResponse(up users.UserPage, pm users.PageMetadata) userPageRes {
 	res := userPageRes{
 		pageRes: pageRes{
 			Total:  up.Total,
-			Offset: up.Offset,
-			Limit:  up.Limit,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
+			Email:  pm.Email,
+			Status: pm.Status,
 		},
 		Users: []viewUserRes{},
 	}
