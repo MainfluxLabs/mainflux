@@ -22,17 +22,34 @@ func listJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 		}
 
 		var page readers.JSONMessagesPage
-		switch {
-		case req.key != "":
-			pc, err := getPubConfByKey(ctx, req.key)
-			if err != nil {
-				return nil, err
-			}
-			req.pageMeta.Publisher = pc.PublisherID
-		default:
-			if err := isAdmin(ctx, req.token); err != nil {
-				return nil, err
-			}
+		pc, err := getPubConfByKey(ctx, req.key)
+		if err != nil {
+			return nil, err
+		}
+		req.pageMeta.Publisher = pc.PublisherID
+
+		page, err = svc.ListJSONMessages(ctx, req.pageMeta)
+		if err != nil {
+			return nil, err
+		}
+
+		return listJSONMessagesRes{
+			JSONPageMetadata: req.pageMeta,
+			Total:            page.Total,
+			Messages:         page.Messages,
+		}, nil
+	}
+}
+
+func listAdminJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listJSONMessagesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := isAdmin(ctx, req.token); err != nil {
+			return nil, err
 		}
 
 		page, err := svc.ListJSONMessages(ctx, req.pageMeta)
@@ -46,6 +63,7 @@ func listJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 			Messages:         page.Messages,
 		}, nil
 	}
+
 }
 
 func listSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
@@ -79,6 +97,31 @@ func listSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint 
 			Total:             page.Total,
 			Messages:          page.Messages,
 		}, nil
+	}
+}
+
+func listAdminSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listSenMLMessagesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := isAdmin(ctx, req.token); err != nil {
+			return nil, err
+		}
+
+		page, err := svc.ListSenMLMessages(ctx, req.pageMeta)
+		if err != nil {
+			return nil, err
+		}
+
+		return listSenMLMessagesRes{
+			SenMLPageMetadata: req.pageMeta,
+			Total:             page.Total,
+			Messages:          page.Messages,
+		}, nil
+
 	}
 }
 
