@@ -3030,12 +3030,17 @@ func TestIdentify(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("failed to create thing: %s", err))
 	th := ths[0]
 
-	ir := identifyReq{Key: th.Key, Type: "inline"}
-	data := toJSON(ir)
+	externalKey := "abc123"
+	err = svc.CreateExternalThingKey(context.Background(), token, externalKey, th.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	irInline := identifyReq{Key: th.Key, Type: things.KeyTypeInline}
+	dataInline := toJSON(irInline)
+
+	irExternal := identifyReq{Key: externalKey, Type: things.KeyTypeExternal}
+	dataExternal := toJSON(irExternal)
 
 	nonexistentData := toJSON(identifyReq{Key: wrongValue, Type: "inline"})
-
-	// TODO: add support for and tests for external keys as well
 
 	cases := map[string]struct {
 		contentType string
@@ -3044,7 +3049,7 @@ func TestIdentify(t *testing.T) {
 	}{
 		"identify existing thing": {
 			contentType: contentTypeJSON,
-			req:         data,
+			req:         dataInline,
 			status:      http.StatusOK,
 		},
 		"identify non-existent thing": {
@@ -3054,7 +3059,7 @@ func TestIdentify(t *testing.T) {
 		},
 		"identify with missing content type": {
 			contentType: wrongValue,
-			req:         data,
+			req:         dataInline,
 			status:      http.StatusUnsupportedMediaType,
 		},
 		"identify with empty JSON request": {
@@ -3066,6 +3071,11 @@ func TestIdentify(t *testing.T) {
 			contentType: contentTypeJSON,
 			req:         emptyValue,
 			status:      http.StatusBadRequest,
+		},
+		"identify thing with external key": {
+			contentType: contentTypeJSON,
+			req:         dataExternal,
+			status:      http.StatusOK,
 		},
 	}
 

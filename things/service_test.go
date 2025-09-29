@@ -1558,25 +1558,44 @@ func TestIdentify(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
 
+	externalKey := "abc123"
+	err = svc.CreateExternalThingKey(context.Background(), token, externalKey, th.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
 	cases := map[string]struct {
-		token string
-		id    string
-		err   error
+		key     string
+		keyType string
+		id      string
+		err     error
 	}{
-		"identify existing thing": {
-			token: th.Key,
-			id:    th.ID,
-			err:   nil,
+		"identify thing with inline key": {
+			key:     th.Key,
+			keyType: things.KeyTypeInline,
+			id:      th.ID,
+			err:     nil,
 		},
-		"identify non-existing thing": {
-			token: wrongValue,
-			id:    emptyValue,
-			err:   dbutil.ErrNotFound,
+		"identify thing with invalid inline key": {
+			key:     wrongValue,
+			keyType: things.KeyTypeInline,
+			id:      emptyValue,
+			err:     dbutil.ErrNotFound,
+		},
+		"identify thing with external key": {
+			key:     externalKey,
+			keyType: things.KeyTypeExternal,
+			id:      th.ID,
+			err:     nil,
+		},
+		"identify thing with invalid external key": {
+			key:     wrongValue,
+			keyType: things.KeyTypeExternal,
+			id:      emptyValue,
+			err:     dbutil.ErrNotFound,
 		},
 	}
 
 	for desc, tc := range cases {
-		id, err := svc.Identify(context.Background(), things.KeyTypeInline, tc.token)
+		id, err := svc.Identify(context.Background(), tc.keyType, tc.key)
 		assert.Equal(t, tc.id, id, fmt.Sprintf("%s: expected %s got %s\n", desc, tc.id, id))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
