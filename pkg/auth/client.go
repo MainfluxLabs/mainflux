@@ -35,7 +35,6 @@ func New(redisClient *redis.Client, things protomfx.ThingsServiceClient) Client 
 }
 
 func (c client) Identify(ctx context.Context, keyType, thingKey string) (string, error) {
-	// TODO: where in the auth service's redis client are thing keys cached? -- cache them by type once i figure it out
 	tkey := keyPrefix + ":" + thingKey
 	thingID, err := c.redisClient.Get(ctx, tkey).Result()
 	if err != nil {
