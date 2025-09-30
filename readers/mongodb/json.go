@@ -44,15 +44,14 @@ func (jr *jsonRepository) Backup(ctx context.Context, rpm readers.JSONPageMetada
 }
 
 func (jr *jsonRepository) DeleteMessages(ctx context.Context, rpm readers.JSONPageMetadata) error {
-	col := jr.db.Collection(jsonCollection)
-
+	coll := jr.db.Collection(jsonCollection)
 	filter := jr.fmtCondition(rpm)
 
 	if len(filter) == 0 {
 		return errors.Wrap(errors.ErrDeleteMessages, errors.New("no delete criteria specified"))
 	}
 
-	_, err := col.DeleteMany(ctx, filter)
+	_, err := coll.DeleteMany(ctx, filter)
 	if err != nil {
 		return errors.Wrap(errors.ErrDeleteMessages, err)
 	}
@@ -80,7 +79,7 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 }
 
 func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
-	col := jr.db.Collection(jsonCollection)
+	coll := jr.db.Collection(jsonCollection)
 	filter := jr.fmtCondition(rpm)
 
 	sortMap := bson.D{{Key: jsonOrder, Value: -1}}
@@ -90,7 +89,7 @@ func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetad
 		findOpts.SetLimit(int64(rpm.Limit)).SetSkip(int64(rpm.Offset))
 	}
 
-	cursor, err := col.Find(ctx, filter, findOpts)
+	cursor, err := coll.Find(ctx, filter, findOpts)
 	if err != nil {
 		return readers.JSONMessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
 	}
@@ -105,7 +104,7 @@ func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetad
 		messages = append(messages, m)
 	}
 
-	total, err := col.CountDocuments(ctx, filter)
+	total, err := coll.CountDocuments(ctx, filter)
 	if err != nil {
 		return readers.JSONMessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
 	}

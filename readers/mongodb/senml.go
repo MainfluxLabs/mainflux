@@ -83,7 +83,7 @@ func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Mess
 }
 
 func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
-	col := sr.db.Collection(senmlCollection)
+	coll := sr.db.Collection(senmlCollection)
 	filter := sr.fmtCondition(rpm)
 
 	sortMap := bson.D{{Key: senmlOrder, Value: -1}}
@@ -93,7 +93,7 @@ func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLPageMet
 		findOpts.SetLimit(int64(rpm.Limit)).SetSkip(int64(rpm.Offset))
 	}
 
-	cursor, err := col.Find(ctx, filter, findOpts)
+	cursor, err := coll.Find(ctx, filter, findOpts)
 	if err != nil {
 		return readers.SenMLMessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
 	}
@@ -108,7 +108,7 @@ func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLPageMet
 		messages = append(messages, m)
 	}
 
-	total, err := col.CountDocuments(ctx, filter)
+	total, err := coll.CountDocuments(ctx, filter)
 	if err != nil {
 		return readers.SenMLMessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
 	}
