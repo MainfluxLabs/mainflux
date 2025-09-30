@@ -115,10 +115,10 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	repo := newService(auth, tc, db, logger)
+	svc := newService(auth, tc, db, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, api.MakeHandler(repo, svcName, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, api.MakeHandler(svc, svcName, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
