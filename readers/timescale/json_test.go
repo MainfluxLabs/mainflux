@@ -1,5 +1,6 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
+
 package timescale_test
 
 import (
