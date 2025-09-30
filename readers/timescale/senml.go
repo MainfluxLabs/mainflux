@@ -52,7 +52,7 @@ func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenML
 	defer func() {
 		if err != nil {
 			if txErr := tx.Rollback(); txErr != nil {
-				err = errors.Wrap(err, errors.Wrap(errors.ErrTransRollback, txErr))
+				err = errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, txErr))
 			}
 			return
 		}
@@ -94,7 +94,7 @@ func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Mess
 	defer func() {
 		if err != nil {
 			if txErr := tx.Rollback(); txErr != nil {
-				err = errors.Wrap(err, errors.Wrap(errors.ErrTransRollback, txErr))
+				err = errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, txErr))
 			}
 			return
 		}

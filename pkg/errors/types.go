@@ -22,7 +22,7 @@ var (
 	ErrInvalidMessage = errors.New("invalid message representation")
 
 	// ErrTransRollback indicates failure occured while trying to rollback transaction.
-	ErrTransRollback = errors.New("failed to rollback transaction")
+	ErrTxRollback = errors.New("failed to rollback transaction")
 
 	// ErrBackupMessages indicates failure occurred while backing up messages from the database.
 	ErrBackupMessages = New("failed to backup messages")

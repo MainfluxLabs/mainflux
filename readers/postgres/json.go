@@ -164,7 +164,7 @@ func (jr *jsonRepository) DeleteMessages(ctx context.Context, rpm readers.JSONPa
 	defer func() {
 		if err != nil {
 			if txErr := tx.Rollback(); txErr != nil {
-				err = errors.Wrap(err, errors.Wrap(errors.ErrTransRollback, txErr))
+				err = errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, txErr))
 			}
 			return
 		}
@@ -217,7 +217,7 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 	defer func() {
 		if err != nil {
 			if txErr := tx.Rollback(); txErr != nil {
-				err = errors.Wrap(err, errors.Wrap(errors.ErrTransRollback, txErr))
+				err = errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, txErr))
 			}
 			return
 		}
