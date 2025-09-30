@@ -76,7 +76,7 @@ func NewHandler(publisher messaging.Publisher, es redis.EventStore,
 }
 
 // AuthConnect is called on device connection,
-// prior forwarding to the MQTT broker
+// prior to forwarding to the MQTT broker
 func (h *handler) AuthConnect(c *session.Client) error {
 	if c == nil {
 		return ErrClientNotInitialized
