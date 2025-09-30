@@ -45,7 +45,7 @@ var (
 	idProvider = uuid.New()
 )
 
-func TestListAllMessagesSenML(t *testing.T) {
+func TestListSenMLMessages(t *testing.T) {
 	reader := treader.NewSenMLRepository(db)
 	writer := twriter.New(db)
 

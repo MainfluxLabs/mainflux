@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestListAllMessagesJSON(t *testing.T) {
+func TestListJSONMessages(t *testing.T) {
 	reader := preader.NewJSONRepository(db)
 	writer := pwriter.New(db)
 
@@ -132,7 +132,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 	}
 }
 
-func TestDeleteMessagesJSON(t *testing.T) {
+func TestDeleteJSONMessages(t *testing.T) {
 	reader := preader.NewJSONRepository(db)
 	writer := pwriter.New(db)
 

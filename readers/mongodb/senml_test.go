@@ -51,7 +51,7 @@ var (
 	idProvider = uuid.New()
 )
 
-func TestListAllMessagesSenML(t *testing.T) {
+func TestListSenMLMessages(t *testing.T) {
 	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(addr))
 	require.Nil(t, err, fmt.Sprintf("Creating new MongoDB client expected to succeed: %s.\n", err))
 

@@ -50,7 +50,7 @@ var (
 	idProvider = uuid.New()
 )
 
-func TestListAllMessagesSenML(t *testing.T) {
+func TestListSenMLMessages(t *testing.T) {
 	reader := preader.NewSenMLRepository(db)
 	writer := pwriter.New(db)
 
@@ -419,7 +419,7 @@ func TestListAllMessagesSenML(t *testing.T) {
 	}
 }
 
-func TestDeleteMessagesSenML(t *testing.T) {
+func TestDeleteSenMLMessages(t *testing.T) {
 	reader := preader.NewSenMLRepository(db)
 	writer := pwriter.New(db)
 

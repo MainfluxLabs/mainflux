@@ -21,7 +21,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func TestListAllMessagesJSON(t *testing.T) {
+func TestListJSONMessages(t *testing.T) {
 	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(addr))
 	require.Nil(t, err, fmt.Sprintf("Creating new MongoDB client expected to succeed: %s.\n", err))
 
