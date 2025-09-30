@@ -194,5 +194,6 @@ func (rs *readersService) getPubConfByKey(ctx context.Context, key string) (*pro
 	if err != nil {
 		return nil, err
 	}
+
 	return pc, nil
 }
