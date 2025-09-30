@@ -471,7 +471,7 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
 
-  /external-keys/{key}:
+  /things/{thingId}/external-keys/{key}:
     delete:
       summary: Remove an external thing key.
       description: Remove the specified external thing key from the thing it's associated with.
@@ -492,6 +492,8 @@ paths:
           description: Bad request.
         '401':
           description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity. 
         '404':
           description: Key not found.
         '500':

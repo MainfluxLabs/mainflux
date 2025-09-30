@@ -2757,42 +2757,55 @@ func TestRemoveExternalThingKey(t *testing.T) {
 		desc        string
 		token       string
 		externalKey string
+		thingID     string
 		err         error
 	}{
 		{
 			desc:        "remove external key as admin",
 			token:       otherToken,
 			externalKey: "abc123",
+			thingID:     createdThing.ID,
 			err:         nil,
 		},
 		{
 			desc:        "remove non-existing external key as admin",
 			token:       otherToken,
 			externalKey: "aaaa",
+			thingID:     createdThing.ID,
 			err:         dbutil.ErrNotFound,
 		},
 		{
 			desc:        "remove external key as editor",
 			token:       editorToken,
 			externalKey: "def456",
+			thingID:     createdThing.ID,
 			err:         nil,
 		},
 		{
 			desc:        "remove external key as viewer",
 			token:       viewerToken,
 			externalKey: "ghi789",
+			thingID:     createdThing.ID,
 			err:         errors.ErrAuthorization,
 		},
 		{
 			desc:        "remove external key unauthorized user",
 			token:       unauthToken,
 			externalKey: "ghi789",
+			thingID:     createdThing.ID,
+			err:         errors.ErrAuthorization,
+		},
+		{
+			desc:        "remove external key with non-matching thing id",
+			token:       otherToken,
+			externalKey: "ghi789",
+			thingID:     "non-matching",
 			err:         errors.ErrAuthorization,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.RemoveExternalThingKey(context.Background(), tc.token, tc.externalKey)
+		err := svc.RemoveExternalThingKey(context.Background(), tc.token, tc.thingID, tc.externalKey)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

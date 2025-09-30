@@ -188,7 +188,7 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		opts...,
 	))
 
-	mux.Delete("/external-keys/:key", kithttp.NewServer(
+	mux.Delete("/things/:id/external-keys/:key", kithttp.NewServer(
 		kitot.TraceServer(tracer, "remove_external_key")(removeExternalKeyEndpoint(svc)),
 		decodeRemoveExternalKey,
 		encodeResponse,
@@ -557,8 +557,9 @@ func decodeListExternalKeysByThing(_ context.Context, r *http.Request) (any, err
 
 func decodeRemoveExternalKey(_ context.Context, r *http.Request) (any, error) {
 	req := removeExternalKeyReq{
-		token: apiutil.ExtractBearerToken(r),
-		key:   bone.GetValue(r, keyKey),
+		token:   apiutil.ExtractBearerToken(r),
+		key:     bone.GetValue(r, keyKey),
+		thingID: bone.GetValue(r, apiutil.IDKey),
 	}
 
 	return req, nil

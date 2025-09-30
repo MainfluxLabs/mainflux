@@ -311,7 +311,7 @@ func (svc *mainfluxThings) CreateExternalThingKey(ctx context.Context, token, ke
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) RemoveExternalThingKey(ctx context.Context, token, key string) error {
+func (svc *mainfluxThings) RemoveExternalThingKey(ctx context.Context, token, thingID, key string) error {
 	panic("not implemented")
 
 }

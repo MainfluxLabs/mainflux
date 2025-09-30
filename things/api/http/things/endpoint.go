@@ -398,7 +398,7 @@ func removeExternalKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.RemoveExternalThingKey(ctx, req.token, req.key); err != nil {
+		if err := svc.RemoveExternalThingKey(ctx, req.token, req.thingID, req.key); err != nil {
 			return nil, err
 		}
 

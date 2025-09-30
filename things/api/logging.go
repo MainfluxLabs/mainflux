@@ -762,7 +762,7 @@ func (lm *loggingMiddleware) CreateExternalThingKey(ctx context.Context, token, 
 	return lm.svc.CreateExternalThingKey(ctx, token, key, thingID)
 }
 
-func (lm *loggingMiddleware) RemoveExternalThingKey(ctx context.Context, token, key string) (err error) {
+func (lm *loggingMiddleware) RemoveExternalThingKey(ctx context.Context, token, thingID, key string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method remove_external_thing_key for thing key %s took %s to complete", key, time.Since(begin))
 		if err != nil {
@@ -771,7 +771,7 @@ func (lm *loggingMiddleware) RemoveExternalThingKey(ctx context.Context, token, 
 		}
 	}(time.Now())
 
-	return lm.svc.RemoveExternalThingKey(ctx, token, key)
+	return lm.svc.RemoveExternalThingKey(ctx, token, thingID, key)
 }
 
 func (lm *loggingMiddleware) ListExternalKeysByThing(ctx context.Context, token, thingID string) (keys []string, err error) {

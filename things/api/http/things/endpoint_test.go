@@ -2147,7 +2147,7 @@ func TestRemoveExternalKey(t *testing.T) {
 		req := testRequest{
 			client: ts.Client(),
 			method: http.MethodDelete,
-			url:    fmt.Sprintf("%s/external-keys/%s", ts.URL, tc.key),
+			url:    fmt.Sprintf("%s/things/%s/external-keys/%s", ts.URL, createdThing.ID, tc.key),
 			token:  tc.auth,
 		}
 		res, err := req.make()

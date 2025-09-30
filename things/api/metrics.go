@@ -543,13 +543,13 @@ func (ms *metricsMiddleware) CreateExternalThingKey(ctx context.Context, token, 
 	return ms.svc.CreateExternalThingKey(ctx, token, key, thingID)
 }
 
-func (ms *metricsMiddleware) RemoveExternalThingKey(ctx context.Context, token, key string) error {
+func (ms *metricsMiddleware) RemoveExternalThingKey(ctx context.Context, token, thingID, key string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "remove_external_thing_key").Add(1)
 		ms.latency.With("method", "remove_external_thing_key").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.RemoveExternalThingKey(ctx, token, key)
+	return ms.svc.RemoveExternalThingKey(ctx, token, thingID, key)
 }
 
 func (ms *metricsMiddleware) ListExternalKeysByThing(ctx context.Context, token, thingID string) ([]string, error) {

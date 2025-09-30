@@ -144,8 +144,9 @@ type Service interface {
 	// CreateExternalThingKey creates a new external thing key. The authenticated user must have Editor rights within the Thing's belonging Group.
 	CreateExternalThingKey(ctx context.Context, token, key, thingID string) error
 
-	// RemoveExternalThingKey removes the appropriate external thing key. The authenticated user must have Editor rights within the Thing's belonging Group.
-	RemoveExternalThingKey(ctx context.Context, token, key string) error
+	// RemoveExternalThingKey removes the appropriate external thing key. The key must belong to the thing identified by `thingID`,
+	// and the authenticated user must have Editor rights within the Thing's belonging Group.
+	RemoveExternalThingKey(ctx context.Context, token, thingID, key string) error
 
 	// ListExternalKeysByThingID retrieves a list of all external keys associated with the given Thing.
 	// The authenticated user must have Viewer rights within the Thing's belonging group.
@@ -786,10 +787,14 @@ func (ts *thingsService) CreateExternalThingKey(ctx context.Context, token, key,
 	return nil
 }
 
-func (ts *thingsService) RemoveExternalThingKey(ctx context.Context, token, key string) error {
-	thingID, err := ts.Identify(ctx, KeyTypeExternal, key)
+func (ts *thingsService) RemoveExternalThingKey(ctx context.Context, token, thingID, key string) error {
+	keyThingID, err := ts.Identify(ctx, KeyTypeExternal, key)
 	if err != nil {
 		return err
+	}
+
+	if keyThingID != thingID {
+		return errors.ErrAuthorization
 	}
 
 	accessReq := UserAccessReq{

@@ -396,8 +396,9 @@ func (req listExternalKeysByThingReq) validate() error {
 }
 
 type removeExternalKeyReq struct {
-	token string
-	key   string
+	token   string
+	key     string
+	thingID string
 }
 
 func (req removeExternalKeyReq) validate() error {
@@ -407,6 +408,10 @@ func (req removeExternalKeyReq) validate() error {
 
 	if req.key == "" {
 		return apiutil.ErrMissingExternalThingKey
+	}
+
+	if req.thingID == "" {
+		return apiutil.ErrMissingThingID
 	}
 
 	return nil
