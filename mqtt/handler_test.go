@@ -9,6 +9,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	"github.com/MainfluxLabs/mainflux/mqtt/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -34,12 +35,7 @@ var (
 	logBuffer     = bytes.Buffer{}
 	sessionClient = session.Client{
 		ID:       clientID,
-		Username: thingID,
-		Password: []byte(password),
-	}
-	invalidThingSessionClient = session.Client{
-		ID:       clientID,
-		Username: invalidID,
+		Username: apiutil.ThingKeyTypeInline,
 		Password: []byte(password),
 	}
 )
@@ -62,7 +58,7 @@ func TestAuthConnect(t *testing.T) {
 			err:  mqtt.ErrMissingClientID,
 			session: &session.Client{
 				ID:       "",
-				Username: thingID,
+				Username: apiutil.ThingKeyTypeInline,
 				Password: []byte(password),
 			},
 		},
@@ -71,14 +67,9 @@ func TestAuthConnect(t *testing.T) {
 			err:  errors.ErrAuthentication,
 			session: &session.Client{
 				ID:       clientID,
-				Username: thingID,
+				Username: apiutil.ThingKeyTypeInline,
 				Password: []byte(""),
 			},
-		},
-		{
-			desc:    "connect with valid password and invalid username",
-			err:     errors.ErrAuthentication,
-			session: &invalidThingSessionClient,
 		},
 		{
 			desc:    "connect with valid username and password",
@@ -152,12 +143,6 @@ func TestAuthSubscribe(t *testing.T) {
 			client: &sessionClient,
 			err:    mqtt.ErrMissingTopicSub,
 			topic:  nil,
-		},
-		{
-			desc:   "subscribe with invalid thing ID",
-			client: &invalidThingSessionClient,
-			err:    mqtt.ErrAuthentication,
-			topic:  &topics,
 		},
 		{
 			desc:   "subscribe with active session and valid topics",
@@ -345,7 +330,7 @@ func TestDisconnect(t *testing.T) {
 			desc:   "disconnect with valid session",
 			client: &sessionClient,
 			topic:  topics,
-			logMsg: fmt.Sprintf(mqtt.LogInfoDisconnected, clientID, thingID),
+			logMsg: fmt.Sprintf(mqtt.LogInfoDisconnected, clientID),
 		},
 	}
 
