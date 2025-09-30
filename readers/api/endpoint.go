@@ -65,9 +65,6 @@ func listSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint 
 			}
 			req.pageMeta.Publisher = pc.PublisherID
 		default:
-			// TODO: this case can't happen currently - the request's
-			// .validate() method calls apiutil.ThingKey's .Validate() method
-			// which makes sure that the key must be supplied
 			if err := isAdmin(ctx, req.token); err != nil {
 				return nil, err
 			}
