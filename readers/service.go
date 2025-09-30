@@ -146,12 +146,10 @@ func (rs *readersService) DeleteJSONMessages(ctx context.Context, token, key str
 		}
 		rpm.Publisher = pc.PublisherID
 
-	case token != "":
+	default:
 		if err := rs.isAdmin(ctx, token); err != nil {
 			return err
 		}
-	default:
-		return errors.ErrAuthentication
 	}
 
 	return rs.json.DeleteMessages(ctx, rpm)
