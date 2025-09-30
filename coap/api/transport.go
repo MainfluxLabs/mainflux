@@ -14,6 +14,7 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/coap"
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
@@ -26,9 +27,10 @@ import (
 )
 
 const (
-	protocol     = "coap"
-	authQuery    = "auth"
-	startObserve = 0 // observe option value that indicates start of observation
+	protocol      = "coap"
+	authQuery     = "auth"
+	authTypeQuery = "type"
+	startObserve  = 0 // observe option value that indicates start of observation
 )
 
 var errBadOptions = errors.New("bad options")
@@ -85,9 +87,9 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 	}
 	switch m.Code {
 	case codes.GET:
-		err = handleGet(m, w.Client(), msg, key)
+		err = handleGet(m, w.Client(), msg, key.Type, key.Key)
 	case codes.POST:
-		err = service.Publish(context.Background(), key, msg)
+		err = service.Publish(context.Background(), key.Type, key.Key, msg)
 	default:
 		err = dbutil.ErrNotFound
 	}
@@ -107,7 +109,7 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 	}
 }
 
-func handleGet(m *mux.Message, c mux.Client, msg protomfx.Message, key string) error {
+func handleGet(m *mux.Message, c mux.Client, msg protomfx.Message, keyType, key string) error {
 	var obs uint32
 	obs, err := m.Options.Observe()
 	if err != nil {
@@ -116,9 +118,9 @@ func handleGet(m *mux.Message, c mux.Client, msg protomfx.Message, key string) e
 	}
 	if obs == startObserve {
 		c := coap.NewClient(c, m.Token, logger)
-		return service.Subscribe(context.Background(), key, msg.Subtopic, c)
+		return service.Subscribe(context.Background(), keyType, key, msg.Subtopic, c)
 	}
-	return service.Unsubscribe(context.Background(), key, msg.Subtopic, m.Token.String())
+	return service.Unsubscribe(context.Background(), keyType, key, msg.Subtopic, m.Token.String())
 }
 
 func decodeMessage(msg *mux.Message) (protomfx.Message, error) {
@@ -153,17 +155,35 @@ func decodeMessage(msg *mux.Message) (protomfx.Message, error) {
 	return ret, nil
 }
 
-func parseKey(msg *mux.Message) (string, error) {
+func parseKey(msg *mux.Message) (apiutil.ThingKey, error) {
 	if obs, _ := msg.Options.Observe(); obs != 0 && msg.Code == codes.GET {
-		return "", nil
+		return apiutil.ThingKey{}, nil
 	}
-	authKey, err := msg.Options.GetString(message.URIQuery)
+
+	queries, err := msg.Options.Queries()
 	if err != nil {
-		return "", err
+		return apiutil.ThingKey{}, err
 	}
-	vars := strings.Split(authKey, "=")
-	if len(vars) != 2 || vars[0] != authQuery {
-		return "", errors.ErrAuthorization
+
+	var thingKey apiutil.ThingKey
+
+	for _, query := range queries {
+		parts := strings.Split(query, "=")
+		if len(parts) != 2 {
+			return apiutil.ThingKey{}, errors.ErrAuthentication
+		}
+
+		switch parts[0] {
+		case authQuery:
+			thingKey.Key = parts[1]
+		case authTypeQuery:
+			thingKey.Type = parts[1]
+		}
 	}
-	return vars[1], nil
+
+	if err := thingKey.Validate(); err != nil {
+		return apiutil.ThingKey{}, err
+	}
+
+	return thingKey, nil
 }
