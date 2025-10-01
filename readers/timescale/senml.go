@@ -80,7 +80,7 @@ func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenML
 	_, err = tx.NamedExecContext(ctx, q, params)
 	if err != nil {
 		if rbErr := tx.Rollback(); rbErr != nil {
-			return errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, rbErr))
+			return errors.Wrap(errors.ErrDeleteMessages, err)
 		}
 		return sr.handlePgError(err, errors.ErrDeleteMessages)
 	}
@@ -98,19 +98,6 @@ func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Mess
 		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 
-	defer func() {
-		if err != nil {
-			if txErr := tx.Rollback(); txErr != nil {
-				err = errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, txErr))
-			}
-			return
-		}
-
-		if err = tx.Commit(); err != nil {
-			err = errors.Wrap(errors.ErrSaveMessages, err)
-		}
-	}()
-
 	q := `INSERT INTO senml (subtopic, publisher, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
           time, update_time)
@@ -127,7 +114,7 @@ func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Mess
 		_, err := tx.NamedExecContext(ctx, q, senmlMsg)
 		if err != nil {
 			if rbErr := tx.Rollback(); rbErr != nil {
-				return errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, rbErr))
+				return errors.Wrap(errors.ErrSaveMessages, err)
 			}
 			return sr.handlePgError(err, errors.ErrSaveMessages)
 		}

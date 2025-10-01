@@ -72,7 +72,7 @@ func (jr *jsonRepository) DeleteMessages(ctx context.Context, rpm readers.JSONPa
 	_, err = tx.NamedExecContext(ctx, q, params)
 	if err != nil {
 		if rbErr := tx.Rollback(); rbErr != nil {
-			return errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, rbErr))
+			return errors.Wrap(errors.ErrDeleteMessages, err)
 		}
 		return jr.handlePgError(err, errors.ErrDeleteMessages)
 	}
@@ -89,19 +89,6 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 	if err != nil {
 		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
-
-	defer func() {
-		if err != nil {
-			if txErr := tx.Rollback(); txErr != nil {
-				err = errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, txErr))
-			}
-			return
-		}
-
-		if err = tx.Commit(); err != nil {
-			err = errors.Wrap(errors.ErrSaveMessages, err)
-		}
-	}()
 
 	q := `INSERT INTO json (subtopic, publisher, protocol, payload, created)
           VALUES (:subtopic, :publisher, :protocol, :payload, :created);`
@@ -133,7 +120,7 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 		_, err := tx.NamedExecContext(ctx, q, jsonMsg)
 		if err != nil {
 			if rbErr := tx.Rollback(); rbErr != nil {
-				return errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, rbErr))
+				return errors.Wrap(errors.ErrSaveMessages, err)
 			}
 			return jr.handlePgError(err, errors.ErrSaveMessages)
 		}
