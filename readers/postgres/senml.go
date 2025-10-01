@@ -53,8 +53,7 @@ func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenML
 		"to":           rpm.To,
 	}
 
-	_, err := sr.db.NamedExecContext(ctx, q, params)
-	if err != nil {
+	if _, err := sr.db.NamedExecContext(ctx, q, params); err != nil {
 		return sr.handlePgError(err, errors.ErrDeleteMessages)
 	}
 

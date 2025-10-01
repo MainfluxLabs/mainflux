@@ -51,8 +51,7 @@ func (jr *jsonRepository) DeleteMessages(ctx context.Context, rpm readers.JSONPa
 		"to":        rpm.To,
 	}
 
-	_, err := jr.db.NamedExecContext(ctx, q, params)
-	if err != nil {
+	if _, err := jr.db.NamedExecContext(ctx, q, params); err != nil {
 		return jr.handlePgError(err, errors.ErrDeleteMessages)
 	}
 
