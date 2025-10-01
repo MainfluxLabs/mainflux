@@ -3,6 +3,8 @@
 
 package errors
 
+import "errors"
+
 var (
 	// ErrAuthentication indicates failure occurred while authenticating the entity.
 	ErrAuthentication = New("failed to perform authentication over the entity")
@@ -15,6 +17,9 @@ var (
 
 	// ErrDeleteMessage indicates failure occurred while deleting messages in the database.
 	ErrDeleteMessages = New("failed to delete messages")
+
+	// ErrInvalidMessage indicates that message format is invalid.
+	ErrInvalidMessage = errors.New("invalid message representation")
 
 	// ErrBackupMessages indicates failure occurred while backing up messages from the database.
 	ErrBackupMessages = New("failed to backup messages")

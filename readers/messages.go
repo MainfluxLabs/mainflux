@@ -32,31 +32,32 @@ const (
 // ErrReadMessages indicates failure occurred while reading messages from database.
 var ErrReadMessages = errors.New("failed to read messages from database")
 
-// MessageRepository specifies message reader API.
-type MessageRepository interface {
-	// ListJSONMessages retrieves the json messages with given filters.
-	ListJSONMessages(ctx context.Context, rpm JSONPageMetadata) (JSONMessagesPage, error)
+type JSONMessageRepository interface {
+	// Retrieve retrieves the json messages with given filters.
+	Retrieve(ctx context.Context, rpm JSONPageMetadata) (JSONMessagesPage, error)
 
-	// ListSenMLMessages retrieves the senml messages with given filters.
-	ListSenMLMessages(ctx context.Context, rpm SenMLPageMetadata) (SenMLMessagesPage, error)
+	// Backup backups the json messages with given filters.
+	Backup(ctx context.Context, rpm JSONPageMetadata) (JSONMessagesPage, error)
 
-	// BackupJSONMessages backups the json messages with given filters.
-	BackupJSONMessages(ctx context.Context, rpm JSONPageMetadata) (JSONMessagesPage, error)
+	// Restore restores the json messages.
+	Restore(ctx context.Context, messages ...Message) error
 
-	// BackupSenMLMessages backups the senml messages with given filters.
-	BackupSenMLMessages(ctx context.Context, rpm SenMLPageMetadata) (SenMLMessagesPage, error)
+	// Remove deletes the json messages within a time range.
+	Remove(ctx context.Context, rpm JSONPageMetadata) error
+}
 
-	// RestoreJSONMessages restores the json messages.
-	RestoreJSONMessages(ctx context.Context, messages ...Message) error
+type SenMLMessageRepository interface {
+	// Retrieve retrieves the senml messages with given filters.
+	Retrieve(ctx context.Context, rpm SenMLPageMetadata) (SenMLMessagesPage, error)
 
-	// RestoreSenMLMessages restores the senml messages.
-	RestoreSenMLMessages(ctx context.Context, messages ...Message) error
+	// Backup backups the senml messages with given filters.
+	Backup(ctx context.Context, rpm SenMLPageMetadata) (SenMLMessagesPage, error)
 
-	// DeleteJSONMessages deletes the json messages within a time range.
-	DeleteJSONMessages(ctx context.Context, rpm JSONPageMetadata) error
+	// Restore restores the senml messages.
+	Restore(ctx context.Context, messages ...Message) error
 
-	// DeleteSenMLMessages deletes the json messages within a time range.
-	DeleteSenMLMessages(ctx context.Context, rpm SenMLPageMetadata) error
+	// Remove deletes the senml messages within a time range.
+	Remove(ctx context.Context, rpm SenMLPageMetadata) error
 }
 
 // Message represents any message format.
