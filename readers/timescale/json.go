@@ -41,24 +41,6 @@ func (jr *jsonRepository) Backup(ctx context.Context, rpm readers.JSONPageMetada
 }
 
 func (jr *jsonRepository) DeleteMessages(ctx context.Context, rpm readers.JSONPageMetadata) error {
-	tx, err := jr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(errors.ErrDeleteMessages, err)
-	}
-
-	defer func() {
-		if err != nil {
-			if txErr := tx.Rollback(); txErr != nil {
-				err = errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, txErr))
-			}
-			return
-		}
-
-		if err = tx.Commit(); err != nil {
-			err = errors.Wrap(errors.ErrDeleteMessages, err)
-		}
-	}()
-
 	condition := jr.fmtCondition(rpm)
 	q := fmt.Sprintf("DELETE FROM json %s", condition)
 	params := map[string]interface{}{
@@ -69,16 +51,9 @@ func (jr *jsonRepository) DeleteMessages(ctx context.Context, rpm readers.JSONPa
 		"to":        rpm.To,
 	}
 
-	_, err = tx.NamedExecContext(ctx, q, params)
+	_, err := jr.db.NamedExecContext(ctx, q, params)
 	if err != nil {
-		if rbErr := tx.Rollback(); rbErr != nil {
-			return errors.Wrap(errors.ErrDeleteMessages, err)
-		}
 		return jr.handlePgError(err, errors.ErrDeleteMessages)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrap(errors.ErrDeleteMessages, err)
 	}
 
 	return nil
@@ -125,10 +100,11 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 			return jr.handlePgError(err, errors.ErrSaveMessages)
 		}
 
-		if err := tx.Commit(); err != nil {
-			return errors.Wrap(errors.ErrSaveMessages, err)
-		}
 
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 
 	return nil

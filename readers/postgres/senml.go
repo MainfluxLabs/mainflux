@@ -38,11 +38,6 @@ func (sr *senmlRepository) Backup(ctx context.Context, rpm readers.SenMLPageMeta
 }
 
 func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenMLPageMetadata) error {
-	tx, err := sr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(errors.ErrSaveMessages, err)
-	}
-
 	condition := sr.fmtCondition(rpm)
 	q := fmt.Sprintf("DELETE FROM senml %s", condition)
 	params := map[string]interface{}{
@@ -58,16 +53,9 @@ func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenML
 		"to":           rpm.To,
 	}
 
-	_, err = tx.NamedExecContext(ctx, q, params)
+	_, err := sr.db.NamedExecContext(ctx, q, params)
 	if err != nil {
-		if rbErr := tx.Rollback(); rbErr != nil {
-			return errors.Wrap(errors.ErrSaveMessages, err)
-		}
 		return sr.handlePgError(err, errors.ErrDeleteMessages)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrap(errors.ErrDeleteMessages, err)
 	}
 
 	return nil
@@ -233,11 +221,10 @@ func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Mess
 			}
 			return sr.handlePgError(err, errors.ErrSaveMessages)
 		}
+	}
 
-		if err := tx.Commit(); err != nil {
-			return errors.Wrap(errors.ErrSaveMessages, err)
-		}
-
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 
 	return nil
