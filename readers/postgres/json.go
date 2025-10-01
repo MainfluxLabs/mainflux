@@ -210,7 +210,6 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 			}
 			return jr.handlePgError(err, errors.ErrSaveMessages)
 		}
-
 	}
 
 	if err := tx.Commit(); err != nil {
