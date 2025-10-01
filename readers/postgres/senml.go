@@ -213,8 +213,7 @@ func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Mess
 			return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
 		}
 
-		_, err := tx.NamedExecContext(ctx, q, senmlMesage)
-		if err != nil {
+		if _, err := tx.NamedExecContext(ctx, q, senmlMesage); err != nil {
 			if rbErr := tx.Rollback(); rbErr != nil {
 				return errors.Wrap(errors.ErrSaveMessages, err)
 			}

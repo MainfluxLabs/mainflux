@@ -203,8 +203,7 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 			return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
 		}
 
-		_, err := tx.NamedExecContext(ctx, q, jsonMsg)
-		if err != nil {
+		if _, err := tx.NamedExecContext(ctx, q, jsonMsg); err != nil {
 			if rbErr := tx.Rollback(); rbErr != nil {
 				return errors.Wrap(errors.ErrSaveMessages, err)
 			}
