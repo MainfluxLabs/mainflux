@@ -61,12 +61,11 @@ func deleteJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		err := svc.DeleteJSONMessages(ctx, req.token, req.key, req.pageMeta)
-		if err != nil {
+		if err := svc.DeleteJSONMessages(ctx, req.token, req.key, req.pageMeta); err != nil {
 			return nil, err
 		}
 
-		return nil, nil
+		return removeRes{}, nil
 	}
 }
 
@@ -77,12 +76,11 @@ func deleteSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		err := svc.DeleteSenMLMessages(ctx, req.token, req.key, req.pageMeta)
-		if err != nil {
+		if err := svc.DeleteSenMLMessages(ctx, req.token, req.key, req.pageMeta); err != nil {
 			return nil, err
 		}
 
-		return nil, nil
+		return removeRes{}, nil
 	}
 }
 
