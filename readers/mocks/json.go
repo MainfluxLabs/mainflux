@@ -29,7 +29,7 @@ func NewJSONRepository(profileID string, messages []readers.Message) readers.JSO
 	}
 }
 
-func (repo *jsonRepositoryMock) ListMessages(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
+func (repo *jsonRepositoryMock) Retrieve(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	return repo.readAll(rpm)
 }
 
@@ -37,7 +37,7 @@ func (repo *jsonRepositoryMock) Backup(ctx context.Context, rpm readers.JSONPage
 	return repo.readAll(rpm)
 }
 
-func (repo *jsonRepositoryMock) DeleteMessages(ctx context.Context, rpm readers.JSONPageMetadata) error {
+func (repo *jsonRepositoryMock) Remove(ctx context.Context, rpm readers.JSONPageMetadata) error {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 

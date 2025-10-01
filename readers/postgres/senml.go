@@ -29,7 +29,7 @@ func NewSenMLRepository(db dbutil.Database) readers.SenMLMessageRepository {
 	}
 }
 
-func (sr *senmlRepository) ListMessages(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
+func (sr *senmlRepository) Retrieve(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	return sr.readAll(ctx, rpm)
 }
 
@@ -37,7 +37,7 @@ func (sr *senmlRepository) Backup(ctx context.Context, rpm readers.SenMLPageMeta
 	return sr.readAll(ctx, rpm)
 }
 
-func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenMLPageMetadata) error {
+func (sr *senmlRepository) Remove(ctx context.Context, rpm readers.SenMLPageMetadata) error {
 	condition := sr.fmtCondition(rpm)
 	q := fmt.Sprintf("DELETE FROM senml %s", condition)
 	params := map[string]interface{}{
