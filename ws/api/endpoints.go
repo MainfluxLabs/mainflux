@@ -13,6 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/ws"
+	"github.com/go-zoo/bone"
 	"github.com/gorilla/websocket"
 )
 
@@ -48,9 +49,20 @@ func handshake(svc ws.Service) http.HandlerFunc {
 func decodeRequest(r *http.Request) (getConnByKey, error) {
 	authKey := apiutil.ExtractThingKey(r)
 	if authKey.Key == "" || authKey.Type == "" {
-		// Thing key not present in Authorization HTTP header, attempt to extract it from query params
-		// TODO: handle extracting thing key from query params. perhaps from separate ones:
-		// one for the key and one for the type? or maybe one param with a prefix denoting the type of key?
+		queryKey := bone.GetQuery(r, "key")
+		if len(queryKey) == 0 {
+			return getConnByKey{}, errUnauthorizedAccess
+		}
+
+		queryKeyType := bone.GetQuery(r, "keyType")
+		if len(queryKeyType) == 0 {
+			return getConnByKey{}, errUnauthorizedAccess
+		}
+
+		authKey = apiutil.ThingKey{
+			Key:  queryKey[0],
+			Type: queryKeyType[0],
+		}
 	}
 
 	if err := authKey.Validate(); err != nil {
