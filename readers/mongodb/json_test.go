@@ -130,7 +130,7 @@ func TestListJSONMessages(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ListMessages(context.Background(), tc.pageMeta)
+		result, err := reader.Retrieve(context.Background(), tc.pageMeta)
 		require.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
 		for i := 0; i < len(result.Messages); i++ {

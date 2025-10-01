@@ -32,7 +32,7 @@ func NewSenMLRepository(profileID string, messages []readers.Message) readers.Se
 	}
 }
 
-func (repo *senmlRepositoryMock) ListMessages(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
+func (repo *senmlRepositoryMock) Retrieve(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	return repo.readAll(rpm)
 }
 
@@ -50,7 +50,7 @@ func (repo *senmlRepositoryMock) Restore(ctx context.Context, messages ...reader
 	return nil
 }
 
-func (repo *senmlRepositoryMock) DeleteMessages(ctx context.Context, rpm readers.SenMLPageMetadata) error {
+func (repo *senmlRepositoryMock) Remove(ctx context.Context, rpm readers.SenMLPageMetadata) error {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 

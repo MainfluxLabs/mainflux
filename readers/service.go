@@ -75,7 +75,7 @@ func (rs *readersService) ListJSONMessages(ctx context.Context, token, key strin
 		}
 	}
 
-	return rs.json.ListMessages(ctx, rpm)
+	return rs.json.Retrieve(ctx, rpm)
 }
 
 func (rs *readersService) ListSenMLMessages(ctx context.Context, token, key string, rpm SenMLPageMetadata) (SenMLMessagesPage, error) {
@@ -92,7 +92,7 @@ func (rs *readersService) ListSenMLMessages(ctx context.Context, token, key stri
 		}
 	}
 
-	return rs.senml.ListMessages(ctx, rpm)
+	return rs.senml.Retrieve(ctx, rpm)
 }
 
 func (rs *readersService) BackupJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) (JSONMessagesPage, error) {
@@ -152,7 +152,7 @@ func (rs *readersService) DeleteJSONMessages(ctx context.Context, token, key str
 		}
 	}
 
-	return rs.json.DeleteMessages(ctx, rpm)
+	return rs.json.Remove(ctx, rpm)
 }
 
 func (rs *readersService) DeleteSenMLMessages(ctx context.Context, token, key string, rpm SenMLPageMetadata) error {
@@ -170,7 +170,7 @@ func (rs *readersService) DeleteSenMLMessages(ctx context.Context, token, key st
 		}
 	}
 
-	return rs.senml.DeleteMessages(ctx, rpm)
+	return rs.senml.Remove(ctx, rpm)
 }
 
 func (rs *readersService) isAdmin(ctx context.Context, token string) error {

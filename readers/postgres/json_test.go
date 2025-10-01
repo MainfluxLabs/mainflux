@@ -125,7 +125,7 @@ func TestListJSONMessages(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ListMessages(context.Background(), tc.pageMeta)
+		result, err := reader.Retrieve(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Messages, result.Messages))
 		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Total, result.Total))
@@ -256,13 +256,13 @@ func TestDeleteJSONMessages(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_ = reader.DeleteMessages(context.Background(), readers.JSONPageMetadata{
+		_ = reader.Remove(context.Background(), readers.JSONPageMetadata{
 			Publisher: id1,
 			From:      0,
 			To:        int64(created + int64(msgsNum)),
 		})
 
-		_ = reader.DeleteMessages(context.Background(), readers.JSONPageMetadata{
+		_ = reader.Remove(context.Background(), readers.JSONPageMetadata{
 			Publisher: id2,
 			From:      0,
 			To:        int64(created + int64(msgsNum)),
@@ -273,7 +273,7 @@ func TestDeleteJSONMessages(t *testing.T) {
 			require.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 		}
 
-		beforePage, err := reader.ListMessages(context.Background(), readers.JSONPageMetadata{
+		beforePage, err := reader.Retrieve(context.Background(), readers.JSONPageMetadata{
 			Publisher: tc.pageMeta.Publisher,
 			Subtopic:  tc.pageMeta.Subtopic,
 			Protocol:  tc.pageMeta.Protocol,
@@ -284,10 +284,10 @@ func TestDeleteJSONMessages(t *testing.T) {
 		require.Nil(t, err)
 		beforeCount := beforePage.Total
 
-		err = reader.DeleteMessages(context.Background(), tc.pageMeta)
+		err = reader.Remove(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
-		afterPage, err := reader.ListMessages(context.Background(), readers.JSONPageMetadata{
+		afterPage, err := reader.Retrieve(context.Background(), readers.JSONPageMetadata{
 			Publisher: tc.pageMeta.Publisher,
 			Subtopic:  tc.pageMeta.Subtopic,
 			Protocol:  tc.pageMeta.Protocol,

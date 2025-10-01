@@ -412,7 +412,7 @@ func TestListSenMLMessages(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		result, err := reader.ListMessages(context.Background(), tc.pageMeta)
+		result, err := reader.Retrieve(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Messages, result.Messages))
 		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Total, result.Total))
@@ -562,12 +562,12 @@ func TestDeleteSenMLMessages(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_ = reader.DeleteMessages(context.Background(), readers.SenMLPageMetadata{
+		_ = reader.Remove(context.Background(), readers.SenMLPageMetadata{
 			Publisher: pubID,
 			From:      0,
 			To:        now,
 		})
-		_ = reader.DeleteMessages(context.Background(), readers.SenMLPageMetadata{
+		_ = reader.Remove(context.Background(), readers.SenMLPageMetadata{
 			Publisher: pubID2,
 			From:      0,
 			To:        now,
@@ -600,7 +600,7 @@ func TestDeleteSenMLMessages(t *testing.T) {
 			require.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 		}
 
-		beforePage, err := reader.ListMessages(context.Background(), readers.SenMLPageMetadata{
+		beforePage, err := reader.Retrieve(context.Background(), readers.SenMLPageMetadata{
 			Publisher: tc.pageMeta.Publisher,
 			Subtopic:  tc.pageMeta.Subtopic,
 			Protocol:  tc.pageMeta.Protocol,
@@ -612,10 +612,10 @@ func TestDeleteSenMLMessages(t *testing.T) {
 		require.Nil(t, err)
 		beforeCount := beforePage.Total
 
-		err = reader.DeleteMessages(context.Background(), tc.pageMeta)
+		err = reader.Remove(context.Background(), tc.pageMeta)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
-		afterPage, err := reader.ListMessages(context.Background(), readers.SenMLPageMetadata{
+		afterPage, err := reader.Retrieve(context.Background(), readers.SenMLPageMetadata{
 			Publisher: tc.pageMeta.Publisher,
 			Subtopic:  tc.pageMeta.Subtopic,
 			Protocol:  tc.pageMeta.Protocol,

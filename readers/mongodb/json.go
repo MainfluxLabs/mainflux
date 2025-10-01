@@ -32,7 +32,7 @@ func NewJSONRepository(db *mongo.Database) readers.JSONMessageRepository {
 	}
 }
 
-func (jr *jsonRepository) ListMessages(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
+func (jr *jsonRepository) Retrieve(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	return jr.readAll(ctx, rpm)
 }
 
@@ -43,7 +43,7 @@ func (jr *jsonRepository) Backup(ctx context.Context, rpm readers.JSONPageMetada
 	return jr.readAll(ctx, backupMetadata)
 }
 
-func (jr *jsonRepository) DeleteMessages(ctx context.Context, rpm readers.JSONPageMetadata) error {
+func (jr *jsonRepository) Remove(ctx context.Context, rpm readers.JSONPageMetadata) error {
 	coll := jr.db.Collection(jsonCollection)
 	filter := jr.fmtCondition(rpm)
 
