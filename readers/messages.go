@@ -33,7 +33,7 @@ const (
 var ErrReadMessages = errors.New("failed to read messages from database")
 
 type JSONMessageRepository interface {
-	// ListMessages retrieves the json messages with given filters.
+	// Retrieve retrieves the json messages with given filters.
 	Retrieve(ctx context.Context, rpm JSONPageMetadata) (JSONMessagesPage, error)
 
 	// Backup backups the json messages with given filters.
@@ -42,12 +42,12 @@ type JSONMessageRepository interface {
 	// Restore restores the json messages.
 	Restore(ctx context.Context, messages ...Message) error
 
-	// DeleteMessages deletes the json messages within a time range.
+	// Remove deletes the json messages within a time range.
 	Remove(ctx context.Context, rpm JSONPageMetadata) error
 }
 
 type SenMLMessageRepository interface {
-	// ListMessages retrieves the senml messages with given filters.
+	// Retrieve retrieves the senml messages with given filters.
 	Retrieve(ctx context.Context, rpm SenMLPageMetadata) (SenMLMessagesPage, error)
 
 	// Backup backups the senml messages with given filters.
@@ -56,7 +56,7 @@ type SenMLMessageRepository interface {
 	// Restore restores the senml messages.
 	Restore(ctx context.Context, messages ...Message) error
 
-	// DeleteMessages deletes the senml messages within a time range.
+	// Remove deletes the senml messages within a time range.
 	Remove(ctx context.Context, rpm SenMLPageMetadata) error
 }
 
