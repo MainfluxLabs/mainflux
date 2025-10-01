@@ -53,8 +53,13 @@ Setting `MF_HTTP_ADAPTER_CA_CERTS` expects a file in PEM format of trusted CAs. 
 
 ## Usage
 
-HTTP Authorization request header contains the credentials to authenticate a Thing. The authorization header can be a plain Thing key
-or a Thing key encoded as a password for Basic Authentication. In case the Basic Authentication schema is used, the username is ignored.
+HTTP Authorization request header contains the credentials to authenticate a Thing. The Authorization header can be a:
+
+* Inline Thing key (`Authorization: Thing <key>`)
+* Inline Thing key encoded as a password for Basic Authentication (`Authorization: Basic <key>`)
+    * In this case, the username is ignored.
+* External Thing key (`Authorization: External <key>`)
+
 For more information about service capabilities and its usage, please check out
 the [API documentation](https://github.com/MainfluxLabs/mainflux/blob/master/api/openapi/http.yml).
 
