@@ -5,7 +5,6 @@ package api
 
 import (
 	"context"
-	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -164,18 +163,15 @@ func backupJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint
 		}
 
 		var data []byte
-		outputFormat := strings.ToLower(strings.TrimSpace(req.convertFormat))
-		switch outputFormat {
+		switch req.convertFormat {
 		case jsonFormat:
-			data, err = apiutil.GenerateJSON(page.MessagesPage)
-		case csvFormat:
-			data, err = apiutil.GenerateCSVFromJSON(page.MessagesPage)
+			if data, err = apiutil.GenerateJSON(page.MessagesPage); err != nil {
+				return nil, errors.Wrap(errors.ErrBackupMessages, err)
+			}
 		default:
-			return nil, errors.Wrap(errors.ErrBackupMessages, err)
-		}
-
-		if err != nil {
-			return nil, errors.Wrap(errors.ErrBackupMessages, err)
+			if data, err = apiutil.GenerateCSVFromJSON(page.MessagesPage); err != nil {
+				return nil, errors.Wrap(errors.ErrBackupMessages, err)
+			}
 		}
 
 		return backupFileRes{
@@ -202,18 +198,15 @@ func backupSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 		}
 
 		var data []byte
-		outputFormat := strings.ToLower(strings.TrimSpace(req.convertFormat))
-		switch outputFormat {
+		switch req.convertFormat {
 		case jsonFormat:
 			if data, err = apiutil.GenerateJSON(page.MessagesPage); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
-		case csvFormat:
+		default:
 			if data, err = apiutil.GenerateCSVFromSenML(page.MessagesPage); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
-		default:
-			return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 		}
 
 		return backupFileRes{
@@ -244,12 +237,10 @@ func restoreJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 			if jsonMessages, err = apiutil.ConvertJSONToJSONMessages(req.Messages); err != nil {
 				return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 			}
-		case csvFormat:
+		default:
 			if jsonMessages, err = apiutil.ConvertCSVToJSONMessages(req.Messages); err != nil {
 				return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 			}
-		default:
-			return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 		}
 
 		for _, msg := range jsonMessages {
@@ -286,12 +277,10 @@ func restoreSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoi
 			if senmlMessages, err = apiutil.ConvertJSONToSenMLMessages(req.Messages); err != nil {
 				return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 			}
-		case csvFormat:
+		default:
 			if senmlMessages, err = apiutil.ConvertCSVToSenMLMessages(req.Messages); err != nil {
 				return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 			}
-		default:
-			return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 		}
 
 		for _, msg := range senmlMessages {

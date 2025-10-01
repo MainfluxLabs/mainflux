@@ -224,7 +224,7 @@ func newService(dbTracer opentracing.Tracer, db *sqlx.DB, tc protomfx.ThingsServ
 	rulesRepo = tracing.RuleRepositoryMiddleware(dbTracer, rulesRepo)
 
 	idProvider := uuid.New()
-	svc := rules.New(rulesRepo, tc, pub, idProvider)
+	svc := rules.New(rulesRepo, tc, pub, idProvider, logger)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

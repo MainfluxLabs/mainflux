@@ -13,7 +13,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/mqtt/redis"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mproxy/pkg/session"
 )
@@ -39,7 +38,6 @@ const (
 	LogErrFailedPublishDisconnectEvent = "failed to publish disconnect event: "
 	logErrFailedParseSubtopic          = "failed to parse subtopic: "
 	LogErrFailedPublishConnectEvent    = "failed to publish connect event: "
-	LogErrFailedPublishToMsgBroker     = "failed to publish to mainflux message broker: "
 )
 
 var (
@@ -175,24 +173,8 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		h.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
 	}
 
-	msg := message
-	go func(m protomfx.Message) {
-		_, err := h.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &m})
-		if err != nil {
-			h.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
-		}
-	}(msg)
-
-	subjects := nats.GetSubjects(message.Subtopic)
-	for _, sub := range subjects {
-		msg := message
-		msg.Subject = sub
-
-		go func(m protomfx.Message) {
-			if err := h.publisher.Publish(m); err != nil {
-				h.logger.Error(LogErrFailedPublishToMsgBroker + err.Error())
-			}
-		}(msg)
+	if _, err = h.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &message}); err != nil {
+		h.logger.Error(err.Error())
 	}
 }
 
