@@ -161,19 +161,6 @@ func (jr *jsonRepository) DeleteMessages(ctx context.Context, rpm readers.JSONPa
 		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 
-	defer func() {
-		if err != nil {
-			if txErr := tx.Rollback(); txErr != nil {
-				err = errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, txErr))
-			}
-			return
-		}
-
-		if err = tx.Commit(); err != nil {
-			err = errors.Wrap(errors.ErrDeleteMessages, err)
-		}
-	}()
-
 	condition := jr.fmtCondition(rpm)
 	q := fmt.Sprintf("DELETE FROM json %s", condition)
 	params := map[string]interface{}{
@@ -186,11 +173,16 @@ func (jr *jsonRepository) DeleteMessages(ctx context.Context, rpm readers.JSONPa
 
 	_, err = tx.NamedExecContext(ctx, q, params)
 	if err != nil {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			return errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, rbErr))
+		}
 		return jr.handlePgError(err, errors.ErrDeleteMessages)
 	}
 
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(errors.ErrDeleteMessages, err)
+	}
 	return nil
-
 }
 
 func (jr *jsonRepository) handlePgError(err error, wrapErr error) error {
@@ -214,19 +206,6 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 
-	defer func() {
-		if err != nil {
-			if txErr := tx.Rollback(); txErr != nil {
-				err = errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, txErr))
-			}
-			return
-		}
-
-		if err = tx.Commit(); err != nil {
-			err = errors.Wrap(errors.ErrSaveMessages, err)
-		}
-	}()
-
 	q := `INSERT INTO json (subtopic, publisher, protocol, payload, created)
           VALUES (:subtopic, :publisher, :protocol, :payload, :created);`
 
@@ -236,9 +215,18 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 			return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
 		}
 
-		if _, err := tx.NamedExecContext(ctx, q, jsonMsg); err != nil {
+		_, err := tx.NamedExecContext(ctx, q, jsonMsg)
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				return errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, rbErr))
+			}
 			return jr.handlePgError(err, errors.ErrSaveMessages)
 		}
+
+		if err := tx.Commit(); err != nil {
+			return errors.Wrap(errors.ErrSaveMessages, err)
+		}
 	}
+
 	return nil
 }

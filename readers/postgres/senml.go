@@ -43,19 +43,6 @@ func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenML
 		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 
-	defer func() {
-		if err != nil {
-			if txErr := tx.Rollback(); txErr != nil {
-				err = errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, txErr))
-			}
-			return
-		}
-
-		if err = tx.Commit(); err != nil {
-			err = errors.Wrap(errors.ErrDeleteMessages, err)
-		}
-	}()
-
 	condition := sr.fmtCondition(rpm)
 	q := fmt.Sprintf("DELETE FROM senml %s", condition)
 	params := map[string]interface{}{
@@ -73,7 +60,14 @@ func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenML
 
 	_, err = tx.NamedExecContext(ctx, q, params)
 	if err != nil {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			return errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, rbErr))
+		}
 		return sr.handlePgError(err, errors.ErrDeleteMessages)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(errors.ErrDeleteMessages, err)
 	}
 
 	return nil
@@ -219,19 +213,6 @@ func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Mess
 		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 
-	defer func() {
-		if err != nil {
-			if txErr := tx.Rollback(); txErr != nil {
-				err = errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, txErr))
-			}
-			return
-		}
-
-		if err = tx.Commit(); err != nil {
-			err = errors.Wrap(errors.ErrSaveMessages, err)
-		}
-	}()
-
 	q := `INSERT INTO senml (subtopic, publisher, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
           time, update_time)
@@ -245,9 +226,18 @@ func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Mess
 			return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
 		}
 
-		if _, err := tx.NamedExecContext(ctx, q, senmlMesage); err != nil {
+		_, err := tx.NamedExecContext(ctx, q, senmlMesage)
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				return errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, rbErr))
+			}
 			return sr.handlePgError(err, errors.ErrSaveMessages)
 		}
+
+		if err := tx.Commit(); err != nil {
+			return errors.Wrap(errors.ErrSaveMessages, err)
+		}
+
 	}
 
 	return nil

@@ -71,7 +71,14 @@ func (jr *jsonRepository) DeleteMessages(ctx context.Context, rpm readers.JSONPa
 
 	_, err = tx.NamedExecContext(ctx, q, params)
 	if err != nil {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			return errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, rbErr))
+		}
 		return jr.handlePgError(err, errors.ErrDeleteMessages)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(errors.ErrDeleteMessages, err)
 	}
 
 	return nil
@@ -123,9 +130,18 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 			}
 		}
 
-		if _, err := tx.NamedExecContext(ctx, q, jsonMsg); err != nil {
+		_, err := tx.NamedExecContext(ctx, q, jsonMsg)
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				return errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, rbErr))
+			}
 			return jr.handlePgError(err, errors.ErrSaveMessages)
 		}
+
+		if err := tx.Commit(); err != nil {
+			return errors.Wrap(errors.ErrSaveMessages, err)
+		}
+
 	}
 
 	return nil

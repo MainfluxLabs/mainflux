@@ -79,7 +79,14 @@ func (sr *senmlRepository) DeleteMessages(ctx context.Context, rpm readers.SenML
 
 	_, err = tx.NamedExecContext(ctx, q, params)
 	if err != nil {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			return errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, rbErr))
+		}
 		return sr.handlePgError(err, errors.ErrDeleteMessages)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(errors.ErrDeleteMessages, err)
 	}
 
 	return nil
@@ -117,8 +124,16 @@ func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Mess
 			return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
 		}
 
-		if _, err := tx.NamedExecContext(ctx, q, senmlMsg); err != nil {
+		_, err := tx.NamedExecContext(ctx, q, senmlMsg)
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				return errors.Wrap(err, errors.Wrap(errors.ErrTxRollback, rbErr))
+			}
 			return sr.handlePgError(err, errors.ErrSaveMessages)
+		}
+
+		if err := tx.Commit(); err != nil {
+			return errors.Wrap(errors.ErrSaveMessages, err)
 		}
 	}
 
