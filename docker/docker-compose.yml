@@ -413,7 +413,7 @@ services:
       - mainfluxlabs-postgres-volume:/var/lib/postgresql/data
 
   postgres-writer:
-    image: ${MF_RELEASE_PREFIX}/postgres-writer:v0.30.1
+    image: ${MF_RELEASE_PREFIX}/postgres-writer:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-postgres-writer
     depends_on:
       - postgres
@@ -437,7 +437,7 @@ services:
       - mainfluxlabs-base-net
 
   postgres-reader:
-    image: ${MF_RELEASE_PREFIX}/postgres-reader:v0.30.1
+    image: ${MF_RELEASE_PREFIX}/postgres-reader:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-postgres-reader
     restart: on-failure
     environment:
@@ -614,7 +614,7 @@ services:
       - mainfluxlabs-downlinks-db-volume:/var/lib/postgresql/data
 
   downlinks:
-    image: ${MF_RELEASE_PREFIX}/downlinks:v0.30.1
+    image: ${MF_RELEASE_PREFIX}/downlinks:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-downlinks
     depends_on:
       - things
@@ -655,7 +655,7 @@ services:
       - mainfluxlabs-modbus-db-volume:/var/lib/postgresql/data
 
   modbus:
-    image: ${MF_RELEASE_PREFIX}/modbus:v0.30.1
+    image: ${MF_RELEASE_PREFIX}/modbus:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-modbus
     depends_on:
       - things
