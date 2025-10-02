@@ -7,4 +7,5 @@ package users
 type Emailer interface {
 	SendPasswordReset(To []string, redirectPath, token string) error
 	SendEmailVerification(To []string, redirectPath, token string) error
+	SendPlatformInvite(to []string, inv PlatformInvite, redirectPath string) error
 }

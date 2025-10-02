@@ -211,11 +211,7 @@ func (rr ruleRepository) retrieve(ctx context.Context, query, cquery string, par
 
 	page := rules.RulesPage{
 		Rules: items,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  total,
-			Offset: params["offset"].(uint64),
-			Limit:  params["limit"].(uint64),
-		},
+		Total: total,
 	}
 
 	return page, nil

@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/rules"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -50,7 +51,7 @@ func listRulesByProfileEndpoint(svc rules.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildRulesPageResponse(page), nil
+		return buildRulesPageResponse(page, req.pageMetadata), nil
 	}
 }
 
@@ -66,7 +67,7 @@ func listRulesByGroupEndpoint(svc rules.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildRulesPageResponse(page), nil
+		return buildRulesPageResponse(page, req.pageMetadata), nil
 	}
 }
 
@@ -146,12 +147,15 @@ func buildRulesResponse(rules []rules.Rule, created bool) rulesRes {
 	return res
 }
 
-func buildRulesPageResponse(page rules.RulesPage) RulesPageRes {
+func buildRulesPageResponse(page rules.RulesPage, pm apiutil.PageMetadata) RulesPageRes {
 	res := RulesPageRes{
 		pageRes: pageRes{
 			Total:  page.Total,
-			Offset: page.Offset,
-			Limit:  page.Limit,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+			Ord:    pm.Order,
+			Dir:    pm.Dir,
+			Name:   pm.Name,
 		},
 		Rules: []ruleResponse{},
 	}

@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -22,7 +23,7 @@ func listAlarmsByGroupEndpoint(svc alarms.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildAlarmsResponse(page), nil
+		return buildAlarmsResponse(page, req.pageMetadata), nil
 	}
 }
 
@@ -38,7 +39,7 @@ func listAlarmsByThingEndpoint(svc alarms.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildAlarmsResponse(page), nil
+		return buildAlarmsResponse(page, req.pageMetadata), nil
 	}
 }
 
@@ -54,7 +55,7 @@ func listAlarmsByOrgEndpoint(svc alarms.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildAlarmsResponse(page), nil
+		return buildAlarmsResponse(page, req.pageMetadata), nil
 	}
 }
 
@@ -89,11 +90,13 @@ func removeAlarmsEndpoint(svc alarms.Service) endpoint.Endpoint {
 	}
 }
 
-func buildAlarmsResponse(ap alarms.AlarmsPage) AlarmsPageRes {
+func buildAlarmsResponse(ap alarms.AlarmsPage, pm apiutil.PageMetadata) AlarmsPageRes {
 	res := AlarmsPageRes{
 		Total:  ap.Total,
-		Offset: ap.Offset,
-		Limit:  ap.Limit,
+		Offset: pm.Offset,
+		Limit:  pm.Limit,
+		Order:  pm.Order,
+		Dir:    pm.Dir,
 		Alarms: []alarmResponse{},
 	}
 

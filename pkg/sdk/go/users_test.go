@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
@@ -29,6 +30,8 @@ const (
 	userEmail    = "user@example.com"
 	validPass    = "validPass"
 	registerUser = "register@example.com"
+
+	inviteDuration = 7 * 24 * time.Hour
 )
 
 var (
@@ -44,13 +47,14 @@ var (
 func newUserService() users.Service {
 	usersRepo := usmocks.NewUserRepository(usersList)
 	verificationsRepo := usmocks.NewEmailVerificationRepository(nil)
+	platformInvitesRepo := usmocks.NewPlatformInvitesRepository()
 	hasher := usmocks.NewHasher()
 	idProvider := uuid.New()
 	admin.ID, _ = idProvider.ID()
 	auth := mocks.NewAuthService(admin.ID, usersList, orgsList)
 	emailer := usmocks.NewEmailer()
 
-	return users.New(usersRepo, verificationsRepo, true, true, hasher, auth, emailer, idProvider)
+	return users.New(usersRepo, verificationsRepo, platformInvitesRepo, inviteDuration, true, true, hasher, auth, emailer, idProvider)
 }
 
 func newUserServer(svc users.Service) *httptest.Server {

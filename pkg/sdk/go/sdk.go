@@ -146,15 +146,6 @@ type GroupMembership struct {
 	Email    string `json:"email,omitempty"`
 }
 
-// Webhook represents mainflux Webhook.
-type Webhook struct {
-	ID      string            `json:"id"`
-	GroupID string            `json:"group_id"`
-	Name    string            `json:"name"`
-	Url     string            `json:"url"`
-	Headers map[string]string `json:"headers"`
-}
-
 type Key struct {
 	ID        string
 	Type      uint32
@@ -162,6 +153,17 @@ type Key struct {
 	Subject   string
 	IssuedAt  time.Time
 	ExpiresAt time.Time
+}
+
+type Invite struct {
+	ID           string    `json:"id"`
+	InviteeID    string    `json:"invitee_id"`
+	InviteeEmail string    `json:"invitee_email"`
+	InviterID    string    `json:"inviter_id"`
+	OrgID        string    `json:"org_id"`
+	InviteeRole  string    `json:"invitee_role"`
+	CreatedAt    time.Time `json:"created_at"`
+	ExpiresAt    time.Time `json:"expires_at"`
 }
 
 type Metadata map[string]interface{}
@@ -318,24 +320,6 @@ type SDK interface {
 	// RemoveOrgMemberships removes memberships from the specified org.
 	RemoveOrgMemberships(memberIDs []string, orgID, token string) error
 
-	// CreateWebhooks creates new webhooks.
-	CreateWebhooks(whs []Webhook, groupID, token string) ([]Webhook, error)
-
-	// ListWebhooksByGroup lists webhooks who belong to a specified group.
-	ListWebhooksByGroup(groupID, token string) (Webhooks, error)
-
-	// ListWebhooksByThing lists webhooks who belong to a specified tthing.
-	ListWebhooksByThing(thingID, token string) (Webhooks, error)
-
-	// GetWebhook returns webhook data by id.
-	GetWebhook(webhookID, token string) (Webhook, error)
-
-	// UpdateWebhook updates existing webhook.
-	UpdateWebhook(wh Webhook, webhookID, token string) error
-
-	// DeleteWebhooks removes existing webhooks.
-	DeleteWebhooks(ids []string, token string) error
-
 	// SendMessage send message.
 	SendMessage(subtopic, msg, token string) error
 
@@ -365,6 +349,22 @@ type SDK interface {
 
 	// RetrieveKey retrieves data for the key identified by the provided ID, that is issued by the user identified by the provided key.
 	RetrieveKey(id, token string) (retrieveKeyRes, error)
+
+	// CreateInvite creates and sends a new Invite.
+	CreateInvite(orgID string, om OrgMembership, token string) (Invite, error)
+
+	// RevokeInvite revokes a specific Invite.
+	RevokeInvite(inviteID string, token string) error
+
+	// InviteRespond responds to a specific Invite either accepting or declining it.
+	InviteRespond(inviteID string, accept bool, token string) error
+
+	// GetInvite retrieves a specific Invite.
+	GetInvite(inviteID string, token string) (Invite, error)
+
+	// ListInvitesByUser retrieves a list of Invites either sent out by, or sent to the user identifed by
+	// the specific userID.
+	ListInvitesByUser(userID string, userType string, pm PageMetadata, token string) (InvitesPage, error)
 }
 
 type mfSDK struct {
@@ -373,7 +373,6 @@ type mfSDK struct {
 	httpAdapterURL string
 	readerURL      string
 	thingsURL      string
-	webhooksURL    string
 	usersURL       string
 
 	msgContentType ContentType
@@ -387,7 +386,6 @@ type Config struct {
 	HTTPAdapterURL string
 	ReaderURL      string
 	ThingsURL      string
-	WebhooksURL    string
 	UsersURL       string
 
 	MsgContentType  ContentType
@@ -402,7 +400,6 @@ func NewSDK(conf Config) SDK {
 		httpAdapterURL: conf.HTTPAdapterURL,
 		readerURL:      conf.ReaderURL,
 		thingsURL:      conf.ThingsURL,
-		webhooksURL:    conf.WebhooksURL,
 		usersURL:       conf.UsersURL,
 
 		msgContentType: conf.MsgContentType,

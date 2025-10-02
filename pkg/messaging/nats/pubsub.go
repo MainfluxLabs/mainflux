@@ -15,6 +15,19 @@ import (
 	broker "github.com/nats-io/nats.go"
 )
 
+const (
+	// SubjectMessages represents subject used to subscribe to the global message stream.
+	SubjectMessages = "messages"
+	//SubjectWriters represents subject used to subscribe to messages that should be persisted.
+	SubjectWriters = "writers"
+	// SubjectSmtp represents subject used to subscribe to SMTP notifications.
+	SubjectSmtp = "smtp.*"
+	// SubjectSmpp represents subject used to subscribe to SMPP notifications.
+	SubjectSmpp = "smpp.*"
+	// SubjectAlarms represents subject used to subscribe to alarm triggers.
+	SubjectAlarms = "alarms"
+)
+
 var _ messaging.PubSub = (*pubsub)(nil)
 
 type subscription struct {

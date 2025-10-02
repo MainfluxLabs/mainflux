@@ -214,14 +214,7 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 
 	page := users.UserPage{
 		Users: items,
-		PageMetadata: users.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-			Email:  pm.Email,
-			Order:  pm.Order,
-			Dir:    pm.Dir,
-		},
+		Total: total,
 	}
 
 	return page, nil

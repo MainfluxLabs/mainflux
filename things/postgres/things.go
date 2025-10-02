@@ -190,7 +190,7 @@ func (tr thingRepository) RetrieveByGroups(ctx context.Context, groupIDs []strin
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	giq := getGroupIDsQuery(groupIDs)
+	giq := dbutil.GetGroupIDsQuery(groupIDs)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
@@ -292,7 +292,7 @@ func (tr thingRepository) BackupByGroups(ctx context.Context, groupIDs []string)
 		return []things.Thing{}, nil
 	}
 
-	giq := getGroupIDsQuery(groupIDs)
+	giq := dbutil.GetGroupIDsQuery(groupIDs)
 	whereClause := dbutil.BuildWhereClause(giq)
 	query := fmt.Sprintf("SELECT id, group_id, profile_id, name, key, metadata FROM things %s", whereClause)
 
@@ -359,11 +359,7 @@ func (tr thingRepository) retrieve(ctx context.Context, query, cquery string, pa
 
 	page := things.ThingsPage{
 		Things: items,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  total,
-			Offset: params["offset"].(uint64),
-			Limit:  params["limit"].(uint64),
-		},
+		Total:  total,
 	}
 
 	return page, nil

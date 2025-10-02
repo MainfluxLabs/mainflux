@@ -175,11 +175,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 				Limit:  10,
 			},
 			page: mqtt.Page{
-				PageMetadata: mqtt.PageMetadata{
-					Total:  numSubs,
-					Offset: 0,
-					Limit:  10,
-				},
+				Total:         numSubs,
 				Subscriptions: subs[0:10],
 			},
 			err: nil,
@@ -193,10 +189,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 				Limit: 0,
 			},
 			page: mqtt.Page{
-				PageMetadata: mqtt.PageMetadata{
-					Total: numSubs,
-					Limit: noLimit,
-				},
+				Total:         numSubs,
 				Subscriptions: subs,
 			},
 			err: nil,
@@ -211,11 +204,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 				Limit:  noLimit,
 			},
 			page: mqtt.Page{
-				PageMetadata: mqtt.PageMetadata{
-					Total:  0,
-					Offset: 0,
-					Limit:  noLimit,
-				},
+				Total:         0,
 				Subscriptions: nil,
 			},
 			err: nil,
@@ -226,11 +215,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 			groupID:  invalidID,
 			pageMeta: mqtt.PageMetadata{},
 			page: mqtt.Page{
-				PageMetadata: mqtt.PageMetadata{
-					Total:  0,
-					Offset: 0,
-					Limit:  noLimit,
-				},
+				Total:         0,
 				Subscriptions: nil,
 			},
 			err: dbutil.ErrRetrieveEntity,

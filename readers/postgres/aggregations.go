@@ -1,12 +1,15 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
+
 package postgres
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"text/template"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
@@ -19,10 +22,14 @@ import (
 const (
 	timeIntervals        = "ti"
 	intervalAggregations = "ia"
+	jsonTable            = "json"
+	jsonOrder            = "created"
+	senmlTable           = "senml"
+	senmlOrder           = "time"
 )
 
 type QueryConfig struct {
-	Format           string
+	Table            string
 	TimeColumn       string
 	Condition        string
 	ConditionForJoin string
@@ -44,60 +51,143 @@ type AggStrategy interface {
 }
 
 type aggregationService struct {
-	db *sqlx.DB
+	db dbutil.Database
 }
 
-func newAggregationService(db *sqlx.DB) *aggregationService {
+func newAggregationService(db dbutil.Database) *aggregationService {
 	return &aggregationService{db: db}
 }
 
-func (as *aggregationService) readAggregatedMessages(rpm readers.PageMetadata) ([]readers.Message, error) {
-	if rpm.Format == defTable && rpm.AggField != "" {
-		rpm.Name = rpm.AggField
+func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) ([]readers.Message, uint64, error) {
+	params := map[string]interface{}{
+		"limit":     rpm.Limit,
+		"offset":    rpm.Offset,
+		"subtopic":  rpm.Subtopic,
+		"publisher": rpm.Publisher,
+		"protocol":  rpm.Protocol,
+		"from":      rpm.From,
+		"to":        rpm.To,
 	}
-
-	params := as.buildQueryParams(rpm)
 
 	config := QueryConfig{
-		Format:      rpm.Format,
-		TimeColumn:  as.getTimeColumn(rpm.Format),
-		AggField:    as.getAggregateField(rpm),
+		Table:       jsonTable,
+		TimeColumn:  jsonOrder,
+		AggField:    rpm.AggField,
 		AggInterval: rpm.AggInterval,
-		Limit:       rpm.Limit,
 		AggType:     rpm.AggType,
+		Limit:       rpm.Limit,
 	}
 
-	baseCondition := as.buildBaseCondition(rpm)
-	nameCondition := as.buildNameCondition(rpm)
-	config.Condition = as.combineConditions(baseCondition, nameCondition)
-	config.ConditionForJoin = strings.Replace(config.Condition, "WHERE", "AND", 1)
-
-	if config.Condition == "" {
-		config.ConditionForJoin = ""
+	conditions := as.getJSONConditions(rpm)
+	if len(conditions) > 0 {
+		config.Condition = "WHERE " + strings.Join(conditions, " AND ")
+		config.ConditionForJoin = "AND " + strings.Join(conditions, " AND ")
 	}
 
 	strategy := as.getAggregateStrategy(rpm.AggType)
 	if strategy == nil {
-		return []readers.Message{}, nil
+		return []readers.Message{}, 0, nil
 	}
 
 	query := strategy.BuildQuery(config)
-	rows, err := as.executeQuery(query, params)
+	rows, err := as.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return nil, err
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
+			return []readers.Message{}, 0, nil
+		}
+		return []readers.Message{}, 0, errors.Wrap(readers.ErrReadMessages, err)
 	}
 
 	if rows == nil {
-		return []readers.Message{}, nil
+		return []readers.Message{}, 0, nil
 	}
 	defer rows.Close()
 
-	messages, err := as.scanAggregatedMessages(rows, rpm.Format)
+	messages, err := as.scanAggregatedMessages(rows, jsonTable)
 	if err != nil {
-		return nil, err
+		return []readers.Message{}, 0, err
 	}
 
-	return messages, nil
+	countQuery := fmt.Sprintf(` SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000))) FROM %s %s`,
+		rpm.AggInterval, jsonOrder, jsonTable, config.Condition)
+
+	total, err := dbutil.Total(ctx, as.db, countQuery, params)
+	if err != nil {
+		return []readers.Message{}, 0, err
+	}
+
+	return messages, total, nil
+}
+
+func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) ([]readers.Message, uint64, error) {
+	params := map[string]interface{}{
+		"limit":        rpm.Limit,
+		"offset":       rpm.Offset,
+		"subtopic":     rpm.Subtopic,
+		"publisher":    rpm.Publisher,
+		"name":         rpm.Name,
+		"protocol":     rpm.Protocol,
+		"value":        rpm.Value,
+		"bool_value":   rpm.BoolValue,
+		"string_value": rpm.StringValue,
+		"data_value":   rpm.DataValue,
+		"from":         rpm.From,
+		"to":           rpm.To,
+	}
+
+	config := QueryConfig{
+		Table:       senmlTable,
+		TimeColumn:  senmlOrder,
+		AggField:    rpm.AggField,
+		AggInterval: rpm.AggInterval,
+		AggType:     rpm.AggType,
+		Limit:       rpm.Limit,
+	}
+
+	conditions := as.getSenMLConditions(rpm)
+	if rpm.AggField != "" {
+		conditions = append(conditions, "name = :agg_field")
+		params["agg_field"] = rpm.AggField
+	}
+
+	if len(conditions) > 0 {
+		config.Condition = "WHERE " + strings.Join(conditions, " AND ")
+		config.ConditionForJoin = "AND " + strings.Join(conditions, " AND ")
+	}
+
+	strategy := as.getAggregateStrategy(rpm.AggType)
+	if strategy == nil {
+		return []readers.Message{}, 0, nil
+	}
+
+	query := strategy.BuildQuery(config)
+	rows, err := as.db.NamedQueryContext(ctx, query, params)
+	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
+			return []readers.Message{}, 0, nil
+		}
+		return []readers.Message{}, 0, errors.Wrap(readers.ErrReadMessages, err)
+	}
+	if rows == nil {
+		return []readers.Message{}, 0, nil
+	}
+
+	defer rows.Close()
+
+	messages, err := as.scanAggregatedMessages(rows, senmlTable)
+	if err != nil {
+		return []readers.Message{}, 0, err
+	}
+
+	countQuery := fmt.Sprintf(` SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000))) FROM %s %s`,
+		rpm.AggInterval, senmlOrder, senmlTable, config.Condition)
+
+	total, err := dbutil.Total(ctx, as.db, countQuery, params)
+	if err != nil {
+		return []readers.Message{}, 0, err
+	}
+
+	return messages, total, nil
 }
 
 func (as aggregationService) getAggregateStrategy(aggType string) AggStrategy {
@@ -127,13 +217,13 @@ func (maxStrt MaxStrategy) BuildQuery(config QueryConfig) string {
 				ti.interval_time,
 				{{.AggExpression}} as agg_value
 			FROM time_intervals ti
-			LEFT JOIN {{.Format}} m ON {{.TimeJoinCondition}}
+			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
 				{{.ConditionForJoin}}
 			GROUP BY ti.interval_time
 			HAVING {{.AggExpression}} IS NOT NULL
 		)
 		SELECT DISTINCT ON (ia.interval_time) {{.SelectedFields}}
-		FROM {{.Format}} m
+		FROM {{.Table}} m
 		JOIN interval_aggs ia ON {{.TimeJoinConditionIA}}
 			AND {{.ValueCondition}}
 		{{.Condition}}
@@ -147,9 +237,9 @@ func (maxStrt MaxStrategy) GetSelectedFields(config QueryConfig) string {
 }
 
 func (maxStrt MaxStrategy) GetAggregateExpression(config QueryConfig) string {
-	switch config.Format {
-	case defTable:
-		return fmt.Sprintf("MAX(m.%s)", config.AggField)
+	switch config.Table {
+	case senmlTable:
+		return "MAX(m.value)"
 	default:
 		jsonPath := buildJSONPath(config.AggField)
 		return fmt.Sprintf("MAX(CAST(m.%s AS float))", jsonPath)
@@ -168,13 +258,13 @@ func (minStrt MinStrategy) BuildQuery(config QueryConfig) string {
 				ti.interval_time,
 				{{.AggExpression}} as agg_value
 			FROM time_intervals ti
-			LEFT JOIN {{.Format}} m ON {{.TimeJoinCondition}}
+			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
 				{{.ConditionForJoin}}
 			GROUP BY ti.interval_time
 			HAVING {{.AggExpression}} IS NOT NULL
 		)
 		SELECT DISTINCT ON (ia.interval_time) {{.SelectedFields}}
-		FROM {{.Format}} m
+		FROM {{.Table}} m
 		JOIN interval_aggs ia ON {{.TimeJoinConditionIA}}
 			AND {{.ValueCondition}}
 		{{.Condition}}
@@ -188,9 +278,9 @@ func (minStrt MinStrategy) GetSelectedFields(config QueryConfig) string {
 }
 
 func (minStrt MinStrategy) GetAggregateExpression(config QueryConfig) string {
-	switch config.Format {
-	case defTable:
-		return fmt.Sprintf("MIN(m.%s)", config.AggField)
+	switch config.Table {
+	case senmlTable:
+		return "MIN(m.value)"
 	default:
 		jsonPath := buildJSONPath(config.AggField)
 		return fmt.Sprintf("MIN(CAST(m.%s AS float))", jsonPath)
@@ -210,13 +300,13 @@ func (avgStrt AvgStrategy) BuildQuery(config QueryConfig) string {
 				{{.AggExpression}} as avg_value,
 				MAX(m.{{.TimeColumn}}) as max_time  
 			FROM time_intervals ti
-			LEFT JOIN {{.Format}} m ON {{.TimeJoinCondition}}
+			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
 				{{.ConditionForJoin}}
 			GROUP BY ti.interval_time
 			HAVING {{.AggExpression}} IS NOT NULL
 		)
 		SELECT DISTINCT ON (ia.interval_time) {{.SelectedFields}}
-		FROM {{.Format}} m
+		FROM {{.Table}} m
 		JOIN interval_aggs ia ON {{.TimeJoinConditionIA}}
 			AND m.{{.TimeColumn}} = ia.max_time
 		{{.Condition}}
@@ -226,8 +316,8 @@ func (avgStrt AvgStrategy) BuildQuery(config QueryConfig) string {
 }
 
 func (avgStrt AvgStrategy) GetSelectedFields(config QueryConfig) string {
-	switch config.Format {
-	case defTable:
+	switch config.Table {
+	case senmlTable:
 		return `m.subtopic, m.publisher, m.protocol, m.name, m.unit,
 				ia.avg_value as value, 
 				m.string_value, m.bool_value, m.data_value, m.sum,
@@ -238,9 +328,9 @@ func (avgStrt AvgStrategy) GetSelectedFields(config QueryConfig) string {
 }
 
 func (avgStrt AvgStrategy) GetAggregateExpression(config QueryConfig) string {
-	switch config.Format {
-	case defTable:
-		return fmt.Sprintf("AVG(m.%s)", config.AggField)
+	switch config.Table {
+	case senmlTable:
+		return "AVG(m.value)"
 	default:
 		jsonPath := buildJSONPath(config.AggField)
 		return fmt.Sprintf("AVG(CAST(m.%s AS float))", jsonPath)
@@ -260,13 +350,13 @@ func (countStrt CountStrategy) BuildQuery(config QueryConfig) string {
 				{{.AggExpression}} as sum_value,
 				MAX(m.{{.TimeColumn}}) as max_time  
 			FROM time_intervals ti
-			LEFT JOIN {{.Format}} m ON {{.TimeJoinCondition}}
+			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
 				{{.ConditionForJoin}}
 			GROUP BY ti.interval_time
 			HAVING {{.AggExpression}} IS NOT NULL
 		)
 		SELECT DISTINCT ON (ia.interval_time) {{.SelectedFields}}
-		FROM {{.Format}} m
+		FROM {{.Table}} m
 		JOIN interval_aggs ia ON {{.TimeJoinConditionIA}}
 			AND m.{{.TimeColumn}} = ia.max_time
 		{{.Condition}}
@@ -279,7 +369,7 @@ func renderTemplate(templateStr string, config QueryConfig, strategy AggStrategy
 	data := map[string]string{
 		"TimeIntervals":       buildTimeIntervals(config),
 		"AggExpression":       strategy.GetAggregateExpression(config),
-		"Format":              config.Format,
+		"Table":               config.Table,
 		"TimeJoinCondition":   buildTimeJoinCondition(config, timeIntervals),
 		"TimeJoinConditionIA": buildTimeJoinCondition(config, intervalAggregations),
 		"ConditionForJoin":    config.ConditionForJoin,
@@ -296,8 +386,8 @@ func renderTemplate(templateStr string, config QueryConfig, strategy AggStrategy
 }
 
 func (countStrt CountStrategy) GetSelectedFields(config QueryConfig) string {
-	switch config.Format {
-	case defTable:
+	switch config.Table {
+	case senmlTable:
 		return `m.subtopic, m.publisher, m.protocol, m.name, m.unit,
 				ia.sum_value as value, 
 				m.string_value, m.bool_value, m.data_value, m.sum,
@@ -308,9 +398,9 @@ func (countStrt CountStrategy) GetSelectedFields(config QueryConfig) string {
 }
 
 func (countStrt CountStrategy) GetAggregateExpression(config QueryConfig) string {
-	switch config.Format {
-	case defTable:
-		return fmt.Sprintf("COUNT(m.%s)", config.AggField)
+	switch config.Table {
+	case senmlTable:
+		return "COUNT(m.value)"
 	default:
 		jsonPath := buildJSONPath(config.AggField)
 		return fmt.Sprintf("COUNT(m.%s)", jsonPath)
@@ -324,7 +414,7 @@ func buildTimeIntervals(config QueryConfig) string {
         %s
         ORDER BY interval_time DESC
         LIMIT %d`,
-		config.AggInterval, config.TimeColumn, config.Format, config.Condition, config.Limit)
+		config.AggInterval, config.TimeColumn, config.Table, config.Condition, config.Limit)
 }
 
 func buildTimeJoinCondition(config QueryConfig, tableAlias string) string {
@@ -333,108 +423,21 @@ func buildTimeJoinCondition(config QueryConfig, tableAlias string) string {
 }
 
 func buildValueCondition(config QueryConfig) string {
-	switch config.Format {
-	case defTable:
-		return fmt.Sprintf("m.%s = ia.agg_value", config.AggField)
+	switch config.Table {
+	case senmlTable:
+		// Always match on 'value' column for SenML
+		return "m.value = ia.agg_value"
 	default:
 		jsonPath := buildJSONPath(config.AggField)
 		return fmt.Sprintf("CAST(m.%s as FLOAT) = ia.agg_value", jsonPath)
 	}
 }
 
-func (as *aggregationService) readAggregatedCount(rpm readers.PageMetadata) (uint64, error) {
-	params := as.buildQueryParams(rpm)
-
-	timeColumn := as.getTimeColumn(rpm.Format)
-	baseCondition := as.buildBaseCondition(rpm)
-	nameCondition := as.buildNameCondition(rpm)
-	condition := as.combineConditions(baseCondition, nameCondition)
-
-	query := fmt.Sprintf(`
-        SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000)))
-        FROM %s
-        %s`,
-		rpm.AggInterval, timeColumn, rpm.Format, condition)
-
-	rows, err := as.db.NamedQuery(query, params)
-	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
-			return 0, nil
-		}
-		return 0, errors.Wrap(readers.ErrReadMessages, err)
-	}
-	defer rows.Close()
-
-	var total uint64
-	if rows.Next() {
-		if err := rows.Scan(&total); err != nil {
-			return 0, err
-		}
-	}
-
-	return total, nil
-}
-
-func (as *aggregationService) buildNameCondition(rpm readers.PageMetadata) string {
-	if rpm.Name == "" {
-		return ""
-	}
-
-	switch rpm.Format {
-	case defTable:
-		return "WHERE name = :name"
-	default:
-		return "WHERE payload->>'n' = :name"
-	}
-}
-
-func (as *aggregationService) combineConditions(condition1, condition2 string) string {
-	if condition1 == "" && condition2 == "" {
-		return ""
-	}
-	if condition1 == "" {
-		return condition2
-	}
-	if condition2 == "" {
-		return condition1
-	}
-
-	condition2 = strings.Replace(condition2, "WHERE", "AND", 1)
-	return condition1 + " " + condition2
-}
-
-func (as *aggregationService) buildBaseCondition(rpm readers.PageMetadata) string {
-	var conditions []string
-	timeColumn := as.getTimeColumn(rpm.Format)
-
-	if rpm.Subtopic != "" {
-		conditions = append(conditions, "subtopic = :subtopic")
-	}
-	if rpm.Publisher != "" {
-		conditions = append(conditions, "publisher = :publisher")
-	}
-	if rpm.Protocol != "" {
-		conditions = append(conditions, "protocol = :protocol")
-	}
-	if rpm.From != 0 {
-		conditions = append(conditions, fmt.Sprintf("%s >= :from", timeColumn))
-	}
-	if rpm.To != 0 {
-		conditions = append(conditions, fmt.Sprintf("%s <= :to", timeColumn))
-	}
-
-	if len(conditions) == 0 {
-		return ""
-	}
-
-	return "WHERE " + strings.Join(conditions, " AND ")
-}
-
 func (as *aggregationService) scanAggregatedMessages(rows *sqlx.Rows, format string) ([]readers.Message, error) {
 	var messages []readers.Message
 
 	switch format {
-	case defTable:
+	case senmlTable:
 		for rows.Next() {
 			msg := senml.Message{}
 			if err := rows.StructScan(&msg); err != nil {
@@ -488,53 +491,85 @@ func buildAggregatedJSONSelect(aggField string, aggAlias string) string {
 			parts[0], aggAlias)
 	}
 
-	pathParts := make([]string, len(parts))
-	for i, part := range parts {
-		pathParts[i] = part
-	}
-
-	pathArray := "{" + strings.Join(pathParts, ",") + "}"
+	pathArray := "{" + strings.Join(parts, ",") + "}"
 	return fmt.Sprintf(`m.created, m.subtopic, m.publisher, m.protocol,
 			jsonb_set(m.payload, '%s', to_jsonb(ia.%s)) as payload`,
 		pathArray, aggAlias)
 }
 
-func (as *aggregationService) executeQuery(query string, params map[string]interface{}) (*sqlx.Rows, error) {
-	rows, err := as.db.NamedQuery(query, params)
-	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
-			return nil, nil
-		}
-		return nil, errors.Wrap(readers.ErrReadMessages, err)
+func (as *aggregationService) getJSONConditions(rpm readers.JSONPageMetadata) []string {
+	var conditions []string
+
+	if rpm.Subtopic != "" {
+		conditions = append(conditions, "subtopic = :subtopic")
 	}
-	return rows, nil
+	if rpm.Publisher != "" {
+		conditions = append(conditions, "publisher = :publisher")
+	}
+	if rpm.Protocol != "" {
+		conditions = append(conditions, "protocol = :protocol")
+	}
+	if rpm.From != 0 {
+		conditions = append(conditions, fmt.Sprintf("%s >= :from", jsonOrder))
+	}
+	if rpm.To != 0 {
+		conditions = append(conditions, fmt.Sprintf("%s <= :to", jsonOrder))
+	}
+
+	return conditions
 }
 
-func (as *aggregationService) getAggregateField(rpm readers.PageMetadata) string {
-	if rpm.Format == defTable {
-		return "value"
+func (as *aggregationService) getSenMLConditions(rpm readers.SenMLPageMetadata) []string {
+	var conditions []string
+
+	if rpm.Subtopic != "" {
+		conditions = append(conditions, "subtopic = :subtopic")
 	}
-	return rpm.AggField
+	if rpm.Publisher != "" {
+		conditions = append(conditions, "publisher = :publisher")
+	}
+	if rpm.Protocol != "" {
+		conditions = append(conditions, "protocol = :protocol")
+	}
+	if rpm.Name != "" {
+		conditions = append(conditions, "name = :name")
+	}
+	if rpm.Value != 0 {
+		comparator := as.parseComparator(rpm.Comparator)
+		conditions = append(conditions, fmt.Sprintf("value %s :value", comparator))
+	}
+	if rpm.BoolValue {
+		conditions = append(conditions, "bool_value = :bool_value")
+	}
+	if rpm.StringValue != "" {
+		conditions = append(conditions, "string_value = :string_value")
+	}
+	if rpm.DataValue != "" {
+		conditions = append(conditions, "data_value = :data_value")
+	}
+	if rpm.From != 0 {
+		conditions = append(conditions, fmt.Sprintf("%s >= :from", senmlOrder))
+	}
+	if rpm.To != 0 {
+		conditions = append(conditions, fmt.Sprintf("%s <= :to", senmlOrder))
+	}
+
+	return conditions
 }
 
-func (as *aggregationService) getTimeColumn(table string) string {
-	if table == jsonTable {
-		return "created"
-	}
-	return "time"
-}
-
-func (as *aggregationService) buildQueryParams(rpm readers.PageMetadata) map[string]interface{} {
-	return map[string]interface{}{
-		"subtopic":     rpm.Subtopic,
-		"publisher":    rpm.Publisher,
-		"name":         rpm.Name,
-		"protocol":     rpm.Protocol,
-		"value":        rpm.Value,
-		"bool_value":   rpm.BoolValue,
-		"string_value": rpm.StringValue,
-		"data_value":   rpm.DataValue,
-		"from":         rpm.From,
-		"to":           rpm.To,
+func (as *aggregationService) parseComparator(comparator string) string {
+	switch comparator {
+	case readers.EqualKey:
+		return "="
+	case readers.LowerThanKey:
+		return "<"
+	case readers.LowerThanEqualKey:
+		return "<="
+	case readers.GreaterThanKey:
+		return ">"
+	case readers.GreaterThanEqualKey:
+		return ">="
+	default:
+		return "="
 	}
 }

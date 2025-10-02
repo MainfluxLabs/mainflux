@@ -18,6 +18,7 @@ import (
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -112,10 +113,10 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	repo := newService(db, logger)
+	svc := newService(auth, tc, db, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, api.MakeHandler(repo, tc, auth, svcName, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, api.MakeHandler(svc, svcName, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -200,8 +201,10 @@ func connectToDB(dbConfig timescale.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, logger logger.Logger) readers.MessageRepository {
-	svc := timescale.New(db)
+func newService(ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, db *sqlx.DB, logger logger.Logger) readers.Service {
+	jsonRepo := timescale.NewJSONRepository(db)
+	senmlRepo := timescale.NewSenMLRepository(db)
+	svc := readers.New(ac, tc, jsonRepo, senmlRepo)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

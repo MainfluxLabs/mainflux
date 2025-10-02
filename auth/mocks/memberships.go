@@ -122,11 +122,7 @@ func (mrm *orgMembershipsRepositoryMock) RetrieveByOrg(_ context.Context, orgID 
 
 	return auth.OrgMembershipsPage{
 		OrgMemberships: oms,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  uint64(len(mrm.membershipsByOrgID[orgID])),
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Total:          uint64(len(mrm.membershipsByOrgID[orgID])),
 	}, nil
 }
 

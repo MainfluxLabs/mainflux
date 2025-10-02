@@ -26,6 +26,22 @@ func selfRegistrationEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
+func inviteRegistrationEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(registerByInviteReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		userID, err := svc.RegisterByInvite(ctx, req.User, req.inviteID)
+		if err != nil {
+			return nil, err
+		}
+
+		return createUserRes{created: true, ID: userID}, nil
+	}
+}
+
 func verifyEmailEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(verifyEmailReq)
@@ -158,7 +174,8 @@ func listUsersEndpoint(svc users.Service) endpoint.Endpoint {
 		if err != nil {
 			return users.UserPage{}, err
 		}
-		return buildUsersResponse(up), nil
+
+		return buildUsersResponse(up, pm), nil
 	}
 }
 
@@ -268,12 +285,16 @@ func restoreEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
-func buildUsersResponse(up users.UserPage) userPageRes {
+func buildUsersResponse(up users.UserPage, pm users.PageMetadata) userPageRes {
 	res := userPageRes{
 		pageRes: pageRes{
 			Total:  up.Total,
-			Offset: up.Offset,
-			Limit:  up.Limit,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
+			Email:  pm.Email,
+			Status: pm.Status,
 		},
 		Users: []viewUserRes{},
 	}
@@ -336,4 +357,97 @@ func buildBackup(req restoreReq) (users.User, []users.User) {
 	}
 
 	return admin, u
+}
+
+func createPlatformInviteEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(createPlatformInviteRequest)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		invite, err := svc.CreatePlatformInvite(ctx, req.token, req.RedirectPath, req.Email)
+		if err != nil {
+			return nil, err
+		}
+
+		return createPlatformInviteRes{
+			ID:      invite.ID,
+			created: true,
+		}, nil
+	}
+}
+
+func listPlatformInvitesEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(listPlatformInvitesRequest)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		page, err := svc.ListPlatformInvites(ctx, req.token, req.pm)
+		if err != nil {
+			return nil, err
+		}
+
+		response := platformInvitePageRes{
+			pageRes: pageRes{
+				Limit:  page.Limit,
+				Offset: page.Offset,
+				Total:  page.Total,
+			},
+			Invites: []platformInviteRes{},
+		}
+
+		for _, inv := range page.Invites {
+			resInv := platformInviteRes{
+				ID:           inv.ID,
+				InviteeEmail: inv.InviteeEmail,
+				CreatedAt:    inv.CreatedAt,
+				ExpiresAt:    inv.ExpiresAt,
+				State:        inv.State,
+			}
+
+			response.Invites = append(response.Invites, resInv)
+		}
+
+		return response, nil
+	}
+}
+
+func viewPlatformInviteEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(inviteReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		invite, err := svc.ViewPlatformInvite(ctx, req.token, req.inviteID)
+		if err != nil {
+			return nil, err
+		}
+
+		return platformInviteRes{
+			ID:           invite.ID,
+			InviteeEmail: invite.InviteeEmail,
+			CreatedAt:    invite.CreatedAt,
+			ExpiresAt:    invite.ExpiresAt,
+			State:        invite.State,
+		}, nil
+	}
+}
+
+func revokePlatformInviteEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(inviteReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.RevokePlatformInvite(ctx, req.token, req.inviteID); err != nil {
+			return nil, err
+		}
+
+		return revokePlatformInviteRes{}, nil
+	}
 }

@@ -21,7 +21,6 @@ type Profile struct {
 
 type Config struct {
 	ContentType string      `json:"content_type"`
-	Write       bool        `json:"write"`
 	Transformer Transformer `json:"transformer"`
 }
 
@@ -36,7 +35,7 @@ type Transformer struct {
 // ProfilesPage contains page related metadata as well as list of profiles that
 // belong to this page.
 type ProfilesPage struct {
-	apiutil.PageMetadata
+	Total    uint64
 	Profiles []Profile
 }
 

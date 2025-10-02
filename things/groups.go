@@ -30,7 +30,7 @@ type Group struct {
 // GroupPage contains page related metadata as well as list of groups that
 // belong to this page.
 type GroupPage struct {
-	apiutil.PageMetadata
+	Total  uint64
 	Groups []Group
 }
 
@@ -140,7 +140,7 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token, orgID string, 
 
 	grs := []Group{}
 	for _, group := range groups {
-		timestamp := getTimestmap()
+		timestamp := getTimestamp()
 		group.CreatedAt, group.UpdatedAt = timestamp, timestamp
 
 		id, err := ts.idProvider.ID()
@@ -148,6 +148,7 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token, orgID string, 
 			return []Group{}, err
 		}
 		group.ID = id
+		group.OrgID = orgID
 
 		grs = append(grs, group)
 	}
@@ -192,23 +193,7 @@ func (ts *thingsService) ListGroups(ctx context.Context, token string, pm apiuti
 }
 
 func (ts *thingsService) ListGroupsByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (GroupPage, error) {
-	if err := ts.isAdmin(ctx, token); err == nil {
-		if grIDs, err := ts.groups.RetrieveIDsByOrg(ctx, orgID); err == nil {
-			return ts.groups.RetrieveByIDs(ctx, grIDs, pm)
-		}
-		return GroupPage{}, err
-	}
-
-	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Viewer); err != nil {
-		return GroupPage{}, err
-	}
-
-	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return GroupPage{}, errors.Wrap(errors.ErrAuthentication, err)
-	}
-
-	grIDs, err := ts.groups.RetrieveIDsByOrgMembership(ctx, orgID, user.GetId())
+	grIDs, err := ts.GetGroupIDsByOrg(ctx, orgID, token)
 	if err != nil {
 		return GroupPage{}, err
 	}
@@ -244,7 +229,7 @@ func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Gr
 	if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
 		return Group{}, err
 	}
-	group.UpdatedAt = getTimestmap()
+	group.UpdatedAt = getTimestamp()
 
 	return ts.groups.Update(ctx, group)
 }

@@ -23,6 +23,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	mqttpub "github.com/MainfluxLabs/mainflux/pkg/messaging/mqtt"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
@@ -204,11 +205,7 @@ func main() {
 	}
 
 	if cfg.forwarder == "true" {
-		subjects := []string{
-			brokers.SubjectSenML,
-			brokers.SubjectJSON,
-		}
-
+		subjects := []string{nats.SubjectWriters}
 		fwd := mqtt.NewForwarder(subjects, logger)
 		if err := fwd.Forward(svcName, nps, mpub); err != nil {
 			logger.Error(fmt.Sprintf("Failed to forward message broker messages: %s", err))

@@ -14,7 +14,7 @@ type Subscription struct {
 
 // Page represents page metadata with content.
 type Page struct {
-	PageMetadata
+	Total         uint64
 	Subscriptions []Subscription
 }
 

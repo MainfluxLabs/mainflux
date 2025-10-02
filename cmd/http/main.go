@@ -19,7 +19,6 @@ import (
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	rulesapi "github.com/MainfluxLabs/mainflux/rules/api/grpc"
@@ -37,7 +36,6 @@ const (
 	defClientTLS         = "false"
 	defCACerts           = ""
 	defPort              = "8180"
-	defBrokerURL         = "nats://localhost:4222"
 	defJaegerURL         = ""
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
@@ -48,7 +46,6 @@ const (
 	envClientTLS         = "MF_HTTP_ADAPTER_CLIENT_TLS"
 	envCACerts           = "MF_HTTP_ADAPTER_CA_CERTS"
 	envPort              = "MF_HTTP_ADAPTER_PORT"
-	envBrokerURL         = "MF_BROKER_URL"
 	envJaegerURL         = "MF_JAEGER_URL"
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
@@ -60,7 +57,6 @@ type config struct {
 	httpConfig        servers.Config
 	thingsConfig      clients.Config
 	rulesConfig       clients.Config
-	brokerURL         string
 	logLevel          string
 	jaegerURL         string
 	thingsGRPCTimeout time.Duration
@@ -92,16 +88,9 @@ func main() {
 	rulesTracer, rulesCloser := jaeger.Init("http_rules", cfg.jaegerURL, logger)
 	defer rulesCloser.Close()
 
-	pub, err := brokers.NewPublisher(cfg.brokerURL)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
-		os.Exit(1)
-	}
-	defer pub.Close()
-
 	tc := thingsapi.NewClient(tConn, thingsTracer, cfg.thingsGRPCTimeout)
 	rc := rulesapi.NewClient(rConn, rulesTracer, cfg.rulesGRPCTimeout)
-	svc := adapter.New(pub, tc, rc, logger)
+	svc := adapter.New(tc, rc, logger)
 
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
@@ -177,7 +166,6 @@ func loadConfig() config {
 		httpConfig:        httpConfig,
 		thingsConfig:      thingsConfig,
 		rulesConfig:       rulesConfig,
-		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,

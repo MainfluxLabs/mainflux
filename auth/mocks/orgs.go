@@ -100,12 +100,8 @@ func (orm *orgRepositoryMock) RetrieveByOwner(_ context.Context, ownerID string,
 	}
 
 	return auth.OrgsPage{
-		Orgs: orgs,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  uint64(len(orm.orgs)),
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Orgs:  orgs,
+		Total: uint64(len(orm.orgs)),
 	}, nil
 }
 
@@ -144,12 +140,8 @@ func (orm *orgRepositoryMock) RetrieveByMember(ctx context.Context, memberID str
 	})
 
 	return auth.OrgsPage{
-		Orgs: orgs,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  uint64(len(orm.orgs)),
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Orgs:  orgs,
+		Total: uint64(len(orm.orgs)),
 	}, nil
 }
 
@@ -180,12 +172,8 @@ func (orm *orgRepositoryMock) RetrieveAll(_ context.Context, pm apiutil.PageMeta
 	}
 
 	return auth.OrgsPage{
-		Orgs: orgs,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  uint64(len(orm.orgs)),
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Orgs:  orgs,
+		Total: uint64(len(orm.orgs)),
 	}, nil
 }
 

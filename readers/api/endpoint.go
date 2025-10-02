@@ -5,10 +5,8 @@ package api
 
 import (
 	"context"
-	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
@@ -16,173 +14,99 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-func listJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func listJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listMessagesReq)
+		req := request.(listJSONMessagesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		var page readers.MessagesPage
-		switch {
-		case req.key != "":
-			pc, err := getPubConfByKey(ctx, req.key)
-			if err != nil {
-				return nil, err
-			}
-			req.pageMeta.Publisher = pc.PublisherID
-		default:
-			if err := isAdmin(ctx, req.token); err != nil {
-				return nil, err
-			}
-		}
-
-		req.pageMeta.Format = jsonFormat
-		page, err := svc.ListAllMessages(req.pageMeta)
+		page, err := svc.ListJSONMessages(ctx, req.token, req.key, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
 
-		return listMessagesRes{
-			PageMetadata: page.PageMetadata,
-			Total:        page.Total,
-			Messages:     page.Messages,
+		return listJSONMessagesRes{
+			JSONPageMetadata: req.pageMeta,
+			Total:            page.Total,
+			Messages:         page.Messages,
 		}, nil
 	}
 }
 
-func listSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func listSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listMessagesReq)
+		req := request.(listSenMLMessagesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		var page readers.MessagesPage
-		switch {
-		case req.key != "":
-			pc, err := getPubConfByKey(ctx, req.key)
-			if err != nil {
-				return nil, err
-			}
-			req.pageMeta.Publisher = pc.PublisherID
-		default:
-			if err := isAdmin(ctx, req.token); err != nil {
-				return nil, err
-			}
-
-		}
-
-		req.pageMeta.Format = defFormat
-		page, err := svc.ListAllMessages(req.pageMeta)
+		page, err := svc.ListSenMLMessages(ctx, req.token, req.key, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
 
-		return listMessagesRes{
-			PageMetadata: page.PageMetadata,
-			Total:        page.Total,
-			Messages:     page.Messages,
+		return listSenMLMessagesRes{
+			SenMLPageMetadata: req.pageMeta,
+			Total:             page.Total,
+			Messages:          page.Messages,
 		}, nil
 	}
 }
 
-func deleteJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func deleteJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(deleteMessagesReq)
+		req := request.(deleteJSONMessagesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		switch {
-		case req.key != "":
-			pc, err := getPubConfByKey(ctx, req.key)
-			if err != nil {
-				return nil, errors.Wrap(errors.ErrAuthentication, err)
-			}
-			req.pageMeta.Publisher = pc.PublisherID
-		case req.token != "":
-			if err := isAdmin(ctx, req.token); err != nil {
-				return nil, err
-			}
-		default:
-			return nil, errors.ErrAuthentication
-		}
-
-		req.pageMeta.Format = jsonFormat
-		err := svc.DeleteMessages(ctx, req.pageMeta)
-		if err != nil {
+		if err := svc.DeleteJSONMessages(ctx, req.token, req.key, req.pageMeta); err != nil {
 			return nil, err
 		}
 
-		return nil, nil
+		return removeRes{}, nil
 	}
 }
 
-func deleteSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func deleteSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(deleteMessagesReq)
+		req := request.(deleteSenMLMessagesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		switch {
-		case req.key != "":
-			pc, err := getPubConfByKey(ctx, req.key)
-			if err != nil {
-				return nil, errors.Wrap(errors.ErrAuthentication, err)
-			}
-			req.pageMeta.Publisher = pc.PublisherID
-
-		case req.token != "":
-			if err := isAdmin(ctx, req.token); err != nil {
-				return nil, err
-			}
-		default:
-			return nil, errors.ErrAuthentication
-		}
-
-		req.pageMeta.Format = defFormat
-		err := svc.DeleteMessages(ctx, req.pageMeta)
-		if err != nil {
+		if err := svc.DeleteSenMLMessages(ctx, req.token, req.key, req.pageMeta); err != nil {
 			return nil, err
 		}
 
-		return nil, nil
+		return removeRes{}, nil
 	}
 }
 
-func backupJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func backupJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(backupMessagesReq)
+		req := request.(backupJSONMessagesReq)
 
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := isAdmin(ctx, req.token); err != nil {
-			return nil, err
-		}
-
-		req.pageMeta.Format = jsonFormat
-		page, err := svc.Backup(req.pageMeta)
+		page, err := svc.BackupJSONMessages(ctx, req.token, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
 
 		var data []byte
-		outputFormat := strings.ToLower(strings.TrimSpace(req.convertFormat))
-		switch outputFormat {
+		switch req.convertFormat {
 		case jsonFormat:
-			data, err = apiutil.GenerateJSON(page)
-		case csvFormat:
-			data, err = apiutil.GenerateCSV(page, req.pageMeta.Format)
+			if data, err = apiutil.GenerateJSON(page.MessagesPage); err != nil {
+				return nil, errors.Wrap(errors.ErrBackupMessages, err)
+			}
 		default:
-			return nil, errors.Wrap(dbutil.ErrMalformedEntity, err)
-		}
-
-		if err != nil {
-			return nil, errors.Wrap(errors.ErrBackupMessages, err)
+			if data, err = apiutil.GenerateCSVFromJSON(page.MessagesPage); err != nil {
+				return nil, errors.Wrap(errors.ErrBackupMessages, err)
+			}
 		}
 
 		return backupFileRes{
@@ -191,37 +115,29 @@ func backupJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint
 	}
 }
 
-func backupSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func backupSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(backupMessagesReq)
+		req := request.(backupSenMLMessagesReq)
 
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := isAdmin(ctx, req.token); err != nil {
-			return nil, err
-		}
-
-		req.pageMeta.Format = defFormat
-		page, err := svc.Backup(req.pageMeta)
+		page, err := svc.BackupSenMLMessages(ctx, req.token, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
 
 		var data []byte
-		outputFormat := strings.ToLower(strings.TrimSpace(req.convertFormat))
-		switch outputFormat {
+		switch req.convertFormat {
 		case jsonFormat:
-			if data, err = apiutil.GenerateJSON(page); err != nil {
-				return nil, errors.Wrap(errors.ErrBackupMessages, err)
-			}
-		case csvFormat:
-			if data, err = apiutil.GenerateCSV(page, req.pageMeta.Format); err != nil {
+			if data, err = apiutil.GenerateJSON(page.MessagesPage); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
 		default:
-			return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+			if data, err = apiutil.GenerateCSVFromSenML(page.MessagesPage); err != nil {
+				return nil, errors.Wrap(errors.ErrBackupMessages, err)
+			}
 		}
 
 		return backupFileRes{
@@ -230,14 +146,10 @@ func backupSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 	}
 }
 
-func restoreJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func restoreJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(restoreMessagesReq)
 		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		if err := isAdmin(ctx, req.token); err != nil {
 			return nil, err
 		}
 
@@ -252,20 +164,17 @@ func restoreJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 			if jsonMessages, err = apiutil.ConvertJSONToJSONMessages(req.Messages); err != nil {
 				return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 			}
-		case csvFormat:
+		default:
 			if jsonMessages, err = apiutil.ConvertCSVToJSONMessages(req.Messages); err != nil {
 				return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 			}
-		default:
-			return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 		}
 
 		for _, msg := range jsonMessages {
 			messages = append(messages, msg)
 		}
 
-		table := dbutil.GetTableName(jsonFormat)
-		if err := svc.Restore(ctx, table, messages...); err != nil {
+		if err := svc.RestoreJSONMessages(ctx, req.token, messages...); err != nil {
 			return nil, err
 		}
 
@@ -273,14 +182,10 @@ func restoreJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 	}
 }
 
-func restoreSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func restoreSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(restoreMessagesReq)
 		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		if err := isAdmin(ctx, req.token); err != nil {
 			return nil, err
 		}
 
@@ -295,20 +200,17 @@ func restoreSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoi
 			if senmlMessages, err = apiutil.ConvertJSONToSenMLMessages(req.Messages); err != nil {
 				return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 			}
-		case csvFormat:
+		default:
 			if senmlMessages, err = apiutil.ConvertCSVToSenMLMessages(req.Messages); err != nil {
 				return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 			}
-		default:
-			return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 		}
 
 		for _, msg := range senmlMessages {
 			messages = append(messages, msg)
 		}
 
-		table := dbutil.GetTableName(senmlFormat)
-		if err := svc.Restore(ctx, table, messages...); err != nil {
+		if err := svc.RestoreSenMLMessages(ctx, req.token, messages...); err != nil {
 			return nil, err
 		}
 

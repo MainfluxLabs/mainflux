@@ -19,9 +19,6 @@ const (
 	SenMLContentType = "application/senml+json"
 	CBORContentType  = "application/senml+cbor"
 	JSONContentType  = "application/json"
-	SenMLFormat      = "senml"
-	JSONFormat       = "json"
-	CBORFormat       = "cbor"
 )
 
 var (
@@ -159,22 +156,6 @@ func FormatMessage(pc *protomfx.PubConfByKeyRes, msg *protomfx.Message) error {
 				}
 			default:
 				return ErrInvalidContentType
-			}
-		}
-	}
-
-	return nil
-}
-
-func FindParam(payload map[string]interface{}, param string) interface{} {
-	for key, value := range payload {
-		if key == param {
-			return value
-		}
-
-		if data, ok := value.(map[string]interface{}); ok {
-			if value := FindParam(data, param); value != nil {
-				return value
 			}
 		}
 	}

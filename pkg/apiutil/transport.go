@@ -13,7 +13,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/readers"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
 	"github.com/gofrs/uuid"
@@ -72,7 +71,6 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrMissingGroupID),
 			errors.Contains(err, ErrMissingMemberID),
 			errors.Contains(err, ErrMissingOrgID),
-			errors.Contains(err, ErrMissingWebhookID),
 			errors.Contains(err, ErrMissingNotifierID),
 			errors.Contains(err, ErrMissingAlarmID),
 			errors.Contains(err, ErrMissingUserID),
@@ -80,6 +78,7 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrInvalidSubject),
 			errors.Contains(err, ErrMissingObject),
 			errors.Contains(err, ErrMissingKeyID),
+			errors.Contains(err, ErrMissingInviteID),
 			errors.Contains(err, ErrInvalidAction),
 			errors.Contains(err, ErrBearerKey),
 			errors.Contains(err, ErrInvalidAuthKey),
@@ -128,7 +127,6 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrMissingThingID),
 		errors.Contains(err, ErrMissingProfileID),
 		errors.Contains(err, ErrMissingMemberID),
-		errors.Contains(err, ErrMissingWebhookID),
 		errors.Contains(err, ErrMissingNotifierID),
 		errors.Contains(err, ErrMissingAlarmID),
 		errors.Contains(err, ErrMissingRuleID),
@@ -136,6 +134,7 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrMissingRole),
 		errors.Contains(err, ErrMissingObject),
 		errors.Contains(err, ErrMissingKeyID),
+		errors.Contains(err, ErrMissingInviteID),
 		errors.Contains(err, ErrInvalidIDFormat),
 		errors.Contains(err, ErrNameSize),
 		errors.Contains(err, ErrEmailSize),
@@ -167,11 +166,14 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrMissingActionID),
 		errors.Contains(err, ErrInvalidOperator):
 		w.WriteHeader(http.StatusBadRequest)
-	case errors.Contains(err, errors.ErrAuthorization):
+	case errors.Contains(err, errors.ErrAuthorization),
+		errors.Contains(err, ErrInviteExpired),
+		errors.Contains(err, ErrInvalidInviteState):
 		w.WriteHeader(http.StatusForbidden)
 	case errors.Contains(err, dbutil.ErrNotFound):
 		w.WriteHeader(http.StatusNotFound)
-	case errors.Contains(err, dbutil.ErrConflict):
+	case errors.Contains(err, dbutil.ErrConflict),
+		errors.Contains(err, ErrUserAlreadyInvited):
 		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, ErrUnsupportedContentType):
 		w.WriteHeader(http.StatusUnsupportedMediaType)
@@ -403,87 +405,6 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 		Email:    e,
 		Payload:  p,
 	}, nil
-}
-
-func BuildMessagePageMetadata(r *http.Request) (readers.PageMetadata, error) {
-	offset, err := ReadUintQuery(r, OffsetKey, DefOffset)
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	limit, err := ReadLimitQuery(r, LimitKey, DefLimit)
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	name, err := ReadStringQuery(r, NameKey, "")
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	subtopic, err := ReadStringQuery(r, SubtopicKey, "")
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	protocol, err := ReadStringQuery(r, ProtocolKey, "")
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	v, err := ReadFloatQuery(r, ValueKey, 0)
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	comparator, err := ReadStringQuery(r, ComparatorKey, "")
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	vs, err := ReadStringQuery(r, StringValueKey, "")
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	vd, err := ReadStringQuery(r, DataValueKey, "")
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	from, err := ReadIntQuery(r, FromKey, 0)
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	to, err := ReadIntQuery(r, ToKey, 0)
-	if err != nil {
-		return readers.PageMetadata{}, err
-	}
-
-	pageMeta := readers.PageMetadata{
-		Offset:      offset,
-		Limit:       limit,
-		Name:        name,
-		Subtopic:    subtopic,
-		Protocol:    protocol,
-		Value:       v,
-		Comparator:  comparator,
-		StringValue: vs,
-		DataValue:   vd,
-		From:        from,
-		To:          to,
-	}
-
-	vb, err := ReadBoolQuery(r, BoolValueKey, false)
-	if err != nil && err != ErrNotFoundParam {
-		return readers.PageMetadata{}, err
-	}
-	if err == nil {
-		pageMeta.BoolValue = vb
-	}
-
-	return pageMeta, nil
 }
 
 func BuildPageMetadataFromBody(r *http.Request) (PageMetadata, error) {

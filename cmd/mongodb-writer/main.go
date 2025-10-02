@@ -17,6 +17,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
@@ -85,7 +86,7 @@ func main() {
 	repo = api.LoggingMiddleware(repo, logger)
 	repo = api.MetricsMiddleware(repo, counter, latency)
 
-	if err := consumers.Start(svcName, pubSub, repo, brokers.SubjectSenML, brokers.SubjectJSON); err != nil {
+	if err := consumers.Start(svcName, pubSub, repo, nats.SubjectWriters); err != nil {
 		logger.Error(fmt.Sprintf("Failed to start MongoDB writer: %s", err))
 		os.Exit(1)
 	}

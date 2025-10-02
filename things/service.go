@@ -408,23 +408,7 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm apiuti
 }
 
 func (ts *thingsService) ListThingsByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (ThingsPage, error) {
-	if err := ts.isAdmin(ctx, token); err == nil {
-		if grIDs, err := ts.groups.RetrieveIDsByOrg(ctx, orgID); err == nil {
-			return ts.things.RetrieveByGroups(ctx, grIDs, pm)
-		}
-		return ThingsPage{}, err
-	}
-
-	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Viewer); err != nil {
-		return ThingsPage{}, err
-	}
-
-	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return ThingsPage{}, errors.Wrap(errors.ErrAuthentication, err)
-	}
-
-	grIDs, err := ts.groups.RetrieveIDsByOrgMembership(ctx, orgID, user.GetId())
+	grIDs, err := ts.GetGroupIDsByOrg(ctx, orgID, token)
 	if err != nil {
 		return ThingsPage{}, err
 	}
@@ -615,23 +599,7 @@ func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm apiu
 }
 
 func (ts *thingsService) ListProfilesByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (ProfilesPage, error) {
-	if err := ts.isAdmin(ctx, token); err == nil {
-		if grIDs, err := ts.groups.RetrieveIDsByOrg(ctx, orgID); err == nil {
-			return ts.profiles.RetrieveByGroups(ctx, grIDs, pm)
-		}
-		return ProfilesPage{}, err
-	}
-
-	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Viewer); err != nil {
-		return ProfilesPage{}, err
-	}
-
-	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return ProfilesPage{}, errors.Wrap(errors.ErrAuthentication, err)
-	}
-
-	grIDs, err := ts.groups.RetrieveIDsByOrgMembership(ctx, orgID, user.GetId())
+	grIDs, err := ts.GetGroupIDsByOrg(ctx, orgID, token)
 	if err != nil {
 		return ProfilesPage{}, err
 	}
@@ -986,7 +954,7 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 	return nil
 }
 
-func getTimestmap() time.Time {
+func getTimestamp() time.Time {
 	return time.Now().UTC().Round(time.Millisecond)
 }
 

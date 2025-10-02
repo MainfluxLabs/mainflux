@@ -4,21 +4,17 @@
 package nats
 
 import (
-	"fmt"
-
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/gogo/protobuf/proto"
 	broker "github.com/nats-io/nats.go"
 )
 
-// A maximum number of reconnect attempts before NATS connection closes permanently.
-// Value -1 represents an unlimited number of reconnect retries, i.e. the client
-// will never give up on retrying to re-establish connection to NATS server.
 const (
-	maxReconnects  = -1
-	messagesSuffix = "messages"
-	subjectWebhook = "webhooks"
+	// A maximum number of reconnect attempts before NATS connection closes permanently.
+	// Value -1 represents an unlimited number of reconnect retries, i.e. the client
+	// will never give up on retrying to re-establish connection to NATS server.
+	maxReconnects = -1
 )
 
 var _ messaging.Publisher = (*publisher)(nil)
@@ -54,32 +50,4 @@ func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 func (pub *publisher) Close() error {
 	pub.conn.Close()
 	return nil
-}
-
-func GetSubjects(pc *protomfx.Config, subtopic string) []string {
-	subjects := []string{subjectWebhook}
-
-	if pc.GetWrite() {
-		format := getFormat(pc.ContentType)
-		subject := fmt.Sprintf("%s.%s", format, messagesSuffix)
-		if subtopic != "" {
-			subject = fmt.Sprintf("%s.%s", subject, subtopic)
-		}
-		subjects = append(subjects, subject)
-	}
-
-	return subjects
-}
-
-func getFormat(ct string) string {
-	switch ct {
-	case messaging.JSONContentType:
-		return messaging.JSONFormat
-	case messaging.SenMLContentType:
-		return messaging.SenMLFormat
-	case messaging.CBORContentType:
-		return messaging.CBORFormat
-	default:
-		return messaging.SenMLFormat
-	}
 }

@@ -128,11 +128,7 @@ func (mr *mqttRepository) RetrieveByGroupID(ctx context.Context, pm mqtt.PageMet
 	}
 
 	return mqtt.Page{
-		PageMetadata: mqtt.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
+		Total:         total,
 		Subscriptions: items,
 	}, nil
 
