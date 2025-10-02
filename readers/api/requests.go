@@ -65,13 +65,12 @@ func (req listJSONMessagesReq) validate() error {
 
 type backupSenMLMessagesReq struct {
 	token         string
-	key           string
 	convertFormat string
 	pageMeta      readers.SenMLPageMetadata
 }
 
 func (req backupSenMLMessagesReq) validate() error {
-	if req.token == "" && req.key == "" {
+	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 
@@ -88,13 +87,12 @@ func (req backupSenMLMessagesReq) validate() error {
 
 type backupJSONMessagesReq struct {
 	token         string
-	key           string
 	convertFormat string
 	pageMeta      readers.JSONPageMetadata
 }
 
 func (req backupJSONMessagesReq) validate() error {
-	if req.token == "" && req.key == "" {
+	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 
