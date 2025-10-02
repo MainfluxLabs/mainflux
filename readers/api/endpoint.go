@@ -92,7 +92,7 @@ func backupJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.BackupJSONMessages(ctx, req.token, req.pageMeta)
+		page, err := svc.BackupJSONMessages(ctx, req.token, req.key, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -123,7 +123,7 @@ func backupSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.BackupSenMLMessages(ctx, req.token, req.pageMeta)
+		page, err := svc.BackupSenMLMessages(ctx, req.token, req.key, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}

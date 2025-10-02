@@ -258,6 +258,7 @@ func decodeBackupJSONMessages(_ context.Context, r *http.Request) (interface{}, 
 
 	return backupJSONMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
+		key:           apiutil.ExtractThingKey(r),
 		convertFormat: convertFormat,
 		pageMeta:      pageMeta,
 	}, nil

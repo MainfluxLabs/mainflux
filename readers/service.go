@@ -27,10 +27,10 @@ type Service interface {
 	ListSenMLMessages(ctx context.Context, token, key string, rpm SenMLPageMetadata) (SenMLMessagesPage, error)
 
 	// BackupJSONMessages backups the json messages with given filters.
-	BackupJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) (JSONMessagesPage, error)
+	BackupJSONMessages(ctx context.Context, token, key string, rpm JSONPageMetadata) (JSONMessagesPage, error)
 
 	// BackupSenMLMessages backups the senml messages with given filters.
-	BackupSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) (SenMLMessagesPage, error)
+	BackupSenMLMessages(ctx context.Context, token, key string, rpm SenMLPageMetadata) (SenMLMessagesPage, error)
 
 	// RestoreJSONMessages restores the json messages.
 	RestoreJSONMessages(ctx context.Context, token string, messages ...Message) error
@@ -95,30 +95,38 @@ func (rs *readersService) ListSenMLMessages(ctx context.Context, token, key stri
 	return rs.senml.Retrieve(ctx, rpm)
 }
 
-func (rs *readersService) BackupJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) (JSONMessagesPage, error) {
-	if err := rs.isAdmin(ctx, token); err != nil {
-		return JSONMessagesPage{}, err
+func (rs *readersService) BackupJSONMessages(ctx context.Context, token, key string, rpm JSONPageMetadata) (JSONMessagesPage, error) {
+	switch {
+	case key != "":
+		pc, err := rs.getPubConfByKey(ctx, key)
+		if err != nil {
+			return JSONMessagesPage{}, err
+		}
+		rpm.Publisher = pc.PublisherID
+	default:
+		if err := rs.isAdmin(ctx, token); err != nil {
+			return JSONMessagesPage{}, err
+		}
 	}
 
-	page, err := rs.json.Backup(ctx, rpm)
-	if err != nil {
-		return JSONMessagesPage{}, err
-	}
-
-	return page, nil
+	return rs.json.Backup(ctx, rpm)
 }
 
-func (rs *readersService) BackupSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) (SenMLMessagesPage, error) {
-	if err := rs.isAdmin(ctx, token); err != nil {
-		return SenMLMessagesPage{}, err
+func (rs *readersService) BackupSenMLMessages(ctx context.Context, token, key string, rpm SenMLPageMetadata) (SenMLMessagesPage, error) {
+	switch {
+	case key != "":
+		pc, err := rs.getPubConfByKey(ctx, key)
+		if err != nil {
+			return SenMLMessagesPage{}, err
+		}
+		rpm.Publisher = pc.PublisherID
+	default:
+		if err := rs.isAdmin(ctx, token); err != nil {
+			return SenMLMessagesPage{}, err
+		}
 	}
 
-	page, err := rs.senml.Backup(ctx, rpm)
-	if err != nil {
-		return SenMLMessagesPage{}, err
-	}
-
-	return page, nil
+	return rs.senml.Backup(ctx, rpm)
 }
 
 func (rs *readersService) RestoreJSONMessages(ctx context.Context, token string, messages ...Message) error {
