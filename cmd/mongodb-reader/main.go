@@ -24,8 +24,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/MainfluxLabs/mainflux/readers/api"
 	"github.com/MainfluxLabs/mainflux/readers/mongodb"
+	"github.com/MainfluxLabs/mainflux/readers/tracing"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	"github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -89,6 +91,9 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
+	mongodbReaderHttpTracer, readersHttpCloser := jaeger.Init("mongodb_reader_http", cfg.jaegerURL, logger)
+	defer readersHttpCloser.Close()
+
 	conn := clientsgrpc.Connect(cfg.thingsConfig, logger)
 	defer conn.Close()
 
@@ -107,10 +112,13 @@ func main() {
 
 	db := connectToMongoDB(cfg.dbHost, cfg.dbPort, cfg.dbName, logger)
 
-	svc := newService(auth, tc, db, logger)
+	dbTracer, dbCloser := jaeger.Init("messages_db", cfg.jaegerURL, logger)
+	defer dbCloser.Close()
+
+	svc := newService(db, dbTracer, auth, tc, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, api.MakeHandler(svc, svcName, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, api.MakeHandler(svc, mongodbReaderHttpTracer, svcName, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -189,9 +197,13 @@ func connectToMongoDB(host, port, name string, logger logger.Logger) *mongo.Data
 	return client.Database(name)
 }
 
-func newService(ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, db *mongo.Database, logger logger.Logger) readers.Service {
+func newService(db *mongo.Database, dbTracer opentracing.Tracer, ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, logger logger.Logger) readers.Service {
 	jsonRepo := mongodb.NewJSONRepository(db)
+	jsonRepo = tracing.JSONMessageRepositoryMiddleware(dbTracer, jsonRepo)
+
 	senmlRepo := mongodb.NewSenMLRepository(db)
+	senmlRepo = tracing.SenMLMessageRepositoryMiddleware(dbTracer, senmlRepo)
+
 	svc := readers.New(ac, tc, jsonRepo, senmlRepo)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
