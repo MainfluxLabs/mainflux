@@ -57,23 +57,9 @@ func MakeHandler(svc readers.Service, svcName string, logger logger.Logger) http
 		opts...,
 	))
 
-	mux.Get("/json/:publisherID", kithttp.NewServer(
-		listAdminJSONMessagesEndpoint(svc),
-		decodeListJSONMessagesByAdmin,
-		encodeResponse,
-		opts...,
-	))
-
 	mux.Get("/senml", kithttp.NewServer(
 		listSenMLMessagesEndpoint(svc),
 		decodeListSenMLMessages,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Get("/senml/:publisherID", kithttp.NewServer(
-		listAdminSenMLMessagesEndpoint(svc),
-		decodeListSenMLMessagesByAdmin,
 		encodeResponse,
 		opts...,
 	))
@@ -127,6 +113,11 @@ func MakeHandler(svc readers.Service, svcName string, logger logger.Logger) http
 }
 
 func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	publisher, err := apiutil.ReadStringQuery(r, publisherIDKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	pageMeta, err := BuildJSONPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -144,46 +135,21 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, er
 
 	pageMeta.Offset = offset
 	pageMeta.Limit = limit
+	pageMeta.Publisher = publisher
 
 	return listJSONMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
 		key:      apiutil.ExtractThingKey(r),
-		pageMeta: pageMeta,
-	}, nil
-}
-
-func decodeListJSONMessagesByAdmin(_ context.Context, r *http.Request) (interface{}, error) {
-	publisherID := bone.GetValue(r, publisherIDKey)
-	if publisherID == "" {
-		return nil, errors.New("publisherID path parameter is required")
-	}
-
-	pageMeta, err := BuildJSONPageMetadata(r)
-	if err != nil {
-		return nil, err
-	}
-
-	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	limit, err := apiutil.ReadLimitQuery(r, apiutil.LimitKey, apiutil.DefLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	pageMeta.Offset = offset
-	pageMeta.Limit = limit
-	pageMeta.Publisher = publisherID
-
-	return listJSONMessagesReq{
-		token:    apiutil.ExtractBearerToken(r),
 		pageMeta: pageMeta,
 	}, nil
 }
 
 func decodeListSenMLMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	publisher, err := apiutil.ReadStringQuery(r, publisherIDKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	pageMeta, err := BuildSenMLPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -201,41 +167,11 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (interface{}, e
 
 	pageMeta.Offset = offset
 	pageMeta.Limit = limit
+	pageMeta.Publisher = publisher
 
 	return listSenMLMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
 		key:      apiutil.ExtractThingKey(r),
-		pageMeta: pageMeta,
-	}, nil
-}
-
-func decodeListSenMLMessagesByAdmin(_ context.Context, r *http.Request) (interface{}, error) {
-	publisherID := bone.GetValue(r, publisherIDKey)
-	if publisherID == "" {
-		return nil, errors.New("publisherID path parameter is required")
-	}
-
-	pageMeta, err := BuildSenMLPageMetadata(r)
-	if err != nil {
-		return nil, err
-	}
-
-	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	limit, err := apiutil.ReadLimitQuery(r, apiutil.LimitKey, apiutil.DefLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	pageMeta.Offset = offset
-	pageMeta.Limit = limit
-	pageMeta.Publisher = publisherID
-
-	return listSenMLMessagesReq{
-		token:    apiutil.ExtractBearerToken(r),
 		pageMeta: pageMeta,
 	}, nil
 }
