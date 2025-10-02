@@ -81,3 +81,17 @@ func (res backupFileRes) Headers() map[string]string {
 func (res backupFileRes) Empty() bool {
 	return len(res.file) == 0
 }
+
+type removeRes struct{}
+
+func (res removeRes) Code() int {
+	return http.StatusNoContent
+}
+
+func (res removeRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res removeRes) Empty() bool {
+	return true
+}
