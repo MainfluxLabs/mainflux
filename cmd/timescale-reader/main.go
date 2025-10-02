@@ -24,9 +24,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/MainfluxLabs/mainflux/readers/api"
 	"github.com/MainfluxLabs/mainflux/readers/timescale"
+	"github.com/MainfluxLabs/mainflux/readers/tracing"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
+	"github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/errgroup"
 )
@@ -95,6 +97,9 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
+	timescaleReaderHttpTracer, timescaleReaderHttpCloser := jaeger.Init("postgres_reader_http", cfg.jaegerURL, logger)
+	defer timescaleReaderHttpCloser.Close()
+
 	conn := clientsgrpc.Connect(cfg.thingsConfig, logger)
 	defer conn.Close()
 
@@ -113,10 +118,13 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	svc := newService(auth, tc, db, logger)
+	dbTracer, dbCloser := jaeger.Init("messages_timescale_db", cfg.jaegerURL, logger)
+	defer dbCloser.Close()
+
+	svc := newService(db, dbTracer, auth, tc, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, api.MakeHandler(svc, svcName, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, api.MakeHandler(svc, timescaleReaderHttpTracer, svcName, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -201,9 +209,13 @@ func connectToDB(dbConfig timescale.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, db *sqlx.DB, logger logger.Logger) readers.Service {
+func newService(db *sqlx.DB, dbTracer opentracing.Tracer, ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, logger logger.Logger) readers.Service {
 	jsonRepo := timescale.NewJSONRepository(db)
+	jsonRepo = tracing.JSONMessageRepositoryMiddleware(dbTracer, jsonRepo)
+
 	senmlRepo := timescale.NewSenMLRepository(db)
+	senmlRepo = tracing.SenMLMessageRepositoryMiddleware(dbTracer, senmlRepo)
+
 	svc := readers.New(ac, tc, jsonRepo, senmlRepo)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
