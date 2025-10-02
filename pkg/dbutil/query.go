@@ -7,11 +7,12 @@ import (
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 )
 
-var errCreateMetadataQuery = errors.New("failed to create query for metadata")
-var errCreatePayloadQuery = errors.New("failed to create query for payload")
+var (
+	errCreateMetadataQuery = errors.New("failed to create query for metadata")
+	errCreatePayloadQuery  = errors.New("failed to create query for payload")
+)
 
 func GetNameQuery(name string) (string, string) {
 	if name == "" {
@@ -22,17 +23,6 @@ func GetNameQuery(name string) (string, string) {
 	nq := `LOWER(name) LIKE :name`
 
 	return nq, name
-}
-
-func GetEmailQuery(email string) (string, string) {
-	if email == "" {
-		return "", ""
-	}
-
-	email = fmt.Sprintf(`%%%s%%`, strings.ToLower(email))
-	nq := `email LIKE :email`
-
-	return nq, email
 }
 
 func GetMetadataQuery(m map[string]interface{}) (mb []byte, mq string, err error) {
@@ -87,15 +77,6 @@ func GetOffsetLimitQuery(limit uint64) string {
 	}
 
 	return ""
-}
-
-func GetTableName(format string) string {
-	switch format {
-	case messaging.JSONFormat, messaging.JSONContentType:
-		return "json"
-	default:
-		return "messages"
-	}
 }
 
 func GetGroupIDsQuery(ids []string) string {

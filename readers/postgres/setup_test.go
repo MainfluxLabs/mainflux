@@ -3,6 +3,7 @@
 
 // Package postgres_test contains tests for PostgreSQL repository
 // implementations.
+
 package postgres_test
 
 import (

@@ -5,7 +5,6 @@ package api
 
 import (
 	"context"
-	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -15,28 +14,14 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-func listJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func listJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listJSONMessagesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		var page readers.JSONMessagesPage
-		switch {
-		case req.thingKey.Key != "":
-			pc, err := getPubConfByKey(ctx, req.thingKey.Type, req.thingKey.Key)
-			if err != nil {
-				return nil, err
-			}
-			req.pageMeta.Publisher = pc.PublisherID
-		default:
-			if err := isAdmin(ctx, req.token); err != nil {
-				return nil, err
-			}
-		}
-
-		page, err := svc.ListJSONMessages(ctx, req.pageMeta)
+		page, err := svc.ListJSONMessages(ctx, req.token, req.thingKey.Type, req.thingKey.Type, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -49,28 +34,14 @@ func listJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
 	}
 }
 
-func listSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func listSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listSenMLMessagesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		var page readers.SenMLMessagesPage
-		switch {
-		case req.thingKey.Key != "":
-			pc, err := getPubConfByKey(ctx, req.thingKey.Type, req.thingKey.Key)
-			if err != nil {
-				return nil, err
-			}
-			req.pageMeta.Publisher = pc.PublisherID
-		default:
-			if err := isAdmin(ctx, req.token); err != nil {
-				return nil, err
-			}
-		}
-
-		page, err := svc.ListSenMLMessages(ctx, req.pageMeta)
+		page, err := svc.ListSenMLMessages(ctx, req.token, req.thingKey.Type, req.thingKey.Type, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -83,70 +54,37 @@ func listSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint 
 	}
 }
 
-func deleteJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func deleteJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(deleteJSONMessagesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		switch {
-		case req.thingKey.Key != "":
-			pc, err := getPubConfByKey(ctx, req.thingKey.Type, req.thingKey.Key)
-			if err != nil {
-				return nil, errors.Wrap(errors.ErrAuthentication, err)
-			}
-			req.pageMeta.Publisher = pc.PublisherID
-		case req.token != "":
-			if err := isAdmin(ctx, req.token); err != nil {
-				return nil, err
-			}
-		default:
-			return nil, errors.ErrAuthentication
-		}
-
-		err := svc.DeleteJSONMessages(ctx, req.pageMeta)
-		if err != nil {
+		if err := svc.DeleteJSONMessages(ctx, req.token, req.thingKey.Type, req.thingKey.Key, req.pageMeta); err != nil {
 			return nil, err
 		}
 
-		return nil, nil
+		return removeRes{}, nil
 	}
 }
 
-func deleteSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func deleteSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(deleteSenMLMessagesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		switch {
-		case req.thingKey.Key != "":
-			pc, err := getPubConfByKey(ctx, req.thingKey.Type, req.thingKey.Key)
-			if err != nil {
-				return nil, errors.Wrap(errors.ErrAuthentication, err)
-			}
-			req.pageMeta.Publisher = pc.PublisherID
-
-		case req.token != "":
-			if err := isAdmin(ctx, req.token); err != nil {
-				return nil, err
-			}
-		default:
-			return nil, errors.ErrAuthentication
-		}
-
-		err := svc.DeleteSenMLMessages(ctx, req.pageMeta)
-		if err != nil {
+		if err := svc.DeleteSenMLMessages(ctx, req.token, req.thingKey.Type, req.thingKey.Key, req.pageMeta); err != nil {
 			return nil, err
 		}
 
-		return nil, nil
+		return removeRes{}, nil
 	}
 }
 
-func backupJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func backupJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(backupJSONMessagesReq)
 
@@ -154,28 +92,21 @@ func backupJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint
 			return nil, err
 		}
 
-		if err := isAdmin(ctx, req.token); err != nil {
-			return nil, err
-		}
-
-		page, err := svc.BackupJSONMessages(ctx, req.pageMeta)
+		page, err := svc.BackupJSONMessages(ctx, req.token, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
 
 		var data []byte
-		outputFormat := strings.ToLower(strings.TrimSpace(req.convertFormat))
-		switch outputFormat {
+		switch req.convertFormat {
 		case jsonFormat:
-			data, err = apiutil.GenerateJSON(page.MessagesPage)
-		case csvFormat:
-			data, err = apiutil.GenerateCSVFromJSON(page.MessagesPage)
+			if data, err = apiutil.GenerateJSON(page.MessagesPage); err != nil {
+				return nil, errors.Wrap(errors.ErrBackupMessages, err)
+			}
 		default:
-			return nil, errors.Wrap(errors.ErrBackupMessages, err)
-		}
-
-		if err != nil {
-			return nil, errors.Wrap(errors.ErrBackupMessages, err)
+			if data, err = apiutil.GenerateCSVFromJSON(page.MessagesPage); err != nil {
+				return nil, errors.Wrap(errors.ErrBackupMessages, err)
+			}
 		}
 
 		return backupFileRes{
@@ -184,7 +115,7 @@ func backupJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint
 	}
 }
 
-func backupSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func backupSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(backupSenMLMessagesReq)
 
@@ -192,28 +123,21 @@ func backupSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 			return nil, err
 		}
 
-		if err := isAdmin(ctx, req.token); err != nil {
-			return nil, err
-		}
-
-		page, err := svc.BackupSenMLMessages(ctx, req.pageMeta)
+		page, err := svc.BackupSenMLMessages(ctx, req.token, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
 
 		var data []byte
-		outputFormat := strings.ToLower(strings.TrimSpace(req.convertFormat))
-		switch outputFormat {
+		switch req.convertFormat {
 		case jsonFormat:
 			if data, err = apiutil.GenerateJSON(page.MessagesPage); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
-		case csvFormat:
+		default:
 			if data, err = apiutil.GenerateCSVFromSenML(page.MessagesPage); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
-		default:
-			return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 		}
 
 		return backupFileRes{
@@ -222,14 +146,10 @@ func backupSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 	}
 }
 
-func restoreJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func restoreJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(restoreMessagesReq)
 		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		if err := isAdmin(ctx, req.token); err != nil {
 			return nil, err
 		}
 
@@ -244,19 +164,17 @@ func restoreJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 			if jsonMessages, err = apiutil.ConvertJSONToJSONMessages(req.Messages); err != nil {
 				return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 			}
-		case csvFormat:
+		default:
 			if jsonMessages, err = apiutil.ConvertCSVToJSONMessages(req.Messages); err != nil {
 				return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 			}
-		default:
-			return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 		}
 
 		for _, msg := range jsonMessages {
 			messages = append(messages, msg)
 		}
 
-		if err := svc.RestoreJSONMessages(ctx, messages...); err != nil {
+		if err := svc.RestoreJSONMessages(ctx, req.token, messages...); err != nil {
 			return nil, err
 		}
 
@@ -264,14 +182,10 @@ func restoreJSONMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoin
 	}
 }
 
-func restoreSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoint {
+func restoreSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(restoreMessagesReq)
 		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		if err := isAdmin(ctx, req.token); err != nil {
 			return nil, err
 		}
 
@@ -286,19 +200,17 @@ func restoreSenMLMessagesEndpoint(svc readers.MessageRepository) endpoint.Endpoi
 			if senmlMessages, err = apiutil.ConvertJSONToSenMLMessages(req.Messages); err != nil {
 				return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 			}
-		case csvFormat:
+		default:
 			if senmlMessages, err = apiutil.ConvertCSVToSenMLMessages(req.Messages); err != nil {
 				return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 			}
-		default:
-			return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 		}
 
 		for _, msg := range senmlMessages {
 			messages = append(messages, msg)
 		}
 
-		if err := svc.RestoreSenMLMessages(ctx, messages...); err != nil {
+		if err := svc.RestoreSenMLMessages(ctx, req.token, messages...); err != nil {
 			return nil, err
 		}
 

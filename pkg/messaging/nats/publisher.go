@@ -4,8 +4,6 @@
 package nats
 
 import (
-	"fmt"
-
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/gogo/protobuf/proto"
@@ -17,15 +15,6 @@ const (
 	// Value -1 represents an unlimited number of reconnect retries, i.e. the client
 	// will never give up on retrying to re-establish connection to NATS server.
 	maxReconnects = -1
-
-	// SubjectMessages represents subject used to subscribe to all messages.
-	SubjectMessages = "messages"
-	// SubjectSmtp represents subject used to subscribe to SMTP notifications.
-	SubjectSmtp = "smtp.*"
-	// SubjectSmpp represents subject used to subscribe to SMPP notifications.
-	SubjectSmpp = "smpp.*"
-	// SubjectAlarm represents subject used to subscribe to alarms.
-	SubjectAlarm = "alarms"
 )
 
 var _ messaging.Publisher = (*publisher)(nil)
@@ -61,14 +50,4 @@ func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 func (pub *publisher) Close() error {
 	pub.conn.Close()
 	return nil
-}
-
-func GetSubjects(subtopic string) []string {
-	subjects := []string{SubjectMessages}
-
-	if subtopic != "" {
-		subjects = append(subjects, fmt.Sprintf("%s.%s", SubjectMessages, subtopic))
-	}
-
-	return subjects
 }

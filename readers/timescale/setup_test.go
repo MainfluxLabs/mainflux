@@ -3,6 +3,7 @@
 
 // Package timescale_test contains tests for PostgreSQL repository
 // implementations.
+
 package timescale_test
 
 import (

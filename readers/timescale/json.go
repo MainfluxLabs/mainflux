@@ -1,7 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package postgres
+package timescale
 
 import (
 	"context"
@@ -17,20 +17,94 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+var _ readers.JSONMessageRepository = (*jsonRepository)(nil)
+
 type jsonRepository struct {
-	db         dbutil.Database
-	aggregator *aggregationService
+	db *sqlx.DB
 }
 
-func NewJSONRepository(db dbutil.Database) readers.JSONMessageRepository {
+func NewJSONRepository(db *sqlx.DB) readers.JSONMessageRepository {
 	return &jsonRepository{
-		db:         db,
-		aggregator: newAggregationService(db),
+		db: db,
 	}
 }
 
 func (jr *jsonRepository) Retrieve(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	return jr.readAll(ctx, rpm)
+}
+
+func (jr *jsonRepository) Backup(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
+	backup := rpm
+	backup.Limit = 0
+	backup.Offset = 0
+	return jr.readAll(ctx, backup)
+}
+
+func (jr *jsonRepository) Remove(ctx context.Context, rpm readers.JSONPageMetadata) error {
+	condition := jr.fmtCondition(rpm)
+	q := fmt.Sprintf("DELETE FROM json %s", condition)
+	params := map[string]interface{}{
+		"subtopic":  rpm.Subtopic,
+		"publisher": rpm.Publisher,
+		"protocol":  rpm.Protocol,
+		"from":      rpm.From,
+		"to":        rpm.To,
+	}
+
+	if _, err := jr.db.NamedExecContext(ctx, q, params); err != nil {
+		return jr.handlePgError(err, errors.ErrDeleteMessages)
+	}
+
+	return nil
+}
+
+func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Message) error {
+	tx, err := jr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(errors.ErrSaveMessages, err)
+	}
+
+	q := `INSERT INTO json (subtopic, publisher, protocol, payload, created)
+          VALUES (:subtopic, :publisher, :protocol, :payload, :created);`
+
+	for _, msg := range messages {
+		jsonMsg, ok := msg.(mfjson.Message)
+		if !ok {
+			msgMap, mapOk := msg.(map[string]interface{})
+			if !mapOk {
+				return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
+			}
+
+			jsonMsg = mfjson.Message{
+				Subtopic:  msgMap["subtopic"].(string),
+				Publisher: msgMap["publisher"].(string),
+				Protocol:  msgMap["protocol"].(string),
+				Created:   int64(msgMap["created"].(float64)),
+			}
+
+			if payload, ok := msgMap["payload"]; ok {
+				payloadBytes, err := json.Marshal(payload)
+				if err != nil {
+					return errors.Wrap(errors.ErrSaveMessages, err)
+				}
+				jsonMsg.Payload = payloadBytes
+			}
+		}
+
+		_, err := tx.NamedExecContext(ctx, q, jsonMsg)
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				return errors.Wrap(errors.ErrSaveMessages, err)
+			}
+			return jr.handlePgError(err, errors.ErrSaveMessages)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(errors.ErrSaveMessages, err)
+	}
+
+	return nil
 }
 
 func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
@@ -44,17 +118,6 @@ func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetad
 
 	params := jr.buildQueryParams(rpm)
 
-	if rpm.AggType != "" && rpm.AggInterval != "" {
-		messages, total, err := jr.aggregator.readAggregatedJSONMessages(ctx, rpm)
-		if err != nil {
-			return page, err
-		}
-		page.Messages = messages
-		page.Total = total
-
-		return page, nil
-	}
-
 	messages, err := jr.readMessages(ctx, rpm, params)
 	if err != nil {
 		return page, err
@@ -62,8 +125,8 @@ func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetad
 	page.Messages = messages
 
 	condition := jr.fmtCondition(rpm)
-	query := fmt.Sprintf(`SELECT COUNT(*) FROM json %s;`, condition)
-	total, err := dbutil.Total(ctx, jr.db, query, params)
+	q := fmt.Sprintf(`SELECT COUNT(*) FROM json %s;`, condition)
+	total, err := dbutil.Total(ctx, jr.db, q, params)
 	if err != nil {
 		return page, err
 	}
@@ -76,8 +139,8 @@ func (jr *jsonRepository) readMessages(ctx context.Context, rpm readers.JSONPage
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 	condition := jr.fmtCondition(rpm)
 
-	query := fmt.Sprintf(`SELECT * FROM json %s ORDER BY created DESC %s;`, condition, olq)
-	rows, err := jr.db.NamedQueryContext(ctx, query, params)
+	q := fmt.Sprintf(`SELECT * FROM json %s ORDER BY created DESC %s;`, condition, olq)
+	rows, err := jr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
 			return []readers.Message{}, nil
@@ -151,28 +214,6 @@ func (jr *jsonRepository) buildQueryParams(rpm readers.JSONPageMetadata) map[str
 	}
 }
 
-func (jr *jsonRepository) Backup(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
-	return jr.readAll(ctx, rpm)
-}
-
-func (jr *jsonRepository) Remove(ctx context.Context, rpm readers.JSONPageMetadata) error {
-	condition := jr.fmtCondition(rpm)
-	q := fmt.Sprintf("DELETE FROM json %s", condition)
-	params := map[string]interface{}{
-		"subtopic":  rpm.Subtopic,
-		"publisher": rpm.Publisher,
-		"protocol":  rpm.Protocol,
-		"from":      rpm.From,
-		"to":        rpm.To,
-	}
-
-	if _, err := jr.db.NamedExecContext(ctx, q, params); err != nil {
-		return jr.handlePgError(err, errors.ErrDeleteMessages)
-	}
-
-	return nil
-}
-
 func (jr *jsonRepository) handlePgError(err error, wrapErr error) error {
 	pgErr, ok := err.(*pgconn.PgError)
 	if ok {
@@ -186,34 +227,4 @@ func (jr *jsonRepository) handlePgError(err error, wrapErr error) error {
 		}
 	}
 	return errors.Wrap(wrapErr, err)
-}
-
-func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Message) error {
-	tx, err := jr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(errors.ErrSaveMessages, err)
-	}
-
-	q := `INSERT INTO json (subtopic, publisher, protocol, payload, created)
-          VALUES (:subtopic, :publisher, :protocol, :payload, :created);`
-
-	for _, msg := range messages {
-		jsonMsg, ok := msg.(mfjson.Message)
-		if !ok {
-			return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
-		}
-
-		if _, err := tx.NamedExecContext(ctx, q, jsonMsg); err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				return errors.Wrap(errors.ErrSaveMessages, err)
-			}
-			return jr.handlePgError(err, errors.ErrSaveMessages)
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrap(errors.ErrSaveMessages, err)
-	}
-
-	return nil
 }
