@@ -116,9 +116,10 @@ func TestListSenMLMessages(t *testing.T) {
 	for i := 0; i < numOfMessages; i++ {
 		// Mix possible values as well as value sum.
 		msg := senml.Message{
-			Protocol: mqttProt,
-			Time:     int64(now - int64(i)),
-			Name:     "name",
+			Publisher: pubID,
+			Protocol:  mqttProt,
+			Time:      int64(now - int64(i)),
+			Name:      "name",
 		}
 
 		count := i % valueFields
@@ -481,8 +482,9 @@ func TestListJSONMessages(t *testing.T) {
 
 	for i := 0; i < numOfMessages; i++ {
 		msg := mfjson.Message{
-			Protocol: mqttProt,
-			Created:  int64(now - int64(i)),
+			Publisher: pubID,
+			Protocol:  mqttProt,
+			Created:   int64(now - int64(i)),
 		}
 
 		// Mix different value types
@@ -679,7 +681,7 @@ func TestListJSONMessages(t *testing.T) {
 		},
 		{
 			desc:   "read JSON messages with publisher filter",
-			url:    fmt.Sprintf("%s/json/%s", ts.URL, pubID),
+			url:    fmt.Sprintf("%s/json?publisherID=%s", ts.URL, pubID),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: jsonPageRes{
