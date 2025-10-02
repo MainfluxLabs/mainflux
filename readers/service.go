@@ -69,6 +69,7 @@ func (rs *readersService) ListJSONMessages(ctx context.Context, token, key strin
 			return JSONMessagesPage{}, err
 		}
 		rpm.Publisher = pc.PublisherID
+	case token != "":
 	default:
 		if err := rs.isAdmin(ctx, token); err != nil {
 			return JSONMessagesPage{}, err
@@ -86,6 +87,7 @@ func (rs *readersService) ListSenMLMessages(ctx context.Context, token, key stri
 			return SenMLMessagesPage{}, err
 		}
 		rpm.Publisher = pc.PublisherID
+	case token != "":
 	default:
 		if err := rs.isAdmin(ctx, token); err != nil {
 			return SenMLMessagesPage{}, err
