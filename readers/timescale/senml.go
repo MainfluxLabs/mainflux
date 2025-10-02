@@ -1,7 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package postgres
+package timescale
 
 import (
 	"context"
@@ -17,15 +17,18 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+const senmlTable = "senml"
+
+var _ readers.SenMLMessageRepository = (*senmlRepository)(nil)
+
 type senmlRepository struct {
-	db         dbutil.Database
-	aggregator *aggregationService
+	db *sqlx.DB
 }
 
-func NewSenMLRepository(db dbutil.Database) readers.SenMLMessageRepository {
+// NewSenMLRepository returns new TimescaleDB SenML repository.
+func NewSenMLRepository(db *sqlx.DB) readers.SenMLMessageRepository {
 	return &senmlRepository{
-		db:         db,
-		aggregator: newAggregationService(db),
+		db: db,
 	}
 }
 
@@ -34,12 +37,15 @@ func (sr *senmlRepository) Retrieve(ctx context.Context, rpm readers.SenMLPageMe
 }
 
 func (sr *senmlRepository) Backup(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
-	return sr.readAll(ctx, rpm)
+	backup := rpm
+	backup.Limit = 0
+	backup.Offset = 0
+	return sr.readAll(ctx, backup)
 }
 
 func (sr *senmlRepository) Remove(ctx context.Context, rpm readers.SenMLPageMetadata) error {
 	condition := sr.fmtCondition(rpm)
-	q := fmt.Sprintf("DELETE FROM senml %s", condition)
+	q := fmt.Sprintf("DELETE FROM %s %s", senmlTable, condition)
 	params := map[string]interface{}{
 		"subtopic":     rpm.Subtopic,
 		"publisher":    rpm.Publisher,
@@ -60,6 +66,41 @@ func (sr *senmlRepository) Remove(ctx context.Context, rpm readers.SenMLPageMeta
 	return nil
 }
 
+func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Message) error {
+	tx, err := sr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(errors.ErrSaveMessages, err)
+	}
+
+	q := `INSERT INTO senml (subtopic, publisher, protocol,
+          name, unit, value, string_value, bool_value, data_value, sum,
+          time, update_time)
+          VALUES (:subtopic, :publisher, :protocol, :name, :unit,
+          :value, :string_value, :bool_value, :data_value, :sum,
+          :time, :update_time);`
+
+	for _, msg := range messages {
+		senmlMsg, ok := msg.(senml.Message)
+		if !ok {
+			return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
+		}
+
+		_, err := tx.NamedExecContext(ctx, q, senmlMsg)
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				return errors.Wrap(errors.ErrSaveMessages, err)
+			}
+			return sr.handlePgError(err, errors.ErrSaveMessages)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(errors.ErrSaveMessages, err)
+	}
+
+	return nil
+}
+
 func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	page := readers.SenMLMessagesPage{
 		SenMLPageMetadata: rpm,
@@ -71,17 +112,6 @@ func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLPageMet
 
 	params := sr.buildQueryParams(rpm)
 
-	if rpm.AggType != "" && rpm.AggInterval != "" {
-		messages, total, err := sr.aggregator.readAggregatedSenMLMessages(ctx, rpm)
-		if err != nil {
-			return page, err
-		}
-		page.Messages = messages
-		page.Total = total
-
-		return page, nil
-	}
-
 	messages, err := sr.readMessages(ctx, rpm, params)
 	if err != nil {
 		return page, err
@@ -89,8 +119,8 @@ func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLPageMet
 	page.Messages = messages
 
 	condition := sr.fmtCondition(rpm)
-	query := fmt.Sprintf(`SELECT COUNT(*) FROM senml %s;`, condition)
-	total, err := dbutil.Total(ctx, sr.db, query, params)
+	q := fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, senmlTable, condition)
+	total, err := dbutil.Total(ctx, sr.db, q, params)
 	if err != nil {
 		return page, err
 	}
@@ -103,8 +133,8 @@ func (sr *senmlRepository) readMessages(ctx context.Context, rpm readers.SenMLPa
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 	condition := sr.fmtCondition(rpm)
 
-	query := fmt.Sprintf(`SELECT * FROM senml %s ORDER BY time DESC %s;`, condition, olq)
-	rows, err := sr.db.NamedQueryContext(ctx, query, params)
+	q := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY time DESC %s;`, senmlTable, condition, olq)
+	rows, err := sr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
 			return []readers.Message{}, nil
@@ -124,11 +154,11 @@ func (sr *senmlRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, err
 	var messages []readers.Message
 
 	for rows.Next() {
-		msg := senml.Message{}
+		msg := senmlMessage{Message: senml.Message{}}
 		if err := rows.StructScan(&msg); err != nil {
 			return nil, errors.Wrap(readers.ErrReadMessages, err)
 		}
-		messages = append(messages, msg)
+		messages = append(messages, msg.Message)
 	}
 
 	return messages, nil
@@ -194,41 +224,6 @@ func (sr *senmlRepository) buildQueryParams(rpm readers.SenMLPageMetadata) map[s
 	}
 }
 
-func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Message) error {
-	tx, err := sr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(errors.ErrSaveMessages, err)
-	}
-
-	q := `INSERT INTO senml (subtopic, publisher, protocol,
-          name, unit, value, string_value, bool_value, data_value, sum,
-          time, update_time)
-          VALUES (:subtopic, :publisher, :protocol, :name, :unit,
-          :value, :string_value, :bool_value, :data_value, :sum,
-          :time, :update_time);`
-
-	for _, msg := range messages {
-		senmlMesage, ok := msg.(senml.Message)
-		if !ok {
-			return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
-		}
-
-		if _, err := tx.NamedExecContext(ctx, q, senmlMesage); err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				return errors.Wrap(errors.ErrSaveMessages, err)
-			}
-			return sr.handlePgError(err, errors.ErrSaveMessages)
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrap(errors.ErrSaveMessages, err)
-	}
-
-	return nil
-
-}
-
 func (sr *senmlRepository) handlePgError(err error, wrapErr error) error {
 	pgErr, ok := err.(*pgconn.PgError)
 	if ok {
@@ -242,4 +237,9 @@ func (sr *senmlRepository) handlePgError(err error, wrapErr error) error {
 		}
 	}
 	return errors.Wrap(wrapErr, err)
+}
+
+type senmlMessage struct {
+	ID string `db:"id"`
+	senml.Message
 }

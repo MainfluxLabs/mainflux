@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
@@ -50,7 +51,16 @@ const (
 	OperatorAND = "AND"
 	OperatorOR  = "OR"
 
-	subjectAlarm = "alarms"
+	// subjectMessages represents subject used to publish all incoming messages.
+	subjectMessages = "messages"
+	// subjectWriters represents subject used to publish messages that should be persisted.
+	subjectWriters = "writers"
+	// subjectAlarms represents subject used to publish messages that trigger an alarm.
+	subjectAlarms = "alarms"
+	// subjectSMTP represents subject used to publish messages that trigger an SMTP notification.
+	subjectSMTP = "smtp"
+	// subjectSMPP represents subject used to publish messages that trigger an SMPP notification.
+	subjectSMPP = "smpp"
 )
 
 var errInvalidObject = errors.New("invalid JSON object")
@@ -60,17 +70,19 @@ type rulesService struct {
 	things     protomfx.ThingsServiceClient
 	publisher  messaging.Publisher
 	idProvider uuid.IDProvider
+	logger     logger.Logger
 }
 
 var _ Service = (*rulesService)(nil)
 
 // New instantiates the rules service implementation.
-func New(rules RuleRepository, things protomfx.ThingsServiceClient, publisher messaging.Publisher, idp uuid.IDProvider) Service {
+func New(rules RuleRepository, things protomfx.ThingsServiceClient, publisher messaging.Publisher, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &rulesService{
 		rules:      rules,
 		things:     things,
 		publisher:  publisher,
 		idProvider: idp,
+		logger:     logger,
 	}
 }
 
@@ -174,10 +186,17 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 		return err
 	}
 
+	// publish a message to default subjects independently of rule check
+	go func(msg protomfx.Message) {
+		if err := rs.publishToDefaultSubjects(msg); err != nil {
+			rs.logger.Error(err.Error())
+		}
+	}(message)
+
 	for _, rule := range rp.Rules {
 		triggered, payloads, err := processPayload(message.Payload, rule.Conditions, rule.Operator, message.ContentType)
 		if err != nil {
-			return err
+			return errors.Wrap(messaging.ErrPublishMessage, err)
 		}
 		if !triggered {
 			continue
@@ -189,19 +208,39 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 				newMsg.Payload = payload
 
 				switch action.Type {
-				case ActionTypeSMTP, ActionTypeSMPP:
-					newMsg.Subject = fmt.Sprintf("%s.%s", action.Type, action.ID)
+				case ActionTypeSMTP:
+					newMsg.Subject = fmt.Sprintf("%s.%s", subjectSMTP, action.ID)
+				case ActionTypeSMPP:
+					newMsg.Subject = fmt.Sprintf("%s.%s", subjectSMPP, action.ID)
 				case ActionTypeAlarm:
-					newMsg.Subject = subjectAlarm
+					newMsg.Subject = subjectAlarms
+				default:
+					continue
 				}
 
 				if err := rs.publisher.Publish(newMsg); err != nil {
-					return err
+					return errors.Wrap(messaging.ErrPublishMessage, err)
 				}
 			}
 		}
 	}
 
+	return nil
+}
+
+func (rs *rulesService) publishToDefaultSubjects(msg protomfx.Message) error {
+	subjects := []string{subjectMessages, subjectWriters}
+	if msg.Subtopic != "" {
+		subjects = append(subjects, fmt.Sprintf("%s.%s", subjectMessages, msg.Subtopic))
+	}
+
+	for _, sub := range subjects {
+		m := msg
+		m.Subject = sub
+		if err := rs.publisher.Publish(m); err != nil {
+			return errors.Wrap(messaging.ErrPublishMessage, err)
+		}
+	}
 	return nil
 }
 
@@ -226,7 +265,10 @@ func processPayload(payload []byte, conditions []Condition, operator string, con
 			}
 
 			if triggered {
-				extractedPayload, _ := json.Marshal(obj)
+				extractedPayload, err := json.Marshal(obj)
+				if err != nil {
+					return false, nil, err
+				}
 				triggerPayloads = append(triggerPayloads, extractedPayload)
 			}
 		}
@@ -239,7 +281,10 @@ func processPayload(payload []byte, conditions []Condition, operator string, con
 		}
 
 		if triggered {
-			extractedPayload, _ := json.Marshal(data)
+			extractedPayload, err := json.Marshal(data)
+			if err != nil {
+				return false, nil, err
+			}
 			return true, [][]byte{extractedPayload}, nil
 		}
 

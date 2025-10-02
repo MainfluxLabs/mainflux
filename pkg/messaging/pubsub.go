@@ -19,9 +19,6 @@ const (
 	SenMLContentType = "application/senml+json"
 	CBORContentType  = "application/senml+cbor"
 	JSONContentType  = "application/json"
-	SenMLFormat      = "senml"
-	JSONFormat       = "json"
-	CBORFormat       = "cbor"
 )
 
 var (
