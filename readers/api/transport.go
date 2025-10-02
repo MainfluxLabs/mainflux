@@ -36,7 +36,7 @@ const (
 	aggIntervalKey         = "agg_interval"
 	aggTypeKey             = "agg_type"
 	aggFieldKey            = "agg_field"
-	publisherIDKey         = "publisherID"
+	publisherKey           = "publisher"
 	jsonFormat             = "json"
 	senmlFormat            = "senml"
 	csvFormat              = "csv"
@@ -113,7 +113,7 @@ func MakeHandler(svc readers.Service, svcName string, logger logger.Logger) http
 }
 
 func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, error) {
-	publisher, err := apiutil.ReadStringQuery(r, publisherIDKey, "")
+	publisher, err := apiutil.ReadStringQuery(r, publisherKey, "")
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, er
 }
 
 func decodeListSenMLMessages(_ context.Context, r *http.Request) (interface{}, error) {
-	publisher, err := apiutil.ReadStringQuery(r, publisherIDKey, "")
+	publisher, err := apiutil.ReadStringQuery(r, publisherKey, "")
 	if err != nil {
 		return nil, err
 	}
