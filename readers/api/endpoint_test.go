@@ -442,6 +442,16 @@ func TestListSenMLMessages(t *testing.T) {
 				Messages: messages[5:15],
 			},
 		},
+		{
+			desc:   "read page messages with publisher filter",
+			url:    fmt.Sprintf("%s/senml?publisher=%s", ts.URL, pubID),
+			token:  adminToken,
+			status: http.StatusOK,
+			res: senmlPageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[0:10],
+			},
+		},
 	}
 
 	for _, tc := range cases {

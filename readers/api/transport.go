@@ -36,6 +36,7 @@ const (
 	aggIntervalKey         = "agg_interval"
 	aggTypeKey             = "agg_type"
 	aggFieldKey            = "agg_field"
+	publisherKey           = "publisher"
 	jsonFormat             = "json"
 	senmlFormat            = "senml"
 	csvFormat              = "csv"
@@ -112,6 +113,11 @@ func MakeHandler(svc readers.Service, svcName string, logger logger.Logger) http
 }
 
 func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	publisher, err := apiutil.ReadStringQuery(r, publisherKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	pageMeta, err := BuildJSONPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -129,6 +135,7 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, er
 
 	pageMeta.Offset = offset
 	pageMeta.Limit = limit
+	pageMeta.Publisher = publisher
 
 	return listJSONMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
@@ -138,6 +145,11 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, er
 }
 
 func decodeListSenMLMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	publisher, err := apiutil.ReadStringQuery(r, publisherKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	pageMeta, err := BuildSenMLPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -155,6 +167,7 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (interface{}, e
 
 	pageMeta.Offset = offset
 	pageMeta.Limit = limit
+	pageMeta.Publisher = publisher
 
 	return listSenMLMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
@@ -246,6 +259,11 @@ func decodeRestoreMessages(_ context.Context, r *http.Request) (interface{}, err
 }
 
 func decodeBackupJSONMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	publisher, err := apiutil.ReadStringQuery(r, publisherKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, jsonFormat)
 	if err != nil {
 		return nil, err
@@ -256,6 +274,8 @@ func decodeBackupJSONMessages(_ context.Context, r *http.Request) (interface{}, 
 		return nil, err
 	}
 
+	pageMeta.Publisher = publisher
+
 	return backupJSONMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
 		convertFormat: convertFormat,
@@ -264,6 +284,11 @@ func decodeBackupJSONMessages(_ context.Context, r *http.Request) (interface{}, 
 }
 
 func decodeBackupSenMLMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	publisher, err := apiutil.ReadStringQuery(r, publisherKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, jsonFormat)
 	if err != nil {
 		return nil, err
@@ -273,6 +298,8 @@ func decodeBackupSenMLMessages(_ context.Context, r *http.Request) (interface{},
 	if err != nil {
 		return nil, err
 	}
+
+	pageMeta.Publisher = publisher
 
 	return backupSenMLMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
