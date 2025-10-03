@@ -27,7 +27,7 @@ type identifyThingResp struct {
 	ID string `json:"id,omitempty"`
 }
 
-type createExternalThingKeyReq struct {
+type updateExternalThingKeyReq struct {
 	Key string `json:"key,omitempty"`
 }
 
@@ -313,16 +313,16 @@ func (sdk mfSDK) IdentifyThing(keyType, key string) (string, error) {
 	return i.ID, err
 }
 
-func (sdk mfSDK) CreateExternalThingKey(key, thingID, token string) error {
-	createReq := createExternalThingKeyReq{Key: key}
+func (sdk mfSDK) UpdateExternalThingKey(key, thingID, token string) error {
+	createReq := updateExternalThingKeyReq{Key: key}
 	data, err := json.Marshal(createReq)
 	if err != nil {
 		return err
 	}
 
-	url := fmt.Sprintf("%s/things/%s/external-keys", sdk.thingsURL, thingID)
+	url := fmt.Sprintf("%s/things/%s/external-key", sdk.thingsURL, thingID)
 
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewReader(data))
 	if err != nil {
 		return err
 	}

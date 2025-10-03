@@ -36,24 +36,17 @@ CREATE TABLE profiles (
 );
 
 CREATE TABLE things (
-    id         UUID UNIQUE NOT NULL,
-    group_id   UUID NOT NULL,
-    key        VARCHAR(4096) UNIQUE NOT NULL,
-    name       VARCHAR(1024) NOT NULL,
-    metadata   JSONB,
-    profile_id UUID NOT NULL,
+    id           UUID UNIQUE NOT NULL,
+    group_id     UUID NOT NULL,
+    key          VARCHAR(4096) UNIQUE NOT NULL,
+    key_external VARCHAR UNIQUE NULL,
+    name         VARCHAR(1024) NOT NULL,
+    metadata     JSONB,
+    profile_id   UUID NOT NULL,
 
     CONSTRAINT group_name_ths UNIQUE (group_id, name),
     CONSTRAINT things_pkey PRIMARY KEY (id),
     CONSTRAINT fk_things_profile_id FOREIGN KEY (profile_id) REFERENCES profiles(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT things_group_id_fkey FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS key_external (
-    thing_id UUID NOT NULL,
-    key      VARCHAR UNIQUE NOT NULL,
-
-    PRIMARY KEY (thing_id, key),
-    FOREIGN KEY (thing_id) REFERENCES things (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 ```

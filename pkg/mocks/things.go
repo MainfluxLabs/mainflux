@@ -307,15 +307,11 @@ func (svc *mainfluxThings) RemoveGroupMemberships(_ context.Context, token, grou
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CreateExternalThingKey(ctx context.Context, token, key, thingID string) error {
+func (svc *mainfluxThings) UpdateExternalKey(ctx context.Context, token, key, thingID string) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) RemoveExternalThingKey(ctx context.Context, token, thingID, key string) error {
+func (svc *mainfluxThings) RemoveExternalKey(ctx context.Context, token, thingID string) error {
 	panic("not implemented")
 
-}
-
-func (svc *mainfluxThings) ListExternalKeysByThing(ctx context.Context, token, thingID string) ([]string, error) {
-	panic("not implemented")
 }

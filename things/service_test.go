@@ -1559,7 +1559,7 @@ func TestIdentify(t *testing.T) {
 	th := ths[0]
 
 	externalKey := "abc123"
-	err = svc.CreateExternalThingKey(context.Background(), token, externalKey, th.ID)
+	err = svc.UpdateExternalKey(context.Background(), token, externalKey, th.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := map[string]struct {
@@ -2658,7 +2658,7 @@ func TestRemoveGroupMemberships(t *testing.T) {
 	}
 }
 
-func TestCreateExternalThingKey(t *testing.T) {
+func TestUpdateThingKey(t *testing.T) {
 	svc := newService()
 
 	createdGroups, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
@@ -2687,31 +2687,31 @@ func TestCreateExternalThingKey(t *testing.T) {
 		err         error
 	}{
 		{
-			desc:        "create external thing key as admin",
+			desc:        "update external thing key as admin",
 			token:       otherToken,
 			externalKey: "abc123",
 			err:         nil,
 		},
 		{
-			desc:        "create existing external thing key as admin",
+			desc:        "update existing external thing key as admin",
 			token:       otherToken,
 			externalKey: "abc123",
 			err:         dbutil.ErrConflict,
 		},
 		{
-			desc:        "create external thing key as editor",
+			desc:        "update external thing key as editor",
 			token:       editorToken,
 			externalKey: "def123",
 			err:         nil,
 		},
 		{
-			desc:        "create external thing key as viewer",
+			desc:        "update external thing key as viewer",
 			token:       viewerToken,
 			externalKey: "ghi123",
 			err:         errors.ErrAuthorization,
 		},
 		{
-			desc:        "create external thing key as unauthorized user",
+			desc:        "update external thing key as unauthorized user",
 			token:       unauthToken,
 			externalKey: "ghi123",
 			err:         errors.ErrAuthorization,
@@ -2719,12 +2719,12 @@ func TestCreateExternalThingKey(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.CreateExternalThingKey(context.Background(), tc.token, tc.externalKey, createdThing.ID)
+		err := svc.UpdateExternalKey(context.Background(), tc.token, tc.externalKey, createdThing.ID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestRemoveExternalThingKey(t *testing.T) {
+func TestRemoveExternalKey(t *testing.T) {
 	svc := newService()
 
 	createdGroups, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
@@ -2746,135 +2746,51 @@ func TestRemoveExternalThingKey(t *testing.T) {
 
 	createdThing := createdThings[0]
 
-	externalKeys := []string{"abc123", "def456", "ghi789"}
-
-	for _, externalKey := range externalKeys {
-		err = svc.CreateExternalThingKey(context.Background(), adminToken, externalKey, createdThing.ID)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	}
+	externalKey := "abc123"
+	err = svc.UpdateExternalKey(context.Background(), adminToken, externalKey, createdThing.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := []struct {
-		desc        string
-		token       string
-		externalKey string
-		thingID     string
-		err         error
+		desc    string
+		token   string
+		thingID string
+		err     error
 	}{
 		{
-			desc:        "remove external key as admin",
-			token:       otherToken,
-			externalKey: "abc123",
-			thingID:     createdThing.ID,
-			err:         nil,
+			desc:    "remove external key as admin",
+			token:   otherToken,
+			thingID: createdThing.ID,
+			err:     nil,
 		},
 		{
-			desc:        "remove non-existing external key as admin",
-			token:       otherToken,
-			externalKey: "aaaa",
-			thingID:     createdThing.ID,
-			err:         dbutil.ErrNotFound,
+			desc:    "remove external key as editor",
+			token:   editorToken,
+			thingID: createdThing.ID,
+			err:     nil,
 		},
 		{
-			desc:        "remove external key as editor",
-			token:       editorToken,
-			externalKey: "def456",
-			thingID:     createdThing.ID,
-			err:         nil,
+			desc:    "remove external key as viewer",
+			token:   viewerToken,
+			thingID: createdThing.ID,
+			err:     errors.ErrAuthorization,
 		},
 		{
-			desc:        "remove external key as viewer",
-			token:       viewerToken,
-			externalKey: "ghi789",
-			thingID:     createdThing.ID,
-			err:         errors.ErrAuthorization,
+			desc:    "remove external key as unauthorized user",
+			token:   unauthToken,
+			thingID: createdThing.ID,
+			err:     errors.ErrAuthorization,
 		},
 		{
-			desc:        "remove external key unauthorized user",
-			token:       unauthToken,
-			externalKey: "ghi789",
-			thingID:     createdThing.ID,
-			err:         errors.ErrAuthorization,
-		},
-		{
-			desc:        "remove external key with non-matching thing id",
-			token:       otherToken,
-			externalKey: "ghi789",
-			thingID:     "non-matching",
-			err:         errors.ErrAuthorization,
+			desc:    "remove external key of invalid thing id",
+			token:   otherToken,
+			thingID: "invalid-id",
+			err:     errors.ErrAuthorization,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.RemoveExternalThingKey(context.Background(), tc.token, tc.thingID, tc.externalKey)
+		err := svc.RemoveExternalKey(context.Background(), tc.token, tc.thingID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
-	}
-}
-
-func TestListExternalKeysByThing(t *testing.T) {
-	svc := newService()
-
-	createdGroups, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	createdGroup := createdGroups[0]
-
-	for i := range memberships {
-		memberships[i].GroupID = createdGroup.ID
-	}
-	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-
-	createdProfiles, err := svc.CreateProfiles(context.Background(), token, createdGroup.ID, profile)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	createdProfileID := createdProfiles[0].ID
-
-	createdThings, err := svc.CreateThings(context.Background(), token, createdProfileID, thing)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-
-	createdThing := createdThings[0]
-
-	externalKeys := []string{"abc123", "def456", "ghi789"}
-
-	for _, externalKey := range externalKeys {
-		err = svc.CreateExternalThingKey(context.Background(), adminToken, externalKey, createdThing.ID)
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	}
-
-	cases := []struct {
-		desc  string
-		token string
-		res   []string
-		err   error
-	}{
-		{
-			desc:  "list external keys as admin",
-			token: otherToken,
-			res:   externalKeys,
-			err:   nil,
-		},
-		{
-			desc:  "list external keys as editor",
-			token: editorToken,
-			res:   externalKeys,
-			err:   nil,
-		},
-		{
-			desc:  "list external keys as viewer",
-			token: viewerToken,
-			res:   externalKeys,
-			err:   nil,
-		},
-		{
-			desc:  "list external keys as user not in group",
-			token: unauthToken,
-			res:   nil,
-			err:   errors.ErrAuthorization,
-		},
-	}
-
-	for _, tc := range cases {
-		resKeys, err := svc.ListExternalKeysByThing(context.Background(), tc.token, createdThing.ID)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
-		assert.ElementsMatch(t, resKeys, tc.res, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.res, resKeys))
 	}
 }
 
@@ -2911,7 +2827,6 @@ func TestBackup(t *testing.T) {
 	pr := prsc[0]
 
 	ths := []things.Thing{}
-	externalKeys := make(things.ExternalKeysBackup)
 
 	for i := 0; i < 10; i++ {
 		name := "name_" + fmt.Sprintf("%03d", i+1)
@@ -2923,23 +2838,16 @@ func TestBackup(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := things[0]
 
-		for j := range 2 {
-			externalKey := fmt.Sprintf("external_key_%d_%d", i, j)
-			err := svc.CreateExternalThingKey(context.Background(), token, externalKey, th.ID)
-			require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-			externalKeys[th.ID] = append(externalKeys[th.ID], externalKey)
-		}
+		externalKey := fmt.Sprintf("external_key_%d", i)
+		err = svc.UpdateExternalKey(context.Background(), token, externalKey, th.ID)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 		ths = append(ths, th)
 	}
 
 	backup := things.Backup{
-		Groups: groups,
-		Things: things.ThingsBackup{
-			Things:       ths,
-			ExternalKeys: externalKeys,
-		},
+		Groups:   groups,
+		Things:   ths,
 		Profiles: prsc,
 	}
 
@@ -2968,16 +2876,12 @@ func TestBackup(t *testing.T) {
 	for desc, tc := range cases {
 		backup, err := svc.Backup(context.Background(), tc.token)
 		groupSize := len(backup.Groups)
-		thingsSize := len(backup.Things.Things)
+		thingsSize := len(backup.Things)
 		profilesSize := len(backup.Profiles)
 
 		assert.Equal(t, len(tc.backup.Groups), groupSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Groups), groupSize))
-		assert.Equal(t, len(tc.backup.Things.Things), thingsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Things.Things), thingsSize))
+		assert.Equal(t, len(tc.backup.Things), thingsSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Things), thingsSize))
 		assert.Equal(t, len(tc.backup.Profiles), profilesSize, fmt.Sprintf("%s: expected %v got %d\n", desc, len(tc.backup.Profiles), profilesSize))
-
-		for thingID, thingExternalKeys := range backup.Things.ExternalKeys {
-			assert.Equal(t, len(thingExternalKeys), len(tc.backup.Things.ExternalKeys[thingID]))
-		}
 
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
@@ -3008,16 +2912,12 @@ func TestRestore(t *testing.T) {
 
 	ths := []things.Thing{
 		{
-			ID:       thID,
-			Name:     "testThing",
-			Key:      thkey,
-			Metadata: map[string]interface{}{},
+			ID:          thID,
+			Name:        "testThing",
+			Key:         thkey,
+			KeyExternal: "abc123",
+			Metadata:    map[string]interface{}{},
 		},
-	}
-
-	externalKeys := make(things.ExternalKeysBackup)
-	for idx, thing := range ths {
-		externalKeys[thing.ID] = []string{fmt.Sprintf("external_key_%d", idx)}
 	}
 
 	var prs []things.Profile
@@ -3033,11 +2933,8 @@ func TestRestore(t *testing.T) {
 	}
 
 	backup := things.Backup{
-		Groups: groups,
-		Things: things.ThingsBackup{
-			Things:       ths,
-			ExternalKeys: externalKeys,
-		},
+		Groups:   groups,
+		Things:   ths,
 		Profiles: prs,
 	}
 

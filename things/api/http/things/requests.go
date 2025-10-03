@@ -14,10 +14,11 @@ const (
 )
 
 type createThingReq struct {
-	Name     string                 `json:"name,omitempty"`
-	Key      string                 `json:"key,omitempty"`
-	ID       string                 `json:"id,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Name        string                 `json:"name,omitempty"`
+	Key         string                 `json:"key,omitempty"`
+	KeyExternal string                 `json:"key_external,omitempty"`
+	ID          string                 `json:"id,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type createThingsReq struct {
@@ -292,7 +293,7 @@ func (req backupReq) validate() error {
 type restoreThingsByGroupReq struct {
 	id     string
 	token  string
-	Backup backupThings
+	Things []viewThingRes
 }
 
 func (req restoreThingsByGroupReq) validate() error {
@@ -304,7 +305,7 @@ func (req restoreThingsByGroupReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.Backup.Things) == 0 {
+	if len(req.Things) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
@@ -314,7 +315,7 @@ func (req restoreThingsByGroupReq) validate() error {
 type restoreThingsByOrgReq struct {
 	id     string
 	token  string
-	Backup backupThings
+	Things []viewThingRes
 }
 
 func (req restoreThingsByOrgReq) validate() error {
@@ -324,7 +325,7 @@ func (req restoreThingsByOrgReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
-	if len(req.Backup.Things) == 0 {
+	if len(req.Things) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
@@ -333,7 +334,7 @@ func (req restoreThingsByOrgReq) validate() error {
 
 type restoreReq struct {
 	token            string
-	Things           backupThings                         `json:"things"`
+	Things           []viewThingRes                       `json:"things"`
 	Profiles         []backupProfile                      `json:"profiles"`
 	Groups           []backupGroup                        `json:"groups"`
 	GroupMemberships []memberships.ViewGroupMembershipRes `json:"group_memberships"`
@@ -345,7 +346,7 @@ func (req restoreReq) validate() error {
 	}
 
 	// FIXME: Why do we only validate only the existence of Things in the restore request?
-	if len(req.Things.Things) == 0 {
+	if len(req.Things) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
@@ -364,54 +365,19 @@ func (req identifyReq) validate() error {
 	return nil
 }
 
-type createExternalKeyReq struct {
+type updateExternalKeyReq struct {
 	thingID string
 	Key     string `json:"key"`
 	token   string
 }
 
-func (req createExternalKeyReq) validate() error {
+func (req updateExternalKeyReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 
 	if req.Key == "" {
 		return apiutil.ErrMissingExternalThingKey
-	}
-
-	return nil
-}
-
-type listExternalKeysByThingReq struct {
-	token   string
-	thingID string
-}
-
-func (req listExternalKeysByThingReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	return nil
-}
-
-type removeExternalKeyReq struct {
-	token   string
-	key     string
-	thingID string
-}
-
-func (req removeExternalKeyReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.key == "" {
-		return apiutil.ErrMissingExternalThingKey
-	}
-
-	if req.thingID == "" {
-		return apiutil.ErrMissingThingID
 	}
 
 	return nil

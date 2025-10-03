@@ -191,15 +191,7 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				Id: "things_9",
 				Up: []string{
-					`CREATE TABLE IF NOT EXISTS key_external (
-					    thing_id UUID NOT NULL,
-						key      VARCHAR UNIQUE NOT NULL,
-						PRIMARY KEY (thing_id, key),
-						FOREIGN KEY (thing_id) REFERENCES things (id) ON DELETE CASCADE ON UPDATE CASCADE
-					)`,
-				},
-				Down: []string{
-					`DROP TABLE IF EXISTS key_external`,
+					`ALTER TABLE things ADD COLUMN key_external VARCHAR(1024) UNIQUE NULL CHECK (LENGTH(key_external) >= 5);`,
 				},
 			},
 		},

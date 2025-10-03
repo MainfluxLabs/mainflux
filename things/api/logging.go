@@ -750,38 +750,26 @@ func (lm *loggingMiddleware) RemoveGroupMemberships(ctx context.Context, token, 
 	return lm.svc.RemoveGroupMemberships(ctx, token, groupID, memberIDs...)
 }
 
-func (lm *loggingMiddleware) CreateExternalThingKey(ctx context.Context, token, key, thingID string) (err error) {
+func (lm *loggingMiddleware) UpdateExternalKey(ctx context.Context, token, key, thingID string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_external_thing_key for thing id %s took %s to complete", thingID, time.Since(begin))
+		message := fmt.Sprintf("Method update_external_key for thing id %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 	}(time.Now())
 
-	return lm.svc.CreateExternalThingKey(ctx, token, key, thingID)
+	return lm.svc.UpdateExternalKey(ctx, token, key, thingID)
 }
 
-func (lm *loggingMiddleware) RemoveExternalThingKey(ctx context.Context, token, thingID, key string) (err error) {
+func (lm *loggingMiddleware) RemoveExternalKey(ctx context.Context, token, thingID string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_external_thing_key for thing key %s took %s to complete", key, time.Since(begin))
+		message := fmt.Sprintf("Method remove_external_key for thing %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 	}(time.Now())
 
-	return lm.svc.RemoveExternalThingKey(ctx, token, thingID, key)
-}
-
-func (lm *loggingMiddleware) ListExternalKeysByThing(ctx context.Context, token, thingID string) (keys []string, err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_external_keys_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-	}(time.Now())
-
-	return lm.svc.ListExternalKeysByThing(ctx, token, thingID)
+	return lm.svc.RemoveExternalKey(ctx, token, thingID)
 }

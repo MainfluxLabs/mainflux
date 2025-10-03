@@ -420,24 +420,24 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
 
-  /things/{thingId}/external-keys:
-    post:
-      summary: Create a new external Thing key.
-      description: Creates a new external key associated with a thing identified by thingId
+  /things/{thingId}/external-key:
+    patch:
+      summary: Update the Thing's external key.
+      description: Update the value of the Thing's associated external key.
       tags:
         - things
       parameters:
         - $ref: "#/components/parameters/ThingId"
       requestBody:
-        description: The external key to create.
+        description: Value of the external key.
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateExternalKeyReq"
+              $ref: "#/components/schemas/UpdateExternalKeyReq"
       responses:
         '201':
-          description: External key created.
+          description: External key updated.
         '400':
           description: Bad request.
         '401':
@@ -450,41 +450,14 @@ paths:
           description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
-    get:
-      summary: Lists external keys associated with a Thing.
-      description: Retrieves all external keys associated with the thing identified by thingId.
-      tags:
-        - things
-      parameters:
-        - $ref: "#/components/parameters/ThingId"
-      responses:
-        '200':
-          description: List of external keys.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListExternalKeysByThingRes"
-        '401':
-          description: Missing or invalid access token provided.
-        '404':
-          description: Thing does not exist.
-        '500':
-          $ref: "#/components/responses/ServiceError"
 
-  /things/{thingId}/external-keys/{key}:
     delete:
       summary: Remove an external thing key.
-      description: Remove the specified external thing key from the thing it's associated with.
+      description: Remove the thing's associated external key.
       tags:
         - things
       parameters:
         - $ref: "#/components/parameters/ThingId"
-        - name: key
-          in: path
-          required: true
-          schema:
-            type: string
-          description: External key to removed.
       responses:
         '204':
           description: External key removed.
@@ -1395,6 +1368,10 @@ components:
           type: string
           format: uuid
           description: Auto-generated access key.
+        key_external:
+          type: string
+          format: string
+          description: Thing's external key.
         group_id:
           type: string
           format: uuid
@@ -1412,14 +1389,11 @@ components:
         - key
         - group_id
     BackupAndRestoreThingsSchema:
-      type: object
-      properties:
-        things:
-          type: array
-          items:
-            $ref: "#/components/schemas/ThingResSchema"
-        external_keys:
-          $ref: "#/components/schemas/ExternalKeysBackup"
+      type: array
+      minItems: 0
+      uniqueItems: true
+      items:
+        $ref: "#/components/schemas/ThingResSchema"
     ThingsPage:
       type: object
       properties:
@@ -1836,32 +1810,14 @@ components:
         - groups
         - things
         - profiles
-    CreateExternalKeyReq:
+    UpdateExternalKeyReq:
       type: object
       properties:
         key:
           type: string
-          description: External key to create.
+          description: Value of external key.
       required:
         - key
-
-    ListExternalKeysByThingRes:
-      type: object
-      properties:
-        keys:
-          type: array
-          items:
-            type: string
-          description: List of external keys.
-
-    ExternalKeysBackup:
-      type: object
-      additionalProperties:
-        type: array
-        items:
-          type: string
-      example:
-        thing_id_1: ['external_key_1', 'external_key_2']
 
   parameters:
     ProfileId:

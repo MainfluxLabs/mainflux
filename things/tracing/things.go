@@ -12,26 +12,25 @@ import (
 )
 
 const (
-	saveThing                   = "save_thing"
-	saveThings                  = "save_things"
-	updateThing                 = "update_thing"
-	updateThingKey              = "update_thing_by_key"
-	retrieveThingByID           = "retrieve_thing_by_id"
-	retrieveThingByKey          = "retrieve_thing_by_key"
-	retrieveThingsByProfile     = "retrieve_things_by_profile"
-	retrieveThingsByGroups      = "retrieve_things_by_groups"
-	removeThing                 = "remove_thing"
-	removeKey                   = "remove_key"
-	retrieveThingIDByKey        = "retrieve_id_by_key"
-	retrieveAllThings           = "retrieve_all_things"
-	backupAllThings             = "backup_all_things"
-	backupThingsByGroups        = "backup_things_by_groups"
-	saveGroupIDByThingID        = "save_group_id_by_thing_id"
-	retrieveGroupIDByThingID    = "retrieve_group_id_by_thing_id"
-	removeGroupIDByThingID      = "remove_group_id_by_thing_id"
-	saveExternalKey             = "save_external_key"
-	removeExternalKey           = "remove_external_key"
-	retrieveExternalKeysByThing = "retrieve_external_keys_by_thing"
+	saveThing                = "save_thing"
+	saveThings               = "save_things"
+	updateThing              = "update_thing"
+	updateThingKey           = "update_thing_by_key"
+	retrieveThingByID        = "retrieve_thing_by_id"
+	retrieveThingByKey       = "retrieve_thing_by_key"
+	retrieveThingsByProfile  = "retrieve_things_by_profile"
+	retrieveThingsByGroups   = "retrieve_things_by_groups"
+	removeThing              = "remove_thing"
+	removeKey                = "remove_key"
+	retrieveThingIDByKey     = "retrieve_id_by_key"
+	retrieveAllThings        = "retrieve_all_things"
+	backupAllThings          = "backup_all_things"
+	backupThingsByGroups     = "backup_things_by_groups"
+	saveGroupIDByThingID     = "save_group_id_by_thing_id"
+	retrieveGroupIDByThingID = "retrieve_group_id_by_thing_id"
+	removeGroupIDByThingID   = "remove_group_id_by_thing_id"
+	updateExternalKey        = "update_external_key"
+	removeExternalKey        = "remove_external_key"
 )
 
 var (
@@ -141,28 +140,20 @@ func (trm thingRepositoryMiddleware) BackupByGroups(ctx context.Context, groupID
 	return trm.repo.BackupByGroups(ctx, groupIDs)
 }
 
-func (trm thingRepositoryMiddleware) SaveExternalKey(ctx context.Context, key, thingID string) error {
-	span := createSpan(ctx, trm.tracer, saveExternalKey)
+func (trm thingRepositoryMiddleware) UpdateExternalKey(ctx context.Context, key, thingID string) error {
+	span := createSpan(ctx, trm.tracer, updateExternalKey)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.SaveExternalKey(ctx, key, thingID)
+	return trm.repo.UpdateExternalKey(ctx, key, thingID)
 }
 
-func (trm thingRepositoryMiddleware) RemoveExternalKey(ctx context.Context, key string) error {
+func (trm thingRepositoryMiddleware) RemoveExternalKey(ctx context.Context, thingID string) error {
 	span := createSpan(ctx, trm.tracer, removeExternalKey)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.RemoveExternalKey(ctx, key)
-}
-
-func (trm thingRepositoryMiddleware) RetrieveExternalKeysByThing(ctx context.Context, thingID string) ([]string, error) {
-	span := createSpan(ctx, trm.tracer, retrieveExternalKeysByThing)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return trm.repo.RetrieveExternalKeysByThing(ctx, thingID)
+	return trm.repo.RemoveExternalKey(ctx, thingID)
 }
 
 type thingCacheMiddleware struct {

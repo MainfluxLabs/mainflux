@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/api/http/memberships"
 )
 
@@ -35,13 +34,14 @@ func (res removeRes) Empty() bool {
 }
 
 type thingRes struct {
-	ID        string                 `json:"id"`
-	GroupID   string                 `json:"group_id,omitempty"`
-	ProfileID string                 `json:"profile_id"`
-	Name      string                 `json:"name,omitempty"`
-	Key       string                 `json:"key"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
-	created   bool
+	ID          string                 `json:"id"`
+	GroupID     string                 `json:"group_id,omitempty"`
+	ProfileID   string                 `json:"profile_id"`
+	Name        string                 `json:"name,omitempty"`
+	Key         string                 `json:"key"`
+	KeyExternal string                 `json:"key_external,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	created     bool
 }
 
 type thingsRes struct {
@@ -66,12 +66,13 @@ func (res thingsRes) Empty() bool {
 }
 
 type viewThingRes struct {
-	ID        string                 `json:"id"`
-	GroupID   string                 `json:"group_id,omitempty"`
-	ProfileID string                 `json:"profile_id"`
-	Name      string                 `json:"name,omitempty"`
-	Key       string                 `json:"key"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+	ID          string                 `json:"id"`
+	GroupID     string                 `json:"group_id,omitempty"`
+	ProfileID   string                 `json:"profile_id"`
+	Name        string                 `json:"name,omitempty"`
+	Key         string                 `json:"key"`
+	KeyExternal string                 `json:"key_external,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
 func (res viewThingRes) Code() int {
@@ -137,13 +138,8 @@ type backupGroup struct {
 	UpdatedAt   time.Time              `json:"updated_at"`
 }
 
-type backupThings struct {
-	Things       []viewThingRes            `json:"things"`
-	ExternalKeys things.ExternalKeysBackup `json:"external_keys"`
-}
-
 type backupRes struct {
-	Things           backupThings                         `json:"things"`
+	Things           []viewThingRes                       `json:"things"`
 	Profiles         []backupProfile                      `json:"profiles"`
 	Groups           []backupGroup                        `json:"groups"`
 	GroupMemberships []memberships.ViewGroupMembershipRes `json:"group_memberships"`
@@ -217,33 +213,17 @@ func (res identityRes) Empty() bool {
 	return false
 }
 
-type createExternalKeyRes struct {
+type updateExternalKeyRes struct {
 }
 
-func (res createExternalKeyRes) Code() int {
+func (res updateExternalKeyRes) Code() int {
 	return http.StatusCreated
 }
 
-func (res createExternalKeyRes) Headers() map[string]string {
+func (res updateExternalKeyRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res createExternalKeyRes) Empty() bool {
+func (res updateExternalKeyRes) Empty() bool {
 	return true
-}
-
-type listExternalKeysByThingRes struct {
-	Keys []string `json:"keys"`
-}
-
-func (res listExternalKeysByThingRes) Code() int {
-	return http.StatusOK
-}
-
-func (res listExternalKeysByThingRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res listExternalKeysByThingRes) Empty() bool {
-	return false
 }

@@ -221,8 +221,8 @@ type SDK interface {
 	// IdentifyThing validates thing's key and returns its ID
 	IdentifyThing(keyType, key string) (string, error)
 
-	// CreateExternalThingKey creates an external key associated with the Thing identified by 'thingID'.
-	CreateExternalThingKey(key, thingID, token string) error
+	// UpdateExternalThingKey sets the external key of the Thing identified by `thingID`.`
+	UpdateExternalThingKey(key, thingID, token string) error
 
 	// CreateGroup creates new group and returns its id.
 	CreateGroup(group Group, orgID, token string) (string, error)

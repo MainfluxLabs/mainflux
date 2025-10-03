@@ -66,6 +66,10 @@ func (tc *thingCache) RemoveThing(ctx context.Context, thingID string) error {
 	keysSetKey := keysByThingIDKey(thingID)
 	thingKeys, err := tc.client.SMembers(ctx, keysSetKey).Result()
 
+	if err == redis.Nil {
+		return nil
+	}
+
 	if err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
@@ -93,6 +97,11 @@ func (tc *thingCache) RemoveKey(ctx context.Context, keyType, thingKey string) e
 	// Obtain id of thing represented by this particular key
 	thingIdKey := idByThingKeyKey(keyType, thingKey)
 	thingID, err := tc.client.Get(ctx, thingIdKey).Result()
+
+	if err == redis.Nil {
+		return nil
+	}
+
 	if err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}

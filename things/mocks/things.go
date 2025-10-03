@@ -5,7 +5,6 @@ package mocks
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 
@@ -19,17 +18,15 @@ import (
 var _ things.ThingRepository = (*thingRepositoryMock)(nil)
 
 type thingRepositoryMock struct {
-	mu           sync.Mutex
-	counter      uint64
-	things       map[string]things.Thing
-	externalKeys map[string]string
+	mu      sync.Mutex
+	counter uint64
+	things  map[string]things.Thing
 }
 
 // NewThingRepository creates in-memory thing repository.
 func NewThingRepository() things.ThingRepository {
 	repo := &thingRepositoryMock{
-		things:       make(map[string]things.Thing),
-		externalKeys: make(map[string]string),
+		things: make(map[string]things.Thing),
 	}
 
 	return repo
@@ -200,69 +197,59 @@ func (trm *thingRepositoryMock) RetrieveByKey(_ context.Context, keyType, key st
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
-	switch keyType {
-	case things.KeyTypeInline:
-		for _, thing := range trm.things {
-			if thing.Key == key {
-				return thing.ID, nil
-			}
-		}
-	case things.KeyTypeExternal:
-		if _, ok := trm.externalKeys[key]; !ok {
-			return "", dbutil.ErrNotFound
+	for _, thing := range trm.things {
+		if keyType == things.KeyTypeInline && thing.Key == key {
+			return thing.ID, nil
 		}
 
-		return trm.externalKeys[key], nil
-	default:
-		return "", errors.New("invalid thing key type")
+		if keyType == things.KeyTypeExternal && thing.KeyExternal == key {
+			return thing.ID, nil
+		}
 	}
 
 	return "", dbutil.ErrNotFound
 }
 
-func (trm *thingRepositoryMock) SaveExternalKey(_ context.Context, key, thingID string) error {
+func (trm *thingRepositoryMock) UpdateExternalKey(_ context.Context, key, thingID string) error {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
-	if _, ok := trm.externalKeys[key]; ok {
+	if _, ok := trm.things[thingID]; !ok {
 		return dbutil.ErrConflict
 	}
+
+	for _, thing := range trm.things {
+		if thing.KeyExternal == key {
+			return dbutil.ErrConflict
+		}
+	}
+
+	if key == "" {
+		return dbutil.ErrMalformedEntity
+	}
+
+	thing := trm.things[thingID]
+	thing.KeyExternal = key
+
+	trm.things[thingID] = thing
+
+	return nil
+}
+
+func (trm *thingRepositoryMock) RemoveExternalKey(_ context.Context, thingID string) error {
+	trm.mu.Lock()
+	defer trm.mu.Unlock()
 
 	if _, ok := trm.things[thingID]; !ok {
 		return dbutil.ErrNotFound
 	}
 
-	trm.externalKeys[key] = thingID
+	thing := trm.things[thingID]
+	thing.KeyExternal = ""
+
+	trm.things[thingID] = thing
 
 	return nil
-}
-
-func (trm *thingRepositoryMock) RemoveExternalKey(_ context.Context, key string) error {
-	trm.mu.Lock()
-	defer trm.mu.Unlock()
-
-	if _, ok := trm.externalKeys[key]; !ok {
-		return dbutil.ErrNotFound
-	}
-
-	delete(trm.externalKeys, key)
-
-	return nil
-}
-
-func (trm *thingRepositoryMock) RetrieveExternalKeysByThing(_ context.Context, thingID string) ([]string, error) {
-	trm.mu.Lock()
-	defer trm.mu.Unlock()
-
-	var keys []string
-
-	for key, keyThingID := range trm.externalKeys {
-		if keyThingID == thingID {
-			keys = append(keys, key)
-		}
-	}
-
-	return keys, nil
 }
 
 func (trm *thingRepositoryMock) BackupAll(_ context.Context) ([]things.Thing, error) {

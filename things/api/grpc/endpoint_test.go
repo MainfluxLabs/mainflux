@@ -87,7 +87,7 @@ func TestIdentify(t *testing.T) {
 	sth := ths[0]
 
 	externalKey := "abc123"
-	err = svc.CreateExternalThingKey(context.Background(), token, externalKey, sth.ID)
+	err = svc.UpdateExternalKey(context.Background(), token, externalKey, sth.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	usersAddr := fmt.Sprintf("localhost:%d", port)

@@ -25,10 +25,11 @@ func createThingsEndpoint(svc things.Service) endpoint.Endpoint {
 		ths := []things.Thing{}
 		for _, t := range req.Things {
 			th := things.Thing{
-				ID:       t.ID,
-				Name:     t.Name,
-				Key:      t.Key,
-				Metadata: t.Metadata,
+				ID:          t.ID,
+				Name:        t.Name,
+				Key:         t.Key,
+				KeyExternal: t.KeyExternal,
+				Metadata:    t.Metadata,
 			}
 			ths = append(ths, th)
 		}
@@ -45,12 +46,13 @@ func createThingsEndpoint(svc things.Service) endpoint.Endpoint {
 
 		for _, t := range saved {
 			th := thingRes{
-				ID:        t.ID,
-				GroupID:   t.GroupID,
-				ProfileID: t.ProfileID,
-				Name:      t.Name,
-				Key:       t.Key,
-				Metadata:  t.Metadata,
+				ID:          t.ID,
+				GroupID:     t.GroupID,
+				ProfileID:   t.ProfileID,
+				Name:        t.Name,
+				Key:         t.Key,
+				KeyExternal: t.KeyExternal,
+				Metadata:    t.Metadata,
 			}
 			res.Things = append(res.Things, th)
 		}
@@ -73,12 +75,13 @@ func viewThingEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		res := viewThingRes{
-			ID:        thing.ID,
-			GroupID:   thing.GroupID,
-			ProfileID: thing.ProfileID,
-			Name:      thing.Name,
-			Key:       thing.Key,
-			Metadata:  thing.Metadata,
+			ID:          thing.ID,
+			GroupID:     thing.GroupID,
+			ProfileID:   thing.ProfileID,
+			Name:        thing.Name,
+			Key:         thing.Key,
+			KeyExternal: thing.KeyExternal,
+			Metadata:    thing.Metadata,
 		}
 		return res, nil
 	}
@@ -195,7 +198,7 @@ func restoreThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		thingsBackup := buildThingsBackup(req.Backup)
+		thingsBackup := buildThingsBackup(req.Things)
 
 		if err := svc.RestoreThingsByGroup(ctx, req.token, req.id, thingsBackup); err != nil {
 			return nil, err
@@ -229,7 +232,7 @@ func restoreThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		thingsBackup := buildThingsBackup(req.Backup)
+		thingsBackup := buildThingsBackup(req.Things)
 
 		if err := svc.RestoreThingsByOrg(ctx, req.token, req.id, thingsBackup); err != nil {
 			return nil, err
@@ -360,45 +363,29 @@ func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func createExternalKeyEndpoint(svc things.Service) endpoint.Endpoint {
+func updateExternalKeyEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(createExternalKeyReq)
+		req := request.(updateExternalKeyReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.CreateExternalThingKey(ctx, req.token, req.Key, req.thingID); err != nil {
+		if err := svc.UpdateExternalKey(ctx, req.token, req.Key, req.thingID); err != nil {
 			return nil, err
 		}
 
-		return createExternalKeyRes{}, nil
-	}
-}
-
-func listExternalKeysByThingEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(listExternalKeysByThingReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		keys, err := svc.ListExternalKeysByThing(ctx, req.token, req.thingID)
-		if err != nil {
-			return nil, err
-		}
-
-		return listExternalKeysByThingRes{Keys: keys}, nil
+		return updateExternalKeyRes{}, nil
 	}
 }
 
 func removeExternalKeyEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(removeExternalKeyReq)
+		req := request.(resourceReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.RemoveExternalThingKey(ctx, req.token, req.thingID, req.key); err != nil {
+		if err := svc.RemoveExternalKey(ctx, req.token, req.id); err != nil {
 			return nil, err
 		}
 
@@ -471,21 +458,17 @@ func buildBackupThingsResponse(tb things.ThingsBackup, fileName string) (apiutil
 	things := make([]viewThingRes, 0, len(tb.Things))
 	for _, thing := range tb.Things {
 		things = append(things, viewThingRes{
-			ID:        thing.ID,
-			GroupID:   thing.GroupID,
-			ProfileID: thing.ProfileID,
-			Name:      thing.Name,
-			Key:       thing.Key,
-			Metadata:  thing.Metadata,
+			ID:          thing.ID,
+			GroupID:     thing.GroupID,
+			ProfileID:   thing.ProfileID,
+			Name:        thing.Name,
+			Key:         thing.Key,
+			KeyExternal: thing.KeyExternal,
+			Metadata:    thing.Metadata,
 		})
 	}
 
-	res := backupThings{
-		Things:       things,
-		ExternalKeys: tb.ExternalKeys,
-	}
-
-	data, err := json.MarshalIndent(res, "", "  ")
+	data, err := json.MarshalIndent(things, "", "  ")
 	if err != nil {
 		return apiutil.ViewFileRes{}, err
 	}
@@ -496,48 +479,45 @@ func buildBackupThingsResponse(tb things.ThingsBackup, fileName string) (apiutil
 	}, nil
 }
 
-func buildThingsBackup(backup backupThings) things.ThingsBackup {
-	res := things.ThingsBackup{}
-	for _, thing := range backup.Things {
+func buildThingsBackup(ths []viewThingRes) (backup things.ThingsBackup) {
+	for _, thing := range ths {
 		th := things.Thing{
-			ID:        thing.ID,
-			GroupID:   thing.GroupID,
-			ProfileID: thing.ProfileID,
-			Name:      thing.Name,
-			Key:       thing.Key,
-			Metadata:  thing.Metadata,
+			ID:          thing.ID,
+			GroupID:     thing.GroupID,
+			ProfileID:   thing.ProfileID,
+			Name:        thing.Name,
+			Key:         thing.Key,
+			KeyExternal: thing.KeyExternal,
+			Metadata:    thing.Metadata,
 		}
 
-		res.Things = append(res.Things, th)
+		backup.Things = append(backup.Things, th)
 	}
 
-	res.ExternalKeys = backup.ExternalKeys
-
-	return res
+	return backup
 }
 
 func buildBackupResponse(backup things.Backup) backupRes {
 	res := backupRes{
-		Things:           backupThings{ExternalKeys: make(things.ExternalKeysBackup)},
+		Things:           []viewThingRes{},
 		Profiles:         []backupProfile{},
 		Groups:           []backupGroup{},
 		GroupMemberships: []memberships.ViewGroupMembershipRes{},
 	}
 
-	for _, thing := range backup.Things.Things {
+	for _, thing := range backup.Things {
 		view := viewThingRes{
-			ID:        thing.ID,
-			GroupID:   thing.GroupID,
-			ProfileID: thing.ProfileID,
-			Name:      thing.Name,
-			Key:       thing.Key,
-			Metadata:  thing.Metadata,
+			ID:          thing.ID,
+			GroupID:     thing.GroupID,
+			ProfileID:   thing.ProfileID,
+			Name:        thing.Name,
+			Key:         thing.Key,
+			KeyExternal: thing.KeyExternal,
+			Metadata:    thing.Metadata,
 		}
 
-		res.Things.Things = append(res.Things.Things, view)
+		res.Things = append(res.Things, view)
 	}
-
-	res.Things.ExternalKeys = backup.Things.ExternalKeys
 
 	for _, profile := range backup.Profiles {
 		view := backupProfile{
@@ -577,19 +557,18 @@ func buildBackupResponse(backup things.Backup) backupRes {
 }
 
 func buildBackup(req restoreReq) (backup things.Backup) {
-	for _, thing := range req.Things.Things {
+	for _, thing := range req.Things {
 		th := things.Thing{
-			ID:        thing.ID,
-			GroupID:   thing.GroupID,
-			ProfileID: thing.ProfileID,
-			Name:      thing.Name,
-			Key:       thing.Key,
-			Metadata:  thing.Metadata,
+			ID:          thing.ID,
+			GroupID:     thing.GroupID,
+			ProfileID:   thing.ProfileID,
+			Name:        thing.Name,
+			Key:         thing.Key,
+			KeyExternal: thing.KeyExternal,
+			Metadata:    thing.Metadata,
 		}
-		backup.Things.Things = append(backup.Things.Things, th)
+		backup.Things = append(backup.Things, th)
 	}
-
-	backup.Things.ExternalKeys = req.Things.ExternalKeys
 
 	for _, profile := range req.Profiles {
 		pr := things.Profile{

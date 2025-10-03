@@ -141,16 +141,12 @@ type Service interface {
 	// GetGroupIDsByOrg returns all group IDs belonging to an org.
 	GetGroupIDsByOrg(ctx context.Context, orgID string, token string) ([]string, error)
 
-	// CreateExternalThingKey creates a new external thing key. The authenticated user must have Editor rights within the Thing's belonging Group.
-	CreateExternalThingKey(ctx context.Context, token, key, thingID string) error
+	// UpdateExternalKey updates the external key of the Thing identified by `thingID`. The authenticated user must have Editor rights within the Thing's belonging Group.
+	UpdateExternalKey(ctx context.Context, token, key, thingID string) error
 
-	// RemoveExternalThingKey removes the appropriate external thing key. The key must belong to the thing identified by `thingID`,
-	// and the authenticated user must have Editor rights within the Thing's belonging Group.
-	RemoveExternalThingKey(ctx context.Context, token, thingID, key string) error
-
-	// ListExternalKeysByThingID retrieves a list of all external keys associated with the given Thing.
-	// The authenticated user must have Viewer rights within the Thing's belonging group.
-	ListExternalKeysByThing(ctx context.Context, token, thingID string) ([]string, error)
+	// RemoveExternalKey removes the external thing key of the Thing identified by `thingID`.
+	// The authenticated user must have Editor rights within the Thing's belonging Group.
+	RemoveExternalKey(ctx context.Context, token, thingID string) error
 
 	// Backup retrieves all things, profiles, groups, and groups memberships for all users. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
@@ -188,7 +184,7 @@ type Service interface {
 }
 
 type Backup struct {
-	Things           ThingsBackup
+	Things           []Thing
 	Profiles         []Profile
 	Groups           []Group
 	GroupMemberships []GroupMembership
@@ -210,8 +206,7 @@ type ProfilesBackup struct {
 type ExternalKeysBackup map[string][]string
 
 type ThingsBackup struct {
-	Things       []Thing
-	ExternalKeys ExternalKeysBackup
+	Things []Thing
 }
 
 type UserAccessReq struct {
@@ -460,14 +455,8 @@ func (ts *thingsService) BackupThingsByGroup(ctx context.Context, token string, 
 		return ThingsBackup{}, err
 	}
 
-	externalKeys, err := ts.generateExternalKeysBackupForThings(ctx, things...)
-	if err != nil {
-		return ThingsBackup{}, err
-	}
-
 	return ThingsBackup{
-		Things:       things,
-		ExternalKeys: externalKeys,
+		Things: things,
 	}, nil
 }
 
@@ -477,10 +466,6 @@ func (ts *thingsService) RestoreThingsByGroup(ctx context.Context, token string,
 	}
 
 	if _, err := ts.things.Save(ctx, backup.Things...); err != nil {
-		return err
-	}
-
-	if err := ts.restoreExternalKeysBackup(ctx, backup.ExternalKeys); err != nil {
 		return err
 	}
 
@@ -502,14 +487,8 @@ func (ts *thingsService) BackupThingsByOrg(ctx context.Context, token string, or
 		return ThingsBackup{}, err
 	}
 
-	externalKeys, err := ts.generateExternalKeysBackupForThings(ctx, things...)
-	if err != nil {
-		return ThingsBackup{}, err
-	}
-
 	return ThingsBackup{
-		Things:       things,
-		ExternalKeys: externalKeys,
+		Things: things,
 	}, nil
 }
 
@@ -519,10 +498,6 @@ func (ts *thingsService) RestoreThingsByOrg(ctx context.Context, token string, o
 	}
 
 	if _, err := ts.things.Save(ctx, backup.Things...); err != nil {
-		return err
-	}
-
-	if err := ts.restoreExternalKeysBackup(ctx, backup.ExternalKeys); err != nil {
 		return err
 	}
 
@@ -769,7 +744,7 @@ func (ts *thingsService) Identify(ctx context.Context, keyType, key string) (str
 	return id, nil
 }
 
-func (ts *thingsService) CreateExternalThingKey(ctx context.Context, token, key, thingID string) error {
+func (ts *thingsService) UpdateExternalKey(ctx context.Context, token, key, thingID string) error {
 	accessReq := UserAccessReq{
 		Token:  token,
 		ID:     thingID,
@@ -780,23 +755,23 @@ func (ts *thingsService) CreateExternalThingKey(ctx context.Context, token, key,
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	if err := ts.things.SaveExternalKey(ctx, key, thingID); err != nil {
+	thing, err := ts.things.RetrieveByID(ctx, thingID)
+	if err != nil {
+		return err
+	}
+
+	if err := ts.things.UpdateExternalKey(ctx, key, thingID); err != nil {
+		return err
+	}
+
+	if err := ts.thingCache.RemoveKey(ctx, KeyTypeExternal, thing.KeyExternal); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (ts *thingsService) RemoveExternalThingKey(ctx context.Context, token, thingID, key string) error {
-	keyThingID, err := ts.Identify(ctx, KeyTypeExternal, key)
-	if err != nil {
-		return err
-	}
-
-	if keyThingID != thingID {
-		return errors.ErrAuthorization
-	}
-
+func (ts *thingsService) RemoveExternalKey(ctx context.Context, token, thingID string) error {
 	accessReq := UserAccessReq{
 		Token:  token,
 		ID:     thingID,
@@ -807,34 +782,20 @@ func (ts *thingsService) RemoveExternalThingKey(ctx context.Context, token, thin
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	if err := ts.things.RemoveExternalKey(ctx, key); err != nil {
+	thing, err := ts.things.RetrieveByID(ctx, thingID)
+	if err != nil {
 		return err
 	}
 
-	if err := ts.thingCache.RemoveKey(ctx, KeyTypeExternal, key); err != nil {
+	if err := ts.things.RemoveExternalKey(ctx, thingID); err != nil {
+		return err
+	}
+
+	if err := ts.thingCache.RemoveKey(ctx, KeyTypeExternal, thing.KeyExternal); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func (ts *thingsService) ListExternalKeysByThing(ctx context.Context, token, thingID string) ([]string, error) {
-	accessReq := UserAccessReq{
-		Token:  token,
-		ID:     thingID,
-		Action: Viewer,
-	}
-
-	if err := ts.CanUserAccessThing(ctx, accessReq); err != nil {
-		return nil, errors.Wrap(errors.ErrAuthorization, err)
-	}
-
-	keys, err := ts.things.RetrieveExternalKeysByThing(ctx, thingID)
-	if err != nil {
-		return nil, err
-	}
-
-	return keys, nil
 }
 
 func (ts *thingsService) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {
@@ -874,21 +835,13 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 		return Backup{}, err
 	}
 
-	externalKeys, err := ts.generateExternalKeysBackupForThings(ctx, things...)
-	if err != nil {
-		return Backup{}, err
-	}
-
 	profiles, err := ts.profiles.BackupAll(ctx)
 	if err != nil {
 		return Backup{}, err
 	}
 
 	return Backup{
-		Things: ThingsBackup{
-			Things:       things,
-			ExternalKeys: externalKeys,
-		},
+		Things:           things,
 		Profiles:         profiles,
 		Groups:           groups,
 		GroupMemberships: groupMemberships,
@@ -1047,11 +1000,7 @@ func (ts *thingsService) Restore(ctx context.Context, token string, backup Backu
 		return err
 	}
 
-	if _, err := ts.things.Save(ctx, backup.Things.Things...); err != nil {
-		return err
-	}
-
-	if err := ts.restoreExternalKeysBackup(ctx, backup.Things.ExternalKeys); err != nil {
+	if _, err := ts.things.Save(ctx, backup.Things...); err != nil {
 		return err
 	}
 
@@ -1188,37 +1137,4 @@ func (ts *thingsService) GetGroupIDsByOrg(ctx context.Context, orgID string, tok
 	}
 
 	return ts.groups.RetrieveIDsByOrgMembership(ctx, orgID, user.GetId())
-}
-
-func (ts *thingsService) generateExternalKeysBackupForThings(ctx context.Context, things ...Thing) (ExternalKeysBackup, error) {
-	externalKeys := make(ExternalKeysBackup, len(things))
-
-	for _, thing := range things {
-		thingExternalKeys, err := ts.things.RetrieveExternalKeysByThing(ctx, thing.ID)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(thingExternalKeys) == 0 {
-			continue
-		}
-
-		externalKeys[thing.ID] = thingExternalKeys
-	}
-
-	return externalKeys, nil
-}
-
-// Helper for restoring all keys in an ExternalKeysBackup to the ThingRepository. Note that it assumes that
-// all Things referenced by keys in the ExternalKeysBackup already exist in the repository.
-func (ts *thingsService) restoreExternalKeysBackup(ctx context.Context, externalKeys ExternalKeysBackup) error {
-	for thingID, keys := range externalKeys {
-		for _, key := range keys {
-			if err := ts.things.SaveExternalKey(ctx, key, thingID); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
 }

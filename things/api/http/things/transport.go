@@ -24,10 +24,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-const (
-	keyKey = "key"
-)
-
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, logger log.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
@@ -174,21 +170,14 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		opts...,
 	))
 
-	mux.Post("/things/:id/external-keys", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_external_key")(createExternalKeyEndpoint(svc)),
-		decodeCreateExternalKey,
+	mux.Patch("/things/:id/external-key", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_external_key")(updateExternalKeyEndpoint(svc)),
+		decodeUpdateExternalKey,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Get("/things/:id/external-keys", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_external_keys_by_thing")(listExternalKeysByThingEndpoint(svc)),
-		decodeListExternalKeysByThing,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Delete("/things/:id/external-keys/:key", kithttp.NewServer(
+	mux.Delete("/things/:id/external-key", kithttp.NewServer(
 		kitot.TraceServer(tracer, "remove_external_key")(removeExternalKeyEndpoint(svc)),
 		decodeRemoveExternalKey,
 		encodeResponse,
@@ -475,7 +464,7 @@ func decodeRestoreThingsByGroup(ctx context.Context, r *http.Request) (interface
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	if err := json.Unmarshal(data, &req.Backup); err != nil {
+	if err := json.Unmarshal(data, &req.Things); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
@@ -497,7 +486,7 @@ func decodeRestoreThingsByOrg(ctx context.Context, r *http.Request) (interface{}
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	if err := json.Unmarshal(data, &req.Backup); err != nil {
+	if err := json.Unmarshal(data, &req.Things); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
@@ -530,12 +519,12 @@ func decodeIdentify(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeCreateExternalKey(_ context.Context, r *http.Request) (any, error) {
+func decodeUpdateExternalKey(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := createExternalKeyReq{
+	req := updateExternalKeyReq{
 		token:   apiutil.ExtractBearerToken(r),
 		thingID: bone.GetValue(r, apiutil.IDKey),
 	}
@@ -546,20 +535,10 @@ func decodeCreateExternalKey(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeListExternalKeysByThing(_ context.Context, r *http.Request) (any, error) {
-	req := listExternalKeysByThingReq{
-		token:   apiutil.ExtractBearerToken(r),
-		thingID: bone.GetValue(r, apiutil.IDKey),
-	}
-
-	return req, nil
-}
-
 func decodeRemoveExternalKey(_ context.Context, r *http.Request) (any, error) {
-	req := removeExternalKeyReq{
-		token:   apiutil.ExtractBearerToken(r),
-		key:     bone.GetValue(r, keyKey),
-		thingID: bone.GetValue(r, apiutil.IDKey),
+	req := resourceReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
 	return req, nil
