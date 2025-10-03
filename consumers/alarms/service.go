@@ -3,6 +3,8 @@ package alarms
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -124,23 +126,33 @@ func (as *alarmService) createAlarm(ctx context.Context, alarm *Alarm) error {
 func (as *alarmService) Consume(message interface{}) error {
 	ctx := context.Background()
 
-	if msg, ok := message.(protomfx.Message); ok {
-		var payload map[string]interface{}
-		if err := json.Unmarshal(msg.Payload, &payload); err != nil {
-			return err
-		}
+	msg, ok := message.(protomfx.Message)
+	if !ok {
+		return errors.ErrMessage
+	}
 
-		alarm := Alarm{
-			ThingID:  msg.Publisher,
-			Subtopic: msg.Subtopic,
-			Protocol: msg.Protocol,
-			Payload:  payload,
-			Created:  msg.Created,
-		}
+	subject := strings.Split(msg.Subject, ".")
+	if len(subject) < 2 {
+		return fmt.Errorf("invalid subject: %s", msg.Subject)
+	}
+	ruleID := subject[1]
 
-		if err := as.createAlarm(ctx, &alarm); err != nil {
-			return err
-		}
+	var payload map[string]interface{}
+	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
+		return err
+	}
+
+	alarm := Alarm{
+		ThingID:  msg.Publisher,
+		RuleID:   ruleID,
+		Subtopic: msg.Subtopic,
+		Protocol: msg.Protocol,
+		Payload:  payload,
+		Created:  msg.Created,
+	}
+
+	if err := as.createAlarm(ctx, &alarm); err != nil {
+		return err
 	}
 
 	return nil
