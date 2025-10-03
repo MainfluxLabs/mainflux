@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/opentracing/opentracing-go"
 )
@@ -46,7 +47,7 @@ func ProfileRepositoryMiddleware(tracer opentracing.Tracer, repo things.ProfileR
 }
 
 func (prm profileRepositoryMiddleware) Save(ctx context.Context, profiles ...things.Profile) ([]things.Profile, error) {
-	span := createSpan(ctx, prm.tracer, saveProfiles)
+	span := dbutil.CreateSpan(ctx, prm.tracer, saveProfiles)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -54,7 +55,7 @@ func (prm profileRepositoryMiddleware) Save(ctx context.Context, profiles ...thi
 }
 
 func (prm profileRepositoryMiddleware) Update(ctx context.Context, pr things.Profile) error {
-	span := createSpan(ctx, prm.tracer, updateProfile)
+	span := dbutil.CreateSpan(ctx, prm.tracer, updateProfile)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -62,7 +63,7 @@ func (prm profileRepositoryMiddleware) Update(ctx context.Context, pr things.Pro
 }
 
 func (prm profileRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (things.Profile, error) {
-	span := createSpan(ctx, prm.tracer, retrieveProfileByID)
+	span := dbutil.CreateSpan(ctx, prm.tracer, retrieveProfileByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -70,7 +71,7 @@ func (prm profileRepositoryMiddleware) RetrieveByID(ctx context.Context, id stri
 }
 
 func (prm profileRepositoryMiddleware) RetrieveByGroups(ctx context.Context, ids []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
-	span := createSpan(ctx, prm.tracer, retrieveProfilesByGroups)
+	span := dbutil.CreateSpan(ctx, prm.tracer, retrieveProfilesByGroups)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -78,7 +79,7 @@ func (prm profileRepositoryMiddleware) RetrieveByGroups(ctx context.Context, ids
 }
 
 func (prm profileRepositoryMiddleware) RetrieveByThing(ctx context.Context, thID string) (things.Profile, error) {
-	span := createSpan(ctx, prm.tracer, retrieveProfileByThing)
+	span := dbutil.CreateSpan(ctx, prm.tracer, retrieveProfileByThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -86,7 +87,7 @@ func (prm profileRepositoryMiddleware) RetrieveByThing(ctx context.Context, thID
 }
 
 func (prm profileRepositoryMiddleware) Remove(ctx context.Context, ids ...string) error {
-	span := createSpan(ctx, prm.tracer, removeProfile)
+	span := dbutil.CreateSpan(ctx, prm.tracer, removeProfile)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -94,7 +95,7 @@ func (prm profileRepositoryMiddleware) Remove(ctx context.Context, ids ...string
 }
 
 func (prm profileRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.Profile, error) {
-	span := createSpan(ctx, prm.tracer, backupAllProfiles)
+	span := dbutil.CreateSpan(ctx, prm.tracer, backupAllProfiles)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -102,7 +103,7 @@ func (prm profileRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.
 }
 
 func (prm profileRepositoryMiddleware) BackupByGroups(ctx context.Context, groupIDs []string) ([]things.Profile, error) {
-	span := createSpan(ctx, prm.tracer, backupProfilesByGroups)
+	span := dbutil.CreateSpan(ctx, prm.tracer, backupProfilesByGroups)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -110,7 +111,7 @@ func (prm profileRepositoryMiddleware) BackupByGroups(ctx context.Context, group
 }
 
 func (prm profileRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
-	span := createSpan(ctx, prm.tracer, retrieveAllProfiles)
+	span := dbutil.CreateSpan(ctx, prm.tracer, retrieveAllProfiles)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -132,7 +133,7 @@ func ProfileCacheMiddleware(tracer opentracing.Tracer, cache things.ProfileCache
 }
 
 func (pcm profileCacheMiddleware) SaveGroup(ctx context.Context, profileID, groupID string) error {
-	span := createSpan(ctx, pcm.tracer, saveGroupIDByProfileID)
+	span := dbutil.CreateSpan(ctx, pcm.tracer, saveGroupIDByProfileID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -140,7 +141,7 @@ func (pcm profileCacheMiddleware) SaveGroup(ctx context.Context, profileID, grou
 }
 
 func (pcm profileCacheMiddleware) ViewGroup(ctx context.Context, profileID string) (string, error) {
-	span := createSpan(ctx, pcm.tracer, retrieveGroupIDByProfileID)
+	span := dbutil.CreateSpan(ctx, pcm.tracer, retrieveGroupIDByProfileID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -148,7 +149,7 @@ func (pcm profileCacheMiddleware) ViewGroup(ctx context.Context, profileID strin
 }
 
 func (pcm profileCacheMiddleware) RemoveGroup(ctx context.Context, profileID string) error {
-	span := createSpan(ctx, pcm.tracer, removeGroupIDByProfileID)
+	span := dbutil.CreateSpan(ctx, pcm.tracer, removeGroupIDByProfileID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

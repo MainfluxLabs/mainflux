@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/opentracing/opentracing-go"
 )
 
@@ -38,7 +39,7 @@ func NotifierRepositoryMiddleware(tracer opentracing.Tracer, repo notifiers.Noti
 }
 
 func (n notifierRepositoryMiddleware) Save(ctx context.Context, nfs ...notifiers.Notifier) ([]notifiers.Notifier, error) {
-	span := createSpan(ctx, n.tracer, saveNotifiers)
+	span := dbutil.CreateSpan(ctx, n.tracer, saveNotifiers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -46,7 +47,7 @@ func (n notifierRepositoryMiddleware) Save(ctx context.Context, nfs ...notifiers
 }
 
 func (n notifierRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (notifiers.NotifiersPage, error) {
-	span := createSpan(ctx, n.tracer, retrieveNotifiersByGroup)
+	span := dbutil.CreateSpan(ctx, n.tracer, retrieveNotifiersByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -54,7 +55,7 @@ func (n notifierRepositoryMiddleware) RetrieveByGroup(ctx context.Context, group
 }
 
 func (n notifierRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (notifiers.Notifier, error) {
-	span := createSpan(ctx, n.tracer, retrieveNotifierByID)
+	span := dbutil.CreateSpan(ctx, n.tracer, retrieveNotifierByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -62,7 +63,7 @@ func (n notifierRepositoryMiddleware) RetrieveByID(ctx context.Context, id strin
 }
 
 func (n notifierRepositoryMiddleware) Update(ctx context.Context, ntf notifiers.Notifier) error {
-	span := createSpan(ctx, n.tracer, updateNotifier)
+	span := dbutil.CreateSpan(ctx, n.tracer, updateNotifier)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -70,19 +71,9 @@ func (n notifierRepositoryMiddleware) Update(ctx context.Context, ntf notifiers.
 }
 
 func (n notifierRepositoryMiddleware) Remove(ctx context.Context, ids ...string) error {
-	span := createSpan(ctx, n.tracer, removeNotifiers)
+	span := dbutil.CreateSpan(ctx, n.tracer, removeNotifiers)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return n.repo.Remove(ctx, ids...)
-}
-
-func createSpan(ctx context.Context, tracer opentracing.Tracer, opName string) opentracing.Span {
-	if parentSpan := opentracing.SpanFromContext(ctx); parentSpan != nil {
-		return tracer.StartSpan(
-			opName,
-			opentracing.ChildOf(parentSpan.Context()),
-		)
-	}
-	return tracer.StartSpan(opName)
 }

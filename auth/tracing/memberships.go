@@ -9,6 +9,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/opentracing/opentracing-go"
 )
 
@@ -37,7 +38,7 @@ func OrgMembershipsRepositoryMiddleware(tracer opentracing.Tracer, gr auth.OrgMe
 }
 
 func (orm orgMembershipsRepositoryMiddleware) Save(ctx context.Context, oms ...auth.OrgMembership) error {
-	span := createSpan(ctx, orm.tracer, saveOrgMemberships)
+	span := dbutil.CreateSpan(ctx, orm.tracer, saveOrgMemberships)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -45,7 +46,7 @@ func (orm orgMembershipsRepositoryMiddleware) Save(ctx context.Context, oms ...a
 }
 
 func (orm orgMembershipsRepositoryMiddleware) Remove(ctx context.Context, orgID string, memberIDs ...string) error {
-	span := createSpan(ctx, orm.tracer, removeOrgMemberships)
+	span := dbutil.CreateSpan(ctx, orm.tracer, removeOrgMemberships)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -53,7 +54,7 @@ func (orm orgMembershipsRepositoryMiddleware) Remove(ctx context.Context, orgID 
 }
 
 func (orm orgMembershipsRepositoryMiddleware) Update(ctx context.Context, oms ...auth.OrgMembership) error {
-	span := createSpan(ctx, orm.tracer, updateOrgMemberships)
+	span := dbutil.CreateSpan(ctx, orm.tracer, updateOrgMemberships)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -61,7 +62,7 @@ func (orm orgMembershipsRepositoryMiddleware) Update(ctx context.Context, oms ..
 }
 
 func (orm orgMembershipsRepositoryMiddleware) RetrieveRole(ctx context.Context, orgID, memberID string) (string, error) {
-	span := createSpan(ctx, orm.tracer, retrieveRole)
+	span := dbutil.CreateSpan(ctx, orm.tracer, retrieveRole)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -69,7 +70,7 @@ func (orm orgMembershipsRepositoryMiddleware) RetrieveRole(ctx context.Context, 
 }
 
 func (orm orgMembershipsRepositoryMiddleware) RetrieveByOrg(ctx context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembershipsPage, error) {
-	span := createSpan(ctx, orm.tracer, retrieveOrgMemberships)
+	span := dbutil.CreateSpan(ctx, orm.tracer, retrieveOrgMemberships)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -77,7 +78,7 @@ func (orm orgMembershipsRepositoryMiddleware) RetrieveByOrg(ctx context.Context,
 }
 
 func (orm orgMembershipsRepositoryMiddleware) BackupAll(ctx context.Context) ([]auth.OrgMembership, error) {
-	span := createSpan(ctx, orm.tracer, backupAllOrgMemberships)
+	span := dbutil.CreateSpan(ctx, orm.tracer, backupAllOrgMemberships)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -85,7 +86,7 @@ func (orm orgMembershipsRepositoryMiddleware) BackupAll(ctx context.Context) ([]
 }
 
 func (orm orgMembershipsRepositoryMiddleware) BackupByOrg(ctx context.Context, orgID string) ([]auth.OrgMembership, error) {
-	span := createSpan(ctx, orm.tracer, backupOrgMemberships)
+	span := dbutil.CreateSpan(ctx, orm.tracer, backupOrgMemberships)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

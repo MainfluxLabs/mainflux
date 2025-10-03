@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
@@ -37,7 +38,7 @@ func New(repo auth.KeyRepository, tracer opentracing.Tracer) auth.KeyRepository 
 }
 
 func (krm keyRepositoryMiddleware) Save(ctx context.Context, key auth.Key) (string, error) {
-	span := createSpan(ctx, krm.tracer, saveKey)
+	span := dbutil.CreateSpan(ctx, krm.tracer, saveKey)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -45,7 +46,7 @@ func (krm keyRepositoryMiddleware) Save(ctx context.Context, key auth.Key) (stri
 }
 
 func (krm keyRepositoryMiddleware) Retrieve(ctx context.Context, owner, id string) (auth.Key, error) {
-	span := createSpan(ctx, krm.tracer, retrieveKeyByID)
+	span := dbutil.CreateSpan(ctx, krm.tracer, retrieveKeyByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -53,20 +54,9 @@ func (krm keyRepositoryMiddleware) Retrieve(ctx context.Context, owner, id strin
 }
 
 func (krm keyRepositoryMiddleware) Remove(ctx context.Context, owner, id string) error {
-	span := createSpan(ctx, krm.tracer, removeKey)
+	span := dbutil.CreateSpan(ctx, krm.tracer, removeKey)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return krm.repo.Remove(ctx, owner, id)
-}
-
-func createSpan(ctx context.Context, tracer opentracing.Tracer, opName string) opentracing.Span {
-	if parentSpan := opentracing.SpanFromContext(ctx); parentSpan != nil {
-		return tracer.StartSpan(
-			opName,
-			opentracing.ChildOf(parentSpan.Context()),
-		)
-	}
-
-	return tracer.StartSpan(opName)
 }

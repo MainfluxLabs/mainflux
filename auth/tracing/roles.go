@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
@@ -21,7 +22,7 @@ type rolesRepositoryMiddleware struct {
 	repo   auth.RolesRepository
 }
 
-// OrgRepositoryMiddleware tracks request and their latency, and adds spans to context.
+// RolesRepositoryMiddleware tracks request and their latency, and adds spans to context.
 func RolesRepositoryMiddleware(tracer opentracing.Tracer, rr auth.RolesRepository) auth.RolesRepository {
 	return rolesRepositoryMiddleware{
 		tracer: tracer,
@@ -30,7 +31,7 @@ func RolesRepositoryMiddleware(tracer opentracing.Tracer, rr auth.RolesRepositor
 }
 
 func (rrm rolesRepositoryMiddleware) SaveRole(ctx context.Context, id, role string) error {
-	span := createSpan(ctx, rrm.tracer, saveRole)
+	span := dbutil.CreateSpan(ctx, rrm.tracer, saveRole)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -38,7 +39,7 @@ func (rrm rolesRepositoryMiddleware) SaveRole(ctx context.Context, id, role stri
 }
 
 func (rrm rolesRepositoryMiddleware) RetrieveRole(ctx context.Context, id string) (string, error) {
-	span := createSpan(ctx, rrm.tracer, retrieveRole)
+	span := dbutil.CreateSpan(ctx, rrm.tracer, retrieveRole)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -46,7 +47,7 @@ func (rrm rolesRepositoryMiddleware) RetrieveRole(ctx context.Context, id string
 }
 
 func (rrm rolesRepositoryMiddleware) UpdateRole(ctx context.Context, id, role string) error {
-	span := createSpan(ctx, rrm.tracer, updateRole)
+	span := dbutil.CreateSpan(ctx, rrm.tracer, updateRole)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -54,7 +55,7 @@ func (rrm rolesRepositoryMiddleware) UpdateRole(ctx context.Context, id, role st
 }
 
 func (rrm rolesRepositoryMiddleware) RemoveRole(ctx context.Context, id string) error {
-	span := createSpan(ctx, rrm.tracer, removeRole)
+	span := dbutil.CreateSpan(ctx, rrm.tracer, removeRole)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
