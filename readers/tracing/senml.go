@@ -12,7 +12,7 @@ import (
 
 const (
 	retrieveSenMLMessages = "retrieve_senml_messages"
-	backupSenMLMessaages  = "backup_senml_messages"
+	backupSenMLMessages   = "backup_senml_messages"
 	restoreSenMLMessages  = "restore_senml_messages"
 	removeSenMLMessages   = "remove_senml_messages"
 )
@@ -40,7 +40,7 @@ func (srm senmlRepositoryMiddleware) Retrieve(ctx context.Context, rpm readers.S
 }
 
 func (srm senmlRepositoryMiddleware) Backup(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
-	span := createSpan(ctx, srm.tracer, backupSenMLMessaages)
+	span := createSpan(ctx, srm.tracer, backupSenMLMessages)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

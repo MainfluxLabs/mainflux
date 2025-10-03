@@ -12,7 +12,7 @@ import (
 
 const (
 	retrieveJSONMessages = "retrieve_json_messages"
-	backupJSONMessaages  = "backup_json_messages"
+	backupJSONMessages   = "backup_json_messages"
 	restoreJSONMessages  = "restore_json_messages"
 	removeJSONMessages   = "remove_json_messages"
 )
@@ -40,7 +40,7 @@ func (jrm jsonRepositoryMiddleware) Retrieve(ctx context.Context, rpm readers.JS
 }
 
 func (jrm jsonRepositoryMiddleware) Backup(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
-	span := createSpan(ctx, jrm.tracer, backupJSONMessaages)
+	span := createSpan(ctx, jrm.tracer, backupJSONMessages)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
