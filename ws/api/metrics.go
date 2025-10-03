@@ -31,29 +31,29 @@ func MetricsMiddleware(svc ws.Service, counter metrics.Counter, latency metrics.
 	}
 }
 
-func (mm *metricsMiddleware) Publish(ctx context.Context, thingKey string, msg protomfx.Message) error {
+func (mm *metricsMiddleware) Publish(ctx context.Context, thingKeyType, thingKey string, msg protomfx.Message) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "publish").Add(1)
 		mm.latency.With("method", "publish").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.Publish(ctx, thingKey, msg)
+	return mm.svc.Publish(ctx, thingKeyType, thingKey, msg)
 }
 
-func (mm *metricsMiddleware) Subscribe(ctx context.Context, thingKey, subtopic string, c *ws.Client) error {
+func (mm *metricsMiddleware) Subscribe(ctx context.Context, thingKeyType, thingKey, subtopic string, c *ws.Client) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "subscribe").Add(1)
 		mm.latency.With("method", "subscribe").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.Subscribe(ctx, thingKey, subtopic, c)
+	return mm.svc.Subscribe(ctx, thingKeyType, thingKey, subtopic, c)
 }
 
-func (mm *metricsMiddleware) Unsubscribe(ctx context.Context, thingKey, subtopic string) error {
+func (mm *metricsMiddleware) Unsubscribe(ctx context.Context, thingKeyType, thingKey, subtopic string) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "unsubscribe").Add(1)
 		mm.latency.With("method", "unsubscribe").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.Unsubscribe(ctx, thingKey, subtopic)
+	return mm.svc.Unsubscribe(ctx, thingKeyType, thingKey, subtopic)
 }

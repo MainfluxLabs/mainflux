@@ -52,9 +52,9 @@ func decodeListSubscriptions(_ context.Context, r *http.Request) (interface{}, e
 	}
 
 	return listSubscriptionsReq{
-		groupID: bone.GetValue(r, "id"),
-		token:   apiutil.ExtractBearerToken(r),
-		key:     apiutil.ExtractThingKey(r),
+		groupID:  bone.GetValue(r, "id"),
+		token:    apiutil.ExtractBearerToken(r),
+		thingKey: apiutil.ExtractThingKey(r),
 		pageMetadata: mqtt.PageMetadata{
 			Offset: o,
 			Limit:  l,

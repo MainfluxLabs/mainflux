@@ -143,7 +143,7 @@ func TestHandshake(t *testing.T) {
 			subtopic: "",
 			header:   true,
 			thingKey: "",
-			status:   http.StatusForbidden,
+			status:   http.StatusUnauthorized,
 			msg:      []byte{},
 		},
 		{

@@ -95,7 +95,7 @@ var cmdThings = []cobra.Command{
 		},
 	},
 	{
-		Use:   "metadata <thing_key>",
+		Use:   "metadata <key_type> <thing_key>",
 		Short: "Get thing metadata",
 		Long:  "Get metadata about the thing identified by the given key",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -104,7 +104,7 @@ var cmdThings = []cobra.Command{
 				return
 			}
 
-			meta, err := sdk.GetThingMetadataByKey(args[0])
+			meta, err := sdk.GetThingMetadataByKey(args[0], args[1])
 			if err != nil {
 				logError(err)
 				return
@@ -132,16 +132,16 @@ var cmdThings = []cobra.Command{
 		},
 	},
 	{
-		Use:   "identify <thing_key>",
+		Use:   "identify <key_type> <thing_key>",
 		Short: "Identify thing",
 		Long:  "Validates thing's key and returns its ID",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 1 {
+			if len(args) != 2 {
 				logUsage(cmd.Use)
 				return
 			}
 
-			i, err := sdk.IdentifyThing(args[0])
+			i, err := sdk.IdentifyThing(args[0], args[1])
 			if err != nil {
 				logError(err)
 				return

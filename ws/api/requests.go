@@ -3,10 +3,13 @@
 
 package api
 
-import "github.com/gorilla/websocket"
+import (
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/gorilla/websocket"
+)
 
 type getConnByKey struct {
-	thingKey string
+	apiutil.ThingKey
 	subtopic string
 	conn     *websocket.Conn
 }

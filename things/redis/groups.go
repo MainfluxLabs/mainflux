@@ -48,12 +48,15 @@ func (gc *groupCache) RemoveGroupEntities(ctx context.Context, groupID string) e
 			switch prefix {
 			case thingsByGroupPrefix:
 				gk := groupByThingIDKey(entityID)
-				kk := keyByThingIDKey(entityID)
-				removalKeys = append(removalKeys, gk, kk)
+				keysSetKey := keysByThingIDKey(entityID)
+				removalKeys = append(removalKeys, gk, keysSetKey)
 
-				if thingKey, err := gc.client.Get(ctx, kk).Result(); err == nil {
-					ik := idByThingKeyKey(thingKey)
-					removalKeys = append(removalKeys, ik)
+				if thingKeys, err := gc.client.SMembers(ctx, keysSetKey).Result(); err == nil {
+					for idx, keyVal := range thingKeys {
+						thingKeys[idx] = fmt.Sprintf("%s:%s", idByKeyPrefix, keyVal)
+					}
+
+					removalKeys = append(removalKeys, thingKeys...)
 				}
 			case profilesByGroupPrefix:
 				gk := groupByProfileIDKey(entityID)

@@ -17,7 +17,7 @@ type apiReq interface {
 type listSubscriptionsReq struct {
 	groupID      string
 	token        string
-	key          string
+	thingKey     apiutil.ThingKey
 	pageMetadata mqtt.PageMetadata
 }
 
@@ -26,8 +26,12 @@ func (req listSubscriptionsReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	if req.token == "" && req.key == "" {
+	if req.token == "" {
 		return apiutil.ErrBearerToken
+	}
+
+	if err := req.thingKey.Validate(); err != nil {
+		return err
 	}
 
 	if req.pageMetadata.Limit > maxLimitSize {

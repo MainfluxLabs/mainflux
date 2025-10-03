@@ -16,12 +16,13 @@ type Metadata map[string]interface{}
 // Thing represents a Mainflux thing. Each thing is owned by one user, and
 // it is assigned with the unique identifier and (temporary) access key.
 type Thing struct {
-	ID        string
-	GroupID   string
-	ProfileID string
-	Name      string
-	Key       string
-	Metadata  Metadata
+	ID          string
+	GroupID     string
+	ProfileID   string
+	Name        string
+	Key         string
+	KeyExternal string
+	Metadata    Metadata
 }
 
 // ThingsPage contains page related metadata as well as list of things that
@@ -30,6 +31,11 @@ type ThingsPage struct {
 	Total  uint64
 	Things []Thing
 }
+
+const (
+	KeyTypeInline   = "inline"
+	KeyTypeExternal = "external"
+)
 
 // ThingRepository specifies a thing persistence API.
 type ThingRepository interface {
@@ -50,8 +56,8 @@ type ThingRepository interface {
 	// by the specified user.
 	RetrieveByID(ctx context.Context, id string) (Thing, error)
 
-	// RetrieveByKey returns thing ID for given thing key.
-	RetrieveByKey(ctx context.Context, key string) (string, error)
+	// RetrieveByKey returns thing ID for given thing key based on its type.
+	RetrieveByKey(ctx context.Context, keyType, key string) (string, error)
 
 	// RetrieveByGroups retrieves the subset of things specified by given group ids.
 	RetrieveByGroups(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (ThingsPage, error)
@@ -71,18 +77,27 @@ type ThingRepository interface {
 
 	// RetrieveAll retrieves all things for all users with pagination.
 	RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (ThingsPage, error)
+
+	// UpdateExternalKey sets/updates the external key of the Thing identified by `thingID`.
+	UpdateExternalKey(ctx context.Context, key, thingID string) error
+
+	// RemoveExternalKey removes an external key from the thing identified by `thingID`.
+	RemoveExternalKey(ctx context.Context, thingID string) error
 }
 
 // ThingCache contains thing caching interface.
 type ThingCache interface {
-	// Save stores pair thing key, thing id.
-	Save(context.Context, string, string) error
+	// Save stores the pair (thing key, thing id).
+	Save(ctx context.Context, keyType, thingKey, thingID string) error
 
-	// ID returns thing ID for given key.
-	ID(context.Context, string) (string, error)
+	// ID returns thing ID for a given thing key.
+	ID(ctx context.Context, keyType, thingKey string) (string, error)
 
-	// Remove removes thing from cache.
-	Remove(context.Context, string) error
+	// RemoveThing removes thing from cache.
+	RemoveThing(context.Context, string) error
+
+	// RemoveKey removes a specific thing key from the cache.
+	RemoveKey(ctx context.Context, keyType, thingKey string) error
 
 	// SaveGroup stores group ID by given thing ID.
 	SaveGroup(context.Context, string, string) error

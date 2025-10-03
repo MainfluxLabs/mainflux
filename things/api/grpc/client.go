@@ -131,13 +131,15 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 	}
 }
 
-func (client grpcClient) GetPubConfByKey(ctx context.Context, req *protomfx.PubConfByKeyReq, _ ...grpc.CallOption) (*protomfx.PubConfByKeyRes, error) {
+func (client grpcClient) GetPubConfByKey(ctx context.Context, req *protomfx.ThingKey, _ ...grpc.CallOption) (*protomfx.PubConfByKeyRes, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	ar := pubConfByKeyReq{
-		key: req.GetKey(),
+	ar := thingKey{
+		key:     req.GetKey(),
+		keyType: req.GetKeyType(),
 	}
+
 	res, err := client.getPubConfByKey(ctx, ar)
 	if err != nil {
 		return nil, err
@@ -202,11 +204,11 @@ func (client grpcClient) CanThingAccessGroup(ctx context.Context, req *protomfx.
 	return &empty.Empty{}, er.err
 }
 
-func (client grpcClient) Identify(ctx context.Context, req *protomfx.Token, _ ...grpc.CallOption) (*protomfx.ThingID, error) {
+func (client grpcClient) Identify(ctx context.Context, req *protomfx.ThingKey, _ ...grpc.CallOption) (*protomfx.ThingID, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.identify(ctx, identifyReq{key: req.GetValue()})
+	res, err := client.identify(ctx, identifyReq{key: req.GetKey(), keyType: req.GetKeyType()})
 	if err != nil {
 		return nil, err
 	}
@@ -268,8 +270,8 @@ func (c grpcClient) GetGroupIDsByOrg(ctx context.Context, req *protomfx.OrgAcces
 }
 
 func encodeGetPubConfByKeyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(pubConfByKeyReq)
-	return &protomfx.PubConfByKeyReq{Key: req.key}, nil
+	req := grpcReq.(thingKey)
+	return &protomfx.ThingKey{Key: req.key, KeyType: req.keyType}, nil
 }
 
 func encodeGetConfigByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
@@ -299,7 +301,7 @@ func encodeThingAccessGroupRequest(_ context.Context, grpcReq interface{}) (inte
 
 func encodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(identifyReq)
-	return &protomfx.Token{Value: req.key}, nil
+	return &protomfx.ThingKey{Key: req.key, KeyType: req.keyType}, nil
 }
 
 func encodeGetGroupIDByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

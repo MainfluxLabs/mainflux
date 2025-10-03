@@ -139,7 +139,7 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, er
 
 	return listJSONMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
-		key:      apiutil.ExtractThingKey(r),
+		thingKey: apiutil.ExtractThingKey(r),
 		pageMeta: pageMeta,
 	}, nil
 }
@@ -171,7 +171,7 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (interface{}, e
 
 	return listSenMLMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
-		key:      apiutil.ExtractThingKey(r),
+		thingKey: apiutil.ExtractThingKey(r),
 		pageMeta: pageMeta,
 	}, nil
 }
@@ -198,8 +198,8 @@ func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (interface{}, 
 	}
 
 	req := deleteJSONMessagesReq{
-		token: apiutil.ExtractBearerToken(r),
-		key:   apiutil.ExtractThingKey(r),
+		token:    apiutil.ExtractBearerToken(r),
+		thingKey: apiutil.ExtractThingKey(r),
 		pageMeta: readers.JSONPageMetadata{
 			Subtopic: subtopic,
 			Protocol: protocol,
@@ -223,8 +223,8 @@ func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (interface{},
 	}
 
 	req := deleteSenMLMessagesReq{
-		token: apiutil.ExtractBearerToken(r),
-		key:   apiutil.ExtractThingKey(r),
+		token:    apiutil.ExtractBearerToken(r),
+		thingKey: apiutil.ExtractThingKey(r),
 		pageMeta: readers.SenMLPageMetadata{
 			From: from,
 			To:   to,

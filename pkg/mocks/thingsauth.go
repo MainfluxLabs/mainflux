@@ -30,7 +30,7 @@ func NewThingsServiceClient(profiles map[string]things.Profile, things map[strin
 	return &thingsServiceMock{profiles, things, groups}
 }
 
-func (svc thingsServiceMock) GetPubConfByKey(_ context.Context, in *protomfx.PubConfByKeyReq, _ ...grpc.CallOption) (*protomfx.PubConfByKeyRes, error) {
+func (svc thingsServiceMock) GetPubConfByKey(_ context.Context, in *protomfx.ThingKey, _ ...grpc.CallOption) (*protomfx.PubConfByKeyRes, error) {
 	key := in.GetKey()
 
 	if key == "invalid" {
@@ -110,8 +110,8 @@ func (svc thingsServiceMock) CanThingAccessGroup(_ context.Context, req *protomf
 	return &empty.Empty{}, errors.ErrAuthorization
 }
 
-func (svc thingsServiceMock) Identify(_ context.Context, token *protomfx.Token, _ ...grpc.CallOption) (*protomfx.ThingID, error) {
-	if th, ok := svc.things[token.GetValue()]; ok {
+func (svc thingsServiceMock) Identify(_ context.Context, key *protomfx.ThingKey, _ ...grpc.CallOption) (*protomfx.ThingID, error) {
+	if th, ok := svc.things[key.GetKey()]; ok {
 		return &protomfx.ThingID{Value: th.ID}, nil
 	}
 	return nil, errors.ErrAuthentication

@@ -14,10 +14,11 @@ const (
 )
 
 type createThingReq struct {
-	Name     string                 `json:"name,omitempty"`
-	Key      string                 `json:"key,omitempty"`
-	ID       string                 `json:"id,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Name        string                 `json:"name,omitempty"`
+	Key         string                 `json:"key,omitempty"`
+	KeyExternal string                 `json:"key_external,omitempty"`
+	ID          string                 `json:"id,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type createThingsReq struct {
@@ -129,12 +130,12 @@ func (req updateKeyReq) validate() error {
 }
 
 type viewMetadataReq struct {
-	key string
+	apiutil.ThingKey
 }
 
 func (req viewMetadataReq) validate() error {
-	if req.key == "" {
-		return apiutil.ErrBearerKey
+	if err := req.ThingKey.Validate(); err != nil {
+		return err
 	}
 
 	return nil
@@ -299,9 +300,11 @@ func (req restoreThingsByGroupReq) validate() error {
 	if req.id == "" {
 		return apiutil.ErrMissingGroupID
 	}
+
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
+
 	if len(req.Things) == 0 {
 		return apiutil.ErrEmptyList
 	}
@@ -342,6 +345,7 @@ func (req restoreReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
+	// FIXME: Why do we only validate only the existence of Things in the restore request?
 	if len(req.Things) == 0 {
 		return apiutil.ErrEmptyList
 	}
@@ -350,12 +354,30 @@ func (req restoreReq) validate() error {
 }
 
 type identifyReq struct {
-	Token string `json:"token"`
+	apiutil.ThingKey
 }
 
 func (req identifyReq) validate() error {
-	if req.Token == "" {
+	if err := req.ThingKey.Validate(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type updateExternalKeyReq struct {
+	thingID string
+	Key     string `json:"key"`
+	token   string
+}
+
+func (req updateExternalKeyReq) validate() error {
+	if req.token == "" {
 		return apiutil.ErrBearerToken
+	}
+
+	if req.Key == "" {
+		return apiutil.ErrMissingExternalThingKey
 	}
 
 	return nil

@@ -193,17 +193,63 @@ func (trm *thingRepositoryMock) Remove(_ context.Context, ids ...string) error {
 	return nil
 }
 
-func (trm *thingRepositoryMock) RetrieveByKey(_ context.Context, key string) (string, error) {
+func (trm *thingRepositoryMock) RetrieveByKey(_ context.Context, keyType, key string) (string, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
 	for _, thing := range trm.things {
-		if thing.Key == key {
+		if keyType == things.KeyTypeInline && thing.Key == key {
+			return thing.ID, nil
+		}
+
+		if keyType == things.KeyTypeExternal && thing.KeyExternal == key {
 			return thing.ID, nil
 		}
 	}
 
 	return "", dbutil.ErrNotFound
+}
+
+func (trm *thingRepositoryMock) UpdateExternalKey(_ context.Context, key, thingID string) error {
+	trm.mu.Lock()
+	defer trm.mu.Unlock()
+
+	if _, ok := trm.things[thingID]; !ok {
+		return dbutil.ErrConflict
+	}
+
+	for _, thing := range trm.things {
+		if thing.KeyExternal == key {
+			return dbutil.ErrConflict
+		}
+	}
+
+	if key == "" {
+		return dbutil.ErrMalformedEntity
+	}
+
+	thing := trm.things[thingID]
+	thing.KeyExternal = key
+
+	trm.things[thingID] = thing
+
+	return nil
+}
+
+func (trm *thingRepositoryMock) RemoveExternalKey(_ context.Context, thingID string) error {
+	trm.mu.Lock()
+	defer trm.mu.Unlock()
+
+	if _, ok := trm.things[thingID]; !ok {
+		return dbutil.ErrNotFound
+	}
+
+	thing := trm.things[thingID]
+	thing.KeyExternal = ""
+
+	trm.things[thingID] = thing
+
+	return nil
 }
 
 func (trm *thingRepositoryMock) BackupAll(_ context.Context) ([]things.Thing, error) {

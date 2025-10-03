@@ -24,9 +24,12 @@ servers:
           - '1883'
           - '8883'
       username:
-        description: Thing ID.
+        enum:
+          - 'inline'
+          - 'external'
+        description: Thing key type.
       password:
-        description: Thing Key corresponding to the Thing ID.
+        description: Thing key.
 
 channels:
   /messages/{subtopic}:

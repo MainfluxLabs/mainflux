@@ -18,13 +18,13 @@ message Message {
 }
 
 service ThingsService {
-    rpc GetPubConfByKey(PubConfByKeyReq) returns (PubConfByKeyRes) {}
+    rpc GetPubConfByKey(ThingKey) returns (PubConfByKeyRes) {}
     rpc GetConfigByThingID(ThingID) returns (ConfigByThingIDRes){}
     rpc CanUserAccessThing(UserAccessReq) returns (google.protobuf.Empty) {}
     rpc CanUserAccessProfile(UserAccessReq) returns (google.protobuf.Empty) {}
     rpc CanUserAccessGroup(UserAccessReq) returns (google.protobuf.Empty) {}
     rpc CanThingAccessGroup(ThingAccessReq) returns (google.protobuf.Empty) {}
-    rpc Identify(Token) returns (ThingID) {}
+    rpc Identify(ThingKey) returns (ThingID) {}
     rpc GetGroupIDByThingID(ThingID) returns (GroupID) {}
     rpc GetGroupIDByProfileID(ProfileID) returns (GroupID) {}
     rpc GetProfileIDByThingID(ThingID) returns (ProfileID) {}
@@ -53,8 +53,9 @@ message PublishReq {
     Message message = 1;
 }
 
-message PubConfByKeyReq {
+message ThingKey {
     string key = 1;
+    string keyType = 2;
 }
 
 message PubConfByKeyRes {

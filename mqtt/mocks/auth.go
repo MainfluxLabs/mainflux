@@ -3,6 +3,7 @@ package mocks
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -13,15 +14,16 @@ import (
 var _ protomfx.AuthServiceClient = (*authServiceMock)(nil)
 
 type MockClient struct {
-	key   map[string]string
-	conns map[string]string
+	key         map[string]string
+	keyExternal map[string]string
+	conns       map[string]string
 }
 
-func NewClient(key map[string]string, conns map[string]string) auth.Client {
-	return MockClient{key: key, conns: conns}
+func NewClient(key map[string]string, keyExternal map[string]string, conns map[string]string) auth.Client {
+	return MockClient{key: key, keyExternal: keyExternal, conns: conns}
 }
 
-func (cli MockClient) GetPubConfByKey(ctx context.Context, key string) (protomfx.PubConfByKeyRes, error) {
+func (cli MockClient) GetPubConfByKey(ctx context.Context, _ string, key string) (protomfx.PubConfByKeyRes, error) {
 	thID, ok := cli.key[key]
 	if !ok {
 		return protomfx.PubConfByKeyRes{}, errors.ErrAuthentication
@@ -34,10 +36,20 @@ func (cli MockClient) GetPubConfByKey(ctx context.Context, key string) (protomfx
 	return *pc, nil
 }
 
-func (cli MockClient) Identify(ctx context.Context, thingKey string) (string, error) {
-	if id, ok := cli.key[thingKey]; ok {
-		return id, nil
+func (cli MockClient) Identify(ctx context.Context, keyType, thingKey string) (string, error) {
+	switch keyType {
+	case apiutil.ThingKeyTypeInline:
+		if id, ok := cli.key[thingKey]; ok {
+			return id, nil
+		}
+	case apiutil.ThingKeyTypeExternal:
+		if id, ok := cli.keyExternal[thingKey]; ok {
+			return id, nil
+		}
+	default:
+		return "", apiutil.ErrInvalidThingKeyType
 	}
+
 	return "", errors.ErrAuthentication
 }
 
