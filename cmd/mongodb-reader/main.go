@@ -91,8 +91,8 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	mongodbReaderHttpTracer, readersHttpCloser := jaeger.Init("mongodb_reader_http", cfg.jaegerURL, logger)
-	defer readersHttpCloser.Close()
+	mongodbHttpTracer, mongodbHttpCloser := jaeger.Init("mongodb_reader_http", cfg.jaegerURL, logger)
+	defer mongodbHttpCloser.Close()
 
 	conn := clientsgrpc.Connect(cfg.thingsConfig, logger)
 	defer conn.Close()
@@ -118,7 +118,7 @@ func main() {
 	svc := newService(db, dbTracer, auth, tc, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, api.MakeHandler(svc, mongodbReaderHttpTracer, svcName, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, api.MakeHandler(svc, mongodbHttpTracer, svcName, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
