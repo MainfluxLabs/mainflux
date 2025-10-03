@@ -6,7 +6,6 @@ package api
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
@@ -100,11 +99,11 @@ func backupJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 		var data []byte
 		switch req.convertFormat {
 		case jsonFormat:
-			if data, err = apiutil.GenerateJSON(page.MessagesPage); err != nil {
+			if data, err = GenerateJSON(page.MessagesPage); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
 		default:
-			if data, err = apiutil.GenerateCSVFromJSON(page.MessagesPage); err != nil {
+			if data, err = GenerateCSVFromJSON(page.MessagesPage); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
 		}
@@ -131,11 +130,11 @@ func backupSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 		var data []byte
 		switch req.convertFormat {
 		case jsonFormat:
-			if data, err = apiutil.GenerateJSON(page.MessagesPage); err != nil {
+			if data, err = GenerateJSON(page.MessagesPage); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
 		default:
-			if data, err = apiutil.GenerateCSVFromSenML(page.MessagesPage); err != nil {
+			if data, err = GenerateCSVFromSenML(page.MessagesPage); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
 		}
@@ -161,11 +160,11 @@ func restoreJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 
 		switch req.fileType {
 		case jsonFormat:
-			if jsonMessages, err = apiutil.ConvertJSONToJSONMessages(req.Messages); err != nil {
+			if jsonMessages, err = ConvertJSONToJSONMessages(req.Messages); err != nil {
 				return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 			}
 		default:
-			if jsonMessages, err = apiutil.ConvertCSVToJSONMessages(req.Messages); err != nil {
+			if jsonMessages, err = ConvertCSVToJSONMessages(req.Messages); err != nil {
 				return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 			}
 		}
@@ -197,11 +196,11 @@ func restoreSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 
 		switch req.fileType {
 		case jsonFormat:
-			if senmlMessages, err = apiutil.ConvertJSONToSenMLMessages(req.Messages); err != nil {
+			if senmlMessages, err = ConvertJSONToSenMLMessages(req.Messages); err != nil {
 				return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 			}
 		default:
-			if senmlMessages, err = apiutil.ConvertCSVToSenMLMessages(req.Messages); err != nil {
+			if senmlMessages, err = ConvertCSVToSenMLMessages(req.Messages); err != nil {
 				return nil, errors.Wrap(errors.ErrRestoreMessages, err)
 			}
 		}
@@ -217,4 +216,3 @@ func restoreSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 		return restoreMessagesRes{}, nil
 	}
 }
-
