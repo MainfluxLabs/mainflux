@@ -6,6 +6,7 @@ package readers
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
@@ -15,8 +16,6 @@ const (
 	senmlFormat = "senml"
 	csvFormat   = "csv"
 	rootSubject = "root"
-
-	Viewer = "viewer"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -66,7 +65,7 @@ func New(auth protomfx.AuthServiceClient, things protomfx.ThingsServiceClient, j
 func (rs *readersService) ListJSONMessages(ctx context.Context, token, key string, rpm JSONPageMetadata) (JSONMessagesPage, error) {
 	switch {
 	case rpm.Publisher != "":
-		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: Viewer})
+		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: auth.Viewer})
 		if err != nil {
 			return JSONMessagesPage{}, err
 		}
@@ -88,7 +87,7 @@ func (rs *readersService) ListJSONMessages(ctx context.Context, token, key strin
 func (rs *readersService) ListSenMLMessages(ctx context.Context, token, key string, rpm SenMLPageMetadata) (SenMLMessagesPage, error) {
 	switch {
 	case rpm.Publisher != "":
-		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: Viewer})
+		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: auth.Viewer})
 		if err != nil {
 			return SenMLMessagesPage{}, err
 		}
@@ -110,7 +109,7 @@ func (rs *readersService) ListSenMLMessages(ctx context.Context, token, key stri
 func (rs *readersService) BackupJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) (JSONMessagesPage, error) {
 	switch {
 	case rpm.Publisher != "":
-		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: Viewer})
+		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: auth.Viewer})
 		if err != nil {
 			return JSONMessagesPage{}, err
 		}
@@ -126,7 +125,7 @@ func (rs *readersService) BackupJSONMessages(ctx context.Context, token string, 
 func (rs *readersService) BackupSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) (SenMLMessagesPage, error) {
 	switch {
 	case rpm.Publisher != "":
-		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: Viewer})
+		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: auth.Viewer})
 		if err != nil {
 			return SenMLMessagesPage{}, err
 		}
