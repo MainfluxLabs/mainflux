@@ -32,6 +32,7 @@ func (ir invitesRepository) SavePlatformInvite(ctx context.Context, invites ...u
 	if err != nil {
 		errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
+	defer tx.Rollback()
 
 	qIns := `
 		INSERT INTO platform_invites (id, invitee_email, created_at, expires_at, state)	
@@ -40,13 +41,11 @@ func (ir invitesRepository) SavePlatformInvite(ctx context.Context, invites ...u
 
 	for _, invite := range invites {
 		if err := ir.syncPlatformInviteStateByEmail(ctx, invite.InviteeEmail); err != nil {
-			tx.Rollback()
 			return err
 		}
 
 		dbInvite := toDBPlatformInvite(invite)
 		if _, err := tx.NamedExecContext(ctx, qIns, dbInvite); err != nil {
-			tx.Rollback()
 
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {

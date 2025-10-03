@@ -31,13 +31,13 @@ func (mr groupMembershipsRepository) Save(ctx context.Context, gms ...things.Gro
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	q := `INSERT INTO group_memberships (member_id, group_id, role) VALUES (:member_id, :group_id, :role);`
 
 	for _, g := range gms {
 		dbgm := toDBGroupMembership(g)
 		if _, err := mr.db.NamedExecContext(ctx, q, dbgm); err != nil {
-			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
 				switch pgErr.Code {

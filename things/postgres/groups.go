@@ -36,6 +36,7 @@ func (gr groupRepository) Save(ctx context.Context, gs ...things.Group) ([]thing
 	if err != nil {
 		return []things.Group{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
+	defer tx.Rollback()
 
 	q := `INSERT INTO groups (name, description, id, org_id, metadata, created_at, updated_at)
 		  VALUES (:name, :description, :id, :org_id, :metadata, :created_at, :updated_at)`
@@ -43,12 +44,10 @@ func (gr groupRepository) Save(ctx context.Context, gs ...things.Group) ([]thing
 	for _, group := range gs {
 		dbg, err := toDBGroup(group)
 		if err != nil {
-			tx.Rollback()
 			return []things.Group{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 
 		if _, err := tx.NamedExecContext(ctx, q, dbg); err != nil {
-			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
 				switch pgErr.Code {

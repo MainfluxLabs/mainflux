@@ -34,6 +34,7 @@ func (rr ruleRepository) Save(ctx context.Context, rls ...rules.Rule) ([]rules.R
 	if err != nil {
 		return []rules.Rule{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
+	defer tx.Rollback()
 
 	q := `INSERT INTO rules (id, profile_id, group_id, name, description, conditions, operator, actions) VALUES (:id, :profile_id, :group_id, :name, :description, :conditions, :operator, :actions);`
 
@@ -44,7 +45,6 @@ func (rr ruleRepository) Save(ctx context.Context, rls ...rules.Rule) ([]rules.R
 		}
 
 		if _, err := tx.NamedExecContext(ctx, q, dbr); err != nil {
-			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
 				switch pgErr.Code {

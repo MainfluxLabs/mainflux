@@ -31,6 +31,7 @@ func (ir invitesRepository) SaveOrgInvite(ctx context.Context, invites ...auth.O
 	if err != nil {
 		errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
+	defer tx.Rollback()
 
 	qIns := `
 		INSERT INTO org_invites (id, invitee_id, inviter_id, org_id, invitee_role, created_at, expires_at, state)	
@@ -39,14 +40,11 @@ func (ir invitesRepository) SaveOrgInvite(ctx context.Context, invites ...auth.O
 
 	for _, invite := range invites {
 		if err := ir.syncOrgInviteStateByInvite(ctx, invite); err != nil {
-			tx.Rollback()
 			return err
 		}
 
 		dbInvite := toDBOrgInvite(invite)
 		if _, err := tx.NamedExecContext(ctx, qIns, dbInvite); err != nil {
-			tx.Rollback()
-
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
 				switch pgErr.Code {
