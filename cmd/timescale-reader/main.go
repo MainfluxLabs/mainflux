@@ -97,8 +97,8 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	timescaleReaderHttpTracer, timescaleReaderHttpCloser := jaeger.Init("postgres_reader_http", cfg.jaegerURL, logger)
-	defer timescaleReaderHttpCloser.Close()
+	timescaleHttpTracer, timescaleHttpCloser := jaeger.Init("timescale_http", cfg.jaegerURL, logger)
+	defer timescaleHttpCloser.Close()
 
 	conn := clientsgrpc.Connect(cfg.thingsConfig, logger)
 	defer conn.Close()
@@ -118,13 +118,13 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	dbTracer, dbCloser := jaeger.Init("messages_timescale_db", cfg.jaegerURL, logger)
+	dbTracer, dbCloser := jaeger.Init("timescale_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
 	svc := newService(db, dbTracer, auth, tc, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, api.MakeHandler(svc, timescaleReaderHttpTracer, svcName, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, api.MakeHandler(svc, timescaleHttpTracer, svcName, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
