@@ -1,4 +1,4 @@
-package apiutil
+package api
 
 import (
 	"bytes"
@@ -35,11 +35,6 @@ var jsonHeader = []string{
 	"protocol",
 	"payload",
 }
-
-const (
-	defTable  = "messages"
-	jsonTable = "json"
-)
 
 func GenerateCSVFromSenML(page readers.MessagesPage) ([]byte, error) {
 	var buf bytes.Buffer
