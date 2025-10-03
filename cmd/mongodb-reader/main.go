@@ -91,7 +91,7 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	mongodbHttpTracer, mongodbHttpCloser := jaeger.Init("mongodb_reader_http", cfg.jaegerURL, logger)
+	mongodbHttpTracer, mongodbHttpCloser := jaeger.Init("mongodb_http", cfg.jaegerURL, logger)
 	defer mongodbHttpCloser.Close()
 
 	conn := clientsgrpc.Connect(cfg.thingsConfig, logger)
