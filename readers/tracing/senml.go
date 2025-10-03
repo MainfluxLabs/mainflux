@@ -11,54 +11,54 @@ import (
 )
 
 const (
-	senmlRetrieveMessages = "senml_retrieve_messages"
-	senmlBackupMessaages  = "senml_backup_messages"
-	senmlRestoreMessages  = "senml_restore_messages"
-	senmlRemoveMessages   = "senml_remove_messages"
+	retrieveSenMLMessages = "retrieve_senml_messages"
+	backupSenMLMessaages  = "backup_senml_messages"
+	restoreSenMLMessages  = "restore_senml_messages"
+	removeSenMLMessages   = "remove_senml_messages"
 )
 
-var _ readers.SenMLMessageRepository = (*senmlMessageRepositoryMiddleware)(nil)
+var _ readers.SenMLMessageRepository = (*senmlRepositoryMiddleware)(nil)
 
-type senmlMessageRepositoryMiddleware struct {
-	tracer          opentracing.Tracer
-	senmlRepository readers.SenMLMessageRepository
+type senmlRepositoryMiddleware struct {
+	tracer opentracing.Tracer
+	repo   readers.SenMLMessageRepository
 }
 
-func SenMLMessageRepositoryMiddleware(tracer opentracing.Tracer, senmlRepository readers.SenMLMessageRepository) readers.SenMLMessageRepository {
-	return senmlMessageRepositoryMiddleware{
-		tracer:          tracer,
-		senmlRepository: senmlRepository,
+func SenMLRepositoryMiddleware(tracer opentracing.Tracer, repo readers.SenMLMessageRepository) readers.SenMLMessageRepository {
+	return senmlRepositoryMiddleware{
+		tracer: tracer,
+		repo:   repo,
 	}
 }
 
-func (srm senmlMessageRepositoryMiddleware) Retrieve(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
-	span := createSpan(ctx, srm.tracer, senmlRetrieveMessages)
+func (srm senmlRepositoryMiddleware) Retrieve(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
+	span := createSpan(ctx, srm.tracer, retrieveSenMLMessages)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return srm.senmlRepository.Retrieve(ctx, rpm)
+	return srm.repo.Retrieve(ctx, rpm)
 }
 
-func (srm senmlMessageRepositoryMiddleware) Backup(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
-	span := createSpan(ctx, srm.tracer, senmlBackupMessaages)
+func (srm senmlRepositoryMiddleware) Backup(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
+	span := createSpan(ctx, srm.tracer, backupSenMLMessaages)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return srm.senmlRepository.Backup(ctx, rpm)
+	return srm.repo.Backup(ctx, rpm)
 }
 
-func (srm senmlMessageRepositoryMiddleware) Restore(ctx context.Context, messages ...readers.Message) error {
-	span := createSpan(ctx, srm.tracer, senmlRestoreMessages)
+func (srm senmlRepositoryMiddleware) Restore(ctx context.Context, messages ...readers.Message) error {
+	span := createSpan(ctx, srm.tracer, restoreSenMLMessages)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return srm.senmlRepository.Restore(ctx, messages...)
+	return srm.repo.Restore(ctx, messages...)
 }
 
-func (srm senmlMessageRepositoryMiddleware) Remove(ctx context.Context, rpm readers.SenMLPageMetadata) error {
-	span := createSpan(ctx, srm.tracer, senmlRemoveMessages)
+func (srm senmlRepositoryMiddleware) Remove(ctx context.Context, rpm readers.SenMLPageMetadata) error {
+	span := createSpan(ctx, srm.tracer, removeSenMLMessages)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return srm.senmlRepository.Remove(ctx, rpm)
+	return srm.repo.Remove(ctx, rpm)
 }

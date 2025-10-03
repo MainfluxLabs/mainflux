@@ -11,56 +11,56 @@ import (
 )
 
 const (
-	jsonRetrieveMessages = "json_retrieve_messages"
-	jsonBackupMessaages  = "json_backup_messages"
-	jsonRestoreMessages  = "json_restore_messages"
-	jsonRemoveMessages   = "json_remove_messages"
+	retrieveJSONMessages = "retrieve_json_messages"
+	backupJSONMessaages  = "backup_json_messages"
+	restoreJSONMessages  = "restore_json_messages"
+	removeJSONMessages   = "remove_json_messages"
 )
 
-var _ readers.JSONMessageRepository = (*jsonMessageRepositoryMiddleware)(nil)
+var _ readers.JSONMessageRepository = (*jsonRepositoryMiddleware)(nil)
 
-type jsonMessageRepositoryMiddleware struct {
-	tracer         opentracing.Tracer
-	jsonRepository readers.JSONMessageRepository
+type jsonRepositoryMiddleware struct {
+	tracer opentracing.Tracer
+	repo   readers.JSONMessageRepository
 }
 
-func JSONMessageRepositoryMiddleware(tracer opentracing.Tracer, jsonRepository readers.JSONMessageRepository) readers.JSONMessageRepository {
-	return jsonMessageRepositoryMiddleware{
-		tracer:         tracer,
-		jsonRepository: jsonRepository,
+func JSONRepositoryMiddleware(tracer opentracing.Tracer, repo readers.JSONMessageRepository) readers.JSONMessageRepository {
+	return jsonRepositoryMiddleware{
+		tracer: tracer,
+		repo:   repo,
 	}
 }
 
-func (jrm jsonMessageRepositoryMiddleware) Retrieve(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
-	span := createSpan(ctx, jrm.tracer, jsonRetrieveMessages)
+func (jrm jsonRepositoryMiddleware) Retrieve(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
+	span := createSpan(ctx, jrm.tracer, retrieveJSONMessages)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return jrm.jsonRepository.Retrieve(ctx, rpm)
+	return jrm.repo.Retrieve(ctx, rpm)
 }
 
-func (jrm jsonMessageRepositoryMiddleware) Backup(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
-	span := createSpan(ctx, jrm.tracer, jsonBackupMessaages)
+func (jrm jsonRepositoryMiddleware) Backup(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
+	span := createSpan(ctx, jrm.tracer, backupJSONMessaages)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return jrm.jsonRepository.Backup(ctx, rpm)
+	return jrm.repo.Backup(ctx, rpm)
 }
 
-func (jrm jsonMessageRepositoryMiddleware) Restore(ctx context.Context, messages ...readers.Message) error {
-	span := createSpan(ctx, jrm.tracer, jsonRestoreMessages)
+func (jrm jsonRepositoryMiddleware) Restore(ctx context.Context, messages ...readers.Message) error {
+	span := createSpan(ctx, jrm.tracer, restoreJSONMessages)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return jrm.jsonRepository.Restore(ctx, messages...)
+	return jrm.repo.Restore(ctx, messages...)
 }
 
-func (jrm jsonMessageRepositoryMiddleware) Remove(ctx context.Context, rpm readers.JSONPageMetadata) error {
-	span := createSpan(ctx, jrm.tracer, jsonRemoveMessages)
+func (jrm jsonRepositoryMiddleware) Remove(ctx context.Context, rpm readers.JSONPageMetadata) error {
+	span := createSpan(ctx, jrm.tracer, removeJSONMessages)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return jrm.jsonRepository.Remove(ctx, rpm)
+	return jrm.repo.Remove(ctx, rpm)
 }
 
 func createSpan(ctx context.Context, tracer opentracing.Tracer, opName string) opentracing.Span {
