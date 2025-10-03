@@ -15,8 +15,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/readers"
+	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
+	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -43,7 +45,7 @@ const (
 	defFormat              = "messages"
 )
 
-func MakeHandler(svc readers.Service, svcName string, logger logger.Logger) http.Handler {
+func MakeHandler(svc readers.Service, tracer opentracing.Tracer, svcName string, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(encodeError),
 	}
@@ -51,56 +53,56 @@ func MakeHandler(svc readers.Service, svcName string, logger logger.Logger) http
 	mux := bone.New()
 
 	mux.Get("/json", kithttp.NewServer(
-		listJSONMessagesEndpoint(svc),
+		kitot.TraceServer(tracer, "list_json_messages")(listJSONMessagesEndpoint(svc)),
 		decodeListJSONMessages,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/senml", kithttp.NewServer(
-		listSenMLMessagesEndpoint(svc),
+		kitot.TraceServer(tracer, "list_senml_messages")(listSenMLMessagesEndpoint(svc)),
 		decodeListSenMLMessages,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/json", kithttp.NewServer(
-		deleteJSONMessagesEndpoint(svc),
+		kitot.TraceServer(tracer, "delete_json_messages")(deleteJSONMessagesEndpoint(svc)),
 		decodeDeleteJSONMessages,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/senml", kithttp.NewServer(
-		deleteSenMLMessagesEndpoint(svc),
+		kitot.TraceServer(tracer, "delete_senml_messages")(deleteSenMLMessagesEndpoint(svc)),
 		decodeDeleteSenMLMessages,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/json/backup", kithttp.NewServer(
-		backupJSONMessagesEndpoint(svc),
+		kitot.TraceServer(tracer, "backup_json_messages")(backupJSONMessagesEndpoint(svc)),
 		decodeBackupJSONMessages,
 		encodeBackupFileResponse,
 		opts...,
 	))
 
 	mux.Get("/senml/backup", kithttp.NewServer(
-		backupSenMLMessagesEndpoint(svc),
+		kitot.TraceServer(tracer, "backup_senml_messages")(backupSenMLMessagesEndpoint(svc)),
 		decodeBackupSenMLMessages,
 		encodeBackupFileResponse,
 		opts...,
 	))
 
 	mux.Post("/json/restore", kithttp.NewServer(
-		restoreJSONMessagesEndpoint(svc),
+		kitot.TraceServer(tracer, "restore_json_messages")(restoreJSONMessagesEndpoint(svc)),
 		decodeRestoreMessages,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/senml/restore", kithttp.NewServer(
-		restoreSenMLMessagesEndpoint(svc),
+		kitot.TraceServer(tracer, "restore_senml_messages")(restoreSenMLMessagesEndpoint(svc)),
 		decodeRestoreMessages,
 		encodeResponse,
 		opts...,

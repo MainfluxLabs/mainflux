@@ -24,6 +24,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/readers/api"
 	rmocks "github.com/MainfluxLabs/mainflux/readers/mocks"
 	"github.com/MainfluxLabs/mainflux/users"
+	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -64,7 +65,7 @@ func newServer(jsonMessages []mfjson.Message, senmlMessaages []senml.Message, tc
 	senmlRepo := rmocks.NewSenMLRepository("", fromSenml(senmlMessaages))
 	svc := readers.New(ac, tc, jsonRepo, senmlRepo)
 
-	mux := api.MakeHandler(svc, svcName, logger)
+	mux := api.MakeHandler(svc, mocktracer.New(), svcName, logger)
 
 	id, _ := idProvider.ID()
 	user.ID = id
