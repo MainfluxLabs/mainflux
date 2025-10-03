@@ -15,6 +15,8 @@ const (
 	senmlFormat = "senml"
 	csvFormat   = "csv"
 	rootSubject = "root"
+
+	Viewer = "viewer"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -63,6 +65,11 @@ func New(auth protomfx.AuthServiceClient, things protomfx.ThingsServiceClient, j
 
 func (rs *readersService) ListJSONMessages(ctx context.Context, token, key string, rpm JSONPageMetadata) (JSONMessagesPage, error) {
 	switch {
+	case rpm.Publisher != "":
+		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: Viewer})
+		if err != nil {
+			return JSONMessagesPage{}, err
+		}
 	case key != "":
 		pc, err := rs.getPubConfByKey(ctx, key)
 		if err != nil {
@@ -80,6 +87,11 @@ func (rs *readersService) ListJSONMessages(ctx context.Context, token, key strin
 
 func (rs *readersService) ListSenMLMessages(ctx context.Context, token, key string, rpm SenMLPageMetadata) (SenMLMessagesPage, error) {
 	switch {
+	case rpm.Publisher != "":
+		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: Viewer})
+		if err != nil {
+			return SenMLMessagesPage{}, err
+		}
 	case key != "":
 		pc, err := rs.getPubConfByKey(ctx, key)
 		if err != nil {
@@ -96,7 +108,13 @@ func (rs *readersService) ListSenMLMessages(ctx context.Context, token, key stri
 }
 
 func (rs *readersService) BackupJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) (JSONMessagesPage, error) {
-	if rpm.Publisher == "" {
+	switch {
+	case rpm.Publisher != "":
+		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: Viewer})
+		if err != nil {
+			return JSONMessagesPage{}, err
+		}
+	default:
 		if err := rs.isAdmin(ctx, token); err != nil {
 			return JSONMessagesPage{}, err
 		}
@@ -106,7 +124,13 @@ func (rs *readersService) BackupJSONMessages(ctx context.Context, token string, 
 }
 
 func (rs *readersService) BackupSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) (SenMLMessagesPage, error) {
-	if rpm.Publisher == "" {
+	switch {
+	case rpm.Publisher != "":
+		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: Viewer})
+		if err != nil {
+			return SenMLMessagesPage{}, err
+		}
+	default:
 		if err := rs.isAdmin(ctx, token); err != nil {
 			return SenMLMessagesPage{}, err
 		}
