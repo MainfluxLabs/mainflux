@@ -9,6 +9,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/opentracing/opentracing-go"
 )
 
@@ -38,7 +39,7 @@ func OrgRepositoryMiddleware(tracer opentracing.Tracer, gr auth.OrgRepository) a
 }
 
 func (orm orgRepositoryMiddleware) Save(ctx context.Context, orgs ...auth.Org) error {
-	span := createSpan(ctx, orm.tracer, saveOrg)
+	span := dbutil.CreateSpan(ctx, orm.tracer, saveOrg)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -46,7 +47,7 @@ func (orm orgRepositoryMiddleware) Save(ctx context.Context, orgs ...auth.Org) e
 }
 
 func (orm orgRepositoryMiddleware) Update(ctx context.Context, org auth.Org) error {
-	span := createSpan(ctx, orm.tracer, updateOrg)
+	span := dbutil.CreateSpan(ctx, orm.tracer, updateOrg)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -54,7 +55,7 @@ func (orm orgRepositoryMiddleware) Update(ctx context.Context, org auth.Org) err
 }
 
 func (orm orgRepositoryMiddleware) Remove(ctx context.Context, ownerID string, orgIDs ...string) error {
-	span := createSpan(ctx, orm.tracer, deleteOrg)
+	span := dbutil.CreateSpan(ctx, orm.tracer, deleteOrg)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -62,7 +63,7 @@ func (orm orgRepositoryMiddleware) Remove(ctx context.Context, ownerID string, o
 }
 
 func (orm orgRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (auth.Org, error) {
-	span := createSpan(ctx, orm.tracer, retrieveOrgByID)
+	span := dbutil.CreateSpan(ctx, orm.tracer, retrieveOrgByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -70,7 +71,7 @@ func (orm orgRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) 
 }
 
 func (orm orgRepositoryMiddleware) BackupAll(ctx context.Context) ([]auth.Org, error) {
-	span := createSpan(ctx, orm.tracer, backupAllOrgs)
+	span := dbutil.CreateSpan(ctx, orm.tracer, backupAllOrgs)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -78,7 +79,7 @@ func (orm orgRepositoryMiddleware) BackupAll(ctx context.Context) ([]auth.Org, e
 }
 
 func (orm orgRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
-	span := createSpan(ctx, orm.tracer, retrieveAllOrgs)
+	span := dbutil.CreateSpan(ctx, orm.tracer, retrieveAllOrgs)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -86,7 +87,7 @@ func (orm orgRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.P
 }
 
 func (orm orgRepositoryMiddleware) RetrieveByMember(ctx context.Context, memberID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
-	span := createSpan(ctx, orm.tracer, retrieveOrgsByMember)
+	span := dbutil.CreateSpan(ctx, orm.tracer, retrieveOrgsByMember)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

@@ -3,6 +3,7 @@ package tracing
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/users"
 	opentracing "github.com/opentracing/opentracing-go"
 )
@@ -28,7 +29,7 @@ func VerificationRepositoryMiddleware(repo users.EmailVerificationRepository, tr
 }
 
 func (evrm verificationRepositoryMiddleware) Save(ctx context.Context, verification users.EmailVerification) (string, error) {
-	span := createSpan(ctx, evrm.tracer, saveVerification)
+	span := dbutil.CreateSpan(ctx, evrm.tracer, saveVerification)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -36,7 +37,7 @@ func (evrm verificationRepositoryMiddleware) Save(ctx context.Context, verificat
 }
 
 func (evrm verificationRepositoryMiddleware) RetrieveByToken(ctx context.Context, confirmationToken string) (users.EmailVerification, error) {
-	span := createSpan(ctx, evrm.tracer, retrieveVerificationByToken)
+	span := dbutil.CreateSpan(ctx, evrm.tracer, retrieveVerificationByToken)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -44,7 +45,7 @@ func (evrm verificationRepositoryMiddleware) RetrieveByToken(ctx context.Context
 }
 
 func (evrm verificationRepositoryMiddleware) Remove(ctx context.Context, confirmationToken string) error {
-	span := createSpan(ctx, evrm.tracer, removeVerification)
+	span := dbutil.CreateSpan(ctx, evrm.tracer, removeVerification)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

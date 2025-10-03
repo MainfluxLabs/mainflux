@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/opentracing/opentracing-go"
 )
@@ -37,7 +38,7 @@ func GroupMembershipsRepositoryMiddleware(tracer opentracing.Tracer, repo things
 }
 
 func (gmr groupMembershipsRepositoryMiddleware) Save(ctx context.Context, gms ...things.GroupMembership) error {
-	span := createSpan(ctx, gmr.tracer, saveGroupMemberships)
+	span := dbutil.CreateSpan(ctx, gmr.tracer, saveGroupMemberships)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -45,7 +46,7 @@ func (gmr groupMembershipsRepositoryMiddleware) Save(ctx context.Context, gms ..
 }
 
 func (gmr groupMembershipsRepositoryMiddleware) RetrieveRole(ctx context.Context, gm things.GroupMembership) (string, error) {
-	span := createSpan(ctx, gmr.tracer, retrieveRole)
+	span := dbutil.CreateSpan(ctx, gmr.tracer, retrieveRole)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -53,7 +54,7 @@ func (gmr groupMembershipsRepositoryMiddleware) RetrieveRole(ctx context.Context
 }
 
 func (gmr groupMembershipsRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (things.GroupMembershipsPage, error) {
-	span := createSpan(ctx, gmr.tracer, retrieveMembershipsByGroup)
+	span := dbutil.CreateSpan(ctx, gmr.tracer, retrieveMembershipsByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -61,7 +62,7 @@ func (gmr groupMembershipsRepositoryMiddleware) RetrieveByGroup(ctx context.Cont
 }
 
 func (gmr groupMembershipsRepositoryMiddleware) RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error) {
-	span := createSpan(ctx, gmr.tracer, retrieveGroupIDsByMember)
+	span := dbutil.CreateSpan(ctx, gmr.tracer, retrieveGroupIDsByMember)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -69,7 +70,7 @@ func (gmr groupMembershipsRepositoryMiddleware) RetrieveGroupIDsByMember(ctx con
 }
 
 func (gmr groupMembershipsRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.GroupMembership, error) {
-	span := createSpan(ctx, gmr.tracer, backupAllGroupMemberships)
+	span := dbutil.CreateSpan(ctx, gmr.tracer, backupAllGroupMemberships)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -77,7 +78,7 @@ func (gmr groupMembershipsRepositoryMiddleware) BackupAll(ctx context.Context) (
 }
 
 func (gmr groupMembershipsRepositoryMiddleware) BackupByGroup(ctx context.Context, groupID string) ([]things.GroupMembership, error) {
-	span := createSpan(ctx, gmr.tracer, backupGroupMemberhips)
+	span := dbutil.CreateSpan(ctx, gmr.tracer, backupGroupMemberhips)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -85,7 +86,7 @@ func (gmr groupMembershipsRepositoryMiddleware) BackupByGroup(ctx context.Contex
 }
 
 func (gmr groupMembershipsRepositoryMiddleware) Update(ctx context.Context, gms ...things.GroupMembership) error {
-	span := createSpan(ctx, gmr.tracer, updateGroupMemberships)
+	span := dbutil.CreateSpan(ctx, gmr.tracer, updateGroupMemberships)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -93,7 +94,7 @@ func (gmr groupMembershipsRepositoryMiddleware) Update(ctx context.Context, gms 
 }
 
 func (gmr groupMembershipsRepositoryMiddleware) Remove(ctx context.Context, groupID string, memberIDs ...string) error {
-	span := createSpan(ctx, gmr.tracer, removeGroupMemberships)
+	span := dbutil.CreateSpan(ctx, gmr.tracer, removeGroupMemberships)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

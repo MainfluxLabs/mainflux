@@ -75,3 +75,13 @@ func addSpanTags(ctx context.Context, query string) {
 		span.SetTag("db.type", "sql")
 	}
 }
+
+func CreateSpan(ctx context.Context, tracer opentracing.Tracer, opName string) opentracing.Span {
+	if parentSpan := opentracing.SpanFromContext(ctx); parentSpan != nil {
+		return tracer.StartSpan(
+			opName,
+			opentracing.ChildOf(parentSpan.Context()),
+		)
+	}
+	return tracer.StartSpan(opName)
+}
