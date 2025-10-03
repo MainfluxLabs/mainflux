@@ -217,3 +217,4 @@ func restoreSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 		return restoreMessagesRes{}, nil
 	}
 }
+

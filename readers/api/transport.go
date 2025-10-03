@@ -113,6 +113,11 @@ func MakeHandler(svc readers.Service, svcName string, logger logger.Logger) http
 }
 
 func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	publisher, err := apiutil.ReadStringQuery(r, publisherKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	pageMeta, err := BuildJSONPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -130,6 +135,7 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, er
 
 	pageMeta.Offset = offset
 	pageMeta.Limit = limit
+	pageMeta.Publisher = publisher
 
 	return listJSONMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
@@ -139,6 +145,11 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, er
 }
 
 func decodeListSenMLMessages(_ context.Context, r *http.Request) (interface{}, error) {
+	publisher, err := apiutil.ReadStringQuery(r, publisherKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	pageMeta, err := BuildSenMLPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -156,6 +167,7 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (interface{}, e
 
 	pageMeta.Offset = offset
 	pageMeta.Limit = limit
+	pageMeta.Publisher = publisher
 
 	return listSenMLMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
