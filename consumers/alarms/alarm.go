@@ -10,6 +10,7 @@ type Alarm struct {
 	ID       string
 	ThingID  string
 	GroupID  string
+	RuleID   string
 	Subtopic string
 	Protocol string
 	Payload  map[string]interface{}
