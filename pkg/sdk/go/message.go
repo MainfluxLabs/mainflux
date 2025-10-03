@@ -15,7 +15,7 @@ import (
 
 const messagesEndpoint = "messages"
 
-func (sdk mfSDK) SendMessage(subtopic, msg, key string) error {
+func (sdk mfSDK) SendMessage(subtopic, msg, keyType, key string) error {
 	subtopic = strings.Replace(subtopic, ".", "/", -1)
 	url := fmt.Sprintf("%s/messages/%s", sdk.httpAdapterURL, subtopic)
 
@@ -24,7 +24,7 @@ func (sdk mfSDK) SendMessage(subtopic, msg, key string) error {
 		return err
 	}
 
-	resp, err := sdk.sendThingRequest(req, key, string(sdk.msgContentType))
+	resp, err := sdk.sendThingRequest(req, keyType, key, string(sdk.msgContentType))
 	if err != nil {
 		return err
 	}
@@ -36,7 +36,7 @@ func (sdk mfSDK) SendMessage(subtopic, msg, key string) error {
 	return nil
 }
 
-func (sdk mfSDK) ReadMessages(isAdmin bool, pm PageMetadata, token string) (map[string]interface{}, error) {
+func (sdk mfSDK) ReadMessages(isAdmin bool, pm PageMetadata, keyType, token string) (map[string]interface{}, error) {
 	url, err := sdk.withQueryParams(sdk.readerURL, messagesEndpoint, pm)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func (sdk mfSDK) ReadMessages(isAdmin bool, pm PageMetadata, token string) (map[
 		return decodeMessages(response)
 	}
 
-	response, err := sdk.sendThingRequest(req, token, string(sdk.msgContentType))
+	response, err := sdk.sendThingRequest(req, keyType, token, string(sdk.msgContentType))
 	if err != nil {
 		return nil, err
 	}

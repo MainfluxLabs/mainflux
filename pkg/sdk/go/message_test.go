@@ -12,6 +12,7 @@ import (
 	adapter "github.com/MainfluxLabs/mainflux/http"
 	"github.com/MainfluxLabs/mainflux/http/api"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
@@ -87,7 +88,7 @@ func TestSendMessage(t *testing.T) {
 		},
 	}
 	for desc, tc := range cases {
-		err := mainfluxSDK.SendMessage(tc.profileID, tc.msg, tc.auth)
+		err := mainfluxSDK.SendMessage(tc.profileID, tc.msg, apiutil.ThingKeyTypeInline, tc.auth)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", desc, tc.err, err))
 	}
 }

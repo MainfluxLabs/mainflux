@@ -346,7 +346,7 @@ func TestMetadataByKey(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		resMeta, err := mainfluxSDK.GetThingMetadataByKey(tc.key)
+		resMeta, err := mainfluxSDK.GetThingMetadataByKey(apiutil.ThingKeyTypeInline, tc.key)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, resMeta, fmt.Sprintf("%s: expected response thing %s, got %s", tc.desc, tc.response, resMeta))
 	}

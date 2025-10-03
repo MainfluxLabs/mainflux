@@ -175,7 +175,7 @@ func (sdk mfSDK) GetThing(id, token string) (Thing, error) {
 	return t, nil
 }
 
-func (sdk mfSDK) GetThingMetadataByKey(thingKey string) (Metadata, error) {
+func (sdk mfSDK) GetThingMetadataByKey(keyType, thingKey string) (Metadata, error) {
 	url := fmt.Sprintf("%s/metadata", sdk.thingsURL)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -183,7 +183,7 @@ func (sdk mfSDK) GetThingMetadataByKey(thingKey string) (Metadata, error) {
 		return Metadata{}, err
 	}
 
-	resp, err := sdk.sendThingRequest(req, thingKey, string(CTJSON))
+	resp, err := sdk.sendThingRequest(req, keyType, thingKey, string(CTJSON))
 	if err != nil {
 		return Metadata{}, err
 	}

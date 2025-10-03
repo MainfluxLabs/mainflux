@@ -207,7 +207,7 @@ type SDK interface {
 	GetThing(id, token string) (Thing, error)
 
 	// GetThingMetadataByKey retrieves metadata about the thing identified by the given key.
-	GetThingMetadataByKey(thingKey string) (Metadata, error)
+	GetThingMetadataByKey(keyType, thingKey string) (Metadata, error)
 
 	// UpdateThing updates existing thing.
 	UpdateThing(thing Thing, thingID, token string) error
@@ -324,10 +324,10 @@ type SDK interface {
 	RemoveOrgMemberships(memberIDs []string, orgID, token string) error
 
 	// SendMessage send message.
-	SendMessage(subtopic, msg, token string) error
+	SendMessage(subtopic, msg, keyType, key string) error
 
 	// ReadMessages read messages.
-	ReadMessages(isAdmin bool, pm PageMetadata, token string) (map[string]interface{}, error)
+	ReadMessages(isAdmin bool, pm PageMetadata, keyType, token string) (map[string]interface{}, error)
 
 	// ValidateContentType sets message content type.
 	ValidateContentType(ct ContentType) error
@@ -428,9 +428,14 @@ func (sdk mfSDK) sendRequest(req *http.Request, token, contentType string) (*htt
 	return sdk.client.Do(req)
 }
 
-func (sdk mfSDK) sendThingRequest(req *http.Request, key, contentType string) (*http.Response, error) {
+func (sdk mfSDK) sendThingRequest(req *http.Request, keyType, key, contentType string) (*http.Response, error) {
 	if key != "" {
-		req.Header.Set("Authorization", apiutil.ThingKeyPrefixInline+key)
+		switch keyType {
+		case apiutil.ThingKeyTypeInline:
+			req.Header.Set("Authorization", apiutil.ThingKeyPrefixInline+key)
+		case apiutil.ThingKeyTypeExternal:
+			req.Header.Set("Authorization", apiutil.ThingKeyPrefixExternal+key)
+		}
 	}
 
 	if contentType != "" {
