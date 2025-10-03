@@ -98,8 +98,8 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	postgresReaderHttpTracer, postgresReaderHttpCloser := jaeger.Init("postgres_reader_http", cfg.jaegerURL, logger)
-	defer postgresReaderHttpCloser.Close()
+	postgresHttpTracer, postgresHttpCloser := jaeger.Init("postgres_reader_http", cfg.jaegerURL, logger)
+	defer postgresHttpCloser.Close()
 
 	conn := clientsgrpc.Connect(cfg.thingsConfig, logger)
 	defer conn.Close()
@@ -126,7 +126,7 @@ func main() {
 	svc := newService(db, dbTracer, auth, tc, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, api.MakeHandler(svc, postgresReaderHttpTracer, svcName, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, api.MakeHandler(svc, postgresHttpTracer, svcName, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
