@@ -118,7 +118,7 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	dbTracer, dbCloser := jaeger.Init("timescale_db", cfg.jaegerURL, logger)
+	dbTracer, dbCloser := jaeger.Init("timescale", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
 	svc := newService(db, dbTracer, auth, tc, logger)

@@ -112,7 +112,7 @@ func main() {
 
 	db := connectToMongoDB(cfg.dbHost, cfg.dbPort, cfg.dbName, logger)
 
-	dbTracer, dbCloser := jaeger.Init("mongo_db", cfg.jaegerURL, logger)
+	dbTracer, dbCloser := jaeger.Init("mongo", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
 	svc := newService(db, dbTracer, auth, tc, logger)
