@@ -3,6 +3,7 @@ package tracing
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/users"
 	opentracing "github.com/opentracing/opentracing-go"
 )
@@ -29,7 +30,7 @@ func PlatformInvitesRepositoryMiddleware(repo users.PlatformInvitesRepository, t
 }
 
 func (irm invitesRepositoryMiddleware) SavePlatformInvite(ctx context.Context, invites ...users.PlatformInvite) error {
-	span := createSpan(ctx, irm.tracer, savePlatformInvite)
+	span := dbutil.CreateSpan(ctx, irm.tracer, savePlatformInvite)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -37,7 +38,7 @@ func (irm invitesRepositoryMiddleware) SavePlatformInvite(ctx context.Context, i
 }
 
 func (irm invitesRepositoryMiddleware) RetrievePlatformInviteByID(ctx context.Context, inviteID string) (users.PlatformInvite, error) {
-	span := createSpan(ctx, irm.tracer, retrievePlatformInviteByID)
+	span := dbutil.CreateSpan(ctx, irm.tracer, retrievePlatformInviteByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -45,7 +46,7 @@ func (irm invitesRepositoryMiddleware) RetrievePlatformInviteByID(ctx context.Co
 }
 
 func (irm invitesRepositoryMiddleware) RetrievePlatformInvites(ctx context.Context, pm users.PageMetadataInvites) (users.PlatformInvitesPage, error) {
-	span := createSpan(ctx, irm.tracer, retrievePlatformInvites)
+	span := dbutil.CreateSpan(ctx, irm.tracer, retrievePlatformInvites)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -53,7 +54,7 @@ func (irm invitesRepositoryMiddleware) RetrievePlatformInvites(ctx context.Conte
 }
 
 func (irm invitesRepositoryMiddleware) UpdatePlatformInviteState(ctx context.Context, inviteID string, state string) error {
-	span := createSpan(ctx, irm.tracer, updatePlatformInviteState)
+	span := dbutil.CreateSpan(ctx, irm.tracer, updatePlatformInviteState)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

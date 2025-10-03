@@ -213,7 +213,7 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 				case ActionTypeSMPP:
 					newMsg.Subject = fmt.Sprintf("%s.%s", subjectSMPP, action.ID)
 				case ActionTypeAlarm:
-					newMsg.Subject = subjectAlarms
+					newMsg.Subject = fmt.Sprintf("%s.%s", subjectAlarms, rule.ID)
 				default:
 					continue
 				}

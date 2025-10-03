@@ -23,7 +23,7 @@ func listAlarmsByGroupEndpoint(svc alarms.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildAlarmsResponse(page, req.pageMetadata), nil
+		return buildAlarmsPageResponse(page, req.pageMetadata), nil
 	}
 }
 
@@ -39,7 +39,7 @@ func listAlarmsByThingEndpoint(svc alarms.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildAlarmsResponse(page, req.pageMetadata), nil
+		return buildAlarmsPageResponse(page, req.pageMetadata), nil
 	}
 }
 
@@ -55,7 +55,7 @@ func listAlarmsByOrgEndpoint(svc alarms.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildAlarmsResponse(page, req.pageMetadata), nil
+		return buildAlarmsPageResponse(page, req.pageMetadata), nil
 	}
 }
 
@@ -90,7 +90,7 @@ func removeAlarmsEndpoint(svc alarms.Service) endpoint.Endpoint {
 	}
 }
 
-func buildAlarmsResponse(ap alarms.AlarmsPage, pm apiutil.PageMetadata) AlarmsPageRes {
+func buildAlarmsPageResponse(ap alarms.AlarmsPage, pm apiutil.PageMetadata) AlarmsPageRes {
 	res := AlarmsPageRes{
 		Total:  ap.Total,
 		Offset: pm.Offset,
@@ -101,16 +101,7 @@ func buildAlarmsResponse(ap alarms.AlarmsPage, pm apiutil.PageMetadata) AlarmsPa
 	}
 
 	for _, a := range ap.Alarms {
-		alarm := alarmResponse{
-			ID:       a.ID,
-			ThingID:  a.ThingID,
-			GroupID:  a.GroupID,
-			Subtopic: a.Subtopic,
-			Protocol: a.Protocol,
-			Payload:  a.Payload,
-			Created:  a.Created,
-		}
-		res.Alarms = append(res.Alarms, alarm)
+		res.Alarms = append(res.Alarms, buildAlarmResponse(a))
 	}
 
 	return res
@@ -121,6 +112,7 @@ func buildAlarmResponse(alarm alarms.Alarm) alarmResponse {
 		ID:       alarm.ID,
 		ThingID:  alarm.ThingID,
 		GroupID:  alarm.GroupID,
+		RuleID:   alarm.RuleID,
 		Subtopic: alarm.Subtopic,
 		Protocol: alarm.Protocol,
 		Payload:  alarm.Payload,
