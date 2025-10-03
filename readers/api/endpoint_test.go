@@ -23,6 +23,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/MainfluxLabs/mainflux/readers/api"
 	rmocks "github.com/MainfluxLabs/mainflux/readers/mocks"
+	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -147,13 +148,16 @@ func TestListSenMLMessages(t *testing.T) {
 		messages = append(messages, msg)
 	}
 
-	thSvc := thmocks.NewThingsServiceClient(nil, nil, nil)
 	authSvc := newAuthService()
 
 	adminTok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
 	require.Nil(t, err, fmt.Sprintf("issue token for admin got unexpected error: %s", err))
 
 	adminToken := adminTok.GetValue()
+
+	thSvc := thmocks.NewThingsServiceClient(nil, map[string]things.Thing{
+		adminToken: {ID: pubID},
+	}, nil)
 
 	ts := newServer(nil, messages, thSvc, authSvc)
 	defer ts.Close()
@@ -524,13 +528,16 @@ func TestListJSONMessages(t *testing.T) {
 		messages = append(messages, msg)
 	}
 
-	thSvc := thmocks.NewThingsServiceClient(nil, nil, nil)
 	authSvc := newAuthService()
 
 	adminTok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
 	require.Nil(t, err, fmt.Sprintf("issue token for admin got unexpected error: %s", err))
 
 	adminToken := adminTok.GetValue()
+
+	thSvc := thmocks.NewThingsServiceClient(nil, map[string]things.Thing{
+		adminToken: {ID: pubID},
+	}, nil)
 
 	ts := newServer(messages, nil, thSvc, authSvc)
 	defer ts.Close()
