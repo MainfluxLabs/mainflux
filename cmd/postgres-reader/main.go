@@ -215,10 +215,10 @@ func newService(db *sqlx.DB, dbTracer opentracing.Tracer, ac protomfx.AuthServic
 	database := dbutil.NewDatabase(db)
 
 	jsonRepo := postgres.NewJSONRepository(database)
-	jsonRepo = tracing.JSONMessageRepositoryMiddleware(dbTracer, jsonRepo)
+	jsonRepo = tracing.JSONRepositoryMiddleware(dbTracer, jsonRepo)
 
 	senmlRepo := postgres.NewSenMLRepository(database)
-	senmlRepo = tracing.SenMLMessageRepositoryMiddleware(dbTracer, senmlRepo)
+	senmlRepo = tracing.SenMLRepositoryMiddleware(dbTracer, senmlRepo)
 
 	svc := readers.New(ac, tc, jsonRepo, senmlRepo)
 	svc = api.LoggingMiddleware(svc, logger)

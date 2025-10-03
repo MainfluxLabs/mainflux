@@ -211,10 +211,10 @@ func connectToDB(dbConfig timescale.Config, logger logger.Logger) *sqlx.DB {
 
 func newService(db *sqlx.DB, dbTracer opentracing.Tracer, ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, logger logger.Logger) readers.Service {
 	jsonRepo := timescale.NewJSONRepository(db)
-	jsonRepo = tracing.JSONMessageRepositoryMiddleware(dbTracer, jsonRepo)
+	jsonRepo = tracing.JSONRepositoryMiddleware(dbTracer, jsonRepo)
 
 	senmlRepo := timescale.NewSenMLRepository(db)
-	senmlRepo = tracing.SenMLMessageRepositoryMiddleware(dbTracer, senmlRepo)
+	senmlRepo = tracing.SenMLRepositoryMiddleware(dbTracer, senmlRepo)
 
 	svc := readers.New(ac, tc, jsonRepo, senmlRepo)
 	svc = api.LoggingMiddleware(svc, logger)
