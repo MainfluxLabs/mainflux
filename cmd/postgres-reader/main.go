@@ -120,7 +120,7 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	dbTracer, dbCloser := jaeger.Init("messages_postgres_db", cfg.jaegerURL, logger)
+	dbTracer, dbCloser := jaeger.Init("postgres_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
 	svc := newService(db, dbTracer, auth, tc, logger)
