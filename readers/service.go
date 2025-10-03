@@ -96,29 +96,23 @@ func (rs *readersService) ListSenMLMessages(ctx context.Context, token, key stri
 }
 
 func (rs *readersService) BackupJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) (JSONMessagesPage, error) {
-	if err := rs.isAdmin(ctx, token); err != nil {
-		return JSONMessagesPage{}, err
+	if rpm.Publisher == "" {
+		if err := rs.isAdmin(ctx, token); err != nil {
+			return JSONMessagesPage{}, err
+		}
 	}
 
-	page, err := rs.json.Backup(ctx, rpm)
-	if err != nil {
-		return JSONMessagesPage{}, err
-	}
-
-	return page, nil
+	return rs.json.Backup(ctx, rpm)
 }
 
 func (rs *readersService) BackupSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) (SenMLMessagesPage, error) {
-	if err := rs.isAdmin(ctx, token); err != nil {
-		return SenMLMessagesPage{}, err
+	if rpm.Publisher == "" {
+		if err := rs.isAdmin(ctx, token); err != nil {
+			return SenMLMessagesPage{}, err
+		}
 	}
 
-	page, err := rs.senml.Backup(ctx, rpm)
-	if err != nil {
-		return SenMLMessagesPage{}, err
-	}
-
-	return page, nil
+	return rs.senml.Backup(ctx, rpm)
 }
 
 func (rs *readersService) RestoreJSONMessages(ctx context.Context, token string, messages ...Message) error {
