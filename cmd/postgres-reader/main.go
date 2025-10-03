@@ -98,7 +98,7 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	postgresHttpTracer, postgresHttpCloser := jaeger.Init("postgres_reader_http", cfg.jaegerURL, logger)
+	postgresHttpTracer, postgresHttpCloser := jaeger.Init("postgres_http", cfg.jaegerURL, logger)
 	defer postgresHttpCloser.Close()
 
 	conn := clientsgrpc.Connect(cfg.thingsConfig, logger)
