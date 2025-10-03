@@ -365,7 +365,21 @@ func (ts *thingsService) UpdateKey(ctx context.Context, token, id, key string) e
 		return err
 	}
 
-	return ts.things.UpdateKey(ctx, id, key)
+	thing, err := ts.things.RetrieveByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if err := ts.things.UpdateKey(ctx, id, key); err != nil {
+		return err
+	}
+
+	// Invalidate previous key from cache
+	if err := ts.thingCache.RemoveKey(ctx, KeyTypeInline, thing.Key); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing, error) {
