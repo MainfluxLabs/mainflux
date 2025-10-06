@@ -204,7 +204,7 @@ func (rs *readersService) isAdmin(ctx context.Context, token string) error {
 }
 
 func (rs *readersService) getPubConfByKey(ctx context.Context, keyType, key string) (*protomfx.PubConfByKeyRes, error) {
-	pc, err := rs.thingc.GetPubConfByKey(ctx, &protomfx.ThingKey{Key: key, KeyType: keyType})
+	pc, err := rs.thingc.GetPubConfByKey(ctx, &protomfx.ThingKey{Value: key, Type: keyType})
 	if err != nil {
 		return nil, err
 	}

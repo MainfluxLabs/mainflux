@@ -86,7 +86,7 @@ func (ms *mqttService) authorize(ctx context.Context, token, keyType, key, group
 		}
 		return nil
 	default:
-		if _, err := ms.things.GetPubConfByKey(ctx, &protomfx.ThingKey{Key: key, KeyType: keyType}); err != nil {
+		if _, err := ms.things.GetPubConfByKey(ctx, &protomfx.ThingKey{Value: key, Type: keyType}); err != nil {
 			return err
 		}
 		return nil

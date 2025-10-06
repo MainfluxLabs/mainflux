@@ -31,7 +31,7 @@ func NewThingsServiceClient(profiles map[string]things.Profile, things map[strin
 }
 
 func (svc thingsServiceMock) GetPubConfByKey(_ context.Context, in *protomfx.ThingKey, _ ...grpc.CallOption) (*protomfx.PubConfByKeyRes, error) {
-	key := in.GetKey()
+	key := in.GetValue()
 
 	if key == "invalid" {
 		return nil, errors.ErrAuthentication
@@ -111,7 +111,7 @@ func (svc thingsServiceMock) CanThingAccessGroup(_ context.Context, req *protomf
 }
 
 func (svc thingsServiceMock) Identify(_ context.Context, key *protomfx.ThingKey, _ ...grpc.CallOption) (*protomfx.ThingID, error) {
-	if th, ok := svc.things[key.GetKey()]; ok {
+	if th, ok := svc.things[key.GetValue()]; ok {
 		return &protomfx.ThingID{Value: th.ID}, nil
 	}
 	return nil, errors.ErrAuthentication

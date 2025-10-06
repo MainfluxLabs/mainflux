@@ -39,8 +39,8 @@ func (c client) Identify(ctx context.Context, keyType, thingKey string) (string,
 	thingID, err := c.redisClient.Get(ctx, tkey).Result()
 	if err != nil {
 		t := &protomfx.ThingKey{
-			Key:     string(thingKey),
-			KeyType: keyType,
+			Value: string(thingKey),
+			Type:  keyType,
 		}
 
 		thid, err := c.things.Identify(context.TODO(), t)
@@ -54,8 +54,8 @@ func (c client) Identify(ctx context.Context, keyType, thingKey string) (string,
 
 func (c client) GetPubConfByKey(ctx context.Context, thingKeyType, thingKey string) (protomfx.PubConfByKeyRes, error) {
 	req := &protomfx.ThingKey{
-		Key:     thingKey,
-		KeyType: thingKeyType,
+		Value: thingKey,
+		Type:  thingKeyType,
 	}
 
 	pc, err := c.things.GetPubConfByKey(ctx, req)

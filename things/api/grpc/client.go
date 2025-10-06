@@ -136,8 +136,8 @@ func (client grpcClient) GetPubConfByKey(ctx context.Context, req *protomfx.Thin
 	defer cancel()
 
 	ar := thingKey{
-		key:     req.GetKey(),
-		keyType: req.GetKeyType(),
+		key:     req.GetValue(),
+		keyType: req.GetType(),
 	}
 
 	res, err := client.getPubConfByKey(ctx, ar)
@@ -208,7 +208,7 @@ func (client grpcClient) Identify(ctx context.Context, req *protomfx.ThingKey, _
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.identify(ctx, identifyReq{key: req.GetKey(), keyType: req.GetKeyType()})
+	res, err := client.identify(ctx, identifyReq{key: req.GetValue(), keyType: req.GetType()})
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +271,7 @@ func (c grpcClient) GetGroupIDsByOrg(ctx context.Context, req *protomfx.OrgAcces
 
 func encodeGetPubConfByKeyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(thingKey)
-	return &protomfx.ThingKey{Key: req.key, KeyType: req.keyType}, nil
+	return &protomfx.ThingKey{Value: req.key, Type: req.keyType}, nil
 }
 
 func encodeGetConfigByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
@@ -301,7 +301,7 @@ func encodeThingAccessGroupRequest(_ context.Context, grpcReq interface{}) (inte
 
 func encodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(identifyReq)
-	return &protomfx.ThingKey{Key: req.key, KeyType: req.keyType}, nil
+	return &protomfx.ThingKey{Value: req.key, Type: req.keyType}, nil
 }
 
 func encodeGetGroupIDByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

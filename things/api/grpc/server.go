@@ -195,7 +195,7 @@ func (gs *grpcServer) GetGroupIDsByOrg(ctx context.Context, req *protomfx.OrgAcc
 
 func decodeGetPubConfByKeyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*protomfx.ThingKey)
-	return thingKey{key: req.GetKey(), keyType: req.GetKeyType()}, nil
+	return thingKey{key: req.GetValue(), keyType: req.GetType()}, nil
 }
 
 func decodeGetConfigByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
@@ -225,7 +225,7 @@ func decodeThingAccessGroupRequest(_ context.Context, grpcReq interface{}) (inte
 
 func decodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*protomfx.ThingKey)
-	return identifyReq{key: req.GetKey(), keyType: req.GetKeyType()}, nil
+	return identifyReq{key: req.GetValue(), keyType: req.GetType()}, nil
 }
 
 func decodeGetGroupIDByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

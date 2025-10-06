@@ -54,8 +54,8 @@ message PublishReq {
 }
 
 message ThingKey {
-    string key = 1;
-    string keyType = 2;
+    string value = 1;
+    string type = 2;
 }
 
 message PubConfByKeyRes {

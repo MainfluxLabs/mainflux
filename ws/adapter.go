@@ -111,8 +111,8 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, thingKeyType, thingK
 
 func (svc *adapterService) authorize(ctx context.Context, thingKeyType, thingKey string) (*protomfx.PubConfByKeyRes, error) {
 	ar := &protomfx.ThingKey{
-		Key:     thingKey,
-		KeyType: thingKeyType,
+		Value: thingKey,
+		Type:  thingKeyType,
 	}
 	pc, err := svc.things.GetPubConfByKey(ctx, ar)
 	if err != nil {

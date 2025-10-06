@@ -155,8 +155,8 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	}
 
 	thingKeyReq := &protomfx.ThingKey{
-		Key:     string(c.Password),
-		KeyType: c.Username,
+		Value: string(c.Password),
+		Type:  c.Username,
 	}
 
 	pc, err := h.things.GetPubConfByKey(context.Background(), thingKeyReq)
@@ -241,8 +241,8 @@ func (h *handler) Disconnect(c *session.Client) {
 
 func (h *handler) identifySessionThing(c *session.Client) (string, error) {
 	thingKeyReq := &protomfx.ThingKey{
-		Key:     string(c.Password),
-		KeyType: c.Username,
+		Value: string(c.Password),
+		Type:  c.Username,
 	}
 
 	keyRes, err := h.things.Identify(context.Background(), thingKeyReq)
