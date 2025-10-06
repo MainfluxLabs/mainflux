@@ -65,7 +65,7 @@ func TestGetPubConfByKey(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, err := cli.GetPubConfByKey(ctx, &protomfx.ThingKey{Key: tc.key, KeyType: apiutil.ThingKeyTypeInline})
+		_, err := cli.GetPubConfByKey(ctx, &protomfx.ThingKey{Key: tc.key, KeyType: apiutil.ThingKeyTypeInternal})
 		e, ok := status.FromError(err)
 		assert.True(t, ok, "OK expected to be true")
 		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", desc, tc.code, e.Code()))
@@ -103,15 +103,15 @@ func TestIdentify(t *testing.T) {
 		id      string
 		code    codes.Code
 	}{
-		"identify thing using inline key": {
+		"identify thing using internal key": {
 			key:     sth.Key,
-			keyType: things.KeyTypeInline,
+			keyType: things.KeyTypeInternal,
 			id:      sth.ID,
 			code:    codes.OK,
 		},
-		"identify thing using invalid inline key": {
+		"identify thing using invalid internal key": {
 			key:     wrong,
-			keyType: things.KeyTypeInline,
+			keyType: things.KeyTypeInternal,
 			id:      wrongID,
 			code:    codes.NotFound,
 		},

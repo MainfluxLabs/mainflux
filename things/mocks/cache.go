@@ -35,7 +35,7 @@ func (tcm *thingCacheMock) Save(_ context.Context, keyType, key, id string) erro
 	defer tcm.mu.Unlock()
 
 	switch keyType {
-	case things.KeyTypeInline:
+	case things.KeyTypeInternal:
 		tcm.thingsByKey[key] = id
 	case things.KeyTypeExternal:
 		tcm.thingsByKeyExternal[key] = id
@@ -49,7 +49,7 @@ func (tcm *thingCacheMock) ID(_ context.Context, keyType, key string) (string, e
 	defer tcm.mu.Unlock()
 
 	switch keyType {
-	case things.KeyTypeInline:
+	case things.KeyTypeInternal:
 		if id, ok := tcm.thingsByKey[key]; ok {
 			return id, nil
 		}
@@ -88,7 +88,7 @@ func (tcm *thingCacheMock) RemoveKey(_ context.Context, keyType, thingKey string
 	defer tcm.mu.Unlock()
 
 	switch keyType {
-	case things.KeyTypeInline:
+	case things.KeyTypeInternal:
 		delete(tcm.thingsByKey, thingKey)
 	case things.KeyTypeExternal:
 		delete(tcm.thingsByKeyExternal, thingKey)

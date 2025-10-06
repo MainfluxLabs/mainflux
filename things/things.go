@@ -33,7 +33,7 @@ type ThingsPage struct {
 }
 
 const (
-	KeyTypeInline   = "inline"
+	KeyTypeInternal = "internal"
 	KeyTypeExternal = "external"
 )
 

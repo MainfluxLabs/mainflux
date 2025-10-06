@@ -367,7 +367,7 @@ func TestViewMetadataByKey(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, err := svc.ViewMetadataByKey(context.Background(), things.KeyTypeInline, tc.key)
+		_, err := svc.ViewMetadataByKey(context.Background(), things.KeyTypeInternal, tc.key)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }
@@ -1538,7 +1538,7 @@ func TestGetPubConfByKey(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, err := svc.GetPubConfByKey(context.Background(), things.KeyTypeInline, tc.key)
+		_, err := svc.GetPubConfByKey(context.Background(), things.KeyTypeInternal, tc.key)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected '%s' got '%s'\n", desc, tc.err, err))
 	}
 }
@@ -1568,15 +1568,15 @@ func TestIdentify(t *testing.T) {
 		id      string
 		err     error
 	}{
-		"identify thing with inline key": {
+		"identify thing with internal key": {
 			key:     th.Key,
-			keyType: things.KeyTypeInline,
+			keyType: things.KeyTypeInternal,
 			id:      th.ID,
 			err:     nil,
 		},
-		"identify thing with invalid inline key": {
+		"identify thing with invalid internal key": {
 			key:     wrongValue,
-			keyType: things.KeyTypeInline,
+			keyType: things.KeyTypeInternal,
 			id:      emptyValue,
 			err:     dbutil.ErrNotFound,
 		},

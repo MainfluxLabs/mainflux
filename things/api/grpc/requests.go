@@ -14,7 +14,7 @@ type thingKey struct {
 }
 
 func (req thingKey) validate() error {
-	if req.keyType != apiutil.ThingKeyTypeInline && req.keyType != apiutil.ThingKeyTypeExternal {
+	if req.keyType != apiutil.ThingKeyTypeInternal && req.keyType != apiutil.ThingKeyTypeExternal {
 		return apiutil.ErrInvalidThingKeyType
 	}
 
@@ -104,7 +104,7 @@ func (req thingAccessGroupReq) validate() error {
 		return apiutil.ErrBearerKey
 	}
 
-	if req.keyType != apiutil.ThingKeyTypeInline && req.keyType != apiutil.ThingKeyTypeExternal {
+	if req.keyType != apiutil.ThingKeyTypeInternal && req.keyType != apiutil.ThingKeyTypeExternal {
 		return apiutil.ErrInvalidThingKeyType
 	}
 
@@ -125,7 +125,7 @@ func (req identifyReq) validate() error {
 		return apiutil.ErrBearerKey
 	}
 
-	if req.keyType != apiutil.ThingKeyTypeInline && req.keyType != apiutil.ThingKeyTypeExternal {
+	if req.keyType != apiutil.ThingKeyTypeInternal && req.keyType != apiutil.ThingKeyTypeExternal {
 		return apiutil.ErrInvalidThingKeyType
 	}
 

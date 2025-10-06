@@ -11,8 +11,8 @@ import (
 const (
 	// BearerPrefix represents the token prefix for Bearer authentication scheme.
 	BearerPrefix = "Bearer "
-	// ThingKeyPrefixInline represents the key prefix for Thing authentication based on an inline key.
-	ThingKeyPrefixInline = "Thing "
+	// ThingKeyPrefixInternal represents the key prefix for Thing authentication based on an internal key.
+	ThingKeyPrefixInternal = "Thing "
 	// ThingKeyPrefixExternal represents the key prefix for Thing authentication based on an externaly defined key.
 	ThingKeyPrefixExternal = "External "
 )
@@ -24,7 +24,7 @@ type ThingKey struct {
 }
 
 func (tk ThingKey) Validate() error {
-	if tk.Type != ThingKeyTypeExternal && tk.Type != ThingKeyTypeInline {
+	if tk.Type != ThingKeyTypeExternal && tk.Type != ThingKeyTypeInternal {
 		return ErrInvalidThingKeyType
 	}
 
@@ -52,10 +52,10 @@ func ExtractThingKey(r *http.Request) ThingKey {
 	header := r.Header.Get("Authorization")
 
 	switch {
-	case strings.HasPrefix(header, ThingKeyPrefixInline):
+	case strings.HasPrefix(header, ThingKeyPrefixInternal):
 		return ThingKey{
-			Type: ThingKeyTypeInline,
-			Key:  strings.TrimPrefix(header, ThingKeyPrefixInline),
+			Type: ThingKeyTypeInternal,
+			Key:  strings.TrimPrefix(header, ThingKeyPrefixInternal),
 		}
 	case strings.HasPrefix(header, ThingKeyPrefixExternal):
 		return ThingKey{

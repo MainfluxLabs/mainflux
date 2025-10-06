@@ -173,7 +173,7 @@ func (tr thingRepository) RetrieveByKey(ctx context.Context, keyType string, key
 		SELECT id FROM things WHERE %s = $1;	
 	`
 	switch keyType {
-	case things.KeyTypeInline:
+	case things.KeyTypeInternal:
 		query = fmt.Sprintf(query, "key")
 	case things.KeyTypeExternal:
 		query = fmt.Sprintf(query, "key_external")

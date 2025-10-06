@@ -99,7 +99,7 @@ func (tr testRequest) make() (*http.Response, error) {
 		return nil, err
 	}
 	if tr.key != "" {
-		req.Header.Set("Authorization", apiutil.ThingKeyPrefixInline+tr.key)
+		req.Header.Set("Authorization", apiutil.ThingKeyPrefixInternal+tr.key)
 	}
 	if tr.token != "" {
 		req.Header.Set("Authorization", apiutil.BearerPrefix+tr.token)
@@ -2919,22 +2919,22 @@ func TestIdentify(t *testing.T) {
 	err = svc.UpdateExternalKey(context.Background(), token, externalKey, th.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	irInline := identifyReq{Key: th.Key, Type: things.KeyTypeInline}
-	dataInline := toJSON(irInline)
+	irInternal := identifyReq{Key: th.Key, Type: things.KeyTypeInternal}
+	dataInternal := toJSON(irInternal)
 
 	irExternal := identifyReq{Key: externalKey, Type: things.KeyTypeExternal}
 	dataExternal := toJSON(irExternal)
 
-	nonexistentData := toJSON(identifyReq{Key: wrongValue, Type: "inline"})
+	nonexistentData := toJSON(identifyReq{Key: wrongValue, Type: "internal"})
 
 	cases := map[string]struct {
 		contentType string
 		req         string
 		status      int
 	}{
-		"identify thing using inline key": {
+		"identify thing using internal key": {
 			contentType: contentTypeJSON,
-			req:         dataInline,
+			req:         dataInternal,
 			status:      http.StatusOK,
 		},
 		"identify thing using invalid iline key": {
@@ -2944,7 +2944,7 @@ func TestIdentify(t *testing.T) {
 		},
 		"identify with missing content type": {
 			contentType: wrongValue,
-			req:         dataInline,
+			req:         dataInternal,
 			status:      http.StatusUnsupportedMediaType,
 		},
 		"identify with empty JSON request": {

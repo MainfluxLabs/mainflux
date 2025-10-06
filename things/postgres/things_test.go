@@ -384,15 +384,15 @@ func TestRetrieveByKey(t *testing.T) {
 		ID      string
 		err     error
 	}{
-		"retrieve existing thing by inline key": {
+		"retrieve existing thing by internal key": {
 			key:     th.Key,
-			keyType: things.KeyTypeInline,
+			keyType: things.KeyTypeInternal,
 			ID:      th.ID,
 			err:     nil,
 		},
-		"retrieve non-existent thing by inline key": {
+		"retrieve non-existent thing by internal key": {
 			key:     wrongID,
-			keyType: things.KeyTypeInline,
+			keyType: things.KeyTypeInternal,
 			ID:      "",
 			err:     dbutil.ErrNotFound,
 		},

@@ -29,7 +29,7 @@ func TestThingSave(t *testing.T) {
 	id := "123"
 	id2 := "124"
 
-	err = thingCache.Save(context.Background(), things.KeyTypeInline, existingKey, id2)
+	err = thingCache.Save(context.Background(), things.KeyTypeInternal, existingKey, id2)
 	require.Nil(t, err, fmt.Sprintf("save thing to cache: expected nil got %s", err))
 
 	cases := []struct {
@@ -39,16 +39,16 @@ func TestThingSave(t *testing.T) {
 		keyType string
 	}{
 		{
-			desc:    "save inline key to thing cache",
+			desc:    "save internal key to thing cache",
 			ID:      id,
 			key:     existingKey,
-			keyType: things.KeyTypeInline,
+			keyType: things.KeyTypeInternal,
 		},
 		{
-			desc:    "save already cached inline key thing to cache",
+			desc:    "save already cached internal key thing to cache",
 			ID:      id2,
 			key:     existingKey,
-			keyType: things.KeyTypeInline,
+			keyType: things.KeyTypeInternal,
 		},
 		{
 			desc:    "save external key to thing cache",
@@ -76,7 +76,7 @@ func TestThingID(t *testing.T) {
 	key, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	id := "123"
-	err = thingCache.Save(context.Background(), things.KeyTypeInline, key, id)
+	err = thingCache.Save(context.Background(), things.KeyTypeInternal, key, id)
 	require.Nil(t, err, fmt.Sprintf("save thing to cache: expected nil got %s", err))
 
 	externalKey := "external_key"
@@ -89,16 +89,16 @@ func TestThingID(t *testing.T) {
 		keyType string
 		err     error
 	}{
-		"get ID by existing inline thing-key": {
+		"get ID by existing internal thing-key": {
 			ID:      id,
 			key:     key,
-			keyType: things.KeyTypeInline,
+			keyType: things.KeyTypeInternal,
 			err:     nil,
 		},
-		"get ID by non-existing inline thing-key": {
+		"get ID by non-existing internal thing-key": {
 			ID:      "",
 			key:     wrongValue,
-			keyType: things.KeyTypeInline,
+			keyType: things.KeyTypeInternal,
 			err:     r.Nil,
 		},
 		"get ID by existing external thing-key": {
@@ -129,7 +129,7 @@ func TestThingRemove(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	id := "123"
 	id2 := "321"
-	err = thingCache.Save(context.Background(), things.KeyTypeInline, key, id)
+	err = thingCache.Save(context.Background(), things.KeyTypeInternal, key, id)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	externalKey := "external_key"

@@ -61,4 +61,4 @@ Since CoAP protocol does not support `Authorization` header (option) and since o
 * `auth`
     * Thing authentication key
 * `type`
-    * Type of Thing key. One of: `external`, `inline`.
+    * Type of Thing key. One of: `external`, `internal`.

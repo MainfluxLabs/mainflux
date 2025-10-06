@@ -55,8 +55,8 @@ Setting `MF_HTTP_ADAPTER_CA_CERTS` expects a file in PEM format of trusted CAs. 
 
 HTTP Authorization request header contains the credentials to authenticate a Thing. The Authorization header can be a:
 
-* Inline Thing key (`Authorization: Thing <key>`)
-* Inline Thing key encoded as a password for Basic Authentication (`Authorization: Basic <key>`)
+* Internal Thing key (`Authorization: Thing <key>`)
+* Internal Thing key encoded as a password for Basic Authentication (`Authorization: Basic <key>`)
     * In this case, the username is ignored.
 * External Thing key (`Authorization: External <key>`)
 

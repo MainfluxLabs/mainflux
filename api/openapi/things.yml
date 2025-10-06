@@ -2036,7 +2036,7 @@ components:
                 description: Thing key that is used for thing auth.
               type:
                 type: string
-                enum: [inline, external]
+                enum: [internal, external]
                 description: Thing key type.
             required:
               - token

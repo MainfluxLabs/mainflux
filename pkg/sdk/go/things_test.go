@@ -346,7 +346,7 @@ func TestMetadataByKey(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		resMeta, err := mainfluxSDK.GetThingMetadataByKey(apiutil.ThingKeyTypeInline, tc.key)
+		resMeta, err := mainfluxSDK.GetThingMetadataByKey(apiutil.ThingKeyTypeInternal, tc.key)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, resMeta, fmt.Sprintf("%s: expected response thing %s, got %s", tc.desc, tc.response, resMeta))
 	}
@@ -874,23 +874,23 @@ func TestIdentifyThing(t *testing.T) {
 		response string
 	}{
 		{
-			desc:     "identify thing using valid inline key",
+			desc:     "identify thing using valid internal key",
 			thingKey: thing.Key,
-			keyType:  apiutil.ThingKeyTypeInline,
+			keyType:  apiutil.ThingKeyTypeInternal,
 			err:      nil,
 			response: id,
 		},
 		{
-			desc:     "identify thing using invalid inline key",
+			desc:     "identify thing using invalid internal key",
 			thingKey: badKey,
-			keyType:  apiutil.ThingKeyTypeInline,
+			keyType:  apiutil.ThingKeyTypeInternal,
 			err:      createError(sdk.ErrFailedFetch, http.StatusNotFound),
 			response: emptyValue,
 		},
 		{
-			desc:     "identify thing using empty inline key",
+			desc:     "identify thing using empty internal key",
 			thingKey: emptyValue,
-			keyType:  apiutil.ThingKeyTypeInline,
+			keyType:  apiutil.ThingKeyTypeInternal,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: emptyValue,
 		},

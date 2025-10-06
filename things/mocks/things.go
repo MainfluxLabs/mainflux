@@ -198,7 +198,7 @@ func (trm *thingRepositoryMock) RetrieveByKey(_ context.Context, keyType, key st
 	defer trm.mu.Unlock()
 
 	for _, thing := range trm.things {
-		if keyType == things.KeyTypeInline && thing.Key == key {
+		if keyType == things.KeyTypeInternal && thing.Key == key {
 			return thing.ID, nil
 		}
 

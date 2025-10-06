@@ -47,7 +47,7 @@ const (
 	DefOffset              = 0
 	DefLimit               = 10
 
-	ThingKeyTypeInline   = "inline"
+	ThingKeyTypeInternal = "internal"
 	ThingKeyTypeExternal = "external"
 )
 

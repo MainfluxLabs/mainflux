@@ -35,7 +35,7 @@ var (
 	logBuffer     = bytes.Buffer{}
 	sessionClient = session.Client{
 		ID:       clientID,
-		Username: apiutil.ThingKeyTypeInline,
+		Username: apiutil.ThingKeyTypeInternal,
 		Password: []byte(password),
 	}
 )
@@ -58,7 +58,7 @@ func TestAuthConnect(t *testing.T) {
 			err:  mqtt.ErrMissingClientID,
 			session: &session.Client{
 				ID:       "",
-				Username: apiutil.ThingKeyTypeInline,
+				Username: apiutil.ThingKeyTypeInternal,
 				Password: []byte(password),
 			},
 		},
@@ -67,7 +67,7 @@ func TestAuthConnect(t *testing.T) {
 			err:  errors.ErrAuthentication,
 			session: &session.Client{
 				ID:       clientID,
-				Username: apiutil.ThingKeyTypeInline,
+				Username: apiutil.ThingKeyTypeInternal,
 				Password: []byte(""),
 			},
 		},

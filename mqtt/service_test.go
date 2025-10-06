@@ -260,7 +260,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		page, err := svc.ListSubscriptions(context.Background(), tc.groupID, tc.token, apiutil.ThingKeyTypeInline, tc.key, tc.pageMeta)
+		page, err := svc.ListSubscriptions(context.Background(), tc.groupID, tc.token, apiutil.ThingKeyTypeInternal, tc.key, tc.pageMeta)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.page, page, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.page, page))
 	}

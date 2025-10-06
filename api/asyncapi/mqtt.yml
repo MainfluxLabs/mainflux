@@ -25,7 +25,7 @@ servers:
           - '8883'
       username:
         enum:
-          - 'inline'
+          - 'internal'
           - 'external'
         description: Thing key type.
       password:

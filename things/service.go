@@ -375,7 +375,7 @@ func (ts *thingsService) UpdateKey(ctx context.Context, token, id, key string) e
 	}
 
 	// Invalidate previous key from cache
-	if err := ts.thingCache.RemoveKey(ctx, KeyTypeInline, thing.Key); err != nil {
+	if err := ts.thingCache.RemoveKey(ctx, KeyTypeInternal, thing.Key); err != nil {
 		return err
 	}
 

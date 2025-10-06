@@ -38,7 +38,7 @@ func (cli MockClient) GetPubConfByKey(ctx context.Context, _ string, key string)
 
 func (cli MockClient) Identify(ctx context.Context, keyType, thingKey string) (string, error) {
 	switch keyType {
-	case apiutil.ThingKeyTypeInline:
+	case apiutil.ThingKeyTypeInternal:
 		if id, ok := cli.key[thingKey]; ok {
 			return id, nil
 		}
