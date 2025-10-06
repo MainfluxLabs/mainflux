@@ -400,7 +400,6 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
   /orgs/{orgId}/things:
-  
     get:
       summary: Retrieves things by org
       description: |
@@ -450,7 +449,6 @@ paths:
           description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
-
     delete:
       summary: Remove an external thing key.
       description: Remove the thing's associated external key.
