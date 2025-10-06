@@ -29,7 +29,7 @@ func NewOrgInvitesRepo(db dbutil.Database) auth.OrgInvitesRepository {
 func (ir invitesRepository) SaveOrgInvite(ctx context.Context, invites ...auth.OrgInvite) error {
 	tx, err := ir.db.BeginTxx(ctx, nil)
 	if err != nil {
-		errors.Wrap(dbutil.ErrCreateEntity, err)
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 	defer tx.Rollback()
 
