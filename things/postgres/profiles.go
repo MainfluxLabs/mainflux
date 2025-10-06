@@ -39,6 +39,7 @@ func (pr profileRepository) Save(ctx context.Context, profiles ...things.Profile
 	if err != nil {
 		return nil, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
+	defer tx.Rollback()
 
 	q := `INSERT INTO profiles (id, group_id, name, metadata, config)
 		  VALUES (:id, :group_id, :name, :metadata, :config);`
@@ -48,7 +49,6 @@ func (pr profileRepository) Save(ctx context.Context, profiles ...things.Profile
 
 		_, err = tx.NamedExecContext(ctx, q, dbpr)
 		if err != nil {
-			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
 				switch pgErr.Code {

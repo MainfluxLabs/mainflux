@@ -32,6 +32,7 @@ func (ar *alarmRepository) Save(ctx context.Context, alarms ...alarms.Alarm) err
 	if err != nil {
 		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
+	defer tx.Rollback()
 
 	q := `INSERT INTO alarms (id, thing_id, group_id, rule_id, subtopic, protocol, payload, created)
 	      VALUES (:id, :thing_id, :group_id, :rule_id, :subtopic, :protocol, :payload, :created);`
@@ -39,12 +40,10 @@ func (ar *alarmRepository) Save(ctx context.Context, alarms ...alarms.Alarm) err
 	for _, alarm := range alarms {
 		dbAlarm, err := toDBAlarm(alarm)
 		if err != nil {
-			tx.Rollback()
 			return errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 
 		if _, err := tx.NamedExecContext(ctx, q, dbAlarm); err != nil {
-			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
 				switch pgErr.Code {
