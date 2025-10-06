@@ -6,6 +6,7 @@ package tracing
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/opentracing/opentracing-go"
 )
@@ -32,7 +33,7 @@ func SenMLRepositoryMiddleware(tracer opentracing.Tracer, repo readers.SenMLMess
 }
 
 func (srm senmlRepositoryMiddleware) Retrieve(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
-	span := createSpan(ctx, srm.tracer, retrieveSenMLMessages)
+	span := dbutil.CreateSpan(ctx, srm.tracer, retrieveSenMLMessages)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -40,7 +41,7 @@ func (srm senmlRepositoryMiddleware) Retrieve(ctx context.Context, rpm readers.S
 }
 
 func (srm senmlRepositoryMiddleware) Backup(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
-	span := createSpan(ctx, srm.tracer, backupSenMLMessages)
+	span := dbutil.CreateSpan(ctx, srm.tracer, backupSenMLMessages)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -48,7 +49,7 @@ func (srm senmlRepositoryMiddleware) Backup(ctx context.Context, rpm readers.Sen
 }
 
 func (srm senmlRepositoryMiddleware) Restore(ctx context.Context, messages ...readers.Message) error {
-	span := createSpan(ctx, srm.tracer, restoreSenMLMessages)
+	span := dbutil.CreateSpan(ctx, srm.tracer, restoreSenMLMessages)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -56,7 +57,7 @@ func (srm senmlRepositoryMiddleware) Restore(ctx context.Context, messages ...re
 }
 
 func (srm senmlRepositoryMiddleware) Remove(ctx context.Context, rpm readers.SenMLPageMetadata) error {
-	span := createSpan(ctx, srm.tracer, removeSenMLMessages)
+	span := dbutil.CreateSpan(ctx, srm.tracer, removeSenMLMessages)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

@@ -6,6 +6,7 @@ package tracing
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/opentracing/opentracing-go"
 )
@@ -32,7 +33,7 @@ func JSONRepositoryMiddleware(tracer opentracing.Tracer, repo readers.JSONMessag
 }
 
 func (jrm jsonRepositoryMiddleware) Retrieve(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
-	span := createSpan(ctx, jrm.tracer, retrieveJSONMessages)
+	span := dbutil.CreateSpan(ctx, jrm.tracer, retrieveJSONMessages)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -40,7 +41,7 @@ func (jrm jsonRepositoryMiddleware) Retrieve(ctx context.Context, rpm readers.JS
 }
 
 func (jrm jsonRepositoryMiddleware) Backup(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
-	span := createSpan(ctx, jrm.tracer, backupJSONMessages)
+	span := dbutil.CreateSpan(ctx, jrm.tracer, backupJSONMessages)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -48,7 +49,7 @@ func (jrm jsonRepositoryMiddleware) Backup(ctx context.Context, rpm readers.JSON
 }
 
 func (jrm jsonRepositoryMiddleware) Restore(ctx context.Context, messages ...readers.Message) error {
-	span := createSpan(ctx, jrm.tracer, restoreJSONMessages)
+	span := dbutil.CreateSpan(ctx, jrm.tracer, restoreJSONMessages)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -56,20 +57,9 @@ func (jrm jsonRepositoryMiddleware) Restore(ctx context.Context, messages ...rea
 }
 
 func (jrm jsonRepositoryMiddleware) Remove(ctx context.Context, rpm readers.JSONPageMetadata) error {
-	span := createSpan(ctx, jrm.tracer, removeJSONMessages)
+	span := dbutil.CreateSpan(ctx, jrm.tracer, removeJSONMessages)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return jrm.repo.Remove(ctx, rpm)
-}
-
-func createSpan(ctx context.Context, tracer opentracing.Tracer, opName string) opentracing.Span {
-	if parentSpan := opentracing.SpanFromContext(ctx); parentSpan != nil {
-		return tracer.StartSpan(
-			opName,
-			opentracing.ChildOf(parentSpan.Context()),
-		)
-	}
-
-	return tracer.StartSpan(opName)
 }
