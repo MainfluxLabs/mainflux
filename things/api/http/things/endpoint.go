@@ -95,7 +95,7 @@ func viewMetadataByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		metadata, err := svc.ViewMetadataByKey(ctx, req.Type, req.Key)
+		metadata, err := svc.ViewMetadataByKey(ctx, req.ThingKey)
 		if err != nil {
 			return nil, err
 		}
@@ -350,7 +350,7 @@ func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		id, err := svc.Identify(ctx, req.Type, req.Key)
+		id, err := svc.Identify(ctx, req.ThingKey)
 		if err != nil {
 			return nil, err
 		}

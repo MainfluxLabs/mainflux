@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -29,7 +30,7 @@ func TestThingSave(t *testing.T) {
 	id := "123"
 	id2 := "124"
 
-	err = thingCache.Save(context.Background(), things.KeyTypeInternal, existingKey, id2)
+	err = thingCache.Save(context.Background(), apiutil.ThingKey{Type: things.KeyTypeExternal, Key: existingKey}, id2)
 	require.Nil(t, err, fmt.Sprintf("save thing to cache: expected nil got %s", err))
 
 	cases := []struct {
@@ -65,7 +66,7 @@ func TestThingSave(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := thingCache.Save(context.Background(), tc.keyType, tc.key, tc.ID)
+		err := thingCache.Save(context.Background(), apiutil.ThingKey{Type: tc.keyType, Key: tc.key}, tc.ID)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected nil got %s", tc.desc, err))
 	}
 }
@@ -76,11 +77,11 @@ func TestThingID(t *testing.T) {
 	key, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	id := "123"
-	err = thingCache.Save(context.Background(), things.KeyTypeInternal, key, id)
+	err = thingCache.Save(context.Background(), apiutil.ThingKey{Type: things.KeyTypeInternal, Key: key}, id)
 	require.Nil(t, err, fmt.Sprintf("save thing to cache: expected nil got %s", err))
 
 	externalKey := "external_key"
-	err = thingCache.Save(context.Background(), things.KeyTypeExternal, externalKey, id)
+	err = thingCache.Save(context.Background(), apiutil.ThingKey{Type: things.KeyTypeExternal, Key: externalKey}, id)
 	require.Nil(t, err, fmt.Sprintf("save thing to cache: expected nil got %s", err))
 
 	cases := map[string]struct {
@@ -116,7 +117,7 @@ func TestThingID(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		cacheID, err := thingCache.ID(context.Background(), tc.keyType, tc.key)
+		cacheID, err := thingCache.ID(context.Background(), apiutil.ThingKey{Key: tc.key, Type: tc.keyType})
 		assert.Equal(t, tc.ID, cacheID, fmt.Sprintf("%s: expected %s got %s\n", desc, tc.ID, cacheID))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
@@ -129,11 +130,11 @@ func TestThingRemove(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	id := "123"
 	id2 := "321"
-	err = thingCache.Save(context.Background(), things.KeyTypeInternal, key, id)
+	err = thingCache.Save(context.Background(), apiutil.ThingKey{Type: things.KeyTypeInternal, Key: key}, id)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	externalKey := "external_key"
-	err = thingCache.Save(context.Background(), things.KeyTypeExternal, externalKey, id)
+	err = thingCache.Save(context.Background(), apiutil.ThingKey{Type: things.KeyTypeExternal, Key: externalKey}, id)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {

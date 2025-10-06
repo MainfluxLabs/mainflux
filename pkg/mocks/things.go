@@ -101,7 +101,7 @@ func (svc *mainfluxThings) UpdateKey(context.Context, string, string, string) er
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewMetadataByKey(context.Context, string, string) (things.Metadata, error) {
+func (svc *mainfluxThings) ViewMetadataByKey(context.Context, apiutil.ThingKey) (things.Metadata, error) {
 	panic("not implemented")
 }
 
@@ -207,7 +207,7 @@ func (svc *mainfluxThings) RemoveProfiles(context.Context, string, ...string) er
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) GetPubConfByKey(context.Context, string, string) (things.PubConfInfo, error) {
+func (svc *mainfluxThings) GetPubConfByKey(context.Context, apiutil.ThingKey) (things.PubConfInfo, error) {
 	panic("not implemented")
 }
 
@@ -231,7 +231,7 @@ func (svc *mainfluxThings) CanThingAccessGroup(context.Context, things.ThingAcce
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) Identify(context.Context, string, string) (string, error) {
+func (svc *mainfluxThings) Identify(context.Context, apiutil.ThingKey) (string, error) {
 	panic("not implemented")
 }
 

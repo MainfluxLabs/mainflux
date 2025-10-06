@@ -12,6 +12,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/coap"
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
@@ -27,7 +28,7 @@ func LoggingMiddleware(svc coap.Service, logger log.Logger) coap.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) Publish(ctx context.Context, keyType, key string, msg protomfx.Message) (err error) {
+func (lm *loggingMiddleware) Publish(ctx context.Context, key apiutil.ThingKey, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
 		dest := ""
 		if msg.Subtopic != "" {
@@ -41,10 +42,10 @@ func (lm *loggingMiddleware) Publish(ctx context.Context, keyType, key string, m
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Publish(ctx, keyType, key, msg)
+	return lm.svc.Publish(ctx, key, msg)
 }
 
-func (lm *loggingMiddleware) Subscribe(ctx context.Context, keyType, key, subtopic string, c coap.Client) (err error) {
+func (lm *loggingMiddleware) Subscribe(ctx context.Context, key apiutil.ThingKey, subtopic string, c coap.Client) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method subscribe for client %s took %s to complete", c.Token(), time.Since(begin))
 		if err != nil {
@@ -54,10 +55,10 @@ func (lm *loggingMiddleware) Subscribe(ctx context.Context, keyType, key, subtop
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Subscribe(ctx, keyType, key, subtopic, c)
+	return lm.svc.Subscribe(ctx, key, subtopic, c)
 }
 
-func (lm *loggingMiddleware) Unsubscribe(ctx context.Context, keyType, key, subtopic, token string) (err error) {
+func (lm *loggingMiddleware) Unsubscribe(ctx context.Context, key apiutil.ThingKey, subtopic, token string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method unsubscribe for the client %s took %s to complete", token, time.Since(begin))
 		if err != nil {
@@ -67,6 +68,6 @@ func (lm *loggingMiddleware) Unsubscribe(ctx context.Context, keyType, key, subt
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Unsubscribe(ctx, keyType, key, subtopic, token)
+	return lm.svc.Unsubscribe(ctx, key, subtopic, token)
 
 }

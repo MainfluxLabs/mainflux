@@ -193,16 +193,16 @@ func (trm *thingRepositoryMock) Remove(_ context.Context, ids ...string) error {
 	return nil
 }
 
-func (trm *thingRepositoryMock) RetrieveByKey(_ context.Context, keyType, key string) (string, error) {
+func (trm *thingRepositoryMock) RetrieveByKey(_ context.Context, key apiutil.ThingKey) (string, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
 	for _, thing := range trm.things {
-		if keyType == things.KeyTypeInternal && thing.Key == key {
+		if key.Type == things.KeyTypeInternal && thing.Key == key.Key {
 			return thing.ID, nil
 		}
 
-		if keyType == things.KeyTypeExternal && thing.KeyExternal == key {
+		if key.Type == things.KeyTypeExternal && thing.KeyExternal == key.Key {
 			return thing.ID, nil
 		}
 	}

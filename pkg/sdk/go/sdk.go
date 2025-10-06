@@ -207,7 +207,7 @@ type SDK interface {
 	GetThing(id, token string) (Thing, error)
 
 	// GetThingMetadataByKey retrieves metadata about the thing identified by the given key.
-	GetThingMetadataByKey(keyType, thingKey string) (Metadata, error)
+	GetThingMetadataByKey(key apiutil.ThingKey) (Metadata, error)
 
 	// UpdateThing updates existing thing.
 	UpdateThing(thing Thing, thingID, token string) error
@@ -219,7 +219,7 @@ type SDK interface {
 	DeleteThings(ids []string, token string) error
 
 	// IdentifyThing validates thing's key and returns its ID
-	IdentifyThing(keyType, key string) (string, error)
+	IdentifyThing(key apiutil.ThingKey) (string, error)
 
 	// UpdateExternalThingKey sets the external key of the Thing identified by `thingID`.`
 	UpdateExternalThingKey(key, thingID, token string) error
@@ -324,7 +324,7 @@ type SDK interface {
 	RemoveOrgMemberships(memberIDs []string, orgID, token string) error
 
 	// SendMessage send message.
-	SendMessage(subtopic, msg, keyType, key string) error
+	SendMessage(subtopic, msg string, key apiutil.ThingKey) error
 
 	// ReadMessages read messages.
 	ReadMessages(isAdmin bool, pm PageMetadata, keyType, token string) (map[string]interface{}, error)
@@ -428,13 +428,13 @@ func (sdk mfSDK) sendRequest(req *http.Request, token, contentType string) (*htt
 	return sdk.client.Do(req)
 }
 
-func (sdk mfSDK) sendThingRequest(req *http.Request, keyType, key, contentType string) (*http.Response, error) {
-	if key != "" {
-		switch keyType {
+func (sdk mfSDK) sendThingRequest(req *http.Request, key apiutil.ThingKey, contentType string) (*http.Response, error) {
+	if key.Key != "" {
+		switch key.Type {
 		case apiutil.ThingKeyTypeInternal:
-			req.Header.Set("Authorization", apiutil.ThingKeyPrefixInternal+key)
+			req.Header.Set("Authorization", apiutil.ThingKeyPrefixInternal+key.Key)
 		case apiutil.ThingKeyTypeExternal:
-			req.Header.Set("Authorization", apiutil.ThingKeyPrefixExternal+key)
+			req.Header.Set("Authorization", apiutil.ThingKeyPrefixExternal+key.Key)
 		}
 	}
 

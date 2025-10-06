@@ -57,7 +57,7 @@ type ThingRepository interface {
 	RetrieveByID(ctx context.Context, id string) (Thing, error)
 
 	// RetrieveByKey returns thing ID for given thing key based on its type.
-	RetrieveByKey(ctx context.Context, keyType, key string) (string, error)
+	RetrieveByKey(ctx context.Context, key apiutil.ThingKey) (string, error)
 
 	// RetrieveByGroups retrieves the subset of things specified by given group ids.
 	RetrieveByGroups(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (ThingsPage, error)
@@ -88,16 +88,16 @@ type ThingRepository interface {
 // ThingCache contains thing caching interface.
 type ThingCache interface {
 	// Save stores the pair (thing key, thing id).
-	Save(ctx context.Context, keyType, thingKey, thingID string) error
+	Save(ctx context.Context, key apiutil.ThingKey, thingID string) error
 
 	// ID returns thing ID for a given thing key.
-	ID(ctx context.Context, keyType, thingKey string) (string, error)
+	ID(ctx context.Context, key apiutil.ThingKey) (string, error)
 
 	// RemoveThing removes thing from cache.
 	RemoveThing(context.Context, string) error
 
 	// RemoveKey removes a specific thing key from the cache.
-	RemoveKey(ctx context.Context, keyType, thingKey string) error
+	RemoveKey(ctx context.Context, key apiutil.ThingKey) error
 
 	// SaveGroup stores group ID by given thing ID.
 	SaveGroup(context.Context, string, string) error

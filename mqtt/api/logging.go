@@ -13,6 +13,7 @@ import (
 
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
 var _ mqtt.Service = (*loggingMiddleware)(nil)
@@ -27,7 +28,7 @@ func LoggingMiddleware(svc mqtt.Service, logger log.Logger) mqtt.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) ListSubscriptions(ctx context.Context, groupID, token, keyType, key string, pm mqtt.PageMetadata) (page mqtt.Page, err error) {
+func (lm *loggingMiddleware) ListSubscriptions(ctx context.Context, groupID, token string, key apiutil.ThingKey, pm mqtt.PageMetadata) (page mqtt.Page, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_subscriptions took %s to complete", time.Since(begin))
 		if err != nil {
@@ -37,7 +38,7 @@ func (lm *loggingMiddleware) ListSubscriptions(ctx context.Context, groupID, tok
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListSubscriptions(ctx, groupID, token, keyType, key, pm)
+	return lm.svc.ListSubscriptions(ctx, groupID, token, key, pm)
 }
 
 func (lm *loggingMiddleware) CreateSubscription(ctx context.Context, sub mqtt.Subscription) (err error) {

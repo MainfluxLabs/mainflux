@@ -87,9 +87,9 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 	}
 	switch m.Code {
 	case codes.GET:
-		err = handleGet(m, w.Client(), msg, key.Type, key.Key)
+		err = handleGet(m, w.Client(), msg, key)
 	case codes.POST:
-		err = service.Publish(context.Background(), key.Type, key.Key, msg)
+		err = service.Publish(context.Background(), key, msg)
 	default:
 		err = dbutil.ErrNotFound
 	}
@@ -109,7 +109,7 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 	}
 }
 
-func handleGet(m *mux.Message, c mux.Client, msg protomfx.Message, keyType, key string) error {
+func handleGet(m *mux.Message, c mux.Client, msg protomfx.Message, key apiutil.ThingKey) error {
 	var obs uint32
 	obs, err := m.Options.Observe()
 	if err != nil {
@@ -118,9 +118,9 @@ func handleGet(m *mux.Message, c mux.Client, msg protomfx.Message, keyType, key 
 	}
 	if obs == startObserve {
 		c := coap.NewClient(c, m.Token, logger)
-		return service.Subscribe(context.Background(), keyType, key, msg.Subtopic, c)
+		return service.Subscribe(context.Background(), key, msg.Subtopic, c)
 	}
-	return service.Unsubscribe(context.Background(), keyType, key, msg.Subtopic, m.Token.String())
+	return service.Unsubscribe(context.Background(), key, msg.Subtopic, m.Token.String())
 }
 
 func decodeMessage(msg *mux.Message) (protomfx.Message, error) {

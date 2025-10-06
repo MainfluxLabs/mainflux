@@ -30,31 +30,31 @@ func NewThingCache() things.ThingCache {
 	}
 }
 
-func (tcm *thingCacheMock) Save(_ context.Context, keyType, key, id string) error {
+func (tcm *thingCacheMock) Save(_ context.Context, key apiutil.ThingKey, id string) error {
 	tcm.mu.Lock()
 	defer tcm.mu.Unlock()
 
-	switch keyType {
+	switch key.Type {
 	case things.KeyTypeInternal:
-		tcm.thingsByKey[key] = id
+		tcm.thingsByKey[key.Key] = id
 	case things.KeyTypeExternal:
-		tcm.thingsByKeyExternal[key] = id
+		tcm.thingsByKeyExternal[key.Key] = id
 	}
 
 	return nil
 }
 
-func (tcm *thingCacheMock) ID(_ context.Context, keyType, key string) (string, error) {
+func (tcm *thingCacheMock) ID(_ context.Context, key apiutil.ThingKey) (string, error) {
 	tcm.mu.Lock()
 	defer tcm.mu.Unlock()
 
-	switch keyType {
+	switch key.Type {
 	case things.KeyTypeInternal:
-		if id, ok := tcm.thingsByKey[key]; ok {
+		if id, ok := tcm.thingsByKey[key.Key]; ok {
 			return id, nil
 		}
 	case things.KeyTypeExternal:
-		if id, ok := tcm.thingsByKeyExternal[key]; ok {
+		if id, ok := tcm.thingsByKeyExternal[key.Key]; ok {
 			return id, nil
 		}
 	default:
@@ -83,15 +83,15 @@ func (tcm *thingCacheMock) RemoveThing(_ context.Context, id string) error {
 	return nil
 }
 
-func (tcm *thingCacheMock) RemoveKey(_ context.Context, keyType, thingKey string) error {
+func (tcm *thingCacheMock) RemoveKey(_ context.Context, key apiutil.ThingKey) error {
 	tcm.mu.Lock()
 	defer tcm.mu.Unlock()
 
-	switch keyType {
+	switch key.Type {
 	case things.KeyTypeInternal:
-		delete(tcm.thingsByKey, thingKey)
+		delete(tcm.thingsByKey, key.Key)
 	case things.KeyTypeExternal:
-		delete(tcm.thingsByKeyExternal, thingKey)
+		delete(tcm.thingsByKeyExternal, key.Key)
 	default:
 		return apiutil.ErrInvalidThingKeyType
 	}

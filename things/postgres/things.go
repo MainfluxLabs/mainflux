@@ -168,11 +168,11 @@ func (tr thingRepository) RetrieveByID(ctx context.Context, id string) (things.T
 	return toThing(dbth)
 }
 
-func (tr thingRepository) RetrieveByKey(ctx context.Context, keyType string, key string) (string, error) {
+func (tr thingRepository) RetrieveByKey(ctx context.Context, key apiutil.ThingKey) (string, error) {
 	query := `
 		SELECT id FROM things WHERE %s = $1;	
 	`
-	switch keyType {
+	switch key.Type {
 	case things.KeyTypeInternal:
 		query = fmt.Sprintf(query, "key")
 	case things.KeyTypeExternal:
@@ -182,7 +182,7 @@ func (tr thingRepository) RetrieveByKey(ctx context.Context, keyType string, key
 	}
 
 	var id string
-	if err := tr.db.QueryRowxContext(ctx, query, key).Scan(&id); err != nil {
+	if err := tr.db.QueryRowxContext(ctx, query, key.Key).Scan(&id); err != nil {
 		if err == sql.ErrNoRows {
 			return "", errors.Wrap(dbutil.ErrNotFound, err)
 		}

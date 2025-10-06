@@ -4,6 +4,7 @@
 package cli
 
 import (
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	mfxsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/spf13/cobra"
 )
@@ -16,12 +17,12 @@ var cmdMessages = []cobra.Command{
 		Run: func(cmd *cobra.Command, args []string) {
 			switch len(args) {
 			case 3:
-				if err := sdk.SendMessage("", args[0], args[1], args[2]); err != nil {
+				if err := sdk.SendMessage("", args[0], apiutil.ThingKey{Type: args[1], Key: args[2]}); err != nil {
 					logError(err)
 					return
 				}
 			case 4:
-				if err := sdk.SendMessage(args[0], args[1], args[2], args[3]); err != nil {
+				if err := sdk.SendMessage(args[0], args[1], apiutil.ThingKey{Type: args[2], Key: args[3]}); err != nil {
 					logError(err)
 					return
 				}

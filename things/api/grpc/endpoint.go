@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
@@ -19,7 +20,7 @@ func getPubConfByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		pc, err := svc.GetPubConfByKey(ctx, req.keyType, req.key)
+		pc, err := svc.GetPubConfByKey(ctx, apiutil.ThingKey{Type: req.keyType, Key: req.key})
 		if err != nil {
 			return pubConfByKeyRes{}, err
 		}
@@ -130,9 +131,11 @@ func canThingAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		r := things.ThingAccessReq{
-			Key:     req.key,
-			KeyType: req.keyType,
-			ID:      req.id,
+			ThingKey: apiutil.ThingKey{
+				Key:  req.key,
+				Type: req.keyType,
+			},
+			ID: req.id,
 		}
 
 		if err := svc.CanThingAccessGroup(ctx, r); err != nil {
@@ -150,7 +153,7 @@ func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		id, err := svc.Identify(ctx, req.keyType, req.key)
+		id, err := svc.Identify(ctx, apiutil.ThingKey{Type: req.keyType, Key: req.key})
 		if err != nil {
 			return identityRes{}, err
 		}

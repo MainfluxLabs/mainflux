@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -33,9 +34,9 @@ func NewThingCache(client *redis.Client) things.ThingCache {
 	}
 }
 
-func (tc *thingCache) Save(ctx context.Context, keyType, thingKey string, thingID string) error {
+func (tc *thingCache) Save(ctx context.Context, key apiutil.ThingKey, thingID string) error {
 	// Associate the given thing key with the given thing ID
-	idKey := idByThingKeyKey(keyType, thingKey)
+	idKey := idByThingKeyKey(key)
 	if err := tc.client.Set(ctx, idKey, thingID, 0).Err(); err != nil {
 		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
@@ -43,7 +44,7 @@ func (tc *thingCache) Save(ctx context.Context, keyType, thingKey string, thingI
 	// Add the given thing key to the set containing thing keys associated with
 	// this particular thing
 	keysSetKey := keysByThingIDKey(thingID)
-	thingKeyVal := fmt.Sprintf("%s:%s", keyType, thingKey)
+	thingKeyVal := fmt.Sprintf("%s:%s", key.Type, key.Key)
 	if err := tc.client.SAdd(ctx, keysSetKey, thingKeyVal).Err(); err != nil {
 		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
@@ -51,8 +52,8 @@ func (tc *thingCache) Save(ctx context.Context, keyType, thingKey string, thingI
 	return nil
 }
 
-func (tc *thingCache) ID(ctx context.Context, keyType, thingKey string) (string, error) {
-	ik := idByThingKeyKey(keyType, thingKey)
+func (tc *thingCache) ID(ctx context.Context, key apiutil.ThingKey) (string, error) {
+	ik := idByThingKeyKey(key)
 	thingID, err := tc.client.Get(ctx, ik).Result()
 	if err != nil {
 		return "", errors.Wrap(dbutil.ErrNotFound, err)
@@ -93,9 +94,9 @@ func (tc *thingCache) RemoveThing(ctx context.Context, thingID string) error {
 	return nil
 }
 
-func (tc *thingCache) RemoveKey(ctx context.Context, keyType, thingKey string) error {
+func (tc *thingCache) RemoveKey(ctx context.Context, key apiutil.ThingKey) error {
 	// Obtain id of thing represented by this particular key
-	thingIdKey := idByThingKeyKey(keyType, thingKey)
+	thingIdKey := idByThingKeyKey(key)
 	thingID, err := tc.client.Get(ctx, thingIdKey).Result()
 
 	if err == redis.Nil {
@@ -113,7 +114,7 @@ func (tc *thingCache) RemoveKey(ctx context.Context, keyType, thingKey string) e
 
 	// Remove thing key from set associating thing ID with all of its keys
 	keysSetKey := keysByThingIDKey(thingID)
-	thingKeyVal := fmt.Sprintf("%s:%s", keyType, thingKey)
+	thingKeyVal := fmt.Sprintf("%s:%s", key.Type, key.Type)
 	if err := tc.client.SRem(ctx, keysSetKey, thingKeyVal).Err(); err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
@@ -168,8 +169,8 @@ func (tc *thingCache) RemoveGroup(ctx context.Context, thingID string) error {
 	return nil
 }
 
-func idByThingKeyKey(keyType, thingKey string) string {
-	return fmt.Sprintf("%s:%s:%s", idByKeyPrefix, keyType, thingKey)
+func idByThingKeyKey(key apiutil.ThingKey) string {
+	return fmt.Sprintf("%s:%s:%s", idByKeyPrefix, key.Type, key.Key)
 }
 
 func keysByThingIDKey(thingID string) string {

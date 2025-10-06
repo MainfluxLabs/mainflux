@@ -90,7 +90,7 @@ func TestPublish(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.Publish(context.Background(), apiutil.ThingKeyTypeInternal, tc.thingKey, tc.msg)
+		err := svc.Publish(context.Background(), apiutil.ThingKey{Type: apiutil.ThingKeyTypeInternal, Key: tc.thingKey}, tc.msg)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -149,7 +149,7 @@ func TestSubscribe(t *testing.T) {
 
 	for _, tc := range cases {
 		pubsub.SetFail(tc.fail)
-		err := svc.Subscribe(context.Background(), apiutil.ThingKeyTypeInternal, tc.thingKey, tc.subtopic, c)
+		err := svc.Subscribe(context.Background(), apiutil.ThingKey{Type: apiutil.ThingKeyPrefixInternal, Key: tc.thingKey}, tc.subtopic, c)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -199,7 +199,7 @@ func TestUnsubscribe(t *testing.T) {
 
 	for _, tc := range cases {
 		pubsub.SetFail(tc.fail)
-		err := svc.Unsubscribe(context.Background(), apiutil.ThingKeyTypeInternal, tc.thingKey, tc.subtopic)
+		err := svc.Unsubscribe(context.Background(), apiutil.ThingKey{Type: apiutil.ThingKeyTypeInternal, Key: tc.thingKey}, tc.subtopic)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

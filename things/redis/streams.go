@@ -101,8 +101,8 @@ func (es eventStore) ViewThing(ctx context.Context, token, id string) (things.Th
 	return es.svc.ViewThing(ctx, token, id)
 }
 
-func (es eventStore) ViewMetadataByKey(ctx context.Context, keyType, thingKey string) (things.Metadata, error) {
-	return es.svc.ViewMetadataByKey(ctx, keyType, thingKey)
+func (es eventStore) ViewMetadataByKey(ctx context.Context, key apiutil.ThingKey) (things.Metadata, error) {
+	return es.svc.ViewMetadataByKey(ctx, key)
 }
 
 func (es eventStore) ListThings(ctx context.Context, token string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
@@ -258,8 +258,8 @@ func (es eventStore) RemoveProfiles(ctx context.Context, token string, ids ...st
 	return nil
 }
 
-func (es eventStore) GetPubConfByKey(ctx context.Context, keyType, key string) (things.PubConfInfo, error) {
-	return es.svc.GetPubConfByKey(ctx, keyType, key)
+func (es eventStore) GetPubConfByKey(ctx context.Context, key apiutil.ThingKey) (things.PubConfInfo, error) {
+	return es.svc.GetPubConfByKey(ctx, key)
 }
 
 func (es eventStore) GetConfigByThingID(ctx context.Context, thingID string) (map[string]interface{}, error) {
@@ -282,8 +282,8 @@ func (es eventStore) CanThingAccessGroup(ctx context.Context, req things.ThingAc
 	return es.svc.CanThingAccessGroup(ctx, req)
 }
 
-func (es eventStore) Identify(ctx context.Context, keyType, key string) (string, error) {
-	return es.svc.Identify(ctx, keyType, key)
+func (es eventStore) Identify(ctx context.Context, key apiutil.ThingKey) (string, error) {
+	return es.svc.Identify(ctx, key)
 }
 
 func (es eventStore) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {

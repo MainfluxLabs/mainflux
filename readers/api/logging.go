@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/readers"
 )
 
@@ -29,7 +30,7 @@ func LoggingMiddleware(svc readers.Service, logger logger.Logger) readers.Servic
 	}
 }
 
-func (lm *loggingMiddleware) ListJSONMessages(ctx context.Context, token, keyType, key string, rpm readers.JSONPageMetadata) (page readers.JSONMessagesPage, err error) {
+func (lm *loggingMiddleware) ListJSONMessages(ctx context.Context, token string, key apiutil.ThingKey, rpm readers.JSONPageMetadata) (page readers.JSONMessagesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_json_messages took %s to complete", time.Since(begin))
 		if err != nil {
@@ -39,10 +40,10 @@ func (lm *loggingMiddleware) ListJSONMessages(ctx context.Context, token, keyTyp
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListJSONMessages(ctx, token, keyType, key, rpm)
+	return lm.svc.ListJSONMessages(ctx, token, key, rpm)
 }
 
-func (lm *loggingMiddleware) ListSenMLMessages(ctx context.Context, token, keyType, key string, rpm readers.SenMLPageMetadata) (page readers.SenMLMessagesPage, err error) {
+func (lm *loggingMiddleware) ListSenMLMessages(ctx context.Context, token string, key apiutil.ThingKey, rpm readers.SenMLPageMetadata) (page readers.SenMLMessagesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_senml_messages took %s to complete", time.Since(begin))
 		if err != nil {
@@ -52,7 +53,7 @@ func (lm *loggingMiddleware) ListSenMLMessages(ctx context.Context, token, keyTy
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListSenMLMessages(ctx, token, keyType, key, rpm)
+	return lm.svc.ListSenMLMessages(ctx, token, key, rpm)
 }
 
 func (lm *loggingMiddleware) BackupJSONMessages(ctx context.Context, token string, rpm readers.JSONPageMetadata) (page readers.JSONMessagesPage, err error) {
@@ -107,7 +108,7 @@ func (lm *loggingMiddleware) RestoreSenMLMessages(ctx context.Context, token str
 	return lm.svc.RestoreSenMLMessages(ctx, token, messages...)
 }
 
-func (lm *loggingMiddleware) DeleteJSONMessages(ctx context.Context, token, keyType, key string, rpm readers.JSONPageMetadata) (err error) {
+func (lm *loggingMiddleware) DeleteJSONMessages(ctx context.Context, token string, key apiutil.ThingKey, rpm readers.JSONPageMetadata) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method delete_json_messages took %s to complete", time.Since(begin))
 		if err != nil {
@@ -117,10 +118,10 @@ func (lm *loggingMiddleware) DeleteJSONMessages(ctx context.Context, token, keyT
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.DeleteJSONMessages(ctx, token, keyType, key, rpm)
+	return lm.svc.DeleteJSONMessages(ctx, token, key, rpm)
 }
 
-func (lm *loggingMiddleware) DeleteSenMLMessages(ctx context.Context, token, keyType, key string, rpm readers.SenMLPageMetadata) (err error) {
+func (lm *loggingMiddleware) DeleteSenMLMessages(ctx context.Context, token string, key apiutil.ThingKey, rpm readers.SenMLPageMetadata) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method delete_senml_messages took %s to complete", time.Since(begin))
 		if err != nil {
@@ -130,5 +131,5 @@ func (lm *loggingMiddleware) DeleteSenMLMessages(ctx context.Context, token, key
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.DeleteSenMLMessages(ctx, token, keyType, key, rpm)
+	return lm.svc.DeleteSenMLMessages(ctx, token, key, rpm)
 }

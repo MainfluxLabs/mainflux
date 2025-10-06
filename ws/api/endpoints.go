@@ -32,7 +32,7 @@ func handshake(svc ws.Service) http.HandlerFunc {
 		req.conn = conn
 		client := ws.NewClient(conn)
 
-		if err := svc.Subscribe(context.Background(), req.ThingKey.Type, req.ThingKey.Key, req.subtopic, client); err != nil {
+		if err := svc.Subscribe(context.Background(), req.ThingKey, req.subtopic, client); err != nil {
 			req.conn.Close()
 			return
 		}
@@ -112,9 +112,9 @@ func process(svc ws.Service, req getConnByKey, msgs <-chan []byte) {
 			Payload:  msg,
 			Created:  time.Now().UnixNano(),
 		}
-		svc.Publish(context.Background(), req.ThingKey.Type, req.ThingKey.Key, m)
+		svc.Publish(context.Background(), req.ThingKey, m)
 	}
-	if err := svc.Unsubscribe(context.Background(), req.ThingKey.Type, req.ThingKey.Key, req.subtopic); err != nil {
+	if err := svc.Unsubscribe(context.Background(), req.ThingKey, req.subtopic); err != nil {
 		req.conn.Close()
 	}
 }

@@ -411,7 +411,7 @@ func TestRetrieveByKey(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		id, err := thingRepo.RetrieveByKey(context.Background(), tc.keyType, tc.key)
+		id, err := thingRepo.RetrieveByKey(context.Background(), apiutil.ThingKey{Type: tc.keyType, Key: tc.key})
 		assert.Equal(t, tc.ID, id, fmt.Sprintf("%s: expected %s got %s\n", desc, tc.ID, id))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}

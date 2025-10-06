@@ -12,6 +12,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/http"
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
@@ -27,7 +28,7 @@ func LoggingMiddleware(svc http.Service, logger log.Logger) http.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) Publish(ctx context.Context, keyType, key string, msg protomfx.Message) (err error) {
+func (lm *loggingMiddleware) Publish(ctx context.Context, key apiutil.ThingKey, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method publish took %s to complete", time.Since(begin))
 		if err != nil {
@@ -37,5 +38,5 @@ func (lm *loggingMiddleware) Publish(ctx context.Context, keyType, key string, m
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Publish(ctx, keyType, key, msg)
+	return lm.svc.Publish(ctx, key, msg)
 }

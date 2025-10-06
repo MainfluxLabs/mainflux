@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
@@ -175,7 +176,7 @@ func (sdk mfSDK) GetThing(id, token string) (Thing, error) {
 	return t, nil
 }
 
-func (sdk mfSDK) GetThingMetadataByKey(keyType, thingKey string) (Metadata, error) {
+func (sdk mfSDK) GetThingMetadataByKey(key apiutil.ThingKey) (Metadata, error) {
 	url := fmt.Sprintf("%s/metadata", sdk.thingsURL)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -183,7 +184,7 @@ func (sdk mfSDK) GetThingMetadataByKey(keyType, thingKey string) (Metadata, erro
 		return Metadata{}, err
 	}
 
-	resp, err := sdk.sendThingRequest(req, keyType, thingKey, string(CTJSON))
+	resp, err := sdk.sendThingRequest(req, key, string(CTJSON))
 	if err != nil {
 		return Metadata{}, err
 	}
@@ -277,8 +278,8 @@ func (sdk mfSDK) DeleteThings(ids []string, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) IdentifyThing(keyType, key string) (string, error) {
-	idReq := identifyThingReq{Key: key, Type: keyType}
+func (sdk mfSDK) IdentifyThing(key apiutil.ThingKey) (string, error) {
+	idReq := identifyThingReq{Key: key.Key, Type: key.Type}
 	data, err := json.Marshal(idReq)
 	if err != nil {
 		return "", err

@@ -346,7 +346,7 @@ func TestMetadataByKey(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		resMeta, err := mainfluxSDK.GetThingMetadataByKey(apiutil.ThingKeyTypeInternal, tc.key)
+		resMeta, err := mainfluxSDK.GetThingMetadataByKey(apiutil.ThingKey{Type: apiutil.ThingKeyTypeInternal, Key: tc.key})
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, resMeta, fmt.Sprintf("%s: expected response thing %s, got %s", tc.desc, tc.response, resMeta))
 	}
@@ -918,7 +918,7 @@ func TestIdentifyThing(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		thingID, err := mainfluxAuthSDK.IdentifyThing(tc.keyType, tc.thingKey)
+		thingID, err := mainfluxAuthSDK.IdentifyThing(apiutil.ThingKey{Type: tc.keyType, Key: tc.thingKey})
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, thingID, fmt.Sprintf("%s: expected response id %s, got %s", tc.desc, tc.response, thingID))
 	}

@@ -18,6 +18,6 @@ func sendMessageEndpoint(svc http.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return nil, svc.Publish(ctx, req.ThingKey.Type, req.ThingKey.Key, req.msg)
+		return nil, svc.Publish(ctx, req.ThingKey, req.msg)
 	}
 }

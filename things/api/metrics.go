@@ -76,13 +76,13 @@ func (ms *metricsMiddleware) ViewThing(ctx context.Context, token, id string) (t
 	return ms.svc.ViewThing(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) ViewMetadataByKey(ctx context.Context, keyType, thingKey string) (things.Metadata, error) {
+func (ms *metricsMiddleware) ViewMetadataByKey(ctx context.Context, key apiutil.ThingKey) (things.Metadata, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_metadata_by_key").Add(1)
 		ms.latency.With("method", "view_metadata_by_key").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ViewMetadataByKey(ctx, keyType, thingKey)
+	return ms.svc.ViewMetadataByKey(ctx, key)
 }
 
 func (ms *metricsMiddleware) ListThings(ctx context.Context, token string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
@@ -184,13 +184,13 @@ func (ms *metricsMiddleware) RemoveProfiles(ctx context.Context, token string, i
 	return ms.svc.RemoveProfiles(ctx, token, ids...)
 }
 
-func (ms *metricsMiddleware) GetPubConfByKey(ctx context.Context, keyType, key string) (things.PubConfInfo, error) {
+func (ms *metricsMiddleware) GetPubConfByKey(ctx context.Context, key apiutil.ThingKey) (things.PubConfInfo, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "get_pub_conf_by_key").Add(1)
 		ms.latency.With("method", "get_pub_conf_by_key").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.GetPubConfByKey(ctx, keyType, key)
+	return ms.svc.GetPubConfByKey(ctx, key)
 }
 
 func (ms *metricsMiddleware) GetConfigByThingID(ctx context.Context, thingID string) (map[string]interface{}, error) {
@@ -237,13 +237,13 @@ func (ms *metricsMiddleware) CanThingAccessGroup(ctx context.Context, req things
 	return ms.svc.CanThingAccessGroup(ctx, req)
 }
 
-func (ms *metricsMiddleware) Identify(ctx context.Context, keyType, key string) (string, error) {
+func (ms *metricsMiddleware) Identify(ctx context.Context, key apiutil.ThingKey) (string, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "identify").Add(1)
 		ms.latency.With("method", "identify").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Identify(ctx, keyType, key)
+	return ms.svc.Identify(ctx, key)
 }
 
 func (ms *metricsMiddleware) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {
