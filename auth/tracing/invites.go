@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
@@ -34,7 +35,7 @@ func InvitesRepositoryMiddleware(tracer opentracing.Tracer, repo auth.OrgInvites
 }
 
 func (irm invitesRepositoryMiddleware) SaveOrgInvite(ctx context.Context, invites ...auth.OrgInvite) error {
-	span := createSpan(ctx, irm.tracer, saveOrgInvite)
+	span := dbutil.CreateSpan(ctx, irm.tracer, saveOrgInvite)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -42,7 +43,7 @@ func (irm invitesRepositoryMiddleware) SaveOrgInvite(ctx context.Context, invite
 }
 
 func (irm invitesRepositoryMiddleware) RetrieveOrgInviteByID(ctx context.Context, inviteID string) (auth.OrgInvite, error) {
-	span := createSpan(ctx, irm.tracer, retrieveOrgInviteByID)
+	span := dbutil.CreateSpan(ctx, irm.tracer, retrieveOrgInviteByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -50,7 +51,7 @@ func (irm invitesRepositoryMiddleware) RetrieveOrgInviteByID(ctx context.Context
 }
 
 func (irm invitesRepositoryMiddleware) RemoveOrgInvite(ctx context.Context, inviteID string) error {
-	span := createSpan(ctx, irm.tracer, removeOrgInvite)
+	span := dbutil.CreateSpan(ctx, irm.tracer, removeOrgInvite)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -58,7 +59,7 @@ func (irm invitesRepositoryMiddleware) RemoveOrgInvite(ctx context.Context, invi
 }
 
 func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByUser(ctx context.Context, userType string, userID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
-	span := createSpan(ctx, irm.tracer, retrieveOrgInvitesByUser)
+	span := dbutil.CreateSpan(ctx, irm.tracer, retrieveOrgInvitesByUser)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -66,7 +67,7 @@ func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByUser(ctx context.Cont
 }
 
 func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByOrg(ctx context.Context, orgID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
-	span := createSpan(ctx, irm.tracer, retrieveOrgInvitesByUser)
+	span := dbutil.CreateSpan(ctx, irm.tracer, retrieveOrgInvitesByUser)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -74,7 +75,7 @@ func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByOrg(ctx context.Conte
 }
 
 func (irm invitesRepositoryMiddleware) UpdateOrgInviteState(ctx context.Context, inviteID string, state string) error {
-	span := createSpan(ctx, irm.tracer, updateOrgInviteState)
+	span := dbutil.CreateSpan(ctx, irm.tracer, updateOrgInviteState)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

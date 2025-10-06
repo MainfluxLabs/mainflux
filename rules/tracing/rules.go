@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/rules"
 	"github.com/opentracing/opentracing-go"
 )
@@ -35,7 +36,7 @@ func RuleRepositoryMiddleware(tracer opentracing.Tracer, repo rules.RuleReposito
 }
 
 func (rpm ruleRepositoryMiddleware) Save(ctx context.Context, rules ...rules.Rule) ([]rules.Rule, error) {
-	span := createSpan(ctx, rpm.tracer, saveRule)
+	span := dbutil.CreateSpan(ctx, rpm.tracer, saveRule)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -43,7 +44,7 @@ func (rpm ruleRepositoryMiddleware) Save(ctx context.Context, rules ...rules.Rul
 }
 
 func (rpm ruleRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (rules.Rule, error) {
-	span := createSpan(ctx, rpm.tracer, retrieveRuleByID)
+	span := dbutil.CreateSpan(ctx, rpm.tracer, retrieveRuleByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -51,7 +52,7 @@ func (rpm ruleRepositoryMiddleware) RetrieveByID(ctx context.Context, id string)
 }
 
 func (rpm ruleRepositoryMiddleware) RetrieveByProfile(ctx context.Context, profileID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
-	span := createSpan(ctx, rpm.tracer, retrieveRuleByProfile)
+	span := dbutil.CreateSpan(ctx, rpm.tracer, retrieveRuleByProfile)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -59,7 +60,7 @@ func (rpm ruleRepositoryMiddleware) RetrieveByProfile(ctx context.Context, profi
 }
 
 func (rpm ruleRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
-	span := createSpan(ctx, rpm.tracer, retrieveRuleByGroup)
+	span := dbutil.CreateSpan(ctx, rpm.tracer, retrieveRuleByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -67,7 +68,7 @@ func (rpm ruleRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID
 }
 
 func (rpm ruleRepositoryMiddleware) Update(ctx context.Context, rule rules.Rule) error {
-	span := createSpan(ctx, rpm.tracer, updateRule)
+	span := dbutil.CreateSpan(ctx, rpm.tracer, updateRule)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -75,19 +76,9 @@ func (rpm ruleRepositoryMiddleware) Update(ctx context.Context, rule rules.Rule)
 }
 
 func (rpm ruleRepositoryMiddleware) Remove(ctx context.Context, ids ...string) error {
-	span := createSpan(ctx, rpm.tracer, removeRule)
+	span := dbutil.CreateSpan(ctx, rpm.tracer, removeRule)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return rpm.repo.Remove(ctx, ids...)
-}
-
-func createSpan(ctx context.Context, tracer opentracing.Tracer, opName string) opentracing.Span {
-	if parentSpan := opentracing.SpanFromContext(ctx); parentSpan != nil {
-		return tracer.StartSpan(
-			opName,
-			opentracing.ChildOf(parentSpan.Context()),
-		)
-	}
-	return tracer.StartSpan(opName)
 }
