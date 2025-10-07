@@ -175,7 +175,7 @@ func parseKey(msg *mux.Message) (apiutil.ThingKey, error) {
 
 		switch parts[0] {
 		case authQuery:
-			thingKey.Key = parts[1]
+			thingKey.Value = parts[1]
 		case authTypeQuery:
 			thingKey.Type = parts[1]
 		}

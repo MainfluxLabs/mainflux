@@ -77,7 +77,7 @@ func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	_, pass, ok := r.BasicAuth()
 	switch {
 	case ok:
-		thingKey = apiutil.ThingKey{Type: things.KeyTypeInternal, Key: pass}
+		thingKey = apiutil.ThingKey{Type: things.KeyTypeInternal, Value: pass}
 	case !ok:
 		thingKey = apiutil.ExtractThingKey(r)
 	}

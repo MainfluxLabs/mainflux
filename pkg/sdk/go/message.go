@@ -57,7 +57,7 @@ func (sdk mfSDK) ReadMessages(isAdmin bool, pm PageMetadata, keyType, token stri
 		return decodeMessages(response)
 	}
 
-	response, err := sdk.sendThingRequest(req, apiutil.ThingKey{Key: token, Type: keyType}, string(sdk.msgContentType))
+	response, err := sdk.sendThingRequest(req, apiutil.ThingKey{Value: token, Type: keyType}, string(sdk.msgContentType))
 	if err != nil {
 		return nil, err
 	}

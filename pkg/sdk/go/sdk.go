@@ -429,12 +429,12 @@ func (sdk mfSDK) sendRequest(req *http.Request, token, contentType string) (*htt
 }
 
 func (sdk mfSDK) sendThingRequest(req *http.Request, key apiutil.ThingKey, contentType string) (*http.Response, error) {
-	if key.Key != "" {
+	if key.Value != "" {
 		switch key.Type {
 		case apiutil.ThingKeyTypeInternal:
-			req.Header.Set("Authorization", apiutil.ThingKeyPrefixInternal+key.Key)
+			req.Header.Set("Authorization", apiutil.ThingKeyPrefixInternal+key.Value)
 		case apiutil.ThingKeyTypeExternal:
-			req.Header.Set("Authorization", apiutil.ThingKeyPrefixExternal+key.Key)
+			req.Header.Set("Authorization", apiutil.ThingKeyPrefixExternal+key.Value)
 		}
 	}
 

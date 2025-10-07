@@ -374,7 +374,7 @@ func (ts *thingsService) UpdateKey(ctx context.Context, token, id, key string) e
 	}
 
 	// Invalidate previous key from cache
-	if err := ts.thingCache.RemoveKey(ctx, apiutil.ThingKey{Key: thing.Key, Type: KeyTypeInternal}); err != nil {
+	if err := ts.thingCache.RemoveKey(ctx, apiutil.ThingKey{Value: thing.Key, Type: KeyTypeInternal}); err != nil {
 		return err
 	}
 
@@ -777,7 +777,7 @@ func (ts *thingsService) UpdateExternalKey(ctx context.Context, token, key, thin
 		return err
 	}
 
-	if err := ts.thingCache.RemoveKey(ctx, apiutil.ThingKey{Type: KeyTypeExternal, Key: thing.KeyExternal}); err != nil {
+	if err := ts.thingCache.RemoveKey(ctx, apiutil.ThingKey{Type: KeyTypeExternal, Value: thing.KeyExternal}); err != nil {
 		return err
 	}
 
@@ -804,7 +804,7 @@ func (ts *thingsService) RemoveExternalKey(ctx context.Context, token, thingID s
 		return err
 	}
 
-	if err := ts.thingCache.RemoveKey(ctx, apiutil.ThingKey{Type: KeyTypeExternal, Key: thing.KeyExternal}); err != nil {
+	if err := ts.thingCache.RemoveKey(ctx, apiutil.ThingKey{Type: KeyTypeExternal, Value: thing.KeyExternal}); err != nil {
 		return err
 	}
 

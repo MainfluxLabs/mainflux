@@ -279,7 +279,7 @@ func (sdk mfSDK) DeleteThings(ids []string, token string) error {
 }
 
 func (sdk mfSDK) IdentifyThing(key apiutil.ThingKey) (string, error) {
-	idReq := identifyThingReq{Key: key.Key, Type: key.Type}
+	idReq := identifyThingReq{Key: key.Value, Type: key.Type}
 	data, err := json.Marshal(idReq)
 	if err != nil {
 		return "", err

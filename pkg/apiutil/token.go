@@ -19,8 +19,8 @@ const (
 
 // ThingKey represents a Thing authentication key and its type
 type ThingKey struct {
-	Key  string `json:"key"`
-	Type string `json:"type"`
+	Value string `json:"key"`
+	Type  string `json:"type"`
 }
 
 func (tk ThingKey) Validate() error {
@@ -28,7 +28,7 @@ func (tk ThingKey) Validate() error {
 		return ErrInvalidThingKeyType
 	}
 
-	if tk.Key == "" {
+	if tk.Value == "" {
 		return ErrBearerKey
 	}
 
@@ -54,13 +54,13 @@ func ExtractThingKey(r *http.Request) ThingKey {
 	switch {
 	case strings.HasPrefix(header, ThingKeyPrefixInternal):
 		return ThingKey{
-			Type: ThingKeyTypeInternal,
-			Key:  strings.TrimPrefix(header, ThingKeyPrefixInternal),
+			Type:  ThingKeyTypeInternal,
+			Value: strings.TrimPrefix(header, ThingKeyPrefixInternal),
 		}
 	case strings.HasPrefix(header, ThingKeyPrefixExternal):
 		return ThingKey{
-			Type: ThingKeyTypeExternal,
-			Key:  strings.TrimPrefix(header, ThingKeyPrefixExternal),
+			Type:  ThingKeyTypeExternal,
+			Value: strings.TrimPrefix(header, ThingKeyPrefixExternal),
 		}
 	}
 

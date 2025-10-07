@@ -24,7 +24,7 @@ func NewClient(key map[string]string, keyExternal map[string]string, conns map[s
 }
 
 func (cli MockClient) GetPubConfByKey(ctx context.Context, key apiutil.ThingKey) (protomfx.PubConfByKeyRes, error) {
-	thID, ok := cli.key[key.Key]
+	thID, ok := cli.key[key.Value]
 	if !ok {
 		return protomfx.PubConfByKeyRes{}, errors.ErrAuthentication
 	}
@@ -39,11 +39,11 @@ func (cli MockClient) GetPubConfByKey(ctx context.Context, key apiutil.ThingKey)
 func (cli MockClient) Identify(ctx context.Context, key apiutil.ThingKey) (string, error) {
 	switch key.Type {
 	case apiutil.ThingKeyTypeInternal:
-		if id, ok := cli.key[key.Key]; ok {
+		if id, ok := cli.key[key.Value]; ok {
 			return id, nil
 		}
 	case apiutil.ThingKeyTypeExternal:
-		if id, ok := cli.keyExternal[key.Key]; ok {
+		if id, ok := cli.keyExternal[key.Value]; ok {
 			return id, nil
 		}
 	default:

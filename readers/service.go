@@ -70,7 +70,7 @@ func (rs *readersService) ListJSONMessages(ctx context.Context, token string, ke
 		if err != nil {
 			return JSONMessagesPage{}, err
 		}
-	case key.Key != "":
+	case key.Value != "":
 		pc, err := rs.getPubConfByKey(ctx, key)
 		if err != nil {
 			return JSONMessagesPage{}, err
@@ -92,7 +92,7 @@ func (rs *readersService) ListSenMLMessages(ctx context.Context, token string, k
 		if err != nil {
 			return SenMLMessagesPage{}, err
 		}
-	case key.Key != "":
+	case key.Value != "":
 		pc, err := rs.getPubConfByKey(ctx, key)
 		if err != nil {
 			return SenMLMessagesPage{}, err
@@ -157,7 +157,7 @@ func (rs *readersService) RestoreSenMLMessages(ctx context.Context, token string
 
 func (rs *readersService) DeleteJSONMessages(ctx context.Context, token string, key apiutil.ThingKey, rpm JSONPageMetadata) error {
 	switch {
-	case key.Key != "":
+	case key.Value != "":
 		pc, err := rs.getPubConfByKey(ctx, key)
 		if err != nil {
 			return errors.Wrap(errors.ErrAuthentication, err)
@@ -175,7 +175,7 @@ func (rs *readersService) DeleteJSONMessages(ctx context.Context, token string, 
 
 func (rs *readersService) DeleteSenMLMessages(ctx context.Context, token string, key apiutil.ThingKey, rpm SenMLPageMetadata) error {
 	switch {
-	case key.Key != "":
+	case key.Value != "":
 		pc, err := rs.getPubConfByKey(ctx, key)
 		if err != nil {
 			return errors.Wrap(errors.ErrAuthentication, err)
@@ -205,7 +205,7 @@ func (rs *readersService) isAdmin(ctx context.Context, token string) error {
 }
 
 func (rs *readersService) getPubConfByKey(ctx context.Context, key apiutil.ThingKey) (*protomfx.PubConfByKeyRes, error) {
-	pc, err := rs.thingc.GetPubConfByKey(ctx, &protomfx.ThingKey{Value: key.Key, Type: key.Type})
+	pc, err := rs.thingc.GetPubConfByKey(ctx, &protomfx.ThingKey{Value: key.Value, Type: key.Type})
 	if err != nil {
 		return nil, err
 	}

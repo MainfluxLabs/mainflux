@@ -36,9 +36,9 @@ func (tcm *thingCacheMock) Save(_ context.Context, key apiutil.ThingKey, id stri
 
 	switch key.Type {
 	case things.KeyTypeInternal:
-		tcm.thingsByKey[key.Key] = id
+		tcm.thingsByKey[key.Value] = id
 	case things.KeyTypeExternal:
-		tcm.thingsByKeyExternal[key.Key] = id
+		tcm.thingsByKeyExternal[key.Value] = id
 	}
 
 	return nil
@@ -50,11 +50,11 @@ func (tcm *thingCacheMock) ID(_ context.Context, key apiutil.ThingKey) (string, 
 
 	switch key.Type {
 	case things.KeyTypeInternal:
-		if id, ok := tcm.thingsByKey[key.Key]; ok {
+		if id, ok := tcm.thingsByKey[key.Value]; ok {
 			return id, nil
 		}
 	case things.KeyTypeExternal:
-		if id, ok := tcm.thingsByKeyExternal[key.Key]; ok {
+		if id, ok := tcm.thingsByKeyExternal[key.Value]; ok {
 			return id, nil
 		}
 	default:
@@ -89,9 +89,9 @@ func (tcm *thingCacheMock) RemoveKey(_ context.Context, key apiutil.ThingKey) er
 
 	switch key.Type {
 	case things.KeyTypeInternal:
-		delete(tcm.thingsByKey, key.Key)
+		delete(tcm.thingsByKey, key.Value)
 	case things.KeyTypeExternal:
-		delete(tcm.thingsByKeyExternal, key.Key)
+		delete(tcm.thingsByKeyExternal, key.Value)
 	default:
 		return apiutil.ErrInvalidThingKeyType
 	}

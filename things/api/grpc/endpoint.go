@@ -20,7 +20,7 @@ func getPubConfByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		pc, err := svc.GetPubConfByKey(ctx, apiutil.ThingKey{Type: req.keyType, Key: req.key})
+		pc, err := svc.GetPubConfByKey(ctx, apiutil.ThingKey{Type: req.keyType, Value: req.key})
 		if err != nil {
 			return pubConfByKeyRes{}, err
 		}
@@ -132,8 +132,8 @@ func canThingAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
 
 		r := things.ThingAccessReq{
 			ThingKey: apiutil.ThingKey{
-				Key:  req.key,
-				Type: req.keyType,
+				Value: req.key,
+				Type:  req.keyType,
 			},
 			ID: req.id,
 		}
@@ -153,7 +153,7 @@ func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		id, err := svc.Identify(ctx, apiutil.ThingKey{Type: req.keyType, Key: req.key})
+		id, err := svc.Identify(ctx, apiutil.ThingKey{Type: req.keyType, Value: req.key})
 		if err != nil {
 			return identityRes{}, err
 		}

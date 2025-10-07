@@ -182,7 +182,7 @@ func (tr thingRepository) RetrieveByKey(ctx context.Context, key apiutil.ThingKe
 	}
 
 	var id string
-	if err := tr.db.QueryRowxContext(ctx, query, key.Key).Scan(&id); err != nil {
+	if err := tr.db.QueryRowxContext(ctx, query, key.Value).Scan(&id); err != nil {
 		if err == sql.ErrNoRows {
 			return "", errors.Wrap(dbutil.ErrNotFound, err)
 		}

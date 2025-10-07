@@ -38,7 +38,7 @@ func New(things protomfx.ThingsServiceClient, rules protomfx.RulesServiceClient,
 }
 
 func (as *adapterService) Publish(ctx context.Context, key apiutil.ThingKey, message protomfx.Message) error {
-	cr := &protomfx.ThingKey{Value: key.Key, Type: key.Type}
+	cr := &protomfx.ThingKey{Value: key.Value, Type: key.Type}
 	pc, err := as.things.GetPubConfByKey(ctx, cr)
 	if err != nil {
 		return err

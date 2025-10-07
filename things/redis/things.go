@@ -44,7 +44,7 @@ func (tc *thingCache) Save(ctx context.Context, key apiutil.ThingKey, thingID st
 	// Add the given thing key to the set containing thing keys associated with
 	// this particular thing
 	keysSetKey := keysByThingIDKey(thingID)
-	thingKeyVal := fmt.Sprintf("%s:%s", key.Type, key.Key)
+	thingKeyVal := fmt.Sprintf("%s:%s", key.Type, key.Value)
 	if err := tc.client.SAdd(ctx, keysSetKey, thingKeyVal).Err(); err != nil {
 		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
@@ -170,7 +170,7 @@ func (tc *thingCache) RemoveGroup(ctx context.Context, thingID string) error {
 }
 
 func idByThingKeyKey(key apiutil.ThingKey) string {
-	return fmt.Sprintf("%s:%s:%s", idByKeyPrefix, key.Type, key.Key)
+	return fmt.Sprintf("%s:%s:%s", idByKeyPrefix, key.Type, key.Value)
 }
 
 func keysByThingIDKey(thingID string) string {

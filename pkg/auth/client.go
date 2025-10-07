@@ -36,11 +36,11 @@ func New(redisClient *redis.Client, things protomfx.ThingsServiceClient) Client 
 }
 
 func (c client) Identify(ctx context.Context, key apiutil.ThingKey) (string, error) {
-	tkey := keyPrefix + ":" + key.Key
+	tkey := keyPrefix + ":" + key.Value
 	thingID, err := c.redisClient.Get(ctx, tkey).Result()
 	if err != nil {
 		t := &protomfx.ThingKey{
-			Value: string(key.Key),
+			Value: string(key.Value),
 			Type:  key.Type,
 		}
 
@@ -55,7 +55,7 @@ func (c client) Identify(ctx context.Context, key apiutil.ThingKey) (string, err
 
 func (c client) GetPubConfByKey(ctx context.Context, key apiutil.ThingKey) (protomfx.PubConfByKeyRes, error) {
 	req := &protomfx.ThingKey{
-		Value: key.Key,
+		Value: key.Value,
 		Type:  key.Type,
 	}
 

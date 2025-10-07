@@ -83,7 +83,7 @@ func (svc *adapterService) Publish(ctx context.Context, key apiutil.ThingKey, me
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key apiutil.ThingKey, subtopic string, c *Client) error {
-	if key.Key == "" {
+	if key.Value == "" {
 		return ErrUnauthorizedAccess
 	}
 
@@ -98,7 +98,7 @@ func (svc *adapterService) Subscribe(ctx context.Context, key apiutil.ThingKey, 
 }
 
 func (svc *adapterService) Unsubscribe(ctx context.Context, key apiutil.ThingKey, subtopic string) error {
-	if key.Key == "" {
+	if key.Value == "" {
 		return ErrUnauthorizedAccess
 	}
 
@@ -112,7 +112,7 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, key apiutil.ThingKey
 
 func (svc *adapterService) authorize(ctx context.Context, key apiutil.ThingKey) (*protomfx.PubConfByKeyRes, error) {
 	ar := &protomfx.ThingKey{
-		Value: key.Key,
+		Value: key.Value,
 		Type:  key.Type,
 	}
 	pc, err := svc.things.GetPubConfByKey(ctx, ar)
