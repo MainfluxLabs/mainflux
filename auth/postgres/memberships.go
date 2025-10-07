@@ -95,6 +95,7 @@ func (omr orgMembershipsRepository) Save(ctx context.Context, oms ...auth.OrgMem
 	if err != nil {
 		return errors.Wrap(auth.ErrCreateOrgMembership, err)
 	}
+	defer tx.Rollback()
 
 	qIns := `INSERT INTO org_memberships (org_id, member_id, role, created_at, updated_at)
 			 VALUES(:org_id, :member_id, :role, :created_at, :updated_at)`
@@ -103,7 +104,6 @@ func (omr orgMembershipsRepository) Save(ctx context.Context, oms ...auth.OrgMem
 		dbom := toDBOrgMembership(om)
 
 		if _, err := tx.NamedExecContext(ctx, qIns, dbom); err != nil {
-			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
 				switch pgErr.Code {
@@ -143,7 +143,6 @@ func (omr orgMembershipsRepository) Remove(ctx context.Context, orgID string, id
 		dbom := toDBOrgMembership(om)
 
 		if _, err := tx.NamedExecContext(ctx, qDel, dbom); err != nil {
-			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
 				switch pgErr.Code {

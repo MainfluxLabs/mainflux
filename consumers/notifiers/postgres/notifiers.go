@@ -34,6 +34,7 @@ func (nr notifierRepository) Save(ctx context.Context, nfs ...notifiers.Notifier
 	if err != nil {
 		return []notifiers.Notifier{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
+	defer tx.Rollback()
 
 	q := `INSERT INTO notifiers (id, group_id, name, contacts, metadata) VALUES (:id, :group_id, :name, :contacts, :metadata);`
 
@@ -44,7 +45,6 @@ func (nr notifierRepository) Save(ctx context.Context, nfs ...notifiers.Notifier
 		}
 
 		if _, err := tx.NamedExecContext(ctx, q, dbNf); err != nil {
-			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
 				switch pgErr.Code {

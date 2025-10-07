@@ -37,6 +37,7 @@ func (tr thingRepository) Save(ctx context.Context, ths ...things.Thing) ([]thin
 	if err != nil {
 		return []things.Thing{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
+	defer tx.Rollback()
 
 	q := `INSERT INTO things (id, group_id, profile_id, name, key, key_external, metadata)
 		  VALUES (:id, :group_id, :profile_id, :name, :key, :key_external, :metadata);`
@@ -48,7 +49,6 @@ func (tr thingRepository) Save(ctx context.Context, ths ...things.Thing) ([]thin
 		}
 
 		if _, err := tx.NamedExecContext(ctx, q, dbth); err != nil {
-			tx.Rollback()
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
 				switch pgErr.Code {
