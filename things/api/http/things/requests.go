@@ -17,7 +17,7 @@ const (
 type createThingReq struct {
 	Name        string                 `json:"name,omitempty"`
 	Key         string                 `json:"key,omitempty"`
-	KeyExternal string                 `json:"external_key,omitempty"`
+	ExternalKey string                 `json:"external_key,omitempty"`
 	ID          string                 `json:"id,omitempty"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }

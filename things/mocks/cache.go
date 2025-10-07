@@ -17,7 +17,7 @@ import (
 type thingCacheMock struct {
 	mu                  sync.Mutex
 	thingsByKey         map[string]string
-	thingsByKeyExternal map[string]string
+	thingsByExternalKey map[string]string
 	groups              map[string]string
 }
 
@@ -25,7 +25,7 @@ type thingCacheMock struct {
 func NewThingCache() things.ThingCache {
 	return &thingCacheMock{
 		thingsByKey:         make(map[string]string),
-		thingsByKeyExternal: make(map[string]string),
+		thingsByExternalKey: make(map[string]string),
 		groups:              make(map[string]string),
 	}
 }
@@ -38,7 +38,7 @@ func (tcm *thingCacheMock) Save(_ context.Context, key things.ThingKey, id strin
 	case things.KeyTypeInternal:
 		tcm.thingsByKey[key.Value] = id
 	case things.KeyTypeExternal:
-		tcm.thingsByKeyExternal[key.Value] = id
+		tcm.thingsByExternalKey[key.Value] = id
 	}
 
 	return nil
@@ -54,7 +54,7 @@ func (tcm *thingCacheMock) ID(_ context.Context, key things.ThingKey) (string, e
 			return id, nil
 		}
 	case things.KeyTypeExternal:
-		if id, ok := tcm.thingsByKeyExternal[key.Value]; ok {
+		if id, ok := tcm.thingsByExternalKey[key.Value]; ok {
 			return id, nil
 		}
 	default:
@@ -74,7 +74,7 @@ func (tcm *thingCacheMock) RemoveThing(_ context.Context, id string) error {
 		}
 	}
 
-	for key, val := range tcm.thingsByKeyExternal {
+	for key, val := range tcm.thingsByExternalKey {
 		if val == id {
 			delete(tcm.thingsByKey, key)
 		}
@@ -91,7 +91,7 @@ func (tcm *thingCacheMock) RemoveKey(_ context.Context, key things.ThingKey) err
 	case things.KeyTypeInternal:
 		delete(tcm.thingsByKey, key.Value)
 	case things.KeyTypeExternal:
-		delete(tcm.thingsByKeyExternal, key.Value)
+		delete(tcm.thingsByExternalKey, key.Value)
 	default:
 		return apiutil.ErrInvalidThingKeyType
 	}

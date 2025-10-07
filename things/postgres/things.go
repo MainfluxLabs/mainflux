@@ -448,7 +448,7 @@ type dbThing struct {
 	ProfileID   string         `db:"profile_id"`
 	Name        string         `db:"name"`
 	Key         string         `db:"key"`
-	KeyExternal sql.NullString `db:"external_key"`
+	ExternalKey sql.NullString `db:"external_key"`
 	Metadata    []byte         `db:"metadata"`
 }
 
@@ -468,7 +468,7 @@ func toDBThing(th things.Thing) (dbThing, error) {
 		ProfileID:   th.ProfileID,
 		Name:        th.Name,
 		Key:         th.Key,
-		KeyExternal: sql.NullString{String: th.ExternalKey, Valid: len(th.ExternalKey) > 0},
+		ExternalKey: sql.NullString{String: th.ExternalKey, Valid: len(th.ExternalKey) > 0},
 		Metadata:    data,
 	}, nil
 }
@@ -485,7 +485,7 @@ func toThing(dbth dbThing) (things.Thing, error) {
 		ProfileID:   dbth.ProfileID,
 		Name:        dbth.Name,
 		Key:         dbth.Key,
-		ExternalKey: dbth.KeyExternal.String,
+		ExternalKey: dbth.ExternalKey.String,
 		Metadata:    metadata,
 	}, nil
 }

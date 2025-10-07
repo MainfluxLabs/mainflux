@@ -2100,7 +2100,7 @@ func TestBackupThingsByGroup(t *testing.T) {
 			ProfileID:   th.ProfileID,
 			Name:        th.Name,
 			Key:         th.Key,
-			KeyExternal: externalKey,
+			ExternalKey: externalKey,
 			Metadata:    th.Metadata,
 		})
 	}
@@ -2194,7 +2194,7 @@ func TestRestoreThingsByGroup(t *testing.T) {
 			ProfileID:   prID,
 			Name:        fmt.Sprintf("thing_%d", i),
 			Key:         thKey,
-			KeyExternal: externalKey,
+			ExternalKey: externalKey,
 			Metadata:    metadata,
 		})
 	}
@@ -2295,7 +2295,7 @@ func TestBackupThingsByOrg(t *testing.T) {
 			ProfileID:   th.ProfileID,
 			Name:        th.Name,
 			Key:         th.Key,
-			KeyExternal: externalKey,
+			ExternalKey: externalKey,
 			Metadata:    th.Metadata,
 		})
 	}
@@ -2383,7 +2383,7 @@ func TestRestoreThingsByOrg(t *testing.T) {
 			ProfileID:   prID,
 			Name:        fmt.Sprintf("thing_%d", i),
 			Key:         thKey,
-			KeyExternal: fmt.Sprintf("external_key_%d", i),
+			ExternalKey: fmt.Sprintf("external_key_%d", i),
 			Metadata:    metadata,
 		})
 	}
@@ -2680,7 +2680,7 @@ func TestBackup(t *testing.T) {
 			ProfileID:   th.ProfileID,
 			Name:        th.Name,
 			Key:         th.Key,
-			KeyExternal: th.ExternalKey,
+			ExternalKey: th.ExternalKey,
 			Metadata:    th.Metadata,
 		})
 	}
@@ -2811,7 +2811,7 @@ func TestRestore(t *testing.T) {
 			ID:          testThing.ID,
 			Name:        testThing.Name,
 			Key:         testThing.Key,
-			KeyExternal: testThing.ExternalKey,
+			ExternalKey: testThing.ExternalKey,
 			Metadata:    testThing.Metadata,
 		},
 	}
@@ -2993,7 +2993,7 @@ type thingRes struct {
 	ProfileID   string                 `json:"profile_id,omitempty"`
 	Name        string                 `json:"name,omitempty"`
 	Key         string                 `json:"key"`
-	KeyExternal string                 `json:"external_key"`
+	ExternalKey string                 `json:"external_key"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -3010,7 +3010,7 @@ type viewThingRes struct {
 	ProfileID   string                 `json:"profile_id"`
 	Name        string                 `json:"name,omitempty"`
 	Key         string                 `json:"key"`
-	KeyExternal string                 `json:"external_key,omitempty"`
+	ExternalKey string                 `json:"external_key,omitempty"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -3039,7 +3039,7 @@ type restoreThingReq struct {
 	ID          string                 `json:"id"`
 	Name        string                 `json:"name"`
 	Key         string                 `json:"key"`
-	KeyExternal string                 `json:"external_key"`
+	ExternalKey string                 `json:"external_key"`
 	Metadata    map[string]interface{} `json:"metadata"`
 }
 
