@@ -9,8 +9,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/readers"
+	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -31,7 +31,7 @@ func MetricsMiddleware(svc readers.Service, counter metrics.Counter, latency met
 	}
 }
 
-func (mm *metricsMiddleware) ListJSONMessages(ctx context.Context, token string, key apiutil.ThingKey, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
+func (mm *metricsMiddleware) ListJSONMessages(ctx context.Context, token string, key things.ThingKey, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "list_json_messages").Add(1)
 		mm.latency.With("method", "list_json_messages").Observe(time.Since(begin).Seconds())
@@ -40,7 +40,7 @@ func (mm *metricsMiddleware) ListJSONMessages(ctx context.Context, token string,
 	return mm.svc.ListJSONMessages(ctx, token, key, rpm)
 }
 
-func (mm *metricsMiddleware) ListSenMLMessages(ctx context.Context, token string, key apiutil.ThingKey, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
+func (mm *metricsMiddleware) ListSenMLMessages(ctx context.Context, token string, key things.ThingKey, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "list_senml_messages").Add(1)
 		mm.latency.With("method", "list_senml_messages").Observe(time.Since(begin).Seconds())
@@ -85,7 +85,7 @@ func (mm *metricsMiddleware) RestoreSenMLMessages(ctx context.Context, token str
 	return mm.svc.RestoreSenMLMessages(ctx, token, messages...)
 }
 
-func (mm *metricsMiddleware) DeleteJSONMessages(ctx context.Context, token string, key apiutil.ThingKey, rpm readers.JSONPageMetadata) error {
+func (mm *metricsMiddleware) DeleteJSONMessages(ctx context.Context, token string, key things.ThingKey, rpm readers.JSONPageMetadata) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "delete_json_messages").Add(1)
 		mm.latency.With("method", "delete_json_messages").Observe(time.Since(begin).Seconds())
@@ -94,7 +94,7 @@ func (mm *metricsMiddleware) DeleteJSONMessages(ctx context.Context, token strin
 	return mm.svc.DeleteJSONMessages(ctx, token, key, rpm)
 }
 
-func (mm *metricsMiddleware) DeleteSenMLMessages(ctx context.Context, token string, key apiutil.ThingKey, rpm readers.SenMLPageMetadata) error {
+func (mm *metricsMiddleware) DeleteSenMLMessages(ctx context.Context, token string, key things.ThingKey, rpm readers.SenMLPageMetadata) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "delete_senml_messages").Add(1)
 		mm.latency.With("method", "delete_senml_messages").Observe(time.Since(begin).Seconds())

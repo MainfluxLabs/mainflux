@@ -6,15 +6,15 @@ package auth
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-redis/redis/v8"
 )
 
 // Client represents Auth cache.
 type Client interface {
-	Identify(ctx context.Context, key apiutil.ThingKey) (string, error)
-	GetPubConfByKey(ctx context.Context, key apiutil.ThingKey) (protomfx.PubConfByKeyRes, error)
+	Identify(ctx context.Context, key things.ThingKey) (string, error)
+	GetPubConfByKey(ctx context.Context, key things.ThingKey) (protomfx.PubConfByKeyRes, error)
 }
 
 const (
@@ -35,7 +35,7 @@ func New(redisClient *redis.Client, things protomfx.ThingsServiceClient) Client 
 	}
 }
 
-func (c client) Identify(ctx context.Context, key apiutil.ThingKey) (string, error) {
+func (c client) Identify(ctx context.Context, key things.ThingKey) (string, error) {
 	tkey := keyPrefix + ":" + key.Value
 	thingID, err := c.redisClient.Get(ctx, tkey).Result()
 	if err != nil {
@@ -53,7 +53,7 @@ func (c client) Identify(ctx context.Context, key apiutil.ThingKey) (string, err
 	return thingID, nil
 }
 
-func (c client) GetPubConfByKey(ctx context.Context, key apiutil.ThingKey) (protomfx.PubConfByKeyRes, error) {
+func (c client) GetPubConfByKey(ctx context.Context, key things.ThingKey) (protomfx.PubConfByKeyRes, error) {
 	req := &protomfx.ThingKey{
 		Value: key.Value,
 		Type:  key.Type,

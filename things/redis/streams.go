@@ -101,7 +101,7 @@ func (es eventStore) ViewThing(ctx context.Context, token, id string) (things.Th
 	return es.svc.ViewThing(ctx, token, id)
 }
 
-func (es eventStore) ViewMetadataByKey(ctx context.Context, key apiutil.ThingKey) (things.Metadata, error) {
+func (es eventStore) ViewMetadataByKey(ctx context.Context, key things.ThingKey) (things.Metadata, error) {
 	return es.svc.ViewMetadataByKey(ctx, key)
 }
 
@@ -258,7 +258,7 @@ func (es eventStore) RemoveProfiles(ctx context.Context, token string, ids ...st
 	return nil
 }
 
-func (es eventStore) GetPubConfByKey(ctx context.Context, key apiutil.ThingKey) (things.PubConfInfo, error) {
+func (es eventStore) GetPubConfByKey(ctx context.Context, key things.ThingKey) (things.PubConfInfo, error) {
 	return es.svc.GetPubConfByKey(ctx, key)
 }
 
@@ -282,7 +282,7 @@ func (es eventStore) CanThingAccessGroup(ctx context.Context, req things.ThingAc
 	return es.svc.CanThingAccessGroup(ctx, req)
 }
 
-func (es eventStore) Identify(ctx context.Context, key apiutil.ThingKey) (string, error) {
+func (es eventStore) Identify(ctx context.Context, key things.ThingKey) (string, error) {
 	return es.svc.Identify(ctx, key)
 }
 

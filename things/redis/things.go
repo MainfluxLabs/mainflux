@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -34,7 +33,7 @@ func NewThingCache(client *redis.Client) things.ThingCache {
 	}
 }
 
-func (tc *thingCache) Save(ctx context.Context, key apiutil.ThingKey, thingID string) error {
+func (tc *thingCache) Save(ctx context.Context, key things.ThingKey, thingID string) error {
 	// Associate the given thing key with the given thing ID
 	idKey := idByThingKeyKey(key)
 	if err := tc.client.Set(ctx, idKey, thingID, 0).Err(); err != nil {
@@ -52,7 +51,7 @@ func (tc *thingCache) Save(ctx context.Context, key apiutil.ThingKey, thingID st
 	return nil
 }
 
-func (tc *thingCache) ID(ctx context.Context, key apiutil.ThingKey) (string, error) {
+func (tc *thingCache) ID(ctx context.Context, key things.ThingKey) (string, error) {
 	ik := idByThingKeyKey(key)
 	thingID, err := tc.client.Get(ctx, ik).Result()
 	if err != nil {
@@ -94,7 +93,7 @@ func (tc *thingCache) RemoveThing(ctx context.Context, thingID string) error {
 	return nil
 }
 
-func (tc *thingCache) RemoveKey(ctx context.Context, key apiutil.ThingKey) error {
+func (tc *thingCache) RemoveKey(ctx context.Context, key things.ThingKey) error {
 	// Obtain id of thing represented by this particular key
 	thingIdKey := idByThingKeyKey(key)
 	thingID, err := tc.client.Get(ctx, thingIdKey).Result()
@@ -169,7 +168,7 @@ func (tc *thingCache) RemoveGroup(ctx context.Context, thingID string) error {
 	return nil
 }
 
-func idByThingKeyKey(key apiutil.ThingKey) string {
+func idByThingKeyKey(key things.ThingKey) string {
 	return fmt.Sprintf("%s:%s:%s", idByKeyPrefix, key.Type, key.Value)
 }
 

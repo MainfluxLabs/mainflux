@@ -76,7 +76,7 @@ func (ms *metricsMiddleware) ViewThing(ctx context.Context, token, id string) (t
 	return ms.svc.ViewThing(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) ViewMetadataByKey(ctx context.Context, key apiutil.ThingKey) (things.Metadata, error) {
+func (ms *metricsMiddleware) ViewMetadataByKey(ctx context.Context, key things.ThingKey) (things.Metadata, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_metadata_by_key").Add(1)
 		ms.latency.With("method", "view_metadata_by_key").Observe(time.Since(begin).Seconds())
@@ -184,7 +184,7 @@ func (ms *metricsMiddleware) RemoveProfiles(ctx context.Context, token string, i
 	return ms.svc.RemoveProfiles(ctx, token, ids...)
 }
 
-func (ms *metricsMiddleware) GetPubConfByKey(ctx context.Context, key apiutil.ThingKey) (things.PubConfInfo, error) {
+func (ms *metricsMiddleware) GetPubConfByKey(ctx context.Context, key things.ThingKey) (things.PubConfInfo, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "get_pub_conf_by_key").Add(1)
 		ms.latency.With("method", "get_pub_conf_by_key").Observe(time.Since(begin).Seconds())
@@ -237,7 +237,7 @@ func (ms *metricsMiddleware) CanThingAccessGroup(ctx context.Context, req things
 	return ms.svc.CanThingAccessGroup(ctx, req)
 }
 
-func (ms *metricsMiddleware) Identify(ctx context.Context, key apiutil.ThingKey) (string, error) {
+func (ms *metricsMiddleware) Identify(ctx context.Context, key things.ThingKey) (string, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "identify").Add(1)
 		ms.latency.With("method", "identify").Observe(time.Since(begin).Seconds())

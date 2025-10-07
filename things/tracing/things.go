@@ -85,7 +85,7 @@ func (trm thingRepositoryMiddleware) RetrieveByID(ctx context.Context, id string
 	return trm.repo.RetrieveByID(ctx, id)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveByKey(ctx context.Context, key apiutil.ThingKey) (string, error) {
+func (trm thingRepositoryMiddleware) RetrieveByKey(ctx context.Context, key things.ThingKey) (string, error) {
 	span := dbutil.CreateSpan(ctx, trm.tracer, retrieveThingByKey)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -171,7 +171,7 @@ func ThingCacheMiddleware(tracer opentracing.Tracer, cache things.ThingCache) th
 	}
 }
 
-func (tcm thingCacheMiddleware) Save(ctx context.Context, key apiutil.ThingKey, thingID string) error {
+func (tcm thingCacheMiddleware) Save(ctx context.Context, key things.ThingKey, thingID string) error {
 	span := dbutil.CreateSpan(ctx, tcm.tracer, saveThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -179,7 +179,7 @@ func (tcm thingCacheMiddleware) Save(ctx context.Context, key apiutil.ThingKey, 
 	return tcm.cache.Save(ctx, key, thingID)
 }
 
-func (tcm thingCacheMiddleware) ID(ctx context.Context, key apiutil.ThingKey) (string, error) {
+func (tcm thingCacheMiddleware) ID(ctx context.Context, key things.ThingKey) (string, error) {
 	span := dbutil.CreateSpan(ctx, tcm.tracer, retrieveThingIDByKey)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -195,7 +195,7 @@ func (tcm thingCacheMiddleware) RemoveThing(ctx context.Context, thingID string)
 	return tcm.cache.RemoveThing(ctx, thingID)
 }
 
-func (tcm thingCacheMiddleware) RemoveKey(ctx context.Context, key apiutil.ThingKey) error {
+func (tcm thingCacheMiddleware) RemoveKey(ctx context.Context, key things.ThingKey) error {
 	span := dbutil.CreateSpan(ctx, tcm.tracer, removeKey)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

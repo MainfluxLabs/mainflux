@@ -7,6 +7,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 )
@@ -23,7 +24,7 @@ func NewClient(key map[string]string, keyExternal map[string]string, conns map[s
 	return MockClient{key: key, keyExternal: keyExternal, conns: conns}
 }
 
-func (cli MockClient) GetPubConfByKey(ctx context.Context, key apiutil.ThingKey) (protomfx.PubConfByKeyRes, error) {
+func (cli MockClient) GetPubConfByKey(ctx context.Context, key things.ThingKey) (protomfx.PubConfByKeyRes, error) {
 	thID, ok := cli.key[key.Value]
 	if !ok {
 		return protomfx.PubConfByKeyRes{}, errors.ErrAuthentication
@@ -36,13 +37,13 @@ func (cli MockClient) GetPubConfByKey(ctx context.Context, key apiutil.ThingKey)
 	return *pc, nil
 }
 
-func (cli MockClient) Identify(ctx context.Context, key apiutil.ThingKey) (string, error) {
+func (cli MockClient) Identify(ctx context.Context, key things.ThingKey) (string, error) {
 	switch key.Type {
-	case apiutil.ThingKeyTypeInternal:
+	case things.KeyTypeInternal:
 		if id, ok := cli.key[key.Value]; ok {
 			return id, nil
 		}
-	case apiutil.ThingKeyTypeExternal:
+	case things.KeyTypeExternal:
 		if id, ok := cli.keyExternal[key.Value]; ok {
 			return id, nil
 		}

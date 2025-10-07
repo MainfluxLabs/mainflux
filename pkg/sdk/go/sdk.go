@@ -15,6 +15,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const (
@@ -207,7 +208,7 @@ type SDK interface {
 	GetThing(id, token string) (Thing, error)
 
 	// GetThingMetadataByKey retrieves metadata about the thing identified by the given key.
-	GetThingMetadataByKey(key apiutil.ThingKey) (Metadata, error)
+	GetThingMetadataByKey(key things.ThingKey) (Metadata, error)
 
 	// UpdateThing updates existing thing.
 	UpdateThing(thing Thing, thingID, token string) error
@@ -219,7 +220,7 @@ type SDK interface {
 	DeleteThings(ids []string, token string) error
 
 	// IdentifyThing validates thing's key and returns its ID
-	IdentifyThing(key apiutil.ThingKey) (string, error)
+	IdentifyThing(key things.ThingKey) (string, error)
 
 	// UpdateExternalThingKey sets the external key of the Thing identified by `thingID`.`
 	UpdateExternalThingKey(key, thingID, token string) error
@@ -324,7 +325,7 @@ type SDK interface {
 	RemoveOrgMemberships(memberIDs []string, orgID, token string) error
 
 	// SendMessage send message.
-	SendMessage(subtopic, msg string, key apiutil.ThingKey) error
+	SendMessage(subtopic, msg string, key things.ThingKey) error
 
 	// ReadMessages read messages.
 	ReadMessages(isAdmin bool, pm PageMetadata, keyType, token string) (map[string]interface{}, error)
@@ -428,12 +429,12 @@ func (sdk mfSDK) sendRequest(req *http.Request, token, contentType string) (*htt
 	return sdk.client.Do(req)
 }
 
-func (sdk mfSDK) sendThingRequest(req *http.Request, key apiutil.ThingKey, contentType string) (*http.Response, error) {
+func (sdk mfSDK) sendThingRequest(req *http.Request, key things.ThingKey, contentType string) (*http.Response, error) {
 	if key.Value != "" {
 		switch key.Type {
-		case apiutil.ThingKeyTypeInternal:
+		case things.KeyTypeInternal:
 			req.Header.Set("Authorization", apiutil.ThingKeyPrefixInternal+key.Value)
-		case apiutil.ThingKeyTypeExternal:
+		case things.KeyTypeExternal:
 			req.Header.Set("Authorization", apiutil.ThingKeyPrefixExternal+key.Value)
 		}
 	}

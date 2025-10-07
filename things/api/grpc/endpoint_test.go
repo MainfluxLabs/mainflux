@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 	grpcapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
@@ -65,7 +64,7 @@ func TestGetPubConfByKey(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, err := cli.GetPubConfByKey(ctx, &protomfx.ThingKey{Value: tc.key, Type: apiutil.ThingKeyTypeInternal})
+		_, err := cli.GetPubConfByKey(ctx, &protomfx.ThingKey{Value: tc.key, Type: things.KeyTypeInternal})
 		e, ok := status.FromError(err)
 		assert.True(t, ok, "OK expected to be true")
 		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", desc, tc.code, e.Code()))

@@ -5,6 +5,8 @@ package things
 
 import (
 	"context"
+	"net/http"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
@@ -37,6 +39,45 @@ const (
 	KeyTypeExternal = "external"
 )
 
+// ThingKey represents a Thing authentication key and its type
+type ThingKey struct {
+	Value string `json:"key"`
+	Type  string `json:"type"`
+}
+
+func (tk ThingKey) Validate() error {
+	if tk.Type != KeyTypeExternal && tk.Type != KeyTypeInternal {
+		return apiutil.ErrInvalidThingKeyType
+	}
+
+	if tk.Value == "" {
+		return apiutil.ErrBearerKey
+	}
+
+	return nil
+}
+
+// ExtractThingKey returns the supplied thing key and its type, from the request's HTTP 'Authorization' header. If the provided key type is invalid
+// an empty instance of ThingKey is returned.
+func ExtractThingKey(r *http.Request) ThingKey {
+	header := r.Header.Get("Authorization")
+
+	switch {
+	case strings.HasPrefix(header, apiutil.ThingKeyPrefixInternal):
+		return ThingKey{
+			Type:  KeyTypeInternal,
+			Value: strings.TrimPrefix(header, apiutil.ThingKeyPrefixInternal),
+		}
+	case strings.HasPrefix(header, apiutil.ThingKeyPrefixExternal):
+		return ThingKey{
+			Type:  KeyTypeExternal,
+			Value: strings.TrimPrefix(header, apiutil.ThingKeyPrefixExternal),
+		}
+	}
+
+	return ThingKey{}
+}
+
 // ThingRepository specifies a thing persistence API.
 type ThingRepository interface {
 	// Save persists multiple things. Things are saved using a transaction. If one thing
@@ -57,7 +98,7 @@ type ThingRepository interface {
 	RetrieveByID(ctx context.Context, id string) (Thing, error)
 
 	// RetrieveByKey returns thing ID for given thing key based on its type.
-	RetrieveByKey(ctx context.Context, key apiutil.ThingKey) (string, error)
+	RetrieveByKey(ctx context.Context, key ThingKey) (string, error)
 
 	// RetrieveByGroups retrieves the subset of things specified by given group ids.
 	RetrieveByGroups(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (ThingsPage, error)
@@ -88,16 +129,16 @@ type ThingRepository interface {
 // ThingCache contains thing caching interface.
 type ThingCache interface {
 	// Save stores the pair (thing key, thing id).
-	Save(ctx context.Context, key apiutil.ThingKey, thingID string) error
+	Save(ctx context.Context, key ThingKey, thingID string) error
 
 	// ID returns thing ID for a given thing key.
-	ID(ctx context.Context, key apiutil.ThingKey) (string, error)
+	ID(ctx context.Context, key ThingKey) (string, error)
 
 	// RemoveThing removes thing from cache.
 	RemoveThing(context.Context, string) error
 
 	// RemoveKey removes a specific thing key from the cache.
-	RemoveKey(ctx context.Context, key apiutil.ThingKey) error
+	RemoveKey(ctx context.Context, key ThingKey) error
 
 	// SaveGroup stores group ID by given thing ID.
 	SaveGroup(context.Context, string, string) error

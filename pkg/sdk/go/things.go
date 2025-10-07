@@ -10,8 +10,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const (
@@ -176,7 +176,7 @@ func (sdk mfSDK) GetThing(id, token string) (Thing, error) {
 	return t, nil
 }
 
-func (sdk mfSDK) GetThingMetadataByKey(key apiutil.ThingKey) (Metadata, error) {
+func (sdk mfSDK) GetThingMetadataByKey(key things.ThingKey) (Metadata, error) {
 	url := fmt.Sprintf("%s/metadata", sdk.thingsURL)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -278,7 +278,7 @@ func (sdk mfSDK) DeleteThings(ids []string, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) IdentifyThing(key apiutil.ThingKey) (string, error) {
+func (sdk mfSDK) IdentifyThing(key things.ThingKey) (string, error) {
 	idReq := identifyThingReq{Key: key.Value, Type: key.Type}
 	data, err := json.Marshal(idReq)
 	if err != nil {

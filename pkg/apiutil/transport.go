@@ -46,9 +46,6 @@ const (
 	ContentTypeOctetStream = "application/octet-stream"
 	DefOffset              = 0
 	DefLimit               = 10
-
-	ThingKeyTypeInternal = "internal"
-	ThingKeyTypeExternal = "external"
 )
 
 // PageMetadata contains page metadata that helps navigation.

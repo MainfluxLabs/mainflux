@@ -5,6 +5,7 @@ package things
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/api/http/memberships"
 )
 
@@ -130,7 +131,7 @@ func (req updateKeyReq) validate() error {
 }
 
 type viewMetadataReq struct {
-	apiutil.ThingKey
+	things.ThingKey
 }
 
 func (req viewMetadataReq) validate() error {
@@ -354,7 +355,7 @@ func (req restoreReq) validate() error {
 }
 
 type identifyReq struct {
-	apiutil.ThingKey
+	things.ThingKey
 }
 
 func (req identifyReq) validate() error {

@@ -11,7 +11,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -346,7 +345,7 @@ func TestMetadataByKey(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		resMeta, err := mainfluxSDK.GetThingMetadataByKey(apiutil.ThingKey{Type: apiutil.ThingKeyTypeInternal, Value: tc.key})
+		resMeta, err := mainfluxSDK.GetThingMetadataByKey(things.ThingKey{Type: things.KeyTypeInternal, Value: tc.key})
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, resMeta, fmt.Sprintf("%s: expected response thing %s, got %s", tc.desc, tc.response, resMeta))
 	}
@@ -876,49 +875,49 @@ func TestIdentifyThing(t *testing.T) {
 		{
 			desc:     "identify thing using valid internal key",
 			thingKey: thing.Key,
-			keyType:  apiutil.ThingKeyTypeInternal,
+			keyType:  things.KeyTypeInternal,
 			err:      nil,
 			response: id,
 		},
 		{
 			desc:     "identify thing using invalid internal key",
 			thingKey: badKey,
-			keyType:  apiutil.ThingKeyTypeInternal,
+			keyType:  things.KeyTypeInternal,
 			err:      createError(sdk.ErrFailedFetch, http.StatusNotFound),
 			response: emptyValue,
 		},
 		{
 			desc:     "identify thing using empty internal key",
 			thingKey: emptyValue,
-			keyType:  apiutil.ThingKeyTypeInternal,
+			keyType:  things.KeyTypeInternal,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: emptyValue,
 		},
 		{
 			desc:     "identify thing using valid external key",
 			thingKey: externalKey,
-			keyType:  apiutil.ThingKeyTypeExternal,
+			keyType:  things.KeyTypeExternal,
 			err:      nil,
 			response: id,
 		},
 		{
 			desc:     "identify thing using invalid external key",
 			thingKey: badKey,
-			keyType:  apiutil.ThingKeyTypeExternal,
+			keyType:  things.KeyTypeExternal,
 			err:      createError(sdk.ErrFailedFetch, http.StatusNotFound),
 			response: emptyValue,
 		},
 		{
 			desc:     "identify thing using empty external key",
 			thingKey: emptyValue,
-			keyType:  apiutil.ThingKeyTypeExternal,
+			keyType:  things.KeyTypeExternal,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: emptyValue,
 		},
 	}
 
 	for _, tc := range cases {
-		thingID, err := mainfluxAuthSDK.IdentifyThing(apiutil.ThingKey{Type: tc.keyType, Value: tc.thingKey})
+		thingID, err := mainfluxAuthSDK.IdentifyThing(things.ThingKey{Type: tc.keyType, Value: tc.thingKey})
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, thingID, fmt.Sprintf("%s: expected response id %s, got %s", tc.desc, tc.response, thingID))
 	}

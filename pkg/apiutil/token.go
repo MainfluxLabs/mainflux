@@ -17,24 +17,6 @@ const (
 	ThingKeyPrefixExternal = "External "
 )
 
-// ThingKey represents a Thing authentication key and its type
-type ThingKey struct {
-	Value string `json:"key"`
-	Type  string `json:"type"`
-}
-
-func (tk ThingKey) Validate() error {
-	if tk.Type != ThingKeyTypeExternal && tk.Type != ThingKeyTypeInternal {
-		return ErrInvalidThingKeyType
-	}
-
-	if tk.Value == "" {
-		return ErrBearerKey
-	}
-
-	return nil
-}
-
 // ExtractBearerToken returns value of the bearer token. If there is no bearer token - an empty value is returned.
 func ExtractBearerToken(r *http.Request) string {
 	token := r.Header.Get("Authorization")
@@ -44,25 +26,4 @@ func ExtractBearerToken(r *http.Request) string {
 	}
 
 	return strings.TrimPrefix(token, BearerPrefix)
-}
-
-// ExtractThingKey returns the supplied thing key and its type, from the request's HTTP 'Authorization' header. If the provided key type is invalid
-// an empty instance of ThingKey is returned.
-func ExtractThingKey(r *http.Request) ThingKey {
-	header := r.Header.Get("Authorization")
-
-	switch {
-	case strings.HasPrefix(header, ThingKeyPrefixInternal):
-		return ThingKey{
-			Type:  ThingKeyTypeInternal,
-			Value: strings.TrimPrefix(header, ThingKeyPrefixInternal),
-		}
-	case strings.HasPrefix(header, ThingKeyPrefixExternal):
-		return ThingKey{
-			Type:  ThingKeyTypeExternal,
-			Value: strings.TrimPrefix(header, ThingKeyPrefixExternal),
-		}
-	}
-
-	return ThingKey{}
 }

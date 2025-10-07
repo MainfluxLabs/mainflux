@@ -73,13 +73,13 @@ func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
-	var thingKey apiutil.ThingKey
+	var thingKey things.ThingKey
 	_, pass, ok := r.BasicAuth()
 	switch {
 	case ok:
-		thingKey = apiutil.ThingKey{Type: things.KeyTypeInternal, Value: pass}
+		thingKey = things.ThingKey{Type: things.KeyTypeInternal, Value: pass}
 	case !ok:
-		thingKey = apiutil.ExtractThingKey(r)
+		thingKey = things.ExtractThingKey(r)
 	}
 
 	payload, err := ioutil.ReadAll(r.Body)

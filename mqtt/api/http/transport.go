@@ -12,6 +12,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/things"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -54,7 +55,7 @@ func decodeListSubscriptions(_ context.Context, r *http.Request) (interface{}, e
 	return listSubscriptionsReq{
 		groupID:  bone.GetValue(r, "id"),
 		token:    apiutil.ExtractBearerToken(r),
-		thingKey: apiutil.ExtractThingKey(r),
+		thingKey: things.ExtractThingKey(r),
 		pageMetadata: mqtt.PageMetadata{
 			Offset: o,
 			Limit:  l,

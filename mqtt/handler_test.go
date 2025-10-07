@@ -9,7 +9,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	"github.com/MainfluxLabs/mainflux/mqtt/mocks"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -35,7 +34,7 @@ var (
 	logBuffer     = bytes.Buffer{}
 	sessionClient = session.Client{
 		ID:       clientID,
-		Username: apiutil.ThingKeyTypeInternal,
+		Username: things.KeyTypeInternal,
 		Password: []byte(password),
 	}
 )
@@ -58,7 +57,7 @@ func TestAuthConnect(t *testing.T) {
 			err:  mqtt.ErrMissingClientID,
 			session: &session.Client{
 				ID:       "",
-				Username: apiutil.ThingKeyTypeInternal,
+				Username: things.KeyTypeInternal,
 				Password: []byte(password),
 			},
 		},
@@ -67,7 +66,7 @@ func TestAuthConnect(t *testing.T) {
 			err:  errors.ErrAuthentication,
 			session: &session.Client{
 				ID:       clientID,
-				Username: apiutil.ThingKeyTypeInternal,
+				Username: things.KeyTypeInternal,
 				Password: []byte(""),
 			},
 		},

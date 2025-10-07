@@ -4,13 +4,13 @@
 package api
 
 import (
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 type publishReq struct {
 	msg protomfx.Message
-	apiutil.ThingKey
+	things.ThingKey
 }
 
 func (req publishReq) validate() error {

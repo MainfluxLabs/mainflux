@@ -6,13 +6,14 @@ package api
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/readers"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const maxLimitSize = 1000
 
 type listSenMLMessagesReq struct {
 	token    string
-	thingKey apiutil.ThingKey
+	thingKey things.ThingKey
 	pageMeta readers.SenMLPageMetadata
 }
 
@@ -44,7 +45,7 @@ func (req listSenMLMessagesReq) validate() error {
 
 type listJSONMessagesReq struct {
 	token    string
-	thingKey apiutil.ThingKey
+	thingKey things.ThingKey
 	pageMeta readers.JSONPageMetadata
 }
 
@@ -130,7 +131,7 @@ func (req restoreMessagesReq) validate() error {
 
 type deleteSenMLMessagesReq struct {
 	token    string
-	thingKey apiutil.ThingKey
+	thingKey things.ThingKey
 	pageMeta readers.SenMLPageMetadata
 }
 
@@ -145,7 +146,7 @@ func (req deleteSenMLMessagesReq) validate() error {
 
 type deleteJSONMessagesReq struct {
 	token    string
-	thingKey apiutil.ThingKey
+	thingKey things.ThingKey
 	pageMeta readers.JSONPageMetadata
 }
 

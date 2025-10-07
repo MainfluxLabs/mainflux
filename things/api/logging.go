@@ -96,7 +96,7 @@ func (lm *loggingMiddleware) ViewThing(ctx context.Context, token, id string) (t
 	return lm.svc.ViewThing(ctx, token, id)
 }
 
-func (lm *loggingMiddleware) ViewMetadataByKey(ctx context.Context, key apiutil.ThingKey) (metadata things.Metadata, err error) {
+func (lm *loggingMiddleware) ViewMetadataByKey(ctx context.Context, key things.ThingKey) (metadata things.Metadata, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view_metadata_by_key took %s to complete", time.Since(begin))
 		if err != nil {
@@ -300,7 +300,7 @@ func (lm *loggingMiddleware) RemoveProfiles(ctx context.Context, token string, i
 	return lm.svc.RemoveProfiles(ctx, token, ids...)
 }
 
-func (lm *loggingMiddleware) GetPubConfByKey(ctx context.Context, key apiutil.ThingKey) (pc things.PubConfInfo, err error) {
+func (lm *loggingMiddleware) GetPubConfByKey(ctx context.Context, key things.ThingKey) (pc things.PubConfInfo, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method get_pub_conf_by_key for thing %s took %s to complete", pc.PublisherID, time.Since(begin))
 		if err != nil {
@@ -377,7 +377,7 @@ func (lm *loggingMiddleware) CanThingAccessGroup(ctx context.Context, req things
 	return lm.svc.CanThingAccessGroup(ctx, req)
 }
 
-func (lm *loggingMiddleware) Identify(ctx context.Context, key apiutil.ThingKey) (id string, err error) {
+func (lm *loggingMiddleware) Identify(ctx context.Context, key things.ThingKey) (id string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method identify for thing %s took %s to complete", id, time.Since(begin))
 		if err != nil {

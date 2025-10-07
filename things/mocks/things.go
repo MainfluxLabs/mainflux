@@ -193,7 +193,7 @@ func (trm *thingRepositoryMock) Remove(_ context.Context, ids ...string) error {
 	return nil
 }
 
-func (trm *thingRepositoryMock) RetrieveByKey(_ context.Context, key apiutil.ThingKey) (string, error) {
+func (trm *thingRepositoryMock) RetrieveByKey(_ context.Context, key things.ThingKey) (string, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 

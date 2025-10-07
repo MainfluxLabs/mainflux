@@ -168,7 +168,7 @@ func (tr thingRepository) RetrieveByID(ctx context.Context, id string) (things.T
 	return toThing(dbth)
 }
 
-func (tr thingRepository) RetrieveByKey(ctx context.Context, key apiutil.ThingKey) (string, error) {
+func (tr thingRepository) RetrieveByKey(ctx context.Context, key things.ThingKey) (string, error) {
 	query := `
 		SELECT id FROM things WHERE %s = $1;	
 	`

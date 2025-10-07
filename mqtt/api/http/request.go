@@ -6,6 +6,7 @@ package http
 import (
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const maxLimitSize = 200
@@ -17,7 +18,7 @@ type apiReq interface {
 type listSubscriptionsReq struct {
 	groupID      string
 	token        string
-	thingKey     apiutil.ThingKey
+	thingKey     things.ThingKey
 	pageMetadata mqtt.PageMetadata
 }
 

@@ -14,11 +14,11 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/coap"
 	log "github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-zoo/bone"
 	"github.com/plgd-dev/go-coap/v2/message"
 	"github.com/plgd-dev/go-coap/v2/message/codes"
@@ -109,7 +109,7 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 	}
 }
 
-func handleGet(m *mux.Message, c mux.Client, msg protomfx.Message, key apiutil.ThingKey) error {
+func handleGet(m *mux.Message, c mux.Client, msg protomfx.Message, key things.ThingKey) error {
 	var obs uint32
 	obs, err := m.Options.Observe()
 	if err != nil {
@@ -155,22 +155,22 @@ func decodeMessage(msg *mux.Message) (protomfx.Message, error) {
 	return ret, nil
 }
 
-func parseKey(msg *mux.Message) (apiutil.ThingKey, error) {
+func parseKey(msg *mux.Message) (things.ThingKey, error) {
 	if obs, _ := msg.Options.Observe(); obs != 0 && msg.Code == codes.GET {
-		return apiutil.ThingKey{}, nil
+		return things.ThingKey{}, nil
 	}
 
 	queries, err := msg.Options.Queries()
 	if err != nil {
-		return apiutil.ThingKey{}, err
+		return things.ThingKey{}, err
 	}
 
-	var thingKey apiutil.ThingKey
+	var thingKey things.ThingKey
 
 	for _, query := range queries {
 		parts := strings.Split(query, "=")
 		if len(parts) != 2 {
-			return apiutil.ThingKey{}, errors.ErrAuthentication
+			return things.ThingKey{}, errors.ErrAuthentication
 		}
 
 		switch parts[0] {
@@ -182,7 +182,7 @@ func parseKey(msg *mux.Message) (apiutil.ThingKey, error) {
 	}
 
 	if err := thingKey.Validate(); err != nil {
-		return apiutil.ThingKey{}, err
+		return things.ThingKey{}, err
 	}
 
 	return thingKey, nil

@@ -30,7 +30,7 @@ func NewThingCache() things.ThingCache {
 	}
 }
 
-func (tcm *thingCacheMock) Save(_ context.Context, key apiutil.ThingKey, id string) error {
+func (tcm *thingCacheMock) Save(_ context.Context, key things.ThingKey, id string) error {
 	tcm.mu.Lock()
 	defer tcm.mu.Unlock()
 
@@ -44,7 +44,7 @@ func (tcm *thingCacheMock) Save(_ context.Context, key apiutil.ThingKey, id stri
 	return nil
 }
 
-func (tcm *thingCacheMock) ID(_ context.Context, key apiutil.ThingKey) (string, error) {
+func (tcm *thingCacheMock) ID(_ context.Context, key things.ThingKey) (string, error) {
 	tcm.mu.Lock()
 	defer tcm.mu.Unlock()
 
@@ -83,7 +83,7 @@ func (tcm *thingCacheMock) RemoveThing(_ context.Context, id string) error {
 	return nil
 }
 
-func (tcm *thingCacheMock) RemoveKey(_ context.Context, key apiutil.ThingKey) error {
+func (tcm *thingCacheMock) RemoveKey(_ context.Context, key things.ThingKey) error {
 	tcm.mu.Lock()
 	defer tcm.mu.Unlock()
 

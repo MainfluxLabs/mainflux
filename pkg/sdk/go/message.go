@@ -10,13 +10,13 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const messagesEndpoint = "messages"
 
-func (sdk mfSDK) SendMessage(subtopic, msg string, key apiutil.ThingKey) error {
+func (sdk mfSDK) SendMessage(subtopic, msg string, key things.ThingKey) error {
 	subtopic = strings.Replace(subtopic, ".", "/", -1)
 	url := fmt.Sprintf("%s/messages/%s", sdk.httpAdapterURL, subtopic)
 
@@ -57,7 +57,7 @@ func (sdk mfSDK) ReadMessages(isAdmin bool, pm PageMetadata, keyType, token stri
 		return decodeMessages(response)
 	}
 
-	response, err := sdk.sendThingRequest(req, apiutil.ThingKey{Value: token, Type: keyType}, string(sdk.msgContentType))
+	response, err := sdk.sendThingRequest(req, things.ThingKey{Value: token, Type: keyType}, string(sdk.msgContentType))
 	if err != nil {
 		return nil, err
 	}
