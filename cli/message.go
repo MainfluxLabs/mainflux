@@ -17,12 +17,14 @@ var cmdMessages = []cobra.Command{
 		Run: func(cmd *cobra.Command, args []string) {
 			switch len(args) {
 			case 3:
-				if err := sdk.SendMessage("", args[0], apiutil.ThingKey{Type: args[1], Value: args[2]}); err != nil {
+				key := apiutil.ThingKey{Type: args[1], Value: args[2]}
+				if err := sdk.SendMessage("", args[0], key); err != nil {
 					logError(err)
 					return
 				}
 			case 4:
-				if err := sdk.SendMessage(args[0], args[1], apiutil.ThingKey{Type: args[2], Value: args[3]}); err != nil {
+				key := apiutil.ThingKey{Type: args[2], Value: args[3]}
+				if err := sdk.SendMessage(args[0], args[1], key); err != nil {
 					logError(err)
 					return
 				}
