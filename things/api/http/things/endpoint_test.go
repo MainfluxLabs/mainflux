@@ -2664,7 +2664,7 @@ func TestBackup(t *testing.T) {
 			things.Thing{
 				Name:        name,
 				Metadata:    metadata,
-				KeyExternal: fmt.Sprintf("external_key_%d", i),
+				ExternalKey: fmt.Sprintf("external_key_%d", i),
 			})
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		th := things[0]
@@ -2680,7 +2680,7 @@ func TestBackup(t *testing.T) {
 			ProfileID:   th.ProfileID,
 			Name:        th.Name,
 			Key:         th.Key,
-			KeyExternal: th.KeyExternal,
+			KeyExternal: th.ExternalKey,
 			Metadata:    th.Metadata,
 		})
 	}
@@ -2776,7 +2776,7 @@ func TestRestore(t *testing.T) {
 		ID:          thId,
 		Name:        nameKey,
 		Key:         thKey,
-		KeyExternal: "abc123",
+		ExternalKey: "abc123",
 		Metadata:    metadata,
 	}
 
@@ -2811,7 +2811,7 @@ func TestRestore(t *testing.T) {
 			ID:          testThing.ID,
 			Name:        testThing.Name,
 			Key:         testThing.Key,
-			KeyExternal: testThing.KeyExternal,
+			KeyExternal: testThing.ExternalKey,
 			Metadata:    testThing.Metadata,
 		},
 	}

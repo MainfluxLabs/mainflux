@@ -777,7 +777,7 @@ func (ts *thingsService) UpdateExternalKey(ctx context.Context, token, key, thin
 		return err
 	}
 
-	if err := ts.thingCache.RemoveKey(ctx, ThingKey{Type: KeyTypeExternal, Value: thing.KeyExternal}); err != nil {
+	if err := ts.thingCache.RemoveKey(ctx, ThingKey{Type: KeyTypeExternal, Value: thing.ExternalKey}); err != nil {
 		return err
 	}
 
@@ -804,7 +804,7 @@ func (ts *thingsService) RemoveExternalKey(ctx context.Context, token, thingID s
 		return err
 	}
 
-	if err := ts.thingCache.RemoveKey(ctx, ThingKey{Type: KeyTypeExternal, Value: thing.KeyExternal}); err != nil {
+	if err := ts.thingCache.RemoveKey(ctx, ThingKey{Type: KeyTypeExternal, Value: thing.ExternalKey}); err != nil {
 		return err
 	}
 

@@ -468,7 +468,7 @@ func toDBThing(th things.Thing) (dbThing, error) {
 		ProfileID:   th.ProfileID,
 		Name:        th.Name,
 		Key:         th.Key,
-		KeyExternal: sql.NullString{String: th.KeyExternal, Valid: len(th.KeyExternal) > 0},
+		KeyExternal: sql.NullString{String: th.ExternalKey, Valid: len(th.ExternalKey) > 0},
 		Metadata:    data,
 	}, nil
 }
@@ -485,7 +485,7 @@ func toThing(dbth dbThing) (things.Thing, error) {
 		ProfileID:   dbth.ProfileID,
 		Name:        dbth.Name,
 		Key:         dbth.Key,
-		KeyExternal: dbth.KeyExternal.String,
+		ExternalKey: dbth.KeyExternal.String,
 		Metadata:    metadata,
 	}, nil
 }

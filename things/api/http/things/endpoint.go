@@ -28,7 +28,7 @@ func createThingsEndpoint(svc things.Service) endpoint.Endpoint {
 				ID:          t.ID,
 				Name:        t.Name,
 				Key:         t.Key,
-				KeyExternal: t.KeyExternal,
+				ExternalKey: t.KeyExternal,
 				Metadata:    t.Metadata,
 			}
 			ths = append(ths, th)
@@ -51,7 +51,7 @@ func createThingsEndpoint(svc things.Service) endpoint.Endpoint {
 				ProfileID:   t.ProfileID,
 				Name:        t.Name,
 				Key:         t.Key,
-				KeyExternal: t.KeyExternal,
+				KeyExternal: t.ExternalKey,
 				Metadata:    t.Metadata,
 			}
 			res.Things = append(res.Things, th)
@@ -80,7 +80,7 @@ func viewThingEndpoint(svc things.Service) endpoint.Endpoint {
 			ProfileID:   thing.ProfileID,
 			Name:        thing.Name,
 			Key:         thing.Key,
-			KeyExternal: thing.KeyExternal,
+			KeyExternal: thing.ExternalKey,
 			Metadata:    thing.Metadata,
 		}
 		return res, nil
@@ -463,7 +463,7 @@ func buildBackupThingsResponse(tb things.ThingsBackup, fileName string) (apiutil
 			ProfileID:   thing.ProfileID,
 			Name:        thing.Name,
 			Key:         thing.Key,
-			KeyExternal: thing.KeyExternal,
+			KeyExternal: thing.ExternalKey,
 			Metadata:    thing.Metadata,
 		})
 	}
@@ -487,7 +487,7 @@ func buildThingsBackup(ths []viewThingRes) (backup things.ThingsBackup) {
 			ProfileID:   thing.ProfileID,
 			Name:        thing.Name,
 			Key:         thing.Key,
-			KeyExternal: thing.KeyExternal,
+			ExternalKey: thing.KeyExternal,
 			Metadata:    thing.Metadata,
 		}
 
@@ -512,7 +512,7 @@ func buildBackupResponse(backup things.Backup) backupRes {
 			ProfileID:   thing.ProfileID,
 			Name:        thing.Name,
 			Key:         thing.Key,
-			KeyExternal: thing.KeyExternal,
+			KeyExternal: thing.ExternalKey,
 			Metadata:    thing.Metadata,
 		}
 
@@ -564,7 +564,7 @@ func buildBackup(req restoreReq) (backup things.Backup) {
 			ProfileID:   thing.ProfileID,
 			Name:        thing.Name,
 			Key:         thing.Key,
-			KeyExternal: thing.KeyExternal,
+			ExternalKey: thing.KeyExternal,
 			Metadata:    thing.Metadata,
 		}
 		backup.Things = append(backup.Things, th)

@@ -23,7 +23,7 @@ type Thing struct {
 	ProfileID   string
 	Name        string
 	Key         string
-	KeyExternal string
+	ExternalKey string
 	Metadata    Metadata
 }
 

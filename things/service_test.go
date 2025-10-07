@@ -2915,7 +2915,7 @@ func TestRestore(t *testing.T) {
 			ID:          thID,
 			Name:        "testThing",
 			Key:         thkey,
-			KeyExternal: "abc123",
+			ExternalKey: "abc123",
 			Metadata:    map[string]interface{}{},
 		},
 	}

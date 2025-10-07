@@ -202,7 +202,7 @@ func (trm *thingRepositoryMock) RetrieveByKey(_ context.Context, key things.Thin
 			return thing.ID, nil
 		}
 
-		if key.Type == things.KeyTypeExternal && thing.KeyExternal == key.Value {
+		if key.Type == things.KeyTypeExternal && thing.ExternalKey == key.Value {
 			return thing.ID, nil
 		}
 	}
@@ -219,7 +219,7 @@ func (trm *thingRepositoryMock) UpdateExternalKey(_ context.Context, key, thingI
 	}
 
 	for _, thing := range trm.things {
-		if thing.KeyExternal == key {
+		if thing.ExternalKey == key {
 			return dbutil.ErrConflict
 		}
 	}
@@ -229,7 +229,7 @@ func (trm *thingRepositoryMock) UpdateExternalKey(_ context.Context, key, thingI
 	}
 
 	thing := trm.things[thingID]
-	thing.KeyExternal = key
+	thing.ExternalKey = key
 
 	trm.things[thingID] = thing
 
@@ -245,7 +245,7 @@ func (trm *thingRepositoryMock) RemoveExternalKey(_ context.Context, thingID str
 	}
 
 	thing := trm.things[thingID]
-	thing.KeyExternal = ""
+	thing.ExternalKey = ""
 
 	trm.things[thingID] = thing
 
