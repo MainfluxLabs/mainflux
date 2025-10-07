@@ -536,8 +536,8 @@ func (ms *metricsMiddleware) RemoveGroupMemberships(ctx context.Context, token, 
 
 func (ms *metricsMiddleware) UpdateExternalKey(ctx context.Context, token, key, thingID string) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "create_external_key").Add(1)
-		ms.latency.With("method", "create_external_key").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "update_external_key").Add(1)
+		ms.latency.With("method", "update_external_key").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.svc.UpdateExternalKey(ctx, token, key, thingID)
