@@ -220,7 +220,7 @@ func decodeUserAccessGroupRequest(_ context.Context, grpcReq interface{}) (inter
 
 func decodeThingAccessGroupRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*protomfx.ThingAccessReq)
-	return thingAccessGroupReq{key: req.GetKey(), id: req.GetId()}, nil
+	return thingAccessGroupReq{thingKey: thingKey{value: req.GetKey()}, id: req.GetId()}, nil
 }
 
 func decodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

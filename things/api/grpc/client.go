@@ -194,7 +194,7 @@ func (client grpcClient) CanUserAccessGroup(ctx context.Context, req *protomfx.U
 }
 
 func (client grpcClient) CanThingAccessGroup(ctx context.Context, req *protomfx.ThingAccessReq, _ ...grpc.CallOption) (*empty.Empty, error) {
-	r := thingAccessGroupReq{key: req.GetKey(), id: req.GetId()}
+	r := thingAccessGroupReq{thingKey: thingKey{value: req.GetKey()}, id: req.GetId()}
 	res, err := client.canThingAccessGroup(ctx, r)
 	if err != nil {
 		return nil, err
@@ -296,7 +296,7 @@ func encodeUserAccessGroupRequest(_ context.Context, grpcReq interface{}) (inter
 
 func encodeThingAccessGroupRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(thingAccessGroupReq)
-	return &protomfx.ThingAccessReq{Key: req.key, Id: req.id}, nil
+	return &protomfx.ThingAccessReq{Key: req.thingKey.value, Id: req.id}, nil
 }
 
 func encodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

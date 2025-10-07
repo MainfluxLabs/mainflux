@@ -131,7 +131,7 @@ func canThingAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
 
 		r := things.ThingAccessReq{
 			ThingKey: things.ThingKey{
-				Value: req.key,
+				Value: req.thingKey.value,
 				Type:  req.keyType,
 			},
 			ID: req.id,

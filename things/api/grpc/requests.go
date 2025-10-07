@@ -94,18 +94,13 @@ func (req userAccessGroupReq) validate() error {
 }
 
 type thingAccessGroupReq struct {
-	key     string
-	keyType string
-	id      string
+	thingKey
+	id string
 }
 
 func (req thingAccessGroupReq) validate() error {
-	if req.key == "" {
-		return apiutil.ErrBearerKey
-	}
-
-	if req.keyType != things.KeyTypeInternal && req.keyType != things.KeyTypeExternal {
-		return apiutil.ErrInvalidThingKeyType
+	if err := req.thingKey.validate(); err != nil {
+		return err
 	}
 
 	if req.id == "" {
