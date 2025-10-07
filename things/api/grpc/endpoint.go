@@ -19,7 +19,7 @@ func getPubConfByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		pc, err := svc.GetPubConfByKey(ctx, things.ThingKey{Type: req.keyType, Value: req.key})
+		pc, err := svc.GetPubConfByKey(ctx, things.ThingKey{Type: req.keyType, Value: req.value})
 		if err != nil {
 			return pubConfByKeyRes{}, err
 		}

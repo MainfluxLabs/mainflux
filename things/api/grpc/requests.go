@@ -9,7 +9,7 @@ import (
 )
 
 type thingKey struct {
-	key     string
+	value   string
 	keyType string
 }
 
@@ -18,7 +18,7 @@ func (req thingKey) validate() error {
 		return apiutil.ErrInvalidThingKeyType
 	}
 
-	if req.key == "" {
+	if req.value == "" {
 		return apiutil.ErrBearerKey
 	}
 

@@ -136,7 +136,7 @@ func (client grpcClient) GetPubConfByKey(ctx context.Context, req *protomfx.Thin
 	defer cancel()
 
 	ar := thingKey{
-		key:     req.GetValue(),
+		value:   req.GetValue(),
 		keyType: req.GetType(),
 	}
 
@@ -271,7 +271,7 @@ func (c grpcClient) GetGroupIDsByOrg(ctx context.Context, req *protomfx.OrgAcces
 
 func encodeGetPubConfByKeyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(thingKey)
-	return &protomfx.ThingKey{Value: req.key, Type: req.keyType}, nil
+	return &protomfx.ThingKey{Value: req.value, Type: req.keyType}, nil
 }
 
 func encodeGetConfigByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
