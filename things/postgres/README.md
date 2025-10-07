@@ -39,7 +39,7 @@ CREATE TABLE things (
     id           UUID UNIQUE NOT NULL,
     group_id     UUID NOT NULL,
     key          VARCHAR(4096) UNIQUE NOT NULL,
-    key_external VARCHAR UNIQUE NULL,
+    external_key VARCHAR UNIQUE NULL,
     name         VARCHAR(1024) NOT NULL,
     metadata     JSONB,
     profile_id   UUID NOT NULL,

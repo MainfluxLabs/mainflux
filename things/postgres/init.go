@@ -191,7 +191,7 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				Id: "things_9",
 				Up: []string{
-					`ALTER TABLE things ADD COLUMN key_external VARCHAR(1024) UNIQUE NULL CHECK (LENGTH(key_external) >= 5);`,
+					`ALTER TABLE things ADD COLUMN external_key VARCHAR(1024) UNIQUE NULL CHECK (LENGTH(external_key) >= 5);`,
 				},
 			},
 		},

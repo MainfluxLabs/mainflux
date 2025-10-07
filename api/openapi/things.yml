@@ -1366,7 +1366,7 @@ components:
           type: string
           format: uuid
           description: Auto-generated access key.
-        key_external:
+        external_key:
           type: string
           format: string
           description: Thing's external key.

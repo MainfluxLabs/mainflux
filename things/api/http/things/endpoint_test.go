@@ -2383,7 +2383,7 @@ func TestRestoreThingsByOrg(t *testing.T) {
 			ProfileID:   prID,
 			Name:        fmt.Sprintf("thing_%d", i),
 			Key:         thKey,
-			KeyExternal: fmt.Sprintf("key_external_%d", i),
+			KeyExternal: fmt.Sprintf("external_key_%d", i),
 			Metadata:    metadata,
 		})
 	}
@@ -2993,7 +2993,7 @@ type thingRes struct {
 	ProfileID   string                 `json:"profile_id,omitempty"`
 	Name        string                 `json:"name,omitempty"`
 	Key         string                 `json:"key"`
-	KeyExternal string                 `json:"key_external"`
+	KeyExternal string                 `json:"external_key"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -3010,7 +3010,7 @@ type viewThingRes struct {
 	ProfileID   string                 `json:"profile_id"`
 	Name        string                 `json:"name,omitempty"`
 	Key         string                 `json:"key"`
-	KeyExternal string                 `json:"key_external,omitempty"`
+	KeyExternal string                 `json:"external_key,omitempty"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -3039,7 +3039,7 @@ type restoreThingReq struct {
 	ID          string                 `json:"id"`
 	Name        string                 `json:"name"`
 	Key         string                 `json:"key"`
-	KeyExternal string                 `json:"key_external"`
+	KeyExternal string                 `json:"external_key"`
 	Metadata    map[string]interface{} `json:"metadata"`
 }
 

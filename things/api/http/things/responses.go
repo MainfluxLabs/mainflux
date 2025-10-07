@@ -39,7 +39,7 @@ type thingRes struct {
 	ProfileID   string                 `json:"profile_id"`
 	Name        string                 `json:"name,omitempty"`
 	Key         string                 `json:"key"`
-	KeyExternal string                 `json:"key_external,omitempty"`
+	KeyExternal string                 `json:"external_key,omitempty"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 	created     bool
 }
@@ -71,7 +71,7 @@ type viewThingRes struct {
 	ProfileID   string                 `json:"profile_id"`
 	Name        string                 `json:"name,omitempty"`
 	Key         string                 `json:"key"`
-	KeyExternal string                 `json:"key_external,omitempty"`
+	KeyExternal string                 `json:"external_key,omitempty"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 

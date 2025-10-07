@@ -39,8 +39,8 @@ func (tr thingRepository) Save(ctx context.Context, ths ...things.Thing) ([]thin
 	}
 	defer tx.Rollback()
 
-	q := `INSERT INTO things (id, group_id, profile_id, name, key, key_external, metadata)
-		  VALUES (:id, :group_id, :profile_id, :name, :key, :key_external, :metadata);`
+	q := `INSERT INTO things (id, group_id, profile_id, name, key, external_key, metadata)
+		  VALUES (:id, :group_id, :profile_id, :name, :key, :external_key, :metadata);`
 
 	for _, thing := range ths {
 		dbth, err := toDBThing(thing)
@@ -152,7 +152,7 @@ func (tr thingRepository) UpdateKey(ctx context.Context, id, key string) error {
 }
 
 func (tr thingRepository) RetrieveByID(ctx context.Context, id string) (things.Thing, error) {
-	q := `SELECT group_id, profile_id, name, key, key_external, metadata FROM things WHERE id = $1;`
+	q := `SELECT group_id, profile_id, name, key, external_key, metadata FROM things WHERE id = $1;`
 
 	dbth := dbThing{ID: id}
 
@@ -176,7 +176,7 @@ func (tr thingRepository) RetrieveByKey(ctx context.Context, key things.ThingKey
 	case things.KeyTypeInternal:
 		query = fmt.Sprintf(query, "key")
 	case things.KeyTypeExternal:
-		query = fmt.Sprintf(query, "key_external")
+		query = fmt.Sprintf(query, "external_key")
 	default:
 		return "", apiutil.ErrInvalidThingKeyType
 	}
@@ -209,7 +209,7 @@ func (tr thingRepository) RetrieveByGroups(ctx context.Context, groupIDs []strin
 	}
 
 	whereClause := dbutil.BuildWhereClause(giq, nq, mq)
-	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, key_external, metadata FROM things %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
+	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, external_key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
 
 	params := map[string]interface{}{
@@ -223,7 +223,7 @@ func (tr thingRepository) RetrieveByGroups(ctx context.Context, groupIDs []strin
 }
 
 func (tr thingRepository) BackupAll(ctx context.Context) ([]things.Thing, error) {
-	query := "SELECT id, group_id, profile_id, name, key, key_external, metadata FROM things"
+	query := "SELECT id, group_id, profile_id, name, key, external_key, metadata FROM things"
 
 	var items []dbThing
 	err := tr.db.SelectContext(ctx, &items, query)
@@ -255,7 +255,7 @@ func (tr thingRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetada
 	}
 
 	whereClause := dbutil.BuildWhereClause(nq, mq)
-	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, key_external, metadata FROM things %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
+	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, external_key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
 
 	params := map[string]interface{}{
@@ -285,7 +285,7 @@ func (tr thingRepository) RetrieveByProfile(ctx context.Context, prID string, pm
 	}
 
 	whereClause := dbutil.BuildWhereClause(baseCondition, mq)
-	query := fmt.Sprintf(`SELECT id, group_id, name, key, key_external, metadata FROM things %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	query := fmt.Sprintf(`SELECT id, group_id, name, key, external_key, metadata FROM things %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
 
 	params := map[string]interface{}{
@@ -305,7 +305,7 @@ func (tr thingRepository) BackupByGroups(ctx context.Context, groupIDs []string)
 
 	giq := dbutil.GetGroupIDsQuery(groupIDs)
 	whereClause := dbutil.BuildWhereClause(giq)
-	query := fmt.Sprintf("SELECT id, group_id, profile_id, name, key, key_external, metadata FROM things %s", whereClause)
+	query := fmt.Sprintf("SELECT id, group_id, profile_id, name, key, external_key, metadata FROM things %s", whereClause)
 
 	var items []dbThing
 	err := tr.db.SelectContext(ctx, &items, query)
@@ -344,7 +344,7 @@ func (tr thingRepository) Remove(ctx context.Context, ids ...string) error {
 func (tr thingRepository) UpdateExternalKey(ctx context.Context, key, thingID string) error {
 	query := `
 		UPDATE things
-		SET key_external = :key
+		SET external_key = :key
 		WHERE id = :thingID
 	`
 
@@ -383,7 +383,7 @@ func (tr thingRepository) UpdateExternalKey(ctx context.Context, key, thingID st
 func (tr thingRepository) RemoveExternalKey(ctx context.Context, thingID string) error {
 	query := `
 		UPDATE things
-		SET key_external = NULL
+		SET external_key = NULL
 		where id = :thingID
 	`
 
@@ -448,7 +448,7 @@ type dbThing struct {
 	ProfileID   string         `db:"profile_id"`
 	Name        string         `db:"name"`
 	Key         string         `db:"key"`
-	KeyExternal sql.NullString `db:"key_external"`
+	KeyExternal sql.NullString `db:"external_key"`
 	Metadata    []byte         `db:"metadata"`
 }
 
