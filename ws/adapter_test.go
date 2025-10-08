@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	pkgmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -47,50 +46,50 @@ func TestPublish(t *testing.T) {
 
 	cases := []struct {
 		desc     string
-		thingKey string
+		thingKey things.ThingKey
 		msg      protomfx.Message
 		err      error
 	}{
 		{
 			desc:     "publish a valid message with valid thingKey",
-			thingKey: thingKey,
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey},
 			msg:      msg,
 			err:      nil,
 		},
 		{
 			desc:     "publish a valid message with empty thingKey",
-			thingKey: "",
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: ""},
 			msg:      msg,
 			err:      ws.ErrUnauthorizedAccess,
 		},
 		{
 			desc:     "publish a valid message with invalid thingKey",
-			thingKey: "invalid",
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: "invalid"},
 			msg:      msg,
 			err:      ws.ErrUnauthorizedAccess,
 		},
 		{
 			desc:     "publish an empty message with valid thingKey",
-			thingKey: thingKey,
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey},
 			msg:      protomfx.Message{},
 			err:      messaging.ErrPublishMessage,
 		},
 		{
 			desc:     "publish an empty message with empty thingKey",
-			thingKey: "",
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: ""},
 			msg:      protomfx.Message{},
 			err:      ws.ErrUnauthorizedAccess,
 		},
 		{
 			desc:     "publish an empty message with invalid thingKey",
-			thingKey: "invalid",
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: "invalid"},
 			msg:      protomfx.Message{},
 			err:      ws.ErrUnauthorizedAccess,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.Publish(context.Background(), things.ThingKey{Type: things.KeyTypeInternal, Value: tc.thingKey}, tc.msg)
+		err := svc.Publish(context.Background(), tc.thingKey, tc.msg)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -105,42 +104,42 @@ func TestSubscribe(t *testing.T) {
 
 	cases := []struct {
 		desc     string
-		thingKey string
+		thingKey things.ThingKey
 		subtopic string
 		fail     bool
 		err      error
 	}{
 		{
 			desc:     "subscribe with valid thingKey and subtopic",
-			thingKey: thingKey,
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey},
 			subtopic: subTopic,
 			fail:     false,
 			err:      nil,
 		},
 		{
 			desc:     "subscribe again with valid thingKey and subtopic",
-			thingKey: thingKey,
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey},
 			subtopic: subTopic,
 			fail:     false,
 			err:      nil,
 		},
 		{
 			desc:     "subscribe with subscribe set to fail",
-			thingKey: thingKey,
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey},
 			subtopic: subTopic,
 			fail:     true,
 			err:      ws.ErrFailedSubscription,
 		},
 		{
 			desc:     "subscribe with invalid thingKey",
-			thingKey: "invalid",
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: "invalid"},
 			subtopic: subTopic,
 			fail:     false,
 			err:      ws.ErrUnauthorizedAccess,
 		},
 		{
 			desc:     "subscribe with empty thingKey",
-			thingKey: "",
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: ""},
 			subtopic: subTopic,
 			fail:     false,
 			err:      ws.ErrUnauthorizedAccess,
@@ -149,7 +148,7 @@ func TestSubscribe(t *testing.T) {
 
 	for _, tc := range cases {
 		pubsub.SetFail(tc.fail)
-		err := svc.Subscribe(context.Background(), things.ThingKey{Type: apiutil.ThingKeyPrefixInternal, Value: tc.thingKey}, tc.subtopic, c)
+		err := svc.Subscribe(context.Background(), tc.thingKey, tc.subtopic, c)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -162,35 +161,35 @@ func TestUnsubscribe(t *testing.T) {
 
 	cases := []struct {
 		desc     string
-		thingKey string
+		thingKey things.ThingKey
 		subtopic string
 		fail     bool
 		err      error
 	}{
 		{
 			desc:     "unsubscribe with valid thingKey and subtopic",
-			thingKey: thingKey,
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey},
 			subtopic: subTopic,
 			fail:     false,
 			err:      nil,
 		},
 		{
 			desc:     "unsubscribe with valid thingKey and empty subtopic",
-			thingKey: thingKey,
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey},
 			subtopic: "",
 			fail:     false,
 			err:      nil,
 		},
 		{
 			desc:     "unsubscribe with unsubscribe set to fail",
-			thingKey: thingKey,
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey},
 			subtopic: subTopic,
 			fail:     true,
 			err:      ws.ErrFailedUnsubscribe,
 		},
 		{
 			desc:     "unsubscribe with empty thingKey",
-			thingKey: "",
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: ""},
 			subtopic: subTopic,
 			fail:     false,
 			err:      ws.ErrUnauthorizedAccess,
@@ -199,7 +198,7 @@ func TestUnsubscribe(t *testing.T) {
 
 	for _, tc := range cases {
 		pubsub.SetFail(tc.fail)
-		err := svc.Unsubscribe(context.Background(), things.ThingKey{Type: things.KeyTypeInternal, Value: tc.thingKey}, tc.subtopic)
+		err := svc.Unsubscribe(context.Background(), tc.thingKey, tc.subtopic)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

@@ -867,57 +867,50 @@ func TestIdentifyThing(t *testing.T) {
 
 	cases := []struct {
 		desc     string
-		thingKey string
-		keyType  string
+		thingKey things.ThingKey
 		err      error
 		response string
 	}{
 		{
 			desc:     "identify thing using valid internal key",
-			thingKey: thing.Key,
-			keyType:  things.KeyTypeInternal,
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thing.Key},
 			err:      nil,
 			response: id,
 		},
 		{
 			desc:     "identify thing using invalid internal key",
-			thingKey: badKey,
-			keyType:  things.KeyTypeInternal,
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: badKey},
 			err:      createError(sdk.ErrFailedFetch, http.StatusNotFound),
 			response: emptyValue,
 		},
 		{
 			desc:     "identify thing using empty internal key",
-			thingKey: emptyValue,
-			keyType:  things.KeyTypeInternal,
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: emptyValue},
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: emptyValue,
 		},
 		{
 			desc:     "identify thing using valid external key",
-			thingKey: externalKey,
-			keyType:  things.KeyTypeExternal,
+			thingKey: things.ThingKey{Type: things.KeyTypeExternal, Value: externalKey},
 			err:      nil,
 			response: id,
 		},
 		{
 			desc:     "identify thing using invalid external key",
-			thingKey: badKey,
-			keyType:  things.KeyTypeExternal,
+			thingKey: things.ThingKey{Type: things.KeyTypeExternal, Value: badKey},
 			err:      createError(sdk.ErrFailedFetch, http.StatusNotFound),
 			response: emptyValue,
 		},
 		{
 			desc:     "identify thing using empty external key",
-			thingKey: emptyValue,
-			keyType:  things.KeyTypeExternal,
+			thingKey: things.ThingKey{Type: things.KeyTypeExternal, Value: emptyValue},
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: emptyValue,
 		},
 	}
 
 	for _, tc := range cases {
-		thingID, err := mainfluxAuthSDK.IdentifyThing(things.ThingKey{Type: tc.keyType, Value: tc.thingKey})
+		thingID, err := mainfluxAuthSDK.IdentifyThing(tc.thingKey)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, thingID, fmt.Sprintf("%s: expected response id %s, got %s", tc.desc, tc.response, thingID))
 	}
