@@ -110,23 +110,6 @@ func (req thingAccessGroupReq) validate() error {
 	return nil
 }
 
-type identifyReq struct {
-	key     string
-	keyType string
-}
-
-func (req identifyReq) validate() error {
-	if req.key == "" {
-		return apiutil.ErrBearerKey
-	}
-
-	if req.keyType != things.KeyTypeInternal && req.keyType != things.KeyTypeExternal {
-		return apiutil.ErrInvalidThingKeyType
-	}
-
-	return nil
-}
-
 type profileIDReq struct {
 	profileID string
 }

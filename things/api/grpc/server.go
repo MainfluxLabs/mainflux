@@ -225,7 +225,7 @@ func decodeThingAccessGroupRequest(_ context.Context, grpcReq interface{}) (inte
 
 func decodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*protomfx.ThingKey)
-	return identifyReq{key: req.GetValue(), keyType: req.GetType()}, nil
+	return thingKey{value: req.GetValue(), keyType: req.GetType()}, nil
 }
 
 func decodeGetGroupIDByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

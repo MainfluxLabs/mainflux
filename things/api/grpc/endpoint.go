@@ -147,12 +147,12 @@ func canThingAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
 
 func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(identifyReq)
+		req := request.(thingKey)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		id, err := svc.Identify(ctx, things.ThingKey{Type: req.keyType, Value: req.key})
+		id, err := svc.Identify(ctx, things.ThingKey{Type: req.keyType, Value: req.value})
 		if err != nil {
 			return identityRes{}, err
 		}

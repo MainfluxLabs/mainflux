@@ -208,7 +208,7 @@ func (client grpcClient) Identify(ctx context.Context, req *protomfx.ThingKey, _
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.identify(ctx, identifyReq{key: req.GetValue(), keyType: req.GetType()})
+	res, err := client.identify(ctx, thingKey{value: req.GetValue(), keyType: req.GetType()})
 	if err != nil {
 		return nil, err
 	}
@@ -300,8 +300,8 @@ func encodeThingAccessGroupRequest(_ context.Context, grpcReq interface{}) (inte
 }
 
 func encodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(identifyReq)
-	return &protomfx.ThingKey{Value: req.key, Type: req.keyType}, nil
+	req := grpcReq.(thingKey)
+	return &protomfx.ThingKey{Value: req.value, Type: req.keyType}, nil
 }
 
 func encodeGetGroupIDByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
