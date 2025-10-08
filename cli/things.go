@@ -100,7 +100,7 @@ var cmdThings = []cobra.Command{
 		Short: "Get thing metadata",
 		Long:  "Get metadata about the thing identified by the given key",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 1 {
+			if len(args) != 2 {
 				logUsage(cmd.Use)
 				return
 			}
