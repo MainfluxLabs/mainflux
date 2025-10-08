@@ -384,7 +384,7 @@ func (tr thingRepository) RemoveExternalKey(ctx context.Context, thingID string)
 	query := `
 		UPDATE things
 		SET external_key = NULL
-		where id = :thingID
+		WHERE id = :thingID
 	`
 
 	params := map[string]any{
