@@ -346,7 +346,6 @@ func (req restoreReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	// FIXME: Why do we only validate only the existence of Things in the restore request?
 	if len(req.Things) == 0 {
 		return apiutil.ErrEmptyList
 	}
