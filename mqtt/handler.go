@@ -84,7 +84,7 @@ func (h *handler) AuthConnect(c *session.Client) error {
 		return ErrMissingClientID
 	}
 
-	thingID, err := h.identifySessionThing(c)
+	thingID, err := h.identify(c)
 	if err != nil {
 		return err
 	}
@@ -106,7 +106,7 @@ func (h *handler) AuthPublish(c *session.Client, topic *string, payload *[]byte)
 		return ErrMissingTopicPub
 	}
 
-	if _, err := h.identifySessionThing(c); err != nil {
+	if _, err := h.identify(c); err != nil {
 		return err
 	}
 
@@ -123,7 +123,7 @@ func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 		return ErrMissingTopicSub
 	}
 
-	if _, err := h.identifySessionThing(c); err != nil {
+	if _, err := h.identify(c); err != nil {
 		return err
 	}
 
@@ -231,7 +231,7 @@ func (h *handler) Disconnect(c *session.Client) {
 		return
 	}
 
-	thingID, _ := h.identifySessionThing(c)
+	thingID, _ := h.identify(c)
 
 	h.logger.Error(fmt.Sprintf(LogInfoDisconnected, c.ID))
 	if err := h.es.Disconnect(thingID); err != nil {
@@ -239,7 +239,7 @@ func (h *handler) Disconnect(c *session.Client) {
 	}
 }
 
-func (h *handler) identifySessionThing(c *session.Client) (string, error) {
+func (h *handler) identify(c *session.Client) (string, error) {
 	thingKeyReq := &protomfx.ThingKey{
 		Value: string(c.Password),
 		Type:  c.Username,
@@ -254,7 +254,7 @@ func (h *handler) identifySessionThing(c *session.Client) (string, error) {
 }
 
 func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subscription, error) {
-	thingID, err := h.identifySessionThing(c)
+	thingID, err := h.identify(c)
 	if err != nil {
 		return nil, err
 	}
