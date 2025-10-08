@@ -183,4 +183,3 @@ security:
   - bearerAuth: []
   - basicAuth: []
   - externalAuth: []
-  
