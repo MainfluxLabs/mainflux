@@ -268,9 +268,10 @@ func TestUpdateThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
 
-	data := fmt.Sprintf(`{"name":"test","profile_id":"%s", "key": "tk1"}`, prID)
-	invalidNameData := fmt.Sprintf(`{"name": "%s","profile_id":"%s"}`, invalidName, prID)
-	invalidProfileData := `{"name": "test"}`
+	data := `{"name":"test", "key": "tk1"}`
+	dataMissingKey := `{"name":"test"}`
+	dataMissingName := `{"key":"tk1"}`
+	invalidNameData := fmt.Sprintf(`{"name": "%s", "key": "tk1"}`, invalidName)
 
 	cases := []struct {
 		desc        string
@@ -294,7 +295,7 @@ func TestUpdateThing(t *testing.T) {
 			id:          th.ID,
 			contentType: contentTypeJSON,
 			auth:        token,
-			status:      http.StatusBadRequest,
+			status:      http.StatusUnauthorized,
 		},
 		{
 			desc:        "update non-existent thing",
@@ -360,9 +361,15 @@ func TestUpdateThing(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "update thing without profile id",
-			req:         invalidProfileData,
-			id:          th.ID,
+			desc:        "update thing with missing name",
+			req:         dataMissingName,
+			contentType: contentTypeJSON,
+			auth:        token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update thing with missing key",
+			req:         dataMissingKey,
 			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
