@@ -268,7 +268,7 @@ func TestUpdateThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
 
-	data := fmt.Sprintf(`{"name":"test","profile_id":"%s"}`, prID)
+	data := fmt.Sprintf(`{"name":"test","profile_id":"%s", "key": "tk1"}`, prID)
 	invalidNameData := fmt.Sprintf(`{"name": "%s","profile_id":"%s"}`, invalidName, prID)
 	invalidProfileData := `{"name": "test"}`
 
@@ -374,136 +374,6 @@ func TestUpdateThing(t *testing.T) {
 			client:      ts.Client(),
 			method:      http.MethodPut,
 			url:         fmt.Sprintf("%s/things/%s", ts.URL, tc.id),
-			contentType: tc.contentType,
-			token:       tc.auth,
-			body:        strings.NewReader(tc.req),
-		}
-		res, err := req.make()
-		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
-	}
-}
-
-func TestUpdateKey(t *testing.T) {
-	svc := newService()
-	ts := newServer(svc)
-	defer ts.Close()
-
-	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	grID := grs[0].ID
-
-	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	prID := prs[0].ID
-
-	th := thing
-	th.Key = "key"
-	ths, err := svc.CreateThings(context.Background(), token, prID, th)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	th = ths[0]
-
-	th.Key = "new-key"
-	data := toJSON(th)
-
-	th.Key = "key"
-	dummyData := toJSON(th)
-
-	cases := []struct {
-		desc        string
-		req         string
-		id          string
-		contentType string
-		auth        string
-		status      int
-	}{
-		{
-			desc:        "update key for an existing thing",
-			req:         data,
-			id:          th.ID,
-			contentType: contentTypeJSON,
-			auth:        token,
-			status:      http.StatusOK,
-		},
-		{
-			desc:        "update thing with conflicting key",
-			req:         data,
-			id:          th.ID,
-			contentType: contentTypeJSON,
-			auth:        token,
-			status:      http.StatusConflict,
-		},
-		{
-			desc:        "update key with empty JSON request",
-			req:         "{}",
-			id:          th.ID,
-			contentType: contentTypeJSON,
-			auth:        token,
-			status:      http.StatusUnauthorized,
-		},
-		{
-			desc:        "update key of non-existent thing",
-			req:         dummyData,
-			id:          strconv.FormatUint(wrongID, 10),
-			contentType: contentTypeJSON,
-			auth:        token,
-			status:      http.StatusNotFound,
-		},
-		{
-			desc:        "update thing with invalid id",
-			req:         dummyData,
-			id:          wrongValue,
-			contentType: contentTypeJSON,
-			auth:        token,
-			status:      http.StatusNotFound,
-		},
-		{
-			desc:        "update thing with invalid user token",
-			req:         data,
-			id:          th.ID,
-			contentType: contentTypeJSON,
-			auth:        wrongValue,
-			status:      http.StatusUnauthorized,
-		},
-		{
-			desc:        "update thing with empty user token",
-			req:         data,
-			id:          th.ID,
-			contentType: contentTypeJSON,
-			auth:        emptyValue,
-			status:      http.StatusUnauthorized,
-		},
-		{
-			desc:        "update thing with invalid data format",
-			req:         "{",
-			id:          th.ID,
-			contentType: contentTypeJSON,
-			auth:        token,
-			status:      http.StatusBadRequest,
-		},
-		{
-			desc:        "update thing with empty request",
-			req:         emptyValue,
-			id:          th.ID,
-			contentType: contentTypeJSON,
-			auth:        token,
-			status:      http.StatusBadRequest,
-		},
-		{
-			desc:        "update thing without content type",
-			req:         data,
-			id:          th.ID,
-			contentType: emptyValue,
-			auth:        token,
-			status:      http.StatusUnsupportedMediaType,
-		},
-	}
-
-	for _, tc := range cases {
-		req := testRequest{
-			client:      ts.Client(),
-			method:      http.MethodPatch,
-			url:         fmt.Sprintf("%s/things/%s/key", ts.URL, tc.id),
 			contentType: tc.contentType,
 			token:       tc.auth,
 			body:        strings.NewReader(tc.req),

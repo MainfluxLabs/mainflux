@@ -223,59 +223,6 @@ func TestUpdateThing(t *testing.T) {
 	}
 }
 
-func TestUpdateKey(t *testing.T) {
-	key := "new-key"
-	svc := newService()
-
-	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
-
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	grID := grs[0].ID
-
-	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	prID := prs[0].ID
-
-	ths, err := svc.CreateThings(context.Background(), token, prID, thing)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	th := ths[0]
-
-	cases := []struct {
-		desc  string
-		token string
-		id    string
-		key   string
-		err   error
-	}{
-		{
-			desc:  "update key of an existing thing",
-			token: token,
-			id:    th.ID,
-			key:   key,
-			err:   nil,
-		},
-		{
-			desc:  "update key with invalid credentials",
-			token: wrongValue,
-			id:    th.ID,
-			key:   key,
-			err:   errors.ErrAuthentication,
-		},
-		{
-			desc:  "update key of non-existing thing",
-			token: token,
-			id:    emptyValue,
-			key:   wrongValue,
-			err:   dbutil.ErrNotFound,
-		},
-	}
-
-	for _, tc := range cases {
-		err := svc.UpdateKey(context.Background(), tc.token, tc.id, tc.key)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
-	}
-}
-
 func TestViewThing(t *testing.T) {
 	svc := newService()
 
