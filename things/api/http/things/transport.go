@@ -142,6 +142,13 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		opts...,
 	))
 
+	mux.Patch("/things/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "patch_thing")(patchThingEndpoint(svc)),
+		decodePatchThing,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Put("/things", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_things_metadata")(updateThingsMetadataEndpoint(svc)),
 		decodeUpdateThingsMetadata,
@@ -230,6 +237,23 @@ func decodeUpdateThing(_ context.Context, r *http.Request) (interface{}, error) 
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodePatchThing(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := patchThingReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, apiutil.IDKey),
+	}
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}

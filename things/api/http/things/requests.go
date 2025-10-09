@@ -89,6 +89,37 @@ func (req updateThingReq) validate() error {
 	return nil
 }
 
+type patchThingReq struct {
+	token     string
+	id        string
+	Name      string         `json:"name"`
+	Metadata  map[string]any `json:"metadata"`
+	Key       string         `json:"key"`
+	ProfileID string         `json:"profile_id"`
+	GroupID   string         `json:"group_id"`
+}
+
+func (req patchThingReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.id == "" {
+		return apiutil.ErrMissingThingID
+	}
+
+	if req.Name == "" && req.Metadata == nil && req.Key == "" && req.ProfileID == "" && req.GroupID == "" {
+		return apiutil.ErrMalformedEntity
+	}
+
+	// Making a request to change the Thing's Group requires specifying a Profile ID
+	if req.GroupID != "" && req.ProfileID == "" {
+		return apiutil.ErrMissingProfileID
+	}
+
+	return nil
+}
+
 type updateMetadataReq struct {
 	ID       string                 `json:"id,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`

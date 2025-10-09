@@ -321,6 +321,29 @@ paths:
           description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
+    patch:
+      summary: Update thing's properties
+      description: | 
+        Update one or more properties of a specific Thing.
+      tags:
+        - things
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      requestBody:
+        $ref: "#/components/requestBodies/PatchThingReq"
+      responses:
+        '200':
+          description: Thing updated.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Thing does not exist.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
     delete:
       summary: Removes a thing
       description: |
@@ -1896,6 +1919,24 @@ components:
                 items:
                   $ref: "#/components/schemas/ThingReqSchema"
     UpdateThingReq:
+      description: Arbitrary, object-encoded thing's data.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Free-form thing name.
+              metadata:
+                type: object
+              profile_id:
+                type: string
+                format: uuid
+              key:
+                type: string
+    PatchThingReq:
       description: Arbitrary, object-encoded thing's data.
       required: true
       content:

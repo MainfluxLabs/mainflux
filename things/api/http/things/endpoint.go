@@ -267,6 +267,31 @@ func updateThingEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func patchThingEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(patchThingReq)
+
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		thing := things.Thing{
+			ID:        req.id,
+			ProfileID: req.ProfileID,
+			Name:      req.Name,
+			Key:       req.Key,
+			Metadata:  req.Metadata,
+		}
+
+		if err := svc.UpdateThing(ctx, req.token, thing); err != nil {
+			return nil, err
+		}
+
+		res := thingRes{ID: req.id, created: false}
+		return res, nil
+	}
+}
+
 func updateThingsMetadataEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(updateThingsMetadataReq)

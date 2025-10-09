@@ -300,22 +300,25 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		ID:     thing.ID,
 		Action: Editor,
 	}
+
 	if err := ts.CanUserAccessThing(ctx, ar); err != nil {
 		return err
 	}
 
-	thGrID, err := ts.getGroupIDByThingID(ctx, thing.ID)
-	if err != nil {
-		return err
-	}
+	if thing.ProfileID != "" {
+		thGrID, err := ts.getGroupIDByThingID(ctx, thing.ID)
+		if err != nil {
+			return err
+		}
 
-	prGrID, err := ts.getGroupIDByProfileID(ctx, thing.ProfileID)
-	if err != nil {
-		return err
-	}
+		prGrID, err := ts.getGroupIDByProfileID(ctx, thing.ProfileID)
+		if err != nil {
+			return err
+		}
 
-	if prGrID != thGrID {
-		return errors.ErrAuthorization
+		if prGrID != thGrID {
+			return errors.ErrAuthorization
+		}
 	}
 
 	return ts.things.Update(ctx, thing)
