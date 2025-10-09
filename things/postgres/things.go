@@ -73,18 +73,33 @@ func (tr thingRepository) Save(ctx context.Context, ths ...things.Thing) ([]thin
 }
 
 func (tr thingRepository) Update(ctx context.Context, t things.Thing) error {
-	nq := ""
+	var columns string
+
 	if t.Name != "" {
-		nq += "name = :name,"
-	}
-	if t.ProfileID != "" {
-		nq += "profile_id = :profile_id,"
-	}
-	if t.Key != "" {
-		nq += "key = :key,"
+		columns += "name = :name,"
 	}
 
-	q := fmt.Sprintf(`UPDATE things SET %s metadata = :metadata WHERE id = :id;`, nq)
+	if t.Metadata != nil {
+		columns += "metadata = :metadata,"
+	}
+
+	if t.ProfileID != "" {
+		columns += "profile_id = :profile_id,"
+	}
+
+	if t.GroupID != "" {
+		columns += "group_id = :group_id,"
+	}
+
+	if t.Key != "" {
+		columns += "key = :key,"
+	}
+
+	if string(columns[len(columns)-1]) == "," {
+		columns = columns[:len(columns)-1]
+	}
+
+	q := fmt.Sprintf(`UPDATE things SET %s WHERE id = :id;`, columns)
 
 	dbth, err := toDBThing(t)
 	if err != nil {
