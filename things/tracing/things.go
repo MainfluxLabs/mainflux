@@ -22,6 +22,7 @@ const (
 	retrieveThingsByProfile  = "retrieve_things_by_profile"
 	retrieveThingsByGroups   = "retrieve_things_by_groups"
 	removeThing              = "remove_thing"
+	removeKey                = "remove_key"
 	retrieveThingIDByKey     = "retrieve_id_by_key"
 	retrieveAllThings        = "retrieve_all_things"
 	backupAllThings          = "backup_all_things"
@@ -29,6 +30,8 @@ const (
 	saveGroupIDByThingID     = "save_group_id_by_thing_id"
 	retrieveGroupIDByThingID = "retrieve_group_id_by_thing_id"
 	removeGroupIDByThingID   = "remove_group_id_by_thing_id"
+	updateExternalKey        = "update_external_key"
+	removeExternalKey        = "remove_external_key"
 )
 
 var (
@@ -82,7 +85,7 @@ func (trm thingRepositoryMiddleware) RetrieveByID(ctx context.Context, id string
 	return trm.repo.RetrieveByID(ctx, id)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveByKey(ctx context.Context, key string) (string, error) {
+func (trm thingRepositoryMiddleware) RetrieveByKey(ctx context.Context, key things.ThingKey) (string, error) {
 	span := dbutil.CreateSpan(ctx, trm.tracer, retrieveThingByKey)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -138,6 +141,22 @@ func (trm thingRepositoryMiddleware) BackupByGroups(ctx context.Context, groupID
 	return trm.repo.BackupByGroups(ctx, groupIDs)
 }
 
+func (trm thingRepositoryMiddleware) UpdateExternalKey(ctx context.Context, key, thingID string) error {
+	span := dbutil.CreateSpan(ctx, trm.tracer, updateExternalKey)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return trm.repo.UpdateExternalKey(ctx, key, thingID)
+}
+
+func (trm thingRepositoryMiddleware) RemoveExternalKey(ctx context.Context, thingID string) error {
+	span := dbutil.CreateSpan(ctx, trm.tracer, removeExternalKey)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return trm.repo.RemoveExternalKey(ctx, thingID)
+}
+
 type thingCacheMiddleware struct {
 	tracer opentracing.Tracer
 	cache  things.ThingCache
@@ -152,28 +171,36 @@ func ThingCacheMiddleware(tracer opentracing.Tracer, cache things.ThingCache) th
 	}
 }
 
-func (tcm thingCacheMiddleware) Save(ctx context.Context, thingKey string, thingID string) error {
+func (tcm thingCacheMiddleware) Save(ctx context.Context, key things.ThingKey, thingID string) error {
 	span := dbutil.CreateSpan(ctx, tcm.tracer, saveThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return tcm.cache.Save(ctx, thingKey, thingID)
+	return tcm.cache.Save(ctx, key, thingID)
 }
 
-func (tcm thingCacheMiddleware) ID(ctx context.Context, thingKey string) (string, error) {
+func (tcm thingCacheMiddleware) ID(ctx context.Context, key things.ThingKey) (string, error) {
 	span := dbutil.CreateSpan(ctx, tcm.tracer, retrieveThingIDByKey)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return tcm.cache.ID(ctx, thingKey)
+	return tcm.cache.ID(ctx, key)
 }
 
-func (tcm thingCacheMiddleware) Remove(ctx context.Context, thingID string) error {
+func (tcm thingCacheMiddleware) RemoveThing(ctx context.Context, thingID string) error {
 	span := dbutil.CreateSpan(ctx, tcm.tracer, removeThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return tcm.cache.Remove(ctx, thingID)
+	return tcm.cache.RemoveThing(ctx, thingID)
+}
+
+func (tcm thingCacheMiddleware) RemoveKey(ctx context.Context, key things.ThingKey) error {
+	span := dbutil.CreateSpan(ctx, tcm.tracer, removeKey)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return tcm.cache.RemoveKey(ctx, key)
 }
 
 func (tcm thingCacheMiddleware) SaveGroup(ctx context.Context, thingID string, groupID string) error {

@@ -374,25 +374,44 @@ func TestRetrieveByKey(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th.ID = ths[0].ID
 
+	externalKey := "abc123"
+	err = thingRepo.UpdateExternalKey(context.Background(), externalKey, th.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
 	cases := map[string]struct {
-		key string
-		ID  string
-		err error
+		key     string
+		keyType string
+		ID      string
+		err     error
 	}{
-		"retrieve existing thing by key": {
-			key: th.Key,
-			ID:  th.ID,
-			err: nil,
+		"retrieve existing thing by internal key": {
+			key:     th.Key,
+			keyType: things.KeyTypeInternal,
+			ID:      th.ID,
+			err:     nil,
 		},
-		"retrieve non-existent thing by key": {
-			key: wrongID,
-			ID:  "",
-			err: dbutil.ErrNotFound,
+		"retrieve non-existent thing by internal key": {
+			key:     wrongID,
+			keyType: things.KeyTypeInternal,
+			ID:      "",
+			err:     dbutil.ErrNotFound,
+		},
+		"retrieve existing thing by external key": {
+			key:     externalKey,
+			keyType: things.KeyTypeExternal,
+			ID:      th.ID,
+			err:     nil,
+		},
+		"retrieve non-existent thing by external key": {
+			key:     wrongID,
+			keyType: things.KeyTypeExternal,
+			ID:      "",
+			err:     dbutil.ErrNotFound,
 		},
 	}
 
 	for desc, tc := range cases {
-		id, err := thingRepo.RetrieveByKey(context.Background(), tc.key)
+		id, err := thingRepo.RetrieveByKey(context.Background(), things.ThingKey{Type: tc.keyType, Value: tc.key})
 		assert.Equal(t, tc.ID, id, fmt.Sprintf("%s: expected %s got %s\n", desc, tc.ID, id))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
@@ -854,6 +873,128 @@ func TestRemoveThing(t *testing.T) {
 	for desc, tc := range cases {
 		err := thingRepo.Remove(context.Background(), tc.thingID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+	}
+}
+
+func TestUpdateExternalKey(t *testing.T) {
+	dbMiddleware := dbutil.NewDatabase(db)
+	thingRepo := postgres.NewThingRepository(dbMiddleware)
+	profileRepo := postgres.NewProfileRepository(dbMiddleware)
+
+	err := cleanTestTable(context.Background(), "things", dbMiddleware)
+	assert.Nil(t, err, fmt.Sprintf("cleaning table 'things' expected to success %v", err))
+
+	group := createGroup(t, dbMiddleware)
+
+	p := things.Profile{
+		ID:      generateUUID(t),
+		GroupID: group.ID,
+		Name:    profileName,
+	}
+	_, err = profileRepo.Save(context.Background(), p)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	thing := things.Thing{
+		GroupID:   group.ID,
+		ProfileID: p.ID,
+		Name:      "thing",
+		Key:       "123",
+		ID:        generateUUID(t),
+	}
+
+	_, err = thingRepo.Save(context.Background(), thing)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	thing2 := things.Thing{
+		GroupID:   group.ID,
+		ProfileID: p.ID,
+		Name:      "thing2",
+		Key:       "456",
+		ID:        generateUUID(t),
+	}
+
+	_, err = thingRepo.Save(context.Background(), thing2)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	cases := []struct {
+		desc    string
+		key     string
+		thingID string
+		err     error
+	}{
+		{
+			desc:    "save external key",
+			key:     "abc123",
+			thingID: thing.ID,
+			err:     nil,
+		},
+		{
+			desc:    "save existing external key",
+			key:     "abc123",
+			thingID: thing2.ID,
+			err:     dbutil.ErrConflict,
+		},
+		{
+			desc:    "save external key of non-existent thing ID",
+			key:     "def123",
+			thingID: generateUUID(t),
+			err:     dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		err := thingRepo.UpdateExternalKey(context.Background(), tc.key, tc.thingID)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestRemoveExternalKey(t *testing.T) {
+	dbMiddleware := dbutil.NewDatabase(db)
+	thingRepo := postgres.NewThingRepository(dbMiddleware)
+	profileRepo := postgres.NewProfileRepository(dbMiddleware)
+
+	err := cleanTestTable(context.Background(), "things", dbMiddleware)
+	assert.Nil(t, err, fmt.Sprintf("cleaning table 'things' expected to success %v", err))
+
+	group := createGroup(t, dbMiddleware)
+
+	p := things.Profile{
+		ID:      generateUUID(t),
+		GroupID: group.ID,
+		Name:    profileName,
+	}
+	_, err = profileRepo.Save(context.Background(), p)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	thing := things.Thing{
+		GroupID:   group.ID,
+		ProfileID: p.ID,
+		Name:      "thing",
+		ID:        generateUUID(t),
+	}
+
+	_, err = thingRepo.Save(context.Background(), thing)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	const externalKey = "abc123"
+	err = thingRepo.UpdateExternalKey(context.Background(), externalKey, thing.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	cases := []struct {
+		desc    string
+		thingID string
+		err     error
+	}{
+		{
+			desc:    "remove external key",
+			thingID: thing.ID,
+			err:     nil,
+		},
+	}
+
+	for _, tc := range cases {
+		err := thingRepo.RemoveExternalKey(context.Background(), tc.thingID)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 

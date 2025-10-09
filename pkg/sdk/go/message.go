@@ -11,11 +11,12 @@ import (
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const messagesEndpoint = "messages"
 
-func (sdk mfSDK) SendMessage(subtopic, msg, key string) error {
+func (sdk mfSDK) SendMessage(subtopic, msg string, key things.ThingKey) error {
 	subtopic = strings.Replace(subtopic, ".", "/", -1)
 	url := fmt.Sprintf("%s/messages/%s", sdk.httpAdapterURL, subtopic)
 
@@ -36,7 +37,7 @@ func (sdk mfSDK) SendMessage(subtopic, msg, key string) error {
 	return nil
 }
 
-func (sdk mfSDK) ReadMessages(isAdmin bool, pm PageMetadata, token string) (map[string]interface{}, error) {
+func (sdk mfSDK) ReadMessages(isAdmin bool, pm PageMetadata, keyType, token string) (map[string]interface{}, error) {
 	url, err := sdk.withQueryParams(sdk.readerURL, messagesEndpoint, pm)
 	if err != nil {
 		return nil, err
@@ -56,7 +57,7 @@ func (sdk mfSDK) ReadMessages(isAdmin bool, pm PageMetadata, token string) (map[
 		return decodeMessages(response)
 	}
 
-	response, err := sdk.sendThingRequest(req, token, string(sdk.msgContentType))
+	response, err := sdk.sendThingRequest(req, things.ThingKey{Value: token, Type: keyType}, string(sdk.msgContentType))
 	if err != nil {
 		return nil, err
 	}

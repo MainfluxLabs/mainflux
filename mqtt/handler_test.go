@@ -34,12 +34,7 @@ var (
 	logBuffer     = bytes.Buffer{}
 	sessionClient = session.Client{
 		ID:       clientID,
-		Username: thingID,
-		Password: []byte(password),
-	}
-	invalidThingSessionClient = session.Client{
-		ID:       clientID,
-		Username: invalidID,
+		Username: things.KeyTypeInternal,
 		Password: []byte(password),
 	}
 )
@@ -62,7 +57,7 @@ func TestAuthConnect(t *testing.T) {
 			err:  mqtt.ErrMissingClientID,
 			session: &session.Client{
 				ID:       "",
-				Username: thingID,
+				Username: things.KeyTypeInternal,
 				Password: []byte(password),
 			},
 		},
@@ -71,14 +66,9 @@ func TestAuthConnect(t *testing.T) {
 			err:  errors.ErrAuthentication,
 			session: &session.Client{
 				ID:       clientID,
-				Username: thingID,
+				Username: things.KeyTypeInternal,
 				Password: []byte(""),
 			},
-		},
-		{
-			desc:    "connect with valid password and invalid username",
-			err:     errors.ErrAuthentication,
-			session: &invalidThingSessionClient,
 		},
 		{
 			desc:    "connect with valid username and password",
@@ -152,12 +142,6 @@ func TestAuthSubscribe(t *testing.T) {
 			client: &sessionClient,
 			err:    mqtt.ErrMissingTopicSub,
 			topic:  nil,
-		},
-		{
-			desc:   "subscribe with invalid thing ID",
-			client: &invalidThingSessionClient,
-			err:    mqtt.ErrAuthentication,
-			topic:  &topics,
 		},
 		{
 			desc:   "subscribe with active session and valid topics",
@@ -345,7 +329,7 @@ func TestDisconnect(t *testing.T) {
 			desc:   "disconnect with valid session",
 			client: &sessionClient,
 			topic:  topics,
-			logMsg: fmt.Sprintf(mqtt.LogInfoDisconnected, clientID, thingID),
+			logMsg: fmt.Sprintf(mqtt.LogInfoDisconnected, clientID),
 		},
 	}
 
@@ -361,7 +345,7 @@ func newHandler() session.Handler {
 		log.Fatalf("failed to create logger: %s", err)
 	}
 
-	thingsClient := pkgmocks.NewThingsServiceClient(nil, map[string]things.Thing{password: {ID: thingID}}, nil)
+	thingsClient := pkgmocks.NewThingsServiceClient(nil, map[string]things.Thing{password: {ID: thingID}, thingID: {ID: thingID}}, nil)
 	rulesClient := pkgmocks.NewRulesServiceClient()
 	eventStore := mocks.NewEventStore()
 	return mqtt.NewHandler(pkgmocks.NewPublisher(), eventStore, logger, thingsClient, rulesClient, newService())

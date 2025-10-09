@@ -15,6 +15,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/readers"
+	"github.com/MainfluxLabs/mainflux/things"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -141,7 +142,7 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, er
 
 	return listJSONMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
-		key:      apiutil.ExtractThingKey(r),
+		thingKey: things.ExtractThingKey(r),
 		pageMeta: pageMeta,
 	}, nil
 }
@@ -173,7 +174,7 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (interface{}, e
 
 	return listSenMLMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
-		key:      apiutil.ExtractThingKey(r),
+		thingKey: things.ExtractThingKey(r),
 		pageMeta: pageMeta,
 	}, nil
 }
@@ -200,8 +201,8 @@ func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (interface{}, 
 	}
 
 	req := deleteJSONMessagesReq{
-		token: apiutil.ExtractBearerToken(r),
-		key:   apiutil.ExtractThingKey(r),
+		token:    apiutil.ExtractBearerToken(r),
+		thingKey: things.ExtractThingKey(r),
 		pageMeta: readers.JSONPageMetadata{
 			Subtopic: subtopic,
 			Protocol: protocol,
@@ -225,8 +226,8 @@ func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (interface{},
 	}
 
 	req := deleteSenMLMessagesReq{
-		token: apiutil.ExtractBearerToken(r),
-		key:   apiutil.ExtractThingKey(r),
+		token:    apiutil.ExtractBearerToken(r),
+		thingKey: things.ExtractThingKey(r),
 		pageMeta: readers.SenMLPageMetadata{
 			From: from,
 			To:   to,

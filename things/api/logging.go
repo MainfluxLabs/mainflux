@@ -96,7 +96,7 @@ func (lm *loggingMiddleware) ViewThing(ctx context.Context, token, id string) (t
 	return lm.svc.ViewThing(ctx, token, id)
 }
 
-func (lm *loggingMiddleware) ViewMetadataByKey(ctx context.Context, thingKey string) (metadata things.Metadata, err error) {
+func (lm *loggingMiddleware) ViewMetadataByKey(ctx context.Context, key things.ThingKey) (metadata things.Metadata, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view_metadata_by_key took %s to complete", time.Since(begin))
 		if err != nil {
@@ -106,7 +106,7 @@ func (lm *loggingMiddleware) ViewMetadataByKey(ctx context.Context, thingKey str
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ViewMetadataByKey(ctx, thingKey)
+	return lm.svc.ViewMetadataByKey(ctx, key)
 }
 
 func (lm *loggingMiddleware) ListThings(ctx context.Context, token string, pm apiutil.PageMetadata) (_ things.ThingsPage, err error) {
@@ -300,7 +300,7 @@ func (lm *loggingMiddleware) RemoveProfiles(ctx context.Context, token string, i
 	return lm.svc.RemoveProfiles(ctx, token, ids...)
 }
 
-func (lm *loggingMiddleware) GetPubConfByKey(ctx context.Context, key string) (pc things.PubConfInfo, err error) {
+func (lm *loggingMiddleware) GetPubConfByKey(ctx context.Context, key things.ThingKey) (pc things.PubConfInfo, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method get_pub_conf_by_key for thing %s took %s to complete", pc.PublisherID, time.Since(begin))
 		if err != nil {
@@ -377,7 +377,7 @@ func (lm *loggingMiddleware) CanThingAccessGroup(ctx context.Context, req things
 	return lm.svc.CanThingAccessGroup(ctx, req)
 }
 
-func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (id string, err error) {
+func (lm *loggingMiddleware) Identify(ctx context.Context, key things.ThingKey) (id string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method identify for thing %s took %s to complete", id, time.Since(begin))
 		if err != nil {
@@ -748,4 +748,28 @@ func (lm *loggingMiddleware) RemoveGroupMemberships(ctx context.Context, token, 
 	}(time.Now())
 
 	return lm.svc.RemoveGroupMemberships(ctx, token, groupID, memberIDs...)
+}
+
+func (lm *loggingMiddleware) UpdateExternalKey(ctx context.Context, token, key, thingID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method update_external_key for thing id %s took %s to complete", thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+	}(time.Now())
+
+	return lm.svc.UpdateExternalKey(ctx, token, key, thingID)
+}
+
+func (lm *loggingMiddleware) RemoveExternalKey(ctx context.Context, token, thingID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_external_key for thing %s took %s to complete", thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+	}(time.Now())
+
+	return lm.svc.RemoveExternalKey(ctx, token, thingID)
 }

@@ -101,7 +101,7 @@ type Service interface {
 	ViewProfileByThing(ctx context.Context, token, thID string) (Profile, error)
 
 	// ViewMetadataByKey retrieves metadata about the thing identified by the given key.
-	ViewMetadataByKey(ctx context.Context, thingKey string) (Metadata, error)
+	ViewMetadataByKey(ctx context.Context, key ThingKey) (Metadata, error)
 
 	// RemoveProfiles removes the things identified by the provided IDs, that
 	// belongs to the user identified by the provided key.
@@ -109,7 +109,7 @@ type Service interface {
 
 	// GetPubConfByKey determines whether the profile can be accessed using the
 	// provided key and returns thing's id if access is allowed.
-	GetPubConfByKey(ctx context.Context, key string) (PubConfInfo, error)
+	GetPubConfByKey(ctx context.Context, key ThingKey) (PubConfInfo, error)
 
 	// GetConfigByThingID returns profile config for given thing ID.
 	GetConfigByThingID(ctx context.Context, thingID string) (map[string]interface{}, error)
@@ -127,7 +127,7 @@ type Service interface {
 	CanThingAccessGroup(ctx context.Context, req ThingAccessReq) error
 
 	// Identify returns thing ID for given thing key.
-	Identify(ctx context.Context, key string) (string, error)
+	Identify(ctx context.Context, key ThingKey) (string, error)
 
 	// GetGroupIDByThingID returns a thing's group ID for given thing ID.
 	GetGroupIDByThingID(ctx context.Context, thingID string) (string, error)
@@ -140,6 +140,13 @@ type Service interface {
 
 	// GetGroupIDsByOrg returns all group IDs belonging to an org.
 	GetGroupIDsByOrg(ctx context.Context, orgID string, token string) ([]string, error)
+
+	// UpdateExternalKey updates the external key of the Thing identified by `thingID`. The authenticated user must have Editor rights within the Thing's belonging Group.
+	UpdateExternalKey(ctx context.Context, token, key, thingID string) error
+
+	// RemoveExternalKey removes the external thing key of the Thing identified by `thingID`.
+	// The authenticated user must have Editor rights within the Thing's belonging Group.
+	RemoveExternalKey(ctx context.Context, token, thingID string) error
 
 	// Backup retrieves all things, profiles, groups, and groups memberships for all users. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
@@ -195,6 +202,9 @@ type ProfilesBackup struct {
 	Profiles []Profile
 }
 
+// Map of Thind ID to a slice of all external keys associated with that Thing.
+type ExternalKeysBackup map[string][]string
+
 type ThingsBackup struct {
 	Things []Thing
 }
@@ -206,8 +216,8 @@ type UserAccessReq struct {
 }
 
 type ThingAccessReq struct {
-	Key string
-	ID  string
+	ThingKey
+	ID string
 }
 
 type PubConfInfo struct {
@@ -354,11 +364,17 @@ func (ts *thingsService) UpdateKey(ctx context.Context, token, id, key string) e
 		return err
 	}
 
+	thing, err := ts.things.RetrieveByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
 	if err := ts.things.UpdateKey(ctx, id, key); err != nil {
 		return err
 	}
 
-	if err := ts.thingCache.Remove(ctx, id); err != nil {
+	// Invalidate previous key from cache
+	if err := ts.thingCache.RemoveKey(ctx, ThingKey{Value: thing.Key, Type: KeyTypeInternal}); err != nil {
 		return err
 	}
 
@@ -383,8 +399,8 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 	return thing, nil
 }
 
-func (ts *thingsService) ViewMetadataByKey(ctx context.Context, thingKey string) (Metadata, error) {
-	thingID, err := ts.Identify(ctx, thingKey)
+func (ts *thingsService) ViewMetadataByKey(ctx context.Context, key ThingKey) (Metadata, error) {
+	thingID, err := ts.Identify(ctx, key)
 	if err != nil {
 		return Metadata{}, err
 	}
@@ -512,7 +528,7 @@ func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...
 			return err
 		}
 
-		if err := ts.thingCache.Remove(ctx, id); err != nil {
+		if err := ts.thingCache.RemoveThing(ctx, id); err != nil {
 			return err
 		}
 
@@ -653,16 +669,16 @@ func (ts *thingsService) RemoveProfiles(ctx context.Context, token string, ids .
 	return ts.profiles.Remove(ctx, ids...)
 }
 
-func (ts *thingsService) GetPubConfByKey(ctx context.Context, thingKey string) (PubConfInfo, error) {
-	thID, err := ts.thingCache.ID(ctx, thingKey)
+func (ts *thingsService) GetPubConfByKey(ctx context.Context, key ThingKey) (PubConfInfo, error) {
+	thID, err := ts.thingCache.ID(ctx, key)
 	if err != nil {
-		id, err := ts.things.RetrieveByKey(ctx, thingKey)
+		id, err := ts.things.RetrieveByKey(ctx, key)
 		if err != nil {
 			return PubConfInfo{}, err
 		}
 		thID = id
 
-		if err := ts.thingCache.Save(ctx, thingKey, thID); err != nil {
+		if err := ts.thingCache.Save(ctx, key, thID); err != nil {
 			return PubConfInfo{}, err
 		}
 	}
@@ -707,7 +723,7 @@ func (ts *thingsService) CanUserAccessGroup(ctx context.Context, req UserAccessR
 }
 
 func (ts *thingsService) CanThingAccessGroup(ctx context.Context, req ThingAccessReq) error {
-	thID, err := ts.Identify(ctx, req.Key)
+	thID, err := ts.Identify(ctx, req.ThingKey)
 	if err != nil {
 		return err
 	}
@@ -724,7 +740,7 @@ func (ts *thingsService) CanThingAccessGroup(ctx context.Context, req ThingAcces
 	return nil
 }
 
-func (ts *thingsService) Identify(ctx context.Context, key string) (string, error) {
+func (ts *thingsService) Identify(ctx context.Context, key ThingKey) (string, error) {
 	id, err := ts.thingCache.ID(ctx, key)
 	if err == nil {
 		return id, nil
@@ -739,6 +755,60 @@ func (ts *thingsService) Identify(ctx context.Context, key string) (string, erro
 		return "", err
 	}
 	return id, nil
+}
+
+func (ts *thingsService) UpdateExternalKey(ctx context.Context, token, key, thingID string) error {
+	accessReq := UserAccessReq{
+		Token:  token,
+		ID:     thingID,
+		Action: Editor,
+	}
+
+	if err := ts.CanUserAccessThing(ctx, accessReq); err != nil {
+		return errors.Wrap(errors.ErrAuthorization, err)
+	}
+
+	thing, err := ts.things.RetrieveByID(ctx, thingID)
+	if err != nil {
+		return err
+	}
+
+	if err := ts.things.UpdateExternalKey(ctx, key, thingID); err != nil {
+		return err
+	}
+
+	if err := ts.thingCache.RemoveKey(ctx, ThingKey{Type: KeyTypeExternal, Value: thing.ExternalKey}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ts *thingsService) RemoveExternalKey(ctx context.Context, token, thingID string) error {
+	accessReq := UserAccessReq{
+		Token:  token,
+		ID:     thingID,
+		Action: Editor,
+	}
+
+	if err := ts.CanUserAccessThing(ctx, accessReq); err != nil {
+		return errors.Wrap(errors.ErrAuthorization, err)
+	}
+
+	thing, err := ts.things.RetrieveByID(ctx, thingID)
+	if err != nil {
+		return err
+	}
+
+	if err := ts.things.RemoveExternalKey(ctx, thingID); err != nil {
+		return err
+	}
+
+	if err := ts.thingCache.RemoveKey(ctx, ThingKey{Type: KeyTypeExternal, Value: thing.ExternalKey}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (ts *thingsService) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {

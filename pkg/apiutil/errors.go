@@ -51,6 +51,9 @@ var (
 	// ErrMissingKeyID indicates missing ID of key.
 	ErrMissingKeyID = errors.New("missing key ID")
 
+	// ErrMissingExternalThingKey indicates missing external thing key
+	ErrMissingExternalThingKey = errors.New("missing external thing key")
+
 	// ErrMissingInviteID incidates missing ID of Invite.
 	ErrMissingInviteID = errors.New("missing invite ID")
 
@@ -167,4 +170,7 @@ var (
 
 	// ErrUserAlreadyInvited indicates that the invitee already has a pending invitation to join the same Org
 	ErrUserAlreadyInvited = errors.New("user already has pending invite to org")
+
+	// ErrInvalidThingKeyType indicates an invalid or missing type of thing authentication key
+	ErrInvalidThingKeyType = errors.New("invalid thing key type")
 )

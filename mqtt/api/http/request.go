@@ -6,6 +6,7 @@ package http
 import (
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const maxLimitSize = 200
@@ -17,7 +18,7 @@ type apiReq interface {
 type listSubscriptionsReq struct {
 	groupID      string
 	token        string
-	key          string
+	thingKey     things.ThingKey
 	pageMetadata mqtt.PageMetadata
 }
 
@@ -26,8 +27,12 @@ func (req listSubscriptionsReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	if req.token == "" && req.key == "" {
+	if req.token == "" {
 		return apiutil.ErrBearerToken
+	}
+
+	if err := req.thingKey.Validate(); err != nil {
+		return err
 	}
 
 	if req.pageMetadata.Limit > maxLimitSize {

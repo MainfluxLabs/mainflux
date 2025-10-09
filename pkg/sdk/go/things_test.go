@@ -345,7 +345,7 @@ func TestMetadataByKey(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		resMeta, err := mainfluxSDK.GetThingMetadataByKey(tc.key)
+		resMeta, err := mainfluxSDK.GetThingMetadataByKey(things.ThingKey{Type: things.KeyTypeInternal, Value: tc.key})
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
 		assert.Equal(t, tc.response, resMeta, fmt.Sprintf("%s: expected response thing %s, got %s", tc.desc, tc.response, resMeta))
 	}
@@ -860,27 +860,50 @@ func TestIdentifyThing(t *testing.T) {
 	thing, err := mainfluxSDK.GetThing(th.ID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	externalKey := "abc123"
+
+	err = mainfluxSDK.UpdateExternalThingKey(externalKey, thing.ID, token)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	cases := []struct {
 		desc     string
-		thingKey string
+		thingKey things.ThingKey
 		err      error
 		response string
 	}{
 		{
-			desc:     "identify thing with valid key",
-			thingKey: thing.Key,
+			desc:     "identify thing using valid internal key",
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thing.Key},
 			err:      nil,
 			response: id,
 		},
 		{
-			desc:     "identify thing with invalid key",
-			thingKey: badKey,
+			desc:     "identify thing using invalid internal key",
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: badKey},
 			err:      createError(sdk.ErrFailedFetch, http.StatusNotFound),
 			response: emptyValue,
 		},
 		{
-			desc:     "identify thing with empty key",
-			thingKey: emptyValue,
+			desc:     "identify thing using empty internal key",
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: emptyValue},
+			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
+			response: emptyValue,
+		},
+		{
+			desc:     "identify thing using valid external key",
+			thingKey: things.ThingKey{Type: things.KeyTypeExternal, Value: externalKey},
+			err:      nil,
+			response: id,
+		},
+		{
+			desc:     "identify thing using invalid external key",
+			thingKey: things.ThingKey{Type: things.KeyTypeExternal, Value: badKey},
+			err:      createError(sdk.ErrFailedFetch, http.StatusNotFound),
+			response: emptyValue,
+		},
+		{
+			desc:     "identify thing using empty external key",
+			thingKey: things.ThingKey{Type: things.KeyTypeExternal, Value: emptyValue},
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: emptyValue,
 		},

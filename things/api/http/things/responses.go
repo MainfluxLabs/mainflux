@@ -34,13 +34,14 @@ func (res removeRes) Empty() bool {
 }
 
 type thingRes struct {
-	ID        string                 `json:"id"`
-	GroupID   string                 `json:"group_id,omitempty"`
-	ProfileID string                 `json:"profile_id"`
-	Name      string                 `json:"name,omitempty"`
-	Key       string                 `json:"key"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
-	created   bool
+	ID          string                 `json:"id"`
+	GroupID     string                 `json:"group_id,omitempty"`
+	ProfileID   string                 `json:"profile_id"`
+	Name        string                 `json:"name,omitempty"`
+	Key         string                 `json:"key"`
+	ExternalKey string                 `json:"external_key,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	created     bool
 }
 
 type thingsRes struct {
@@ -65,12 +66,13 @@ func (res thingsRes) Empty() bool {
 }
 
 type viewThingRes struct {
-	ID        string                 `json:"id"`
-	GroupID   string                 `json:"group_id,omitempty"`
-	ProfileID string                 `json:"profile_id"`
-	Name      string                 `json:"name,omitempty"`
-	Key       string                 `json:"key"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+	ID          string                 `json:"id"`
+	GroupID     string                 `json:"group_id,omitempty"`
+	ProfileID   string                 `json:"profile_id"`
+	Name        string                 `json:"name,omitempty"`
+	Key         string                 `json:"key"`
+	ExternalKey string                 `json:"external_key,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
 func (res viewThingRes) Code() int {
@@ -209,4 +211,19 @@ func (res identityRes) Headers() map[string]string {
 
 func (res identityRes) Empty() bool {
 	return false
+}
+
+type updateExternalKeyRes struct {
+}
+
+func (res updateExternalKeyRes) Code() int {
+	return http.StatusCreated
+}
+
+func (res updateExternalKeyRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res updateExternalKeyRes) Empty() bool {
+	return true
 }

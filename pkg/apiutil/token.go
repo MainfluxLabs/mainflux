@@ -8,11 +8,14 @@ import (
 	"strings"
 )
 
-// BearerPrefix represents the token prefix for Bearer authentication scheme.
-const BearerPrefix = "Bearer "
-
-// ThingPrefix represents the key prefix for Thing authentication scheme.
-const ThingPrefix = "Thing "
+const (
+	// BearerPrefix represents the token prefix for Bearer authentication scheme.
+	BearerPrefix = "Bearer "
+	// ThingKeyPrefixInternal represents the key prefix for Thing authentication based on an internal key.
+	ThingKeyPrefixInternal = "Thing "
+	// ThingKeyPrefixExternal represents the key prefix for Thing authentication based on an externaly defined key.
+	ThingKeyPrefixExternal = "External "
+)
 
 // ExtractBearerToken returns value of the bearer token. If there is no bearer token - an empty value is returned.
 func ExtractBearerToken(r *http.Request) string {
@@ -23,15 +26,4 @@ func ExtractBearerToken(r *http.Request) string {
 	}
 
 	return strings.TrimPrefix(token, BearerPrefix)
-}
-
-// ExtractThingKey returns value of the thing key. If there is no thing key - an empty value is returned.
-func ExtractThingKey(r *http.Request) string {
-	token := r.Header.Get("Authorization")
-
-	if !strings.HasPrefix(token, ThingPrefix) {
-		return ""
-	}
-
-	return strings.TrimPrefix(token, ThingPrefix)
 }

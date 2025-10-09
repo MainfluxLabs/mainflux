@@ -28,7 +28,7 @@ const (
 	LogInfoSubscribed                  = "subscribed with client_id %s to topics %s"
 	LogInfoUnsubscribed                = "unsubscribed client_id %s from topics %s"
 	LogInfoConnected                   = "connected with client_id %s"
-	LogInfoDisconnected                = "disconnected client_id %s and username %s"
+	LogInfoDisconnected                = "disconnected client_id %s"
 	LogInfoPublished                   = "published with client_id %s to the topic %s"
 	LogErrFailedConnect                = "failed to connect: "
 	LogErrFailedSubscribe              = "failed to subscribe: "
@@ -74,7 +74,7 @@ func NewHandler(publisher messaging.Publisher, es redis.EventStore,
 }
 
 // AuthConnect is called on device connection,
-// prior forwarding to the MQTT broker
+// prior to forwarding to the MQTT broker
 func (h *handler) AuthConnect(c *session.Client) error {
 	if c == nil {
 		return ErrClientNotInitialized
@@ -84,16 +84,12 @@ func (h *handler) AuthConnect(c *session.Client) error {
 		return ErrMissingClientID
 	}
 
-	thid, err := h.things.Identify(context.Background(), &protomfx.Token{Value: string(c.Password)})
+	thingID, err := h.identify(c)
 	if err != nil {
 		return err
 	}
 
-	if thid.GetValue() != c.Username {
-		return errors.ErrAuthentication
-	}
-
-	if err := h.es.Connect(c.Username); err != nil {
+	if err := h.es.Connect(thingID); err != nil {
 		h.logger.Error(LogErrFailedPublishConnectEvent + err.Error())
 	}
 
@@ -110,7 +106,7 @@ func (h *handler) AuthPublish(c *session.Client, topic *string, payload *[]byte)
 		return ErrMissingTopicPub
 	}
 
-	if _, err := h.authAccess(c); err != nil {
+	if _, err := h.identify(c); err != nil {
 		return err
 	}
 
@@ -127,7 +123,7 @@ func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 		return ErrMissingTopicSub
 	}
 
-	if _, err := h.authAccess(c); err != nil {
+	if _, err := h.identify(c); err != nil {
 		return err
 	}
 
@@ -158,7 +154,12 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		return
 	}
 
-	pc, err := h.things.GetPubConfByKey(context.Background(), &protomfx.PubConfByKeyReq{Key: string(c.Password)})
+	thingKeyReq := &protomfx.ThingKey{
+		Value: string(c.Password),
+		Type:  c.Username,
+	}
+
+	pc, err := h.things.GetPubConfByKey(context.Background(), thingKeyReq)
 	if err != nil {
 		h.logger.Error(LogErrFailedPublish + (ErrAuthentication).Error())
 	}
@@ -230,29 +231,40 @@ func (h *handler) Disconnect(c *session.Client) {
 		return
 	}
 
-	h.logger.Error(fmt.Sprintf(LogInfoDisconnected, c.ID, c.Username))
-	if err := h.es.Disconnect(c.Username); err != nil {
+	thingID, _ := h.identify(c)
+
+	h.logger.Error(fmt.Sprintf(LogInfoDisconnected, c.ID))
+	if err := h.es.Disconnect(thingID); err != nil {
 		h.logger.Error(LogErrFailedPublishDisconnectEvent + err.Error())
 	}
 }
 
-func (h *handler) authAccess(c *session.Client) (protomfx.PubConfByKeyRes, error) {
-	pc, err := h.things.GetPubConfByKey(context.Background(), &protomfx.PubConfByKeyReq{Key: string(c.Password)})
+func (h *handler) identify(c *session.Client) (string, error) {
+	thingKeyReq := &protomfx.ThingKey{
+		Value: string(c.Password),
+		Type:  c.Username,
+	}
+
+	keyRes, err := h.things.Identify(context.Background(), thingKeyReq)
 	if err != nil {
-		return protomfx.PubConfByKeyRes{}, err
+		return "", err
 	}
 
-	if pc.PublisherID != c.Username {
-		return protomfx.PubConfByKeyRes{}, ErrAuthentication
-	}
-
-	return *pc, nil
+	return keyRes.GetValue(), nil
 }
 
 func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subscription, error) {
+	thingID, err := h.identify(c)
+	if err != nil {
+		return nil, err
+	}
+
 	var subs []Subscription
 	for _, t := range *topics {
-		groupID, err := h.things.GetGroupIDByThingID(context.Background(), &protomfx.ThingID{Value: c.Username})
+		groupID, err := h.things.GetGroupIDByThingID(context.Background(), &protomfx.ThingID{Value: thingID})
+		if err != nil {
+			return nil, err
+		}
 
 		subject, err := messaging.CreateSubject(t)
 		if err != nil {
@@ -262,7 +274,7 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 		sub := Subscription{
 			Subtopic:  subject,
 			GroupID:   groupID.GetValue(),
-			ThingID:   c.Username,
+			ThingID:   thingID,
 			ClientID:  c.ID,
 			Status:    connected,
 			CreatedAt: float64(time.Now().UnixNano()) / float64(1e9),

@@ -171,8 +171,15 @@ components:
       scheme: basic
       description: |
         * Things access: "Authorization: Basic <base64-encoded_credentials>"
+    
+    externalAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: string
+      description: |
+        * Thing access: "Authorization: External <external_thing_key>"
 
 security:
   - bearerAuth: []
   - basicAuth: []
-  
+  - externalAuth: []

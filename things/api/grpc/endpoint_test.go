@@ -64,7 +64,7 @@ func TestGetPubConfByKey(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, err := cli.GetPubConfByKey(ctx, &protomfx.PubConfByKeyReq{Key: tc.key})
+		_, err := cli.GetPubConfByKey(ctx, &protomfx.ThingKey{Value: tc.key, Type: things.KeyTypeInternal})
 		e, ok := status.FromError(err)
 		assert.True(t, ok, "OK expected to be true")
 		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", desc, tc.code, e.Code()))
@@ -85,6 +85,10 @@ func TestIdentify(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	sth := ths[0]
 
+	externalKey := "abc123"
+	err = svc.UpdateExternalKey(context.Background(), token, externalKey, sth.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
 	usersAddr := fmt.Sprintf("localhost:%d", port)
 	conn, err := grpc.Dial(usersAddr, grpc.WithInsecure())
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
@@ -93,24 +97,39 @@ func TestIdentify(t *testing.T) {
 	defer cancel()
 
 	cases := map[string]struct {
-		key  string
-		id   string
-		code codes.Code
+		key     string
+		keyType string
+		id      string
+		code    codes.Code
 	}{
-		"identify existing thing": {
-			key:  sth.Key,
-			id:   sth.ID,
-			code: codes.OK,
+		"identify thing using internal key": {
+			key:     sth.Key,
+			keyType: things.KeyTypeInternal,
+			id:      sth.ID,
+			code:    codes.OK,
 		},
-		"identify non-existent thing": {
-			key:  wrong,
-			id:   wrongID,
-			code: codes.NotFound,
+		"identify thing using invalid internal key": {
+			key:     wrong,
+			keyType: things.KeyTypeInternal,
+			id:      wrongID,
+			code:    codes.NotFound,
+		},
+		"identify thing using external key": {
+			key:     externalKey,
+			keyType: things.KeyTypeExternal,
+			id:      sth.ID,
+			code:    codes.OK,
+		},
+		"identify thing using invalid external key": {
+			key:     wrong,
+			keyType: things.KeyTypeExternal,
+			id:      wrongID,
+			code:    codes.NotFound,
 		},
 	}
 
 	for desc, tc := range cases {
-		id, err := cli.Identify(ctx, &protomfx.Token{Value: tc.key})
+		id, err := cli.Identify(ctx, &protomfx.ThingKey{Value: tc.key, Type: tc.keyType})
 		e, ok := status.FromError(err)
 		assert.True(t, ok, "OK expected to be true")
 		assert.Equal(t, tc.id, id.GetValue(), fmt.Sprintf("%s: expected %s got %s", desc, tc.id, id.GetValue()))

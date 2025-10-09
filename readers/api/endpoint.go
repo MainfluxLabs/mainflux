@@ -20,7 +20,7 @@ func listJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.ListJSONMessages(ctx, req.token, req.key, req.pageMeta)
+		page, err := svc.ListJSONMessages(ctx, req.token, req.thingKey, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -40,7 +40,7 @@ func listSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.ListSenMLMessages(ctx, req.token, req.key, req.pageMeta)
+		page, err := svc.ListSenMLMessages(ctx, req.token, req.thingKey, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -60,7 +60,7 @@ func deleteJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.DeleteJSONMessages(ctx, req.token, req.key, req.pageMeta); err != nil {
+		if err := svc.DeleteJSONMessages(ctx, req.token, req.thingKey, req.pageMeta); err != nil {
 			return nil, err
 		}
 
@@ -75,7 +75,7 @@ func deleteSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.DeleteSenMLMessages(ctx, req.token, req.key, req.pageMeta); err != nil {
+		if err := svc.DeleteSenMLMessages(ctx, req.token, req.thingKey, req.pageMeta); err != nil {
 			return nil, err
 		}
 
