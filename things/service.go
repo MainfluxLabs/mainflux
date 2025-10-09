@@ -305,7 +305,9 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		return err
 	}
 
-	if thing.ProfileID != "" {
+	// We're updating only the Thing's Profile - make sure that the destination Profile is in the Thing's
+	// current belonging Group.
+	if thing.ProfileID != "" && thing.GroupID == "" {
 		thGrID, err := ts.getGroupIDByThingID(ctx, thing.ID)
 		if err != nil {
 			return err
@@ -317,6 +319,23 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		}
 
 		if prGrID != thGrID {
+			return errors.ErrAuthorization
+		}
+	}
+
+	// We're changing the Thing's Group - make sure that the authenticated user has Editor rights within the destination Group
+	// and that the destination Profile belongs in that Group
+	if thing.GroupID != "" {
+		if err := ts.canAccessGroup(ctx, token, thing.GroupID, Editor); err != nil {
+			return err
+		}
+
+		prGrID, err := ts.getGroupIDByProfileID(ctx, thing.ProfileID)
+		if err != nil {
+			return err
+		}
+
+		if prGrID != thing.GroupID {
 			return errors.ErrAuthorization
 		}
 	}

@@ -277,6 +277,7 @@ func patchThingEndpoint(svc things.Service) endpoint.Endpoint {
 		thing := things.Thing{
 			ID:        req.id,
 			ProfileID: req.ProfileID,
+			GroupID:   req.GroupID,
 			Name:      req.Name,
 			Key:       req.Key,
 			Metadata:  req.Metadata,
