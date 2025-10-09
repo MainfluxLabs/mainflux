@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -73,14 +74,30 @@ func (tr thingRepository) Save(ctx context.Context, ths ...things.Thing) ([]thin
 }
 
 func (tr thingRepository) Update(ctx context.Context, t things.Thing) error {
-	nq := ""
+	var fields []string
+
 	if t.Name != "" {
-		nq += "name = :name,"
+		fields = append(fields, "name = :name")
 	}
+
+	if t.Metadata != nil {
+		fields = append(fields, "metadata = :metadata")
+	}
+
 	if t.ProfileID != "" {
-		nq += "profile_id = :profile_id,"
+		fields = append(fields, "profile_id = :profile_id")
 	}
-	q := fmt.Sprintf(`UPDATE things SET %s metadata = :metadata WHERE id = :id;`, nq)
+
+	if t.GroupID != "" {
+		fields = append(fields, "group_id = :group_id")
+	}
+
+	if t.Key != "" {
+		fields = append(fields, "key = :key")
+	}
+
+	columns := strings.Join(fields, ",")
+	q := fmt.Sprintf(`UPDATE things SET %s WHERE id = :id;`, columns)
 
 	dbth, err := toDBThing(t)
 	if err != nil {
@@ -105,43 +122,6 @@ func (tr thingRepository) Update(ctx context.Context, t things.Thing) error {
 	cnt, errdb := res.RowsAffected()
 	if errdb != nil {
 		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
-	}
-
-	if cnt == 0 {
-		return dbutil.ErrNotFound
-	}
-
-	return nil
-}
-
-func (tr thingRepository) UpdateKey(ctx context.Context, id, key string) error {
-	q := `UPDATE things SET key = :key WHERE id = :id;`
-
-	dbth := dbThing{
-		ID:  id,
-		Key: key,
-	}
-
-	res, err := tr.db.NamedExecContext(ctx, q, dbth)
-	if err != nil {
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pgErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(dbutil.ErrMalformedEntity, err)
-			case pgerrcode.UniqueViolation:
-				return errors.Wrap(dbutil.ErrConflict, err)
-			case pgerrcode.StringDataRightTruncationDataException:
-				return errors.Wrap(dbutil.ErrMalformedEntity, err)
-			}
-		}
-
-		return errors.Wrap(dbutil.ErrUpdateEntity, err)
-	}
-
-	cnt, err := res.RowsAffected()
-	if err != nil {
-		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	if cnt == 0 {

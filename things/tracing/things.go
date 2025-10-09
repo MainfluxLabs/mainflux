@@ -16,7 +16,6 @@ const (
 	saveThing                = "save_thing"
 	saveThings               = "save_things"
 	updateThing              = "update_thing"
-	updateThingKey           = "update_thing_by_key"
 	retrieveThingByID        = "retrieve_thing_by_id"
 	retrieveThingByKey       = "retrieve_thing_by_key"
 	retrieveThingsByProfile  = "retrieve_things_by_profile"
@@ -67,14 +66,6 @@ func (trm thingRepositoryMiddleware) Update(ctx context.Context, th things.Thing
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return trm.repo.Update(ctx, th)
-}
-
-func (trm thingRepositoryMiddleware) UpdateKey(ctx context.Context, id, key string) error {
-	span := dbutil.CreateSpan(ctx, trm.tracer, updateThingKey)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return trm.repo.UpdateKey(ctx, id, key)
 }
 
 func (trm thingRepositoryMiddleware) RetrieveByID(ctx context.Context, id string) (things.Thing, error) {

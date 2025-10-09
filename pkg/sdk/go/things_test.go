@@ -30,6 +30,7 @@ const (
 	token       = email
 	wrongValue  = "wrong_value"
 	orgID       = "374106f7-030e-4881-8ab0-151195c29f92"
+	thingKey    = "tk1"
 	wrongID     = "999"
 	badKey      = "999"
 	emptyValue  = ""
@@ -38,7 +39,7 @@ const (
 var (
 	metadata  = map[string]interface{}{"meta": "data"}
 	metadata2 = map[string]interface{}{"meta": "data2"}
-	th1       = sdk.Thing{GroupID: groupID, ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1", Metadata: metadata}
+	th1       = sdk.Thing{GroupID: groupID, ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1", Key: thingKey, Metadata: metadata}
 	th2       = sdk.Thing{GroupID: groupID, ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2", Metadata: metadata}
 	profile   = sdk.Profile{ID: "fe6b4e92-cc98-425e-b0aa-000000000003", Name: "test1"}
 	group     = sdk.Group{OrgID: orgID, Name: "test_group", Metadata: metadata}
@@ -625,6 +626,7 @@ func TestUpdateThing(t *testing.T) {
 				ID:        id,
 				ProfileID: prID,
 				Name:      "test_app",
+				Key:       thingKey,
 				Metadata:  metadata2,
 			},
 			token: token,
@@ -636,6 +638,7 @@ func TestUpdateThing(t *testing.T) {
 				ID:        "0",
 				ProfileID: prID,
 				Name:      "test_device",
+				Key:       thingKey,
 				Metadata:  metadata,
 			},
 			token: token,
@@ -647,6 +650,7 @@ func TestUpdateThing(t *testing.T) {
 				ID:        emptyValue,
 				ProfileID: prID,
 				Name:      "test_device",
+				Key:       thingKey,
 				Metadata:  metadata,
 			},
 			token: token,
@@ -658,6 +662,7 @@ func TestUpdateThing(t *testing.T) {
 				ID:        id,
 				ProfileID: prID,
 				Name:      "test_app",
+				Key:       thingKey,
 				Metadata:  metadata2,
 			},
 			token: wrongValue,
@@ -669,6 +674,7 @@ func TestUpdateThing(t *testing.T) {
 				ID:        id,
 				ProfileID: prID,
 				Name:      "test_app",
+				Key:       thingKey,
 				Metadata:  metadata2,
 			},
 			token: emptyValue,

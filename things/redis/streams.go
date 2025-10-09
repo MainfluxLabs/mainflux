@@ -82,13 +82,6 @@ func (es eventStore) UpdateThingsMetadata(ctx context.Context, token string, thi
 	return es.svc.UpdateThingsMetadata(ctx, token, things...)
 }
 
-// UpdateKey doesn't send event because key shouldn't be sent over stream.
-// Maybe we can start publishing this event at some point, without key value
-// in order to notify adapters to disconnect connected things after key update.
-func (es eventStore) UpdateKey(ctx context.Context, token, id, key string) error {
-	return es.svc.UpdateKey(ctx, token, id, key)
-}
-
 func (es eventStore) UpdateExternalKey(ctx context.Context, token, key, thingID string) error {
 	return es.svc.UpdateExternalKey(ctx, token, key, thingID)
 }

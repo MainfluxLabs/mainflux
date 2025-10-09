@@ -57,11 +57,11 @@ func (req createThingsReq) validate() error {
 }
 
 type updateThingReq struct {
-	token     string
-	id        string
-	ProfileID string                 `json:"profile_id"`
-	Name      string                 `json:"name,omitempty"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+	token    string
+	id       string
+	Key      string                 `json:"key,omitempty"`
+	Name     string                 `json:"name,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 func (req updateThingReq) validate() error {
@@ -73,12 +73,43 @@ func (req updateThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	if req.ProfileID == "" {
-		return apiutil.ErrMissingProfileID
+	if req.Key == "" {
+		return apiutil.ErrBearerKey
 	}
 
 	if req.Name == "" || len(req.Name) > maxNameSize {
 		return apiutil.ErrNameSize
+	}
+
+	return nil
+}
+
+type patchThingReq struct {
+	token     string
+	id        string
+	Name      string         `json:"name"`
+	Metadata  map[string]any `json:"metadata"`
+	Key       string         `json:"key"`
+	ProfileID string         `json:"profile_id"`
+	GroupID   string         `json:"group_id"`
+}
+
+func (req patchThingReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.id == "" {
+		return apiutil.ErrMissingThingID
+	}
+
+	if req.Name == "" && req.Metadata == nil && req.Key == "" && req.ProfileID == "" && req.GroupID == "" {
+		return apiutil.ErrMalformedEntity
+	}
+
+	// Making a request to change the Thing's Group requires specifying a Profile ID
+	if req.GroupID != "" && req.ProfileID == "" {
+		return apiutil.ErrMissingProfileID
 	}
 
 	return nil
@@ -103,28 +134,6 @@ func (req updateThingsMetadataReq) validate() error {
 		if thing.ID == "" {
 			return apiutil.ErrMissingThingID
 		}
-	}
-
-	return nil
-}
-
-type updateKeyReq struct {
-	token string
-	id    string
-	Key   string `json:"key"`
-}
-
-func (req updateKeyReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.id == "" {
-		return apiutil.ErrMissingThingID
-	}
-
-	if req.Key == "" {
-		return apiutil.ErrBearerKey
 	}
 
 	return nil

@@ -40,10 +40,6 @@ type Service interface {
 	// belongs to the user identified by the provided token.
 	UpdateThingsMetadata(ctx context.Context, token string, things ...Thing) error
 
-	// UpdateKey updates key value of the existing thing. A non-nil error is
-	// returned to indicate operation failure.
-	UpdateKey(ctx context.Context, token, id, key string) error
-
 	// ViewThing retrieves data about the thing identified with the provided
 	// ID, that belongs to the user identified by the provided key.
 	ViewThing(ctx context.Context, token, id string) (Thing, error)
@@ -304,22 +300,25 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		ID:     thing.ID,
 		Action: Editor,
 	}
+
 	if err := ts.CanUserAccessThing(ctx, ar); err != nil {
 		return err
 	}
 
-	thGrID, err := ts.getGroupIDByThingID(ctx, thing.ID)
-	if err != nil {
-		return err
-	}
+	if thing.ProfileID != "" {
+		thGrID, err := ts.getGroupIDByThingID(ctx, thing.ID)
+		if err != nil {
+			return err
+		}
 
-	prGrID, err := ts.getGroupIDByProfileID(ctx, thing.ProfileID)
-	if err != nil {
-		return err
-	}
+		prGrID, err := ts.getGroupIDByProfileID(ctx, thing.ProfileID)
+		if err != nil {
+			return err
+		}
 
-	if prGrID != thGrID {
-		return errors.ErrAuthorization
+		if prGrID != thGrID {
+			return errors.ErrAuthorization
+		}
 	}
 
 	return ts.things.Update(ctx, thing)
@@ -349,33 +348,6 @@ func (ts *thingsService) UpdateThingsMetadata(ctx context.Context, token string,
 		if err := ts.things.Update(ctx, th); err != nil {
 			return err
 		}
-	}
-
-	return nil
-}
-
-func (ts *thingsService) UpdateKey(ctx context.Context, token, id, key string) error {
-	ar := UserAccessReq{
-		Token:  token,
-		ID:     id,
-		Action: Editor,
-	}
-	if err := ts.CanUserAccessThing(ctx, ar); err != nil {
-		return err
-	}
-
-	thing, err := ts.things.RetrieveByID(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	if err := ts.things.UpdateKey(ctx, id, key); err != nil {
-		return err
-	}
-
-	// Invalidate previous key from cache
-	if err := ts.thingCache.RemoveKey(ctx, ThingKey{Value: thing.Key, Type: KeyTypeInternal}); err != nil {
-		return err
 	}
 
 	return nil
