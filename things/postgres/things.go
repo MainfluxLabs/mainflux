@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -73,32 +74,29 @@ func (tr thingRepository) Save(ctx context.Context, ths ...things.Thing) ([]thin
 }
 
 func (tr thingRepository) Update(ctx context.Context, t things.Thing) error {
-	var columns string
+	var fields []string
 
 	if t.Name != "" {
-		columns += "name = :name,"
+		fields = append(fields, "name = :name")
 	}
 
 	if t.Metadata != nil {
-		columns += "metadata = :metadata,"
+		fields = append(fields, "metadata = :metadata")
 	}
 
 	if t.ProfileID != "" {
-		columns += "profile_id = :profile_id,"
+		fields = append(fields, "profile_id = :profile_id")
 	}
 
 	if t.GroupID != "" {
-		columns += "group_id = :group_id,"
+		fields = append(fields, "group_id = :group_id")
 	}
 
 	if t.Key != "" {
-		columns += "key = :key,"
+		fields = append(fields, "key = :key")
 	}
 
-	if string(columns[len(columns)-1]) == "," {
-		columns = columns[:len(columns)-1]
-	}
-
+	columns := strings.Join(fields, ",")
 	q := fmt.Sprintf(`UPDATE things SET %s WHERE id = :id;`, columns)
 
 	dbth, err := toDBThing(t)
