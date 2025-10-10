@@ -1,65 +1,49 @@
 openapi: 3.0.1
 info:
   title: Mainflux reader service
-  description: HTTP API for reading messages.
+  description: HTTP API for reading messages in JSON and SenML formats.
   version: "1.0.0"
 
 paths:
-  /messages:
+  /json:
     get:
-      summary: Retrieves messages sent to single profile
+      summary: Retrieves JSON messages
       description: |
-        Retrieves a list of messages sent to specific profile. Due to
+        Retrieves a list of JSON messages with optional filtering. Due to
         performance concerns, data is retrieved in subsets. The API readers must
         ensure that the entire dataset is consumed either by making subsequent
         requests, or by increasing the subset size of the initial request.
       tags:
-        - messages
+        - get messages
       parameters:
+        - $ref: "#/components/parameters/Publisher"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Offset"
-        - $ref: "#/components/parameters/Name"
         - $ref: "#/components/parameters/Subtopic"
-        - $ref: "#/components/parameters/Value"
-        - $ref: "#/components/parameters/BoolValue"
-        - $ref: "#/components/parameters/StringValue"
-        - $ref: "#/components/parameters/DataValue"
+        - $ref: "#/components/parameters/Protocol"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/AggInterval"
+        - $ref: "#/components/parameters/AggType"
+        - $ref: "#/components/parameters/AggField"
       responses:
         '200':
-          $ref: "#/components/responses/MessagesPageRes"
+          $ref: "#/components/responses/JSONMessagesPageRes"
         '400':
           description: Failed due to malformed query parameters.
         '401':
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /health:
-    get:
-      summary: Retrieves service health check info.
-      tags:
-        - health
-      responses:
-        '200':
-          $ref: "#/components/responses/HealthRes"
-        '500':
-          $ref: "#/components/responses/ServiceError"
-
-  /messages/{publisherID}:
     delete:
-      summary: Delete messages for a publisher in a time range.
+      summary: Delete JSON messages
       description: |
-        Deletes all JSON or SenML messages for a given publisher within the specified time range.
+        Deletes JSON messages for a publisher within the specified time range and optional filters.
       tags:
-        - messages
+        - delete messages
       parameters:
-        - name: publisherID
-          in: path
-          required: true
-          description: Publisher's unique identifier.
-          schema:
-            type: string
+        - $ref: "#/components/parameters/Subtopic"
+        - $ref: "#/components/parameters/Protocol"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
       responses:
@@ -72,9 +56,263 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
 
+  /senml:
+    get:
+      summary: Retrieves SenML messages
+      description: |
+        Retrieves a list of SenML messages with optional filtering. Due to
+        performance concerns, data is retrieved in subsets. The API readers must
+        ensure that the entire dataset is consumed either by making subsequent
+        requests, or by increasing the subset size of the initial request.
+      tags:
+        - get messages
+      parameters:
+        - $ref: "#/components/parameters/Publisher"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Name"
+        - $ref: "#/components/parameters/Subtopic"
+        - $ref: "#/components/parameters/Protocol"
+        - $ref: "#/components/parameters/Value"
+        - $ref: "#/components/parameters/BoolValue"
+        - $ref: "#/components/parameters/StringValue"
+        - $ref: "#/components/parameters/DataValue"
+        - $ref: "#/components/parameters/Comparator"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/AggInterval"
+        - $ref: "#/components/parameters/AggType"
+        - $ref: "#/components/parameters/AggField"
+      responses:
+        '200':
+          $ref: "#/components/responses/SenMLMessagesPageRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    delete:
+      summary: Delete SenML messages
+      description: |
+        Deletes SenML messages for a publisher within the specified time range.
+      tags:
+        - delete messages
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        '200':
+          description: Messages successfully deleted.
+        '400':
+          description: Invalid or missing parameters.
+        '401':
+          description: Unauthorized access token or thing key.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /json/backup:
+    get:
+      summary: Backup JSON messages
+      description: |
+        Creates a backup of JSON messages with optional filtering and format conversion.
+      tags: 
+        - backup messages
+      parameters:
+        - $ref: "#/components/parameters/Publisher"
+        - $ref: "#/components/parameters/ConvertFormat"
+        - $ref: "#/components/parameters/Subtopic"
+        - $ref: "#/components/parameters/Protocol"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/AggInterval"
+        - $ref: "#/components/parameters/AggType"
+        - $ref: "#/components/parameters/AggField"
+      responses:
+        '200':
+          description: Backup file created successfully.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /senml/backup:
+    get:
+      summary: Backup SenML messages
+      description: |
+        Creates a backup of SenML messages with optional filtering and format conversion.
+      tags:
+        - backup messages
+      parameters:
+        - $ref: "#/components/parameters/Publisher"
+        - $ref: "#/components/parameters/ConvertFormat"
+        - $ref: "#/components/parameters/Name"
+        - $ref: "#/components/parameters/Subtopic"
+        - $ref: "#/components/parameters/Protocol"
+        - $ref: "#/components/parameters/Value"
+        - $ref: "#/components/parameters/BoolValue"
+        - $ref: "#/components/parameters/StringValue"
+        - $ref: "#/components/parameters/DataValue"
+        - $ref: "#/components/parameters/Comparator"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/AggInterval"
+        - $ref: "#/components/parameters/AggType"
+        - $ref: "#/components/parameters/AggField"
+      responses:
+        '200':
+          description: Backup file created successfully.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /json/restore:
+    post:
+      summary: Restore JSON messages
+      description: |
+        Restores JSON messages from a backup file. Requires admin privileges.
+      tags:
+        - restore messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/Message"
+          text/csv:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Messages successfully restored.
+        '400':
+          description: Invalid or malformed request body.
+        '401':
+          description: Unauthorized - admin privileges required.
+        '415':
+          description: Unsupported content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /senml/restore:
+    post:
+      summary: Restore SenML messages
+      description: |
+        Restores SenML messages from a backup file. Requires admin privileges.
+      tags:
+        - restore messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/Message"
+          text/csv:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Messages successfully restored.
+        '400':
+          description: Invalid or malformed request body.
+        '401':
+          description: Unauthorized - admin privileges required.
+        '415':
+          description: Unsupported content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /health:
+    get:
+      summary: Retrieves service health check info.
+      tags:
+        - health
+      responses:
+        '200':
+          $ref: "#/components/responses/HealthRes"
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /metrics:
+    get:
+      summary: Prometheus metrics endpoint
+      tags:
+        - metrics
+      responses:
+        '200':
+          description: Prometheus metrics in text format.
+          content:
+            text/plain:
+              schema:
+                type: string
+
 components:
   schemas:
-    MessagesPage:
+    Message:
+      type: object
+      properties:
+        profile:
+          type: integer
+          description: Unique profile id.
+        publisher:
+          type: string
+          description: Publisher's unique identifier.
+        protocol:
+          type: string
+          description: Protocol name.
+        name:
+          type: string
+          description: Measured parameter name.
+        unit:
+          type: string
+          description: Value unit.
+        value:
+          type: number
+          description: Measured value in number.
+        stringValue:
+          type: string
+          description: Measured value in string format.
+        boolValue:
+          type: boolean
+          description: Measured value in boolean format.
+        dataValue:
+          type: string
+          description: Measured value in binary format.
+        valueSum:
+          type: number
+          description: Sum value.
+        time:
+          type: number
+          description: Time of measurement.
+        updateTime:
+          type: number
+          description: Time of updating measurement.
+        subtopic:
+          type: string
+          description: Message subtopic.
+
+    JSONMessagesPage:
       type: object
       properties:
         total:
@@ -91,43 +329,35 @@ components:
           minItems: 0
           uniqueItems: true
           items:
-            type: object
-            properties:
-              profile:
-                type: integer
-                description: Unique profile id.
-              protocol:
-                type: string
-                description: Protocol name.
-              name:
-                type: string
-                description: Measured parameter name.
-              unit:
-                type: string
-                description: Value unit.
-              value:
-                type: number
-                description: Measured value in number.
-              stringValue:
-                type: string
-                description: Measured value in string format.
-              boolValue:
-                type: boolean
-                description: Measured value in boolean format.
-              dataValue:
-                type: string
-                description: Measured value in binary format.
-              valueSum:
-                type: number
-                description: Sum value.
-              time:
-                type: number
-                description: Time of measurement.
-              updateTime:
-                type: number
-                description: Time of updating measurement.
+            $ref: "#/components/schemas/Message"
+
+    SenMLMessagesPage:
+      type: object
+      properties:
+        total:
+          type: number
+          description: Total number of items that are present on the system.
+        offset:
+          type: number
+          description: Number of items that were skipped during retrieval.
+        limit:
+          type: number
+          description: Size of the subset that was retrieved.
+        messages:
+          type: array
+          minItems: 0
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/Message"
 
   parameters:
+    Publisher:
+      name: publisher
+      description: Publisher's unique identifier.
+      in: query
+      schema:
+        type: string
+      required: false
     Limit:
       name: limit
       description: Size of the subset to retrieve.
@@ -156,17 +386,24 @@ components:
       required: false
     Subtopic:
       name: subtopic
-      description: SenML message subtopic.
+      description: Message subtopic.
+      in: query
+      schema:
+        type: string
+      required: false
+    Protocol:
+      name: protocol
+      description: Protocol name.
       in: query
       schema:
         type: string
       required: false
     Value:
       name: v
-      description: SenML message value.
+      description: SenML message value (numeric).
       in: query
       schema:
-        type: string
+        type: number
       required: false
     BoolValue:
       name: vb
@@ -205,26 +442,64 @@ components:
       required: false
     From:
       name: from
-      description: SenML message time in nanoseconds (integer part represents seconds).
+      description: Start time in nanoseconds (integer part represents seconds).
       in: query
       schema:
         type: number
       required: false
     To:
       name: to
-      description: SenML message time in nanoseconds (integer part represents seconds).
+      description: End time in nanoseconds (integer part represents seconds).
       in: query
       schema:
         type: number
       required: false
+    ConvertFormat:
+      name: convert
+      description: Format to convert the backup to.
+      in: query
+      schema:
+        type: string
+        default: json
+        enum:
+          - json
+          - csv
+      required: false
+    AggInterval:
+      name: agg_interval
+      description: Aggregation interval for time-based grouping.
+      in: query
+      schema:
+        type: string
+      required: false
+    AggType:
+      name: agg_type
+      description: Type of aggregation to perform (e.g., sum, avg, min, max).
+      in: query
+      schema:
+        type: string
+      required: false
+    AggField:
+      name: agg_field
+      description: Field to aggregate on.
+      in: query
+      schema:
+        type: string
+      required: false
 
   responses:
-    MessagesPageRes:
-      description: Data retrieved.
+    JSONMessagesPageRes:
+      description: JSON messages retrieved successfully.
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/MessagesPage"
+            $ref: "#/components/schemas/JSONMessagesPage"
+    SenMLMessagesPageRes:
+      description: SenML messages retrieved successfully.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SenMLMessagesPage"
     ServiceError:
       description: Unexpected server-side error occurred.
     HealthRes:
@@ -232,7 +507,18 @@ components:
       content:
         application/json:
           schema:
-            $ref: "./schemas/HealthInfo.yml"
+            type: object
+            properties:
+              status:
+                type: string
+              version:
+                type: string
+              commit:
+                type: string
+              description:
+                type: string
+              buildTime:
+                type: string
 
   securitySchemes:
     bearerAuth:
@@ -241,7 +527,6 @@ components:
       bearerFormat: JWT
       description: |
         * Users access: "Authorization: Bearer <user_token>"
-
     thingAuth:
       type: http
       scheme: bearer
@@ -252,3 +537,4 @@ components:
 security:
   - bearerAuth: []
   - thingAuth: []
+
