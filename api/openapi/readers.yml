@@ -14,7 +14,7 @@ paths:
         ensure that the entire dataset is consumed either by making subsequent
         requests, or by increasing the subset size of the initial request.
       tags:
-        - get messages
+        - get json messages
       parameters:
         - $ref: "#/components/parameters/Publisher"
         - $ref: "#/components/parameters/Limit"
@@ -40,7 +40,7 @@ paths:
       description: |
         Deletes JSON messages for a publisher within the specified time range and optional filters.
       tags:
-        - delete messages
+        - delete json messages
       parameters:
         - $ref: "#/components/parameters/Subtopic"
         - $ref: "#/components/parameters/Protocol"
@@ -65,7 +65,7 @@ paths:
         ensure that the entire dataset is consumed either by making subsequent
         requests, or by increasing the subset size of the initial request.
       tags:
-        - get messages
+        - get senml messages
       parameters:
         - $ref: "#/components/parameters/Publisher"
         - $ref: "#/components/parameters/Limit"
@@ -97,8 +97,10 @@ paths:
       description: |
         Deletes SenML messages for a publisher within the specified time range.
       tags:
-        - delete messages
+        - delete senml messages
       parameters:
+        - $ref: "#/components/parameters/Publisher"
+        - $ref: "#/components/parameters/Subtopic"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
       responses:
@@ -117,7 +119,7 @@ paths:
       description: |
         Creates a backup of JSON messages with optional filtering and format conversion.
       tags: 
-        - backup messages
+        - backup json messages
       parameters:
         - $ref: "#/components/parameters/Publisher"
         - $ref: "#/components/parameters/ConvertFormat"
@@ -149,7 +151,7 @@ paths:
       description: |
         Creates a backup of SenML messages with optional filtering and format conversion.
       tags:
-        - backup messages
+        - backup senml messages
       parameters:
         - $ref: "#/components/parameters/Publisher"
         - $ref: "#/components/parameters/ConvertFormat"
@@ -187,7 +189,7 @@ paths:
       description: |
         Restores JSON messages from a backup file. Requires admin privileges.
       tags:
-        - restore messages
+        - restore json messages
       requestBody:
         required: true
         content:
@@ -218,7 +220,7 @@ paths:
       description: |
         Restores SenML messages from a backup file. Requires admin privileges.
       tags:
-        - restore messages
+        - restore senml messages
       requestBody:
         required: true
         content:
