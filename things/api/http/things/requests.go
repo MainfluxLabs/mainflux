@@ -87,11 +87,8 @@ func (req updateThingReq) validate() error {
 type patchThingReq struct {
 	token     string
 	id        string
-	Name      string         `json:"name"`
-	Metadata  map[string]any `json:"metadata"`
-	Key       string         `json:"key"`
-	ProfileID string         `json:"profile_id"`
-	GroupID   string         `json:"group_id"`
+	ProfileID string `json:"profile_id"`
+	GroupID   string `json:"group_id"`
 }
 
 func (req patchThingReq) validate() error {
@@ -103,7 +100,7 @@ func (req patchThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	if req.Name == "" && req.Metadata == nil && req.Key == "" && req.ProfileID == "" && req.GroupID == "" {
+	if req.ProfileID == "" && req.GroupID == "" {
 		return apiutil.ErrMalformedEntity
 	}
 
