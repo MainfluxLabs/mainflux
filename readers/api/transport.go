@@ -35,6 +35,7 @@ const (
 	fromKey                = "from"
 	toKey                  = "to"
 	convertKey             = "convert"
+	jsonKeyKey             = "key"
 	aggIntervalKey         = "agg_interval"
 	aggTypeKey             = "agg_type"
 	aggFieldKey            = "agg_field"
@@ -123,6 +124,11 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, er
 		return nil, err
 	}
 
+	key, err := apiutil.ReadStringQuery(r, jsonKeyKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
 	if err != nil {
 		return nil, err
@@ -136,6 +142,7 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, er
 	pageMeta.Offset = offset
 	pageMeta.Limit = limit
 	pageMeta.Publisher = publisher
+	pageMeta.Key = key
 
 	return listJSONMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
