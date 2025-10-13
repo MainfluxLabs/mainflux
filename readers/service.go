@@ -12,12 +12,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
-const (
-	jsonFormat  = "json"
-	senmlFormat = "senml"
-	csvFormat   = "csv"
-	rootSubject = "root"
-)
+const rootSubject = "root"
 
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
