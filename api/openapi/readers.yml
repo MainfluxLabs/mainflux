@@ -274,9 +274,6 @@ components:
     Message:
       type: object
       properties:
-        profile:
-          type: integer
-          description: Unique profile id.
         publisher:
           type: string
           description: Publisher's unique identifier.
