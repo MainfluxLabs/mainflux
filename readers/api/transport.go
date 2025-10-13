@@ -35,7 +35,7 @@ const (
 	fromKey                = "from"
 	toKey                  = "to"
 	convertKey             = "convert"
-	jsonKeyKey             = "key"
+	keyKey                 = "key"
 	aggIntervalKey         = "agg_interval"
 	aggTypeKey             = "agg_type"
 	aggFieldKey            = "agg_field"
@@ -124,7 +124,7 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, er
 		return nil, err
 	}
 
-	key, err := apiutil.ReadStringQuery(r, jsonKeyKey, "")
+	key, err := apiutil.ReadStringQuery(r, keyKey, "")
 	if err != nil {
 		return nil, err
 	}
