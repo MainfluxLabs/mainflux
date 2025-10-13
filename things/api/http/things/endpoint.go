@@ -277,9 +277,6 @@ func patchThingEndpoint(svc things.Service) endpoint.Endpoint {
 		thing := things.Thing{
 			ID:        req.id,
 			ProfileID: req.ProfileID,
-			Name:      req.Name,
-			Key:       req.Key,
-			Metadata:  req.Metadata,
 		}
 
 		if err := svc.UpdateThing(ctx, req.token, thing); err != nil {

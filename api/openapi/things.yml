@@ -1941,16 +1941,9 @@ components:
           schema:
             type: object
             properties:
-              name:
-                type: string
-                description: Free-form thing name.
-              metadata:
-                type: object
               profile_id:
                 type: string
                 format: uuid
-              key:
-                type: string
     SearchThingsReq:
       description: JSON-formatted document describing search parameters.
       required: false
