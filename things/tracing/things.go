@@ -13,9 +13,11 @@ import (
 )
 
 const (
-	saveThing                = "save_thing"
-	saveThings               = "save_things"
-	updateThing              = "update_thing"
+	saveThing   = "save_thing"
+	saveThings  = "save_things"
+	updateThing = "update_thing"
+	patchThing  = "patch_thing"
+
 	retrieveThingByID        = "retrieve_thing_by_id"
 	retrieveThingByKey       = "retrieve_thing_by_key"
 	retrieveThingsByProfile  = "retrieve_things_by_profile"
@@ -62,6 +64,14 @@ func (trm thingRepositoryMiddleware) Save(ctx context.Context, ths ...things.Thi
 
 func (trm thingRepositoryMiddleware) Update(ctx context.Context, th things.Thing) error {
 	span := dbutil.CreateSpan(ctx, trm.tracer, updateThing)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return trm.repo.Update(ctx, th)
+}
+
+func (trm thingRepositoryMiddleware) Patch(ctx context.Context, th things.Thing) error {
+	span := dbutil.CreateSpan(ctx, trm.tracer, patchThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

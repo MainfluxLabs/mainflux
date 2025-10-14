@@ -408,8 +408,7 @@ func TestPatchThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
 
-	data := fmt.Sprintf(`{"name":"test","profile_id":"%s", "key": "tk1"}`, prID)
-	invalidNameData := fmt.Sprintf(`{"name": "%s","profile_id":"%s"}`, invalidName, prID)
+	data := fmt.Sprintf(`{"profile_id":"%s"}`, prID)
 
 	cases := []struct {
 		desc        string
@@ -420,7 +419,7 @@ func TestPatchThing(t *testing.T) {
 		status      int
 	}{
 		{
-			desc:        "update existing thing",
+			desc:        "patch existing thing",
 			req:         data,
 			id:          th.ID,
 			contentType: contentTypeJSON,
@@ -428,7 +427,7 @@ func TestPatchThing(t *testing.T) {
 			status:      http.StatusOK,
 		},
 		{
-			desc:        "update thing with empty JSON request",
+			desc:        "patch thing with empty JSON request",
 			req:         "{}",
 			id:          th.ID,
 			contentType: contentTypeJSON,
@@ -436,7 +435,7 @@ func TestPatchThing(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "update non-existent thing",
+			desc:        "patch non-existent thing",
 			req:         data,
 			id:          wrongValue,
 			contentType: contentTypeJSON,
@@ -444,7 +443,7 @@ func TestPatchThing(t *testing.T) {
 			status:      http.StatusNotFound,
 		},
 		{
-			desc:        "update thing with invalid id",
+			desc:        "patch thing with invalid id",
 			req:         data,
 			id:          wrongValue,
 			contentType: contentTypeJSON,
@@ -452,7 +451,7 @@ func TestPatchThing(t *testing.T) {
 			status:      http.StatusNotFound,
 		},
 		{
-			desc:        "update thing with invalid user token",
+			desc:        "patch thing with invalid user token",
 			req:         data,
 			id:          th.ID,
 			contentType: contentTypeJSON,
@@ -460,7 +459,7 @@ func TestPatchThing(t *testing.T) {
 			status:      http.StatusUnauthorized,
 		},
 		{
-			desc:        "update thing with empty user token",
+			desc:        "patch thing with empty user token",
 			req:         data,
 			id:          th.ID,
 			contentType: contentTypeJSON,
@@ -468,7 +467,7 @@ func TestPatchThing(t *testing.T) {
 			status:      http.StatusUnauthorized,
 		},
 		{
-			desc:        "update thing with invalid data format",
+			desc:        "patch thing with invalid data format",
 			req:         "{",
 			id:          th.ID,
 			contentType: contentTypeJSON,
@@ -476,7 +475,7 @@ func TestPatchThing(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "update thing with empty request",
+			desc:        "patch thing with empty request",
 			req:         emptyValue,
 			id:          th.ID,
 			contentType: contentTypeJSON,
@@ -484,19 +483,12 @@ func TestPatchThing(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "update thing without content type",
+			desc:        "patch thing without content type",
 			req:         data,
 			id:          th.ID,
 			contentType: emptyValue,
 			auth:        token,
 			status:      http.StatusUnsupportedMediaType,
-		},
-		{
-			desc:        "update thing with invalid name",
-			req:         invalidNameData,
-			contentType: contentTypeJSON,
-			auth:        token,
-			status:      http.StatusBadRequest,
 		},
 	}
 

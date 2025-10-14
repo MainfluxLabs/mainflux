@@ -78,6 +78,28 @@ func (es eventStore) UpdateThing(ctx context.Context, token string, thing things
 	return nil
 }
 
+func (es eventStore) PatchThing(ctx context.Context, token string, thing things.Thing) error {
+	if err := es.svc.UpdateThing(ctx, token, thing); err != nil {
+		return err
+	}
+
+	event := patchThingEvent{
+		id:        thing.ID,
+		profileID: thing.ProfileID,
+		groupID:   thing.GroupID,
+	}
+
+	record := &redis.XAddArgs{
+		Stream:       streamID,
+		MaxLenApprox: streamLen,
+		Values:       event.Encode(),
+	}
+
+	es.client.XAdd(ctx, record).Err()
+
+	return nil
+}
+
 func (es eventStore) UpdateThingsMetadata(ctx context.Context, token string, things ...things.Thing) error {
 	return es.svc.UpdateThingsMetadata(ctx, token, things...)
 }
