@@ -88,7 +88,6 @@ type patchThingReq struct {
 	token     string
 	id        string
 	ProfileID string `json:"profile_id"`
-	GroupID   string `json:"group_id"`
 }
 
 func (req patchThingReq) validate() error {
@@ -100,12 +99,7 @@ func (req patchThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	if req.ProfileID == "" && req.GroupID == "" {
-		return apiutil.ErrMalformedEntity
-	}
-
-	// Making a request to change the Thing's Group requires specifying a Profile ID
-	if req.GroupID != "" && req.ProfileID == "" {
+	if req.ProfileID == "" {
 		return apiutil.ErrMissingProfileID
 	}
 
