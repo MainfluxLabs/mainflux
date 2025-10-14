@@ -23,7 +23,7 @@ func LoggingMiddleware(svc rules.Service, logger log.Logger) rules.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm loggingMiddleware) CreateRules(ctx context.Context, token, profileID string, rules ...rules.Rule) (saved []rules.Rule, err error) {
+func (lm loggingMiddleware) CreateRules(ctx context.Context, token, groupID string, thingIDs []string, rules ...rules.Rule) (saved []rules.Rule, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_rules for rules %v took %s to complete", saved, time.Since(begin))
 		if err != nil {
@@ -33,7 +33,7 @@ func (lm loggingMiddleware) CreateRules(ctx context.Context, token, profileID st
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CreateRules(ctx, token, profileID, rules...)
+	return lm.svc.CreateRules(ctx, token, groupID, thingIDs, rules...)
 }
 
 func (lm loggingMiddleware) ListRulesByProfile(ctx context.Context, token, profileID string, pm apiutil.PageMetadata) (_ rules.RulesPage, err error) {

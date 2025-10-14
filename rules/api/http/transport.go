@@ -27,7 +27,7 @@ func MakeHandler(tracer opentracing.Tracer, svc rules.Service, logger log.Logger
 
 	r := bone.New()
 
-	r.Post("/profiles/:id/rules", kithttp.NewServer(
+	r.Post("/groups/:id/rules", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_rules")(createRulesEndpoint(svc)),
 		decodeCreateRules,
 		encodeResponse,
@@ -76,8 +76,8 @@ func decodeCreateRules(_ context.Context, r *http.Request) (interface{}, error) 
 	}
 
 	req := createRulesReq{
-		token:     apiutil.ExtractBearerToken(r),
-		profileID: bone.GetValue(r, apiutil.IDKey),
+		token:   apiutil.ExtractBearerToken(r),
+		groupID: bone.GetValue(r, apiutil.IDKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req.Rules); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
@@ -130,7 +130,7 @@ func decodeUpdateRule(_ context.Context, r *http.Request) (interface{}, error) {
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req.ruleReq); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 

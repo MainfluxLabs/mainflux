@@ -8,7 +8,7 @@ import (
 
 type Rule struct {
 	ID          string
-	ProfileID   string
+	ThingIDs    []string
 	GroupID     string
 	Name        string
 	Description string
@@ -38,6 +38,9 @@ type RuleRepository interface {
 	// If one rule fails then none will be saved.
 	// Successful operation is indicated by a non-nil error response.
 	Save(ctx context.Context, rules ...Rule) ([]Rule, error)
+
+	// AssignRule assigns a rule to a list of things.
+	AssignRule(ctx context.Context, ruleID string, thingIDs []string) error
 
 	// RetrieveByID retrieves a rule having the provided identifier.
 	RetrieveByID(ctx context.Context, id string) (Rule, error)
