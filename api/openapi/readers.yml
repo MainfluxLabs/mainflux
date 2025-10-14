@@ -302,8 +302,10 @@ components:
           type: number
           description: Sum value.
         time:
-          type: number
-          description: Time of measurement.
+          type: integer
+          format: int64
+          description: Time of measurement as Unix nanoseconds (since epoch)
+          example: 1694012400123456789
         updateTime:
           type: number
           description: Time of updating measurement.
@@ -324,8 +326,11 @@ components:
           type: object
           description: Payload of a JSON message.
         created:
-          type: number
-          description: Time of measurement.
+          type: integer
+          format: int64
+          description: Time of measurement as Unix nanoseconds (since epoch)
+          example: 1694012400123456789
+
         subtopic:
           type: string
           description: Message subtopic.
@@ -555,4 +560,3 @@ components:
 security:
   - bearerAuth: []
   - thingAuth: []
-
