@@ -52,7 +52,7 @@ paths:
         '400':
           description: Invalid or missing parameters.
         '401':
-          description: Unauthorized access token or thing key.
+          description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
 
@@ -109,7 +109,7 @@ paths:
         '400':
           description: Invalid or missing parameters.
         '401':
-          description: Unauthorized access token or thing key.
+          description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
 
@@ -208,7 +208,7 @@ paths:
         '400':
           description: Invalid or malformed request body.
         '401':
-          description: Unauthorized - admin privileges required.
+          description: Missing or invalid access token provided.
         '415':
           description: Unsupported content type.
         '500':
@@ -239,7 +239,7 @@ paths:
         '400':
           description: Invalid or malformed request body.
         '401':
-          description: Unauthorized - admin privileges required.
+          description: Missing or invalid access token provided.
         '415':
           description: Unsupported content type.
         '500':
