@@ -465,14 +465,14 @@ components:
       required: false
     From:
       name: from
-      description: Start time in nanoseconds (integer part represents seconds).
+      description: Start time in nanoseconds.
       in: query
       schema:
         type: number
       required: false
     To:
       name: to
-      description: End time in nanoseconds (integer part represents seconds).
+      description: End time in nanoseconds.
       in: query
       schema:
         type: number
