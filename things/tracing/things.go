@@ -13,11 +13,10 @@ import (
 )
 
 const (
-	saveThing   = "save_thing"
-	saveThings  = "save_things"
-	updateThing = "update_thing"
-	patchThing  = "patch_thing"
-
+	saveThing                = "save_thing"
+	saveThings               = "save_things"
+	updateThing              = "update_thing"
+	patchThing               = "patch_thing"
 	retrieveThingByID        = "retrieve_thing_by_id"
 	retrieveThingByKey       = "retrieve_thing_by_key"
 	retrieveThingsByProfile  = "retrieve_things_by_profile"
