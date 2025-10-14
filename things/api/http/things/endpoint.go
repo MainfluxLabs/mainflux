@@ -266,9 +266,9 @@ func updateThingEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func patchThingEndpoint(svc things.Service) endpoint.Endpoint {
+func updateThingGroupAndProfileEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(patchThingReq)
+		req := request.(updateThingGroupAndProfileReq)
 
 		if err := req.validate(); err != nil {
 			return nil, err

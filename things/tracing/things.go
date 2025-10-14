@@ -13,25 +13,25 @@ import (
 )
 
 const (
-	saveThing                = "save_thing"
-	saveThings               = "save_things"
-	updateThing              = "update_thing"
-	patchThing               = "patch_thing"
-	retrieveThingByID        = "retrieve_thing_by_id"
-	retrieveThingByKey       = "retrieve_thing_by_key"
-	retrieveThingsByProfile  = "retrieve_things_by_profile"
-	retrieveThingsByGroups   = "retrieve_things_by_groups"
-	removeThing              = "remove_thing"
-	removeKey                = "remove_key"
-	retrieveThingIDByKey     = "retrieve_id_by_key"
-	retrieveAllThings        = "retrieve_all_things"
-	backupAllThings          = "backup_all_things"
-	backupThingsByGroups     = "backup_things_by_groups"
-	saveGroupIDByThingID     = "save_group_id_by_thing_id"
-	retrieveGroupIDByThingID = "retrieve_group_id_by_thing_id"
-	removeGroupIDByThingID   = "remove_group_id_by_thing_id"
-	updateExternalKey        = "update_external_key"
-	removeExternalKey        = "remove_external_key"
+	saveThing                  = "save_thing"
+	saveThings                 = "save_things"
+	updateThing                = "update_thing"
+	updateThingGroupAndProfile = "update_thing_group_and_profile"
+	retrieveThingByID          = "retrieve_thing_by_id"
+	retrieveThingByKey         = "retrieve_thing_by_key"
+	retrieveThingsByProfile    = "retrieve_things_by_profile"
+	retrieveThingsByGroups     = "retrieve_things_by_groups"
+	removeThing                = "remove_thing"
+	removeKey                  = "remove_key"
+	retrieveThingIDByKey       = "retrieve_id_by_key"
+	retrieveAllThings          = "retrieve_all_things"
+	backupAllThings            = "backup_all_things"
+	backupThingsByGroups       = "backup_things_by_groups"
+	saveGroupIDByThingID       = "save_group_id_by_thing_id"
+	retrieveGroupIDByThingID   = "retrieve_group_id_by_thing_id"
+	removeGroupIDByThingID     = "remove_group_id_by_thing_id"
+	updateExternalKey          = "update_external_key"
+	removeExternalKey          = "remove_external_key"
 )
 
 var (
@@ -70,7 +70,7 @@ func (trm thingRepositoryMiddleware) Update(ctx context.Context, th things.Thing
 }
 
 func (trm thingRepositoryMiddleware) UpdateGroupAndProfile(ctx context.Context, th things.Thing) error {
-	span := dbutil.CreateSpan(ctx, trm.tracer, patchThing)
+	span := dbutil.CreateSpan(ctx, trm.tracer, updateThingGroupAndProfile)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 

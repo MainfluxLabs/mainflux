@@ -83,7 +83,7 @@ func (es eventStore) UpdateThingGroupAndProfile(ctx context.Context, token strin
 		return err
 	}
 
-	event := patchThingEvent{
+	event := updateThingGroupAndProfileEvent{
 		id:        thing.ID,
 		profileID: thing.ProfileID,
 		groupID:   thing.GroupID,

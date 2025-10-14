@@ -143,8 +143,8 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 	))
 
 	mux.Patch("/things/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "patch_thing")(patchThingEndpoint(svc)),
-		decodePatchThing,
+		kitot.TraceServer(tracer, "update_thing_group_and_profile")(updateThingGroupAndProfileEndpoint(svc)),
+		decodeUpdateThingGroupAndProfile,
 		encodeResponse,
 		opts...,
 	))
@@ -244,12 +244,12 @@ func decodeUpdateThing(_ context.Context, r *http.Request) (interface{}, error) 
 	return req, nil
 }
 
-func decodePatchThing(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeUpdateThingGroupAndProfile(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := patchThingReq{
+	req := updateThingGroupAndProfileReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}

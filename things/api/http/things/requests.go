@@ -84,13 +84,13 @@ func (req updateThingReq) validate() error {
 	return nil
 }
 
-type patchThingReq struct {
+type updateThingGroupAndProfileReq struct {
 	token     string
 	id        string
 	ProfileID string `json:"profile_id"`
 }
 
-func (req patchThingReq) validate() error {
+func (req updateThingGroupAndProfileReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
