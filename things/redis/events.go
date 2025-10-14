@@ -6,7 +6,7 @@ const (
 	thingPrefix                = "thing."
 	thingCreate                = thingPrefix + "create"
 	thingUpdate                = thingPrefix + "update"
-	thingUpdateGroupAndProfile = thingPrefix + "patch"
+	thingUpdateGroupAndProfile = thingPrefix + "update_group_and_profile"
 	thingRemove                = thingPrefix + "remove"
 
 	profilePrefix = "profile."
