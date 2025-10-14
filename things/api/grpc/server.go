@@ -17,22 +17,24 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 var _ protomfx.ThingsServiceServer = (*grpcServer)(nil)
 
 type grpcServer struct {
-	getPubConfByKey       kitgrpc.Handler
-	getConfigByThingID    kitgrpc.Handler
-	canUserAccessThing    kitgrpc.Handler
-	canUserAccessProfile  kitgrpc.Handler
-	canUserAccessGroup    kitgrpc.Handler
-	canThingAccessGroup   kitgrpc.Handler
-	identify              kitgrpc.Handler
-	getGroupIDByThingID   kitgrpc.Handler
-	getGroupIDByProfileID kitgrpc.Handler
-	getProfileIDByThingID kitgrpc.Handler
-	getGroupIDsByOrg      kitgrpc.Handler
+	getPubConfByKey          kitgrpc.Handler
+	getConfigByThingID       kitgrpc.Handler
+	canUserAccessThing       kitgrpc.Handler
+	canUserAccessProfile     kitgrpc.Handler
+	canUserAccessGroup       kitgrpc.Handler
+	canUserAccessGroupThings kitgrpc.Handler
+	canThingAccessGroup      kitgrpc.Handler
+	identify                 kitgrpc.Handler
+	getGroupIDByThingID      kitgrpc.Handler
+	getGroupIDByProfileID    kitgrpc.Handler
+	getProfileIDByThingID    kitgrpc.Handler
+	getGroupIDsByOrg         kitgrpc.Handler
 }
 
 // NewServer returns new ThingsServiceServer instance.
@@ -61,6 +63,11 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 		canUserAccessGroup: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "can_user_access_group")(canUserAccessGroupEndpoint(svc)),
 			decodeUserAccessGroupRequest,
+			encodeEmptyResponse,
+		),
+		canUserAccessGroupThings: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "can_user_access_group_things")(canUserAccessGroupThingsEndpoint(svc)),
+			decodeUserAccessGroupThingsRequest,
 			encodeEmptyResponse,
 		),
 		canThingAccessGroup: kitgrpc.NewServer(
@@ -133,6 +140,15 @@ func (gs *grpcServer) CanUserAccessProfile(ctx context.Context, req *protomfx.Us
 
 func (gs *grpcServer) CanUserAccessGroup(ctx context.Context, req *protomfx.UserAccessReq) (*empty.Empty, error) {
 	_, res, err := gs.canUserAccessGroup.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*empty.Empty), nil
+}
+
+func (gs *grpcServer) CanUserAccessGroupThings(ctx context.Context, req *protomfx.GroupThingsAccessReq) (*emptypb.Empty, error) {
+	_, res, err := gs.canUserAccessGroupThings.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -218,6 +234,12 @@ func decodeUserAccessGroupRequest(_ context.Context, grpcReq interface{}) (inter
 	return userAccessGroupReq{accessReq: accessReq{token: req.GetToken(), action: req.GetAction()}, id: req.GetId()}, nil
 }
 
+func decodeUserAccessGroupThingsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(*protomfx.GroupThingsAccessReq)
+	return userAccessGroupThingsReq{accessReq: accessReq{token: req.GetToken(), action: req.GetAction()},
+		groupID: req.GetGroupId(), thingIDs: req.GetThingIds()}, nil
+}
+
 func decodeThingAccessGroupRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*protomfx.ThingAccessReq)
 	return thingAccessGroupReq{thingKey: thingKey{value: req.GetKey()}, id: req.GetId()}, nil
@@ -298,7 +320,8 @@ func encodeError(err error) error {
 		err == apiutil.ErrMissingGroupID,
 		err == apiutil.ErrInvalidAction,
 		err == apiutil.ErrBearerToken,
-		err == apiutil.ErrBearerKey:
+		err == apiutil.ErrBearerKey,
+		err == apiutil.ErrEmptyList:
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Contains(err, errors.ErrAuthentication):
 		return status.Error(codes.Unauthenticated, err.Error())

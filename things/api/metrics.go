@@ -228,6 +228,15 @@ func (ms *metricsMiddleware) CanUserAccessGroup(ctx context.Context, req things.
 	return ms.svc.CanUserAccessGroup(ctx, req)
 }
 
+func (ms *metricsMiddleware) CanUserAccessGroupThings(ctx context.Context, req things.GroupThingsReq) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "can_user_access_group_things").Add(1)
+		ms.latency.With("method", "can_user_access_group_things").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.CanUserAccessGroupThings(ctx, req)
+}
+
 func (ms *metricsMiddleware) CanThingAccessGroup(ctx context.Context, req things.ThingAccessReq) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "can_thing_access_group").Add(1)
