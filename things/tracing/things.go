@@ -70,7 +70,7 @@ func (trm thingRepositoryMiddleware) Update(ctx context.Context, th things.Thing
 	return trm.repo.Update(ctx, th)
 }
 
-func (trm thingRepositoryMiddleware) Patch(ctx context.Context, th things.Thing) error {
+func (trm thingRepositoryMiddleware) UpdateGroupAndProfile(ctx context.Context, th things.Thing) error {
 	span := dbutil.CreateSpan(ctx, trm.tracer, patchThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

@@ -49,13 +49,13 @@ func (ms *metricsMiddleware) UpdateThing(ctx context.Context, token string, thin
 	return ms.svc.UpdateThing(ctx, token, thing)
 }
 
-func (ms *metricsMiddleware) PatchThing(ctx context.Context, token string, thing things.Thing) error {
+func (ms *metricsMiddleware) UpdateThingGroupAndProfile(ctx context.Context, token string, thing things.Thing) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "patch_thing").Add(1)
 		ms.latency.With("method", "patch_thing").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.PatchThing(ctx, token, thing)
+	return ms.svc.UpdateThingGroupAndProfile(ctx, token, thing)
 }
 
 func (ms *metricsMiddleware) UpdateThingsMetadata(ctx context.Context, token string, things ...things.Thing) error {

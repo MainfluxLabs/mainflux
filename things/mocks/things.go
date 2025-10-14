@@ -68,7 +68,7 @@ func (trm *thingRepositoryMock) Update(_ context.Context, thing things.Thing) er
 	return nil
 }
 
-func (trm *thingRepositoryMock) Patch(_ context.Context, thing things.Thing) error {
+func (trm *thingRepositoryMock) UpdateGroupAndProfile(_ context.Context, thing things.Thing) error {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 

@@ -89,9 +89,9 @@ type ThingRepository interface {
 	// returned to indicate operation failure.
 	Update(ctx context.Context, t Thing) error
 
-	// Patch performs a patch of an existing Thing. A non-nil error is
+	// UpdateGroupAndProfile performs a patch of an existing Thing. A non-nil error is
 	// returned to indicate operation failure.
-	Patch(ctx context.Context, t Thing) error
+	UpdateGroupAndProfile(ctx context.Context, t Thing) error
 
 	// RetrieveByID retrieves the thing having the provided identifier, that is owned
 	// by the specified user.

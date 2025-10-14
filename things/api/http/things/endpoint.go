@@ -279,7 +279,7 @@ func patchThingEndpoint(svc things.Service) endpoint.Endpoint {
 			ProfileID: req.ProfileID,
 		}
 
-		if err := svc.PatchThing(ctx, req.token, thing); err != nil {
+		if err := svc.UpdateThingGroupAndProfile(ctx, req.token, thing); err != nil {
 			return nil, err
 		}
 

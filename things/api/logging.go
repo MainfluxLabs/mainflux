@@ -53,7 +53,7 @@ func (lm *loggingMiddleware) UpdateThing(ctx context.Context, token string, thin
 	return lm.svc.UpdateThing(ctx, token, thing)
 }
 
-func (lm *loggingMiddleware) PatchThing(ctx context.Context, token string, thing things.Thing) (err error) {
+func (lm *loggingMiddleware) UpdateThingGroupAndProfile(ctx context.Context, token string, thing things.Thing) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method patch_thing for id %s took %s to complete", thing.ID, time.Since(begin))
 		if err != nil {
@@ -63,7 +63,7 @@ func (lm *loggingMiddleware) PatchThing(ctx context.Context, token string, thing
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.PatchThing(ctx, token, thing)
+	return lm.svc.UpdateThingGroupAndProfile(ctx, token, thing)
 }
 
 func (lm *loggingMiddleware) UpdateThingsMetadata(ctx context.Context, token string, things ...things.Thing) (err error) {
