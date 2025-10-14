@@ -78,6 +78,10 @@ func (es eventStore) UpdateThing(ctx context.Context, token string, thing things
 	return nil
 }
 
+func (es eventStore) UpdateThingsMetadata(ctx context.Context, token string, things ...things.Thing) error {
+	return es.svc.UpdateThingsMetadata(ctx, token, things...)
+}
+
 func (es eventStore) UpdateThingGroupAndProfile(ctx context.Context, token string, thing things.Thing) error {
 	if err := es.svc.UpdateThing(ctx, token, thing); err != nil {
 		return err
@@ -98,10 +102,6 @@ func (es eventStore) UpdateThingGroupAndProfile(ctx context.Context, token strin
 	es.client.XAdd(ctx, record).Err()
 
 	return nil
-}
-
-func (es eventStore) UpdateThingsMetadata(ctx context.Context, token string, things ...things.Thing) error {
-	return es.svc.UpdateThingsMetadata(ctx, token, things...)
 }
 
 func (es eventStore) UpdateExternalKey(ctx context.Context, token, key, thingID string) error {
