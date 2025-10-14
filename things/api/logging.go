@@ -55,7 +55,7 @@ func (lm *loggingMiddleware) UpdateThing(ctx context.Context, token string, thin
 
 func (lm *loggingMiddleware) UpdateThingGroupAndProfile(ctx context.Context, token string, thing things.Thing) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method patch_thing for id %s took %s to complete", thing.ID, time.Since(begin))
+		message := fmt.Sprintf("Method update_thing_group_and_profile for id %s took %s to complete", thing.ID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

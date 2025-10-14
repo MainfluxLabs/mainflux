@@ -214,7 +214,7 @@ func TestUpdateThing(t *testing.T) {
 	}
 }
 
-func TestPatchThing(t *testing.T) {
+func TestUpdateThingGroupAndProfile(t *testing.T) {
 	svc := newService()
 
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup, createdGroup, createdGroup)
@@ -248,31 +248,31 @@ func TestPatchThing(t *testing.T) {
 		err   error
 	}{
 		{
-			desc:  "patch existing thing",
+			desc:  "update existing thing",
 			thing: th,
 			token: token,
 			err:   nil,
 		},
 		{
-			desc:  "patch thing with wrong credentials",
+			desc:  "update thing with wrong credentials",
 			thing: th,
 			token: wrongValue,
 			err:   errors.ErrAuthentication,
 		},
 		{
-			desc:  "patch non-existing thing",
+			desc:  "update non-existing thing",
 			thing: other,
 			token: token,
 			err:   dbutil.ErrNotFound,
 		},
 		{
-			desc:  "patch thing with profile from non-belonging group",
+			desc:  "update thing with profile from non-belonging group",
 			thing: invalidPrGr,
 			token: token,
 			err:   errors.ErrAuthorization,
 		},
 		{
-			desc: "patch thing with group change and profile from non-belonging group",
+			desc: "update thing with group change and profile from non-belonging group",
 			thing: things.Thing{
 				ID:        th.ID,
 				GroupID:   grID2,

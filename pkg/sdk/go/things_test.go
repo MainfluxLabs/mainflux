@@ -30,7 +30,7 @@ const (
 	token       = email
 	wrongValue  = "wrong_value"
 	orgID       = "374106f7-030e-4881-8ab0-151195c29f92"
-	thingKey    = "tk1"
+	thingKey    = "1d7c83ea-f47c-4326-820b-55d5d4930b62"
 	wrongID     = "999"
 	badKey      = "999"
 	emptyValue  = ""

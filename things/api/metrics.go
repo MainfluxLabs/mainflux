@@ -51,8 +51,8 @@ func (ms *metricsMiddleware) UpdateThing(ctx context.Context, token string, thin
 
 func (ms *metricsMiddleware) UpdateThingGroupAndProfile(ctx context.Context, token string, thing things.Thing) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "patch_thing").Add(1)
-		ms.latency.With("method", "patch_thing").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "update_thing_group_and_profile").Add(1)
+		ms.latency.With("method", "update_thing_group_and_profile").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.svc.UpdateThingGroupAndProfile(ctx, token, thing)
