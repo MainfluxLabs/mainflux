@@ -197,7 +197,7 @@ paths:
             schema:
               type: array
               items:
-                $ref: "#/components/schemas/Message"
+                $ref: "#/components/schemas/JSONMessage"
           text/csv:
             schema:
               type: string
@@ -228,7 +228,7 @@ paths:
             schema:
               type: array
               items:
-                $ref: "#/components/schemas/Message"
+                $ref: "#/components/schemas/SenMLMessage"
           text/csv:
             schema:
               type: string
@@ -271,7 +271,7 @@ paths:
 
 components:
   schemas:
-    Message:
+    SenMLMessage:
       type: object
       properties:
         publisher:
@@ -311,6 +311,25 @@ components:
           type: string
           description: Message subtopic.
 
+    JSONMessage:
+      type: object
+      properties:
+        publisher:
+          type: string
+          description: Publisher's unique identifier.
+        protocol:
+          type: string
+          description: Protocol name.
+        payload:
+          type: object
+          description: Payload of a JSON message.
+        created:
+          type: number
+          description: Time of measurement.
+        subtopic:
+          type: string
+          description: Message subtopic.
+
     JSONMessagesPage:
       type: object
       properties:
@@ -328,7 +347,7 @@ components:
           minItems: 0
           uniqueItems: true
           items:
-            $ref: "#/components/schemas/Message"
+            $ref: "#/components/schemas/JSONMessage"
 
     SenMLMessagesPage:
       type: object
@@ -347,7 +366,7 @@ components:
           minItems: 0
           uniqueItems: true
           items:
-            $ref: "#/components/schemas/Message"
+            $ref: "#/components/schemas/SenMLMessage"
 
   parameters:
     Publisher:
