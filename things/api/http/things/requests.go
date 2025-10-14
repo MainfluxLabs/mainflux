@@ -100,12 +100,7 @@ func (req patchThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	if req.ProfileID == "" && req.GroupID == "" {
-		return apiutil.ErrMalformedEntity
-	}
-
-	// Making a request to change the Thing's Group requires specifying a Profile ID
-	if req.GroupID != "" && req.ProfileID == "" {
+	if req.ProfileID == "" {
 		return apiutil.ErrMissingProfileID
 	}
 
