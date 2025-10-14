@@ -43,7 +43,7 @@ paths:
         - json messages
       parameters:
         - $ref: "#/components/parameters/Subtopic"
-        - $ref: "#/components/parameters/Protocol"
+        - $ref: "#/components/parameters/Publisher"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
       responses:
