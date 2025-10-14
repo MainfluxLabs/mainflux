@@ -77,7 +77,7 @@ func (tr thingRepository) Update(ctx context.Context, t things.Thing) error {
 	return tr.update(ctx, t)
 }
 
-func (tr thingRepository) Patch(ctx context.Context, t things.Thing) error {
+func (tr thingRepository) UpdateGroupAndProfile(ctx context.Context, t things.Thing) error {
 	return tr.update(ctx, t)
 }
 

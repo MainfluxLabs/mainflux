@@ -284,7 +284,7 @@ func TestPatchThing(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.PatchThing(context.Background(), tc.token, tc.thing)
+		err := svc.UpdateThingGroupAndProfile(context.Background(), tc.token, tc.thing)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

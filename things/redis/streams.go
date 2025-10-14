@@ -78,7 +78,7 @@ func (es eventStore) UpdateThing(ctx context.Context, token string, thing things
 	return nil
 }
 
-func (es eventStore) PatchThing(ctx context.Context, token string, thing things.Thing) error {
+func (es eventStore) UpdateThingGroupAndProfile(ctx context.Context, token string, thing things.Thing) error {
 	if err := es.svc.UpdateThing(ctx, token, thing); err != nil {
 		return err
 	}

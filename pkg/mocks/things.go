@@ -93,7 +93,7 @@ func (svc *mainfluxThings) UpdateThing(context.Context, string, things.Thing) er
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) PatchThing(context.Context, string, things.Thing) error {
+func (svc *mainfluxThings) UpdateThingGroupAndProfile(context.Context, string, things.Thing) error {
 	panic("not implemented")
 }
 

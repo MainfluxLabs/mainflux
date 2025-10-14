@@ -35,8 +35,8 @@ type Service interface {
 	// UpdateThing updates the Thing identified by the provided ID.
 	UpdateThing(ctx context.Context, token string, thing Thing) error
 
-	// PatchThing updates the Thing's belonging Profile or Group.
-	PatchThing(ctx context.Context, token string, thing Thing) error
+	// UpdateThingGroupAndProfile updates the Thing's belonging Profile or Group.
+	UpdateThingGroupAndProfile(ctx context.Context, token string, thing Thing) error
 
 	// UpdateThingsMetadata updates the things metadata identified by the provided IDs, that
 	// belongs to the user identified by the provided token.
@@ -310,7 +310,7 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 	return ts.things.Update(ctx, thing)
 }
 
-func (ts *thingsService) PatchThing(ctx context.Context, token string, thing Thing) error {
+func (ts *thingsService) UpdateThingGroupAndProfile(ctx context.Context, token string, thing Thing) error {
 	ar := UserAccessReq{
 		Token:  token,
 		ID:     thing.ID,
@@ -356,7 +356,7 @@ func (ts *thingsService) PatchThing(ctx context.Context, token string, thing Thi
 		}
 	}
 
-	return ts.things.Patch(ctx, thing)
+	return ts.things.UpdateGroupAndProfile(ctx, thing)
 }
 
 func (ts *thingsService) UpdateThingsMetadata(ctx context.Context, token string, things ...Thing) error {
