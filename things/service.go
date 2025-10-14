@@ -32,7 +32,8 @@ type Service interface {
 	// The group ID for each thing is assigned based on the provided profile ID.
 	CreateThings(ctx context.Context, token, profileID string, things ...Thing) ([]Thing, error)
 
-	// UpdateThing updates the Thing identified by the provided ID.
+	// UpdateThing updates the Thing identified by the provided ID, as the user authenticated by 'token',
+	// who must possess required permissions in the Thing's belonging Group.
 	UpdateThing(ctx context.Context, token string, thing Thing) error
 
 	// UpdateThingGroupAndProfile updates the Thing's belonging Profile or Group.
