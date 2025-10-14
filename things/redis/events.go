@@ -6,6 +6,7 @@ const (
 	thingPrefix = "thing."
 	thingCreate = thingPrefix + "create"
 	thingUpdate = thingPrefix + "update"
+	thingPatch  = thingPrefix + "patch"
 	thingRemove = thingPrefix + "remove"
 
 	profilePrefix = "profile."
@@ -84,6 +85,26 @@ func (ute updateThingEvent) Encode() map[string]interface{} {
 		}
 
 		val["metadata"] = string(metadata)
+	}
+
+	return val
+}
+
+type patchThingEvent struct {
+	id        string
+	profileID string
+	groupID   string
+}
+
+func (pte patchThingEvent) Encode() map[string]interface{} {
+	val := map[string]interface{}{
+		"id":         pte.id,
+		"profile_id": pte.profileID,
+		"operation":  thingPatch,
+	}
+
+	if pte.groupID != "" {
+		val["groupID"] = pte.groupID
 	}
 
 	return val

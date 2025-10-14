@@ -167,23 +167,20 @@ func TestUpdateThing(t *testing.T) {
 
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup, createdGroup)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	grID, grID1 := grs[0].ID, grs[1].ID
+	grID := grs[0].ID
 
 	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
 
-	profile1 := profile
-	prs1, err := svc.CreateProfiles(context.Background(), token, grID1, profile1)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	prID1 := prs1[0].ID
-
 	ths, err := svc.CreateThings(context.Background(), token, prID, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
+
+	th.Name = "newName"
+	th.Key = "newKey"
+
 	other := things.Thing{ID: emptyValue, Key: "x", ProfileID: prID}
-	invalidPrGr := th
-	invalidPrGr.ProfileID = prID1
 
 	cases := []struct {
 		desc  string
@@ -209,8 +206,67 @@ func TestUpdateThing(t *testing.T) {
 			token: token,
 			err:   dbutil.ErrNotFound,
 		},
+	}
+
+	for _, tc := range cases {
+		err := svc.UpdateThing(context.Background(), tc.token, tc.thing)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestPatchThing(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID, grID1 := grs[0].ID, grs[1].ID
+
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	prID := prs[0].ID
+
+	profile1 := profile
+	prs1, err := svc.CreateProfiles(context.Background(), token, grID1, profile1)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	prID1 := prs1[0].ID
+
+	ths, err := svc.CreateThings(context.Background(), token, prID, thing)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	th := ths[0]
+
+	invalidPrGr := things.Thing{
+		ID:        th.ID,
+		ProfileID: prID1,
+	}
+
+	other := things.Thing{ID: emptyValue, Key: "x", ProfileID: prID}
+
+	cases := []struct {
+		desc  string
+		thing things.Thing
+		token string
+		err   error
+	}{
 		{
-			desc:  "update thing with profile from different group",
+			desc:  "patch existing thing",
+			thing: th,
+			token: token,
+			err:   nil,
+		},
+		{
+			desc:  "patch thing with wrong credentials",
+			thing: th,
+			token: wrongValue,
+			err:   errors.ErrAuthentication,
+		},
+		{
+			desc:  "patch non-existing thing",
+			thing: other,
+			token: token,
+			err:   dbutil.ErrNotFound,
+		},
+		{
+			desc:  "patch thing with profile from non-belonging group",
 			thing: invalidPrGr,
 			token: token,
 			err:   errors.ErrAuthorization,
@@ -218,7 +274,7 @@ func TestUpdateThing(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.UpdateThing(context.Background(), tc.token, tc.thing)
+		err := svc.PatchThing(context.Background(), tc.token, tc.thing)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

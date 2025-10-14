@@ -32,9 +32,11 @@ type Service interface {
 	// The group ID for each thing is assigned based on the provided profile ID.
 	CreateThings(ctx context.Context, token, profileID string, things ...Thing) ([]Thing, error)
 
-	// UpdateThing updates the thing identified by the provided ID, that
-	// belongs to the user identified by the provided token.
+	// UpdateThing updates the Thing identified by the provided ID.
 	UpdateThing(ctx context.Context, token string, thing Thing) error
+
+	// PatchThing updates the Thing's belonging Profile or Group.
+	PatchThing(ctx context.Context, token string, thing Thing) error
 
 	// UpdateThingsMetadata updates the things metadata identified by the provided IDs, that
 	// belongs to the user identified by the provided token.
@@ -305,6 +307,20 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		return err
 	}
 
+	return ts.things.Update(ctx, thing)
+}
+
+func (ts *thingsService) PatchThing(ctx context.Context, token string, thing Thing) error {
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     thing.ID,
+		Action: Editor,
+	}
+
+	if err := ts.CanUserAccessThing(ctx, ar); err != nil {
+		return err
+	}
+
 	// We're updating only the Thing's Profile - make sure that the destination Profile is in the Thing's
 	// current belonging Group.
 	if thing.ProfileID != "" && thing.GroupID == "" {
@@ -340,7 +356,7 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		}
 	}
 
-	return ts.things.Update(ctx, thing)
+	return ts.things.Patch(ctx, thing)
 }
 
 func (ts *thingsService) UpdateThingsMetadata(ctx context.Context, token string, things ...Thing) error {

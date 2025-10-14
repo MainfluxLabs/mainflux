@@ -68,6 +68,25 @@ func (trm *thingRepositoryMock) Update(_ context.Context, thing things.Thing) er
 	return nil
 }
 
+func (trm *thingRepositoryMock) Patch(_ context.Context, thing things.Thing) error {
+	trm.mu.Lock()
+	defer trm.mu.Unlock()
+
+	existingThing, ok := trm.things[thing.ID]
+	if !ok {
+		return dbutil.ErrNotFound
+	}
+
+	existingThing.ProfileID = thing.ProfileID
+	if thing.GroupID != "" {
+		existingThing.GroupID = thing.GroupID
+	}
+
+	trm.things[thing.ID] = thing
+
+	return nil
+}
+
 func (trm *thingRepositoryMock) UpdateKey(_ context.Context, id, val string) error {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()

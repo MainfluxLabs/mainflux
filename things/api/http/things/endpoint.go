@@ -280,7 +280,7 @@ func patchThingEndpoint(svc things.Service) endpoint.Endpoint {
 			GroupID:   req.GroupID,
 		}
 
-		if err := svc.UpdateThing(ctx, req.token, thing); err != nil {
+		if err := svc.PatchThing(ctx, req.token, thing); err != nil {
 			return nil, err
 		}
 
