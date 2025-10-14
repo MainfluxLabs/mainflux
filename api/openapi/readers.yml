@@ -50,7 +50,7 @@ paths:
         '200':
           description: Messages successfully deleted.
         '400':
-          description: Invalid or missing parameters.
+          description: Failed due to malformed query parameters.
         '401':
           description: Missing or invalid access token provided.
         '500':
@@ -107,7 +107,7 @@ paths:
         '200':
           description: Messages successfully deleted.
         '400':
-          description: Invalid or missing parameters.
+          description: Failed due to malformed query parameters.
         '401':
           description: Missing or invalid access token provided.
         '500':
@@ -206,7 +206,7 @@ paths:
         '200':
           description: Messages successfully restored.
         '400':
-          description: Invalid or malformed request body.
+          description: Failed due to malformed query parameters.
         '401':
           description: Missing or invalid access token provided.
         '415':
@@ -237,7 +237,7 @@ paths:
         '200':
           description: Messages successfully restored.
         '400':
-          description: Invalid or malformed request body.
+          description: Failed due to malformed query parameters.
         '401':
           description: Missing or invalid access token provided.
         '415':
