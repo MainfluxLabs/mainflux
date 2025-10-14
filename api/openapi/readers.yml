@@ -8,6 +8,9 @@ paths:
   /json:
     get:
       summary: Retrieves JSON messages
+      security:
+        - bearerAuth: []
+        - thingAuth: []
       description: |
         Retrieves a list of JSON messages with optional filtering. Due to
         performance concerns, data is retrieved in subsets. The API readers must
@@ -37,6 +40,9 @@ paths:
           $ref: "#/components/responses/ServiceError"
     delete:
       summary: Delete JSON messages
+      security:
+        - bearerAuth: []
+        - thingAuth: []
       description: |
         Deletes JSON messages for a publisher within the specified time range and optional filters.
       tags:
@@ -59,6 +65,9 @@ paths:
   /senml:
     get:
       summary: Retrieves SenML messages
+      security:
+        - bearerAuth: []
+        - thingAuth: []
       description: |
         Retrieves a list of SenML messages with optional filtering. Due to
         performance concerns, data is retrieved in subsets. The API readers must
@@ -93,6 +102,9 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
     delete:
+      security:
+        - bearerAuth: []
+        - thingAuth: []
       summary: Delete SenML messages
       description: |
         Deletes SenML messages for a publisher within the specified time range.
@@ -116,6 +128,8 @@ paths:
   /json/backup:
     get:
       summary: Backup JSON messages
+      security:
+        - bearerAuth: []
       description: |
         Creates a backup of JSON messages with optional filtering and format conversion.
       tags: 
@@ -148,6 +162,8 @@ paths:
   /senml/backup:
     get:
       summary: Backup SenML messages
+      security:
+        - bearerAuth: []
       description: |
         Creates a backup of SenML messages with optional filtering and format conversion.
       tags:
@@ -186,6 +202,8 @@ paths:
   /json/restore:
     post:
       summary: Restore JSON messages
+      security:
+        - bearerAuth: []
       description: |
         Restores JSON messages from a backup file. Requires admin privileges.
       tags:
@@ -216,6 +234,8 @@ paths:
 
   /senml/restore:
     post:
+      security:
+        - bearerAuth: []
       summary: Restore SenML messages
       description: |
         Restores SenML messages from a backup file. Requires admin privileges.
@@ -248,6 +268,7 @@ paths:
   /health:
     get:
       summary: Retrieves service health check info.
+      security: []
       tags:
         - health
       responses:
@@ -557,6 +578,3 @@ components:
       description: |
         * Things access: "Authorization: Thing <thing_key>"
 
-security:
-  - bearerAuth: []
-  - thingAuth: []
