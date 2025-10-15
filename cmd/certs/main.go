@@ -17,7 +17,6 @@ import (
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/certs"
 	"github.com/MainfluxLabs/mainflux/certs/api"
-	vault "github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/certs/postgres"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
@@ -147,10 +146,10 @@ func main() {
 		log.Fatalf("No host specified for PKI engine")
 	}
 
-	pkiClient, err := vault.NewVaultClient(cfg.pkiToken, cfg.pkiHost, cfg.pkiPath, cfg.pkiRole)
-	if err != nil {
-		log.Fatalf("Failed to configure client for PKI engine")
-	}
+	// pkiClient, err := vault.NewVaultClient(cfg.pkiToken, cfg.pkiHost, cfg.pkiPath, cfg.pkiRole)
+	// if err != nil {
+	// 	log.Fatalf("Failed to configure client for PKI engine")
+	// }
 
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
@@ -163,7 +162,7 @@ func main() {
 
 	auth := authapi.NewClient(authConn, authTracer, cfg.authGRPCTimeout)
 
-	svc := newService(auth, db, logger, tlsCert, caCert, cfg, pkiClient)
+	svc := newService(auth, db, logger, tlsCert, caCert, cfg)
 
 	g.Go(func() error {
 		return servershttp.Start(ctx, api.MakeHandler(svc, logger), cfg.httpConfig, logger)
@@ -256,7 +255,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(ac protomfx.AuthServiceClient, db *sqlx.DB, logger logger.Logger, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config, pkiAgent vault.Agent) certs.Service {
+func newService(ac protomfx.AuthServiceClient, db *sqlx.DB, logger logger.Logger, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config) certs.Service {
 	certsRepo := postgres.NewRepository(db, logger)
 
 	certsConfig := certs.Config{
@@ -287,7 +286,7 @@ func newService(ac protomfx.AuthServiceClient, db *sqlx.DB, logger logger.Logger
 
 	sdk := mfsdk.NewSDK(config)
 
-	svc := certs.New(ac, certsRepo, sdk, certsConfig, pkiAgent)
+	svc := certs.New(ac, certsRepo, sdk, certsConfig)
 	svc = api.NewLoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
