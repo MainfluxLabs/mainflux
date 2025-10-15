@@ -89,7 +89,7 @@ type ThingRepository interface {
 	// returned to indicate operation failure.
 	Update(ctx context.Context, t Thing) error
 
-	// UpdateGroupAndProfile performs a patch of an existing Thing. A non-nil error is
+	// UpdateGroupAndProfile performs a an update of an existing Thing's Profile and/or Group. A non-nil error is
 	// returned to indicate operation failure.
 	UpdateGroupAndProfile(ctx context.Context, t Thing) error
 

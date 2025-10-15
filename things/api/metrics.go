@@ -49,15 +49,6 @@ func (ms *metricsMiddleware) UpdateThing(ctx context.Context, token string, thin
 	return ms.svc.UpdateThing(ctx, token, thing)
 }
 
-func (ms *metricsMiddleware) UpdateThingGroupAndProfile(ctx context.Context, token string, thing things.Thing) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "update_thing_group_and_profile").Add(1)
-		ms.latency.With("method", "update_thing_group_and_profile").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.UpdateThingGroupAndProfile(ctx, token, thing)
-}
-
 func (ms *metricsMiddleware) UpdateThingsMetadata(ctx context.Context, token string, things ...things.Thing) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_things_metadata").Add(1)
@@ -65,6 +56,15 @@ func (ms *metricsMiddleware) UpdateThingsMetadata(ctx context.Context, token str
 	}(time.Now())
 
 	return ms.svc.UpdateThingsMetadata(ctx, token, things...)
+}
+
+func (ms *metricsMiddleware) UpdateThingGroupAndProfile(ctx context.Context, token string, thing things.Thing) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "update_thing_group_and_profile").Add(1)
+		ms.latency.With("method", "update_thing_group_and_profile").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.UpdateThingGroupAndProfile(ctx, token, thing)
 }
 
 func (ms *metricsMiddleware) ViewThing(ctx context.Context, token, id string) (things.Thing, error) {

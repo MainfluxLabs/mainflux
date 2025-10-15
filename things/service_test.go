@@ -180,7 +180,7 @@ func TestUpdateThing(t *testing.T) {
 	th.Name = "newName"
 	th.Key = "newKey"
 
-	other := things.Thing{ID: emptyValue, Key: "x", ProfileID: prID}
+	other := things.Thing{ID: emptyValue, Key: "x", Name: "y"}
 
 	cases := []struct {
 		desc  string
@@ -189,19 +189,19 @@ func TestUpdateThing(t *testing.T) {
 		err   error
 	}{
 		{
-			desc:  "update existing thing",
+			desc:  "update name and key of existing thing",
 			thing: th,
 			token: token,
 			err:   nil,
 		},
 		{
-			desc:  "update thing with wrong credentials",
+			desc:  "update name and key of thing with wrong credentials",
 			thing: th,
 			token: wrongValue,
 			err:   errors.ErrAuthentication,
 		},
 		{
-			desc:  "update non-existing thing",
+			desc:  "update name and key of non-existing thing",
 			thing: other,
 			token: token,
 			err:   dbutil.ErrNotFound,
