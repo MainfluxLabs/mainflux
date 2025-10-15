@@ -17,7 +17,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
@@ -27,7 +26,41 @@ var (
 	errPrivateKeyUnsupportedType = errors.New("private key type is unsupported")
 )
 
-var _ pki.Agent = (*agent)(nil)
+type Cert struct {
+	ClientCert     string    `json:"client_cert" mapstructure:"certificate"`
+	IssuingCA      string    `json:"issuing_ca" mapstructure:"issuing_ca"`
+	CAChain        []string  `json:"ca_chain" mapstructure:"ca_chain"`
+	ClientKey      string    `json:"client_key" mapstructure:"private_key"`
+	PrivateKeyType string    `json:"private_key_type" mapstructure:"private_key_type"`
+	Serial         string    `json:"serial" mapstructure:"serial_number"`
+	Expire         time.Time `json:"expire" mapstructure:"-"`
+}
+
+var (
+	// ErrMissingCACertificate indicates missing CA certificate
+	ErrMissingCACertificate = errors.New("missing CA certificate for certificate signing")
+
+	// ErrFailedCertCreation indicates failed to certificate creation
+	ErrFailedCertCreation = errors.New("failed to create client certificate")
+
+	// ErrFailedCertRevocation indicates failed certificate revocation
+	ErrFailedCertRevocation = errors.New("failed to revoke certificate")
+
+	errFailedVaultCertIssue = errors.New("failed to issue vault certificate")
+	errFailedVaultRead      = errors.New("failed to read vault certificate")
+	errFailedCertDecoding   = errors.New("failed to decode response from vault service")
+)
+
+type Agent interface {
+	// IssueCert issues certificate on PKI
+	IssueCert(cn string, ttl, keyType string, keyBits int) (Cert, error)
+
+	// Read retrieves certificate from PKI
+	Read(serial string) (Cert, error)
+
+	// Revoke revokes certificate from PKI
+	Revoke(serial string) (time.Time, error)
+}
 
 type agent struct {
 	AuthTimeout time.Duration
@@ -37,32 +70,32 @@ type agent struct {
 	TTL         string
 	mu          sync.Mutex
 	counter     uint64
-	certs       map[string]pki.Cert
+	certs       map[string]Cert
 }
 
-func NewPkiAgent(tlsCert tls.Certificate, caCert *x509.Certificate, keyBits int, ttl string, timeout time.Duration) pki.Agent {
+func NewPkiAgent(tlsCert tls.Certificate, caCert *x509.Certificate, keyBits int, ttl string, timeout time.Duration) Agent {
 	return &agent{
 		AuthTimeout: timeout,
 		TLSCert:     tlsCert,
 		X509Cert:    caCert,
 		RSABits:     keyBits,
 		TTL:         ttl,
-		certs:       make(map[string]pki.Cert),
+		certs:       make(map[string]Cert),
 	}
 }
 
-func (a *agent) IssueCert(cn string, ttl, keyType string, keyBits int) (pki.Cert, error) {
+func (a *agent) IssueCert(cn string, ttl, keyType string, keyBits int) (Cert, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
 	if a.X509Cert == nil {
-		return pki.Cert{}, errors.Wrap(pki.ErrFailedCertCreation, pki.ErrMissingCACertificate)
+		return Cert{}, errors.Wrap(ErrFailedCertCreation, ErrMissingCACertificate)
 	}
 
 	var priv interface{}
 	priv, err := rsa.GenerateKey(rand.Reader, keyBits)
 	if err != nil {
-		return pki.Cert{}, errors.Wrap(pki.ErrFailedCertCreation, err)
+		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 
 	if ttl == "" {
@@ -72,14 +105,14 @@ func (a *agent) IssueCert(cn string, ttl, keyType string, keyBits int) (pki.Cert
 	notBefore := time.Now()
 	validFor, err := time.ParseDuration(ttl)
 	if err != nil {
-		return pki.Cert{}, errors.Wrap(pki.ErrFailedCertCreation, err)
+		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 	notAfter := notBefore.Add(validFor)
 
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
-		return pki.Cert{}, errors.Wrap(pki.ErrFailedCertCreation, err)
+		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 
 	tmpl := x509.Certificate{
@@ -99,16 +132,16 @@ func (a *agent) IssueCert(cn string, ttl, keyType string, keyBits int) (pki.Cert
 
 	pubKey, err := publicKey(priv)
 	if err != nil {
-		return pki.Cert{}, errors.Wrap(pki.ErrFailedCertCreation, err)
+		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 	derBytes, err := x509.CreateCertificate(rand.Reader, &tmpl, a.X509Cert, pubKey, a.TLSCert.PrivateKey)
 	if err != nil {
-		return pki.Cert{}, errors.Wrap(pki.ErrFailedCertCreation, err)
+		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 
 	x509cert, err := x509.ParseCertificate(derBytes)
 	if err != nil {
-		return pki.Cert{}, errors.Wrap(pki.ErrFailedCertCreation, err)
+		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 
 	var bw, keyOut bytes.Buffer
@@ -116,27 +149,27 @@ func (a *agent) IssueCert(cn string, ttl, keyType string, keyBits int) (pki.Cert
 	buffKeyOut := bufio.NewWriter(&keyOut)
 
 	if err := pem.Encode(buffWriter, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes}); err != nil {
-		return pki.Cert{}, errors.Wrap(pki.ErrFailedCertCreation, err)
+		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 	buffWriter.Flush()
 	cert := bw.String()
 
 	block, err := pemBlockForKey(priv)
 	if err != nil {
-		return pki.Cert{}, errors.Wrap(pki.ErrFailedCertCreation, err)
+		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 	if err := pem.Encode(buffKeyOut, block); err != nil {
-		return pki.Cert{}, errors.Wrap(pki.ErrFailedCertCreation, err)
+		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 	buffKeyOut.Flush()
 	key := keyOut.String()
 
-	a.certs[x509cert.SerialNumber.String()] = pki.Cert{
+	a.certs[x509cert.SerialNumber.String()] = Cert{
 		ClientCert: cert,
 	}
 	a.counter++
 
-	return pki.Cert{
+	return Cert{
 		ClientCert: cert,
 		ClientKey:  key,
 		Serial:     x509cert.SerialNumber.String(),
@@ -145,13 +178,13 @@ func (a *agent) IssueCert(cn string, ttl, keyType string, keyBits int) (pki.Cert
 	}, nil
 }
 
-func (a *agent) Read(serial string) (pki.Cert, error) {
+func (a *agent) Read(serial string) (Cert, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
 	crt, ok := a.certs[serial]
 	if !ok {
-		return pki.Cert{}, dbutil.ErrNotFound
+		return Cert{}, dbutil.ErrNotFound
 	}
 
 	return crt, nil
