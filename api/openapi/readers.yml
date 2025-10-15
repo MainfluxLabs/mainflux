@@ -35,7 +35,7 @@ paths:
         '400':
           description: Failed due to malformed query parameters.
         '401':
-          description: Missing or invalid access token key provided.
+          description: Missing or invalid access token or thing key provided.
         '500':
           $ref: "#/components/responses/ServiceError"
     delete:
@@ -58,7 +58,7 @@ paths:
         '400':
           description: Failed due to malformed query parameters.
         '401':
-          description: Missing or invalid access token key provided.
+          description: Missing or invalid access token or thing key provided.
         '500':
           $ref: "#/components/responses/ServiceError"
 
@@ -98,7 +98,7 @@ paths:
         '400':
           description: Failed due to malformed query parameters.
         '401':
-          description: Missing or invalid access token key provided.
+          description: Missing or invalid access token or thing key provided.
         '500':
           $ref: "#/components/responses/ServiceError"
     delete:
@@ -121,7 +121,7 @@ paths:
         '400':
           description: Failed due to malformed query parameters.
         '401':
-          description: Missing or invalid access token key provided.
+          description: Missing or invalid access token or thing key provided.
         '500':
           $ref: "#/components/responses/ServiceError"
 
