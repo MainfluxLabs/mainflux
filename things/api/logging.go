@@ -53,19 +53,6 @@ func (lm *loggingMiddleware) UpdateThing(ctx context.Context, token string, thin
 	return lm.svc.UpdateThing(ctx, token, thing)
 }
 
-func (lm *loggingMiddleware) UpdateThingGroupAndProfile(ctx context.Context, token string, thing things.Thing) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_thing_group_and_profile for id %s took %s to complete", thing.ID, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.UpdateThingGroupAndProfile(ctx, token, thing)
-}
-
 func (lm *loggingMiddleware) UpdateThingsMetadata(ctx context.Context, token string, things ...things.Thing) (err error) {
 	defer func(begin time.Time) {
 		var ids []string
@@ -81,6 +68,19 @@ func (lm *loggingMiddleware) UpdateThingsMetadata(ctx context.Context, token str
 	}(time.Now())
 
 	return lm.svc.UpdateThingsMetadata(ctx, token, things...)
+}
+
+func (lm *loggingMiddleware) UpdateThingGroupAndProfile(ctx context.Context, token string, thing things.Thing) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method update_thing_group_and_profile for id %s took %s to complete", thing.ID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.UpdateThingGroupAndProfile(ctx, token, thing)
 }
 
 func (lm *loggingMiddleware) ViewThing(ctx context.Context, token, id string) (thing things.Thing, err error) {
