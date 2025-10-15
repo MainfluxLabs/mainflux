@@ -39,9 +39,9 @@ func MakeHandler(tracer opentracing.Tracer, svc rules.Service, logger log.Logger
 		encodeResponse,
 		opts...,
 	))
-	r.Get("/profiles/:id/rules", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_rules_by_profile")(listRulesByProfileEndpoint(svc)),
-		decodeListRulesByProfile,
+	r.Get("/things/:id/rules", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_rules_by_thing")(listRulesByThingEndpoint(svc)),
+		decodeListRulesByThing,
 		encodeResponse,
 		opts...,
 	))
@@ -79,22 +79,22 @@ func decodeCreateRules(_ context.Context, r *http.Request) (interface{}, error) 
 		token:   apiutil.ExtractBearerToken(r),
 		groupID: bone.GetValue(r, apiutil.IDKey),
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req.Rules); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil
 }
 
-func decodeListRulesByProfile(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListRulesByThing(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
 
-	req := listRulesByProfileReq{
+	req := listRulesByThingReq{
 		token:        apiutil.ExtractBearerToken(r),
-		profileID:    bone.GetValue(r, apiutil.IDKey),
+		thingID:      bone.GetValue(r, apiutil.IDKey),
 		pageMetadata: pm,
 	}
 	return req, nil

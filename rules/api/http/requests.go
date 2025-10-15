@@ -114,19 +114,19 @@ func (req *viewRuleReq) validate() error {
 	return nil
 }
 
-type listRulesByProfileReq struct {
+type listRulesByThingReq struct {
 	token        string
-	profileID    string
+	thingID      string
 	pageMetadata apiutil.PageMetadata
 }
 
-func (req listRulesByProfileReq) validate() error {
+func (req listRulesByThingReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.profileID == "" {
-		return apiutil.ErrMissingProfileID
+	if req.thingID == "" {
+		return apiutil.ErrMissingThingID
 	}
 
 	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)

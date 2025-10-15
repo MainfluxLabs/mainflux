@@ -24,8 +24,8 @@ type Service interface {
 	// CreateRules creates new rules and assigns them to the specified things within a group.
 	CreateRules(ctx context.Context, token, groupID string, thingIDs []string, rules ...Rule) ([]Rule, error)
 
-	// ListRulesByProfile retrieves a paginated list of rules by profile.
-	ListRulesByProfile(ctx context.Context, token, profileID string, pm apiutil.PageMetadata) (RulesPage, error)
+	// ListRulesByThing retrieves a paginated list of rules by thing.
+	ListRulesByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (RulesPage, error)
 
 	// ListRulesByGroup retrieves a paginated list of rules by group.
 	ListRulesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (RulesPage, error)
@@ -104,25 +104,25 @@ func (rs *rulesService) CreateRules(ctx context.Context, token, groupID string, 
 
 	saved, err := rs.rules.Save(ctx, rules...)
 	if err != nil {
-		return nil, err
+		return []Rule{}, err
 	}
 
 	for _, r := range saved {
 		if err := rs.rules.AssignRule(ctx, r.ID, thingIDs); err != nil {
-			return nil, err
+			return []Rule{}, err
 		}
 	}
 
 	return saved, nil
 }
 
-func (rs *rulesService) ListRulesByProfile(ctx context.Context, token, profileID string, pm apiutil.PageMetadata) (RulesPage, error) {
-	_, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: profileID, Action: things.Viewer})
+func (rs *rulesService) ListRulesByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (RulesPage, error) {
+	_, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer})
 	if err != nil {
 		return RulesPage{}, err
 	}
 
-	rules, err := rs.rules.RetrieveByProfile(ctx, profileID, pm)
+	rules, err := rs.rules.RetrieveByThing(ctx, thingID, pm)
 	if err != nil {
 		return RulesPage{}, err
 	}
@@ -188,7 +188,7 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 		return err
 	}
 
-	rp, err := rs.rules.RetrieveByProfile(ctx, profileID.GetValue(), apiutil.PageMetadata{})
+	rp, err := rs.rules.RetrieveByThing(ctx, profileID.GetValue(), apiutil.PageMetadata{})
 	if err != nil {
 		return err
 	}

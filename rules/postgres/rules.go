@@ -129,27 +129,38 @@ func (rr ruleRepository) RetrieveByGroup(ctx context.Context, groupID string, pm
 	return rr.retrieve(ctx, q, qc, params)
 }
 
-func (rr ruleRepository) RetrieveByProfile(ctx context.Context, profileID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
-	//TODO: RetrieveByThing
-	if _, err := uuid.FromString(profileID); err != nil {
+func (rr ruleRepository) RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
+	if _, err := uuid.FromString(thingID); err != nil {
 		return rules.RulesPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
-	pq := "profile_id = :profile_id"
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	tq := "rt.thing_id = :thing_id"
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	whereClause := dbutil.BuildWhereClause(pq, nq)
+	whereClause := dbutil.BuildWhereClause(tq, nq)
 
-	q := fmt.Sprintf(`SELECT id, group_id, name, description, conditions, operator, actions FROM rules %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
-	qc := fmt.Sprintf(`SELECT COUNT(*) FROM rules WHERE %s;`, pq)
+	q := fmt.Sprintf(`
+		SELECT r.id, r.group_id, r.name, r.description, r.conditions, r.operator, r.actions
+		FROM rules r
+		INNER JOIN rules_things rt ON r.id = rt.rule_id
+		%s
+		ORDER BY %s %s
+		%s;`,
+		whereClause, oq, dq, olq)
+
+	qc := fmt.Sprintf(`
+		SELECT COUNT(*)
+		FROM rules r
+		INNER JOIN rules_things rt ON r.id = rt.rule_id
+		%s;`, whereClause)
 
 	params := map[string]interface{}{
-		"profile_id": profileID,
-		"name":       name,
-		"limit":      pm.Limit,
-		"offset":     pm.Offset,
+		"thing_id": thingID,
+		"name":     name,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
 	}
 
 	return rr.retrieve(ctx, q, qc, params)

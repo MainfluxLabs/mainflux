@@ -39,14 +39,14 @@ func createRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 	}
 }
 
-func listRulesByProfileEndpoint(svc rules.Service) endpoint.Endpoint {
+func listRulesByThingEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listRulesByProfileReq)
+		req := request.(listRulesByThingReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		page, err := svc.ListRulesByProfile(ctx, req.token, req.profileID, req.pageMetadata)
+		page, err := svc.ListRulesByThing(ctx, req.token, req.thingID, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
