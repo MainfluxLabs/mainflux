@@ -108,7 +108,7 @@ func (rs *rulesService) CreateRules(ctx context.Context, token, groupID string, 
 	}
 
 	for _, r := range saved {
-		if err := rs.rules.AssignRule(ctx, r.ID, thingIDs); err != nil {
+		if err := rs.rules.Assign(ctx, r.ID, thingIDs); err != nil {
 			return []Rule{}, err
 		}
 	}
@@ -167,7 +167,6 @@ func (rs *rulesService) UpdateRule(ctx context.Context, token string, rule Rule)
 }
 
 func (rs *rulesService) RemoveRules(ctx context.Context, token string, ids ...string) error {
-	//TODO: Add UnassignRule method
 	for _, id := range ids {
 		rule, err := rs.rules.RetrieveByID(ctx, id)
 		if err != nil {
@@ -175,6 +174,10 @@ func (rs *rulesService) RemoveRules(ctx context.Context, token string, ids ...st
 		}
 
 		if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Editor}); err != nil {
+			return err
+		}
+
+		if err := rs.rules.Unassign(ctx, id); err != nil {
 			return err
 		}
 	}

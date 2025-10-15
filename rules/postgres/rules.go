@@ -67,43 +67,6 @@ func (rr ruleRepository) Save(ctx context.Context, rls ...rules.Rule) ([]rules.R
 	return rls, nil
 }
 
-func (rr ruleRepository) AssignRule(ctx context.Context, ruleID string, thingIDs []string) error {
-	tx, err := rr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(dbutil.ErrCreateEntity, err)
-	}
-	defer tx.Rollback()
-
-	q := `INSERT INTO rules_things (rule_id, thing_id) VALUES (:rule_id, :thing_id);`
-
-	for _, thingID := range thingIDs {
-		params := map[string]interface{}{
-			"rule_id":  ruleID,
-			"thing_id": thingID,
-		}
-
-		if _, err := tx.NamedExecContext(ctx, q, params); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(dbutil.ErrConflict, err)
-				}
-			}
-			return errors.Wrap(dbutil.ErrCreateEntity, err)
-		}
-
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrap(dbutil.ErrCreateEntity, err)
-	}
-
-	return nil
-}
-
 func (rr ruleRepository) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
 	if _, err := uuid.FromString(groupID); err != nil {
 		return rules.RulesPage{}, errors.Wrap(dbutil.ErrNotFound, err)
@@ -226,6 +189,57 @@ func (rr ruleRepository) Remove(ctx context.Context, ids ...string) error {
 		if err != nil {
 			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
+	}
+
+	return nil
+}
+
+func (rr ruleRepository) Assign(ctx context.Context, ruleID string, thingIDs []string) error {
+	tx, err := rr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
+	}
+	defer tx.Rollback()
+
+	q := `INSERT INTO rules_things (rule_id, thing_id) VALUES (:rule_id, :thing_id);`
+
+	for _, thingID := range thingIDs {
+		params := map[string]interface{}{
+			"rule_id":  ruleID,
+			"thing_id": thingID,
+		}
+
+		if _, err := tx.NamedExecContext(ctx, q, params); err != nil {
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(dbutil.ErrMalformedEntity, err)
+				case pgerrcode.UniqueViolation:
+					return errors.Wrap(dbutil.ErrConflict, err)
+				}
+			}
+			return errors.Wrap(dbutil.ErrCreateEntity, err)
+		}
+
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
+	}
+
+	return nil
+}
+
+func (rr ruleRepository) Unassign(ctx context.Context, ruleID string) error {
+	q := `DELETE FROM rules_things WHERE rule_id = :rule_id;`
+
+	params := map[string]interface{}{
+		"rule_id": ruleID,
+	}
+
+	if _, err := rr.db.NamedExecContext(ctx, q, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil

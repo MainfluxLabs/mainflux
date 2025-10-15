@@ -39,9 +39,6 @@ type RuleRepository interface {
 	// Successful operation is indicated by a non-nil error response.
 	Save(ctx context.Context, rules ...Rule) ([]Rule, error)
 
-	// AssignRule assigns a rule to a list of things.
-	AssignRule(ctx context.Context, ruleID string, thingIDs []string) error
-
 	// RetrieveByID retrieves a rule having the provided identifier.
 	RetrieveByID(ctx context.Context, id string) (Rule, error)
 
@@ -57,4 +54,10 @@ type RuleRepository interface {
 
 	// Remove removes the rules having the provided identifiers.
 	Remove(ctx context.Context, ids ...string) error
+
+	// Assign assigns the specified rule to the given list of things.
+	Assign(ctx context.Context, ruleID string, thingIDs []string) error
+
+	// Unassign removes all thing associations for the given rule ID.
+	Unassign(ctx context.Context, ruleID string) error
 }
