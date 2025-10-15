@@ -155,7 +155,7 @@ paths:
         '400':
           description: Failed due to malformed query parameters.
         '401':
-          description: Missing or invalid access token key provided.
+          description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
 
@@ -195,7 +195,7 @@ paths:
         '400':
           description: Failed due to malformed query parameters.
         '401':
-          description: Missing or invalid access token key provided.
+          description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
 
@@ -226,7 +226,7 @@ paths:
         '400':
           description: Failed due to malformed query parameters.
         '401':
-          description: Missing or invalid access token key provided.
+          description: Missing or invalid access token provided.
         '415':
           description: Unsupported content type.
         '500':
@@ -259,7 +259,7 @@ paths:
         '400':
           description: Failed due to malformed query parameters.
         '401':
-          description: Missing or invalid access token key provided.
+          description: Missing or invalid access token provided.
         '415':
           description: Unsupported content type.
         '500':
