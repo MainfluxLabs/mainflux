@@ -180,7 +180,6 @@ func (req updateRuleReq) validate() error {
 
 type removeRulesReq struct {
 	token   string
-	groupID string
 	RuleIDs []string `json:"rule_ids"`
 }
 

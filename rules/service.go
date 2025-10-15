@@ -145,13 +145,12 @@ func (rs *rulesService) ListRulesByGroup(ctx context.Context, token, groupID str
 }
 
 func (rs *rulesService) ViewRule(ctx context.Context, token, id string) (Rule, error) {
-	//TODO: Fix user rights
 	rule, err := rs.rules.RetrieveByID(ctx, id)
 	if err != nil {
 		return Rule{}, err
 	}
 
-	if _, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Viewer}); err != nil {
+	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Viewer}); err != nil {
 		return Rule{}, err
 	}
 
@@ -168,14 +167,14 @@ func (rs *rulesService) UpdateRule(ctx context.Context, token string, rule Rule)
 }
 
 func (rs *rulesService) RemoveRules(ctx context.Context, token string, ids ...string) error {
-	//TODO: Fix user rights
+	//TODO: Add UnassignRule method
 	for _, id := range ids {
 		rule, err := rs.rules.RetrieveByID(ctx, id)
 		if err != nil {
 			return err
 		}
 
-		if _, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Editor}); err != nil {
+		if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Editor}); err != nil {
 			return err
 		}
 	}
