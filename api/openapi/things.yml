@@ -321,6 +321,29 @@ paths:
           description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
+    patch:
+      summary: Update thing's properties
+      description: | 
+        Update one or more properties of a specific Thing.
+      tags:
+        - things
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      requestBody:
+        $ref: "#/components/requestBodies/PatchThingReq"
+      responses:
+        '200':
+          description: Thing updated.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Thing does not exist.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
     delete:
       summary: Removes a thing
       description: |
@@ -338,32 +361,7 @@ paths:
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /things/{thingId}/key:
-    patch:
-      summary: Updates thing key
-      description: |
-        Update is performed by replacing current key with a new one.
-      tags:
-        - things
-      parameters:
-        - $ref: "#/components/parameters/ThingId"
-      requestBody:
-        $ref: "#/components/requestBodies/UpdateKeyReq"
-      responses:
-        '200':
-          description: Thing key updated.
-        '400':
-          description: Failed due to malformed JSON.
-        '401':
-          description: Missing or invalid access token provided.
-        '404':
-          description: Thing does not exist.
-        '409':
-          description: Specified key already exists.
-        '415':
-          description: Missing or invalid content type.
-        '500':
-          $ref: "#/components/responses/ServiceError"
+
   /things/{thingId}/groups:
     get:
       summary: Retrieves group by thing.
@@ -1933,6 +1931,16 @@ components:
                 description: Free-form thing name.
               metadata:
                 type: object
+              key:
+                type: string
+    PatchThingReq:
+      description: Arbitrary, object-encoded thing's data.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
               profile_id:
                 type: string
                 format: uuid
@@ -1963,18 +1971,6 @@ components:
                 items:
                   type: string
                   format: uuid
-    UpdateKeyReq:
-      required: true
-      description: JSON containing thing.
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-                format: uuid
-                description: Thing key that is used for thing auth.
     CreateProfileReq:
       description: JSON-formatted document describing the updated profile.
       required: true

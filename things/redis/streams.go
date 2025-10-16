@@ -82,11 +82,26 @@ func (es eventStore) UpdateThingsMetadata(ctx context.Context, token string, thi
 	return es.svc.UpdateThingsMetadata(ctx, token, things...)
 }
 
-// UpdateKey doesn't send event because key shouldn't be sent over stream.
-// Maybe we can start publishing this event at some point, without key value
-// in order to notify adapters to disconnect connected things after key update.
-func (es eventStore) UpdateKey(ctx context.Context, token, id, key string) error {
-	return es.svc.UpdateKey(ctx, token, id, key)
+func (es eventStore) UpdateThingGroupAndProfile(ctx context.Context, token string, thing things.Thing) error {
+	if err := es.svc.UpdateThing(ctx, token, thing); err != nil {
+		return err
+	}
+
+	event := updateThingGroupAndProfileEvent{
+		id:        thing.ID,
+		profileID: thing.ProfileID,
+		groupID:   thing.GroupID,
+	}
+
+	record := &redis.XAddArgs{
+		Stream:       streamID,
+		MaxLenApprox: streamLen,
+		Values:       event.Encode(),
+	}
+
+	es.client.XAdd(ctx, record).Err()
+
+	return nil
 }
 
 func (es eventStore) UpdateExternalKey(ctx context.Context, token, key, thingID string) error {

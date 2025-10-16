@@ -58,13 +58,13 @@ func (ms *metricsMiddleware) UpdateThingsMetadata(ctx context.Context, token str
 	return ms.svc.UpdateThingsMetadata(ctx, token, things...)
 }
 
-func (ms *metricsMiddleware) UpdateKey(ctx context.Context, token, id, key string) error {
+func (ms *metricsMiddleware) UpdateThingGroupAndProfile(ctx context.Context, token string, thing things.Thing) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "update_key").Add(1)
-		ms.latency.With("method", "update_key").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "update_thing_group_and_profile").Add(1)
+		ms.latency.With("method", "update_thing_group_and_profile").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.UpdateKey(ctx, token, id, key)
+	return ms.svc.UpdateThingGroupAndProfile(ctx, token, thing)
 }
 
 func (ms *metricsMiddleware) ViewThing(ctx context.Context, token, id string) (things.Thing, error) {

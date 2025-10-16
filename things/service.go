@@ -32,17 +32,16 @@ type Service interface {
 	// The group ID for each thing is assigned based on the provided profile ID.
 	CreateThings(ctx context.Context, token, profileID string, things ...Thing) ([]Thing, error)
 
-	// UpdateThing updates the thing identified by the provided ID, that
-	// belongs to the user identified by the provided token.
+	// UpdateThing updates the Thing identified by the provided ID, as the user authenticated by 'token',
+	// who must possess required permissions in the Thing's belonging Group.
 	UpdateThing(ctx context.Context, token string, thing Thing) error
+
+	// UpdateThingGroupAndProfile updates the Thing's belonging Profile or Group.
+	UpdateThingGroupAndProfile(ctx context.Context, token string, thing Thing) error
 
 	// UpdateThingsMetadata updates the things metadata identified by the provided IDs, that
 	// belongs to the user identified by the provided token.
 	UpdateThingsMetadata(ctx context.Context, token string, things ...Thing) error
-
-	// UpdateKey updates key value of the existing thing. A non-nil error is
-	// returned to indicate operation failure.
-	UpdateKey(ctx context.Context, token, id, key string) error
 
 	// ViewThing retrieves data about the thing identified with the provided
 	// ID, that belongs to the user identified by the provided key.
@@ -304,6 +303,21 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		ID:     thing.ID,
 		Action: Editor,
 	}
+
+	if err := ts.CanUserAccessThing(ctx, ar); err != nil {
+		return err
+	}
+
+	return ts.things.Update(ctx, thing)
+}
+
+func (ts *thingsService) UpdateThingGroupAndProfile(ctx context.Context, token string, thing Thing) error {
+	ar := UserAccessReq{
+		Token:  token,
+		ID:     thing.ID,
+		Action: Editor,
+	}
+
 	if err := ts.CanUserAccessThing(ctx, ar); err != nil {
 		return err
 	}
@@ -322,7 +336,7 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		return errors.ErrAuthorization
 	}
 
-	return ts.things.Update(ctx, thing)
+	return ts.things.UpdateGroupAndProfile(ctx, thing)
 }
 
 func (ts *thingsService) UpdateThingsMetadata(ctx context.Context, token string, things ...Thing) error {
@@ -349,33 +363,6 @@ func (ts *thingsService) UpdateThingsMetadata(ctx context.Context, token string,
 		if err := ts.things.Update(ctx, th); err != nil {
 			return err
 		}
-	}
-
-	return nil
-}
-
-func (ts *thingsService) UpdateKey(ctx context.Context, token, id, key string) error {
-	ar := UserAccessReq{
-		Token:  token,
-		ID:     id,
-		Action: Editor,
-	}
-	if err := ts.CanUserAccessThing(ctx, ar); err != nil {
-		return err
-	}
-
-	thing, err := ts.things.RetrieveByID(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	if err := ts.things.UpdateKey(ctx, id, key); err != nil {
-		return err
-	}
-
-	// Invalidate previous key from cache
-	if err := ts.thingCache.RemoveKey(ctx, ThingKey{Value: thing.Key, Type: KeyTypeInternal}); err != nil {
-		return err
 	}
 
 	return nil
