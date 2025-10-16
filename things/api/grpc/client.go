@@ -20,18 +20,19 @@ import (
 var _ protomfx.ThingsServiceClient = (*grpcClient)(nil)
 
 type grpcClient struct {
-	timeout               time.Duration
-	getPubConfByKey       endpoint.Endpoint
-	getConfigByThingID    endpoint.Endpoint
-	canUserAccessThing    endpoint.Endpoint
-	canUserAccessProfile  endpoint.Endpoint
-	canUserAccessGroup    endpoint.Endpoint
-	canThingAccessGroup   endpoint.Endpoint
-	identify              endpoint.Endpoint
-	getGroupIDByThingID   endpoint.Endpoint
-	getGroupIDByProfileID endpoint.Endpoint
-	getProfileIDByThingID endpoint.Endpoint
-	getGroupIDsByOrg      endpoint.Endpoint
+	timeout                  time.Duration
+	getPubConfByKey          endpoint.Endpoint
+	getConfigByThingID       endpoint.Endpoint
+	canUserAccessThing       endpoint.Endpoint
+	canUserAccessProfile     endpoint.Endpoint
+	canUserAccessGroup       endpoint.Endpoint
+	canUserAccessGroupThings endpoint.Endpoint
+	canThingAccessGroup      endpoint.Endpoint
+	identify                 endpoint.Endpoint
+	getGroupIDByThingID      endpoint.Endpoint
+	getGroupIDByProfileID    endpoint.Endpoint
+	getProfileIDByThingID    endpoint.Endpoint
+	getGroupIDsByOrg         endpoint.Endpoint
 }
 
 // NewClient returns new gRPC client instance.
@@ -77,6 +78,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			svcName,
 			"CanUserAccessGroup",
 			encodeUserAccessGroupRequest,
+			decodeEmptyResponse,
+			empty.Empty{},
+		).Endpoint()),
+		canUserAccessGroupThings: kitot.TraceClient(tracer, "can_user_access_group_things")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"CanUserAccessGroupThings",
+			encodeUserAccessGroupThingsRequest,
 			decodeEmptyResponse,
 			empty.Empty{},
 		).Endpoint()),
@@ -193,6 +202,17 @@ func (client grpcClient) CanUserAccessGroup(ctx context.Context, req *protomfx.U
 	return &empty.Empty{}, er.err
 }
 
+func (client grpcClient) CanUserAccessGroupThings(ctx context.Context, req *protomfx.GroupThingsAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	r := userAccessGroupThingsReq{accessReq: accessReq{token: req.GetToken(), action: req.GetAction()}, groupID: req.GetGroupId(), thingIDs: req.GetThingIds()}
+	res, err := client.canUserAccessGroupThings(ctx, r)
+	if err != nil {
+		return nil, err
+	}
+
+	er := res.(emptyRes)
+	return &empty.Empty{}, er.err
+}
+
 func (client grpcClient) CanThingAccessGroup(ctx context.Context, req *protomfx.ThingAccessReq, _ ...grpc.CallOption) (*empty.Empty, error) {
 	r := thingAccessGroupReq{thingKey: thingKey{value: req.GetKey()}, id: req.GetId()}
 	res, err := client.canThingAccessGroup(ctx, r)
@@ -292,6 +312,11 @@ func encodeUserAccessProfileRequest(_ context.Context, grpcReq interface{}) (int
 func encodeUserAccessGroupRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(userAccessGroupReq)
 	return &protomfx.UserAccessReq{Token: req.token, Id: req.id, Action: req.action}, nil
+}
+
+func encodeUserAccessGroupThingsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(userAccessGroupThingsReq)
+	return &protomfx.GroupThingsAccessReq{Token: req.token, GroupId: req.groupID, Action: req.action, ThingIds: req.thingIDs}, nil
 }
 
 func encodeThingAccessGroupRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
