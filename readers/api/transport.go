@@ -34,21 +34,18 @@ const (
 	comparatorKey          = "comparator"
 	fromKey                = "from"
 	toKey                  = "to"
-	formatKey              = "format"
 	convertKey             = "convert"
 	aggIntervalKey         = "agg_interval"
 	aggTypeKey             = "agg_type"
 	aggFieldKey            = "agg_field"
 	publisherKey           = "publisher"
 	jsonFormat             = "json"
-	senmlFormat            = "senml"
 	csvFormat              = "csv"
-	defFormat              = "messages"
 )
 
 func MakeHandler(svc readers.Service, tracer opentracing.Tracer, svcName string, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
-		kithttp.ServerErrorEncoder(encodeError),
+		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
 
 	mux := bone.New()

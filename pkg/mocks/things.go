@@ -231,6 +231,10 @@ func (svc *mainfluxThings) CanUserAccessGroup(ctx context.Context, req things.Us
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) CanUserAccessGroupThings(ctx context.Context, req things.GroupThingsReq) error {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) CanThingAccessGroup(context.Context, things.ThingAccessReq) error {
 	panic("not implemented")
 }

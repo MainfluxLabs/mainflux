@@ -293,6 +293,10 @@ func (es eventStore) CanUserAccessGroup(ctx context.Context, req things.UserAcce
 	return es.svc.CanUserAccessGroup(ctx, req)
 }
 
+func (es eventStore) CanUserAccessGroupThings(ctx context.Context, req things.GroupThingsReq) error {
+	return es.svc.CanUserAccessGroupThings(ctx, req)
+}
+
 func (es eventStore) CanThingAccessGroup(ctx context.Context, req things.ThingAccessReq) error {
 	return es.svc.CanThingAccessGroup(ctx, req)
 }

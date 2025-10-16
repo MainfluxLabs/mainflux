@@ -122,6 +122,9 @@ type Service interface {
 	// CanUserAccessGroup determines whether a user has access to a group.
 	CanUserAccessGroup(ctx context.Context, req UserAccessReq) error
 
+	// CanUserAccessGroupThings determines whether a user has access to a group of things.
+	CanUserAccessGroupThings(ctx context.Context, req GroupThingsReq) error
+
 	// CanThingAccessGroup determines whether a given thing has access to a group with a key.
 	CanThingAccessGroup(ctx context.Context, req ThingAccessReq) error
 
@@ -201,9 +204,6 @@ type ProfilesBackup struct {
 	Profiles []Profile
 }
 
-// Map of Thind ID to a slice of all external keys associated with that Thing.
-type ExternalKeysBackup map[string][]string
-
 type ThingsBackup struct {
 	Things []Thing
 }
@@ -212,6 +212,13 @@ type UserAccessReq struct {
 	Token  string
 	ID     string
 	Action string
+}
+
+type GroupThingsReq struct {
+	Token    string
+	GroupID  string
+	Action   string
+	ThingIDs []string
 }
 
 type ThingAccessReq struct {
@@ -728,6 +735,25 @@ func (ts *thingsService) CanUserAccessProfile(ctx context.Context, req UserAcces
 
 func (ts *thingsService) CanUserAccessGroup(ctx context.Context, req UserAccessReq) error {
 	return ts.canAccessGroup(ctx, req.Token, req.ID, req.Action)
+}
+
+func (ts *thingsService) CanUserAccessGroupThings(ctx context.Context, req GroupThingsReq) error {
+	if err := ts.canAccessGroup(ctx, req.Token, req.GroupID, req.Action); err != nil {
+		return err
+	}
+
+	for _, thID := range req.ThingIDs {
+		grID, err := ts.getGroupIDByThingID(ctx, thID)
+		if err != nil {
+			return err
+		}
+
+		if grID != req.GroupID {
+			return errors.ErrAuthorization
+		}
+	}
+
+	return nil
 }
 
 func (ts *thingsService) CanThingAccessGroup(ctx context.Context, req ThingAccessReq) error {
