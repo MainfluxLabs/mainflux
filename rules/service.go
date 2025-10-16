@@ -185,12 +185,7 @@ func (rs *rulesService) RemoveRules(ctx context.Context, token string, ids ...st
 }
 
 func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) error {
-	profileID, err := rs.things.GetProfileIDByThingID(ctx, &protomfx.ThingID{Value: message.Publisher})
-	if err != nil {
-		return err
-	}
-
-	rp, err := rs.rules.RetrieveByThing(ctx, profileID.GetValue(), apiutil.PageMetadata{})
+	rp, err := rs.rules.RetrieveByThing(ctx, message.GetPublisher(), apiutil.PageMetadata{})
 	if err != nil {
 		return err
 	}
