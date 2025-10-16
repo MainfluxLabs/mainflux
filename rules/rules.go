@@ -8,7 +8,6 @@ import (
 
 type Rule struct {
 	ID          string
-	ThingIDs    []string
 	GroupID     string
 	Name        string
 	Description string
