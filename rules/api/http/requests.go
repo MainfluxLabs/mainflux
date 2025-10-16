@@ -151,11 +151,9 @@ func (req listRulesByGroupReq) validate() error {
 }
 
 type updateRuleReq struct {
-	token    string
-	id       string
-	ThingIDs []string `json:"thing_ids"`
-	GroupID  string   `json:"group_id"`
-	Rule     ruleReq  `json:"rule"`
+	token string
+	id    string
+	ruleReq
 }
 
 func (req updateRuleReq) validate() error {
@@ -167,15 +165,7 @@ func (req updateRuleReq) validate() error {
 		return apiutil.ErrMissingRuleID
 	}
 
-	if req.GroupID == "" {
-		return apiutil.ErrMissingGroupID
-	}
-
-	if len(req.ThingIDs) < minLen {
-		return apiutil.ErrEmptyList
-	}
-
-	return req.Rule.validate()
+	return req.ruleReq.validate()
 }
 
 type removeRulesReq struct {
