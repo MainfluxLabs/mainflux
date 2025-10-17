@@ -65,7 +65,6 @@ type agent struct {
 	revokedCerts map[string]bool
 }
 
-// NewAgent creates a new PKI agent with the provided CA certificate and key
 func NewAgent(caCertPEM, caKeyPEM string) (Agent, error) {
 	if caCertPEM == "" || caKeyPEM == "" {
 		return nil, ErrMissingCACertificate
