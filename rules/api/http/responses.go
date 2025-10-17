@@ -25,7 +25,6 @@ type pageRes struct {
 type ruleResponse struct {
 	ID          string            `json:"id"`
 	GroupID     string            `json:"group_id"`
-	ProfileID   string            `json:"profile_id"`
 	Name        string            `json:"name"`
 	Description string            `json:"description,omitempty"`
 	Conditions  []rules.Condition `json:"conditions"`

@@ -30,7 +30,7 @@ func createRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 			rulesList = append(rulesList, r)
 		}
 
-		rules, err := svc.CreateRules(ctx, req.token, req.profileID, rulesList...)
+		rules, err := svc.CreateRules(ctx, req.token, req.groupID, req.ThingIDs, rulesList...)
 		if err != nil {
 			return nil, err
 		}
@@ -39,14 +39,14 @@ func createRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 	}
 }
 
-func listRulesByProfileEndpoint(svc rules.Service) endpoint.Endpoint {
+func listRulesByThingEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(listRulesByProfileReq)
+		req := request.(listRulesByThingReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		page, err := svc.ListRulesByProfile(ctx, req.token, req.profileID, req.pageMetadata)
+		page, err := svc.ListRulesByThing(ctx, req.token, req.thingID, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
@@ -96,7 +96,6 @@ func updateRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 
 		rule := rules.Rule{
 			ID:          req.id,
-			ProfileID:   req.ProfileID,
 			Name:        req.Name,
 			Description: req.Description,
 			Conditions:  req.Conditions,
@@ -133,7 +132,6 @@ func buildRulesResponse(rules []rules.Rule, created bool) rulesRes {
 	for _, r := range rules {
 		rule := ruleResponse{
 			ID:          r.ID,
-			ProfileID:   r.ProfileID,
 			GroupID:     r.GroupID,
 			Name:        r.Name,
 			Description: r.Description,
@@ -163,7 +161,6 @@ func buildRulesPageResponse(page rules.RulesPage, pm apiutil.PageMetadata) Rules
 	for _, r := range page.Rules {
 		rule := ruleResponse{
 			ID:          r.ID,
-			ProfileID:   r.ProfileID,
 			GroupID:     r.GroupID,
 			Name:        r.Name,
 			Description: r.Description,
@@ -180,7 +177,6 @@ func buildRulesPageResponse(page rules.RulesPage, pm apiutil.PageMetadata) Rules
 func buildRuleResponse(rule rules.Rule, updated bool) ruleResponse {
 	return ruleResponse{
 		ID:          rule.ID,
-		ProfileID:   rule.ProfileID,
 		GroupID:     rule.GroupID,
 		Name:        rule.Name,
 		Description: rule.Description,

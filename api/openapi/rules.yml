@@ -5,14 +5,14 @@ info:
   version: 1.0.0
 
 paths:
-  /profiles/{profileId}/rules:
+  /groups/{groupId}/rules:
     post:
-      summary: Adds new rules
-      description: Adds new rules to the list of rules for certain profile identified by the provided ID
+      summary: Creates new rules for a thing group
+      description: Creates new rules for a given list of things within the same group.
       tags:
         - rules
       parameters:
-        - $ref: "#/components/parameters/ProfileId"
+        - $ref: "#/components/parameters/GroupId"
       requestBody:
         $ref: "#/components/requestBodies/CreateRulesReq"
       responses:
@@ -29,29 +29,8 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
     get:
-      summary: Retrieves rules by profile
-      description: Retrieves list of rules related to a certain profile identified by the provided ID.
-      tags:
-        - rules
-      parameters:
-        - $ref: "#/components/parameters/ProfileId"
-      responses:
-        '200':
-          $ref: "#/components/responses/ListRulesRes"
-        '400':
-          description: Failed due to malformed query parameters.
-        '401':
-          description: Missing or invalid access token provided.
-        '403':
-          description: Failed to perform authorization over the entity.
-        '422':
-          description: Database can't process request.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-  /groups/{groupId}/rules:
-    get:
       summary: Retrieves rules by group
-      description: Retrieves list of rules related to a certain group identified by the provided ID.
+      description: Retrieves list of rules related to a certain group identified by the provided ID..
       tags:
         - rules
       parameters:
@@ -69,9 +48,30 @@ paths:
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /things/{thingId}/rules:
+    get:
+      summary: Retrieves rules by thing
+      description: Retrieves list of rules assigned to a certain thing identified by the provided ID.
+      tags:
+        - rules
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListRulesRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /rules/{ruleId}:
     get:
-      summary: Retrieves rule info
+      summary: Retrieves rule details
       tags:
         - rules
       parameters:
@@ -88,8 +88,8 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
     put:
-      summary: Updates rule info
-      description: Update is performed by replacing the current resource data with values provided in a request payload.
+      summary: Updates rule
+      description: Updates an existing rule with the data provided in the request payload.
       tags:
         - rules
       parameters:
@@ -151,16 +151,13 @@ components:
           example: "513e2557-e09b-42d3-s456-425614175403"
         type:
           type: string
-          enum: [ smtp, smpp, alarm ]
+          enum: [smtp, smpp, alarm]
           example: "smtp"
       required:
         - type
     RuleReqSchema:
       type: object
       properties:
-        profile_id:
-          type: string
-          example: "123e4567-e89b-12d3-a456-426614174000"
         name:
           type: string
           example: "Temperature and Humidity Alert"
@@ -186,9 +183,6 @@ components:
         id:
           type: string
           example: "789e4567-e89b-12d3-a456-426614174abc"
-        profile_id:
-          type: string
-          example: "123e4567-e89b-12d3-a456-426614174000"
         group_id:
           type: string
           example: "321e4567-e89b-12d3-a456-426614174def"
@@ -209,7 +203,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Action"
-      required: [ id, profile_id, group_id, name, conditions, actions ]
+      required: [id, group_id, name, conditions, actions]
 
   parameters:
     RuleId:
@@ -230,9 +224,9 @@ components:
         format: uuid
       example: "321e4567-e89b-12d3-a456-426614174def"
       required: true
-    ProfileId:
-      name: profileId
-      description: Profile identifier for which the rules are being created/retrieved.
+    ThingId:
+      name: thingId
+      description: Thing identifier for which the rules are being retrieved.
       in: path
       schema:
         type: string
@@ -249,13 +243,20 @@ components:
           schema:
             type: object
             properties:
+              thing_ids:
+                type: array
+                items:
+                  type: string
+                  format: uuid
               rules:
                 type: array
                 items:
                   $ref: "#/components/schemas/RuleReqSchema"
-            required:
-              - rules
+            required: [thing_ids, rules]
           example:
+            thing_ids:
+              - "111e4567-e89b-12d3-a456-426614174001"
+              - "222e4567-e89b-12d3-a456-426614174002"
             rules:
                 name: "Temperature and Humidity Alert"
                 description: "Triggers when temperature exceeds 45°C and humidity drops below 20%"
@@ -279,7 +280,6 @@ components:
           schema:
             $ref: "#/components/schemas/RuleReqSchema"
           example:
-            profile_id: "123e4567-e89b-12d3-a456-426614174000"
             name: "Temperature Alert"
             description: "Triggers when temperature exceeds 50°C"
             conditions:
@@ -289,7 +289,7 @@ components:
             actions:
               - type: "alarm"
     RemoveRulesReq:
-      description: JSON-formatted document describing the identifiers of rules for deleting.
+      description: JSON array of rule identifiers to delete.
       required: true
       content:
         application/json:
@@ -318,8 +318,7 @@ components:
             items:
               $ref: "#/components/schemas/RuleResSchema"
           example:
-            - id: "84d1be5e-3511-4d15-aafa-b1bb4c20bca4"
-              profile_id: "123e4567-e89b-12d3-a456-426614174000"
+              id: "84d1be5e-3511-4d15-aafa-b1bb4c20bca4"
               group_id: "fc1e40aa-c5af-4a1d-b1e4-37f2e4bb50d1"
               name: "Temperature and Humidity Alert"
               description: "Triggers when temperature exceeds 45°C and humidity drops below 20%"
@@ -343,7 +342,6 @@ components:
             $ref: "#/components/schemas/RuleResSchema"
           example:
             id: "789e4567-e89b-12d3-a456-426614174abc"
-            profile_id: "123e4567-e89b-12d3-a456-426614174000"
             group_id: "321e4567-e89b-12d3-a456-426614174def"
             name: "Temperature Alert"
             description: "Triggers when temperature exceeds 45°C"
@@ -369,8 +367,7 @@ components:
               - rules
           example:
             rules:
-              - id: "789e4567-e89b-12d3-a456-426614174abc"
-                profile_id: "123e4567-e89b-12d3-a456-426614174000"
+                id: "789e4567-e89b-12d3-a456-426614174abc"
                 group_id: "321e4567-e89b-12d3-a456-426614174def"
                 name: "Temperature Alert"
                 description: "Triggers when temperature exceeds 45°C"
