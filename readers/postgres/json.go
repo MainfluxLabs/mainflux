@@ -139,7 +139,6 @@ func (jr *jsonRepository) fmtCondition(rpm readers.JSONPageMetadata) string {
 			keyPath := buildPayloadFilterPath(rpm.Key)
 			condition = fmt.Sprintf(`%s %s %s IS NOT NULL`, condition, op, keyPath)
 			op = "AND"
-
 		}
 	}
 	return condition
