@@ -237,6 +237,7 @@ func TestUpdateThingGroupAndProfile(t *testing.T) {
 	invalidPrGr := things.Thing{
 		ID:        th.ID,
 		ProfileID: prID1,
+		GroupID:   grID,
 	}
 
 	other := things.Thing{ID: emptyValue, Key: "x", ProfileID: prID}
