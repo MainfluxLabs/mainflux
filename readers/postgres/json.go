@@ -135,9 +135,9 @@ func (jr *jsonRepository) fmtCondition(rpm readers.JSONPageMetadata) string {
 		case "to":
 			condition = fmt.Sprintf(`%s %s created <= :to`, condition, op)
 			op = "AND"
-		case "key":
-			keyPath := buildPayloadFilterPath(rpm.Key)
-			condition = fmt.Sprintf(`%s %s %s IS NOT NULL`, condition, op, keyPath)
+		case "filter":
+			filterPath := buildPayloadFilterPath(rpm.Filter)
+			condition = fmt.Sprintf(`%s %s %s IS NOT NULL`, condition, op, filterPath)
 			op = "AND"
 		}
 	}
@@ -171,7 +171,7 @@ func (jr *jsonRepository) buildQueryParams(rpm readers.JSONPageMetadata) map[str
 		"subtopic":  rpm.Subtopic,
 		"publisher": rpm.Publisher,
 		"protocol":  rpm.Protocol,
-		"key":       rpm.Key,
+		"filter":    rpm.Filter,
 		"from":      rpm.From,
 		"to":        rpm.To,
 	}
