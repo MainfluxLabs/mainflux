@@ -124,7 +124,7 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, er
 		return nil, err
 	}
 
-	key, err := apiutil.ReadStringQuery(r, filterKey, "")
+	filter, err := apiutil.ReadStringQuery(r, filterKey, "")
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, er
 	pageMeta.Offset = offset
 	pageMeta.Limit = limit
 	pageMeta.Publisher = publisher
-	pageMeta.Key = key
+	pageMeta.Filter = filter
 
 	return listJSONMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),

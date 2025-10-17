@@ -107,7 +107,7 @@ type JSONPageMetadata struct {
 	Protocol    string `json:"protocol,omitempty"`
 	From        int64  `json:"from,omitempty"`
 	To          int64  `json:"to,omitempty"`
-	Key         string `json:"key,omitempty"`
+	Filter      string `json:"key,omitempty"`
 	AggInterval string `json:"agg_interval,omitempty"`
 	AggType     string `json:"agg_type,omitempty"`
 	AggField    string `json:"agg_field,omitempty"`
