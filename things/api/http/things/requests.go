@@ -104,6 +104,10 @@ func (req updateThingGroupAndProfileReq) validate() error {
 		return apiutil.ErrMissingProfileID
 	}
 
+	if req.GroupID == "" {
+		return apiutil.ErrMissingGroupID
+	}
+
 	return nil
 }
 
