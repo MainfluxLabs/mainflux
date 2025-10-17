@@ -17,6 +17,7 @@ import (
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/certs"
 	"github.com/MainfluxLabs/mainflux/certs/api"
+	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/certs/postgres"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
@@ -142,6 +143,11 @@ func main() {
 		logger.Error("Failed to load CA certificates for issuing client certs")
 	}
 
+	pkiAgent, err := pki.NewAgentFromTLS(tlsCert)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to create PKI agent: %s", err))
+	}
+
 	if cfg.pkiHost == "" {
 		log.Fatalf("No host specified for PKI engine")
 	}
@@ -162,7 +168,7 @@ func main() {
 
 	auth := authapi.NewClient(authConn, authTracer, cfg.authGRPCTimeout)
 
-	svc := newService(auth, db, logger, tlsCert, caCert, cfg)
+	svc := newService(auth, db, logger, tlsCert, caCert, cfg, pkiAgent)
 
 	g.Go(func() error {
 		return servershttp.Start(ctx, api.MakeHandler(svc, logger), cfg.httpConfig, logger)
@@ -255,7 +261,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(ac protomfx.AuthServiceClient, db *sqlx.DB, logger logger.Logger, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config) certs.Service {
+func newService(ac protomfx.AuthServiceClient, db *sqlx.DB, logger logger.Logger, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config, pkiAgent pki.Agent) certs.Service {
 	certsRepo := postgres.NewRepository(db, logger)
 
 	certsConfig := certs.Config{
@@ -286,7 +292,7 @@ func newService(ac protomfx.AuthServiceClient, db *sqlx.DB, logger logger.Logger
 
 	sdk := mfsdk.NewSDK(config)
 
-	svc := certs.New(ac, certsRepo, sdk, certsConfig)
+	svc := certs.New(ac, certsRepo, sdk, certsConfig, pkiAgent)
 	svc = api.NewLoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
