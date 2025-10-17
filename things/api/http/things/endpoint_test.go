@@ -408,7 +408,7 @@ func TestUpdateThingGroupAndProfile(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
 
-	data := fmt.Sprintf(`{"profile_id":"%s"}`, prID)
+	data := fmt.Sprintf(`{"profile_id":"%s","group_id": "%s"}`, prID, grID)
 
 	cases := []struct {
 		desc        string
