@@ -217,9 +217,9 @@ func TestUpdateThing(t *testing.T) {
 func TestUpdateThingGroupAndProfile(t *testing.T) {
 	svc := newService()
 
-	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup, createdGroup)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup, createdGroup, createdGroup)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	grID, grID1 := grs[0].ID, grs[1].ID
+	grID, grID1, grID2 := grs[0].ID, grs[1].ID, grs[2].ID
 
 	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -237,6 +237,7 @@ func TestUpdateThingGroupAndProfile(t *testing.T) {
 	invalidPrGr := things.Thing{
 		ID:        th.ID,
 		ProfileID: prID1,
+		GroupID:   grID,
 	}
 
 	other := things.Thing{ID: emptyValue, Key: "x", ProfileID: prID}
@@ -268,6 +269,16 @@ func TestUpdateThingGroupAndProfile(t *testing.T) {
 		{
 			desc:  "update thing with profile from non-belonging group",
 			thing: invalidPrGr,
+			token: token,
+			err:   errors.ErrAuthorization,
+		},
+		{
+			desc: "update thing with group change and profile from non-belonging group",
+			thing: things.Thing{
+				ID:        th.ID,
+				GroupID:   grID2,
+				ProfileID: prID1,
+			},
 			token: token,
 			err:   errors.ErrAuthorization,
 		},

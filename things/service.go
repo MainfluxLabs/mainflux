@@ -329,8 +329,7 @@ func (ts *thingsService) UpdateThingGroupAndProfile(ctx context.Context, token s
 		return err
 	}
 
-	thGrID, err := ts.getGroupIDByThingID(ctx, thing.ID)
-	if err != nil {
+	if err := ts.canAccessGroup(ctx, token, thing.GroupID, Editor); err != nil {
 		return err
 	}
 
@@ -339,7 +338,7 @@ func (ts *thingsService) UpdateThingGroupAndProfile(ctx context.Context, token s
 		return err
 	}
 
-	if prGrID != thGrID {
+	if prGrID != thing.GroupID {
 		return errors.ErrAuthorization
 	}
 

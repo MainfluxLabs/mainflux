@@ -1944,6 +1944,9 @@ components:
               profile_id:
                 type: string
                 format: uuid
+              group_id:
+                type: string
+                format: uuid
     SearchThingsReq:
       description: JSON-formatted document describing search parameters.
       required: false

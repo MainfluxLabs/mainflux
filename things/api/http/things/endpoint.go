@@ -277,6 +277,7 @@ func updateThingGroupAndProfileEndpoint(svc things.Service) endpoint.Endpoint {
 		thing := things.Thing{
 			ID:        req.id,
 			ProfileID: req.ProfileID,
+			GroupID:   req.GroupID,
 		}
 
 		if err := svc.UpdateThingGroupAndProfile(ctx, req.token, thing); err != nil {

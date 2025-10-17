@@ -408,7 +408,9 @@ func TestUpdateThingGroupAndProfile(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
 
-	data := fmt.Sprintf(`{"profile_id":"%s"}`, prID)
+	data := fmt.Sprintf(`{"profile_id":"%s","group_id": "%s"}`, prID, grID)
+	dataMissingGroupID := fmt.Sprintf(`{"profile_id": "%s"}`, prID)
+	dataMissingProfileID := fmt.Sprintf(`{"group_id": "%s"}`, grID)
 
 	cases := []struct {
 		desc        string
@@ -429,6 +431,22 @@ func TestUpdateThingGroupAndProfile(t *testing.T) {
 		{
 			desc:        "update thing with empty JSON request",
 			req:         "{}",
+			id:          th.ID,
+			contentType: contentTypeJSON,
+			auth:        token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update thing with missing group id",
+			req:         dataMissingGroupID,
+			id:          th.ID,
+			contentType: contentTypeJSON,
+			auth:        token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update thing with missing profile id",
+			req:         dataMissingProfileID,
 			id:          th.ID,
 			contentType: contentTypeJSON,
 			auth:        token,

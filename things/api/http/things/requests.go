@@ -88,6 +88,7 @@ type updateThingGroupAndProfileReq struct {
 	token     string
 	id        string
 	ProfileID string `json:"profile_id"`
+	GroupID   string `json:"group_id"`
 }
 
 func (req updateThingGroupAndProfileReq) validate() error {
@@ -101,6 +102,10 @@ func (req updateThingGroupAndProfileReq) validate() error {
 
 	if req.ProfileID == "" {
 		return apiutil.ErrMissingProfileID
+	}
+
+	if req.GroupID == "" {
+		return apiutil.ErrMissingGroupID
 	}
 
 	return nil
