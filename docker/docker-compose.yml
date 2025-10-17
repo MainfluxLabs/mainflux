@@ -25,6 +25,7 @@ volumes:
   mainfluxlabs-modbus-db-volume:
   mainfluxlabs-alarms-db-volume:
   mainfluxlabs-rules-db-volume:
+  mainfluxlabs-ui-configs-db-volume:
 
 services:
   ui:
@@ -781,5 +782,44 @@ services:
     ports:
       - ${MF_RULES_HTTP_PORT}:${MF_RULES_HTTP_PORT}
       - ${MF_RULES_GRPC_PORT}:${MF_RULES_GRPC_PORT}
+    networks:
+      - mainfluxlabs-base-net
+
+  ui-configs-db:
+    image: postgres:13.3-alpine
+    container_name: mainfluxlabs-ui-configs-db
+    restart: on-failure
+    environment:
+      POSTGRES_USER: ${MF_UI_CONFIGS_DB_USER}
+      POSTGRES_PASSWORD: ${MF_UI_CONFIGS_DB_PASS}
+      POSTGRES_DB: ${MF_UI_CONFIGS_DB}
+    networks:
+      - mainfluxlabs-base-net
+    volumes:
+      - mainfluxlabs-ui-configs-db-volume:/var/lib/postgresql/data
+
+  ui-configs:
+    image: ${MF_RELEASE_PREFIX}/uiconfigs:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-ui-configs
+    depends_on:
+      - ui-configs-db
+    restart: on-failure
+    environment:
+      MF_UI_CONFIGS_LOG_LEVEL: debug
+      MF_UI_CONFIGS_HTTP_PORT: ${MF_UI_CONFIGS_HTTP_PORT}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_UI_CONFIGS_DB_HOST: ui-configs-db
+      MF_UI_CONFIGS_DB_PORT: ${MF_UI_CONFIGS_DB_PORT}
+      MF_UI_CONFIGS_DB_USER: ${MF_UI_CONFIGS_DB_USER}
+      MF_UI_CONFIGS_DB_PASS: ${MF_UI_CONFIGS_DB_PASS}
+      MF_UI_CONFIGS_DB: ${MF_UI_CONFIGS_DB}
+      MF_UI_CONFIGS_SERVER_CERT: ${MF_UI_CONFIGS_SERVER_CERT}
+      MF_UI_CONFIGS_SERVER_KEY: ${MF_UI_CONFIGS_SERVER_KEY}
+      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+      MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
+      MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
+    ports:
+      - ${MF_UI_CONFIGS_HTTP_PORT}:${MF_UI_CONFIGS_HTTP_PORT}
     networks:
       - mainfluxlabs-base-net
