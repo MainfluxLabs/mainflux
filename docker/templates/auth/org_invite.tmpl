@@ -1,0 +1,9 @@
+{{ define "content" }}
+    <p>You've been invited to join an Organization:</p>
+    <ul>
+        <li>Organization: {{ .OrgName }}</li>
+        <li>Role: {{ .Role }}</li>
+    </ul>
+    
+    <a href="{{ .InviteLink }}">Click here to view the invite</a>
+{{ end }}

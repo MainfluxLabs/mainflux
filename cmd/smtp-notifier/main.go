@@ -64,13 +64,13 @@ const (
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
 
-	defEmailHost        = "localhost"
-	defEmailPort        = "25"
-	defEmailUsername    = "root"
-	defEmailPassword    = ""
-	defEmailFromAddress = ""
-	defEmailFromName    = ""
-	defEmailTemplate    = "email.tmpl"
+	defEmailHost         = "localhost"
+	defEmailPort         = "25"
+	defEmailUsername     = "root"
+	defEmailPassword     = ""
+	defEmailFromAddress  = ""
+	defEmailFromName     = ""
+	defEmailBaseTemplate = "base.tmpl"
 
 	envLogLevel          = "MF_SMTP_NOTIFIER_LOG_LEVEL"
 	envFrom              = "MF_SMTP_NOTIFIER_FROM_ADDR"
@@ -93,13 +93,13 @@ const (
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 
-	envEmailHost        = "MF_EMAIL_HOST"
-	envEmailPort        = "MF_EMAIL_PORT"
-	envEmailUsername    = "MF_EMAIL_USERNAME"
-	envEmailPassword    = "MF_EMAIL_PASSWORD"
-	envEmailFromAddress = "MF_EMAIL_FROM_ADDRESS"
-	envEmailFromName    = "MF_EMAIL_FROM_NAME"
-	envEmailTemplate    = "MF_SMTP_NOTIFIER_TEMPLATE"
+	envEmailHost         = "MF_EMAIL_HOST"
+	envEmailPort         = "MF_EMAIL_PORT"
+	envEmailUsername     = "MF_EMAIL_USERNAME"
+	envEmailPassword     = "MF_EMAIL_PASSWORD"
+	envEmailFromAddress  = "MF_EMAIL_FROM_ADDRESS"
+	envEmailFromName     = "MF_EMAIL_FROM_NAME"
+	envEmailBaseTemplate = "MF_EMAIL_BASE_TEMPLATE"
 )
 
 type config struct {
@@ -184,13 +184,13 @@ func loadConfig() config {
 	}
 
 	emailConf := email.Config{
-		FromAddress: mainflux.Env(envEmailFromAddress, defEmailFromAddress),
-		FromName:    mainflux.Env(envEmailFromName, defEmailFromName),
-		Host:        mainflux.Env(envEmailHost, defEmailHost),
-		Port:        mainflux.Env(envEmailPort, defEmailPort),
-		Username:    mainflux.Env(envEmailUsername, defEmailUsername),
-		Password:    mainflux.Env(envEmailPassword, defEmailPassword),
-		Template:    mainflux.Env(envEmailTemplate, defEmailTemplate),
+		FromAddress:      mainflux.Env(envEmailFromAddress, defEmailFromAddress),
+		FromName:         mainflux.Env(envEmailFromName, defEmailFromName),
+		Host:             mainflux.Env(envEmailHost, defEmailHost),
+		Port:             mainflux.Env(envEmailPort, defEmailPort),
+		Username:         mainflux.Env(envEmailUsername, defEmailUsername),
+		Password:         mainflux.Env(envEmailPassword, defEmailPassword),
+		BaseTemplatePath: mainflux.Env(envEmailBaseTemplate, defEmailBaseTemplate),
 	}
 
 	dbConfig := postgres.Config{

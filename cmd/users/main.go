@@ -58,16 +58,16 @@ const (
 	defServerKey     = ""
 	defJaegerURL     = ""
 
-	defEmailHost        = "localhost"
-	defEmailPort        = "25"
-	defEmailUsername    = "root"
-	defEmailPassword    = ""
-	defEmailFromAddress = ""
-	defEmailFromName    = ""
-	defEmailTemplate    = "email.tmpl"
-	defAdminEmail       = ""
-	defAdminPassword    = ""
-	defPassRegex        = `^\S{8,}$`
+	defEmailHost         = "localhost"
+	defEmailPort         = "25"
+	defEmailUsername     = "root"
+	defEmailPassword     = ""
+	defEmailFromAddress  = ""
+	defEmailFromName     = ""
+	defEmailBaseTemplate = "base.tmpl"
+	defAdminEmail        = ""
+	defAdminPassword     = ""
+	defPassRegex         = `^\S{8,}$`
 
 	defHost = "http://localhost"
 
@@ -101,13 +101,13 @@ const (
 	envAdminPassword = "MF_USERS_ADMIN_PASSWORD"
 	envPassRegex     = "MF_USERS_PASS_REGEX"
 
-	envEmailHost        = "MF_EMAIL_HOST"
-	envEmailPort        = "MF_EMAIL_PORT"
-	envEmailUsername    = "MF_EMAIL_USERNAME"
-	envEmailPassword    = "MF_EMAIL_PASSWORD"
-	envEmailFromAddress = "MF_EMAIL_FROM_ADDRESS"
-	envEmailFromName    = "MF_EMAIL_FROM_NAME"
-	envEmailTemplate    = "MF_EMAIL_TEMPLATE"
+	envEmailHost         = "MF_EMAIL_HOST"
+	envEmailPort         = "MF_EMAIL_PORT"
+	envEmailUsername     = "MF_EMAIL_USERNAME"
+	envEmailPassword     = "MF_EMAIL_PASSWORD"
+	envEmailFromAddress  = "MF_EMAIL_FROM_ADDRESS"
+	envEmailFromName     = "MF_EMAIL_FROM_NAME"
+	envEmailBaseTemplate = "MF_EMAIL_BASE_TEMPLATE"
 
 	envHost = "MF_HOST"
 
@@ -248,13 +248,13 @@ func loadConfig() config {
 	}
 
 	emailConf := email.Config{
-		FromAddress: mainflux.Env(envEmailFromAddress, defEmailFromAddress),
-		FromName:    mainflux.Env(envEmailFromName, defEmailFromName),
-		Host:        mainflux.Env(envEmailHost, defEmailHost),
-		Port:        mainflux.Env(envEmailPort, defEmailPort),
-		Username:    mainflux.Env(envEmailUsername, defEmailUsername),
-		Password:    mainflux.Env(envEmailPassword, defEmailPassword),
-		Template:    mainflux.Env(envEmailTemplate, defEmailTemplate),
+		FromAddress:      mainflux.Env(envEmailFromAddress, defEmailFromAddress),
+		FromName:         mainflux.Env(envEmailFromName, defEmailFromName),
+		Host:             mainflux.Env(envEmailHost, defEmailHost),
+		Port:             mainflux.Env(envEmailPort, defEmailPort),
+		Username:         mainflux.Env(envEmailUsername, defEmailUsername),
+		Password:         mainflux.Env(envEmailPassword, defEmailPassword),
+		BaseTemplatePath: mainflux.Env(envEmailBaseTemplate, defEmailBaseTemplate),
 	}
 
 	authConfig := clients.Config{

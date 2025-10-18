@@ -81,7 +81,7 @@ default values.
 | MF_EMAIL_PASSWORD             | Mail server password                                                     |                |
 | MF_EMAIL_FROM_ADDRESS         | Email "from" address                                                     |                |
 | MF_EMAIL_FROM_NAME            | Email "from" name                                                        |                |
-| MF_AUTH_EMAIL_TEMPLATE        | Email template for all e-mail notifications sent from the `auth` service | email.tmpl     |
+| MF_EMAIL_BASE_TEMPLATE        | Path to base template for e-mails sent from the service                  | base.tmpl      |
 
 ## Deployment
 

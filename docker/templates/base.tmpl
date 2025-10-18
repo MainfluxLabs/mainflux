@@ -1,0 +1,12 @@
+{{ define "base" }}
+<!doctype html>
+<html lang="en">
+<head>
+    <title>{{ .Title }}</title>
+</head>
+<body>
+    <h1>MainfluxLabs</h1>
+    {{ template "content" . }}
+</body>
+</html>
+{{ end }}

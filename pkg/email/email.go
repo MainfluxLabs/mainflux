@@ -6,11 +6,11 @@ package email
 import (
 	"bytes"
 	"fmt"
+	"html/template"
 	"net/mail"
 	"regexp"
 	"strconv"
 	"strings"
-	"text/template"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"golang.org/x/net/idna"
@@ -38,31 +38,22 @@ var (
 	userDotRegexp = regexp.MustCompile("(^[.]{1})|([.]{1}$)|([.]{2,})")
 )
 
-type email struct {
-	To      []string
-	From    string
-	Subject string
-	Header  string
-	Content string
-	Footer  string
-}
-
 // Config email agent configuration.
 type Config struct {
-	Host        string
-	Port        string
-	Username    string
-	Password    string
-	FromAddress string
-	FromName    string
-	Template    string
+	Host             string
+	Port             string
+	Username         string
+	Password         string
+	FromAddress      string
+	FromName         string
+	BaseTemplatePath string
 }
 
 // Agent for mailing
 type Agent struct {
-	conf *Config
-	tmpl *template.Template
-	dial *gomail.Dialer
+	conf     *Config
+	baseTmpl *template.Template
+	dial     *gomail.Dialer
 }
 
 // New creates new email agent
@@ -76,43 +67,51 @@ func New(c *Config) (*Agent, error) {
 	d := gomail.NewDialer(c.Host, port, c.Username, c.Password)
 	a.dial = d
 
-	tmpl, err := template.ParseFiles(c.Template)
+	tmpl, err := template.ParseFiles(c.BaseTemplatePath)
 	if err != nil {
 		return a, errors.Wrap(errParseTemplate, err)
 	}
-	a.tmpl = tmpl
+	a.baseTmpl = tmpl
 	return a, nil
 }
 
-// Send sends e-mail
-func (a *Agent) Send(To []string, From, Subject, Header, Content, Footer string) error {
-	if a.tmpl == nil {
+// Send sends an e-mail message comprised of the Agent's base template and the template idenitifed by `TemplateName`, which
+// must be the filename of the subtemplate, without an extension.
+func (a *Agent) Send(To []string, From, Subject, TemplateName string, TemplateData map[string]any) error {
+	if a.baseTmpl == nil {
 		return errMissingEmailTemplate
 	}
 
-	buff := new(bytes.Buffer)
-	e := email{
-		To:      To,
-		From:    From,
-		Subject: Subject,
-		Header:  Header,
-		Content: Content,
-		Footer:  Footer,
-	}
 	if From == "" {
 		from := mail.Address{Name: a.conf.FromName, Address: a.conf.FromAddress}
-		e.From = from.String()
+		From = from.String()
 	}
 
-	if err := a.tmpl.Execute(buff, e); err != nil {
+	TemplateData["to"] = To
+	TemplateData["from"] = From
+	TemplateData["subject"] = Subject
+
+	subtemplatePath := fmt.Sprintf("%s.tmpl", TemplateName)
+	tmpl, err := a.baseTmpl.Clone()
+	if err != nil {
+		return err
+	}
+
+	if _, err := tmpl.ParseFiles(subtemplatePath); err != nil {
+		return errors.Wrap(errParseTemplate, err)
+	}
+
+	buffer := new(bytes.Buffer)
+	if err := tmpl.ExecuteTemplate(buffer, "base", TemplateData); err != nil {
 		return errors.Wrap(errExecTemplate, err)
 	}
 
 	m := gomail.NewMessage()
-	m.SetHeader("From", e.From)
+
+	m.SetHeader("From", From)
 	m.SetHeader("To", To...)
 	m.SetHeader("Subject", Subject)
-	m.SetBody("text/plain", buff.String())
+	m.SetBody("text/html", buffer.String())
 
 	if err := a.dial.DialAndSend(m); err != nil {
 		return errors.Wrap(errSendMail, err)
