@@ -4,6 +4,7 @@
 package pki
 
 import (
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -35,6 +36,7 @@ type Cert struct {
 type Agent interface {
 	IssueCert(cn, ttl, keyType string, keyBits int) (Cert, error)
 	VerifyCert(certPEM string) (*x509.Certificate, error)
+	CreateCRL(revokedCerts []pkix.RevokedCertificate) ([]byte, error)
 }
 
 var (
@@ -49,20 +51,17 @@ var (
 	// ErrCertificateExpired indicates certificate has expired
 	ErrCertificateExpired = errors.New("certificate has expired")
 	// ErrCertificateRevoked indicates certificate has been revoked
-	ErrCertificateRevoked        = errors.New("certificate has been revoked")
-	errFailedVaultCertIssue      = errors.New("failed to issue vault certificate")
-	errFailedVaultRead           = errors.New("failed to read vault certificate")
-	errFailedCertDecoding        = errors.New("failed to decode response from vault service")
+	ErrCertificateRevoked = errors.New("certificate has been revoked")
+
 	errPrivateKeyEmpty           = errors.New("private key is empty")
 	errPrivateKeyUnsupportedType = errors.New("private key type is unsupported")
 )
 
 type agent struct {
-	mu           sync.RWMutex
-	caCert       *x509.Certificate
-	caKey        interface{}
-	caPEM        string
-	revokedCerts map[string]bool
+	mu     sync.RWMutex
+	caCert *x509.Certificate
+	caKey  interface{}
+	caPEM  string
 }
 
 func NewAgent(caCertPEM, caKeyPEM string) (Agent, error) {
@@ -102,10 +101,9 @@ func NewAgent(caCertPEM, caKeyPEM string) (Agent, error) {
 	}
 
 	return &agent{
-		caCert:       caCert,
-		caKey:        caKey,
-		caPEM:        string(caCertPEM),
-		revokedCerts: make(map[string]bool),
+		caCert: caCert,
+		caKey:  caKey,
+		caPEM:  string(caCertPEM),
 	}, nil
 }
 
@@ -129,10 +127,9 @@ func NewAgentFromTLS(tlsCert tls.Certificate) (Agent, error) {
 	})
 
 	return &agent{
-		caCert:       caCert,
-		caKey:        tlsCert.PrivateKey,
-		caPEM:        string(caPEM),
-		revokedCerts: make(map[string]bool),
+		caCert: caCert,
+		caKey:  tlsCert.PrivateKey,
+		caPEM:  string(caPEM),
 	}, nil
 }
 
@@ -276,11 +273,6 @@ func (a *agent) VerifyCert(certPEM string) (*x509.Certificate, error) {
 		return nil, ErrCertificateExpired
 	}
 
-	// TODO: might need to do DB retrieval here
-	if a.revokedCerts[cert.SerialNumber.String()] {
-		return nil, ErrCertificateRevoked
-	}
-
 	roots := x509.NewCertPool()
 	roots.AddCert(a.caCert)
 
@@ -294,6 +286,34 @@ func (a *agent) VerifyCert(certPEM string) (*x509.Certificate, error) {
 	}
 
 	return cert, nil
+}
+
+func (a *agent) CreateCRL(revokedCerts []pkix.RevokedCertificate) ([]byte, error) {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	now := time.Now()
+	crlTemplate := &x509.RevocationList{
+		Number:              big.NewInt(1),
+		ThisUpdate:          now,
+		NextUpdate:          now.Add(24 * time.Hour),
+		RevokedCertificates: revokedCerts,
+	}
+
+	signer, ok := a.caKey.(crypto.Signer)
+	if !ok {
+		return nil, errors.New("CA private key does not implement crypto.Signer")
+	}
+
+	crlBytes, err := x509.CreateRevocationList(rand.Reader, crlTemplate, a.caCert, signer)
+	if err != nil {
+		return nil, errors.Wrap(errors.New("failed to create CRL"), err)
+	}
+
+	return pem.EncodeToMemory(&pem.Block{
+		Type:  "X509 CRL",
+		Bytes: crlBytes,
+	}), nil
 }
 
 func generateSerialNumber() (*big.Int, error) {
