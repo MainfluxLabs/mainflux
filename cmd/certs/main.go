@@ -143,6 +143,9 @@ func main() {
 		logger.Error("Failed to load CA certificates for issuing client certs")
 	}
 
+	tlsConfig := configureTLSServer(cfg, caCert)
+	cfg.httpConfig.TLSConfig = tlsConfig
+
 	pkiAgent, err := pki.NewAgentFromTLS(tlsCert)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to create PKI agent: %s", err))
@@ -171,7 +174,7 @@ func main() {
 	svc := newService(auth, db, logger, tlsCert, caCert, cfg, pkiAgent)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, api.MakeHandler(svc, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, api.MakeHandler(svc, pkiAgent, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -349,4 +352,24 @@ func loadCertificates(conf config) (tls.Certificate, *x509.Certificate, error) {
 	}
 
 	return tlsCert, caCert, nil
+}
+
+func configureTLSServer(cfg config, caCert *x509.Certificate) *tls.Config {
+	if cfg.httpConfig.ServerCert == "" {
+		return nil
+	}
+
+	caCertPool := x509.NewCertPool()
+	caCertPool.AddCert(caCert)
+
+	return &tls.Config{
+		ClientAuth: tls.RequireAndVerifyClientCert,
+		ClientCAs:  caCertPool,
+		MinVersion: tls.VersionTLS12,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+		},
+	}
+
 }
