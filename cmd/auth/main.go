@@ -68,13 +68,13 @@ const (
 	defUsersClientTLS  = "false"
 	defUsersGRPCURL    = "localhost:8184"
 
-	defEmailHost        = "localhost"
-	defEmailPort        = "25"
-	defEmailUsername    = "root"
-	defEmailPassword    = ""
-	defEmailFromAddress = ""
-	defEmailFromName    = ""
-	defEmailTemplate    = "email.tmpl"
+	defEmailHost         = "localhost"
+	defEmailPort         = "25"
+	defEmailUsername     = "root"
+	defEmailPassword     = ""
+	defEmailFromAddress  = ""
+	defEmailFromName     = ""
+	defEmailBaseTemplate = "base.tmpl"
 
 	defHost = "http://localhost"
 
@@ -105,13 +105,13 @@ const (
 	envUsersCACerts    = "MF_USERS_CA_CERTS"
 	envUsersClientTLS  = "MF_USERS_CLIENT_TLS"
 
-	envEmailHost        = "MF_EMAIL_HOST"
-	envEmailPort        = "MF_EMAIL_PORT"
-	envEmailUsername    = "MF_EMAIL_USERNAME"
-	envEmailPassword    = "MF_EMAIL_PASSWORD"
-	envEmailFromAddress = "MF_EMAIL_FROM_ADDRESS"
-	envEmailFromName    = "MF_EMAIL_FROM_NAME"
-	envEmailTemplate    = "MF_AUTH_EMAIL_TEMPLATE"
+	envEmailHost         = "MF_EMAIL_HOST"
+	envEmailPort         = "MF_EMAIL_PORT"
+	envEmailUsername     = "MF_EMAIL_USERNAME"
+	envEmailPassword     = "MF_EMAIL_PASSWORD"
+	envEmailFromAddress  = "MF_EMAIL_FROM_ADDRESS"
+	envEmailFromName     = "MF_EMAIL_FROM_NAME"
+	envEmailBaseTemplate = "MF_EMAIL_BASE_TEMPLATE"
 
 	envHost = "MF_HOST"
 )
@@ -245,13 +245,13 @@ func loadConfig() config {
 	}
 
 	emailConfig := email.Config{
-		FromAddress: mainflux.Env(envEmailFromAddress, defEmailFromAddress),
-		FromName:    mainflux.Env(envEmailFromName, defEmailFromName),
-		Host:        mainflux.Env(envEmailHost, defEmailHost),
-		Port:        mainflux.Env(envEmailPort, defEmailPort),
-		Username:    mainflux.Env(envEmailUsername, defEmailUsername),
-		Password:    mainflux.Env(envEmailPassword, defEmailPassword),
-		Template:    mainflux.Env(envEmailTemplate, defEmailTemplate),
+		FromAddress:      mainflux.Env(envEmailFromAddress, defEmailFromAddress),
+		FromName:         mainflux.Env(envEmailFromName, defEmailFromName),
+		Host:             mainflux.Env(envEmailHost, defEmailHost),
+		Port:             mainflux.Env(envEmailPort, defEmailPort),
+		Username:         mainflux.Env(envEmailUsername, defEmailUsername),
+		Password:         mainflux.Env(envEmailPassword, defEmailPassword),
+		BaseTemplatePath: mainflux.Env(envEmailBaseTemplate, defEmailBaseTemplate),
 	}
 
 	loginDuration, err := time.ParseDuration(mainflux.Env(envLoginDuration, defLoginDuration))
