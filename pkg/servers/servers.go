@@ -4,6 +4,7 @@
 package servers
 
 import (
+	"crypto/tls"
 	"time"
 )
 
@@ -13,4 +14,5 @@ type Config struct {
 	ServerKey    string
 	Port         string
 	StopWaitTime time.Duration
+	TLSConfig    *tls.Config
 }

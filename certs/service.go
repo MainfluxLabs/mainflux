@@ -7,6 +7,8 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"crypto/x509/pkix"
+	"math/big"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/certs/pki"
@@ -44,6 +46,10 @@ type Service interface {
 
 	// RevokeCert revokes a certificate for a given serial ID
 	RevokeCert(ctx context.Context, token, serialID string) (Revoke, error)
+
+	GetCRL(ctx context.Context) ([]byte, error)
+
+	RenewCert(ctx context.Context, token, serialID string) (Cert, error)
 }
 
 // Config defines the service parameters
@@ -77,13 +83,13 @@ type certsService struct {
 }
 
 // New returns new Certs service.
-func New(auth protomfx.AuthServiceClient, certs Repository, sdk mfsdk.SDK, config Config, pki pki.Agent) Service {
+func New(auth protomfx.AuthServiceClient, certs Repository, sdk mfsdk.SDK, config Config, pkiAgent pki.Agent) Service {
 	return &certsService{
 		certsRepo: certs,
 		sdk:       sdk,
 		auth:      auth,
 		conf:      config,
-		pki:       pki,
+		pki:       pkiAgent,
 	}
 }
 
@@ -92,7 +98,7 @@ type Revoke struct {
 	RevocationTime time.Time `mapstructure:"revocation_time"`
 }
 
-// Cert defines the certificate paremeters
+// Cert defines the certificate parameters
 type Cert struct {
 	OwnerID        string    `json:"owner_id" mapstructure:"owner_id"`
 	ThingID        string    `json:"thing_id" mapstructure:"thing_id"`
@@ -116,7 +122,7 @@ func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, tt
 		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 
-	cert, err := cs.pki.IssueCert(thing.Key, ttl, keyType, keyBits)
+	pkiCert, err := cs.pki.IssueCert(thing.Key, ttl, keyType, keyBits)
 	if err != nil {
 		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
@@ -124,48 +130,41 @@ func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, tt
 	c := Cert{
 		ThingID:        thingID,
 		OwnerID:        owner.GetId(),
-		ClientCert:     cert.ClientCert,
-		IssuingCA:      cert.IssuingCA,
-		CAChain:        cert.CAChain,
-		ClientKey:      cert.ClientKey,
-		PrivateKeyType: cert.PrivateKeyType,
-		Serial:         cert.Serial,
-		Expire:         cert.Expire,
+		ClientCert:     pkiCert.ClientCert,
+		IssuingCA:      pkiCert.IssuingCA,
+		CAChain:        pkiCert.CAChain,
+		ClientKey:      pkiCert.ClientKey,
+		PrivateKeyType: pkiCert.PrivateKeyType,
+		Serial:         pkiCert.Serial,
+		Expire:         pkiCert.Expire,
 	}
 
-	_, err = cs.certsRepo.Save(context.Background(), c)
-	return c, err
+	_, err = cs.certsRepo.Save(ctx, c)
+	if err != nil {
+		return Cert{}, err
+	}
+
+	return c, nil
 }
 
-func (cs *certsService) RevokeCert(ctx context.Context, token, thingID string) (Revoke, error) {
+func (cs *certsService) RevokeCert(ctx context.Context, token, serialID string) (Revoke, error) {
 	var revoke Revoke
+
 	u, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
 		return revoke, err
 	}
-	thing, err := cs.sdk.GetThing(thingID, token)
+
+	_, err = cs.certsRepo.RetrieveBySerial(ctx, u.GetId(), serialID)
 	if err != nil {
 		return revoke, errors.Wrap(ErrFailedCertRevocation, err)
 	}
 
-	// TODO: Replace offset and limit
-	offset, limit := uint64(0), uint64(10000)
-	cp, err := cs.certsRepo.RetrieveByThing(ctx, u.GetId(), thing.ID, offset, limit)
-	if err != nil {
-		return revoke, errors.Wrap(ErrFailedCertRevocation, err)
+	if err = cs.certsRepo.Remove(ctx, u.GetId(), serialID); err != nil {
+		return revoke, errors.Wrap(errFailedToRemoveCertFromDB, err)
 	}
 
-	for _, c := range cp.Certs {
-		revTime, err := cs.pki.Revoke(c.Serial)
-		if err != nil {
-			return revoke, errors.Wrap(ErrFailedCertRevocation, err)
-		}
-		revoke.RevocationTime = revTime
-		if err = cs.certsRepo.Remove(context.Background(), u.GetId(), c.Serial); err != nil {
-			return revoke, errors.Wrap(errFailedToRemoveCertFromDB, err)
-		}
-	}
-
+	revoke.RevocationTime = time.Now()
 	return revoke, nil
 }
 
@@ -178,15 +177,6 @@ func (cs *certsService) ListCerts(ctx context.Context, token, thingID string, of
 	cp, err := cs.certsRepo.RetrieveByThing(ctx, u.GetId(), thingID, offset, limit)
 	if err != nil {
 		return Page{}, err
-	}
-
-	for i, cert := range cp.Certs {
-		vcert, err := cs.pki.Read(cert.Serial)
-		if err != nil {
-			return Page{}, err
-		}
-		cp.Certs[i].ClientCert = vcert.ClientCert
-		cp.Certs[i].ClientKey = vcert.ClientKey
 	}
 
 	return cp, nil
@@ -212,17 +202,45 @@ func (cs *certsService) ViewCert(ctx context.Context, token, serialID string) (C
 		return Cert{}, err
 	}
 
-	vcert, err := cs.pki.Read(serialID)
+	return cert, nil
+}
+
+func (cs *certsService) GetCRL(ctx context.Context) ([]byte, error) {
+	serials, err := cs.certsRepo.RetrieveRevokedSerials(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var revokedCerts []pkix.RevokedCertificate
+	for _, serial := range serials {
+		serialNum := new(big.Int)
+		if _, ok := serialNum.SetString(serial, 10); !ok {
+			continue
+		}
+
+		revokedCerts = append(revokedCerts, pkix.RevokedCertificate{
+			SerialNumber:   serialNum,
+			RevocationTime: time.Now(),
+		})
+	}
+
+	return cs.pki.CreateCRL(revokedCerts)
+}
+
+func (cs *certsService) RenewCert(ctx context.Context, token, serialID string) (Cert, error) {
+	u, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
 		return Cert{}, err
 	}
 
-	c := Cert{
-		ThingID:    cert.ThingID,
-		ClientCert: vcert.ClientCert,
-		Serial:     cert.Serial,
-		Expire:     cert.Expire,
+	oldCert, err := cs.certsRepo.RetrieveBySerial(ctx, u.GetId(), serialID)
+	if err != nil {
+		return Cert{}, err
 	}
 
-	return c, nil
+	if time.Until(oldCert.Expire) > 30*24*time.Hour {
+		return Cert{}, errors.New("certificate not eligible for renewal yet")
+	}
+
+	return cs.IssueCert(ctx, token, oldCert.ThingID, "8760h", 2048, "rsa")
 }

@@ -6,10 +6,13 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"encoding/pem"
+	"fmt"
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/certs"
+	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	kithttp "github.com/go-kit/kit/transport/http"
@@ -18,7 +21,7 @@ import (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc certs.Service, logger logger.Logger) http.Handler {
+func MakeHandler(svc certs.Service, pkiAgent pki.Agent, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
@@ -49,6 +52,20 @@ func MakeHandler(svc certs.Service, logger logger.Logger) http.Handler {
 	r.Get("/serials/:id", kithttp.NewServer(
 		listSerials(svc),
 		decodeListCerts,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/crl", kithttp.NewServer(
+		getCRL(svc),
+		decodeGetCRL,
+		encodeCRL,
+		opts...,
+	))
+
+	r.Post("/certs/:id/renew", kithttp.NewServer(
+		renewCert(svc),
+		decodeViewCert,
 		encodeResponse,
 		opts...,
 	))
@@ -96,6 +113,18 @@ func decodeListCerts(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
+func decodeGetCRL(_ context.Context, r *http.Request) (interface{}, error) {
+	return nil, nil
+}
+
+func encodeCRL(_ context.Context, w http.ResponseWriter, response interface{}) error {
+	w.Header().Set("Content-Type", "application/pkix-crl")
+	w.WriteHeader(http.StatusOK)
+	crl := response.([]byte)
+	_, err := w.Write(crl)
+	return err
+}
+
 func decodeViewCert(_ context.Context, r *http.Request) (interface{}, error) {
 	req := viewReq{
 		token:    apiutil.ExtractBearerToken(r),
@@ -130,4 +159,30 @@ func decodeRevokeCerts(_ context.Context, r *http.Request) (interface{}, error) 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	apiutil.EncodeError(err, w)
 	apiutil.WriteErrorResponse(err, w)
+}
+
+func verifyClientCertMiddleware(pkiAgent pki.Agent, logger logger.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.TLS != nil && len(r.TLS.PeerCertificates) > 0 {
+				clientCert := r.TLS.PeerCertificates[0]
+
+				certPEM := string(pem.EncodeToMemory(&pem.Block{
+					Type:  "CERTIFICATE",
+					Bytes: clientCert.Raw,
+				}))
+
+				if _, err := pkiAgent.VerifyCert(certPEM); err != nil {
+					logger.Warn(fmt.Sprintf("Client cert verification failed: %s", err))
+					encodeError(r.Context(), err, w)
+					return
+				}
+
+				ctx := context.WithValue(r.Context(), "client_cert", clientCert)
+				r = r.WithContext(ctx)
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
 }
