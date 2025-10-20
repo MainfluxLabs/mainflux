@@ -130,7 +130,13 @@ func (rs *rulesService) ViewRule(ctx context.Context, token, id string) (Rule, e
 }
 
 func (rs *rulesService) UpdateRule(ctx context.Context, token string, rule Rule) error {
-	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Editor}); err != nil {
+	r, err := rs.rules.RetrieveByID(ctx, rule.ID)
+	if err != nil {
+		return err
+	}
+
+	req := &protomfx.UserAccessReq{Token: token, Id: r.GroupID, Action: things.Editor}
+	if _, err := rs.things.CanUserAccessGroup(ctx, req); err != nil {
 		return err
 	}
 
