@@ -7,6 +7,8 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"crypto/x509/pkix"
+	"math/big"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/certs/pki"
@@ -44,6 +46,10 @@ type Service interface {
 
 	// RevokeCert revokes a certificate for a given serial ID
 	RevokeCert(ctx context.Context, token, serialID string) (Revoke, error)
+
+	GetCRL(ctx context.Context) ([]byte, error)
+
+	RenewCert(ctx context.Context, token, serialID string) (Cert, error)
 }
 
 // Config defines the service parameters
@@ -197,4 +203,44 @@ func (cs *certsService) ViewCert(ctx context.Context, token, serialID string) (C
 	}
 
 	return cert, nil
+}
+
+func (cs *certsService) GetCRL(ctx context.Context) ([]byte, error) {
+	serials, err := cs.certsRepo.RetrieveRevokedSerials(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var revokedCerts []pkix.RevokedCertificate
+	for _, serial := range serials {
+		serialNum := new(big.Int)
+		if _, ok := serialNum.SetString(serial, 10); !ok {
+			continue
+		}
+
+		revokedCerts = append(revokedCerts, pkix.RevokedCertificate{
+			SerialNumber:   serialNum,
+			RevocationTime: time.Now(),
+		})
+	}
+
+	return cs.pki.CreateCRL(revokedCerts)
+}
+
+func (cs *certsService) RenewCert(ctx context.Context, token, serialID string) (Cert, error) {
+	u, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
+	if err != nil {
+		return Cert{}, err
+	}
+
+	oldCert, err := cs.certsRepo.RetrieveBySerial(ctx, u.GetId(), serialID)
+	if err != nil {
+		return Cert{}, err
+	}
+
+	if time.Until(oldCert.Expire) > 30*24*time.Hour {
+		return Cert{}, errors.New("certificate not eligible for renewal yet")
+	}
+
+	return cs.IssueCert(ctx, token, oldCert.ThingID, "8760h", 2048, "rsa")
 }
