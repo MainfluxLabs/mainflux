@@ -15,7 +15,6 @@ const (
 )
 
 type ruleReq struct {
-	ProfileID   string            `json:"profile_id"`
 	Name        string            `json:"name"`
 	Description string            `json:"description,omitempty"`
 	Conditions  []rules.Condition `json:"conditions"`
@@ -24,9 +23,9 @@ type ruleReq struct {
 }
 
 type createRulesReq struct {
-	token     string
-	profileID string
-	Rules     []ruleReq `json:"rules"`
+	token   string
+	groupID string
+	Rules   []ruleReq `json:"rules"`
 }
 
 func (req createRulesReq) validate() error {
@@ -34,8 +33,8 @@ func (req createRulesReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.profileID == "" {
-		return apiutil.ErrMissingProfileID
+	if req.groupID == "" {
+		return apiutil.ErrMissingGroupID
 	}
 
 	if len(req.Rules) < minLen {
@@ -110,24 +109,6 @@ func (req *viewRuleReq) validate() error {
 	return nil
 }
 
-type listRulesByProfileReq struct {
-	token        string
-	profileID    string
-	pageMetadata apiutil.PageMetadata
-}
-
-func (req listRulesByProfileReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.profileID == "" {
-		return apiutil.ErrMissingProfileID
-	}
-
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
-}
-
 type listRulesByGroupReq struct {
 	token        string
 	groupID      string
@@ -159,10 +140,6 @@ func (req updateRuleReq) validate() error {
 
 	if req.id == "" {
 		return apiutil.ErrMissingRuleID
-	}
-
-	if req.ProfileID == "" {
-		return apiutil.ErrMissingProfileID
 	}
 
 	return req.ruleReq.validate()

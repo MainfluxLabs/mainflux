@@ -10,12 +10,11 @@ import (
 )
 
 const (
-	saveRule              = "save_rule"
-	retrieveRuleByID      = "retrieve_rule_by_id"
-	retrieveRuleByProfile = "retrieve_rule_by_profile"
-	retrieveRuleByGroup   = "retrieve_rule_by_group"
-	updateRule            = "update_rule"
-	removeRule            = "remove_rule"
+	saveRule            = "save_rule"
+	retrieveRuleByID    = "retrieve_rule_by_id"
+	retrieveRuleByGroup = "retrieve_rule_by_group"
+	updateRule          = "update_rule"
+	removeRule          = "remove_rule"
 )
 
 var (
@@ -49,14 +48,6 @@ func (rpm ruleRepositoryMiddleware) RetrieveByID(ctx context.Context, id string)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return rpm.repo.RetrieveByID(ctx, id)
-}
-
-func (rpm ruleRepositoryMiddleware) RetrieveByProfile(ctx context.Context, profileID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
-	span := dbutil.CreateSpan(ctx, rpm.tracer, retrieveRuleByProfile)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return rpm.repo.RetrieveByProfile(ctx, profileID, pm)
 }
 
 func (rpm ruleRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
