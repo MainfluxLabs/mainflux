@@ -10,4 +10,10 @@ CREATE TABLE IF NOT EXISTS rules (
     operator    VARCHAR(3) NOT NULL,
     actions     JSONB NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS rules_things (
+    rule_id   UUID NOT NULL REFERENCES rules(id) ON DELETE CASCADE,
+    thing_id  UUID NOT NULL,
+    PRIMARY KEY (rule_id, thing_id)
+);
 ```
