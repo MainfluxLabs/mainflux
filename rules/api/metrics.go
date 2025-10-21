@@ -54,13 +54,13 @@ func (ms metricsMiddleware) ListRulesByGroup(ctx context.Context, token, groupID
 	return ms.svc.ListRulesByGroup(ctx, token, groupID, pm)
 }
 
-func (ms metricsMiddleware) ListThingsByRule(ctx context.Context, token, ruleID string) ([]string, error) {
+func (ms metricsMiddleware) ListThingIDsByRule(ctx context.Context, token, ruleID string) ([]string, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "list_things_by_rule").Add(1)
-		ms.latency.With("method", "list_things_by_rule").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "list_thing_ids_by_rule").Add(1)
+		ms.latency.With("method", "list_thing_ids_by_rule").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListThingsByRule(ctx, token, ruleID)
+	return ms.svc.ListThingIDsByRule(ctx, token, ruleID)
 }
 
 func (ms metricsMiddleware) ViewRule(ctx context.Context, token, id string) (rules.Rule, error) {

@@ -52,7 +52,7 @@ func MakeHandler(tracer opentracing.Tracer, svc rules.Service, logger log.Logger
 		opts...,
 	))
 	r.Get("/rules/:id/things", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_things_by_rule")(listThingsByRuleEndpoint(svc)),
+		kitot.TraceServer(tracer, "list_thing_ids_by_rule")(listThingIDsByRuleEndpoint(svc)),
 		decodeRuleReq,
 		encodeResponse,
 		opts...,

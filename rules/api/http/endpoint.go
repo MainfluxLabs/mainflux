@@ -71,14 +71,14 @@ func listRulesByGroupEndpoint(svc rules.Service) endpoint.Endpoint {
 	}
 }
 
-func listThingsByRuleEndpoint(svc rules.Service) endpoint.Endpoint {
+func listThingIDsByRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(ruleReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		ids, err := svc.ListThingsByRule(ctx, req.token, req.id)
+		ids, err := svc.ListThingIDsByRule(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}

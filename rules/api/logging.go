@@ -62,9 +62,9 @@ func (lm loggingMiddleware) ListRulesByGroup(ctx context.Context, token, groupID
 	return lm.svc.ListRulesByGroup(ctx, token, groupID, pm)
 }
 
-func (lm loggingMiddleware) ListThingsByRule(ctx context.Context, token, ruleID string) (_ []string, err error) {
+func (lm loggingMiddleware) ListThingIDsByRule(ctx context.Context, token, ruleID string) (_ []string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_things_by_rule for id %s took %s to complete", ruleID, time.Since(begin))
+		message := fmt.Sprintf("Method list_thing_ids_by_rule for id %s took %s to complete", ruleID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -72,7 +72,7 @@ func (lm loggingMiddleware) ListThingsByRule(ctx context.Context, token, ruleID 
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListThingsByRule(ctx, token, ruleID)
+	return lm.svc.ListThingIDsByRule(ctx, token, ruleID)
 }
 
 func (lm loggingMiddleware) ViewRule(ctx context.Context, token, id string) (_ rules.Rule, err error) {

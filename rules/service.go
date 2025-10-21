@@ -30,10 +30,8 @@ type Service interface {
 	// ListRulesByGroup retrieves a paginated list of rules by group.
 	ListRulesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (RulesPage, error)
 
-	// TODO: Consider renaming it to ListThingIDsByRule
-
-	// ListThingsByRule retrieves a list of thing IDs attached to the given rule ID.
-	ListThingsByRule(ctx context.Context, token, ruleID string) ([]string, error)
+	// ListThingIDsByRule retrieves a list of thing IDs attached to the given rule ID.
+	ListThingIDsByRule(ctx context.Context, token, ruleID string) ([]string, error)
 
 	// ViewRule retrieves a specific rule by its ID.
 	ViewRule(ctx context.Context, token, id string) (Rule, error)
@@ -144,7 +142,7 @@ func (rs *rulesService) ListRulesByGroup(ctx context.Context, token, groupID str
 	return rules, nil
 }
 
-func (rs *rulesService) ListThingsByRule(ctx context.Context, token, ruleID string) ([]string, error) {
+func (rs *rulesService) ListThingIDsByRule(ctx context.Context, token, ruleID string) ([]string, error) {
 	rule, err := rs.rules.RetrieveByID(ctx, ruleID)
 	if err != nil {
 		return []string{}, err
@@ -154,7 +152,7 @@ func (rs *rulesService) ListThingsByRule(ctx context.Context, token, ruleID stri
 		return []string{}, err
 	}
 
-	return rs.rules.RetrieveThingsByRule(ctx, ruleID)
+	return rs.rules.RetrieveThingIDsByRule(ctx, ruleID)
 }
 
 func (rs *rulesService) ViewRule(ctx context.Context, token, id string) (Rule, error) {
