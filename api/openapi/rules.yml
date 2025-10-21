@@ -48,6 +48,98 @@ paths:
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /things/{thingId}/rules:
+    get:
+      summary: Retrieves rules assigned to a thing
+      description: Retrieves list of rules assigned to a specific thing identified by the provided ID.
+      tags:
+        - rules
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListRulesRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    post:
+      summary: Assigns rules to a thing
+      description: Assigns rules to a specific thing identified by the provided ID.
+      tags:
+        - rules
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      requestBody:
+        $ref: "#/components/requestBodies/ThingRulesReq"
+      responses:
+        '200':
+          description: Rules assigned successfully.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Thing or one of the rules does not exist.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    patch:
+      summary: Unassigns rules from a thing
+      description: Unassigns rules from a specific thing identified by the provided ID.
+      tags:
+        - rules
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      requestBody:
+        $ref: "#/components/requestBodies/ThingRulesReq"
+      responses:
+        '200':
+          description: Rules unassigned successfully.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Thing or one of the rules does not exist.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /rules/{ruleId}/things:
+    get:
+      summary: Retrieves thing IDs assigned to a rule
+      description: Retrieves list of thing IDs that have the specified rule assigned.
+      tags:
+        - rules
+      parameters:
+        - $ref: "#/components/parameters/RuleId"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListThingIDsRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Rule does not exist.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /rules/{ruleId}:
     get:
       summary: Retrieves rule info
@@ -183,6 +275,15 @@ components:
           items:
             $ref: "#/components/schemas/Action"
       required: [ id, group_id, name, conditions, actions ]
+    ThingIDsRes:
+      type: object
+      properties:
+        thing_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          example: ["123e4567-e89b-12d3-a456-426614174000", "123e4567-e89b-12d3-a456-426614174001"]
 
   parameters:
     RuleId:
@@ -196,12 +297,21 @@ components:
       required: true
     GroupId:
       name: groupId
-      description: Group identifier for which the rules are being created/retrieved.
+      description: Unique group identifier.
       in: path
       schema:
         type: string
         format: uuid
       example: "321e4567-e89b-12d3-a456-426614174def"
+      required: true
+    ThingId:
+      name: thingId
+      description: Unique thing identifier.
+      in: path
+      schema:
+        type: string
+        format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174000"
       required: true
 
   requestBodies:
@@ -221,7 +331,7 @@ components:
               - rules
           example:
             rules:
-                name: "Temperature and Humidity Alert"
+              - name: "Temperature and Humidity Alert"
                 description: "Triggers when temperature exceeds 45°C and humidity drops below 20%"
                 conditions:
                   - field: "temperature"
@@ -270,6 +380,25 @@ components:
             rule_ids:
               - "789e4567-e89b-12d3-a456-426614174abc"
               - "654e4567-e89b-12d3-a456-426614174999"
+    ThingRulesReq:
+      description: JSON-formatted document describing the rule identifiers to assign/unassign.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              rule_ids:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+            required:
+              - rule_ids
+          example:
+            rule_ids:
+              - "789e4567-e89b-12d3-a456-426614174abc"
+              - "654e4567-e89b-12d3-a456-426614174999"
 
   responses:
     CreateRulesRes:
@@ -281,22 +410,22 @@ components:
             items:
               $ref: "#/components/schemas/RuleResSchema"
           example:
-            id: "84d1be5e-3511-4d15-aafa-b1bb4c20bca4"
-            group_id: "fc1e40aa-c5af-4a1d-b1e4-37f2e4bb50d1"
-            name: "Temperature and Humidity Alert"
-            description: "Triggers when temperature exceeds 45°C and humidity drops below 20%"
-            conditions:
-              - field: "temperature"
-                comparator: ">"
-                threshold: 45
-              - field: "humidity"
-                comparator: "<"
-                threshold: 20
-            operator: "AND"
-            actions:
-              - type: "smtp"
-                id: "513e2557-e09b-42d3-s456-425614175403"
-              - type: "alarm"
+            - id: "84d1be5e-3511-4d15-aafa-b1bb4c20bca4"
+              group_id: "fc1e40aa-c5af-4a1d-b1e4-37f2e4bb50d1"
+              name: "Temperature and Humidity Alert"
+              description: "Triggers when temperature exceeds 45°C and humidity drops below 20%"
+              conditions:
+                - field: "temperature"
+                  comparator: ">"
+                  threshold: 45
+                - field: "humidity"
+                  comparator: "<"
+                  threshold: 20
+              operator: "AND"
+              actions:
+                - type: "smtp"
+                  id: "513e2557-e09b-42d3-s456-425614175403"
+                - type: "alarm"
     RuleRes:
       description: Data retrieved.
       content:
@@ -309,11 +438,11 @@ components:
             name: "Temperature Alert"
             description: "Triggers when temperature exceeds 45°C"
             conditions:
-                field: "temperature"
+              - field: "temperature"
                 comparator: ">"
                 threshold: 45
             actions:
-                type: "smtp"
+              - type: "smtp"
                 id: "513e2557-e09b-42d3-s456-425614175403"
     ListRulesRes:
       description: Rules retrieved.
@@ -330,17 +459,27 @@ components:
               - rules
           example:
             rules:
-              id: "789e4567-e89b-12d3-a456-426614174abc"
-              group_id: "321e4567-e89b-12d3-a456-426614174def"
-              name: "Temperature Alert"
-              description: "Triggers when temperature exceeds 45°C"
-              conditions:
-                  field: "temperature"
-                  comparator: ">"
-                  threshold: 45
-              actions:
-                  type: "smtp"
-                  id: "513e2557-e09b-42d3-s456-425614175403"
+              - id: "789e4567-e89b-12d3-a456-426614174abc"
+                group_id: "321e4567-e89b-12d3-a456-426614174def"
+                name: "Temperature Alert"
+                description: "Triggers when temperature exceeds 45°C"
+                conditions:
+                  - field: "temperature"
+                    comparator: ">"
+                    threshold: 45
+                actions:
+                  - type: "smtp"
+                    id: "513e2557-e09b-42d3-s456-425614175403"
+    ListThingIDsRes:
+      description: Thing IDs retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ThingIDsRes"
+          example:
+            thing_ids:
+              - "123e4567-e89b-12d3-a456-426614174000"
+              - "123e4567-e89b-12d3-a456-426614174001"
     ServiceError:
       description: Unexpected server-side error occurred.
       content:
