@@ -36,6 +36,15 @@ func (ms metricsMiddleware) CreateRules(ctx context.Context, token, groupID stri
 	return ms.svc.CreateRules(ctx, token, groupID, rules...)
 }
 
+func (ms metricsMiddleware) ListRulesByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_rules_by_thing").Add(1)
+		ms.latency.With("method", "list_rules_by_thing").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListRulesByThing(ctx, token, thingID, pm)
+}
+
 func (ms metricsMiddleware) ListRulesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_rules_by_group").Add(1)
@@ -43,6 +52,15 @@ func (ms metricsMiddleware) ListRulesByGroup(ctx context.Context, token, groupID
 	}(time.Now())
 
 	return ms.svc.ListRulesByGroup(ctx, token, groupID, pm)
+}
+
+func (ms metricsMiddleware) ListThingsByRule(ctx context.Context, token, ruleID string) ([]string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_things_by_rule").Add(1)
+		ms.latency.With("method", "list_things_by_rule").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListThingsByRule(ctx, token, ruleID)
 }
 
 func (ms metricsMiddleware) ViewRule(ctx context.Context, token, id string) (rules.Rule, error) {
@@ -70,6 +88,24 @@ func (ms metricsMiddleware) RemoveRules(ctx context.Context, token string, ids .
 	}(time.Now())
 
 	return ms.svc.RemoveRules(ctx, token, ids...)
+}
+
+func (ms metricsMiddleware) AssignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "assign_rules").Add(1)
+		ms.latency.With("method", "assign_rules").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.AssignRules(ctx, token, thingID, ruleIDs...)
+}
+
+func (ms metricsMiddleware) UnassignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "unassign_rules").Add(1)
+		ms.latency.With("method", "unassign_rules").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.UnassignRules(ctx, token, thingID, ruleIDs...)
 }
 
 func (ms metricsMiddleware) Publish(ctx context.Context, message protomfx.Message) error {
