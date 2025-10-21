@@ -57,12 +57,9 @@ type RuleRepository interface {
 	// Remove removes the rules having the provided identifiers.
 	Remove(ctx context.Context, ids ...string) error
 
-	// AssignByThing assigns rules to the specified thing.
-	AssignByThing(ctx context.Context, thingID string, ruleIDs ...string) error
+	// Assign assigns rules to the specified thing.
+	Assign(ctx context.Context, thingID string, ruleIDs ...string) error
 
-	// UnassignByThing removes rules from the specified thing.
-	UnassignByThing(ctx context.Context, thingID string, ruleIDs ...string) error
-
-	// Unassign removes all assignments related to the specified rule.
-	Unassign(ctx context.Context, ruleID string) error
+	// Unassign removes rules from the specified thing.
+	Unassign(ctx context.Context, thingID string, ruleIDs ...string) error
 }

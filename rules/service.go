@@ -194,10 +194,6 @@ func (rs *rulesService) RemoveRules(ctx context.Context, token string, ids ...st
 		if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Editor}); err != nil {
 			return err
 		}
-
-		if err := rs.rules.Unassign(ctx, id); err != nil {
-			return err
-		}
 	}
 
 	return rs.rules.Remove(ctx, ids...)
@@ -224,7 +220,7 @@ func (rs *rulesService) AssignRules(ctx context.Context, token, thingID string, 
 		}
 	}
 
-	if err := rs.rules.AssignByThing(ctx, thingID, ruleIDs...); err != nil {
+	if err := rs.rules.Assign(ctx, thingID, ruleIDs...); err != nil {
 		return err
 	}
 
@@ -252,7 +248,7 @@ func (rs *rulesService) UnassignRules(ctx context.Context, token, thingID string
 		}
 	}
 
-	if err := rs.rules.UnassignByThing(ctx, thingID, ruleIDs...); err != nil {
+	if err := rs.rules.Unassign(ctx, thingID, ruleIDs...); err != nil {
 		return err
 	}
 

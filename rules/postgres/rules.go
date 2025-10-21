@@ -205,7 +205,7 @@ func (rr ruleRepository) Remove(ctx context.Context, ids ...string) error {
 	return nil
 }
 
-func (rr ruleRepository) AssignByThing(ctx context.Context, thingID string, ruleIDs ...string) error {
+func (rr ruleRepository) Assign(ctx context.Context, thingID string, ruleIDs ...string) error {
 	tx, err := rr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(dbutil.ErrCreateEntity, err)
@@ -242,7 +242,7 @@ func (rr ruleRepository) AssignByThing(ctx context.Context, thingID string, rule
 	return nil
 }
 
-func (rr ruleRepository) UnassignByThing(ctx context.Context, thingID string, ruleIDs ...string) error {
+func (rr ruleRepository) Unassign(ctx context.Context, thingID string, ruleIDs ...string) error {
 	q := `DELETE FROM rules_things WHERE rule_id = :rule_id AND thing_id = :thing_id;`
 
 	for _, ruleID := range ruleIDs {
@@ -254,20 +254,6 @@ func (rr ruleRepository) UnassignByThing(ctx context.Context, thingID string, ru
 		if _, err := rr.db.NamedExecContext(ctx, q, params); err != nil {
 			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
-	}
-
-	return nil
-}
-
-func (rr ruleRepository) Unassign(ctx context.Context, ruleID string) error {
-	q := `DELETE FROM rules_things WHERE rule_id = :rule_id;`
-
-	params := map[string]interface{}{
-		"rule_id": ruleID,
-	}
-
-	if _, err := rr.db.NamedExecContext(ctx, q, params); err != nil {
-		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil

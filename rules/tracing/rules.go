@@ -17,8 +17,7 @@ const (
 	retrieveThingsByRule = "retrieveThingsByRule"
 	updateRule           = "update_rule"
 	removeRule           = "remove_rule"
-	assignRulesByThing   = "assign_rules_by_thing"
-	unassignRulesByThing = "unassign_rules_by_thing"
+	assignRules          = "assign_rules"
 	unassignRules        = "unassign_rules"
 )
 
@@ -95,26 +94,18 @@ func (rpm ruleRepositoryMiddleware) Remove(ctx context.Context, ids ...string) e
 	return rpm.repo.Remove(ctx, ids...)
 }
 
-func (rpm ruleRepositoryMiddleware) AssignByThing(ctx context.Context, thingID string, ruleIDs ...string) error {
-	span := dbutil.CreateSpan(ctx, rpm.tracer, assignRulesByThing)
+func (rpm ruleRepositoryMiddleware) Assign(ctx context.Context, thingID string, ruleIDs ...string) error {
+	span := dbutil.CreateSpan(ctx, rpm.tracer, assignRules)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return rpm.repo.AssignByThing(ctx, thingID, ruleIDs...)
+	return rpm.repo.Assign(ctx, thingID, ruleIDs...)
 }
 
-func (rpm ruleRepositoryMiddleware) UnassignByThing(ctx context.Context, thingID string, ruleIDs ...string) error {
-	span := dbutil.CreateSpan(ctx, rpm.tracer, unassignRulesByThing)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return rpm.repo.UnassignByThing(ctx, thingID, ruleIDs...)
-}
-
-func (rpm ruleRepositoryMiddleware) Unassign(ctx context.Context, ruleID string) error {
+func (rpm ruleRepositoryMiddleware) Unassign(ctx context.Context, thingID string, ruleIDs ...string) error {
 	span := dbutil.CreateSpan(ctx, rpm.tracer, unassignRules)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return rpm.repo.Unassign(ctx, ruleID)
+	return rpm.repo.Unassign(ctx, thingID, ruleIDs...)
 }
