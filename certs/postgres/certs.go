@@ -202,6 +202,33 @@ func (cr certsRepository) RetrieveBySerial(ctx context.Context, ownerID, serialI
 	return c, nil
 }
 
+func (cr certsRepository) RetrieveRevokedSerials(ctx context.Context) ([]string, error) {
+	q := `SELECT serial FROM revoked_certs ORDER BY revoked_at DESC`
+	rows, err := cr.db.QueryContext(ctx, q)
+	if err != nil {
+		cr.log.Error(fmt.Sprintf("Failed to retrieve revoked serials due to %s", err))
+		return nil, err
+	}
+	defer rows.Close()
+
+	var serials []string
+	for rows.Next() {
+		var serial string
+		if err := rows.Scan(&serial); err != nil {
+			cr.log.Error(fmt.Sprintf("Failed to read revoked serial due to %s", err))
+			return nil, err
+		}
+		serials = append(serials, serial)
+	}
+
+	if err := rows.Err(); err != nil {
+		cr.log.Error(fmt.Sprintf("Error iterating revoked serials: %s", err))
+		return nil, err
+	}
+
+	return serials, nil
+}
+
 func (cr certsRepository) rollback(content string, tx *sqlx.Tx, err error) {
 	cr.log.Error(fmt.Sprintf("%s %s", content, err))
 

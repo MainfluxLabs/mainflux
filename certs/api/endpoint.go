@@ -94,3 +94,36 @@ func revokeCert(svc certs.Service) endpoint.Endpoint {
 		return svc.RevokeCert(ctx, req.token, req.certID)
 	}
 }
+
+func getCRL(svc certs.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		crl, err := svc.GetCRL(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return crl, nil
+	}
+}
+
+func renewCert(svc certs.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(viewReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		cert, err := svc.RenewCert(ctx, req.token, req.serialID)
+		if err != nil {
+			return certsRes{}, err
+		}
+
+		return certsRes{
+			CertSerial: cert.Serial,
+			ThingID:    cert.ThingID,
+			ClientCert: cert.ClientCert,
+			ClientKey:  cert.ClientKey,
+			Expiration: cert.Expire,
+			created:    true,
+		}, nil
+	}
+}
