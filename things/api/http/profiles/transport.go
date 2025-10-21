@@ -20,6 +20,7 @@ import (
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
 	"github.com/opentracing/opentracing-go"
+	"google.golang.org/grpc/status"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -376,6 +377,12 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
+	if st, ok := status.FromError(err); ok {
+		apiutil.EncodeGRPCError(st, w)
+		apiutil.WriteErrorResponse(err, w)
+		return
+	}
+
 	switch {
 	case errors.Contains(err, dbutil.ErrScanMetadata):
 		w.WriteHeader(http.StatusUnprocessableEntity)

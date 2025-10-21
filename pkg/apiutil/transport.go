@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -16,6 +17,8 @@ import (
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
 	"github.com/gofrs/uuid"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -116,6 +119,65 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 	}
 }
 
+// Map a gRPC-error Status code to an HTTP status code and write it to w
+func EncodeGRPCError(st *status.Status, w http.ResponseWriter) {
+	switch st.Code() {
+	case codes.OK:
+		w.WriteHeader(http.StatusOK)
+
+	case codes.Canceled:
+		w.WriteHeader(http.StatusRequestTimeout)
+
+	case codes.Unknown:
+		w.WriteHeader(http.StatusInternalServerError)
+
+	case codes.InvalidArgument:
+		w.WriteHeader(http.StatusBadRequest)
+
+	case codes.DeadlineExceeded:
+		w.WriteHeader(http.StatusGatewayTimeout)
+
+	case codes.NotFound:
+		w.WriteHeader(http.StatusNotFound)
+
+	case codes.AlreadyExists:
+		w.WriteHeader(http.StatusConflict)
+
+	case codes.PermissionDenied:
+		w.WriteHeader(http.StatusForbidden)
+
+	case codes.ResourceExhausted:
+		w.WriteHeader(http.StatusTooManyRequests)
+
+	case codes.FailedPrecondition:
+		w.WriteHeader(http.StatusPreconditionFailed)
+
+	case codes.Aborted:
+		w.WriteHeader(http.StatusConflict)
+
+	case codes.OutOfRange:
+		w.WriteHeader(http.StatusBadRequest)
+
+	case codes.Unimplemented:
+		w.WriteHeader(http.StatusNotImplemented)
+
+	case codes.Internal:
+		w.WriteHeader(http.StatusInternalServerError)
+
+	case codes.Unavailable:
+		w.WriteHeader(http.StatusServiceUnavailable)
+
+	case codes.DataLoss:
+		w.WriteHeader(http.StatusInternalServerError)
+
+	case codes.Unauthenticated:
+		w.WriteHeader(http.StatusUnauthorized)
+
+	default:
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
 func EncodeError(err error, w http.ResponseWriter) {
 	switch {
 	case errors.Contains(err, errors.ErrAuthentication),
@@ -190,9 +252,19 @@ func EncodeError(err error, w http.ResponseWriter) {
 }
 
 func WriteErrorResponse(err error, w http.ResponseWriter) {
+	var errorMessage string
+
 	if errorVal, ok := err.(errors.Error); ok {
+		errorMessage = errorVal.Msg()
+	} else if st, ok := status.FromError(err); ok {
+		// Cut the error message short at the occurrence of the first colon, as it may expose
+		// details of wrapper errors.
+		errorMessage, _, _ = strings.Cut(st.Message(), " :")
+	}
+
+	if errorMessage != "" {
 		w.Header().Set("Content-Type", ContentTypeJSON)
-		if err := json.NewEncoder(w).Encode(ErrorRes{Err: errorVal.Msg()}); err != nil {
+		if err := json.NewEncoder(w).Encode(ErrorRes{Err: errorMessage}); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 	}

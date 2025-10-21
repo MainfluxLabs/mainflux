@@ -311,6 +311,11 @@ func encodeGetGroupIDsByOrgResponse(_ context.Context, grpcRes interface{}) (int
 }
 
 func encodeError(err error) error {
+	// err is the result of another failed gRPC call - propagate it out
+	if _, ok := status.FromError(err); ok {
+		return err
+	}
+
 	switch {
 	case err == nil:
 		return nil

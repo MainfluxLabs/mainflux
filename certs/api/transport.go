@@ -15,6 +15,7 @@ import (
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"google.golang.org/grpc/status"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -128,6 +129,12 @@ func decodeRevokeCerts(_ context.Context, r *http.Request) (interface{}, error) 
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
+	if st, ok := status.FromError(err); ok {
+		apiutil.EncodeGRPCError(st, w)
+		apiutil.WriteErrorResponse(err, w)
+		return
+	}
+
 	apiutil.EncodeError(err, w)
 	apiutil.WriteErrorResponse(err, w)
 }

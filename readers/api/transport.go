@@ -21,6 +21,7 @@ import (
 	"github.com/go-zoo/bone"
 	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -347,6 +348,12 @@ func encodeBackupFileResponse(_ context.Context, w http.ResponseWriter, response
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
+	if st, ok := status.FromError(err); ok {
+		apiutil.EncodeGRPCError(st, w)
+		apiutil.WriteErrorResponse(err, w)
+		return
+	}
+
 	switch {
 	case errors.Contains(err, dbutil.ErrScanMetadata):
 		w.WriteHeader(http.StatusUnprocessableEntity)
