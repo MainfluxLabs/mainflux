@@ -8,7 +8,6 @@ import (
 
 type Rule struct {
 	ID          string
-	ProfileID   string
 	GroupID     string
 	Name        string
 	Description string
@@ -41,9 +40,6 @@ type RuleRepository interface {
 
 	// RetrieveByID retrieves a rule having the provided identifier.
 	RetrieveByID(ctx context.Context, id string) (Rule, error)
-
-	// RetrieveByProfile retrieves rules assigned to a certain profile.
-	RetrieveByProfile(ctx context.Context, profileID string, pm apiutil.PageMetadata) (RulesPage, error)
 
 	// RetrieveByGroup retrieves rules assigned to a certain group.
 	RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (RulesPage, error)

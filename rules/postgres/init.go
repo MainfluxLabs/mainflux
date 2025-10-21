@@ -69,6 +69,12 @@ func migrateDB(db *sqlx.DB) error {
 					 WHERE jsonb_typeof(conditions) = 'object'`,
 				},
 			},
+			{
+				Id: "rules_3",
+				Up: []string{
+					`ALTER TABLE rules DROP COLUMN IF EXISTS profile_id;`,
+				},
+			},
 		},
 	}
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)

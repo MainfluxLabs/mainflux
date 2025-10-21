@@ -5,14 +5,14 @@ info:
   version: 1.0.0
 
 paths:
-  /profiles/{profileId}/rules:
+  /groups/{groupId}/rules:
     post:
       summary: Adds new rules
-      description: Adds new rules to the list of rules for certain profile identified by the provided ID
+      description: Adds new rules to the list of rules for certain group identified by the provided ID
       tags:
         - rules
       parameters:
-        - $ref: "#/components/parameters/ProfileId"
+        - $ref: "#/components/parameters/GroupId"
       requestBody:
         $ref: "#/components/requestBodies/CreateRulesReq"
       responses:
@@ -28,27 +28,6 @@ paths:
           description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
-    get:
-      summary: Retrieves rules by profile
-      description: Retrieves list of rules related to a certain profile identified by the provided ID.
-      tags:
-        - rules
-      parameters:
-        - $ref: "#/components/parameters/ProfileId"
-      responses:
-        '200':
-          $ref: "#/components/responses/ListRulesRes"
-        '400':
-          description: Failed due to malformed query parameters.
-        '401':
-          description: Missing or invalid access token provided.
-        '403':
-          description: Failed to perform authorization over the entity.
-        '422':
-          description: Database can't process request.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-  /groups/{groupId}/rules:
     get:
       summary: Retrieves rules by group
       description: Retrieves list of rules related to a certain group identified by the provided ID.
@@ -158,9 +137,6 @@ components:
     RuleReqSchema:
       type: object
       properties:
-        profile_id:
-          type: string
-          example: "123e4567-e89b-12d3-a456-426614174000"
         name:
           type: string
           example: "Temperature and Humidity Alert"
@@ -186,9 +162,6 @@ components:
         id:
           type: string
           example: "789e4567-e89b-12d3-a456-426614174abc"
-        profile_id:
-          type: string
-          example: "123e4567-e89b-12d3-a456-426614174000"
         group_id:
           type: string
           example: "321e4567-e89b-12d3-a456-426614174def"
@@ -209,7 +182,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Action"
-      required: [ id, profile_id, group_id, name, conditions, actions ]
+      required: [ id, group_id, name, conditions, actions ]
 
   parameters:
     RuleId:
@@ -229,15 +202,6 @@ components:
         type: string
         format: uuid
       example: "321e4567-e89b-12d3-a456-426614174def"
-      required: true
-    ProfileId:
-      name: profileId
-      description: Profile identifier for which the rules are being created/retrieved.
-      in: path
-      schema:
-        type: string
-        format: uuid
-      example: "123e4567-e89b-12d3-a456-426614174000"
       required: true
 
   requestBodies:
@@ -279,7 +243,6 @@ components:
           schema:
             $ref: "#/components/schemas/RuleReqSchema"
           example:
-            profile_id: "123e4567-e89b-12d3-a456-426614174000"
             name: "Temperature Alert"
             description: "Triggers when temperature exceeds 50°C"
             conditions:
@@ -318,23 +281,22 @@ components:
             items:
               $ref: "#/components/schemas/RuleResSchema"
           example:
-            - id: "84d1be5e-3511-4d15-aafa-b1bb4c20bca4"
-              profile_id: "123e4567-e89b-12d3-a456-426614174000"
-              group_id: "fc1e40aa-c5af-4a1d-b1e4-37f2e4bb50d1"
-              name: "Temperature and Humidity Alert"
-              description: "Triggers when temperature exceeds 45°C and humidity drops below 20%"
-              conditions:
-                - field: "temperature"
-                  comparator: ">"
-                  threshold: 45
-                - field: "humidity"
-                  comparator: "<"
-                  threshold: 20
-              operator: "AND"
-              actions:
-                - type: "smtp"
-                  id: "513e2557-e09b-42d3-s456-425614175403"
-                - type: "alarm"
+            id: "84d1be5e-3511-4d15-aafa-b1bb4c20bca4"
+            group_id: "fc1e40aa-c5af-4a1d-b1e4-37f2e4bb50d1"
+            name: "Temperature and Humidity Alert"
+            description: "Triggers when temperature exceeds 45°C and humidity drops below 20%"
+            conditions:
+              - field: "temperature"
+                comparator: ">"
+                threshold: 45
+              - field: "humidity"
+                comparator: "<"
+                threshold: 20
+            operator: "AND"
+            actions:
+              - type: "smtp"
+                id: "513e2557-e09b-42d3-s456-425614175403"
+              - type: "alarm"
     RuleRes:
       description: Data retrieved.
       content:
@@ -343,16 +305,15 @@ components:
             $ref: "#/components/schemas/RuleResSchema"
           example:
             id: "789e4567-e89b-12d3-a456-426614174abc"
-            profile_id: "123e4567-e89b-12d3-a456-426614174000"
             group_id: "321e4567-e89b-12d3-a456-426614174def"
             name: "Temperature Alert"
             description: "Triggers when temperature exceeds 45°C"
             conditions:
-              - field: "temperature"
+                field: "temperature"
                 comparator: ">"
                 threshold: 45
             actions:
-              - type: "smtp"
+                type: "smtp"
                 id: "513e2557-e09b-42d3-s456-425614175403"
     ListRulesRes:
       description: Rules retrieved.
@@ -369,18 +330,17 @@ components:
               - rules
           example:
             rules:
-              - id: "789e4567-e89b-12d3-a456-426614174abc"
-                profile_id: "123e4567-e89b-12d3-a456-426614174000"
-                group_id: "321e4567-e89b-12d3-a456-426614174def"
-                name: "Temperature Alert"
-                description: "Triggers when temperature exceeds 45°C"
-                conditions:
-                  - field: "temperature"
-                    comparator: ">"
-                    threshold: 45
-                actions:
-                  - type: "smtp"
-                    id: "513e2557-e09b-42d3-s456-425614175403"
+              id: "789e4567-e89b-12d3-a456-426614174abc"
+              group_id: "321e4567-e89b-12d3-a456-426614174def"
+              name: "Temperature Alert"
+              description: "Triggers when temperature exceeds 45°C"
+              conditions:
+                  field: "temperature"
+                  comparator: ">"
+                  threshold: 45
+              actions:
+                  type: "smtp"
+                  id: "513e2557-e09b-42d3-s456-425614175403"
     ServiceError:
       description: Unexpected server-side error occurred.
       content:
