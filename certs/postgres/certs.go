@@ -6,7 +6,9 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/certs"
@@ -20,6 +22,72 @@ import (
 )
 
 var _ certs.Repository = (*certsRepository)(nil)
+
+// NOTE: custom type for PostgreSQL TEXT[] arrays, might delete later
+type StringArray []string
+
+func (a *StringArray) Scan(src interface{}) error {
+	if src == nil {
+		*a = []string{}
+		return nil
+	}
+
+	switch v := src.(type) {
+	case []byte:
+		return a.scanBytes(v)
+	case string:
+		return a.scanBytes([]byte(v))
+	case []string:
+		*a = v
+		return nil
+	default:
+		return fmt.Errorf("cannot scan %T to StringArray", src)
+	}
+}
+
+func (a *StringArray) scanBytes(src []byte) error {
+	str := string(src)
+
+	// Handle empty array
+	if str == "{}" || str == "" {
+		*a = []string{}
+		return nil
+	}
+
+	str = strings.TrimPrefix(str, "{")
+	str = strings.TrimSuffix(str, "}")
+
+	if str == "" {
+		*a = []string{}
+		return nil
+	}
+
+	parts := strings.Split(str, ",")
+	result := make([]string, len(parts))
+
+	for i, part := range parts {
+		part = strings.TrimSpace(part)
+		part = strings.Trim(part, "\"")
+		result[i] = part
+	}
+
+	*a = result
+	return nil
+}
+
+func (a StringArray) Value() (driver.Value, error) {
+	if len(a) == 0 {
+		return "{}", nil
+	}
+
+	quoted := make([]string, len(a))
+	for i, s := range a {
+		s = strings.ReplaceAll(s, `"`, `\"`)
+		quoted[i] = `"` + s + `"`
+	}
+
+	return "{" + strings.Join(quoted, ",") + "}", nil
+}
 
 type certsRepository struct {
 	db  *sqlx.DB
@@ -42,13 +110,13 @@ func (cr certsRepository) RetrieveAll(ctx context.Context, ownerID string, offse
 
 	certificates := []certs.Cert{}
 	for rows.Next() {
-		c := certs.Cert{}
-		if err := rows.Scan(&c.ThingID, &c.OwnerID, &c.Serial, &c.Expire,
-			&c.ClientCert, &c.ClientKey, &c.IssuingCA, &c.CAChain, &c.PrivateKeyType); err != nil {
+		var dbcrt dbCert
+		if err := rows.Scan(&dbcrt.ThingID, &dbcrt.OwnerID, &dbcrt.Serial, &dbcrt.Expire,
+			&dbcrt.ClientCert, &dbcrt.ClientKey, &dbcrt.IssuingCA, &dbcrt.CAChain, &dbcrt.PrivateKeyType); err != nil {
 			cr.log.Error(fmt.Sprintf("Failed to read retrieved cert due to %s", err))
 			return certs.Page{}, err
 		}
-		certificates = append(certificates, c)
+		certificates = append(certificates, toCert(dbcrt))
 	}
 
 	q = `SELECT COUNT(*) FROM certs WHERE owner_id = $1`
@@ -127,81 +195,6 @@ func (cr certsRepository) Remove(ctx context.Context, ownerID, serial string) er
 	return nil
 }
 
-func (cr certsRepository) GetRevokedSerials(ctx context.Context) ([]string, error) {
-	q := `SELECT serial FROM revoked_certs`
-	rows, err := cr.db.QueryContext(ctx, q)
-	if err != nil {
-		cr.log.Error(fmt.Sprintf("Failed to retrieve revoked serials due to %s", err))
-		return nil, err
-	}
-	defer rows.Close()
-
-	var serials []string
-	for rows.Next() {
-		var serial string
-		if err := rows.Scan(&serial); err != nil {
-			cr.log.Error(fmt.Sprintf("Failed to read revoked serial due to %s", err))
-			return nil, err
-		}
-		serials = append(serials, serial)
-	}
-
-	return serials, nil
-}
-
-func (cr certsRepository) RetrieveByThing(ctx context.Context, ownerID, thingID string, offset, limit uint64) (certs.Page, error) {
-	q := `SELECT thing_id, owner_id, serial, expire, client_cert, client_key, issuing_ca, 
-	      ca_chain, private_key_type FROM certs 
-	      WHERE owner_id = $1 AND thing_id = $2 ORDER BY expire LIMIT $3 OFFSET $4;`
-	rows, err := cr.db.Query(q, ownerID, thingID, limit, offset)
-	if err != nil {
-		cr.log.Error(fmt.Sprintf("Failed to retrieve certs due to %s", err))
-		return certs.Page{}, err
-	}
-	defer rows.Close()
-
-	certificates := []certs.Cert{}
-	for rows.Next() {
-		c := certs.Cert{}
-		if err := rows.Scan(&c.ThingID, &c.OwnerID, &c.Serial, &c.Expire,
-			&c.ClientCert, &c.ClientKey, &c.IssuingCA, &c.CAChain, &c.PrivateKeyType); err != nil {
-			cr.log.Error(fmt.Sprintf("Failed to read retrieved cert due to %s", err))
-			return certs.Page{}, err
-		}
-		certificates = append(certificates, c)
-	}
-
-	q = `SELECT COUNT(*) FROM certs WHERE owner_id = $1 AND thing_id = $2`
-	var total uint64
-	if err := cr.db.QueryRow(q, ownerID, thingID).Scan(&total); err != nil {
-		cr.log.Error(fmt.Sprintf("Failed to count certs due to %s", err))
-		return certs.Page{}, err
-	}
-
-	return certs.Page{
-		Total: total,
-		Certs: certificates,
-	}, nil
-}
-
-func (cr certsRepository) RetrieveBySerial(ctx context.Context, ownerID, serialID string) (certs.Cert, error) {
-	q := `SELECT thing_id, owner_id, serial, expire, client_cert, client_key, issuing_ca, 
-	      ca_chain, private_key_type FROM certs WHERE owner_id = $1 AND serial = $2`
-	var dbcrt dbCert
-	var c certs.Cert
-
-	if err := cr.db.QueryRowxContext(ctx, q, ownerID, serialID).StructScan(&dbcrt); err != nil {
-		pqErr, ok := err.(*pgconn.PgError)
-		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pqErr.Code {
-			return c, errors.Wrap(dbutil.ErrNotFound, err)
-		}
-		return c, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-	}
-	c = toCert(dbcrt)
-
-	return c, nil
-}
-
 func (cr certsRepository) RetrieveRevokedSerials(ctx context.Context) ([]string, error) {
 	q := `SELECT serial FROM revoked_certs ORDER BY revoked_at DESC`
 	rows, err := cr.db.QueryContext(ctx, q)
@@ -229,6 +222,70 @@ func (cr certsRepository) RetrieveRevokedSerials(ctx context.Context) ([]string,
 	return serials, nil
 }
 
+func (cr certsRepository) RetrieveByThing(ctx context.Context, ownerID, thingID string, offset, limit uint64) (certs.Page, error) {
+	q := `SELECT thing_id, owner_id, serial, expire, client_cert, client_key, issuing_ca, 
+	      ca_chain, private_key_type FROM certs 
+	      WHERE owner_id = $1 AND thing_id = $2 ORDER BY expire LIMIT $3 OFFSET $4;`
+	rows, err := cr.db.Query(q, ownerID, thingID, limit, offset)
+	if err != nil {
+		cr.log.Error(fmt.Sprintf("Failed to retrieve certs due to %s", err))
+		return certs.Page{}, err
+	}
+	defer rows.Close()
+
+	certificates := []certs.Cert{}
+	for rows.Next() {
+		var dbcrt dbCert
+		if err := rows.Scan(&dbcrt.ThingID, &dbcrt.OwnerID, &dbcrt.Serial, &dbcrt.Expire,
+			&dbcrt.ClientCert, &dbcrt.ClientKey, &dbcrt.IssuingCA, &dbcrt.CAChain, &dbcrt.PrivateKeyType); err != nil {
+			cr.log.Error(fmt.Sprintf("Failed to read retrieved cert due to %s", err))
+			return certs.Page{}, err
+		}
+		certificates = append(certificates, toCert(dbcrt))
+	}
+
+	q = `SELECT COUNT(*) FROM certs WHERE owner_id = $1 AND thing_id = $2`
+	var total uint64
+	if err := cr.db.QueryRow(q, ownerID, thingID).Scan(&total); err != nil {
+		cr.log.Error(fmt.Sprintf("Failed to count certs due to %s", err))
+		return certs.Page{}, err
+	}
+
+	return certs.Page{
+		Total: total,
+		Certs: certificates,
+	}, nil
+}
+
+func (cr certsRepository) RetrieveBySerial(ctx context.Context, ownerID, serialID string) (certs.Cert, error) {
+	q := `SELECT thing_id, owner_id, serial, expire, client_cert, client_key, issuing_ca, 
+	      ca_chain, private_key_type FROM certs WHERE owner_id = $1 AND serial = $2`
+
+	var dbcrt dbCert
+
+	err := cr.db.QueryRowContext(ctx, q, ownerID, serialID).Scan(
+		&dbcrt.ThingID,
+		&dbcrt.OwnerID,
+		&dbcrt.Serial,
+		&dbcrt.Expire,
+		&dbcrt.ClientCert,
+		&dbcrt.ClientKey,
+		&dbcrt.IssuingCA,
+		&dbcrt.CAChain,
+		&dbcrt.PrivateKeyType,
+	)
+
+	if err != nil {
+		pqErr, ok := err.(*pgconn.PgError)
+		if err == sql.ErrNoRows || (ok && pgerrcode.InvalidTextRepresentation == pqErr.Code) {
+			return certs.Cert{}, errors.Wrap(dbutil.ErrNotFound, err)
+		}
+		return certs.Cert{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	return toCert(dbcrt), nil
+}
+
 func (cr certsRepository) rollback(content string, tx *sqlx.Tx, err error) {
 	cr.log.Error(fmt.Sprintf("%s %s", content, err))
 
@@ -246,15 +303,15 @@ func (cr certsRepository) rollbackTx(content string, tx *sqlx.Tx, err error) {
 }
 
 type dbCert struct {
-	ThingID        string    `db:"thing_id"`
-	Serial         string    `db:"serial"`
-	Expire         time.Time `db:"expire"`
-	OwnerID        string    `db:"owner_id"`
-	ClientCert     string    `db:"client_cert"`
-	ClientKey      string    `db:"client_key"`
-	IssuingCA      string    `db:"issuing_ca"`
-	CAChain        []string  `db:"ca_chain"`
-	PrivateKeyType string    `db:"private_key_type"`
+	ThingID        string      `db:"thing_id"`
+	Serial         string      `db:"serial"`
+	Expire         time.Time   `db:"expire"`
+	OwnerID        string      `db:"owner_id"`
+	ClientCert     string      `db:"client_cert"`
+	ClientKey      string      `db:"client_key"`
+	IssuingCA      string      `db:"issuing_ca"`
+	CAChain        StringArray `db:"ca_chain"`
+	PrivateKeyType string      `db:"private_key_type"`
 }
 
 func toDBCert(c certs.Cert) dbCert {
@@ -266,7 +323,7 @@ func toDBCert(c certs.Cert) dbCert {
 		ClientCert:     c.ClientCert,
 		ClientKey:      c.ClientKey,
 		IssuingCA:      c.IssuingCA,
-		CAChain:        c.CAChain,
+		CAChain:        StringArray(c.CAChain),
 		PrivateKeyType: c.PrivateKeyType,
 	}
 }
@@ -280,7 +337,7 @@ func toCert(cdb dbCert) certs.Cert {
 		ClientCert:     cdb.ClientCert,
 		ClientKey:      cdb.ClientKey,
 		IssuingCA:      cdb.IssuingCA,
-		CAChain:        cdb.CAChain,
+		CAChain:        []string(cdb.CAChain),
 		PrivateKeyType: cdb.PrivateKeyType,
 	}
 }
