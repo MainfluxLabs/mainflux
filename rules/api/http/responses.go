@@ -99,7 +99,7 @@ func (res removeRes) Empty() bool {
 }
 
 type thingIDsRes struct {
-	thingIDs []string `json:"thing_ids"`
+	ThingIDs []string `json:"thing_ids"`
 }
 
 func (res thingIDsRes) Code() int {

@@ -83,7 +83,7 @@ func listThingsByRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		res := thingIDsRes{thingIDs: ids}
+		res := thingIDsRes{ThingIDs: ids}
 		return res, nil
 	}
 }
