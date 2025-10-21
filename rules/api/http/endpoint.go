@@ -39,6 +39,22 @@ func createRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 	}
 }
 
+func listRulesByThingEndpoint(svc rules.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(listRulesByThingReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		page, err := svc.ListRulesByThing(ctx, req.token, req.thingID, req.pageMetadata)
+		if err != nil {
+			return nil, err
+		}
+
+		return buildRulesPageResponse(page, req.pageMetadata), nil
+	}
+}
+
 func listRulesByGroupEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listRulesByGroupReq)
@@ -55,9 +71,26 @@ func listRulesByGroupEndpoint(svc rules.Service) endpoint.Endpoint {
 	}
 }
 
+func listThingsByRuleEndpoint(svc rules.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(ruleReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		ids, err := svc.ListThingsByRule(ctx, req.token, req.id)
+		if err != nil {
+			return nil, err
+		}
+
+		res := thingIDsRes{thingIDs: ids}
+		return res, nil
+	}
+}
+
 func viewRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(viewRuleReq)
+		req := request.(ruleReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -107,6 +140,36 @@ func removeRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 		}
 
 		return removeRes{}, nil
+	}
+}
+
+func assignRulesEndpoint(svc rules.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(thingRulesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.AssignRules(ctx, req.token, req.thingID, req.RuleIDs...); err != nil {
+			return nil, err
+		}
+
+		return thingRulesRes{}, nil
+	}
+}
+
+func unassignRulesEndpoint(svc rules.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(thingRulesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.UnassignRules(ctx, req.token, req.thingID, req.RuleIDs...); err != nil {
+			return nil, err
+		}
+
+		return thingRulesRes{}, nil
 	}
 }
 
