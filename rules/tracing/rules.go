@@ -10,15 +10,15 @@ import (
 )
 
 const (
-	saveRule             = "save_rule"
-	retrieveRuleByID     = "retrieve_rule_by_id"
-	retrieveRulesByThing = "retrieve_rules_by_thing"
-	retrieveRulesByGroup = "retrieve_rules_by_group"
-	retrieveThingsByRule = "retrieveThingsByRule"
-	updateRule           = "update_rule"
-	removeRule           = "remove_rule"
-	assignRules          = "assign_rules"
-	unassignRules        = "unassign_rules"
+	saveRule               = "save_rule"
+	retrieveRuleByID       = "retrieve_rule_by_id"
+	retrieveRulesByThing   = "retrieve_rules_by_thing"
+	retrieveRulesByGroup   = "retrieve_rules_by_group"
+	retrieveThingIDsByRule = "retrieve_thing_ids_by_rule"
+	updateRule             = "update_rule"
+	removeRule             = "remove_rule"
+	assignRules            = "assign_rules"
+	unassignRules          = "unassign_rules"
 )
 
 var (
@@ -70,12 +70,12 @@ func (rpm ruleRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID
 	return rpm.repo.RetrieveByGroup(ctx, groupID, pm)
 }
 
-func (rpm ruleRepositoryMiddleware) RetrieveThingsByRule(ctx context.Context, ruleID string) ([]string, error) {
-	span := dbutil.CreateSpan(ctx, rpm.tracer, retrieveThingsByRule)
+func (rpm ruleRepositoryMiddleware) RetrieveThingIDsByRule(ctx context.Context, ruleID string) ([]string, error) {
+	span := dbutil.CreateSpan(ctx, rpm.tracer, retrieveThingIDsByRule)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return rpm.repo.RetrieveThingsByRule(ctx, ruleID)
+	return rpm.repo.RetrieveThingIDsByRule(ctx, ruleID)
 }
 
 func (rpm ruleRepositoryMiddleware) Update(ctx context.Context, rule rules.Rule) error {

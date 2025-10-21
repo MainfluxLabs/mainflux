@@ -145,7 +145,7 @@ func (rr ruleRepository) RetrieveByID(ctx context.Context, id string) (rules.Rul
 	return toRule(dbr)
 }
 
-func (rr ruleRepository) RetrieveThingsByRule(ctx context.Context, ruleID string) ([]string, error) {
+func (rr ruleRepository) RetrieveThingIDsByRule(ctx context.Context, ruleID string) ([]string, error) {
 	q := `SELECT thing_id FROM rules_things WHERE rule_id = $1;`
 
 	var thingIDs []string

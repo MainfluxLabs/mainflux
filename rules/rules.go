@@ -47,8 +47,8 @@ type RuleRepository interface {
 	// RetrieveByGroup retrieves rules assigned to a certain group.
 	RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (RulesPage, error)
 
-	// RetrieveThingsByRule retrieves all thing IDs that have the given rule assigned.
-	RetrieveThingsByRule(ctx context.Context, ruleID string) ([]string, error)
+	// RetrieveThingIDsByRule retrieves all thing IDs that have the given rule assigned.
+	RetrieveThingIDsByRule(ctx context.Context, ruleID string) ([]string, error)
 
 	// Update performs an update to the existing rule. A non-nil error is
 	// returned to indicate operation failure.
