@@ -148,7 +148,7 @@ func (rr ruleRepository) RetrieveByID(ctx context.Context, id string) (rules.Rul
 func (rr ruleRepository) RetrieveThingIDsByRule(ctx context.Context, ruleID string) ([]string, error) {
 	q := `SELECT thing_id FROM rules_things WHERE rule_id = $1;`
 
-	var thingIDs []string
+	thingIDs := []string{}
 	if err := rr.db.SelectContext(ctx, &thingIDs, q, ruleID); err != nil {
 		return nil, err
 	}
