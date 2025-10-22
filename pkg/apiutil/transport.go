@@ -124,55 +124,38 @@ func EncodeGRPCError(st *status.Status, w http.ResponseWriter) {
 	switch st.Code() {
 	case codes.OK:
 		w.WriteHeader(http.StatusOK)
-
 	case codes.Internal:
 		w.WriteHeader(http.StatusInternalServerError)
-
 	case codes.InvalidArgument:
 		w.WriteHeader(http.StatusBadRequest)
-
 	case codes.Unauthenticated:
 		w.WriteHeader(http.StatusUnauthorized)
-
 	case codes.NotFound:
 		w.WriteHeader(http.StatusNotFound)
-
 	case codes.AlreadyExists:
 		w.WriteHeader(http.StatusConflict)
-
 	case codes.PermissionDenied:
 		w.WriteHeader(http.StatusForbidden)
-
 	case codes.Canceled:
 		w.WriteHeader(http.StatusRequestTimeout)
-
 	case codes.DeadlineExceeded:
 		w.WriteHeader(http.StatusGatewayTimeout)
-
 	case codes.ResourceExhausted:
 		w.WriteHeader(http.StatusTooManyRequests)
-
 	case codes.FailedPrecondition:
 		w.WriteHeader(http.StatusPreconditionFailed)
-
 	case codes.Aborted:
 		w.WriteHeader(http.StatusConflict)
-
 	case codes.OutOfRange:
 		w.WriteHeader(http.StatusBadRequest)
-
 	case codes.Unimplemented:
 		w.WriteHeader(http.StatusNotImplemented)
-
 	case codes.Unavailable:
 		w.WriteHeader(http.StatusServiceUnavailable)
-
 	case codes.DataLoss:
 		w.WriteHeader(http.StatusInternalServerError)
-
 	case codes.Unknown:
 		w.WriteHeader(http.StatusInternalServerError)
-
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
 	}
