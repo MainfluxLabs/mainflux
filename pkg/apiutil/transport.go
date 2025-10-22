@@ -230,6 +230,11 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, dbutil.ErrRemoveEntity):
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
+		if st, ok := status.FromError(err); ok {
+			EncodeGRPCError(st, w)
+			return
+		}
+
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
