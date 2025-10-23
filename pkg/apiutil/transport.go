@@ -242,12 +242,14 @@ func EncodeError(err error, w http.ResponseWriter) {
 func WriteErrorResponse(err error, w http.ResponseWriter) {
 	var errorMessage string
 
-	if errorVal, ok := err.(errors.Error); ok {
-		errorMessage = errorVal.Msg()
-	} else if st, ok := status.FromError(err); ok {
-		// Cut the error message short at the occurrence of the first colon, as it may expose
-		// details of wrapper errors.
-		errorMessage, _, _ = strings.Cut(st.Message(), " :")
+	switch e := err.(type) {
+	case errors.Error:
+		errorMessage = e.Msg()
+	default:
+		if st, ok := status.FromError(err); ok {
+			// Cut the error message short to avoid exposing details of wrapped errors
+			errorMessage, _, _ = strings.Cut(st.Message(), " :")
+		}
 	}
 
 	if errorMessage != "" {
