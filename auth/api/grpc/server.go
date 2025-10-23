@@ -170,6 +170,10 @@ func encodeEmptyResponse(_ context.Context, grpcRes interface{}) (interface{}, e
 }
 
 func encodeError(err error) error {
+	if _, ok := status.FromError(err); ok {
+		return err
+	}
+
 	switch {
 	case errors.Contains(err, nil):
 		return nil
