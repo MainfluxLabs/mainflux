@@ -132,13 +132,15 @@ func buildOrgInvitesPageRes(page auth.OrgInvitesPage, pm auth.PageMetadataInvite
 
 func buildOrgInviteRes(inv auth.OrgInvite) orgInviteRes {
 	return orgInviteRes{
-		ID:          inv.ID,
-		InviteeID:   inv.InviteeID,
-		InviteeRole: inv.InviteeRole,
-		InviterID:   inv.InviterID,
-		OrgID:       inv.OrgID,
-		CreatedAt:   inv.CreatedAt,
-		ExpiresAt:   inv.ExpiresAt,
-		State:       inv.State,
+		ID:           inv.ID,
+		InviteeID:    inv.InviteeID,
+		InviteeRole:  inv.InviteeRole,
+		InviterID:    inv.InviterID,
+		InviterEmail: inv.InviterEmail,
+		OrgID:        inv.OrgID,
+		OrgName:      inv.OrgName,
+		CreatedAt:    inv.CreatedAt,
+		ExpiresAt:    inv.ExpiresAt,
+		State:        inv.State,
 	}
 }
