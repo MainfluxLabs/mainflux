@@ -799,8 +799,8 @@ services:
       - mainfluxlabs-ui-configs-db-volume:/var/lib/postgresql/data
 
   ui-configs:
-    image: ${MF_RELEASE_PREFIX}/ui-configs:${MF_RELEASE_TAG}
-    container_name: mainfluxlabs-ui-configs
+    image: ${MF_RELEASE_PREFIX}/uiconfigs:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-uiconfigs
     depends_on:
       - ui-configs-db
     restart: on-failure
