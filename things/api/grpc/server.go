@@ -33,7 +33,6 @@ type grpcServer struct {
 	identify                 kitgrpc.Handler
 	getGroupIDByThingID      kitgrpc.Handler
 	getGroupIDByProfileID    kitgrpc.Handler
-	getProfileIDByThingID    kitgrpc.Handler
 	getGroupIDsByOrg         kitgrpc.Handler
 }
 
@@ -89,11 +88,6 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 			kitot.TraceServer(tracer, "get_group_id_by_profile_id")(getGroupIDByProfileIDEndpoint(svc)),
 			decodeGetGroupIDByProfileIDRequest,
 			encodeGetGroupIDByProfileIDResponse,
-		),
-		getProfileIDByThingID: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "get_profile_id_by_thing_id")(getProfileIDByThingIDEndpoint(svc)),
-			decodeGetProfileIDByThingIDRequest,
-			encodeGetProfileIDByThingIDResponse,
 		),
 		getGroupIDsByOrg: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "get_group_ids_by_org")(getGroupIDsByOrgEndpoint(svc)),
@@ -192,15 +186,6 @@ func (gs *grpcServer) GetGroupIDByProfileID(ctx context.Context, req *protomfx.P
 	return res.(*protomfx.GroupID), nil
 }
 
-func (gs *grpcServer) GetProfileIDByThingID(ctx context.Context, req *protomfx.ThingID) (*protomfx.ProfileID, error) {
-	_, res, err := gs.getProfileIDByThingID.ServeGRPC(ctx, req)
-	if err != nil {
-		return nil, encodeError(err)
-	}
-
-	return res.(*protomfx.ProfileID), nil
-}
-
 func (gs *grpcServer) GetGroupIDsByOrg(ctx context.Context, req *protomfx.OrgAccessReq) (*protomfx.GroupIDs, error) {
 	_, res, err := gs.getGroupIDsByOrg.ServeGRPC(ctx, req)
 	if err != nil {
@@ -260,11 +245,6 @@ func decodeGetGroupIDByProfileIDRequest(_ context.Context, grpcReq interface{}) 
 	return profileIDReq{profileID: req.GetValue()}, nil
 }
 
-func decodeGetProfileIDByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*protomfx.ThingID)
-	return thingIDReq{thingID: req.GetValue()}, nil
-}
-
 func decodeGetGroupIDsByOrgRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*protomfx.OrgAccessReq)
 	return orgAccessReq{orgID: req.GetOrgId(), token: req.GetToken()}, nil
@@ -298,11 +278,6 @@ func encodeGetGroupIDByThingIDResponse(_ context.Context, grpcRes interface{}) (
 func encodeGetGroupIDByProfileIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(groupIDRes)
 	return &protomfx.GroupID{Value: res.groupID}, nil
-}
-
-func encodeGetProfileIDByThingIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(profileIDRes)
-	return &protomfx.ProfileID{Value: res.profileID}, nil
 }
 
 func encodeGetGroupIDsByOrgResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
