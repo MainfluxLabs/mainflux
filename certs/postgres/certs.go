@@ -195,8 +195,8 @@ func (cr certsRepository) Remove(ctx context.Context, ownerID, serial string) er
 	return nil
 }
 
-func (cr certsRepository) RetrieveRevokedSerials(ctx context.Context) ([]string, error) {
-	q := `SELECT serial FROM revoked_certs ORDER BY revoked_at DESC`
+func (cr certsRepository) RetrieveRevokedCertificates(ctx context.Context) ([]certs.RevokedCert, error) {
+	q := `SELECT serial, revoked_at, thing_id, owner_id FROM revoked_certs ORDER BY revoked_at DESC`
 	rows, err := cr.db.QueryContext(ctx, q)
 	if err != nil {
 		cr.log.Error(fmt.Sprintf("Failed to retrieve revoked serials due to %s", err))
@@ -204,14 +204,14 @@ func (cr certsRepository) RetrieveRevokedSerials(ctx context.Context) ([]string,
 	}
 	defer rows.Close()
 
-	var serials []string
+	var revokedCerts []certs.RevokedCert
 	for rows.Next() {
-		var serial string
-		if err := rows.Scan(&serial); err != nil {
+		var cert certs.RevokedCert
+		if err := rows.Scan(&cert.Serial, &cert.RevokedAt, &cert.ThingID, &cert.OwnerID); err != nil {
 			cr.log.Error(fmt.Sprintf("Failed to read revoked serial due to %s", err))
 			return nil, err
 		}
-		serials = append(serials, serial)
+		revokedCerts = append(revokedCerts, cert)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -219,7 +219,7 @@ func (cr certsRepository) RetrieveRevokedSerials(ctx context.Context) ([]string,
 		return nil, err
 	}
 
-	return serials, nil
+	return revokedCerts, nil
 }
 
 func (cr certsRepository) RetrieveByThing(ctx context.Context, ownerID, thingID string, offset, limit uint64) (certs.Page, error) {
