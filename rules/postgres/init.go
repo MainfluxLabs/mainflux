@@ -75,6 +75,16 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE rules DROP COLUMN IF EXISTS profile_id;`,
 				},
 			},
+			{
+				Id: "rules_4",
+				Up: []string{
+					`CREATE TABLE IF NOT EXISTS rules_things (
+						rule_id   UUID NOT NULL REFERENCES rules(id) ON DELETE CASCADE,
+						thing_id  UUID NOT NULL,
+						PRIMARY KEY (rule_id, thing_id)
+					);`,
+				},
+			},
 		},
 	}
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)

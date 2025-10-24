@@ -14,7 +14,7 @@ const (
 	maxNameSize  = 254
 )
 
-type ruleReq struct {
+type rule struct {
 	Name        string            `json:"name"`
 	Description string            `json:"description,omitempty"`
 	Conditions  []rules.Condition `json:"conditions"`
@@ -25,7 +25,7 @@ type ruleReq struct {
 type createRulesReq struct {
 	token   string
 	groupID string
-	Rules   []ruleReq `json:"rules"`
+	Rules   []rule `json:"rules"`
 }
 
 func (req createRulesReq) validate() error {
@@ -50,7 +50,7 @@ func (req createRulesReq) validate() error {
 	return nil
 }
 
-func (req ruleReq) validate() error {
+func (req rule) validate() error {
 	if req.Name == "" || len(req.Name) > maxNameSize {
 		return apiutil.ErrNameSize
 	}
@@ -94,19 +94,39 @@ func (req ruleReq) validate() error {
 	return nil
 }
 
-type viewRuleReq struct {
+type ruleReq struct {
 	token string
 	id    string
 }
 
-func (req *viewRuleReq) validate() error {
+func (req ruleReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
+
 	if req.id == "" {
 		return apiutil.ErrMissingRuleID
 	}
+
 	return nil
+}
+
+type listRulesByThingReq struct {
+	token        string
+	thingID      string
+	pageMetadata apiutil.PageMetadata
+}
+
+func (req listRulesByThingReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.thingID == "" {
+		return apiutil.ErrMissingThingID
+	}
+
+	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
 }
 
 type listRulesByGroupReq struct {
@@ -130,7 +150,7 @@ func (req listRulesByGroupReq) validate() error {
 type updateRuleReq struct {
 	token string
 	id    string
-	ruleReq
+	rule
 }
 
 func (req updateRuleReq) validate() error {
@@ -142,7 +162,7 @@ func (req updateRuleReq) validate() error {
 		return apiutil.ErrMissingRuleID
 	}
 
-	return req.ruleReq.validate()
+	return req.rule.validate()
 }
 
 type removeRulesReq struct {
@@ -153,6 +173,34 @@ type removeRulesReq struct {
 func (req removeRulesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
+	}
+
+	if len(req.RuleIDs) < minLen {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, ruleID := range req.RuleIDs {
+		if ruleID == "" {
+			return apiutil.ErrMissingRuleID
+		}
+	}
+
+	return nil
+}
+
+type thingRulesReq struct {
+	token   string
+	thingID string
+	RuleIDs []string `json:"rule_ids"`
+}
+
+func (req thingRulesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.thingID == "" {
+		return apiutil.ErrMissingThingID
 	}
 
 	if len(req.RuleIDs) < minLen {

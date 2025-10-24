@@ -11,6 +11,7 @@ var (
 	_ apiutil.Response = (*removeRes)(nil)
 	_ apiutil.Response = (*ruleResponse)(nil)
 	_ apiutil.Response = (*rulesRes)(nil)
+	_ apiutil.Response = (*thingIDsRes)(nil)
 )
 
 type pageRes struct {
@@ -94,5 +95,35 @@ func (res removeRes) Headers() map[string]string {
 }
 
 func (res removeRes) Empty() bool {
+	return true
+}
+
+type thingIDsRes struct {
+	ThingIDs []string `json:"thing_ids"`
+}
+
+func (res thingIDsRes) Code() int {
+	return http.StatusOK
+}
+
+func (res thingIDsRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res thingIDsRes) Empty() bool {
+	return false
+}
+
+type thingRulesRes struct{}
+
+func (res thingRulesRes) Code() int {
+	return http.StatusOK
+}
+
+func (res thingRulesRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res thingRulesRes) Empty() bool {
 	return true
 }
