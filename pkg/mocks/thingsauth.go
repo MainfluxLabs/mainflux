@@ -148,13 +148,6 @@ func (svc thingsServiceMock) GetGroupIDByProfileID(_ context.Context, in *protom
 	return nil, dbutil.ErrNotFound
 }
 
-func (svc thingsServiceMock) GetProfileIDByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ProfileID, error) {
-	if th, ok := svc.things[in.GetValue()]; ok {
-		return &protomfx.ProfileID{Value: th.ProfileID}, nil
-	}
-	return nil, dbutil.ErrNotFound
-}
-
 func (svc thingsServiceMock) GetGroupIDsByOrg(_ context.Context, in *protomfx.OrgAccessReq, _ ...grpc.CallOption) (*protomfx.GroupIDs, error) {
 	var ids []string
 	for _, g := range svc.groups {

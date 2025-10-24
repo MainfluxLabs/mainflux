@@ -137,9 +137,6 @@ type Service interface {
 	// GetGroupIDByProfileID returns a profile's group ID for given profile ID.
 	GetGroupIDByProfileID(ctx context.Context, profileID string) (string, error)
 
-	// GetProfileIDByThingID returns a thing's profile ID for given thing ID.
-	GetProfileIDByThingID(ctx context.Context, thingID string) (string, error)
-
 	// GetGroupIDsByOrg returns all group IDs belonging to an org.
 	GetGroupIDsByOrg(ctx context.Context, orgID string, token string) ([]string, error)
 
@@ -832,15 +829,6 @@ func (ts *thingsService) GetGroupIDByThingID(ctx context.Context, thingID string
 
 func (ts *thingsService) GetGroupIDByProfileID(ctx context.Context, profileID string) (string, error) {
 	return ts.getGroupIDByProfileID(ctx, profileID)
-}
-
-func (ts *thingsService) GetProfileIDByThingID(ctx context.Context, thingID string) (string, error) {
-	th, err := ts.things.RetrieveByID(ctx, thingID)
-	if err != nil {
-		return "", err
-	}
-
-	return th.ProfileID, nil
 }
 
 func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, error) {

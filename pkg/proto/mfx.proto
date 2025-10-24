@@ -28,7 +28,6 @@ service ThingsService {
     rpc Identify(ThingKey) returns (ThingID) {}
     rpc GetGroupIDByThingID(ThingID) returns (GroupID) {}
     rpc GetGroupIDByProfileID(ProfileID) returns (GroupID) {}
-    rpc GetProfileIDByThingID(ThingID) returns (ProfileID) {}
     rpc GetGroupIDsByOrg(OrgAccessReq) returns (GroupIDs) {}
 }
 

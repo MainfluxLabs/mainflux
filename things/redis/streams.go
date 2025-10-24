@@ -313,10 +313,6 @@ func (es eventStore) GetGroupIDByProfileID(ctx context.Context, profileID string
 	return es.svc.GetGroupIDByProfileID(ctx, profileID)
 }
 
-func (es eventStore) GetProfileIDByThingID(ctx context.Context, thingID string) (string, error) {
-	return es.svc.GetProfileIDByThingID(ctx, thingID)
-}
-
 func (es eventStore) GetGroupIDsByOrg(ctx context.Context, orgID string, token string) ([]string, error) {
 	return es.svc.GetGroupIDsByOrg(ctx, orgID, token)
 }
