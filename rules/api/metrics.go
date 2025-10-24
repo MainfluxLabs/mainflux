@@ -27,22 +27,13 @@ func MetricsMiddleware(svc rules.Service, counter metrics.Counter, latency metri
 	}
 }
 
-func (ms metricsMiddleware) CreateRules(ctx context.Context, token, profileID string, rules ...rules.Rule) ([]rules.Rule, error) {
+func (ms metricsMiddleware) CreateRules(ctx context.Context, token, groupID string, rules ...rules.Rule) ([]rules.Rule, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_rules").Add(1)
 		ms.latency.With("method", "create_rules").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateRules(ctx, token, profileID, rules...)
-}
-
-func (ms metricsMiddleware) ListRulesByProfile(ctx context.Context, token, profileID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "list_rules_by_profile").Add(1)
-		ms.latency.With("method", "list_rules_by_profile").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.ListRulesByProfile(ctx, token, profileID, pm)
+	return ms.svc.CreateRules(ctx, token, groupID, rules...)
 }
 
 func (ms metricsMiddleware) ListRulesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {

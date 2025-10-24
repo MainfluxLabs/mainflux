@@ -13,6 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/coap"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 var _ coap.Service = (*loggingMiddleware)(nil)
@@ -27,7 +28,7 @@ func LoggingMiddleware(svc coap.Service, logger log.Logger) coap.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) Publish(ctx context.Context, key string, msg protomfx.Message) (err error) {
+func (lm *loggingMiddleware) Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
 		dest := ""
 		if msg.Subtopic != "" {
@@ -44,7 +45,7 @@ func (lm *loggingMiddleware) Publish(ctx context.Context, key string, msg protom
 	return lm.svc.Publish(ctx, key, msg)
 }
 
-func (lm *loggingMiddleware) Subscribe(ctx context.Context, key, subtopic string, c coap.Client) (err error) {
+func (lm *loggingMiddleware) Subscribe(ctx context.Context, key things.ThingKey, subtopic string, c coap.Client) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method subscribe for client %s took %s to complete", c.Token(), time.Since(begin))
 		if err != nil {
@@ -57,7 +58,7 @@ func (lm *loggingMiddleware) Subscribe(ctx context.Context, key, subtopic string
 	return lm.svc.Subscribe(ctx, key, subtopic, c)
 }
 
-func (lm *loggingMiddleware) Unsubscribe(ctx context.Context, key, subtopic, token string) (err error) {
+func (lm *loggingMiddleware) Unsubscribe(ctx context.Context, key things.ThingKey, subtopic, token string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method unsubscribe for the client %s took %s to complete", token, time.Since(begin))
 		if err != nil {

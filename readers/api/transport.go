@@ -15,6 +15,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/readers"
+	"github.com/MainfluxLabs/mainflux/things"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -33,21 +34,19 @@ const (
 	comparatorKey          = "comparator"
 	fromKey                = "from"
 	toKey                  = "to"
-	formatKey              = "format"
 	convertKey             = "convert"
+	filterKey              = "filter"
 	aggIntervalKey         = "agg_interval"
 	aggTypeKey             = "agg_type"
 	aggFieldKey            = "agg_field"
 	publisherKey           = "publisher"
 	jsonFormat             = "json"
-	senmlFormat            = "senml"
 	csvFormat              = "csv"
-	defFormat              = "messages"
 )
 
 func MakeHandler(svc readers.Service, tracer opentracing.Tracer, svcName string, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
-		kithttp.ServerErrorEncoder(encodeError),
+		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
 
 	mux := bone.New()
@@ -125,6 +124,11 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, er
 		return nil, err
 	}
 
+	filter, err := apiutil.ReadStringQuery(r, filterKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	offset, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
 	if err != nil {
 		return nil, err
@@ -138,10 +142,11 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, er
 	pageMeta.Offset = offset
 	pageMeta.Limit = limit
 	pageMeta.Publisher = publisher
+	pageMeta.Filter = filter
 
 	return listJSONMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
-		key:      apiutil.ExtractThingKey(r),
+		thingKey: things.ExtractThingKey(r),
 		pageMeta: pageMeta,
 	}, nil
 }
@@ -173,7 +178,7 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (interface{}, e
 
 	return listSenMLMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
-		key:      apiutil.ExtractThingKey(r),
+		thingKey: things.ExtractThingKey(r),
 		pageMeta: pageMeta,
 	}, nil
 }
@@ -200,8 +205,8 @@ func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (interface{}, 
 	}
 
 	req := deleteJSONMessagesReq{
-		token: apiutil.ExtractBearerToken(r),
-		key:   apiutil.ExtractThingKey(r),
+		token:    apiutil.ExtractBearerToken(r),
+		thingKey: things.ExtractThingKey(r),
 		pageMeta: readers.JSONPageMetadata{
 			Subtopic: subtopic,
 			Protocol: protocol,
@@ -225,8 +230,8 @@ func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (interface{},
 	}
 
 	req := deleteSenMLMessagesReq{
-		token: apiutil.ExtractBearerToken(r),
-		key:   apiutil.ExtractThingKey(r),
+		token:    apiutil.ExtractBearerToken(r),
+		thingKey: things.ExtractThingKey(r),
 		pageMeta: readers.SenMLPageMetadata{
 			From: from,
 			To:   to,

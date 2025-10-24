@@ -3,10 +3,11 @@ package redis
 import "encoding/json"
 
 const (
-	thingPrefix = "thing."
-	thingCreate = thingPrefix + "create"
-	thingUpdate = thingPrefix + "update"
-	thingRemove = thingPrefix + "remove"
+	thingPrefix                = "thing."
+	thingCreate                = thingPrefix + "create"
+	thingUpdate                = thingPrefix + "update"
+	thingUpdateGroupAndProfile = thingPrefix + "update_group_and_profile"
+	thingRemove                = thingPrefix + "remove"
 
 	profilePrefix = "profile."
 	profileCreate = profilePrefix + "create"
@@ -84,6 +85,26 @@ func (ute updateThingEvent) Encode() map[string]interface{} {
 		}
 
 		val["metadata"] = string(metadata)
+	}
+
+	return val
+}
+
+type updateThingGroupAndProfileEvent struct {
+	id        string
+	profileID string
+	groupID   string
+}
+
+func (pte updateThingGroupAndProfileEvent) Encode() map[string]interface{} {
+	val := map[string]interface{}{
+		"id":         pte.id,
+		"profile_id": pte.profileID,
+		"operation":  thingUpdateGroupAndProfile,
+	}
+
+	if pte.groupID != "" {
+		val["groupID"] = pte.groupID
 	}
 
 	return val

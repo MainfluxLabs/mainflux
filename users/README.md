@@ -40,10 +40,10 @@ default values.
 | MF_EMAIL_PASSWORD             | Mail server password                                                    |                  |
 | MF_EMAIL_FROM_ADDRESS         | Email "from" address                                                    |                  |
 | MF_EMAIL_FROM_NAME            | Email "from" name                                                       |                  |
-| MF_EMAIL_TEMPLATE             | Email template for sending emails with password reset link              | email.tmpl       |
+| MF_EMAIL_BASE_TEMPLATE        | Path to base template for e-mails sent from the service                 | base.tmpl        |
 | MF_HOST                       | URL Path of the frontend included in user-facing e-mails                | http://localhost |  
 | MF_REQUIRE_EMAIL_VERIFICATION | Whether e-mail verification is required during self-registration        | true             |  
-| MF_INVITE_DURATION            | Duration of validity of created platform invites                        | 168h           |
+| MF_INVITE_DURATION            | Duration of validity of created platform invites                        | 168h             |
 
 ## Deployment
 

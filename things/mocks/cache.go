@@ -9,53 +9,91 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
 type thingCacheMock struct {
-	mu     sync.Mutex
-	things map[string]string
-	groups map[string]string
+	mu                  sync.Mutex
+	thingsByKey         map[string]string
+	thingsByExternalKey map[string]string
+	groups              map[string]string
 }
 
 // NewThingCache returns mock cache instance.
 func NewThingCache() things.ThingCache {
 	return &thingCacheMock{
-		things: make(map[string]string),
-		groups: make(map[string]string),
+		thingsByKey:         make(map[string]string),
+		thingsByExternalKey: make(map[string]string),
+		groups:              make(map[string]string),
 	}
 }
 
-func (tcm *thingCacheMock) Save(_ context.Context, key, id string) error {
+func (tcm *thingCacheMock) Save(_ context.Context, key things.ThingKey, id string) error {
 	tcm.mu.Lock()
 	defer tcm.mu.Unlock()
 
-	tcm.things[key] = id
+	switch key.Type {
+	case things.KeyTypeInternal:
+		tcm.thingsByKey[key.Value] = id
+	case things.KeyTypeExternal:
+		tcm.thingsByExternalKey[key.Value] = id
+	}
+
 	return nil
 }
 
-func (tcm *thingCacheMock) ID(_ context.Context, key string) (string, error) {
+func (tcm *thingCacheMock) ID(_ context.Context, key things.ThingKey) (string, error) {
 	tcm.mu.Lock()
 	defer tcm.mu.Unlock()
 
-	id, ok := tcm.things[key]
-	if !ok {
-		return "", dbutil.ErrNotFound
+	switch key.Type {
+	case things.KeyTypeInternal:
+		if id, ok := tcm.thingsByKey[key.Value]; ok {
+			return id, nil
+		}
+	case things.KeyTypeExternal:
+		if id, ok := tcm.thingsByExternalKey[key.Value]; ok {
+			return id, nil
+		}
+	default:
+		return "", apiutil.ErrInvalidThingKeyType
 	}
 
-	return id, nil
+	return "", dbutil.ErrNotFound
 }
 
-func (tcm *thingCacheMock) Remove(_ context.Context, id string) error {
+func (tcm *thingCacheMock) RemoveThing(_ context.Context, id string) error {
 	tcm.mu.Lock()
 	defer tcm.mu.Unlock()
 
-	for key, val := range tcm.things {
+	for key, val := range tcm.thingsByKey {
 		if val == id {
-			delete(tcm.things, key)
-			return nil
+			delete(tcm.thingsByKey, key)
 		}
+	}
+
+	for key, val := range tcm.thingsByExternalKey {
+		if val == id {
+			delete(tcm.thingsByKey, key)
+		}
+	}
+
+	return nil
+}
+
+func (tcm *thingCacheMock) RemoveKey(_ context.Context, key things.ThingKey) error {
+	tcm.mu.Lock()
+	defer tcm.mu.Unlock()
+
+	switch key.Type {
+	case things.KeyTypeInternal:
+		delete(tcm.thingsByKey, key.Value)
+	case things.KeyTypeExternal:
+		delete(tcm.thingsByExternalKey, key.Value)
+	default:
+		return apiutil.ErrInvalidThingKeyType
 	}
 
 	return nil

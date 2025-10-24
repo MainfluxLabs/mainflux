@@ -5,23 +5,26 @@ package cli
 
 import (
 	mfxsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
+	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/spf13/cobra"
 )
 
 var cmdMessages = []cobra.Command{
 	{
-		Use:   "send [subtopic] <JSON_string> <thing_key>",
+		Use:   "send [subtopic] <JSON_string> <key_type> <thing_key>",
 		Short: "Send messages",
 		Long:  `Sends message`,
 		Run: func(cmd *cobra.Command, args []string) {
 			switch len(args) {
-			case 2:
-				if err := sdk.SendMessage("", args[0], args[1]); err != nil {
+			case 3:
+				key := things.ThingKey{Type: args[1], Value: args[2]}
+				if err := sdk.SendMessage("", args[0], key); err != nil {
 					logError(err)
 					return
 				}
-			case 3:
-				if err := sdk.SendMessage(args[0], args[1], args[2]); err != nil {
+			case 4:
+				key := things.ThingKey{Type: args[2], Value: args[3]}
+				if err := sdk.SendMessage(args[0], args[1], key); err != nil {
 					logError(err)
 					return
 				}
@@ -34,7 +37,7 @@ var cmdMessages = []cobra.Command{
 		},
 	},
 	{
-		Use:   "read [by-admin] <auth_token>",
+		Use:   "read [by-admin] <key_type> <auth_token>",
 		Short: "Read messages",
 		Long:  `Reads all messages`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -45,16 +48,16 @@ var cmdMessages = []cobra.Command{
 				Subtopic: Subtopic,
 			}
 			switch len(args) {
-			case 1:
-				m, err := sdk.ReadMessages(false, pm, args[0])
+			case 2:
+				m, err := sdk.ReadMessages(true, pm, "", args[1])
 				if err != nil {
 					logError(err)
 					return
 				}
 
 				logJSON(m)
-			case 2:
-				m, err := sdk.ReadMessages(true, pm, args[1])
+			case 3:
+				m, err := sdk.ReadMessages(false, pm, args[0], args[1])
 				if err != nil {
 					logError(err)
 					return

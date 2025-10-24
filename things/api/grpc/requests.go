@@ -8,12 +8,19 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
-type pubConfByKeyReq struct {
-	key string
+const minLen = 1
+
+type thingKey struct {
+	value   string
+	keyType string
 }
 
-func (req pubConfByKeyReq) validate() error {
-	if req.key == "" {
+func (req thingKey) validate() error {
+	if req.keyType != things.KeyTypeInternal && req.keyType != things.KeyTypeExternal {
+		return apiutil.ErrInvalidThingKeyType
+	}
+
+	if req.value == "" {
 		return apiutil.ErrBearerKey
 	}
 
@@ -88,30 +95,36 @@ func (req userAccessGroupReq) validate() error {
 	return req.accessReq.validate()
 }
 
+type userAccessGroupThingsReq struct {
+	accessReq
+	groupID  string
+	thingIDs []string
+}
+
+func (req userAccessGroupThingsReq) validate() error {
+	if req.groupID == "" {
+		return apiutil.ErrMissingGroupID
+	}
+
+	if len(req.thingIDs) < minLen {
+		return apiutil.ErrEmptyList
+	}
+
+	return req.accessReq.validate()
+}
+
 type thingAccessGroupReq struct {
-	key string
-	id  string
+	thingKey
+	id string
 }
 
 func (req thingAccessGroupReq) validate() error {
-	if req.key == "" {
-		return apiutil.ErrBearerKey
+	if err := req.thingKey.validate(); err != nil {
+		return err
 	}
 
 	if req.id == "" {
 		return apiutil.ErrMissingGroupID
-	}
-
-	return nil
-}
-
-type identifyReq struct {
-	key string
-}
-
-func (req identifyReq) validate() error {
-	if req.key == "" {
-		return apiutil.ErrBearerKey
 	}
 
 	return nil

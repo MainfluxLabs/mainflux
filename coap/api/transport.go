@@ -18,6 +18,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-zoo/bone"
 	"github.com/plgd-dev/go-coap/v2/message"
 	"github.com/plgd-dev/go-coap/v2/message/codes"
@@ -26,9 +27,10 @@ import (
 )
 
 const (
-	protocol     = "coap"
-	authQuery    = "auth"
-	startObserve = 0 // observe option value that indicates start of observation
+	protocol      = "coap"
+	authQuery     = "auth"
+	authTypeQuery = "type"
+	startObserve  = 0 // observe option value that indicates start of observation
 )
 
 var errBadOptions = errors.New("bad options")
@@ -107,7 +109,7 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 	}
 }
 
-func handleGet(m *mux.Message, c mux.Client, msg protomfx.Message, key string) error {
+func handleGet(m *mux.Message, c mux.Client, msg protomfx.Message, key things.ThingKey) error {
 	var obs uint32
 	obs, err := m.Options.Observe()
 	if err != nil {
@@ -153,17 +155,35 @@ func decodeMessage(msg *mux.Message) (protomfx.Message, error) {
 	return ret, nil
 }
 
-func parseKey(msg *mux.Message) (string, error) {
+func parseKey(msg *mux.Message) (things.ThingKey, error) {
 	if obs, _ := msg.Options.Observe(); obs != 0 && msg.Code == codes.GET {
-		return "", nil
+		return things.ThingKey{}, nil
 	}
-	authKey, err := msg.Options.GetString(message.URIQuery)
+
+	queries, err := msg.Options.Queries()
 	if err != nil {
-		return "", err
+		return things.ThingKey{}, err
 	}
-	vars := strings.Split(authKey, "=")
-	if len(vars) != 2 || vars[0] != authQuery {
-		return "", errors.ErrAuthorization
+
+	var thingKey things.ThingKey
+
+	for _, query := range queries {
+		parts := strings.Split(query, "=")
+		if len(parts) != 2 {
+			return things.ThingKey{}, errors.ErrAuthentication
+		}
+
+		switch parts[0] {
+		case authQuery:
+			thingKey.Value = parts[1]
+		case authTypeQuery:
+			thingKey.Type = parts[1]
+		}
 	}
-	return vars[1], nil
+
+	if err := thingKey.Validate(); err != nil {
+		return things.ThingKey{}, err
+	}
+
+	return thingKey, nil
 }

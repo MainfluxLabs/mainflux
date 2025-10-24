@@ -11,6 +11,7 @@ import (
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const (
@@ -19,11 +20,16 @@ const (
 )
 
 type identifyThingReq struct {
-	Token string `json:"token,omitempty"`
+	Key  string `json:"key,omitempty"`
+	Type string `json:"type,omitempty"`
 }
 
 type identifyThingResp struct {
 	ID string `json:"id,omitempty"`
+}
+
+type updateExternalThingKeyReq struct {
+	Key string `json:"key,omitempty"`
 }
 
 func (sdk mfSDK) CreateThing(t Thing, profileID, token string) (string, error) {
@@ -170,7 +176,7 @@ func (sdk mfSDK) GetThing(id, token string) (Thing, error) {
 	return t, nil
 }
 
-func (sdk mfSDK) GetThingMetadataByKey(thingKey string) (Metadata, error) {
+func (sdk mfSDK) GetThingMetadataByKey(key things.ThingKey) (Metadata, error) {
 	url := fmt.Sprintf("%s/metadata", sdk.thingsURL)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -178,7 +184,7 @@ func (sdk mfSDK) GetThingMetadataByKey(thingKey string) (Metadata, error) {
 		return Metadata{}, err
 	}
 
-	resp, err := sdk.sendThingRequest(req, thingKey, string(CTJSON))
+	resp, err := sdk.sendThingRequest(req, key, string(CTJSON))
 	if err != nil {
 		return Metadata{}, err
 	}
@@ -272,8 +278,8 @@ func (sdk mfSDK) DeleteThings(ids []string, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) IdentifyThing(key string) (string, error) {
-	idReq := identifyThingReq{Token: key}
+func (sdk mfSDK) IdentifyThing(key things.ThingKey) (string, error) {
+	idReq := identifyThingReq{Key: key.Value, Type: key.Type}
 	data, err := json.Marshal(idReq)
 	if err != nil {
 		return "", err
@@ -306,4 +312,31 @@ func (sdk mfSDK) IdentifyThing(key string) (string, error) {
 	}
 
 	return i.ID, err
+}
+
+func (sdk mfSDK) UpdateExternalThingKey(key, thingID, token string) error {
+	createReq := updateExternalThingKeyReq{Key: key}
+	data, err := json.Marshal(createReq)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s/things/%s/external-key", sdk.thingsURL, thingID)
+
+	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewReader(data))
+	if err != nil {
+		return err
+	}
+
+	resp, err := sdk.sendRequest(req, token, string(CTJSON))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return errors.Wrap(ErrFailedCreation, errors.New(resp.Status))
+	}
+
+	return nil
 }

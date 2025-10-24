@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -39,8 +40,8 @@ func (tr thingRepository) Save(ctx context.Context, ths ...things.Thing) ([]thin
 	}
 	defer tx.Rollback()
 
-	q := `INSERT INTO things (id, group_id, profile_id, name, key, metadata)
-		  VALUES (:id, :group_id, :profile_id, :name, :key, :metadata);`
+	q := `INSERT INTO things (id, group_id, profile_id, name, key, external_key, metadata)
+		  VALUES (:id, :group_id, :profile_id, :name, :key, :external_key, :metadata);`
 
 	for _, thing := range ths {
 		dbth, err := toDBThing(thing)
@@ -73,86 +74,15 @@ func (tr thingRepository) Save(ctx context.Context, ths ...things.Thing) ([]thin
 }
 
 func (tr thingRepository) Update(ctx context.Context, t things.Thing) error {
-	nq := ""
-	if t.Name != "" {
-		nq += "name = :name,"
-	}
-	if t.ProfileID != "" {
-		nq += "profile_id = :profile_id,"
-	}
-	q := fmt.Sprintf(`UPDATE things SET %s metadata = :metadata WHERE id = :id;`, nq)
-
-	dbth, err := toDBThing(t)
-	if err != nil {
-		return errors.Wrap(dbutil.ErrUpdateEntity, err)
-	}
-
-	res, errdb := tr.db.NamedExecContext(ctx, q, dbth)
-	if errdb != nil {
-		pgErr, ok := errdb.(*pgconn.PgError)
-		if ok {
-			switch pgErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(dbutil.ErrMalformedEntity, errdb)
-			case pgerrcode.StringDataRightTruncationDataException:
-				return errors.Wrap(dbutil.ErrMalformedEntity, err)
-			}
-		}
-
-		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
-	}
-
-	cnt, errdb := res.RowsAffected()
-	if errdb != nil {
-		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
-	}
-
-	if cnt == 0 {
-		return dbutil.ErrNotFound
-	}
-
-	return nil
+	return tr.update(ctx, t)
 }
 
-func (tr thingRepository) UpdateKey(ctx context.Context, id, key string) error {
-	q := `UPDATE things SET key = :key WHERE id = :id;`
-
-	dbth := dbThing{
-		ID:  id,
-		Key: key,
-	}
-
-	res, err := tr.db.NamedExecContext(ctx, q, dbth)
-	if err != nil {
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pgErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(dbutil.ErrMalformedEntity, err)
-			case pgerrcode.UniqueViolation:
-				return errors.Wrap(dbutil.ErrConflict, err)
-			case pgerrcode.StringDataRightTruncationDataException:
-				return errors.Wrap(dbutil.ErrMalformedEntity, err)
-			}
-		}
-
-		return errors.Wrap(dbutil.ErrUpdateEntity, err)
-	}
-
-	cnt, err := res.RowsAffected()
-	if err != nil {
-		return errors.Wrap(dbutil.ErrUpdateEntity, err)
-	}
-
-	if cnt == 0 {
-		return dbutil.ErrNotFound
-	}
-
-	return nil
+func (tr thingRepository) UpdateGroupAndProfile(ctx context.Context, t things.Thing) error {
+	return tr.update(ctx, t)
 }
 
 func (tr thingRepository) RetrieveByID(ctx context.Context, id string) (things.Thing, error) {
-	q := `SELECT group_id, profile_id, name, key, metadata FROM things WHERE id = $1;`
+	q := `SELECT group_id, profile_id, name, key, external_key, metadata FROM things WHERE id = $1;`
 
 	dbth := dbThing{ID: id}
 
@@ -168,14 +98,25 @@ func (tr thingRepository) RetrieveByID(ctx context.Context, id string) (things.T
 	return toThing(dbth)
 }
 
-func (tr thingRepository) RetrieveByKey(ctx context.Context, key string) (string, error) {
-	q := `SELECT id FROM things WHERE key = $1;`
+func (tr thingRepository) RetrieveByKey(ctx context.Context, key things.ThingKey) (string, error) {
+	query := `
+		SELECT id FROM things WHERE %s = $1;	
+	`
+	switch key.Type {
+	case things.KeyTypeInternal:
+		query = fmt.Sprintf(query, "key")
+	case things.KeyTypeExternal:
+		query = fmt.Sprintf(query, "external_key")
+	default:
+		return "", apiutil.ErrInvalidThingKeyType
+	}
 
 	var id string
-	if err := tr.db.QueryRowxContext(ctx, q, key).Scan(&id); err != nil {
+	if err := tr.db.QueryRowxContext(ctx, query, key.Value).Scan(&id); err != nil {
 		if err == sql.ErrNoRows {
 			return "", errors.Wrap(dbutil.ErrNotFound, err)
 		}
+
 		return "", errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
@@ -198,7 +139,7 @@ func (tr thingRepository) RetrieveByGroups(ctx context.Context, groupIDs []strin
 	}
 
 	whereClause := dbutil.BuildWhereClause(giq, nq, mq)
-	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
+	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, external_key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
 
 	params := map[string]interface{}{
@@ -212,7 +153,7 @@ func (tr thingRepository) RetrieveByGroups(ctx context.Context, groupIDs []strin
 }
 
 func (tr thingRepository) BackupAll(ctx context.Context) ([]things.Thing, error) {
-	query := "SELECT id, group_id, profile_id, name, key, metadata FROM things"
+	query := "SELECT id, group_id, profile_id, name, key, external_key, metadata FROM things"
 
 	var items []dbThing
 	err := tr.db.SelectContext(ctx, &items, query)
@@ -244,7 +185,7 @@ func (tr thingRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetada
 	}
 
 	whereClause := dbutil.BuildWhereClause(nq, mq)
-	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
+	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, external_key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
 
 	params := map[string]interface{}{
@@ -274,7 +215,7 @@ func (tr thingRepository) RetrieveByProfile(ctx context.Context, prID string, pm
 	}
 
 	whereClause := dbutil.BuildWhereClause(baseCondition, mq)
-	query := fmt.Sprintf(`SELECT id, group_id, name, key, metadata FROM things %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	query := fmt.Sprintf(`SELECT id, group_id, name, key, external_key, metadata FROM things %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
 
 	params := map[string]interface{}{
@@ -294,7 +235,7 @@ func (tr thingRepository) BackupByGroups(ctx context.Context, groupIDs []string)
 
 	giq := dbutil.GetGroupIDsQuery(groupIDs)
 	whereClause := dbutil.BuildWhereClause(giq)
-	query := fmt.Sprintf("SELECT id, group_id, profile_id, name, key, metadata FROM things %s", whereClause)
+	query := fmt.Sprintf("SELECT id, group_id, profile_id, name, key, external_key, metadata FROM things %s", whereClause)
 
 	var items []dbThing
 	err := tr.db.SelectContext(ctx, &items, query)
@@ -325,6 +266,72 @@ func (tr thingRepository) Remove(ctx context.Context, ids ...string) error {
 		if err != nil {
 			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
+	}
+
+	return nil
+}
+
+func (tr thingRepository) UpdateExternalKey(ctx context.Context, key, thingID string) error {
+	query := `
+		UPDATE things
+		SET external_key = :key
+		WHERE id = :thingID
+	`
+
+	params := map[string]any{
+		"thingID": thingID,
+		"key":     key,
+	}
+
+	res, err := tr.db.NamedExecContext(ctx, query, params)
+	if err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return errors.Wrap(dbutil.ErrConflict, err)
+			}
+		}
+
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
+	}
+
+	cnt, err := res.RowsAffected()
+	if err != nil {
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
+	}
+
+	if cnt == 0 {
+		return dbutil.ErrNotFound
+	}
+
+	return nil
+}
+
+func (tr thingRepository) RemoveExternalKey(ctx context.Context, thingID string) error {
+	query := `
+		UPDATE things
+		SET external_key = NULL
+		WHERE id = :thingID
+	`
+
+	params := map[string]any{
+		"thingID": thingID,
+	}
+
+	_, err := tr.db.NamedExecContext(ctx, query, params)
+	if err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			}
+		}
+
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil
@@ -365,13 +372,72 @@ func (tr thingRepository) retrieve(ctx context.Context, query, cquery string, pa
 	return page, nil
 }
 
+func (tr thingRepository) update(ctx context.Context, t things.Thing) error {
+	var fields []string
+
+	if t.Name != "" {
+		fields = append(fields, "name = :name")
+	}
+
+	if t.Metadata != nil {
+		fields = append(fields, "metadata = :metadata")
+	}
+
+	if t.ProfileID != "" {
+		fields = append(fields, "profile_id = :profile_id")
+	}
+
+	if t.GroupID != "" {
+		fields = append(fields, "group_id = :group_id")
+	}
+
+	if t.Key != "" {
+		fields = append(fields, "key = :key")
+	}
+
+	columns := strings.Join(fields, ",")
+	q := fmt.Sprintf(`UPDATE things SET %s WHERE id = :id;`, columns)
+
+	dbth, err := toDBThing(t)
+	if err != nil {
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
+	}
+
+	res, errdb := tr.db.NamedExecContext(ctx, q, dbth)
+	if errdb != nil {
+		pgErr, ok := errdb.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, errdb)
+			case pgerrcode.StringDataRightTruncationDataException:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			}
+		}
+
+		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
+	}
+
+	cnt, errdb := res.RowsAffected()
+	if errdb != nil {
+		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
+	}
+
+	if cnt == 0 {
+		return dbutil.ErrNotFound
+	}
+
+	return nil
+}
+
 type dbThing struct {
-	ID        string `db:"id"`
-	GroupID   string `db:"group_id"`
-	ProfileID string `db:"profile_id"`
-	Name      string `db:"name"`
-	Key       string `db:"key"`
-	Metadata  []byte `db:"metadata"`
+	ID          string         `db:"id"`
+	GroupID     string         `db:"group_id"`
+	ProfileID   string         `db:"profile_id"`
+	Name        string         `db:"name"`
+	Key         string         `db:"key"`
+	ExternalKey sql.NullString `db:"external_key"`
+	Metadata    []byte         `db:"metadata"`
 }
 
 func toDBThing(th things.Thing) (dbThing, error) {
@@ -385,12 +451,13 @@ func toDBThing(th things.Thing) (dbThing, error) {
 	}
 
 	return dbThing{
-		ID:        th.ID,
-		GroupID:   th.GroupID,
-		ProfileID: th.ProfileID,
-		Name:      th.Name,
-		Key:       th.Key,
-		Metadata:  data,
+		ID:          th.ID,
+		GroupID:     th.GroupID,
+		ProfileID:   th.ProfileID,
+		Name:        th.Name,
+		Key:         th.Key,
+		ExternalKey: sql.NullString{String: th.ExternalKey, Valid: len(th.ExternalKey) > 0},
+		Metadata:    data,
 	}, nil
 }
 
@@ -401,11 +468,12 @@ func toThing(dbth dbThing) (things.Thing, error) {
 	}
 
 	return things.Thing{
-		ID:        dbth.ID,
-		GroupID:   dbth.GroupID,
-		ProfileID: dbth.ProfileID,
-		Name:      dbth.Name,
-		Key:       dbth.Key,
-		Metadata:  metadata,
+		ID:          dbth.ID,
+		GroupID:     dbth.GroupID,
+		ProfileID:   dbth.ProfileID,
+		Name:        dbth.Name,
+		Key:         dbth.Key,
+		ExternalKey: dbth.ExternalKey.String,
+		Metadata:    metadata,
 	}, nil
 }

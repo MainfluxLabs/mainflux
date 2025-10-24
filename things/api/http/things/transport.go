@@ -142,9 +142,9 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		opts...,
 	))
 
-	mux.Patch("/things/:id/key", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_key")(updateKeyEndpoint(svc)),
-		decodeUpdateKey,
+	mux.Patch("/things/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_thing_group_and_profile")(updateThingGroupAndProfileEndpoint(svc)),
+		decodeUpdateThingGroupAndProfile,
 		encodeResponse,
 		opts...,
 	))
@@ -166,6 +166,20 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 	mux.Patch("/things", kithttp.NewServer(
 		kitot.TraceServer(tracer, "remove_things")(removeThingsEndpoint(svc)),
 		decodeRemoveThings,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Patch("/things/:id/external-key", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_external_key")(updateExternalKeyEndpoint(svc)),
+		decodeUpdateExternalKey,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Delete("/things/:id/external-key", kithttp.NewServer(
+		kitot.TraceServer(tracer, "remove_external_key")(removeExternalKeyEndpoint(svc)),
+		decodeRemoveExternalKey,
 		encodeResponse,
 		opts...,
 	))
@@ -230,15 +244,16 @@ func decodeUpdateThing(_ context.Context, r *http.Request) (interface{}, error) 
 	return req, nil
 }
 
-func decodeUpdateKey(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeUpdateThingGroupAndProfile(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := updateKeyReq{
+	req := updateThingGroupAndProfileReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
@@ -248,7 +263,7 @@ func decodeUpdateKey(_ context.Context, r *http.Request) (interface{}, error) {
 
 func decodeViewMetadata(_ context.Context, r *http.Request) (interface{}, error) {
 	req := viewMetadataReq{
-		key: apiutil.ExtractThingKey(r),
+		ThingKey: things.ExtractThingKey(r),
 	}
 
 	return req, nil
@@ -500,6 +515,31 @@ func decodeIdentify(_ context.Context, r *http.Request) (interface{}, error) {
 	req := identifyReq{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeUpdateExternalKey(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := updateExternalKeyReq{
+		token:   apiutil.ExtractBearerToken(r),
+		thingID: bone.GetValue(r, apiutil.IDKey),
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeRemoveExternalKey(_ context.Context, r *http.Request) (any, error) {
+	req := resourceReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
 	return req, nil

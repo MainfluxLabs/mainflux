@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -134,9 +135,33 @@ func (jr *jsonRepository) fmtCondition(rpm readers.JSONPageMetadata) string {
 		case "to":
 			condition = fmt.Sprintf(`%s %s created <= :to`, condition, op)
 			op = "AND"
+		case "filter":
+			filterPath := buildPayloadFilterPath(rpm.Filter)
+			condition = fmt.Sprintf(`%s %s %s IS NOT NULL`, condition, op, filterPath)
+			op = "AND"
 		}
 	}
 	return condition
+}
+
+func buildPayloadFilterPath(field string) string {
+	parts := strings.Split(field, ".")
+	if len(parts) == 1 {
+		return fmt.Sprintf("payload->>'%s'", parts[0])
+	}
+
+	var path strings.Builder
+	path.WriteString("payload")
+
+	for i, part := range parts {
+		if i == len(parts)-1 {
+			path.WriteString(fmt.Sprintf("->>'%s'", part))
+		} else {
+			path.WriteString(fmt.Sprintf("->'%s'", part))
+		}
+	}
+
+	return path.String()
 }
 
 func (jr *jsonRepository) buildQueryParams(rpm readers.JSONPageMetadata) map[string]interface{} {
@@ -146,6 +171,7 @@ func (jr *jsonRepository) buildQueryParams(rpm readers.JSONPageMetadata) map[str
 		"subtopic":  rpm.Subtopic,
 		"publisher": rpm.Publisher,
 		"protocol":  rpm.Protocol,
+		"filter":    rpm.Filter,
 		"from":      rpm.From,
 		"to":        rpm.To,
 	}

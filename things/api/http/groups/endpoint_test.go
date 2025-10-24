@@ -83,7 +83,7 @@ func (tr testRequest) make() (*http.Response, error) {
 		return nil, err
 	}
 	if tr.key != "" {
-		req.Header.Set("Authorization", apiutil.ThingPrefix+tr.key)
+		req.Header.Set("Authorization", apiutil.ThingKeyPrefixInternal+tr.key)
 	}
 	if tr.token != "" {
 		req.Header.Set("Authorization", apiutil.BearerPrefix+tr.token)

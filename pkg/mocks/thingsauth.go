@@ -30,8 +30,8 @@ func NewThingsServiceClient(profiles map[string]things.Profile, things map[strin
 	return &thingsServiceMock{profiles, things, groups}
 }
 
-func (svc thingsServiceMock) GetPubConfByKey(_ context.Context, in *protomfx.PubConfByKeyReq, _ ...grpc.CallOption) (*protomfx.PubConfByKeyRes, error) {
-	key := in.GetKey()
+func (svc thingsServiceMock) GetPubConfByKey(_ context.Context, in *protomfx.ThingKey, _ ...grpc.CallOption) (*protomfx.PubConfByKeyRes, error) {
+	key := in.GetValue()
 
 	if key == "invalid" {
 		return nil, errors.ErrAuthentication
@@ -100,7 +100,24 @@ func (svc thingsServiceMock) CanUserAccessGroup(_ context.Context, req *protomfx
 	return &empty.Empty{}, errors.ErrAuthorization
 }
 
-func (svc thingsServiceMock) CanThingAccessGroup(_ context.Context, req *protomfx.ThingAccessReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (svc thingsServiceMock) CanUserAccessGroupThings(_ context.Context, req *protomfx.GroupThingsAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	gr, ok := svc.groups[req.GetToken()]
+	if !ok {
+		return &empty.Empty{}, errors.ErrAuthentication
+	}
+
+	for _, id := range req.ThingIds {
+		if th, ok := svc.things[id]; ok {
+			if th.GroupID != gr.ID {
+				return &empty.Empty{}, errors.ErrAuthorization
+			}
+		}
+	}
+
+	return &empty.Empty{}, nil
+}
+
+func (svc thingsServiceMock) CanThingAccessGroup(_ context.Context, req *protomfx.ThingAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
 	if th, ok := svc.things[req.GetKey()]; ok {
 		if th.GroupID == req.GetId() {
 			return &empty.Empty{}, nil
@@ -110,8 +127,8 @@ func (svc thingsServiceMock) CanThingAccessGroup(_ context.Context, req *protomf
 	return &empty.Empty{}, errors.ErrAuthorization
 }
 
-func (svc thingsServiceMock) Identify(_ context.Context, token *protomfx.Token, _ ...grpc.CallOption) (*protomfx.ThingID, error) {
-	if th, ok := svc.things[token.GetValue()]; ok {
+func (svc thingsServiceMock) Identify(_ context.Context, key *protomfx.ThingKey, _ ...grpc.CallOption) (*protomfx.ThingID, error) {
+	if th, ok := svc.things[key.GetValue()]; ok {
 		return &protomfx.ThingID{Value: th.ID}, nil
 	}
 	return nil, errors.ErrAuthentication

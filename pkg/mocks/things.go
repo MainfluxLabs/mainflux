@@ -93,6 +93,10 @@ func (svc *mainfluxThings) UpdateThing(context.Context, string, things.Thing) er
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) UpdateThingGroupAndProfile(context.Context, string, things.Thing) error {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) UpdateThingsMetadata(context.Context, string, ...things.Thing) error {
 	panic("not implemented")
 }
@@ -101,7 +105,7 @@ func (svc *mainfluxThings) UpdateKey(context.Context, string, string, string) er
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewMetadataByKey(context.Context, string) (things.Metadata, error) {
+func (svc *mainfluxThings) ViewMetadataByKey(context.Context, things.ThingKey) (things.Metadata, error) {
 	panic("not implemented")
 }
 
@@ -207,7 +211,7 @@ func (svc *mainfluxThings) RemoveProfiles(context.Context, string, ...string) er
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) GetPubConfByKey(context.Context, string) (things.PubConfInfo, error) {
+func (svc *mainfluxThings) GetPubConfByKey(context.Context, things.ThingKey) (things.PubConfInfo, error) {
 	panic("not implemented")
 }
 
@@ -227,11 +231,15 @@ func (svc *mainfluxThings) CanUserAccessGroup(ctx context.Context, req things.Us
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) CanUserAccessGroupThings(ctx context.Context, req things.GroupThingsReq) error {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) CanThingAccessGroup(context.Context, things.ThingAccessReq) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) Identify(context.Context, string) (string, error) {
+func (svc *mainfluxThings) Identify(context.Context, things.ThingKey) (string, error) {
 	panic("not implemented")
 }
 
@@ -305,4 +313,13 @@ func (svc *mainfluxThings) UpdateGroupMemberships(_ context.Context, token strin
 
 func (svc *mainfluxThings) RemoveGroupMemberships(_ context.Context, token, groupID string, memberIDs ...string) error {
 	panic("not implemented")
+}
+
+func (svc *mainfluxThings) UpdateExternalKey(ctx context.Context, token, key, thingID string) error {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) RemoveExternalKey(ctx context.Context, token, thingID string) error {
+	panic("not implemented")
+
 }

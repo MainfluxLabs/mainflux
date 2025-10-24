@@ -11,12 +11,13 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 // Service specifies coap service API.
 type Service interface {
 	// Publish Message
-	Publish(ctx context.Context, token string, msg protomfx.Message) error
+	Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error
 }
 
 var _ Service = (*adapterService)(nil)
@@ -36,8 +37,8 @@ func New(things protomfx.ThingsServiceClient, rules protomfx.RulesServiceClient,
 	}
 }
 
-func (as *adapterService) Publish(ctx context.Context, key string, message protomfx.Message) error {
-	cr := &protomfx.PubConfByKeyReq{Key: key}
+func (as *adapterService) Publish(ctx context.Context, key things.ThingKey, message protomfx.Message) error {
+	cr := &protomfx.ThingKey{Value: key.Value, Type: key.Type}
 	pc, err := as.things.GetPubConfByKey(ctx, cr)
 	if err != nil {
 		return err

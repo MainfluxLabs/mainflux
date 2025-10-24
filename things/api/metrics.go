@@ -58,13 +58,13 @@ func (ms *metricsMiddleware) UpdateThingsMetadata(ctx context.Context, token str
 	return ms.svc.UpdateThingsMetadata(ctx, token, things...)
 }
 
-func (ms *metricsMiddleware) UpdateKey(ctx context.Context, token, id, key string) error {
+func (ms *metricsMiddleware) UpdateThingGroupAndProfile(ctx context.Context, token string, thing things.Thing) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "update_key").Add(1)
-		ms.latency.With("method", "update_key").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "update_thing_group_and_profile").Add(1)
+		ms.latency.With("method", "update_thing_group_and_profile").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.UpdateKey(ctx, token, id, key)
+	return ms.svc.UpdateThingGroupAndProfile(ctx, token, thing)
 }
 
 func (ms *metricsMiddleware) ViewThing(ctx context.Context, token, id string) (things.Thing, error) {
@@ -76,13 +76,13 @@ func (ms *metricsMiddleware) ViewThing(ctx context.Context, token, id string) (t
 	return ms.svc.ViewThing(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) ViewMetadataByKey(ctx context.Context, thingKey string) (things.Metadata, error) {
+func (ms *metricsMiddleware) ViewMetadataByKey(ctx context.Context, key things.ThingKey) (things.Metadata, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_metadata_by_key").Add(1)
 		ms.latency.With("method", "view_metadata_by_key").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ViewMetadataByKey(ctx, thingKey)
+	return ms.svc.ViewMetadataByKey(ctx, key)
 }
 
 func (ms *metricsMiddleware) ListThings(ctx context.Context, token string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
@@ -184,7 +184,7 @@ func (ms *metricsMiddleware) RemoveProfiles(ctx context.Context, token string, i
 	return ms.svc.RemoveProfiles(ctx, token, ids...)
 }
 
-func (ms *metricsMiddleware) GetPubConfByKey(ctx context.Context, key string) (things.PubConfInfo, error) {
+func (ms *metricsMiddleware) GetPubConfByKey(ctx context.Context, key things.ThingKey) (things.PubConfInfo, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "get_pub_conf_by_key").Add(1)
 		ms.latency.With("method", "get_pub_conf_by_key").Observe(time.Since(begin).Seconds())
@@ -228,6 +228,15 @@ func (ms *metricsMiddleware) CanUserAccessGroup(ctx context.Context, req things.
 	return ms.svc.CanUserAccessGroup(ctx, req)
 }
 
+func (ms *metricsMiddleware) CanUserAccessGroupThings(ctx context.Context, req things.GroupThingsReq) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "can_user_access_group_things").Add(1)
+		ms.latency.With("method", "can_user_access_group_things").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.CanUserAccessGroupThings(ctx, req)
+}
+
 func (ms *metricsMiddleware) CanThingAccessGroup(ctx context.Context, req things.ThingAccessReq) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "can_thing_access_group").Add(1)
@@ -237,7 +246,7 @@ func (ms *metricsMiddleware) CanThingAccessGroup(ctx context.Context, req things
 	return ms.svc.CanThingAccessGroup(ctx, req)
 }
 
-func (ms *metricsMiddleware) Identify(ctx context.Context, key string) (string, error) {
+func (ms *metricsMiddleware) Identify(ctx context.Context, key things.ThingKey) (string, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "identify").Add(1)
 		ms.latency.With("method", "identify").Observe(time.Since(begin).Seconds())
@@ -532,4 +541,22 @@ func (ms *metricsMiddleware) RemoveGroupMemberships(ctx context.Context, token, 
 	}(time.Now())
 
 	return ms.svc.RemoveGroupMemberships(ctx, token, groupID, memberIDs...)
+}
+
+func (ms *metricsMiddleware) UpdateExternalKey(ctx context.Context, token, key, thingID string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "update_external_key").Add(1)
+		ms.latency.With("method", "update_external_key").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.UpdateExternalKey(ctx, token, key, thingID)
+}
+
+func (ms *metricsMiddleware) RemoveExternalKey(ctx context.Context, token, thingID string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "remove_external_key").Add(1)
+		ms.latency.With("method", "remove_external_key").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RemoveExternalKey(ctx, token, thingID)
 }

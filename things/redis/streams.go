@@ -82,19 +82,42 @@ func (es eventStore) UpdateThingsMetadata(ctx context.Context, token string, thi
 	return es.svc.UpdateThingsMetadata(ctx, token, things...)
 }
 
-// UpdateKey doesn't send event because key shouldn't be sent over stream.
-// Maybe we can start publishing this event at some point, without key value
-// in order to notify adapters to disconnect connected things after key update.
-func (es eventStore) UpdateKey(ctx context.Context, token, id, key string) error {
-	return es.svc.UpdateKey(ctx, token, id, key)
+func (es eventStore) UpdateThingGroupAndProfile(ctx context.Context, token string, thing things.Thing) error {
+	if err := es.svc.UpdateThing(ctx, token, thing); err != nil {
+		return err
+	}
+
+	event := updateThingGroupAndProfileEvent{
+		id:        thing.ID,
+		profileID: thing.ProfileID,
+		groupID:   thing.GroupID,
+	}
+
+	record := &redis.XAddArgs{
+		Stream:       streamID,
+		MaxLenApprox: streamLen,
+		Values:       event.Encode(),
+	}
+
+	es.client.XAdd(ctx, record).Err()
+
+	return nil
+}
+
+func (es eventStore) UpdateExternalKey(ctx context.Context, token, key, thingID string) error {
+	return es.svc.UpdateExternalKey(ctx, token, key, thingID)
+}
+
+func (es eventStore) RemoveExternalKey(ctx context.Context, token, thingID string) error {
+	return es.svc.RemoveExternalKey(ctx, token, thingID)
 }
 
 func (es eventStore) ViewThing(ctx context.Context, token, id string) (things.Thing, error) {
 	return es.svc.ViewThing(ctx, token, id)
 }
 
-func (es eventStore) ViewMetadataByKey(ctx context.Context, thingKey string) (things.Metadata, error) {
-	return es.svc.ViewMetadataByKey(ctx, thingKey)
+func (es eventStore) ViewMetadataByKey(ctx context.Context, key things.ThingKey) (things.Metadata, error) {
+	return es.svc.ViewMetadataByKey(ctx, key)
 }
 
 func (es eventStore) ListThings(ctx context.Context, token string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
@@ -250,7 +273,7 @@ func (es eventStore) RemoveProfiles(ctx context.Context, token string, ids ...st
 	return nil
 }
 
-func (es eventStore) GetPubConfByKey(ctx context.Context, key string) (things.PubConfInfo, error) {
+func (es eventStore) GetPubConfByKey(ctx context.Context, key things.ThingKey) (things.PubConfInfo, error) {
 	return es.svc.GetPubConfByKey(ctx, key)
 }
 
@@ -270,11 +293,15 @@ func (es eventStore) CanUserAccessGroup(ctx context.Context, req things.UserAcce
 	return es.svc.CanUserAccessGroup(ctx, req)
 }
 
+func (es eventStore) CanUserAccessGroupThings(ctx context.Context, req things.GroupThingsReq) error {
+	return es.svc.CanUserAccessGroupThings(ctx, req)
+}
+
 func (es eventStore) CanThingAccessGroup(ctx context.Context, req things.ThingAccessReq) error {
 	return es.svc.CanThingAccessGroup(ctx, req)
 }
 
-func (es eventStore) Identify(ctx context.Context, key string) (string, error) {
+func (es eventStore) Identify(ctx context.Context, key things.ThingKey) (string, error) {
 	return es.svc.Identify(ctx, key)
 }
 

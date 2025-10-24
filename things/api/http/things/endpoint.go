@@ -25,10 +25,11 @@ func createThingsEndpoint(svc things.Service) endpoint.Endpoint {
 		ths := []things.Thing{}
 		for _, t := range req.Things {
 			th := things.Thing{
-				ID:       t.ID,
-				Name:     t.Name,
-				Key:      t.Key,
-				Metadata: t.Metadata,
+				ID:          t.ID,
+				Name:        t.Name,
+				Key:         t.Key,
+				ExternalKey: t.ExternalKey,
+				Metadata:    t.Metadata,
 			}
 			ths = append(ths, th)
 		}
@@ -45,12 +46,13 @@ func createThingsEndpoint(svc things.Service) endpoint.Endpoint {
 
 		for _, t := range saved {
 			th := thingRes{
-				ID:        t.ID,
-				GroupID:   t.GroupID,
-				ProfileID: t.ProfileID,
-				Name:      t.Name,
-				Key:       t.Key,
-				Metadata:  t.Metadata,
+				ID:          t.ID,
+				GroupID:     t.GroupID,
+				ProfileID:   t.ProfileID,
+				Name:        t.Name,
+				Key:         t.Key,
+				ExternalKey: t.ExternalKey,
+				Metadata:    t.Metadata,
 			}
 			res.Things = append(res.Things, th)
 		}
@@ -73,12 +75,13 @@ func viewThingEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		res := viewThingRes{
-			ID:        thing.ID,
-			GroupID:   thing.GroupID,
-			ProfileID: thing.ProfileID,
-			Name:      thing.Name,
-			Key:       thing.Key,
-			Metadata:  thing.Metadata,
+			ID:          thing.ID,
+			GroupID:     thing.GroupID,
+			ProfileID:   thing.ProfileID,
+			Name:        thing.Name,
+			Key:         thing.Key,
+			ExternalKey: thing.ExternalKey,
+			Metadata:    thing.Metadata,
 		}
 		return res, nil
 	}
@@ -92,7 +95,7 @@ func viewMetadataByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		metadata, err := svc.ViewMetadataByKey(ctx, req.key)
+		metadata, err := svc.ViewMetadataByKey(ctx, req.ThingKey)
 		if err != nil {
 			return nil, err
 		}
@@ -248,13 +251,36 @@ func updateThingEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		thing := things.Thing{
-			ID:        req.id,
-			ProfileID: req.ProfileID,
-			Name:      req.Name,
-			Metadata:  req.Metadata,
+			ID:       req.id,
+			Name:     req.Name,
+			Key:      req.Key,
+			Metadata: req.Metadata,
 		}
 
 		if err := svc.UpdateThing(ctx, req.token, thing); err != nil {
+			return nil, err
+		}
+
+		res := thingRes{ID: req.id, created: false}
+		return res, nil
+	}
+}
+
+func updateThingGroupAndProfileEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(updateThingGroupAndProfileReq)
+
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		thing := things.Thing{
+			ID:        req.id,
+			ProfileID: req.ProfileID,
+			GroupID:   req.GroupID,
+		}
+
+		if err := svc.UpdateThingGroupAndProfile(ctx, req.token, thing); err != nil {
 			return nil, err
 		}
 
@@ -287,23 +313,6 @@ func updateThingsMetadataEndpoint(svc things.Service) endpoint.Endpoint {
 		res := thingsRes{
 			created: false,
 		}
-		return res, nil
-	}
-}
-
-func updateKeyEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(updateKeyReq)
-
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		if err := svc.UpdateKey(ctx, req.token, req.id, req.Key); err != nil {
-			return nil, err
-		}
-
-		res := thingRes{ID: req.id, created: false}
 		return res, nil
 	}
 }
@@ -347,7 +356,7 @@ func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		id, err := svc.Identify(ctx, req.Token)
+		id, err := svc.Identify(ctx, req.ThingKey)
 		if err != nil {
 			return nil, err
 		}
@@ -357,6 +366,36 @@ func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		return res, nil
+	}
+}
+
+func updateExternalKeyEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(updateExternalKeyReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.UpdateExternalKey(ctx, req.token, req.Key, req.thingID); err != nil {
+			return nil, err
+		}
+
+		return updateExternalKeyRes{}, nil
+	}
+}
+
+func removeExternalKeyEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(resourceReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.RemoveExternalKey(ctx, req.token, req.id); err != nil {
+			return nil, err
+		}
+
+		return removeRes{}, nil
 	}
 }
 
@@ -422,19 +461,20 @@ func buildThingsResponse(tp things.ThingsPage, pm apiutil.PageMetadata) ThingsPa
 }
 
 func buildBackupThingsResponse(tb things.ThingsBackup, fileName string) (apiutil.ViewFileRes, error) {
-	views := make([]viewThingRes, 0, len(tb.Things))
+	things := make([]viewThingRes, 0, len(tb.Things))
 	for _, thing := range tb.Things {
-		views = append(views, viewThingRes{
-			ID:        thing.ID,
-			GroupID:   thing.GroupID,
-			ProfileID: thing.ProfileID,
-			Name:      thing.Name,
-			Key:       thing.Key,
-			Metadata:  thing.Metadata,
+		things = append(things, viewThingRes{
+			ID:          thing.ID,
+			GroupID:     thing.GroupID,
+			ProfileID:   thing.ProfileID,
+			Name:        thing.Name,
+			Key:         thing.Key,
+			ExternalKey: thing.ExternalKey,
+			Metadata:    thing.Metadata,
 		})
 	}
 
-	data, err := json.MarshalIndent(views, "", "  ")
+	data, err := json.MarshalIndent(things, "", "  ")
 	if err != nil {
 		return apiutil.ViewFileRes{}, err
 	}
@@ -448,15 +488,18 @@ func buildBackupThingsResponse(tb things.ThingsBackup, fileName string) (apiutil
 func buildThingsBackup(ths []viewThingRes) (backup things.ThingsBackup) {
 	for _, thing := range ths {
 		th := things.Thing{
-			ID:        thing.ID,
-			GroupID:   thing.GroupID,
-			ProfileID: thing.ProfileID,
-			Name:      thing.Name,
-			Key:       thing.Key,
-			Metadata:  thing.Metadata,
+			ID:          thing.ID,
+			GroupID:     thing.GroupID,
+			ProfileID:   thing.ProfileID,
+			Name:        thing.Name,
+			Key:         thing.Key,
+			ExternalKey: thing.ExternalKey,
+			Metadata:    thing.Metadata,
 		}
+
 		backup.Things = append(backup.Things, th)
 	}
+
 	return backup
 }
 
@@ -470,13 +513,15 @@ func buildBackupResponse(backup things.Backup) backupRes {
 
 	for _, thing := range backup.Things {
 		view := viewThingRes{
-			ID:        thing.ID,
-			GroupID:   thing.GroupID,
-			ProfileID: thing.ProfileID,
-			Name:      thing.Name,
-			Key:       thing.Key,
-			Metadata:  thing.Metadata,
+			ID:          thing.ID,
+			GroupID:     thing.GroupID,
+			ProfileID:   thing.ProfileID,
+			Name:        thing.Name,
+			Key:         thing.Key,
+			ExternalKey: thing.ExternalKey,
+			Metadata:    thing.Metadata,
 		}
+
 		res.Things = append(res.Things, view)
 	}
 
@@ -520,12 +565,13 @@ func buildBackupResponse(backup things.Backup) backupRes {
 func buildBackup(req restoreReq) (backup things.Backup) {
 	for _, thing := range req.Things {
 		th := things.Thing{
-			ID:        thing.ID,
-			GroupID:   thing.GroupID,
-			ProfileID: thing.ProfileID,
-			Name:      thing.Name,
-			Key:       thing.Key,
-			Metadata:  thing.Metadata,
+			ID:          thing.ID,
+			GroupID:     thing.GroupID,
+			ProfileID:   thing.ProfileID,
+			Name:        thing.Name,
+			Key:         thing.Key,
+			ExternalKey: thing.ExternalKey,
+			Metadata:    thing.Metadata,
 		}
 		backup.Things = append(backup.Things, th)
 	}

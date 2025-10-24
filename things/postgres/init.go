@@ -188,6 +188,12 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE group_memberships RENAME CONSTRAINT group_policies_group_id_fkey TO group_memberships_group_id_fkey`,
 				},
 			},
+			{
+				Id: "things_9",
+				Up: []string{
+					`ALTER TABLE things ADD COLUMN external_key VARCHAR(1024) UNIQUE NULL CHECK (LENGTH(external_key) >= 5);`,
+				},
+			},
 		},
 	}
 
