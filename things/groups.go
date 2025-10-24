@@ -299,10 +299,6 @@ func (ts *thingsService) ViewGroupByThing(ctx context.Context, token string, thi
 }
 
 func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, action string) error {
-	if err := ts.isAdmin(ctx, token); err == nil {
-		return nil
-	}
-
 	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
 		return err
@@ -317,13 +313,14 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 	if err != nil {
 		r, err := ts.groupMemberships.RetrieveRole(ctx, gm)
 		if err != nil {
+			// root admin check: if it isn't a group member but has all rights
+			if isAdminErr := ts.isAdmin(ctx, token); isAdminErr == nil {
+				return nil
+			}
 			return err
 		}
 		role = r
-
-		if err := ts.groupCache.SaveGroupMembership(ctx, gm.GroupID, gm.MemberID, r); err != nil {
-			return err
-		}
+		_ = ts.groupCache.SaveGroupMembership(ctx, gm.GroupID, gm.MemberID, r)
 	}
 
 	switch role {
@@ -331,20 +328,17 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 		if action == Viewer {
 			return nil
 		}
-		return errors.ErrAuthorization
 	case Editor:
 		if action == Viewer || action == Editor {
 			return nil
 		}
-		return errors.ErrAuthorization
 	case Admin:
 		if action != Owner {
 			return nil
 		}
-		return errors.ErrAuthorization
 	case Owner:
 		return nil
-	default:
-		return errors.ErrAuthorization
 	}
+
+	return errors.ErrAuthorization
 }

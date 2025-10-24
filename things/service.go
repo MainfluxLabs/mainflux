@@ -712,6 +712,9 @@ func (ts *thingsService) CanUserAccessProfile(ctx context.Context, req UserAcces
 }
 
 func (ts *thingsService) CanUserAccessGroup(ctx context.Context, req UserAccessReq) error {
+	if _, err := ts.groups.RetrieveByID(ctx, req.ID); err != nil {
+		return err
+	}
 	return ts.canAccessGroup(ctx, req.Token, req.ID, req.Action)
 }
 
