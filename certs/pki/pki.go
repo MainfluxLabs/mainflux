@@ -293,8 +293,9 @@ func (a *agent) CreateCRL(revokedCerts []pkix.RevokedCertificate) ([]byte, error
 	defer a.mu.RUnlock()
 
 	now := time.Now()
+
 	crlTemplate := &x509.RevocationList{
-		Number:              big.NewInt(1),
+		Number:              big.NewInt(now.Unix()),
 		ThisUpdate:          now,
 		NextUpdate:          now.Add(24 * time.Hour),
 		RevokedCertificates: revokedCerts,
