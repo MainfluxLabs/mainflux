@@ -212,7 +212,7 @@ func (svc service) ViewOrgInvite(ctx context.Context, token, inviteID string) (O
 		return OrgInvite{}, err
 	}
 
-	if err := svc.setInviteInfo(ctx, &invite); err != nil {
+	if err := svc.populateInviteInfo(ctx, &invite); err != nil {
 		return OrgInvite{}, err
 	}
 
@@ -299,7 +299,7 @@ func (svc service) ListOrgInvitesByOrg(ctx context.Context, token, orgID string,
 	}
 
 	for idx := range page.Invites {
-		if err := svc.setInviteInfo(ctx, &page.Invites[idx]); err != nil {
+		if err := svc.populateInviteInfo(ctx, &page.Invites[idx]); err != nil {
 			return OrgInvitesPage{}, err
 		}
 	}
@@ -330,7 +330,7 @@ func (svc service) ListOrgInvitesByUser(ctx context.Context, token, userType, us
 	}
 
 	for idx := range invitesPage.Invites {
-		if err := svc.setInviteInfo(ctx, &invitesPage.Invites[idx]); err != nil {
+		if err := svc.populateInviteInfo(ctx, &invitesPage.Invites[idx]); err != nil {
 			return OrgInvitesPage{}, err
 		}
 	}
@@ -339,7 +339,7 @@ func (svc service) ListOrgInvitesByUser(ctx context.Context, token, userType, us
 }
 
 // Sets invite.InviterEmail and invite.OrgName fields of the passed invite.
-func (svc service) setInviteInfo(ctx context.Context, invite *OrgInvite) error {
+func (svc service) populateInviteInfo(ctx context.Context, invite *OrgInvite) error {
 	org, err := svc.orgs.RetrieveByID(ctx, invite.OrgID)
 	if err != nil {
 		return err
@@ -353,8 +353,8 @@ func (svc service) setInviteInfo(ctx context.Context, invite *OrgInvite) error {
 		return err
 	}
 
-	userInviter := usersRes.GetUsers()[0]
-	invite.InviterEmail = userInviter.GetEmail()
+	inviter := usersRes.GetUsers()[0]
+	invite.InviterEmail = inviter.GetEmail()
 
 	return nil
 }
