@@ -32,23 +32,25 @@ var _ Service = (*certsService)(nil)
 // Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
-	// IssueCert issues certificate for given thing id if access is granted with token
+	// IssueCert issues certificate for given thing id if access is granted with token.
 	IssueCert(ctx context.Context, token, thingID, ttl string, keyBits int, keyType string) (Cert, error)
 
-	// ListCerts lists certificates issued for a given thing ID
+	// ListCerts lists certificates issued for a given thing ID.
 	ListCerts(ctx context.Context, token, thingID string, offset, limit uint64) (Page, error)
 
-	// ListSerials lists certificate serial IDs issued for a given thing ID
+	// ListSerials lists certificate serial IDs issued for a given thing ID.
 	ListSerials(ctx context.Context, token, thingID string, offset, limit uint64) (Page, error)
 
-	// ViewCert retrieves the certificate issued for a given serial ID
+	// ViewCert retrieves the certificate issued for a given serial ID.
 	ViewCert(ctx context.Context, token, serialID string) (Cert, error)
 
-	// RevokeCert revokes a certificate for a given serial ID
+	// RevokeCert revokes a certificate for a given serial ID.
 	RevokeCert(ctx context.Context, token, serialID string) (Revoke, error)
 
+	// GetCRL is used to get Certificate Revocation Lists that currently exists.
 	GetCRL(ctx context.Context) ([]byte, error)
 
+	// RenewCert extends the expiration date of a certificate.
 	RenewCert(ctx context.Context, token, serialID string) (Cert, error)
 }
 
@@ -206,25 +208,25 @@ func (cs *certsService) ViewCert(ctx context.Context, token, serialID string) (C
 }
 
 func (cs *certsService) GetCRL(ctx context.Context) ([]byte, error) {
-	serials, err := cs.certsRepo.RetrieveRevokedSerials(ctx)
+	revokedCerts, err := cs.certsRepo.RetrieveRevokedCertificates(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var revokedCerts []pkix.RevokedCertificate
-	for _, serial := range serials {
+	var revokedCertList []pkix.RevokedCertificate
+	for _, cert := range revokedCerts {
 		serialNum := new(big.Int)
-		if _, ok := serialNum.SetString(serial, 10); !ok {
+		if _, ok := serialNum.SetString(cert.Serial, 10); !ok {
 			continue
 		}
 
-		revokedCerts = append(revokedCerts, pkix.RevokedCertificate{
+		revokedCertList = append(revokedCertList, pkix.RevokedCertificate{
 			SerialNumber:   serialNum,
-			RevocationTime: time.Now(),
+			RevocationTime: cert.RevokedAt,
 		})
 	}
 
-	return cs.pki.CreateCRL(revokedCerts)
+	return cs.pki.CreateCRL(revokedCertList)
 }
 
 func (cs *certsService) RenewCert(ctx context.Context, token, serialID string) (Cert, error) {
