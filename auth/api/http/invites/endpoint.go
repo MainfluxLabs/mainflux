@@ -134,6 +134,7 @@ func buildOrgInviteRes(inv auth.OrgInvite) orgInviteRes {
 	return orgInviteRes{
 		ID:           inv.ID,
 		InviteeID:    inv.InviteeID,
+		InviteeEmail: inv.InviteeEmail,
 		InviteeRole:  inv.InviteeRole,
 		InviterID:    inv.InviterID,
 		InviterEmail: inv.InviterEmail,

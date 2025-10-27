@@ -70,6 +70,7 @@ func (res respondOrgInviteRes) Empty() bool {
 type orgInviteRes struct {
 	ID           string    `json:"id"`
 	InviteeID    string    `json:"invitee_id"`
+	InviteeEmail string    `json:"invitee_email"`
 	InviterID    string    `json:"inviter_id"`
 	InviterEmail string    `json:"inviter_email"`
 	OrgID        string    `json:"org_id"`
