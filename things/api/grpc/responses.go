@@ -28,10 +28,6 @@ type groupIDRes struct {
 	groupID string
 }
 
-type profileIDRes struct {
-	profileID string
-}
-
 type groupIDsRes struct {
 	groupIDs []string
 }

@@ -122,28 +122,6 @@ func canUserAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func canUserAccessGroupThingsEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(userAccessGroupThingsReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		r := things.GroupThingsReq{
-			Token:    req.token,
-			GroupID:  req.groupID,
-			Action:   req.action,
-			ThingIDs: req.thingIDs,
-		}
-
-		if err := svc.CanUserAccessGroupThings(ctx, r); err != nil {
-			return emptyRes{}, err
-		}
-
-		return emptyRes{}, nil
-	}
-}
-
 func canThingAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(thingAccessGroupReq)

@@ -23,7 +23,6 @@ service ThingsService {
     rpc CanUserAccessThing(UserAccessReq) returns (google.protobuf.Empty) {}
     rpc CanUserAccessProfile(UserAccessReq) returns (google.protobuf.Empty) {}
     rpc CanUserAccessGroup(UserAccessReq) returns (google.protobuf.Empty) {}
-    rpc CanUserAccessGroupThings(GroupThingsAccessReq) returns (google.protobuf.Empty) {}
     rpc CanThingAccessGroup(ThingAccessReq) returns (google.protobuf.Empty) {}
     rpc Identify(ThingKey) returns (ThingID) {}
     rpc GetGroupIDByThingID(ThingID) returns (GroupID) {}
@@ -138,13 +137,6 @@ message UserAccessReq {
 message ThingAccessReq {
     string key = 1;
     string id  = 2;
-}
-
-message GroupThingsAccessReq {
-    string token              = 1;
-    string group_id           = 2;
-    string action             = 3;
-    repeated string thing_ids = 4;
 }
 
 message User {
