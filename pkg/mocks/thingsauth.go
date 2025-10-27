@@ -55,7 +55,7 @@ func (svc thingsServiceMock) GetPubConfByKey(_ context.Context, in *protomfx.Thi
 	return &protomfx.PubConfByKeyRes{PublisherID: svc.things[key].ID}, nil
 }
 
-func (svc thingsServiceMock) GetConfigByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ConfigByThingIDRes, error) {
+func (svc thingsServiceMock) GetConfigByThingID(context.Context, *protomfx.ThingID, ...grpc.CallOption) (*protomfx.ConfigByThingIDRes, error) {
 	panic("not implemented")
 }
 
@@ -98,23 +98,6 @@ func (svc thingsServiceMock) CanUserAccessGroup(_ context.Context, req *protomfx
 	}
 
 	return &empty.Empty{}, errors.ErrAuthorization
-}
-
-func (svc thingsServiceMock) CanUserAccessGroupThings(_ context.Context, req *protomfx.GroupThingsAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
-	gr, ok := svc.groups[req.GetToken()]
-	if !ok {
-		return &empty.Empty{}, errors.ErrAuthentication
-	}
-
-	for _, id := range req.ThingIds {
-		if th, ok := svc.things[id]; ok {
-			if th.GroupID != gr.ID {
-				return &empty.Empty{}, errors.ErrAuthorization
-			}
-		}
-	}
-
-	return &empty.Empty{}, nil
 }
 
 func (svc thingsServiceMock) CanThingAccessGroup(_ context.Context, req *protomfx.ThingAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {

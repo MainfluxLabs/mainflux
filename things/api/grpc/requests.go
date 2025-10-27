@@ -8,8 +8,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
-const minLen = 1
-
 type thingKey struct {
 	value   string
 	keyType string
@@ -90,24 +88,6 @@ type userAccessGroupReq struct {
 func (req userAccessGroupReq) validate() error {
 	if req.id == "" {
 		return apiutil.ErrMissingGroupID
-	}
-
-	return req.accessReq.validate()
-}
-
-type userAccessGroupThingsReq struct {
-	accessReq
-	groupID  string
-	thingIDs []string
-}
-
-func (req userAccessGroupThingsReq) validate() error {
-	if req.groupID == "" {
-		return apiutil.ErrMissingGroupID
-	}
-
-	if len(req.thingIDs) < minLen {
-		return apiutil.ErrEmptyList
 	}
 
 	return req.accessReq.validate()
