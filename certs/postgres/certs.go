@@ -23,72 +23,6 @@ import (
 
 var _ certs.Repository = (*certsRepository)(nil)
 
-// NOTE: custom type for PostgreSQL TEXT[] arrays, might delete later
-type StringArray []string
-
-func (a *StringArray) Scan(src interface{}) error {
-	if src == nil {
-		*a = []string{}
-		return nil
-	}
-
-	switch v := src.(type) {
-	case []byte:
-		return a.scanBytes(v)
-	case string:
-		return a.scanBytes([]byte(v))
-	case []string:
-		*a = v
-		return nil
-	default:
-		return fmt.Errorf("cannot scan %T to StringArray", src)
-	}
-}
-
-func (a *StringArray) scanBytes(src []byte) error {
-	str := string(src)
-
-	// Handle empty array
-	if str == "{}" || str == "" {
-		*a = []string{}
-		return nil
-	}
-
-	str = strings.TrimPrefix(str, "{")
-	str = strings.TrimSuffix(str, "}")
-
-	if str == "" {
-		*a = []string{}
-		return nil
-	}
-
-	parts := strings.Split(str, ",")
-	result := make([]string, len(parts))
-
-	for i, part := range parts {
-		part = strings.TrimSpace(part)
-		part = strings.Trim(part, "\"")
-		result[i] = part
-	}
-
-	*a = result
-	return nil
-}
-
-func (a StringArray) Value() (driver.Value, error) {
-	if len(a) == 0 {
-		return "{}", nil
-	}
-
-	quoted := make([]string, len(a))
-	for i, s := range a {
-		s = strings.ReplaceAll(s, `"`, `\"`)
-		quoted[i] = `"` + s + `"`
-	}
-
-	return "{" + strings.Join(quoted, ",") + "}", nil
-}
-
 type certsRepository struct {
 	db  *sqlx.DB
 	log logger.Logger
@@ -340,4 +274,70 @@ func toCert(cdb dbCert) certs.Cert {
 		CAChain:        []string(cdb.CAChain),
 		PrivateKeyType: cdb.PrivateKeyType,
 	}
+}
+
+// NOTE: custom type for PostgreSQL TEXT[] arrays, might delete later
+type StringArray []string
+
+func (a *StringArray) Scan(src interface{}) error {
+	if src == nil {
+		*a = []string{}
+		return nil
+	}
+
+	switch v := src.(type) {
+	case []byte:
+		return a.scanBytes(v)
+	case string:
+		return a.scanBytes([]byte(v))
+	case []string:
+		*a = v
+		return nil
+	default:
+		return fmt.Errorf("cannot scan %T to StringArray", src)
+	}
+}
+
+func (a *StringArray) scanBytes(src []byte) error {
+	str := string(src)
+
+	// Handle empty array
+	if str == "{}" || str == "" {
+		*a = []string{}
+		return nil
+	}
+
+	str = strings.TrimPrefix(str, "{")
+	str = strings.TrimSuffix(str, "}")
+
+	if str == "" {
+		*a = []string{}
+		return nil
+	}
+
+	parts := strings.Split(str, ",")
+	result := make([]string, len(parts))
+
+	for i, part := range parts {
+		part = strings.TrimSpace(part)
+		part = strings.Trim(part, "\"")
+		result[i] = part
+	}
+
+	*a = result
+	return nil
+}
+
+func (a StringArray) Value() (driver.Value, error) {
+	if len(a) == 0 {
+		return "{}", nil
+	}
+
+	quoted := make([]string, len(a))
+	for i, s := range a {
+		s = strings.ReplaceAll(s, `"`, `\"`)
+		quoted[i] = `"` + s + `"`
+	}
+
+	return "{" + strings.Join(quoted, ",") + "}", nil
 }
