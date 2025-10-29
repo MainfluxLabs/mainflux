@@ -15,10 +15,10 @@ type Page struct {
 }
 
 type RevokedCert struct {
-	Serial    string
-	RevokedAt time.Time
-	ThingID   string
-	OwnerID   string
+	Serial    string    `db:"serial"`
+	OwnerID   string    `db:"owner_id"`
+	ThingID   string    `db:"thing_id"`
+	RevokedAt time.Time `db:"revoked_at"`
 }
 
 // Repository specifies a Config persistence API.
