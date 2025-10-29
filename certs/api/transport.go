@@ -28,21 +28,21 @@ func MakeHandler(svc certs.Service, pkiAgent pki.Agent, logger logger.Logger) ht
 
 	r := bone.New()
 
-	r.Post("/certs", kithttp.NewServer(
+	r.Post("/", kithttp.NewServer(
 		IssueCert(svc),
 		decodeCerts,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Get("/certs/:id", kithttp.NewServer(
+	r.Get("/:id", kithttp.NewServer(
 		ViewCert(svc),
 		decodeViewCert,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Delete("/certs/:id", kithttp.NewServer(
+	r.Delete("/:id", kithttp.NewServer(
 		RevokeCert(svc),
 		decodeRevokeCerts,
 		encodeResponse,
@@ -63,7 +63,7 @@ func MakeHandler(svc certs.Service, pkiAgent pki.Agent, logger logger.Logger) ht
 		opts...,
 	))
 
-	r.Post("/certs/:id/renew", kithttp.NewServer(
+	r.Post("/:id/renew", kithttp.NewServer(
 		RenewCert(svc),
 		decodeViewCert,
 		encodeResponse,
