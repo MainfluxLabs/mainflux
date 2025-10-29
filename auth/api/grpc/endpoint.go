@@ -129,3 +129,37 @@ func retrieveRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 		return res, nil
 	}
 }
+
+func createDormantOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(createDormantOrgInviteReq)
+
+		if err := req.validate(); err != nil {
+			return emptyRes{}, err
+		}
+
+		_, err := svc.CreateDormantOrgInvite(ctx, req.token, req.orgID, req.inviteeRole, req.platformInviteID)
+		if err != nil {
+			return emptyRes{}, err
+		}
+
+		return emptyRes{}, nil
+	}
+}
+
+func activateDormantOrgInvitesEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(activateDormantOrgInvitesReq)
+
+		if err := req.validate(); err != nil {
+			return emptyRes{}, err
+		}
+
+		err := svc.ActivateDormantOrgInvites(ctx, req.platformInviteID, req.newUserID, req.invRedirectPath)
+		if err != nil {
+			return emptyRes{}, err
+		}
+
+		return emptyRes{}, nil
+	}
+}

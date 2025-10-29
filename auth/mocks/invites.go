@@ -13,13 +13,15 @@ import (
 var _ auth.OrgInvitesRepository = (*invitesRepositoryMock)(nil)
 
 type invitesRepositoryMock struct {
-	mu         sync.Mutex
-	orgInvites map[string]auth.OrgInvite
+	mu                                  sync.Mutex
+	orgInvites                          map[string]auth.OrgInvite
+	dormantOrgInvitesByPlatformInviteID map[string][]string
 }
 
 func NewInvitesRepository() auth.OrgInvitesRepository {
 	return &invitesRepositoryMock{
-		orgInvites: make(map[string]auth.OrgInvite),
+		orgInvites:                          make(map[string]auth.OrgInvite),
+		dormantOrgInvitesByPlatformInviteID: make(map[string][]string),
 	}
 }
 
@@ -46,6 +48,20 @@ func (irm *invitesRepositoryMock) SaveOrgInvite(ctx context.Context, invites ...
 	}
 
 	return nil
+}
+
+func (irm *invitesRepositoryMock) AssociateDormantInvitePlatform(ctx context.Context, orgInviteID, platformInviteID string) error {
+	irm.mu.Lock()
+	defer irm.mu.Unlock()
+
+	irm.dormantOrgInvitesByPlatformInviteID[platformInviteID] = append(irm.dormantOrgInvitesByPlatformInviteID[platformInviteID], orgInviteID)
+
+	return nil
+}
+
+func (irm *invitesRepositoryMock) ActivateDormantOrgInvites(ctx context.Context, platformInviteID, newUserID string, expiresAt time.Time) ([]auth.OrgInvite, error) {
+	// TODO: implement
+	panic("not implemented")
 }
 
 func (irm *invitesRepositoryMock) RetrieveOrgInviteByID(ctx context.Context, inviteID string) (auth.OrgInvite, error) {

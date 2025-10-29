@@ -66,6 +66,91 @@ func (ir invitesRepository) SaveOrgInvite(ctx context.Context, invites ...auth.O
 	return nil
 }
 
+func (ir invitesRepository) AssociateDormantInvitePlatform(ctx context.Context, orgInviteID, platformInviteID string) error {
+	qIns := `
+		INSERT INTO dormant_org_invites (org_invite_id, platform_invite_id)	
+		VALUES (:org_invite_id, :platform_invite_id)
+	`
+
+	params := map[string]any{
+		"org_invite_id":      orgInviteID,
+		"platform_invite_id": platformInviteID,
+	}
+
+	if _, err := ir.db.NamedExecContext(ctx, qIns, params); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return errors.Wrap(dbutil.ErrConflict, err)
+			}
+		}
+
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
+	}
+
+	return nil
+}
+
+func (ir invitesRepository) ActivateDormantOrgInvites(ctx context.Context, platformInviteID, newUserID string, expiresAt time.Time) ([]auth.OrgInvite, error) {
+	queryUpdate := `
+		UPDATE org_invites
+		SET invitee_id = :new_user_id,
+		    expires_at = :expires_at			
+		FROM dormant_org_invites
+		WHERE org_invites.id = dormant_org_invites.org_invite_id
+	      AND dormant_org_invites.platform_invite_id = :platform_invite_id
+		RETURNING org_invites.id, org_invites.invitee_id, org_invites.inviter_id, org_invites.org_id, org_invites.invitee_role,
+		          org_invites.created_at, org_invites.expires_at, org_invites.state
+	`
+
+	queryDelete := `
+		DELETE FROM dormant_org_invites
+		WHERE platform_invite_id = :platform_invite_id	
+	`
+
+	params := map[string]any{
+		"platform_invite_id": platformInviteID,
+		"new_user_id":        newUserID,
+		"expires_at":         expiresAt,
+	}
+
+	rows, err := ir.db.NamedQueryContext(ctx, queryUpdate, params)
+	if err != nil {
+		return nil, errors.Wrap(dbutil.ErrUpdateEntity, err)
+	}
+	defer rows.Close()
+
+	var invites []auth.OrgInvite
+
+	for rows.Next() {
+		dbInv := dbOrgInvite{}
+
+		if err := rows.StructScan(&dbInv); err != nil {
+			return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		}
+
+		inv := toOrgInvite(dbInv)
+		invites = append(invites, inv)
+	}
+
+	_, err = ir.db.NamedExecContext(ctx, queryDelete, params)
+	if err != nil {
+		pqErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pqErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return nil, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			}
+		}
+		return nil, errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	return invites, nil
+}
+
 func (ir invitesRepository) RetrieveOrgInviteByID(ctx context.Context, inviteID string) (auth.OrgInvite, error) {
 	if err := ir.syncOrgInviteStateByID(ctx, inviteID); err != nil {
 		return auth.OrgInvite{}, err
@@ -377,7 +462,7 @@ func (ir invitesRepository) syncOrgInviteStateByID(ctx context.Context, inviteID
 func toDBOrgInvite(invite auth.OrgInvite) dbOrgInvite {
 	return dbOrgInvite{
 		ID:          invite.ID,
-		InviteeID:   invite.InviteeID,
+		InviteeID:   sql.NullString{String: invite.InviteeID, Valid: len(invite.InviteeID) > 0},
 		InviterID:   invite.InviterID,
 		OrgID:       invite.OrgID,
 		InviteeRole: invite.InviteeRole,
@@ -390,7 +475,7 @@ func toDBOrgInvite(invite auth.OrgInvite) dbOrgInvite {
 func toOrgInvite(dbI dbOrgInvite) auth.OrgInvite {
 	return auth.OrgInvite{
 		ID:          dbI.ID,
-		InviteeID:   dbI.InviteeID,
+		InviteeID:   dbI.InviteeID.String,
 		InviterID:   dbI.InviterID,
 		OrgID:       dbI.OrgID,
 		InviteeRole: dbI.InviteeRole,
@@ -401,12 +486,12 @@ func toOrgInvite(dbI dbOrgInvite) auth.OrgInvite {
 }
 
 type dbOrgInvite struct {
-	ID          string    `db:"id"`
-	InviteeID   string    `db:"invitee_id"`
-	InviterID   string    `db:"inviter_id"`
-	OrgID       string    `db:"org_id"`
-	InviteeRole string    `db:"invitee_role"`
-	CreatedAt   time.Time `db:"created_at"`
-	ExpiresAt   time.Time `db:"expires_at"`
-	State       string    `db:"state"`
+	ID          string         `db:"id"`
+	InviteeID   sql.NullString `db:"invitee_id"`
+	InviterID   string         `db:"inviter_id"`
+	OrgID       string         `db:"org_id"`
+	InviteeRole string         `db:"invitee_role"`
+	CreatedAt   time.Time      `db:"created_at"`
+	ExpiresAt   time.Time      `db:"expires_at"`
+	State       string         `db:"state"`
 }

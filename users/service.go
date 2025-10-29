@@ -272,6 +272,17 @@ func (svc usersService) RegisterByInvite(ctx context.Context, user User, inviteI
 		return "", err
 	}
 
+	// gRPC call to activate dormant Org Invites associated with this particular Platform Invite
+	dormantOrgInvitesReq := &protomfx.ActivateDormantOrgInvitesReq{
+		PlatformInviteID: inviteID,
+		NewUserID:        userID,
+		InvRedirectPath:  "/TEST", // TODO: change
+	}
+
+	if _, err := svc.auth.ActivateDormantOrgInvites(ctx, dormantOrgInvitesReq); err != nil {
+		return "", err
+	}
+
 	return user.ID, nil
 }
 

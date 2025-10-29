@@ -234,6 +234,15 @@ func (ms *metricsMiddleware) CreateOrgInvite(ctx context.Context, token, email, 
 	return ms.svc.CreateOrgInvite(ctx, token, email, role, orgID, invRedirectPath)
 }
 
+func (ms *metricsMiddleware) CreateDormantOrgInvite(ctx context.Context, token, orgID, role, platformInviteID string) (auth.OrgInvite, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "create_dormant_org_invite").Add(1)
+		ms.latency.With("method", "create_dormant_org_invite").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.CreateDormantOrgInvite(ctx, token, orgID, role, platformInviteID)
+}
+
 func (ms *metricsMiddleware) ViewOrgInvite(ctx context.Context, token, inviteID string) (auth.OrgInvite, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_org_invite").Add(1)
@@ -286,4 +295,13 @@ func (ms *metricsMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth
 	}(time.Now())
 
 	return ms.svc.SendOrgInviteEmail(ctx, invite, email, orgName, invRedirectPath)
+}
+
+func (ms *metricsMiddleware) ActivateDormantOrgInvites(ctx context.Context, platformInviteID, newUserID, orgInviteRedirectPath string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "activate_dormant_org_invites").Add(1)
+		ms.latency.With("method", "activate_dormant_org_invites").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ActivateDormantOrgInvites(ctx, platformInviteID, newUserID, orgInviteRedirectPath)
 }

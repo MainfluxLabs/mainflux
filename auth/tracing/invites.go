@@ -6,6 +6,7 @@ package tracing
 
 import (
 	"context"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -13,11 +14,13 @@ import (
 )
 
 const (
-	saveOrgInvite            = "save_org_invite"
-	retrieveOrgInviteByID    = "retrieve_org_invite_by_id"
-	removeOrgInvite          = "remove_org_invite"
-	retrieveOrgInvitesByUser = "retrieve_org_invites_by_user"
-	updateOrgInviteState     = "update_org_invite_state"
+	saveOrgInvite                  = "save_org_invite"
+	associateDormantInvitePlatform = "associate_dormant_invite_platform"
+	retrieveOrgInviteByID          = "retrieve_org_invite_by_id"
+	removeOrgInvite                = "remove_org_invite"
+	retrieveOrgInvitesByUser       = "retrieve_org_invites_by_user"
+	updateOrgInviteState           = "update_org_invite_state"
+	activateDormantOrgInvites      = "activate_dormant_org_invites"
 )
 
 var _ auth.OrgInvitesRepository = (*invitesRepositoryMiddleware)(nil)
@@ -80,4 +83,20 @@ func (irm invitesRepositoryMiddleware) UpdateOrgInviteState(ctx context.Context,
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return irm.repo.UpdateOrgInviteState(ctx, inviteID, state)
+}
+
+func (irm invitesRepositoryMiddleware) AssociateDormantInvitePlatform(ctx context.Context, orgInviteID, platformInviteID string) error {
+	span := dbutil.CreateSpan(ctx, irm.tracer, associateDormantInvitePlatform)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return irm.repo.AssociateDormantInvitePlatform(ctx, orgInviteID, platformInviteID)
+}
+
+func (irm invitesRepositoryMiddleware) ActivateDormantOrgInvites(ctx context.Context, platformInviteID, newUserID string, expiresAt time.Time) ([]auth.OrgInvite, error) {
+	span := dbutil.CreateSpan(ctx, irm.tracer, activateDormantOrgInvites)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return irm.repo.ActivateDormantOrgInvites(ctx, platformInviteID, newUserID, expiresAt)
 }

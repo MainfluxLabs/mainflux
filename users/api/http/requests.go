@@ -250,6 +250,8 @@ func (req inviteReq) validate() error {
 type createPlatformInviteRequest struct {
 	token        string
 	Email        string `json:"email,omitempty"`
+	OrgID        string `json:"org_id"`
+	Role         string `json:"role"`
 	RedirectPath string `json:"redirect_path,omitempty"`
 }
 
@@ -264,6 +266,10 @@ func (req createPlatformInviteRequest) validate() error {
 
 	if req.RedirectPath == "" {
 		return apiutil.ErrMissingRedirectPath
+	}
+
+	if req.OrgID != "" && req.Role == "" {
+		return apiutil.ErrMissingRole
 	}
 
 	return nil

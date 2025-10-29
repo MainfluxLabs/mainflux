@@ -7,6 +7,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 const (
@@ -40,8 +41,9 @@ type PageMetadataInvites struct {
 
 type PlatformInvites interface {
 	// CreatePlatformInvite creates a pending platform Invite for the appropriate email address.
-	// Only usable by the platform Root Admin.
-	CreatePlatformInvite(ctx context.Context, token, redirectPath, email string) (PlatformInvite, error)
+	// The user can optionally also be invited to an Organization with a certain role - the invites become visible once the user
+	// completes registration via the platform invite. Only usable by the platform Root Admin.
+	CreatePlatformInvite(ctx context.Context, token, redirectPath, email, orgID, role string) (PlatformInvite, error)
 
 	// RevokePlatformInvite revokes a specific pending PlatformInvite. Only usable by the platform Root Admin.
 	RevokePlatformInvite(ctx context.Context, token, inviteID string) error
@@ -75,7 +77,7 @@ type PlatformInvitesRepository interface {
 	UpdatePlatformInviteState(ctx context.Context, inviteID, state string) error
 }
 
-func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string) (PlatformInvite, error) {
+func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirectPath, email, orgID, role string) (PlatformInvite, error) {
 	if err := svc.isAdmin(ctx, token); err != nil {
 		return PlatformInvite{}, err
 	}
@@ -107,6 +109,19 @@ func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirec
 
 	if err := svc.invites.SavePlatformInvite(ctx, invite); err != nil {
 		return PlatformInvite{}, err
+	}
+
+	if orgID != "" {
+		dormantInviteReq := &protomfx.CreateDormantOrgInviteReq{
+			Token:            token,
+			OrgID:            orgID,
+			InviteeRole:      role,
+			PlatformInviteID: inviteID,
+		}
+
+		if _, err := svc.auth.CreateDormantOrgInvite(ctx, dormantInviteReq); err != nil {
+			return PlatformInvite{}, err
+		}
 	}
 
 	go func() {
