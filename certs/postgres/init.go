@@ -81,7 +81,6 @@ func migrateDB(db *sqlx.DB) error {
 						owner_id     TEXT NOT NULL,
 						thing_id     TEXT NOT NULL,
 						revoked_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-						reason       TEXT
 					);`,
 					`CREATE INDEX idx_revoked_certs_owner_id ON revoked_certs(owner_id);`,
 					`CREATE INDEX idx_revoked_certs_thing_id ON revoked_certs(thing_id);`,
