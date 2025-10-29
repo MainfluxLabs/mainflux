@@ -7,7 +7,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -22,6 +21,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -140,7 +140,7 @@ func main() {
 
 	tlsCert, caCert, err := loadCertificates(cfg)
 	if err != nil {
-		logger.Error("Failed to load CA certificates for issuing client certs")
+		log.Fatalf("Failed to load CA certificates for issuing client certs: %s", err)
 	}
 
 	tlsConfig := configureTLSServer(cfg, caCert)
@@ -151,14 +151,13 @@ func main() {
 		logger.Error(fmt.Sprintf("Failed to create PKI agent: %s", err))
 	}
 
+	if pkiAgent == nil {
+		log.Fatalf("PKI agent is nil - cannot start service")
+	}
+
 	if cfg.pkiHost == "" {
 		log.Fatalf("No host specified for PKI engine")
 	}
-
-	// pkiClient, err := vault.NewVaultClient(cfg.pkiToken, cfg.pkiHost, cfg.pkiPath, cfg.pkiRole)
-	// if err != nil {
-	// 	log.Fatalf("Failed to configure client for PKI engine")
-	// }
 
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
@@ -265,7 +264,8 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func newService(ac protomfx.AuthServiceClient, db *sqlx.DB, logger logger.Logger, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config, pkiAgent pki.Agent) certs.Service {
-	certsRepo := postgres.NewRepository(db, logger)
+	database := dbutil.NewDatabase(db)
+	certsRepo := postgres.NewRepository(database)
 
 	certsConfig := certs.Config{
 		LogLevel:       cfg.logLevel,
@@ -320,7 +320,7 @@ func loadCertificates(conf config) (tls.Certificate, *x509.Certificate, error) {
 	var caCert *x509.Certificate
 
 	if conf.signCAPath == "" || conf.signCAKeyPath == "" {
-		return tlsCert, caCert, nil
+		return tlsCert, caCert, errors.New("CA certificate paths not configured")
 	}
 
 	if _, err := os.Stat(conf.signCAPath); os.IsNotExist(err) {
@@ -336,14 +336,14 @@ func loadCertificates(conf config) (tls.Certificate, *x509.Certificate, error) {
 		return tlsCert, caCert, errors.Wrap(errFailedCertLoading, err)
 	}
 
-	b, err := ioutil.ReadFile(conf.signCAPath)
+	b, err := os.ReadFile(conf.signCAPath)
 	if err != nil {
 		return tlsCert, caCert, errors.Wrap(errFailedCertLoading, err)
 	}
 
 	block, _ := pem.Decode(b)
 	if block == nil {
-		log.Fatalf("No PEM data found, failed to decode CA")
+		return tlsCert, caCert, errors.New("no PEM data found, failed to decode CA")
 	}
 
 	caCert, err = x509.ParseCertificate(block.Bytes)
@@ -356,6 +356,10 @@ func loadCertificates(conf config) (tls.Certificate, *x509.Certificate, error) {
 
 func configureTLSServer(cfg config, caCert *x509.Certificate) *tls.Config {
 	if cfg.httpConfig.ServerCert == "" {
+		return nil
+	}
+
+	if caCert == nil {
 		return nil
 	}
 
