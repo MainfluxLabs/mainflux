@@ -283,7 +283,7 @@ func (svc service) ActivateDormantOrgInvites(ctx context.Context, platformInvite
 		}
 
 		go func() {
-			svc.SendOrgInviteEmail(ctx, invite, invite.InviterEmail, invite.OrgName, orgInviteRedirectPath)
+			svc.SendOrgInviteEmail(ctx, invite, invite.InviteeEmail, invite.OrgName, orgInviteRedirectPath)
 		}()
 	}
 
