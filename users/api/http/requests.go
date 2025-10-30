@@ -45,8 +45,9 @@ func (req selfRegisterUserReq) validate() error {
 }
 
 type registerByInviteReq struct {
-	User     users.User `json:"user"`
-	inviteID string
+	User         users.User `json:"user"`
+	RedirectPath string     `json:"redirect_path"`
+	inviteID     string
 }
 
 func (req registerByInviteReq) validate() error {
@@ -54,7 +55,15 @@ func (req registerByInviteReq) validate() error {
 		return apiutil.ErrMissingInviteID
 	}
 
-	return req.User.Validate(userPasswordRegex)
+	if err := req.User.Validate(userPasswordRegex); err != nil {
+		return err
+	}
+
+	if req.RedirectPath == "" {
+		return apiutil.ErrMissingRedirectPath
+	}
+
+	return nil
 }
 
 type verifyEmailReq struct {

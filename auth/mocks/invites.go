@@ -60,7 +60,6 @@ func (irm *invitesRepositoryMock) AssociateDormantInvitePlatform(ctx context.Con
 }
 
 func (irm *invitesRepositoryMock) ActivateDormantOrgInvites(ctx context.Context, platformInviteID, newUserID string, expiresAt time.Time) ([]auth.OrgInvite, error) {
-	// TODO: implement
 	panic("not implemented")
 }
 
