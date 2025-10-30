@@ -66,7 +66,7 @@ func (ir invitesRepository) SaveOrgInvite(ctx context.Context, invites ...auth.O
 	return nil
 }
 
-func (ir invitesRepository) AssociateDormantInvitePlatform(ctx context.Context, orgInviteID, platformInviteID string) error {
+func (ir invitesRepository) SaveDormantInviteAssociation(ctx context.Context, orgInviteID, platformInviteID string) error {
 	qIns := `
 		INSERT INTO dormant_org_invites (org_invite_id, platform_invite_id)	
 		VALUES (:org_invite_id, :platform_invite_id)
