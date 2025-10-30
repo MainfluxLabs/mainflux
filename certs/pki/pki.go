@@ -1,6 +1,3 @@
-// Copyright (c) Mainflux
-// SPDX-License-Identifier: Apache-2.0
-
 package pki
 
 import (
@@ -53,19 +50,30 @@ type Agent interface {
 var (
 	// ErrMissingCACertificate indicates missing CA certificate
 	ErrMissingCACertificate = errors.New("missing CA certificate for certificate signing")
+
 	// ErrFailedCertCreation indicates failed to certificate creation
 	ErrFailedCertCreation = errors.New("failed to create client certificate")
-	// ErrFailedCertRevocation indicates failed certificate revocation
-	ErrFailedCertRevocation = errors.New("failed to revoke certificate")
+
 	// ErrCertificateInvalid indicates certificate is invalid
 	ErrCertificateInvalid = errors.New("certificate is invalid")
+
 	// ErrCertificateExpired indicates certificate has expired
 	ErrCertificateExpired = errors.New("certificate has expired")
-	// ErrCertificateRevoked indicates certificate has been revoked
-	ErrCertificateRevoked = errors.New("certificate has been revoked")
 
-	errPrivateKeyEmpty           = errors.New("private key is empty")
-	errPrivateKeyUnsupportedType = errors.New("private key type is unsupported")
+	// ErrPrivateKeyEmpty indicates that PK failed to load
+	ErrPrivateKeyEmpty = errors.New("private key is empty")
+
+	// ErrPrivateKeyUnsupportedType indicates that private key type is not supported
+	ErrPrivateKeyUnsupportedType = errors.New("unsupported key type")
+
+	// ErrFailedCertParsing indicates certificate failed to parse
+	ErrFailedCACertParsing = errors.New("failed to parse CA certificate")
+
+	// ErrFailedPEMParsing indicates PEM failed to parse
+	ErrFailedPEMParsing = errors.New("failed to parse certificate PEM")
+
+	// ErrFailedCRLCreation indicates that crl could not be created
+	ErrFailedCRLCreation = errors.New("failed to create crl")
 )
 
 type agent struct {
@@ -82,17 +90,17 @@ func NewAgent(caCertPEM, caKeyPEM string) (Agent, error) {
 
 	caCertBlock, _ := pem.Decode([]byte(caCertPEM))
 	if caCertBlock == nil {
-		return nil, errors.New("failed to parse CA certificate PEM")
+		return nil, ErrFailedPEMParsing
 	}
 
 	caCert, err := x509.ParseCertificate(caCertBlock.Bytes)
 	if err != nil {
-		return nil, errors.Wrap(errors.New("failed to parse CA certificate"), err)
+		return nil, errors.Wrap(ErrFailedCACertParsing, err)
 	}
 
 	caKeyBlock, _ := pem.Decode([]byte(caKeyPEM))
 	if caKeyBlock == nil {
-		return nil, errors.New("failed to parse CA private key PEM")
+		return nil, ErrFailedPEMParsing
 	}
 
 	var caKey interface{}
@@ -104,7 +112,7 @@ func NewAgent(caCertPEM, caKeyPEM string) (Agent, error) {
 	case pkKeyBlockType:
 		caKey, err = x509.ParsePKCS8PrivateKey(caKeyBlock.Bytes)
 	default:
-		return nil, errors.New("unsupported CA private key type: " + caKeyBlock.Type)
+		return nil, ErrPrivateKeyUnsupportedType
 	}
 
 	if err != nil {
@@ -125,11 +133,11 @@ func NewAgentFromTLS(tlsCert tls.Certificate) (Agent, error) {
 
 	caCert, err := x509.ParseCertificate(tlsCert.Certificate[0])
 	if err != nil {
-		return nil, errors.Wrap(errors.New("failed to parse CA certificate"), err)
+		return nil, errors.Wrap(ErrFailedCACertParsing, err)
 	}
 
 	if tlsCert.PrivateKey == nil {
-		return nil, errPrivateKeyEmpty
+		return nil, ErrPrivateKeyEmpty
 	}
 
 	caPEM := pem.EncodeToMemory(&pem.Block{
@@ -167,11 +175,11 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (Cert, error) {
 			return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 		}
 		privateKey = rsaKey
-		pkType = "rsa"
+		pkType = rsaKeyType
 
 		privKeyBytes := x509.MarshalPKCS1PrivateKey(rsaKey)
 		privKeyPEM = string(pem.EncodeToMemory(&pem.Block{
-			Type:  "RSA PRIVATE KEY",
+			Type:  rsaKeyBlockType,
 			Bytes: privKeyBytes,
 		}))
 
@@ -207,7 +215,7 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (Cert, error) {
 		}))
 
 	default:
-		return Cert{}, errPrivateKeyUnsupportedType
+		return Cert{}, ErrPrivateKeyUnsupportedType
 	}
 
 	serialNumber, err := generateSerialNumber()
@@ -238,7 +246,7 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (Cert, error) {
 	case *ecdsa.PrivateKey:
 		certDER, err = x509.CreateCertificate(rand.Reader, &template, a.caCert, &key.PublicKey, a.caKey)
 	default:
-		return Cert{}, errPrivateKeyUnsupportedType
+		return Cert{}, ErrPrivateKeyUnsupportedType
 	}
 
 	if err != nil {
@@ -271,7 +279,7 @@ func (a *agent) VerifyCert(certPEM string) (*x509.Certificate, error) {
 
 	block, _ := pem.Decode([]byte(certPEM))
 	if block == nil {
-		return nil, errors.New("failed to parse certificate PEM")
+		return nil, ErrFailedPEMParsing
 	}
 
 	cert, err := x509.ParseCertificate(block.Bytes)
@@ -319,7 +327,7 @@ func (a *agent) CreateCRL(revokedCerts []pkix.RevokedCertificate) ([]byte, error
 
 	crlBytes, err := x509.CreateRevocationList(rand.Reader, crlTemplate, a.caCert, signer)
 	if err != nil {
-		return nil, errors.Wrap(errors.New("failed to create CRL"), err)
+		return nil, errors.Wrap(ErrFailedCRLCreation, err)
 	}
 
 	return pem.EncodeToMemory(&pem.Block{
