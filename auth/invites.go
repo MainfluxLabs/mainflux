@@ -278,6 +278,10 @@ func (svc service) ActivateDormantOrgInvites(ctx context.Context, platformInvite
 
 	// Send e-mail notification for each activated Org Invite
 	for _, invite := range invites {
+		if invite.State != InviteStatePending {
+			continue
+		}
+
 		if err := svc.populateInviteInfo(ctx, &invite); err != nil {
 			continue
 		}
