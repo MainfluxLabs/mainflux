@@ -34,7 +34,7 @@ func NewThingsService(things map[string]things.Thing, profiles map[string]things
 	}
 }
 
-func (svc *mainfluxThings) CreateThings(_ context.Context, token, profileID string, ths ...things.Thing) ([]things.Thing, error) {
+func (svc *mainfluxThings) CreateThings(_ context.Context, _, profileID string, ths ...things.Thing) ([]things.Thing, error) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
@@ -55,7 +55,7 @@ func (svc *mainfluxThings) CreateThings(_ context.Context, token, profileID stri
 	return ths, nil
 }
 
-func (svc *mainfluxThings) ViewThing(_ context.Context, token, id string) (things.Thing, error) {
+func (svc *mainfluxThings) ViewThing(_ context.Context, _, id string) (things.Thing, error) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
@@ -67,7 +67,7 @@ func (svc *mainfluxThings) ViewThing(_ context.Context, token, id string) (thing
 	return things.Thing{}, dbutil.ErrNotFound
 }
 
-func (svc *mainfluxThings) RemoveThings(_ context.Context, token string, ids ...string) error {
+func (svc *mainfluxThings) RemoveThings(_ context.Context, _ string, ids ...string) error {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
@@ -82,7 +82,7 @@ func (svc *mainfluxThings) RemoveThings(_ context.Context, token string, ids ...
 	return nil
 }
 
-func (svc *mainfluxThings) ViewProfile(_ context.Context, token, id string) (things.Profile, error) {
+func (svc *mainfluxThings) ViewProfile(_ context.Context, _, id string) (things.Profile, error) {
 	if c, ok := svc.profiles[id]; ok {
 		return c, nil
 	}
@@ -98,10 +98,6 @@ func (svc *mainfluxThings) UpdateThingGroupAndProfile(context.Context, string, t
 }
 
 func (svc *mainfluxThings) UpdateThingsMetadata(context.Context, string, ...things.Thing) error {
-	panic("not implemented")
-}
-
-func (svc *mainfluxThings) UpdateKey(context.Context, string, string, string) error {
 	panic("not implemented")
 }
 
@@ -181,7 +177,7 @@ func (svc *mainfluxThings) Restore(context.Context, string, things.Backup) error
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CreateProfiles(_ context.Context, token, grID string, prs ...things.Profile) ([]things.Profile, error) {
+func (svc *mainfluxThings) CreateProfiles(_ context.Context, _, grID string, prs ...things.Profile) ([]things.Profile, error) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
@@ -215,23 +211,19 @@ func (svc *mainfluxThings) GetPubConfByKey(context.Context, things.ThingKey) (th
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) GetConfigByThingID(_ context.Context, thingID string) (map[string]interface{}, error) {
+func (svc *mainfluxThings) GetConfigByThingID(context.Context, string) (map[string]interface{}, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CanUserAccessThing(ctx context.Context, req things.UserAccessReq) error {
+func (svc *mainfluxThings) CanUserAccessThing(context.Context, things.UserAccessReq) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CanUserAccessProfile(ctx context.Context, req things.UserAccessReq) error {
+func (svc *mainfluxThings) CanUserAccessProfile(context.Context, things.UserAccessReq) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CanUserAccessGroup(ctx context.Context, req things.UserAccessReq) error {
-	panic("not implemented")
-}
-
-func (svc *mainfluxThings) CanUserAccessGroupThings(ctx context.Context, req things.GroupThingsReq) error {
+func (svc *mainfluxThings) CanUserAccessGroup(context.Context, things.UserAccessReq) error {
 	panic("not implemented")
 }
 
@@ -243,79 +235,79 @@ func (svc *mainfluxThings) Identify(context.Context, things.ThingKey) (string, e
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) GetGroupIDByThingID(_ context.Context, thingID string) (string, error) {
+func (svc *mainfluxThings) GetGroupIDByThingID(context.Context, string) (string, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) GetGroupIDByProfileID(_ context.Context, profileID string) (string, error) {
+func (svc *mainfluxThings) GetGroupIDByProfileID(context.Context, string) (string, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) GetGroupIDsByOrg(_ context.Context, orgID string, token string) ([]string, error) {
+func (svc *mainfluxThings) GetGroupIDsByOrg(context.Context, string, string) ([]string, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListThingsByGroup(_ context.Context, token, groupID string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+func (svc *mainfluxThings) ListThingsByGroup(context.Context, string, string, apiutil.PageMetadata) (things.ThingsPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CreateGroups(_ context.Context, token, orgID string, groups ...things.Group) ([]things.Group, error) {
+func (svc *mainfluxThings) CreateGroups(context.Context, string, string, ...things.Group) ([]things.Group, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListGroups(_ context.Context, token string, pm apiutil.PageMetadata) (things.GroupPage, error) {
+func (svc *mainfluxThings) ListGroups(context.Context, string, apiutil.PageMetadata) (things.GroupPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListGroupsByOrg(_ context.Context, token, orgID string, pm apiutil.PageMetadata) (things.GroupPage, error) {
+func (svc *mainfluxThings) ListGroupsByOrg(context.Context, string, string, apiutil.PageMetadata) (things.GroupPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) RemoveGroups(_ context.Context, token string, ids ...string) error {
+func (svc *mainfluxThings) RemoveGroups(context.Context, string, ...string) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) UpdateGroup(_ context.Context, token string, group things.Group) (things.Group, error) {
+func (svc *mainfluxThings) UpdateGroup(context.Context, string, things.Group) (things.Group, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewGroup(_ context.Context, token, id string) (things.Group, error) {
+func (svc *mainfluxThings) ViewGroup(context.Context, string, string) (things.Group, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewGroupByThing(_ context.Context, token string, thingID string) (things.Group, error) {
+func (svc *mainfluxThings) ViewGroupByThing(context.Context, string, string) (things.Group, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ViewGroupByProfile(_ context.Context, token, profileID string) (things.Group, error) {
+func (svc *mainfluxThings) ViewGroupByProfile(context.Context, string, string) (things.Group, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListProfilesByGroup(_ context.Context, token, groupID string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+func (svc *mainfluxThings) ListProfilesByGroup(context.Context, string, string, apiutil.PageMetadata) (things.ProfilesPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CreateGroupMemberships(_ context.Context, token string, gms ...things.GroupMembership) error {
+func (svc *mainfluxThings) CreateGroupMemberships(context.Context, string, ...things.GroupMembership) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListGroupMemberships(_ context.Context, token, groupID string, pm apiutil.PageMetadata) (things.GroupMembershipsPage, error) {
+func (svc *mainfluxThings) ListGroupMemberships(context.Context, string, string, apiutil.PageMetadata) (things.GroupMembershipsPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) UpdateGroupMemberships(_ context.Context, token string, gms ...things.GroupMembership) error {
+func (svc *mainfluxThings) UpdateGroupMemberships(context.Context, string, ...things.GroupMembership) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) RemoveGroupMemberships(_ context.Context, token, groupID string, memberIDs ...string) error {
+func (svc *mainfluxThings) RemoveGroupMemberships(context.Context, string, string, ...string) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) UpdateExternalKey(ctx context.Context, token, key, thingID string) error {
+func (svc *mainfluxThings) UpdateExternalKey(context.Context, string, string, string) error {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) RemoveExternalKey(ctx context.Context, token, thingID string) error {
+func (svc *mainfluxThings) RemoveExternalKey(context.Context, string, string) error {
 	panic("not implemented")
 
 }

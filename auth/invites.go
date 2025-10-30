@@ -18,6 +18,7 @@ var ErrInvalidInviteResponse = errors.New("invalid invite response action")
 type OrgInvite struct {
 	ID           string
 	InviteeID    string
+	InviteeEmail string
 	InviterID    string
 	InviterEmail string
 	OrgID        string
@@ -421,7 +422,7 @@ func (svc service) ListOrgInvitesByUser(ctx context.Context, token, userType, us
 	return invitesPage, nil
 }
 
-// Sets invite.InviterEmail and invite.OrgName fields of the passed invite.
+// Sets the invite.InviterEmail, invite.InviteeEmail and invite.OrgName fields of the passed invite.
 func (svc service) populateInviteInfo(ctx context.Context, invite *OrgInvite) error {
 	org, err := svc.orgs.RetrieveByID(ctx, invite.OrgID)
 	if err != nil {
@@ -430,14 +431,23 @@ func (svc service) populateInviteInfo(ctx context.Context, invite *OrgInvite) er
 
 	invite.OrgName = org.Name
 
-	usersReq := &protomfx.UsersByIDsReq{Ids: []string{invite.InviterID}}
+	usersReq := &protomfx.UsersByIDsReq{Ids: []string{invite.InviterID, invite.InviteeID}}
 	usersRes, err := svc.users.GetUsersByIDs(ctx, usersReq)
 	if err != nil {
 		return err
 	}
 
-	inviter := usersRes.GetUsers()[0]
-	invite.InviterEmail = inviter.GetEmail()
+	// Order of results from gRPC call isn't guaranteed to match order of IDs in request
+	users := usersRes.GetUsers()
+
+	switch users[0].Id {
+	case invite.InviterID:
+		invite.InviterEmail = users[0].GetEmail()
+		invite.InviteeEmail = users[1].GetEmail()
+	default:
+		invite.InviterEmail = users[1].GetEmail()
+		invite.InviteeEmail = users[0].GetEmail()
+	}
 
 	return nil
 }

@@ -364,19 +364,6 @@ func (lm *loggingMiddleware) CanUserAccessGroup(ctx context.Context, req things.
 	return lm.svc.CanUserAccessGroup(ctx, req)
 }
 
-func (lm *loggingMiddleware) CanUserAccessGroupThings(ctx context.Context, req things.GroupThingsReq) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method can_user_access_group_things took %s to complete", time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.CanUserAccessGroupThings(ctx, req)
-}
-
 func (lm *loggingMiddleware) CanThingAccessGroup(ctx context.Context, req things.ThingAccessReq) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method can_thing_access_group took %s to complete", time.Since(begin))
