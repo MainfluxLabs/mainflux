@@ -23,6 +23,17 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
+const (
+	rsaKeyType      = "rsa"
+	ecdsaKeyType    = "ecdsa"
+	ecKeyType       = "ec"
+	rsaKeyBlockType = "RSA PRIVATE KEY"
+	ecKeyBlockType  = "EC PRIVATE KEY"
+	pkKeyBlockType  = "PRIVATE KEY"
+	crlType         = "X509 CRL"
+	certificateType = "CERTIFICATE"
+)
+
 type Cert struct {
 	ClientCert     string    `json:"client_cert" mapstructure:"certificate"`
 	IssuingCA      string    `json:"issuing_ca" mapstructure:"issuing_ca"`
@@ -86,11 +97,11 @@ func NewAgent(caCertPEM, caKeyPEM string) (Agent, error) {
 
 	var caKey interface{}
 	switch caKeyBlock.Type {
-	case "RSA PRIVATE KEY":
+	case rsaKeyBlockType:
 		caKey, err = x509.ParsePKCS1PrivateKey(caKeyBlock.Bytes)
-	case "EC PRIVATE KEY":
+	case ecKeyBlockType:
 		caKey, err = x509.ParseECPrivateKey(caKeyBlock.Bytes)
-	case "PRIVATE KEY":
+	case pkKeyBlockType:
 		caKey, err = x509.ParsePKCS8PrivateKey(caKeyBlock.Bytes)
 	default:
 		return nil, errors.New("unsupported CA private key type: " + caKeyBlock.Type)
@@ -122,7 +133,7 @@ func NewAgentFromTLS(tlsCert tls.Certificate) (Agent, error) {
 	}
 
 	caPEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "CERTIFICATE",
+		Type:  certificateType,
 		Bytes: tlsCert.Certificate[0],
 	})
 
@@ -147,7 +158,7 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (Cert, error) {
 	var pkType string
 
 	switch strings.ToLower(keyType) {
-	case "rsa", "":
+	case rsaKeyType, "":
 		if keyBits == 0 {
 			keyBits = 2048
 		}
@@ -164,7 +175,7 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (Cert, error) {
 			Bytes: privKeyBytes,
 		}))
 
-	case "ec", "ecdsa":
+	case ecKeyType, ecdsaKeyType:
 		var curve elliptic.Curve
 		switch keyBits {
 		case 224:
@@ -184,14 +195,14 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (Cert, error) {
 			return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 		}
 		privateKey = ecKey
-		pkType = "ec"
+		pkType = ecKeyType
 
 		privKeyBytes, err := x509.MarshalECPrivateKey(ecKey)
 		if err != nil {
 			return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 		}
 		privKeyPEM = string(pem.EncodeToMemory(&pem.Block{
-			Type:  "EC PRIVATE KEY",
+			Type:  ecKeyBlockType,
 			Bytes: privKeyBytes,
 		}))
 
@@ -235,7 +246,7 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (Cert, error) {
 	}
 
 	certPEM := string(pem.EncodeToMemory(&pem.Block{
-		Type:  "CERTIFICATE",
+		Type:  certificateType,
 		Bytes: certDER,
 	}))
 
@@ -312,7 +323,7 @@ func (a *agent) CreateCRL(revokedCerts []pkix.RevokedCertificate) ([]byte, error
 	}
 
 	return pem.EncodeToMemory(&pem.Block{
-		Type:  "X509 CRL",
+		Type:  crlType,
 		Bytes: crlBytes,
 	}), nil
 }
