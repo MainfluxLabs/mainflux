@@ -161,6 +161,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	apiutil.WriteErrorResponse(err, w)
 }
 
+// TODO : might not need this, experiment with mTLS
 func verifyClientCertMiddleware(pkiAgent pki.Agent, logger logger.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
