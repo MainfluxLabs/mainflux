@@ -18,11 +18,12 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/certs"
-	ctmocks "github.com/MainfluxLabs/mainflux/certs/mocks"
+	"github.com/MainfluxLabs/mainflux/certs/mocks"
+	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/mocks"
+	authmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
@@ -44,18 +45,17 @@ const (
 	thingID    = "1"
 	ttl        = "1h"
 	keyBits    = 2048
-	key        = "rsa"
+	keyType    = "rsa"
 	certNum    = 10
 
-	cfgLogLevel    = "error"
-	cfgClientTLS   = false
-	cfgServerCert  = ""
-	cfgServerKey   = ""
-	cfgCertsURL    = "http://localhost"
-	cfgJaegerURL   = ""
-	cfgAuthURL     = "localhost:8181"
-	cfgAuthTimeout = "1s"
-
+	cfgLogLevel       = "error"
+	cfgClientTLS      = false
+	cfgServerCert     = ""
+	cfgServerKey      = ""
+	cfgCertsURL       = "http://localhost"
+	cfgJaegerURL      = ""
+	cfgAuthURL        = "localhost:8181"
+	cfgAuthTimeout    = "1s"
 	caPath            = "../docker/ssl/certs/ca.crt"
 	caKeyPath         = "../docker/ssl/certs/ca.key"
 	cfgSignHoursValid = "24h"
@@ -64,25 +64,29 @@ const (
 
 var usersList = []users.User{{Email: email, Password: password}}
 
-func newService() (certs.Service, error) {
-	auth := mocks.NewAuthService("", usersList, nil)
+func newService() (certs.Service, pki.Agent, error) {
+	auth := authmock.NewAuthService("", usersList, nil)
 	ac := auth
 	server := newThingsServer(newThingsService(ac))
 	config := mfsdk.Config{
 		ThingsURL: server.URL,
 	}
-
 	sdk := mfsdk.NewSDK(config)
-	repo := ctmocks.NewCertsRepository()
+	repo := mocks.NewCertsRepository()
 
 	tlsCert, caCert, err := loadCertificates(caPath, caKeyPath)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	authTimeout, err := time.ParseDuration(cfgAuthTimeout)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+
+	pkiAgent, err := pki.NewAgentFromTLS(tlsCert)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	c := certs.Config{
@@ -97,11 +101,10 @@ func newService() (certs.Service, error) {
 		SignX509Cert:   caCert,
 		SignHoursValid: cfgSignHoursValid,
 		SignRSABits:    cfgSignRSABits,
+		AuthTimeout:    authTimeout,
 	}
 
-	pki := ctmocks.NewPkiAgent(tlsCert, caCert, cfgSignRSABits, cfgSignHoursValid, authTimeout)
-
-	return certs.New(auth, repo, sdk, c, pki), nil
+	return certs.New(auth, repo, sdk, c, pkiAgent), pkiAgent, nil
 }
 
 func newThingsService(auth protomfx.AuthServiceClient) things.Service {
@@ -113,20 +116,20 @@ func newThingsService(auth protomfx.AuthServiceClient) things.Service {
 			Key: thingKey,
 		}
 	}
-
 	return thmocks.NewThingsService(ths, map[string]things.Profile{}, auth)
 }
 
 func TestIssueCert(t *testing.T) {
-	svc, err := newService()
+	svc, pkiAgent, err := newService()
 	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
+	require.NotNil(t, pkiAgent, "PKI agent should not be nil")
 
 	cases := []struct {
 		token   string
 		desc    string
 		thingID string
 		ttl     string
-		key     string
+		keyType string
 		keyBits int
 		err     error
 	}{
@@ -135,8 +138,8 @@ func TestIssueCert(t *testing.T) {
 			token:   token,
 			thingID: thingID,
 			ttl:     ttl,
-			key:     key,
-			keyBits: 2048,
+			keyType: keyType,
+			keyBits: keyBits,
 			err:     nil,
 		},
 		{
@@ -144,96 +147,108 @@ func TestIssueCert(t *testing.T) {
 			token:   token,
 			thingID: "2",
 			ttl:     ttl,
-			key:     key,
-			keyBits: 2048,
+			keyType: keyType,
+			keyBits: keyBits,
 			err:     certs.ErrFailedCertCreation,
 		},
 		{
-			desc:    "issue new cert for non existing thing id",
+			desc:    "issue new cert with invalid token",
 			token:   wrongValue,
 			thingID: thingID,
 			ttl:     ttl,
-			key:     key,
-			keyBits: 2048,
+			keyType: keyType,
+			keyBits: keyBits,
 			err:     errors.ErrAuthentication,
 		},
 		{
-			desc:    "issue new cert for bad key bits",
+			desc:    "issue new cert with invalid key bits",
 			token:   token,
 			thingID: thingID,
 			ttl:     ttl,
-			key:     key,
+			keyType: keyType,
 			keyBits: -2,
 			err:     certs.ErrFailedCertCreation,
 		},
 		{
-			desc:    "issue new cert for bad key bits",
+			desc:    "issue new cert with ECDSA key type",
 			token:   token,
 			thingID: thingID,
 			ttl:     ttl,
-			key:     key,
-			keyBits: -2,
-			err:     certs.ErrFailedCertCreation,
+			keyType: "ecdsa",
+			keyBits: 256,
+			err:     nil,
 		},
 	}
 
 	for _, tc := range cases {
-		c, err := svc.IssueCert(context.Background(), tc.token, tc.thingID, tc.ttl, tc.keyBits, tc.key)
+		c, err := svc.IssueCert(context.Background(), tc.token, tc.thingID, tc.ttl, tc.keyBits, tc.keyType)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
-		cert, _ := readCert([]byte(c.ClientCert))
-		if cert != nil {
-			assert.True(t, strings.Contains(cert.Subject.CommonName, thingKey), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		if err == nil {
+			assert.NotEmpty(t, c.ClientCert, fmt.Sprintf("%s: client cert should not be empty", tc.desc))
+			assert.NotEmpty(t, c.ClientKey, fmt.Sprintf("%s: client key should not be empty", tc.desc))
+			assert.NotEmpty(t, c.Serial, fmt.Sprintf("%s: serial should not be empty", tc.desc))
+			assert.Equal(t, tc.thingID, c.ThingID, fmt.Sprintf("%s: thing ID mismatch", tc.desc))
+
+			cert, _ := readCert([]byte(c.ClientCert))
+			if cert != nil {
+				assert.True(t, strings.Contains(cert.Subject.CommonName, thingKey),
+					fmt.Sprintf("%s: expected cert CN to contain thing key", tc.desc))
+			}
+
+			_, err := pkiAgent.VerifyCert(c.ClientCert)
+			assert.NoError(t, err, fmt.Sprintf("%s: certificate verification failed", tc.desc))
 		}
 	}
-
 }
 
 func TestRevokeCert(t *testing.T) {
-	svc, err := newService()
+	svc, _, err := newService()
 	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
 
-	_, err = svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, key)
-	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
+	issuedCert, err := svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, keyType)
+	require.Nil(t, err, fmt.Sprintf("unexpected cert creation error: %s\n", err))
 
 	cases := []struct {
-		token   string
-		desc    string
-		thingID string
-		err     error
+		token    string
+		desc     string
+		serialID string
+		err      error
 	}{
 		{
-			desc:    "revoke cert",
-			token:   token,
-			thingID: thingID,
-			err:     nil,
+			desc:     "revoke cert",
+			token:    token,
+			serialID: issuedCert.Serial,
+			err:      nil,
 		},
 		{
-			desc:    "revoke cert for invalid token",
-			token:   wrongValue,
-			thingID: thingID,
-			err:     errors.ErrAuthentication,
+			desc:     "revoke cert with invalid token",
+			token:    wrongValue,
+			serialID: issuedCert.Serial,
+			err:      errors.ErrAuthentication,
 		},
 		{
-			desc:    "revoke cert for invalid thing id",
-			token:   token,
-			thingID: "2",
-			err:     certs.ErrFailedCertRevocation,
+			desc:     "revoke cert for invalid serial id",
+			token:    token,
+			serialID: "invalid-serial",
+			err:      certs.ErrFailedCertRevocation,
 		},
 	}
 
 	for _, tc := range cases {
-		_, err := svc.RevokeCert(context.Background(), tc.token, tc.thingID)
+		revoke, err := svc.RevokeCert(context.Background(), tc.token, tc.serialID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		if err == nil {
+			assert.False(t, revoke.RevocationTime.IsZero(), fmt.Sprintf("%s: revocation time should not be zero", tc.desc))
+		}
 	}
-
 }
 
 func TestListCerts(t *testing.T) {
-	svc, err := newService()
+	svc, _, err := newService()
 	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
 
 	for i := 0; i < certNum; i++ {
-		_, err = svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, key)
+		_, err = svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, keyType)
 		require.Nil(t, err, fmt.Sprintf("unexpected cert creation error: %s\n", err))
 	}
 
@@ -293,21 +308,14 @@ func TestListCerts(t *testing.T) {
 }
 
 func TestListSerials(t *testing.T) {
-	svc, err := newService()
+	svc, _, err := newService()
 	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
 
-	var issuedCerts []certs.Cert
+	var issuedSerials []string
 	for i := 0; i < certNum; i++ {
-		cert, err := svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, key)
+		cert, err := svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, keyType)
 		require.Nil(t, err, fmt.Sprintf("unexpected cert creation error: %s\n", err))
-
-		crt := certs.Cert{
-			OwnerID: cert.OwnerID,
-			ThingID: cert.ThingID,
-			Serial:  cert.Serial,
-			Expire:  cert.Expire,
-		}
-		issuedCerts = append(issuedCerts, crt)
+		issuedSerials = append(issuedSerials, cert.Serial)
 	}
 
 	cases := []struct {
@@ -316,102 +324,172 @@ func TestListSerials(t *testing.T) {
 		thingID string
 		offset  uint64
 		limit   uint64
-		certs   []certs.Cert
+		size    uint64
 		err     error
 	}{
 		{
-			desc:    "list all certs with valid token",
+			desc:    "list all serials with valid token",
 			token:   token,
 			thingID: thingID,
 			offset:  0,
 			limit:   certNum,
-			certs:   issuedCerts,
+			size:    certNum,
 			err:     nil,
 		},
 		{
-			desc:    "list all certs with invalid token",
+			desc:    "list all serials with invalid token",
 			token:   wrongValue,
 			thingID: thingID,
 			offset:  0,
 			limit:   certNum,
-			certs:   nil,
+			size:    0,
 			err:     errors.ErrAuthentication,
 		},
 		{
-			desc:    "list half certs with valid token",
+			desc:    "list half serials with valid token",
 			token:   token,
 			thingID: thingID,
 			offset:  certNum / 2,
 			limit:   certNum,
-			certs:   issuedCerts[certNum/2:],
+			size:    certNum / 2,
 			err:     nil,
 		},
 		{
-			desc:    "list last cert with valid token",
+			desc:    "list last serial with valid token",
 			token:   token,
 			thingID: thingID,
 			offset:  certNum - 1,
 			limit:   certNum,
-			certs:   []certs.Cert{issuedCerts[certNum-1]},
+			size:    1,
 			err:     nil,
 		},
 	}
 
 	for _, tc := range cases {
 		page, err := svc.ListSerials(context.Background(), tc.token, tc.thingID, tc.offset, tc.limit)
-		assert.Equal(t, tc.certs, page.Certs, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.certs, page.Certs))
+		size := uint64(len(page.Certs))
+		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected %d got %d\n", tc.desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		if err == nil && size > 0 {
+			for i, cert := range page.Certs {
+				expectedIndex := int(tc.offset) + i
+				if expectedIndex < len(issuedSerials) {
+					assert.Equal(t, issuedSerials[expectedIndex], cert.Serial,
+						fmt.Sprintf("%s: serial mismatch at index %d", tc.desc, i))
+				}
+			}
+		}
 	}
 }
 
 func TestViewCert(t *testing.T) {
-	svc, err := newService()
+	svc, _, err := newService()
 	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
 
-	ic, err := svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, key)
+	issuedCert, err := svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, keyType)
 	require.Nil(t, err, fmt.Sprintf("unexpected cert creation error: %s\n", err))
-
-	cert := certs.Cert{
-		ThingID:    thingID,
-		ClientCert: ic.ClientCert,
-		Serial:     ic.Serial,
-		Expire:     ic.Expire,
-	}
 
 	cases := []struct {
 		token    string
 		desc     string
 		serialID string
-		cert     certs.Cert
 		err      error
 	}{
 		{
-			desc:     "list cert with valid token and serial",
+			desc:     "view cert with valid token and serial",
 			token:    token,
-			serialID: cert.Serial,
-			cert:     cert,
+			serialID: issuedCert.Serial,
 			err:      nil,
 		},
 		{
-			desc:     "list cert with invalid token",
+			desc:     "view cert with invalid token",
 			token:    wrongValue,
-			serialID: cert.Serial,
-			cert:     certs.Cert{},
+			serialID: issuedCert.Serial,
 			err:      errors.ErrAuthentication,
 		},
 		{
-			desc:     "list cert with invalid serial",
+			desc:     "view cert with invalid serial",
 			token:    token,
 			serialID: wrongValue,
-			cert:     certs.Cert{},
 			err:      dbutil.ErrNotFound,
 		},
 	}
 
 	for _, tc := range cases {
 		cert, err := svc.ViewCert(context.Background(), tc.token, tc.serialID)
-		assert.Equal(t, tc.cert, cert, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.cert, cert))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		if err == nil {
+			assert.Equal(t, issuedCert.Serial, cert.Serial, fmt.Sprintf("%s: serial mismatch", tc.desc))
+			assert.Equal(t, issuedCert.ThingID, cert.ThingID, fmt.Sprintf("%s: thing ID mismatch", tc.desc))
+			assert.Equal(t, issuedCert.ClientCert, cert.ClientCert, fmt.Sprintf("%s: client cert mismatch", tc.desc))
+			assert.Equal(t, issuedCert.Expire, cert.Expire, fmt.Sprintf("%s: expiration mismatch", tc.desc))
+		}
+	}
+}
+
+func TestGetCRL(t *testing.T) {
+	svc, _, err := newService()
+	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
+
+	cert, err := svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, keyType)
+	require.Nil(t, err, fmt.Sprintf("unexpected cert creation error: %s\n", err))
+
+	_, err = svc.RevokeCert(context.Background(), token, cert.Serial)
+	require.Nil(t, err, fmt.Sprintf("unexpected cert revocation error: %s\n", err))
+
+	crl, err := svc.GetCRL(context.Background())
+	assert.Nil(t, err, fmt.Sprintf("unexpected error getting CRL: %s\n", err))
+	assert.NotNil(t, crl, "CRL should not be nil")
+	assert.NotEmpty(t, crl, "CRL should not be empty")
+
+	block, _ := pem.Decode(crl)
+	assert.NotNil(t, block, "CRL should be valid PEM")
+	assert.Equal(t, "X509 CRL", block.Type, "CRL block type should be X509 CRL")
+}
+
+func TestRenewCert(t *testing.T) {
+	svc, _, err := newService()
+	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
+
+	issuedCert, err := svc.IssueCert(context.Background(), token, thingID, "1h", keyBits, keyType)
+	require.Nil(t, err, fmt.Sprintf("unexpected cert creation error: %s\n", err))
+
+	cases := []struct {
+		token    string
+		desc     string
+		serialID string
+		err      error
+	}{
+		{
+			desc:     "renew cert with valid token and serial",
+			token:    token,
+			serialID: issuedCert.Serial,
+			err:      nil,
+		},
+		{
+			desc:     "renew cert with invalid token",
+			token:    wrongValue,
+			serialID: issuedCert.Serial,
+			err:      errors.ErrAuthentication,
+		},
+		{
+			desc:     "renew cert with invalid serial",
+			token:    token,
+			serialID: wrongValue,
+			err:      dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		renewedCert, err := svc.RenewCert(context.Background(), tc.token, tc.serialID)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		if err == nil {
+			assert.NotEqual(t, issuedCert.Serial, renewedCert.Serial, fmt.Sprintf("%s: renewed cert should have different serial", tc.desc))
+			assert.Equal(t, issuedCert.ThingID, renewedCert.ThingID, fmt.Sprintf("%s: thing ID should match", tc.desc))
+			assert.NotEmpty(t, renewedCert.ClientCert, fmt.Sprintf("%s: client cert should not be empty", tc.desc))
+			assert.NotEmpty(t, renewedCert.ClientKey, fmt.Sprintf("%s: client key should not be empty", tc.desc))
+			assert.True(t, renewedCert.Expire.After(issuedCert.Expire), fmt.Sprintf("%s: renewed cert should expire later", tc.desc))
+		}
 	}
 }
 
