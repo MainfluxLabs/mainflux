@@ -54,8 +54,8 @@ func (cr certsRepository) RetrieveAll(ctx context.Context, ownerID string, offse
 		certificates = append(certificates, toCert(dbcrt))
 	}
 
-	countQ := `SELECT COUNT(*) FROM certs WHERE owner_id = :owner_id`
-	total, err := dbutil.Total(ctx, cr.db, countQ, params)
+	q = `SELECT COUNT(*) FROM certs WHERE owner_id = :owner_id`
+	total, err := dbutil.Total(ctx, cr.db, q, params)
 	if err != nil {
 		return certs.Page{}, cr.handlePgError(err, dbutil.ErrRetrieveEntity)
 	}
@@ -103,23 +103,23 @@ func (cr certsRepository) Remove(ctx context.Context, ownerID, serial string) er
 	}
 	defer tx.Rollback()
 
-	revokeQ := `INSERT INTO revoked_certs (serial, owner_id, thing_id, revoked_at) 
+	q := `INSERT INTO revoked_certs (serial, owner_id, thing_id, revoked_at) 
 	            VALUES (:serial, :owner_id, :thing_id, NOW())`
 	revokeParams := map[string]interface{}{
 		"serial":   serial,
 		"owner_id": ownerID,
 		"thing_id": cert.ThingID,
 	}
-	if _, err := tx.NamedExecContext(ctx, revokeQ, revokeParams); err != nil {
+	if _, err := tx.NamedExecContext(ctx, q, revokeParams); err != nil {
 		return cr.handlePgError(err, dbutil.ErrRemoveEntity)
 	}
 
-	deleteQ := `DELETE FROM certs WHERE serial = :serial AND owner_id = :owner_id`
+	q = `DELETE FROM certs WHERE serial = :serial AND owner_id = :owner_id`
 	deleteParams := map[string]interface{}{
 		"serial":   serial,
 		"owner_id": ownerID,
 	}
-	if _, err := tx.NamedExecContext(ctx, deleteQ, deleteParams); err != nil {
+	if _, err := tx.NamedExecContext(ctx, q, deleteParams); err != nil {
 		return cr.handlePgError(err, dbutil.ErrRemoveEntity)
 	}
 
@@ -182,8 +182,8 @@ func (cr certsRepository) RetrieveByThing(ctx context.Context, ownerID, thingID 
 		certificates = append(certificates, toCert(dbcrt))
 	}
 
-	countQ := `SELECT COUNT(*) FROM certs WHERE owner_id = :owner_id AND thing_id = :thing_id`
-	total, err := dbutil.Total(ctx, cr.db, countQ, params)
+	q = `SELECT COUNT(*) FROM certs WHERE owner_id = :owner_id AND thing_id = :thing_id`
+	total, err := dbutil.Total(ctx, cr.db, q, params)
 	if err != nil {
 		return certs.Page{}, cr.handlePgError(err, dbutil.ErrRetrieveEntity)
 	}
