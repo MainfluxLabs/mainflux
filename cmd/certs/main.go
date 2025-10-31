@@ -146,7 +146,7 @@ func main() {
 	tlsConfig := configureTLSServer(cfg, caCert)
 	cfg.httpConfig.TLSConfig = tlsConfig
 
-	pkiAgent, err := pki.NewAgentFromTLS(tlsCert)
+	pkiAgent, err := pki.NewAgent(tlsCert)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to create PKI agent: %s", err))
 	}

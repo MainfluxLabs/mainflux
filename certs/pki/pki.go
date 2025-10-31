@@ -83,50 +83,7 @@ type agent struct {
 	caPEM  string
 }
 
-func NewAgent(caCertPEM, caKeyPEM string) (Agent, error) {
-	if caCertPEM == "" || caKeyPEM == "" {
-		return nil, ErrMissingCACertificate
-	}
-
-	caCertBlock, _ := pem.Decode([]byte(caCertPEM))
-	if caCertBlock == nil {
-		return nil, ErrFailedPEMParsing
-	}
-
-	caCert, err := x509.ParseCertificate(caCertBlock.Bytes)
-	if err != nil {
-		return nil, errors.Wrap(ErrFailedCACertParsing, err)
-	}
-
-	caKeyBlock, _ := pem.Decode([]byte(caKeyPEM))
-	if caKeyBlock == nil {
-		return nil, ErrFailedPEMParsing
-	}
-
-	var caKey interface{}
-	switch caKeyBlock.Type {
-	case rsaKeyBlockType:
-		caKey, err = x509.ParsePKCS1PrivateKey(caKeyBlock.Bytes)
-	case ecKeyBlockType:
-		caKey, err = x509.ParseECPrivateKey(caKeyBlock.Bytes)
-	case pkKeyBlockType:
-		caKey, err = x509.ParsePKCS8PrivateKey(caKeyBlock.Bytes)
-	default:
-		return nil, ErrPrivateKeyUnsupportedType
-	}
-
-	if err != nil {
-		return nil, errors.Wrap(errors.New("failed to parse CA private key"), err)
-	}
-
-	return &agent{
-		caCert: caCert,
-		caKey:  caKey,
-		caPEM:  string(caCertPEM),
-	}, nil
-}
-
-func NewAgentFromTLS(tlsCert tls.Certificate) (Agent, error) {
+func NewAgent(tlsCert tls.Certificate) (Agent, error) {
 	if len(tlsCert.Certificate) == 0 {
 		return nil, ErrMissingCACertificate
 	}

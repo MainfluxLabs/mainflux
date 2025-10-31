@@ -84,7 +84,7 @@ func newService() (certs.Service, pki.Agent, error) {
 		return nil, nil, err
 	}
 
-	pkiAgent, err := pki.NewAgentFromTLS(tlsCert)
+	pkiAgent, err := pki.NewAgent(tlsCert)
 	if err != nil {
 		return nil, nil, err
 	}
