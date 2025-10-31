@@ -95,28 +95,23 @@ func (c *certsRepoMock) RetrieveAll(ctx context.Context, ownerID string, offset,
 	return page, nil
 }
 
-// Remove removes certificate from DB by serial ID (matches postgres implementation)
 func (c *certsRepoMock) Remove(ctx context.Context, ownerID, serialID string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	// First retrieve the cert to get thingID
 	cert, ok := c.certsBySerial[serialID]
 	if !ok {
 		return dbutil.ErrNotFound
 	}
 
-	// Verify ownership
 	if cert.OwnerID != ownerID {
 		return dbutil.ErrNotFound
 	}
 
 	thingID := cert.ThingID
 
-	// Remove from certsBySerial
 	delete(c.certsBySerial, serialID)
 
-	// Add to revoked certs
 	c.revokedCerts[serialID] = certs.RevokedCert{
 		Serial:    serialID,
 		OwnerID:   ownerID,
@@ -124,18 +119,14 @@ func (c *certsRepoMock) Remove(ctx context.Context, ownerID, serialID string) er
 		RevokedAt: time.Now(),
 	}
 
-	// Remove from certsByThingID
 	if thingCerts, ok := c.certsByThingID[ownerID][thingID]; ok {
-		// Find and remove the specific cert
 		for i, tc := range thingCerts {
 			if tc.Serial == serialID {
-				// Remove this cert from the slice
 				c.certsByThingID[ownerID][thingID] = append(thingCerts[:i], thingCerts[i+1:]...)
 				break
 			}
 		}
 
-		// Clean up empty maps
 		if len(c.certsByThingID[ownerID][thingID]) == 0 {
 			delete(c.certsByThingID[ownerID], thingID)
 		}
@@ -204,4 +195,3 @@ func (c *certsRepoMock) RetrieveRevokedCertificates(ctx context.Context) ([]cert
 
 	return revokedCerts, nil
 }
-

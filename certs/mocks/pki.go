@@ -54,14 +54,13 @@ type agent struct {
 	X509Cert    *x509.Certificate
 	RSABits     int
 	TTL         string
-	caPEM       string // Added missing field
+	caPEM       string
 	mu          sync.Mutex
 	counter     uint64
 	certs       map[string]certs.Cert
 }
 
 func NewPkiAgent(tlsCert tls.Certificate, caCert *x509.Certificate, keyBits int, ttl string, timeout time.Duration) Agent {
-	// Generate CA PEM from the certificate
 	var caPEM string
 	if len(tlsCert.Certificate) > 0 {
 		caPEM = string(pem.EncodeToMemory(&pem.Block{
