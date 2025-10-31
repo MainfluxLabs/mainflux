@@ -6,19 +6,21 @@ package mocks
 import (
 	"bufio"
 	"bytes"
+	"crypto"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"io"
 	"math/big"
 	"sync"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/certs"
-	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
@@ -36,21 +38,14 @@ var (
 
 	// ErrFailedCertRevocation indicates failed certificate revocation
 	ErrFailedCertRevocation = errors.New("failed to revoke certificate")
-
-	errFailedVaultCertIssue = errors.New("failed to issue vault certificate")
-	errFailedVaultRead      = errors.New("failed to read vault certificate")
-	errFailedCertDecoding   = errors.New("failed to decode response from vault service")
 )
 
 type Agent interface {
-	// IssueCert issues certificate on PKI
-	IssueCert(cn string, ttl, keyType string, keyBits int) (certs.Cert, error)
+	IssueCert(cn, ttl, keyType string, keyBits int) (certs.Cert, error)
 
-	// Read retrieves certificate from PKI
-	Read(serial string) (certs.Cert, error)
+	VerifyCert(certPEM string) (*x509.Certificate, error)
 
-	// Revoke revokes certificate from PKI
-	Revoke(serial string) (time.Time, error)
+	CreateCRL(revokedCerts []pkix.RevokedCertificate) ([]byte, error)
 }
 
 type agent struct {
@@ -59,23 +54,34 @@ type agent struct {
 	X509Cert    *x509.Certificate
 	RSABits     int
 	TTL         string
+	caPEM       string // Added missing field
 	mu          sync.Mutex
 	counter     uint64
 	certs       map[string]certs.Cert
 }
 
 func NewPkiAgent(tlsCert tls.Certificate, caCert *x509.Certificate, keyBits int, ttl string, timeout time.Duration) Agent {
+	// Generate CA PEM from the certificate
+	var caPEM string
+	if len(tlsCert.Certificate) > 0 {
+		caPEM = string(pem.EncodeToMemory(&pem.Block{
+			Type:  "CERTIFICATE",
+			Bytes: tlsCert.Certificate[0],
+		}))
+	}
+
 	return &agent{
 		AuthTimeout: timeout,
 		TLSCert:     tlsCert,
 		X509Cert:    caCert,
 		RSABits:     keyBits,
 		TTL:         ttl,
+		caPEM:       caPEM,
 		certs:       make(map[string]certs.Cert),
 	}
 }
 
-func (a *agent) IssueCert(cn string, ttl, keyType string, keyBits int) (certs.Cert, error) {
+func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (certs.Cert, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
@@ -84,7 +90,33 @@ func (a *agent) IssueCert(cn string, ttl, keyType string, keyBits int) (certs.Ce
 	}
 
 	var priv interface{}
-	priv, err := rsa.GenerateKey(rand.Reader, keyBits)
+	var err error
+
+	switch keyType {
+	case "rsa", "":
+		if keyBits == 0 {
+			keyBits = 2048
+		}
+		priv, err = rsa.GenerateKey(rand.Reader, keyBits)
+	case "ecdsa", "ec":
+		var curve elliptic.Curve
+		switch keyBits {
+		case 224:
+			curve = elliptic.P224()
+		case 256, 0:
+			curve = elliptic.P256()
+		case 384:
+			curve = elliptic.P384()
+		case 521:
+			curve = elliptic.P521()
+		default:
+			return certs.Cert{}, errors.New("unsupported EC key size, use 224, 256, 384, or 521")
+		}
+		priv, err = ecdsa.GenerateKey(curve, rand.Reader)
+	default:
+		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, errPrivateKeyUnsupportedType)
+	}
+
 	if err != nil {
 		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
@@ -143,7 +175,7 @@ func (a *agent) IssueCert(cn string, ttl, keyType string, keyBits int) (certs.Ce
 		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 	buffWriter.Flush()
-	cert := bw.String()
+	certPEM := bw.String()
 
 	block, err := pemBlockForKey(priv)
 	if err != nil {
@@ -153,36 +185,78 @@ func (a *agent) IssueCert(cn string, ttl, keyType string, keyBits int) (certs.Ce
 		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 	buffKeyOut.Flush()
-	key := keyOut.String()
+	keyPEM := keyOut.String()
 
-	a.certs[x509cert.SerialNumber.String()] = certs.Cert{
-		ClientCert: cert,
+	cert := certs.Cert{
+		ClientCert:     certPEM,
+		ClientKey:      keyPEM,
+		IssuingCA:      a.caPEM,
+		CAChain:        []string{a.caPEM},
+		PrivateKeyType: keyType,
+		Serial:         x509cert.SerialNumber.String(),
+		Expire:         x509cert.NotAfter,
 	}
+
+	a.certs[x509cert.SerialNumber.String()] = cert
 	a.counter++
 
-	return certs.Cert{
-		ClientCert: cert,
-		ClientKey:  key,
-		Serial:     x509cert.SerialNumber.String(),
-		Expire:     x509cert.NotAfter,
-		IssuingCA:  x509cert.Issuer.String(),
-	}, nil
+	return cert, nil
 }
 
-func (a *agent) Read(serial string) (certs.Cert, error) {
+func (a *agent) VerifyCert(certPEM string) (*x509.Certificate, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	crt, ok := a.certs[serial]
-	if !ok {
-		return certs.Cert{}, dbutil.ErrNotFound
+	block, _ := pem.Decode([]byte(certPEM))
+	if block == nil {
+		return nil, errors.New("failed to parse certificate PEM")
 	}
 
-	return crt, nil
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return nil, errors.Wrap(errors.New("failed to parse certificate"), err)
+	}
+
+	_, exists := a.certs[cert.SerialNumber.String()]
+	if !exists {
+		return nil, errors.New("certificate not found")
+	}
+
+	return cert, nil
 }
 
-func (a *agent) Revoke(serial string) (time.Time, error) {
-	return time.Now(), nil
+func (a *agent) CreateCRL(revokedCerts []pkix.RevokedCertificate) ([]byte, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	now := time.Now()
+
+	crlTemplate := &x509.RevocationList{
+		Number:              big.NewInt(now.Unix()),
+		ThisUpdate:          now,
+		NextUpdate:          now.Add(24 * time.Hour),
+		RevokedCertificates: revokedCerts,
+	}
+
+	signer, ok := a.TLSCert.PrivateKey.(interface {
+		Public() crypto.PublicKey
+		Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) (signature []byte, err error)
+	})
+	if !ok {
+		return nil, errors.New("CA private key cannot sign CRL")
+	}
+
+	crlBytes, err := x509.CreateRevocationList(rand.Reader, crlTemplate, a.X509Cert, signer)
+	if err != nil {
+		return nil, errors.Wrap(errors.New("failed to create CRL"), err)
+	}
+
+	crlPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "X509 CRL",
+		Bytes: crlBytes,
+	})
+
+	return crlPEM, nil
 }
 
 func publicKey(priv interface{}) (interface{}, error) {
