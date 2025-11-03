@@ -138,6 +138,9 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
+	certsHttpTracer, certsHttpCloser := jaeger.Init("certs_http", cfg.jaegerURL, logger)
+	defer certsHttpCloser.Close()
+
 	tlsCert, caCert, err := loadCertificates(cfg)
 	if err != nil {
 		log.Fatalf("Failed to load CA certificates for issuing client certs: %s", err)
@@ -173,7 +176,7 @@ func main() {
 	svc := newService(auth, db, logger, tlsCert, caCert, cfg, pkiAgent)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, api.MakeHandler(svc, pkiAgent, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, api.MakeHandler(svc, certsHttpTracer, pkiAgent, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
