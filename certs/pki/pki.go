@@ -26,7 +26,6 @@ const (
 	ecKeyType       = "ec"
 	rsaKeyBlockType = "RSA PRIVATE KEY"
 	ecKeyBlockType  = "EC PRIVATE KEY"
-	pkKeyBlockType  = "PRIVATE KEY"
 	crlType         = "X509 CRL"
 	certificateType = "CERTIFICATE"
 )
