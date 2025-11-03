@@ -13,13 +13,15 @@ import (
 	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
+	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc certs.Service, pkiAgent pki.Agent, logger logger.Logger) http.Handler {
+func MakeHandler(svc certs.Service, tracer opentracing.Tracer, pkiAgent pki.Agent, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
@@ -27,42 +29,42 @@ func MakeHandler(svc certs.Service, pkiAgent pki.Agent, logger logger.Logger) ht
 	r := bone.New()
 
 	r.Post("/certs", kithttp.NewServer(
-		issueCertEndpoint(svc),
+		kitot.TraceServer(tracer, "issue_certs")(issueCertEndpoint(svc)),
 		decodeCerts,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/certs/:id", kithttp.NewServer(
-		viewCertEndpoint(svc),
+		kitot.TraceServer(tracer, "list_cert")(listCertEndpoint(svc)),
 		decodeViewCert,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Delete("/certs/:id", kithttp.NewServer(
-		revokeCertEndpoint(svc),
+		kitot.TraceServer(tracer, "delete_cert")(revokeCertEndpoint(svc)),
 		decodeRevokeCerts,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/certs/serials/:id", kithttp.NewServer(
-		listSerialsEndpoint(svc),
+		kitot.TraceServer(tracer, "list_serials")(listSerialsEndpoint(svc)),
 		decodeListCerts,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/certs/crl", kithttp.NewServer(
-		listCRLEndpoint(svc),
+		kitot.TraceServer(tracer, "list_crl")(listCRLEndpoint(svc)),
 		decodeGetCRL,
 		encodeCRL,
 		opts...,
 	))
 
 	r.Post("/certs/:id/renew", kithttp.NewServer(
-		renewCertEndpoint(svc),
+		kitot.TraceServer(tracer, "renew_cert")(renewCertEndpoint(svc)),
 		decodeViewCert,
 		encodeResponse,
 		opts...,
