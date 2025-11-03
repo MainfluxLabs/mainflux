@@ -96,7 +96,7 @@ func revokeCert(svc certs.Service) endpoint.Endpoint {
 }
 
 func getCRL(svc certs.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, _ interface{}) (interface{}, error) {
 		crl, err := svc.GetCRL(ctx)
 		if err != nil {
 			return nil, err
