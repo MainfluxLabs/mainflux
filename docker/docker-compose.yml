@@ -799,7 +799,7 @@ services:
       - mainfluxlabs-certs-db-volume:/var/lib/postgresql/data
 
   certs:
-    image: mainfluxlabs/certs:${MF_RELEASE_TAG}
+    image: ${MF_RELEASE_PREFIX}/certs:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-certs
     depends_on:
       - certs-db
