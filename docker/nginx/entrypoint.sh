@@ -28,6 +28,7 @@ envsubst '
     ${MF_FILESTORE_HTTP_PORT}
     ${MF_ALARMS_HTTP_PORT}
     ${MF_RULES_HTTP_PORT}
+    #{MF_CERTS_HTTP_PORT}
     ${MF_MODBUS_HTTP_PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
 
