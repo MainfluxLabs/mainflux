@@ -27,7 +27,7 @@ func MakeHandler(tracer opentracing.Tracer, svc rules.Service, logger log.Logger
 
 	r := bone.New()
 
-	r.Post("/profiles/:id/rules", kithttp.NewServer(
+	r.Post("/groups/:id/rules", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_rules")(createRulesEndpoint(svc)),
 		decodeCreateRules,
 		encodeResponse,
@@ -35,19 +35,25 @@ func MakeHandler(tracer opentracing.Tracer, svc rules.Service, logger log.Logger
 	))
 	r.Get("/rules/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_rule")(viewRuleEndpoint(svc)),
-		decodeViewRule,
+		decodeRuleReq,
 		encodeResponse,
 		opts...,
 	))
-	r.Get("/profiles/:id/rules", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_rules_by_profile")(listRulesByProfileEndpoint(svc)),
-		decodeListRulesByProfile,
+	r.Get("/things/:id/rules", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_rules_by_thing")(listRulesByThingEndpoint(svc)),
+		decodeListRulesByThing,
 		encodeResponse,
 		opts...,
 	))
 	r.Get("/groups/:id/rules", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_rules_by_group")(listRulesByGroupEndpoint(svc)),
 		decodeListRulesByGroup,
+		encodeResponse,
+		opts...,
+	))
+	r.Get("/rules/:id/things", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_thing_ids_by_rule")(listThingIDsByRuleEndpoint(svc)),
+		decodeRuleReq,
 		encodeResponse,
 		opts...,
 	))
@@ -60,6 +66,18 @@ func MakeHandler(tracer opentracing.Tracer, svc rules.Service, logger log.Logger
 	r.Patch("/rules", kithttp.NewServer(
 		kitot.TraceServer(tracer, "remove_rules")(removeRulesEndpoint(svc)),
 		decodeRemoveRules,
+		encodeResponse,
+		opts...,
+	))
+	r.Post("/things/:id/rules", kithttp.NewServer(
+		kitot.TraceServer(tracer, "assign_rules")(assignRulesEndpoint(svc)),
+		decodeThingRules,
+		encodeResponse,
+		opts...,
+	))
+	r.Patch("/things/:id/rules", kithttp.NewServer(
+		kitot.TraceServer(tracer, "unassign_rules")(unassignRulesEndpoint(svc)),
+		decodeThingRules,
 		encodeResponse,
 		opts...,
 	))
@@ -76,25 +94,25 @@ func decodeCreateRules(_ context.Context, r *http.Request) (interface{}, error) 
 	}
 
 	req := createRulesReq{
-		token:     apiutil.ExtractBearerToken(r),
-		profileID: bone.GetValue(r, apiutil.IDKey),
+		token:   apiutil.ExtractBearerToken(r),
+		groupID: bone.GetValue(r, apiutil.IDKey),
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req.Rules); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil
 }
 
-func decodeListRulesByProfile(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListRulesByThing(_ context.Context, r *http.Request) (interface{}, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
 
-	req := listRulesByProfileReq{
+	req := listRulesByThingReq{
 		token:        apiutil.ExtractBearerToken(r),
-		profileID:    bone.GetValue(r, apiutil.IDKey),
+		thingID:      bone.GetValue(r, apiutil.IDKey),
 		pageMetadata: pm,
 	}
 	return req, nil
@@ -115,8 +133,11 @@ func decodeListRulesByGroup(_ context.Context, r *http.Request) (interface{}, er
 	return req, nil
 }
 
-func decodeViewRule(_ context.Context, r *http.Request) (interface{}, error) {
-	req := viewRuleReq{token: apiutil.ExtractBearerToken(r), id: bone.GetValue(r, apiutil.IDKey)}
+func decodeRuleReq(_ context.Context, r *http.Request) (interface{}, error) {
+	req := ruleReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, apiutil.IDKey),
+	}
 
 	return req, nil
 }
@@ -130,7 +151,7 @@ func decodeUpdateRule(_ context.Context, r *http.Request) (interface{}, error) {
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req.ruleReq); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
@@ -143,6 +164,21 @@ func decodeRemoveRules(_ context.Context, r *http.Request) (interface{}, error) 
 	}
 
 	req := removeRulesReq{token: apiutil.ExtractBearerToken(r)}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+func decodeThingRules(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := thingRulesReq{
+		token:   apiutil.ExtractBearerToken(r),
+		thingID: bone.GetValue(r, apiutil.IDKey),
+	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}

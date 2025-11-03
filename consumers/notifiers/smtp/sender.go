@@ -13,8 +13,7 @@ import (
 )
 
 const (
-	footer          = "Sent by Mainflux SMTP Notification"
-	contentTemplate = "A publisher with an id %s sent the message over %s with the following values \n %s"
+	footer = "Sent by Mainflux SMTP Notification"
 )
 
 var _ notifiers.Sender = (*sender)(nil)
@@ -32,9 +31,14 @@ func New(agent *email.Agent, from string) notifiers.Sender {
 func (n *sender) Send(to []string, msg protomfx.Message) error {
 	subject := fmt.Sprintf(`Mainflux notification: Thing %s and subtopic %s`, msg.Publisher, msg.Subtopic)
 	values := string(msg.Payload)
-	content := fmt.Sprintf(contentTemplate, msg.Publisher, msg.Protocol, values)
 
-	return n.agent.Send(to, n.from, subject, "", content, footer)
+	templateData := map[string]any{
+		"PublisherID":    msg.Publisher,
+		"Protocol":       msg.Protocol,
+		"MessageContent": values,
+	}
+
+	return n.agent.Send(to, n.from, subject, "notification", templateData)
 }
 
 func (n *sender) ValidateContacts(contacts []string) error {

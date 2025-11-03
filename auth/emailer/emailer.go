@@ -31,14 +31,11 @@ func New(host string, config *email.Config) (auth.Emailer, error) {
 func (e *emailer) SendOrgInvite(to []string, inv auth.OrgInvite, orgName, invRedirectPath string) error {
 	redirectURL := fmt.Sprintf("%s%s/%s", e.host, invRedirectPath, inv.ID)
 
-	emailContent := fmt.Sprintf(`
-		Hello,
+	templateData := map[string]any{
+		"OrgName":    orgName,
+		"Role":       inv.InviteeRole,
+		"InviteLink": redirectURL,
+	}
 
-		You've been invited to join the %s Organization with role: %s.
-
-		Navigate to the following URL to view the invitation:
-		%s
-	`, orgName, inv.InviteeRole, redirectURL)
-
-	return e.agent.Send(to, "", subjectOrgInvite, "", emailContent, "")
+	return e.agent.Send(to, "", subjectOrgInvite, "org_invite", templateData)
 }

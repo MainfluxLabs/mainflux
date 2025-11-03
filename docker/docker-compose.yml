@@ -128,14 +128,16 @@ services:
       MF_EMAIL_PASSWORD: ${MF_EMAIL_PASSWORD}
       MF_EMAIL_FROM_ADDRESS: ${MF_EMAIL_FROM_ADDRESS}
       MF_EMAIL_FROM_NAME: ${MF_EMAIL_FROM_NAME}
-      MF_AUTH_EMAIL_TEMPLATE: ${MF_AUTH_EMAIL_TEMPLATE}
+      MF_EMAIL_BASE_TEMPLATE: ${MF_EMAIL_BASE_TEMPLATE}
+      MF_HOST: ${MF_HOST}
     ports:
       - ${MF_AUTH_HTTP_PORT}:${MF_AUTH_HTTP_PORT}
       - ${MF_AUTH_GRPC_PORT}:${MF_AUTH_GRPC_PORT}
     networks:
       - mainfluxlabs-base-net
     volumes:
-      - ./templates/${MF_AUTH_EMAIL_TEMPLATE}:/${MF_AUTH_EMAIL_TEMPLATE}
+      - ./templates/base.tmpl:/base.tmpl
+      - ./templates/auth/org_invite.tmpl:/org_invite.tmpl
 
   users-db:
     image: postgres:13.3-alpine
@@ -154,7 +156,10 @@ services:
     image: ${MF_RELEASE_PREFIX}/users:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-users
     volumes:
-      - ./templates/${MF_USERS_RESET_PWD_TEMPLATE}:/${MF_EMAIL_TEMPLATE}
+      - ./templates/base.tmpl:/base.tmpl
+      - ./templates/users/email_verification.tmpl:/email_verification.tmpl
+      - ./templates/users/password_reset.tmpl:/password_reset.tmpl
+      - ./templates/users/platform_invite.tmpl:/platform_invite.tmpl
     depends_on:
       - users-db
       - auth
@@ -176,7 +181,7 @@ services:
       MF_EMAIL_PASSWORD: ${MF_EMAIL_PASSWORD}
       MF_EMAIL_FROM_ADDRESS: ${MF_EMAIL_FROM_ADDRESS}
       MF_EMAIL_FROM_NAME: ${MF_EMAIL_FROM_NAME}
-      MF_EMAIL_TEMPLATE: ${MF_EMAIL_TEMPLATE}
+      MF_EMAIL_BASE_TEMPLATE: ${MF_EMAIL_BASE_TEMPLATE}
       MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
       MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
       MF_USERS_ADMIN_EMAIL: ${MF_USERS_ADMIN_EMAIL}
@@ -582,8 +587,7 @@ services:
       MF_EMAIL_PORT: ${MF_EMAIL_PORT}
       MF_EMAIL_FROM_ADDRESS: ${MF_EMAIL_FROM_ADDRESS}
       MF_EMAIL_FROM_NAME: ${MF_EMAIL_FROM_NAME}
-      MF_EMAIL_TEMPLATE: ${MF_EMAIL_TEMPLATE}
-      MF_SMTP_NOTIFIER_TEMPLATE: ${MF_SMTP_NOTIFIER_TEMPLATE}
+      MF_EMAIL_BASE_TEMPLATE: ${MF_EMAIL_BASE_TEMPLATE}
       MF_SMTP_NOTIFIER_FROM_ADDR: ${MF_SMTP_NOTIFIER_FROM_ADDR}
       MF_SMTP_NOTIFIER_DB_HOST: smtp-notifier-db
       MF_SMTP_NOTIFIER_DB_PORT: ${MF_SMTP_NOTIFIER_DB_PORT}
@@ -599,7 +603,8 @@ services:
     networks:
       - mainfluxlabs-base-net
     volumes:
-      - ./templates/${MF_SMTP_NOTIFIER_TEMPLATE}:/${MF_EMAIL_TEMPLATE}
+      - ./templates/base.tmpl:/base.tmpl
+      - ./templates/smtp/notification.tmpl:/notification.tmpl
 
   downlinks-db:
     image: postgres:13.3-alpine

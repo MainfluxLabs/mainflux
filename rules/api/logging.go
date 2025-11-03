@@ -23,7 +23,7 @@ func LoggingMiddleware(svc rules.Service, logger log.Logger) rules.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm loggingMiddleware) CreateRules(ctx context.Context, token, profileID string, rules ...rules.Rule) (saved []rules.Rule, err error) {
+func (lm loggingMiddleware) CreateRules(ctx context.Context, token, groupID string, rules ...rules.Rule) (saved []rules.Rule, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_rules for rules %v took %s to complete", saved, time.Since(begin))
 		if err != nil {
@@ -33,12 +33,12 @@ func (lm loggingMiddleware) CreateRules(ctx context.Context, token, profileID st
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CreateRules(ctx, token, profileID, rules...)
+	return lm.svc.CreateRules(ctx, token, groupID, rules...)
 }
 
-func (lm loggingMiddleware) ListRulesByProfile(ctx context.Context, token, profileID string, pm apiutil.PageMetadata) (_ rules.RulesPage, err error) {
+func (lm loggingMiddleware) ListRulesByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (_ rules.RulesPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_rules_by_profile for id %s took %s to complete", profileID, time.Since(begin))
+		message := fmt.Sprintf("Method list_rules_by_thing for id %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -46,7 +46,7 @@ func (lm loggingMiddleware) ListRulesByProfile(ctx context.Context, token, profi
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListRulesByProfile(ctx, token, profileID, pm)
+	return lm.svc.ListRulesByThing(ctx, token, thingID, pm)
 }
 
 func (lm loggingMiddleware) ListRulesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (_ rules.RulesPage, err error) {
@@ -60,6 +60,19 @@ func (lm loggingMiddleware) ListRulesByGroup(ctx context.Context, token, groupID
 	}(time.Now())
 
 	return lm.svc.ListRulesByGroup(ctx, token, groupID, pm)
+}
+
+func (lm loggingMiddleware) ListThingIDsByRule(ctx context.Context, token, ruleID string) (_ []string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_thing_ids_by_rule for id %s took %s to complete", ruleID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListThingIDsByRule(ctx, token, ruleID)
 }
 
 func (lm loggingMiddleware) ViewRule(ctx context.Context, token, id string) (_ rules.Rule, err error) {
@@ -99,6 +112,32 @@ func (lm loggingMiddleware) RemoveRules(ctx context.Context, token string, ids .
 	}(time.Now())
 
 	return lm.svc.RemoveRules(ctx, token, ids...)
+}
+
+func (lm loggingMiddleware) AssignRules(ctx context.Context, token, thingID string, ruleIDs ...string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method assign_rules took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.AssignRules(ctx, token, thingID, ruleIDs...)
+}
+
+func (lm loggingMiddleware) UnassignRules(ctx context.Context, token, thingID string, ruleIDs ...string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method unassign_rules took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.UnassignRules(ctx, token, thingID, ruleIDs...)
 }
 
 func (lm loggingMiddleware) Publish(ctx context.Context, msg protomfx.Message) (err error) {

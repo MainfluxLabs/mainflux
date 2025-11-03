@@ -70,9 +70,9 @@ func (lm *loggingMiddleware) UpdateThingsMetadata(ctx context.Context, token str
 	return lm.svc.UpdateThingsMetadata(ctx, token, things...)
 }
 
-func (lm *loggingMiddleware) UpdateKey(ctx context.Context, token, id, key string) (err error) {
+func (lm *loggingMiddleware) UpdateThingGroupAndProfile(ctx context.Context, token string, thing things.Thing) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_key for id %s and key %s took %s to complete", id, key, time.Since(begin))
+		message := fmt.Sprintf("Method update_thing_group_and_profile for id %s took %s to complete", thing.ID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -80,7 +80,7 @@ func (lm *loggingMiddleware) UpdateKey(ctx context.Context, token, id, key strin
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.UpdateKey(ctx, token, id, key)
+	return lm.svc.UpdateThingGroupAndProfile(ctx, token, thing)
 }
 
 func (lm *loggingMiddleware) ViewThing(ctx context.Context, token, id string) (thing things.Thing, err error) {
@@ -414,19 +414,6 @@ func (lm *loggingMiddleware) GetGroupIDByProfileID(ctx context.Context, profileI
 	}(time.Now())
 
 	return lm.svc.GetGroupIDByProfileID(ctx, profileID)
-}
-
-func (lm *loggingMiddleware) GetProfileIDByThingID(ctx context.Context, thingID string) (_ string, err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method get_profile_id_by_thing_id for thing %s took %s to complete", thingID, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.GetProfileIDByThingID(ctx, thingID)
 }
 
 func (lm *loggingMiddleware) GetGroupIDsByOrg(ctx context.Context, orgID string, token string) (_ []string, err error) {

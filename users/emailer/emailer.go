@@ -10,7 +10,9 @@ import (
 )
 
 const (
-	subjectPlatformInvite = "You've been invited to join MainfluxLabs"
+	subjectPlatformInvite    = "You've been invited to join MainfluxLabs"
+	subjectPasswordReset     = "MainfluxLabs - Password reset request"
+	subjectEmailVerification = "MainfluxLabs - Verify your e-mail address"
 )
 
 var _ users.Emailer = (*emailer)(nil)
@@ -35,35 +37,29 @@ func New(host string, c *email.Config) (users.Emailer, error) {
 
 func (e *emailer) SendPasswordReset(To []string, redirectPath, token string) error {
 	url := fmt.Sprintf("%s%s?token=%s", e.host, redirectPath, token)
-	return e.agent.Send(To, "", "Password reset", "", url, "")
+	templateData := map[string]any{
+		"RedirectURL": url,
+	}
+
+	return e.agent.Send(To, "", subjectPasswordReset, "password_reset", templateData)
 }
 
 func (e *emailer) SendEmailVerification(To []string, redirectPath, token string) error {
-	subject := "Verify your MainfluxLabs e-mail address"
-	content := `
-		Use the following link to verify your e-mail address and complete registration:
-		
-		%s
-	`
-
 	url := fmt.Sprintf("%s%s?token=%s", e.host, redirectPath, token)
 
-	content = fmt.Sprintf(content, url)
+	templateData := map[string]any{
+		"RedirectURL": url,
+	}
 
-	return e.agent.Send(To, "", subject, "", content, "")
+	return e.agent.Send(To, "", subjectEmailVerification, "email_verification", templateData)
 }
 
 func (e *emailer) SendPlatformInvite(to []string, inv users.PlatformInvite, redirectPath string) error {
-	redirectURL := fmt.Sprintf("%s%s/%s", e.host, redirectPath, inv.ID)
+	url := fmt.Sprintf("%s%s/%s", e.host, redirectPath, inv.ID)
 
-	emailContent := fmt.Sprintf(`
-		Hello,
+	templateData := map[string]any{
+		"RedirectURL": url,
+	}
 
-		You've been invited to join the MainfluxLabs platform!
-
-		Navigate to the following URL to create an account:
-		%s
-	`, redirectURL)
-
-	return e.agent.Send(to, "", subjectPlatformInvite, "", emailContent, "")
+	return e.agent.Send(to, "", subjectPlatformInvite, "platform_invite", templateData)
 }

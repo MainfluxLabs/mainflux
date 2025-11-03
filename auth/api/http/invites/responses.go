@@ -68,14 +68,17 @@ func (res respondOrgInviteRes) Empty() bool {
 }
 
 type orgInviteRes struct {
-	ID          string    `json:"id"`
-	InviteeID   string    `json:"invitee_id"`
-	InviterID   string    `json:"inviter_id"`
-	OrgID       string    `json:"org_id"`
-	InviteeRole string    `json:"invitee_role"`
-	CreatedAt   time.Time `json:"created_at"`
-	ExpiresAt   time.Time `json:"expires_at"`
-	State       string    `json:"state"`
+	ID           string    `json:"id"`
+	InviteeID    string    `json:"invitee_id"`
+	InviteeEmail string    `json:"invitee_email"`
+	InviterID    string    `json:"inviter_id"`
+	InviterEmail string    `json:"inviter_email"`
+	OrgID        string    `json:"org_id"`
+	OrgName      string    `json:"org_name"`
+	InviteeRole  string    `json:"invitee_role"`
+	CreatedAt    time.Time `json:"created_at"`
+	ExpiresAt    time.Time `json:"expires_at"`
+	State        string    `json:"state"`
 }
 
 func (res orgInviteRes) Code() int {

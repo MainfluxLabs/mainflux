@@ -268,9 +268,10 @@ func TestUpdateThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
 
-	data := fmt.Sprintf(`{"name":"test","profile_id":"%s"}`, prID)
-	invalidNameData := fmt.Sprintf(`{"name": "%s","profile_id":"%s"}`, invalidName, prID)
-	invalidProfileData := `{"name": "test"}`
+	data := `{"name":"test", "key": "tk1"}`
+	dataMissingKey := `{"name":"test"}`
+	dataMissingName := `{"key":"tk1"}`
+	invalidNameData := fmt.Sprintf(`{"name": "%s", "key": "tk1"}`, invalidName)
 
 	cases := []struct {
 		desc        string
@@ -294,7 +295,7 @@ func TestUpdateThing(t *testing.T) {
 			id:          th.ID,
 			contentType: contentTypeJSON,
 			auth:        token,
-			status:      http.StatusBadRequest,
+			status:      http.StatusUnauthorized,
 		},
 		{
 			desc:        "update non-existent thing",
@@ -360,9 +361,15 @@ func TestUpdateThing(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "update thing without profile id",
-			req:         invalidProfileData,
-			id:          th.ID,
+			desc:        "update thing with missing name",
+			req:         dataMissingName,
+			contentType: contentTypeJSON,
+			auth:        token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update thing with missing key",
+			req:         dataMissingKey,
 			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -384,30 +391,26 @@ func TestUpdateThing(t *testing.T) {
 	}
 }
 
-func TestUpdateKey(t *testing.T) {
+func TestUpdateThingGroupAndProfile(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grID := grs[0].ID
 
 	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
 
-	th := thing
-	th.Key = "key"
-	ths, err := svc.CreateThings(context.Background(), token, prID, th)
+	ths, err := svc.CreateThings(context.Background(), token, prID, thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	th = ths[0]
+	th := ths[0]
 
-	th.Key = "new-key"
-	data := toJSON(th)
-
-	th.Key = "key"
-	dummyData := toJSON(th)
+	data := fmt.Sprintf(`{"profile_id":"%s","group_id": "%s"}`, prID, grID)
+	dataMissingGroupID := fmt.Sprintf(`{"profile_id": "%s"}`, prID)
+	dataMissingProfileID := fmt.Sprintf(`{"group_id": "%s"}`, grID)
 
 	cases := []struct {
 		desc        string
@@ -418,7 +421,7 @@ func TestUpdateKey(t *testing.T) {
 		status      int
 	}{
 		{
-			desc:        "update key for an existing thing",
+			desc:        "update existing thing",
 			req:         data,
 			id:          th.ID,
 			contentType: contentTypeJSON,
@@ -426,32 +429,40 @@ func TestUpdateKey(t *testing.T) {
 			status:      http.StatusOK,
 		},
 		{
-			desc:        "update thing with conflicting key",
-			req:         data,
-			id:          th.ID,
-			contentType: contentTypeJSON,
-			auth:        token,
-			status:      http.StatusConflict,
-		},
-		{
-			desc:        "update key with empty JSON request",
+			desc:        "update thing with empty JSON request",
 			req:         "{}",
 			id:          th.ID,
 			contentType: contentTypeJSON,
 			auth:        token,
-			status:      http.StatusUnauthorized,
+			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "update key of non-existent thing",
-			req:         dummyData,
-			id:          strconv.FormatUint(wrongID, 10),
+			desc:        "update thing with missing group id",
+			req:         dataMissingGroupID,
+			id:          th.ID,
+			contentType: contentTypeJSON,
+			auth:        token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update thing with missing profile id",
+			req:         dataMissingProfileID,
+			id:          th.ID,
+			contentType: contentTypeJSON,
+			auth:        token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update non-existent thing",
+			req:         data,
+			id:          wrongValue,
 			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusNotFound,
 		},
 		{
 			desc:        "update thing with invalid id",
-			req:         dummyData,
+			req:         data,
 			id:          wrongValue,
 			contentType: contentTypeJSON,
 			auth:        token,
@@ -503,7 +514,7 @@ func TestUpdateKey(t *testing.T) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPatch,
-			url:         fmt.Sprintf("%s/things/%s/key", ts.URL, tc.id),
+			url:         fmt.Sprintf("%s/things/%s", ts.URL, tc.id),
 			contentType: tc.contentType,
 			token:       tc.auth,
 			body:        strings.NewReader(tc.req),

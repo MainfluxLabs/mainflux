@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -73,82 +74,11 @@ func (tr thingRepository) Save(ctx context.Context, ths ...things.Thing) ([]thin
 }
 
 func (tr thingRepository) Update(ctx context.Context, t things.Thing) error {
-	nq := ""
-	if t.Name != "" {
-		nq += "name = :name,"
-	}
-	if t.ProfileID != "" {
-		nq += "profile_id = :profile_id,"
-	}
-	q := fmt.Sprintf(`UPDATE things SET %s metadata = :metadata WHERE id = :id;`, nq)
-
-	dbth, err := toDBThing(t)
-	if err != nil {
-		return errors.Wrap(dbutil.ErrUpdateEntity, err)
-	}
-
-	res, errdb := tr.db.NamedExecContext(ctx, q, dbth)
-	if errdb != nil {
-		pgErr, ok := errdb.(*pgconn.PgError)
-		if ok {
-			switch pgErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(dbutil.ErrMalformedEntity, errdb)
-			case pgerrcode.StringDataRightTruncationDataException:
-				return errors.Wrap(dbutil.ErrMalformedEntity, err)
-			}
-		}
-
-		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
-	}
-
-	cnt, errdb := res.RowsAffected()
-	if errdb != nil {
-		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
-	}
-
-	if cnt == 0 {
-		return dbutil.ErrNotFound
-	}
-
-	return nil
+	return tr.update(ctx, t)
 }
 
-func (tr thingRepository) UpdateKey(ctx context.Context, id, key string) error {
-	q := `UPDATE things SET key = :key WHERE id = :id;`
-
-	dbth := dbThing{
-		ID:  id,
-		Key: key,
-	}
-
-	res, err := tr.db.NamedExecContext(ctx, q, dbth)
-	if err != nil {
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pgErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(dbutil.ErrMalformedEntity, err)
-			case pgerrcode.UniqueViolation:
-				return errors.Wrap(dbutil.ErrConflict, err)
-			case pgerrcode.StringDataRightTruncationDataException:
-				return errors.Wrap(dbutil.ErrMalformedEntity, err)
-			}
-		}
-
-		return errors.Wrap(dbutil.ErrUpdateEntity, err)
-	}
-
-	cnt, err := res.RowsAffected()
-	if err != nil {
-		return errors.Wrap(dbutil.ErrUpdateEntity, err)
-	}
-
-	if cnt == 0 {
-		return dbutil.ErrNotFound
-	}
-
-	return nil
+func (tr thingRepository) UpdateGroupAndProfile(ctx context.Context, t things.Thing) error {
+	return tr.update(ctx, t)
 }
 
 func (tr thingRepository) RetrieveByID(ctx context.Context, id string) (things.Thing, error) {
@@ -440,6 +370,64 @@ func (tr thingRepository) retrieve(ctx context.Context, query, cquery string, pa
 	}
 
 	return page, nil
+}
+
+func (tr thingRepository) update(ctx context.Context, t things.Thing) error {
+	var fields []string
+
+	if t.Name != "" {
+		fields = append(fields, "name = :name")
+	}
+
+	if t.Metadata != nil {
+		fields = append(fields, "metadata = :metadata")
+	}
+
+	if t.ProfileID != "" {
+		fields = append(fields, "profile_id = :profile_id")
+	}
+
+	if t.GroupID != "" {
+		fields = append(fields, "group_id = :group_id")
+	}
+
+	if t.Key != "" {
+		fields = append(fields, "key = :key")
+	}
+
+	columns := strings.Join(fields, ",")
+	q := fmt.Sprintf(`UPDATE things SET %s WHERE id = :id;`, columns)
+
+	dbth, err := toDBThing(t)
+	if err != nil {
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
+	}
+
+	res, errdb := tr.db.NamedExecContext(ctx, q, dbth)
+	if errdb != nil {
+		pgErr, ok := errdb.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, errdb)
+			case pgerrcode.StringDataRightTruncationDataException:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			}
+		}
+
+		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
+	}
+
+	cnt, errdb := res.RowsAffected()
+	if errdb != nil {
+		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
+	}
+
+	if cnt == 0 {
+		return dbutil.ErrNotFound
+	}
+
+	return nil
 }
 
 type dbThing struct {

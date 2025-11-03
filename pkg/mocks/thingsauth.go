@@ -55,7 +55,7 @@ func (svc thingsServiceMock) GetPubConfByKey(_ context.Context, in *protomfx.Thi
 	return &protomfx.PubConfByKeyRes{PublisherID: svc.things[key].ID}, nil
 }
 
-func (svc thingsServiceMock) GetConfigByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ConfigByThingIDRes, error) {
+func (svc thingsServiceMock) GetConfigByThingID(context.Context, *protomfx.ThingID, ...grpc.CallOption) (*protomfx.ConfigByThingIDRes, error) {
 	panic("not implemented")
 }
 
@@ -100,7 +100,7 @@ func (svc thingsServiceMock) CanUserAccessGroup(_ context.Context, req *protomfx
 	return &empty.Empty{}, errors.ErrAuthorization
 }
 
-func (svc thingsServiceMock) CanThingAccessGroup(_ context.Context, req *protomfx.ThingAccessReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (svc thingsServiceMock) CanThingAccessGroup(_ context.Context, req *protomfx.ThingAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
 	if th, ok := svc.things[req.GetKey()]; ok {
 		if th.GroupID == req.GetId() {
 			return &empty.Empty{}, nil
@@ -127,13 +127,6 @@ func (svc thingsServiceMock) GetGroupIDByThingID(_ context.Context, in *protomfx
 func (svc thingsServiceMock) GetGroupIDByProfileID(_ context.Context, in *protomfx.ProfileID, _ ...grpc.CallOption) (*protomfx.GroupID, error) {
 	if pr, ok := svc.profiles[in.GetValue()]; ok {
 		return &protomfx.GroupID{Value: pr.GroupID}, nil
-	}
-	return nil, dbutil.ErrNotFound
-}
-
-func (svc thingsServiceMock) GetProfileIDByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ProfileID, error) {
-	if th, ok := svc.things[in.GetValue()]; ok {
-		return &protomfx.ProfileID{Value: th.ProfileID}, nil
 	}
 	return nil, dbutil.ErrNotFound
 }

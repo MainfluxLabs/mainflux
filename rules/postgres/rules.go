@@ -36,7 +36,7 @@ func (rr ruleRepository) Save(ctx context.Context, rls ...rules.Rule) ([]rules.R
 	}
 	defer tx.Rollback()
 
-	q := `INSERT INTO rules (id, profile_id, group_id, name, description, conditions, operator, actions) VALUES (:id, :profile_id, :group_id, :name, :description, :conditions, :operator, :actions);`
+	q := `INSERT INTO rules (id, group_id, name, description, conditions, operator, actions) VALUES (:id, :group_id, :name, :description, :conditions, :operator, :actions);`
 
 	for _, rule := range rls {
 		dbr, err := toDBRule(rule)
@@ -79,7 +79,7 @@ func (rr ruleRepository) RetrieveByGroup(ctx context.Context, groupID string, pm
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	whereClause := dbutil.BuildWhereClause(gq, nq)
 
-	q := fmt.Sprintf(`SELECT id, profile_id, group_id, name, description, conditions, operator, actions FROM rules %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	q := fmt.Sprintf(`SELECT id, group_id, name, description, conditions, operator, actions FROM rules %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM rules WHERE %s;`, gq)
 
 	params := map[string]interface{}{
@@ -92,33 +92,45 @@ func (rr ruleRepository) RetrieveByGroup(ctx context.Context, groupID string, pm
 	return rr.retrieve(ctx, q, qc, params)
 }
 
-func (rr ruleRepository) RetrieveByProfile(ctx context.Context, profileID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
-	if _, err := uuid.FromString(profileID); err != nil {
+func (rr ruleRepository) RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
+	if _, err := uuid.FromString(thingID); err != nil {
 		return rules.RulesPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
-	pq := "profile_id = :profile_id"
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	tq := "rt.thing_id = :thing_id"
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	whereClause := dbutil.BuildWhereClause(pq, nq)
+	whereClause := dbutil.BuildWhereClause(tq, nq)
 
-	q := fmt.Sprintf(`SELECT id, profile_id, group_id, name, description, conditions, operator, actions FROM rules %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
-	qc := fmt.Sprintf(`SELECT COUNT(*) FROM rules WHERE %s;`, pq)
+	q := fmt.Sprintf(`
+		SELECT r.id, r.group_id, r.name, r.description, r.conditions, r.operator, r.actions
+		FROM rules r
+		INNER JOIN rules_things rt ON r.id = rt.rule_id
+		%s
+		ORDER BY %s %s
+		%s;`,
+		whereClause, oq, dq, olq)
+
+	qc := fmt.Sprintf(`
+		SELECT COUNT(*)
+		FROM rules r
+		INNER JOIN rules_things rt ON r.id = rt.rule_id
+		%s;`, whereClause)
 
 	params := map[string]interface{}{
-		"profile_id": profileID,
-		"name":       name,
-		"limit":      pm.Limit,
-		"offset":     pm.Offset,
+		"thing_id": thingID,
+		"name":     name,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
 	}
 
 	return rr.retrieve(ctx, q, qc, params)
 }
 
 func (rr ruleRepository) RetrieveByID(ctx context.Context, id string) (rules.Rule, error) {
-	q := `SELECT id, profile_id, group_id, name, description, conditions, operator, actions FROM rules WHERE id = $1;`
+	q := `SELECT id, group_id, name, description, conditions, operator, actions FROM rules WHERE id = $1;`
 
 	var dbr dbRule
 	if err := rr.db.QueryRowxContext(ctx, q, id).StructScan(&dbr); err != nil {
@@ -133,8 +145,19 @@ func (rr ruleRepository) RetrieveByID(ctx context.Context, id string) (rules.Rul
 	return toRule(dbr)
 }
 
+func (rr ruleRepository) RetrieveThingIDsByRule(ctx context.Context, ruleID string) ([]string, error) {
+	q := `SELECT thing_id FROM rules_things WHERE rule_id = $1;`
+
+	thingIDs := []string{}
+	if err := rr.db.SelectContext(ctx, &thingIDs, q, ruleID); err != nil {
+		return nil, err
+	}
+
+	return thingIDs, nil
+}
+
 func (rr ruleRepository) Update(ctx context.Context, r rules.Rule) error {
-	q := `UPDATE rules SET name = :name, description = :description, conditions = :conditions, operator = :operator, actions = :actions, profile_id = :profile_id WHERE id = :id;`
+	q := `UPDATE rules SET name = :name, description = :description, conditions = :conditions, operator = :operator, actions = :actions WHERE id = :id;`
 
 	dbr, err := toDBRule(r)
 	if err != nil {
@@ -182,6 +205,60 @@ func (rr ruleRepository) Remove(ctx context.Context, ids ...string) error {
 	return nil
 }
 
+func (rr ruleRepository) Assign(ctx context.Context, thingID string, ruleIDs ...string) error {
+	tx, err := rr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
+	}
+	defer tx.Rollback()
+
+	q := `INSERT INTO rules_things (rule_id, thing_id) VALUES (:rule_id, :thing_id);`
+
+	for _, ruleID := range ruleIDs {
+		params := map[string]interface{}{
+			"rule_id":  ruleID,
+			"thing_id": thingID,
+		}
+
+		if _, err := tx.NamedExecContext(ctx, q, params); err != nil {
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(dbutil.ErrMalformedEntity, err)
+				case pgerrcode.UniqueViolation:
+					continue
+				}
+			}
+			return errors.Wrap(dbutil.ErrCreateEntity, err)
+		}
+
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
+	}
+
+	return nil
+}
+
+func (rr ruleRepository) Unassign(ctx context.Context, thingID string, ruleIDs ...string) error {
+	q := `DELETE FROM rules_things WHERE rule_id = :rule_id AND thing_id = :thing_id;`
+
+	for _, ruleID := range ruleIDs {
+		params := map[string]interface{}{
+			"rule_id":  ruleID,
+			"thing_id": thingID,
+		}
+
+		if _, err := rr.db.NamedExecContext(ctx, q, params); err != nil {
+			return errors.Wrap(dbutil.ErrRemoveEntity, err)
+		}
+	}
+
+	return nil
+}
+
 func (rr ruleRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (rules.RulesPage, error) {
 	rows, err := rr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
@@ -219,7 +296,6 @@ func (rr ruleRepository) retrieve(ctx context.Context, query, cquery string, par
 
 type dbRule struct {
 	ID          string `db:"id"`
-	ProfileID   string `db:"profile_id"`
 	GroupID     string `db:"group_id"`
 	Name        string `db:"name"`
 	Description string `db:"description"`
@@ -241,7 +317,6 @@ func toDBRule(r rules.Rule) (dbRule, error) {
 
 	return dbRule{
 		ID:          r.ID,
-		ProfileID:   r.ProfileID,
 		GroupID:     r.GroupID,
 		Name:        r.Name,
 		Description: r.Description,
@@ -264,7 +339,6 @@ func toRule(dbr dbRule) (rules.Rule, error) {
 
 	return rules.Rule{
 		ID:          dbr.ID,
-		ProfileID:   dbr.ProfileID,
 		GroupID:     dbr.GroupID,
 		Name:        dbr.Name,
 		Description: dbr.Description,

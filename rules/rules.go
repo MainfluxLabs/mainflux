@@ -8,7 +8,6 @@ import (
 
 type Rule struct {
 	ID          string
-	ProfileID   string
 	GroupID     string
 	Name        string
 	Description string
@@ -42,11 +41,14 @@ type RuleRepository interface {
 	// RetrieveByID retrieves a rule having the provided identifier.
 	RetrieveByID(ctx context.Context, id string) (Rule, error)
 
-	// RetrieveByProfile retrieves rules assigned to a certain profile.
-	RetrieveByProfile(ctx context.Context, profileID string, pm apiutil.PageMetadata) (RulesPage, error)
+	// RetrieveByThing retrieves rules assigned to a certain thing.
+	RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (RulesPage, error)
 
 	// RetrieveByGroup retrieves rules assigned to a certain group.
 	RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (RulesPage, error)
+
+	// RetrieveThingIDsByRule retrieves all thing IDs that have the given rule assigned.
+	RetrieveThingIDsByRule(ctx context.Context, ruleID string) ([]string, error)
 
 	// Update performs an update to the existing rule. A non-nil error is
 	// returned to indicate operation failure.
@@ -54,4 +56,10 @@ type RuleRepository interface {
 
 	// Remove removes the rules having the provided identifiers.
 	Remove(ctx context.Context, ids ...string) error
+
+	// Assign assigns rules to the specified thing.
+	Assign(ctx context.Context, thingID string, ruleIDs ...string) error
+
+	// Unassign removes rules from the specified thing.
+	Unassign(ctx context.Context, thingID string, ruleIDs ...string) error
 }

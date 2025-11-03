@@ -193,22 +193,6 @@ func getGroupIDByProfileIDEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func getProfileIDByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(thingIDReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		profileID, err := svc.GetProfileIDByThingID(ctx, req.thingID)
-		if err != nil {
-			return profileIDRes{}, err
-		}
-
-		return profileIDRes{profileID: profileID}, nil
-	}
-}
-
 func buildConfigResponse(conf map[string]interface{}) (*protomfx.Config, error) {
 	cb, err := json.Marshal(conf)
 	if err != nil {

@@ -22,13 +22,16 @@ import (
 // Service specifies an API for managing rules.
 type Service interface {
 	// CreateRules creates rules.
-	CreateRules(ctx context.Context, token, profileID string, rules ...Rule) ([]Rule, error)
+	CreateRules(ctx context.Context, token, groupID string, rules ...Rule) ([]Rule, error)
 
-	// ListRulesByProfile retrieves a paginated list of rules by profile.
-	ListRulesByProfile(ctx context.Context, token, profileID string, pm apiutil.PageMetadata) (RulesPage, error)
+	// ListRulesByThing retrieves a paginated list of rules by thing.
+	ListRulesByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (RulesPage, error)
 
 	// ListRulesByGroup retrieves a paginated list of rules by group.
 	ListRulesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (RulesPage, error)
+
+	// ListThingIDsByRule retrieves a list of thing IDs attached to the given rule ID.
+	ListThingIDsByRule(ctx context.Context, token, ruleID string) ([]string, error)
 
 	// ViewRule retrieves a specific rule by its ID.
 	ViewRule(ctx context.Context, token, id string) (Rule, error)
@@ -38,6 +41,12 @@ type Service interface {
 
 	// RemoveRules removes the rules identified with the provided IDs.
 	RemoveRules(ctx context.Context, token string, ids ...string) error
+
+	// AssignRules assigns rules to a specific thing.
+	AssignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error
+
+	// UnassignRules removes rule assignments from a specific thing.
+	UnassignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error
 
 	// Publish publishes messages on a topic related to a certain rule action
 	Publish(ctx context.Context, message protomfx.Message) error
@@ -86,20 +95,13 @@ func New(rules RuleRepository, things protomfx.ThingsServiceClient, publisher me
 	}
 }
 
-func (rs *rulesService) CreateRules(ctx context.Context, token, profileID string, rules ...Rule) ([]Rule, error) {
-	_, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: profileID, Action: things.Editor})
+func (rs *rulesService) CreateRules(ctx context.Context, token, groupID string, rules ...Rule) ([]Rule, error) {
+	_, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Editor})
 	if err != nil {
 		return []Rule{}, err
 	}
-
-	grID, err := rs.things.GetGroupIDByProfileID(ctx, &protomfx.ProfileID{Value: profileID})
-	if err != nil {
-		return []Rule{}, err
-	}
-	groupID := grID.GetValue()
 
 	for i := range rules {
-		rules[i].ProfileID = profileID
 		rules[i].GroupID = groupID
 
 		id, err := rs.idProvider.ID()
@@ -112,13 +114,13 @@ func (rs *rulesService) CreateRules(ctx context.Context, token, profileID string
 	return rs.rules.Save(ctx, rules...)
 }
 
-func (rs *rulesService) ListRulesByProfile(ctx context.Context, token, profileID string, pm apiutil.PageMetadata) (RulesPage, error) {
-	_, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: profileID, Action: things.Viewer})
+func (rs *rulesService) ListRulesByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (RulesPage, error) {
+	_, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer})
 	if err != nil {
 		return RulesPage{}, err
 	}
 
-	rules, err := rs.rules.RetrieveByProfile(ctx, profileID, pm)
+	rules, err := rs.rules.RetrieveByThing(ctx, thingID, pm)
 	if err != nil {
 		return RulesPage{}, err
 	}
@@ -140,13 +142,26 @@ func (rs *rulesService) ListRulesByGroup(ctx context.Context, token, groupID str
 	return rules, nil
 }
 
+func (rs *rulesService) ListThingIDsByRule(ctx context.Context, token, ruleID string) ([]string, error) {
+	rule, err := rs.rules.RetrieveByID(ctx, ruleID)
+	if err != nil {
+		return []string{}, err
+	}
+
+	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Viewer}); err != nil {
+		return []string{}, err
+	}
+
+	return rs.rules.RetrieveThingIDsByRule(ctx, ruleID)
+}
+
 func (rs *rulesService) ViewRule(ctx context.Context, token, id string) (Rule, error) {
 	rule, err := rs.rules.RetrieveByID(ctx, id)
 	if err != nil {
 		return Rule{}, err
 	}
 
-	if _, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.ProfileID, Action: things.Viewer}); err != nil {
+	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Viewer}); err != nil {
 		return Rule{}, err
 	}
 
@@ -154,7 +169,13 @@ func (rs *rulesService) ViewRule(ctx context.Context, token, id string) (Rule, e
 }
 
 func (rs *rulesService) UpdateRule(ctx context.Context, token string, rule Rule) error {
-	if _, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.ProfileID, Action: things.Editor}); err != nil {
+	r, err := rs.rules.RetrieveByID(ctx, rule.ID)
+	if err != nil {
+		return err
+	}
+
+	req := &protomfx.UserAccessReq{Token: token, Id: r.GroupID, Action: things.Editor}
+	if _, err := rs.things.CanUserAccessGroup(ctx, req); err != nil {
 		return err
 	}
 
@@ -168,20 +189,72 @@ func (rs *rulesService) RemoveRules(ctx context.Context, token string, ids ...st
 			return err
 		}
 
-		if _, err := rs.things.CanUserAccessProfile(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.ProfileID, Action: things.Editor}); err != nil {
+		if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Editor}); err != nil {
 			return err
 		}
 	}
+
 	return rs.rules.Remove(ctx, ids...)
 }
 
-func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) error {
-	profileID, err := rs.things.GetProfileIDByThingID(ctx, &protomfx.ThingID{Value: message.Publisher})
+func (rs *rulesService) AssignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error {
+	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
+		return err
+	}
+
+	grID, err := rs.things.GetGroupIDByThingID(ctx, &protomfx.ThingID{Value: thingID})
 	if err != nil {
 		return err
 	}
 
-	rp, err := rs.rules.RetrieveByProfile(ctx, profileID.GetValue(), apiutil.PageMetadata{})
+	for _, id := range ruleIDs {
+		rule, err := rs.rules.RetrieveByID(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		if rule.GroupID != grID.GetValue() {
+			return errors.ErrAuthorization
+		}
+	}
+
+	if err := rs.rules.Assign(ctx, thingID, ruleIDs...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (rs *rulesService) UnassignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error {
+	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
+		return err
+	}
+
+	grID, err := rs.things.GetGroupIDByThingID(ctx, &protomfx.ThingID{Value: thingID})
+	if err != nil {
+		return err
+	}
+
+	for _, id := range ruleIDs {
+		rule, err := rs.rules.RetrieveByID(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		if rule.GroupID != grID.GetValue() {
+			return errors.ErrAuthorization
+		}
+	}
+
+	if err := rs.rules.Unassign(ctx, thingID, ruleIDs...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) error {
+	rp, err := rs.rules.RetrieveByThing(ctx, message.GetPublisher(), apiutil.PageMetadata{})
 	if err != nil {
 		return err
 	}
