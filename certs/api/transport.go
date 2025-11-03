@@ -55,7 +55,7 @@ func MakeHandler(svc certs.Service, pkiAgent pki.Agent, logger logger.Logger) ht
 	))
 
 	r.Get("/certs/crl", kithttp.NewServer(
-		getCRL(svc),
+		listCRL(svc),
 		decodeGetCRL,
 		encodeCRL,
 		opts...,
