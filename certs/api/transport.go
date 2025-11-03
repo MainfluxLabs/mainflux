@@ -6,8 +6,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"encoding/pem"
-	"fmt"
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux"
