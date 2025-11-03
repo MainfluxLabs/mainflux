@@ -80,7 +80,7 @@ func migrateDB(db *sqlx.DB) error {
 						serial       TEXT PRIMARY KEY,
 						owner_id     TEXT NOT NULL,
 						thing_id     TEXT NOT NULL,
-						revoked_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+						revoked_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 					);`,
 					`CREATE INDEX idx_revoked_certs_owner_id ON revoked_certs(owner_id);`,
 					`CREATE INDEX idx_revoked_certs_thing_id ON revoked_certs(thing_id);`,
