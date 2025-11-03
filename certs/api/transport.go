@@ -27,42 +27,42 @@ func MakeHandler(svc certs.Service, pkiAgent pki.Agent, logger logger.Logger) ht
 	r := bone.New()
 
 	r.Post("/", kithttp.NewServer(
-		IssueCert(svc),
+		issueCert(svc),
 		decodeCerts,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/:id", kithttp.NewServer(
-		ViewCert(svc),
+		viewCert(svc),
 		decodeViewCert,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Delete("/:id", kithttp.NewServer(
-		RevokeCert(svc),
+		revokeCert(svc),
 		decodeRevokeCerts,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/serials/:id", kithttp.NewServer(
-		ListSerials(svc),
+		listSerials(svc),
 		decodeListCerts,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/crl", kithttp.NewServer(
-		GetCRL(svc),
+		getCRL(svc),
 		decodeGetCRL,
 		encodeCRL,
 		opts...,
 	))
 
 	r.Post("/:id/renew", kithttp.NewServer(
-		RenewCert(svc),
+		renewCert(svc),
 		decodeViewCert,
 		encodeResponse,
 		opts...,
