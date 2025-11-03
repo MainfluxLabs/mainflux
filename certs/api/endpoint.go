@@ -10,7 +10,7 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-func issueCert(svc certs.Service) endpoint.Endpoint {
+func issueCertEndpoint(svc certs.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(addCertsReq)
 		if err := req.validate(); err != nil {
@@ -32,7 +32,7 @@ func issueCert(svc certs.Service) endpoint.Endpoint {
 	}
 }
 
-func listSerials(svc certs.Service) endpoint.Endpoint {
+func listSerialsEndpoint(svc certs.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listReq)
 		if err := req.validate(); err != nil {
@@ -62,7 +62,7 @@ func listSerials(svc certs.Service) endpoint.Endpoint {
 	}
 }
 
-func viewCert(svc certs.Service) endpoint.Endpoint {
+func viewCertEndpoint(svc certs.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(viewReq)
 		if err := req.validate(); err != nil {
@@ -85,7 +85,7 @@ func viewCert(svc certs.Service) endpoint.Endpoint {
 	}
 }
 
-func revokeCert(svc certs.Service) endpoint.Endpoint {
+func revokeCertEndpoint(svc certs.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(revokeReq)
 		if err := req.validate(); err != nil {
@@ -95,7 +95,7 @@ func revokeCert(svc certs.Service) endpoint.Endpoint {
 	}
 }
 
-func listCRL(svc certs.Service) endpoint.Endpoint {
+func listCRLEndpoint(svc certs.Service) endpoint.Endpoint {
 	return func(ctx context.Context, _ interface{}) (interface{}, error) {
 		crl, err := svc.GetCRL(ctx)
 		if err != nil {
@@ -105,7 +105,7 @@ func listCRL(svc certs.Service) endpoint.Endpoint {
 	}
 }
 
-func renewCert(svc certs.Service) endpoint.Endpoint {
+func renewCertEndpoint(svc certs.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(viewReq)
 		if err := req.validate(); err != nil {
