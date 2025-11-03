@@ -278,7 +278,6 @@ func toCert(cdb dbCert) certs.Cert {
 	}
 }
 
-// NOTE: custom type for PostgreSQL TEXT[] arrays, might delete later
 type StringArray []string
 
 func (a *StringArray) Scan(src interface{}) error {
