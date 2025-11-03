@@ -160,30 +160,3 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	apiutil.EncodeError(err, w)
 	apiutil.WriteErrorResponse(err, w)
 }
-
-// TODO : might not need this, experiment with mTLS
-func verifyClientCertMiddleware(pkiAgent pki.Agent, logger logger.Logger) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.TLS != nil && len(r.TLS.PeerCertificates) > 0 {
-				clientCert := r.TLS.PeerCertificates[0]
-
-				certPEM := string(pem.EncodeToMemory(&pem.Block{
-					Type:  "CERTIFICATE",
-					Bytes: clientCert.Raw,
-				}))
-
-				if _, err := pkiAgent.VerifyCert(certPEM); err != nil {
-					logger.Warn(fmt.Sprintf("Client cert verification failed: %s", err))
-					encodeError(r.Context(), err, w)
-					return
-				}
-
-				ctx := context.WithValue(r.Context(), "client_cert", clientCert)
-				r = r.WithContext(ctx)
-			}
-
-			next.ServeHTTP(w, r)
-		})
-	}
-}
