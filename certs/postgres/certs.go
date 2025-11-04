@@ -130,7 +130,7 @@ func (cr certsRepository) Remove(ctx context.Context, ownerID, serial string) er
 	return nil
 }
 
-func (cr certsRepository) RetrieveRevokedCertificates(ctx context.Context) ([]certs.RevokedCert, error) {
+func (cr certsRepository) RetrieveRevokedCerts(ctx context.Context) ([]certs.RevokedCert, error) {
 	q := `SELECT serial, revoked_at, thing_id, owner_id FROM revoked_certs ORDER BY revoked_at DESC`
 
 	rows, err := cr.db.NamedQueryContext(ctx, q, map[string]interface{}{})

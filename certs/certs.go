@@ -39,5 +39,5 @@ type Repository interface {
 	RetrieveBySerial(ctx context.Context, ownerID, serialID string) (Cert, error)
 
 	// Retrieves the serials of all revoked certificates
-	RetrieveRevokedCertificates(ctx context.Context) ([]RevokedCert, error)
+	RetrieveRevokedCerts(ctx context.Context) ([]RevokedCert, error)
 }

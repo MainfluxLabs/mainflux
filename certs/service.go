@@ -208,7 +208,7 @@ func (cs *certsService) ViewCert(ctx context.Context, token, serialID string) (C
 }
 
 func (cs *certsService) ListCRL(ctx context.Context) ([]byte, error) {
-	revokedCerts, err := cs.certsRepo.RetrieveRevokedCertificates(ctx)
+	revokedCerts, err := cs.certsRepo.RetrieveRevokedCerts(ctx)
 	if err != nil {
 		return nil, err
 	}
