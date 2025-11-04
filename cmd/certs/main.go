@@ -143,7 +143,7 @@ func main() {
 
 	tlsCert, caCert, err := loadCertificates(cfg)
 	if err != nil {
-		log.Fatalf("Failed to load CA certificates for issuing client certs: %s", err)
+		logger.Error(fmt.Sprintf("Failed to load CA certificates for issuing client certs: %s", err))
 	}
 
 	tlsConfig := configureTLSServer(cfg, caCert)
