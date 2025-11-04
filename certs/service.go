@@ -47,9 +47,6 @@ type Service interface {
 	// RevokeCert revokes a certificate for a given serial ID.
 	RevokeCert(ctx context.Context, token, serialID string) (Revoke, error)
 
-	// ListCRL is used to get Certificate Revocation Lists that currently exists.
-	ListCRL(ctx context.Context) ([]byte, error)
-
 	// RenewCert extends the expiration date of a certificate.
 	RenewCert(ctx context.Context, token, serialID string) (Cert, error)
 }
@@ -205,28 +202,6 @@ func (cs *certsService) ViewCert(ctx context.Context, token, serialID string) (C
 	}
 
 	return cert, nil
-}
-
-func (cs *certsService) ListCRL(ctx context.Context) ([]byte, error) {
-	revokedCerts, err := cs.certsRepo.RetrieveRevokedCerts(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var revokedCertList []pkix.RevokedCertificate
-	for _, cert := range revokedCerts {
-		serialNum := new(big.Int)
-		if _, ok := serialNum.SetString(cert.Serial, 10); !ok {
-			continue
-		}
-
-		revokedCertList = append(revokedCertList, pkix.RevokedCertificate{
-			SerialNumber:   serialNum,
-			RevocationTime: cert.RevokedAt,
-		})
-	}
-
-	return cs.pki.CreateCRL(revokedCertList)
 }
 
 func (cs *certsService) RenewCert(ctx context.Context, token, serialID string) (Cert, error) {

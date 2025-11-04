@@ -427,26 +427,6 @@ func TestViewCert(t *testing.T) {
 	}
 }
 
-func TestListCRL(t *testing.T) {
-	svc, _, err := newService()
-	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
-
-	cert, err := svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, keyType)
-	require.Nil(t, err, fmt.Sprintf("unexpected cert creation error: %s\n", err))
-
-	_, err = svc.RevokeCert(context.Background(), token, cert.Serial)
-	require.Nil(t, err, fmt.Sprintf("unexpected cert revocation error: %s\n", err))
-
-	crl, err := svc.ListCRL(context.Background())
-	assert.Nil(t, err, fmt.Sprintf("unexpected error getting CRL: %s\n", err))
-	assert.NotNil(t, crl, "CRL should not be nil")
-	assert.NotEmpty(t, crl, "CRL should not be empty")
-
-	block, _ := pem.Decode(crl)
-	assert.NotNil(t, block, "CRL should be valid PEM")
-	assert.Equal(t, "X509 CRL", block.Type, "CRL block type should be X509 CRL")
-}
-
 func TestRenewCert(t *testing.T) {
 	svc, _, err := newService()
 	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))

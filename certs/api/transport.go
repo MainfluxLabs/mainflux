@@ -56,13 +56,6 @@ func MakeHandler(svc certs.Service, tracer opentracing.Tracer, pkiAgent pki.Agen
 		opts...,
 	))
 
-	r.Get("/certs/crl", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_crl")(listCRLEndpoint(svc)),
-		decodeListCRL,
-		encodeCRL,
-		opts...,
-	))
-
 	r.Post("/certs/:id/renew", kithttp.NewServer(
 		kitot.TraceServer(tracer, "renew_cert")(renewCertEndpoint(svc)),
 		decodeViewCert,
@@ -111,18 +104,6 @@ func decodeListCerts(_ context.Context, r *http.Request) (interface{}, error) {
 		offset:  o,
 	}
 	return req, nil
-}
-
-func decodeListCRL(_ context.Context, r *http.Request) (interface{}, error) {
-	return nil, nil
-}
-
-func encodeCRL(_ context.Context, w http.ResponseWriter, response interface{}) error {
-	w.Header().Set("Content-Type", "application/pkix-crl")
-	w.WriteHeader(http.StatusOK)
-	crl := response.([]byte)
-	_, err := w.Write(crl)
-	return err
 }
 
 func decodeViewCert(_ context.Context, r *http.Request) (interface{}, error) {

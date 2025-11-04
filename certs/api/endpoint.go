@@ -95,16 +95,6 @@ func revokeCertEndpoint(svc certs.Service) endpoint.Endpoint {
 	}
 }
 
-func listCRLEndpoint(svc certs.Service) endpoint.Endpoint {
-	return func(ctx context.Context, _ interface{}) (interface{}, error) {
-		crl, err := svc.ListCRL(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return crl, nil
-	}
-}
-
 func renewCertEndpoint(svc certs.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(viewReq)

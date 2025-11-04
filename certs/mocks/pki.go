@@ -44,8 +44,6 @@ type Agent interface {
 	IssueCert(cn, ttl, keyType string, keyBits int) (certs.Cert, error)
 
 	VerifyCert(certPEM string) (*x509.Certificate, error)
-
-	CreateCRL(revokedCerts []pkix.RevokedCertificate) ([]byte, error)
 }
 
 type agent struct {
@@ -222,40 +220,6 @@ func (a *agent) VerifyCert(certPEM string) (*x509.Certificate, error) {
 	}
 
 	return cert, nil
-}
-
-func (a *agent) CreateCRL(revokedCerts []pkix.RevokedCertificate) ([]byte, error) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	now := time.Now()
-
-	crlTemplate := &x509.RevocationList{
-		Number:              big.NewInt(now.Unix()),
-		ThisUpdate:          now,
-		NextUpdate:          now.Add(24 * time.Hour),
-		RevokedCertificates: revokedCerts,
-	}
-
-	signer, ok := a.TLSCert.PrivateKey.(interface {
-		Public() crypto.PublicKey
-		Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) (signature []byte, err error)
-	})
-	if !ok {
-		return nil, errors.New("CA private key cannot sign CRL")
-	}
-
-	crlBytes, err := x509.CreateRevocationList(rand.Reader, crlTemplate, a.X509Cert, signer)
-	if err != nil {
-		return nil, errors.Wrap(errors.New("failed to create CRL"), err)
-	}
-
-	crlPEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "X509 CRL",
-		Bytes: crlBytes,
-	})
-
-	return crlPEM, nil
 }
 
 func publicKey(priv interface{}) (interface{}, error) {

@@ -1,7 +1,6 @@
 package pki
 
 import (
-	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -26,7 +25,6 @@ const (
 	ecKeyType       = "ec"
 	rsaKeyBlockType = "RSA PRIVATE KEY"
 	ecKeyBlockType  = "EC PRIVATE KEY"
-	crlType         = "X509 CRL"
 	certificateType = "CERTIFICATE"
 )
 
@@ -43,7 +41,6 @@ type Cert struct {
 type Agent interface {
 	IssueCert(cn, ttl, keyType string, keyBits int) (Cert, error)
 	VerifyCert(certPEM string) (*x509.Certificate, error)
-	CreateCRL(revokedCerts []pkix.RevokedCertificate) ([]byte, error)
 }
 
 var (
@@ -261,35 +258,6 @@ func (a *agent) VerifyCert(certPEM string) (*x509.Certificate, error) {
 	}
 
 	return cert, nil
-}
-
-func (a *agent) CreateCRL(revokedCerts []pkix.RevokedCertificate) ([]byte, error) {
-	a.mu.RLock()
-	defer a.mu.RUnlock()
-
-	now := time.Now()
-
-	crlTemplate := &x509.RevocationList{
-		Number:              big.NewInt(now.Unix()),
-		ThisUpdate:          now,
-		NextUpdate:          now.Add(24 * time.Hour),
-		RevokedCertificates: revokedCerts,
-	}
-
-	signer, ok := a.caKey.(crypto.Signer)
-	if !ok {
-		return nil, errors.New("CA private key does not implement crypto.Signer")
-	}
-
-	crlBytes, err := x509.CreateRevocationList(rand.Reader, crlTemplate, a.caCert, signer)
-	if err != nil {
-		return nil, errors.Wrap(ErrFailedCRLCreation, err)
-	}
-
-	return pem.EncodeToMemory(&pem.Block{
-		Type:  crlType,
-		Bytes: crlBytes,
-	}), nil
 }
 
 func generateSerialNumber() (*big.Int, error) {
