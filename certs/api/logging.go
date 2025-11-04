@@ -91,19 +91,6 @@ func (lm *loggingMiddleware) RevokeCert(ctx context.Context, token, thingID stri
 	return lm.svc.RevokeCert(ctx, token, thingID)
 }
 
-func (lm *loggingMiddleware) ListCRL(ctx context.Context) (crl []byte, err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_crl took %s to complete", time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.ListCRL(ctx)
-}
-
 func (lm *loggingMiddleware) RenewCert(ctx context.Context, token, serialID string) (c certs.Cert, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method renew_cert for serial: %s took %s to complete", serialID, time.Since(begin))

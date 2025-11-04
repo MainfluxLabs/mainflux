@@ -7,8 +7,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"crypto/x509/pkix"
-	"math/big"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/certs/pki"
