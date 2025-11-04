@@ -47,8 +47,8 @@ type Service interface {
 	// RevokeCert revokes a certificate for a given serial ID.
 	RevokeCert(ctx context.Context, token, serialID string) (Revoke, error)
 
-	// GetCRL is used to get Certificate Revocation Lists that currently exists.
-	GetCRL(ctx context.Context) ([]byte, error)
+	// ListCRL is used to get Certificate Revocation Lists that currently exists.
+	ListCRL(ctx context.Context) ([]byte, error)
 
 	// RenewCert extends the expiration date of a certificate.
 	RenewCert(ctx context.Context, token, serialID string) (Cert, error)
@@ -207,7 +207,7 @@ func (cs *certsService) ViewCert(ctx context.Context, token, serialID string) (C
 	return cert, nil
 }
 
-func (cs *certsService) GetCRL(ctx context.Context) ([]byte, error) {
+func (cs *certsService) ListCRL(ctx context.Context) ([]byte, error) {
 	revokedCerts, err := cs.certsRepo.RetrieveRevokedCertificates(ctx)
 	if err != nil {
 		return nil, err

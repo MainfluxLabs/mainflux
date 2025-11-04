@@ -75,13 +75,13 @@ func (ms *metricsMiddleware) RevokeCert(ctx context.Context, token, thingID stri
 	return ms.svc.RevokeCert(ctx, token, thingID)
 }
 
-func (ms *metricsMiddleware) GetCRL(ctx context.Context) ([]byte, error) {
+func (ms *metricsMiddleware) ListCRL(ctx context.Context) ([]byte, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "get_crl").Add(1)
-		ms.latency.With("method", "get_crl").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "list_crl").Add(1)
+		ms.latency.With("method", "list_crl").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.GetCRL(ctx)
+	return ms.svc.ListCRL(ctx)
 }
 
 func (ms *metricsMiddleware) RenewCert(ctx context.Context, token, serialID string) (certs.Cert, error) {
