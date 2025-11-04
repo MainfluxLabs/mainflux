@@ -1,5 +1,9 @@
 {{ define "content" }}
-    <h3>You've been invited to join MainfluxLabs!</h3>
+    <p style="margin-bottom:16px;">
+        You've been invited to join Mainflux Labs! Click the button below to create your account and get started:
+    </p>
 
-    <a href="{{ .RedirectURL }}">Click here to create an account.</a>
+    <p style="text-align:center; margin-top:24px;">
+        <a href="{{ .RedirectURL }}" class="btn">Create Account</a>
+    </p>
 {{ end }}

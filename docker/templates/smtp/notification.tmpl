@@ -1,4 +1,12 @@
 {{ define "content" }}
-    <p>A publisher with an id {{ .PublisherID }} sent the message over {{ .Protocol }} with the following values:</p>
-    <p>{{ .MessageContent }}</p>
+    <p style="margin-bottom:16px;">
+        A publisher with ID <strong>{{ .PublisherID }}</strong> sent a message over
+        <strong>{{ .Protocol }}</strong> with the following values:
+    </p>
+
+    <pre style="margin:0 0 24px 0; padding:12px; background-color:#f1f3f6; border-radius:4px;
+                font-size:13px; line-height:1.4; font-family: monospace;
+                white-space:pre-wrap; word-break:break-word;">
+        {{ .MessageContent }}
+    </pre>
 {{ end }}

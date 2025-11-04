@@ -1,76 +1,87 @@
 {{ define "base" }}
-<!doctype html>
-<html lang="en">
+    <!doctype html>
+    <html lang="en">
 
-<head>
-    <meta charset="UTF-8" />
-    <title>{{ .Title }}</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f7f9fc;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 620px;
-            margin: auto;
-            background: #ffffff;
-            padding: 24px;
-            border-radius: 6px;
-            border: 1px solid #e3e9f1;
-        }
-        .logo {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .footer {
-            margin-top: 30px;
-            text-align: center;
-            color: #7a8291;
-            font-size: 12px;
-            line-height: 1.5;
-        }
-        a.btn {
-            background-color: #0066cc;
-            color: #ffffff !important;
-            padding: 12px 20px;
-            border-radius: 5px;
-            display: inline-block;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        p {
-            font-size: 15px;
-            color: #222;
-        }
-    </style>
-</head>
+    <head>
+        <meta charset="UTF-8" />
+        <title>{{ .Title }}</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f7f9fc;
+                margin: 0;
+                padding: 0;
+            }
+            .container {
+                max-width: 620px;
+                margin: auto;
+                background: #ffffff;
+                padding: 24px;
+                border-radius: 6px;
+                border: 1px solid #e3e9f1;
+            }
+            .brand {
+                display: block;
+                text-align: center;
+                font-weight: 800;
+                font-size: 24px;
+                color: #ffffff !important;
+                text-decoration: none;
+                background-color: #03122a;
+                padding: 16px 0;
+                border-radius: 6px 6px 0 0;
+                margin-bottom: 20px;
+            }
+            .footer {
+                margin-top: 30px;
+                text-align: center;
+                color: #7a8291;
+                font-size: 12px;
+                line-height: 1.5;
+            }
+            a.btn {
+                background-color: #03122a;
+                color: #ffffff !important;
+                padding: 12px 20px;
+                border-radius: 5px;
+                display: inline-block;
+                text-decoration: none;
+                font-weight: bold;
+            }
+            p {
+                font-size: 15px;
+                color: #222;
+            }
+            .closing {
+                margin-top: 24px;
+            }
+        </style>
+    </head>
 
-<body>
-    <div class="container">
-        <div class="logo">
-            <img src="https://mainflux.com/assets/img/logo.png" alt="Mainflux Logo" width="140">
+    <body>
+        <div class="container">
+
+            <a href="https://mainflux.com" class="brand" id="brand">MAINFLUX LABS</a>
+
+            <p style="font-size:15px; color:#222; margin-bottom:20px;">
+                Hello,
+            </p>
+
+            {{ template "content" . }}
+
+            <p class="closing">
+                Best regards,<br>
+                <strong>Mainflux Team</strong>
+            </p>
+
+            <div class="footer">
+                Veljka Dugoševića 54<br>
+                Science Technology Park Belgrade<br>
+                11000 Belgrade, Serbia<br>
+                Website: <a href="https://mainflux.com">mainflux.com</a><br><br>
+                © Mainflux Labs — Internet of Things Solutionss
+            </div>
         </div>
-
-        <p style="font-size:15px; color:#222; margin-bottom:20px;">
-            Hello,
-        </p>
-
-        {{ template "content" . }}
-
-        <div class="footer">
-            Best regards,<br>
-            <strong>Mainflux Team</strong><br>
-            Website: <a href="https://mainflux.com">mainflux.com</a><br><br>
-
-            Veljka Dugoševića 54<br>
-            Science Technology Park Belgrade<br>
-            11000 Belgrade, Serbia<br><br>
-
-            © Mainflux Labs — Internet of Things Solutions
-        </div>
-    </div>
-</body>
-</html>
+    </body>
+    </html>
 {{ end }}

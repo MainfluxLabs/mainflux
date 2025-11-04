@@ -3,16 +3,8 @@
         You have been invited to join an Organization on the Mainflux platform. This will give you access to collaborate with other members and manage IoT resources according to your assigned role.
     </p>
 
-    <table style="width:100%; border-collapse: collapse; margin-bottom: 24px;">
-        <tr>
-            <td style="padding:8px; font-weight:bold; width:120px;">Organization:</td>
-            <td style="padding:8px;">{{ .OrgName }}</td>
-        </tr>
-        <tr>
-            <td style="padding:8px; font-weight:bold;">Role:</td>
-            <td style="padding:8px;">{{ .Role }}</td>
-        </tr>
-    </table>
+    <p style="margin-bottom:8px;"><strong>Organization:</strong> {{ .OrgName }}</p>
+    <p style="margin-bottom:16px;"><strong>Role:</strong> {{ .Role }}</p>
 
     <p style="text-align:center; margin-top:24px;">
         <a href="{{ .InviteLink }}" class="btn">View Invitation</a>
