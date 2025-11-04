@@ -58,7 +58,7 @@ func MakeHandler(svc certs.Service, tracer opentracing.Tracer, pkiAgent pki.Agen
 
 	r.Get("/certs/crl", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_crl")(listCRLEndpoint(svc)),
-		decodeGetCRL,
+		decodeListCRL,
 		encodeCRL,
 		opts...,
 	))
@@ -113,7 +113,7 @@ func decodeListCerts(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeGetCRL(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListCRL(_ context.Context, r *http.Request) (interface{}, error) {
 	return nil, nil
 }
 
