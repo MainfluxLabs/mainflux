@@ -184,7 +184,7 @@ func (c *certsRepoMock) RetrieveBySerial(ctx context.Context, ownerID, serialID 
 	return crt, nil
 }
 
-func (c *certsRepoMock) RetrieveRevokedCertificates(ctx context.Context) ([]certs.RevokedCert, error) {
+func (c *certsRepoMock) RetrieveRevokedCerts(ctx context.Context) ([]certs.RevokedCert, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
