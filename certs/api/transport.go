@@ -36,7 +36,7 @@ func MakeHandler(svc certs.Service, tracer opentracing.Tracer, pkiAgent pki.Agen
 	))
 
 	r.Get("/certs/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_cert")(listCertEndpoint(svc)),
+		kitot.TraceServer(tracer, "view_cert")(viewCertEndpoint(svc)),
 		decodeViewCert,
 		encodeResponse,
 		opts...,
