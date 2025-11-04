@@ -63,7 +63,7 @@ func (crm certsRepositoryMiddleware) RetrieveRevokedCertificates(ctx context.Con
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.RetrieveRevokedCertificates(ctx)
+	return crm.repo.RetrieveRevokedCerts(ctx)
 }
 
 func (crm certsRepositoryMiddleware) RetrieveByThing(ctx context.Context, ownerID, thingID string, offset, limit uint64) (certs.Page, error) {
