@@ -62,7 +62,6 @@ func migrateDB(db *sqlx.DB) error {
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS certs (
 						thing_id         TEXT NOT NULL,
-						owner_id         TEXT NOT NULL,
 						serial           TEXT NOT NULL,
 						expire           TIMESTAMPTZ NOT NULL,
 						client_cert      TEXT NOT NULL,
@@ -78,7 +77,6 @@ func migrateDB(db *sqlx.DB) error {
 					`CREATE INDEX idx_certs_expire ON certs(expire);`,
 					`CREATE TABLE IF NOT EXISTS revoked_certs (
 						serial       TEXT PRIMARY KEY,
-						owner_id     TEXT NOT NULL,
 						thing_id     TEXT NOT NULL,
 						revoked_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 					);`,

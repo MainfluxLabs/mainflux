@@ -97,7 +97,6 @@ type Revoke struct {
 
 // Cert defines the certificate parameters
 type Cert struct {
-	OwnerID        string    `json:"owner_id" mapstructure:"owner_id"`
 	ThingID        string    `json:"thing_id" mapstructure:"thing_id"`
 	ClientCert     string    `json:"client_cert" mapstructure:"certificate"`
 	IssuingCA      string    `json:"issuing_ca" mapstructure:"issuing_ca"`
@@ -109,11 +108,6 @@ type Cert struct {
 }
 
 func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, ttl string, keyBits int, keyType string) (Cert, error) {
-	owner, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return Cert{}, err
-	}
-
 	thing, err := cs.sdk.GetThing(thingID, token)
 	if err != nil {
 		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
@@ -126,7 +120,6 @@ func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, tt
 
 	c := Cert{
 		ThingID:        thingID,
-		OwnerID:        owner.GetId(),
 		ClientCert:     pkiCert.ClientCert,
 		IssuingCA:      pkiCert.IssuingCA,
 		CAChain:        pkiCert.CAChain,
@@ -147,17 +140,12 @@ func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, tt
 func (cs *certsService) RevokeCert(ctx context.Context, token, serialID string) (Revoke, error) {
 	var revoke Revoke
 
-	u, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return revoke, err
-	}
-
-	_, err = cs.certsRepo.RetrieveBySerial(ctx, u.GetId(), serialID)
+	_, err := cs.certsRepo.RetrieveBySerial(ctx, serialID)
 	if err != nil {
 		return revoke, errors.Wrap(ErrFailedCertRevocation, err)
 	}
 
-	if err = cs.certsRepo.Remove(ctx, u.GetId(), serialID); err != nil {
+	if err = cs.certsRepo.Remove(ctx, serialID); err != nil {
 		return revoke, errors.Wrap(errFailedToRemoveCertFromDB, err)
 	}
 
@@ -166,12 +154,7 @@ func (cs *certsService) RevokeCert(ctx context.Context, token, serialID string) 
 }
 
 func (cs *certsService) ListCerts(ctx context.Context, token, thingID string, offset, limit uint64) (Page, error) {
-	u, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return Page{}, err
-	}
-
-	cp, err := cs.certsRepo.RetrieveByThing(ctx, u.GetId(), thingID, offset, limit)
+	cp, err := cs.certsRepo.RetrieveByThing(ctx, thingID, offset, limit)
 	if err != nil {
 		return Page{}, err
 	}
@@ -180,21 +163,11 @@ func (cs *certsService) ListCerts(ctx context.Context, token, thingID string, of
 }
 
 func (cs *certsService) ListSerials(ctx context.Context, token, thingID string, offset, limit uint64) (Page, error) {
-	u, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return Page{}, err
-	}
-
-	return cs.certsRepo.RetrieveByThing(ctx, u.GetId(), thingID, offset, limit)
+	return cs.certsRepo.RetrieveByThing(ctx, thingID, offset, limit)
 }
 
 func (cs *certsService) ViewCert(ctx context.Context, token, serialID string) (Cert, error) {
-	u, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return Cert{}, err
-	}
-
-	cert, err := cs.certsRepo.RetrieveBySerial(ctx, u.GetId(), serialID)
+	cert, err := cs.certsRepo.RetrieveBySerial(ctx, serialID)
 	if err != nil {
 		return Cert{}, err
 	}
@@ -203,12 +176,7 @@ func (cs *certsService) ViewCert(ctx context.Context, token, serialID string) (C
 }
 
 func (cs *certsService) RenewCert(ctx context.Context, token, serialID string) (Cert, error) {
-	u, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return Cert{}, err
-	}
-
-	oldCert, err := cs.certsRepo.RetrieveBySerial(ctx, u.GetId(), serialID)
+	oldCert, err := cs.certsRepo.RetrieveBySerial(ctx, serialID)
 	if err != nil {
 		return Cert{}, err
 	}

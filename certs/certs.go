@@ -16,7 +16,6 @@ type Page struct {
 
 type RevokedCert struct {
 	Serial    string    `db:"serial"`
-	OwnerID   string    `db:"owner_id"`
 	ThingID   string    `db:"thing_id"`
 	RevokedAt time.Time `db:"revoked_at"`
 }
@@ -26,17 +25,17 @@ type Repository interface {
 	// Save  saves cert for thing into database
 	Save(ctx context.Context, cert Cert) (string, error)
 
-	// RetrieveAll retrieve issued certificates for given owner ID
-	RetrieveAll(ctx context.Context, ownerID string, offset, limit uint64) (Page, error)
+	// RetrieveAll retrieve issued certificates
+	RetrieveAll(ctx context.Context, offset, limit uint64) (Page, error)
 
 	// Remove removes certificate from DB for a given thing ID
-	Remove(ctx context.Context, ownerID, thingID string) error
+	Remove(ctx context.Context, thingID string) error
 
 	// RetrieveByThing retrieves issued certificates for a given thing ID
-	RetrieveByThing(ctx context.Context, ownerID, thingID string, offset, limit uint64) (Page, error)
+	RetrieveByThing(ctx context.Context, thingID string, offset, limit uint64) (Page, error)
 
 	// RetrieveBySerial retrieves a certificate for a given serial ID
-	RetrieveBySerial(ctx context.Context, ownerID, serialID string) (Cert, error)
+	RetrieveBySerial(ctx context.Context, serialID string) (Cert, error)
 
 	// RetrieveRevokedCerts retrieves all revoked certificates
 	RetrieveRevokedCerts(ctx context.Context) ([]RevokedCert, error)

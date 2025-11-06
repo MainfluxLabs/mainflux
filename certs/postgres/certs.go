@@ -29,14 +29,13 @@ func NewRepository(db dbutil.Database) certs.Repository {
 	return &certsRepository{db: db}
 }
 
-func (cr certsRepository) RetrieveAll(ctx context.Context, ownerID string, offset, limit uint64) (certs.Page, error) {
-	q := `SELECT thing_id, owner_id, serial, expire, client_cert, client_key, issuing_ca, 
-	      ca_chain, private_key_type FROM certs WHERE owner_id = :owner_id ORDER BY expire LIMIT :limit OFFSET :offset;`
+func (cr certsRepository) RetrieveAll(ctx context.Context, offset, limit uint64) (certs.Page, error) {
+	q := `SELECT thing_id,  serial, expire, client_cert, client_key, issuing_ca, 
+	      ca_chain, private_key_type FROM certs ORDER BY expire LIMIT :limit OFFSET :offset;`
 
 	params := map[string]interface{}{
-		"owner_id": ownerID,
-		"limit":    limit,
-		"offset":   offset,
+		"limit":  limit,
+		"offset": offset,
 	}
 
 	rows, err := cr.db.NamedQueryContext(ctx, q, params)
@@ -54,7 +53,7 @@ func (cr certsRepository) RetrieveAll(ctx context.Context, ownerID string, offse
 		certificates = append(certificates, toCert(dbcrt))
 	}
 
-	q = `SELECT COUNT(*) FROM certs WHERE owner_id = :owner_id`
+	q = `SELECT COUNT(*) FROM certs`
 	total, err := dbutil.Total(ctx, cr.db, q, params)
 	if err != nil {
 		return certs.Page{}, cr.handlePgError(err, dbutil.ErrRetrieveEntity)
@@ -67,9 +66,9 @@ func (cr certsRepository) RetrieveAll(ctx context.Context, ownerID string, offse
 }
 
 func (cr certsRepository) Save(ctx context.Context, cert certs.Cert) (string, error) {
-	q := `INSERT INTO certs (thing_id, owner_id, serial, expire, client_cert, client_key, 
+	q := `INSERT INTO certs (thing_id,  serial, expire, client_cert, client_key, 
 	      issuing_ca, ca_chain, private_key_type) 
-	      VALUES (:thing_id, :owner_id, :serial, :expire, :client_cert, :client_key, 
+	      VALUES (:thing_id,  :serial, :expire, :client_cert, :client_key, 
 	      :issuing_ca, :ca_chain, :private_key_type)`
 
 	tx, err := cr.db.BeginTxx(ctx, nil)
@@ -91,8 +90,8 @@ func (cr certsRepository) Save(ctx context.Context, cert certs.Cert) (string, er
 	return cert.Serial, nil
 }
 
-func (cr certsRepository) Remove(ctx context.Context, ownerID, serial string) error {
-	cert, err := cr.RetrieveBySerial(ctx, ownerID, serial)
+func (cr certsRepository) Remove(ctx context.Context, serial string) error {
+	cert, err := cr.RetrieveBySerial(ctx, serial)
 	if err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
@@ -103,21 +102,19 @@ func (cr certsRepository) Remove(ctx context.Context, ownerID, serial string) er
 	}
 	defer tx.Rollback()
 
-	q := `INSERT INTO revoked_certs (serial, owner_id, thing_id, revoked_at) 
-	            VALUES (:serial, :owner_id, :thing_id, NOW())`
+	q := `INSERT INTO revoked_certs (serial,  thing_id, revoked_at) 
+	            VALUES (:serial,  :thing_id, NOW())`
 	revokeParams := map[string]interface{}{
 		"serial":   serial,
-		"owner_id": ownerID,
 		"thing_id": cert.ThingID,
 	}
 	if _, err := tx.NamedExecContext(ctx, q, revokeParams); err != nil {
 		return cr.handlePgError(err, dbutil.ErrRemoveEntity)
 	}
 
-	q = `DELETE FROM certs WHERE serial = :serial AND owner_id = :owner_id`
+	q = `DELETE FROM certs WHERE serial = :serial`
 	deleteParams := map[string]interface{}{
-		"serial":   serial,
-		"owner_id": ownerID,
+		"serial": serial,
 	}
 	if _, err := tx.NamedExecContext(ctx, q, deleteParams); err != nil {
 		return cr.handlePgError(err, dbutil.ErrRemoveEntity)
@@ -131,7 +128,7 @@ func (cr certsRepository) Remove(ctx context.Context, ownerID, serial string) er
 }
 
 func (cr certsRepository) RetrieveRevokedCerts(ctx context.Context) ([]certs.RevokedCert, error) {
-	q := `SELECT serial, revoked_at, thing_id, owner_id FROM revoked_certs ORDER BY revoked_at DESC`
+	q := `SELECT serial, revoked_at, thing_id FROM revoked_certs ORDER BY revoked_at DESC`
 
 	rows, err := cr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
@@ -155,13 +152,12 @@ func (cr certsRepository) RetrieveRevokedCerts(ctx context.Context) ([]certs.Rev
 	return revokedCerts, nil
 }
 
-func (cr certsRepository) RetrieveByThing(ctx context.Context, ownerID, thingID string, offset, limit uint64) (certs.Page, error) {
-	q := `SELECT thing_id, owner_id, serial, expire, client_cert, client_key, issuing_ca, 
+func (cr certsRepository) RetrieveByThing(ctx context.Context, thingID string, offset, limit uint64) (certs.Page, error) {
+	q := `SELECT thing_id,  serial, expire, client_cert, client_key, issuing_ca, 
 	      ca_chain, private_key_type FROM certs 
-	      WHERE owner_id = :owner_id AND thing_id = :thing_id ORDER BY expire LIMIT :limit OFFSET :offset;`
+	      WHERE thing_id = :thing_id ORDER BY expire LIMIT :limit OFFSET :offset;`
 
 	params := map[string]interface{}{
-		"owner_id": ownerID,
 		"thing_id": thingID,
 		"limit":    limit,
 		"offset":   offset,
@@ -182,7 +178,7 @@ func (cr certsRepository) RetrieveByThing(ctx context.Context, ownerID, thingID 
 		certificates = append(certificates, toCert(dbcrt))
 	}
 
-	q = `SELECT COUNT(*) FROM certs WHERE owner_id = :owner_id AND thing_id = :thing_id`
+	q = `SELECT COUNT(*) FROM certs WHERE thing_id = :thing_id`
 	total, err := dbutil.Total(ctx, cr.db, q, params)
 	if err != nil {
 		return certs.Page{}, cr.handlePgError(err, dbutil.ErrRetrieveEntity)
@@ -194,13 +190,12 @@ func (cr certsRepository) RetrieveByThing(ctx context.Context, ownerID, thingID 
 	}, nil
 }
 
-func (cr certsRepository) RetrieveBySerial(ctx context.Context, ownerID, serialID string) (certs.Cert, error) {
-	q := `SELECT thing_id, owner_id, serial, expire, client_cert, client_key, issuing_ca, 
-	      ca_chain, private_key_type FROM certs WHERE owner_id = :owner_id AND serial = :serial`
+func (cr certsRepository) RetrieveBySerial(ctx context.Context, serialID string) (certs.Cert, error) {
+	q := `SELECT thing_id,  serial, expire, client_cert, client_key, issuing_ca, 
+	      ca_chain, private_key_type FROM certs AND serial = :serial`
 
 	params := map[string]interface{}{
-		"owner_id": ownerID,
-		"serial":   serialID,
+		"serial": serialID,
 	}
 
 	rows, err := cr.db.NamedQueryContext(ctx, q, params)
@@ -242,7 +237,6 @@ type dbCert struct {
 	ThingID        string      `db:"thing_id"`
 	Serial         string      `db:"serial"`
 	Expire         time.Time   `db:"expire"`
-	OwnerID        string      `db:"owner_id"`
 	ClientCert     string      `db:"client_cert"`
 	ClientKey      string      `db:"client_key"`
 	IssuingCA      string      `db:"issuing_ca"`
@@ -253,7 +247,6 @@ type dbCert struct {
 func toDBCert(c certs.Cert) dbCert {
 	return dbCert{
 		ThingID:        c.ThingID,
-		OwnerID:        c.OwnerID,
 		Serial:         c.Serial,
 		Expire:         c.Expire,
 		ClientCert:     c.ClientCert,
@@ -266,7 +259,6 @@ func toDBCert(c certs.Cert) dbCert {
 
 func toCert(cdb dbCert) certs.Cert {
 	return certs.Cert{
-		OwnerID:        cdb.OwnerID,
 		ThingID:        cdb.ThingID,
 		Serial:         cdb.Serial,
 		Expire:         cdb.Expire,
