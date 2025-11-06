@@ -67,9 +67,6 @@ var (
 
 	// ErrFailedPEMParsing indicates PEM failed to parse
 	ErrFailedPEMParsing = errors.New("failed to parse certificate PEM")
-
-	// ErrFailedCRLCreation indicates that crl could not be created
-	ErrFailedCRLCreation = errors.New("failed to create crl")
 )
 
 type agent struct {
