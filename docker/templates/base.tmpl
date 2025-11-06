@@ -20,7 +20,7 @@
                 border-radius: 6px;
                 border: 1px solid #e3e9f1;
             }
-            .brand {
+            .logo {
                 display: block;
                 text-align: center;
                 font-weight: 800;
@@ -55,17 +55,39 @@
             .closing {
                 margin-top: 24px;
             }
+            .code-block {
+                margin: 0 0 24px 0;
+                padding: 12px;
+                background-color: #f1f3f6;
+                border-radius: 4px;
+                font-size: 13px;
+                line-height: 1.4;
+                font-family: monospace;
+                white-space: pre-wrap;
+                word-break: break-word;
+            }
+            .btn-wrapper {
+                text-align: center;
+                margin-top: 24px;
+            }
+            .mb-8 {
+                margin-bottom: 8px;
+            }
+            .mb-16 {
+                margin-bottom: 16px;
+            }
+            .mb-20 {
+                margin-bottom: 20px;
+            }
         </style>
     </head>
 
     <body>
         <div class="container">
 
-            <a href="https://mainflux.com" class="brand" id="brand">MAINFLUX LABS</a>
+            <a href="https://mainflux.com" class="logo">MAINFLUX LABS</a>
 
-            <p style="font-size:15px; color:#222; margin-bottom:20px;">
-                Hello,
-            </p>
+            <p class="mb-20">Hello,</p>
 
             {{ template "content" . }}
 
