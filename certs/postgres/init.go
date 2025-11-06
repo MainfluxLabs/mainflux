@@ -70,9 +70,8 @@ func migrateDB(db *sqlx.DB) error {
 						ca_chain         TEXT[],
 						private_key_type TEXT NOT NULL,
 						created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-						PRIMARY KEY      (thing_id, owner_id, serial)
+						PRIMARY KEY      (thing_id, serial)
 					);`,
-					`CREATE INDEX idx_certs_owner_id ON certs(owner_id);`,
 					`CREATE INDEX idx_certs_serial ON certs(serial);`,
 					`CREATE INDEX idx_certs_expire ON certs(expire);`,
 					`CREATE TABLE IF NOT EXISTS revoked_certs (
@@ -80,7 +79,6 @@ func migrateDB(db *sqlx.DB) error {
 						thing_id     TEXT NOT NULL,
 						revoked_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 					);`,
-					`CREATE INDEX idx_revoked_certs_owner_id ON revoked_certs(owner_id);`,
 					`CREATE INDEX idx_revoked_certs_thing_id ON revoked_certs(thing_id);`,
 					`CREATE INDEX idx_revoked_certs_revoked_at ON revoked_certs(revoked_at);`,
 				},

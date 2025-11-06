@@ -4,249 +4,174 @@
 package mocks
 
 import (
-	"bufio"
-	"bytes"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/tls"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/pem"
-	"math/big"
+	"context"
 	"sync"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/certs"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 )
 
-var (
-	errPrivateKeyEmpty           = errors.New("private key is empty")
-	errPrivateKeyUnsupportedType = errors.New("private key type is unsupported")
-)
+var _ certs.Repository = (*certsRepoMock)(nil)
 
-var (
-	// ErrMissingCACertificate indicates missing CA certificate
-	ErrMissingCACertificate = errors.New("missing CA certificate for certificate signing")
-
-	// ErrFailedCertCreation indicates failed to certificate creation
-	ErrFailedCertCreation = errors.New("failed to create client certificate")
-
-	// ErrFailedCertRevocation indicates failed certificate revocation
-	ErrFailedCertRevocation = errors.New("failed to revoke certificate")
-)
-
-type Agent interface {
-	// IssueCert is a mock method for Issuing Certificates of PKI Agent.
-	IssueCert(cn, ttl, keyType string, keyBits int) (certs.Cert, error)
-
-	// VerifyCert is a mock method for Verifying Certificates of PKI Agent.
-	VerifyCert(certPEM string) (*x509.Certificate, error)
+type certsRepoMock struct {
+	mu             sync.Mutex
+	counter        uint64
+	certsBySerial  map[string]certs.Cert
+	certsByThingID map[string][]certs.Cert
+	revokedCerts   map[string]certs.RevokedCert
 }
 
-type agent struct {
-	AuthTimeout time.Duration
-	TLSCert     tls.Certificate
-	X509Cert    *x509.Certificate
-	RSABits     int
-	TTL         string
-	caPEM       string
-	mu          sync.Mutex
-	counter     uint64
-	certs       map[string]certs.Cert
-}
-
-func NewPkiAgent(tlsCert tls.Certificate, caCert *x509.Certificate, keyBits int, ttl string, timeout time.Duration) Agent {
-	var caPEM string
-	if len(tlsCert.Certificate) > 0 {
-		caPEM = string(pem.EncodeToMemory(&pem.Block{
-			Type:  "CERTIFICATE",
-			Bytes: tlsCert.Certificate[0],
-		}))
-	}
-
-	return &agent{
-		AuthTimeout: timeout,
-		TLSCert:     tlsCert,
-		X509Cert:    caCert,
-		RSABits:     keyBits,
-		TTL:         ttl,
-		caPEM:       caPEM,
-		certs:       make(map[string]certs.Cert),
+func NewCertsRepository() certs.Repository {
+	return &certsRepoMock{
+		certsBySerial:  make(map[string]certs.Cert),
+		certsByThingID: make(map[string][]certs.Cert),
+		revokedCerts:   make(map[string]certs.RevokedCert),
 	}
 }
 
-func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (certs.Cert, error) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+func (c *certsRepoMock) Save(ctx context.Context, cert certs.Cert) (string, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	if a.X509Cert == nil {
-		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, ErrMissingCACertificate)
+	crt := certs.Cert{
+		ThingID:        cert.ThingID,
+		Serial:         cert.Serial,
+		Expire:         cert.Expire,
+		ClientCert:     cert.ClientCert,
+		ClientKey:      cert.ClientKey,
+		IssuingCA:      cert.IssuingCA,
+		CAChain:        cert.CAChain,
+		PrivateKeyType: cert.PrivateKeyType,
 	}
 
-	var priv interface{}
-	var err error
+	if _, ok := c.certsByThingID[cert.ThingID]; !ok {
+		c.certsByThingID[cert.ThingID] = []certs.Cert{}
+	}
 
-	switch keyType {
-	case "rsa", "":
-		if keyBits == 0 {
-			keyBits = 2048
+	c.certsByThingID[cert.ThingID] = append(c.certsByThingID[cert.ThingID], crt)
+	c.certsBySerial[cert.Serial] = crt
+	c.counter++
+
+	return cert.Serial, nil
+}
+
+func (c *certsRepoMock) RetrieveAll(ctx context.Context, offset, limit uint64) (certs.Page, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if limit <= 0 {
+		return certs.Page{}, nil
+	}
+
+	// Collect all certificates from all things
+	var allCerts []certs.Cert
+	for _, thingCerts := range c.certsByThingID {
+		allCerts = append(allCerts, thingCerts...)
+	}
+
+	start := offset
+	if start > uint64(len(allCerts)) {
+		start = uint64(len(allCerts))
+	}
+
+	end := start + limit
+	if end > uint64(len(allCerts)) {
+		end = uint64(len(allCerts))
+	}
+
+	page := certs.Page{
+		Certs: allCerts[start:end],
+		Total: uint64(len(allCerts)),
+	}
+
+	return page, nil
+}
+
+func (c *certsRepoMock) Remove(ctx context.Context, serialID string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	cert, ok := c.certsBySerial[serialID]
+	if !ok {
+		return dbutil.ErrNotFound
+	}
+
+	thingID := cert.ThingID
+	delete(c.certsBySerial, serialID)
+
+	c.revokedCerts[serialID] = certs.RevokedCert{
+		Serial:    serialID,
+		ThingID:   thingID,
+		RevokedAt: time.Now(),
+	}
+
+	if thingCerts, ok := c.certsByThingID[thingID]; ok {
+		for i, tc := range thingCerts {
+			if tc.Serial == serialID {
+				c.certsByThingID[thingID] = append(thingCerts[:i], thingCerts[i+1:]...)
+				break
+			}
 		}
-		priv, err = rsa.GenerateKey(rand.Reader, keyBits)
-	case "ecdsa", "ec":
-		var curve elliptic.Curve
-		switch keyBits {
-		case 224:
-			curve = elliptic.P224()
-		case 256, 0:
-			curve = elliptic.P256()
-		case 384:
-			curve = elliptic.P384()
-		case 521:
-			curve = elliptic.P521()
-		default:
-			return certs.Cert{}, errors.New("unsupported EC key size, use 224, 256, 384, or 521")
+		if len(c.certsByThingID[thingID]) == 0 {
+			delete(c.certsByThingID, thingID)
 		}
-		priv, err = ecdsa.GenerateKey(curve, rand.Reader)
-	default:
-		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, errPrivateKeyUnsupportedType)
 	}
 
-	if err != nil {
-		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
-	}
-
-	if ttl == "" {
-		ttl = a.TTL
-	}
-
-	notBefore := time.Now()
-	validFor, err := time.ParseDuration(ttl)
-	if err != nil {
-		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
-	}
-	notAfter := notBefore.Add(validFor)
-
-	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-	if err != nil {
-		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
-	}
-
-	tmpl := x509.Certificate{
-		SerialNumber: serialNumber,
-		Subject: pkix.Name{
-			Organization:       []string{"Mainflux"},
-			CommonName:         cn,
-			OrganizationalUnit: []string{"mainflux"},
-		},
-		NotBefore: notBefore,
-		NotAfter:  notAfter,
-
-		KeyUsage:     x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
-		SubjectKeyId: []byte{1, 2, 3, 4, 6},
-	}
-
-	pubKey, err := publicKey(priv)
-	if err != nil {
-		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
-	}
-	derBytes, err := x509.CreateCertificate(rand.Reader, &tmpl, a.X509Cert, pubKey, a.TLSCert.PrivateKey)
-	if err != nil {
-		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
-	}
-
-	x509cert, err := x509.ParseCertificate(derBytes)
-	if err != nil {
-		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
-	}
-
-	var bw, keyOut bytes.Buffer
-	buffWriter := bufio.NewWriter(&bw)
-	buffKeyOut := bufio.NewWriter(&keyOut)
-
-	if err := pem.Encode(buffWriter, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes}); err != nil {
-		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
-	}
-	buffWriter.Flush()
-	certPEM := bw.String()
-
-	block, err := pemBlockForKey(priv)
-	if err != nil {
-		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
-	}
-	if err := pem.Encode(buffKeyOut, block); err != nil {
-		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
-	}
-	buffKeyOut.Flush()
-	keyPEM := keyOut.String()
-
-	cert := certs.Cert{
-		ClientCert:     certPEM,
-		ClientKey:      keyPEM,
-		IssuingCA:      a.caPEM,
-		CAChain:        []string{a.caPEM},
-		PrivateKeyType: keyType,
-		Serial:         x509cert.SerialNumber.String(),
-		Expire:         x509cert.NotAfter,
-	}
-
-	a.certs[x509cert.SerialNumber.String()] = cert
-	a.counter++
-
-	return cert, nil
+	return nil
 }
 
-func (a *agent) VerifyCert(certPEM string) (*x509.Certificate, error) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+func (c *certsRepoMock) RetrieveByThing(ctx context.Context, thingID string, offset, limit uint64) (certs.Page, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	block, _ := pem.Decode([]byte(certPEM))
-	if block == nil {
-		return nil, errors.New("failed to parse certificate PEM")
+	if limit <= 0 {
+		return certs.Page{}, nil
 	}
 
-	cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return nil, errors.Wrap(errors.New("failed to parse certificate"), err)
+	thingCerts, ok := c.certsByThingID[thingID]
+	if !ok {
+		return certs.Page{}, dbutil.ErrNotFound
 	}
 
-	_, exists := a.certs[cert.SerialNumber.String()]
-	if !exists {
-		return nil, errors.New("certificate not found")
+	start := offset
+	if start > uint64(len(thingCerts)) {
+		start = uint64(len(thingCerts))
 	}
 
-	return cert, nil
+	end := start + limit
+	if end > uint64(len(thingCerts)) {
+		end = uint64(len(thingCerts))
+	}
+
+	page := certs.Page{
+		Certs: thingCerts[start:end],
+		Total: uint64(len(thingCerts)),
+	}
+
+	return page, nil
 }
 
-func publicKey(priv interface{}) (interface{}, error) {
-	if priv == nil {
-		return nil, errPrivateKeyEmpty
+func (c *certsRepoMock) RetrieveBySerial(ctx context.Context, serialID string) (certs.Cert, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	crt, ok := c.certsBySerial[serialID]
+	if !ok {
+		return certs.Cert{}, dbutil.ErrNotFound
 	}
-	switch k := priv.(type) {
-	case *rsa.PrivateKey:
-		return &k.PublicKey, nil
-	case *ecdsa.PrivateKey:
-		return &k.PublicKey, nil
-	default:
-		return nil, errPrivateKeyUnsupportedType
-	}
+
+	return crt, nil
 }
 
-func pemBlockForKey(priv interface{}) (*pem.Block, error) {
-	switch k := priv.(type) {
-	case *rsa.PrivateKey:
-		return &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(k)}, nil
-	case *ecdsa.PrivateKey:
-		b, err := x509.MarshalECPrivateKey(k)
-		if err != nil {
-			return nil, err
-		}
-		return &pem.Block{Type: "EC PRIVATE KEY", Bytes: b}, nil
-	default:
-		return nil, nil
+func (c *certsRepoMock) RetrieveRevokedCerts(ctx context.Context) ([]certs.RevokedCert, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	revokedCerts := make([]certs.RevokedCert, 0, len(c.revokedCerts))
+	for _, cert := range c.revokedCerts {
+		revokedCerts = append(revokedCerts, cert)
 	}
+
+	return revokedCerts, nil
 }

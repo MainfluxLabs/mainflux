@@ -1,5 +1,6 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
+
 package mocks
 
 import (
@@ -87,27 +88,35 @@ func (c *certsRepoMock) RetrieveAll(ctx context.Context, offset, limit uint64) (
 	return page, nil
 }
 
-func (c *certsRepoMock) Remove(ctx context.Context, thingID string) error {
+func (c *certsRepoMock) Remove(ctx context.Context, serialID string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	thingCerts, ok := c.certsByThingID[thingID]
+	cert, ok := c.certsBySerial[serialID]
 	if !ok {
 		return dbutil.ErrNotFound
 	}
 
-	// Remove all certificates for this thing
-	for _, cert := range thingCerts {
-		delete(c.certsBySerial, cert.Serial)
+	thingID := cert.ThingID
+	delete(c.certsBySerial, serialID)
 
-		c.revokedCerts[cert.Serial] = certs.RevokedCert{
-			Serial:    cert.Serial,
-			ThingID:   thingID,
-			RevokedAt: time.Now(),
-		}
+	c.revokedCerts[serialID] = certs.RevokedCert{
+		Serial:    serialID,
+		ThingID:   thingID,
+		RevokedAt: time.Now(),
 	}
 
-	delete(c.certsByThingID, thingID)
+	if thingCerts, ok := c.certsByThingID[thingID]; ok {
+		for i, tc := range thingCerts {
+			if tc.Serial == serialID {
+				c.certsByThingID[thingID] = append(thingCerts[:i], thingCerts[i+1:]...)
+				break
+			}
+		}
+		if len(c.certsByThingID[thingID]) == 0 {
+			delete(c.certsByThingID, thingID)
+		}
+	}
 
 	return nil
 }
