@@ -25,7 +25,7 @@ volumes:
   mainfluxlabs-modbus-db-volume:
   mainfluxlabs-alarms-db-volume:
   mainfluxlabs-rules-db-volume:
-  mainfluxlabs-ui-configs-db-volume:
+  mainfluxlabs-uiconfigs-db-volume:
 
 services:
   ui:
@@ -790,9 +790,9 @@ services:
     networks:
       - mainfluxlabs-base-net
 
-  ui-configs-db:
+  uiconfigs-db:
     image: postgres:13.3-alpine
-    container_name: mainfluxlabs-ui-configs-db
+    container_name: mainfluxlabs-uiconfigs-db
     restart: on-failure
     environment:
       POSTGRES_USER: ${MF_UI_CONFIGS_DB_USER}
@@ -801,19 +801,19 @@ services:
     networks:
       - mainfluxlabs-base-net
     volumes:
-      - mainfluxlabs-ui-configs-db-volume:/var/lib/postgresql/data
+      - mainfluxlabs-uiconfigs-db-volume:/var/lib/postgresql/data
 
-  ui-configs:
+  uiconfigs:
     image: ${MF_RELEASE_PREFIX}/uiconfigs:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-uiconfigs
     depends_on:
-      - ui-configs-db
+      - uiconfigs-db
     restart: on-failure
     environment:
       MF_UI_CONFIGS_LOG_LEVEL: debug
       MF_UI_CONFIGS_HTTP_PORT: ${MF_UI_CONFIGS_HTTP_PORT}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
-      MF_UI_CONFIGS_DB_HOST: ui-configs-db
+      MF_UI_CONFIGS_DB_HOST: uiconfigs-db
       MF_UI_CONFIGS_DB_PORT: ${MF_UI_CONFIGS_DB_PORT}
       MF_UI_CONFIGS_DB_USER: ${MF_UI_CONFIGS_DB_USER}
       MF_UI_CONFIGS_DB_PASS: ${MF_UI_CONFIGS_DB_PASS}
