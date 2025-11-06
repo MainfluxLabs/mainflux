@@ -39,8 +39,10 @@ var (
 )
 
 type Agent interface {
+	// IssueCert is a mock method for Issuing Certificates of PKI Agent.
 	IssueCert(cn, ttl, keyType string, keyBits int) (certs.Cert, error)
 
+	// VerifyCert is a mock method for Verifying Certificates of PKI Agent.
 	VerifyCert(certPEM string) (*x509.Certificate, error)
 }
 
