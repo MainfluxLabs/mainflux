@@ -29,7 +29,7 @@ func MakeHandler(svc certs.Service, tracer opentracing.Tracer, pkiAgent pki.Agen
 	r := bone.New()
 
 	r.Post("/certs", kithttp.NewServer(
-		kitot.TraceServer(tracer, "issue_certs")(issueCertEndpoint(svc)),
+		kitot.TraceServer(tracer, "issue_cert")(issueCertEndpoint(svc)),
 		decodeCerts,
 		encodeResponse,
 		opts...,
@@ -43,7 +43,7 @@ func MakeHandler(svc certs.Service, tracer opentracing.Tracer, pkiAgent pki.Agen
 	))
 
 	r.Delete("/certs/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "delete_cert")(revokeCertEndpoint(svc)),
+		kitot.TraceServer(tracer, "revoke_cert")(revokeCertEndpoint(svc)),
 		decodeRevokeCerts,
 		encodeResponse,
 		opts...,
