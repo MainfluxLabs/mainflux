@@ -39,7 +39,7 @@ type Cert struct {
 }
 
 type Agent interface {
-	// IssueCert issues generates and returns a new certificate.
+	// IssueCert generates and returns a new certificate.
 	IssueCert(cn, ttl, keyType string, keyBits int) (Cert, error)
 
 	// VerifyCerta validates that the certificate is valid.
