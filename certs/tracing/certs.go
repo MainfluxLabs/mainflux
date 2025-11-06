@@ -34,12 +34,12 @@ func CertsRepositoryMiddleware(tracer opentracing.Tracer, repo certs.Repository)
 	}
 }
 
-func (crm certsRepositoryMiddleware) RetrieveAll(ctx context.Context, ownerID string, offset, limit uint64) (certs.Page, error) {
+func (crm certsRepositoryMiddleware) RetrieveAll(ctx context.Context, offset, limit uint64) (certs.Page, error) {
 	span := dbutil.CreateSpan(ctx, crm.tracer, retrieveAllCertificates)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.RetrieveAll(ctx, ownerID, offset, limit)
+	return crm.repo.RetrieveAll(ctx, offset, limit)
 }
 
 func (crm certsRepositoryMiddleware) Save(ctx context.Context, cert certs.Cert) (string, error) {
@@ -50,12 +50,12 @@ func (crm certsRepositoryMiddleware) Save(ctx context.Context, cert certs.Cert) 
 	return crm.repo.Save(ctx, cert)
 }
 
-func (crm certsRepositoryMiddleware) Remove(ctx context.Context, ownerID, serial string) error {
+func (crm certsRepositoryMiddleware) Remove(ctx context.Context, serial string) error {
 	span := dbutil.CreateSpan(ctx, crm.tracer, removeCert)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.Remove(ctx, ownerID, serial)
+	return crm.repo.Remove(ctx, serial)
 }
 
 func (crm certsRepositoryMiddleware) RetrieveRevokedCerts(ctx context.Context) ([]certs.RevokedCert, error) {
@@ -66,18 +66,18 @@ func (crm certsRepositoryMiddleware) RetrieveRevokedCerts(ctx context.Context) (
 	return crm.repo.RetrieveRevokedCerts(ctx)
 }
 
-func (crm certsRepositoryMiddleware) RetrieveByThing(ctx context.Context, ownerID, thingID string, offset, limit uint64) (certs.Page, error) {
+func (crm certsRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingID string, offset, limit uint64) (certs.Page, error) {
 	span := dbutil.CreateSpan(ctx, crm.tracer, retrieveCertificatesByThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.RetrieveByThing(ctx, ownerID, thingID, offset, limit)
+	return crm.repo.RetrieveByThing(ctx, thingID, offset, limit)
 }
 
-func (crm certsRepositoryMiddleware) RetrieveBySerial(ctx context.Context, ownerID, serialID string) (certs.Cert, error) {
+func (crm certsRepositoryMiddleware) RetrieveBySerial(ctx context.Context, serialID string) (certs.Cert, error) {
 	span := dbutil.CreateSpan(ctx, crm.tracer, retrieveCertificatesBySerial)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.RetrieveBySerial(ctx, ownerID, serialID)
+	return crm.repo.RetrieveBySerial(ctx, serialID)
 }
