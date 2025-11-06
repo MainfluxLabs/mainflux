@@ -154,14 +154,6 @@ func main() {
 		logger.Error(fmt.Sprintf("Failed to create PKI agent: %s", err))
 	}
 
-	if pkiAgent == nil {
-		log.Fatalf("PKI agent is nil - cannot start service")
-	}
-
-	if cfg.pkiHost == "" {
-		log.Fatalf("No host specified for PKI engine")
-	}
-
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
