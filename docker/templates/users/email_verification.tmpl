@@ -1,5 +1,9 @@
 {{ define "content" }}
-    <p>Navigate to the following URL to verify your e-mail address and complete MainfluxLabs account registration:</p>
+    <p class="mb-16">
+        To complete your Mainflux Labs account registration, please verify your e-mail address by clicking the button below:
+    </p>
 
-    <a href="{{ .RedirectURL }}">Click here to verify your e-mail address.</a>
+    <p class="btn-wrapper">
+        <a href="{{ .RedirectURL }}" class="btn">Verify E-mail Address</a>
+    </p>
 {{ end }}
