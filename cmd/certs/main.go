@@ -378,4 +378,5 @@ func configureTLSServer(cfg config, caCert *x509.Certificate) *tls.Config {
 			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
 		},
 	}
+
 }
