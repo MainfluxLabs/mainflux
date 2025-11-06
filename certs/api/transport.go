@@ -56,7 +56,7 @@ func MakeHandler(svc certs.Service, tracer opentracing.Tracer, pkiAgent pki.Agen
 		opts...,
 	))
 
-	r.Post("/certs/:id/renew", kithttp.NewServer(
+	r.Put("/certs/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "renew_cert")(renewCertEndpoint(svc)),
 		decodeViewCert,
 		encodeResponse,
