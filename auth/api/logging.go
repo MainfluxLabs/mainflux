@@ -330,7 +330,7 @@ func (lm *loggingMiddleware) CreateOrgInvite(ctx context.Context, token, email, 
 
 func (lm *loggingMiddleware) CreateDormantOrgInvite(ctx context.Context, token, orgID, role, platformInviteID string) (invite auth.OrgInvite, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_dormant_org_invite for Org (ID): %s, Role: %s and Platform Invite (ID): %s took %s to complete",
+		message := fmt.Sprintf("Method create_dormant_org_invite for org id %s, role %s and platform invite id %s took %s to complete",
 			orgID, role, platformInviteID, time.Since(begin))
 
 		if err != nil {
@@ -374,7 +374,7 @@ func (lm *loggingMiddleware) RespondOrgInvite(ctx context.Context, token, invite
 
 func (lm *loggingMiddleware) ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm auth.PageMetadataInvites) (invPage auth.OrgInvitesPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_org_invites_by_user (%s) took %s to complete", userType, time.Since(begin))
+		message := fmt.Sprintf("Method list_org_invites_by_user for user id %s took %s to complete", userType, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -430,7 +430,7 @@ func (lm *loggingMiddleware) ViewOrgInvite(ctx context.Context, token, inviteID 
 
 func (lm *loggingMiddleware) ActivateDormantOrgInvites(ctx context.Context, platformInviteID, newUserID, orgInviteRedirectPath string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method activate_dormant_org_invites for Platform Invite (ID): %s and User ID: %s took %s to complete",
+		message := fmt.Sprintf("Method activate_dormant_org_invites for platform invite id %s and user id %s took %s to complete",
 			platformInviteID, newUserID, time.Since(begin))
 
 		if err != nil {
