@@ -12,12 +12,12 @@ import (
 )
 
 const (
-	retrieveAllCertificates      = "retrieve_all_certs"
-	saveCert                     = "save_cert"
-	removeCert                   = "remove_cert"
-	retrieveRevokedCertificates  = "retrieve_revoked_certs"
-	retrieveCertificatesByThing  = "retrieve_certs_by_thing_id"
-	retrieveCertificatesBySerial = "retrieve_certs_by_serial"
+	retrieveAllCerts     = "retrieve_all_certs"
+	saveCert             = "save_cert"
+	removeCert           = "remove_cert"
+	retrieveRevokedCerts = "retrieve_revoked_certs"
+	retrieveCertByThing  = "retrieve_cert_by_thing_id"
+	retrieveCertBySerial = "retrieve_cert_by_serial"
 )
 
 var _ certs.Repository = (*certsRepositoryMiddleware)(nil)
@@ -35,7 +35,7 @@ func CertsRepositoryMiddleware(tracer opentracing.Tracer, repo certs.Repository)
 }
 
 func (crm certsRepositoryMiddleware) RetrieveAll(ctx context.Context, offset, limit uint64) (certs.Page, error) {
-	span := dbutil.CreateSpan(ctx, crm.tracer, retrieveAllCertificates)
+	span := dbutil.CreateSpan(ctx, crm.tracer, retrieveAllCerts)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -59,7 +59,7 @@ func (crm certsRepositoryMiddleware) Remove(ctx context.Context, serial string) 
 }
 
 func (crm certsRepositoryMiddleware) RetrieveRevokedCerts(ctx context.Context) ([]certs.RevokedCert, error) {
-	span := dbutil.CreateSpan(ctx, crm.tracer, retrieveRevokedCertificates)
+	span := dbutil.CreateSpan(ctx, crm.tracer, retrieveRevokedCerts)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -67,7 +67,7 @@ func (crm certsRepositoryMiddleware) RetrieveRevokedCerts(ctx context.Context) (
 }
 
 func (crm certsRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingID string, offset, limit uint64) (certs.Page, error) {
-	span := dbutil.CreateSpan(ctx, crm.tracer, retrieveCertificatesByThing)
+	span := dbutil.CreateSpan(ctx, crm.tracer, retrieveCertByThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -75,7 +75,7 @@ func (crm certsRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingI
 }
 
 func (crm certsRepositoryMiddleware) RetrieveBySerial(ctx context.Context, serialID string) (certs.Cert, error) {
-	span := dbutil.CreateSpan(ctx, crm.tracer, retrieveCertificatesBySerial)
+	span := dbutil.CreateSpan(ctx, crm.tracer, retrieveCertBySerial)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
