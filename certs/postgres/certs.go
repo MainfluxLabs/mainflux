@@ -192,7 +192,7 @@ func (cr certsRepository) RetrieveByThing(ctx context.Context, thingID string, o
 
 func (cr certsRepository) RetrieveBySerial(ctx context.Context, serialID string) (certs.Cert, error) {
 	q := `SELECT thing_id,  serial, expire, client_cert, client_key, issuing_ca, 
-	      ca_chain, private_key_type FROM certs AND serial = :serial`
+	      ca_chain, private_key_type FROM certs WHERE serial = :serial`
 
 	params := map[string]interface{}{
 		"serial": serialID,
