@@ -194,7 +194,7 @@ func encodeGetOwnerIDByOrgIDResponse(_ context.Context, grpcRes interface{}) (in
 	return &protomfx.OwnerID{Value: res.ownerID}, nil
 }
 
-func decodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, error) {
+func decodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq interface{}) (any, error) {
 	req := grpcReq.(*protomfx.CreateDormantOrgInviteReq)
 	return createDormantOrgInviteReq{
 		token:            req.GetToken(),
@@ -204,7 +204,7 @@ func decodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, e
 	}, nil
 }
 
-func decodeActivateDormantOrgInvitesRequest(_ context.Context, grpcReq any) (any, error) {
+func decodeActivateDormantOrgInvitesRequest(_ context.Context, grpcReq interface{}) (any, error) {
 	req := grpcReq.(*protomfx.ActivateDormantOrgInvitesReq)
 	return activateDormantOrgInvitesReq{
 		platformInviteID: req.GetPlatformInviteID(),
