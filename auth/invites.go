@@ -95,8 +95,8 @@ type OrgInvitesRepository interface {
 	// SaveOrgInvite saves one or more pending org invites to the repository.
 	SaveOrgInvite(ctx context.Context, invites ...OrgInvite) error
 
-	// SaveDormantInviteAssociation saves an association of a dormant Org Invite with a specific Platform Invite.
-	SaveDormantInviteAssociation(ctx context.Context, orgInviteID, platformInviteID string) error
+	// SaveDormantInviteRelation saves a relation of a dormant Org Invite with a specific Platform Invite.
+	SaveDormantInviteRelation(ctx context.Context, orgInviteID, platformInviteID string) error
 
 	// ActivateDormantOrgInvites activates all dormant Org Invites corresponding to the specified Platform Invite by:
 	// - Updating the "invitee_id" and "expires_at" columns of all matching Org Invites to the supplied values
@@ -226,7 +226,7 @@ func (svc service) CreateDormantOrgInvite(ctx context.Context, token, orgID, rol
 		return OrgInvite{}, err
 	}
 
-	if err := svc.invites.SaveDormantInviteAssociation(ctx, inviteID, platformInviteID); err != nil {
+	if err := svc.invites.SaveDormantInviteRelation(ctx, inviteID, platformInviteID); err != nil {
 		if err := svc.invites.RemoveOrgInvite(ctx, inviteID); err != nil {
 			return OrgInvite{}, err
 		}

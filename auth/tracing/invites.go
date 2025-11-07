@@ -14,13 +14,13 @@ import (
 )
 
 const (
-	saveOrgInvite                  = "save_org_invite"
-	createDormantInviteAssociation = "create_dormant_invite_association"
-	retrieveOrgInviteByID          = "retrieve_org_invite_by_id"
-	removeOrgInvite                = "remove_org_invite"
-	retrieveOrgInvitesByUser       = "retrieve_org_invites_by_user"
-	updateOrgInviteState           = "update_org_invite_state"
-	activateDormantOrgInvites      = "activate_dormant_org_invites"
+	saveOrgInvite             = "save_org_invite"
+	saveDormantInviteRelation = "save_dormant_invite_relation"
+	retrieveOrgInviteByID     = "retrieve_org_invite_by_id"
+	removeOrgInvite           = "remove_org_invite"
+	retrieveOrgInvitesByUser  = "retrieve_org_invites_by_user"
+	updateOrgInviteState      = "update_org_invite_state"
+	activateDormantOrgInvites = "activate_dormant_org_invites"
 )
 
 var _ auth.OrgInvitesRepository = (*invitesRepositoryMiddleware)(nil)
@@ -85,12 +85,12 @@ func (irm invitesRepositoryMiddleware) UpdateOrgInviteState(ctx context.Context,
 	return irm.repo.UpdateOrgInviteState(ctx, inviteID, state)
 }
 
-func (irm invitesRepositoryMiddleware) SaveDormantInviteAssociation(ctx context.Context, orgInviteID, platformInviteID string) error {
-	span := dbutil.CreateSpan(ctx, irm.tracer, createDormantInviteAssociation)
+func (irm invitesRepositoryMiddleware) SaveDormantInviteRelation(ctx context.Context, orgInviteID, platformInviteID string) error {
+	span := dbutil.CreateSpan(ctx, irm.tracer, saveDormantInviteRelation)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return irm.repo.SaveDormantInviteAssociation(ctx, orgInviteID, platformInviteID)
+	return irm.repo.SaveDormantInviteRelation(ctx, orgInviteID, platformInviteID)
 }
 
 func (irm invitesRepositoryMiddleware) ActivateDormantOrgInvites(ctx context.Context, platformInviteID, newUserID string, expiresAt time.Time) ([]auth.OrgInvite, error) {

@@ -50,7 +50,7 @@ func (irm *invitesRepositoryMock) SaveOrgInvite(ctx context.Context, invites ...
 	return nil
 }
 
-func (irm *invitesRepositoryMock) SaveDormantInviteAssociation(ctx context.Context, orgInviteID, platformInviteID string) error {
+func (irm *invitesRepositoryMock) SaveDormantInviteRelation(ctx context.Context, orgInviteID, platformInviteID string) error {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 
