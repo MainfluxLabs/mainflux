@@ -42,33 +42,33 @@ type Agent interface {
 	// IssueCert generates and returns a new certificate.
 	IssueCert(cn, ttl, keyType string, keyBits int) (Cert, error)
 
-	// VerifyCerta validates that the certificate is valid.
+	// VerifyCert validates that the certificate is valid.
 	VerifyCert(certPEM string) (*x509.Certificate, error)
 }
 
 var (
-	// ErrMissingCACertificate indicates missing CA certificate
+	// ErrMissingCACertificate indicates missing CA certificate.
 	ErrMissingCACertificate = errors.New("missing CA certificate for certificate signing")
 
-	// ErrFailedCertCreation indicates failed to certificate creation
+	// ErrFailedCertCreation indicates an error in attempting to create a certificate.
 	ErrFailedCertCreation = errors.New("failed to create client certificate")
 
-	// ErrCertificateInvalid indicates certificate is invalid
+	// ErrCertificateInvalid indicates certificate is invalid.
 	ErrCertificateInvalid = errors.New("certificate is invalid")
 
-	// ErrCertificateExpired indicates certificate has expired
+	// ErrCertificateExpired indicates certificate has expired.
 	ErrCertificateExpired = errors.New("certificate has expired")
 
-	// ErrPrivateKeyEmpty indicates that PK failed to load
+	// ErrPrivateKeyEmpty indicates that PK failed to load.
 	ErrPrivateKeyEmpty = errors.New("private key is empty")
 
-	// ErrPrivateKeyUnsupportedType indicates that private key type is not supported
+	// ErrPrivateKeyUnsupportedType indicates that private key type is not supported.
 	ErrPrivateKeyUnsupportedType = errors.New("unsupported key type")
 
-	// ErrFailedCertParsing indicates certificate failed to parse
+	// ErrFailedCACertParsing indicates certificate failed to parse.
 	ErrFailedCACertParsing = errors.New("failed to parse CA certificate")
 
-	// ErrFailedPEMParsing indicates PEM failed to parse
+	// ErrFailedPEMParsing indicates PEM failed to parse.
 	ErrFailedPEMParsing = errors.New("failed to parse certificate PEM")
 )
 
