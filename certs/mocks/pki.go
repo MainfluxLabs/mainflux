@@ -28,7 +28,7 @@ var (
 )
 
 var (
-	// ErrMissingCACertificate indicates missing CA certificate
+	// ErrMissingCACert indicates missing CA certificate
 	ErrMissingCACert = errors.New("missing CA certificate for certificate signing")
 
 	// ErrFailedCertCreation indicates failed to certificate creation
@@ -58,7 +58,7 @@ type agent struct {
 	certs       map[string]certs.Cert
 }
 
-func NewPkiAgent(tlsCert tls.Certificate, caCert *x509.Certificate, keyBits int, ttl string, timeout time.Duration) Agent {
+func NewPKIAgent(tlsCert tls.Certificate, caCert *x509.Certificate, keyBits int, ttl string, timeout time.Duration) Agent {
 	var caPEM string
 	if len(tlsCert.Certificate) > 0 {
 		caPEM = string(pem.EncodeToMemory(&pem.Block{
@@ -83,7 +83,7 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (certs.Cert, err
 	defer a.mu.Unlock()
 
 	if a.X509Cert == nil {
-		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, ErrMissingCACertificate)
+		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, ErrMissingCACert)
 	}
 
 	var priv interface{}
