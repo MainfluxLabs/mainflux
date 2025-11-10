@@ -71,8 +71,8 @@ func (req *viewReq) validate() error {
 }
 
 type revokeReq struct {
-	token  string
-	certID string
+	token    string
+	serialID string
 }
 
 func (req *revokeReq) validate() error {
@@ -80,7 +80,7 @@ func (req *revokeReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.certID == "" {
+	if req.serialID == "" {
 		return apiutil.ErrMissingCertID
 	}
 
