@@ -13,15 +13,15 @@ import (
 var _ auth.OrgInvitesRepository = (*invitesRepositoryMock)(nil)
 
 type invitesRepositoryMock struct {
-	mu                                  sync.Mutex
-	orgInvites                          map[string]auth.OrgInvite
-	dormantOrgInvitesByPlatformInviteID map[string][]string
+	mu                                sync.Mutex
+	orgInvites                        map[string]auth.OrgInvite
+	dormantOrgInvitesByPlatformInvite map[string][]string
 }
 
 func NewInvitesRepository() auth.OrgInvitesRepository {
 	return &invitesRepositoryMock{
-		orgInvites:                          make(map[string]auth.OrgInvite),
-		dormantOrgInvitesByPlatformInviteID: make(map[string][]string),
+		orgInvites:                        make(map[string]auth.OrgInvite),
+		dormantOrgInvitesByPlatformInvite: make(map[string][]string),
 	}
 }
 
@@ -54,7 +54,7 @@ func (irm *invitesRepositoryMock) SaveDormantInviteRelation(ctx context.Context,
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 
-	irm.dormantOrgInvitesByPlatformInviteID[platformInviteID] = append(irm.dormantOrgInvitesByPlatformInviteID[platformInviteID], orgInviteID)
+	irm.dormantOrgInvitesByPlatformInvite[platformInviteID] = append(irm.dormantOrgInvitesByPlatformInvite[platformInviteID], orgInviteID)
 
 	return nil
 }
