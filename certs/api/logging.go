@@ -78,9 +78,9 @@ func (lm *loggingMiddleware) ViewCert(ctx context.Context, token, serialID strin
 	return lm.svc.ViewCert(ctx, token, serialID)
 }
 
-func (lm *loggingMiddleware) RevokeCert(ctx context.Context, token, serial string) (c certs.Revoke, err error) {
+func (lm *loggingMiddleware) RevokeCert(ctx context.Context, token, serialID string) (c certs.Revoke, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method revoke_cert for thing: %s took %s to complete", serial, time.Since(begin))
+		message := fmt.Sprintf("Method revoke_cert for thing: %s took %s to complete", serialID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -88,7 +88,7 @@ func (lm *loggingMiddleware) RevokeCert(ctx context.Context, token, serial strin
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.RevokeCert(ctx, token, serial)
+	return lm.svc.RevokeCert(ctx, token, serialID)
 }
 
 func (lm *loggingMiddleware) RenewCert(ctx context.Context, token, serialID string) (c certs.Cert, err error) {
