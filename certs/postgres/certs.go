@@ -30,7 +30,7 @@ func NewRepository(db dbutil.Database) certs.Repository {
 }
 
 func (cr certsRepository) RetrieveAll(ctx context.Context, offset, limit uint64) (certs.Page, error) {
-	q := `SELECT thing_id,  serial, expire, client_cert, client_key, issuing_ca, 
+	q := `SELECT thing_id, serial, expire, client_cert, client_key, issuing_ca, 
 	      ca_chain, private_key_type FROM certs ORDER BY expire LIMIT :limit OFFSET :offset;`
 
 	params := map[string]interface{}{
@@ -68,7 +68,7 @@ func (cr certsRepository) RetrieveAll(ctx context.Context, offset, limit uint64)
 func (cr certsRepository) Save(ctx context.Context, cert certs.Cert) (string, error) {
 	q := `INSERT INTO certs (thing_id,  serial, expire, client_cert, client_key, 
 	      issuing_ca, ca_chain, private_key_type) 
-	      VALUES (:thing_id,  :serial, :expire, :client_cert, :client_key, 
+	      VALUES (:thing_id, :serial, :expire, :client_cert, :client_key, 
 	      :issuing_ca, :ca_chain, :private_key_type)`
 
 	tx, err := cr.db.BeginTxx(ctx, nil)
@@ -102,8 +102,8 @@ func (cr certsRepository) Remove(ctx context.Context, serial string) error {
 	}
 	defer tx.Rollback()
 
-	q := `INSERT INTO revoked_certs (serial,  thing_id, revoked_at) 
-	            VALUES (:serial,  :thing_id, NOW())`
+	q := `INSERT INTO revoked_certs (serial, thing_id, revoked_at) 
+	            VALUES (:serial, :thing_id, NOW())`
 	revokeParams := map[string]interface{}{
 		"serial":   serial,
 		"thing_id": cert.ThingID,
@@ -153,7 +153,7 @@ func (cr certsRepository) RetrieveRevokedCerts(ctx context.Context) ([]certs.Rev
 }
 
 func (cr certsRepository) RetrieveByThing(ctx context.Context, thingID string, offset, limit uint64) (certs.Page, error) {
-	q := `SELECT thing_id,  serial, expire, client_cert, client_key, issuing_ca, 
+	q := `SELECT thing_id, serial, expire, client_cert, client_key, issuing_ca, 
 	      ca_chain, private_key_type FROM certs 
 	      WHERE thing_id = :thing_id ORDER BY expire LIMIT :limit OFFSET :offset;`
 
@@ -191,7 +191,7 @@ func (cr certsRepository) RetrieveByThing(ctx context.Context, thingID string, o
 }
 
 func (cr certsRepository) RetrieveBySerial(ctx context.Context, serialID string) (certs.Cert, error) {
-	q := `SELECT thing_id,  serial, expire, client_cert, client_key, issuing_ca, 
+	q := `SELECT thing_id, serial, expire, client_cert, client_key, issuing_ca, 
 	      ca_chain, private_key_type FROM certs WHERE serial = :serial`
 
 	params := map[string]interface{}{
