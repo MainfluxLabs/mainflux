@@ -66,7 +66,7 @@ func (cr certsRepository) RetrieveAll(ctx context.Context, offset, limit uint64)
 }
 
 func (cr certsRepository) Save(ctx context.Context, cert certs.Cert) (string, error) {
-	q := `INSERT INTO certs (thing_id,  serial, expire, client_cert, client_key, 
+	q := `INSERT INTO certs (thing_id, serial, expire, client_cert, client_key, 
 	      issuing_ca, ca_chain, private_key_type) 
 	      VALUES (:thing_id, :serial, :expire, :client_cert, :client_key, 
 	      :issuing_ca, :ca_chain, :private_key_type)`
