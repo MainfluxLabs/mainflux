@@ -374,7 +374,7 @@ func (lm *loggingMiddleware) RespondOrgInvite(ctx context.Context, token, invite
 
 func (lm *loggingMiddleware) ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm auth.PageMetadataInvites) (invPage auth.OrgInvitesPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_org_invites_by_user for user id %s took %s to complete", userType, time.Since(begin))
+		message := fmt.Sprintf("Method list_org_invites_by_user for type %s and user id %s took %s to complete", userType, userID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
