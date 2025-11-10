@@ -542,3 +542,12 @@ func (ms *metricsMiddleware) RemoveExternalKey(ctx context.Context, token, thing
 
 	return ms.svc.RemoveExternalKey(ctx, token, thingID)
 }
+
+func (ms *metricsMiddleware) GetThingIDsByProfile(ctx context.Context, profileID string) ([]string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "get_thing_ids_by_profile").Add(1)
+		ms.latency.With("method", "get_thing_ids_by_profile").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.GetThingIDsByProfile(ctx, profileID)
+}

@@ -12,10 +12,6 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
-const (
-	footer = "Sent by Mainflux SMTP Notification"
-)
-
 var _ notifiers.Sender = (*sender)(nil)
 
 type sender struct {
@@ -29,7 +25,10 @@ func New(agent *email.Agent, from string) notifiers.Sender {
 }
 
 func (n *sender) Send(to []string, msg protomfx.Message) error {
-	subject := fmt.Sprintf(`Mainflux notification: Thing %s and subtopic %s`, msg.Publisher, msg.Subtopic)
+	subject := fmt.Sprintf("New IoT message from Thing %s", msg.Publisher)
+	if msg.Subtopic != "" {
+		subject = fmt.Sprintf("New IoT message on %s from Thing %s", msg.Subtopic, msg.Publisher)
+	}
 	values := string(msg.Payload)
 
 	templateData := map[string]any{

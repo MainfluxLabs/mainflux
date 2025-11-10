@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	subjectPlatformInvite    = "You've been invited to join MainfluxLabs"
-	subjectPasswordReset     = "MainfluxLabs - Password reset request"
-	subjectEmailVerification = "MainfluxLabs - Verify your e-mail address"
+	subjectPlatformInvite    = "You've been invited to join Mainflux Labs"
+	subjectPasswordReset     = "Password reset request"
+	subjectEmailVerification = "Verify your e-mail address"
 )
 
 var _ users.Emailer = (*emailer)(nil)

@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	subjectOrgInvite = "You've been invited to join an Organization"
+	subjectOrgInvite = "You're invited to join '%s'"
 )
 
 type emailer struct {
@@ -37,5 +37,6 @@ func (e *emailer) SendOrgInvite(to []string, inv auth.OrgInvite, orgName, invRed
 		"InviteLink": redirectURL,
 	}
 
-	return e.agent.Send(to, "", subjectOrgInvite, "org_invite", templateData)
+	subject := fmt.Sprintf(subjectOrgInvite, orgName)
+	return e.agent.Send(to, "", subject, "org_invite", templateData)
 }
