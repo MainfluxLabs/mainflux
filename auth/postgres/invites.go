@@ -99,9 +99,9 @@ func (ir invitesRepository) ActivateDormantOrgInvite(ctx context.Context, platfo
 		UPDATE org_invites AS oi
 		SET invitee_id = :new_user_id,
 		    expires_at = :expires_at			
-		FROM dormant_org_invites
-		WHERE oi.id = dormant_org_invites.org_invite_id
-	      AND dormant_org_invites.platform_invite_id = :platform_invite_id
+		FROM dormant_org_invites AS doi
+		WHERE oi.id = doi.org_invite_id
+	      AND doi.platform_invite_id = :platform_invite_id
 		RETURNING oi.id, oi.invitee_id, oi.inviter_id, oi.org_id, oi.invitee_role,
 		          oi.created_at, oi.expires_at, oi.state
 	`
