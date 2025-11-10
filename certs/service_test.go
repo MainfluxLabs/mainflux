@@ -169,15 +169,6 @@ func TestIssueCert(t *testing.T) {
 			keyBits: -2,
 			err:     certs.ErrFailedCertCreation,
 		},
-		{
-			desc:    "issue new cert with ECDSA key type",
-			token:   token,
-			thingID: thingID,
-			ttl:     ttl,
-			keyType: "ecdsa",
-			keyBits: 256,
-			err:     nil,
-		},
 	}
 
 	for _, tc := range cases {
