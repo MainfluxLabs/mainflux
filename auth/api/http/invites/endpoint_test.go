@@ -17,6 +17,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth/mocks"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	invitesCommon "github.com/MainfluxLabs/mainflux/pkg/invites"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
@@ -474,13 +475,13 @@ func TestListInvitesByInvitee(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("Inviting member expected to succeed: %s", err))
 		invites = append(invites, inviteRes{
 			ID:          inv.ID,
-			InviteeID:   inv.InviteeID,
+			InviteeID:   inv.InviteeID.String,
 			InviterID:   inv.InviterID,
 			OrgID:       inv.OrgID,
 			InviteeRole: inv.InviteeRole,
 			CreatedAt:   inv.CreatedAt,
 			ExpiresAt:   inv.ExpiresAt,
-			State:       auth.InviteStatePending,
+			State:       invitesCommon.InviteStatePending,
 		})
 	}
 

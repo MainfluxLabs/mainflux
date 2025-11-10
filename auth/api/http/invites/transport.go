@@ -10,6 +10,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/invites"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -62,14 +63,14 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	))
 
 	mux.Get("/users/:id/invites/received", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_org_invites_by_invitee")(listOrgInvitesByUserEndpoint(svc, auth.UserTypeInvitee)),
+		kitot.TraceServer(tracer, "list_org_invites_by_invitee")(listOrgInvitesByUserEndpoint(svc, invites.UserTypeInvitee)),
 		decodeListOrgInvitesByUserRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/users/:id/invites/sent", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_org_invites_by_inviter")(listOrgInvitesByUserEndpoint(svc, auth.UserTypeInviter)),
+		kitot.TraceServer(tracer, "list_org_invites_by_inviter")(listOrgInvitesByUserEndpoint(svc, invites.UserTypeInviter)),
 		decodeListOrgInvitesByUserRequest,
 		encodeResponse,
 		opts...,
@@ -155,19 +156,19 @@ func decodeListOrgInvitesByOrgRequest(_ context.Context, r *http.Request) (any, 
 	return req, nil
 }
 
-func buildPageMetadataInvites(r *http.Request) (auth.PageMetadataInvites, error) {
-	pm := auth.PageMetadataInvites{}
+func buildPageMetadataInvites(r *http.Request) (invites.PageMetadataInvites, error) {
+	pm := invites.PageMetadataInvites{}
 
 	apm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
-		return auth.PageMetadataInvites{}, err
+		return invites.PageMetadataInvites{}, err
 	}
 
 	pm.PageMetadata = apm
 
 	state, err := apiutil.ReadStringQuery(r, stateKey, "")
 	if err != nil {
-		return auth.PageMetadataInvites{}, err
+		return invites.PageMetadataInvites{}, err
 	}
 
 	pm.State = state

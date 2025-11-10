@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/invites"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -110,7 +111,7 @@ func listOrgInvitesByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func buildOrgInvitesPageRes(page auth.OrgInvitesPage, pm auth.PageMetadataInvites) orgInvitePageRes {
+func buildOrgInvitesPageRes(page auth.OrgInvitesPage, pm invites.PageMetadataInvites) orgInvitePageRes {
 	response := orgInvitePageRes{
 		pageRes: pageRes{
 			Limit:  pm.Limit,
@@ -133,7 +134,7 @@ func buildOrgInvitesPageRes(page auth.OrgInvitesPage, pm auth.PageMetadataInvite
 func buildOrgInviteRes(inv auth.OrgInvite) orgInviteRes {
 	return orgInviteRes{
 		ID:           inv.ID,
-		InviteeID:    inv.InviteeID,
+		InviteeID:    inv.InviteeID.String,
 		InviteeEmail: inv.InviteeEmail,
 		InviteeRole:  inv.InviteeRole,
 		InviterID:    inv.InviterID,

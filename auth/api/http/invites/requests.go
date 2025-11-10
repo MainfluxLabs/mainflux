@@ -3,6 +3,7 @@ package invites
 import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/invites"
 )
 
 const (
@@ -84,7 +85,7 @@ func (req respondOrgInviteReq) validate() error {
 type listOrgInvitesByUserReq struct {
 	token string
 	id    string
-	pm    auth.PageMetadataInvites
+	pm    invites.PageMetadataInvites
 }
 
 func (req listOrgInvitesByUserReq) validate() error {
@@ -106,7 +107,7 @@ func (req listOrgInvitesByUserReq) validate() error {
 type listOrgInvitesByOrgReq struct {
 	token string
 	id    string
-	pm    auth.PageMetadataInvites
+	pm    invites.PageMetadataInvites
 }
 
 func (req listOrgInvitesByOrgReq) validate() error {

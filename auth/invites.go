@@ -2,11 +2,12 @@ package auth
 
 import (
 	"context"
-	"time"
+	"database/sql"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/invites"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -16,39 +17,35 @@ import (
 var ErrInvalidInviteResponse = errors.New("invalid invite response action")
 
 type OrgInvite struct {
-	ID           string
-	InviteeID    string
-	InviteeEmail string
-	InviterID    string
-	InviterEmail string
-	OrgID        string
-	OrgName      string
-	InviteeRole  string
-	CreatedAt    time.Time
-	ExpiresAt    time.Time
-	State        string
+	invites.InviteCommon
+	OrgID   string `db:"org_id"`
+	OrgName string
 }
 
-type OrgInvitesPage struct {
-	Invites []OrgInvite
-	Total   uint64
+func (invite OrgInvite) GetCommon() invites.InviteCommon {
+	return invite.InviteCommon
 }
 
-type PageMetadataInvites struct {
-	apiutil.PageMetadata
-	State string `json:"state,omitempty"`
+func (invite OrgInvite) GetDestinationID() string {
+	return invite.OrgID
 }
 
-const (
-	UserTypeInvitee = "invitee"
-	UserTypeInviter = "inviter"
+func (invite OrgInvite) ColumnDestinationID() string {
+	return "org_id"
+}
 
-	InviteStatePending  = "pending"
-	InviteStateExpired  = "expired"
-	InviteStateRevoked  = "revoked"
-	InviteStateAccepted = "accepted"
-	InviteStateDeclined = "declined"
-)
+func (invite OrgInvite) TableName() string {
+	return "org_invites"
+}
+
+func (invite OrgInvite) ToDBInvite() invites.DbInvite {
+	commonDBInvite := invite.InviteCommon.ToDBInvite()
+	commonDBInvite.DestinationID = invite.OrgID
+
+	return commonDBInvite
+}
+
+type OrgInvitesPage = invites.InvitesPage[OrgInvite]
 
 type Invites interface {
 	// CreateOrgInvite creates a pending Invite on behalf of the User authenticated by `token`,
@@ -72,36 +69,18 @@ type Invites interface {
 	// ListOrgInvitesByUser retrieves a list of invites either directed towards a specific Invitee,
 	// or sent out by a specific Inviter, depending on the value of the `userType` argument, which
 	// must be either 'invitee' or 'inviter'.
-	ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm PageMetadataInvites) (OrgInvitesPage, error)
+	ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm invites.PageMetadataInvites) (OrgInvitesPage, error)
 
 	// ListOrgInvitesByOrg retrieves a list of invites towards any user(s) to join the org identified
 	// by its ID
-	ListOrgInvitesByOrg(ctx context.Context, token, orgID string, pm PageMetadataInvites) (OrgInvitesPage, error)
+	ListOrgInvitesByOrg(ctx context.Context, token, orgID string, pm invites.PageMetadataInvites) (OrgInvitesPage, error)
 
 	// SendOrgInviteEmail sends an e-mail notifying the invitee of the corresponding Invite.
 	SendOrgInviteEmail(ctx context.Context, invite OrgInvite, email, orgName, invRedirectPath string) error
 }
 
-type OrgInvitesRepository interface {
-	// SaveOrgInvite saves one or more pending org invites to the repository.
-	SaveOrgInvite(ctx context.Context, invites ...OrgInvite) error
-
-	// RetrieveOrgInviteByID retrieves a specific OrgInvite by its ID.
-	RetrieveOrgInviteByID(ctx context.Context, inviteID string) (OrgInvite, error)
-
-	// RemoveOrgInvite removes a specific pending OrgInvite.
-	RemoveOrgInvite(ctx context.Context, inviteID string) error
-
-	// RetrieveOrgInviteByUser retrieves a list of invites either directed towards a specific Invitee, or sent out by a
-	// specific Inviter, depending on the value of the `userType` argument, which must be either 'invitee' or 'inviter'.
-	RetrieveOrgInvitesByUser(ctx context.Context, userType, userID string, pm PageMetadataInvites) (OrgInvitesPage, error)
-
-	// RetrieveOrgInvitesByOrg retrieves a list of invites towards any user(s) to join the Org identified
-	// by its ID.
-	RetrieveOrgInvitesByOrg(ctx context.Context, orgID string, pm PageMetadataInvites) (OrgInvitesPage, error)
-
-	// UpdateOrgInviteState updates the state of a specific Invite denoted by its ID.
-	UpdateOrgInviteState(ctx context.Context, inviteID, state string) error
+type OrgInviteRepository interface {
+	invites.InviteRepository[OrgInvite]
 }
 
 func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string) (OrgInvite, error) {
@@ -155,17 +134,19 @@ func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgI
 	}
 
 	invite := OrgInvite{
-		ID:          inviteID,
-		InviteeID:   inviteeID,
-		InviterID:   inviter.ID,
-		OrgID:       orgID,
-		InviteeRole: role,
-		CreatedAt:   createdAt,
-		ExpiresAt:   createdAt.Add(svc.inviteDuration),
-		State:       InviteStatePending,
+		InviteCommon: invites.InviteCommon{
+			ID:          inviteID,
+			InviteeID:   sql.NullString{Valid: true, String: inviteeID},
+			InviterID:   inviter.ID,
+			InviteeRole: role,
+			CreatedAt:   createdAt,
+			ExpiresAt:   createdAt.Add(svc.inviteDuration),
+			State:       invites.InviteStatePending,
+		},
+		OrgID: orgID,
 	}
 
-	if err := svc.invites.SaveOrgInvite(ctx, invite); err != nil {
+	if err := svc.invites.SaveInvites(ctx, invite); err != nil {
 		return OrgInvite{}, err
 	}
 
@@ -182,7 +163,7 @@ func (svc service) RevokeOrgInvite(ctx context.Context, token, inviteID string) 
 		return err
 	}
 
-	invite, err := svc.invites.RetrieveOrgInviteByID(ctx, inviteID)
+	invite, err := svc.invites.RetrieveInviteByID(ctx, inviteID)
 	if err != nil {
 		return err
 	}
@@ -192,15 +173,15 @@ func (svc service) RevokeOrgInvite(ctx context.Context, token, inviteID string) 
 		return errors.ErrAuthorization
 	}
 
-	if invite.State != InviteStatePending {
-		if invite.State == InviteStateExpired {
+	if invite.State != invites.InviteStatePending {
+		if invite.State == invites.InviteStateExpired {
 			return apiutil.ErrInviteExpired
 		}
 
 		return apiutil.ErrInvalidInviteState
 	}
 
-	if err := svc.invites.UpdateOrgInviteState(ctx, inviteID, InviteStateRevoked); err != nil {
+	if err := svc.invites.UpdateInviteState(ctx, inviteID, invites.InviteStateRevoked); err != nil {
 		return err
 	}
 
@@ -208,7 +189,7 @@ func (svc service) RevokeOrgInvite(ctx context.Context, token, inviteID string) 
 }
 
 func (svc service) ViewOrgInvite(ctx context.Context, token, inviteID string) (OrgInvite, error) {
-	invite, err := svc.invites.RetrieveOrgInviteByID(ctx, inviteID)
+	invite, err := svc.invites.RetrieveInviteByID(ctx, inviteID)
 	if err != nil {
 		return OrgInvite{}, err
 	}
@@ -230,7 +211,7 @@ func (svc service) ViewOrgInvite(ctx context.Context, token, inviteID string) (O
 		return OrgInvite{}, err
 	}
 
-	if user.ID == invite.InviteeID {
+	if user.ID == invite.InviteeID.String {
 		return invite, nil
 	}
 
@@ -243,13 +224,13 @@ func (svc service) RespondOrgInvite(ctx context.Context, token, inviteID string,
 		return err
 	}
 
-	invite, err := svc.invites.RetrieveOrgInviteByID(ctx, inviteID)
+	invite, err := svc.invites.RetrieveInviteByID(ctx, inviteID)
 	if err != nil {
 		return err
 	}
 
-	if invite.State != InviteStatePending {
-		if invite.State == InviteStateExpired {
+	if invite.State != invites.InviteStatePending {
+		if invite.State == invites.InviteStateExpired {
 			return apiutil.ErrInviteExpired
 		}
 
@@ -257,16 +238,16 @@ func (svc service) RespondOrgInvite(ctx context.Context, token, inviteID string,
 	}
 
 	// An Invite can only be responded to by the invitee
-	if user.ID != invite.InviteeID {
+	if user.ID != invite.InviteeID.String {
 		return errors.ErrAuthorization
 	}
 
-	newState := InviteStateDeclined
+	newState := invites.InviteStateDeclined
 
 	if accept {
 		// User has accepted the Invite, assign them as a member of the appropriate Org
 		// with the appropriate role
-		newState = InviteStateAccepted
+		newState = invites.InviteStateAccepted
 		ts := getTimestamp()
 
 		membership := OrgMembership{
@@ -282,19 +263,19 @@ func (svc service) RespondOrgInvite(ctx context.Context, token, inviteID string,
 		}
 	}
 
-	if err := svc.invites.UpdateOrgInviteState(ctx, inviteID, newState); err != nil {
+	if err := svc.invites.UpdateInviteState(ctx, inviteID, newState); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (svc service) ListOrgInvitesByOrg(ctx context.Context, token, orgID string, pm PageMetadataInvites) (OrgInvitesPage, error) {
+func (svc service) ListOrgInvitesByOrg(ctx context.Context, token, orgID string, pm invites.PageMetadataInvites) (OrgInvitesPage, error) {
 	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
 		return OrgInvitesPage{}, err
 	}
 
-	page, err := svc.invites.RetrieveOrgInvitesByOrg(ctx, orgID, pm)
+	page, err := svc.invites.RetrieveInvitesByDestination(ctx, orgID, pm)
 	if err != nil {
 		return OrgInvitesPage{}, err
 	}
@@ -308,7 +289,7 @@ func (svc service) ListOrgInvitesByOrg(ctx context.Context, token, orgID string,
 	return page, nil
 }
 
-func (svc service) ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm PageMetadataInvites) (OrgInvitesPage, error) {
+func (svc service) ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm invites.PageMetadataInvites) (OrgInvitesPage, error) {
 	if err := svc.isAdmin(ctx, token); err != nil {
 		if err != errors.ErrAuthorization {
 			return OrgInvitesPage{}, err
@@ -325,7 +306,7 @@ func (svc service) ListOrgInvitesByUser(ctx context.Context, token, userType, us
 		}
 	}
 
-	invitesPage, err := svc.invites.RetrieveOrgInvitesByUser(ctx, userType, userID, pm)
+	invitesPage, err := svc.invites.RetrieveInvitesByUser(ctx, userType, userID, pm)
 	if err != nil {
 		return OrgInvitesPage{}, err
 	}
@@ -348,7 +329,7 @@ func (svc service) populateInviteInfo(ctx context.Context, invite *OrgInvite) er
 
 	invite.OrgName = org.Name
 
-	usersReq := &protomfx.UsersByIDsReq{Ids: []string{invite.InviterID, invite.InviteeID}}
+	usersReq := &protomfx.UsersByIDsReq{Ids: []string{invite.InviterID, invite.InviteeID.String}}
 	usersRes, err := svc.users.GetUsersByIDs(ctx, usersReq)
 	if err != nil {
 		return err

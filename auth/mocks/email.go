@@ -3,7 +3,9 @@
 
 package mocks
 
-import "github.com/MainfluxLabs/mainflux/auth"
+import (
+	"github.com/MainfluxLabs/mainflux/auth"
+)
 
 type emailerMock struct {
 }

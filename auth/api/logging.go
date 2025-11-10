@@ -13,6 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/invites"
 )
 
 var _ auth.Service = (*loggingMiddleware)(nil)
@@ -356,7 +357,7 @@ func (lm *loggingMiddleware) RespondOrgInvite(ctx context.Context, token, invite
 	return lm.svc.RespondOrgInvite(ctx, token, inviteID, accept)
 }
 
-func (lm *loggingMiddleware) ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm auth.PageMetadataInvites) (invPage auth.OrgInvitesPage, err error) {
+func (lm *loggingMiddleware) ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm invites.PageMetadataInvites) (invPage auth.OrgInvitesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_org_invites_by_user (%s) took %s to complete", userType, time.Since(begin))
 		if err != nil {
@@ -370,7 +371,7 @@ func (lm *loggingMiddleware) ListOrgInvitesByUser(ctx context.Context, token, us
 	return lm.svc.ListOrgInvitesByUser(ctx, token, userType, userID, pm)
 }
 
-func (lm *loggingMiddleware) ListOrgInvitesByOrg(ctx context.Context, token string, orgID string, pm auth.PageMetadataInvites) (invPage auth.OrgInvitesPage, err error) {
+func (lm *loggingMiddleware) ListOrgInvitesByOrg(ctx context.Context, token string, orgID string, pm invites.PageMetadataInvites) (invPage auth.OrgInvitesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_org_invites_by_org took %s to complete", time.Since(begin))
 		if err != nil {
