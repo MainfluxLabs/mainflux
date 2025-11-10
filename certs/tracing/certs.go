@@ -50,12 +50,12 @@ func (crm certsRepositoryMiddleware) Save(ctx context.Context, cert certs.Cert) 
 	return crm.repo.Save(ctx, cert)
 }
 
-func (crm certsRepositoryMiddleware) Remove(ctx context.Context, serial string) error {
+func (crm certsRepositoryMiddleware) Remove(ctx context.Context, serialID string) error {
 	span := dbutil.CreateSpan(ctx, crm.tracer, removeCert)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.Remove(ctx, serial)
+	return crm.repo.Remove(ctx, serialID)
 }
 
 func (crm certsRepositoryMiddleware) RetrieveRevokedCerts(ctx context.Context) ([]certs.RevokedCert, error) {
