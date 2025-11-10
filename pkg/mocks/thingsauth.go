@@ -140,3 +140,13 @@ func (svc thingsServiceMock) GetGroupIDsByOrg(_ context.Context, in *protomfx.Or
 	}
 	return &protomfx.GroupIDs{Ids: ids}, nil
 }
+
+func (svc thingsServiceMock) GetThingIDsByProfile(_ context.Context, in *protomfx.ProfileID, _ ...grpc.CallOption) (*protomfx.ThingIDs, error) {
+	var ids []string
+	for _, t := range svc.things {
+		if t.ProfileID == in.GetValue() {
+			ids = append(ids, t.ID)
+		}
+	}
+	return &protomfx.ThingIDs{Ids: ids}, nil
+}

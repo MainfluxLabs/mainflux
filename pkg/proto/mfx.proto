@@ -28,6 +28,7 @@ service ThingsService {
     rpc GetGroupIDByThingID(ThingID) returns (GroupID) {}
     rpc GetGroupIDByProfileID(ProfileID) returns (GroupID) {}
     rpc GetGroupIDsByOrg(OrgAccessReq) returns (GroupIDs) {}
+    rpc GetThingIDsByProfile(ProfileID) returns (ThingIDs) {}
 }
 
 service UsersService {
@@ -81,6 +82,10 @@ message Transformer {
 
 message ThingID {
     string value = 1;
+}
+
+message ThingIDs {
+    repeated string ids = 1;
 }
 
 message ProfileID {

@@ -174,6 +174,9 @@ type Service interface {
 	// Restore adds things, profiles, groups, and groups memberships from a backup. Only accessible by admin.
 	Restore(ctx context.Context, token string, backup Backup) error
 
+	// GetThingIDsByProfile returns the IDs of all things associated with the given profile ID.
+	GetThingIDsByProfile(ctx context.Context, profileID string) ([]string, error)
+
 	Groups
 
 	GroupMemberships
@@ -1124,4 +1127,17 @@ func (ts *thingsService) GetGroupIDsByOrg(ctx context.Context, orgID string, tok
 	}
 
 	return ts.groups.RetrieveIDsByOrgMembership(ctx, orgID, user.GetId())
+}
+
+func (ts *thingsService) GetThingIDsByProfile(ctx context.Context, profileID string) ([]string, error) {
+	page, err := ts.things.RetrieveByProfile(ctx, profileID, apiutil.PageMetadata{})
+	if err != nil {
+		return []string{}, err
+	}
+
+	var thingIDs []string
+	for _, t := range page.Things {
+		thingIDs = append(thingIDs, t.ID)
+	}
+	return thingIDs, nil
 }
