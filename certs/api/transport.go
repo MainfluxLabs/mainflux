@@ -130,8 +130,8 @@ func decodeCerts(_ context.Context, r *http.Request) (interface{}, error) {
 
 func decodeRevokeCerts(_ context.Context, r *http.Request) (interface{}, error) {
 	req := revokeReq{
-		token:  apiutil.ExtractBearerToken(r),
-		certID: bone.GetValue(r, apiutil.IDKey),
+		token:    apiutil.ExtractBearerToken(r),
+		serialID: bone.GetValue(r, apiutil.IDKey),
 	}
 
 	return req, nil
