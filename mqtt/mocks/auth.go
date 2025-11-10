@@ -67,6 +67,6 @@ func (svc authServiceMock) CreateDormantOrgInvite(ctx context.Context, req *prot
 	panic("not implemented")
 }
 
-func (svc authServiceMock) ActivateDormantOrgInvites(ctx context.Context, req *protomfx.ActivateDormantOrgInvitesReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+func (svc authServiceMock) ActivateDormantOrgInvite(ctx context.Context, req *protomfx.ActivateDormantOrgInviteReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
 	panic("not implemented")
 }

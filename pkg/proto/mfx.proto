@@ -43,7 +43,7 @@ service AuthService {
     rpc AssignRole(AssignRoleReq) returns (google.protobuf.Empty) {}
     rpc RetrieveRole(RetrieveRoleReq) returns (RetrieveRoleRes) {}
     rpc CreateDormantOrgInvite(CreateDormantOrgInviteReq) returns (google.protobuf.Empty) {}
-    rpc ActivateDormantOrgInvites(ActivateDormantOrgInvitesReq) returns (google.protobuf.Empty) {}
+    rpc ActivateDormantOrgInvite(ActivateDormantOrgInviteReq) returns (google.protobuf.Empty) {}
 }
 
 service RulesService {
@@ -195,7 +195,7 @@ message CreateDormantOrgInviteReq {
     string platformInviteID = 4;
 }
 
-message ActivateDormantOrgInvitesReq {
+message ActivateDormantOrgInviteReq {
     string platformInviteID = 1;
     string newUserID = 2;
     string invRedirectPath = 3;

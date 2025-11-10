@@ -59,7 +59,7 @@ func (irm *invitesRepositoryMock) SaveDormantInviteRelation(ctx context.Context,
 	return nil
 }
 
-func (irm *invitesRepositoryMock) ActivateDormantOrgInvites(ctx context.Context, platformInviteID, newUserID string, expiresAt time.Time) ([]auth.OrgInvite, error) {
+func (irm *invitesRepositoryMock) ActivateDormantOrgInvite(ctx context.Context, platformInviteID, newUserID string, expiresAt time.Time) ([]auth.OrgInvite, error) {
 	panic("not implemented")
 }
 
