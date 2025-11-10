@@ -26,7 +26,7 @@ func issueCertEndpoint(svc certs.Service) endpoint.Endpoint {
 			ThingID:    res.ThingID,
 			ClientCert: res.ClientCert,
 			ClientKey:  res.ClientKey,
-			Expiration: res.Expire,
+			Expire:     res.Expire,
 			created:    true,
 		}, nil
 	}
@@ -78,7 +78,7 @@ func viewCertEndpoint(svc certs.Service) endpoint.Endpoint {
 			CertSerial: cert.Serial,
 			ThingID:    cert.ThingID,
 			ClientCert: cert.ClientCert,
-			Expiration: cert.Expire,
+			Expire:     cert.Expire,
 		}
 
 		return certRes, nil
@@ -112,7 +112,7 @@ func renewCertEndpoint(svc certs.Service) endpoint.Endpoint {
 			ThingID:    cert.ThingID,
 			ClientCert: cert.ClientCert,
 			ClientKey:  cert.ClientKey,
-			Expiration: cert.Expire,
+			Expire:     cert.Expire,
 			created:    true,
 		}, nil
 	}
