@@ -96,14 +96,14 @@ func (ir invitesRepository) SaveDormantInviteRelation(ctx context.Context, orgIn
 
 func (ir invitesRepository) ActivateDormantOrgInvite(ctx context.Context, platformInviteID, newUserID string, expiresAt time.Time) ([]auth.OrgInvite, error) {
 	queryUpdate := `
-		UPDATE org_invites
+		UPDATE org_invites as oi
 		SET invitee_id = :new_user_id,
 		    expires_at = :expires_at			
 		FROM dormant_org_invites
-		WHERE org_invites.id = dormant_org_invites.org_invite_id
-	      AND dormant_org_invites.platform_invite_id = :platform_invite_id
-		RETURNING org_invites.id, org_invites.invitee_id, org_invites.inviter_id, org_invites.org_id, org_invites.invitee_role,
-		          org_invites.created_at, org_invites.expires_at, org_invites.state
+		WHERE oi.id = dormant_oi.org_invite_id
+	      AND dormant_oi.platform_invite_id = :platform_invite_id
+		RETURNING oi.id, oi.invitee_id, oi.inviter_id, oi.org_id, oi.invitee_role,
+		          oi.created_at, oi.expires_at, oi.state
 	`
 
 	queryDelete := `
