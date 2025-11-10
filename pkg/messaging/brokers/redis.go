@@ -1,0 +1,26 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
+package brokers
+
+import (
+	"context"
+	"log"
+
+	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/events"
+	"github.com/MainfluxLabs/mainflux/pkg/events/redis"
+)
+
+func init() {
+	log.Println("The binary was build using redis as the events store")
+}
+
+func NewSubscriber(_ context.Context, url, stream, consumer string, logger logger.Logger) (events.Subscriber, error) {
+	s, err := redis.NewSubscriber(url, stream, consumer, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
