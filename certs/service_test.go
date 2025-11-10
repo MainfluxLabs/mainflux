@@ -5,13 +5,15 @@ package certs_test
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
+	"math/big"
 	"net/http/httptest"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -471,34 +473,38 @@ func newThingsServer(svc things.Service) *httptest.Server {
 }
 
 func loadCertificates(caPath, caKeyPath string) (tls.Certificate, *x509.Certificate, error) {
-	var tlsCert tls.Certificate
-	var caCert *x509.Certificate
-
-	if caPath == "" || caKeyPath == "" {
-		return tlsCert, caCert, nil
-	}
-
-	if _, err := os.Stat(caPath); os.IsNotExist(err) {
-		return tlsCert, caCert, err
-	}
-
-	if _, err := os.Stat(caKeyPath); os.IsNotExist(err) {
-		return tlsCert, caCert, err
-	}
-
-	tlsCert, err := tls.LoadX509KeyPair(caPath, caKeyPath)
+	caPrivKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return tlsCert, caCert, errors.Wrap(err, err)
+		return tls.Certificate{}, nil, err
 	}
 
-	b, err := ioutil.ReadFile(caPath)
-	if err != nil {
-		return tlsCert, caCert, err
+	caTemplate := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			Organization: []string{"Mainflux Test CA"},
+			CommonName:   "Mainflux Test CA",
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(10 * 365 * 24 * time.Hour),
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+		BasicConstraintsValid: true,
+		IsCA:                  true,
 	}
 
-	caCert, err = readCert(b)
+	caCertDER, err := x509.CreateCertificate(rand.Reader, &caTemplate, &caTemplate, &caPrivKey.PublicKey, caPrivKey)
 	if err != nil {
-		return tlsCert, caCert, errors.Wrap(err, err)
+		return tls.Certificate{}, nil, err
+	}
+
+	caCert, err := x509.ParseCertificate(caCertDER)
+	if err != nil {
+		return tls.Certificate{}, nil, err
+	}
+
+	tlsCert := tls.Certificate{
+		Certificate: [][]byte{caCertDER},
+		PrivateKey:  caPrivKey,
 	}
 
 	return tlsCert, caCert, nil
