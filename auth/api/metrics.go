@@ -297,11 +297,11 @@ func (ms *metricsMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth
 	return ms.svc.SendOrgInviteEmail(ctx, invite, email, orgName, invRedirectPath)
 }
 
-func (ms *metricsMiddleware) ActivateDormantOrgInvite(ctx context.Context, platformInviteID, newUserID, orgInviteRedirectPath string) error {
+func (ms *metricsMiddleware) ActivateOrgInvite(ctx context.Context, platformInviteID, newUserID, orgInviteRedirectPath string) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "activate_dormant_org_invite").Add(1)
-		ms.latency.With("method", "activate_dormant_org_invite").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "activate_org_invite").Add(1)
+		ms.latency.With("method", "activate_org_invite").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ActivateDormantOrgInvite(ctx, platformInviteID, newUserID, orgInviteRedirectPath)
+	return ms.svc.ActivateOrgInvite(ctx, platformInviteID, newUserID, orgInviteRedirectPath)
 }

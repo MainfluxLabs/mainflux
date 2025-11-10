@@ -21,14 +21,14 @@ import (
 var _ protomfx.AuthServiceServer = (*grpcServer)(nil)
 
 type grpcServer struct {
-	issue                    kitgrpc.Handler
-	identify                 kitgrpc.Handler
-	authorize                kitgrpc.Handler
-	getOwnerIDByOrgID        kitgrpc.Handler
-	assignRole               kitgrpc.Handler
-	retrieveRole             kitgrpc.Handler
-	createDormantOrgInvite   kitgrpc.Handler
-	activateDormantOrgInvite kitgrpc.Handler
+	issue                  kitgrpc.Handler
+	identify               kitgrpc.Handler
+	authorize              kitgrpc.Handler
+	getOwnerIDByOrgID      kitgrpc.Handler
+	assignRole             kitgrpc.Handler
+	retrieveRole           kitgrpc.Handler
+	createDormantOrgInvite kitgrpc.Handler
+	activateOrgInvite      kitgrpc.Handler
 }
 
 // NewServer returns new AuthServiceServer instance.
@@ -69,9 +69,9 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			decodeCreateDormantOrgInviteRequest,
 			encodeEmptyResponse,
 		),
-		activateDormantOrgInvite: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "activate_dormant_org_invite")(activateDormantOrgInviteEndpoint(svc)),
-			decodeActivateDormantOrgInviteRequest,
+		activateOrgInvite: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "activate_org_invite")(activateOrgInviteEndpoint(svc)),
+			decodeActivateOrgInviteRequest,
 			encodeEmptyResponse,
 		),
 	}
@@ -135,8 +135,8 @@ func (s *grpcServer) CreateDormantOrgInvite(ctx context.Context, req *protomfx.C
 	return res.(*empty.Empty), nil
 }
 
-func (s *grpcServer) ActivateDormantOrgInvite(ctx context.Context, req *protomfx.ActivateDormantOrgInviteReq) (*empty.Empty, error) {
-	_, res, err := s.activateDormantOrgInvite.ServeGRPC(ctx, req)
+func (s *grpcServer) ActivateOrgInvite(ctx context.Context, req *protomfx.ActivateOrgInviteReq) (*empty.Empty, error) {
+	_, res, err := s.activateOrgInvite.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -204,9 +204,9 @@ func decodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq interface{})
 	}, nil
 }
 
-func decodeActivateDormantOrgInviteRequest(_ context.Context, grpcReq interface{}) (any, error) {
-	req := grpcReq.(*protomfx.ActivateDormantOrgInviteReq)
-	return activateDormantOrgInviteReq{
+func decodeActivateOrgInviteRequest(_ context.Context, grpcReq interface{}) (any, error) {
+	req := grpcReq.(*protomfx.ActivateOrgInviteReq)
+	return activateOrgInviteReq{
 		platformInviteID: req.GetPlatformInviteID(),
 		newUserID:        req.GetNewUserID(),
 		invRedirectPath:  req.GetInvRedirectPath(),

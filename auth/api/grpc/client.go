@@ -23,15 +23,15 @@ const (
 var _ protomfx.AuthServiceClient = (*grpcClient)(nil)
 
 type grpcClient struct {
-	issue                    endpoint.Endpoint
-	identify                 endpoint.Endpoint
-	authorize                endpoint.Endpoint
-	getOwnerIDByOrgID        endpoint.Endpoint
-	retrieveRole             endpoint.Endpoint
-	assignRole               endpoint.Endpoint
-	createDormantOrgInvite   endpoint.Endpoint
-	activateDormantOrgInvite endpoint.Endpoint
-	timeout                  time.Duration
+	issue                  endpoint.Endpoint
+	identify               endpoint.Endpoint
+	authorize              endpoint.Endpoint
+	getOwnerIDByOrgID      endpoint.Endpoint
+	retrieveRole           endpoint.Endpoint
+	assignRole             endpoint.Endpoint
+	createDormantOrgInvite endpoint.Endpoint
+	activateOrgInvite      endpoint.Endpoint
+	timeout                time.Duration
 }
 
 // NewClient returns new gRPC client instance.
@@ -93,11 +93,11 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			decodeEmptyResponse,
 			empty.Empty{},
 		).Endpoint()),
-		activateDormantOrgInvite: kitot.TraceClient(tracer, "activate_dormant_org_invite")(kitgrpc.NewClient(
+		activateOrgInvite: kitot.TraceClient(tracer, "activate_org_invite")(kitgrpc.NewClient(
 			conn,
 			svcName,
-			"ActivateDormantOrgInvite",
-			encodeActivateDormantOrgInviteRequest,
+			"ActivateOrgInvite",
+			encodeActivateOrgInviteRequest,
 			decodeEmptyResponse,
 			empty.Empty{},
 		).Endpoint()),
@@ -273,11 +273,11 @@ func encodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, e
 	}, nil
 }
 
-func (client grpcClient) ActivateDormantOrgInvite(ctx context.Context, req *protomfx.ActivateDormantOrgInviteReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+func (client grpcClient) ActivateOrgInvite(ctx context.Context, req *protomfx.ActivateOrgInviteReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := client.activateDormantOrgInvite(ctx, activateDormantOrgInviteReq{
+	res, err := client.activateOrgInvite(ctx, activateOrgInviteReq{
 		platformInviteID: req.GetPlatformInviteID(),
 		newUserID:        req.GetNewUserID(),
 		invRedirectPath:  req.GetInvRedirectPath(),
@@ -291,9 +291,9 @@ func (client grpcClient) ActivateDormantOrgInvite(ctx context.Context, req *prot
 	return &empty.Empty{}, er.err
 }
 
-func encodeActivateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, error) {
-	req := grpcReq.(activateDormantOrgInviteReq)
-	return &protomfx.ActivateDormantOrgInviteReq{
+func encodeActivateOrgInviteRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(activateOrgInviteReq)
+	return &protomfx.ActivateOrgInviteReq{
 		PlatformInviteID: req.platformInviteID,
 		NewUserID:        req.newUserID,
 		InvRedirectPath:  req.invRedirectPath,

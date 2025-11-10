@@ -65,6 +65,6 @@ func (repo singleUserRepo) CreateDormantOrgInvite(ctx context.Context, req *prot
 	panic("not implemented")
 }
 
-func (repo singleUserRepo) ActivateDormantOrgInvite(ctx context.Context, req *protomfx.ActivateDormantOrgInviteReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+func (repo singleUserRepo) ActivateOrgInvite(ctx context.Context, req *protomfx.ActivateOrgInviteReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
 	panic("not implemented")
 }

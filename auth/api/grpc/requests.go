@@ -133,13 +133,13 @@ func (req createDormantOrgInviteReq) validate() error {
 	return nil
 }
 
-type activateDormantOrgInviteReq struct {
+type activateOrgInviteReq struct {
 	platformInviteID string
 	newUserID        string
 	invRedirectPath  string
 }
 
-func (req activateDormantOrgInviteReq) validate() error {
+func (req activateOrgInviteReq) validate() error {
 	if req.platformInviteID == "" {
 		return apiutil.ErrMissingInviteID
 	}
