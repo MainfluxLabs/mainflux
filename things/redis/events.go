@@ -154,6 +154,7 @@ func (cce createProfileEvent) Encode() map[string]interface{} {
 type updateProfileEvent struct {
 	id       string
 	name     string
+	config   map[string]interface{}
 	metadata map[string]interface{}
 }
 
@@ -165,6 +166,15 @@ func (uce updateProfileEvent) Encode() map[string]interface{} {
 
 	if uce.name != "" {
 		val["name"] = uce.name
+	}
+
+	if uce.config != nil {
+		config, err := json.Marshal(uce.config)
+		if err != nil {
+			return val
+		}
+
+		val["config"] = string(config)
 	}
 
 	if uce.metadata != nil {
