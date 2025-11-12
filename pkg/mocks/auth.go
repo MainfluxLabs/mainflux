@@ -141,3 +141,11 @@ func (svc authServiceMock) AssignRole(_ context.Context, _ *protomfx.AssignRoleR
 func (svc authServiceMock) RetrieveRole(_ context.Context, _ *protomfx.RetrieveRoleReq, _ ...grpc.CallOption) (r *protomfx.RetrieveRoleRes, err error) {
 	panic("not implemented")
 }
+
+func (svc authServiceMock) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+	panic("not implemented")
+}
+
+func (svc authServiceMock) ActivateOrgInvite(ctx context.Context, req *protomfx.ActivateOrgInviteReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+	panic("not implemented")
+}

@@ -105,3 +105,52 @@ func (req retrieveRoleReq) validate() error {
 
 	return nil
 }
+
+type createDormantOrgInviteReq struct {
+	token            string
+	orgID            string
+	inviteeRole      string
+	platformInviteID string
+}
+
+func (req createDormantOrgInviteReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.orgID == "" {
+		return apiutil.ErrMissingOrgID
+	}
+
+	if req.inviteeRole == "" {
+		return apiutil.ErrMissingRole
+	}
+
+	if req.platformInviteID == "" {
+		return apiutil.ErrMissingInviteID
+	}
+
+	return nil
+}
+
+type activateOrgInviteReq struct {
+	platformInviteID string
+	userID           string
+	redirectPath     string
+}
+
+func (req activateOrgInviteReq) validate() error {
+	if req.platformInviteID == "" {
+		return apiutil.ErrMissingInviteID
+	}
+
+	if req.userID == "" {
+		return apiutil.ErrMissingUserID
+	}
+
+	if req.redirectPath == "" {
+		return apiutil.ErrMissingRedirectPath
+	}
+
+	return nil
+}

@@ -118,6 +118,21 @@ func migrateDB(db *sqlx.DB) error {
 					`DROP INDEX IF EXISTS unique_org_invitee_pending`,
 				},
 			},
+			{
+				Id: "auth_4",
+				Up: []string{
+					`ALTER TABLE org_invites ALTER COLUMN invitee_id DROP NOT NULL;`,
+					`CREATE TABLE IF NOT EXISTS dormant_org_invites (
+						org_invite_id      UUID NOT NULL,
+						platform_invite_id UUID NOT NULL,
+						PRIMARY KEY (org_invite_id, platform_invite_id),
+						FOREIGN KEY (org_invite_id) REFERENCES org_invites (id) ON DELETE CASCADE
+					)`,
+				},
+				Down: []string{
+					`DROP TABLE IF EXISTS dormant_org_invites;`,
+				},
+			},
 		},
 	}
 
