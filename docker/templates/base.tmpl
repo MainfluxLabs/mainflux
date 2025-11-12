@@ -1,12 +1,109 @@
 {{ define "base" }}
-<!doctype html>
-<html lang="en">
-<head>
-    <title>{{ .Title }}</title>
-</head>
-<body>
-    <h1>MainfluxLabs</h1>
-    {{ template "content" . }}
-</body>
-</html>
+    <!doctype html>
+    <html lang="en">
+
+    <head>
+        <meta charset="UTF-8" />
+        <title>{{ .Title }}</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f7f9fc;
+                margin: 0;
+                padding: 0;
+            }
+            .container {
+                max-width: 620px;
+                margin: auto;
+                background: #ffffff;
+                padding: 24px;
+                border-radius: 6px;
+                border: 1px solid #e3e9f1;
+            }
+            .logo {
+                display: block;
+                text-align: center;
+                font-weight: 800;
+                font-size: 24px;
+                color: #ffffff !important;
+                text-decoration: none;
+                background-color: #03122a;
+                padding: 16px 0;
+                border-radius: 6px 6px 0 0;
+                margin-bottom: 20px;
+            }
+            .footer {
+                margin-top: 30px;
+                text-align: center;
+                color: #7a8291;
+                font-size: 12px;
+                line-height: 1.5;
+            }
+            a.btn {
+                background-color: #03122a;
+                color: #ffffff !important;
+                padding: 12px 20px;
+                border-radius: 5px;
+                display: inline-block;
+                text-decoration: none;
+                font-weight: bold;
+            }
+            p {
+                font-size: 15px;
+                color: #222;
+            }
+            .closing {
+                margin-top: 24px;
+            }
+            .code-block {
+                margin: 0 0 24px 0;
+                padding: 12px;
+                background-color: #f1f3f6;
+                border-radius: 4px;
+                font-size: 13px;
+                line-height: 1.4;
+                font-family: monospace;
+                white-space: pre-wrap;
+                word-break: break-word;
+            }
+            .btn-wrapper {
+                text-align: center;
+                margin-top: 24px;
+            }
+            .mb-8 {
+                margin-bottom: 8px;
+            }
+            .mb-16 {
+                margin-bottom: 16px;
+            }
+            .mb-20 {
+                margin-bottom: 20px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="container">
+
+            <a href="https://mainflux.com" class="logo">MAINFLUX LABS</a>
+
+            <p class="mb-20">Hello,</p>
+
+            {{ template "content" . }}
+
+            <p class="closing">
+                Best regards,<br>
+                <strong>Mainflux Team</strong>
+            </p>
+
+            <div class="footer">
+                Veljka Dugoševića 54<br>
+                Science Technology Park Belgrade<br>
+                11000 Belgrade, Serbia<br>
+                Website: <a href="https://mainflux.com">mainflux.com</a><br><br>
+                © Mainflux Labs — Internet of Things Solutions
+            </div>
+        </div>
+    </body>
+    </html>
 {{ end }}

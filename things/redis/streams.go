@@ -384,3 +384,7 @@ func (es eventStore) UpdateGroupMemberships(ctx context.Context, token string, g
 func (es eventStore) RemoveGroupMemberships(ctx context.Context, token, groupID string, memberIDs ...string) error {
 	return es.svc.RemoveGroupMemberships(ctx, token, groupID, memberIDs...)
 }
+
+func (es eventStore) GetThingIDsByProfile(ctx context.Context, profileID string) ([]string, error) {
+	return es.svc.GetThingIDsByProfile(ctx, profileID)
+}

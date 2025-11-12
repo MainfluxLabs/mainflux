@@ -309,5 +309,8 @@ func (svc *mainfluxThings) UpdateExternalKey(context.Context, string, string, st
 
 func (svc *mainfluxThings) RemoveExternalKey(context.Context, string, string) error {
 	panic("not implemented")
+}
 
+func (svc *mainfluxThings) GetThingIDsByProfile(context.Context, string) ([]string, error) {
+	panic("not implemented")
 }
