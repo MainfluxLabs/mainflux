@@ -25,6 +25,12 @@ var (
 	errFailedToRemoveCertFromDB = errors.New("failed to remove cert serial from db")
 )
 
+const (
+	defaultRenewalTTL     = "8760h"
+	defaultRenewalKeyType = "rsa"
+	defaultRenewalKeyBits = 2048
+)
+
 var _ Service = (*certsService)(nil)
 
 // Service specifies an API that must be fulfilled by the domain service
@@ -215,5 +221,5 @@ func (cs *certsService) RenewCert(ctx context.Context, token, serialID string) (
 		return Cert{}, errors.New("certificate not eligible for renewal yet")
 	}
 
-	return cs.IssueCert(ctx, token, oldCert.ThingID, "8760h", 2048, "rsa")
+	return cs.IssueCert(ctx, token, oldCert.ThingID, defaultRenewalTTL, defaultRenewalKeyBits, defaultRenewalKeyType)
 }
