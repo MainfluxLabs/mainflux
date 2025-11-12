@@ -28,7 +28,7 @@ func NewLoggingMiddleware(svc certs.Service, logger log.Logger) certs.Service {
 
 func (lm *loggingMiddleware) IssueCert(ctx context.Context, token, thingID, ttl string, keyBits int, keyType string) (c certs.Cert, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method issue_cert for serial: %s took %s to complete", thingID, time.Since(begin))
+		message := fmt.Sprintf("Method issue_cert for thing: %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -80,7 +80,7 @@ func (lm *loggingMiddleware) ViewCert(ctx context.Context, token, serialID strin
 
 func (lm *loggingMiddleware) RevokeCert(ctx context.Context, token, serialID string) (c certs.Revoke, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method revoke_cert for thing: %s took %s to complete", serialID, time.Since(begin))
+		message := fmt.Sprintf("Method revoke_cert for serial: %s took %s to complete", serialID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
