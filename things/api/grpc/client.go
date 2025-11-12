@@ -126,7 +126,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			"GetThingIDsByProfile",
 			encodeGetThingIDsByProfileRequest,
 			decodeGetThingIDsResponse,
-			protomfx.GroupIDs{},
+			protomfx.ThingIDs{},
 		).Endpoint()),
 	}
 }

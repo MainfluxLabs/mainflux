@@ -245,7 +245,7 @@ func getThingIDsByProfileEndpoint(svc things.Service) endpoint.Endpoint {
 
 		thingIDs, err := svc.GetThingIDsByProfile(ctx, req.profileID)
 		if err != nil {
-			return groupIDsRes{}, err
+			return thingIDsRes{}, err
 		}
 
 		return thingIDsRes{thingIDs: thingIDs}, nil
