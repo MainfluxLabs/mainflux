@@ -28,7 +28,7 @@ func NewLoggingMiddleware(svc certs.Service, logger log.Logger) certs.Service {
 
 func (lm *loggingMiddleware) IssueCert(ctx context.Context, token, thingID, ttl string, keyBits int, keyType string) (c certs.Cert, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method issue_cert for thing: %s took %s to complete", thingID, time.Since(begin))
+		message := fmt.Sprintf("Method issue_cert for serial: %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
