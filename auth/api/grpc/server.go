@@ -208,8 +208,8 @@ func decodeActivateOrgInviteRequest(_ context.Context, grpcReq interface{}) (any
 	req := grpcReq.(*protomfx.ActivateOrgInviteReq)
 	return activateOrgInviteReq{
 		platformInviteID: req.GetPlatformInviteID(),
-		newUserID:        req.GetNewUserID(),
-		invRedirectPath:  req.GetInvRedirectPath(),
+		userID:           req.GetNewUserID(),
+		redirectPath:     req.GetInvRedirectPath(),
 	}, nil
 }
 

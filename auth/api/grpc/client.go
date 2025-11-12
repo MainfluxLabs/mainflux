@@ -279,8 +279,8 @@ func (client grpcClient) ActivateOrgInvite(ctx context.Context, req *protomfx.Ac
 
 	res, err := client.activateOrgInvite(ctx, activateOrgInviteReq{
 		platformInviteID: req.GetPlatformInviteID(),
-		newUserID:        req.GetNewUserID(),
-		invRedirectPath:  req.GetInvRedirectPath(),
+		userID:           req.GetNewUserID(),
+		redirectPath:     req.GetInvRedirectPath(),
 	})
 
 	if err != nil {
@@ -295,8 +295,8 @@ func encodeActivateOrgInviteRequest(_ context.Context, grpcReq any) (any, error)
 	req := grpcReq.(activateOrgInviteReq)
 	return &protomfx.ActivateOrgInviteReq{
 		PlatformInviteID: req.platformInviteID,
-		NewUserID:        req.newUserID,
-		InvRedirectPath:  req.invRedirectPath,
+		NewUserID:        req.userID,
+		InvRedirectPath:  req.redirectPath,
 	}, nil
 }
 

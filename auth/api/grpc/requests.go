@@ -135,8 +135,8 @@ func (req createDormantOrgInviteReq) validate() error {
 
 type activateOrgInviteReq struct {
 	platformInviteID string
-	newUserID        string
-	invRedirectPath  string
+	userID           string
+	redirectPath     string
 }
 
 func (req activateOrgInviteReq) validate() error {
@@ -144,11 +144,11 @@ func (req activateOrgInviteReq) validate() error {
 		return apiutil.ErrMissingInviteID
 	}
 
-	if req.newUserID == "" {
+	if req.userID == "" {
 		return apiutil.ErrMissingUserID
 	}
 
-	if req.invRedirectPath == "" {
+	if req.redirectPath == "" {
 		return apiutil.ErrMissingRedirectPath
 	}
 

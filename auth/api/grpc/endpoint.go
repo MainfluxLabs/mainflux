@@ -155,7 +155,7 @@ func activateOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 			return emptyRes{}, err
 		}
 
-		err := svc.ActivateOrgInvite(ctx, req.platformInviteID, req.newUserID, req.invRedirectPath)
+		err := svc.ActivateOrgInvite(ctx, req.platformInviteID, req.userID, req.redirectPath)
 		if err != nil {
 			return emptyRes{}, err
 		}
