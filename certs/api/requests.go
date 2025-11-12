@@ -64,7 +64,7 @@ func (req *viewReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 	if req.serialID == "" {
-		return apiutil.ErrMissingCertID
+		return apiutil.ErrMissingSerialID
 	}
 
 	return nil
@@ -81,7 +81,7 @@ func (req *revokeReq) validate() error {
 	}
 
 	if req.serialID == "" {
-		return apiutil.ErrMissingCertID
+		return apiutil.ErrMissingSerialID
 	}
 
 	return nil
