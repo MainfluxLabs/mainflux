@@ -428,10 +428,10 @@ func (lm *loggingMiddleware) ViewOrgInvite(ctx context.Context, token, inviteID 
 	return lm.svc.ViewOrgInvite(ctx, token, inviteID)
 }
 
-func (lm *loggingMiddleware) ActivateOrgInvite(ctx context.Context, platformInviteID, newUserID, orgInviteRedirectPath string) (err error) {
+func (lm *loggingMiddleware) ActivateOrgInvite(ctx context.Context, platformInviteID, userID, orgInviteRedirectPath string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method activate_org_invite for platform invite id %s and user id %s took %s to complete",
-			platformInviteID, newUserID, time.Since(begin))
+			platformInviteID, userID, time.Since(begin))
 
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -441,5 +441,5 @@ func (lm *loggingMiddleware) ActivateOrgInvite(ctx context.Context, platformInvi
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ActivateOrgInvite(ctx, platformInviteID, newUserID, orgInviteRedirectPath)
+	return lm.svc.ActivateOrgInvite(ctx, platformInviteID, userID, orgInviteRedirectPath)
 }

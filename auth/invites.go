@@ -71,7 +71,7 @@ type Invites interface {
 	// ActivateOrgInvite activates all dormant Org Invites associated with the specific Platform Invite.
 	// The expiration time of the invites is reset. An e-mail notification is sent to the invitee for each
 	// activated invite.
-	ActivateOrgInvite(ctx context.Context, platformInviteID, newUserID, invRedirectPath string) error
+	ActivateOrgInvite(ctx context.Context, platformInviteID, userID, invRedirectPath string) error
 
 	// ViewOrgInvite retrieves a single Invite denoted by its ID.  A specific Org Invite can be retrieved
 	// by any user with admin privileges within the Org to which the invite belongs,
@@ -102,7 +102,7 @@ type OrgInvitesRepository interface {
 	// - Updating the "invitee_id" and "expires_at" columns of all matching Org Invites to the supplied values
 	// - Removing the associated rows from the "dormant_org_invites" table
 	// Returns slice of activated Org Invites.
-	ActivateOrgInvite(ctx context.Context, platformInviteID, newUserID string, expirationTime time.Time) ([]OrgInvite, error)
+	ActivateOrgInvite(ctx context.Context, platformInviteID, userID string, expirationTime time.Time) ([]OrgInvite, error)
 
 	// RetrieveOrgInviteByID retrieves a specific OrgInvite by its ID.
 	RetrieveOrgInviteByID(ctx context.Context, inviteID string) (OrgInvite, error)
@@ -268,10 +268,10 @@ func (svc service) RevokeOrgInvite(ctx context.Context, token, inviteID string) 
 	return nil
 }
 
-func (svc service) ActivateOrgInvite(ctx context.Context, platformInviteID, newUserID, orgInviteRedirectPath string) error {
+func (svc service) ActivateOrgInvite(ctx context.Context, platformInviteID, userID, orgInviteRedirectPath string) error {
 	newExpirationTime := getTimestamp().Add(svc.inviteDuration)
 
-	invites, err := svc.invites.ActivateOrgInvite(ctx, platformInviteID, newUserID, newExpirationTime)
+	invites, err := svc.invites.ActivateOrgInvite(ctx, platformInviteID, userID, newExpirationTime)
 	if err != nil {
 		return err
 	}

@@ -202,6 +202,6 @@ message CreateDormantOrgInviteReq {
 
 message ActivateOrgInviteReq {
     string platformInviteID = 1;
-    string newUserID = 2;
-    string invRedirectPath = 3;
+    string userID = 2;
+    string redirectPath = 3;
 }

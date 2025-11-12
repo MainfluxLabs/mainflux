@@ -94,7 +94,7 @@ func (ir invitesRepository) SaveDormantInviteRelation(ctx context.Context, orgIn
 	return nil
 }
 
-func (ir invitesRepository) ActivateOrgInvite(ctx context.Context, platformInviteID, newUserID string, expiresAt time.Time) ([]auth.OrgInvite, error) {
+func (ir invitesRepository) ActivateOrgInvite(ctx context.Context, platformInviteID, userID string, expiresAt time.Time) ([]auth.OrgInvite, error) {
 	queryUpdate := `
 		UPDATE org_invites AS oi
 		SET invitee_id = :new_user_id,
@@ -113,7 +113,7 @@ func (ir invitesRepository) ActivateOrgInvite(ctx context.Context, platformInvit
 
 	params := map[string]any{
 		"platform_invite_id": platformInviteID,
-		"new_user_id":        newUserID,
+		"new_user_id":        userID,
 		"expires_at":         expiresAt,
 	}
 
