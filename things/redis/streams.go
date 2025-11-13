@@ -224,6 +224,7 @@ func (es eventStore) UpdateProfile(ctx context.Context, token string, profile th
 	event := updateProfileEvent{
 		id:       profile.ID,
 		name:     profile.Name,
+		config:   profile.Config,
 		metadata: profile.Metadata,
 	}
 	record := &redis.XAddArgs{
