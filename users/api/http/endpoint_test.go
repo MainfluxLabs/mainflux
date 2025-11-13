@@ -30,6 +30,8 @@ import (
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
 const (
@@ -155,7 +157,14 @@ func newService() users.Service {
 	hasher := usmocks.NewHasher()
 	auth := mocks.NewAuthService(admin.ID, usersList, nil)
 	email := usmocks.NewEmailer()
-	return users.New(usersRepo, verificationsRepo, invitesRepo, inviteDuration, true, true, hasher, auth, email, idProvider)
+	oauthCfg := oauth2.Config{
+		ClientID:     "test-client-id",
+		ClientSecret: "test-client-secret",
+		RedirectURL:  "http://localhost:8080/oauth/callback", //fix
+		Scopes:       []string{"email", "profile"},
+		Endpoint:     google.Endpoint,
+	}
+	return users.New(usersRepo, verificationsRepo, invitesRepo, inviteDuration, true, true, hasher, auth, email, idProvider, oauthCfg)
 }
 
 func newServer(svc users.Service) *httptest.Server {

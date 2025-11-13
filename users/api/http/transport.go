@@ -28,6 +28,8 @@ const (
 	statusKey     = "status"
 	emailTokenKey = "token"
 	stateKey      = "state"
+	providerKey   = "provider"
+	codeKey       = "code"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -127,6 +129,20 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 	mux.Post("/tokens", kithttp.NewServer(
 		kitot.TraceServer(tracer, "login")(loginEndpoint(svc)),
 		decodeCredentials,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Get("/users/:provider/login", kithttp.NewServer(
+		kitot.TraceServer(tracer, "oauth_login")(oauthLoginEndpoint(svc)),
+		decodeOAuthProvider,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Get("/users/:provider/callback", kithttp.NewServer(
+		kitot.TraceServer(tracer, "oauth_callback")(oauthCallbackEndpoint(svc)),
+		decodeOAuthProviderCode,
 		encodeResponse,
 		opts...,
 	))
@@ -338,6 +354,23 @@ func decodeRegisterUser(_ context.Context, r *http.Request) (interface{}, error)
 	req := registerUserReq{
 		user:  user,
 		token: apiutil.ExtractBearerToken(r),
+	}
+
+	return req, nil
+}
+
+func decodeOAuthProvider(_ context.Context, r *http.Request) (interface{}, error) {
+	req := oauthProviderReq{
+		provider: bone.GetValue(r, providerKey),
+	}
+
+	return req, nil
+}
+
+func decodeOAuthProviderCode(_ context.Context, r *http.Request) (interface{}, error) {
+	req := oauthProviderCodeReq{
+		provider: bone.GetValue(r, providerKey),
+		code:     r.URL.Query().Get(codeKey),
 	}
 
 	return req, nil

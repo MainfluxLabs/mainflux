@@ -5,6 +5,7 @@ package users
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
@@ -13,6 +14,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -77,6 +80,12 @@ type Service interface {
 	// authentication generates new access token. Failed invocations are
 	// identified by the non-nil error values in the response.
 	Login(ctx context.Context, user User) (string, error)
+
+	// GetOAuthLoginURL returns the OAuth authorization URL for the specified provider.
+	GetOAuthLoginURL(provider string) string
+
+	// HandleOAuthCallback exchanges the authorization code for user data and creates or logs in the user.
+	HandleOAuthCallback(ctx context.Context, provider, code string) (string, error)
 
 	// ViewUser retrieves user info for a given user ID and an authorized token.
 	ViewUser(ctx context.Context, token, id string) (User, error)
@@ -155,10 +164,11 @@ type usersService struct {
 	email               Emailer
 	auth                protomfx.AuthServiceClient
 	idProvider          uuid.IDProvider
+	oauth               oauth2.Config
 }
 
 // New instantiates the users service implementation
-func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, inviteDuration time.Duration, emailVerifyEnabled bool, selfRegisterEnabled bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider) Service {
+func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, inviteDuration time.Duration, emailVerifyEnabled bool, selfRegisterEnabled bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider, oauth oauth2.Config) Service {
 	return &usersService{
 		users:               users,
 		emailVerifications:  verifications,
@@ -170,6 +180,7 @@ func New(users UserRepository, verifications EmailVerificationRepository, invite
 		auth:                auth,
 		email:               e,
 		idProvider:          idp,
+		oauth:               oauth,
 	}
 }
 
@@ -408,6 +419,60 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 	if err := svc.hasher.Compare(user.Password, dbUser.Password); err != nil {
 		return "", errors.Wrap(errors.ErrAuthentication, err)
 	}
+	return svc.issue(ctx, dbUser.ID, dbUser.Email, auth.LoginKey)
+}
+
+func (svc usersService) GetOAuthLoginURL(provider string) string {
+	switch provider {
+	case "google":
+		return svc.oauth.AuthCodeURL("state", oauth2.AccessTypeOffline)
+	default:
+		return ""
+	}
+}
+
+func (svc usersService) HandleOAuthCallback(ctx context.Context, provider, code string) (string, error) {
+	token, err := svc.oauth.Exchange(ctx, code)
+	if err != nil {
+		return "", errors.Wrap(errors.New("failed to exchange code for token"), err)
+	}
+
+	client := svc.oauth.Client(ctx, token)
+	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo") //fix later - don't hardcode it
+	if err != nil {
+		return "", errors.Wrap(errors.New("failed to fetch user info from Google"), err)
+	}
+	defer resp.Body.Close()
+
+	var gUser struct {
+		Email string `json:"email"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&gUser); err != nil {
+		return "", errors.Wrap(errors.New("failed to decode user info"), err)
+	}
+
+	// Try to find existing user or create a new one if not found
+	dbUser, err := svc.users.RetrieveByEmail(ctx, gUser.Email)
+	if err != nil {
+		if errors.Contains(err, dbutil.ErrNotFound) {
+			uid, _ := svc.idProvider.ID()
+			// generate random password for now, change it so its nullable or something??
+			hashed, _ := bcrypt.GenerateFromPassword([]byte("random_password_1234567876"), bcrypt.DefaultCost)
+			dbUser = User{
+				ID:       uid,
+				Email:    gUser.Email,
+				Password: string(hashed),
+				Status:   EnabledStatusKey,
+			}
+			if _, err := svc.users.Save(ctx, dbUser); err != nil {
+				return "", err
+			}
+		} else {
+			return "", err
+		}
+	}
+
 	return svc.issue(ctx, dbUser.ID, dbUser.Email, auth.LoginKey)
 }
 

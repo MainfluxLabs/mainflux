@@ -89,6 +89,22 @@ func (res tokenRes) Empty() bool {
 	return res.Token == ""
 }
 
+type redirectURLRes struct {
+	RedirectURL string `json:"url,omitempty"`
+}
+
+func (res redirectURLRes) Code() int {
+	return http.StatusCreated
+}
+
+func (res redirectURLRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res redirectURLRes) Empty() bool {
+	return res.RedirectURL == ""
+}
+
 type updateUserRes struct{}
 
 func (res updateUserRes) Code() int {

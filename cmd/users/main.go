@@ -36,6 +36,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	opentracing "github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -82,6 +84,10 @@ const (
 	defSelfRegisterEnabled = "true" // By default, everybody can create a user. Otherwise, only admin can create a user.
 	defEmailVerifyEnabled  = "true"
 
+	defGoogleClientID     = ""
+	defGoogleClientSecret = ""
+	defGoogleRedirectURL  = ""
+
 	envLogLevel      = "MF_USERS_LOG_LEVEL"
 	envDBHost        = "MF_USERS_DB_HOST"
 	envDBPort        = "MF_USERS_DB_PORT"
@@ -121,6 +127,10 @@ const (
 	envEmailVerifyEnabled  = "MF_REQUIRE_EMAIL_VERIFICATION"
 
 	envInviteDuration = "MF_INVITE_DURATION"
+
+	envGoogleClientID     = "MF_GOOGLE_CLIENT_ID"
+	envGoogleClientSecret = "MF_GOOGLE_CLIENT_SECRET"
+	envGoogleRedirectURL  = "MF_GOOGLE_REDIRECT_URL"
 )
 
 type config struct {
@@ -139,6 +149,7 @@ type config struct {
 	selfRegisterEnabled bool
 	emailVerifyEnabled  bool
 	inviteDuration      time.Duration
+	googleOauthConfig   oauth2.Config
 }
 
 func main() {
@@ -170,7 +181,7 @@ func main() {
 	dbTracer, dbCloser := jaeger.Init("users_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(db, dbTracer, auth, cfg, logger)
+	svc := newService(db, dbTracer, auth, cfg, logger, cfg.googleOauthConfig)
 
 	g.Go(func() error {
 		return servershttp.Start(ctx, httpapi.MakeHandler(svc, usersHttpTracer, logger, cfg.passRegex), cfg.httpConfig, logger)
@@ -264,6 +275,14 @@ func loadConfig() config {
 		ClientName: clients.Auth,
 	}
 
+	googleOauthConfig := oauth2.Config{
+		ClientID:     mainflux.Env(envGoogleClientID, defGoogleClientID),
+		ClientSecret: mainflux.Env(envGoogleClientSecret, defGoogleClientSecret),
+		RedirectURL:  fmt.Sprintf("%s%s", mainflux.Env(envHost, defHost), mainflux.Env(envGoogleRedirectURL, defGoogleRedirectURL)),
+		Scopes:       []string{"email", "profile"},
+		Endpoint:     google.Endpoint,
+	}
+
 	inviteDuration, err := time.ParseDuration(mainflux.Env(envInviteDuration, defInviteDuration))
 	if err != nil {
 		log.Fatal(err)
@@ -285,6 +304,7 @@ func loadConfig() config {
 		selfRegisterEnabled: selfRegisterEnabled,
 		emailVerifyEnabled:  emailVerifyEnabled,
 		inviteDuration:      inviteDuration,
+		googleOauthConfig:   googleOauthConfig,
 	}
 }
 
@@ -297,7 +317,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceClient, c config, logger logger.Logger) users.Service {
+func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceClient, c config, logger logger.Logger, oauth oauth2.Config) users.Service {
 	database := dbutil.NewDatabase(db)
 	hasher := bcrypt.New()
 	userRepo := tracing.UserRepositoryMiddleware(postgres.NewUserRepo(database), tracer)
@@ -328,7 +348,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceC
 
 	idProvider := uuid.New()
 
-	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, c.inviteDuration, c.emailVerifyEnabled, c.selfRegisterEnabled, hasher, ac, svcEmailer, idProvider)
+	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, c.inviteDuration, c.emailVerifyEnabled, c.selfRegisterEnabled, hasher, ac, svcEmailer, idProvider, oauth)
 	svc = httpapi.LoggingMiddleware(svc, logger)
 	svc = httpapi.MetricsMiddleware(
 		svc,

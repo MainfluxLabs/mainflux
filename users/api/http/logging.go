@@ -109,6 +109,29 @@ func (lm *loggingMiddleware) Login(ctx context.Context, user users.User) (token 
 	return lm.svc.Login(ctx, user)
 }
 
+// find simpler names
+func (lm *loggingMiddleware) GetOAuthLoginURL(provider string) (url string) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method get_oauth_login_url for provider %s took %s to complete", provider, time.Since(begin))
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.GetOAuthLoginURL(provider)
+}
+
+func (lm *loggingMiddleware) HandleOAuthCallback(ctx context.Context, provider, code string) (token string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method handle_oauth_callback for provider %s took %s to complete", provider, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.HandleOAuthCallback(ctx, provider, code)
+}
+
 func (lm *loggingMiddleware) ViewUser(ctx context.Context, token, id string) (u users.User, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view_user for user %s took %s to complete", u.Email, time.Since(begin))
