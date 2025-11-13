@@ -2,6 +2,7 @@ package invites
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
@@ -35,4 +36,16 @@ type PageRes struct {
 	Ord    string `json:"order,omitempty"`
 	Dir    string `json:"direction,omitempty"`
 	State  string `json:"state,omitempty"`
+}
+
+type InviteRes struct {
+	ID           string    `json:"id,omitempty"`
+	InviteeID    string    `json:"invitee_id,omitempty"`
+	InviteeEmail string    `json:"invitee_email,omitempty"`
+	InviteeRole  string    `json:"invitee_role,omitempty"`
+	InviterID    string    `json:"inviter_id,omitempty"`
+	InviterEmail string    `json:"inviter_email,omitempty"`
+	CreatedAt    time.Time `json:"created_at,omitempty"`
+	ExpiresAt    time.Time `json:"expires_at,omitempty"`
+	State        string    `json:"state,omitempty"`
 }

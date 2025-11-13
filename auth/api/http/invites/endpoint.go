@@ -138,16 +138,18 @@ func buildOrgInviteRes(inv auth.OrgInvite) orgInviteRes {
 	}
 
 	return orgInviteRes{
-		ID:           inv.ID,
-		InviteeID:    inviteeID,
-		InviteeEmail: inv.InviteeEmail,
-		InviteeRole:  inv.InviteeRole,
-		InviterID:    inv.InviterID,
-		InviterEmail: inv.InviterEmail,
-		OrgID:        inv.OrgID,
-		OrgName:      inv.OrgName,
-		CreatedAt:    inv.CreatedAt,
-		ExpiresAt:    inv.ExpiresAt,
-		State:        inv.State,
+		InviteRes: invites.InviteRes{
+			ID:           inv.ID,
+			InviteeID:    inviteeID,
+			InviteeEmail: inv.InviteeEmail,
+			InviteeRole:  inv.InviteeRole,
+			InviterID:    inv.InviterID,
+			InviterEmail: inv.InviterEmail,
+			CreatedAt:    inv.CreatedAt,
+			ExpiresAt:    inv.ExpiresAt,
+			State:        inv.State,
+		},
+		OrgID:   inv.OrgID,
+		OrgName: inv.OrgName,
 	}
 }
