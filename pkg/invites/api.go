@@ -11,7 +11,10 @@ import (
 // ErrInvalidInviteResponse indicates an invalid Invite response action string.
 var ErrInvalidInviteResponse = errors.New("invalid invite response action")
 
-const StateKey = "state"
+const (
+	ResponseActionKey = "action"
+	StateKey          = "state"
+)
 
 func BuildPageMetadataInvites(r *http.Request) (PageMetadataInvites, error) {
 	pm := PageMetadataInvites{}

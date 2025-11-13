@@ -17,10 +17,6 @@ import (
 	"github.com/opentracing/opentracing-go"
 )
 
-const (
-	responseActionKey = "action"
-)
-
 func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
@@ -101,7 +97,7 @@ func decodeRespondOrgInviteRequest(_ context.Context, r *http.Request) (any, err
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
-	action := bone.GetValue(r, responseActionKey)
+	action := bone.GetValue(r, invites.ResponseActionKey)
 	switch action {
 	case "accept":
 		req.accepted = true
