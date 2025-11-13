@@ -28,8 +28,8 @@ var (
 )
 
 var (
-	// ErrMissingCACert indicates missing CA certificate
-	ErrMissingCACert = errors.New("missing CA certificate for certificate signing")
+	// ErrMissingCACert indicates missing ca certificate
+	ErrMissingCACert = errors.New("missing ca certificate for certificate signing")
 
 	// ErrFailedCertCreation indicates failed to certificate creation
 	ErrFailedCertCreation = errors.New("failed to create client certificate")
