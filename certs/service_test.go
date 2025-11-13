@@ -415,7 +415,7 @@ func TestViewCert(t *testing.T) {
 			assert.Equal(t, issuedCert.Serial, cert.Serial, fmt.Sprintf("%s: serial mismatch", tc.desc))
 			assert.Equal(t, issuedCert.ThingID, cert.ThingID, fmt.Sprintf("%s: thing ID mismatch", tc.desc))
 			assert.Equal(t, issuedCert.ClientCert, cert.ClientCert, fmt.Sprintf("%s: client cert mismatch", tc.desc))
-			assert.Equal(t, issuedCert.Expire, cert.Expire, fmt.Sprintf("%s: expiration mismatch", tc.desc))
+			assert.Equal(t, issuedCert.ExpiresAt, cert.ExpiresAt, fmt.Sprintf("%s: expiration mismatch", tc.desc))
 		}
 	}
 }
@@ -461,7 +461,7 @@ func TestRenewCert(t *testing.T) {
 			assert.Equal(t, issuedCert.ThingID, renewedCert.ThingID, fmt.Sprintf("%s: thing should match", tc.desc))
 			assert.NotEmpty(t, renewedCert.ClientCert, fmt.Sprintf("%s: client cert should not be empty", tc.desc))
 			assert.NotEmpty(t, renewedCert.ClientKey, fmt.Sprintf("%s: client key should not be empty", tc.desc))
-			assert.True(t, renewedCert.Expire.After(issuedCert.Expire), fmt.Sprintf("%s: renewed cert should expire later", tc.desc))
+			assert.True(t, renewedCert.ExpiresAt.After(issuedCert.ExpiresAt), fmt.Sprintf("%s: renewed cert should expire later", tc.desc))
 		}
 	}
 }

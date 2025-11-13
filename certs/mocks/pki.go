@@ -191,7 +191,7 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (certs.Cert, err
 		CAChain:        []string{a.caPEM},
 		PrivateKeyType: keyType,
 		Serial:         x509cert.SerialNumber.String(),
-		Expire:         x509cert.NotAfter,
+		ExpiresAt:      x509cert.NotAfter,
 	}
 
 	a.certs[x509cert.SerialNumber.String()] = cert

@@ -236,7 +236,7 @@ func (cr certsRepository) handlePgError(err error, wrapErr error) error {
 type dbCert struct {
 	ThingID        string      `db:"thing_id"`
 	Serial         string      `db:"serial"`
-	Expire         time.Time   `db:"expire"`
+	ExpiresAt      time.Time   `db:"expires_at"`
 	ClientCert     string      `db:"client_cert"`
 	ClientKey      string      `db:"client_key"`
 	IssuingCA      string      `db:"issuing_ca"`
@@ -248,7 +248,7 @@ func toDBCert(c certs.Cert) dbCert {
 	return dbCert{
 		ThingID:        c.ThingID,
 		Serial:         c.Serial,
-		Expire:         c.Expire,
+		ExpiresAt:      c.ExpiresAt,
 		ClientCert:     c.ClientCert,
 		ClientKey:      c.ClientKey,
 		IssuingCA:      c.IssuingCA,
@@ -261,7 +261,7 @@ func toCert(cdb dbCert) certs.Cert {
 	return certs.Cert{
 		ThingID:        cdb.ThingID,
 		Serial:         cdb.Serial,
-		Expire:         cdb.Expire,
+		ExpiresAt:      cdb.ExpiresAt,
 		ClientCert:     cdb.ClientCert,
 		ClientKey:      cdb.ClientKey,
 		IssuingCA:      cdb.IssuingCA,

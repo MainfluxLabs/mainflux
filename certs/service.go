@@ -110,7 +110,7 @@ type Cert struct {
 	ClientKey      string    `json:"client_key" mapstructure:"private_key"`
 	PrivateKeyType string    `json:"private_key_type" mapstructure:"private_key_type"`
 	Serial         string    `json:"serial" mapstructure:"serial_number"`
-	Expire         time.Time `json:"expire" mapstructure:"-"`
+	ExpiresAt      time.Time `json:"expires_at" mapstructure:"-"`
 }
 
 func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, ttl string, keyBits int, keyType string) (Cert, error) {
@@ -137,7 +137,7 @@ func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, tt
 		ClientKey:      pkiCert.ClientKey,
 		PrivateKeyType: pkiCert.PrivateKeyType,
 		Serial:         pkiCert.Serial,
-		Expire:         pkiCert.Expire,
+		ExpiresAt:      pkiCert.Expire,
 	}
 
 	_, err = cs.certsRepo.Save(ctx, c)
@@ -217,7 +217,7 @@ func (cs *certsService) RenewCert(ctx context.Context, token, serialID string) (
 		return Cert{}, err
 	}
 
-	if time.Until(oldCert.Expire) > 30*24*time.Hour {
+	if time.Until(oldCert.ExpiresAt) > 30*24*time.Hour {
 		return Cert{}, errors.New("certificate not eligible for renewal yet")
 	}
 

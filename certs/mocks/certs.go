@@ -37,7 +37,7 @@ func (c *certsRepoMock) Save(ctx context.Context, cert certs.Cert) (string, erro
 	crt := certs.Cert{
 		ThingID:        cert.ThingID,
 		Serial:         cert.Serial,
-		Expire:         cert.Expire,
+		ExpiresAt:      cert.ExpiresAt,
 		ClientCert:     cert.ClientCert,
 		ClientKey:      cert.ClientKey,
 		IssuingCA:      cert.IssuingCA,
