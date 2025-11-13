@@ -16,7 +16,7 @@ const (
 	saveCert             = "save_cert"
 	removeCert           = "remove_cert"
 	retrieveRevokedCerts = "retrieve_revoked_certs"
-	retrieveCertByThing  = "retrieve_cert_by_thing_id"
+	retrieveCertByThing  = "retrieve_cert_by_thing"
 	retrieveCertBySerial = "retrieve_cert_by_serial"
 )
 
