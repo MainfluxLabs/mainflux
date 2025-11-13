@@ -47,17 +47,17 @@ type Agent interface {
 }
 
 var (
-	// ErrMissingCACertificate indicates missing CA certificate.
-	ErrMissingCACertificate = errors.New("missing ca certificate for certificate signing")
+	// ErrMissingCACert indicates missing CA certificate.
+	ErrMissingCACert = errors.New("missing ca certificate for certificate signing")
 
 	// ErrFailedCertCreation indicates an error in attempting to create a certificate.
 	ErrFailedCertCreation = errors.New("failed to create client certificate")
 
-	// ErrCertificateInvalid indicates certificate is invalid.
-	ErrCertificateInvalid = errors.New("certificate is invalid")
+	// ErrInvalidCert indicates certificate is invalid.
+	ErrInvalidCert = errors.New("certificate is invalid")
 
-	// ErrCertificateExpired indicates certificate has expired.
-	ErrCertificateExpired = errors.New("certificate has expired")
+	// ErrExpiredCert indicates certificate has expired.
+	ErrExpiredCert = errors.New("certificate has expired")
 
 	// ErrPrivateKeyEmpty indicates that PK failed to load.
 	ErrPrivateKeyEmpty = errors.New("private key is empty")
@@ -81,7 +81,7 @@ type agent struct {
 
 func NewAgent(tlsCert tls.Certificate) (Agent, error) {
 	if len(tlsCert.Certificate) == 0 {
-		return nil, ErrMissingCACertificate
+		return nil, ErrMissingCACert
 	}
 
 	caCert, err := x509.ParseCertificate(tlsCert.Certificate[0])
@@ -237,12 +237,12 @@ func (a *agent) VerifyCert(certPEM string) (*x509.Certificate, error) {
 
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return nil, errors.Wrap(ErrCertificateInvalid, err)
+		return nil, errors.Wrap(ErrInvalidCert, err)
 	}
 
 	now := time.Now()
 	if now.Before(cert.NotBefore) || now.After(cert.NotAfter) {
-		return nil, ErrCertificateExpired
+		return nil, ErrExpiredCert
 	}
 
 	roots := x509.NewCertPool()
@@ -254,7 +254,7 @@ func (a *agent) VerifyCert(certPEM string) (*x509.Certificate, error) {
 	}
 
 	if _, err := cert.Verify(opts); err != nil {
-		return nil, errors.Wrap(ErrCertificateInvalid, err)
+		return nil, errors.Wrap(ErrInvalidCert, err)
 	}
 
 	return cert, nil
