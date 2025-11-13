@@ -132,9 +132,14 @@ func buildOrgInvitesPageRes(page auth.OrgInvitesPage, pm invites.PageMetadataInv
 }
 
 func buildOrgInviteRes(inv auth.OrgInvite) orgInviteRes {
+	var inviteeID string
+	if inv.InviteeID.Valid {
+		inviteeID = inv.InviteeID.String
+	}
+
 	return orgInviteRes{
 		ID:           inv.ID,
-		InviteeID:    inv.InviteeID.String,
+		InviteeID:    inviteeID,
 		InviteeEmail: inv.InviteeEmail,
 		InviteeRole:  inv.InviteeRole,
 		InviterID:    inv.InviterID,
