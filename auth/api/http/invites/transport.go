@@ -108,7 +108,7 @@ func decodeRespondOrgInviteRequest(_ context.Context, r *http.Request) (any, err
 	case "decline":
 		req.accepted = false
 	default:
-		return respondOrgInviteReq{}, auth.ErrInvalidInviteResponse
+		return respondOrgInviteReq{}, invites.ErrInvalidInviteResponse
 	}
 
 	return req, nil
@@ -175,7 +175,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
-	case errors.Contains(err, auth.ErrInvalidInviteResponse):
+	case errors.Contains(err, invites.ErrInvalidInviteResponse):
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, auth.ErrOrgMembershipExists):
 		w.WriteHeader(http.StatusConflict)

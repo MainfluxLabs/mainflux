@@ -14,9 +14,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// ErrInvalidInviteResponse indicates an invalid Invite response action string.
-var ErrInvalidInviteResponse = errors.New("invalid invite response action")
-
 type OrgInvite struct {
 	invites.InviteCommon
 	OrgID   string `db:"org_id"`

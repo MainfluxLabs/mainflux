@@ -5,7 +5,11 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
+
+// ErrInvalidInviteResponse indicates an invalid Invite response action string.
+var ErrInvalidInviteResponse = errors.New("invalid invite response action")
 
 const StateKey = "state"
 
