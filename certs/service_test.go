@@ -124,7 +124,7 @@ func newThingsService(auth protomfx.AuthServiceClient) things.Service {
 func TestIssueCert(t *testing.T) {
 	svc, pkiAgent, err := newService()
 	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
-	require.NotNil(t, pkiAgent, "PKI agent should not be nil")
+	require.NotNil(t, pkiAgent, "pki agent should not be nil")
 
 	cases := []struct {
 		token   string
@@ -180,12 +180,12 @@ func TestIssueCert(t *testing.T) {
 			assert.NotEmpty(t, c.ClientCert, fmt.Sprintf("%s: client cert should not be empty", tc.desc))
 			assert.NotEmpty(t, c.ClientKey, fmt.Sprintf("%s: client key should not be empty", tc.desc))
 			assert.NotEmpty(t, c.Serial, fmt.Sprintf("%s: serial should not be empty", tc.desc))
-			assert.Equal(t, tc.thingID, c.ThingID, fmt.Sprintf("%s: thing ID mismatch", tc.desc))
+			assert.Equal(t, tc.thingID, c.ThingID, fmt.Sprintf("%s: thing mismatch", tc.desc))
 
 			cert, _ := readCert([]byte(c.ClientCert))
 			if cert != nil {
 				assert.True(t, strings.Contains(cert.Subject.CommonName, thingKey),
-					fmt.Sprintf("%s: expected cert CN to contain thing key", tc.desc))
+					fmt.Sprintf("%s: expected cert cn to contain thing key", tc.desc))
 			}
 
 			_, err := pkiAgent.VerifyCert(c.ClientCert)
@@ -458,7 +458,7 @@ func TestRenewCert(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		if err == nil {
 			assert.NotEqual(t, issuedCert.Serial, renewedCert.Serial, fmt.Sprintf("%s: renewed cert should have different serial", tc.desc))
-			assert.Equal(t, issuedCert.ThingID, renewedCert.ThingID, fmt.Sprintf("%s: thing ID should match", tc.desc))
+			assert.Equal(t, issuedCert.ThingID, renewedCert.ThingID, fmt.Sprintf("%s: thing should match", tc.desc))
 			assert.NotEmpty(t, renewedCert.ClientCert, fmt.Sprintf("%s: client cert should not be empty", tc.desc))
 			assert.NotEmpty(t, renewedCert.ClientKey, fmt.Sprintf("%s: client key should not be empty", tc.desc))
 			assert.True(t, renewedCert.Expire.After(issuedCert.Expire), fmt.Sprintf("%s: renewed cert should expire later", tc.desc))
@@ -513,7 +513,7 @@ func loadCertificates(caPath, caKeyPath string) (tls.Certificate, *x509.Certific
 func readCert(b []byte) (*x509.Certificate, error) {
 	block, _ := pem.Decode(b)
 	if block == nil {
-		return nil, errors.New("failed to decode PEM data")
+		return nil, errors.New("failed to decode pem data")
 	}
 
 	return x509.ParseCertificate(block.Bytes)

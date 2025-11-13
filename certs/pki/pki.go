@@ -48,7 +48,7 @@ type Agent interface {
 
 var (
 	// ErrMissingCACertificate indicates missing CA certificate.
-	ErrMissingCACertificate = errors.New("missing CA certificate for certificate signing")
+	ErrMissingCACertificate = errors.New("missing ca certificate for certificate signing")
 
 	// ErrFailedCertCreation indicates an error in attempting to create a certificate.
 	ErrFailedCertCreation = errors.New("failed to create client certificate")
@@ -66,10 +66,10 @@ var (
 	ErrPrivateKeyUnsupportedType = errors.New("unsupported key type")
 
 	// ErrFailedCACertParsing indicates certificate failed to parse.
-	ErrFailedCACertParsing = errors.New("failed to parse CA certificate")
+	ErrFailedCACertParsing = errors.New("failed to parse ca certificate")
 
 	// ErrFailedPEMParsing indicates PEM failed to parse.
-	ErrFailedPEMParsing = errors.New("failed to parse certificate PEM")
+	ErrFailedPEMParsing = errors.New("failed to parse certificate pem")
 )
 
 type agent struct {
@@ -148,7 +148,7 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (Cert, error) {
 		case 521:
 			curve = elliptic.P521()
 		default:
-			return Cert{}, errors.New("unsupported EC key size, use 224, 256, 384, or 521")
+			return Cert{}, errors.New("unsupported ec key size, use 224, 256, 384, or 521")
 		}
 
 		ecKey, err := ecdsa.GenerateKey(curve, rand.Reader)
@@ -284,5 +284,5 @@ func parseTTL(ttl string) (time.Duration, error) {
 		return time.Duration(hours) * time.Hour, nil
 	}
 
-	return 0, fmt.Errorf("invalid TTL format: %s (use duration like '8760h' or hours as integer)", ttl)
+	return 0, fmt.Errorf("invalid ttl format: %s (use duration like '8760h' or hours as integer)", ttl)
 }
