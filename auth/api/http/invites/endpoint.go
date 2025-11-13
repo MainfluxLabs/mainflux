@@ -113,7 +113,7 @@ func listOrgInvitesByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 
 func buildOrgInvitesPageRes(page auth.OrgInvitesPage, pm invites.PageMetadataInvites) orgInvitePageRes {
 	response := orgInvitePageRes{
-		pageRes: pageRes{
+		PageRes: invites.PageRes{
 			Limit:  pm.Limit,
 			Offset: pm.Offset,
 			Total:  page.Total,
