@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -52,6 +53,10 @@ type Invites interface {
 	// towards the user identified by `email`, to join the Org identified by `orgID` with an appropriate role.
 	CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string) (OrgInvite, error)
 
+	// CreateDormantOrgInvite creates a pending, dormant Org Invite associated with a specfic Platform Invite
+	// denoted by `platformInviteID`.
+	CreateDormantOrgInvite(ctx context.Context, token, orgID, role, platformInviteID string) (OrgInvite, error)
+
 	// RevokeOrgInvite revokes a specific pending Invite. An existing pending Invite can only be revoked
 	// by its original inviter (creator).
 	RevokeOrgInvite(ctx context.Context, token, inviteID string) error
@@ -60,6 +65,11 @@ type Invites interface {
 	// is assigned as a member of the appropriate Org), or declining it. An Invite can only be responded
 	// to by the invitee that it's directed towards.
 	RespondOrgInvite(ctx context.Context, token, inviteID string, accept bool) error
+
+	// ActivateOrgInvite activates all dormant Org Invites associated with the specific Platform Invite.
+	// The expiration time of the invites is reset. An e-mail notification is sent to the invitee for each
+	// activated invite.
+	ActivateOrgInvite(ctx context.Context, platformInviteID, userID, invRedirectPath string) error
 
 	// ViewOrgInvite retrieves a single Invite denoted by its ID.  A specific Org Invite can be retrieved
 	// by any user with admin privileges within the Org to which the invite belongs,
@@ -81,6 +91,15 @@ type Invites interface {
 
 type OrgInviteRepository interface {
 	invites.InviteRepository[OrgInvite]
+
+	// SaveDormantInviteRelation saves a relation of a dormant Org Invite with a specific Platform Invite.
+	SaveDormantInviteRelation(ctx context.Context, orgInviteID, platformInviteID string) error
+
+	// ActivateOrgInvite activates all dormant Org Invites corresponding to the specified Platform Invite by:
+	// - Updating the "invitee_id" and "expires_at" columns of all matching Org Invites to the supplied values
+	// - Removing the associated rows from the "dormant_org_invites" table
+	// Returns slice of activated Org Invites.
+	ActivateOrgInvite(ctx context.Context, platformInviteID, userID string, expirationTime time.Time) ([]OrgInvite, error)
 }
 
 func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string) (OrgInvite, error) {
@@ -157,6 +176,51 @@ func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgI
 	return invite, nil
 }
 
+func (svc service) CreateDormantOrgInvite(ctx context.Context, token, orgID, role, platformInviteID string) (OrgInvite, error) {
+	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
+		return OrgInvite{}, err
+	}
+
+	inviter, err := svc.identify(ctx, token)
+	if err != nil {
+		return OrgInvite{}, err
+	}
+
+	createdAt := getTimestamp()
+
+	inviteID, err := svc.idProvider.ID()
+	if err != nil {
+		return OrgInvite{}, err
+	}
+
+	invite := OrgInvite{
+		InviteCommon: invites.InviteCommon{
+			ID:          inviteID,
+			InviteeID:   sql.NullString{Valid: false},
+			InviterID:   inviter.ID,
+			InviteeRole: role,
+			CreatedAt:   createdAt,
+			ExpiresAt:   createdAt.Add(svc.inviteDuration),
+			State:       invites.InviteStatePending,
+		},
+		OrgID: orgID,
+	}
+
+	if err := svc.invites.SaveInvites(ctx, invite); err != nil {
+		return OrgInvite{}, err
+	}
+
+	if err := svc.invites.SaveDormantInviteRelation(ctx, inviteID, platformInviteID); err != nil {
+		if err := svc.invites.RemoveInvite(ctx, inviteID); err != nil {
+			return OrgInvite{}, err
+		}
+
+		return OrgInvite{}, err
+	}
+
+	return invite, nil
+}
+
 func (svc service) RevokeOrgInvite(ctx context.Context, token, inviteID string) error {
 	user, err := svc.identify(ctx, token)
 	if err != nil {
@@ -183,6 +247,32 @@ func (svc service) RevokeOrgInvite(ctx context.Context, token, inviteID string) 
 
 	if err := svc.invites.UpdateInviteState(ctx, inviteID, invites.InviteStateRevoked); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (svc service) ActivateOrgInvite(ctx context.Context, platformInviteID, userID, orgInviteRedirectPath string) error {
+	newExpirationTime := getTimestamp().Add(svc.inviteDuration)
+
+	activatedInvites, err := svc.invites.ActivateOrgInvite(ctx, platformInviteID, userID, newExpirationTime)
+	if err != nil {
+		return err
+	}
+
+	// Send e-mail notification for each activated Org Invite
+	for _, invite := range activatedInvites {
+		if invite.State != invites.InviteStatePending {
+			continue
+		}
+
+		if err := svc.populateInviteInfo(ctx, &invite); err != nil {
+			continue
+		}
+
+		go func() {
+			svc.SendOrgInviteEmail(ctx, invite, invite.InviteeEmail, invite.OrgName, orgInviteRedirectPath)
+		}()
 	}
 
 	return nil

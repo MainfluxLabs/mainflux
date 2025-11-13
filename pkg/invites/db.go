@@ -33,17 +33,17 @@ type InviteRepository[T Invitable] interface {
 }
 
 type CommonInviteRepository[T Invitable] struct {
-	db dbutil.Database
+	Db dbutil.Database
 }
 
 func NewCommonInviteRepository[T Invitable](db dbutil.Database) *CommonInviteRepository[T] {
 	return &CommonInviteRepository[T]{
-		db: db,
+		Db: db,
 	}
 }
 
 func (ir CommonInviteRepository[T]) SaveInvites(ctx context.Context, invites ...T) error {
-	tx, err := ir.db.BeginTxx(ctx, nil)
+	tx, err := ir.Db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
@@ -99,7 +99,7 @@ func (ir CommonInviteRepository[T]) RetrieveInviteByID(ctx context.Context, invi
 
 	query = fmt.Sprintf(query, invite.ColumnDestinationID(), invite.TableName())
 
-	if err := ir.db.QueryRowxContext(ctx, query, inviteID).StructScan(&invite); err != nil {
+	if err := ir.Db.QueryRowxContext(ctx, query, inviteID).StructScan(&invite); err != nil {
 		if err == sql.ErrNoRows {
 			return *new(T), errors.Wrap(dbutil.ErrNotFound, err)
 		}
@@ -124,7 +124,7 @@ func (ir CommonInviteRepository[T]) RemoveInvite(ctx context.Context, inviteID s
 	var invite T
 	query = fmt.Sprintf(query, invite.TableName())
 
-	res, err := ir.db.NamedExecContext(ctx, query, map[string]any{
+	res, err := ir.Db.NamedExecContext(ctx, query, map[string]any{
 		"id": inviteID,
 	})
 
@@ -161,7 +161,7 @@ func (ir CommonInviteRepository[T]) UpdateInviteState(ctx context.Context, invit
 	var invite T
 	query = fmt.Sprintf(query, invite.TableName())
 
-	_, err := ir.db.NamedExecContext(ctx, query, map[string]any{
+	_, err := ir.Db.NamedExecContext(ctx, query, map[string]any{
 		"inviteID": inviteID,
 		"state":    state,
 	})
@@ -211,7 +211,7 @@ func (ir CommonInviteRepository[T]) RetrieveInvitesByDestination(ctx context.Con
 		"state":          pm.State,
 	}
 
-	rows, err := ir.db.NamedQueryContext(ctx, query, params)
+	rows, err := ir.Db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return *new(InvitesPage[T]), errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
@@ -229,7 +229,7 @@ func (ir CommonInviteRepository[T]) RetrieveInvitesByDestination(ctx context.Con
 		invites = append(invites, invite)
 	}
 
-	total, err := dbutil.Total(ctx, ir.db, queryCount, params)
+	total, err := dbutil.Total(ctx, ir.Db, queryCount, params)
 	if err != nil {
 		return *new(InvitesPage[T]), errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
@@ -286,7 +286,7 @@ func (ir CommonInviteRepository[T]) RetrieveInvitesByUser(ctx context.Context, u
 		return *new(InvitesPage[T]), errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
-	rows, err := ir.db.NamedQueryContext(ctx, query, params)
+	rows, err := ir.Db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return *new(InvitesPage[T]), errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
@@ -304,7 +304,7 @@ func (ir CommonInviteRepository[T]) RetrieveInvitesByUser(ctx context.Context, u
 		invites = append(invites, invite)
 	}
 
-	total, err := dbutil.Total(ctx, ir.db, queryCount, params)
+	total, err := dbutil.Total(ctx, ir.Db, queryCount, params)
 	if err != nil {
 		return *new(InvitesPage[T]), errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
@@ -341,7 +341,7 @@ func (ir CommonInviteRepository[T]) syncInviteStateByUserID(ctx context.Context,
 
 	query = fmt.Sprintf(query, invite.TableName(), col)
 
-	_, err := ir.db.NamedExecContext(ctx, query, map[string]any{"userID": userID})
+	_, err := ir.Db.NamedExecContext(ctx, query, map[string]any{"userID": userID})
 	if err != nil {
 		pqErr, ok := err.(*pgconn.PgError)
 		if ok {
@@ -369,7 +369,7 @@ func (ir CommonInviteRepository[T]) syncInviteStateByInvite(ctx context.Context,
 
 	common := invite.GetCommon()
 
-	_, err := ir.db.NamedExecContext(ctx, query, map[string]any{
+	_, err := ir.Db.NamedExecContext(ctx, query, map[string]any{
 		"invitee_id":     common.InviteeID,
 		"inviter_id":     common.InviterID,
 		"destination_id": invite.GetDestinationID(),
@@ -401,7 +401,7 @@ func (ir CommonInviteRepository[T]) syncInviteStateByID(ctx context.Context, inv
 
 	query = fmt.Sprintf(query, invite.TableName())
 
-	_, err := ir.db.NamedExecContext(ctx, query, map[string]any{"inviteID": inviteID})
+	_, err := ir.Db.NamedExecContext(ctx, query, map[string]any{"inviteID": inviteID})
 	if err != nil {
 		pqErr, ok := err.(*pgconn.PgError)
 		if ok {

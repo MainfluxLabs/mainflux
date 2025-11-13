@@ -329,6 +329,22 @@ func (lm *loggingMiddleware) CreateOrgInvite(ctx context.Context, token, email, 
 	return lm.svc.CreateOrgInvite(ctx, token, email, role, orgID, invRedirectPath)
 }
 
+func (lm *loggingMiddleware) CreateDormantOrgInvite(ctx context.Context, token, orgID, role, platformInviteID string) (invite auth.OrgInvite, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method create_dormant_org_invite for org id %s, role %s and platform invite id %s took %s to complete",
+			orgID, role, platformInviteID, time.Since(begin))
+
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.CreateDormantOrgInvite(ctx, token, orgID, role, platformInviteID)
+}
+
 func (lm *loggingMiddleware) RevokeOrgInvite(ctx context.Context, token, inviteID string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method revoke_org_invite took %s to complete", time.Since(begin))
@@ -359,7 +375,7 @@ func (lm *loggingMiddleware) RespondOrgInvite(ctx context.Context, token, invite
 
 func (lm *loggingMiddleware) ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm invites.PageMetadataInvites) (invPage auth.OrgInvitesPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_org_invites_by_user (%s) took %s to complete", userType, time.Since(begin))
+		message := fmt.Sprintf("Method list_org_invites_by_user for type %s and user id %s took %s to complete", userType, userID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -411,4 +427,20 @@ func (lm *loggingMiddleware) ViewOrgInvite(ctx context.Context, token, inviteID 
 	}(time.Now())
 
 	return lm.svc.ViewOrgInvite(ctx, token, inviteID)
+}
+
+func (lm *loggingMiddleware) ActivateOrgInvite(ctx context.Context, platformInviteID, userID, orgInviteRedirectPath string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method activate_org_invite for platform invite id %s and user id %s took %s to complete",
+			platformInviteID, userID, time.Since(begin))
+
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ActivateOrgInvite(ctx, platformInviteID, userID, orgInviteRedirectPath)
 }

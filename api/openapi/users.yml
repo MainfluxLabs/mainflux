@@ -501,16 +501,22 @@ components:
     PlatformInviteRegisterReqObj:
       type: object
       properties:
-        email:
+        user:
+          type: object
+          properties:
+            email:
+              type: string
+              format: email
+              example: "test@example.com"
+              description: User's email address will be used as its unique identifier
+            password:
+              type: string
+              format: password
+              minimum: 8
+              description: Free-form account password used for acquiring auth token(s).
+        redirect_path:
           type: string
-          format: email
-          example: "test@example.com"
-          description: User's email address will be used as its unique identifier
-        password:
-          type: string
-          format: password
-          minimum: 8
-          description: Free-form account password used for acquiring auth token(s).
+          description: The path portion of the Organization Invite view URL that the end user receives in the email notification.
     User:
       type: object
       properties:
@@ -542,6 +548,17 @@ components:
           type: string
           format: email
           description: E-mail of user to invite.
+        org_id:
+          type: string
+          format: uuid
+          description: Optional. ID of Organization for which the user will receive an invite once they register an account.
+        role:
+          type: string
+          description: The invited user's role in the Organization. Only required if "org_id" is supplied.
+          enum: [admin, editor, viewer]
+      required:
+        - redirect_path
+        - email
     Users:
       type: object
       properties:

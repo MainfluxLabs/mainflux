@@ -760,3 +760,15 @@ func (lm *loggingMiddleware) RemoveExternalKey(ctx context.Context, token, thing
 
 	return lm.svc.RemoveExternalKey(ctx, token, thingID)
 }
+
+func (lm *loggingMiddleware) GetThingIDsByProfile(ctx context.Context, profileID string) (_ []string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method get_thing_ids_by_profile for profile %s took %s to complete", profileID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+	}(time.Now())
+
+	return lm.svc.GetThingIDsByProfile(ctx, profileID)
+}

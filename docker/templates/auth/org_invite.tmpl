@@ -1,9 +1,12 @@
 {{ define "content" }}
-    <p>You've been invited to join an Organization:</p>
-    <ul>
-        <li>Organization: {{ .OrgName }}</li>
-        <li>Role: {{ .Role }}</li>
-    </ul>
-    
-    <a href="{{ .InviteLink }}">Click here to view the invite</a>
+    <p class="mb-16">
+        You have been invited to join an Organization on the Mainflux platform. This will give you access to collaborate with other members and manage IoT resources according to your assigned role.
+    </p>
+
+    <p class="mb-8"><strong>Organization:</strong> {{ .OrgName }}</p>
+    <p class="mb-16"><strong>Role:</strong> {{ .Role }}</p>
+
+    <p class="btn-wrapper">
+        <a href="{{ .InviteLink }}" class="btn">View Invitation</a>
+    </p>
 {{ end }}
