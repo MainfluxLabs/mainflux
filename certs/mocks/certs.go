@@ -15,18 +15,18 @@ import (
 var _ certs.Repository = (*certsRepoMock)(nil)
 
 type certsRepoMock struct {
-	mu             sync.Mutex
-	counter        uint64
-	certsBySerial  map[string]certs.Cert
-	certsByThingID map[string][]certs.Cert
-	revokedCerts   map[string]certs.RevokedCert
+	mu            sync.Mutex
+	counter       uint64
+	certsBySerial map[string]certs.Cert
+	certsByThing  map[string][]certs.Cert
+	revokedCerts  map[string]certs.RevokedCert
 }
 
 func NewCertsRepository() certs.Repository {
 	return &certsRepoMock{
-		certsBySerial:  make(map[string]certs.Cert),
-		certsByThingID: make(map[string][]certs.Cert),
-		revokedCerts:   make(map[string]certs.RevokedCert),
+		certsBySerial: make(map[string]certs.Cert),
+		certsByThing:  make(map[string][]certs.Cert),
+		revokedCerts:  make(map[string]certs.RevokedCert),
 	}
 }
 
@@ -45,11 +45,11 @@ func (c *certsRepoMock) Save(ctx context.Context, cert certs.Cert) (string, erro
 		PrivateKeyType: cert.PrivateKeyType,
 	}
 
-	if _, ok := c.certsByThingID[cert.ThingID]; !ok {
-		c.certsByThingID[cert.ThingID] = []certs.Cert{}
+	if _, ok := c.certsByThing[cert.ThingID]; !ok {
+		c.certsByThing[cert.ThingID] = []certs.Cert{}
 	}
 
-	c.certsByThingID[cert.ThingID] = append(c.certsByThingID[cert.ThingID], crt)
+	c.certsByThing[cert.ThingID] = append(c.certsByThing[cert.ThingID], crt)
 	c.certsBySerial[cert.Serial] = crt
 	c.counter++
 
@@ -66,7 +66,7 @@ func (c *certsRepoMock) RetrieveAll(ctx context.Context, offset, limit uint64) (
 
 	// Collect all certificates from all things
 	var allCerts []certs.Cert
-	for _, thingCerts := range c.certsByThingID {
+	for _, thingCerts := range c.certsByThing {
 		allCerts = append(allCerts, thingCerts...)
 	}
 
@@ -106,15 +106,15 @@ func (c *certsRepoMock) Remove(ctx context.Context, serialID string) error {
 		RevokedAt: time.Now(),
 	}
 
-	if thingCerts, ok := c.certsByThingID[thingID]; ok {
+	if thingCerts, ok := c.certsByThing[thingID]; ok {
 		for i, tc := range thingCerts {
 			if tc.Serial == serialID {
-				c.certsByThingID[thingID] = append(thingCerts[:i], thingCerts[i+1:]...)
+				c.certsByThing[thingID] = append(thingCerts[:i], thingCerts[i+1:]...)
 				break
 			}
 		}
-		if len(c.certsByThingID[thingID]) == 0 {
-			delete(c.certsByThingID, thingID)
+		if len(c.certsByThing[thingID]) == 0 {
+			delete(c.certsByThing, thingID)
 		}
 	}
 
@@ -129,7 +129,7 @@ func (c *certsRepoMock) RetrieveByThing(ctx context.Context, thingID string, off
 		return certs.Page{}, nil
 	}
 
-	thingCerts, ok := c.certsByThingID[thingID]
+	thingCerts, ok := c.certsByThing[thingID]
 	if !ok {
 		return certs.Page{}, dbutil.ErrNotFound
 	}
