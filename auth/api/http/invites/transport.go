@@ -19,7 +19,6 @@ import (
 
 const (
 	responseActionKey = "action"
-	stateKey          = "state"
 )
 
 func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
@@ -121,7 +120,7 @@ func decodeListOrgInvitesByUserRequest(_ context.Context, r *http.Request) (any,
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
-	pm, err := buildPageMetadataInvites(r)
+	pm, err := invites.BuildPageMetadataInvites(r)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +145,7 @@ func decodeListOrgInvitesByOrgRequest(_ context.Context, r *http.Request) (any, 
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
-	pm, err := buildPageMetadataInvites(r)
+	pm, err := invites.BuildPageMetadataInvites(r)
 	if err != nil {
 		return nil, err
 	}
@@ -154,26 +153,6 @@ func decodeListOrgInvitesByOrgRequest(_ context.Context, r *http.Request) (any, 
 	req.pm = pm
 
 	return req, nil
-}
-
-func buildPageMetadataInvites(r *http.Request) (invites.PageMetadataInvites, error) {
-	pm := invites.PageMetadataInvites{}
-
-	apm, err := apiutil.BuildPageMetadata(r)
-	if err != nil {
-		return invites.PageMetadataInvites{}, err
-	}
-
-	pm.PageMetadata = apm
-
-	state, err := apiutil.ReadStringQuery(r, stateKey, "")
-	if err != nil {
-		return invites.PageMetadataInvites{}, err
-	}
-
-	pm.State = state
-
-	return pm, nil
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
