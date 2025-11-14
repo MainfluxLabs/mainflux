@@ -28,8 +28,8 @@ type Repository interface {
 	// RetrieveAll retrieve issued certificates
 	RetrieveAll(ctx context.Context, offset, limit uint64) (Page, error)
 
-	// Remove removes certificate from DB for a given serial ID
-	Remove(ctx context.Context, serialID string) error
+	// Remove removes certificate from DB for a given serial
+	Remove(ctx context.Context, serial string) error
 
 	// RetrieveByThing retrieves issued certificates for a given thing ID
 	RetrieveByThing(ctx context.Context, thingID string, offset, limit uint64) (Page, error)

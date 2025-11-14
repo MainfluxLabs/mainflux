@@ -42,7 +42,7 @@ type Service interface {
 	// ListCerts lists certificates issued for a given thing ID.
 	ListCerts(ctx context.Context, token, thingID string, offset, limit uint64) (Page, error)
 
-	// ListSerials lists certificate serial IDs issued for a given thing ID.
+	// ListSerials lists certificate serial numbers issued for a given thing ID.
 	ListSerials(ctx context.Context, token, thingID string, offset, limit uint64) (Page, error)
 
 	// ViewCert retrieves the certificate issued for a given serial ID.
