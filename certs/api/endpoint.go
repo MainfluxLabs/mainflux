@@ -32,7 +32,7 @@ func issueCertEndpoint(svc certs.Service) endpoint.Endpoint {
 	}
 }
 
-func listSerialsEndpoint(svc certs.Service) endpoint.Endpoint {
+func listSerialsByThingEndpoint(svc certs.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listReq)
 		if err := req.validate(); err != nil {
