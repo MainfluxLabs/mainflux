@@ -24,7 +24,8 @@ const (
 	AllStatusKey      = "all"
 	rootAdminRole     = "root"
 	stateKey          = "state"
-	googleKey         = "google"
+	GoogleKey         = "google"
+	GitHubKey         = "github"
 )
 
 var (
@@ -155,6 +156,7 @@ type UserPage struct {
 
 type ConfigURLs struct {
 	GoogleUserInfoURL string
+	GitHubUserInfoURL string
 	RedirectLoginURL  string
 }
 
@@ -171,12 +173,13 @@ type usersService struct {
 	email               Emailer
 	auth                protomfx.AuthServiceClient
 	idProvider          uuid.IDProvider
-	oauth               oauth2.Config
+	googleOAuth         oauth2.Config
+	githubOAuth         oauth2.Config
 	urls                ConfigURLs
 }
 
 // New instantiates the users service implementation
-func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, inviteDuration time.Duration, emailVerifyEnabled bool, selfRegisterEnabled bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider, oauth oauth2.Config, urls ConfigURLs) Service {
+func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, inviteDuration time.Duration, emailVerifyEnabled bool, selfRegisterEnabled bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider, googleOAuth, githubOAuth oauth2.Config, urls ConfigURLs) Service {
 	return &usersService{
 		users:               users,
 		emailVerifications:  verifications,
@@ -188,7 +191,8 @@ func New(users UserRepository, verifications EmailVerificationRepository, invite
 		auth:                auth,
 		email:               e,
 		idProvider:          idp,
-		oauth:               oauth,
+		googleOAuth:         googleOAuth,
+		githubOAuth:         githubOAuth,
 		urls:                urls,
 	}
 }
@@ -432,23 +436,42 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 }
 
 func (svc usersService) OAuthLogin(provider string) string {
+	var oauthCfg oauth2.Config
 	switch provider {
-	case googleKey:
-		// verifier := oauth2.GenerateVerifier()
-		return svc.oauth.AuthCodeURL(stateKey, oauth2.AccessTypeOffline)
+	case GoogleKey:
+		oauthCfg = svc.googleOAuth
+	case GitHubKey:
+		oauthCfg = svc.githubOAuth
 	default:
 		return ""
 	}
+
+	// verifier := oauth2.GenerateVerifier()
+	return oauthCfg.AuthCodeURL(stateKey, oauth2.AccessTypeOffline)
 }
 
 func (svc usersService) OAuthCallback(ctx context.Context, provider, code string) (string, error) {
-	oauthToken, err := svc.oauth.Exchange(ctx, code)
+	var oauth oauth2.Config
+	var userInfoURL string
+
+	switch provider {
+	case GoogleKey:
+		oauth = svc.googleOAuth
+		userInfoURL = svc.urls.GoogleUserInfoURL
+	case GitHubKey:
+		oauth = svc.githubOAuth
+		userInfoURL = svc.urls.GitHubUserInfoURL
+	default:
+		return "", apiutil.ErrMissingProvider
+	}
+
+	oauthToken, err := oauth.Exchange(ctx, code)
 	if err != nil {
 		return "", err
 	}
 
-	client := svc.oauth.Client(ctx, oauthToken)
-	resp, err := client.Get(svc.urls.GoogleUserInfoURL)
+	client := oauth.Client(ctx, oauthToken)
+	resp, err := client.Get(userInfoURL)
 	if err != nil {
 		return "", err
 	}

@@ -1,6 +1,8 @@
 module github.com/MainfluxLabs/mainflux
 
-go 1.22.5
+go 1.24.0
+
+toolchain go1.24.3
 
 require (
 	github.com/MainfluxLabs/mproxy v0.2.3
@@ -42,7 +44,7 @@ require (
 	go.mongodb.org/mongo-driver v1.10.1
 	golang.org/x/crypto v0.25.0
 	golang.org/x/net v0.27.0
-	golang.org/x/oauth2 v0.18.0
+	golang.org/x/oauth2 v0.33.0
 	golang.org/x/sync v0.7.0
 	gonum.org/v1/gonum v0.11.0
 	google.golang.org/grpc v1.64.1
@@ -51,8 +53,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute v1.25.1 // indirect
-	cloud.google.com/go/compute/metadata v0.2.3 // indirect
+	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
@@ -146,7 +147,6 @@ require (
 	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
-	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240730163845-b1a4ccb954bf // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect

@@ -37,6 +37,7 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/github"
 	"golang.org/x/oauth2/google"
 	"golang.org/x/sync/errgroup"
 )
@@ -84,11 +85,11 @@ const (
 	defSelfRegisterEnabled = "true" // By default, everybody can create a user. Otherwise, only admin can create a user.
 	defEmailVerifyEnabled  = "true"
 
-	defGoogleClientID     = ""
-	defGoogleClientSecret = ""
-	defGoogleRedirectURL  = ""
-	defGoogleUserInfo     = ""
-	defRedirectLoginURL   = ""
+	defClientID         = ""
+	defClientSecret     = ""
+	defRedirectURL      = ""
+	defUserInfo         = ""
+	defRedirectLoginURL = ""
 
 	envLogLevel      = "MF_USERS_LOG_LEVEL"
 	envDBHost        = "MF_USERS_DB_HOST"
@@ -134,7 +135,13 @@ const (
 	envGoogleClientSecret = "MF_GOOGLE_CLIENT_SECRET"
 	envGoogleRedirectURL  = "MF_GOOGLE_REDIRECT_URL"
 	envGoogleUserInfo     = "MF_GOOGLE_USER_INFO"
-	envRedirectLoginURL   = "MF_REDIRECT_LOGIN_URL"
+
+	envGitHubClientID     = "MF_GITHUB_CLIENT_ID"
+	envGitHubClientSecret = "MF_GITHUB_CLIENT_SECRET"
+	envGitHubRedirectURL  = "MF_GITHUB_REDIRECT_URL"
+	envGitHubUserInfo     = "MF_GITHUB_USER_INFO"
+
+	envRedirectLoginURL = "MF_REDIRECT_LOGIN_URL"
 )
 
 type config struct {
@@ -154,6 +161,7 @@ type config struct {
 	emailVerifyEnabled  bool
 	inviteDuration      time.Duration
 	googleOauthConfig   oauth2.Config
+	githubOauthConfig   oauth2.Config
 	urls                users.ConfigURLs
 }
 
@@ -186,7 +194,7 @@ func main() {
 	dbTracer, dbCloser := jaeger.Init("users_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(db, dbTracer, auth, cfg, logger, cfg.googleOauthConfig)
+	svc := newService(db, dbTracer, auth, cfg, logger)
 
 	g.Go(func() error {
 		return servershttp.Start(ctx, httpapi.MakeHandler(svc, usersHttpTracer, logger, cfg.passRegex), cfg.httpConfig, logger)
@@ -281,15 +289,24 @@ func loadConfig() config {
 	}
 
 	googleOauthConfig := oauth2.Config{
-		ClientID:     mainflux.Env(envGoogleClientID, defGoogleClientID),
-		ClientSecret: mainflux.Env(envGoogleClientSecret, defGoogleClientSecret),
-		RedirectURL:  fmt.Sprintf("%s:%s%s", mainflux.Env(envHost, defHost), mainflux.Env(envHTTPPort, defHTTPPort), mainflux.Env(envGoogleRedirectURL, defGoogleRedirectURL)),
-		Scopes:       []string{"email", "profile"},
+		ClientID:     mainflux.Env(envGoogleClientID, defClientID),
+		ClientSecret: mainflux.Env(envGoogleClientSecret, defClientSecret),
+		RedirectURL:  fmt.Sprintf("%s%s", mainflux.Env(envHost, defHost), mainflux.Env(envGoogleRedirectURL, defRedirectURL)),
+		Scopes:       []string{"email"},
 		Endpoint:     google.Endpoint,
 	}
 
+	githubOauthConfig := oauth2.Config{
+		ClientID:     mainflux.Env(envGitHubClientID, defClientID),
+		ClientSecret: mainflux.Env(envGitHubClientSecret, defClientSecret),
+		RedirectURL:  fmt.Sprintf("%s%s", mainflux.Env(envHost, defHost), mainflux.Env(envGitHubRedirectURL, defRedirectURL)),
+		Scopes:       []string{"user:email"},
+		Endpoint:     github.Endpoint,
+	}
+
 	urls := users.ConfigURLs{
-		GoogleUserInfoURL: mainflux.Env(envGoogleUserInfo, defGoogleUserInfo),
+		GoogleUserInfoURL: mainflux.Env(envGoogleUserInfo, defUserInfo),
+		GitHubUserInfoURL: mainflux.Env(envGitHubUserInfo, defUserInfo),
 		//don't forget to remove 4200
 		RedirectLoginURL: fmt.Sprintf("%s:%s%s", mainflux.Env(envHost, defHost), "4200", mainflux.Env(envRedirectLoginURL, defRedirectLoginURL)),
 	}
@@ -316,6 +333,7 @@ func loadConfig() config {
 		emailVerifyEnabled:  emailVerifyEnabled,
 		inviteDuration:      inviteDuration,
 		googleOauthConfig:   googleOauthConfig,
+		githubOauthConfig:   githubOauthConfig,
 		urls:                urls,
 	}
 }
@@ -329,7 +347,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceClient, c config, logger logger.Logger, oauth oauth2.Config) users.Service {
+func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceClient, c config, logger logger.Logger) users.Service {
 	database := dbutil.NewDatabase(db)
 	hasher := bcrypt.New()
 	userRepo := tracing.UserRepositoryMiddleware(postgres.NewUserRepo(database), tracer)
@@ -360,7 +378,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceC
 
 	idProvider := uuid.New()
 
-	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, c.inviteDuration, c.emailVerifyEnabled, c.selfRegisterEnabled, hasher, ac, svcEmailer, idProvider, oauth, c.urls)
+	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, c.inviteDuration, c.emailVerifyEnabled, c.selfRegisterEnabled, hasher, ac, svcEmailer, idProvider, c.googleOauthConfig, c.githubOauthConfig, c.urls)
 	svc = httpapi.LoggingMiddleware(svc, logger)
 	svc = httpapi.MetricsMiddleware(
 		svc,

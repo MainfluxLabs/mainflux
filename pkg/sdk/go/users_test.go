@@ -55,19 +55,28 @@ func newUserService() users.Service {
 	admin.ID, _ = idProvider.ID()
 	auth := mocks.NewAuthService(admin.ID, usersList, orgsList)
 	emailer := usmocks.NewEmailer()
-	oauthCfg := oauth2.Config{
+	oauthGoogleCfg := oauth2.Config{
 		ClientID:     "test-client-id",
 		ClientSecret: "test-client-secret",
 		RedirectURL:  "http://test-redirect/oauth/callback",
-		Scopes:       []string{"email", "profile"},
+		Scopes:       []string{"email"},
+		Endpoint:     google.Endpoint,
+	}
+
+	oauthGithubCfg := oauth2.Config{
+		ClientID:     "test-client-id",
+		ClientSecret: "test-client-secret",
+		RedirectURL:  "http://test-redirect/oauth/callback",
+		Scopes:       []string{"user:email"},
 		Endpoint:     google.Endpoint,
 	}
 
 	cfgURLs := users.ConfigURLs{
 		RedirectLoginURL:  "http://test-redirect/login",
 		GoogleUserInfoURL: "http://test-provider/userinfo",
+		GitHubUserInfoURL: "http://test-provider/userinfo",
 	}
-	return users.New(usersRepo, verificationsRepo, platformInvitesRepo, inviteDuration, true, true, hasher, auth, emailer, idProvider, oauthCfg, cfgURLs)
+	return users.New(usersRepo, verificationsRepo, platformInvitesRepo, inviteDuration, true, true, hasher, auth, emailer, idProvider, oauthGoogleCfg, oauthGithubCfg, cfgURLs)
 }
 
 func newUserServer(svc users.Service) *httptest.Server {
