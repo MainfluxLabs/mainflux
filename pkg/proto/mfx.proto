@@ -43,6 +43,7 @@ service AuthService {
     rpc GetOwnerIDByOrgID(OrgID) returns (OwnerID) {}
     rpc AssignRole(AssignRoleReq) returns (google.protobuf.Empty) {}
     rpc RetrieveRole(RetrieveRoleReq) returns (RetrieveRoleRes) {}
+    rpc ViewOrgMembership(ViewOrgMembershipReq) returns (OrgMembership) {}
     rpc CreateDormantOrgInvite(CreateDormantOrgInviteReq) returns (google.protobuf.Empty) {}
     rpc ActivateOrgInvite(ActivateOrgInviteReq) returns (google.protobuf.Empty) {}
 }
@@ -204,4 +205,16 @@ message ActivateOrgInviteReq {
     string platformInviteID = 1;
     string userID = 2;
     string redirectPath = 3;
+}
+
+message ViewOrgMembershipReq {
+    string token = 1;
+    string memberID = 2;
+    string orgID = 3;
+}
+
+message OrgMembership {
+    string memberID = 1;
+    string orgID = 2;
+    string role = 3;    
 }
