@@ -6,6 +6,7 @@ package users
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
@@ -14,7 +15,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
 )
 
@@ -23,6 +23,8 @@ const (
 	DisabledStatusKey = "disabled"
 	AllStatusKey      = "all"
 	rootAdminRole     = "root"
+	stateKey          = "state"
+	googleKey         = "google"
 )
 
 var (
@@ -81,11 +83,11 @@ type Service interface {
 	// identified by the non-nil error values in the response.
 	Login(ctx context.Context, user User) (string, error)
 
-	// GetOAuthLoginURL returns the OAuth authorization URL for the specified provider.
-	GetOAuthLoginURL(provider string) string
+	// OAuthOAuthLoginLoginURL returns the URL to initiate OAuth login.
+	OAuthLogin(provider string) string
 
-	// HandleOAuthCallback exchanges the authorization code for user data and creates or logs in the user.
-	HandleOAuthCallback(ctx context.Context, provider, code string) (string, error)
+	// OAuthCallback exchanges the OAuth code for user info and logs in/creates the user.
+	OAuthCallback(ctx context.Context, provider, code string) (string, error)
 
 	// ViewUser retrieves user info for a given user ID and an authorized token.
 	ViewUser(ctx context.Context, token, id string) (User, error)
@@ -151,6 +153,11 @@ type UserPage struct {
 	Users []User
 }
 
+type ConfigURLs struct {
+	GoogleUserInfoURL string
+	RedirectLoginURL  string
+}
+
 var _ Service = (*usersService)(nil)
 
 type usersService struct {
@@ -165,10 +172,11 @@ type usersService struct {
 	auth                protomfx.AuthServiceClient
 	idProvider          uuid.IDProvider
 	oauth               oauth2.Config
+	urls                ConfigURLs
 }
 
 // New instantiates the users service implementation
-func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, inviteDuration time.Duration, emailVerifyEnabled bool, selfRegisterEnabled bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider, oauth oauth2.Config) Service {
+func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, inviteDuration time.Duration, emailVerifyEnabled bool, selfRegisterEnabled bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider, oauth oauth2.Config, urls ConfigURLs) Service {
 	return &usersService{
 		users:               users,
 		emailVerifications:  verifications,
@@ -181,6 +189,7 @@ func New(users UserRepository, verifications EmailVerificationRepository, invite
 		email:               e,
 		idProvider:          idp,
 		oauth:               oauth,
+		urls:                urls,
 	}
 }
 
@@ -422,25 +431,26 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 	return svc.issue(ctx, dbUser.ID, dbUser.Email, auth.LoginKey)
 }
 
-func (svc usersService) GetOAuthLoginURL(provider string) string {
+func (svc usersService) OAuthLogin(provider string) string {
 	switch provider {
-	case "google":
-		return svc.oauth.AuthCodeURL("state", oauth2.AccessTypeOffline)
+	case googleKey:
+		// verifier := oauth2.GenerateVerifier()
+		return svc.oauth.AuthCodeURL(stateKey, oauth2.AccessTypeOffline)
 	default:
 		return ""
 	}
 }
 
-func (svc usersService) HandleOAuthCallback(ctx context.Context, provider, code string) (string, error) {
-	token, err := svc.oauth.Exchange(ctx, code)
+func (svc usersService) OAuthCallback(ctx context.Context, provider, code string) (string, error) {
+	oauthToken, err := svc.oauth.Exchange(ctx, code)
 	if err != nil {
-		return "", errors.Wrap(errors.New("failed to exchange code for token"), err)
+		return "", err
 	}
 
-	client := svc.oauth.Client(ctx, token)
-	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo") //fix later - don't hardcode it
+	client := svc.oauth.Client(ctx, oauthToken)
+	resp, err := client.Get(svc.urls.GoogleUserInfoURL)
 	if err != nil {
-		return "", errors.Wrap(errors.New("failed to fetch user info from Google"), err)
+		return "", err
 	}
 	defer resp.Body.Close()
 
@@ -449,23 +459,19 @@ func (svc usersService) HandleOAuthCallback(ctx context.Context, provider, code 
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&gUser); err != nil {
-		return "", errors.Wrap(errors.New("failed to decode user info"), err)
+		return "", err
 	}
 
-	// Try to find existing user or create a new one if not found
-	dbUser, err := svc.users.RetrieveByEmail(ctx, gUser.Email)
+	user, err := svc.users.RetrieveByEmail(ctx, gUser.Email)
 	if err != nil {
 		if errors.Contains(err, dbutil.ErrNotFound) {
 			uid, _ := svc.idProvider.ID()
-			// generate random password for now, change it so its nullable or something??
-			hashed, _ := bcrypt.GenerateFromPassword([]byte("random_password_1234567876"), bcrypt.DefaultCost)
-			dbUser = User{
-				ID:       uid,
-				Email:    gUser.Email,
-				Password: string(hashed),
-				Status:   EnabledStatusKey,
+			user = User{
+				ID:     uid,
+				Email:  gUser.Email,
+				Status: EnabledStatusKey,
 			}
-			if _, err := svc.users.Save(ctx, dbUser); err != nil {
+			if _, err := svc.users.Save(ctx, user); err != nil {
 				return "", err
 			}
 		} else {
@@ -473,7 +479,13 @@ func (svc usersService) HandleOAuthCallback(ctx context.Context, provider, code 
 		}
 	}
 
-	return svc.issue(ctx, dbUser.ID, dbUser.Email, auth.LoginKey)
+	token, err := svc.issue(ctx, user.ID, user.Email, auth.LoginKey)
+	if err != nil {
+		return "", err
+	}
+
+	redirectURL := fmt.Sprintf("%s?token=%s", svc.urls.RedirectLoginURL, token)
+	return redirectURL, nil
 }
 
 func (svc usersService) ViewUser(ctx context.Context, token, id string) (User, error) {

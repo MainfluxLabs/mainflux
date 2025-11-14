@@ -232,7 +232,7 @@ func oauthLoginEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		redirectURL := svc.GetOAuthLoginURL(req.provider)
+		redirectURL := svc.OAuthLogin(req.provider)
 		return redirectURLRes{redirectURL}, nil
 	}
 }
@@ -244,12 +244,12 @@ func oauthCallbackEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		token, err := svc.HandleOAuthCallback(ctx, req.provider, req.code)
+		redirectURL, err := svc.OAuthCallback(ctx, req.provider, req.code)
 		if err != nil {
 			return nil, err
 		}
 
-		return tokenRes{token}, nil
+		return redirectURLRes{redirectURL}, nil
 	}
 }
 

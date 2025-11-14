@@ -133,17 +133,17 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 		opts...,
 	))
 
-	mux.Get("/users/:provider/login", kithttp.NewServer(
+	mux.Get("/users/oauth/:provider", kithttp.NewServer(
 		kitot.TraceServer(tracer, "oauth_login")(oauthLoginEndpoint(svc)),
 		decodeOAuthProvider,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Get("/users/:provider/callback", kithttp.NewServer(
+	mux.Get("/users/oauth/:provider/callback", kithttp.NewServer(
 		kitot.TraceServer(tracer, "oauth_callback")(oauthCallbackEndpoint(svc)),
 		decodeOAuthProviderCode,
-		encodeResponse,
+		encodeCallbackResponse,
 		opts...,
 	))
 
@@ -537,6 +537,13 @@ func buildPageMetadataInvites(r *http.Request) (users.PageMetadataInvites, error
 	pm.State = state
 
 	return pm, nil
+}
+
+func encodeCallbackResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+	res := response.(redirectURLRes)
+	w.Header().Set("Location", res.RedirectURL)
+	w.WriteHeader(http.StatusFound)
+	return nil
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {

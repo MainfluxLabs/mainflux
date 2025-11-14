@@ -160,11 +160,16 @@ func newService() users.Service {
 	oauthCfg := oauth2.Config{
 		ClientID:     "test-client-id",
 		ClientSecret: "test-client-secret",
-		RedirectURL:  "http://localhost:8080/oauth/callback", //fix
+		RedirectURL:  "http://test-redirect/oauth/callback",
 		Scopes:       []string{"email", "profile"},
 		Endpoint:     google.Endpoint,
 	}
-	return users.New(usersRepo, verificationsRepo, invitesRepo, inviteDuration, true, true, hasher, auth, email, idProvider, oauthCfg)
+
+	cfgURLs := users.ConfigURLs{
+		RedirectLoginURL:  "http://test-redirect/login",
+		GoogleUserInfoURL: "http://test-provider/userinfo",
+	}
+	return users.New(usersRepo, verificationsRepo, invitesRepo, inviteDuration, true, true, hasher, auth, email, idProvider, oauthCfg, cfgURLs)
 }
 
 func newServer(svc users.Service) *httptest.Server {

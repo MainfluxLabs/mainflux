@@ -87,6 +87,8 @@ const (
 	defGoogleClientID     = ""
 	defGoogleClientSecret = ""
 	defGoogleRedirectURL  = ""
+	defGoogleUserInfo     = ""
+	defRedirectLoginURL   = ""
 
 	envLogLevel      = "MF_USERS_LOG_LEVEL"
 	envDBHost        = "MF_USERS_DB_HOST"
@@ -131,6 +133,8 @@ const (
 	envGoogleClientID     = "MF_GOOGLE_CLIENT_ID"
 	envGoogleClientSecret = "MF_GOOGLE_CLIENT_SECRET"
 	envGoogleRedirectURL  = "MF_GOOGLE_REDIRECT_URL"
+	envGoogleUserInfo     = "MF_GOOGLE_USER_INFO"
+	envRedirectLoginURL   = "MF_REDIRECT_LOGIN_URL"
 )
 
 type config struct {
@@ -150,6 +154,7 @@ type config struct {
 	emailVerifyEnabled  bool
 	inviteDuration      time.Duration
 	googleOauthConfig   oauth2.Config
+	urls                users.ConfigURLs
 }
 
 func main() {
@@ -278,9 +283,15 @@ func loadConfig() config {
 	googleOauthConfig := oauth2.Config{
 		ClientID:     mainflux.Env(envGoogleClientID, defGoogleClientID),
 		ClientSecret: mainflux.Env(envGoogleClientSecret, defGoogleClientSecret),
-		RedirectURL:  fmt.Sprintf("%s%s", mainflux.Env(envHost, defHost), mainflux.Env(envGoogleRedirectURL, defGoogleRedirectURL)),
+		RedirectURL:  fmt.Sprintf("%s:%s%s", mainflux.Env(envHost, defHost), mainflux.Env(envHTTPPort, defHTTPPort), mainflux.Env(envGoogleRedirectURL, defGoogleRedirectURL)),
 		Scopes:       []string{"email", "profile"},
 		Endpoint:     google.Endpoint,
+	}
+
+	urls := users.ConfigURLs{
+		GoogleUserInfoURL: mainflux.Env(envGoogleUserInfo, defGoogleUserInfo),
+		//don't forget to remove 4200
+		RedirectLoginURL: fmt.Sprintf("%s:%s%s", mainflux.Env(envHost, defHost), "4200", mainflux.Env(envRedirectLoginURL, defRedirectLoginURL)),
 	}
 
 	inviteDuration, err := time.ParseDuration(mainflux.Env(envInviteDuration, defInviteDuration))
@@ -305,6 +316,7 @@ func loadConfig() config {
 		emailVerifyEnabled:  emailVerifyEnabled,
 		inviteDuration:      inviteDuration,
 		googleOauthConfig:   googleOauthConfig,
+		urls:                urls,
 	}
 }
 
@@ -348,7 +360,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceC
 
 	idProvider := uuid.New()
 
-	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, c.inviteDuration, c.emailVerifyEnabled, c.selfRegisterEnabled, hasher, ac, svcEmailer, idProvider, oauth)
+	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, c.inviteDuration, c.emailVerifyEnabled, c.selfRegisterEnabled, hasher, ac, svcEmailer, idProvider, oauth, c.urls)
 	svc = httpapi.LoggingMiddleware(svc, logger)
 	svc = httpapi.MetricsMiddleware(
 		svc,

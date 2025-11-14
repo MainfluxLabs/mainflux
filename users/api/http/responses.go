@@ -13,6 +13,7 @@ import (
 
 var (
 	_ apiutil.Response = (*tokenRes)(nil)
+	_ apiutil.Response = (*redirectURLRes)(nil)
 	_ apiutil.Response = (*viewUserRes)(nil)
 	_ apiutil.Response = (*passwChangeRes)(nil)
 	_ apiutil.Response = (*createUserRes)(nil)
