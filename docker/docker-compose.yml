@@ -25,7 +25,7 @@ volumes:
   mainfluxlabs-modbus-db-volume:
   mainfluxlabs-alarms-db-volume:
   mainfluxlabs-rules-db-volume:
-  mainfluxlabs-uiconfigs-db-volume:
+  # mainfluxlabs-uiconfigs-db-volume:
 
 services:
   ui:
@@ -222,6 +222,9 @@ services:
   things:
     image: ${MF_RELEASE_PREFIX}/things:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-things
+    volumes:
+      - ./templates/base.tmpl:/base.tmpl
+      - ./templates/things/group_invite.tmpl:/group_invite.tmpl
     depends_on:
       - things-db
       - auth
@@ -244,6 +247,15 @@ services:
       MF_USERS_GRPC_URL: ${MF_USERS_GRPC_URL}
       MF_USERS_CA_CERTS: ${MF_USERS_CA_CERTS}
       MF_USERS_CLIENT_TLS: ${MF_USERS_CLIENT_TLS}
+      MF_EMAIL_HOST: ${MF_EMAIL_HOST}
+      MF_EMAIL_PORT: ${MF_EMAIL_PORT}
+      MF_EMAIL_USERNAME: ${MF_EMAIL_USERNAME}
+      MF_EMAIL_PASSWORD: ${MF_EMAIL_PASSWORD}
+      MF_EMAIL_FROM_ADDRESS: ${MF_EMAIL_FROM_ADDRESS}
+      MF_EMAIL_FROM_NAME: ${MF_EMAIL_FROM_NAME}
+      MF_EMAIL_BASE_TEMPLATE: ${MF_EMAIL_BASE_TEMPLATE}
+      MF_HOST: ${MF_HOST}
+      MF_INVITE_DURATION: ${MF_INVITE_DURATION}
     ports:
       - ${MF_THINGS_HTTP_PORT}:${MF_THINGS_HTTP_PORT}
       - ${MF_THINGS_AUTH_HTTP_PORT}:${MF_THINGS_AUTH_HTTP_PORT}
@@ -790,41 +802,41 @@ services:
     networks:
       - mainfluxlabs-base-net
 
-  uiconfigs-db:
-    image: postgres:13.3-alpine
-    container_name: mainfluxlabs-uiconfigs-db
-    restart: on-failure
-    environment:
-      POSTGRES_USER: ${MF_UI_CONFIGS_DB_USER}
-      POSTGRES_PASSWORD: ${MF_UI_CONFIGS_DB_PASS}
-      POSTGRES_DB: ${MF_UI_CONFIGS_DB}
-    networks:
-      - mainfluxlabs-base-net
-    volumes:
-      - mainfluxlabs-uiconfigs-db-volume:/var/lib/postgresql/data
-
-  uiconfigs:
-    image: ${MF_RELEASE_PREFIX}/uiconfigs:${MF_RELEASE_TAG}
-    container_name: mainfluxlabs-uiconfigs
-    depends_on:
-      - uiconfigs-db
-    restart: on-failure
-    environment:
-      MF_UI_CONFIGS_LOG_LEVEL: debug
-      MF_UI_CONFIGS_HTTP_PORT: ${MF_UI_CONFIGS_HTTP_PORT}
-      MF_JAEGER_URL: ${MF_JAEGER_URL}
-      MF_UI_CONFIGS_DB_HOST: uiconfigs-db
-      MF_UI_CONFIGS_DB_PORT: ${MF_UI_CONFIGS_DB_PORT}
-      MF_UI_CONFIGS_DB_USER: ${MF_UI_CONFIGS_DB_USER}
-      MF_UI_CONFIGS_DB_PASS: ${MF_UI_CONFIGS_DB_PASS}
-      MF_UI_CONFIGS_DB: ${MF_UI_CONFIGS_DB}
-      MF_UI_CONFIGS_SERVER_CERT: ${MF_UI_CONFIGS_SERVER_CERT}
-      MF_UI_CONFIGS_SERVER_KEY: ${MF_UI_CONFIGS_SERVER_KEY}
-      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
-      MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
-      MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
-      MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
-    ports:
-      - ${MF_UI_CONFIGS_HTTP_PORT}:${MF_UI_CONFIGS_HTTP_PORT}
-    networks:
-      - mainfluxlabs-base-net
+  # uiconfigs-db:
+  #   image: postgres:13.3-alpine
+  #   container_name: mainfluxlabs-uiconfigs-db
+  #   restart: on-failure
+  #   environment:
+  #     POSTGRES_USER: ${MF_UI_CONFIGS_DB_USER}
+  #     POSTGRES_PASSWORD: ${MF_UI_CONFIGS_DB_PASS}
+  #     POSTGRES_DB: ${MF_UI_CONFIGS_DB}
+  #   networks:
+  #     - mainfluxlabs-base-net
+  #   volumes:
+  #     - mainfluxlabs-uiconfigs-db-volume:/var/lib/postgresql/data
+  #
+  # uiconfigs:
+  #   image: ${MF_RELEASE_PREFIX}/uiconfigs:${MF_RELEASE_TAG}
+  #   container_name: mainfluxlabs-uiconfigs
+  #   depends_on:
+  #     - uiconfigs-db
+  #   restart: on-failure
+  #   environment:
+  #     MF_UI_CONFIGS_LOG_LEVEL: debug
+  #     MF_UI_CONFIGS_HTTP_PORT: ${MF_UI_CONFIGS_HTTP_PORT}
+  #     MF_JAEGER_URL: ${MF_JAEGER_URL}
+  #     MF_UI_CONFIGS_DB_HOST: uiconfigs-db
+  #     MF_UI_CONFIGS_DB_PORT: ${MF_UI_CONFIGS_DB_PORT}
+  #     MF_UI_CONFIGS_DB_USER: ${MF_UI_CONFIGS_DB_USER}
+  #     MF_UI_CONFIGS_DB_PASS: ${MF_UI_CONFIGS_DB_PASS}
+  #     MF_UI_CONFIGS_DB: ${MF_UI_CONFIGS_DB}
+  #     MF_UI_CONFIGS_SERVER_CERT: ${MF_UI_CONFIGS_SERVER_CERT}
+  #     MF_UI_CONFIGS_SERVER_KEY: ${MF_UI_CONFIGS_SERVER_KEY}
+  #     MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+  #     MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+  #     MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
+  #     MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
+  #   ports:
+  #     - ${MF_UI_CONFIGS_HTTP_PORT}:${MF_UI_CONFIGS_HTTP_PORT}
+  #   networks:
+  #     - mainfluxlabs-base-net

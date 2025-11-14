@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/invites"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/metrics"
 )
@@ -550,4 +551,67 @@ func (ms *metricsMiddleware) GetThingIDsByProfile(ctx context.Context, profileID
 	}(time.Now())
 
 	return ms.svc.GetThingIDsByProfile(ctx, profileID)
+}
+
+func (ms *metricsMiddleware) CreateGroupInvite(ctx context.Context, token, email, role, groupID, grRedirectPath string) (things.GroupInvite, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "create_group_invite").Add(1)
+		ms.latency.With("method", "create_group_invite").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.CreateGroupInvite(ctx, token, email, role, groupID, grRedirectPath)
+}
+
+func (ms *metricsMiddleware) RevokeGroupInvite(ctx context.Context, token, inviteID string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "revoke_group_invite").Add(1)
+		ms.latency.With("method", "revoke_group_invite").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RevokeGroupInvite(ctx, token, inviteID)
+}
+
+func (ms *metricsMiddleware) RespondGroupInvite(ctx context.Context, token, inviteID string, accept bool) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "respond_group_invite").Add(1)
+		ms.latency.With("method", "respond_group_invite").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RespondGroupInvite(ctx, token, inviteID, accept)
+}
+
+func (ms *metricsMiddleware) ViewGroupInvite(ctx context.Context, token, inviteID string) (things.GroupInvite, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "view_group_invite").Add(1)
+		ms.latency.With("method", "view_group_invite").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ViewGroupInvite(ctx, token, inviteID)
+}
+
+func (ms *metricsMiddleware) ListGroupInvitesByUser(ctx context.Context, token, userType, userID string, pm invites.PageMetadataInvites) (things.GroupInvitesPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_group_invites_by_user").Add(1)
+		ms.latency.With("method", "list_group_invites_by_user").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListGroupInvitesByUser(ctx, token, userType, userID, pm)
+}
+
+func (ms *metricsMiddleware) ListGroupInvitesByGroup(ctx context.Context, token, groupID string, pm invites.PageMetadataInvites) (things.GroupInvitesPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_group_invites_by_group").Add(1)
+		ms.latency.With("method", "list_group_invites_by_group").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListGroupInvitesByGroup(ctx, token, groupID, pm)
+}
+
+func (ms *metricsMiddleware) SendGroupInviteEmail(ctx context.Context, invite things.GroupInvite, email, orgName, invRedirectPath string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "send_group_invite_email").Add(1)
+		ms.latency.With("method", "send_group_invite_email").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.SendGroupInviteEmail(ctx, invite, email, orgName, invRedirectPath)
 }

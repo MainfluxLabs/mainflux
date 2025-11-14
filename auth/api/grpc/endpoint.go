@@ -109,6 +109,7 @@ func assignRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 		return emptyRes{}, nil
 	}
 }
+
 func retrieveRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(retrieveRoleReq)
@@ -127,6 +128,27 @@ func retrieveRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		return res, nil
+	}
+}
+
+func viewOrgMembershipEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(viewOrgMembershipReq)
+
+		if err := req.validate(); err != nil {
+			return orgMembershipRes{}, nil
+		}
+
+		membership, err := svc.ViewOrgMembership(ctx, req.token, req.orgID, req.memberID)
+		if err != nil {
+			return orgMembershipRes{}, err
+		}
+
+		return orgMembershipRes{
+			orgID:    membership.OrgID,
+			memberID: membership.MemberID,
+			role:     membership.Role,
+		}, nil
 	}
 }
 

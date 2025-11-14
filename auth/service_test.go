@@ -15,6 +15,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/invites"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -1542,7 +1543,7 @@ func TestListInvitesByUser(t *testing.T) {
 	cases := []struct {
 		desc     string
 		token    string
-		pm       auth.PageMetadataInvites
+		pm       invites.PageMetadataInvites
 		userID   string
 		userType string
 		size     uint64
@@ -1551,90 +1552,90 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list all pending invites as invitee",
 			token:    inviteeToken,
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
+			pm:       invites.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
 			userID:   invitee.ID,
-			userType: auth.UserTypeInvitee,
+			userType: invites.UserTypeInvitee,
 			size:     n,
 			err:      nil,
 		},
 		{
 			desc:     "list all pending invites as root admin",
 			token:    rootAdminToken,
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
+			pm:       invites.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
 			userID:   invitee.ID,
-			userType: auth.UserTypeInvitee,
+			userType: invites.UserTypeInvitee,
 			size:     n,
 			err:      nil,
 		},
 		{
 			desc:     "list all pending invites as unauthorized user",
 			token:    unauthToken,
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
+			pm:       invites.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
 			userID:   invitee.ID,
-			userType: auth.UserTypeInvitee,
+			userType: invites.UserTypeInvitee,
 			size:     0,
 			err:      errors.ErrAuthorization,
 		},
 		{
 			desc:     "list half of pending invites as invitee",
 			token:    inviteeToken,
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n / 2, Offset: 0}},
+			pm:       invites.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n / 2, Offset: 0}},
 			userID:   invitee.ID,
-			userType: auth.UserTypeInvitee,
+			userType: invites.UserTypeInvitee,
 			size:     n / 2,
 			err:      nil,
 		},
 		{
 			desc:     "list last pending invite as invitee",
 			token:    inviteeToken,
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: n - 1}},
+			pm:       invites.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: n - 1}},
 			userID:   invitee.ID,
-			userType: auth.UserTypeInvitee,
+			userType: invites.UserTypeInvitee,
 			size:     1,
 			err:      nil,
 		},
 		{
 			desc:     "list all sent invites as inviter",
 			token:    ownerToken,
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
+			pm:       invites.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
 			userID:   ownerID,
-			userType: auth.UserTypeInviter,
+			userType: invites.UserTypeInviter,
 			size:     n,
 			err:      nil,
 		},
 		{
 			desc:     "list all sent invites as root admin",
 			token:    rootAdminToken,
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
+			pm:       invites.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
 			userID:   ownerID,
-			userType: auth.UserTypeInviter,
+			userType: invites.UserTypeInviter,
 			size:     n,
 			err:      nil,
 		},
 		{
 			desc:     "list all sent invites as unauthorized user",
 			token:    unauthToken,
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
+			pm:       invites.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
 			userID:   ownerID,
-			userType: auth.UserTypeInviter,
+			userType: invites.UserTypeInviter,
 			size:     0,
 			err:      errors.ErrAuthorization,
 		},
 		{
 			desc:     "list half of sent invites as inviter",
 			token:    ownerToken,
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n / 2, Offset: 0}},
+			pm:       invites.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n / 2, Offset: 0}},
 			userID:   ownerID,
-			userType: auth.UserTypeInviter,
+			userType: invites.UserTypeInviter,
 			size:     n / 2,
 			err:      nil,
 		},
 		{
 			desc:     "list last sent invite as inviter",
 			token:    ownerToken,
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: n - 1}},
+			pm:       invites.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: n - 1}},
 			userID:   ownerID,
-			userType: auth.UserTypeInviter,
+			userType: invites.UserTypeInviter,
 			size:     1,
 			err:      nil,
 		},

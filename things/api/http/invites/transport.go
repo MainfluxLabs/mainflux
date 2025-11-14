@@ -6,67 +6,74 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/invites"
+	"github.com/MainfluxLabs/mainflux/things"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
 	"github.com/opentracing/opentracing-go"
 )
 
-func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
+func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
 
-	mux.Post("/orgs/:id/invites", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_org_invite")(createOrgInviteEndpoint(svc)),
-		decodeCreateOrgInviteRequest,
+	mux.Post("/groups/:id/invites", kithttp.NewServer(
+		kitot.TraceServer(tracer, "create_group_invite")(createGroupInviteEndpoint(svc)),
+		decodeCreateGroupInviteRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Get("/groups/:id/invites", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_group_invites_by_group")(listGroupInvitesByGroupEndpoint(svc)),
+		decodeListGroupInvitesByGroupRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/orgs/:id/invites", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_org_invites_by_org")(listOrgInvitesByOrgEndpoint(svc)),
-		decodeListOrgInvitesByOrgRequest,
+		kitot.TraceServer(tracer, "list_group_invites_by_org")(listGroupInvitesByOrgEndpoint(svc)),
+		decodeListGroupInvitesByOrgRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/invites/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_org_invite")(viewOrgInviteEndpoint(svc)),
+		kitot.TraceServer(tracer, "view_group_invite")(viewGroupInviteEndpoint(svc)),
 		decodeInviteRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/invites/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "revoke_org_invite")(revokeOrgInviteEndpoint(svc)),
+		kitot.TraceServer(tracer, "revoke_group_invite")(revokeGroupInviteEndpoint(svc)),
 		decodeInviteRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/invites/:id/:action", kithttp.NewServer(
-		kitot.TraceServer(tracer, "respond_org_invite")(respondOrgInviteEndpoint(svc)),
-		decodeRespondOrgInviteRequest,
+		kitot.TraceServer(tracer, "respond_group_invite")(respondGroupInviteEndpoint(svc)),
+		decodeRespondGroupInviteRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/users/:id/invites/received", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_org_invites_by_invitee")(listOrgInvitesByUserEndpoint(svc, invites.UserTypeInvitee)),
-		decodeListOrgInvitesByUserRequest,
+		kitot.TraceServer(tracer, "list_group_invites_by_invitee")(listGroupInvitesByUserEndpoint(svc, invites.UserTypeInvitee)),
+		decodeListGroupInvitesByUserRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/users/:id/invites/sent", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_org_invites_by_inviter")(listOrgInvitesByUserEndpoint(svc, invites.UserTypeInviter)),
-		decodeListOrgInvitesByUserRequest,
+		kitot.TraceServer(tracer, "list_group_invites_by_inviter")(listGroupInvitesByUserEndpoint(svc, invites.UserTypeInviter)),
+		decodeListGroupInvitesByUserRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -74,14 +81,14 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	return mux
 }
 
-func decodeCreateOrgInviteRequest(_ context.Context, r *http.Request) (any, error) {
+func decodeCreateGroupInviteRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := createOrgInviteReq{
-		token: apiutil.ExtractBearerToken(r),
-		orgID: bone.GetValue(r, apiutil.IDKey),
+	req := createGroupInviteReq{
+		token:   apiutil.ExtractBearerToken(r),
+		groupID: bone.GetValue(r, apiutil.IDKey),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -91,8 +98,8 @@ func decodeCreateOrgInviteRequest(_ context.Context, r *http.Request) (any, erro
 	return req, nil
 }
 
-func decodeRespondOrgInviteRequest(_ context.Context, r *http.Request) (any, error) {
-	req := respondOrgInviteReq{
+func decodeRespondGroupInviteRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := respondGroupInviteReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
@@ -104,14 +111,14 @@ func decodeRespondOrgInviteRequest(_ context.Context, r *http.Request) (any, err
 	case "decline":
 		req.accepted = false
 	default:
-		return respondOrgInviteReq{}, invites.ErrInvalidInviteResponse
+		return respondGroupInviteReq{}, invites.ErrInvalidInviteResponse
 	}
 
 	return req, nil
 }
 
-func decodeListOrgInvitesByUserRequest(_ context.Context, r *http.Request) (any, error) {
-	req := listOrgInvitesByUserReq{
+func decodeListGroupInvitesByUserRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := listGroupInvitesByUserReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
@@ -126,7 +133,7 @@ func decodeListOrgInvitesByUserRequest(_ context.Context, r *http.Request) (any,
 	return req, nil
 }
 
-func decodeInviteRequest(_ context.Context, r *http.Request) (any, error) {
+func decodeInviteRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	req := inviteReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
@@ -135,8 +142,24 @@ func decodeInviteRequest(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeListOrgInvitesByOrgRequest(_ context.Context, r *http.Request) (any, error) {
-	req := listOrgInvitesByOrgReq{
+func decodeListGroupInvitesByGroupRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := listGroupInvitesByGroupReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, apiutil.IDKey),
+	}
+
+	pm, err := invites.BuildPageMetadataInvites(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req.pm = pm
+
+	return req, nil
+}
+
+func decodeListGroupInvitesByOrgRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	req := listGroupInvitesByOrgReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
@@ -173,8 +196,6 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
 	case errors.Contains(err, invites.ErrInvalidInviteResponse):
 		w.WriteHeader(http.StatusBadRequest)
-	case errors.Contains(err, auth.ErrOrgMembershipExists):
-		w.WriteHeader(http.StatusConflict)
 	default:
 		apiutil.EncodeError(err, w)
 	}

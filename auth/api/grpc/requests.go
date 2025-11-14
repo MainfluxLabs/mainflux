@@ -154,3 +154,25 @@ func (req activateOrgInviteReq) validate() error {
 
 	return nil
 }
+
+type viewOrgMembershipReq struct {
+	token    string
+	memberID string
+	orgID    string
+}
+
+func (req viewOrgMembershipReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.memberID == "" {
+		return apiutil.ErrMissingMemberID
+	}
+
+	if req.orgID == "" {
+		return apiutil.ErrMissingOrgID
+	}
+
+	return nil
+}

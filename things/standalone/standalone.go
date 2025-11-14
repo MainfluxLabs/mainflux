@@ -61,6 +61,10 @@ func (repo singleUserRepo) RetrieveRole(ctx context.Context, req *protomfx.Retri
 	return &protomfx.RetrieveRoleRes{}, errUnsupported
 }
 
+func (repo singleUserRepo) ViewOrgMembership(ctx context.Context, req *protomfx.ViewOrgMembershipReq, _ ...grpc.CallOption) (r *protomfx.OrgMembership, err error) {
+	return &protomfx.OrgMembership{}, errUnsupported
+}
+
 func (repo singleUserRepo) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
 	panic("not implemented")
 }

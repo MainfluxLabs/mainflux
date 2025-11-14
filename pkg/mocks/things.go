@@ -10,6 +10,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/invites"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 )
@@ -312,5 +313,33 @@ func (svc *mainfluxThings) RemoveExternalKey(context.Context, string, string) er
 }
 
 func (svc *mainfluxThings) GetThingIDsByProfile(context.Context, string) ([]string, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) CreateGroupInvite(context.Context, string, string, string, string, string) (things.GroupInvite, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) RevokeGroupInvite(context.Context, string, string) error {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) RespondGroupInvite(context.Context, string, string, bool) error {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) ViewGroupInvite(context.Context, string, string) (things.GroupInvite, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) ListGroupInvitesByUser(context.Context, string, string, string, invites.PageMetadataInvites) (things.GroupInvitesPage, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) ListGroupInvitesByGroup(context.Context, string, string, invites.PageMetadataInvites) (things.GroupInvitesPage, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) SendGroupInviteEmail(context.Context, things.GroupInvite, string, string, string) error {
 	panic("not implemented")
 }

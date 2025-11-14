@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -43,6 +44,8 @@ const (
 	orgID           = "374106f7-030e-4881-8ab0-151195c29f92"
 	prefixID        = "fe6b4e92-cc98-425e-b0aa-"
 	prefixName      = "test-"
+
+	inviteDuration = 7 * 24 * time.Hour
 )
 
 var (
@@ -80,12 +83,14 @@ func newService() things.Service {
 	profilesRepo := mocks.NewProfileRepository(thingsRepo)
 	groupMembershipsRepo := mocks.NewGroupMembershipsRepository()
 	groupsRepo := mocks.NewGroupRepository(groupMembershipsRepo)
+	invitesRepo := mocks.NewInvitesRepository()
 	profileCache := mocks.NewProfileCache()
 	thingCache := mocks.NewThingCache()
 	groupCache := mocks.NewGroupCache()
 	idProvider := uuid.NewMock()
+	emailerMock := mocks.NewEmailer()
 
-	return things.New(auth, uc, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider)
+	return things.New(auth, uc, thingsRepo, profilesRepo, groupsRepo, invitesRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider, emailerMock, inviteDuration)
 }
 
 func TestInit(t *testing.T) {

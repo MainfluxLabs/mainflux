@@ -27,6 +27,7 @@ type grpcServer struct {
 	getOwnerIDByOrgID      kitgrpc.Handler
 	assignRole             kitgrpc.Handler
 	retrieveRole           kitgrpc.Handler
+	viewOrgMembership      kitgrpc.Handler
 	createDormantOrgInvite kitgrpc.Handler
 	activateOrgInvite      kitgrpc.Handler
 }
@@ -73,6 +74,11 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			kitot.TraceServer(tracer, "activate_org_invite")(activateOrgInviteEndpoint(svc)),
 			decodeActivateOrgInviteRequest,
 			encodeEmptyResponse,
+		),
+		viewOrgMembership: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "view_org_membership")(viewOrgMembershipEndpoint(svc)),
+			decodeViewOrgMembershipRequest,
+			encodeOrgMembershipResponse,
 		),
 	}
 }
@@ -124,6 +130,14 @@ func (s *grpcServer) RetrieveRole(ctx context.Context, req *protomfx.RetrieveRol
 		return nil, encodeError(err)
 	}
 	return res.(*protomfx.RetrieveRoleRes), nil
+}
+
+func (s *grpcServer) ViewOrgMembership(ctx context.Context, req *protomfx.ViewOrgMembershipReq) (*protomfx.OrgMembership, error) {
+	_, res, err := s.viewOrgMembership.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+	return res.(*protomfx.OrgMembership), nil
 }
 
 func (s *grpcServer) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq) (*empty.Empty, error) {
@@ -210,6 +224,24 @@ func decodeActivateOrgInviteRequest(_ context.Context, grpcReq interface{}) (any
 		platformInviteID: req.GetPlatformInviteID(),
 		userID:           req.GetUserID(),
 		redirectPath:     req.GetRedirectPath(),
+	}, nil
+}
+
+func decodeViewOrgMembershipRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(*protomfx.ViewOrgMembershipReq)
+	return viewOrgMembershipReq{
+		token:    req.GetToken(),
+		orgID:    req.GetOrgID(),
+		memberID: req.GetMemberID(),
+	}, nil
+}
+
+func encodeOrgMembershipResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+	res := grpcRes.(orgMembershipRes)
+	return &protomfx.OrgMembership{
+		MemberID: res.memberID,
+		OrgID:    res.orgID,
+		Role:     res.role,
 	}, nil
 }
 

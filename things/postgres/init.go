@@ -194,6 +194,28 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE things ADD COLUMN external_key VARCHAR(1024) UNIQUE NULL CHECK (LENGTH(external_key) >= 5);`,
 				},
 			},
+			{
+				Id: "things_10",
+				Up: []string{
+					`CREATE TABLE IF NOT EXISTS group_invites (
+						id           UUID NOT NULL,
+						invitee_id   UUID NULL,         
+						inviter_id   UUID NOT NULL,
+						group_id     UUID NOT NULL,
+						invitee_role VARCHAR(12) NOT NULL,
+						created_at   TIMESTAMPTZ,
+						expires_at   TIMESTAMPTZ,
+						state        VARCHAR DEFAULT 'pending' NOT NULL,      
+						FOREIGN KEY  (group_id) REFERENCES groups (id) ON DELETE CASCADE,
+						PRIMARY KEY  (id)
+					)`,
+					`CREATE UNIQUE INDEX unique_group_invitee_pending on group_invites (invitee_id, group_id) WHERE state='pending'`,
+				},
+				Down: []string{
+					`DROP TABLE IF EXISTS group_invites`,
+					`DROP INDEX IF EXISTS unique_group_invitee_pending`,
+				},
+			},
 		},
 	}
 
