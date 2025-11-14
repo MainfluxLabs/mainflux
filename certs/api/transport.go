@@ -51,7 +51,7 @@ func MakeHandler(svc certs.Service, tracer opentracing.Tracer, pkiAgent pki.Agen
 
 	r.Get("/things/:id/serials", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_serials")(listSerialsByThingEndpoint(svc)),
-		decodeListCerts,
+		decodeListSerialsByThing,
 		encodeResponse,
 		opts...,
 	))
@@ -87,7 +87,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	return json.NewEncoder(w).Encode(response)
 }
 
-func decodeListCerts(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListSerialsByThing(_ context.Context, r *http.Request) (interface{}, error) {
 	l, err := apiutil.ReadUintQuery(r, apiutil.LimitKey, apiutil.DefLimit)
 	if err != nil {
 		return nil, err
