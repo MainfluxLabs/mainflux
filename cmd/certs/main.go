@@ -7,7 +7,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -17,11 +16,12 @@ import (
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/certs"
 	"github.com/MainfluxLabs/mainflux/certs/api"
-	vault "github.com/MainfluxLabs/mainflux/certs/pki"
+	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/certs/postgres"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -138,18 +138,20 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
+	certsHttpTracer, certsHttpCloser := jaeger.Init("certs_http", cfg.jaegerURL, logger)
+	defer certsHttpCloser.Close()
+
 	tlsCert, caCert, err := loadCertificates(cfg)
 	if err != nil {
-		logger.Error("Failed to load CA certificates for issuing client certs")
+		logger.Error(fmt.Sprintf("Failed to load CA certificates for issuing client certs: %s", err))
 	}
 
-	if cfg.pkiHost == "" {
-		log.Fatalf("No host specified for PKI engine")
-	}
+	tlsConfig := configureTLSServer(cfg, caCert)
+	cfg.httpConfig.TLSConfig = tlsConfig
 
-	pkiClient, err := vault.NewVaultClient(cfg.pkiToken, cfg.pkiHost, cfg.pkiPath, cfg.pkiRole)
+	pkiAgent, err := pki.NewAgent(tlsCert)
 	if err != nil {
-		log.Fatalf("Failed to configure client for PKI engine")
+		logger.Error(fmt.Sprintf("Failed to create PKI agent: %s", err))
 	}
 
 	db := connectToDB(cfg.dbConfig, logger)
@@ -163,10 +165,10 @@ func main() {
 
 	auth := authapi.NewClient(authConn, authTracer, cfg.authGRPCTimeout)
 
-	svc := newService(auth, db, logger, tlsCert, caCert, cfg, pkiClient)
+	svc := newService(auth, db, logger, tlsCert, caCert, cfg, pkiAgent)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, api.MakeHandler(svc, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, api.MakeHandler(svc, certsHttpTracer, pkiAgent, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -256,8 +258,9 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(ac protomfx.AuthServiceClient, db *sqlx.DB, logger logger.Logger, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config, pkiAgent vault.Agent) certs.Service {
-	certsRepo := postgres.NewRepository(db, logger)
+func newService(ac protomfx.AuthServiceClient, db *sqlx.DB, logger logger.Logger, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config, pkiAgent pki.Agent) certs.Service {
+	database := dbutil.NewDatabase(db)
+	certsRepo := postgres.NewRepository(database)
 
 	certsConfig := certs.Config{
 		LogLevel:       cfg.logLevel,
@@ -312,7 +315,7 @@ func loadCertificates(conf config) (tls.Certificate, *x509.Certificate, error) {
 	var caCert *x509.Certificate
 
 	if conf.signCAPath == "" || conf.signCAKeyPath == "" {
-		return tlsCert, caCert, nil
+		return tlsCert, caCert, errors.New("CA certificate paths not configured")
 	}
 
 	if _, err := os.Stat(conf.signCAPath); os.IsNotExist(err) {
@@ -328,14 +331,14 @@ func loadCertificates(conf config) (tls.Certificate, *x509.Certificate, error) {
 		return tlsCert, caCert, errors.Wrap(errFailedCertLoading, err)
 	}
 
-	b, err := ioutil.ReadFile(conf.signCAPath)
+	b, err := os.ReadFile(conf.signCAPath)
 	if err != nil {
 		return tlsCert, caCert, errors.Wrap(errFailedCertLoading, err)
 	}
 
 	block, _ := pem.Decode(b)
 	if block == nil {
-		log.Fatalf("No PEM data found, failed to decode CA")
+		return tlsCert, caCert, errors.New("no PEM data found, failed to decode CA")
 	}
 
 	caCert, err = x509.ParseCertificate(block.Bytes)
@@ -344,4 +347,28 @@ func loadCertificates(conf config) (tls.Certificate, *x509.Certificate, error) {
 	}
 
 	return tlsCert, caCert, nil
+}
+
+func configureTLSServer(cfg config, caCert *x509.Certificate) *tls.Config {
+	if cfg.httpConfig.ServerCert == "" {
+		return nil
+	}
+
+	if caCert == nil {
+		return nil
+	}
+
+	caCertPool := x509.NewCertPool()
+	caCertPool.AddCert(caCert)
+
+	return &tls.Config{
+		ClientAuth: tls.RequireAndVerifyClientCert,
+		ClientCAs:  caCertPool,
+		MinVersion: tls.VersionTLS12,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+		},
+	}
+
 }

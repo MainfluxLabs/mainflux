@@ -3,7 +3,10 @@
 
 package certs
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // ConfigsPage contains page related metadata as well as list
 type Page struct {
@@ -11,20 +14,29 @@ type Page struct {
 	Certs []Cert
 }
 
+type RevokedCert struct {
+	Serial    string    `db:"serial"`
+	ThingID   string    `db:"thing_id"`
+	RevokedAt time.Time `db:"revoked_at"`
+}
+
 // Repository specifies a Config persistence API.
 type Repository interface {
 	// Save  saves cert for thing into database
 	Save(ctx context.Context, cert Cert) (string, error)
 
-	// RetrieveAll retrieve issued certificates for given owner ID
-	RetrieveAll(ctx context.Context, ownerID string, offset, limit uint64) (Page, error)
+	// RetrieveAll retrieve issued certificates
+	RetrieveAll(ctx context.Context, offset, limit uint64) (Page, error)
 
-	// Remove removes certificate from DB for a given thing ID
-	Remove(ctx context.Context, ownerID, thingID string) error
+	// Remove removes certificate from DB for a given serial
+	Remove(ctx context.Context, serial string) error
 
 	// RetrieveByThing retrieves issued certificates for a given thing ID
-	RetrieveByThing(ctx context.Context, ownerID, thingID string, offset, limit uint64) (Page, error)
+	RetrieveByThing(ctx context.Context, thingID string, offset, limit uint64) (Page, error)
 
-	// RetrieveBySerial retrieves a certificate for a given serial ID
-	RetrieveBySerial(ctx context.Context, ownerID, serialID string) (Cert, error)
+	// RetrieveBySerial retrieves a certificate for a given serial
+	RetrieveBySerial(ctx context.Context, serial string) (Cert, error)
+
+	// RetrieveRevokedCerts retrieves all revoked certificates
+	RetrieveRevokedCerts(ctx context.Context) ([]RevokedCert, error)
 }

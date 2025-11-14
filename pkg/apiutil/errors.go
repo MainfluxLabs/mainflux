@@ -93,8 +93,8 @@ var (
 	// ErrEmptyList indicates that entity data is empty.
 	ErrEmptyList = errors.New("empty list provided")
 
-	// ErrMissingCertID indicates missing cert ID.
-	ErrMissingCertID = errors.New("missing cert id")
+	// ErrMissingSerial indicates missing serial.
+	ErrMissingSerial = errors.New("missing serial")
 
 	// ErrMissingCertData indicates missing cert data (ttl, key_type or key_bits).
 	ErrMissingCertData = errors.New("missing certificate data")

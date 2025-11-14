@@ -10,7 +10,7 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-func issueCert(svc certs.Service) endpoint.Endpoint {
+func issueCertEndpoint(svc certs.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(addCertsReq)
 		if err := req.validate(); err != nil {
@@ -26,13 +26,13 @@ func issueCert(svc certs.Service) endpoint.Endpoint {
 			ThingID:    res.ThingID,
 			ClientCert: res.ClientCert,
 			ClientKey:  res.ClientKey,
-			Expiration: res.Expire,
+			ExpiresAt:  res.ExpiresAt,
 			created:    true,
 		}, nil
 	}
 }
 
-func listSerials(svc certs.Service) endpoint.Endpoint {
+func listSerialsByThingEndpoint(svc certs.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listReq)
 		if err := req.validate(); err != nil {
@@ -62,14 +62,14 @@ func listSerials(svc certs.Service) endpoint.Endpoint {
 	}
 }
 
-func viewCert(svc certs.Service) endpoint.Endpoint {
+func viewCertEndpoint(svc certs.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(viewReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		cert, err := svc.ViewCert(ctx, req.token, req.serialID)
+		cert, err := svc.ViewCert(ctx, req.token, req.serial)
 		if err != nil {
 			return certsPageRes{}, err
 		}
@@ -78,19 +78,42 @@ func viewCert(svc certs.Service) endpoint.Endpoint {
 			CertSerial: cert.Serial,
 			ThingID:    cert.ThingID,
 			ClientCert: cert.ClientCert,
-			Expiration: cert.Expire,
+			ExpiresAt:  cert.ExpiresAt,
 		}
 
 		return certRes, nil
 	}
 }
 
-func revokeCert(svc certs.Service) endpoint.Endpoint {
+func revokeCertEndpoint(svc certs.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(revokeReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
-		return svc.RevokeCert(ctx, req.token, req.certID)
+		return svc.RevokeCert(ctx, req.token, req.serial)
+	}
+}
+
+func renewCertEndpoint(svc certs.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(viewReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		cert, err := svc.RenewCert(ctx, req.token, req.serial)
+		if err != nil {
+			return certsRes{}, err
+		}
+
+		return certsRes{
+			CertSerial: cert.Serial,
+			ThingID:    cert.ThingID,
+			ClientCert: cert.ClientCert,
+			ClientKey:  cert.ClientKey,
+			ExpiresAt:  cert.ExpiresAt,
+			created:    true,
+		}, nil
 	}
 }

@@ -24,7 +24,7 @@ type certsRes struct {
 	ClientCert string    `json:"client_cert"`
 	ClientKey  string    `json:"client_key"`
 	CertSerial string    `json:"cert_serial"`
-	Expiration time.Time `json:"expiration"`
+	ExpiresAt  time.Time `json:"expires_at"`
 	created    bool
 }
 
