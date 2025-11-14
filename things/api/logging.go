@@ -12,6 +12,7 @@ import (
 
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/invites"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
@@ -768,7 +769,98 @@ func (lm *loggingMiddleware) GetThingIDsByProfile(ctx context.Context, profileID
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
 	return lm.svc.GetThingIDsByProfile(ctx, profileID)
+}
+
+func (lm *loggingMiddleware) CreateGroupInvite(ctx context.Context, token, email, role, groupID, grRedirectPath string) (invite things.GroupInvite, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method create_group_invite for group id %s and email %s took %s to complete", groupID, email, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+	}(time.Now())
+
+	return lm.svc.CreateGroupInvite(ctx, token, email, role, groupID, grRedirectPath)
+}
+
+func (lm *loggingMiddleware) RevokeGroupInvite(ctx context.Context, token, inviteID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method revoke_group_invite for id %s took %s to complete", inviteID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RevokeGroupInvite(ctx, token, inviteID)
+}
+
+func (lm *loggingMiddleware) RespondGroupInvite(ctx context.Context, token, inviteID string, accept bool) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method respond_group_invite for id %s (accept=%t) took %s to complete", inviteID, accept, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RespondGroupInvite(ctx, token, inviteID, accept)
+}
+
+func (lm *loggingMiddleware) ViewGroupInvite(ctx context.Context, token, inviteID string) (invite things.GroupInvite, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method view_group_invite for id %s took %s to complete", inviteID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ViewGroupInvite(ctx, token, inviteID)
+}
+
+func (lm *loggingMiddleware) ListGroupInvitesByUser(ctx context.Context, token, userType, userID string, pm invites.PageMetadataInvites) (_ things.GroupInvitesPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_group_invites_by_user for user id %s and user-type %s took %s to complete", userID, userType, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListGroupInvitesByUser(ctx, token, userType, userID, pm)
+}
+
+func (lm *loggingMiddleware) ListGroupInvitesByGroup(ctx context.Context, token, groupID string, pm invites.PageMetadataInvites) (_ things.GroupInvitesPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_group_invites_by_group for group %s took %s to complete", groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListGroupInvitesByGroup(ctx, token, groupID, pm)
+}
+
+func (lm *loggingMiddleware) SendGroupInviteEmail(ctx context.Context, invite things.GroupInvite, email, orgName, invRedirectPath string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method send_group_invite_email for invite id %s and email %s took %s to complete", invite.ID, email, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.SendGroupInviteEmail(ctx, invite, email, orgName, invRedirectPath)
 }

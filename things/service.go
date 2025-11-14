@@ -180,6 +180,8 @@ type Service interface {
 	Groups
 
 	GroupMemberships
+
+	Invites
 }
 
 type Backup struct {
@@ -230,25 +232,34 @@ type thingsService struct {
 	profiles         ProfileRepository
 	groups           GroupRepository
 	groupMemberships GroupMembershipsRepository
+	groupInvites     GroupInviteRepository
 	profileCache     ProfileCache
 	thingCache       ThingCache
 	groupCache       GroupCache
 	idProvider       uuid.IDProvider
+	email            Emailer
+	inviteDuration   time.Duration
 }
 
 // New instantiates the things service implementation.
-func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, things ThingRepository, profiles ProfileRepository, groups GroupRepository, groupMemberships GroupMembershipsRepository, pcache ProfileCache, tcache ThingCache, gcache GroupCache, idp uuid.IDProvider) Service {
+func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, things ThingRepository, profiles ProfileRepository,
+	groups GroupRepository, groupInvites GroupInviteRepository, groupMemberships GroupMembershipsRepository,
+	pcache ProfileCache, tcache ThingCache, gcache GroupCache, idp uuid.IDProvider,
+	emailer Emailer, inviteDuration time.Duration) Service {
 	return &thingsService{
 		auth:             auth,
 		users:            users,
 		things:           things,
 		profiles:         profiles,
 		groups:           groups,
+		groupInvites:     groupInvites,
 		groupMemberships: groupMemberships,
 		profileCache:     pcache,
 		thingCache:       tcache,
 		groupCache:       gcache,
 		idProvider:       idp,
+		email:            emailer,
+		inviteDuration:   inviteDuration,
 	}
 }
 

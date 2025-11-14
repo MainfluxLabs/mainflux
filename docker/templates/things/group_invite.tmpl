@@ -1,0 +1,13 @@
+{{ define "content" }}
+    <p class="mb-16">
+        You have been invited to join a Group on the Mainflux platform. This will give you access to collaborate with other members and manage IoT resources according to your assigned role.
+    </p>
+
+    <p class="mb-8"><strong>Group:</strong> {{ .GroupName }}</p>
+    <p class="mb-8"><strong>Organization:</strong> {{ .OrgName }}</p>
+    <p class="mb-16"><strong>Role:</strong> {{ .Role }}</p>
+
+    <p class="btn-wrapper">
+        <a href="{{ .InviteLink }}" class="btn">View Invitation</a>
+    </p>
+{{ end }}
