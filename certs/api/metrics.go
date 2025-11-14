@@ -57,29 +57,29 @@ func (ms *metricsMiddleware) ListSerials(ctx context.Context, token, thingID str
 	return ms.svc.ListSerials(ctx, token, thingID, offset, limit)
 }
 
-func (ms *metricsMiddleware) ViewCert(ctx context.Context, token, serialID string) (certs.Cert, error) {
+func (ms *metricsMiddleware) ViewCert(ctx context.Context, token, serial string) (certs.Cert, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_cert").Add(1)
 		ms.latency.With("method", "view_cert").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ViewCert(ctx, token, serialID)
+	return ms.svc.ViewCert(ctx, token, serial)
 }
 
-func (ms *metricsMiddleware) RevokeCert(ctx context.Context, token, serialID string) (certs.Revoke, error) {
+func (ms *metricsMiddleware) RevokeCert(ctx context.Context, token, serial string) (certs.Revoke, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "revoke_cert").Add(1)
 		ms.latency.With("method", "revoke_cert").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.RevokeCert(ctx, token, serialID)
+	return ms.svc.RevokeCert(ctx, token, serial)
 }
 
-func (ms *metricsMiddleware) RenewCert(ctx context.Context, token, serialID string) (certs.Cert, error) {
+func (ms *metricsMiddleware) RenewCert(ctx context.Context, token, serial string) (certs.Cert, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "renew_cert").Add(1)
 		ms.latency.With("method", "renew_cert").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.RenewCert(ctx, token, serialID)
+	return ms.svc.RenewCert(ctx, token, serial)
 }

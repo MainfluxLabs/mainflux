@@ -108,8 +108,8 @@ func decodeListCerts(_ context.Context, r *http.Request) (interface{}, error) {
 
 func decodeViewCert(_ context.Context, r *http.Request) (interface{}, error) {
 	req := viewReq{
-		token:    apiutil.ExtractBearerToken(r),
-		serialID: bone.GetValue(r, apiutil.IDKey),
+		token:  apiutil.ExtractBearerToken(r),
+		serial: bone.GetValue(r, apiutil.IDKey),
 	}
 
 	return req, nil
@@ -130,8 +130,8 @@ func decodeCerts(_ context.Context, r *http.Request) (interface{}, error) {
 
 func decodeRevokeCerts(_ context.Context, r *http.Request) (interface{}, error) {
 	req := revokeReq{
-		token:    apiutil.ExtractBearerToken(r),
-		serialID: bone.GetValue(r, apiutil.IDKey),
+		token:  apiutil.ExtractBearerToken(r),
+		serial: bone.GetValue(r, apiutil.IDKey),
 	}
 
 	return req, nil

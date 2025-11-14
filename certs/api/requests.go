@@ -55,24 +55,24 @@ func (req *listReq) validate() error {
 }
 
 type viewReq struct {
-	serialID string
-	token    string
+	serial string
+	token  string
 }
 
 func (req *viewReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
-	if req.serialID == "" {
-		return apiutil.ErrMissingSerialID
+	if req.serial == "" {
+		return apiutil.ErrMissingSerial
 	}
 
 	return nil
 }
 
 type revokeReq struct {
-	token    string
-	serialID string
+	token  string
+	serial string
 }
 
 func (req *revokeReq) validate() error {
@@ -80,8 +80,8 @@ func (req *revokeReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.serialID == "" {
-		return apiutil.ErrMissingSerialID
+	if req.serial == "" {
+		return apiutil.ErrMissingSerial
 	}
 
 	return nil

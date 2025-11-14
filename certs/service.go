@@ -46,13 +46,13 @@ type Service interface {
 	ListSerials(ctx context.Context, token, thingID string, offset, limit uint64) (Page, error)
 
 	// ViewCert retrieves the certificate issued for a given serial ID.
-	ViewCert(ctx context.Context, token, serialID string) (Cert, error)
+	ViewCert(ctx context.Context, token, serial string) (Cert, error)
 
 	// RevokeCert revokes a certificate for a given serial ID.
-	RevokeCert(ctx context.Context, token, serialID string) (Revoke, error)
+	RevokeCert(ctx context.Context, token, serial string) (Revoke, error)
 
 	// RenewCert extends the expiration date of a certificate.
-	RenewCert(ctx context.Context, token, serialID string) (Cert, error)
+	RenewCert(ctx context.Context, token, serial string) (Cert, error)
 }
 
 // Config defines the service parameters
@@ -148,7 +148,7 @@ func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, tt
 	return c, nil
 }
 
-func (cs *certsService) RevokeCert(ctx context.Context, token, serialID string) (Revoke, error) {
+func (cs *certsService) RevokeCert(ctx context.Context, token, serial string) (Revoke, error) {
 	var revoke Revoke
 
 	_, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
@@ -156,12 +156,12 @@ func (cs *certsService) RevokeCert(ctx context.Context, token, serialID string) 
 		return revoke, err
 	}
 
-	_, err = cs.certsRepo.RetrieveBySerial(ctx, serialID)
+	_, err = cs.certsRepo.RetrieveBySerial(ctx, serial)
 	if err != nil {
 		return revoke, errors.Wrap(ErrFailedCertRevocation, err)
 	}
 
-	if err = cs.certsRepo.Remove(ctx, serialID); err != nil {
+	if err = cs.certsRepo.Remove(ctx, serial); err != nil {
 		return revoke, errors.Wrap(errFailedToRemoveCertFromDB, err)
 	}
 
@@ -192,13 +192,13 @@ func (cs *certsService) ListSerials(ctx context.Context, token, thingID string, 
 	return cs.certsRepo.RetrieveByThing(ctx, thingID, offset, limit)
 }
 
-func (cs *certsService) ViewCert(ctx context.Context, token, serialID string) (Cert, error) {
+func (cs *certsService) ViewCert(ctx context.Context, token, serial string) (Cert, error) {
 	_, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
 		return Cert{}, err
 	}
 
-	cert, err := cs.certsRepo.RetrieveBySerial(ctx, serialID)
+	cert, err := cs.certsRepo.RetrieveBySerial(ctx, serial)
 	if err != nil {
 		return Cert{}, err
 	}
@@ -206,13 +206,13 @@ func (cs *certsService) ViewCert(ctx context.Context, token, serialID string) (C
 	return cert, nil
 }
 
-func (cs *certsService) RenewCert(ctx context.Context, token, serialID string) (Cert, error) {
+func (cs *certsService) RenewCert(ctx context.Context, token, serial string) (Cert, error) {
 	_, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
 		return Cert{}, err
 	}
 
-	oldCert, err := cs.certsRepo.RetrieveBySerial(ctx, serialID)
+	oldCert, err := cs.certsRepo.RetrieveBySerial(ctx, serial)
 	if err != nil {
 		return Cert{}, err
 	}

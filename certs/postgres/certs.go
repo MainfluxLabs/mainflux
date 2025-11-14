@@ -90,8 +90,8 @@ func (cr certsRepository) Save(ctx context.Context, cert certs.Cert) (string, er
 	return cert.Serial, nil
 }
 
-func (cr certsRepository) Remove(ctx context.Context, serialID string) error {
-	cert, err := cr.RetrieveBySerial(ctx, serialID)
+func (cr certsRepository) Remove(ctx context.Context, serial string) error {
+	cert, err := cr.RetrieveBySerial(ctx, serial)
 	if err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
@@ -105,7 +105,7 @@ func (cr certsRepository) Remove(ctx context.Context, serialID string) error {
 	q := `INSERT INTO revoked_certs (serial, thing_id, revoked_at) 
 	            VALUES (:serial, :thing_id, NOW())`
 	revokeParams := map[string]interface{}{
-		"serial":   serialID,
+		"serial":   serial,
 		"thing_id": cert.ThingID,
 	}
 	if _, err := tx.NamedExecContext(ctx, q, revokeParams); err != nil {
@@ -114,7 +114,7 @@ func (cr certsRepository) Remove(ctx context.Context, serialID string) error {
 
 	q = `DELETE FROM certs WHERE serial = :serial`
 	deleteParams := map[string]interface{}{
-		"serial": serialID,
+		"serial": serial,
 	}
 	if _, err := tx.NamedExecContext(ctx, q, deleteParams); err != nil {
 		return cr.handlePgError(err, dbutil.ErrRemoveEntity)
@@ -190,12 +190,12 @@ func (cr certsRepository) RetrieveByThing(ctx context.Context, thingID string, o
 	}, nil
 }
 
-func (cr certsRepository) RetrieveBySerial(ctx context.Context, serialID string) (certs.Cert, error) {
+func (cr certsRepository) RetrieveBySerial(ctx context.Context, serial string) (certs.Cert, error) {
 	q := `SELECT thing_id, serial, expire, client_cert, client_key, issuing_ca, 
 	      ca_chain, private_key_type FROM certs WHERE serial = :serial`
 
 	params := map[string]interface{}{
-		"serial": serialID,
+		"serial": serial,
 	}
 
 	rows, err := cr.db.NamedQueryContext(ctx, q, params)

@@ -88,27 +88,27 @@ func (c *certsRepoMock) RetrieveAll(ctx context.Context, offset, limit uint64) (
 	return page, nil
 }
 
-func (c *certsRepoMock) Remove(ctx context.Context, serialID string) error {
+func (c *certsRepoMock) Remove(ctx context.Context, serial string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	cert, ok := c.certsBySerial[serialID]
+	cert, ok := c.certsBySerial[serial]
 	if !ok {
 		return dbutil.ErrNotFound
 	}
 
 	thingID := cert.ThingID
-	delete(c.certsBySerial, serialID)
+	delete(c.certsBySerial, serial)
 
-	c.revokedCerts[serialID] = certs.RevokedCert{
-		Serial:    serialID,
+	c.revokedCerts[serial] = certs.RevokedCert{
+		Serial:    serial,
 		ThingID:   thingID,
 		RevokedAt: time.Now(),
 	}
 
 	if thingCerts, ok := c.certsByThing[thingID]; ok {
 		for i, tc := range thingCerts {
-			if tc.Serial == serialID {
+			if tc.Serial == serial {
 				c.certsByThing[thingID] = append(thingCerts[:i], thingCerts[i+1:]...)
 				break
 			}
@@ -152,11 +152,11 @@ func (c *certsRepoMock) RetrieveByThing(ctx context.Context, thingID string, off
 	return page, nil
 }
 
-func (c *certsRepoMock) RetrieveBySerial(ctx context.Context, serialID string) (certs.Cert, error) {
+func (c *certsRepoMock) RetrieveBySerial(ctx context.Context, serial string) (certs.Cert, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	crt, ok := c.certsBySerial[serialID]
+	crt, ok := c.certsBySerial[serial]
 	if !ok {
 		return certs.Cert{}, dbutil.ErrNotFound
 	}

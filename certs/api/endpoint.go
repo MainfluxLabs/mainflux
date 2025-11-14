@@ -69,7 +69,7 @@ func viewCertEndpoint(svc certs.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		cert, err := svc.ViewCert(ctx, req.token, req.serialID)
+		cert, err := svc.ViewCert(ctx, req.token, req.serial)
 		if err != nil {
 			return certsPageRes{}, err
 		}
@@ -91,7 +91,7 @@ func revokeCertEndpoint(svc certs.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
-		return svc.RevokeCert(ctx, req.token, req.serialID)
+		return svc.RevokeCert(ctx, req.token, req.serial)
 	}
 }
 
@@ -102,7 +102,7 @@ func renewCertEndpoint(svc certs.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		cert, err := svc.RenewCert(ctx, req.token, req.serialID)
+		cert, err := svc.RenewCert(ctx, req.token, req.serial)
 		if err != nil {
 			return certsRes{}, err
 		}
