@@ -67,7 +67,7 @@ func (lm *loggingMiddleware) ListSerials(ctx context.Context, token, thingID str
 
 func (lm *loggingMiddleware) ViewCert(ctx context.Context, token, serial string) (c certs.Cert, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_cert for serial id %s took %s to complete", serial, time.Since(begin))
+		message := fmt.Sprintf("Method view_cert for serial %s took %s to complete", serial, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
