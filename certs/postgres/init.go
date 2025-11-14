@@ -61,8 +61,8 @@ func migrateDB(db *sqlx.DB) error {
 				Id: "certs_1",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS certs (
-						thing_id         TEXT NOT NULL,
-						serial           TEXT NOT NULL,
+						thing_id         UUID NOT NULL,
+						serial           VARCHAR(64) NOT NULL UNIQUE,
 						expires_at       TIMESTAMPTZ NOT NULL,
 						client_cert      TEXT NOT NULL,
 						client_key       TEXT NOT NULL,
