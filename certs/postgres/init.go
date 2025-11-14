@@ -75,8 +75,8 @@ func migrateDB(db *sqlx.DB) error {
 					`CREATE INDEX idx_certs_serial ON certs(serial);`,
 					`CREATE INDEX idx_certs_expire ON certs(expire);`,
 					`CREATE TABLE IF NOT EXISTS revoked_certs (
-						serial       TEXT PRIMARY KEY,
-						thing_id     TEXT NOT NULL,
+						thing_id         UUID NOT NULL,
+						serial           VARCHAR(64) NOT NULL UNIQUE,
 						revoked_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 					);`,
 					`CREATE INDEX idx_revoked_certs_thing_id ON revoked_certs(thing_id);`,
