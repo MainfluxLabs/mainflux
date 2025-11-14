@@ -34,8 +34,8 @@ type Repository interface {
 	// RetrieveByThing retrieves issued certificates for a given thing ID
 	RetrieveByThing(ctx context.Context, thingID string, offset, limit uint64) (Page, error)
 
-	// RetrieveBySerial retrieves a certificate for a given serial ID
-	RetrieveBySerial(ctx context.Context, serialID string) (Cert, error)
+	// RetrieveBySerial retrieves a certificate for a given serial
+	RetrieveBySerial(ctx context.Context, serial string) (Cert, error)
 
 	// RetrieveRevokedCerts retrieves all revoked certificates
 	RetrieveRevokedCerts(ctx context.Context) ([]RevokedCert, error)
