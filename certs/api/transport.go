@@ -50,7 +50,7 @@ func MakeHandler(svc certs.Service, tracer opentracing.Tracer, pkiAgent pki.Agen
 	))
 
 	r.Get("/things/:id/serials", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_serials")(listSerialsEndpoint(svc)),
+		kitot.TraceServer(tracer, "list_serials")(listSerialsByThingEndpoint(svc)),
 		decodeListCerts,
 		encodeResponse,
 		opts...,
