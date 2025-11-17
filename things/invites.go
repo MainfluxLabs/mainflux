@@ -153,6 +153,10 @@ func (svc thingsService) CreateGroupInvite(ctx context.Context, token, email, ro
 		return GroupInvite{}, err
 	}
 
+	if err := svc.populateInviteInfo(ctx, &invite); err != nil {
+		return GroupInvite{}, err
+	}
+
 	go func() {
 		// TODO: fetch org name from auth service based on org id and use it in below call
 		svc.SendGroupInviteEmail(ctx, invite, email, "TEMP_ORG_NAME", invRedirectPath)
@@ -333,6 +337,7 @@ func (svc thingsService) ListGroupInvitesByGroup(ctx context.Context, token, gro
 
 func (svc thingsService) SendGroupInviteEmail(ctx context.Context, invite GroupInvite, email, orgName, invRedirectPath string) error {
 	to := []string{email}
+
 	return svc.email.SendGroupInvite(to, invite, orgName, invRedirectPath)
 }
 
