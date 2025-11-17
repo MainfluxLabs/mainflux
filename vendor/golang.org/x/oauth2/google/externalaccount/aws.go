@@ -5,6 +5,7 @@
 package externalaccount
 
 import (
+	"bytes"
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -13,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -26,7 +28,7 @@ import (
 
 // AwsSecurityCredentials models AWS security credentials.
 type AwsSecurityCredentials struct {
-	// AccessKeyID is the AWS Access Key ID - Required.
+	// AccessKeyId is the AWS Access Key ID - Required.
 	AccessKeyID string `json:"AccessKeyID"`
 	// SecretAccessKey is the AWS Secret Access Key - Required.
 	SecretAccessKey string `json:"SecretAccessKey"`
@@ -147,13 +149,13 @@ func canonicalHeaders(req *http.Request) (string, string) {
 	}
 	sort.Strings(headers)
 
-	var fullHeaders strings.Builder
+	var fullHeaders bytes.Buffer
 	for _, header := range headers {
 		headerValue := strings.Join(lowerCaseHeaders[header], ",")
 		fullHeaders.WriteString(header)
-		fullHeaders.WriteByte(':')
+		fullHeaders.WriteRune(':')
 		fullHeaders.WriteString(headerValue)
-		fullHeaders.WriteByte('\n')
+		fullHeaders.WriteRune('\n')
 	}
 
 	return strings.Join(headers, ";"), fullHeaders.String()
@@ -168,7 +170,7 @@ func requestDataHash(req *http.Request) (string, error) {
 		}
 		defer requestBody.Close()
 
-		requestData, err = io.ReadAll(io.LimitReader(requestBody, 1<<20))
+		requestData, err = ioutil.ReadAll(io.LimitReader(requestBody, 1<<20))
 		if err != nil {
 			return "", err
 		}
@@ -417,7 +419,7 @@ func (cs *awsCredentialSource) getAWSSessionToken() (string, error) {
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	respBody, err := ioutil.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
 		return "", err
 	}
@@ -460,7 +462,7 @@ func (cs *awsCredentialSource) getRegion(headers map[string]string) (string, err
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	respBody, err := ioutil.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
 		return "", err
 	}
@@ -518,6 +520,7 @@ func (cs *awsCredentialSource) getMetadataSecurityCredentials(roleName string, h
 	if err != nil {
 		return result, err
 	}
+	req.Header.Add("Content-Type", "application/json")
 
 	for name, value := range headers {
 		req.Header.Add(name, value)
@@ -529,7 +532,7 @@ func (cs *awsCredentialSource) getMetadataSecurityCredentials(roleName string, h
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	respBody, err := ioutil.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
 		return result, err
 	}
@@ -562,7 +565,7 @@ func (cs *awsCredentialSource) getMetadataRoleName(headers map[string]string) (s
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	respBody, err := ioutil.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
 		return "", err
 	}

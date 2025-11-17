@@ -24,8 +24,8 @@ const (
 	AllStatusKey      = "all"
 	rootAdminRole     = "root"
 	stateKey          = "state"
-	GoogleKey         = "google"
-	GitHubKey         = "github"
+	GoogleProvider    = "google"
+	GitHubProvider    = "github"
 )
 
 var (
@@ -436,11 +436,12 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 }
 
 func (svc usersService) OAuthLogin(provider string) string {
+	//its using google for github, fix it
 	var oauthCfg oauth2.Config
 	switch provider {
-	case GoogleKey:
+	case GoogleProvider:
 		oauthCfg = svc.googleOAuth
-	case GitHubKey:
+	case GitHubProvider:
 		oauthCfg = svc.githubOAuth
 	default:
 		return ""
@@ -455,10 +456,10 @@ func (svc usersService) OAuthCallback(ctx context.Context, provider, code string
 	var userInfoURL string
 
 	switch provider {
-	case GoogleKey:
+	case GoogleProvider:
 		oauth = svc.googleOAuth
 		userInfoURL = svc.urls.GoogleUserInfoURL
-	case GitHubKey:
+	case GitHubProvider:
 		oauth = svc.githubOAuth
 		userInfoURL = svc.urls.GitHubUserInfoURL
 	default:

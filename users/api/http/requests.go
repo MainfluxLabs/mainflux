@@ -20,6 +20,7 @@ const (
 	AscDir         = "asc"
 	DescDir        = "desc"
 	GoogleProvider = "google"
+	GithubProvider = "github"
 )
 
 var userPasswordRegex *regexp.Regexp
@@ -63,7 +64,7 @@ type oauthProviderReq struct {
 }
 
 func (req oauthProviderReq) validate() error {
-	if req.provider == "" || req.provider != GoogleProvider {
+	if req.provider == "" || (req.provider != GoogleProvider && req.provider != GithubProvider) {
 		return apiutil.ErrMissingProvider
 	}
 	return nil
@@ -75,7 +76,7 @@ type oauthProviderCodeReq struct {
 }
 
 func (req oauthProviderCodeReq) validate() error {
-	if req.provider == "" || req.provider != GoogleProvider {
+	if req.provider == "" || (req.provider != GoogleProvider && req.provider != GithubProvider) {
 		return apiutil.ErrMissingProvider
 	}
 
