@@ -42,7 +42,7 @@ func MakeHandler(svc certs.Service, tracer opentracing.Tracer, pkiAgent pki.Agen
 		opts...,
 	))
 
-	r.Delete("/certs/:id", kithttp.NewServer(
+	r.Delete("/certs/:serial", kithttp.NewServer(
 		kitot.TraceServer(tracer, "revoke_cert")(revokeCertEndpoint(svc)),
 		decodeRevokeCerts,
 		encodeResponse,
@@ -56,7 +56,7 @@ func MakeHandler(svc certs.Service, tracer opentracing.Tracer, pkiAgent pki.Agen
 		opts...,
 	))
 
-	r.Put("/certs/:id", kithttp.NewServer(
+	r.Put("/certs/:serial", kithttp.NewServer(
 		kitot.TraceServer(tracer, "renew_cert")(renewCertEndpoint(svc)),
 		decodeViewCert,
 		encodeResponse,
@@ -131,7 +131,7 @@ func decodeCerts(_ context.Context, r *http.Request) (interface{}, error) {
 func decodeRevokeCerts(_ context.Context, r *http.Request) (interface{}, error) {
 	req := revokeReq{
 		token:  apiutil.ExtractBearerToken(r),
-		serial: bone.GetValue(r, apiutil.IDKey),
+		serial: bone.GetValue(r, apiutil.SerialKey),
 	}
 
 	return req, nil
