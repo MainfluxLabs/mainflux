@@ -402,6 +402,11 @@ func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
 		return readers.JSONPageMetadata{}, err
 	}
 
+	d, err := apiutil.ReadStringQuery(r, apiutil.DirKey, apiutil.DescDir)
+	if err != nil {
+		return readers.JSONPageMetadata{}, err
+	}
+
 	pageMeta := readers.JSONPageMetadata{
 		Subtopic:    subtopic,
 		Protocol:    protocol,
@@ -410,6 +415,7 @@ func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
 		AggInterval: ai,
 		AggType:     at,
 		AggField:    af,
+		Dir:         d,
 	}
 
 	return pageMeta, nil
@@ -481,6 +487,11 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 		return readers.SenMLPageMetadata{}, err
 	}
 
+	d, err := apiutil.ReadStringQuery(r, apiutil.DirKey, apiutil.DescDir)
+	if err != nil {
+		return readers.SenMLPageMetadata{}, err
+	}
+
 	pageMeta := readers.SenMLPageMetadata{
 		Name:        name,
 		Subtopic:    subtopic,
@@ -495,6 +506,7 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 		AggInterval: ai,
 		AggType:     at,
 		AggField:    af,
+		Dir:         d,
 	}
 
 	return pageMeta, nil

@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"go.mongodb.org/mongo-driver/bson"
@@ -81,8 +82,12 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	coll := jr.db.Collection(jsonCollection)
 	filter := jr.fmtCondition(rpm)
+	dir := 1
+	if rpm.Dir == apiutil.DescDir {
+		dir = -1
+	}
 
-	sortMap := bson.D{{Key: jsonOrder, Value: -1}}
+	sortMap := bson.D{{Key: jsonOrder, Value: dir}}
 
 	findOpts := options.Find().SetSort(sortMap)
 	if rpm.Limit != noLimit {
