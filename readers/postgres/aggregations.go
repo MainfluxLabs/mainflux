@@ -413,13 +413,17 @@ func (countStrt CountStrategy) GetAggregateExpression(config QueryConfig) string
 
 func buildTimeIntervals(config QueryConfig) string {
 	dq := dbutil.GetDirQuery(config.Dir)
+	lq := fmt.Sprintf("LIMIT %d", config.Limit)
+	if config.Limit <= 0 {
+		lq = ""
+	}
 	return fmt.Sprintf(`
         SELECT DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000)) as interval_time
         FROM %s 
         %s
-        ORDER BY interval_time %s
-        LIMIT %d`,
-		config.AggInterval, config.TimeColumn, config.Table, config.Condition, dq, config.Limit)
+        ORDER BY interval_time %s 
+		%s`,
+		config.AggInterval, config.TimeColumn, config.Table, config.Condition, dq, lq)
 }
 
 func buildTimeJoinCondition(config QueryConfig, tableAlias string) string {
