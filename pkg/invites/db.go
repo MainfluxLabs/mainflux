@@ -23,6 +23,8 @@ type DbInvite struct {
 	State         string         `db:"state"`
 }
 
+// InviteRepository specifies a set of common method shared between repositories of both different kinds of invites (group & org) - saving, updating, removing,
+// changing state, etc..
 type InviteRepository[T Invitable] interface {
 	SaveInvites(ctx context.Context, invites ...T) error
 	RetrieveInviteByID(ctx context.Context, inviteID string) (T, error)
@@ -32,6 +34,7 @@ type InviteRepository[T Invitable] interface {
 	RetrieveInvitesByUser(ctx context.Context, userType, userID string, pm PageMetadataInvites) (InvitesPage[T], error)
 }
 
+// CommonInviteRepository is a generic implementation of InviteRepository.
 type CommonInviteRepository[T Invitable] struct {
 	Db dbutil.Database
 }
