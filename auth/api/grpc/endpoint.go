@@ -80,17 +80,17 @@ func authorizeEndpoint(svc auth.Service) endpoint.Endpoint {
 
 func getOwnerIDByOrgIDEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(ownerIDByOrgIDReq)
+		req := request.(orgIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
 		ownerID, err := svc.GetOwnerIDByOrgID(ctx, req.orgID)
 		if err != nil {
-			return ownerIDByOrgIDReq{}, err
+			return orgIDReq{}, err
 		}
 
-		return ownerIDByOrgIDRes{ownerID: ownerID}, nil
+		return ownerIDRes{ownerID: ownerID}, nil
 	}
 }
 

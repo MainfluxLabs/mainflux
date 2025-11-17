@@ -52,7 +52,7 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 		),
 		getOwnerIDByOrgID: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "get_owner_id_by_org_id")(getOwnerIDByOrgIDEndpoint(svc)),
-			decodeGetOwnerIDByOrgIDRequest,
+			decodeOrgIDRequest,
 			encodeGetOwnerIDByOrgIDResponse,
 		),
 		assignRole: kitgrpc.NewServer(
@@ -198,13 +198,13 @@ func decodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}
 	return authReq{Token: req.GetToken(), Object: req.GetObject(), Subject: req.GetSubject(), Action: req.GetAction()}, nil
 }
 
-func decodeGetOwnerIDByOrgIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func decodeOrgIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*protomfx.OrgID)
-	return ownerIDByOrgIDReq{orgID: req.GetValue()}, nil
+	return orgIDReq{orgID: req.GetValue()}, nil
 }
 
 func encodeGetOwnerIDByOrgIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
-	res := grpcRes.(ownerIDByOrgIDRes)
+	res := grpcRes.(ownerIDRes)
 	return &protomfx.OwnerID{Value: res.ownerID}, nil
 }
 

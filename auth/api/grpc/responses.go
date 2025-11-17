@@ -20,7 +20,7 @@ type retrieveRoleRes struct {
 	role string
 }
 
-type ownerIDByOrgIDRes struct {
+type ownerIDRes struct {
 	ownerID string
 }
 

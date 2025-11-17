@@ -65,11 +65,11 @@ func (req authReq) validate() error {
 	return nil
 }
 
-type ownerIDByOrgIDReq struct {
+type orgIDReq struct {
 	orgID string
 }
 
-func (req ownerIDByOrgIDReq) validate() error {
+func (req orgIDReq) validate() error {
 	if req.orgID == "" {
 		return apiutil.ErrMissingOrgID
 	}

@@ -66,8 +66,8 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			conn,
 			svcName,
 			"GetOwnerIDByOrgID",
-			encodeGetOwnerIDByOrgIDRequest,
-			decodeGetOwnerIDByOrgIDResponse,
+			encodeOrgIDRequest,
+			decodeOwnerIDResponse,
 			protomfx.OwnerID{},
 		).Endpoint()),
 		retrieveRole: kitot.TraceClient(tracer, "retrieve_role")(kitgrpc.NewClient(
@@ -188,23 +188,23 @@ func (client grpcClient) GetOwnerIDByOrgID(ctx context.Context, req *protomfx.Or
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := client.getOwnerIDByOrgID(ctx, ownerIDByOrgIDReq{orgID: req.GetValue()})
+	res, err := client.getOwnerIDByOrgID(ctx, orgIDReq{orgID: req.GetValue()})
 	if err != nil {
 		return nil, err
 	}
 
-	oid := res.(ownerIDByOrgIDRes)
+	oid := res.(ownerIDRes)
 	return &protomfx.OwnerID{Value: oid.ownerID}, nil
 }
 
-func encodeGetOwnerIDByOrgIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(ownerIDByOrgIDReq)
+func encodeOrgIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(orgIDReq)
 	return &protomfx.OrgID{Value: req.orgID}, nil
 }
 
-func decodeGetOwnerIDByOrgIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+func decodeOwnerIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(*protomfx.OwnerID)
-	return ownerIDByOrgIDRes{ownerID: res.GetValue()}, nil
+	return ownerIDRes{ownerID: res.GetValue()}, nil
 }
 
 func (client grpcClient) AssignRole(ctx context.Context, req *protomfx.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
