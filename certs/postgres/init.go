@@ -73,7 +73,7 @@ func migrateDB(db *sqlx.DB) error {
 						PRIMARY KEY      (thing_id, serial)
 					);`,
 					`CREATE INDEX idx_certs_serial ON certs(serial);`,
-					`CREATE INDEX idx_certs_expire ON certs(expire);`,
+					`CREATE INDEX idx_certs_expires_at ON certs(expires_at);`,
 					`CREATE TABLE IF NOT EXISTS revoked_certs (
 						thing_id         UUID NOT NULL,
 						serial           VARCHAR(64) NOT NULL UNIQUE,
