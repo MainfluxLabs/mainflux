@@ -29,6 +29,7 @@ const (
 	DirKey                 = "dir"
 	MetadataKey            = "metadata"
 	IDKey                  = "id"
+	SerialKey              = "serial"
 	EmailKey               = "email"
 	PayloadKey             = "payload"
 	SubtopicKey            = "subtopic"

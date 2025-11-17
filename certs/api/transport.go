@@ -35,7 +35,7 @@ func MakeHandler(svc certs.Service, tracer opentracing.Tracer, pkiAgent pki.Agen
 		opts...,
 	))
 
-	r.Get("/certs/:id", kithttp.NewServer(
+	r.Get("/certs/:serial", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_cert")(viewCertEndpoint(svc)),
 		decodeViewCert,
 		encodeResponse,
@@ -109,7 +109,7 @@ func decodeListSerialsByThing(_ context.Context, r *http.Request) (interface{}, 
 func decodeViewCert(_ context.Context, r *http.Request) (interface{}, error) {
 	req := viewReq{
 		token:  apiutil.ExtractBearerToken(r),
-		serial: bone.GetValue(r, apiutil.IDKey),
+		serial: bone.GetValue(r, apiutil.SerialKey),
 	}
 
 	return req, nil
