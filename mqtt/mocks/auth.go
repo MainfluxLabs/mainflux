@@ -67,6 +67,10 @@ func (svc authServiceMock) ViewOrgMembership(_ context.Context, _ *protomfx.View
 	panic("not implemented")
 }
 
+func (svc authServiceMock) ViewOrg(_ context.Context, _ *protomfx.ViewOrgReq, _ ...grpc.CallOption) (r *protomfx.Org, err error) {
+	panic("not implemented")
+}
+
 func (svc authServiceMock) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
 	panic("not implemented")
 }

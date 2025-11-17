@@ -29,6 +29,7 @@ type grpcClient struct {
 	getOwnerIDByOrgID      endpoint.Endpoint
 	retrieveRole           endpoint.Endpoint
 	viewOrgMembership      endpoint.Endpoint
+	viewOrg                endpoint.Endpoint
 	assignRole             endpoint.Endpoint
 	createDormantOrgInvite endpoint.Endpoint
 	activateOrgInvite      endpoint.Endpoint
@@ -85,6 +86,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			encodeViewOrgMembershipRequest,
 			decodeOrgMembershipResponse,
 			protomfx.OrgMembership{},
+		).Endpoint()),
+		viewOrg: kitot.TraceClient(tracer, "view_org")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"ViewOrg",
+			encodeViewOrgRequest,
+			decodeOrgResponse,
+			protomfx.Org{},
 		).Endpoint()),
 		assignRole: kitot.TraceClient(tracer, "assign_role")(kitgrpc.NewClient(
 			conn,
@@ -290,6 +299,48 @@ func decodeOrgMembershipResponse(_ context.Context, grpcRes interface{}) (interf
 		orgID:    res.GetOrgID(),
 		memberID: res.GetMemberID(),
 		role:     res.GetRole(),
+	}, nil
+}
+
+func (client grpcClient) ViewOrg(ctx context.Context, req *protomfx.ViewOrgReq, _ ...grpc.CallOption) (r *protomfx.Org, err error) {
+	ctx, close := context.WithTimeout(ctx, client.timeout)
+	defer close()
+
+	res, err := client.viewOrg(ctx, viewOrgReq{
+		token: req.GetToken(),
+		id:    req.GetId().GetValue(),
+	})
+
+	if err != nil {
+		return &protomfx.Org{}, err
+	}
+
+	rr := res.(orgRes)
+	return &protomfx.Org{
+		Id:          rr.id,
+		OwnerID:     rr.ownerID,
+		Name:        rr.name,
+		Description: rr.description,
+	}, nil
+}
+
+func encodeViewOrgRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(viewOrgReq)
+	return &protomfx.ViewOrgReq{
+		Token: req.token,
+		Id: &protomfx.OrgID{
+			Value: req.id,
+		},
+	}, nil
+}
+
+func decodeOrgResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+	res := grpcRes.(*protomfx.Org)
+	return orgRes{
+		id:          res.GetId(),
+		ownerID:     res.GetOwnerID(),
+		name:        res.GetName(),
+		description: res.GetDescription(),
 	}, nil
 }
 

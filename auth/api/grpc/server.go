@@ -27,6 +27,7 @@ type grpcServer struct {
 	getOwnerIDByOrgID      kitgrpc.Handler
 	assignRole             kitgrpc.Handler
 	retrieveRole           kitgrpc.Handler
+	viewOrg                kitgrpc.Handler
 	viewOrgMembership      kitgrpc.Handler
 	createDormantOrgInvite kitgrpc.Handler
 	activateOrgInvite      kitgrpc.Handler
@@ -74,6 +75,11 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			kitot.TraceServer(tracer, "activate_org_invite")(activateOrgInviteEndpoint(svc)),
 			decodeActivateOrgInviteRequest,
 			encodeEmptyResponse,
+		),
+		viewOrg: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "view_org")(viewOrgEndpoint(svc)),
+			decodeViewOrgRequest,
+			encodeOrgResponse,
 		),
 		viewOrgMembership: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "view_org_membership")(viewOrgMembershipEndpoint(svc)),
@@ -130,6 +136,15 @@ func (s *grpcServer) RetrieveRole(ctx context.Context, req *protomfx.RetrieveRol
 		return nil, encodeError(err)
 	}
 	return res.(*protomfx.RetrieveRoleRes), nil
+}
+
+func (s *grpcServer) ViewOrg(ctx context.Context, req *protomfx.ViewOrgReq) (*protomfx.Org, error) {
+	_, res, err := s.viewOrg.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*protomfx.Org), nil
 }
 
 func (s *grpcServer) ViewOrgMembership(ctx context.Context, req *protomfx.ViewOrgMembershipReq) (*protomfx.OrgMembership, error) {
@@ -242,6 +257,24 @@ func encodeOrgMembershipResponse(_ context.Context, grpcRes interface{}) (interf
 		MemberID: res.memberID,
 		OrgID:    res.orgID,
 		Role:     res.role,
+	}, nil
+}
+
+func decodeViewOrgRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(*protomfx.ViewOrgReq)
+	return viewOrgReq{
+		token: req.GetToken(),
+		id:    req.GetId().GetValue(),
+	}, nil
+}
+
+func encodeOrgResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+	res := grpcRes.(orgRes)
+	return &protomfx.Org{
+		Id:          res.id,
+		OwnerID:     res.ownerID,
+		Name:        res.name,
+		Description: res.description,
 	}, nil
 }
 

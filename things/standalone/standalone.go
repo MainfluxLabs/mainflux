@@ -65,6 +65,10 @@ func (repo singleUserRepo) ViewOrgMembership(ctx context.Context, req *protomfx.
 	return &protomfx.OrgMembership{}, errUnsupported
 }
 
+func (svc singleUserRepo) ViewOrg(_ context.Context, _ *protomfx.ViewOrgReq, _ ...grpc.CallOption) (r *protomfx.Org, err error) {
+	panic("not implemented")
+}
+
 func (repo singleUserRepo) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
 	panic("not implemented")
 }

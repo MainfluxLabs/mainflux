@@ -152,6 +152,28 @@ func viewOrgMembershipEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func viewOrgEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(viewOrgReq)
+
+		if err := req.validate(); err != nil {
+			return orgRes{}, nil
+		}
+
+		org, err := svc.ViewOrg(ctx, req.token, req.id)
+		if err != nil {
+			return orgRes{}, err
+		}
+
+		return orgRes{
+			id:          org.ID,
+			ownerID:     org.OwnerID,
+			name:        org.Name,
+			description: org.Description,
+		}, nil
+	}
+}
+
 func createDormantOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(createDormantOrgInviteReq)
