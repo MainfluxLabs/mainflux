@@ -157,9 +157,19 @@ func (svc thingsService) CreateGroupInvite(ctx context.Context, token, email, ro
 		return GroupInvite{}, err
 	}
 
+	org, err := svc.auth.ViewOrg(ctx, &protomfx.ViewOrgReq{
+		Token: token,
+		Id: &protomfx.OrgID{
+			Value: group.OrgID,
+		},
+	})
+
+	if err != nil {
+		return GroupInvite{}, err
+	}
+
 	go func() {
-		// TODO: fetch org name from auth service based on org id and use it in below call
-		svc.SendGroupInviteEmail(ctx, invite, email, "TEMP_ORG_NAME", invRedirectPath)
+		svc.SendGroupInviteEmail(ctx, invite, email, org.Name, invRedirectPath)
 	}()
 
 	return invite, nil
