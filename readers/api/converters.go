@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -35,7 +36,6 @@ var jsonHeader = []string{
 	"subtopic",
 	"publisher",
 	"protocol",
-	"payload",
 }
 
 func GenerateCSVFromSenML(page readers.SenMLMessagesPage) ([]byte, error) {
@@ -81,49 +81,92 @@ func GenerateCSVFromJSON(page readers.JSONMessagesPage) ([]byte, error) {
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
 
-	if err := writer.Write(jsonHeader); err != nil {
+	payloadKeys := make(map[string]struct{})
+	flattenedPayloads := make([]map[string]interface{}, 0, len(page.MessagesPage.Messages))
+
+	for _, msg := range page.MessagesPage.Messages {
+		m, ok := msg.(map[string]interface{})
+		if !ok {
+			flattenedPayloads = append(flattenedPayloads, nil)
+			continue
+		}
+
+		flatPayload := map[string]interface{}{}
+		if p, ok := m["payload"].(map[string]interface{}); ok {
+			flattenPayload("", p, flatPayload)
+			for k := range flatPayload {
+				payloadKeys[k] = struct{}{}
+			}
+		}
+
+		flattenedPayloads = append(flattenedPayloads, flatPayload)
+	}
+
+	sortedKeys := make([]string, 0, len(payloadKeys))
+	for k := range payloadKeys {
+		sortedKeys = append(sortedKeys, k)
+	}
+	sort.Strings(sortedKeys)
+
+	header := append([]string{}, jsonHeader...)
+	header = append(header, sortedKeys...)
+	if err := writer.Write(header); err != nil {
 		return nil, err
 	}
 
-	for _, msg := range page.MessagesPage.Messages {
-		if m, ok := msg.(map[string]interface{}); ok {
-			created := ""
-			if v, ok := m["created"].(int64); ok {
-				created = formatTimeNs(v, page.JSONPageMetadata.TimeFormat)
-			}
+	for i, msg := range page.MessagesPage.Messages {
+		m, _ := msg.(map[string]interface{})
 
-			subtopic := getStringValue(m, "subtopic")
-			publisher := getStringValue(m, "publisher")
-			protocol := getStringValue(m, "protocol")
+		created := ""
+		if v, ok := m["created"].(int64); ok {
+			created = formatTimeNs(v, page.JSONPageMetadata.TimeFormat)
+		}
 
-			payload := ""
-			if p, ok := m["payload"]; ok {
-				if payloadBytes, err := json.Marshal(p); err == nil {
-					payload = string(payloadBytes)
+		row := []string{
+			created,
+			getStringValue(m, "subtopic"),
+			getStringValue(m, "publisher"),
+			getStringValue(m, "protocol"),
+		}
+
+		flatPayload := flattenedPayloads[i]
+		for _, key := range sortedKeys {
+			if val, ok := flatPayload[key]; ok {
+				switch v := val.(type) {
+				case string:
+					row = append(row, v)
+				default:
+					b, _ := json.Marshal(v)
+					row = append(row, string(b))
 				}
+			} else {
+				row = append(row, "")
 			}
+		}
 
-			row := []string{
-				created,
-				subtopic,
-				publisher,
-				protocol,
-				payload,
-			}
-
-			if err := writer.Write(row); err != nil {
-				return nil, err
-			}
+		if err := writer.Write(row); err != nil {
+			return nil, err
 		}
 	}
 
 	writer.Flush()
-	if err := writer.Error(); err != nil {
-		return nil, err
+	return buf.Bytes(), writer.Error()
+}
+
+func flattenPayload(prefix string, in map[string]interface{}, out map[string]interface{}) {
+	for k, v := range in {
+		key := k
+		if prefix != "" {
+			key = prefix + "." + k
+		}
+
+		if child, ok := v.(map[string]interface{}); ok {
+			flattenPayload(key, child, out)
+			continue
+		}
+
+		out[key] = v
 	}
-
-	return buf.Bytes(), nil
-
 }
 
 func getStringValue(m map[string]interface{}, key string) string {
