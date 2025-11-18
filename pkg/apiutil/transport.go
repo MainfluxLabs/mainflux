@@ -29,6 +29,7 @@ const (
 	DirKey                 = "dir"
 	MetadataKey            = "metadata"
 	IDKey                  = "id"
+	SerialKey              = "serial"
 	EmailKey               = "email"
 	PayloadKey             = "payload"
 	SubtopicKey            = "subtopic"
@@ -92,7 +93,7 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrInvalidOrder),
 			errors.Contains(err, ErrInvalidDirection),
 			errors.Contains(err, ErrEmptyList),
-			errors.Contains(err, ErrMissingCertID),
+			errors.Contains(err, ErrMissingSerial),
 			errors.Contains(err, ErrMissingCertData),
 			errors.Contains(err, ErrInvalidContact),
 			errors.Contains(err, ErrMissingEmail),
@@ -191,7 +192,7 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrInvalidOrder),
 		errors.Contains(err, ErrInvalidDirection),
 		errors.Contains(err, ErrEmptyList),
-		errors.Contains(err, ErrMissingCertID),
+		errors.Contains(err, ErrMissingSerial),
 		errors.Contains(err, ErrMissingCertData),
 		errors.Contains(err, ErrInvalidContact),
 		errors.Contains(err, ErrMissingEmail),
