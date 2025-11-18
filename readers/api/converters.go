@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
+	"time"
 
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
@@ -36,7 +38,7 @@ var jsonHeader = []string{
 	"payload",
 }
 
-func GenerateCSVFromSenML(page readers.MessagesPage) ([]byte, error) {
+func GenerateCSVFromSenML(page readers.SenMLMessagesPage) ([]byte, error) {
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
 
@@ -44,7 +46,7 @@ func GenerateCSVFromSenML(page readers.MessagesPage) ([]byte, error) {
 		return nil, err
 	}
 
-	for _, msg := range page.Messages {
+	for _, msg := range page.MessagesPage.Messages {
 		if m, ok := msg.(senml.Message); ok {
 			row := []string{
 				m.Subtopic,
@@ -57,7 +59,7 @@ func GenerateCSVFromSenML(page readers.MessagesPage) ([]byte, error) {
 				getValue(m.BoolValue, ""),
 				getValue(m.DataValue, ""),
 				getValue(m.Sum, ""),
-				fmt.Sprintf("%v", m.Time),
+				formatTimeNs(m.Time, page.SenMLPageMetadata.TimeFormat),
 				fmt.Sprintf("%v", m.UpdateTime),
 			}
 
@@ -75,7 +77,7 @@ func GenerateCSVFromSenML(page readers.MessagesPage) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func GenerateCSVFromJSON(page readers.MessagesPage) ([]byte, error) {
+func GenerateCSVFromJSON(page readers.JSONMessagesPage) ([]byte, error) {
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
 
@@ -83,11 +85,11 @@ func GenerateCSVFromJSON(page readers.MessagesPage) ([]byte, error) {
 		return nil, err
 	}
 
-	for _, msg := range page.Messages {
+	for _, msg := range page.MessagesPage.Messages {
 		if m, ok := msg.(map[string]interface{}); ok {
 			created := ""
 			if v, ok := m["created"].(int64); ok {
-				created = fmt.Sprintf("%v", v)
+				created = formatTimeNs(v, page.JSONPageMetadata.TimeFormat)
 			}
 
 			subtopic := getStringValue(m, "subtopic")
@@ -149,17 +151,77 @@ func getValue(ptr interface{}, defaultValue string) string {
 	return defaultValue
 }
 
-func GenerateJSON(page readers.MessagesPage) ([]byte, error) {
-	if page.Total == 0 {
+func formatTimeNs(ns int64, timeFormat string) string {
+	if strings.ToLower(timeFormat) == "rfc3339" {
+		return time.Unix(0, ns).UTC().Format(time.RFC3339)
+	}
+	return fmt.Sprintf("%v", ns)
+}
+
+func GenerateJSONFromJSON(page readers.JSONMessagesPage) ([]byte, error) {
+	if page.MessagesPage.Total == 0 {
 		return []byte("[]"), nil
 	}
 
-	data, err := json.Marshal(page.Messages)
+	for _, m := range page.MessagesPage.Messages {
+		if msgMap, ok := m.(map[string]interface{}); ok {
+			if v, ok := msgMap["created"].(int64); ok {
+				msgMap["created"] = formatTimeNs(v, page.JSONPageMetadata.TimeFormat)
+			}
+		}
+	}
+
+	data, err := json.Marshal(page.MessagesPage.Messages)
 	if err != nil {
 		return nil, err
 	}
 
 	return data, nil
+}
+
+func GenerateJSONFromSenML(page readers.SenMLMessagesPage) ([]byte, error) {
+	if page.MessagesPage.Total == 0 {
+		return []byte("[]"), nil
+	}
+
+	out := make([]map[string]interface{}, 0, len(page.MessagesPage.Messages))
+	for _, msg := range page.MessagesPage.Messages {
+		if m, ok := msg.(senml.Message); ok {
+			msgMap := map[string]interface{}{
+				"value":     m.Value,
+				"publisher": m.Publisher,
+				"protocol":  m.Protocol,
+				"name":      m.Name,
+				"time":      formatTimeNs(m.Time, page.SenMLPageMetadata.TimeFormat),
+			}
+
+			if m.Subtopic != "" {
+				msgMap["subtopic"] = m.Subtopic
+			}
+			if m.Unit != "" {
+				msgMap["unit"] = m.Unit
+			}
+			if m.UpdateTime != 0 {
+				msgMap["update_time"] = m.UpdateTime
+			}
+			if m.StringValue != nil {
+				msgMap["string_value"] = *m.StringValue
+			}
+			if m.BoolValue != nil {
+				msgMap["bool_value"] = *m.BoolValue
+			}
+			if m.DataValue != nil {
+				msgMap["data_value"] = *m.DataValue
+			}
+			if m.Sum != nil {
+				msgMap["sum"] = *m.Sum
+			}
+
+			out = append(out, msgMap)
+		}
+	}
+
+	return json.Marshal(out)
 }
 
 func ConvertJSONToJSONMessages(data []byte) ([]mfjson.Message, error) {

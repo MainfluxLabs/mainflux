@@ -97,6 +97,7 @@ type SenMLPageMetadata struct {
 	AggType     string  `json:"agg_type,omitempty"`
 	AggField    string  `json:"agg_field,omitempty"`
 	Dir         string  `json:"dir,omitempty"`
+	TimeFormat  string  `json:"time_format,omitempty"`
 }
 
 // JSONPageMetadata represents the parameters used to create database queries
@@ -113,6 +114,7 @@ type JSONPageMetadata struct {
 	AggType     string `json:"agg_type,omitempty"`
 	AggField    string `json:"agg_field,omitempty"`
 	Dir         string `json:"dir,omitempty"`
+	TimeFormat  string `json:"time_format,omitempty"`
 }
 
 // ParseValueComparator convert comparison operator keys into mathematic anotation

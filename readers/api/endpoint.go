@@ -99,11 +99,11 @@ func backupJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 		var data []byte
 		switch req.convertFormat {
 		case jsonFormat:
-			if data, err = GenerateJSON(page.MessagesPage); err != nil {
+			if data, err = GenerateJSONFromJSON(page); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
 		default:
-			if data, err = GenerateCSVFromJSON(page.MessagesPage); err != nil {
+			if data, err = GenerateCSVFromJSON(page); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
 		}
@@ -130,11 +130,11 @@ func backupSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 		var data []byte
 		switch req.convertFormat {
 		case jsonFormat:
-			if data, err = GenerateJSON(page.MessagesPage); err != nil {
+			if data, err = GenerateJSONFromSenML(page); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
 		default:
-			if data, err = GenerateCSVFromSenML(page.MessagesPage); err != nil {
+			if data, err = GenerateCSVFromSenML(page); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
 		}
