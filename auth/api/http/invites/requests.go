@@ -12,10 +12,14 @@ const (
 )
 
 type createOrgInviteReq struct {
-	token        string
-	orgID        string
-	Email        string `json:"email,omitempty"`
-	Role         string `json:"role,omitempty"`
+	token  string
+	orgID  string
+	Email  string `json:"email,omitempty"`
+	Role   string `json:"role,omitempty"`
+	Groups []struct {
+		GroupID string `json:"group_id"`
+		Role    string `json:"role"`
+	} `json:"groups,omitempty"`
 	RedirectPath string `json:"redirect_path,omitempty"`
 }
 
@@ -38,6 +42,16 @@ func (req createOrgInviteReq) validate() error {
 
 	if err := validateRole(req.Role); err != nil {
 		return err
+	}
+
+	for _, group := range req.Groups {
+		if group.GroupID == "" {
+			return apiutil.ErrMissingGroupID
+		}
+
+		if group.Role == "" {
+			return apiutil.ErrMissingRole
+		}
 	}
 
 	if req.Role == auth.Owner {

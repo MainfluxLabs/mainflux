@@ -15,7 +15,15 @@ func createOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		invite, err := svc.CreateOrgInvite(ctx, req.token, req.Email, req.Role, req.orgID, req.RedirectPath)
+		dormantGroupInvites := make([]auth.DormantGroupInvite, 0, len(req.Groups))
+		for _, gr := range req.Groups {
+			dormantGroupInvites = append(dormantGroupInvites, auth.DormantGroupInvite{
+				GroupID: gr.GroupID,
+				Role:    gr.Role,
+			})
+		}
+
+		invite, err := svc.CreateOrgInvite(ctx, req.token, req.Email, req.Role, req.orgID, req.RedirectPath, dormantGroupInvites...)
 		if err != nil {
 			return nil, err
 		}

@@ -136,3 +136,63 @@ func (req orgAccessReq) validate() error {
 	}
 	return nil
 }
+
+type groupMembership struct {
+	groupID  string
+	memberID string
+	role     string
+}
+
+type createDormantGroupInvitesReq struct {
+	token       string
+	orgInviteID string
+	memberships []groupMembership
+}
+
+func (req createDormantGroupInvitesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.orgInviteID == "" {
+		return apiutil.ErrMissingInviteID
+	}
+
+	if len(req.memberships) == 0 {
+		return apiutil.ErrMalformedEntity
+	}
+
+	for _, membership := range req.memberships {
+		if membership.groupID == "" {
+			return apiutil.ErrMissingGroupID
+		}
+
+		if membership.role == "" {
+			return apiutil.ErrMissingRole
+		}
+	}
+
+	return nil
+}
+
+type activateGroupInvitesReq struct {
+	token        string
+	orgInviteID  string
+	redirectPath string
+}
+
+func (req activateGroupInvitesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.orgInviteID == "" {
+		return apiutil.ErrMissingInviteID
+	}
+
+	if req.redirectPath == "" {
+		return apiutil.ErrMissingRedirectPath
+	}
+
+	return nil
+}

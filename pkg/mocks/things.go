@@ -343,3 +343,11 @@ func (svc *mainfluxThings) ListGroupInvitesByGroup(context.Context, string, stri
 func (svc *mainfluxThings) SendGroupInviteEmail(context.Context, things.GroupInvite, string, string, string) error {
 	panic("not implemented")
 }
+
+func (svc *mainfluxThings) CreateDormantGroupInvites(ctx context.Context, token, orgInviteID string, groupMemberships ...things.GroupMembership) error {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) ActivateGroupInvites(ctx context.Context, orgInviteID, userID, invRedirectPath string) error {
+	panic("not implemented")
+}

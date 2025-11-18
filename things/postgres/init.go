@@ -210,10 +210,17 @@ func migrateDB(db *sqlx.DB) error {
 						PRIMARY KEY  (id)
 					)`,
 					`CREATE UNIQUE INDEX unique_group_invitee_pending on group_invites (invitee_id, group_id) WHERE state='pending'`,
+					`CREATE TABLE IF NOT EXISTS dormant_group_invites (
+						group_invite_id UUID NOT NULL,
+						org_invite_id   UUID NOT NULL,
+						PRIMARY KEY (group_invite_id, org_invite_id),
+						FOREIGN KEY (group_invite_id) REFERENCES group_invites (id) ON DELETE CASCADE
+					)`,
 				},
 				Down: []string{
 					`DROP TABLE IF EXISTS group_invites`,
 					`DROP INDEX IF EXISTS unique_group_invitee_pending`,
+					`DROP TABLE IF EXISTS dormant_group_invites`,
 				},
 			},
 		},

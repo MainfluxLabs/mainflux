@@ -3,6 +3,7 @@ package things
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -47,6 +48,11 @@ type Invites interface {
 	// towards the user identified by `email`, to join the Group identified by `groupID` with an appropriate role.
 	CreateGroupInvite(ctx context.Context, token, email, role, groupID, grRedirectPath string) (GroupInvite, error)
 
+	// CreateDormantGroupInvites creates one or more dormant group invites on behalf of the User authenticated by `token`,
+	// tied to a specific pending Org invite denoted by `orgInviteID`. Each membership in `groupMembership` results in one
+	// new dormant Group Invite.
+	CreateDormantGroupInvites(ctx context.Context, token, orgInviteID string, groupMemberships ...GroupMembership) error
+
 	// RevokeGroupInvite revokes a specific pending Invite. An existing pending Invite can only be revoked
 	// by its creator (inviter).
 	RevokeGroupInvite(ctx context.Context, token, inviteID string) error
@@ -55,6 +61,12 @@ type Invites interface {
 	// is assigned as a member of the appropriate Group), or declining it. An Invite can only be responded
 	// to by the invitee that it's directed towards.
 	RespondGroupInvite(ctx context.Context, token, inviteID string, accept bool) error
+
+	// ActivateGroupInvites activates all dormant Group invites tied to the Org invite denoted by `orgInviteID`,
+	// by setting each invite's `invitee_id` field to the ID of the user authenticated by `token`.
+	// The expiration time of each invite is reset, and an e-mail notification is sent to the invitee for each
+	// activated invite.
+	ActivateGroupInvites(ctx context.Context, token, orgInviteID, invRedirectPath string) error
 
 	// ViewGroupInvite retrieves a single Invite denoted by its ID.  A specific Group Invite can be retrieved
 	// by any user with admin privileges within the Group to which the invite belongs,
@@ -76,6 +88,15 @@ type Invites interface {
 
 type GroupInviteRepository interface {
 	invites.InviteRepository[GroupInvite]
+
+	// SaveDormantInviteRelations saves relations of one or more dormant Group invites to a specific pending Org invite.
+	SaveDormantInviteRelations(ctx context.Context, orgInviteID string, groupInviteIDs ...string) error
+
+	// ActivateGroupInvites activates all dormant Group invites corresponding to the Org invite denoted by `orgInviteID` by:
+	// - Updating the `invitee_id` and `expires_at` columns of all matching Group Invites to the supplied values
+	// - Removing the associated rows from the `dormant_group_invites` table.
+	// Returns a slice of the activated Group Invites.
+	ActivateGroupInvites(ctx context.Context, orgInviteID, userID string, expirationTime time.Time) ([]GroupInvite, error)
 }
 
 func (svc thingsService) CreateGroupInvite(ctx context.Context, token, email, role, groupID, invRedirectPath string) (GroupInvite, error) {
@@ -173,6 +194,108 @@ func (svc thingsService) CreateGroupInvite(ctx context.Context, token, email, ro
 	}()
 
 	return invite, nil
+}
+
+func (svc thingsService) CreateDormantGroupInvites(ctx context.Context, token, orgInviteID string, groupMemberships ...GroupMembership) error {
+	identifyRes, err := svc.auth.Identify(ctx, &protomfx.Token{Value: token})
+	if err != nil {
+		return err
+	}
+
+	inviterID := identifyRes.GetId()
+
+	var invs []GroupInvite
+	var inviteIDs []string
+
+	for _, grm := range groupMemberships {
+		// Make sure authenticated user has admin privileges in the target Group
+		if err := svc.canAccessGroup(ctx, token, grm.GroupID, Admin); err != nil {
+			return err
+		}
+
+		createdAt := getTimestamp()
+		inviteID, err := svc.idProvider.ID()
+		if err != nil {
+			return err
+		}
+
+		inv := GroupInvite{
+			InviteCommon: invites.InviteCommon{
+				ID:          inviteID,
+				InviteeID:   sql.NullString{Valid: false},
+				InviterID:   inviterID,
+				InviteeRole: grm.Role,
+				CreatedAt:   createdAt,
+				ExpiresAt:   createdAt.Add(svc.inviteDuration),
+				State:       invites.InviteStatePending,
+			},
+		}
+
+		invs = append(invs, inv)
+		inviteIDs = append(inviteIDs, inviteID)
+	}
+
+	if err := svc.groupInvites.SaveInvites(ctx, invs...); err != nil {
+		return err
+	}
+
+	if err := svc.groupInvites.SaveDormantInviteRelations(ctx, orgInviteID, inviteIDs...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (svc thingsService) ActivateGroupInvites(ctx context.Context, token, orgInviteID, invRedirectPath string) error {
+	newExpirationTime := getTimestamp().Add(svc.inviteDuration)
+
+	identifyRes, err := svc.auth.Identify(ctx, &protomfx.Token{
+		Value: token,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	inviteeID := identifyRes.Id
+
+	activatedInvites, err := svc.groupInvites.ActivateGroupInvites(ctx, orgInviteID, inviteeID, newExpirationTime)
+	if err != nil {
+		return err
+	}
+
+	// Send e-mail notification for each activated Group Invite
+	for _, invite := range activatedInvites {
+		if invite.State != invites.InviteStatePending {
+			continue
+		}
+
+		if err := svc.populateInviteInfo(ctx, &invite); err != nil {
+			continue
+		}
+
+		group, err := svc.groups.RetrieveByID(ctx, invite.GroupID)
+		if err != nil {
+			return err
+		}
+
+		org, err := svc.auth.ViewOrg(ctx, &protomfx.ViewOrgReq{
+			Token: token,
+			Id: &protomfx.OrgID{
+				Value: group.OrgID,
+			},
+		})
+
+		if err != nil {
+			return err
+		}
+
+		go func() {
+			svc.SendGroupInviteEmail(ctx, invite, invite.InviteeEmail, org.Name, invRedirectPath)
+		}()
+	}
+
+	return nil
 }
 
 func (svc thingsService) RevokeGroupInvite(ctx context.Context, token, inviteID string) error {

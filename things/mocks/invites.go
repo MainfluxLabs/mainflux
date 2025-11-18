@@ -14,13 +14,15 @@ import (
 var _ things.GroupInviteRepository = (*invitesRepositoryMock)(nil)
 
 type invitesRepositoryMock struct {
-	mu         sync.Mutex
-	orgInvites map[string]things.GroupInvite
+	mu                             sync.Mutex
+	orgInvites                     map[string]things.GroupInvite
+	dormantGroupInvitesByOrgInvite map[string][]string
 }
 
 func NewInvitesRepository() things.GroupInviteRepository {
 	return &invitesRepositoryMock{
-		orgInvites: make(map[string]things.GroupInvite),
+		orgInvites:                     make(map[string]things.GroupInvite),
+		dormantGroupInvitesByOrgInvite: make(map[string][]string),
 	}
 }
 
@@ -47,6 +49,19 @@ func (irm *invitesRepositoryMock) SaveInvites(ctx context.Context, invites ...th
 	}
 
 	return nil
+}
+
+func (irm *invitesRepositoryMock) SaveDormantInviteRelations(ctx context.Context, orgInviteID string, groupInviteIDs ...string) error {
+	irm.mu.Lock()
+	defer irm.mu.Unlock()
+
+	irm.dormantGroupInvitesByOrgInvite[orgInviteID] = append(irm.dormantGroupInvitesByOrgInvite[orgInviteID], orgInviteID)
+
+	return nil
+}
+
+func (irm *invitesRepositoryMock) ActivateGroupInvites(ctx context.Context, orgInviteID, userID string, expirationTime time.Time) ([]things.GroupInvite, error) {
+	panic("not implemented")
 }
 
 func (irm *invitesRepositoryMock) RetrieveInviteByID(ctx context.Context, inviteID string) (things.GroupInvite, error) {

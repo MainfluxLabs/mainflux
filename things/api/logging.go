@@ -8,6 +8,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
@@ -850,6 +851,40 @@ func (lm *loggingMiddleware) ListGroupInvitesByGroup(ctx context.Context, token,
 	}(time.Now())
 
 	return lm.svc.ListGroupInvitesByGroup(ctx, token, groupID, pm)
+}
+
+func (lm *loggingMiddleware) CreateDormantGroupInvites(ctx context.Context, token, orgInviteID string, groupMemberships ...things.GroupMembership) (err error) {
+	defer func(begin time.Time) {
+		var groupLogs []string
+		for _, gm := range groupMemberships {
+			msg := fmt.Sprintf("[%s; %s]", gm.GroupID, gm.Role)
+			groupLogs = append(groupLogs, msg)
+		}
+
+		groupsMsg := strings.Join(groupLogs, ",")
+
+		message := fmt.Sprintf("Method create_dormant_group_invites for org invite id %s and groups (%s) took %s to complete", orgInviteID, groupsMsg, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.CreateDormantGroupInvites(ctx, token, orgInviteID, groupMemberships...)
+}
+
+func (lm *loggingMiddleware) ActivateGroupInvites(ctx context.Context, token, orgInviteID, invRedirectPath string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method activate_group_invites for org invite id %s took %s to complete", orgInviteID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ActivateGroupInvites(ctx, token, orgInviteID, invRedirectPath)
 }
 
 func (lm *loggingMiddleware) SendGroupInviteEmail(ctx context.Context, invite things.GroupInvite, email, orgName, invRedirectPath string) (err error) {

@@ -2,6 +2,7 @@ package tracing
 
 import (
 	"context"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/invites"
@@ -15,6 +16,8 @@ const (
 	removeGroupInvite          = "remove_group_invite"
 	retrieveGroupInvitesByUser = "retrieve_group_invites_by_user"
 	updateGroupInviteState     = "update_group_invite_state"
+	saveDormantInviteRelations = "save_dormant_invite_relations"
+	activateGroupInvites       = "activate_group_invites"
 )
 
 var _ things.GroupInviteRepository = (*invitesRepositoryMiddleware)(nil)
@@ -77,4 +80,20 @@ func (irm invitesRepositoryMiddleware) UpdateInviteState(ctx context.Context, in
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return irm.repo.UpdateInviteState(ctx, inviteID, state)
+}
+
+func (irm invitesRepositoryMiddleware) SaveDormantInviteRelations(ctx context.Context, orgInviteID string, groupInviteIDs ...string) error {
+	span := dbutil.CreateSpan(ctx, irm.tracer, saveDormantInviteRelations)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return irm.repo.SaveDormantInviteRelations(ctx, orgInviteID, groupInviteIDs...)
+}
+
+func (irm invitesRepositoryMiddleware) ActivateGroupInvites(ctx context.Context, orgInviteID, userID string, expirationTime time.Time) ([]things.GroupInvite, error) {
+	span := dbutil.CreateSpan(ctx, irm.tracer, activateGroupInvites)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return irm.repo.ActivateGroupInvites(ctx, orgInviteID, userID, expirationTime)
 }

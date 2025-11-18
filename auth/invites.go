@@ -45,10 +45,19 @@ func (invite OrgInvite) ToDBInvite() invites.DbInvite {
 
 type OrgInvitesPage = invites.InvitesPage[OrgInvite]
 
+type DormantGroupInvite struct {
+	GroupID string
+	Role    string
+}
+
 type Invites interface {
 	// CreateOrgInvite creates a pending Invite on behalf of the User authenticated by `token`,
 	// towards the user identified by `email`, to join the Org identified by `orgID` with an appropriate role.
-	CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string) (OrgInvite, error)
+	// The invitee can additionally optionally be invited to one or more Groups within the destination Organization by supplying
+	// one or more `group`s in the call. This creates dormant Group invites that become active only once the invitee
+	// accepts the Organization invite. Note that the currnently authenticated user createing the Org invite must then also
+	// possess "Admin" privileges in each of the Groups.
+	CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string, groups ...DormantGroupInvite) (OrgInvite, error)
 
 	// CreateDormantOrgInvite creates a pending, dormant Org Invite associated with a specfic Platform Invite
 	// denoted by `platformInviteID`.
@@ -99,7 +108,7 @@ type OrgInviteRepository interface {
 	ActivateOrgInvite(ctx context.Context, platformInviteID, userID string, expirationTime time.Time) ([]OrgInvite, error)
 }
 
-func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string) (OrgInvite, error) {
+func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string, groups ...DormantGroupInvite) (OrgInvite, error) {
 	// Check if currently authenticated User has "admin" or higher privileges within Org
 	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
 		return OrgInvite{}, err
@@ -169,6 +178,25 @@ func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgI
 	go func() {
 		svc.SendOrgInviteEmail(ctx, invite, email, org.Name, invRedirectPath)
 	}()
+
+	if len(groups) > 0 {
+		req := &protomfx.CreateDormantGroupInvitesReq{
+			Token:       token,
+			OrgInviteID: inviteID,
+			Memberships: make([]*protomfx.GroupMembership, 0, len(groups)),
+		}
+
+		for _, dormantGroupInvite := range groups {
+			req.Memberships = append(req.Memberships, &protomfx.GroupMembership{
+				GroupID: dormantGroupInvite.GroupID,
+				Role:    dormantGroupInvite.Role,
+			})
+		}
+
+		if _, err := svc.things.CreateDormantGroupInvites(ctx, req); err != nil {
+			return OrgInvite{}, nil
+		}
+	}
 
 	return invite, nil
 }
@@ -346,6 +374,21 @@ func (svc service) RespondOrgInvite(ctx context.Context, token, inviteID string,
 		}
 
 		if err := svc.memberships.Save(ctx, membership); err != nil {
+			return err
+		}
+
+		// gRPC call to things service to activate any potentially dormant Group invites associated with this particular Org invite
+		dormantGroupInviteReq := &protomfx.ActivateGroupInvitesReq{
+			Token:        token,
+			OrgInviteID:  inviteID,
+			RedirectPath: "TODO: CHANGE",
+		}
+
+		if _, err := svc.things.ActivateGroupInvites(ctx, dormantGroupInviteReq); err != nil {
+			if err := svc.invites.UpdateInviteState(ctx, inviteID, newState); err != nil {
+				return err
+			}
+
 			return err
 		}
 	}

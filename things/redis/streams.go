@@ -414,6 +414,14 @@ func (es eventStore) ListGroupInvitesByGroup(ctx context.Context, token, groupID
 	return es.svc.ListGroupInvitesByGroup(ctx, token, groupID, pm)
 }
 
+func (es eventStore) CreateDormantGroupInvites(ctx context.Context, token, orgInviteID string, groupMemberships ...things.GroupMembership) error {
+	return es.svc.CreateDormantGroupInvites(ctx, token, orgInviteID, groupMemberships...)
+}
+
+func (es eventStore) ActivateGroupInvites(ctx context.Context, token, orgInviteID, invRedirectPath string) error {
+	return es.svc.ActivateGroupInvites(ctx, token, orgInviteID, invRedirectPath)
+}
+
 func (es eventStore) SendGroupInviteEmail(ctx context.Context, invite things.GroupInvite, email, orgName, invRedirectPath string) error {
 	return es.svc.SendGroupInviteEmail(ctx, invite, email, orgName, invRedirectPath)
 }

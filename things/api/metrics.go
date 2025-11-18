@@ -615,3 +615,21 @@ func (ms *metricsMiddleware) SendGroupInviteEmail(ctx context.Context, invite th
 
 	return ms.svc.SendGroupInviteEmail(ctx, invite, email, orgName, invRedirectPath)
 }
+
+func (ms *metricsMiddleware) CreateDormantGroupInvites(ctx context.Context, token, orgInviteID string, groupMemberships ...things.GroupMembership) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "create_dormant_group_invites").Add(1)
+		ms.latency.With("method", "create_dormant_group_invites").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.CreateDormantGroupInvites(ctx, token, orgInviteID, groupMemberships...)
+}
+
+func (ms *metricsMiddleware) ActivateGroupInvites(ctx context.Context, token, orgInviteID, invRedirectPath string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "activate_group_invites").Add(1)
+		ms.latency.With("method", "activate_group_invites").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ActivateGroupInvites(ctx, token, orgInviteID, invRedirectPath)
+}
