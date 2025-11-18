@@ -229,6 +229,7 @@ func (svc thingsService) CreateDormantGroupInvites(ctx context.Context, token, o
 				ExpiresAt:   createdAt.Add(svc.inviteDuration),
 				State:       invites.InviteStatePending,
 			},
+			GroupID: grm.GroupID,
 		}
 
 		invs = append(invs, inv)
