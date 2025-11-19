@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
@@ -17,8 +18,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/certs/pki"
-	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/certs"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
@@ -27,7 +27,24 @@ var (
 	errPrivateKeyUnsupportedType = errors.New("private key type is unsupported")
 )
 
-var _ pki.Agent = (*agent)(nil)
+var (
+	// ErrMissingCACert indicates missing ca certificate
+	ErrMissingCACert = errors.New("missing ca certificate for certificate signing")
+
+	// ErrFailedCertCreation indicates failed to certificate creation
+	ErrFailedCertCreation = errors.New("failed to create client certificate")
+
+	// ErrFailedCertRevocation indicates failed certificate revocation
+	ErrFailedCertRevocation = errors.New("failed to revoke certificate")
+)
+
+type Agent interface {
+	// IssueCert is a mock method for Issuing Certificates of PKI Agent.
+	IssueCert(cn, ttl, keyType string, keyBits int) (certs.Cert, error)
+
+	// VerifyCert is a mock method for Verifying Certificates of PKI Agent.
+	VerifyCert(certPEM string) (*x509.Certificate, error)
+}
 
 type agent struct {
 	AuthTimeout time.Duration
@@ -35,34 +52,70 @@ type agent struct {
 	X509Cert    *x509.Certificate
 	RSABits     int
 	TTL         string
+	caPEM       string
 	mu          sync.Mutex
 	counter     uint64
-	certs       map[string]pki.Cert
+	certs       map[string]certs.Cert
 }
 
-func NewPkiAgent(tlsCert tls.Certificate, caCert *x509.Certificate, keyBits int, ttl string, timeout time.Duration) pki.Agent {
+func NewPKIAgent(tlsCert tls.Certificate, caCert *x509.Certificate, keyBits int, ttl string, timeout time.Duration) Agent {
+	var caPEM string
+	if len(tlsCert.Certificate) > 0 {
+		caPEM = string(pem.EncodeToMemory(&pem.Block{
+			Type:  "CERTIFICATE",
+			Bytes: tlsCert.Certificate[0],
+		}))
+	}
+
 	return &agent{
 		AuthTimeout: timeout,
 		TLSCert:     tlsCert,
 		X509Cert:    caCert,
 		RSABits:     keyBits,
 		TTL:         ttl,
-		certs:       make(map[string]pki.Cert),
+		caPEM:       caPEM,
+		certs:       make(map[string]certs.Cert),
 	}
 }
 
-func (a *agent) IssueCert(cn string, ttl, keyType string, keyBits int) (pki.Cert, error) {
+func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (certs.Cert, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
 	if a.X509Cert == nil {
-		return pki.Cert{}, errors.Wrap(pki.ErrFailedCertCreation, pki.ErrMissingCACertificate)
+		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, ErrMissingCACert)
 	}
 
 	var priv interface{}
-	priv, err := rsa.GenerateKey(rand.Reader, keyBits)
+	var err error
+
+	switch keyType {
+	case "rsa", "":
+		if keyBits == 0 {
+			keyBits = 2048
+		}
+		priv, err = rsa.GenerateKey(rand.Reader, keyBits)
+	case "ecdsa", "ec":
+		var curve elliptic.Curve
+		switch keyBits {
+		case 224:
+			curve = elliptic.P224()
+		case 256, 0:
+			curve = elliptic.P256()
+		case 384:
+			curve = elliptic.P384()
+		case 521:
+			curve = elliptic.P521()
+		default:
+			return certs.Cert{}, errors.New("unsupported EC key size, use 224, 256, 384, or 521")
+		}
+		priv, err = ecdsa.GenerateKey(curve, rand.Reader)
+	default:
+		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, errPrivateKeyUnsupportedType)
+	}
+
 	if err != nil {
-		return pki.Cert{}, errors.Wrap(pki.ErrFailedCertCreation, err)
+		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 
 	if ttl == "" {
@@ -72,14 +125,14 @@ func (a *agent) IssueCert(cn string, ttl, keyType string, keyBits int) (pki.Cert
 	notBefore := time.Now()
 	validFor, err := time.ParseDuration(ttl)
 	if err != nil {
-		return pki.Cert{}, errors.Wrap(pki.ErrFailedCertCreation, err)
+		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 	notAfter := notBefore.Add(validFor)
 
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
-		return pki.Cert{}, errors.Wrap(pki.ErrFailedCertCreation, err)
+		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 
 	tmpl := x509.Certificate{
@@ -99,16 +152,16 @@ func (a *agent) IssueCert(cn string, ttl, keyType string, keyBits int) (pki.Cert
 
 	pubKey, err := publicKey(priv)
 	if err != nil {
-		return pki.Cert{}, errors.Wrap(pki.ErrFailedCertCreation, err)
+		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 	derBytes, err := x509.CreateCertificate(rand.Reader, &tmpl, a.X509Cert, pubKey, a.TLSCert.PrivateKey)
 	if err != nil {
-		return pki.Cert{}, errors.Wrap(pki.ErrFailedCertCreation, err)
+		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 
 	x509cert, err := x509.ParseCertificate(derBytes)
 	if err != nil {
-		return pki.Cert{}, errors.Wrap(pki.ErrFailedCertCreation, err)
+		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 
 	var bw, keyOut bytes.Buffer
@@ -116,49 +169,57 @@ func (a *agent) IssueCert(cn string, ttl, keyType string, keyBits int) (pki.Cert
 	buffKeyOut := bufio.NewWriter(&keyOut)
 
 	if err := pem.Encode(buffWriter, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes}); err != nil {
-		return pki.Cert{}, errors.Wrap(pki.ErrFailedCertCreation, err)
+		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 	buffWriter.Flush()
-	cert := bw.String()
+	certPEM := bw.String()
 
 	block, err := pemBlockForKey(priv)
 	if err != nil {
-		return pki.Cert{}, errors.Wrap(pki.ErrFailedCertCreation, err)
+		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 	if err := pem.Encode(buffKeyOut, block); err != nil {
-		return pki.Cert{}, errors.Wrap(pki.ErrFailedCertCreation, err)
+		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 	buffKeyOut.Flush()
-	key := keyOut.String()
+	keyPEM := keyOut.String()
 
-	a.certs[x509cert.SerialNumber.String()] = pki.Cert{
-		ClientCert: cert,
+	cert := certs.Cert{
+		ClientCert:     certPEM,
+		ClientKey:      keyPEM,
+		IssuingCA:      a.caPEM,
+		CAChain:        []string{a.caPEM},
+		PrivateKeyType: keyType,
+		Serial:         x509cert.SerialNumber.String(),
+		ExpiresAt:      x509cert.NotAfter,
 	}
+
+	a.certs[x509cert.SerialNumber.String()] = cert
 	a.counter++
 
-	return pki.Cert{
-		ClientCert: cert,
-		ClientKey:  key,
-		Serial:     x509cert.SerialNumber.String(),
-		Expire:     x509cert.NotAfter,
-		IssuingCA:  x509cert.Issuer.String(),
-	}, nil
+	return cert, nil
 }
 
-func (a *agent) Read(serial string) (pki.Cert, error) {
+func (a *agent) VerifyCert(certPEM string) (*x509.Certificate, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	crt, ok := a.certs[serial]
-	if !ok {
-		return pki.Cert{}, dbutil.ErrNotFound
+	block, _ := pem.Decode([]byte(certPEM))
+	if block == nil {
+		return nil, errors.New("failed to parse certificate PEM")
 	}
 
-	return crt, nil
-}
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return nil, errors.Wrap(errors.New("failed to parse certificate"), err)
+	}
 
-func (a *agent) Revoke(serial string) (time.Time, error) {
-	return time.Now(), nil
+	_, exists := a.certs[cert.SerialNumber.String()]
+	if !exists {
+		return nil, errors.New("certificate not found")
+	}
+
+	return cert, nil
 }
 
 func publicKey(priv interface{}) (interface{}, error) {

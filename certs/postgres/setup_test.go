@@ -1,30 +1,29 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
+// Package postgres_test contains tests for PostgreSQL repository
+// implementations.
+
 package postgres_test
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"testing"
 
-	"github.com/MainfluxLabs/mainflux/certs/postgres"
-	"github.com/MainfluxLabs/mainflux/logger"
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/MainfluxLabs/mainflux/readers/postgres"
+	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
 	"github.com/jmoiron/sqlx"
 	dockertest "github.com/ory/dockertest/v3"
 )
 
-var (
-	testLog, _ = logger.New(os.Stdout, logger.Info.String())
-	db         *sqlx.DB
-)
+var db *sqlx.DB
 
 func TestMain(m *testing.M) {
 	pool, err := dockertest.NewPool("")
 	if err != nil {
-		testLog.Error(fmt.Sprintf("Could not connect to docker: %s", err))
-		return
+		log.Fatalf("Could not connect to docker: %s", err)
 	}
 
 	cfg := []string{
@@ -34,12 +33,12 @@ func TestMain(m *testing.M) {
 	}
 	container, err := pool.Run("postgres", "13.3-alpine", cfg)
 	if err != nil {
-		testLog.Error(fmt.Sprintf("Could not start container: %s", err))
+		log.Fatalf("Could not start container: %s", err)
 	}
 
 	port := container.GetPort("5432/tcp")
 
-	if err := pool.Retry(func() error {
+	if err = pool.Retry(func() error {
 		url := fmt.Sprintf("host=localhost port=%s user=test dbname=test password=test sslmode=disable", port)
 		db, err = sqlx.Open("pgx", url)
 		if err != nil {
@@ -47,7 +46,7 @@ func TestMain(m *testing.M) {
 		}
 		return db.Ping()
 	}); err != nil {
-		testLog.Error(fmt.Sprintf("Could not connect to docker: %s", err))
+		log.Fatalf("Could not connect to docker: %s", err)
 	}
 
 	dbConfig := postgres.Config{
@@ -63,7 +62,7 @@ func TestMain(m *testing.M) {
 	}
 
 	if db, err = postgres.Connect(dbConfig); err != nil {
-		testLog.Error(fmt.Sprintf("Could not setup test DB connection: %s", err))
+		log.Fatalf("Could not setup test DB connection: %s", err)
 	}
 
 	code := m.Run()
@@ -71,7 +70,7 @@ func TestMain(m *testing.M) {
 	// Defers will not be run when using os.Exit
 	db.Close()
 	if err := pool.Purge(container); err != nil {
-		testLog.Error(fmt.Sprintf("Could not purge container: %s", err))
+		log.Fatalf("Could not purge container: %s", err)
 	}
 
 	os.Exit(code)

@@ -55,7 +55,7 @@ endef
 
 all: $(SERVICES)
 
-.PHONY: all $(SERVICES) dockers dockers_dev latest release
+.PHONY: all $(SERVICES) dockers dockers_dev latest release logs_%
 
 clean:
 	rm -rf ${BUILD_DIR}
@@ -118,4 +118,13 @@ rundev:
 	cd scripts && ./run.sh
 
 run:
-	docker-compose -f docker/docker-compose.yml up
+	docker compose -f docker/docker-compose.yml up -d
+
+down:
+	docker compose -f docker/docker-compose.yml down
+
+logs:
+	docker compose -f docker/docker-compose.yml logs -f
+
+logs_%:
+	docker compose -f docker/docker-compose.yml logs -f $* 
