@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -14,6 +13,7 @@ import (
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
+	"github.com/jeremywohl/flatten"
 )
 
 var senmlHeader = []string{
@@ -81,41 +81,45 @@ func GenerateCSVFromJSON(page readers.JSONMessagesPage) ([]byte, error) {
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
 
-	payloadKeys := make(map[string]struct{})
-	flattenedPayloads := make([]map[string]interface{}, 0, len(page.MessagesPage.Messages))
+	flattened := make([]map[string]any, len(page.MessagesPage.Messages))
+	payload := []string{}
+	added := map[string]bool{}
 
-	for _, msg := range page.MessagesPage.Messages {
-		m, ok := msg.(map[string]interface{})
+	for i, raw := range page.MessagesPage.Messages {
+		m, ok := raw.(map[string]any)
 		if !ok {
-			flattenedPayloads = append(flattenedPayloads, nil)
+			flattened[i] = map[string]any{}
 			continue
 		}
 
-		flatPayload := map[string]interface{}{}
-		if p, ok := m["payload"].(map[string]interface{}); ok {
-			flattenPayload("", p, flatPayload)
-			for k := range flatPayload {
-				payloadKeys[k] = struct{}{}
-			}
+		p, _ := m["payload"].(map[string]any)
+		if p == nil {
+			flattened[i] = map[string]any{}
+			continue
 		}
 
-		flattenedPayloads = append(flattenedPayloads, flatPayload)
+		flat, err := flatten.Flatten(p, "", flatten.DotStyle)
+		if err != nil {
+			return nil, err
+		}
+
+		flattened[i] = flat
+
+		for k := range flat {
+			if !added[k] {
+				added[k] = true
+				payload = append(payload, k)
+			}
+		}
 	}
 
-	sortedKeys := make([]string, 0, len(payloadKeys))
-	for k := range payloadKeys {
-		sortedKeys = append(sortedKeys, k)
-	}
-	sort.Strings(sortedKeys)
-
-	header := append([]string{}, jsonHeader...)
-	header = append(header, sortedKeys...)
+	header := append(jsonHeader, payload...)
 	if err := writer.Write(header); err != nil {
 		return nil, err
 	}
 
-	for i, msg := range page.MessagesPage.Messages {
-		m, _ := msg.(map[string]interface{})
+	for i, raw := range page.MessagesPage.Messages {
+		m, _ := raw.(map[string]any)
 
 		created := ""
 		if v, ok := m["created"].(int64); ok {
@@ -129,18 +133,13 @@ func GenerateCSVFromJSON(page readers.JSONMessagesPage) ([]byte, error) {
 			getStringValue(m, "protocol"),
 		}
 
-		flatPayload := flattenedPayloads[i]
-		for _, key := range sortedKeys {
-			if val, ok := flatPayload[key]; ok {
-				switch v := val.(type) {
-				case string:
-					row = append(row, v)
-				default:
-					b, _ := json.Marshal(v)
-					row = append(row, string(b))
-				}
-			} else {
+		flat := flattened[i]
+		for _, key := range payload {
+			val := flat[key]
+			if val == nil {
 				row = append(row, "")
+			} else {
+				row = append(row, fmt.Sprint(val))
 			}
 		}
 
@@ -151,22 +150,6 @@ func GenerateCSVFromJSON(page readers.JSONMessagesPage) ([]byte, error) {
 
 	writer.Flush()
 	return buf.Bytes(), writer.Error()
-}
-
-func flattenPayload(prefix string, in map[string]interface{}, out map[string]interface{}) {
-	for k, v := range in {
-		key := k
-		if prefix != "" {
-			key = prefix + "." + k
-		}
-
-		if child, ok := v.(map[string]interface{}); ok {
-			flattenPayload(key, child, out)
-			continue
-		}
-
-		out[key] = v
-	}
 }
 
 func getStringValue(m map[string]interface{}, key string) string {
