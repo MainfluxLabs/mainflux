@@ -25,7 +25,8 @@ import (
 )
 
 const (
-	redirectPathInvite = "/view-invite"
+	redirectPathInvite      = "/view-invite"
+	redirectPathGroupInvite = "/view-group-invite"
 
 	secret            = "secret"
 	email             = "test@example.com"
@@ -1428,7 +1429,7 @@ func TestRespondInvite(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.RespondOrgInvite(context.Background(), tc.token, tc.inviteID, tc.accept)
+		err := svc.RespondOrgInvite(context.Background(), tc.token, tc.inviteID, tc.accept, redirectPathGroupInvite)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected: %s, got: %s\n", tc.desc, tc.err, err))
 	}
 }

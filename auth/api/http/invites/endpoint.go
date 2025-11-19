@@ -75,7 +75,7 @@ func respondOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.RespondOrgInvite(ctx, req.token, req.id, req.accepted); err != nil {
+		if err := svc.RespondOrgInvite(ctx, req.token, req.id, req.accepted, req.RedirectPath); err != nil {
 			return nil, err
 		}
 

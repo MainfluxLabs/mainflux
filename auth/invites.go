@@ -69,8 +69,10 @@ type Invites interface {
 
 	// RespondOrgInvite responds to a specific invite, either accepting it (after which the invitee
 	// is assigned as a member of the appropriate Org), or declining it. An Invite can only be responded
-	// to by the invitee that it's directed towards.
-	RespondOrgInvite(ctx context.Context, token, inviteID string, accept bool) error
+	// to by the invitee that it's directed towards. `grRedirectPath` represents the suffix of the URL
+	// used to redirect the invitee to the Group invite potentially activated by accepting this Org invite,
+	// for which the invitee receives an e-mail notification.
+	RespondOrgInvite(ctx context.Context, token, inviteID string, accept bool, grRedirectPath string) error
 
 	// ActivateOrgInvite activates all dormant Org Invites associated with the specific Platform Invite.
 	// The expiration time of the invites is reset. An e-mail notification is sent to the invitee for each
@@ -333,7 +335,7 @@ func (svc service) ViewOrgInvite(ctx context.Context, token, inviteID string) (O
 	return OrgInvite{}, errors.ErrAuthorization
 }
 
-func (svc service) RespondOrgInvite(ctx context.Context, token, inviteID string, accept bool) error {
+func (svc service) RespondOrgInvite(ctx context.Context, token, inviteID string, accept bool, grRedirectPath string) error {
 	user, err := svc.identify(ctx, token)
 	if err != nil {
 		return err
@@ -381,7 +383,7 @@ func (svc service) RespondOrgInvite(ctx context.Context, token, inviteID string,
 		dormantGroupInviteReq := &protomfx.ActivateGroupInvitesReq{
 			Token:        token,
 			OrgInviteID:  inviteID,
-			RedirectPath: "TODO: CHANGE",
+			RedirectPath: grRedirectPath,
 		}
 
 		if _, err := svc.things.ActivateGroupInvites(ctx, dormantGroupInviteReq); err != nil {

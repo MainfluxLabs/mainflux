@@ -79,9 +79,10 @@ func (req inviteReq) validate() error {
 }
 
 type respondOrgInviteReq struct {
-	token    string
-	id       string
-	accepted bool
+	token        string
+	id           string
+	accepted     bool
+	RedirectPath string `json:"redirect_path"`
 }
 
 func (req respondOrgInviteReq) validate() error {
@@ -91,6 +92,10 @@ func (req respondOrgInviteReq) validate() error {
 
 	if req.id == "" {
 		return apiutil.ErrMissingInviteID
+	}
+
+	if req.RedirectPath == "" {
+		return apiutil.ErrMissingRedirectPath
 	}
 
 	return nil

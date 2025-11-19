@@ -92,6 +92,10 @@ func decodeCreateOrgInviteRequest(_ context.Context, r *http.Request) (any, erro
 }
 
 func decodeRespondOrgInviteRequest(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
 	req := respondOrgInviteReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
@@ -105,6 +109,10 @@ func decodeRespondOrgInviteRequest(_ context.Context, r *http.Request) (any, err
 		req.accepted = false
 	default:
 		return respondOrgInviteReq{}, invites.ErrInvalidInviteResponse
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil

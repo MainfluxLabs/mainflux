@@ -434,6 +434,8 @@ paths:
         - org invites
       parameters:
         - $ref: "#/components/parameters/InviteId"
+      requestBody:
+        $ref: "#/components/requestBodies/RespondInviteReq"
       responses:
         '201':
           description: Invite accepted and invitee added as a member of the organization.
@@ -453,6 +455,8 @@ paths:
         - org invites
       parameters:
         - $ref: "#/components/parameters/InviteId"
+      requestBody:
+        $ref: "#/components/requestBodies/RespondInviteReq"
       responses:
         '204':
           description: Invite declined and removed from the database.
@@ -1110,6 +1114,18 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/CreateInviteSchema"
+    RespondInviteReq:
+      description: JSON-formatted document containing the redirect path necessary for the request.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              redirect_path:
+                type: string
+                example: "/view-group-invite"
+
   responses:
     ServiceError:
       description: Unexpected server-side error occurred.

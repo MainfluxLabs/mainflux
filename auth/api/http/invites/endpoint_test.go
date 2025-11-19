@@ -26,20 +26,21 @@ import (
 )
 
 const (
-	redirectPathInvite = "/view-invite"
-	secret             = "secret"
-	contentType        = "application/json"
-	id                 = "123e4567-e89b-12d3-a456-000000000022"
-	adminID            = "adminID"
-	editorID           = "editorID"
-	viewerID           = "viewerID"
-	email              = "user@example.com"
-	adminEmail         = "admin@example.com"
-	editorEmail        = "editor@example.com"
-	viewerEmail        = "viewer@example.com"
-	name               = "testName"
-	description        = "testDesc"
-	n                  = 10
+	redirectPathInvite      = "/view-invite"
+	redirectPathGroupInvite = "/view-group-invite"
+	secret                  = "secret"
+	contentType             = "application/json"
+	id                      = "123e4567-e89b-12d3-a456-000000000022"
+	adminID                 = "adminID"
+	editorID                = "editorID"
+	viewerID                = "viewerID"
+	email                   = "user@example.com"
+	adminEmail              = "admin@example.com"
+	editorEmail             = "editor@example.com"
+	viewerEmail             = "viewer@example.com"
+	name                    = "testName"
+	description             = "testDesc"
+	n                       = 10
 
 	responseAccept  = "accept"
 	responseDecline = "decline"
@@ -76,6 +77,10 @@ type testRequest struct {
 type invitesReq struct {
 	Email        string `json:"email,omitempty"`
 	Role         string `json:"role,omitempty"`
+	RedirectPath string `json:"redirect_path,omitempty"`
+}
+
+type respondInviteReq struct {
 	RedirectPath string `json:"redirect_path,omitempty"`
 }
 
@@ -381,6 +386,7 @@ func TestRespondInvite(t *testing.T) {
 
 	cases := []struct {
 		desc     string
+		body     string
 		inviteID string
 		response string
 		token    string
@@ -389,12 +395,14 @@ func TestRespondInvite(t *testing.T) {
 		{
 			desc:     "accept invite",
 			inviteID: invites[0].ID,
+			body:     toJSON(respondInviteReq{RedirectPath: redirectPathGroupInvite}),
 			response: responseAccept,
 			token:    viewerToken,
 			status:   http.StatusCreated,
 		},
 		{
 			desc:     "decline invite",
+			body:     toJSON(respondInviteReq{RedirectPath: redirectPathGroupInvite}),
 			inviteID: invites[1].ID,
 			response: responseDecline,
 			token:    editorToken,
@@ -402,6 +410,7 @@ func TestRespondInvite(t *testing.T) {
 		},
 		{
 			desc:     "respond to invite with invalid response action",
+			body:     toJSON(respondInviteReq{RedirectPath: redirectPathGroupInvite}),
 			inviteID: invites[2].ID,
 			response: invalidResponse,
 			token:    adminToken,
@@ -409,6 +418,7 @@ func TestRespondInvite(t *testing.T) {
 		},
 		{
 			desc:     "respond to invite with invalid auth token",
+			body:     toJSON(respondInviteReq{RedirectPath: redirectPathGroupInvite}),
 			inviteID: invites[2].ID,
 			response: responseAccept,
 			token:    "invalid",
@@ -416,6 +426,7 @@ func TestRespondInvite(t *testing.T) {
 		},
 		{
 			desc:     "respond to invite with empty auth token",
+			body:     toJSON(respondInviteReq{RedirectPath: redirectPathGroupInvite}),
 			inviteID: invites[2].ID,
 			response: responseAccept,
 			token:    "",
@@ -423,6 +434,7 @@ func TestRespondInvite(t *testing.T) {
 		},
 		{
 			desc:     "respond to invite with non-existent id",
+			body:     toJSON(respondInviteReq{RedirectPath: redirectPathGroupInvite}),
 			inviteID: "invalid",
 			response: responseAccept,
 			token:    adminToken,
@@ -432,10 +444,12 @@ func TestRespondInvite(t *testing.T) {
 
 	for _, tc := range cases {
 		req := testRequest{
-			client: client,
-			method: http.MethodPost,
-			url:    fmt.Sprintf("%s/invites/%s/%s", ts.URL, tc.inviteID, tc.response),
-			token:  tc.token,
+			client:      client,
+			method:      http.MethodPost,
+			contentType: contentType,
+			url:         fmt.Sprintf("%s/invites/%s/%s", ts.URL, tc.inviteID, tc.response),
+			body:        strings.NewReader(tc.body),
+			token:       tc.token,
 		}
 
 		res, err := req.make()

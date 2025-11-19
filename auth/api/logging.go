@@ -359,7 +359,7 @@ func (lm *loggingMiddleware) RevokeOrgInvite(ctx context.Context, token, inviteI
 	return lm.svc.RevokeOrgInvite(ctx, token, inviteID)
 }
 
-func (lm *loggingMiddleware) RespondOrgInvite(ctx context.Context, token, inviteID string, accept bool) (err error) {
+func (lm *loggingMiddleware) RespondOrgInvite(ctx context.Context, token, inviteID string, accept bool, grRedirectPath string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method respond_org_invite took %s to complete", time.Since(begin))
 		if err != nil {
@@ -370,7 +370,7 @@ func (lm *loggingMiddleware) RespondOrgInvite(ctx context.Context, token, invite
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.RespondOrgInvite(ctx, token, inviteID, accept)
+	return lm.svc.RespondOrgInvite(ctx, token, inviteID, accept, grRedirectPath)
 }
 
 func (lm *loggingMiddleware) ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm invites.PageMetadataInvites) (invPage auth.OrgInvitesPage, err error) {

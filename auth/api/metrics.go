@@ -262,13 +262,13 @@ func (ms *metricsMiddleware) RevokeOrgInvite(ctx context.Context, token, inviteI
 	return ms.svc.RevokeOrgInvite(ctx, token, inviteID)
 }
 
-func (ms *metricsMiddleware) RespondOrgInvite(ctx context.Context, token, inviteID string, accept bool) error {
+func (ms *metricsMiddleware) RespondOrgInvite(ctx context.Context, token, inviteID string, accept bool, grRedirectPath string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "respond_org_invite").Add(1)
 		ms.latency.With("method", "respond_org_invite").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.RespondOrgInvite(ctx, token, inviteID, accept)
+	return ms.svc.RespondOrgInvite(ctx, token, inviteID, accept, grRedirectPath)
 }
 
 func (ms *metricsMiddleware) ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm invites.PageMetadataInvites) (auth.OrgInvitesPage, error) {
