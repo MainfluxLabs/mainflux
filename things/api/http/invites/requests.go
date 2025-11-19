@@ -127,28 +127,6 @@ func (req listGroupInvitesByGroupReq) validate() error {
 	return nil
 }
 
-type listGroupInvitesByOrgReq struct {
-	token string
-	id    string
-	pm    invites.PageMetadataInvites
-}
-
-func (req listGroupInvitesByOrgReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.id == "" {
-		return apiutil.ErrMissingOrgID
-	}
-
-	if err := apiutil.ValidatePageMetadata(req.pm.PageMetadata, maxLimitSize, maxNameSize); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func validateRole(role string) error {
 	if role != things.Owner && role != things.Admin && role != things.Editor && role != things.Viewer {
 		return apiutil.ErrInvalidRole

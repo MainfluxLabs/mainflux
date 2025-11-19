@@ -103,20 +103,3 @@ func listGroupInvitesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 		return buildGroupInvitesPageRes(page, req.pm), nil
 	}
 }
-
-func listGroupInvitesByOrgEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(listGroupInvitesByOrgReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		// TODO: create svc method
-		page, err := svc.ListGroupInvitesByGroup(ctx, req.token, req.id, req.pm)
-		if err != nil {
-			return nil, err
-		}
-
-		return buildGroupInvitesPageRes(page, req.pm), nil
-	}
-}

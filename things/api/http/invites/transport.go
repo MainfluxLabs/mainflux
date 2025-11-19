@@ -36,13 +36,6 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		opts...,
 	))
 
-	mux.Get("/orgs/:id/invites", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_group_invites_by_org")(listGroupInvitesByOrgEndpoint(svc)),
-		decodeListGroupInvitesByOrgRequest,
-		encodeResponse,
-		opts...,
-	))
-
 	mux.Get("/invites/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_group_invite")(viewGroupInviteEndpoint(svc)),
 		decodeInviteRequest,
@@ -144,22 +137,6 @@ func decodeInviteRequest(_ context.Context, r *http.Request) (interface{}, error
 
 func decodeListGroupInvitesByGroupRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	req := listGroupInvitesByGroupReq{
-		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, apiutil.IDKey),
-	}
-
-	pm, err := invites.BuildPageMetadataInvites(r)
-	if err != nil {
-		return nil, err
-	}
-
-	req.pm = pm
-
-	return req, nil
-}
-
-func decodeListGroupInvitesByOrgRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	req := listGroupInvitesByOrgReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
