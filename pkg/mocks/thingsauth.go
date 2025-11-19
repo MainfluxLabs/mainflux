@@ -152,9 +152,9 @@ func (svc thingsServiceMock) GetThingIDsByProfile(_ context.Context, in *protomf
 }
 
 func (svc thingsServiceMock) ActivateGroupInvites(ctx context.Context, req *protomfx.ActivateGroupInvitesReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
-	panic("not implemented")
+	return &emptypb.Empty{}, nil
 }
 
 func (svc thingsServiceMock) CreateDormantGroupInvites(ctx context.Context, req *protomfx.CreateDormantGroupInvitesReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
-	panic("not implemented")
+	return &emptypb.Empty{}, nil
 }
