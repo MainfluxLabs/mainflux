@@ -941,6 +941,18 @@ components:
           type: string
           example: "editor"
           description: The user's proposed role in the organization.
+        groups:
+          type: array
+          items:
+            type: object
+            properties:
+              group_id:
+                format: uuid
+                type: string
+              role:
+                type: string
+                enum: [admin, editor, viewer]
+
         
   parameters:
     ApiKeyId:
