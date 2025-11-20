@@ -407,7 +407,7 @@ services:
 
   ## POSTGRES DB
   postgres:
-    image: postgres:15-alpine
+    image: postgres:13.3-alpine
     container_name: mainfluxlabs-postgres
     restart: on-failure
     environment:
