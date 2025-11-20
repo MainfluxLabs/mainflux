@@ -54,7 +54,7 @@ func (lm *loggingMiddleware) VerifyEmail(ctx context.Context, confirmationToken 
 	return lm.svc.VerifyEmail(ctx, confirmationToken)
 }
 
-func (lm *loggingMiddleware) RegisterByInvite(ctx context.Context, user users.User, inviteID string) (id string, err error) {
+func (lm *loggingMiddleware) RegisterByInvite(ctx context.Context, user users.User, inviteID, orgInviteRedirectPath string) (id string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method register_by_invite for user: %s, inviteID: %s took %s to complete", user.Email, inviteID, time.Since(begin))
 		if err != nil {
@@ -65,7 +65,7 @@ func (lm *loggingMiddleware) RegisterByInvite(ctx context.Context, user users.Us
 
 	}(time.Now())
 
-	return lm.svc.RegisterByInvite(ctx, user, inviteID)
+	return lm.svc.RegisterByInvite(ctx, user, inviteID, orgInviteRedirectPath)
 }
 
 func (lm *loggingMiddleware) RegisterAdmin(ctx context.Context, user users.User) (err error) {
@@ -305,7 +305,7 @@ func (lm *loggingMiddleware) Restore(ctx context.Context, token string, admin us
 	return lm.svc.Restore(ctx, token, admin, users)
 }
 
-func (lm *loggingMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string) (invite users.PlatformInvite, err error) {
+func (lm *loggingMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email, orgID, role string) (invite users.PlatformInvite, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_platform_invite took %s to complete", time.Since(begin))
 		if err != nil {
@@ -316,7 +316,7 @@ func (lm *loggingMiddleware) CreatePlatformInvite(ctx context.Context, token, re
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CreatePlatformInvite(ctx, token, redirectPath, email)
+	return lm.svc.CreatePlatformInvite(ctx, token, redirectPath, email, orgID, role)
 }
 
 func (lm *loggingMiddleware) RevokePlatformInvite(ctx context.Context, token, inviteID string) (err error) {

@@ -33,7 +33,7 @@ func inviteRegistrationEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		userID, err := svc.RegisterByInvite(ctx, req.User, req.inviteID)
+		userID, err := svc.RegisterByInvite(ctx, req.User, req.inviteID, req.RedirectPath)
 		if err != nil {
 			return nil, err
 		}
@@ -394,7 +394,7 @@ func createPlatformInviteEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		invite, err := svc.CreatePlatformInvite(ctx, req.token, req.RedirectPath, req.Email)
+		invite, err := svc.CreatePlatformInvite(ctx, req.token, req.RedirectPath, req.Email, req.OrgID, req.Role)
 		if err != nil {
 			return nil, err
 		}

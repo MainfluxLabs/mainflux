@@ -47,8 +47,9 @@ func (req selfRegisterUserReq) validate() error {
 }
 
 type registerByInviteReq struct {
-	User     users.User `json:"user"`
-	inviteID string
+	User         users.User `json:"user"`
+	RedirectPath string     `json:"redirect_path"`
+	inviteID     string
 }
 
 func (req registerByInviteReq) validate() error {
@@ -56,7 +57,15 @@ func (req registerByInviteReq) validate() error {
 		return apiutil.ErrMissingInviteID
 	}
 
-	return req.User.Validate(userPasswordRegex)
+	if err := req.User.Validate(userPasswordRegex); err != nil {
+		return err
+	}
+
+	if req.RedirectPath == "" {
+		return apiutil.ErrMissingRedirectPath
+	}
+
+	return nil
 }
 
 type oauthProviderReq struct {
@@ -279,6 +288,8 @@ func (req inviteReq) validate() error {
 type createPlatformInviteRequest struct {
 	token        string
 	Email        string `json:"email,omitempty"`
+	OrgID        string `json:"org_id"`
+	Role         string `json:"role"`
 	RedirectPath string `json:"redirect_path,omitempty"`
 }
 
@@ -293,6 +304,10 @@ func (req createPlatformInviteRequest) validate() error {
 
 	if req.RedirectPath == "" {
 		return apiutil.ErrMissingRedirectPath
+	}
+
+	if req.OrgID != "" && req.Role == "" {
+		return apiutil.ErrMissingRole
 	}
 
 	return nil
