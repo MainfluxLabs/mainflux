@@ -419,10 +419,6 @@ func (svc thingsService) ViewGroupInvite(ctx context.Context, token, inviteID st
 
 func (svc thingsService) ListGroupInvitesByUser(ctx context.Context, token, userType, userID string, pm invites.PageMetadataInvites) (GroupInvitesPage, error) {
 	if err := svc.isAdmin(ctx, token); err != nil {
-		if err != errors.ErrAuthorization {
-			return GroupInvitesPage{}, err
-		}
-
 		// Current User is not Root Admin - must be either the Invitee or Inviter
 		user, err := svc.auth.Identify(ctx, &protomfx.Token{Value: token})
 		if err != nil {
