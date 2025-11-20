@@ -142,12 +142,28 @@ func (svc authServiceMock) RetrieveRole(_ context.Context, _ *protomfx.RetrieveR
 	panic("not implemented")
 }
 
-func (svc authServiceMock) ViewOrg(_ context.Context, _ *protomfx.ViewOrgReq, _ ...grpc.CallOption) (r *protomfx.Org, err error) {
-	panic("not implemented")
+func (svc authServiceMock) ViewOrg(_ context.Context, req *protomfx.ViewOrgReq, _ ...grpc.CallOption) (r *protomfx.Org, err error) {
+	orgID := req.GetId().GetValue()
+
+	org, ok := svc.orgs[orgID]
+	if !ok {
+		return &protomfx.Org{}, dbutil.ErrNotFound
+	}
+
+	return &protomfx.Org{
+		Id:          org.ID,
+		OwnerID:     org.OwnerID,
+		Name:        org.Name,
+		Description: org.Description,
+	}, nil
 }
 
-func (svc authServiceMock) ViewOrgMembership(_ context.Context, _ *protomfx.ViewOrgMembershipReq, _ ...grpc.CallOption) (r *protomfx.OrgMembership, err error) {
-	panic("not implemented")
+func (svc authServiceMock) ViewOrgMembership(_ context.Context, req *protomfx.ViewOrgMembershipReq, _ ...grpc.CallOption) (r *protomfx.OrgMembership, err error) {
+	if err := svc.canAccessOrg(req.GetMemberID(), auth.Viewer); err != nil {
+		return &protomfx.OrgMembership{}, err
+	}
+
+	return &protomfx.OrgMembership{MemberID: req.GetMemberID(), OrgID: req.GetOrgID()}, nil
 }
 
 func (svc authServiceMock) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
