@@ -447,7 +447,6 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 }
 
 func (svc usersService) OAuthLogin(provider string) string {
-	//its using google for github, fix it
 	var oauthCfg oauth2.Config
 	switch provider {
 	case GoogleProvider:
@@ -492,6 +491,7 @@ func (svc usersService) OAuthCallback(ctx context.Context, provider, code string
 	var gUser struct {
 		Email string `json:"email"`
 	}
+	//use different struct for github
 
 	if err := json.NewDecoder(resp.Body).Decode(&gUser); err != nil {
 		return "", err
