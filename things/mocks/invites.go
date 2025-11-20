@@ -15,13 +15,13 @@ var _ things.GroupInviteRepository = (*invitesRepositoryMock)(nil)
 
 type invitesRepositoryMock struct {
 	mu                             sync.Mutex
-	orgInvites                     map[string]things.GroupInvite
+	groupInvites                   map[string]things.GroupInvite
 	dormantGroupInvitesByOrgInvite map[string][]string
 }
 
 func NewInvitesRepository() things.GroupInviteRepository {
 	return &invitesRepositoryMock{
-		orgInvites:                     make(map[string]things.GroupInvite),
+		groupInvites:                   make(map[string]things.GroupInvite),
 		dormantGroupInvitesByOrgInvite: make(map[string][]string),
 	}
 }
@@ -31,11 +31,11 @@ func (irm *invitesRepositoryMock) SaveInvites(ctx context.Context, invites ...th
 	defer irm.mu.Unlock()
 
 	for _, invite := range invites {
-		if _, ok := irm.orgInvites[invite.ID]; ok {
+		if _, ok := irm.groupInvites[invite.ID]; ok {
 			return dbutil.ErrConflict
 		}
 
-		for _, existingInvite := range irm.orgInvites {
+		for _, existingInvite := range irm.groupInvites {
 			if existingInvite.InviteeID == invite.InviteeID &&
 				existingInvite.GroupID == invite.GroupID &&
 				existingInvite.InviterID == invite.InviterID &&
@@ -45,7 +45,7 @@ func (irm *invitesRepositoryMock) SaveInvites(ctx context.Context, invites ...th
 			}
 		}
 
-		irm.orgInvites[invite.ID] = invite
+		irm.groupInvites[invite.ID] = invite
 	}
 
 	return nil
@@ -68,32 +68,32 @@ func (irm *invitesRepositoryMock) RetrieveInviteByID(ctx context.Context, invite
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 
-	if _, ok := irm.orgInvites[inviteID]; !ok {
+	if _, ok := irm.groupInvites[inviteID]; !ok {
 		return things.GroupInvite{}, dbutil.ErrNotFound
 	}
 
-	return irm.orgInvites[inviteID], nil
+	return irm.groupInvites[inviteID], nil
 }
 
 func (irm *invitesRepositoryMock) RemoveInvite(ctx context.Context, inviteID string) error {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 
-	if _, ok := irm.orgInvites[inviteID]; !ok {
+	if _, ok := irm.groupInvites[inviteID]; !ok {
 		return dbutil.ErrNotFound
 	}
 
-	delete(irm.orgInvites, inviteID)
+	delete(irm.groupInvites, inviteID)
 
 	return nil
 }
 
-func (irm *invitesRepositoryMock) RetrieveInvitesByDestination(ctx context.Context, orgID string, pm invites.PageMetadataInvites) (things.GroupInvitesPage, error) {
+func (irm *invitesRepositoryMock) RetrieveInvitesByDestination(ctx context.Context, groupID string, pm invites.PageMetadataInvites) (things.GroupInvitesPage, error) {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 
 	keys := make([]string, 0)
-	for k := range irm.orgInvites {
+	for k := range irm.groupInvites {
 		keys = append(keys, k)
 	}
 
@@ -106,14 +106,14 @@ func (irm *invitesRepositoryMock) RetrieveInvitesByDestination(ctx context.Conte
 	}
 
 	for _, key := range keys[pm.Offset:idxEnd] {
-		if irm.orgInvites[key].GroupID == orgID {
-			invites = append(invites, irm.orgInvites[key])
+		if irm.groupInvites[key].GroupID == groupID {
+			invites = append(invites, irm.groupInvites[key])
 		}
 	}
 
 	return things.GroupInvitesPage{
 		Invites: invites,
-		Total:   uint64(len(irm.orgInvites)),
+		Total:   uint64(len(irm.groupInvites)),
 	}, nil
 }
 
@@ -122,7 +122,7 @@ func (irm *invitesRepositoryMock) RetrieveInvitesByUser(ctx context.Context, use
 	defer irm.mu.Unlock()
 
 	keys := make([]string, 0)
-	for k := range irm.orgInvites {
+	for k := range irm.groupInvites {
 		keys = append(keys, k)
 	}
 
@@ -137,19 +137,19 @@ func (irm *invitesRepositoryMock) RetrieveInvitesByUser(ctx context.Context, use
 	for _, key := range keys[pm.Offset:idxEnd] {
 		switch userType {
 		case invites.UserTypeInvitee:
-			if irm.orgInvites[key].InviteeID.String == userID {
-				retInvites = append(retInvites, irm.orgInvites[key])
+			if irm.groupInvites[key].InviteeID.String == userID {
+				retInvites = append(retInvites, irm.groupInvites[key])
 			}
 		case invites.UserTypeInviter:
-			if irm.orgInvites[key].InviterID == userID {
-				retInvites = append(retInvites, irm.orgInvites[key])
+			if irm.groupInvites[key].InviterID == userID {
+				retInvites = append(retInvites, irm.groupInvites[key])
 			}
 		}
 	}
 
 	return things.GroupInvitesPage{
 		Invites: retInvites,
-		Total:   uint64(len(irm.orgInvites)),
+		Total:   uint64(len(irm.groupInvites)),
 	}, nil
 }
 
@@ -157,13 +157,13 @@ func (irm *invitesRepositoryMock) UpdateInviteState(ctx context.Context, inviteI
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 
-	if _, ok := irm.orgInvites[inviteID]; !ok {
+	if _, ok := irm.groupInvites[inviteID]; !ok {
 		return dbutil.ErrNotFound
 	}
 
-	inv := irm.orgInvites[inviteID]
+	inv := irm.groupInvites[inviteID]
 	inv.State = state
 
-	irm.orgInvites[inviteID] = inv
+	irm.groupInvites[inviteID] = inv
 	return nil
 }
