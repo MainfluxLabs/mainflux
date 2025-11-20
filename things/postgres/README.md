@@ -64,4 +64,11 @@ CREATE TABLE IF NOT EXISTS group_invites (
 );
 
 CREATE UNIQUE INDEX unique_group_invitee_pending on org_invites (invitee_id, group_id) WHERE state='pending';
+
+CREATE TABLE IF NOT EXISTS dormant_group_invites (
+    group_invite_id UUID NOT NULL,
+    org_invite_id   UUID NOT NULL,
+    PRIMARY KEY (group_invite_id, org_invite_id),
+    FOREIGN KEY (group_invite_id) REFERENCES group_invites (id) ON DELETE CASCADE
+);
 ```
