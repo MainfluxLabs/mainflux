@@ -55,11 +55,7 @@ func (es eventStore) CreateOrg(ctx context.Context, token string, org auth.Org) 
 	}
 
 	event := createOrgEvent{
-		id:          sorg.ID,
-		ownerID:     sorg.OwnerID,
-		name:        sorg.Name,
-		description: sorg.Description,
-		metadata:    sorg.Metadata,
+		id: sorg.ID,
 	}
 	record := &redis.XAddArgs{
 		Stream:       streamID,

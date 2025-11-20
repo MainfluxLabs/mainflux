@@ -1,7 +1,5 @@
 package redis
 
-import "encoding/json"
-
 const (
 	orgPrefix = "org."
 	orgCreate = orgPrefix + "create"
@@ -18,35 +16,13 @@ var (
 )
 
 type createOrgEvent struct {
-	id          string
-	ownerID     string
-	name        string
-	description string
-	metadata    map[string]interface{}
+	id string
 }
 
 func (coe createOrgEvent) Encode() map[string]interface{} {
 	val := map[string]interface{}{
 		"id":        coe.id,
-		"owner_id":  coe.ownerID,
 		"operation": orgCreate,
-	}
-
-	if coe.name != "" {
-		val["name"] = coe.name
-	}
-
-	if coe.description != "" {
-		val["description"] = coe.description
-	}
-
-	if coe.metadata != nil {
-		metadata, err := json.Marshal(coe.metadata)
-		if err != nil {
-			return val
-		}
-
-		val["metadata"] = string(metadata)
 	}
 
 	return val

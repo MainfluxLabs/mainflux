@@ -88,11 +88,8 @@ func TestCreateOrg(t *testing.T) {
 			token: ownerToken,
 			err:   nil,
 			event: map[string]interface{}{
-				"id":          "123e4567-e89b-12d3-a456-000000000001",
-				"name":        org.Name,
-				"description": org.Description,
-				"metadata":    "{\"test\":\"test\"}",
-				"operation":   orgCreate,
+				"id":        "123e4567-e89b-12d3-a456-000000000001",
+				"operation": orgCreate,
 			},
 		},
 		{
@@ -120,10 +117,6 @@ func TestCreateOrg(t *testing.T) {
 			msg := streams[0].Messages[0]
 			event = msg.Values
 			lastID = msg.ID
-		}
-
-		if oc.event != nil && event != nil {
-			oc.event["owner_id"] = event["owner_id"]
 		}
 
 		assert.Equal(t, oc.event, event, fmt.Sprintf("%s: expected %v got %v\n", oc.desc, oc.event, event))
