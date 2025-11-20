@@ -26,7 +26,6 @@ func TestSaveGroupInvite(t *testing.T) {
 	repoInvites := thingspostgres.NewGroupInviteRepository(dbMiddleware)
 	repoGroups := thingspostgres.NewGroupRepository(dbMiddleware)
 
-	// generate org id in-place (assume org exists)
 	orgID := generateUUID(t)
 
 	groupID, err := idProvider.ID()
@@ -168,7 +167,6 @@ func TestRetrieveGroupInviteByID(t *testing.T) {
 	repoInvites := thingspostgres.NewGroupInviteRepository(dbMiddleware)
 	repoGroups := thingspostgres.NewGroupRepository(dbMiddleware)
 
-	// generate org id in-place (assume org exists)
 	orgID := generateUUID(t)
 
 	groupID, err := idProvider.ID()
@@ -254,7 +252,6 @@ func TestRemoveGroupInvite(t *testing.T) {
 	repoInvites := thingspostgres.NewGroupInviteRepository(dbMiddleware)
 	repoGroups := thingspostgres.NewGroupRepository(dbMiddleware)
 
-	// generate org id in-place (assume org exists)
 	orgID := generateUUID(t)
 
 	groupID, err := idProvider.ID()
@@ -351,7 +348,6 @@ func TestRetrieveGroupInvitesByUserID(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	for i := 0; i < m; i++ {
-		// generate org id in-place (assume org exists)
 		orgID := generateUUID(t)
 
 		groupID, err := idProvider.ID()
