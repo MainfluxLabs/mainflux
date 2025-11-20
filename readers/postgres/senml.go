@@ -71,7 +71,7 @@ func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLPageMet
 
 	params := sr.buildQueryParams(rpm)
 
-	if rpm.AggType != "" && rpm.AggInterval != "" {
+	if rpm.AggType != "" && rpm.AggIntervalUnit != "" {
 		messages, total, err := sr.aggregator.readAggregatedSenMLMessages(ctx, rpm)
 		if err != nil {
 			return page, err
