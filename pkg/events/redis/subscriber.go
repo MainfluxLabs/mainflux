@@ -16,7 +16,6 @@ import (
 const (
 	eventCount = 100
 	exists     = "BUSYGROUP Consumer Group name already exists"
-	group      = "mainflux"
 )
 
 var _ events.Subscriber = (*subEventStore)(nil)
@@ -27,22 +26,30 @@ var (
 
 	// ErrEmptyConsumer is returned when consumer name is empty.
 	ErrEmptyConsumer = errors.New("consumer name cannot be empty")
+
+	// ErrEmptyGroup is returned when consumer group name is empty.
+	ErrEmptyGroup = errors.New("consumer group cannot be empty")
 )
 
 type subEventStore struct {
 	client   *redis.Client
 	stream   string
 	consumer string
+	group    string
 	logger   logger.Logger
 }
 
-func NewSubscriber(url, stream, consumer string, logger logger.Logger) (events.Subscriber, error) {
+func NewSubscriber(url, stream, group, consumer string, logger logger.Logger) (events.Subscriber, error) {
 	if stream == "" {
 		return nil, ErrEmptyStream
 	}
 
 	if consumer == "" {
 		return nil, ErrEmptyConsumer
+	}
+
+	if group == "" {
+		return nil, ErrEmptyGroup
 	}
 
 	opts, err := redis.ParseURL(url)
@@ -54,12 +61,13 @@ func NewSubscriber(url, stream, consumer string, logger logger.Logger) (events.S
 		client:   redis.NewClient(opts),
 		stream:   stream,
 		consumer: consumer,
+		group:    group,
 		logger:   logger,
 	}, nil
 }
 
 func (es *subEventStore) Subscribe(ctx context.Context, handler events.EventHandler) error {
-	err := es.client.XGroupCreateMkStream(ctx, es.stream, group, "$").Err()
+	err := es.client.XGroupCreateMkStream(ctx, es.stream, es.group, "$").Err()
 	if err != nil && err.Error() != exists {
 		return err
 	}
@@ -67,7 +75,7 @@ func (es *subEventStore) Subscribe(ctx context.Context, handler events.EventHand
 	go func() {
 		for {
 			msgs, err := es.client.XReadGroup(ctx, &redis.XReadGroupArgs{
-				Group:    group,
+				Group:    es.group,
 				Consumer: es.consumer,
 				Streams:  []string{es.stream, ">"},
 				Count:    eventCount,
@@ -108,13 +116,11 @@ func (es *subEventStore) handle(ctx context.Context, msgs []redis.XMessage, h ev
 
 		if err := h.Handle(ctx, event); err != nil {
 			es.logger.Warn(fmt.Sprintf("failed to handle redis event: %s", err))
-
 			return
 		}
 
-		if err := es.client.XAck(ctx, es.stream, group, msg.ID).Err(); err != nil {
+		if err := es.client.XAck(ctx, es.stream, es.group, msg.ID).Err(); err != nil {
 			es.logger.Warn(fmt.Sprintf("failed to ack redis event: %s", err))
-
 			return
 		}
 	}
