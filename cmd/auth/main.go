@@ -314,16 +314,16 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func connectToRedis(cacheURL, cachePass string, cacheDB string, logger logger.Logger) *redis.Client {
-	db, err := strconv.Atoi(cacheDB)
+func connectToRedis(redisURL, redisPass string, redisDB string, logger logger.Logger) *redis.Client {
+	db, err := strconv.Atoi(redisDB)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to cache: %s", err))
 		os.Exit(1)
 	}
 
 	return redis.NewClient(&redis.Options{
-		Addr:     cacheURL,
-		Password: cachePass,
+		Addr:     redisURL,
+		Password: redisPass,
 		DB:       db,
 	})
 }
