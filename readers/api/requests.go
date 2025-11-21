@@ -27,6 +27,11 @@ func (req listSenMLMessagesReq) validate() error {
 		return apiutil.ErrLimitSize
 	}
 
+	if req.pageMeta.Dir != "" &&
+		req.pageMeta.Dir != apiutil.AscDir && req.pageMeta.Dir != apiutil.DescDir {
+		return apiutil.ErrInvalidDirection
+	}
+
 	if req.pageMeta.Comparator != "" &&
 		req.pageMeta.Comparator != readers.EqualKey &&
 		req.pageMeta.Comparator != readers.LowerThanKey &&
@@ -59,6 +64,11 @@ func (req listJSONMessagesReq) validate() error {
 		return apiutil.ErrLimitSize
 	}
 
+	if req.pageMeta.Dir != "" &&
+		req.pageMeta.Dir != apiutil.AscDir && req.pageMeta.Dir != apiutil.DescDir {
+		return apiutil.ErrInvalidDirection
+	}
+
 	if err := validateAggregation(req.pageMeta.AggType); err != nil {
 		return err
 	}
@@ -85,6 +95,11 @@ func (req backupSenMLMessagesReq) validate() error {
 		return err
 	}
 
+	if req.pageMeta.Dir != "" &&
+		req.pageMeta.Dir != apiutil.AscDir && req.pageMeta.Dir != apiutil.DescDir {
+		return apiutil.ErrInvalidDirection
+	}
+
 	return nil
 }
 
@@ -107,14 +122,18 @@ func (req backupJSONMessagesReq) validate() error {
 		return err
 	}
 
+	if req.pageMeta.Dir != "" &&
+		req.pageMeta.Dir != apiutil.AscDir && req.pageMeta.Dir != apiutil.DescDir {
+		return apiutil.ErrInvalidDirection
+	}
+
 	return nil
 }
 
 type restoreMessagesReq struct {
-	token         string
-	fileType      string
-	messageFormat string
-	Messages      []byte
+	token    string
+	fileType string
+	Messages []byte
 }
 
 func (req restoreMessagesReq) validate() error {

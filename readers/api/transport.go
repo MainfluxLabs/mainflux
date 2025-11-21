@@ -40,6 +40,7 @@ const (
 	aggTypeKey             = "agg_type"
 	aggFieldKey            = "agg_field"
 	publisherKey           = "publisher"
+	timeFormatKey          = "time_format"
 	jsonFormat             = "json"
 	csvFormat              = "csv"
 )
@@ -276,12 +277,18 @@ func decodeBackupJSONMessages(_ context.Context, r *http.Request) (interface{}, 
 		return nil, err
 	}
 
+	tf, err := apiutil.ReadStringQuery(r, timeFormatKey, "")
+	if err != nil {
+		return readers.SenMLPageMetadata{}, err
+	}
+
 	pageMeta, err := BuildJSONPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
 
 	pageMeta.Publisher = publisher
+	pageMeta.TimeFormat = tf
 
 	return backupJSONMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
@@ -301,12 +308,18 @@ func decodeBackupSenMLMessages(_ context.Context, r *http.Request) (interface{},
 		return nil, err
 	}
 
+	tf, err := apiutil.ReadStringQuery(r, timeFormatKey, "")
+	if err != nil {
+		return readers.SenMLPageMetadata{}, err
+	}
+
 	pageMeta, err := BuildSenMLPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
 
 	pageMeta.Publisher = publisher
+	pageMeta.TimeFormat = tf
 
 	return backupSenMLMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
@@ -402,6 +415,11 @@ func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
 		return readers.JSONPageMetadata{}, err
 	}
 
+	d, err := apiutil.ReadStringQuery(r, apiutil.DirKey, apiutil.DescDir)
+	if err != nil {
+		return readers.JSONPageMetadata{}, err
+	}
+
 	pageMeta := readers.JSONPageMetadata{
 		Subtopic:    subtopic,
 		Protocol:    protocol,
@@ -410,6 +428,7 @@ func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
 		AggInterval: ai,
 		AggType:     at,
 		AggField:    af,
+		Dir:         d,
 	}
 
 	return pageMeta, nil
@@ -481,6 +500,11 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 		return readers.SenMLPageMetadata{}, err
 	}
 
+	d, err := apiutil.ReadStringQuery(r, apiutil.DirKey, apiutil.DescDir)
+	if err != nil {
+		return readers.SenMLPageMetadata{}, err
+	}
+
 	pageMeta := readers.SenMLPageMetadata{
 		Name:        name,
 		Subtopic:    subtopic,
@@ -495,6 +519,7 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 		AggInterval: ai,
 		AggType:     at,
 		AggField:    af,
+		Dir:         d,
 	}
 
 	return pageMeta, nil
