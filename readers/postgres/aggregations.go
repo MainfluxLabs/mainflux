@@ -28,13 +28,24 @@ const (
 	senmlOrder           = "time"
 )
 
+var standardIntervals = map[string]bool{
+	"minute":  true,
+	"hour":    true,
+	"day":     true,
+	"week":    true,
+	"month":   true,
+	"quarter": true,
+	"year":    true,
+}
+
 type QueryConfig struct {
 	Table            string
 	TimeColumn       string
 	Condition        string
 	ConditionForJoin string
 	Limit            uint64
-	AggInterval      string
+	AggIntervalUnit  string
+	AggIntervalValue int64
 	AggField         string
 	AggType          string
 }
@@ -70,12 +81,13 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 	}
 
 	config := QueryConfig{
-		Table:       jsonTable,
-		TimeColumn:  jsonOrder,
-		AggField:    rpm.AggField,
-		AggInterval: rpm.AggInterval,
-		AggType:     rpm.AggType,
-		Limit:       rpm.Limit,
+		Table:            jsonTable,
+		TimeColumn:       jsonOrder,
+		AggField:         rpm.AggField,
+		AggIntervalUnit:  rpm.AggIntervalUnit,
+		AggIntervalValue: rpm.AggIntervalValue,
+		AggType:          rpm.AggType,
+		Limit:            rpm.Limit,
 	}
 
 	conditions := as.getJSONConditions(rpm)
@@ -108,8 +120,9 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 		return []readers.Message{}, 0, err
 	}
 
-	countQuery := fmt.Sprintf(` SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000))) FROM %s %s`,
-		rpm.AggInterval, jsonOrder, jsonTable, config.Condition)
+	timeTrunc := buildTruncTimeExpression(rpm.AggIntervalValue, rpm.AggIntervalUnit, jsonOrder)
+	countQuery := fmt.Sprintf(`SELECT COUNT(DISTINCT %s) FROM %s %s`,
+		timeTrunc, jsonTable, config.Condition)
 
 	total, err := dbutil.Total(ctx, as.db, countQuery, params)
 	if err != nil {
@@ -136,12 +149,12 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 	}
 
 	config := QueryConfig{
-		Table:       senmlTable,
-		TimeColumn:  senmlOrder,
-		AggField:    rpm.AggField,
-		AggInterval: rpm.AggInterval,
-		AggType:     rpm.AggType,
-		Limit:       rpm.Limit,
+		Table:           senmlTable,
+		TimeColumn:      senmlOrder,
+		AggField:        rpm.AggField,
+		AggIntervalUnit: rpm.AggIntervalUnit,
+		AggType:         rpm.AggType,
+		Limit:           rpm.Limit,
 	}
 
 	conditions := as.getSenMLConditions(rpm)
@@ -179,8 +192,9 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 		return []readers.Message{}, 0, err
 	}
 
-	countQuery := fmt.Sprintf(` SELECT COUNT(DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000))) FROM %s %s`,
-		rpm.AggInterval, senmlOrder, senmlTable, config.Condition)
+	timeTrunc := buildTruncTimeExpression(rpm.AggIntervalValue, rpm.AggIntervalUnit, senmlOrder)
+	countQuery := fmt.Sprintf(`SELECT COUNT(DISTINCT %s) FROM %s %s`,
+		timeTrunc, senmlTable, config.Condition)
 
 	total, err := dbutil.Total(ctx, as.db, countQuery, params)
 	if err != nil {
@@ -408,18 +422,35 @@ func (countStrt CountStrategy) GetAggregateExpression(config QueryConfig) string
 }
 
 func buildTimeIntervals(config QueryConfig) string {
+	timeTrunc := buildTruncTimeExpression(config.AggIntervalValue, config.AggIntervalUnit, config.TimeColumn)
 	return fmt.Sprintf(`
-        SELECT DISTINCT date_trunc('%s', to_timestamp(%s / 1000000000)) as interval_time
+        SELECT DISTINCT %s as interval_time
         FROM %s 
         %s
         ORDER BY interval_time DESC
         LIMIT %d`,
-		config.AggInterval, config.TimeColumn, config.Table, config.Condition, config.Limit)
+		timeTrunc, config.Table, config.Condition, config.Limit)
+}
+
+func buildTruncTimeExpression(intervalVal int64, intervalUnit string, timeColumn string) string {
+	timestamp := fmt.Sprintf("to_timestamp(%s / 1000000000)", timeColumn)
+
+	interval := fmt.Sprintf("%d %s", intervalVal, intervalUnit)
+	if standardIntervals[interval] {
+		return fmt.Sprintf("date_trunc('%s', %s)", interval, timestamp)
+	}
+
+	return fmt.Sprintf(
+		"to_timestamp(floor(extract(epoch from %s) / extract(epoch from interval '%s')) * extract(epoch from interval '%s'))",
+		timestamp,
+		interval,
+		interval,
+	)
 }
 
 func buildTimeJoinCondition(config QueryConfig, tableAlias string) string {
-	return fmt.Sprintf("date_trunc('%s', to_timestamp(m.%s / 1000000000)) = %s.interval_time",
-		config.AggInterval, config.TimeColumn, tableAlias)
+	timeTrunc := buildTruncTimeExpression(config.AggIntervalValue, config.AggIntervalUnit, "m."+config.TimeColumn)
+	return fmt.Sprintf("%s = %s.interval_time", timeTrunc, tableAlias)
 }
 
 func buildValueCondition(config QueryConfig) string {

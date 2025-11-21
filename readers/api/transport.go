@@ -36,7 +36,8 @@ const (
 	toKey                  = "to"
 	convertKey             = "convert"
 	filterKey              = "filter"
-	aggIntervalKey         = "agg_interval"
+	aggIntervalKey         = "agg_int"
+	aggIntervalValueKey    = "agg_val"
 	aggTypeKey             = "agg_type"
 	aggFieldKey            = "agg_field"
 	publisherKey           = "publisher"
@@ -392,6 +393,11 @@ func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
 		return readers.JSONPageMetadata{}, err
 	}
 
+	av, err := apiutil.ReadIntQuery(r, aggIntervalValueKey, 0)
+	if err != nil {
+		return readers.JSONPageMetadata{}, err
+	}
+
 	at, err := apiutil.ReadStringQuery(r, aggTypeKey, "")
 	if err != nil {
 		return readers.JSONPageMetadata{}, err
@@ -403,13 +409,14 @@ func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
 	}
 
 	pageMeta := readers.JSONPageMetadata{
-		Subtopic:    subtopic,
-		Protocol:    protocol,
-		From:        from,
-		To:          to,
-		AggInterval: ai,
-		AggType:     at,
-		AggField:    af,
+		Subtopic:         subtopic,
+		Protocol:         protocol,
+		From:             from,
+		To:               to,
+		AggIntervalUnit:  ai,
+		AggIntervalValue: av,
+		AggType:          at,
+		AggField:         af,
 	}
 
 	return pageMeta, nil
@@ -471,6 +478,11 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 		return readers.SenMLPageMetadata{}, err
 	}
 
+	av, err := apiutil.ReadIntQuery(r, aggIntervalValueKey, 0)
+	if err != nil {
+		return readers.SenMLPageMetadata{}, err
+	}
+
 	at, err := apiutil.ReadStringQuery(r, aggTypeKey, "")
 	if err != nil {
 		return readers.SenMLPageMetadata{}, err
@@ -482,19 +494,20 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 	}
 
 	pageMeta := readers.SenMLPageMetadata{
-		Name:        name,
-		Subtopic:    subtopic,
-		Protocol:    protocol,
-		Value:       v,
-		Comparator:  comparator,
-		StringValue: vs,
-		DataValue:   vd,
-		BoolValue:   vb,
-		From:        from,
-		To:          to,
-		AggInterval: ai,
-		AggType:     at,
-		AggField:    af,
+		Name:             name,
+		Subtopic:         subtopic,
+		Protocol:         protocol,
+		Value:            v,
+		Comparator:       comparator,
+		StringValue:      vs,
+		DataValue:        vd,
+		BoolValue:        vb,
+		From:             from,
+		To:               to,
+		AggIntervalUnit:  ai,
+		AggIntervalValue: av,
+		AggType:          at,
+		AggField:         af,
 	}
 
 	return pageMeta, nil
