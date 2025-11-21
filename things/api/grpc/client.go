@@ -20,18 +20,20 @@ import (
 var _ protomfx.ThingsServiceClient = (*grpcClient)(nil)
 
 type grpcClient struct {
-	timeout               time.Duration
-	getPubConfByKey       endpoint.Endpoint
-	getConfigByThingID    endpoint.Endpoint
-	canUserAccessThing    endpoint.Endpoint
-	canUserAccessProfile  endpoint.Endpoint
-	canUserAccessGroup    endpoint.Endpoint
-	canThingAccessGroup   endpoint.Endpoint
-	identify              endpoint.Endpoint
-	getGroupIDByThingID   endpoint.Endpoint
-	getGroupIDByProfileID endpoint.Endpoint
-	getGroupIDsByOrg      endpoint.Endpoint
-	getThingIDsByProfile  endpoint.Endpoint
+	timeout                   time.Duration
+	getPubConfByKey           endpoint.Endpoint
+	getConfigByThingID        endpoint.Endpoint
+	canUserAccessThing        endpoint.Endpoint
+	canUserAccessProfile      endpoint.Endpoint
+	canUserAccessGroup        endpoint.Endpoint
+	canThingAccessGroup       endpoint.Endpoint
+	identify                  endpoint.Endpoint
+	getGroupIDByThingID       endpoint.Endpoint
+	getGroupIDByProfileID     endpoint.Endpoint
+	getGroupIDsByOrg          endpoint.Endpoint
+	getThingIDsByProfile      endpoint.Endpoint
+	createDormantGroupInvites endpoint.Endpoint
+	activateGroupInvites      endpoint.Endpoint
 }
 
 // NewClient returns new gRPC client instance.
@@ -127,6 +129,22 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			encodeGetThingIDsByProfileRequest,
 			decodeGetThingIDsResponse,
 			protomfx.ThingIDs{},
+		).Endpoint()),
+		activateGroupInvites: kitot.TraceClient(tracer, "activate_group_invites")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"ActivateGroupInvites",
+			encodeActivateGroupInvitesRequest,
+			decodeEmptyResponse,
+			emptypb.Empty{},
+		).Endpoint()),
+		createDormantGroupInvites: kitot.TraceClient(tracer, "create_dormant_group_invites")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"CreateDormantGroupInvites",
+			encodeCreateDormantGroupInvitesRequest,
+			decodeEmptyResponse,
+			emptypb.Empty{},
 		).Endpoint()),
 	}
 }
@@ -269,6 +287,50 @@ func (client grpcClient) GetThingIDsByProfile(ctx context.Context, req *protomfx
 	return &protomfx.ThingIDs{Ids: ids.thingIDs}, nil
 }
 
+func (client grpcClient) ActivateGroupInvites(ctx context.Context, req *protomfx.ActivateGroupInvitesReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	_, err := client.activateGroupInvites(ctx, activateGroupInvitesReq{
+		token:        req.GetToken(),
+		orgInviteID:  req.GetOrgInviteID(),
+		redirectPath: req.GetRedirectPath(),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (client grpcClient) CreateDormantGroupInvites(ctx context.Context, req *protomfx.CreateDormantGroupInvitesReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	groupMemberships := req.GetMemberships()
+	grpcReq := createDormantGroupInvitesReq{
+		token:       req.GetToken(),
+		orgInviteID: req.GetOrgInviteID(),
+		memberships: make([]groupMembership, 0, len(groupMemberships)),
+	}
+
+	for _, gm := range groupMemberships {
+		grpcReq.memberships = append(grpcReq.memberships, groupMembership{
+			groupID: gm.GetGroupID(),
+			role:    gm.GetRole(),
+		})
+	}
+
+	_, err := client.createDormantGroupInvites(ctx, grpcReq)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
 func encodeGetPubConfByKeyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(thingKey)
 	return &protomfx.ThingKey{Value: req.value, Type: req.keyType}, nil
@@ -327,6 +389,33 @@ func encodeGetThingIDsByProfileRequest(_ context.Context, grpcReq interface{}) (
 	return &protomfx.ProfileID{
 		Value: req.profileID,
 	}, nil
+}
+
+func encodeActivateGroupInvitesRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(activateGroupInvitesReq)
+	return &protomfx.ActivateGroupInvitesReq{
+		Token:        req.token,
+		OrgInviteID:  req.orgInviteID,
+		RedirectPath: req.redirectPath,
+	}, nil
+}
+
+func encodeCreateDormantGroupInvitesRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(createDormantGroupInvitesReq)
+	protoReq := &protomfx.CreateDormantGroupInvitesReq{
+		Token:       req.token,
+		OrgInviteID: req.orgInviteID,
+		Memberships: make([]*protomfx.GroupMembership, 0, len(req.memberships)),
+	}
+
+	for _, membership := range req.memberships {
+		protoReq.Memberships = append(protoReq.Memberships, &protomfx.GroupMembership{
+			GroupID: membership.groupID,
+			Role:    membership.role,
+		})
+	}
+
+	return protoReq, nil
 }
 
 func decodeIdentityResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {

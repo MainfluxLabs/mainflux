@@ -11,6 +11,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/invites"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -225,13 +226,13 @@ func (ms *metricsMiddleware) RetrieveRole(ctx context.Context, id string) (strin
 	return ms.svc.RetrieveRole(ctx, id)
 }
 
-func (ms *metricsMiddleware) CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string) (auth.OrgInvite, error) {
+func (ms *metricsMiddleware) CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string, groups ...auth.DormantGroupInvite) (auth.OrgInvite, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_org_invite").Add(1)
 		ms.latency.With("method", "create_org_invite").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateOrgInvite(ctx, token, email, role, orgID, invRedirectPath)
+	return ms.svc.CreateOrgInvite(ctx, token, email, role, orgID, invRedirectPath, groups...)
 }
 
 func (ms *metricsMiddleware) CreateDormantOrgInvite(ctx context.Context, token, orgID, role, platformInviteID string) (auth.OrgInvite, error) {
@@ -261,16 +262,16 @@ func (ms *metricsMiddleware) RevokeOrgInvite(ctx context.Context, token, inviteI
 	return ms.svc.RevokeOrgInvite(ctx, token, inviteID)
 }
 
-func (ms *metricsMiddleware) RespondOrgInvite(ctx context.Context, token, inviteID string, accept bool) error {
+func (ms *metricsMiddleware) RespondOrgInvite(ctx context.Context, token, inviteID string, accept bool, grRedirectPath string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "respond_org_invite").Add(1)
 		ms.latency.With("method", "respond_org_invite").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.RespondOrgInvite(ctx, token, inviteID, accept)
+	return ms.svc.RespondOrgInvite(ctx, token, inviteID, accept, grRedirectPath)
 }
 
-func (ms *metricsMiddleware) ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
+func (ms *metricsMiddleware) ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm invites.PageMetadataInvites) (auth.OrgInvitesPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_org_invites_by_user").Add(1)
 		ms.latency.With("method", "list_org_invites_by_user").Observe(time.Since(begin).Seconds())
@@ -279,7 +280,7 @@ func (ms *metricsMiddleware) ListOrgInvitesByUser(ctx context.Context, token, us
 	return ms.svc.ListOrgInvitesByUser(ctx, token, userType, userID, pm)
 }
 
-func (ms *metricsMiddleware) ListOrgInvitesByOrg(ctx context.Context, token, orgID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
+func (ms *metricsMiddleware) ListOrgInvitesByOrg(ctx context.Context, token, orgID string, pm invites.PageMetadataInvites) (auth.OrgInvitesPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_org_invites_by_org").Add(1)
 		ms.latency.With("method", "list_org_invites_by_org").Observe(time.Since(begin).Seconds())

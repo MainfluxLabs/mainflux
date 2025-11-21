@@ -28,6 +28,8 @@ type grpcClient struct {
 	authorize              endpoint.Endpoint
 	getOwnerIDByOrgID      endpoint.Endpoint
 	retrieveRole           endpoint.Endpoint
+	viewOrgMembership      endpoint.Endpoint
+	viewOrg                endpoint.Endpoint
 	assignRole             endpoint.Endpoint
 	createDormantOrgInvite endpoint.Endpoint
 	activateOrgInvite      endpoint.Endpoint
@@ -65,8 +67,8 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			conn,
 			svcName,
 			"GetOwnerIDByOrgID",
-			encodeGetOwnerIDByOrgIDRequest,
-			decodeGetOwnerIDByOrgIDResponse,
+			encodeOrgIDRequest,
+			decodeOwnerIDResponse,
 			protomfx.OwnerID{},
 		).Endpoint()),
 		retrieveRole: kitot.TraceClient(tracer, "retrieve_role")(kitgrpc.NewClient(
@@ -76,6 +78,22 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			encodeRetrieveRoleRequest,
 			decodeRetrieveRoleResponse,
 			protomfx.RetrieveRoleRes{},
+		).Endpoint()),
+		viewOrgMembership: kitot.TraceClient(tracer, "view_org_membership")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"ViewOrgMembership",
+			encodeViewOrgMembershipRequest,
+			decodeOrgMembershipResponse,
+			protomfx.OrgMembership{},
+		).Endpoint()),
+		viewOrg: kitot.TraceClient(tracer, "view_org")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"ViewOrg",
+			encodeViewOrgRequest,
+			decodeOrgResponse,
+			protomfx.Org{},
 		).Endpoint()),
 		assignRole: kitot.TraceClient(tracer, "assign_role")(kitgrpc.NewClient(
 			conn,
@@ -179,23 +197,23 @@ func (client grpcClient) GetOwnerIDByOrgID(ctx context.Context, req *protomfx.Or
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := client.getOwnerIDByOrgID(ctx, ownerIDByOrgIDReq{orgID: req.GetValue()})
+	res, err := client.getOwnerIDByOrgID(ctx, orgIDReq{orgID: req.GetValue()})
 	if err != nil {
 		return nil, err
 	}
 
-	oid := res.(ownerIDByOrgIDRes)
+	oid := res.(ownerIDRes)
 	return &protomfx.OwnerID{Value: oid.ownerID}, nil
 }
 
-func encodeGetOwnerIDByOrgIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(ownerIDByOrgIDReq)
+func encodeOrgIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(orgIDReq)
 	return &protomfx.OrgID{Value: req.orgID}, nil
 }
 
-func decodeGetOwnerIDByOrgIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+func decodeOwnerIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(*protomfx.OwnerID)
-	return ownerIDByOrgIDRes{ownerID: res.GetValue()}, nil
+	return ownerIDRes{ownerID: res.GetValue()}, nil
 }
 
 func (client grpcClient) AssignRole(ctx context.Context, req *protomfx.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
@@ -242,6 +260,88 @@ func encodeRetrieveRoleRequest(_ context.Context, grpcReq interface{}) (interfac
 func decodeRetrieveRoleResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
 	res := grpcRes.(*protomfx.RetrieveRoleRes)
 	return retrieveRoleRes{role: res.GetRole()}, nil
+}
+
+func (client grpcClient) ViewOrgMembership(ctx context.Context, req *protomfx.ViewOrgMembershipReq, _ ...grpc.CallOption) (r *protomfx.OrgMembership, err error) {
+	ctx, close := context.WithTimeout(ctx, client.timeout)
+	defer close()
+
+	res, err := client.viewOrgMembership(ctx, viewOrgMembershipReq{
+		token:    req.GetToken(),
+		memberID: req.GetMemberID(),
+		orgID:    req.GetOrgID(),
+	})
+
+	if err != nil {
+		return &protomfx.OrgMembership{}, err
+	}
+
+	rr := res.(orgMembershipRes)
+	return &protomfx.OrgMembership{
+		MemberID: rr.memberID,
+		OrgID:    rr.orgID,
+		Role:     rr.role,
+	}, err
+}
+
+func encodeViewOrgMembershipRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(viewOrgMembershipReq)
+	return &protomfx.ViewOrgMembershipReq{
+		Token:    req.token,
+		MemberID: req.memberID,
+		OrgID:    req.orgID,
+	}, nil
+}
+
+func decodeOrgMembershipResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+	res := grpcRes.(*protomfx.OrgMembership)
+	return orgMembershipRes{
+		orgID:    res.GetOrgID(),
+		memberID: res.GetMemberID(),
+		role:     res.GetRole(),
+	}, nil
+}
+
+func (client grpcClient) ViewOrg(ctx context.Context, req *protomfx.ViewOrgReq, _ ...grpc.CallOption) (r *protomfx.Org, err error) {
+	ctx, close := context.WithTimeout(ctx, client.timeout)
+	defer close()
+
+	res, err := client.viewOrg(ctx, viewOrgReq{
+		token: req.GetToken(),
+		id:    req.GetId().GetValue(),
+	})
+
+	if err != nil {
+		return &protomfx.Org{}, err
+	}
+
+	rr := res.(orgRes)
+	return &protomfx.Org{
+		Id:          rr.id,
+		OwnerID:     rr.ownerID,
+		Name:        rr.name,
+		Description: rr.description,
+	}, nil
+}
+
+func encodeViewOrgRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	req := grpcReq.(viewOrgReq)
+	return &protomfx.ViewOrgReq{
+		Token: req.token,
+		Id: &protomfx.OrgID{
+			Value: req.id,
+		},
+	}, nil
+}
+
+func decodeOrgResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+	res := grpcRes.(*protomfx.Org)
+	return orgRes{
+		id:          res.GetId(),
+		ownerID:     res.GetOwnerID(),
+		name:        res.GetName(),
+		description: res.GetDescription(),
+	}, nil
 }
 
 func (client grpcClient) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {

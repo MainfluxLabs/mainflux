@@ -8,9 +8,10 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/invites"
 )
 
-var _ auth.OrgInvitesRepository = (*invitesRepositoryMock)(nil)
+var _ auth.OrgInviteRepository = (*invitesRepositoryMock)(nil)
 
 type invitesRepositoryMock struct {
 	mu                                sync.Mutex
@@ -18,14 +19,14 @@ type invitesRepositoryMock struct {
 	dormantOrgInvitesByPlatformInvite map[string][]string
 }
 
-func NewInvitesRepository() auth.OrgInvitesRepository {
+func NewInvitesRepository() auth.OrgInviteRepository {
 	return &invitesRepositoryMock{
 		orgInvites:                        make(map[string]auth.OrgInvite),
 		dormantOrgInvitesByPlatformInvite: make(map[string][]string),
 	}
 }
 
-func (irm *invitesRepositoryMock) SaveOrgInvite(ctx context.Context, invites ...auth.OrgInvite) error {
+func (irm *invitesRepositoryMock) SaveInvites(ctx context.Context, invites ...auth.OrgInvite) error {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 
@@ -63,7 +64,7 @@ func (irm *invitesRepositoryMock) ActivateOrgInvite(ctx context.Context, platfor
 	panic("not implemented")
 }
 
-func (irm *invitesRepositoryMock) RetrieveOrgInviteByID(ctx context.Context, inviteID string) (auth.OrgInvite, error) {
+func (irm *invitesRepositoryMock) RetrieveInviteByID(ctx context.Context, inviteID string) (auth.OrgInvite, error) {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 
@@ -74,7 +75,7 @@ func (irm *invitesRepositoryMock) RetrieveOrgInviteByID(ctx context.Context, inv
 	return irm.orgInvites[inviteID], nil
 }
 
-func (irm *invitesRepositoryMock) RemoveOrgInvite(ctx context.Context, inviteID string) error {
+func (irm *invitesRepositoryMock) RemoveInvite(ctx context.Context, inviteID string) error {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 
@@ -87,7 +88,7 @@ func (irm *invitesRepositoryMock) RemoveOrgInvite(ctx context.Context, inviteID 
 	return nil
 }
 
-func (irm *invitesRepositoryMock) RetrieveOrgInvitesByOrg(ctx context.Context, orgID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
+func (irm *invitesRepositoryMock) RetrieveInvitesByDestination(ctx context.Context, orgID string, pm invites.PageMetadataInvites) (auth.OrgInvitesPage, error) {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 
@@ -116,7 +117,7 @@ func (irm *invitesRepositoryMock) RetrieveOrgInvitesByOrg(ctx context.Context, o
 	}, nil
 }
 
-func (irm *invitesRepositoryMock) RetrieveOrgInvitesByUser(ctx context.Context, userType, userID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
+func (irm *invitesRepositoryMock) RetrieveInvitesByUser(ctx context.Context, userType, userID string, pm invites.PageMetadataInvites) (auth.OrgInvitesPage, error) {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 
@@ -127,7 +128,7 @@ func (irm *invitesRepositoryMock) RetrieveOrgInvitesByUser(ctx context.Context, 
 
 	sort.Strings(keys)
 
-	invites := make([]auth.OrgInvite, 0)
+	retInvites := make([]auth.OrgInvite, 0)
 	idxEnd := pm.Offset + pm.Limit
 	if idxEnd > uint64(len(keys)) {
 		idxEnd = uint64(len(keys))
@@ -135,24 +136,24 @@ func (irm *invitesRepositoryMock) RetrieveOrgInvitesByUser(ctx context.Context, 
 
 	for _, key := range keys[pm.Offset:idxEnd] {
 		switch userType {
-		case auth.UserTypeInvitee:
-			if irm.orgInvites[key].InviteeID == userID {
-				invites = append(invites, irm.orgInvites[key])
+		case invites.UserTypeInvitee:
+			if irm.orgInvites[key].InviteeID.String == userID {
+				retInvites = append(retInvites, irm.orgInvites[key])
 			}
-		case auth.UserTypeInviter:
+		case invites.UserTypeInviter:
 			if irm.orgInvites[key].InviterID == userID {
-				invites = append(invites, irm.orgInvites[key])
+				retInvites = append(retInvites, irm.orgInvites[key])
 			}
 		}
 	}
 
 	return auth.OrgInvitesPage{
-		Invites: invites,
+		Invites: retInvites,
 		Total:   uint64(len(irm.orgInvites)),
 	}, nil
 }
 
-func (irm *invitesRepositoryMock) UpdateOrgInviteState(ctx context.Context, inviteID, state string) error {
+func (irm *invitesRepositoryMock) UpdateInviteState(ctx context.Context, inviteID, state string) error {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 

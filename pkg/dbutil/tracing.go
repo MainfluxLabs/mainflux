@@ -17,6 +17,7 @@ type database struct {
 // Database provides a database interface
 type Database interface {
 	NamedExecContext(context.Context, string, interface{}) (sql.Result, error)
+	ExecContext(context.Context, string, ...any) (sql.Result, error)
 	QueryRowxContext(context.Context, string, ...interface{}) *sqlx.Row
 	NamedQueryContext(context.Context, string, interface{}) (*sqlx.Rows, error)
 	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
@@ -34,6 +35,11 @@ func NewDatabase(db *sqlx.DB) Database {
 func (dm database) NamedExecContext(ctx context.Context, query string, args interface{}) (sql.Result, error) {
 	addSpanTags(ctx, query)
 	return dm.db.NamedExecContext(ctx, query, args)
+}
+
+func (dm database) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	addSpanTags(ctx, query)
+	return dm.db.ExecContext(ctx, query, args...)
 }
 
 func (dm database) QueryRowxContext(ctx context.Context, query string, args ...interface{}) *sqlx.Row {

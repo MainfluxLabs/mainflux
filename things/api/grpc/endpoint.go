@@ -251,3 +251,41 @@ func getThingIDsByProfileEndpoint(svc things.Service) endpoint.Endpoint {
 		return thingIDsRes{thingIDs: thingIDs}, nil
 	}
 }
+
+func createDormantGroupInvitesEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(createDormantGroupInvitesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		groupMemberships := make([]things.GroupMembership, 0, len(req.memberships))
+		for _, membership := range req.memberships {
+			groupMemberships = append(groupMemberships, things.GroupMembership{
+				GroupID: membership.groupID,
+				Role:    membership.role,
+			})
+		}
+
+		if err := svc.CreateDormantGroupInvites(ctx, req.token, req.orgInviteID, groupMemberships...); err != nil {
+			return nil, err
+		}
+
+		return emptyRes{}, nil
+	}
+}
+
+func activateGroupInvitesEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(activateGroupInvitesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.ActivateGroupInvites(ctx, req.token, req.orgInviteID, req.redirectPath); err != nil {
+			return nil, err
+		}
+
+		return emptyRes{}, nil
+	}
+}

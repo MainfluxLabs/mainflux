@@ -3,7 +3,8 @@ package invites
 import (
 	"fmt"
 	"net/http"
-	"time"
+
+	"github.com/MainfluxLabs/mainflux/pkg/invites"
 )
 
 type createOrgInviteRes struct {
@@ -68,17 +69,9 @@ func (res respondOrgInviteRes) Empty() bool {
 }
 
 type orgInviteRes struct {
-	ID           string    `json:"id"`
-	InviteeID    string    `json:"invitee_id"`
-	InviteeEmail string    `json:"invitee_email"`
-	InviterID    string    `json:"inviter_id"`
-	InviterEmail string    `json:"inviter_email"`
-	OrgID        string    `json:"org_id"`
-	OrgName      string    `json:"org_name"`
-	InviteeRole  string    `json:"invitee_role"`
-	CreatedAt    time.Time `json:"created_at"`
-	ExpiresAt    time.Time `json:"expires_at"`
-	State        string    `json:"state"`
+	invites.InviteRes
+	OrgID   string `json:"org_id"`
+	OrgName string `json:"org_name"`
 }
 
 func (res orgInviteRes) Code() int {
@@ -93,17 +86,8 @@ func (res orgInviteRes) Empty() bool {
 	return false
 }
 
-type pageRes struct {
-	Limit  uint64 `json:"limit"`
-	Offset uint64 `json:"offset"`
-	Total  uint64 `json:"total"`
-	Ord    string `json:"order,omitempty"`
-	Dir    string `json:"direction,omitempty"`
-	State  string `json:"state,omitempty"`
-}
-
 type orgInvitePageRes struct {
-	pageRes
+	invites.PageRes
 	Invites []orgInviteRes `json:"invites"`
 }
 
