@@ -462,48 +462,71 @@ func (svc usersService) OAuthLogin(provider string) string {
 }
 
 func (svc usersService) OAuthCallback(ctx context.Context, provider, code string) (string, error) {
-	var oauth oauth2.Config
-	var userInfoURL string
+	var email string
 
 	switch provider {
 	case GoogleProvider:
-		oauth = svc.googleOAuth
-		userInfoURL = svc.urls.GoogleUserInfoURL
+		oauthToken, err := svc.googleOAuth.Exchange(ctx, code)
+		if err != nil {
+			return "", err
+		}
+
+		client := svc.googleOAuth.Client(ctx, oauthToken)
+		resp, err := client.Get(svc.urls.GoogleUserInfoURL)
+		if err != nil {
+			return "", err
+		}
+		defer resp.Body.Close()
+
+		var gUser struct {
+			Email string `json:"email"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&gUser); err != nil {
+			return "", err
+		}
+		email = gUser.Email
+
 	case GitHubProvider:
-		oauth = svc.githubOAuth
-		userInfoURL = svc.urls.GitHubUserInfoURL
-	default:
-		return "", apiutil.ErrMissingProvider
+		oauthToken, err := svc.githubOAuth.Exchange(ctx, code)
+		if err != nil {
+			return "", err
+		}
+
+		client := svc.githubOAuth.Client(ctx, oauthToken)
+		resp, err := client.Get(svc.urls.GitHubUserInfoURL)
+		if err != nil {
+			return "", err
+		}
+		defer resp.Body.Close()
+
+		var emails []struct {
+			Email    string `json:"email"`
+			Primary  bool   `json:"primary"`
+			Verified bool   `json:"verified"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&emails); err != nil {
+			return "", err
+		}
+
+		for _, e := range emails {
+			if e.Primary && e.Verified {
+				email = e.Email
+				break
+			}
+		}
+
+		if email == "" && len(emails) > 0 {
+			email = emails[0].Email
+		}
 	}
 
-	oauthToken, err := oauth.Exchange(ctx, code)
-	if err != nil {
-		return "", err
-	}
-
-	client := oauth.Client(ctx, oauthToken)
-	resp, err := client.Get(userInfoURL)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	var gUser struct {
-		Email string `json:"email"`
-	}
-	//use different struct for github
-
-	if err := json.NewDecoder(resp.Body).Decode(&gUser); err != nil {
-		return "", err
-	}
-
-	user, err := svc.users.RetrieveByEmail(ctx, gUser.Email)
+	user, err := svc.users.RetrieveByEmail(ctx, email)
 	if err != nil {
 		if errors.Contains(err, dbutil.ErrNotFound) {
 			uid, _ := svc.idProvider.ID()
 			user = User{
 				ID:     uid,
-				Email:  gUser.Email,
+				Email:  email,
 				Status: EnabledStatusKey,
 			}
 			if _, err := svc.users.Save(ctx, user); err != nil {
