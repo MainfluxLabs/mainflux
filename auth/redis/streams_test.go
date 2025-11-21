@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	streamID = "mainflux.orgs"
+	streamID = "mainflux.auth"
 
 	secret      = "secret"
 	ownerEmail  = "owner@test.com"

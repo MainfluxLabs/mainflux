@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	streamID  = "mainflux.orgs"
+	streamID  = "mainflux.auth"
 	streamLen = 1000
 )
 
