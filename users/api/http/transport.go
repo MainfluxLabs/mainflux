@@ -28,6 +28,8 @@ const (
 	statusKey     = "status"
 	emailTokenKey = "token"
 	stateKey      = "state"
+	providerKey   = "provider"
+	codeKey       = "code"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -128,6 +130,20 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 		kitot.TraceServer(tracer, "login")(loginEndpoint(svc)),
 		decodeCredentials,
 		encodeResponse,
+		opts...,
+	))
+
+	mux.Get("/users/oauth/:provider", kithttp.NewServer(
+		kitot.TraceServer(tracer, "oauth_login")(oauthLoginEndpoint(svc)),
+		decodeOAuthProvider,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Get("/users/oauth/:provider/callback", kithttp.NewServer(
+		kitot.TraceServer(tracer, "oauth_callback")(oauthCallbackEndpoint(svc)),
+		decodeOAuthProviderCode,
+		encodeCallbackResponse,
 		opts...,
 	))
 
@@ -343,6 +359,23 @@ func decodeRegisterUser(_ context.Context, r *http.Request) (interface{}, error)
 	return req, nil
 }
 
+func decodeOAuthProvider(_ context.Context, r *http.Request) (interface{}, error) {
+	req := oauthProviderReq{
+		provider: bone.GetValue(r, providerKey),
+	}
+
+	return req, nil
+}
+
+func decodeOAuthProviderCode(_ context.Context, r *http.Request) (interface{}, error) {
+	req := oauthProviderCodeReq{
+		provider: bone.GetValue(r, providerKey),
+		code:     r.URL.Query().Get(codeKey),
+	}
+
+	return req, nil
+}
+
 func decodeSelfRegisterUser(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
@@ -504,6 +537,13 @@ func buildPageMetadataInvites(r *http.Request) (users.PageMetadataInvites, error
 	pm.State = state
 
 	return pm, nil
+}
+
+func encodeCallbackResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+	res := response.(redirectURLRes)
+	w.Header().Set("Location", res.RedirectURL)
+	w.WriteHeader(http.StatusFound)
+	return nil
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {

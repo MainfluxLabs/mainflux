@@ -20,6 +20,8 @@ import (
 	usmocks "github.com/MainfluxLabs/mainflux/users/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
 const (
@@ -74,8 +76,28 @@ func newService() users.Service {
 	invitesRepo := usmocks.NewPlatformInvitesRepository()
 	authSvc := mocks.NewAuthService(admin.ID, usersList, nil)
 	e := usmocks.NewEmailer()
+	oauthGoogleCfg := oauth2.Config{
+		ClientID:     "test-client-id",
+		ClientSecret: "test-client-secret",
+		RedirectURL:  "http://test-redirect/oauth/callback",
+		Scopes:       []string{"email"},
+		Endpoint:     google.Endpoint,
+	}
 
-	return users.New(userRepo, verificationRepo, invitesRepo, inviteDuration, true, true, hasher, authSvc, e, idProvider)
+	oauthGithubCfg := oauth2.Config{
+		ClientID:     "test-client-id",
+		ClientSecret: "test-client-secret",
+		RedirectURL:  "http://test-redirect/oauth/callback",
+		Scopes:       []string{"user:email"},
+		Endpoint:     google.Endpoint,
+	}
+
+	cfgURLs := users.ConfigURLs{
+		RedirectLoginURL:  "http://test-redirect/login",
+		GoogleUserInfoURL: "http://test-provider/userinfo",
+		GitHubUserInfoURL: "http://test-provider/userinfo",
+	}
+	return users.New(userRepo, verificationRepo, invitesRepo, inviteDuration, true, true, hasher, authSvc, e, idProvider, oauthGoogleCfg, oauthGithubCfg, cfgURLs)
 }
 
 func TestSelfRegister(t *testing.T) {
