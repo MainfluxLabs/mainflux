@@ -13,7 +13,6 @@ import (
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
-	"github.com/jeremywohl/flatten"
 )
 
 var senmlHeader = []string{
@@ -98,11 +97,7 @@ func GenerateCSVFromJSON(page readers.JSONMessagesPage) ([]byte, error) {
 			continue
 		}
 
-		flat, err := flatten.Flatten(p, "", flatten.DotStyle)
-		if err != nil {
-			return nil, err
-		}
-
+		flat := Flatten(p, "")
 		flattened[i] = flat
 
 		for k := range flat {
@@ -182,6 +177,26 @@ func formatTimeNs(ns int64, timeFormat string) string {
 		return time.Unix(0, ns).UTC().Format(time.RFC3339)
 	}
 	return fmt.Sprintf("%v", ns)
+}
+
+func Flatten(m map[string]interface{}, prefix string) map[string]interface{} {
+	result := make(map[string]interface{})
+	for k, v := range m {
+		key := k
+		if prefix != "" {
+			key = prefix + "." + k
+		}
+		switch child := v.(type) {
+		case map[string]interface{}:
+			nested := Flatten(child, key)
+			for nk, nv := range nested {
+				result[nk] = nv
+			}
+		default:
+			result[key] = v
+		}
+	}
+	return result
 }
 
 func GenerateJSONFromJSON(page readers.JSONMessagesPage) ([]byte, error) {
