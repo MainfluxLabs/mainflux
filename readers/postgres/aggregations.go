@@ -440,7 +440,12 @@ func buildTruncTimeExpression(intervalVal int64, intervalUnit string, timeColumn
 		return fmt.Sprintf("date_trunc('%s', %s)", interval, timestamp)
 	}
 
-	return fmt.Sprintf("date_bin(CAST('%s' AS interval), %s, CAST('1970-01-01' AS timestamptz))", interval, timestamp)
+	return fmt.Sprintf(
+		"to_timestamp(floor(extract(epoch from %s) / extract(epoch from interval '%s')) * extract(epoch from interval '%s'))",
+		timestamp,
+		interval,
+		interval,
+	)
 }
 
 func buildTimeJoinCondition(config QueryConfig, tableAlias string) string {
