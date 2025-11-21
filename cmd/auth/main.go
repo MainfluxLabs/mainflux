@@ -15,6 +15,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth/emailer"
 	"github.com/MainfluxLabs/mainflux/auth/jwt"
 	"github.com/MainfluxLabs/mainflux/auth/postgres"
+	rediscache "github.com/MainfluxLabs/mainflux/auth/redis"
 	"github.com/MainfluxLabs/mainflux/auth/tracing"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
@@ -31,6 +32,7 @@ import (
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	usersapi "github.com/MainfluxLabs/mainflux/users/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
 	"github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
@@ -67,6 +69,9 @@ const (
 	defUsersCACerts    = ""
 	defUsersClientTLS  = "false"
 	defUsersGRPCURL    = "localhost:8184"
+	defESURL           = "localhost:6379"
+	defESPass          = ""
+	defESDB            = "0"
 
 	defEmailHost         = "localhost"
 	defEmailPort         = "25"
@@ -104,6 +109,9 @@ const (
 	envUsersGRPCURL    = "MF_USERS_GRPC_URL"
 	envUsersCACerts    = "MF_USERS_CA_CERTS"
 	envUsersClientTLS  = "MF_USERS_CLIENT_TLS"
+	envESURL           = "MF_AUTH_ES_URL"
+	envESPass          = "MF_AUTH_ES_PASS"
+	envESDB            = "MF_AUTH_ES_DB"
 
 	envEmailHost         = "MF_EMAIL_HOST"
 	envEmailPort         = "MF_EMAIL_PORT"
@@ -131,6 +139,9 @@ type config struct {
 	timeout        time.Duration
 	adminEmail     string
 	host           string
+	esURL          string
+	esPass         string
+	esDB           string
 }
 
 func main() {
@@ -154,6 +165,8 @@ func main() {
 	dbTracer, dbCloser := jaeger.Init("auth_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
+	esClient := connectToRedis(cfg.esURL, cfg.esPass, cfg.esDB, logger)
+
 	usrConn := clientsgrpc.Connect(cfg.usersConfig, logger)
 	defer usrConn.Close()
 
@@ -170,7 +183,7 @@ func main() {
 
 	tc := thingsapi.NewClient(thConn, thingsTracer, cfg.timeout)
 
-	svc := newService(db, tc, uc, dbTracer, logger, cfg)
+	svc := newService(db, tc, uc, dbTracer, logger, cfg, esClient)
 
 	g.Go(func() error {
 		return servershttp.Start(ctx, httpapi.MakeHandler(svc, authHttpTracer, logger), cfg.httpConfig, logger)
@@ -284,6 +297,9 @@ func loadConfig() config {
 		timeout:        timeout,
 		adminEmail:     mainflux.Env(envAdminEmail, defAdminEmail),
 		host:           mainflux.Env(envHost, defHost),
+		esURL:          mainflux.Env(envESURL, defESURL),
+		esPass:         mainflux.Env(envESPass, defESPass),
+		esDB:           mainflux.Env(envESDB, defESDB),
 	}
 
 }
@@ -298,7 +314,21 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersServiceClient, tracer opentracing.Tracer, logger logger.Logger, cfg config) auth.Service {
+func connectToRedis(redisURL, redisPass string, redisDB string, logger logger.Logger) *redis.Client {
+	db, err := strconv.Atoi(redisDB)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to connect to cache: %s", err))
+		os.Exit(1)
+	}
+
+	return redis.NewClient(&redis.Options{
+		Addr:     redisURL,
+		Password: redisPass,
+		DB:       db,
+	})
+}
+
+func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersServiceClient, tracer opentracing.Tracer, logger logger.Logger, cfg config, esClient *redis.Client) auth.Service {
 	orgsRepo := postgres.NewOrgRepo(db)
 	orgsRepo = tracing.OrgRepositoryMiddleware(tracer, orgsRepo)
 
@@ -340,6 +370,7 @@ func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersS
 	)
 
 	svc := auth.New(orgsRepo, tc, uc, keysRepo, rolesRepo, membsRepo, invitesRepo, authEmailer, idProvider, t, cfg.loginDuration, cfg.inviteDuration)
+	svc = rediscache.NewEventStoreMiddleware(svc, esClient)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
