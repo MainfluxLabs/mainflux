@@ -448,7 +448,7 @@ func (svc thingsService) ListGroupInvitesByUser(ctx context.Context, token, user
 
 func (svc thingsService) ListGroupInvitesByGroup(ctx context.Context, token, groupID string, pm invites.PageMetadataInvites) (GroupInvitesPage, error) {
 	if err := svc.canAccessGroup(ctx, token, groupID, Admin); err != nil {
-		return GroupInvitesPage{}, err
+		return GroupInvitesPage{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
 	page, err := svc.groupInvites.RetrieveInvitesByDestination(ctx, groupID, pm)
