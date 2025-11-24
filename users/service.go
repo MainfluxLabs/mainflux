@@ -85,7 +85,7 @@ type Service interface {
 	// identified by the non-nil error values in the response.
 	Login(ctx context.Context, user User) (string, error)
 
-	// OAuthOAuthLoginLoginURL returns the URL to initiate OAuth login.
+	// OAuthLogin returns the URL to initiate OAuth login.
 	OAuthLogin(provider string) (state, verifier, redirectURL string)
 
 	// OAuthCallback exchanges the OAuth code for user info and logs in/creates the user.

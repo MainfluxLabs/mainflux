@@ -68,18 +68,18 @@ func (req registerByInviteReq) validate() error {
 	return nil
 }
 
-type oauthProviderReq struct {
+type oauthLoginReq struct {
 	provider string
 }
 
-func (req oauthProviderReq) validate() error {
+func (req oauthLoginReq) validate() error {
 	if req.provider == "" || (req.provider != GoogleProvider && req.provider != GitHubProvider) {
 		return apiutil.ErrMissingProvider
 	}
 	return nil
 }
 
-type oauthProviderCodeReq struct {
+type oauthCallbackReq struct {
 	provider      string
 	code          string
 	state         string
@@ -87,7 +87,7 @@ type oauthProviderCodeReq struct {
 	verifier      string
 }
 
-func (req oauthProviderCodeReq) validate() error {
+func (req oauthCallbackReq) validate() error {
 	if req.provider == "" || (req.provider != GoogleProvider && req.provider != GitHubProvider) {
 		return apiutil.ErrMissingProvider
 	}

@@ -136,15 +136,15 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 
 	mux.Get("/users/oauth/:provider", kithttp.NewServer(
 		kitot.TraceServer(tracer, "oauth_login")(oauthLoginEndpoint(svc)),
-		decodeOAuthProvider,
+		decodeOAuthLogin,
 		encodeOAuthLoginResponse,
 		opts...,
 	))
 
 	mux.Get("/users/oauth/:provider/callback", kithttp.NewServer(
 		kitot.TraceServer(tracer, "oauth_callback")(oauthCallbackEndpoint(svc)),
-		decodeOAuthProviderCode,
-		encodeCallbackResponse,
+		decodeOAuthCallback,
+		encodeOAuthCallbackResponse,
 		opts...,
 	))
 
@@ -360,15 +360,15 @@ func decodeRegisterUser(_ context.Context, r *http.Request) (interface{}, error)
 	return req, nil
 }
 
-func decodeOAuthProvider(_ context.Context, r *http.Request) (interface{}, error) {
-	req := oauthProviderReq{
+func decodeOAuthLogin(_ context.Context, r *http.Request) (interface{}, error) {
+	req := oauthLoginReq{
 		provider: bone.GetValue(r, providerKey),
 	}
 
 	return req, nil
 }
 
-func decodeOAuthProviderCode(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeOAuthCallback(_ context.Context, r *http.Request) (interface{}, error) {
 	stateCookie, err := r.Cookie(stateKey)
 	if err != nil {
 		return nil, err
@@ -379,7 +379,7 @@ func decodeOAuthProviderCode(_ context.Context, r *http.Request) (interface{}, e
 		return nil, err
 	}
 
-	req := oauthProviderCodeReq{
+	req := oauthCallbackReq{
 		provider:      bone.GetValue(r, providerKey),
 		code:          r.URL.Query().Get(codeKey),
 		state:         r.URL.Query().Get(stateKey),
@@ -577,7 +577,7 @@ func encodeOAuthLoginResponse(_ context.Context, w http.ResponseWriter, response
 	return json.NewEncoder(w).Encode(redirectURLRes{RedirectURL: res.RedirectURL})
 }
 
-func encodeCallbackResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeOAuthCallbackResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	http.SetCookie(w, &http.Cookie{Name: stateKey, MaxAge: -1, HttpOnly: true, Secure: true})
 	http.SetCookie(w, &http.Cookie{Name: verifierKey, MaxAge: -1, HttpOnly: true, Secure: true})
 

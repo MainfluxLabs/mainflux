@@ -307,8 +307,7 @@ func loadConfig() config {
 	urls := users.ConfigURLs{
 		GoogleUserInfoURL: mainflux.Env(envGoogleUserInfo, defUserInfo),
 		GitHubUserInfoURL: mainflux.Env(envGitHubUserInfo, defUserInfo),
-		//don't forget to remove 4200
-		RedirectLoginURL: fmt.Sprintf("%s:%s%s", mainflux.Env(envHost, defHost), "4200", mainflux.Env(envRedirectLoginURL, defRedirectLoginURL)),
+		RedirectLoginURL:  fmt.Sprintf("%s%s", mainflux.Env(envHost, defHost), mainflux.Env(envRedirectLoginURL, defRedirectLoginURL)),
 	}
 
 	inviteDuration, err := time.ParseDuration(mainflux.Env(envInviteDuration, defInviteDuration))

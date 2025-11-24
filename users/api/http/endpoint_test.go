@@ -31,7 +31,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 )
 
 const (
@@ -157,27 +156,9 @@ func newService() users.Service {
 	hasher := usmocks.NewHasher()
 	auth := mocks.NewAuthService(admin.ID, usersList, nil)
 	email := usmocks.NewEmailer()
-	oauthGoogleCfg := oauth2.Config{
-		ClientID:     "test-client-id",
-		ClientSecret: "test-client-secret",
-		RedirectURL:  "http://test-redirect/oauth/callback",
-		Scopes:       []string{"email"},
-		Endpoint:     google.Endpoint,
-	}
-
-	oauthGithubCfg := oauth2.Config{
-		ClientID:     "test-client-id",
-		ClientSecret: "test-client-secret",
-		RedirectURL:  "http://test-redirect/oauth/callback",
-		Scopes:       []string{"user:email"},
-		Endpoint:     google.Endpoint,
-	}
-
-	cfgURLs := users.ConfigURLs{
-		RedirectLoginURL:  "http://test-redirect/login",
-		GoogleUserInfoURL: "http://test-provider/userinfo",
-		GitHubUserInfoURL: "http://test-provider/userinfo",
-	}
+	oauthGoogleCfg := oauth2.Config{}
+	oauthGithubCfg := oauth2.Config{}
+	cfgURLs := users.ConfigURLs{}
 	return users.New(usersRepo, verificationsRepo, invitesRepo, inviteDuration, true, true, hasher, auth, email, idProvider, oauthGoogleCfg, oauthGithubCfg, cfgURLs)
 }
 

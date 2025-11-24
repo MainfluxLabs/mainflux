@@ -227,7 +227,7 @@ func loginEndpoint(svc users.Service) endpoint.Endpoint {
 
 func oauthLoginEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(oauthProviderReq)
+		req := request.(oauthLoginReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -244,7 +244,7 @@ func oauthLoginEndpoint(svc users.Service) endpoint.Endpoint {
 
 func oauthCallbackEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(oauthProviderCodeReq)
+		req := request.(oauthCallbackReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
