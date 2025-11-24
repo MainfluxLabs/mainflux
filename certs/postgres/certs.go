@@ -6,64 +6,57 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/certs"
-	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
-	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
-	"github.com/jmoiron/sqlx"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 var _ certs.Repository = (*certsRepository)(nil)
 
-// Cert holds info on expiration date for specific cert issued for specific Thing.
-type Cert struct {
-	ThingID string
-	Serial  string
-	Expire  time.Time
-}
-
 type certsRepository struct {
-	db  *sqlx.DB
-	log logger.Logger
+	db dbutil.Database
 }
 
-// NewRepository instantiates a PostgreSQL implementation of certs
-// repository.
-func NewRepository(db *sqlx.DB, log logger.Logger) certs.Repository {
-	return &certsRepository{db: db, log: log}
+func NewRepository(db dbutil.Database) certs.Repository {
+	return &certsRepository{db: db}
 }
 
-func (cr certsRepository) RetrieveAll(ctx context.Context, ownerID string, offset, limit uint64) (certs.Page, error) {
-	q := `SELECT thing_id, owner_id, serial, expire FROM certs WHERE owner_id = $1 ORDER BY expire LIMIT $2 OFFSET $3;`
-	rows, err := cr.db.Query(q, ownerID, limit, offset)
+func (cr certsRepository) RetrieveAll(ctx context.Context, offset, limit uint64) (certs.Page, error) {
+	q := `SELECT thing_id, serial, expires_at, client_cert, client_key, issuing_ca, 
+	      ca_chain, private_key_type FROM certs ORDER BY expires_at LIMIT :limit OFFSET :offset;`
+
+	params := map[string]interface{}{
+		"limit":  limit,
+		"offset": offset,
+	}
+
+	rows, err := cr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		cr.log.Error(fmt.Sprintf("Failed to retrieve configs due to %s", err))
-		return certs.Page{}, err
+		return certs.Page{}, cr.handlePgError(err, dbutil.ErrRetrieveEntity)
 	}
 	defer rows.Close()
 
 	certificates := []certs.Cert{}
 	for rows.Next() {
-		c := certs.Cert{}
-		if err := rows.Scan(&c.ThingID, &c.OwnerID, &c.Serial, &c.Expire); err != nil {
-			cr.log.Error(fmt.Sprintf("Failed to read retrieved config due to %s", err))
-			return certs.Page{}, err
-
+		var dbcrt dbCert
+		if err := rows.StructScan(&dbcrt); err != nil {
+			return certs.Page{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
-		certificates = append(certificates, c)
+		certificates = append(certificates, toCert(dbcrt))
 	}
 
-	q = `SELECT COUNT(*) FROM certs WHERE owner_id = $1`
-	var total uint64
-	if err := cr.db.QueryRow(q, ownerID).Scan(&total); err != nil {
-		cr.log.Error(fmt.Sprintf("Failed to count certs due to %s", err))
-		return certs.Page{}, err
+	q = `SELECT COUNT(*) FROM certs`
+	total, err := dbutil.Total(ctx, cr.db, q, params)
+	if err != nil {
+		return certs.Page{}, cr.handlePgError(err, dbutil.ErrRetrieveEntity)
 	}
 
 	return certs.Page{
@@ -73,72 +66,122 @@ func (cr certsRepository) RetrieveAll(ctx context.Context, ownerID string, offse
 }
 
 func (cr certsRepository) Save(ctx context.Context, cert certs.Cert) (string, error) {
-	q := `INSERT INTO certs (thing_id, owner_id, serial, expire) VALUES (:thing_id, :owner_id, :serial, :expire)`
+	q := `INSERT INTO certs (thing_id, serial, expires_at, client_cert, client_key, 
+	      issuing_ca, ca_chain, private_key_type) 
+	      VALUES (:thing_id, :serial, :expires_at, :client_cert, :client_key, 
+	      :issuing_ca, :ca_chain, :private_key_type)`
 
-	tx, err := cr.db.Beginx()
+	tx, err := cr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return "", errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
+	defer tx.Rollback()
 
 	dbcrt := toDBCert(cert)
 
-	if _, err := tx.NamedExec(q, dbcrt); err != nil {
-		e := err
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UniqueViolation {
-			e = errors.New("error conflict")
-		}
-
-		cr.rollback("Failed to insert a Cert", tx, err)
-
-		return "", errors.Wrap(dbutil.ErrCreateEntity, e)
+	if _, err := tx.NamedExecContext(ctx, q, dbcrt); err != nil {
+		return "", cr.handlePgError(err, dbutil.ErrCreateEntity)
 	}
 
 	if err := tx.Commit(); err != nil {
-		cr.rollback("Failed to commit Config save", tx, err)
+		return "", errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	return cert.Serial, nil
 }
 
-func (cr certsRepository) Remove(ctx context.Context, ownerID, serial string) error {
-	if _, err := cr.RetrieveBySerial(ctx, ownerID, serial); err != nil {
+func (cr certsRepository) Remove(ctx context.Context, serial string) error {
+	cert, err := cr.RetrieveBySerial(ctx, serial)
+	if err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
-	q := `DELETE FROM certs WHERE serial = :serial`
-	var c certs.Cert
-	c.Serial = serial
-	dbcrt := toDBCert(c)
-	if _, err := cr.db.NamedExecContext(ctx, q, dbcrt); err != nil {
+
+	tx, err := cr.db.BeginTxx(ctx, nil)
+	if err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
+	defer tx.Rollback()
+
+	q := `INSERT INTO revoked_certs (serial, thing_id, revoked_at) 
+	            VALUES (:serial, :thing_id, NOW())`
+	revokeParams := map[string]interface{}{
+		"serial":   serial,
+		"thing_id": cert.ThingID,
+	}
+	if _, err := tx.NamedExecContext(ctx, q, revokeParams); err != nil {
+		return cr.handlePgError(err, dbutil.ErrRemoveEntity)
+	}
+
+	q = `DELETE FROM certs WHERE serial = :serial`
+	deleteParams := map[string]interface{}{
+		"serial": serial,
+	}
+	if _, err := tx.NamedExecContext(ctx, q, deleteParams); err != nil {
+		return cr.handlePgError(err, dbutil.ErrRemoveEntity)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
 	return nil
 }
 
-func (cr certsRepository) RetrieveByThing(ctx context.Context, ownerID, thingID string, offset, limit uint64) (certs.Page, error) {
-	q := `SELECT thing_id, owner_id, serial, expire FROM certs WHERE owner_id = $1 AND thing_id = $2 ORDER BY expire LIMIT $3 OFFSET $4;`
-	rows, err := cr.db.Query(q, ownerID, thingID, limit, offset)
+func (cr certsRepository) RetrieveRevokedCerts(ctx context.Context) ([]certs.RevokedCert, error) {
+	q := `SELECT serial, revoked_at, thing_id FROM revoked_certs ORDER BY revoked_at DESC`
+
+	rows, err := cr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
 	if err != nil {
-		cr.log.Error(fmt.Sprintf("Failed to retrieve configs due to %s", err))
-		return certs.Page{}, err
+		return nil, cr.handlePgError(err, dbutil.ErrRetrieveEntity)
+	}
+	defer rows.Close()
+
+	var revokedCerts []certs.RevokedCert
+	for rows.Next() {
+		var cert certs.RevokedCert
+		if err := rows.StructScan(&cert); err != nil {
+			return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		}
+		revokedCerts = append(revokedCerts, cert)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	return revokedCerts, nil
+}
+
+func (cr certsRepository) RetrieveByThing(ctx context.Context, thingID string, offset, limit uint64) (certs.Page, error) {
+	q := `SELECT thing_id, serial, expires_at, client_cert, client_key, issuing_ca, 
+	      ca_chain, private_key_type FROM certs 
+	      WHERE thing_id = :thing_id ORDER BY expires_at LIMIT :limit OFFSET :offset;`
+
+	params := map[string]interface{}{
+		"thing_id": thingID,
+		"limit":    limit,
+		"offset":   offset,
+	}
+
+	rows, err := cr.db.NamedQueryContext(ctx, q, params)
+	if err != nil {
+		return certs.Page{}, cr.handlePgError(err, dbutil.ErrRetrieveEntity)
 	}
 	defer rows.Close()
 
 	certificates := []certs.Cert{}
 	for rows.Next() {
-		c := certs.Cert{}
-		if err := rows.Scan(&c.ThingID, &c.OwnerID, &c.Serial, &c.Expire); err != nil {
-			cr.log.Error(fmt.Sprintf("Failed to read retrieved config due to %s", err))
-			return certs.Page{}, err
-
+		var dbcrt dbCert
+		if err := rows.StructScan(&dbcrt); err != nil {
+			return certs.Page{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
-		certificates = append(certificates, c)
+		certificates = append(certificates, toCert(dbcrt))
 	}
 
-	q = `SELECT COUNT(*) FROM certs WHERE owner_id = $1 AND thing_id = $2`
-	var total uint64
-	if err := cr.db.QueryRow(q, ownerID, thingID).Scan(&total); err != nil {
-		cr.log.Error(fmt.Sprintf("Failed to count certs due to %s", err))
-		return certs.Page{}, err
+	q = `SELECT COUNT(*) FROM certs WHERE thing_id = :thing_id`
+	total, err := dbutil.Total(ctx, cr.db, q, params)
+	if err != nil {
+		return certs.Page{}, cr.handlePgError(err, dbutil.ErrRetrieveEntity)
 	}
 
 	return certs.Page{
@@ -147,54 +190,146 @@ func (cr certsRepository) RetrieveByThing(ctx context.Context, ownerID, thingID 
 	}, nil
 }
 
-func (cr certsRepository) RetrieveBySerial(ctx context.Context, ownerID, serialID string) (certs.Cert, error) {
-	q := `SELECT thing_id, owner_id, serial, expire FROM certs WHERE owner_id = $1 AND serial = $2`
-	var dbcrt dbCert
-	var c certs.Cert
+func (cr certsRepository) RetrieveBySerial(ctx context.Context, serial string) (certs.Cert, error) {
+	q := `SELECT thing_id, serial, expires_at, client_cert, client_key, issuing_ca, 
+	      ca_chain, private_key_type FROM certs WHERE serial = :serial`
 
-	if err := cr.db.QueryRowxContext(ctx, q, ownerID, serialID).StructScan(&dbcrt); err != nil {
-
-		pqErr, ok := err.(*pgconn.PgError)
-		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pqErr.Code {
-			return c, errors.Wrap(dbutil.ErrNotFound, err)
-		}
-
-		return c, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	params := map[string]interface{}{
+		"serial": serial,
 	}
-	c = toCert(dbcrt)
 
-	return c, nil
+	rows, err := cr.db.NamedQueryContext(ctx, q, params)
+	if err != nil {
+		return certs.Cert{}, cr.handlePgError(err, dbutil.ErrRetrieveEntity)
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return certs.Cert{}, errors.Wrap(dbutil.ErrNotFound, sql.ErrNoRows)
+	}
+
+	var dbcrt dbCert
+	if err := rows.StructScan(&dbcrt); err != nil {
+		return certs.Cert{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	return toCert(dbcrt), nil
 }
 
-func (cr certsRepository) rollback(content string, tx *sqlx.Tx, err error) {
-	cr.log.Error(fmt.Sprintf("%s %s", content, err))
-
-	if err := tx.Rollback(); err != nil {
-		cr.log.Error(fmt.Sprintf("Failed to rollback due to %s", err))
+func (cr certsRepository) handlePgError(err error, wrapErr error) error {
+	pgErr, ok := err.(*pgconn.PgError)
+	if ok {
+		switch pgErr.Code {
+		case pgerrcode.UniqueViolation:
+			return errors.Wrap(wrapErr, errors.New("error conflict"))
+		case pgerrcode.InvalidTextRepresentation:
+			return errors.Wrap(wrapErr, err)
+		case pgerrcode.UndefinedTable:
+			return errors.Wrap(wrapErr, err)
+		default:
+			return errors.Wrap(wrapErr, err)
+		}
 	}
+	return errors.Wrap(wrapErr, err)
 }
 
 type dbCert struct {
-	ThingID string    `db:"thing_id"`
-	Serial  string    `db:"serial"`
-	Expire  time.Time `db:"expire"`
-	OwnerID string    `db:"owner_id"`
+	ThingID        string      `db:"thing_id"`
+	Serial         string      `db:"serial"`
+	ExpiresAt      time.Time   `db:"expires_at"`
+	ClientCert     string      `db:"client_cert"`
+	ClientKey      string      `db:"client_key"`
+	IssuingCA      string      `db:"issuing_ca"`
+	CAChain        StringArray `db:"ca_chain"`
+	PrivateKeyType string      `db:"private_key_type"`
 }
 
 func toDBCert(c certs.Cert) dbCert {
 	return dbCert{
-		ThingID: c.ThingID,
-		OwnerID: c.OwnerID,
-		Serial:  c.Serial,
-		Expire:  c.Expire,
+		ThingID:        c.ThingID,
+		Serial:         c.Serial,
+		ExpiresAt:      c.ExpiresAt,
+		ClientCert:     c.ClientCert,
+		ClientKey:      c.ClientKey,
+		IssuingCA:      c.IssuingCA,
+		CAChain:        StringArray(c.CAChain),
+		PrivateKeyType: c.PrivateKeyType,
 	}
 }
 
 func toCert(cdb dbCert) certs.Cert {
-	var c certs.Cert
-	c.OwnerID = cdb.OwnerID
-	c.ThingID = cdb.ThingID
-	c.Serial = cdb.Serial
-	c.Expire = cdb.Expire
-	return c
+	return certs.Cert{
+		ThingID:        cdb.ThingID,
+		Serial:         cdb.Serial,
+		ExpiresAt:      cdb.ExpiresAt,
+		ClientCert:     cdb.ClientCert,
+		ClientKey:      cdb.ClientKey,
+		IssuingCA:      cdb.IssuingCA,
+		CAChain:        []string(cdb.CAChain),
+		PrivateKeyType: cdb.PrivateKeyType,
+	}
+}
+
+type StringArray []string
+
+func (a *StringArray) Scan(src interface{}) error {
+	if src == nil {
+		*a = []string{}
+		return nil
+	}
+
+	switch v := src.(type) {
+	case []byte:
+		return a.scanBytes(v)
+	case string:
+		return a.scanBytes([]byte(v))
+	case []string:
+		*a = v
+		return nil
+	default:
+		return fmt.Errorf("cannot scan %T to StringArray", src)
+	}
+}
+
+func (a *StringArray) scanBytes(src []byte) error {
+	str := string(src)
+
+	if str == "{}" || str == "" {
+		*a = []string{}
+		return nil
+	}
+
+	str = strings.TrimPrefix(str, "{")
+	str = strings.TrimSuffix(str, "}")
+
+	if str == "" {
+		*a = []string{}
+		return nil
+	}
+
+	parts := strings.Split(str, ",")
+	result := make([]string, len(parts))
+
+	for i, part := range parts {
+		part = strings.TrimSpace(part)
+		part = strings.Trim(part, "\"")
+		result[i] = part
+	}
+
+	*a = result
+	return nil
+}
+
+func (a StringArray) Value() (driver.Value, error) {
+	if len(a) == 0 {
+		return "{}", nil
+	}
+
+	quoted := make([]string, len(a))
+	for i, s := range a {
+		s = strings.ReplaceAll(s, `"`, `\"`)
+		quoted[i] = `"` + s + `"`
+	}
+
+	return "{" + strings.Join(quoted, ",") + "}", nil
 }

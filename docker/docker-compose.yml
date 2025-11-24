@@ -25,6 +25,7 @@ volumes:
   mainfluxlabs-modbus-db-volume:
   mainfluxlabs-alarms-db-volume:
   mainfluxlabs-rules-db-volume:
+  mainfluxlabs-certs-db-volume:
   mainfluxlabs-uiconfigs-db-volume:
 
 services:
@@ -130,6 +131,7 @@ services:
       MF_EMAIL_FROM_NAME: ${MF_EMAIL_FROM_NAME}
       MF_EMAIL_BASE_TEMPLATE: ${MF_EMAIL_BASE_TEMPLATE}
       MF_HOST: ${MF_HOST}
+      MF_AUTH_ES_URL: es-redis:${MF_REDIS_TCP_PORT}
     ports:
       - ${MF_AUTH_HTTP_PORT}:${MF_AUTH_HTTP_PORT}
       - ${MF_AUTH_GRPC_PORT}:${MF_AUTH_GRPC_PORT}
@@ -654,6 +656,7 @@ services:
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
       MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
       MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
+      MF_DOWNLINKS_ES_URL: ${MF_DOWNLINKS_ES_URL}
     ports:
       - ${MF_DOWNLINKS_HTTP_PORT}:${MF_DOWNLINKS_HTTP_PORT}
     networks:
@@ -802,6 +805,63 @@ services:
     networks:
       - mainfluxlabs-base-net
 
+  certs-db:
+    image: postgres:13.3-alpine
+    container_name: mainfluxlabs-certs-db
+    restart: on-failure
+    environment:
+      POSTGRES_USER: ${MF_CERTS_DB_USER}
+      POSTGRES_PASSWORD: ${MF_CERTS_DB_PASS}
+      POSTGRES_DB: ${MF_CERTS_DB}
+    networks:
+      - mainfluxlabs-base-net
+    volumes:
+      - mainfluxlabs-certs-db-volume:/var/lib/postgresql/data
+
+  certs:
+    image: ${MF_RELEASE_PREFIX}/certs:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-certs
+    depends_on:
+      - certs-db
+    restart: on-failure
+    networks:
+      - mainfluxlabs-base-net
+    ports:
+      - ${MF_CERTS_HTTP_PORT}:${MF_CERTS_HTTP_PORT}
+    environment:
+      MF_CERTS_LOG_LEVEL: ${MF_CERTS_LOG_LEVEL}
+      MF_CERTS_DB_HOST: certs-db
+      MF_CERTS_DB_PORT: ${MF_CERTS_DB_PORT}
+      MF_CERTS_DB_PASS: ${MF_CERTS_DB_PASS}
+      MF_CERTS_DB_USER: ${MF_CERTS_DB_USER}
+      MF_CERTS_DB: ${MF_CERTS_DB}
+      MF_CERTS_DB_SSL_MODE: ${MF_CERTS_DB_SSL_MODE}
+      MF_CERTS_DB_SSL_CERT: ${MF_CERTS_DB_SSL_CERT}
+      MF_CERTS_DB_SSL_KEY: ${MF_CERTS_DB_SSL_KEY}
+      MF_CERTS_DB_SSL_ROOT_CERT: ${MF_CERTS_DB_SSL_ROOT_CERT}
+      MF_CERTS_ENCRYPT_KEY: ${MF_CERTS_ENCRYPT_KEY}
+      MF_CERTS_CLIENT_TLS: ${MF_CERTS_CLIENT_TLS}
+      MF_CERTS_CA_CERTS: ${MF_CERTS_CA_CERTS}
+      MF_CERTS_HTTP_PORT: ${MF_CERTS_HTTP_PORT}
+      MF_CERTS_SERVER_CERT: ${MF_CERTS_SERVER_CERT}
+      MF_CERTS_SERVER_KEY: ${MF_CERTS_SERVER_KEY}
+      MF_CERTS_SIGN_CA_PATH: ${MF_CERTS_SIGN_CA_PATH}
+      MF_CERTS_SIGN_CA_KEY_PATH: ${MF_CERTS_SIGN_CA_KEY_PATH}
+      MF_CERTS_SIGN_HOURS_VALID: ${MF_CERTS_SIGN_HOURS_VALID}
+      MF_CERTS_SIGN_RSA_BITS: ${MF_CERTS_SIGN_RSA_BITS}
+      MF_VAULT_TOKEN: ${MF_VAULT_TOKEN}
+      MF_VAULT_CA_NAME: ${MF_VAULT_CA_NAME}
+      MF_VAULT_CA_ROLE_NAME: ${MF_VAULT_CA_ROLE_NAME}
+      MF_VAULT_PKI_PATH: ${MF_VAULT_PKI_PATH}
+      MF_THINGS_URL: ${MF_THINGS_URL}
+      MF_SDK_THINGS_PREFIX: ${MF_SDK_THINGS_PREFIX}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
+      MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
+      MF_CERTS_VAULT_HOST: ${MF_CERTS_VAULT_HOST}
+    volumes:
+      - ./ssl/certs/ca.key:/etc/ssl/certs/ca.key
+      - ./ssl/certs/ca.crt:/etc/ssl/certs/ca.crt
   uiconfigs-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-uiconfigs-db
@@ -836,6 +896,8 @@ services:
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
       MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
       MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
+      MF_UI_CONFIGS_ES_URL: ${MF_UI_CONFIGS_ES_URL}
+      MF_UI_CONFIGS_EVENT_CONSUMER: ${MF_UI_CONFIGS_EVENT_CONSUMER}
     ports:
       - ${MF_UI_CONFIGS_HTTP_PORT}:${MF_UI_CONFIGS_HTTP_PORT}
     networks:

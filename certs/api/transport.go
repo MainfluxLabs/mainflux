@@ -10,15 +10,18 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/certs"
+	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
+	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc certs.Service, logger logger.Logger) http.Handler {
+func MakeHandler(svc certs.Service, tracer opentracing.Tracer, pkiAgent pki.Agent, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
@@ -26,29 +29,36 @@ func MakeHandler(svc certs.Service, logger logger.Logger) http.Handler {
 	r := bone.New()
 
 	r.Post("/certs", kithttp.NewServer(
-		issueCert(svc),
+		kitot.TraceServer(tracer, "issue_cert")(issueCertEndpoint(svc)),
 		decodeCerts,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Get("/certs/:id", kithttp.NewServer(
-		viewCert(svc),
+	r.Get("/certs/:serial", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_cert")(viewCertEndpoint(svc)),
 		decodeViewCert,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Delete("/certs/:id", kithttp.NewServer(
-		revokeCert(svc),
+	r.Delete("/certs/:serial", kithttp.NewServer(
+		kitot.TraceServer(tracer, "revoke_cert")(revokeCertEndpoint(svc)),
 		decodeRevokeCerts,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Get("/serials/:id", kithttp.NewServer(
-		listSerials(svc),
-		decodeListCerts,
+	r.Get("/things/:id/serials", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_serials")(listSerialsByThingEndpoint(svc)),
+		decodeListSerialsByThing,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Put("/certs/:serial", kithttp.NewServer(
+		kitot.TraceServer(tracer, "renew_cert")(renewCertEndpoint(svc)),
+		decodeViewCert,
 		encodeResponse,
 		opts...,
 	))
@@ -77,7 +87,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	return json.NewEncoder(w).Encode(response)
 }
 
-func decodeListCerts(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListSerialsByThing(_ context.Context, r *http.Request) (interface{}, error) {
 	l, err := apiutil.ReadUintQuery(r, apiutil.LimitKey, apiutil.DefLimit)
 	if err != nil {
 		return nil, err
@@ -98,8 +108,8 @@ func decodeListCerts(_ context.Context, r *http.Request) (interface{}, error) {
 
 func decodeViewCert(_ context.Context, r *http.Request) (interface{}, error) {
 	req := viewReq{
-		token:    apiutil.ExtractBearerToken(r),
-		serialID: bone.GetValue(r, apiutil.IDKey),
+		token:  apiutil.ExtractBearerToken(r),
+		serial: bone.GetValue(r, apiutil.SerialKey),
 	}
 
 	return req, nil
@@ -121,7 +131,7 @@ func decodeCerts(_ context.Context, r *http.Request) (interface{}, error) {
 func decodeRevokeCerts(_ context.Context, r *http.Request) (interface{}, error) {
 	req := revokeReq{
 		token:  apiutil.ExtractBearerToken(r),
-		certID: bone.GetValue(r, apiutil.IDKey),
+		serial: bone.GetValue(r, apiutil.SerialKey),
 	}
 
 	return req, nil
