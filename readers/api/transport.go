@@ -45,7 +45,7 @@ const (
 	csvFormat              = "csv"
 )
 
-var aggregationLimit = map[string]int64{
+var aggLimits = map[string]int64{
 	"minutes": 60,
 	"hours":   24,
 	"days":    31,
