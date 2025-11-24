@@ -36,7 +36,7 @@ func (req listSenMLMessagesReq) validate() error {
 		return apiutil.ErrInvalidComparator
 	}
 
-	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggIntervalValue); err != nil {
+	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggIntervalValue, req.pageMeta.AggIntervalUnit); err != nil {
 		return err
 	}
 
@@ -59,7 +59,7 @@ func (req listJSONMessagesReq) validate() error {
 		return apiutil.ErrLimitSize
 	}
 
-	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggIntervalValue); err != nil {
+	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggIntervalValue, req.pageMeta.AggIntervalUnit); err != nil {
 		return err
 	}
 
@@ -81,7 +81,7 @@ func (req backupSenMLMessagesReq) validate() error {
 		return apiutil.ErrInvalidQueryParams
 	}
 
-	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggIntervalValue); err != nil {
+	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggIntervalValue, req.pageMeta.AggIntervalUnit); err != nil {
 		return err
 	}
 
@@ -103,7 +103,7 @@ func (req backupJSONMessagesReq) validate() error {
 		return apiutil.ErrInvalidQueryParams
 	}
 
-	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggIntervalValue); err != nil {
+	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggIntervalValue, req.pageMeta.AggIntervalUnit); err != nil {
 		return err
 	}
 
@@ -158,9 +158,16 @@ func (req deleteJSONMessagesReq) validate() error {
 	return nil
 }
 
-func validateAggregation(aggType string, aggIntervalValue int64) error {
-	if aggIntervalValue <= 0 {
-		return apiutil.ErrInvalidAggregationInterval
+func validateAggregation(aggType string, aggIntervalValue int64, aggIntervalUnit string) error {
+	_, ok := aggregationLimit[aggIntervalUnit]
+	if ok {
+		if aggIntervalValue <= 0 {
+			return apiutil.ErrInvalidAggregationInterval
+		}
+
+		if aggIntervalValue > aggregationLimit[aggIntervalUnit] {
+			return apiutil.ErrInvalidAggregationInterval
+		}
 	}
 
 	if aggType == "" {

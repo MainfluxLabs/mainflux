@@ -45,6 +45,15 @@ const (
 	csvFormat              = "csv"
 )
 
+var aggregationLimit = map[string]int64{
+	"minutes": 60,
+	"hours":   24,
+	"days":    31,
+	"weeks":   52,
+	"months":  12,
+	"years":   100,
+}
+
 func MakeHandler(svc readers.Service, tracer opentracing.Tracer, svcName string, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
