@@ -159,14 +159,14 @@ func (req deleteJSONMessagesReq) validate() error {
 }
 
 func validateAggregation(aggType string, aggIntervalValue int64, aggIntervalUnit string) error {
-	_, ok := aggregationLimit[aggIntervalUnit]
+	_, ok := aggLimit[aggIntervalUnit]
 	if ok {
 		if aggIntervalValue <= 0 {
-			return apiutil.ErrInvalidAggregationInterval
+			return apiutil.ErrInvalidAggInterval
 		}
 
-		if aggIntervalValue > aggregationLimit[aggIntervalUnit] {
-			return apiutil.ErrInvalidAggregationInterval
+		if aggIntervalValue > aggLimit[aggIntervalUnit] {
+			return apiutil.ErrInvalidAggInterval
 		}
 	}
 
