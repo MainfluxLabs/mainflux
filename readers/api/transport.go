@@ -393,7 +393,7 @@ func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
 		return readers.JSONPageMetadata{}, err
 	}
 
-	av, err := apiutil.ReadIntQuery(r, aggIntervalValueKey, 0)
+	av, err := apiutil.ReadIntQuery(r, aggIntervalValueKey, 1)
 	if err != nil {
 		return readers.JSONPageMetadata{}, err
 	}
@@ -478,7 +478,7 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 		return readers.SenMLPageMetadata{}, err
 	}
 
-	av, err := apiutil.ReadIntQuery(r, aggIntervalValueKey, 0)
+	av, err := apiutil.ReadIntQuery(r, aggIntervalValueKey, 1)
 	if err != nil {
 		return readers.SenMLPageMetadata{}, err
 	}
