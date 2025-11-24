@@ -149,12 +149,13 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 	}
 
 	config := QueryConfig{
-		Table:           senmlTable,
-		TimeColumn:      senmlOrder,
-		AggField:        rpm.AggField,
-		AggIntervalUnit: rpm.AggIntervalUnit,
-		AggType:         rpm.AggType,
-		Limit:           rpm.Limit,
+		Table:            senmlTable,
+		TimeColumn:       senmlOrder,
+		AggField:         rpm.AggField,
+		AggIntervalUnit:  rpm.AggIntervalUnit,
+		AggIntervalValue: rpm.AggIntervalValue,
+		AggType:          rpm.AggType,
+		Limit:            rpm.Limit,
 	}
 
 	conditions := as.getSenMLConditions(rpm)
