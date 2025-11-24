@@ -109,7 +109,7 @@ func (lm *loggingMiddleware) Login(ctx context.Context, user users.User) (token 
 	return lm.svc.Login(ctx, user)
 }
 
-func (lm *loggingMiddleware) OAuthLogin(provider string) (url string) {
+func (lm *loggingMiddleware) OAuthLogin(provider string) (state, verifier, redirectURL string) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method oauth_login for provider %s took %s to complete", provider, time.Since(begin))
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
@@ -118,9 +118,9 @@ func (lm *loggingMiddleware) OAuthLogin(provider string) (url string) {
 	return lm.svc.OAuthLogin(provider)
 }
 
-func (lm *loggingMiddleware) OAuthCallback(ctx context.Context, provider, code string) (token string, err error) {
+func (lm *loggingMiddleware) OAuthCallback(ctx context.Context, provider, code, verifier string) (token string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method oauth_callback for provider %s and code %s took %s to complete", provider, code, time.Since(begin))
+		message := fmt.Sprintf("Method oauth_callback for provider %s took %s to complete", provider, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -128,7 +128,7 @@ func (lm *loggingMiddleware) OAuthCallback(ctx context.Context, provider, code s
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.OAuthCallback(ctx, provider, code)
+	return lm.svc.OAuthCallback(ctx, provider, code, verifier)
 }
 
 func (lm *loggingMiddleware) ViewUser(ctx context.Context, token, id string) (u users.User, err error) {

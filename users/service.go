@@ -5,6 +5,8 @@ package users
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -23,7 +25,6 @@ const (
 	DisabledStatusKey = "disabled"
 	AllStatusKey      = "all"
 	rootAdminRole     = "root"
-	stateKey          = "state"
 	GoogleProvider    = "google"
 	GitHubProvider    = "github"
 )
@@ -85,10 +86,10 @@ type Service interface {
 	Login(ctx context.Context, user User) (string, error)
 
 	// OAuthOAuthLoginLoginURL returns the URL to initiate OAuth login.
-	OAuthLogin(provider string) string
+	OAuthLogin(provider string) (state, verifier, redirectURL string)
 
 	// OAuthCallback exchanges the OAuth code for user info and logs in/creates the user.
-	OAuthCallback(ctx context.Context, provider, code string) (string, error)
+	OAuthCallback(ctx context.Context, provider, code, verifier string) (string, error)
 
 	// ViewUser retrieves user info for a given user ID and an authorized token.
 	ViewUser(ctx context.Context, token, id string) (User, error)
@@ -446,27 +447,27 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 	return svc.issue(ctx, dbUser.ID, dbUser.Email, auth.LoginKey)
 }
 
-func (svc usersService) OAuthLogin(provider string) string {
+func (svc usersService) OAuthLogin(provider string) (state, verifier, redirectURL string) {
 	var oauthCfg oauth2.Config
 	switch provider {
 	case GoogleProvider:
 		oauthCfg = svc.googleOAuth
 	case GitHubProvider:
 		oauthCfg = svc.githubOAuth
-	default:
-		return ""
 	}
 
-	// verifier := oauth2.GenerateVerifier()
-	return oauthCfg.AuthCodeURL(stateKey, oauth2.AccessTypeOffline)
+	verifier = oauth2.GenerateVerifier()
+	state = generateRandomState()
+	redirectURL = oauthCfg.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.S256ChallengeOption(verifier))
+	return state, verifier, redirectURL
 }
 
-func (svc usersService) OAuthCallback(ctx context.Context, provider, code string) (string, error) {
+func (svc usersService) OAuthCallback(ctx context.Context, provider, code, verifier string) (string, error) {
 	var email string
 
 	switch provider {
 	case GoogleProvider:
-		oauthToken, err := svc.googleOAuth.Exchange(ctx, code)
+		oauthToken, err := svc.googleOAuth.Exchange(ctx, code, oauth2.VerifierOption(verifier))
 		if err != nil {
 			return "", err
 		}
@@ -487,7 +488,7 @@ func (svc usersService) OAuthCallback(ctx context.Context, provider, code string
 		email = gUser.Email
 
 	case GitHubProvider:
-		oauthToken, err := svc.githubOAuth.Exchange(ctx, code)
+		oauthToken, err := svc.githubOAuth.Exchange(ctx, code, oauth2.VerifierOption(verifier))
 		if err != nil {
 			return "", err
 		}
@@ -838,4 +839,10 @@ func (svc usersService) isAdmin(ctx context.Context, token string) error {
 	}
 
 	return nil
+}
+
+func generateRandomState() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return base64.URLEncoding.EncodeToString(b)
 }

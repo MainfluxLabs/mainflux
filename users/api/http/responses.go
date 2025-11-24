@@ -305,3 +305,21 @@ func (res restoreRes) Headers() map[string]string {
 func (res restoreRes) Empty() bool {
 	return true
 }
+
+type oauthLoginRes struct {
+	State       string `json:"state"`
+	Verifier    string `json:"verifier"`
+	RedirectURL string `json:"url"`
+}
+
+func (res oauthLoginRes) Code() int {
+	return http.StatusOK
+}
+
+func (res oauthLoginRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res oauthLoginRes) Empty() bool {
+	return false
+}

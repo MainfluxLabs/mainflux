@@ -84,7 +84,7 @@ func (ms *metricsMiddleware) Login(ctx context.Context, user users.User) (string
 	return ms.svc.Login(ctx, user)
 }
 
-func (ms *metricsMiddleware) OAuthLogin(provider string) string {
+func (ms *metricsMiddleware) OAuthLogin(provider string) (state, verifier, redirectURL string) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "oauth_login").Add(1)
 		ms.latency.With("method", "oauth_login").Observe(time.Since(begin).Seconds())
@@ -93,13 +93,13 @@ func (ms *metricsMiddleware) OAuthLogin(provider string) string {
 	return ms.svc.OAuthLogin(provider)
 }
 
-func (ms *metricsMiddleware) OAuthCallback(ctx context.Context, provider, code string) (string, error) {
+func (ms *metricsMiddleware) OAuthCallback(ctx context.Context, provider, code, verifier string) (string, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "oauth_callback").Add(1)
 		ms.latency.With("method", "oauth_callback").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.OAuthCallback(ctx, provider, code)
+	return ms.svc.OAuthCallback(ctx, provider, code, verifier)
 }
 
 func (ms *metricsMiddleware) ViewUser(ctx context.Context, token, id string) (users.User, error) {

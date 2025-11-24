@@ -179,4 +179,7 @@ var (
 
 	// ErrMissingProviderCode indicates an missing provider code
 	ErrMissingProviderCode = errors.New("missing provider code")
+
+	// ErrMissingState indicates an invalid or missing state
+	ErrMissingState = errors.New("missing or invalid state")
 )

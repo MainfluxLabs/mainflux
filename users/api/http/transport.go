@@ -30,6 +30,7 @@ const (
 	stateKey      = "state"
 	providerKey   = "provider"
 	codeKey       = "code"
+	verifierKey   = "verifier"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -136,7 +137,7 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 	mux.Get("/users/oauth/:provider", kithttp.NewServer(
 		kitot.TraceServer(tracer, "oauth_login")(oauthLoginEndpoint(svc)),
 		decodeOAuthProvider,
-		encodeResponse,
+		encodeOAuthLoginResponse,
 		opts...,
 	))
 
@@ -368,9 +369,22 @@ func decodeOAuthProvider(_ context.Context, r *http.Request) (interface{}, error
 }
 
 func decodeOAuthProviderCode(_ context.Context, r *http.Request) (interface{}, error) {
+	stateCookie, err := r.Cookie(stateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	verifierCookie, err := r.Cookie(verifierKey)
+	if err != nil {
+		return nil, err
+	}
+
 	req := oauthProviderCodeReq{
-		provider: bone.GetValue(r, providerKey),
-		code:     r.URL.Query().Get(codeKey),
+		provider:      bone.GetValue(r, providerKey),
+		code:          r.URL.Query().Get(codeKey),
+		state:         r.URL.Query().Get(stateKey),
+		originalState: stateCookie.Value,
+		verifier:      verifierCookie.Value,
 	}
 
 	return req, nil
@@ -539,7 +553,34 @@ func buildPageMetadataInvites(r *http.Request) (users.PageMetadataInvites, error
 	return pm, nil
 }
 
+func encodeOAuthLoginResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+	res := response.(oauthLoginRes)
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     stateKey,
+		Value:    res.State,
+		MaxAge:   300,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     verifierKey,
+		Value:    res.Verifier,
+		MaxAge:   300,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	return json.NewEncoder(w).Encode(redirectURLRes{RedirectURL: res.RedirectURL})
+}
+
 func encodeCallbackResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+	http.SetCookie(w, &http.Cookie{Name: stateKey, MaxAge: -1, HttpOnly: true, Secure: true})
+	http.SetCookie(w, &http.Cookie{Name: verifierKey, MaxAge: -1, HttpOnly: true, Secure: true})
+
 	res := response.(redirectURLRes)
 	w.Header().Set("Location", res.RedirectURL)
 	w.WriteHeader(http.StatusFound)

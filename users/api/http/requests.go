@@ -80,8 +80,11 @@ func (req oauthProviderReq) validate() error {
 }
 
 type oauthProviderCodeReq struct {
-	provider string
-	code     string
+	provider      string
+	code          string
+	state         string
+	originalState string
+	verifier      string
 }
 
 func (req oauthProviderCodeReq) validate() error {
@@ -92,6 +95,11 @@ func (req oauthProviderCodeReq) validate() error {
 	if req.code == "" {
 		return apiutil.ErrMissingProviderCode
 	}
+
+	if req.state == "" || req.originalState == "" || req.state != req.originalState {
+		return apiutil.ErrMissingState
+	}
+
 	return nil
 }
 
