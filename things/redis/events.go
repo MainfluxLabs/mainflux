@@ -13,6 +13,9 @@ const (
 	profileCreate = profilePrefix + "create"
 	profileUpdate = profilePrefix + "update"
 	profileRemove = profilePrefix + "remove"
+
+	groupPrefix = "group."
+	groupRemove = groupPrefix + "remove"
 )
 
 type event interface {
@@ -128,19 +131,19 @@ type createProfileEvent struct {
 	metadata map[string]interface{}
 }
 
-func (cce createProfileEvent) Encode() map[string]interface{} {
+func (cpe createProfileEvent) Encode() map[string]interface{} {
 	val := map[string]interface{}{
-		"id":        cce.id,
-		"group_id":  cce.groupID,
+		"id":        cpe.id,
+		"group_id":  cpe.groupID,
 		"operation": profileCreate,
 	}
 
-	if cce.name != "" {
-		val["name"] = cce.name
+	if cpe.name != "" {
+		val["name"] = cpe.name
 	}
 
-	if cce.metadata != nil {
-		metadata, err := json.Marshal(cce.metadata)
+	if cpe.metadata != nil {
+		metadata, err := json.Marshal(cpe.metadata)
 		if err != nil {
 			return val
 		}
@@ -158,18 +161,18 @@ type updateProfileEvent struct {
 	metadata map[string]interface{}
 }
 
-func (uce updateProfileEvent) Encode() map[string]interface{} {
+func (upe updateProfileEvent) Encode() map[string]interface{} {
 	val := map[string]interface{}{
-		"id":        uce.id,
+		"id":        upe.id,
 		"operation": profileUpdate,
 	}
 
-	if uce.name != "" {
-		val["name"] = uce.name
+	if upe.name != "" {
+		val["name"] = upe.name
 	}
 
-	if uce.config != nil {
-		config, err := json.Marshal(uce.config)
+	if upe.config != nil {
+		config, err := json.Marshal(upe.config)
 		if err != nil {
 			return val
 		}
@@ -177,8 +180,8 @@ func (uce updateProfileEvent) Encode() map[string]interface{} {
 		val["config"] = string(config)
 	}
 
-	if uce.metadata != nil {
-		metadata, err := json.Marshal(uce.metadata)
+	if upe.metadata != nil {
+		metadata, err := json.Marshal(upe.metadata)
 		if err != nil {
 			return val
 		}
@@ -193,9 +196,20 @@ type removeProfileEvent struct {
 	id string
 }
 
-func (rce removeProfileEvent) Encode() map[string]interface{} {
+func (rpe removeProfileEvent) Encode() map[string]interface{} {
 	return map[string]interface{}{
-		"id":        rce.id,
+		"id":        rpe.id,
 		"operation": profileRemove,
+	}
+}
+
+type removeGroupEvent struct {
+	id string
+}
+
+func (rge removeGroupEvent) Encode() map[string]interface{} {
+	return map[string]interface{}{
+		"id":        rge.id,
+		"operation": groupRemove,
 	}
 }
