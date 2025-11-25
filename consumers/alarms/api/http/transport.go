@@ -20,10 +20,12 @@ import (
 )
 
 const (
-	convertKey = "convert"
-	jsonFormat = "json"
-	csvFormat  = "csv"
-	pdfFormat  = "pdf"
+	convertKey             = "convert"
+	jsonFormat             = "json"
+	csvFormat              = "csv"
+	pdfFormat              = "pdf"
+	timeFormatKey          = "time_format"
+	octetStreamContentType = "application/octet-stream"
 )
 
 // MakeHandler returns a HTTP handler for Alarm API endpoints.
@@ -72,7 +74,7 @@ func MakeHandler(tracer opentracing.Tracer, svc alarms.Service, logger log.Logge
 	r.Get("/things/:id/alarms/backup", kithttp.NewServer(
 		kitot.TraceServer(tracer, "backup_alarms_by_thing")(backupAlarmsByThingEndpoint(svc)),
 		decodeBackupAlarmsByThing,
-		encodeResponse,
+		encodeBackupFileResponse,
 		opts...,
 	))
 
@@ -150,6 +152,11 @@ func decodeBackupAlarmsByThing(_ context.Context, r *http.Request) (interface{},
 		return nil, err
 	}
 
+	timeFormat, err := apiutil.ReadStringQuery(r, timeFormatKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -159,6 +166,7 @@ func decodeBackupAlarmsByThing(_ context.Context, r *http.Request) (interface{},
 		token:         apiutil.ExtractBearerToken(r),
 		thingID:       bone.GetValue(r, apiutil.IDKey),
 		convertFormat: convertFormat,
+		timeFormat:    timeFormat,
 		pageMetadata:  pm,
 	}, nil
 }
@@ -179,6 +187,26 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	}
 
 	return json.NewEncoder(w).Encode(response)
+}
+
+func encodeBackupFileResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+	w.Header().Set("Content-Type", octetStreamContentType)
+
+	if ar, ok := response.(backupFileRes); ok {
+		for k, v := range ar.Headers() {
+			w.Header().Set(k, v)
+		}
+
+		w.WriteHeader(ar.Code())
+
+		if ar.Empty() {
+			return nil
+		}
+
+		w.Write(ar.file)
+	}
+
+	return nil
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {

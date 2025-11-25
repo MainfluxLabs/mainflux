@@ -119,6 +119,7 @@ type backupAlarmsByThingReq struct {
 	token         string
 	thingID       string
 	convertFormat string
+	timeFormat    string
 	pageMetadata  apiutil.PageMetadata
 }
 
