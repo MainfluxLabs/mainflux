@@ -19,6 +19,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+const (
+	convertKey = "convert"
+	jsonFormat = "json"
+	csvFormat  = "csv"
+	pdfFormat  = "pdf"
+)
+
 // MakeHandler returns a HTTP handler for Alarm API endpoints.
 func MakeHandler(tracer opentracing.Tracer, svc alarms.Service, logger log.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
@@ -58,6 +65,13 @@ func MakeHandler(tracer opentracing.Tracer, svc alarms.Service, logger log.Logge
 	r.Patch("/alarms", kithttp.NewServer(
 		kitot.TraceServer(tracer, "remove_alarms")(removeAlarmsEndpoint(svc)),
 		decodeRemoveAlarms,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/things/:id/alarms/backup", kithttp.NewServer(
+		kitot.TraceServer(tracer, "backup_alarms_by_thing")(backupAlarmsByThingEndpoint(svc)),
+		decodeBackupAlarmsByThing,
 		encodeResponse,
 		opts...,
 	))
@@ -128,6 +142,25 @@ func decodeRemoveAlarms(_ context.Context, r *http.Request) (interface{}, error)
 	}
 
 	return req, nil
+}
+
+func decodeBackupAlarmsByThing(_ context.Context, r *http.Request) (interface{}, error) {
+	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, pdfFormat)
+	if err != nil {
+		return nil, err
+	}
+
+	pm, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return backupAlarmsByThingReq{
+		token:         apiutil.ExtractBearerToken(r),
+		thingID:       bone.GetValue(r, apiutil.IDKey),
+		convertFormat: convertFormat,
+		pageMetadata:  pm,
+	}, nil
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
