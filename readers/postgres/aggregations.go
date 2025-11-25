@@ -26,17 +26,13 @@ const (
 	jsonOrder            = "created"
 	senmlTable           = "senml"
 	senmlOrder           = "time"
+	minuteInterval       = "minute"
+	hourInterval         = "hour"
+	dayInterval          = "day"
+	weekInterval         = "week"
+	monthInterval        = "month"
+	yearInterval         = "year"
 )
-
-var standardIntervals = map[string]bool{
-	"minute":  true,
-	"hour":    true,
-	"day":     true,
-	"week":    true,
-	"month":   true,
-	"quarter": true,
-	"year":    true,
-}
 
 type QueryConfig struct {
 	Table            string
@@ -437,7 +433,7 @@ func buildTruncTimeExpression(intervalVal int64, intervalUnit string, timeColumn
 	timestamp := fmt.Sprintf("to_timestamp(%s / 1000000000)", timeColumn)
 
 	interval := fmt.Sprintf("%d %s", intervalVal, intervalUnit)
-	if standardIntervals[interval] {
+	if isStandardInterval(interval) {
 		return fmt.Sprintf("date_trunc('%s', %s)", interval, timestamp)
 	}
 
@@ -603,5 +599,15 @@ func (as *aggregationService) parseComparator(comparator string) string {
 		return ">="
 	default:
 		return "="
+	}
+}
+
+func isStandardInterval(interval string) bool {
+	switch interval {
+	case minuteInterval, hourInterval, dayInterval, weekInterval,
+		monthInterval, yearInterval:
+		return true
+	default:
+		return false
 	}
 }
