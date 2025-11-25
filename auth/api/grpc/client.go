@@ -11,9 +11,9 @@ import (
 	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
-	"github.com/golang/protobuf/ptypes/empty"
 	opentracing "github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 const (
@@ -59,7 +59,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			"Authorize",
 			encodeAuthorizeRequest,
 			decodeEmptyResponse,
-			empty.Empty{},
+			emptypb.Empty{},
 		).Endpoint()),
 		getOwnerIDByOrgID: kitot.TraceClient(tracer, "get_owner_id_by_org_id")(kitgrpc.NewClient(
 			conn,
@@ -83,7 +83,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			"AssignRole",
 			encodeAssignRoleRequest,
 			decodeEmptyResponse,
-			empty.Empty{},
+			emptypb.Empty{},
 		).Endpoint()),
 		createDormantOrgInvite: kitot.TraceClient(tracer, "create_dormant_org_invite")(kitgrpc.NewClient(
 			conn,
@@ -91,7 +91,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			"CreateDormantOrgInvite",
 			encodeCreateDormantOrgInviteRequest,
 			decodeEmptyResponse,
-			empty.Empty{},
+			emptypb.Empty{},
 		).Endpoint()),
 		activateOrgInvite: kitot.TraceClient(tracer, "activate_org_invite")(kitgrpc.NewClient(
 			conn,
@@ -99,7 +99,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			"ActivateOrgInvite",
 			encodeActivateOrgInviteRequest,
 			decodeEmptyResponse,
-			empty.Empty{},
+			emptypb.Empty{},
 		).Endpoint()),
 
 		timeout: timeout,
@@ -152,17 +152,17 @@ func decodeIdentifyResponse(_ context.Context, grpcRes interface{}) (interface{}
 	return identityRes{id: res.GetId(), email: res.GetEmail()}, nil
 }
 
-func (client grpcClient) Authorize(ctx context.Context, req *protomfx.AuthorizeReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+func (client grpcClient) Authorize(ctx context.Context, req *protomfx.AuthorizeReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
 	res, err := client.authorize(ctx, authReq{Token: req.GetToken(), Object: req.GetObject(), Subject: req.GetSubject(), Action: req.GetAction()})
 	if err != nil {
-		return &empty.Empty{}, err
+		return &emptypb.Empty{}, err
 	}
 
 	er := res.(emptyRes)
-	return &empty.Empty{}, er.err
+	return &emptypb.Empty{}, er.err
 }
 
 func encodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
@@ -198,17 +198,17 @@ func decodeGetOwnerIDByOrgIDResponse(_ context.Context, grpcRes interface{}) (in
 	return ownerIDByOrgIDRes{ownerID: res.GetValue()}, nil
 }
 
-func (client grpcClient) AssignRole(ctx context.Context, req *protomfx.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+func (client grpcClient) AssignRole(ctx context.Context, req *protomfx.AssignRoleReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
 	res, err := client.assignRole(ctx, assignRoleReq{ID: req.GetId(), Role: req.GetRole()})
 	if err != nil {
-		return &empty.Empty{}, err
+		return &emptypb.Empty{}, err
 	}
 
 	er := res.(emptyRes)
-	return &empty.Empty{}, er.err
+	return &emptypb.Empty{}, er.err
 }
 
 func encodeAssignRoleRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
@@ -244,7 +244,7 @@ func decodeRetrieveRoleResponse(_ context.Context, grpcRes interface{}) (interfa
 	return retrieveRoleRes{role: res.GetRole()}, nil
 }
 
-func (client grpcClient) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+func (client grpcClient) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
@@ -256,11 +256,11 @@ func (client grpcClient) CreateDormantOrgInvite(ctx context.Context, req *protom
 	})
 
 	if err != nil {
-		return &empty.Empty{}, err
+		return &emptypb.Empty{}, err
 	}
 
 	er := res.(emptyRes)
-	return &empty.Empty{}, er.err
+	return &emptypb.Empty{}, er.err
 }
 
 func encodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, error) {
@@ -273,7 +273,7 @@ func encodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, e
 	}, nil
 }
 
-func (client grpcClient) ActivateOrgInvite(ctx context.Context, req *protomfx.ActivateOrgInviteReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+func (client grpcClient) ActivateOrgInvite(ctx context.Context, req *protomfx.ActivateOrgInviteReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
@@ -284,11 +284,11 @@ func (client grpcClient) ActivateOrgInvite(ctx context.Context, req *protomfx.Ac
 	})
 
 	if err != nil {
-		return &empty.Empty{}, err
+		return &emptypb.Empty{}, err
 	}
 
 	er := res.(emptyRes)
-	return &empty.Empty{}, er.err
+	return &emptypb.Empty{}, er.err
 }
 
 func encodeActivateOrgInviteRequest(_ context.Context, grpcReq any) (any, error) {
