@@ -80,7 +80,7 @@ const (
 	defGRPCPort        = "8184"
 
 	defSelfRegisterEnabled = "true" // By default, everybody can create a user. Otherwise, only admin can create a user.
-	defEmailVerifyEnabled  = "true"
+	defEmailVerifyEnabled  = "false"
 
 	envLogLevel      = "MF_USERS_LOG_LEVEL"
 	envDBHost        = "MF_USERS_DB_HOST"

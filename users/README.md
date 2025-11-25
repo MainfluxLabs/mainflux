@@ -42,7 +42,7 @@ default values.
 | MF_EMAIL_FROM_NAME            | Email "from" name                                                       |                  |
 | MF_EMAIL_BASE_TEMPLATE        | Path to base template for e-mails sent from the service                 | base.tmpl        |
 | MF_HOST                       | URL Path of the frontend included in user-facing e-mails                | http://localhost |  
-| MF_REQUIRE_EMAIL_VERIFICATION | Whether e-mail verification is required during self-registration        | true             |  
+| MF_REQUIRE_EMAIL_VERIFICATION | Whether e-mail verification is required during self-registration        | false            |  
 | MF_INVITE_DURATION            | Duration of validity of created platform invites                        | 168h             |
 
 ## Deployment
