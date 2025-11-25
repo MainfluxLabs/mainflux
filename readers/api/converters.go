@@ -179,15 +179,15 @@ func formatTimeNs(ns int64, timeFormat string) string {
 	return fmt.Sprintf("%v", ns)
 }
 
-func Flatten(m map[string]interface{}, prefix string) map[string]interface{} {
-	result := make(map[string]interface{})
+func Flatten(m map[string]any, prefix string) map[string]any {
+	result := make(map[string]any)
 	for k, v := range m {
 		key := k
 		if prefix != "" {
 			key = prefix + "." + k
 		}
 		switch child := v.(type) {
-		case map[string]interface{}:
+		case map[string]any:
 			nested := Flatten(child, key)
 			for nk, nv := range nested {
 				result[nk] = nv
