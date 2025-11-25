@@ -73,7 +73,7 @@ type oauthLoginReq struct {
 }
 
 func (req oauthLoginReq) validate() error {
-	if req.provider == "" || (req.provider != GoogleProvider && req.provider != GitHubProvider) {
+	if req.provider != GoogleProvider && req.provider != GitHubProvider {
 		return apiutil.ErrMissingProvider
 	}
 	return nil
@@ -88,7 +88,7 @@ type oauthCallbackReq struct {
 }
 
 func (req oauthCallbackReq) validate() error {
-	if req.provider == "" || (req.provider != GoogleProvider && req.provider != GitHubProvider) {
+	if req.provider != GoogleProvider && req.provider != GitHubProvider {
 		return apiutil.ErrMissingProvider
 	}
 
