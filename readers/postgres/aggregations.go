@@ -152,8 +152,8 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 		Table:            senmlTable,
 		TimeColumn:       senmlOrder,
 		AggField:         rpm.AggField,
-		AggIntervalUnit:  rpm.AggIntervalUnit,
-		AggIntervalValue: rpm.AggIntervalValue,
+		AggIntervalUnit:  rpm.AggUnit,
+		AggIntervalValue: rpm.AggValue,
 		AggType:          rpm.AggType,
 		Limit:            rpm.Limit,
 	}
@@ -193,7 +193,7 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 		return []readers.Message{}, 0, err
 	}
 
-	timeTrunc := buildTruncTimeExpression(rpm.AggIntervalValue, rpm.AggIntervalUnit, senmlOrder)
+	timeTrunc := buildTruncTimeExpression(rpm.AggValue, rpm.AggUnit, senmlOrder)
 	countQuery := fmt.Sprintf(`SELECT COUNT(DISTINCT %s) FROM %s %s`,
 		timeTrunc, senmlTable, config.Condition)
 

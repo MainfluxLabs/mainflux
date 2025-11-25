@@ -36,7 +36,7 @@ func (req listSenMLMessagesReq) validate() error {
 		return apiutil.ErrInvalidComparator
 	}
 
-	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggIntervalValue, req.pageMeta.AggIntervalUnit); err != nil {
+	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggValue, req.pageMeta.AggUnit); err != nil {
 		return err
 	}
 
@@ -81,7 +81,7 @@ func (req backupSenMLMessagesReq) validate() error {
 		return apiutil.ErrInvalidQueryParams
 	}
 
-	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggIntervalValue, req.pageMeta.AggIntervalUnit); err != nil {
+	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggValue, req.pageMeta.AggUnit); err != nil {
 		return err
 	}
 

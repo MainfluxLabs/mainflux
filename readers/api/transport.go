@@ -503,20 +503,20 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 	}
 
 	pageMeta := readers.SenMLPageMetadata{
-		Name:             name,
-		Subtopic:         subtopic,
-		Protocol:         protocol,
-		Value:            v,
-		Comparator:       comparator,
-		StringValue:      vs,
-		DataValue:        vd,
-		BoolValue:        vb,
-		From:             from,
-		To:               to,
-		AggIntervalUnit:  ai,
-		AggIntervalValue: av,
-		AggType:          at,
-		AggField:         af,
+		Name:        name,
+		Subtopic:    subtopic,
+		Protocol:    protocol,
+		Value:       v,
+		Comparator:  comparator,
+		StringValue: vs,
+		DataValue:   vd,
+		BoolValue:   vb,
+		From:        from,
+		To:          to,
+		AggUnit:     ai,
+		AggValue:    av,
+		AggType:     at,
+		AggField:    af,
 	}
 
 	return pageMeta, nil
