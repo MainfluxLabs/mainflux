@@ -40,8 +40,8 @@ type QueryConfig struct {
 	Condition        string
 	ConditionForJoin string
 	Limit            uint64
-	AggIntervalUnit  string
-	AggIntervalValue int64
+	AggUnit          string
+	AggValue         int64
 	AggField         string
 	AggType          string
 }
@@ -77,13 +77,13 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 	}
 
 	config := QueryConfig{
-		Table:            jsonTable,
-		TimeColumn:       jsonOrder,
-		AggField:         rpm.AggField,
-		AggIntervalUnit:  rpm.AggIntervalUnit,
-		AggIntervalValue: rpm.AggIntervalValue,
-		AggType:          rpm.AggType,
-		Limit:            rpm.Limit,
+		Table:      jsonTable,
+		TimeColumn: jsonOrder,
+		AggField:   rpm.AggField,
+		AggUnit:    rpm.AggIntervalUnit,
+		AggValue:   rpm.AggIntervalValue,
+		AggType:    rpm.AggType,
+		Limit:      rpm.Limit,
 	}
 
 	conditions := as.getJSONConditions(rpm)
@@ -145,13 +145,13 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 	}
 
 	config := QueryConfig{
-		Table:            senmlTable,
-		TimeColumn:       senmlOrder,
-		AggField:         rpm.AggField,
-		AggIntervalUnit:  rpm.AggUnit,
-		AggIntervalValue: rpm.AggValue,
-		AggType:          rpm.AggType,
-		Limit:            rpm.Limit,
+		Table:      senmlTable,
+		TimeColumn: senmlOrder,
+		AggField:   rpm.AggField,
+		AggUnit:    rpm.AggUnit,
+		AggValue:   rpm.AggValue,
+		AggType:    rpm.AggType,
+		Limit:      rpm.Limit,
 	}
 
 	conditions := as.getSenMLConditions(rpm)
@@ -419,7 +419,7 @@ func (countStrt CountStrategy) GetAggregateExpression(config QueryConfig) string
 }
 
 func buildTimeIntervals(config QueryConfig) string {
-	timeTrunc := buildTruncTimeExpression(config.AggIntervalValue, config.AggIntervalUnit, config.TimeColumn)
+	timeTrunc := buildTruncTimeExpression(config.AggValue, config.AggUnit, config.TimeColumn)
 	return fmt.Sprintf(`
         SELECT DISTINCT %s as interval_time
         FROM %s 
@@ -446,7 +446,7 @@ func buildTruncTimeExpression(intervalVal int64, intervalUnit string, timeColumn
 }
 
 func buildTimeJoinCondition(config QueryConfig, tableAlias string) string {
-	timeTrunc := buildTruncTimeExpression(config.AggIntervalValue, config.AggIntervalUnit, "m."+config.TimeColumn)
+	timeTrunc := buildTruncTimeExpression(config.AggValue, config.AggUnit, "m."+config.TimeColumn)
 	return fmt.Sprintf("%s = %s.interval_time", timeTrunc, tableAlias)
 }
 
