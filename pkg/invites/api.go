@@ -46,13 +46,13 @@ type PageRes struct {
 }
 
 type InviteRes struct {
-	ID           string    `json:"id,omitempty"`
-	InviteeID    string    `json:"invitee_id,omitempty"`
+	ID           string    `json:"id"`
+	InviteeID    string    `json:"invitee_id"`
 	InviteeEmail string    `json:"invitee_email,omitempty"`
-	InviteeRole  string    `json:"invitee_role,omitempty"`
+	InviteeRole  string    `json:"invitee_role"`
 	InviterID    string    `json:"inviter_id,omitempty"`
 	InviterEmail string    `json:"inviter_email,omitempty"`
-	CreatedAt    time.Time `json:"created_at,omitempty"`
-	ExpiresAt    time.Time `json:"expires_at,omitempty"`
-	State        string    `json:"state,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
+	ExpiresAt    time.Time `json:"expires_at"`
+	State        string    `json:"state"`
 }
