@@ -93,8 +93,8 @@ type SenMLPageMetadata struct {
 	DataValue   string  `json:"vd,omitempty"`
 	From        int64   `json:"from,omitempty"`
 	To          int64   `json:"to,omitempty"`
-	AggInterval string  `json:"agg_int,omitempty"`
-	AggValue    int64   `json:"agg_val,omitempty"`
+	AggInterval string  `json:"agg_interval,omitempty"`
+	AggValue    int64   `json:"agg_value,omitempty"`
 	AggType     string  `json:"agg_type,omitempty"`
 	AggField    string  `json:"agg_field,omitempty"`
 }
@@ -109,8 +109,8 @@ type JSONPageMetadata struct {
 	From        int64  `json:"from,omitempty"`
 	To          int64  `json:"to,omitempty"`
 	Filter      string `json:"filter,omitempty"`
-	AggInterval string `json:"agg_int,omitempty"`
-	AggValue    int64  `json:"agg_val,omitempty"`
+	AggInterval string `json:"agg_interval,omitempty"`
+	AggValue    int64  `json:"agg_value,omitempty"`
 	AggType     string `json:"agg_type,omitempty"`
 	AggField    string `json:"agg_field,omitempty"`
 }
