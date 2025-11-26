@@ -45,7 +45,7 @@ func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetad
 
 	params := jr.buildQueryParams(rpm)
 
-	if rpm.AggType != "" && rpm.AggIntervalUnit != "" {
+	if rpm.AggType != "" && rpm.AggInterval != "" {
 		messages, total, err := jr.aggregator.readAggregatedJSONMessages(ctx, rpm)
 		if err != nil {
 			return page, err

@@ -4,6 +4,8 @@
 package api
 
 import (
+	"strings"
+
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -36,7 +38,7 @@ func (req listSenMLMessagesReq) validate() error {
 		return apiutil.ErrInvalidComparator
 	}
 
-	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggValue, req.pageMeta.AggUnit); err != nil {
+	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggValue, req.pageMeta.AggInterval); err != nil {
 		return err
 	}
 
@@ -59,7 +61,7 @@ func (req listJSONMessagesReq) validate() error {
 		return apiutil.ErrLimitSize
 	}
 
-	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggIntervalValue, req.pageMeta.AggIntervalUnit); err != nil {
+	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggValue, req.pageMeta.AggInterval); err != nil {
 		return err
 	}
 
@@ -81,7 +83,7 @@ func (req backupSenMLMessagesReq) validate() error {
 		return apiutil.ErrInvalidQueryParams
 	}
 
-	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggValue, req.pageMeta.AggUnit); err != nil {
+	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggValue, req.pageMeta.AggInterval); err != nil {
 		return err
 	}
 
@@ -103,7 +105,7 @@ func (req backupJSONMessagesReq) validate() error {
 		return apiutil.ErrInvalidQueryParams
 	}
 
-	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggIntervalValue, req.pageMeta.AggIntervalUnit); err != nil {
+	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggValue, req.pageMeta.AggInterval); err != nil {
 		return err
 	}
 
@@ -183,16 +185,18 @@ func validateAggregation(aggType string, aggIntervalValue int64, aggIntervalUnit
 }
 
 func getAggIntervalLimit(unit string) int64 {
-	switch unit {
-	case "minutes":
+	normalizedUnit := strings.TrimSuffix(unit, "s")
+
+	switch normalizedUnit {
+	case "minute":
 		return 60
-	case "hours":
+	case "hour":
 		return 24
-	case "days":
+	case "day":
 		return 31
-	case "months":
+	case "month":
 		return 12
-	case "years":
+	case "year":
 		return 100
 	default:
 		return 0

@@ -409,14 +409,14 @@ func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
 	}
 
 	pageMeta := readers.JSONPageMetadata{
-		Subtopic:         subtopic,
-		Protocol:         protocol,
-		From:             from,
-		To:               to,
-		AggIntervalUnit:  ai,
-		AggIntervalValue: av,
-		AggType:          at,
-		AggField:         af,
+		Subtopic:    subtopic,
+		Protocol:    protocol,
+		From:        from,
+		To:          to,
+		AggInterval: ai,
+		AggValue:    av,
+		AggType:     at,
+		AggField:    af,
 	}
 
 	return pageMeta, nil
@@ -504,7 +504,7 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 		BoolValue:   vb,
 		From:        from,
 		To:          to,
-		AggUnit:     ai,
+		AggInterval: ai,
 		AggValue:    av,
 		AggType:     at,
 		AggField:    af,
