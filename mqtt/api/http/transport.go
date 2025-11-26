@@ -41,7 +41,7 @@ func MakeHandler(tracer opentracing.Tracer, svc mqtt.Service, logger logger.Logg
 	return r
 }
 
-func decodeListSubscriptions(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListSubscriptions(_ context.Context, r *http.Request) (any, error) {
 	o, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
 	if err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func decodeListSubscriptions(_ context.Context, r *http.Request) (interface{}, e
 	}, nil
 }
 
-func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {

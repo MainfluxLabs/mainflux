@@ -80,7 +80,7 @@ func (mr groupMembershipsRepository) RetrieveByGroup(ctx context.Context, groupI
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	q := fmt.Sprintf(`SELECT member_id, role FROM group_memberships WHERE group_id = :group_id %s;`, olq)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"group_id": groupID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
@@ -121,7 +121,7 @@ func (mr groupMembershipsRepository) RetrieveByGroup(ctx context.Context, groupI
 func (mr groupMembershipsRepository) BackupAll(ctx context.Context) ([]things.GroupMembership, error) {
 	q := `SELECT member_id, group_id, role FROM group_memberships;`
 
-	rows, err := mr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
+	rows, err := mr.db.NamedQueryContext(ctx, q, map[string]any{})
 	if err != nil {
 		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
@@ -144,7 +144,7 @@ func (mr groupMembershipsRepository) BackupAll(ctx context.Context) ([]things.Gr
 func (mr groupMembershipsRepository) BackupByGroup(ctx context.Context, groupID string) ([]things.GroupMembership, error) {
 	q := `SELECT member_id, group_id, role FROM group_memberships WHERE group_id = :group_id;`
 
-	rows, err := mr.db.NamedQueryContext(ctx, q, map[string]interface{}{
+	rows, err := mr.db.NamedQueryContext(ctx, q, map[string]any{
 		"group_id": groupID,
 	})
 	if err != nil {

@@ -64,7 +64,7 @@ var (
 	org = auth.Org{
 		Name:        name,
 		Description: description,
-		Metadata:    map[string]interface{}{"key": "value"},
+		Metadata:    map[string]any{"key": "value"},
 	}
 	idProvider      = uuid.New()
 	viewer          = auth.OrgMembership{MemberID: viewerID, Email: viewerEmail, Role: auth.Viewer}
@@ -72,7 +72,7 @@ var (
 	admin           = auth.OrgMembership{MemberID: adminID, Email: adminEmail, Role: auth.Admin}
 	usersByEmails   = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, email: {ID: id, Email: email}}
 	usersByIDs      = map[string]users.User{adminID: {ID: adminID, Email: adminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, id: {ID: id, Email: email}}
-	metadata        = map[string]interface{}{"test": "data"}
+	metadata        = map[string]any{"test": "data"}
 	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, strings.Repeat("m", maxNameSize+1))
 )
 
@@ -123,7 +123,7 @@ func newServer(svc auth.Service) *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-func toJSON(data interface{}) string {
+func toJSON(data any) string {
 	jsonData, _ := json.Marshal(data)
 	return string(jsonData)
 }
@@ -308,7 +308,7 @@ func TestUpdateOrg(t *testing.T) {
 	updtOrg := auth.Org{
 		Name:        "updatedName",
 		Description: "updatedDesc",
-		Metadata:    map[string]interface{}{"newKey": "newValue"},
+		Metadata:    map[string]any{"newKey": "newValue"},
 	}
 
 	data := toJSON(updtOrg)
@@ -1074,11 +1074,11 @@ func TestRestore(t *testing.T) {
 }
 
 type orgRes struct {
-	ID          string                 `json:"id"`
-	OwnerID     string                 `json:"owner_id"`
-	Name        string                 `json:"name"`
-	Description string                 `json:"description"`
-	Metadata    map[string]interface{} `json:"metadata"`
+	ID          string         `json:"id"`
+	OwnerID     string         `json:"owner_id"`
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	Metadata    map[string]any `json:"metadata"`
 }
 
 type orgsPageRes struct {

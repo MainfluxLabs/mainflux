@@ -100,7 +100,7 @@ func (ar *alarmRepository) RetrieveByThing(ctx context.Context, thingID string, 
 	                  FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"thing_id": thingID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
@@ -131,7 +131,7 @@ func (ar *alarmRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 	                  FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"group_id": groupID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
@@ -159,7 +159,7 @@ func (ar *alarmRepository) RetrieveByGroups(ctx context.Context, groupIDs []stri
 	query := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, subtopic, protocol, payload, created FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"limit":     pm.Limit,
 		"offset":    pm.Offset,
 		"payload":   p,
@@ -183,7 +183,7 @@ func (ar *alarmRepository) Remove(ctx context.Context, ids ...string) error {
 	return nil
 }
 
-func (ar *alarmRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (alarms.AlarmsPage, error) {
+func (ar *alarmRepository) retrieve(ctx context.Context, query, cquery string, params map[string]any) (alarms.AlarmsPage, error) {
 	rows, err := ar.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
@@ -248,7 +248,7 @@ func toDBAlarm(alarm alarms.Alarm) (dbAlarm, error) {
 }
 
 func toAlarm(dbAlarm dbAlarm) (alarms.Alarm, error) {
-	var payload map[string]interface{}
+	var payload map[string]any
 	if err := json.Unmarshal(dbAlarm.Payload, &payload); err != nil {
 		return alarms.Alarm{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}

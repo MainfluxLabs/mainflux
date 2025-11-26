@@ -277,7 +277,7 @@ func (es eventStore) GetPubConfByKey(ctx context.Context, key things.ThingKey) (
 	return es.svc.GetPubConfByKey(ctx, key)
 }
 
-func (es eventStore) GetConfigByThingID(ctx context.Context, thingID string) (map[string]interface{}, error) {
+func (es eventStore) GetConfigByThingID(ctx context.Context, thingID string) (map[string]any, error) {
 	return es.svc.GetConfigByThingID(ctx, thingID)
 }
 

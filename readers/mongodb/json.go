@@ -65,7 +65,7 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 	}
 
 	coll := jr.db.Collection(jsonCollection)
-	var docs []interface{}
+	var docs []any
 	for _, msg := range messages {
 		docs = append(docs, msg)
 	}
@@ -97,7 +97,7 @@ func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetad
 
 	var messages []readers.Message
 	for cursor.Next(ctx) {
-		var m map[string]interface{}
+		var m map[string]any
 		if err := cursor.Decode(&m); err != nil {
 			return readers.JSONMessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
 		}
@@ -121,7 +121,7 @@ func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetad
 func (jr *jsonRepository) fmtCondition(rpm readers.JSONPageMetadata) bson.D {
 	filter := bson.D{}
 
-	var query map[string]interface{}
+	var query map[string]any
 	meta, err := json.Marshal(rpm)
 	if err != nil {
 		return filter

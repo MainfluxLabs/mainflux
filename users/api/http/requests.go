@@ -145,7 +145,7 @@ func (req listUsersReq) validate() error {
 
 type updateUserReq struct {
 	token    string
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 func (req updateUserReq) validate() error {
@@ -313,10 +313,10 @@ func (req backupReq) validate() error {
 }
 
 type restoreUserReq struct {
-	ID       string                 `json:"id"`
-	Email    string                 `json:"email"`
-	Password string                 `json:"password"`
-	Metadata map[string]interface{} `json:"metadata"`
+	ID       string         `json:"id"`
+	Email    string         `json:"email"`
+	Password string         `json:"password"`
+	Metadata map[string]any `json:"metadata"`
 	Status   string
 }
 type restoreReq struct {

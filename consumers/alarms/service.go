@@ -123,7 +123,7 @@ func (as *alarmService) createAlarm(ctx context.Context, alarm *Alarm) error {
 
 }
 
-func (as *alarmService) Consume(message interface{}) error {
+func (as *alarmService) Consume(message any) error {
 	ctx := context.Background()
 
 	msg, ok := message.(protomfx.Message)
@@ -137,7 +137,7 @@ func (as *alarmService) Consume(message interface{}) error {
 	}
 	ruleID := subject[1]
 
-	var payload map[string]interface{}
+	var payload map[string]any
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
 		return err
 	}

@@ -12,7 +12,7 @@ import (
 )
 
 func createNotifiersEndpoint(svc notifiers.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(createNotifiersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -38,7 +38,7 @@ func createNotifiersEndpoint(svc notifiers.Service) endpoint.Endpoint {
 }
 
 func listNotifiersByGroupEndpoint(svc notifiers.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listNotifiersReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -54,7 +54,7 @@ func listNotifiersByGroupEndpoint(svc notifiers.Service) endpoint.Endpoint {
 }
 
 func viewNotifierEndpoint(svc notifiers.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(notifierReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -70,7 +70,7 @@ func viewNotifierEndpoint(svc notifiers.Service) endpoint.Endpoint {
 }
 
 func updateNotifierEndpoint(svc notifiers.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(updateNotifierReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -92,7 +92,7 @@ func updateNotifierEndpoint(svc notifiers.Service) endpoint.Endpoint {
 }
 
 func removeNotifiersEndpoint(svc notifiers.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(removeNotifiersReq)
 		if err := req.validate(); err != nil {
 			return nil, err

@@ -168,7 +168,7 @@ func (or orgRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata
 	query := fmt.Sprintf(`SELECT id, owner_id, name, description, metadata, created_at, updated_at FROM orgs %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM orgs %s`, whereClause)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"name":     name,
 		"metadata": m,
 		"limit":    pm.Limit,
@@ -221,7 +221,7 @@ func (or orgRepository) RetrieveByMember(ctx context.Context, memberID string, p
 				FROM org_memberships om, orgs o %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM org_memberships om, orgs o %s`, whereClause)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"member_id": memberID,
 		"name":      name,
 		"limit":     pm.Limit,
@@ -232,7 +232,7 @@ func (or orgRepository) RetrieveByMember(ctx context.Context, memberID string, p
 	return or.retrieve(ctx, query, cquery, params)
 }
 
-func (or orgRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (auth.OrgsPage, error) {
+func (or orgRepository) retrieve(ctx context.Context, query, cquery string, params map[string]any) (auth.OrgsPage, error) {
 	rows, err := or.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return auth.OrgsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
@@ -302,10 +302,10 @@ func toOrg(dbo dbOrg) (auth.Org, error) {
 }
 
 // dbOrgMetadata type for handling metadata properly in database/sql
-type dbOrgMetadata map[string]interface{}
+type dbOrgMetadata map[string]any
 
 // Scan - Implement the database/sql scanner interface
-func (m *dbOrgMetadata) Scan(value interface{}) error {
+func (m *dbOrgMetadata) Scan(value any) error {
 	if value == nil {
 		return nil
 	}

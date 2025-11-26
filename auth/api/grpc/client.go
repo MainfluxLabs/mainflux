@@ -119,12 +119,12 @@ func (client grpcClient) Issue(ctx context.Context, req *protomfx.IssueReq, _ ..
 	return &protomfx.Token{Value: ir.id}, nil
 }
 
-func encodeIssueRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeIssueRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(issueReq)
 	return &protomfx.IssueReq{Id: req.id, Email: req.email, Type: req.keyType}, nil
 }
 
-func decodeIssueResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+func decodeIssueResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.UserIdentity)
 	return identityRes{id: res.GetId(), email: res.GetEmail()}, nil
 }
@@ -142,12 +142,12 @@ func (client grpcClient) Identify(ctx context.Context, token *protomfx.Token, _ 
 	return &protomfx.UserIdentity{Id: ir.id, Email: ir.email}, nil
 }
 
-func encodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(identityReq)
 	return &protomfx.Token{Value: req.token}, nil
 }
 
-func decodeIdentifyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+func decodeIdentifyResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.UserIdentity)
 	return identityRes{id: res.GetId(), email: res.GetEmail()}, nil
 }
@@ -165,7 +165,7 @@ func (client grpcClient) Authorize(ctx context.Context, req *protomfx.AuthorizeR
 	return &empty.Empty{}, er.err
 }
 
-func encodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeAuthorizeRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(authReq)
 	return &protomfx.AuthorizeReq{
 		Token:   req.Token,
@@ -188,12 +188,12 @@ func (client grpcClient) GetOwnerIDByOrgID(ctx context.Context, req *protomfx.Or
 	return &protomfx.OwnerID{Value: oid.ownerID}, nil
 }
 
-func encodeGetOwnerIDByOrgIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeGetOwnerIDByOrgIDRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(ownerIDByOrgIDReq)
 	return &protomfx.OrgID{Value: req.orgID}, nil
 }
 
-func decodeGetOwnerIDByOrgIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+func decodeGetOwnerIDByOrgIDResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.OwnerID)
 	return ownerIDByOrgIDRes{ownerID: res.GetValue()}, nil
 }
@@ -211,7 +211,7 @@ func (client grpcClient) AssignRole(ctx context.Context, req *protomfx.AssignRol
 	return &empty.Empty{}, er.err
 }
 
-func encodeAssignRoleRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeAssignRoleRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(assignRoleReq)
 	return &protomfx.AssignRoleReq{
 		Id:   req.ID,
@@ -232,14 +232,14 @@ func (client grpcClient) RetrieveRole(ctx context.Context, req *protomfx.Retriev
 	return &protomfx.RetrieveRoleRes{Role: rr.role}, err
 }
 
-func encodeRetrieveRoleRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeRetrieveRoleRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(retrieveRoleReq)
 	return &protomfx.RetrieveRoleReq{
 		Id: req.id,
 	}, nil
 }
 
-func decodeRetrieveRoleResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+func decodeRetrieveRoleResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.RetrieveRoleRes)
 	return retrieveRoleRes{role: res.GetRole()}, nil
 }
@@ -300,6 +300,6 @@ func encodeActivateOrgInviteRequest(_ context.Context, grpcReq any) (any, error)
 	}, nil
 }
 
-func decodeEmptyResponse(_ context.Context, _ interface{}) (interface{}, error) {
+func decodeEmptyResponse(_ context.Context, _ any) (any, error) {
 	return emptyRes{}, nil
 }

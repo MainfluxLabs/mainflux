@@ -64,10 +64,10 @@ func TestTransformJSON(t *testing.T) {
 	invalidTimeField.Payload = []byte(invalidTsPayload)
 	invalidTimeFieldTr := protomfx.Transformer{DataFilters: dataFilters, TimeField: timeFieldName, TimeFormat: timeFieldName, TimeLocation: timeFieldLocation}
 
-	pyd := map[string]interface{}{
+	pyd := map[string]any{
 		"key1": "val1",
 		"key2": float64(123),
-		"key3": map[string]interface{}{
+		"key3": map[string]any{
 			"key4": "val4",
 		},
 	}

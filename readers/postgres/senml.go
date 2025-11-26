@@ -40,7 +40,7 @@ func (sr *senmlRepository) Backup(ctx context.Context, rpm readers.SenMLPageMeta
 func (sr *senmlRepository) Remove(ctx context.Context, rpm readers.SenMLPageMetadata) error {
 	condition := sr.fmtCondition(rpm)
 	q := fmt.Sprintf("DELETE FROM senml %s", condition)
-	params := map[string]interface{}{
+	params := map[string]any{
 		"subtopic":     rpm.Subtopic,
 		"publisher":    rpm.Publisher,
 		"name":         rpm.Name,
@@ -99,7 +99,7 @@ func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLPageMet
 	return page, nil
 }
 
-func (sr *senmlRepository) readMessages(ctx context.Context, rpm readers.SenMLPageMetadata, params map[string]interface{}) ([]readers.Message, error) {
+func (sr *senmlRepository) readMessages(ctx context.Context, rpm readers.SenMLPageMetadata, params map[string]any) ([]readers.Message, error) {
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 	condition := sr.fmtCondition(rpm)
 
@@ -135,7 +135,7 @@ func (sr *senmlRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, err
 }
 
 func (sr *senmlRepository) fmtCondition(rpm readers.SenMLPageMetadata) string {
-	var query map[string]interface{}
+	var query map[string]any
 	meta, err := json.Marshal(rpm)
 	if err != nil {
 		return ""
@@ -177,8 +177,8 @@ func (sr *senmlRepository) fmtCondition(rpm readers.SenMLPageMetadata) string {
 	return condition
 }
 
-func (sr *senmlRepository) buildQueryParams(rpm readers.SenMLPageMetadata) map[string]interface{} {
-	return map[string]interface{}{
+func (sr *senmlRepository) buildQueryParams(rpm readers.SenMLPageMetadata) map[string]any {
+	return map[string]any{
 		"limit":        rpm.Limit,
 		"offset":       rpm.Offset,
 		"subtopic":     rpm.Subtopic,

@@ -51,11 +51,11 @@ func (gc grpcClient) Publish(ctx context.Context, req *protomfx.PublishReq, _ ..
 	return &empty.Empty{}, er.err
 }
 
-func encodePublishRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodePublishRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(publishReq)
 	return &protomfx.PublishReq{Message: &req.message}, nil
 }
 
-func decodeEmptyResponse(_ context.Context, _ interface{}) (interface{}, error) {
+func decodeEmptyResponse(_ context.Context, _ any) (any, error) {
 	return emptyRes{}, nil
 }

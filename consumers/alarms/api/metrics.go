@@ -71,7 +71,7 @@ func (ms *metricsMiddleware) RemoveAlarms(ctx context.Context, token string, id 
 	return ms.svc.RemoveAlarms(ctx, token, id...)
 }
 
-func (ms *metricsMiddleware) Consume(message interface{}) error {
+func (ms *metricsMiddleware) Consume(message any) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "consume").Add(1)
 		ms.latency.With("method", "consume").Observe(time.Since(begin).Seconds())

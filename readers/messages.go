@@ -61,7 +61,7 @@ type SenMLMessageRepository interface {
 }
 
 // Message represents any message format.
-type Message interface{}
+type Message any
 
 type MessagesPage struct {
 	Total    uint64
@@ -114,7 +114,7 @@ type JSONPageMetadata struct {
 }
 
 // ParseValueComparator convert comparison operator keys into mathematic anotation
-func ParseValueComparator(query map[string]interface{}) string {
+func ParseValueComparator(query map[string]any) string {
 	comparator := "="
 	val, ok := query["comparator"]
 	if ok {

@@ -87,7 +87,7 @@ func (lm loggingMiddleware) RemoveAlarms(ctx context.Context, token string, id .
 	return lm.svc.RemoveAlarms(ctx, token, id...)
 }
 
-func (lm loggingMiddleware) Consume(alarm interface{}) (err error) {
+func (lm loggingMiddleware) Consume(alarm any) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method consume took %s to complete", time.Since(begin))
 		if err != nil {

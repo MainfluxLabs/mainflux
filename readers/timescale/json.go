@@ -43,7 +43,7 @@ func (jr *jsonRepository) Backup(ctx context.Context, rpm readers.JSONPageMetada
 func (jr *jsonRepository) Remove(ctx context.Context, rpm readers.JSONPageMetadata) error {
 	condition := jr.fmtCondition(rpm)
 	q := fmt.Sprintf("DELETE FROM json %s", condition)
-	params := map[string]interface{}{
+	params := map[string]any{
 		"subtopic":  rpm.Subtopic,
 		"publisher": rpm.Publisher,
 		"protocol":  rpm.Protocol,
@@ -70,7 +70,7 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 	for _, msg := range messages {
 		jsonMsg, ok := msg.(mfjson.Message)
 		if !ok {
-			msgMap, mapOk := msg.(map[string]interface{})
+			msgMap, mapOk := msg.(map[string]any)
 			if !mapOk {
 				return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
 			}
@@ -135,7 +135,7 @@ func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetad
 	return page, nil
 }
 
-func (jr *jsonRepository) readMessages(ctx context.Context, rpm readers.JSONPageMetadata, params map[string]interface{}) ([]readers.Message, error) {
+func (jr *jsonRepository) readMessages(ctx context.Context, rpm readers.JSONPageMetadata, params map[string]any) ([]readers.Message, error) {
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 	condition := jr.fmtCondition(rpm)
 
@@ -176,7 +176,7 @@ func (jr *jsonRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, erro
 }
 
 func (jr *jsonRepository) fmtCondition(rpm readers.JSONPageMetadata) string {
-	var query map[string]interface{}
+	var query map[string]any
 	meta, err := json.Marshal(rpm)
 	if err != nil {
 		return ""
@@ -202,8 +202,8 @@ func (jr *jsonRepository) fmtCondition(rpm readers.JSONPageMetadata) string {
 	return condition
 }
 
-func (jr *jsonRepository) buildQueryParams(rpm readers.JSONPageMetadata) map[string]interface{} {
-	return map[string]interface{}{
+func (jr *jsonRepository) buildQueryParams(rpm readers.JSONPageMetadata) map[string]any {
+	return map[string]any{
 		"limit":     rpm.Limit,
 		"offset":    rpm.Offset,
 		"subtopic":  rpm.Subtopic,

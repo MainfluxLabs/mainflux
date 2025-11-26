@@ -269,52 +269,52 @@ func (client grpcClient) GetThingIDsByProfile(ctx context.Context, req *protomfx
 	return &protomfx.ThingIDs{Ids: ids.thingIDs}, nil
 }
 
-func encodeGetPubConfByKeyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeGetPubConfByKeyRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(thingKey)
 	return &protomfx.ThingKey{Value: req.value, Type: req.keyType}, nil
 }
 
-func encodeGetConfigByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeGetConfigByThingIDRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(thingIDReq)
 	return &protomfx.ThingID{Value: req.thingID}, nil
 }
 
-func encodeUserAccessThingRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeUserAccessThingRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(userAccessThingReq)
 	return &protomfx.UserAccessReq{Token: req.token, Id: req.id, Action: req.action}, nil
 }
 
-func encodeUserAccessProfileRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeUserAccessProfileRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(userAccessProfileReq)
 	return &protomfx.UserAccessReq{Token: req.token, Id: req.id, Action: req.action}, nil
 }
 
-func encodeUserAccessGroupRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeUserAccessGroupRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(userAccessGroupReq)
 	return &protomfx.UserAccessReq{Token: req.token, Id: req.id, Action: req.action}, nil
 }
 
-func encodeThingAccessGroupRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeThingAccessGroupRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(thingAccessGroupReq)
 	return &protomfx.ThingAccessReq{Key: req.thingKey.value, Id: req.id}, nil
 }
 
-func encodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(thingKey)
 	return &protomfx.ThingKey{Value: req.value, Type: req.keyType}, nil
 }
 
-func encodeGetGroupIDByThingIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeGetGroupIDByThingIDRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(thingIDReq)
 	return &protomfx.ThingID{Value: req.thingID}, nil
 }
 
-func encodeGetGroupIDByProfileIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeGetGroupIDByProfileIDRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(profileIDReq)
 	return &protomfx.ProfileID{Value: req.profileID}, nil
 }
 
-func encodeGetGroupIDsByOrgRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeGetGroupIDsByOrgRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(orgAccessReq)
 	return &protomfx.OrgAccessReq{
 		OrgId: req.orgID,
@@ -322,43 +322,43 @@ func encodeGetGroupIDsByOrgRequest(_ context.Context, grpcReq interface{}) (inte
 	}, nil
 }
 
-func encodeGetThingIDsByProfileRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeGetThingIDsByProfileRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(profileIDReq)
 	return &protomfx.ProfileID{
 		Value: req.profileID,
 	}, nil
 }
 
-func decodeIdentityResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+func decodeIdentityResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.ThingID)
 	return identityRes{id: res.GetValue()}, nil
 }
 
-func decodeGetPubConfByKeyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+func decodeGetPubConfByKeyResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.PubConfByKeyRes)
 	return pubConfByKeyRes{publisherID: res.PublisherID, profileConfig: res.ProfileConfig}, nil
 }
 
-func decodeGetConfigByThingIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+func decodeGetConfigByThingIDResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.ConfigByThingIDRes)
 	return configByThingIDRes{config: res.GetConfig()}, nil
 }
 
-func decodeEmptyResponse(_ context.Context, _ interface{}) (interface{}, error) {
+func decodeEmptyResponse(_ context.Context, _ any) (any, error) {
 	return emptyRes{}, nil
 }
 
-func decodeGetGroupIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+func decodeGetGroupIDResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.GroupID)
 	return groupIDRes{groupID: res.GetValue()}, nil
 }
 
-func decodeGetGroupIDsResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+func decodeGetGroupIDsResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.GroupIDs)
 	return groupIDsRes{groupIDs: res.GetIds()}, nil
 }
 
-func decodeGetThingIDsResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+func decodeGetThingIDsResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.ThingIDs)
 	return thingIDsRes{thingIDs: res.GetIds()}, nil
 }

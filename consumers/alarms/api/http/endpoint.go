@@ -12,7 +12,7 @@ import (
 )
 
 func listAlarmsByGroupEndpoint(svc alarms.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listAlarmsByGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -28,7 +28,7 @@ func listAlarmsByGroupEndpoint(svc alarms.Service) endpoint.Endpoint {
 }
 
 func listAlarmsByThingEndpoint(svc alarms.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listAlarmsByThingReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -44,7 +44,7 @@ func listAlarmsByThingEndpoint(svc alarms.Service) endpoint.Endpoint {
 }
 
 func listAlarmsByOrgEndpoint(svc alarms.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listAlarmsByOrgReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -60,7 +60,7 @@ func listAlarmsByOrgEndpoint(svc alarms.Service) endpoint.Endpoint {
 }
 
 func viewAlarmEndpoint(svc alarms.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(alarmReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -76,7 +76,7 @@ func viewAlarmEndpoint(svc alarms.Service) endpoint.Endpoint {
 }
 
 func removeAlarmsEndpoint(svc alarms.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(removeAlarmsReq)
 		if err := req.validate(); err != nil {
 			return nil, err

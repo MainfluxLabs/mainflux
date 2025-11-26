@@ -92,7 +92,7 @@ func (lm *loggingMiddleware) RemoveNotifiers(ctx context.Context, token string, 
 	return lm.svc.RemoveNotifiers(ctx, token, id...)
 }
 
-func (lm *loggingMiddleware) Consume(msg interface{}) (err error) {
+func (lm *loggingMiddleware) Consume(msg any) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method consume took %s to complete", time.Since(begin))
 		if err != nil {

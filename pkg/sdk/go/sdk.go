@@ -69,65 +69,65 @@ var _ SDK = (*mfSDK)(nil)
 
 // User represents mainflux user its credentials.
 type User struct {
-	ID       string                 `json:"id,omitempty"`
-	Email    string                 `json:"email,omitempty"`
-	Groups   []string               `json:"groups,omitempty"`
-	Password string                 `json:"password,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	ID       string         `json:"id,omitempty"`
+	Email    string         `json:"email,omitempty"`
+	Groups   []string       `json:"groups,omitempty"`
+	Password string         `json:"password,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 type PageMetadata struct {
-	Total    uint64                 `json:"total"`
-	Offset   uint64                 `json:"offset"`
-	Limit    uint64                 `json:"limit"`
-	Order    string                 `json:"order"`
-	Dir      string                 `json:"dir"`
-	Subtopic string                 `json:"subtopic,omitempty"`
-	Format   string                 `json:"format,omitempty"`
-	Email    string                 `json:"email,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Total    uint64         `json:"total"`
+	Offset   uint64         `json:"offset"`
+	Limit    uint64         `json:"limit"`
+	Order    string         `json:"order"`
+	Dir      string         `json:"dir"`
+	Subtopic string         `json:"subtopic,omitempty"`
+	Format   string         `json:"format,omitempty"`
+	Email    string         `json:"email,omitempty"`
+	Name     string         `json:"name,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 // Group represents mainflux users group.
 type Group struct {
-	ID          string                 `json:"id,omitempty"`
-	Name        string                 `json:"name,omitempty"`
-	OwnerID     string                 `json:"owner_id,omitempty"`
-	OrgID       string                 `json:"org_id,omitempty"`
-	Description string                 `json:"description,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
-	CreatedAt   time.Time              `json:"created_at,omitempty"`
-	UpdatedAt   time.Time              `json:"updated_at,omitempty"`
+	ID          string         `json:"id,omitempty"`
+	Name        string         `json:"name,omitempty"`
+	OwnerID     string         `json:"owner_id,omitempty"`
+	OrgID       string         `json:"org_id,omitempty"`
+	Description string         `json:"description,omitempty"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
+	CreatedAt   time.Time      `json:"created_at,omitempty"`
+	UpdatedAt   time.Time      `json:"updated_at,omitempty"`
 }
 
 // Thing represents mainflux thing.
 type Thing struct {
-	ID        string                 `json:"id,omitempty"`
-	GroupID   string                 `json:"group_id,omitempty"`
-	ProfileID string                 `json:"profile_id,omitempty"`
-	Name      string                 `json:"name,omitempty"`
-	Key       string                 `json:"key,omitempty"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+	ID        string         `json:"id,omitempty"`
+	GroupID   string         `json:"group_id,omitempty"`
+	ProfileID string         `json:"profile_id,omitempty"`
+	Name      string         `json:"name,omitempty"`
+	Key       string         `json:"key,omitempty"`
+	Metadata  map[string]any `json:"metadata,omitempty"`
 }
 
 // Profile represents mainflux profile.
 type Profile struct {
-	ID       string                 `json:"id,omitempty"`
-	GroupID  string                 `json:"group_id,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Config   map[string]interface{} `json:"config,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	ID       string         `json:"id,omitempty"`
+	GroupID  string         `json:"group_id,omitempty"`
+	Name     string         `json:"name,omitempty"`
+	Config   map[string]any `json:"config,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 // Org represents mainflux org.
 type Org struct {
-	ID          string                 `json:"id,omitempty"`
-	OwnerID     string                 `json:"owner_id,omitempty"`
-	Name        string                 `json:"name,omitempty"`
-	Description string                 `json:"description,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
-	CreatedAt   time.Time              `json:"created_at,omitempty"`
-	UpdatedAt   time.Time              `json:"updated_at,omitempty"`
+	ID          string         `json:"id,omitempty"`
+	OwnerID     string         `json:"owner_id,omitempty"`
+	Name        string         `json:"name,omitempty"`
+	Description string         `json:"description,omitempty"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
+	CreatedAt   time.Time      `json:"created_at,omitempty"`
+	UpdatedAt   time.Time      `json:"updated_at,omitempty"`
 }
 
 // OrgMembership represents mainflux Org Membership.
@@ -167,7 +167,7 @@ type Invite struct {
 	ExpiresAt    time.Time `json:"expires_at"`
 }
 
-type Metadata map[string]interface{}
+type Metadata map[string]any
 
 // SDK contains Mainflux API.
 type SDK interface {
@@ -328,7 +328,7 @@ type SDK interface {
 	SendMessage(subtopic, msg string, key things.ThingKey) error
 
 	// ReadMessages read messages.
-	ReadMessages(isAdmin bool, pm PageMetadata, keyType, token string) (map[string]interface{}, error)
+	ReadMessages(isAdmin bool, pm PageMetadata, keyType, token string) (map[string]any, error)
 
 	// ValidateContentType sets message content type.
 	ValidateContentType(ct ContentType) error

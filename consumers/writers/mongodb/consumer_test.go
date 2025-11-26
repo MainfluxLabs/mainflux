@@ -108,12 +108,12 @@ func TestSaveJSON(t *testing.T) {
 	pubid, err := uuid.NewV4()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"field_1": 123,
 		"field_2": "value",
 		"field_3": false,
 		"field_4": 12.344,
-		"field_5": map[string]interface{}{
+		"field_5": map[string]any{
 			"field_1": "value",
 			"field_2": 42,
 		},

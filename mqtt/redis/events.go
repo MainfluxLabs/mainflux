@@ -4,7 +4,7 @@
 package redis
 
 type event interface {
-	Encode() map[string]interface{}
+	Encode() map[string]any
 }
 
 var (
@@ -18,8 +18,8 @@ type mqttEvent struct {
 	instance  string
 }
 
-func (me mqttEvent) Encode() map[string]interface{} {
-	return map[string]interface{}{
+func (me mqttEvent) Encode() map[string]any {
+	return map[string]any{
 		"thing_id":   me.clientID,
 		"timestamp":  me.timestamp,
 		"event_type": me.eventType,

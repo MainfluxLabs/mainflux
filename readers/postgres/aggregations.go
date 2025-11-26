@@ -59,7 +59,7 @@ func newAggregationService(db dbutil.Database) *aggregationService {
 }
 
 func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) ([]readers.Message, uint64, error) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"limit":     rpm.Limit,
 		"offset":    rpm.Offset,
 		"subtopic":  rpm.Subtopic,
@@ -120,7 +120,7 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 }
 
 func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) ([]readers.Message, uint64, error) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"limit":        rpm.Limit,
 		"offset":       rpm.Offset,
 		"subtopic":     rpm.Subtopic,

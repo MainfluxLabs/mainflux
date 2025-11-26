@@ -84,7 +84,7 @@ func GenerateCSVFromJSON(page readers.MessagesPage) ([]byte, error) {
 	}
 
 	for _, msg := range page.Messages {
-		if m, ok := msg.(map[string]interface{}); ok {
+		if m, ok := msg.(map[string]any); ok {
 			created := ""
 			if v, ok := m["created"].(int64); ok {
 				created = fmt.Sprintf("%v", v)
@@ -124,14 +124,14 @@ func GenerateCSVFromJSON(page readers.MessagesPage) ([]byte, error) {
 
 }
 
-func getStringValue(m map[string]interface{}, key string) string {
+func getStringValue(m map[string]any, key string) string {
 	if v, ok := m[key].(string); ok {
 		return v
 	}
 	return ""
 }
 
-func getValue(ptr interface{}, defaultValue string) string {
+func getValue(ptr any, defaultValue string) string {
 	switch v := ptr.(type) {
 	case *string:
 		if v != nil {
@@ -163,13 +163,13 @@ func GenerateJSON(page readers.MessagesPage) ([]byte, error) {
 }
 
 func ConvertJSONToJSONMessages(data []byte) ([]mfjson.Message, error) {
-	// this was used because mfjson.Message uses []byte but json stores map[string]interface{}
+	// this was used because mfjson.Message uses []byte but json stores map[string]any
 	var tempMessages []struct {
-		Created   int64                  `json:"created"`
-		Subtopic  string                 `json:"subtopic"`
-		Publisher string                 `json:"publisher"`
-		Protocol  string                 `json:"protocol"`
-		Payload   map[string]interface{} `json:"payload"`
+		Created   int64          `json:"created"`
+		Subtopic  string         `json:"subtopic"`
+		Publisher string         `json:"publisher"`
+		Protocol  string         `json:"protocol"`
+		Payload   map[string]any `json:"payload"`
 	}
 
 	if err := json.Unmarshal(data, &tempMessages); err != nil {
