@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	saveGroupInvite             = "save_group_invite"
+	saveGroupInvites            = "save_group_invites"
 	retrieveGroupInviteByID     = "retrieve_group_invite_by_id"
 	removeGroupInvite           = "remove_group_invite"
 	retrieveGroupInvitesByUser  = "retrieve_group_invites_by_user"
@@ -36,7 +36,7 @@ func InvitesRepositoryMiddleware(tracer opentracing.Tracer, repo things.GroupInv
 }
 
 func (irm invitesRepositoryMiddleware) SaveInvites(ctx context.Context, invites ...things.GroupInvite) error {
-	span := dbutil.CreateSpan(ctx, irm.tracer, saveGroupInvite)
+	span := dbutil.CreateSpan(ctx, irm.tracer, saveGroupInvites)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
