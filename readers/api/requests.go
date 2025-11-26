@@ -160,8 +160,8 @@ func (req deleteJSONMessagesReq) validate() error {
 	return nil
 }
 
-func validateAggregation(aggType string, aggValue int64, aggUnit string) error {
-	if maxValue := getAggIntervalLimit(aggUnit); maxValue > 0 {
+func validateAggregation(aggType string, aggValue int64, aggInterval string) error {
+	if maxValue := getAggIntervalLimit(aggInterval); maxValue > 0 {
 		if aggValue <= 0 || aggValue > maxValue {
 			return apiutil.ErrInvalidAggInterval
 		}
