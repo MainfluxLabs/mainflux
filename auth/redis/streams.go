@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/invites"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -139,8 +140,8 @@ func (es eventStore) RestoreOrgMemberships(ctx context.Context, token string, or
 	return es.svc.RestoreOrgMemberships(ctx, token, orgID, backup)
 }
 
-func (es eventStore) CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string) (auth.OrgInvite, error) {
-	return es.svc.CreateOrgInvite(ctx, token, email, role, orgID, invRedirectPath)
+func (es eventStore) CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string, groups ...auth.DormantGroupInvite) (auth.OrgInvite, error) {
+	return es.svc.CreateOrgInvite(ctx, token, email, role, orgID, invRedirectPath, groups...)
 }
 
 func (es eventStore) CreateDormantOrgInvite(ctx context.Context, token, orgID, role, platformInviteID string) (auth.OrgInvite, error) {
@@ -151,8 +152,8 @@ func (es eventStore) RevokeOrgInvite(ctx context.Context, token, inviteID string
 	return es.svc.RevokeOrgInvite(ctx, token, inviteID)
 }
 
-func (es eventStore) RespondOrgInvite(ctx context.Context, token, inviteID string, accept bool) error {
-	return es.svc.RespondOrgInvite(ctx, token, inviteID, accept)
+func (es eventStore) RespondOrgInvite(ctx context.Context, token, inviteID string, accept bool, grRedirectPath string) error {
+	return es.svc.RespondOrgInvite(ctx, token, inviteID, accept, grRedirectPath)
 }
 
 func (es eventStore) ActivateOrgInvite(ctx context.Context, platformInviteID, userID, invRedirectPath string) error {
@@ -163,11 +164,11 @@ func (es eventStore) ViewOrgInvite(ctx context.Context, token, inviteID string) 
 	return es.svc.ViewOrgInvite(ctx, token, inviteID)
 }
 
-func (es eventStore) ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
+func (es eventStore) ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm invites.PageMetadataInvites) (auth.OrgInvitesPage, error) {
 	return es.svc.ListOrgInvitesByUser(ctx, token, userType, userID, pm)
 }
 
-func (es eventStore) ListOrgInvitesByOrg(ctx context.Context, token, orgID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
+func (es eventStore) ListOrgInvitesByOrg(ctx context.Context, token, orgID string, pm invites.PageMetadataInvites) (auth.OrgInvitesPage, error) {
 	return es.svc.ListOrgInvitesByOrg(ctx, token, orgID, pm)
 }
 

@@ -13,6 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/invites"
 )
 
 var _ auth.Service = (*loggingMiddleware)(nil)
@@ -314,7 +315,7 @@ func (lm *loggingMiddleware) RetrieveRole(ctx context.Context, id string) (role 
 	return lm.svc.RetrieveRole(ctx, id)
 }
 
-func (lm *loggingMiddleware) CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string) (invite auth.OrgInvite, err error) {
+func (lm *loggingMiddleware) CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string, groups ...auth.DormantGroupInvite) (invite auth.OrgInvite, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_org_invite took %s to complete", time.Since(begin))
 		if err != nil {
@@ -325,7 +326,7 @@ func (lm *loggingMiddleware) CreateOrgInvite(ctx context.Context, token, email, 
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CreateOrgInvite(ctx, token, email, role, orgID, invRedirectPath)
+	return lm.svc.CreateOrgInvite(ctx, token, email, role, orgID, invRedirectPath, groups...)
 }
 
 func (lm *loggingMiddleware) CreateDormantOrgInvite(ctx context.Context, token, orgID, role, platformInviteID string) (invite auth.OrgInvite, err error) {
@@ -358,7 +359,7 @@ func (lm *loggingMiddleware) RevokeOrgInvite(ctx context.Context, token, inviteI
 	return lm.svc.RevokeOrgInvite(ctx, token, inviteID)
 }
 
-func (lm *loggingMiddleware) RespondOrgInvite(ctx context.Context, token, inviteID string, accept bool) (err error) {
+func (lm *loggingMiddleware) RespondOrgInvite(ctx context.Context, token, inviteID string, accept bool, grRedirectPath string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method respond_org_invite took %s to complete", time.Since(begin))
 		if err != nil {
@@ -369,10 +370,10 @@ func (lm *loggingMiddleware) RespondOrgInvite(ctx context.Context, token, invite
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.RespondOrgInvite(ctx, token, inviteID, accept)
+	return lm.svc.RespondOrgInvite(ctx, token, inviteID, accept, grRedirectPath)
 }
 
-func (lm *loggingMiddleware) ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm auth.PageMetadataInvites) (invPage auth.OrgInvitesPage, err error) {
+func (lm *loggingMiddleware) ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm invites.PageMetadataInvites) (invPage auth.OrgInvitesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_org_invites_by_user for type %s and user id %s took %s to complete", userType, userID, time.Since(begin))
 		if err != nil {
@@ -386,7 +387,7 @@ func (lm *loggingMiddleware) ListOrgInvitesByUser(ctx context.Context, token, us
 	return lm.svc.ListOrgInvitesByUser(ctx, token, userType, userID, pm)
 }
 
-func (lm *loggingMiddleware) ListOrgInvitesByOrg(ctx context.Context, token string, orgID string, pm auth.PageMetadataInvites) (invPage auth.OrgInvitesPage, err error) {
+func (lm *loggingMiddleware) ListOrgInvitesByOrg(ctx context.Context, token string, orgID string, pm invites.PageMetadataInvites) (invPage auth.OrgInvitesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_org_invites_by_org took %s to complete", time.Since(begin))
 		if err != nil {

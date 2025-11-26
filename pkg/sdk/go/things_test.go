@@ -52,12 +52,14 @@ func newThingsService() things.Service {
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
 	groupMembershipsRepo := thmocks.NewGroupMembershipsRepository()
 	groupsRepo := thmocks.NewGroupRepository(groupMembershipsRepo)
+	invitesRepo := thmocks.NewInvitesRepository()
 	profileCache := thmocks.NewProfileCache()
 	thingCache := thmocks.NewThingCache()
 	groupCache := thmocks.NewGroupCache()
 	idProvider := uuid.NewMock()
+	emailerMock := thmocks.NewEmailer()
 
-	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider)
+	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, invitesRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider, emailerMock, inviteDuration)
 }
 
 func newThingsServer(svc things.Service) *httptest.Server {

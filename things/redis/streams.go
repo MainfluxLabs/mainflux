@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/invites"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-redis/redis/v8"
 )
@@ -403,4 +404,40 @@ func (es eventStore) RemoveGroupMemberships(ctx context.Context, token, groupID 
 
 func (es eventStore) GetThingIDsByProfile(ctx context.Context, profileID string) ([]string, error) {
 	return es.svc.GetThingIDsByProfile(ctx, profileID)
+}
+
+func (es eventStore) CreateGroupInvite(ctx context.Context, token, email, role, groupID, invRedirectPath string) (things.GroupInvite, error) {
+	return es.svc.CreateGroupInvite(ctx, token, email, role, groupID, invRedirectPath)
+}
+
+func (es eventStore) RevokeGroupInvite(ctx context.Context, token, inviteID string) error {
+	return es.svc.RevokeGroupInvite(ctx, token, inviteID)
+}
+
+func (es eventStore) RespondGroupInvite(ctx context.Context, token, inviteID string, accept bool) error {
+	return es.svc.RespondGroupInvite(ctx, token, inviteID, accept)
+}
+
+func (es eventStore) ViewGroupInvite(ctx context.Context, token, inviteID string) (things.GroupInvite, error) {
+	return es.svc.ViewGroupInvite(ctx, token, inviteID)
+}
+
+func (es eventStore) ListGroupInvitesByUser(ctx context.Context, token, userType, userID string, pm invites.PageMetadataInvites) (things.GroupInvitesPage, error) {
+	return es.svc.ListGroupInvitesByUser(ctx, token, userType, userID, pm)
+}
+
+func (es eventStore) ListGroupInvitesByGroup(ctx context.Context, token, groupID string, pm invites.PageMetadataInvites) (things.GroupInvitesPage, error) {
+	return es.svc.ListGroupInvitesByGroup(ctx, token, groupID, pm)
+}
+
+func (es eventStore) CreateDormantGroupInvites(ctx context.Context, token, orgInviteID string, groupMemberships ...things.GroupMembership) error {
+	return es.svc.CreateDormantGroupInvites(ctx, token, orgInviteID, groupMemberships...)
+}
+
+func (es eventStore) ActivateGroupInvites(ctx context.Context, token, orgInviteID, invRedirectPath string) error {
+	return es.svc.ActivateGroupInvites(ctx, token, orgInviteID, invRedirectPath)
+}
+
+func (es eventStore) SendGroupInviteEmail(ctx context.Context, invite things.GroupInvite, email, orgName, invRedirectPath string) error {
+	return es.svc.SendGroupInviteEmail(ctx, invite, email, orgName, invRedirectPath)
 }

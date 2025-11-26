@@ -65,11 +65,11 @@ func (req authReq) validate() error {
 	return nil
 }
 
-type ownerIDByOrgIDReq struct {
+type orgIDReq struct {
 	orgID string
 }
 
-func (req ownerIDByOrgIDReq) validate() error {
+func (req orgIDReq) validate() error {
 	if req.orgID == "" {
 		return apiutil.ErrMissingOrgID
 	}
@@ -150,6 +150,45 @@ func (req activateOrgInviteReq) validate() error {
 
 	if req.redirectPath == "" {
 		return apiutil.ErrMissingRedirectPath
+	}
+
+	return nil
+}
+
+type viewOrgMembershipReq struct {
+	token    string
+	memberID string
+	orgID    string
+}
+
+func (req viewOrgMembershipReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.memberID == "" {
+		return apiutil.ErrMissingMemberID
+	}
+
+	if req.orgID == "" {
+		return apiutil.ErrMissingOrgID
+	}
+
+	return nil
+}
+
+type viewOrgReq struct {
+	token string
+	id    string
+}
+
+func (req viewOrgReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.id == "" {
+		return apiutil.ErrMissingOrgID
 	}
 
 	return nil

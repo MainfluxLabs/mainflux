@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
@@ -54,6 +55,8 @@ const (
 	invalidDirData         = `{"limit":5,"offset":0,"dir":"wrong"}`
 	invalidLimitData       = `{"limit":210,"offset":0}`
 	invalidData            = `{"limit": "invalid"}`
+
+	inviteDuration = 7 * 24 * time.Hour
 )
 
 var (
@@ -100,12 +103,15 @@ func newService() things.Service {
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
 	groupMembershipsRepo := thmocks.NewGroupMembershipsRepository()
 	groupsRepo := thmocks.NewGroupRepository(groupMembershipsRepo)
+	invitesRepo := thmocks.NewInvitesRepository()
 	profileCache := thmocks.NewProfileCache()
 	thingCache := thmocks.NewThingCache()
 	groupCache := thmocks.NewGroupCache()
 	idProvider := uuid.NewMock()
 
-	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider)
+	emailerMock := thmocks.NewEmailer()
+
+	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, invitesRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider, emailerMock, inviteDuration)
 }
 
 func newServer(svc things.Service) *httptest.Server {

@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
@@ -28,6 +29,8 @@ const (
 	token    = email
 	password = "password"
 	orgID    = "374106f7-030e-4881-8ab0-151195c29f92"
+
+	inviteDuration = 7 * 24 * time.Hour
 )
 
 var (
@@ -57,10 +60,12 @@ func newService() things.Service {
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
 	groupMembershipsRepo := thmocks.NewGroupMembershipsRepository()
 	groupsRepo := thmocks.NewGroupRepository(groupMembershipsRepo)
+	invitesRepo := thmocks.NewInvitesRepository()
 	profileCache := thmocks.NewProfileCache()
 	thingCache := thmocks.NewThingCache()
 	groupCache := thmocks.NewGroupCache()
 	idProvider := uuid.NewMock()
+	emailerMock := thmocks.NewEmailer()
 
-	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider)
+	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, invitesRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider, emailerMock, inviteDuration)
 }

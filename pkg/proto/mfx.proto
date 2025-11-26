@@ -29,6 +29,8 @@ service ThingsService {
     rpc GetGroupIDByProfileID(ProfileID) returns (GroupID) {}
     rpc GetGroupIDsByOrg(OrgAccessReq) returns (GroupIDs) {}
     rpc GetThingIDsByProfile(ProfileID) returns (ThingIDs) {}
+    rpc CreateDormantGroupInvites(CreateDormantGroupInvitesReq) returns (google.protobuf.Empty) {}
+    rpc ActivateGroupInvites(ActivateGroupInvitesReq) returns (google.protobuf.Empty) {}
 }
 
 service UsersService {
@@ -43,6 +45,8 @@ service AuthService {
     rpc GetOwnerIDByOrgID(OrgID) returns (OwnerID) {}
     rpc AssignRole(AssignRoleReq) returns (google.protobuf.Empty) {}
     rpc RetrieveRole(RetrieveRoleReq) returns (RetrieveRoleRes) {}
+    rpc ViewOrg(ViewOrgReq) returns (Org) {}
+    rpc ViewOrgMembership(ViewOrgMembershipReq) returns (OrgMembership) {}
     rpc CreateDormantOrgInvite(CreateDormantOrgInviteReq) returns (google.protobuf.Empty) {}
     rpc ActivateOrgInvite(ActivateOrgInviteReq) returns (google.protobuf.Empty) {}
 }
@@ -203,5 +207,47 @@ message CreateDormantOrgInviteReq {
 message ActivateOrgInviteReq {
     string platformInviteID = 1;
     string userID = 2;
+    string redirectPath = 3;
+}
+
+message ViewOrgMembershipReq {
+    string token = 1;
+    string memberID = 2;
+    string orgID = 3;
+}
+
+message OrgMembership {
+    string memberID = 1;
+    string orgID = 2;
+    string role = 3;    
+}
+
+message ViewOrgReq {
+    string token = 1;
+    OrgID id = 2;
+}
+
+message Org {
+    string id = 1;
+    string ownerID = 2;
+    string name = 3;
+    string description = 4;
+}
+
+message GroupMembership {
+    string groupID = 1;
+    string memberID = 2;
+    string role = 3;
+}
+
+message CreateDormantGroupInvitesReq {
+    string token = 1;
+    string orgInviteID = 2;
+    repeated GroupMembership memberships = 3;
+}
+
+message ActivateGroupInvitesReq {
+    string token = 1;
+    string orgInviteID = 2;
     string redirectPath = 3;
 }
