@@ -38,7 +38,7 @@ func (req listSenMLMessagesReq) validate() error {
 		return apiutil.ErrInvalidComparator
 	}
 
-	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggValue, req.pageMeta.AggInterval); err != nil {
+	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggInterval, req.pageMeta.AggValue); err != nil {
 		return err
 	}
 
@@ -61,7 +61,7 @@ func (req listJSONMessagesReq) validate() error {
 		return apiutil.ErrLimitSize
 	}
 
-	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggValue, req.pageMeta.AggInterval); err != nil {
+	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggInterval, req.pageMeta.AggValue); err != nil {
 		return err
 	}
 
@@ -83,7 +83,7 @@ func (req backupSenMLMessagesReq) validate() error {
 		return apiutil.ErrInvalidQueryParams
 	}
 
-	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggValue, req.pageMeta.AggInterval); err != nil {
+	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggInterval, req.pageMeta.AggValue); err != nil {
 		return err
 	}
 
@@ -105,7 +105,7 @@ func (req backupJSONMessagesReq) validate() error {
 		return apiutil.ErrInvalidQueryParams
 	}
 
-	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggValue, req.pageMeta.AggInterval); err != nil {
+	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggInterval, req.pageMeta.AggValue); err != nil {
 		return err
 	}
 
@@ -160,7 +160,7 @@ func (req deleteJSONMessagesReq) validate() error {
 	return nil
 }
 
-func validateAggregation(aggType string, aggValue int64, aggInterval string) error {
+func validateAggregation(aggType, aggInterval string, aggValue int64) error {
 	if maxValue := getAggIntervalLimit(aggInterval); maxValue > 0 {
 		if aggValue <= 0 || aggValue > maxValue {
 			return apiutil.ErrInvalidAggInterval
