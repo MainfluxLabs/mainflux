@@ -5,8 +5,8 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 var _ protomfx.AuthServiceClient = (*authServiceMock)(nil)
@@ -43,19 +43,19 @@ func (svc authServiceMock) Issue(_ context.Context, in *protomfx.IssueReq, _ ...
 	return nil, errors.ErrAuthentication
 }
 
-func (svc authServiceMock) Authorize(_ context.Context, req *protomfx.AuthorizeReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+func (svc authServiceMock) Authorize(_ context.Context, req *protomfx.AuthorizeReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
 	if req.GetToken() != "token" {
-		return &empty.Empty{}, errors.ErrAuthorization
+		return &emptypb.Empty{}, errors.ErrAuthorization
 	}
 
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
 func (svc authServiceMock) GetOwnerIDByOrgID(_ context.Context, _ *protomfx.OrgID, _ ...grpc.CallOption) (*protomfx.OwnerID, error) {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) AssignRole(_ context.Context, _ *protomfx.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+func (svc authServiceMock) AssignRole(_ context.Context, _ *protomfx.AssignRoleReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
 	panic("not implemented")
 }
 
@@ -63,10 +63,10 @@ func (svc authServiceMock) RetrieveRole(_ context.Context, _ *protomfx.RetrieveR
 	panic("not implemented")
 }
 
-func (svc authServiceMock) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+func (svc authServiceMock) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) ActivateOrgInvite(ctx context.Context, req *protomfx.ActivateOrgInviteReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+func (svc authServiceMock) ActivateOrgInvite(ctx context.Context, req *protomfx.ActivateOrgInviteReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
 	panic("not implemented")
 }
