@@ -59,11 +59,11 @@ CREATE TABLE IF NOT EXISTS group_invites (
     created_at   TIMESTAMPTZ,
     expires_at   TIMESTAMPTZ,
     state        VARCHAR DEFAULT 'pending' NOT NULL,      
-    FOREIGN KEY  (org_id) REFERENCES orgs (id) ON DELETE CASCADE,
+    FOREIGN KEY  (group_id) REFERENCES groups (id) ON DELETE CASCADE,
     PRIMARY KEY  (id)
 );
 
-CREATE UNIQUE INDEX unique_group_invitee_pending on org_invites (invitee_id, group_id) WHERE state='pending';
+CREATE UNIQUE INDEX unique_group_invitee_pending on group_invites (invitee_id, group_id) WHERE state='pending';
 
 CREATE TABLE IF NOT EXISTS dormant_group_invites (
     group_invite_id UUID NOT NULL,
