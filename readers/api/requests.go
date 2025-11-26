@@ -159,7 +159,8 @@ func (req deleteJSONMessagesReq) validate() error {
 }
 
 func validateAggregation(aggType string, aggIntervalValue int64, aggIntervalUnit string) error {
-	if maxValue, ok := getAggIntervalLimit(aggIntervalUnit); ok {
+	maxValue := getAggIntervalLimit(aggIntervalUnit)
+	if maxValue > 0 {
 		if aggIntervalValue <= 0 {
 			return apiutil.ErrInvalidAggInterval
 		}
@@ -181,19 +182,19 @@ func validateAggregation(aggType string, aggIntervalValue int64, aggIntervalUnit
 	}
 }
 
-func getAggIntervalLimit(unit string) (int64, bool) {
+func getAggIntervalLimit(unit string) int64 {
 	switch unit {
 	case "minutes":
-		return 60, true
+		return 60
 	case "hours":
-		return 24, true
+		return 24
 	case "days":
-		return 31, true
+		return 31
 	case "months":
-		return 12, true
+		return 12
 	case "years":
-		return 100, true
+		return 100
 	default:
-		return 0, false
+		return 0
 	}
 }
