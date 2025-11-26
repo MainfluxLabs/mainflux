@@ -11,13 +11,14 @@ import (
 )
 
 const (
-	saveGroupInvite            = "save_group_invite"
-	retrieveGroupInviteByID    = "retrieve_group_invite_by_id"
-	removeGroupInvite          = "remove_group_invite"
-	retrieveGroupInvitesByUser = "retrieve_group_invites_by_user"
-	updateGroupInviteState     = "update_group_invite_state"
-	saveDormantInviteRelations = "save_dormant_invite_relations"
-	activateGroupInvites       = "activate_group_invites"
+	saveGroupInvite             = "save_group_invite"
+	retrieveGroupInviteByID     = "retrieve_group_invite_by_id"
+	removeGroupInvite           = "remove_group_invite"
+	retrieveGroupInvitesByUser  = "retrieve_group_invites_by_user"
+	retrieveGroupInvitesByGroup = "retrieve_group_invites_by_group"
+	updateGroupInviteState      = "update_group_invite_state"
+	saveDormantInviteRelations  = "save_dormant_invite_relations"
+	activateGroupInvites        = "activate_group_invites"
 )
 
 var _ things.GroupInviteRepository = (*invitesRepositoryMiddleware)(nil)
@@ -67,7 +68,7 @@ func (irm invitesRepositoryMiddleware) RetrieveInvitesByUser(ctx context.Context
 }
 
 func (irm invitesRepositoryMiddleware) RetrieveInvitesByDestination(ctx context.Context, orgID string, pm invites.PageMetadataInvites) (invites.InvitesPage[things.GroupInvite], error) {
-	span := dbutil.CreateSpan(ctx, irm.tracer, retrieveGroupInvitesByUser)
+	span := dbutil.CreateSpan(ctx, irm.tracer, retrieveGroupInvitesByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
