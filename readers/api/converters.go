@@ -37,7 +37,7 @@ var jsonHeader = []string{
 	"protocol",
 }
 
-func GenerateCSVFromSenML(page readers.SenMLMessagesPage) ([]byte, error) {
+func ConvertSenMLToCSVFile(page readers.SenMLMessagesPage, timeFormat string) ([]byte, error) {
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
 
@@ -58,7 +58,7 @@ func GenerateCSVFromSenML(page readers.SenMLMessagesPage) ([]byte, error) {
 				getValue(m.BoolValue, ""),
 				getValue(m.DataValue, ""),
 				getValue(m.Sum, ""),
-				formatTimeNs(m.Time, page.SenMLPageMetadata.TimeFormat),
+				formatTime(m.Time, timeFormat),
 				fmt.Sprintf("%v", m.UpdateTime),
 			}
 
@@ -76,7 +76,7 @@ func GenerateCSVFromSenML(page readers.SenMLMessagesPage) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func GenerateCSVFromJSON(page readers.JSONMessagesPage) ([]byte, error) {
+func ConvertJSONToCSVFile(page readers.JSONMessagesPage, timeFormat string) ([]byte, error) {
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
 
@@ -118,7 +118,7 @@ func GenerateCSVFromJSON(page readers.JSONMessagesPage) ([]byte, error) {
 
 		created := ""
 		if v, ok := m["created"].(int64); ok {
-			created = formatTimeNs(v, page.JSONPageMetadata.TimeFormat)
+			created = formatTime(v, timeFormat)
 		}
 
 		row := []string{
@@ -147,14 +147,14 @@ func GenerateCSVFromJSON(page readers.JSONMessagesPage) ([]byte, error) {
 	return buf.Bytes(), writer.Error()
 }
 
-func getStringValue(m map[string]interface{}, key string) string {
+func getStringValue(m map[string]any, key string) string {
 	if v, ok := m[key].(string); ok {
 		return v
 	}
 	return ""
 }
 
-func getValue(ptr interface{}, defaultValue string) string {
+func getValue(ptr any, defaultValue string) string {
 	switch v := ptr.(type) {
 	case *string:
 		if v != nil {
@@ -172,7 +172,7 @@ func getValue(ptr interface{}, defaultValue string) string {
 	return defaultValue
 }
 
-func formatTimeNs(ns int64, timeFormat string) string {
+func formatTime(ns int64, timeFormat string) string {
 	if strings.ToLower(timeFormat) == "rfc3339" {
 		return time.Unix(0, ns).UTC().Format(time.RFC3339)
 	}
@@ -199,15 +199,15 @@ func Flatten(m map[string]any, prefix string) map[string]any {
 	return result
 }
 
-func GenerateJSONFromJSON(page readers.JSONMessagesPage) ([]byte, error) {
+func ConvertJSONToJSONFile(page readers.JSONMessagesPage, timeFormat string) ([]byte, error) {
 	if page.MessagesPage.Total == 0 {
 		return []byte("[]"), nil
 	}
 
 	for _, m := range page.MessagesPage.Messages {
-		if msgMap, ok := m.(map[string]interface{}); ok {
+		if msgMap, ok := m.(map[string]any); ok {
 			if v, ok := msgMap["created"].(int64); ok {
-				msgMap["created"] = formatTimeNs(v, page.JSONPageMetadata.TimeFormat)
+				msgMap["created"] = formatTime(v, timeFormat)
 			}
 		}
 	}
@@ -220,20 +220,20 @@ func GenerateJSONFromJSON(page readers.JSONMessagesPage) ([]byte, error) {
 	return data, nil
 }
 
-func GenerateJSONFromSenML(page readers.SenMLMessagesPage) ([]byte, error) {
+func ConvertSenMLToJSONFile(page readers.SenMLMessagesPage, timeFormat string) ([]byte, error) {
 	if page.MessagesPage.Total == 0 {
 		return []byte("[]"), nil
 	}
 
-	out := make([]map[string]interface{}, 0, len(page.MessagesPage.Messages))
+	out := make([]map[string]any, 0, len(page.MessagesPage.Messages))
 	for _, msg := range page.MessagesPage.Messages {
 		if m, ok := msg.(senml.Message); ok {
-			msgMap := map[string]interface{}{
+			msgMap := map[string]any{
 				"value":     m.Value,
 				"publisher": m.Publisher,
 				"protocol":  m.Protocol,
 				"name":      m.Name,
-				"time":      formatTimeNs(m.Time, page.SenMLPageMetadata.TimeFormat),
+				"time":      formatTime(m.Time, timeFormat),
 			}
 
 			if m.Subtopic != "" {
@@ -266,13 +266,13 @@ func GenerateJSONFromSenML(page readers.SenMLMessagesPage) ([]byte, error) {
 }
 
 func ConvertJSONToJSONMessages(data []byte) ([]mfjson.Message, error) {
-	// this was used because mfjson.Message uses []byte but json stores map[string]interface{}
+	// this was used because mfjson.Message uses []byte but json stores map[string]any
 	var tempMessages []struct {
-		Created   int64                  `json:"created"`
-		Subtopic  string                 `json:"subtopic"`
-		Publisher string                 `json:"publisher"`
-		Protocol  string                 `json:"protocol"`
-		Payload   map[string]interface{} `json:"payload"`
+		Created   int64          `json:"created"`
+		Subtopic  string         `json:"subtopic"`
+		Publisher string         `json:"publisher"`
+		Protocol  string         `json:"protocol"`
+		Payload   map[string]any `json:"payload"`
 	}
 
 	if err := json.Unmarshal(data, &tempMessages); err != nil {

@@ -27,9 +27,8 @@ func (req listSenMLMessagesReq) validate() error {
 		return apiutil.ErrLimitSize
 	}
 
-	if req.pageMeta.Dir != "" &&
-		req.pageMeta.Dir != apiutil.AscDir && req.pageMeta.Dir != apiutil.DescDir {
-		return apiutil.ErrInvalidDirection
+	if err := validateDir(req.pageMeta.Dir); err != nil {
+		return err
 	}
 
 	if req.pageMeta.Comparator != "" &&
@@ -64,9 +63,8 @@ func (req listJSONMessagesReq) validate() error {
 		return apiutil.ErrLimitSize
 	}
 
-	if req.pageMeta.Dir != "" &&
-		req.pageMeta.Dir != apiutil.AscDir && req.pageMeta.Dir != apiutil.DescDir {
-		return apiutil.ErrInvalidDirection
+	if err := validateDir(req.pageMeta.Dir); err != nil {
+		return err
 	}
 
 	if err := validateAggregation(req.pageMeta.AggType); err != nil {
@@ -79,6 +77,7 @@ func (req listJSONMessagesReq) validate() error {
 type backupSenMLMessagesReq struct {
 	token         string
 	convertFormat string
+	timeFormat    string
 	pageMeta      readers.SenMLPageMetadata
 }
 
@@ -95,9 +94,8 @@ func (req backupSenMLMessagesReq) validate() error {
 		return err
 	}
 
-	if req.pageMeta.Dir != "" &&
-		req.pageMeta.Dir != apiutil.AscDir && req.pageMeta.Dir != apiutil.DescDir {
-		return apiutil.ErrInvalidDirection
+	if err := validateDir(req.pageMeta.Dir); err != nil {
+		return err
 	}
 
 	return nil
@@ -106,6 +104,7 @@ func (req backupSenMLMessagesReq) validate() error {
 type backupJSONMessagesReq struct {
 	token         string
 	convertFormat string
+	timeFormat    string
 	pageMeta      readers.JSONPageMetadata
 }
 
@@ -122,9 +121,8 @@ func (req backupJSONMessagesReq) validate() error {
 		return err
 	}
 
-	if req.pageMeta.Dir != "" &&
-		req.pageMeta.Dir != apiutil.AscDir && req.pageMeta.Dir != apiutil.DescDir {
-		return apiutil.ErrInvalidDirection
+	if err := validateDir(req.pageMeta.Dir); err != nil {
+		return err
 	}
 
 	return nil
@@ -188,4 +186,11 @@ func validateAggregation(aggType string) error {
 	default:
 		return apiutil.ErrInvalidAggType
 	}
+}
+
+func validateDir(dir string) error {
+	if dir == "" || dir == apiutil.AscDir || dir == apiutil.DescDir {
+		return nil
+	}
+	return apiutil.ErrInvalidDirection
 }

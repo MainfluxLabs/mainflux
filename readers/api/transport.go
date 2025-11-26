@@ -277,7 +277,7 @@ func decodeBackupJSONMessages(_ context.Context, r *http.Request) (interface{}, 
 		return nil, err
 	}
 
-	tf, err := apiutil.ReadStringQuery(r, timeFormatKey, "")
+	timeFormat, err := apiutil.ReadStringQuery(r, timeFormatKey, "")
 	if err != nil {
 		return readers.SenMLPageMetadata{}, err
 	}
@@ -288,11 +288,11 @@ func decodeBackupJSONMessages(_ context.Context, r *http.Request) (interface{}, 
 	}
 
 	pageMeta.Publisher = publisher
-	pageMeta.TimeFormat = tf
 
 	return backupJSONMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
 		convertFormat: convertFormat,
+		timeFormat:    timeFormat,
 		pageMeta:      pageMeta,
 	}, nil
 }
@@ -308,7 +308,7 @@ func decodeBackupSenMLMessages(_ context.Context, r *http.Request) (interface{},
 		return nil, err
 	}
 
-	tf, err := apiutil.ReadStringQuery(r, timeFormatKey, "")
+	timeFormat, err := apiutil.ReadStringQuery(r, timeFormatKey, "")
 	if err != nil {
 		return readers.SenMLPageMetadata{}, err
 	}
@@ -319,11 +319,11 @@ func decodeBackupSenMLMessages(_ context.Context, r *http.Request) (interface{},
 	}
 
 	pageMeta.Publisher = publisher
-	pageMeta.TimeFormat = tf
 
 	return backupSenMLMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
 		convertFormat: convertFormat,
+		timeFormat:    timeFormat,
 		pageMeta:      pageMeta,
 	}, nil
 }
