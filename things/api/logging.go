@@ -783,6 +783,7 @@ func (lm *loggingMiddleware) CreateGroupInvite(ctx context.Context, token, email
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
 	return lm.svc.CreateGroupInvite(ctx, token, email, role, groupID, grRedirectPath)
