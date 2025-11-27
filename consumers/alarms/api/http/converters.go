@@ -116,53 +116,73 @@ func GenerateCSV(page alarms.AlarmsPage, timeFormat string) ([]byte, error) {
 }
 
 func GeneratePDF(page alarms.AlarmsPage, timeFormat string) ([]byte, error) {
-	pdf := gofpdf.New("L", "mm", "A4", "")
-	pdf.SetFont("Arial", "", 10)
+	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf.SetAutoPageBreak(false, 10)
+	margin := 10.0
+	pageWidth, pageHeight := pdf.GetPageSize()
+	usableWidth := pageWidth - 2*margin
+	leftColWidth := usableWidth / 2
+	rightColWidth := usableWidth / 2
+	rowHeight := 6.0
+
 	pdf.AddPage()
 
-	pdf.CellFormat(0, 10, "Alarms Backup", "", 1, "C", false, 0, "")
-
-	headers := []string{"Created", "ThingID", "GroupID", "RuleID", "Subtopic", "Protocol"}
-	colWidths := []float64{35, 40, 40, 40, 60, 50}
-
-	for i, h := range headers {
-		pdf.CellFormat(colWidths[i], 7, h, "1", 0, "C", true, 0, "")
-	}
-	pdf.Ln(-1)
-
 	for _, a := range page.Alarms {
-		row := []string{
-			formatTimeNs(a.Created, timeFormat),
-			a.ThingID,
-			a.GroupID,
-			a.RuleID,
-			a.Subtopic,
-			a.Protocol,
+		pdf.SetFont("Arial", "B", 12)
+		pdf.CellFormat(0, 10, fmt.Sprintf("Alarm: %s", a.ID), "", 1, "C", false, 0, "")
+		pdf.SetFont("Arial", "", 10)
+
+		basicData := []struct{ Key, Val string }{
+			{"Created", formatTimeNs(a.Created, timeFormat)},
+			{"RuleID", a.RuleID},
+			{"ThingID", a.ThingID},
+			{"GroupID", a.GroupID},
+			{"Protocol", a.Protocol},
+			{"Subtopic", a.Subtopic},
 		}
 
-		maxLines := 1
-		for i, cell := range row {
-			lines := pdf.SplitLines([]byte(cell), colWidths[i])
-			if len(lines) > maxLines {
-				maxLines = len(lines)
+		for _, row := range basicData {
+			x, y := pdf.GetX(), pdf.GetY()
+			keyLines := pdf.SplitLines([]byte(row.Key), leftColWidth)
+			valLines := pdf.SplitLines([]byte(row.Val), rightColWidth)
+			maxLines := max(len(valLines), len(keyLines))
+			totalRowHeight := float64(maxLines) * rowHeight
+
+			pdf.MultiCell(leftColWidth, rowHeight, row.Key, "1", "L", false)
+			pdf.SetXY(x+leftColWidth, y)
+			pdf.MultiCell(rightColWidth, rowHeight, row.Val, "1", "L", false)
+			pdf.SetXY(margin, y+totalRowHeight)
+		}
+
+		if a.Payload != nil {
+			flat := Flatten(a.Payload, "")
+			for k, v := range flat {
+				valStr := fmt.Sprint(v)
+				x, y := pdf.GetX(), pdf.GetY()
+				keyLines := pdf.SplitLines([]byte(k), leftColWidth)
+				valLines := pdf.SplitLines([]byte(valStr), rightColWidth)
+				maxLines := max(len(valLines), len(keyLines))
+				totalRowHeight := float64(maxLines) * rowHeight
+
+				if y+totalRowHeight > pageHeight-10 {
+					pdf.AddPage()
+					y = pdf.GetY()
+				}
+
+				pdf.MultiCell(leftColWidth, rowHeight, k, "1", "L", false)
+				pdf.SetXY(x+leftColWidth, y)
+				pdf.MultiCell(rightColWidth, rowHeight, valStr, "1", "L", false)
+				pdf.SetXY(margin, y+totalRowHeight)
 			}
 		}
-		rowHeight := float64(maxLines*6 + 1)
 
-		for i, cell := range row {
-			x, y := pdf.GetX(), pdf.GetY()
-			pdf.MultiCell(colWidths[i], 6, cell, "1", "L", false)
-			pdf.SetXY(x+colWidths[i], y)
-		}
-		pdf.Ln(rowHeight)
+		pdf.Ln(5)
 	}
 
 	var buf bytes.Buffer
-	err := pdf.Output(&buf)
-	if err != nil {
+	if err := pdf.Output(&buf); err != nil {
 		return nil, fmt.Errorf("failed to generate PDF: %w", err)
 	}
-
 	return buf.Bytes(), nil
 }
 
