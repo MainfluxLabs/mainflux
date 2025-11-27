@@ -189,6 +189,8 @@ func getAggIntervalLimit(unit string) int64 {
 		return 24
 	case "day":
 		return 31
+	case "week":
+		return 52
 	case "month":
 		return 12
 	case "year":
