@@ -4,8 +4,6 @@
 package api
 
 import (
-	"strings"
-
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -177,15 +175,13 @@ func (req deleteJSONMessagesReq) validate() error {
 	return nil
 }
 
-func validateAggregation(aggType, aggInterval string, aggValue int64) error {
-	if maxValue := getAggIntervalLimit(aggInterval); maxValue > 0 {
-		if aggValue <= 0 || aggValue > maxValue {
-			return apiutil.ErrInvalidAggInterval
-		}
+func validateAggregation(aggType, aggInterval string, aggValue uint64) error {
+	if aggInterval == "" || aggType == "" {
+		return nil
 	}
 
-	if aggType == "" {
-		return nil
+	if !isValidAggInterval(aggInterval, aggValue) {
+		return apiutil.ErrInvalidAggInterval
 	}
 
 	switch aggType {
@@ -196,6 +192,7 @@ func validateAggregation(aggType, aggInterval string, aggValue int64) error {
 	}
 }
 
+
 func validateDir(dir string) error {
 	if dir == "" || dir == apiutil.AscDir || dir == apiutil.DescDir {
 		return nil
@@ -203,21 +200,25 @@ func validateDir(dir string) error {
 	return apiutil.ErrInvalidDirection
 }
 
-func getAggIntervalLimit(unit string) int64 {
-	normalizedUnit := strings.TrimSuffix(unit, "s")
+func isValidAggInterval(aggInterval string, aggValue uint64) bool {
+	var maxValue uint64
 
-	switch normalizedUnit {
+	switch aggInterval {
 	case "minute":
-		return 60
+		maxValue = 60
 	case "hour":
-		return 24
+		maxValue = 24
 	case "day":
-		return 31
+		maxValue = 31
+	case "week":
+		maxValue = 52
 	case "month":
-		return 12
+		maxValue = 12
 	case "year":
-		return 100
+		maxValue = 10
 	default:
-		return 0
+		return false
 	}
+
+	return aggValue <= maxValue
 }

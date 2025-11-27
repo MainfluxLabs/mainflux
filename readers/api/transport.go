@@ -36,8 +36,8 @@ const (
 	toKey                  = "to"
 	convertKey             = "convert"
 	filterKey              = "filter"
-	aggIntervalKey         = "agg_int"
-	aggValueKey            = "agg_val"
+	aggIntervalKey         = "agg_interval"
+	aggValueKey            = "agg_value"
 	aggTypeKey             = "agg_type"
 	aggFieldKey            = "agg_field"
 	publisherKey           = "publisher"
@@ -406,7 +406,7 @@ func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
 		return readers.JSONPageMetadata{}, err
 	}
 
-	av, err := apiutil.ReadIntQuery(r, aggValueKey, 1)
+	av, err := apiutil.ReadUintQuery(r, aggValueKey, 1)
 	if err != nil {
 		return readers.JSONPageMetadata{}, err
 	}
@@ -497,7 +497,7 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 		return readers.SenMLPageMetadata{}, err
 	}
 
-	av, err := apiutil.ReadIntQuery(r, aggValueKey, 1)
+	av, err := apiutil.ReadUintQuery(r, aggValueKey, 1)
 	if err != nil {
 		return readers.SenMLPageMetadata{}, err
 	}
