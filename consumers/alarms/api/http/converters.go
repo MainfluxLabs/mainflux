@@ -133,7 +133,7 @@ func ConvertToPDFFile(page alarms.AlarmsPage, timeFormat string) ([]byte, error)
 		pdf.CellFormat(0, 10, fmt.Sprintf("Alarm: %s", a.ID), "", 1, "C", false, 0, "")
 		pdf.SetFont("Arial", "", 10)
 
-		basicData := []struct{ Key, Val string }{
+		data := []struct{ Key, Val string }{
 			{"Created", formatTimeNs(a.Created, timeFormat)},
 			{"RuleID", a.RuleID},
 			{"ThingID", a.ThingID},
@@ -142,12 +142,17 @@ func ConvertToPDFFile(page alarms.AlarmsPage, timeFormat string) ([]byte, error)
 			{"Subtopic", a.Subtopic},
 		}
 
-		for _, row := range basicData {
+		for _, row := range data {
 			x, y := pdf.GetX(), pdf.GetY()
 			keyLines := pdf.SplitLines([]byte(row.Key), leftColWidth)
 			valLines := pdf.SplitLines([]byte(row.Val), rightColWidth)
 			maxLines := max(len(valLines), len(keyLines))
 			totalRowHeight := float64(maxLines) * rowHeight
+
+			if y+totalRowHeight > pageHeight-10 {
+				pdf.AddPage()
+				y = pdf.GetY()
+			}
 
 			pdf.MultiCell(leftColWidth, rowHeight, row.Key, "1", "L", true)
 			pdf.SetXY(x+leftColWidth, y)
