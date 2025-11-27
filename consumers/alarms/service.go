@@ -113,8 +113,7 @@ func (as *alarmService) BackupAlarmsByThing(ctx context.Context, token, thingID 
 		return AlarmsPage{}, err
 	}
 
-	//BackupByThing
-	alarms, err := as.alarms.RetrieveByThing(ctx, thingID, pm)
+	alarms, err := as.alarms.BackupByThing(ctx, thingID, pm)
 	if err != nil {
 		return AlarmsPage{}, err
 	}
