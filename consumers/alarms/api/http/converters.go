@@ -12,7 +12,7 @@ import (
 	"github.com/jung-kurt/gofpdf"
 )
 
-func GenerateJSON(page alarms.AlarmsPage, timeFormat string) ([]byte, error) {
+func ConvertToJSONFile(page alarms.AlarmsPage, timeFormat string) ([]byte, error) {
 	if page.Total == 0 {
 		return []byte("[]"), nil
 	}
@@ -37,7 +37,7 @@ func GenerateJSON(page alarms.AlarmsPage, timeFormat string) ([]byte, error) {
 	return json.Marshal(result)
 }
 
-func GenerateCSV(page alarms.AlarmsPage, timeFormat string) ([]byte, error) {
+func ConvertToCSVFile(page alarms.AlarmsPage, timeFormat string) ([]byte, error) {
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
 
@@ -115,8 +115,9 @@ func GenerateCSV(page alarms.AlarmsPage, timeFormat string) ([]byte, error) {
 	return buf.Bytes(), writer.Error()
 }
 
-func GeneratePDF(page alarms.AlarmsPage, timeFormat string) ([]byte, error) {
+func ConvertToPDFFile(page alarms.AlarmsPage, timeFormat string) ([]byte, error) {
 	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf.SetFillColor(214, 224, 230)
 	pdf.SetAutoPageBreak(false, 10)
 	margin := 10.0
 	pageWidth, pageHeight := pdf.GetPageSize()
@@ -148,7 +149,7 @@ func GeneratePDF(page alarms.AlarmsPage, timeFormat string) ([]byte, error) {
 			maxLines := max(len(valLines), len(keyLines))
 			totalRowHeight := float64(maxLines) * rowHeight
 
-			pdf.MultiCell(leftColWidth, rowHeight, row.Key, "1", "L", false)
+			pdf.MultiCell(leftColWidth, rowHeight, row.Key, "1", "L", true)
 			pdf.SetXY(x+leftColWidth, y)
 			pdf.MultiCell(rightColWidth, rowHeight, row.Val, "1", "L", false)
 			pdf.SetXY(margin, y+totalRowHeight)
@@ -169,7 +170,7 @@ func GeneratePDF(page alarms.AlarmsPage, timeFormat string) ([]byte, error) {
 					y = pdf.GetY()
 				}
 
-				pdf.MultiCell(leftColWidth, rowHeight, k, "1", "L", false)
+				pdf.MultiCell(leftColWidth, rowHeight, k, "1", "L", true)
 				pdf.SetXY(x+leftColWidth, y)
 				pdf.MultiCell(rightColWidth, rowHeight, valStr, "1", "L", false)
 				pdf.SetXY(margin, y+totalRowHeight)
