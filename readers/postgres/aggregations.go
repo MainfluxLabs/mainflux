@@ -44,6 +44,7 @@ type QueryParams struct {
 	AggValue         int64
 	AggField         string
 	AggType          string
+	Dir              string
 }
 
 type AggStrategy interface {
@@ -84,6 +85,7 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 		AggValue:    rpm.AggValue,
 		AggType:     rpm.AggType,
 		Limit:       rpm.Limit,
+		Dir:         rpm.Dir,
 	}
 
 	conditions := as.getJSONConditions(rpm)
@@ -152,6 +154,7 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 		AggValue:    rpm.AggValue,
 		AggType:     rpm.AggType,
 		Limit:       rpm.Limit,
+		Dir:         rpm.Dir,
 	}
 
 	conditions := as.getSenMLConditions(rpm)
@@ -238,7 +241,7 @@ func (maxStrt MaxStrategy) BuildQuery(qp QueryParams) string {
 		JOIN interval_aggs ia ON {{.TimeJoinConditionIA}}
 			AND {{.ValueCondition}}
 		{{.Condition}}
-		ORDER BY ia.interval_time DESC, {{.TimeColumn}} DESC;`
+		ORDER BY ia.interval_time {{.Dir}}, {{.TimeColumn}} {{.Dir}};`
 
 	return renderTemplate(tmpl, qp, maxStrt)
 }
@@ -279,7 +282,7 @@ func (minStrt MinStrategy) BuildQuery(qp QueryParams) string {
 		JOIN interval_aggs ia ON {{.TimeJoinConditionIA}}
 			AND {{.ValueCondition}}
 		{{.Condition}}
-		ORDER BY ia.interval_time DESC, {{.TimeColumn}} DESC;`
+		ORDER BY ia.interval_time {{.Dir}}, {{.TimeColumn}} {{.Dir}};`
 
 	return renderTemplate(tmpl, qp, minStrt)
 }
@@ -321,7 +324,7 @@ func (avgStrt AvgStrategy) BuildQuery(qp QueryParams) string {
 		JOIN interval_aggs ia ON {{.TimeJoinConditionIA}}
 			AND m.{{.TimeColumn}} = ia.max_time
 		{{.Condition}}
-		ORDER BY ia.interval_time DESC, m.{{.TimeColumn}} DESC;`
+		ORDER BY ia.interval_time {{.Dir}}, m.{{.TimeColumn}} {{.Dir}};`
 
 	return renderTemplate(tmpl, qp, avgStrt)
 }
@@ -371,7 +374,7 @@ func (countStrt CountStrategy) BuildQuery(qp QueryParams) string {
 		JOIN interval_aggs ia ON {{.TimeJoinConditionIA}}
 			AND m.{{.TimeColumn}} = ia.max_time
 		{{.Condition}}
-		ORDER BY ia.interval_time DESC, m.{{.TimeColumn}} DESC;`
+		ORDER BY ia.interval_time {{.Dir}}, m.{{.TimeColumn}} {{.Dir}};`
 
 	return renderTemplate(tmpl, qp, countStrt)
 }
@@ -388,6 +391,7 @@ func renderTemplate(templateStr string, qp QueryParams, strategy AggStrategy) st
 		"ValueCondition":      buildValueCondition(qp),
 		"Condition":           qp.Condition,
 		"TimeColumn":          qp.TimeColumn,
+		"Dir":                 dbutil.GetDirQuery(qp.Dir),
 	}
 
 	tmpl := template.Must(template.New("query").Parse(templateStr))
@@ -419,14 +423,19 @@ func (countStrt CountStrategy) GetAggregateExpression(qp QueryParams) string {
 }
 
 func buildTimeIntervals(qp QueryParams) string {
+	dq := dbutil.GetDirQuery(qp.Dir)
+	lq := fmt.Sprintf("LIMIT %d", qp.Limit)
+	if qp.Limit <= 0 {
+		lq = ""
+	}
 	timeTrunc := buildTruncTimeExpression(qp.AggValue, qp.AggInterval, qp.TimeColumn)
 	return fmt.Sprintf(`
         SELECT DISTINCT %s as interval_time
         FROM %s 
         %s
-        ORDER BY interval_time DESC
-        LIMIT %d`,
-		timeTrunc, qp.Table, qp.Condition, qp.Limit)
+        ORDER BY interval_time %s 
+		%s`,
+		timeTrunc, qp.Table, qp.Condition, dq, lq)
 }
 
 func buildTruncTimeExpression(intervalVal int64, intervalUnit string, timeColumn string) string {
