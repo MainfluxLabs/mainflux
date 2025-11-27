@@ -27,6 +27,10 @@ func (req listSenMLMessagesReq) validate() error {
 		return apiutil.ErrLimitSize
 	}
 
+	if err := validateDir(req.pageMeta.Dir); err != nil {
+		return err
+	}
+
 	if req.pageMeta.Comparator != "" &&
 		req.pageMeta.Comparator != readers.EqualKey &&
 		req.pageMeta.Comparator != readers.LowerThanKey &&
@@ -59,6 +63,10 @@ func (req listJSONMessagesReq) validate() error {
 		return apiutil.ErrLimitSize
 	}
 
+	if err := validateDir(req.pageMeta.Dir); err != nil {
+		return err
+	}
+
 	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggInterval, req.pageMeta.AggValue); err != nil {
 		return err
 	}
@@ -69,6 +77,7 @@ func (req listJSONMessagesReq) validate() error {
 type backupSenMLMessagesReq struct {
 	token         string
 	convertFormat string
+	timeFormat    string
 	pageMeta      readers.SenMLPageMetadata
 }
 
@@ -85,12 +94,17 @@ func (req backupSenMLMessagesReq) validate() error {
 		return err
 	}
 
+	if err := validateDir(req.pageMeta.Dir); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 type backupJSONMessagesReq struct {
 	token         string
 	convertFormat string
+	timeFormat    string
 	pageMeta      readers.JSONPageMetadata
 }
 
@@ -107,14 +121,17 @@ func (req backupJSONMessagesReq) validate() error {
 		return err
 	}
 
+	if err := validateDir(req.pageMeta.Dir); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 type restoreMessagesReq struct {
-	token         string
-	fileType      string
-	messageFormat string
-	Messages      []byte
+	token    string
+	fileType string
+	Messages []byte
 }
 
 func (req restoreMessagesReq) validate() error {
@@ -173,6 +190,14 @@ func validateAggregation(aggType, aggInterval string, aggValue uint64) error {
 	default:
 		return apiutil.ErrInvalidAggType
 	}
+}
+
+
+func validateDir(dir string) error {
+	if dir == "" || dir == apiutil.AscDir || dir == apiutil.DescDir {
+		return nil
+	}
+	return apiutil.ErrInvalidDirection
 }
 
 func isValidAggInterval(aggInterval string, aggValue uint64) bool {
