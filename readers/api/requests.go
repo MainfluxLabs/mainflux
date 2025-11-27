@@ -4,8 +4,6 @@
 package api
 
 import (
-	"strings"
-
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -160,11 +158,9 @@ func (req deleteJSONMessagesReq) validate() error {
 	return nil
 }
 
-func validateAggregation(aggType, aggInterval string, aggValue int64) error {
-	if maxValue := getAggIntervalLimit(aggInterval); maxValue > 0 {
-		if aggValue <= 0 || aggValue > maxValue {
-			return apiutil.ErrInvalidAggInterval
-		}
+func validateAggregation(aggType, aggInterval string, aggValue uint64) error {
+	if !isValidAggInterval(aggInterval, aggValue) {
+		return apiutil.ErrInvalidAggInterval
 	}
 
 	if aggType == "" {
@@ -179,23 +175,25 @@ func validateAggregation(aggType, aggInterval string, aggValue int64) error {
 	}
 }
 
-func getAggIntervalLimit(unit string) int64 {
-	normalizedUnit := strings.TrimSuffix(unit, "s")
+func isValidAggInterval(aggInterval string, aggValue uint64) bool {
+	var maxValue uint64
 
-	switch normalizedUnit {
+	switch aggInterval {
 	case "minute":
-		return 60
+		maxValue = 60
 	case "hour":
-		return 24
+		maxValue = 24
 	case "day":
-		return 31
+		maxValue = 31
 	case "week":
-		return 52
+		maxValue = 52
 	case "month":
-		return 12
+		maxValue = 12
 	case "year":
-		return 100
+		maxValue = 10
 	default:
-		return 0
+		maxValue = 1
 	}
+
+	return aggValue <= maxValue
 }

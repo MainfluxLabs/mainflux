@@ -41,7 +41,7 @@ type QueryParams struct {
 	ConditionForJoin string
 	Limit            uint64
 	AggInterval      string
-	AggValue         int64
+	AggValue         uint64
 	AggField         string
 	AggType          string
 }
@@ -429,13 +429,14 @@ func buildTimeIntervals(qp QueryParams) string {
 		timeTrunc, qp.Table, qp.Condition, qp.Limit)
 }
 
-func buildTruncTimeExpression(intervalVal int64, intervalUnit string, timeColumn string) string {
+func buildTruncTimeExpression(intervalVal uint64, intervalUnit string, timeColumn string) string {
 	timestamp := fmt.Sprintf("to_timestamp(%s / 1000000000)", timeColumn)
 
-	interval := fmt.Sprintf("%d %s", intervalVal, intervalUnit)
-	if isStandardInterval(interval) {
-		return fmt.Sprintf("date_trunc('%s', %s)", interval, timestamp)
+	if intervalVal == 1 {
+		return fmt.Sprintf("date_trunc('%s', %s)", intervalUnit, timestamp)
 	}
+
+	interval := fmt.Sprintf("%d %s", intervalVal, intervalUnit+"s")
 
 	return fmt.Sprintf(
 		"to_timestamp(floor(extract(epoch from %s) / extract(epoch from interval '%s')) * extract(epoch from interval '%s'))",
