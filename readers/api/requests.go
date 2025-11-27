@@ -192,7 +192,7 @@ func isValidAggInterval(aggInterval string, aggValue uint64) bool {
 	case "year":
 		maxValue = 10
 	default:
-		maxValue = 1
+		return false
 	}
 	return aggValue <= maxValue
 }
