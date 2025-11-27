@@ -4,6 +4,8 @@
 package api
 
 import (
+	"strings"
+
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -40,7 +42,7 @@ func (req listSenMLMessagesReq) validate() error {
 		return apiutil.ErrInvalidComparator
 	}
 
-	if err := validateAggregation(req.pageMeta.AggType); err != nil {
+	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggInterval, req.pageMeta.AggValue); err != nil {
 		return err
 	}
 
@@ -67,7 +69,7 @@ func (req listJSONMessagesReq) validate() error {
 		return err
 	}
 
-	if err := validateAggregation(req.pageMeta.AggType); err != nil {
+	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggInterval, req.pageMeta.AggValue); err != nil {
 		return err
 	}
 
@@ -90,7 +92,7 @@ func (req backupSenMLMessagesReq) validate() error {
 		return apiutil.ErrInvalidQueryParams
 	}
 
-	if err := validateAggregation(req.pageMeta.AggType); err != nil {
+	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggInterval, req.pageMeta.AggValue); err != nil {
 		return err
 	}
 
@@ -117,7 +119,7 @@ func (req backupJSONMessagesReq) validate() error {
 		return apiutil.ErrInvalidQueryParams
 	}
 
-	if err := validateAggregation(req.pageMeta.AggType); err != nil {
+	if err := validateAggregation(req.pageMeta.AggType, req.pageMeta.AggInterval, req.pageMeta.AggValue); err != nil {
 		return err
 	}
 
@@ -175,7 +177,13 @@ func (req deleteJSONMessagesReq) validate() error {
 	return nil
 }
 
-func validateAggregation(aggType string) error {
+func validateAggregation(aggType, aggInterval string, aggValue int64) error {
+	if maxValue := getAggIntervalLimit(aggInterval); maxValue > 0 {
+		if aggValue <= 0 || aggValue > maxValue {
+			return apiutil.ErrInvalidAggInterval
+		}
+	}
+
 	if aggType == "" {
 		return nil
 	}
@@ -193,4 +201,23 @@ func validateDir(dir string) error {
 		return nil
 	}
 	return apiutil.ErrInvalidDirection
+}
+
+func getAggIntervalLimit(unit string) int64 {
+	normalizedUnit := strings.TrimSuffix(unit, "s")
+
+	switch normalizedUnit {
+	case "minute":
+		return 60
+	case "hour":
+		return 24
+	case "day":
+		return 31
+	case "month":
+		return 12
+	case "year":
+		return 100
+	default:
+		return 0
+	}
 }

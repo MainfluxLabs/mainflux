@@ -268,7 +268,6 @@ func (es eventStore) RemoveProfiles(ctx context.Context, token string, ids ...st
 			Values:       event.Encode(),
 		}
 		es.client.XAdd(ctx, record).Err()
-
 	}
 
 	return nil
@@ -351,7 +350,23 @@ func (es eventStore) ListGroupsByOrg(ctx context.Context, token, orgID string, p
 }
 
 func (es eventStore) RemoveGroups(ctx context.Context, token string, ids ...string) error {
-	return es.svc.RemoveGroups(ctx, token, ids...)
+	for _, id := range ids {
+		if err := es.svc.RemoveGroups(ctx, token, id); err != nil {
+			return err
+		}
+
+		event := removeGroupEvent{
+			id: id,
+		}
+		record := &redis.XAddArgs{
+			Stream:       streamID,
+			MaxLenApprox: streamLen,
+			Values:       event.Encode(),
+		}
+		es.client.XAdd(ctx, record).Err()
+	}
+
+	return nil
 }
 
 func (es eventStore) UpdateGroup(ctx context.Context, token string, group things.Group) (things.Group, error) {
