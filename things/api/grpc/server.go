@@ -13,10 +13,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
-	"github.com/golang/protobuf/ptypes/empty"
 	opentracing "github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 var _ protomfx.ThingsServiceServer = (*grpcServer)(nil)
@@ -113,40 +113,40 @@ func (gs *grpcServer) GetConfigByThingID(ctx context.Context, req *protomfx.Thin
 	return res.(*protomfx.ConfigByThingIDRes), nil
 }
 
-func (gs *grpcServer) CanUserAccessThing(ctx context.Context, req *protomfx.UserAccessReq) (*empty.Empty, error) {
+func (gs *grpcServer) CanUserAccessThing(ctx context.Context, req *protomfx.UserAccessReq) (*emptypb.Empty, error) {
 	_, res, err := gs.canUserAccessThing.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
 
-	return res.(*empty.Empty), nil
+	return res.(*emptypb.Empty), nil
 }
 
-func (gs *grpcServer) CanUserAccessProfile(ctx context.Context, req *protomfx.UserAccessReq) (*empty.Empty, error) {
+func (gs *grpcServer) CanUserAccessProfile(ctx context.Context, req *protomfx.UserAccessReq) (*emptypb.Empty, error) {
 	_, res, err := gs.canUserAccessProfile.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
 
-	return res.(*empty.Empty), nil
+	return res.(*emptypb.Empty), nil
 }
 
-func (gs *grpcServer) CanUserAccessGroup(ctx context.Context, req *protomfx.UserAccessReq) (*empty.Empty, error) {
+func (gs *grpcServer) CanUserAccessGroup(ctx context.Context, req *protomfx.UserAccessReq) (*emptypb.Empty, error) {
 	_, res, err := gs.canUserAccessGroup.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
 
-	return res.(*empty.Empty), nil
+	return res.(*emptypb.Empty), nil
 }
 
-func (gs *grpcServer) CanThingAccessGroup(ctx context.Context, req *protomfx.ThingAccessReq) (*empty.Empty, error) {
+func (gs *grpcServer) CanThingAccessGroup(ctx context.Context, req *protomfx.ThingAccessReq) (*emptypb.Empty, error) {
 	_, res, err := gs.canThingAccessGroup.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
 
-	return res.(*empty.Empty), nil
+	return res.(*emptypb.Empty), nil
 }
 
 func (gs *grpcServer) Identify(ctx context.Context, req *protomfx.ThingKey) (*protomfx.ThingID, error) {
@@ -264,7 +264,7 @@ func encodeGetConfigByThingIDResponse(_ context.Context, grpcRes any) (any, erro
 
 func encodeEmptyResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(emptyRes)
-	return &empty.Empty{}, encodeError(res.err)
+	return &emptypb.Empty{}, encodeError(res.err)
 }
 
 func encodeGetGroupIDByThingIDResponse(_ context.Context, grpcRes any) (any, error) {

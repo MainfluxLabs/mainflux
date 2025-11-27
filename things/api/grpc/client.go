@@ -11,7 +11,6 @@ import (
 	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -62,7 +61,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			"CanUserAccessThing",
 			encodeUserAccessThingRequest,
 			decodeEmptyResponse,
-			empty.Empty{},
+			emptypb.Empty{},
 		).Endpoint()),
 		canUserAccessProfile: kitot.TraceClient(tracer, "can_user_access_profile")(kitgrpc.NewClient(
 			conn,
@@ -70,7 +69,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			"CanUserAccessProfile",
 			encodeUserAccessProfileRequest,
 			decodeEmptyResponse,
-			empty.Empty{},
+			emptypb.Empty{},
 		).Endpoint()),
 		canUserAccessGroup: kitot.TraceClient(tracer, "can_user_access_group")(kitgrpc.NewClient(
 			conn,
@@ -78,7 +77,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			"CanUserAccessGroup",
 			encodeUserAccessGroupRequest,
 			decodeEmptyResponse,
-			empty.Empty{},
+			emptypb.Empty{},
 		).Endpoint()),
 		canThingAccessGroup: kitot.TraceClient(tracer, "can_thing_access_group")(kitgrpc.NewClient(
 			conn,
@@ -86,7 +85,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			"CanThingAccessGroup",
 			encodeThingAccessGroupRequest,
 			decodeEmptyResponse,
-			empty.Empty{},
+			emptypb.Empty{},
 		).Endpoint()),
 		identify: kitot.TraceClient(tracer, "identify")(kitgrpc.NewClient(
 			conn,
@@ -168,7 +167,7 @@ func (client grpcClient) CanUserAccessThing(ctx context.Context, req *protomfx.U
 	}
 
 	er := res.(emptyRes)
-	return &empty.Empty{}, er.err
+	return &emptypb.Empty{}, er.err
 }
 
 func (client grpcClient) CanUserAccessProfile(ctx context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
@@ -179,7 +178,7 @@ func (client grpcClient) CanUserAccessProfile(ctx context.Context, req *protomfx
 	}
 
 	er := res.(emptyRes)
-	return &empty.Empty{}, er.err
+	return &emptypb.Empty{}, er.err
 }
 
 func (client grpcClient) CanUserAccessGroup(ctx context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
@@ -190,10 +189,10 @@ func (client grpcClient) CanUserAccessGroup(ctx context.Context, req *protomfx.U
 	}
 
 	er := res.(emptyRes)
-	return &empty.Empty{}, er.err
+	return &emptypb.Empty{}, er.err
 }
 
-func (client grpcClient) CanThingAccessGroup(ctx context.Context, req *protomfx.ThingAccessReq, _ ...grpc.CallOption) (*empty.Empty, error) {
+func (client grpcClient) CanThingAccessGroup(ctx context.Context, req *protomfx.ThingAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
 	r := thingAccessGroupReq{thingKey: thingKey{value: req.GetKey()}, id: req.GetId()}
 	res, err := client.canThingAccessGroup(ctx, r)
 	if err != nil {
@@ -201,7 +200,7 @@ func (client grpcClient) CanThingAccessGroup(ctx context.Context, req *protomfx.
 	}
 
 	er := res.(emptyRes)
-	return &empty.Empty{}, er.err
+	return &emptypb.Empty{}, er.err
 }
 
 func (client grpcClient) Identify(ctx context.Context, req *protomfx.ThingKey, _ ...grpc.CallOption) (*protomfx.ThingID, error) {

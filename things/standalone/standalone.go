@@ -8,8 +8,8 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 var errUnsupported = errors.New("not supported in standalone mode")
@@ -45,26 +45,26 @@ func (repo singleUserRepo) Identify(ctx context.Context, token *protomfx.Token, 
 	return &protomfx.UserIdentity{Id: repo.email, Email: repo.email}, nil
 }
 
-func (repo singleUserRepo) Authorize(ctx context.Context, req *protomfx.AuthorizeReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
-	return &empty.Empty{}, errUnsupported
+func (repo singleUserRepo) Authorize(ctx context.Context, req *protomfx.AuthorizeReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
+	return &emptypb.Empty{}, errUnsupported
 }
 
 func (repo singleUserRepo) GetOwnerIDByOrgID(ctx context.Context, in *protomfx.OrgID, opts ...grpc.CallOption) (*protomfx.OwnerID, error) {
 	return &protomfx.OwnerID{}, errUnsupported
 }
 
-func (repo singleUserRepo) AssignRole(ctx context.Context, req *protomfx.AssignRoleReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
-	return &empty.Empty{}, errUnsupported
+func (repo singleUserRepo) AssignRole(ctx context.Context, req *protomfx.AssignRoleReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
+	return &emptypb.Empty{}, errUnsupported
 }
 
 func (repo singleUserRepo) RetrieveRole(ctx context.Context, req *protomfx.RetrieveRoleReq, _ ...grpc.CallOption) (r *protomfx.RetrieveRoleRes, err error) {
 	return &protomfx.RetrieveRoleRes{}, errUnsupported
 }
 
-func (repo singleUserRepo) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+func (repo singleUserRepo) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
 	panic("not implemented")
 }
 
-func (repo singleUserRepo) ActivateOrgInvite(ctx context.Context, req *protomfx.ActivateOrgInviteReq, _ ...grpc.CallOption) (r *empty.Empty, err error) {
+func (repo singleUserRepo) ActivateOrgInvite(ctx context.Context, req *protomfx.ActivateOrgInviteReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
 	panic("not implemented")
 }

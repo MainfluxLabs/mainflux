@@ -8,7 +8,6 @@ import (
 	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -32,7 +31,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			"Publish",
 			encodePublishRequest,
 			decodeEmptyResponse,
-			empty.Empty{},
+			emptypb.Empty{},
 		).Endpoint()),
 	}
 }
@@ -48,7 +47,7 @@ func (gc grpcClient) Publish(ctx context.Context, req *protomfx.PublishReq, _ ..
 	}
 
 	er := res.(emptyRes)
-	return &empty.Empty{}, er.err
+	return &emptypb.Empty{}, er.err
 }
 
 func encodePublishRequest(_ context.Context, grpcReq any) (any, error) {

@@ -137,9 +137,10 @@ func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetad
 
 func (jr *jsonRepository) readMessages(ctx context.Context, rpm readers.JSONPageMetadata, params map[string]any) ([]readers.Message, error) {
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
+	dq := dbutil.GetDirQuery(rpm.Dir)
 	condition := jr.fmtCondition(rpm)
 
-	q := fmt.Sprintf(`SELECT * FROM json %s ORDER BY created DESC %s;`, condition, olq)
+	q := fmt.Sprintf(`SELECT * FROM json %s ORDER BY created %s %s;`, condition, dq, olq)
 	rows, err := jr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {

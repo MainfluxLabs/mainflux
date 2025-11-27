@@ -131,9 +131,10 @@ func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLPageMet
 
 func (sr *senmlRepository) readMessages(ctx context.Context, rpm readers.SenMLPageMetadata, params map[string]any) ([]readers.Message, error) {
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
+	dq := dbutil.GetDirQuery(rpm.Dir)
 	condition := sr.fmtCondition(rpm)
 
-	q := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY time DESC %s;`, senmlTable, condition, olq)
+	q := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY time %s %s;`, senmlTable, condition, dq, olq)
 	rows, err := sr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
