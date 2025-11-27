@@ -192,6 +192,19 @@ func Flatten(m map[string]any, prefix string) map[string]any {
 			for nk, nv := range nested {
 				result[nk] = nv
 			}
+		case []any:
+			for i, elem := range child {
+				indexKey := fmt.Sprintf("%s.%d", key, i)
+				switch elemTyped := elem.(type) {
+				case map[string]any:
+					nested := Flatten(elemTyped, indexKey)
+					for nk, nv := range nested {
+						result[nk] = nv
+					}
+				default:
+					result[indexKey] = elemTyped
+				}
+			}
 		default:
 			result[key] = v
 		}
