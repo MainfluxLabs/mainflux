@@ -132,7 +132,7 @@ func (req backupAlarmsByThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	if req.convertFormat != jsonFormat && req.convertFormat != csvFormat && req.convertFormat != pdfFormat {
+	if req.convertFormat != jsonFormat && req.convertFormat != csvFormat {
 		return apiutil.ErrInvalidQueryParams
 	}
 

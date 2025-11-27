@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
-	"github.com/jung-kurt/gofpdf"
 )
 
 func ConvertToJSONFile(page alarms.AlarmsPage, timeFormat string) ([]byte, error) {
@@ -113,83 +112,6 @@ func ConvertToCSVFile(page alarms.AlarmsPage, timeFormat string) ([]byte, error)
 
 	writer.Flush()
 	return buf.Bytes(), writer.Error()
-}
-
-func ConvertToPDFFile(page alarms.AlarmsPage, timeFormat string) ([]byte, error) {
-	pdf := gofpdf.New("P", "mm", "A4", "")
-	pdf.SetFillColor(214, 224, 230)
-	pdf.SetAutoPageBreak(false, 10)
-	margin := 10.0
-	pageWidth, pageHeight := pdf.GetPageSize()
-	usableWidth := pageWidth - 2*margin
-	leftColWidth := usableWidth / 2
-	rightColWidth := usableWidth / 2
-	rowHeight := 6.0
-
-	pdf.AddPage()
-
-	for _, a := range page.Alarms {
-		pdf.SetFont("Arial", "B", 12)
-		pdf.CellFormat(0, 10, fmt.Sprintf("Alarm: %s", a.ID), "", 1, "C", false, 0, "")
-		pdf.SetFont("Arial", "", 10)
-
-		data := []struct{ Key, Val string }{
-			{"Created", formatTimeNs(a.Created, timeFormat)},
-			{"RuleID", a.RuleID},
-			{"ThingID", a.ThingID},
-			{"GroupID", a.GroupID},
-			{"Protocol", a.Protocol},
-			{"Subtopic", a.Subtopic},
-		}
-
-		for _, row := range data {
-			x, y := pdf.GetX(), pdf.GetY()
-			keyLines := pdf.SplitLines([]byte(row.Key), leftColWidth)
-			valLines := pdf.SplitLines([]byte(row.Val), rightColWidth)
-			maxLines := max(len(valLines), len(keyLines))
-			totalRowHeight := float64(maxLines) * rowHeight
-
-			if y+totalRowHeight > pageHeight-10 {
-				pdf.AddPage()
-				y = pdf.GetY()
-			}
-
-			pdf.MultiCell(leftColWidth, rowHeight, row.Key, "1", "L", true)
-			pdf.SetXY(x+leftColWidth, y)
-			pdf.MultiCell(rightColWidth, rowHeight, row.Val, "1", "L", false)
-			pdf.SetXY(margin, y+totalRowHeight)
-		}
-
-		if a.Payload != nil {
-			flat := Flatten(a.Payload, "")
-			for k, v := range flat {
-				valStr := fmt.Sprint(v)
-				x, y := pdf.GetX(), pdf.GetY()
-				keyLines := pdf.SplitLines([]byte(k), leftColWidth)
-				valLines := pdf.SplitLines([]byte(valStr), rightColWidth)
-				maxLines := max(len(valLines), len(keyLines))
-				totalRowHeight := float64(maxLines) * rowHeight
-
-				if y+totalRowHeight > pageHeight-10 {
-					pdf.AddPage()
-					y = pdf.GetY()
-				}
-
-				pdf.MultiCell(leftColWidth, rowHeight, k, "1", "L", true)
-				pdf.SetXY(x+leftColWidth, y)
-				pdf.MultiCell(rightColWidth, rowHeight, valStr, "1", "L", false)
-				pdf.SetXY(margin, y+totalRowHeight)
-			}
-		}
-
-		pdf.Ln(5)
-	}
-
-	var buf bytes.Buffer
-	if err := pdf.Output(&buf); err != nil {
-		return nil, fmt.Errorf("failed to generate PDF: %w", err)
-	}
-	return buf.Bytes(), nil
 }
 
 func formatTimeNs(ns int64, timeFormat string) string {

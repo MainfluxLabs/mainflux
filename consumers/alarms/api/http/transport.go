@@ -23,7 +23,6 @@ const (
 	convertKey             = "convert"
 	jsonFormat             = "json"
 	csvFormat              = "csv"
-	pdfFormat              = "pdf"
 	timeFormatKey          = "time_format"
 	octetStreamContentType = "application/octet-stream"
 )
@@ -147,7 +146,7 @@ func decodeRemoveAlarms(_ context.Context, r *http.Request) (interface{}, error)
 }
 
 func decodeBackupAlarmsByThing(_ context.Context, r *http.Request) (interface{}, error) {
-	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, pdfFormat)
+	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, jsonFormat)
 	if err != nil {
 		return nil, err
 	}

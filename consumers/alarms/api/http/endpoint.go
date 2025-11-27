@@ -109,10 +109,6 @@ func backupAlarmsByThingEndpoint(svc alarms.Service) endpoint.Endpoint {
 			if data, err = ConvertToJSONFile(page, req.timeFormat); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupAlarms, err)
 			}
-		case pdfFormat:
-			if data, err = ConvertToPDFFile(page, req.timeFormat); err != nil {
-				return nil, errors.Wrap(errors.ErrBackupAlarms, err)
-			}
 		default:
 			if data, err = ConvertToCSVFile(page, req.timeFormat); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupAlarms, err)
