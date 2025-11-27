@@ -194,6 +194,5 @@ func isValidAggInterval(aggInterval string, aggValue uint64) bool {
 	default:
 		maxValue = 1
 	}
-
 	return aggValue <= maxValue
 }
