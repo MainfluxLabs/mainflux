@@ -29,7 +29,6 @@ func ConvertToJSONFile(page alarms.AlarmsPage, timeFormat string) ([]byte, error
 		}
 
 		item["created"] = formatTimeNs(a.Created, timeFormat)
-
 		result = append(result, item)
 	}
 
@@ -49,7 +48,6 @@ func ConvertToCSVFile(page alarms.AlarmsPage, timeFormat string) ([]byte, error)
 	added := map[string]bool{}
 
 	for i, alarm := range page.Alarms {
-
 		p := alarm.Payload
 		if p == nil {
 			flattened[i] = map[string]any{}
@@ -83,7 +81,6 @@ func ConvertToCSVFile(page alarms.AlarmsPage, timeFormat string) ([]byte, error)
 	}
 
 	for i, alarm := range page.Alarms {
-
 		created := formatTimeNs(alarm.Created, timeFormat)
 
 		row := []string{
