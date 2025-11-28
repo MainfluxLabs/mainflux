@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -87,6 +88,36 @@ func removeAlarmsEndpoint(svc alarms.Service) endpoint.Endpoint {
 		}
 
 		return removeRes{}, nil
+	}
+}
+
+func backupAlarmsByThingEndpoint(svc alarms.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(backupAlarmsByThingReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		page, err := svc.BackupAlarmsByThing(ctx, req.token, req.thingID, req.pageMetadata)
+		if err != nil {
+			return nil, err
+		}
+
+		var data []byte
+		switch req.convertFormat {
+		case jsonFormat:
+			if data, err = ConvertToJSONFile(page, req.timeFormat); err != nil {
+				return nil, errors.Wrap(errors.ErrBackupAlarms, err)
+			}
+		default:
+			if data, err = ConvertToCSVFile(page, req.timeFormat); err != nil {
+				return nil, errors.Wrap(errors.ErrBackupAlarms, err)
+			}
+		}
+
+		return backupFileRes{
+			file: data,
+		}, nil
 	}
 }
 

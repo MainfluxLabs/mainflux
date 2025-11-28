@@ -114,3 +114,31 @@ func (req removeAlarmsReq) validate() error {
 
 	return nil
 }
+
+type backupAlarmsByThingReq struct {
+	token         string
+	thingID       string
+	convertFormat string
+	timeFormat    string
+	pageMetadata  apiutil.PageMetadata
+}
+
+func (req backupAlarmsByThingReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.thingID == "" {
+		return apiutil.ErrMissingThingID
+	}
+
+	if req.convertFormat != jsonFormat && req.convertFormat != csvFormat {
+		return apiutil.ErrInvalidQueryParams
+	}
+
+	if req.pageMetadata.Limit > maxLimitSize {
+		return apiutil.ErrLimitSize
+	}
+
+	return nil
+}

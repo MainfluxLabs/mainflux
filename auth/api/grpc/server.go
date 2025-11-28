@@ -12,10 +12,10 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
-	"github.com/golang/protobuf/ptypes/empty"
 	opentracing "github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 var _ protomfx.AuthServiceServer = (*grpcServer)(nil)
@@ -93,12 +93,12 @@ func (s *grpcServer) Identify(ctx context.Context, token *protomfx.Token) (*prot
 	return res.(*protomfx.UserIdentity), nil
 }
 
-func (s *grpcServer) Authorize(ctx context.Context, req *protomfx.AuthorizeReq) (*empty.Empty, error) {
+func (s *grpcServer) Authorize(ctx context.Context, req *protomfx.AuthorizeReq) (*emptypb.Empty, error) {
 	_, res, err := s.authorize.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
-	return res.(*empty.Empty), nil
+	return res.(*emptypb.Empty), nil
 }
 
 func (s *grpcServer) GetOwnerIDByOrgID(ctx context.Context, req *protomfx.OrgID) (*protomfx.OwnerID, error) {
@@ -110,12 +110,12 @@ func (s *grpcServer) GetOwnerIDByOrgID(ctx context.Context, req *protomfx.OrgID)
 	return res.(*protomfx.OwnerID), nil
 }
 
-func (s *grpcServer) AssignRole(ctx context.Context, req *protomfx.AssignRoleReq) (*empty.Empty, error) {
+func (s *grpcServer) AssignRole(ctx context.Context, req *protomfx.AssignRoleReq) (*emptypb.Empty, error) {
 	_, res, err := s.assignRole.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
-	return res.(*empty.Empty), nil
+	return res.(*emptypb.Empty), nil
 }
 
 func (s *grpcServer) RetrieveRole(ctx context.Context, req *protomfx.RetrieveRoleReq) (*protomfx.RetrieveRoleRes, error) {
@@ -126,22 +126,22 @@ func (s *grpcServer) RetrieveRole(ctx context.Context, req *protomfx.RetrieveRol
 	return res.(*protomfx.RetrieveRoleRes), nil
 }
 
-func (s *grpcServer) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq) (*empty.Empty, error) {
+func (s *grpcServer) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq) (*emptypb.Empty, error) {
 	_, res, err := s.createDormantOrgInvite.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
 
-	return res.(*empty.Empty), nil
+	return res.(*emptypb.Empty), nil
 }
 
-func (s *grpcServer) ActivateOrgInvite(ctx context.Context, req *protomfx.ActivateOrgInviteReq) (*empty.Empty, error) {
+func (s *grpcServer) ActivateOrgInvite(ctx context.Context, req *protomfx.ActivateOrgInviteReq) (*emptypb.Empty, error) {
 	_, res, err := s.activateOrgInvite.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
 
-	return res.(*empty.Empty), nil
+	return res.(*emptypb.Empty), nil
 }
 
 func decodeAssignRoleRequest(_ context.Context, grpcReq any) (any, error) {
@@ -215,7 +215,7 @@ func decodeActivateOrgInviteRequest(_ context.Context, grpcReq any) (any, error)
 
 func encodeEmptyResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(emptyRes)
-	return &empty.Empty{}, encodeError(res.err)
+	return &emptypb.Empty{}, encodeError(res.err)
 }
 
 func encodeError(err error) error {

@@ -9,7 +9,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/rules"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -38,7 +37,7 @@ func (gs grpcServer) Publish(ctx context.Context, message *protomfx.PublishReq) 
 		return nil, nil
 	}
 
-	return res.(*empty.Empty), nil
+	return res.(*emptypb.Empty), nil
 }
 
 func decodePublishRequest(_ context.Context, grpcReq any) (any, error) {
@@ -48,7 +47,7 @@ func decodePublishRequest(_ context.Context, grpcReq any) (any, error) {
 
 func encodeEmptyResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(emptyRes)
-	return &empty.Empty{}, encodeError(res.err)
+	return &emptypb.Empty{}, encodeError(res.err)
 }
 
 func encodeError(err error) error {

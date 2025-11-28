@@ -183,6 +183,33 @@ func (ar *alarmRepository) Remove(ctx context.Context, ids ...string) error {
 	return nil
 }
 
+func (ar *alarmRepository) BackupByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+	if _, err := uuid.FromString(thingID); err != nil {
+		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrNotFound, err)
+	}
+
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
+	p, pq, err := dbutil.GetPayloadQuery(pm.Payload)
+	if err != nil {
+		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	thingFilter := "thing_id = :thing_id"
+	whereClause := dbutil.BuildWhereClause(thingFilter, pq)
+
+	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, subtopic, protocol, payload, created 
+	                  FROM alarms %s ORDER BY %s %s;`, whereClause, oq, dq)
+	qc := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
+
+	params := map[string]any{
+		"thing_id": thingID,
+		"payload":  p,
+	}
+
+	return ar.retrieve(ctx, q, qc, params)
+}
+
 func (ar *alarmRepository) retrieve(ctx context.Context, query, cquery string, params map[string]any) (alarms.AlarmsPage, error) {
 	rows, err := ar.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
