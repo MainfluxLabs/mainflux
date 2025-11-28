@@ -18,24 +18,28 @@ import (
 )
 
 // Service represents a notification service.
+// All methods that accept a token parameter use it to identify and authorize
+// the user performing the operation.
 type Service interface {
-	// CreateNotifiers creates notifiers for certain group identified by the group ID
+	// CreateNotifiers creates notifiers for a certain group identified by the group ID.
 	CreateNotifiers(ctx context.Context, token, groupID string, notifiers ...Notifier) ([]Notifier, error)
 
 	// ListNotifiersByGroup retrieves data about a subset of notifiers
-	// related to a certain group identified by the provided ID.
+	// related to a certain group, identified by the provided group ID.
 	ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (NotifiersPage, error)
 
-	// ViewNotifier retrieves data about the notifier identified with the provided ID
+	// ViewNotifier retrieves data about the notifier identified with the provided ID.
 	ViewNotifier(ctx context.Context, token, id string) (Notifier, error)
 
-	// UpdateNotifier updates the notifier identified by the provided ID, that
-	// belongs to the user identified by the provided key.
+	// UpdateNotifier updates the notifier identified by the provided ID.
 	UpdateNotifier(ctx context.Context, token string, notifier Notifier) error
 
-	// RemoveNotifiers removes the notifiers identified with the provided IDs, that
-	// belongs to the user identified by the provided key.
+	// RemoveNotifiers removes notifiers identified with the provided IDs.
 	RemoveNotifiers(ctx context.Context, token string, id ...string) error
+
+	// RemoveNotifiersByGroup removes notifiers related to the specified group,
+	// identified by the provided group ID.
+	RemoveNotifiersByGroup(ctx context.Context, groupID string) error
 
 	consumers.Consumer
 }
@@ -174,4 +178,8 @@ func (ns *notifierService) RemoveNotifiers(ctx context.Context, token string, id
 	}
 
 	return nil
+}
+
+func (ns *notifierService) RemoveNotifiersByGroup(ctx context.Context, groupID string) error {
+	return ns.notifierRepo.RemoveByGroup(ctx, groupID)
 }
