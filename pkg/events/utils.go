@@ -17,7 +17,7 @@ const (
 	GroupRemove = groupPrefix + "remove"
 )
 
-func Read(event map[string]interface{}, key, def string) string {
+func Read(event map[string]any, key, def string) string {
 	val, ok := event[key].(string)
 	if !ok {
 		return def
