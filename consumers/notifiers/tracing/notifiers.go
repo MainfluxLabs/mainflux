@@ -18,6 +18,7 @@ const (
 	retrieveNotifierByID     = "retrieve_notifier_by_id"
 	updateNotifier           = "update_notifier"
 	removeNotifiers          = "remove_notifiers"
+	removeNotifiersByGroup   = "remove_notifiers_by_group"
 )
 
 var (
@@ -76,4 +77,12 @@ func (n notifierRepositoryMiddleware) Remove(ctx context.Context, ids ...string)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return n.repo.Remove(ctx, ids...)
+}
+
+func (n notifierRepositoryMiddleware) RemoveByGroup(ctx context.Context, groupID string) error {
+	span := dbutil.CreateSpan(ctx, n.tracer, removeNotifiersByGroup)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return n.repo.RemoveByGroup(ctx, groupID)
 }
