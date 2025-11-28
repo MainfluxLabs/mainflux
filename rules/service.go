@@ -318,16 +318,16 @@ func (rs *rulesService) publishToDefaultSubjects(msg protomfx.Message) error {
 }
 
 func processPayload(payload []byte, conditions []Condition, operator string, contentType string) (bool, [][]byte, error) {
-	var parsedData interface{}
+	var parsedData any
 	if err := json.Unmarshal(payload, &parsedData); err != nil {
 		return false, nil, err
 	}
 
 	switch data := parsedData.(type) {
-	case []interface{}:
+	case []any:
 		var triggerPayloads [][]byte
 		for _, item := range data {
-			obj, ok := item.(map[string]interface{})
+			obj, ok := item.(map[string]any)
 			if !ok {
 				continue
 			}
@@ -347,7 +347,7 @@ func processPayload(payload []byte, conditions []Condition, operator string, con
 		}
 
 		return len(triggerPayloads) > 0, triggerPayloads, nil
-	case map[string]interface{}:
+	case map[string]any:
 		triggered, err := checkConditionsMet(data, conditions, operator, contentType)
 		if err != nil {
 			return false, nil, err
@@ -367,7 +367,7 @@ func processPayload(payload []byte, conditions []Condition, operator string, con
 	}
 }
 
-func checkConditionsMet(payloadMap map[string]interface{}, conditions []Condition, operator, contentType string) (bool, error) {
+func checkConditionsMet(payloadMap map[string]any, conditions []Condition, operator, contentType string) (bool, error) {
 	results := make([]bool, len(conditions))
 
 	for i, condition := range conditions {
@@ -437,7 +437,7 @@ func isConditionMet(comparator string, val1, val2 float64) bool {
 	}
 }
 
-func findPayloadParam(payload map[string]interface{}, param string, contentType string) interface{} {
+func findPayloadParam(payload map[string]any, param string, contentType string) any {
 	switch contentType {
 	case messaging.SenMLContentType:
 		if name, ok := payload["name"].(string); ok && name == param {
@@ -453,7 +453,7 @@ func findPayloadParam(payload map[string]interface{}, param string, contentType 
 	}
 }
 
-func findParam(payload map[string]interface{}, param string) interface{} {
+func findParam(payload map[string]any, param string) any {
 	if param == "" {
 		return nil
 	}
@@ -468,7 +468,7 @@ func findParam(payload map[string]interface{}, param string) interface{} {
 		}
 
 		if i < len(parts)-1 {
-			nested, ok := val.(map[string]interface{})
+			nested, ok := val.(map[string]any)
 			if !ok {
 				return nil
 			}

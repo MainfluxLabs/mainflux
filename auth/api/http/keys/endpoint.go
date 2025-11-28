@@ -12,7 +12,7 @@ import (
 )
 
 func issueEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(issueKeyReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -48,7 +48,7 @@ func issueEndpoint(svc auth.Service) endpoint.Endpoint {
 }
 
 func retrieveEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(keyReq)
 
 		if err := req.validate(); err != nil {
@@ -76,7 +76,7 @@ func retrieveEndpoint(svc auth.Service) endpoint.Endpoint {
 }
 
 func revokeEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(keyReq)
 
 		if err := req.validate(); err != nil {

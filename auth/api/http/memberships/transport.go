@@ -81,7 +81,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	return mux
 }
 
-func decodeListOrgMemberships(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListOrgMemberships(_ context.Context, r *http.Request) (any, error) {
 	o, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
 	if err != nil {
 		return nil, err
@@ -119,7 +119,7 @@ func decodeListOrgMemberships(_ context.Context, r *http.Request) (interface{}, 
 	return req, nil
 }
 
-func decodeOrgMembershipsRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeOrgMembershipsRequest(_ context.Context, r *http.Request) (any, error) {
 	req := orgMembershipsReq{
 		token: apiutil.ExtractBearerToken(r),
 		orgID: bone.GetValue(r, apiutil.IDKey),
@@ -142,7 +142,7 @@ func decodeOrgMembershipsRequest(_ context.Context, r *http.Request) (interface{
 	return req, nil
 }
 
-func decodeOrgMembershipRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeOrgMembershipRequest(_ context.Context, r *http.Request) (any, error) {
 	req := orgMembershipReq{
 		token:    apiutil.ExtractBearerToken(r),
 		orgID:    bone.GetValue(r, orgIDKey),
@@ -152,7 +152,7 @@ func decodeOrgMembershipRequest(_ context.Context, r *http.Request) (interface{}
 	return req, nil
 }
 
-func decodeRemoveOrgMemberships(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRemoveOrgMemberships(_ context.Context, r *http.Request) (any, error) {
 	req := removeOrgMembershipsReq{
 		token: apiutil.ExtractBearerToken(r),
 		orgID: bone.GetValue(r, apiutil.IDKey),
@@ -165,7 +165,7 @@ func decodeRemoveOrgMemberships(_ context.Context, r *http.Request) (interface{}
 	return req, nil
 }
 
-func decodeBackupByOrg(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeBackupByOrg(_ context.Context, r *http.Request) (any, error) {
 	req := backupByOrgReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
@@ -173,7 +173,7 @@ func decodeBackupByOrg(_ context.Context, r *http.Request) (interface{}, error) 
 	return req, nil
 }
 
-func decodeRestoreByOrg(ctx context.Context, r *http.Request) (interface{}, error) {
+func decodeRestoreByOrg(ctx context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeOctetStream) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -195,7 +195,7 @@ func decodeRestoreByOrg(ctx context.Context, r *http.Request) (interface{}, erro
 	return req, nil
 }
 
-func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {

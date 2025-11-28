@@ -52,7 +52,7 @@ var (
 	org = auth.Org{
 		Name:        name,
 		Description: description,
-		Metadata:    map[string]interface{}{"key": "value"},
+		Metadata:    map[string]any{"key": "value"},
 	}
 
 	viewer = auth.OrgMembership{MemberID: viewerID, Email: viewerEmail, Role: auth.Viewer}
@@ -117,7 +117,7 @@ func newServer(svc auth.Service) *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-func toJSON(data interface{}) string {
+func toJSON(data any) string {
 	jsonData, _ := json.Marshal(data)
 	return string(jsonData)
 }

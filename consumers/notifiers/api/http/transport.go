@@ -79,7 +79,7 @@ func MakeHandler(tracer opentracing.Tracer, svc notifiers.Service, logger log.Lo
 	return r
 }
 
-func decodeCreateNotifiers(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeCreateNotifiers(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -92,13 +92,13 @@ func decodeCreateNotifiers(_ context.Context, r *http.Request) (interface{}, err
 	return req, nil
 }
 
-func decodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 	req := notifierReq{token: apiutil.ExtractBearerToken(r), id: bone.GetValue(r, apiutil.IDKey)}
 
 	return req, nil
 }
 
-func decodeListNotifiers(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListNotifiers(_ context.Context, r *http.Request) (any, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -119,7 +119,7 @@ func decodeListNotifiers(_ context.Context, r *http.Request) (interface{}, error
 	return req, nil
 }
 
-func decodeSearchNotifiers(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeSearchNotifiers(_ context.Context, r *http.Request) (any, error) {
 	pm, err := apiutil.BuildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
@@ -134,7 +134,7 @@ func decodeSearchNotifiers(_ context.Context, r *http.Request) (interface{}, err
 	return req, nil
 }
 
-func decodeUpdateNotifier(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeUpdateNotifier(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -150,7 +150,7 @@ func decodeUpdateNotifier(_ context.Context, r *http.Request) (interface{}, erro
 	return req, nil
 }
 
-func decodeRemoveNotifiers(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRemoveNotifiers(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -166,7 +166,7 @@ func decodeRemoveNotifiers(_ context.Context, r *http.Request) (interface{}, err
 	return req, nil
 }
 
-func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {

@@ -14,7 +14,7 @@ import (
 )
 
 func createProfilesEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(createProfilesReq)
 
 		if err := req.validate(); err != nil {
@@ -58,7 +58,7 @@ func createProfilesEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func viewProfileEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(resourceReq)
 
 		if err := req.validate(); err != nil {
@@ -83,7 +83,7 @@ func viewProfileEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func viewProfileByThingEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(viewByThingReq)
 
 		if err := req.validate(); err != nil {
@@ -108,7 +108,7 @@ func viewProfileByThingEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func listProfilesEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listReq)
 
 		if err := req.validate(); err != nil {
@@ -125,7 +125,7 @@ func listProfilesEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func listProfilesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listByGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -141,7 +141,7 @@ func listProfilesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func listProfilesByOrgEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listByOrgReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -157,7 +157,7 @@ func listProfilesByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func backupProfilesByOrgEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(backupByOrgReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -174,7 +174,7 @@ func backupProfilesByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func restoreProfilesByOrgEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(restoreByOrgReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -191,7 +191,7 @@ func restoreProfilesByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func backupProfilesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(backupByGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -208,7 +208,7 @@ func backupProfilesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func restoreProfilesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(restoreByGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -225,7 +225,7 @@ func restoreProfilesByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func updateProfileEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(updateProfileReq)
 
 		if err := req.validate(); err != nil {
@@ -251,7 +251,7 @@ func updateProfileEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func removeProfileEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(resourceReq)
 
 		if err := req.validate(); err != nil {
@@ -267,7 +267,7 @@ func removeProfileEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func removeProfilesEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(removeProfilesReq)
 
 		if err := req.validate(); err != nil {

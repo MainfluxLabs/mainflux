@@ -259,7 +259,7 @@ func TestProfiles(t *testing.T) {
 		name     string
 		err      error
 		response []sdk.Profile
-		metadata map[string]interface{}
+		metadata map[string]any
 	}{
 		{
 			desc:     "get a list of profiles",
@@ -269,7 +269,7 @@ func TestProfiles(t *testing.T) {
 			dir:      ascDir,
 			err:      nil,
 			response: profiles[0:limit],
-			metadata: make(map[string]interface{}),
+			metadata: make(map[string]any),
 		},
 		{
 			desc:     "get a list of profiles with invalid token",
@@ -278,7 +278,7 @@ func TestProfiles(t *testing.T) {
 			limit:    limit,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: nil,
-			metadata: make(map[string]interface{}),
+			metadata: make(map[string]any),
 		},
 		{
 			desc:     "get a list of profiles with empty token",
@@ -287,7 +287,7 @@ func TestProfiles(t *testing.T) {
 			limit:    limit,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: nil,
-			metadata: make(map[string]interface{}),
+			metadata: make(map[string]any),
 		},
 		{
 			desc:     "get a list of profiles without limit, default 10",
@@ -296,7 +296,7 @@ func TestProfiles(t *testing.T) {
 			limit:    0,
 			err:      createError(sdk.ErrFailedFetch, http.StatusBadRequest),
 			response: nil,
-			metadata: make(map[string]interface{}),
+			metadata: make(map[string]any),
 		},
 		{
 			desc:     "get a list of profiles with limit greater than max",
@@ -305,7 +305,7 @@ func TestProfiles(t *testing.T) {
 			limit:    invalidLimit,
 			err:      createError(sdk.ErrFailedFetch, http.StatusBadRequest),
 			response: nil,
-			metadata: make(map[string]interface{}),
+			metadata: make(map[string]any),
 		},
 		{
 			desc:     "get a list of profiles with offset greater than max",
@@ -314,7 +314,7 @@ func TestProfiles(t *testing.T) {
 			limit:    limit,
 			err:      nil,
 			response: []sdk.Profile{},
-			metadata: make(map[string]interface{}),
+			metadata: make(map[string]any),
 		},
 	}
 	for _, tc := range cases {

@@ -11,7 +11,7 @@ import (
 )
 
 func createOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(orgMembershipsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -26,7 +26,7 @@ func createOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 }
 
 func viewOrgMembershipEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(orgMembershipReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -49,7 +49,7 @@ func viewOrgMembershipEndpoint(svc auth.Service) endpoint.Endpoint {
 }
 
 func listOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listOrgMembershipsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -73,7 +73,7 @@ func listOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 }
 
 func updateOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(orgMembershipsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -88,7 +88,7 @@ func updateOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 }
 
 func removeOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(removeOrgMembershipsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -103,7 +103,7 @@ func removeOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 }
 
 func backupOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(backupByOrgReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -120,7 +120,7 @@ func backupOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 }
 
 func restoreOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(restoreByOrgReq)
 		if err := req.validate(); err != nil {
 			return nil, err

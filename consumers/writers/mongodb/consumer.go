@@ -30,7 +30,7 @@ func New(db *mongo.Database) consumers.Consumer {
 	return &mongoRepo{db}
 }
 
-func (repo *mongoRepo) Consume(message interface{}) error {
+func (repo *mongoRepo) Consume(message any) error {
 	if msg, ok := message.(protomfx.Message); ok {
 		msgs, err := messaging.SplitMessage(msg)
 		if err != nil {
@@ -50,7 +50,7 @@ func (repo *mongoRepo) Consume(message interface{}) error {
 
 func (repo *mongoRepo) saveSenML(msgs []protomfx.Message) error {
 	coll := repo.db.Collection(senmlCollection)
-	var dbMsgs []interface{}
+	var dbMsgs []any
 	for _, msg := range msgs {
 		mapped, err := messaging.ToSenMLMessage(msg)
 		if err != nil {
@@ -69,7 +69,7 @@ func (repo *mongoRepo) saveSenML(msgs []protomfx.Message) error {
 }
 
 func (repo *mongoRepo) saveJSON(msgs []protomfx.Message) error {
-	m := []interface{}{}
+	m := []any{}
 	for _, msg := range msgs {
 		mapped := messaging.ToJSONMessage(msg)
 		m = append(m, mapped)

@@ -31,7 +31,7 @@ func New(db *sqlx.DB) consumers.Consumer {
 	return &postgresRepo{db: db}
 }
 
-func (pr postgresRepo) Consume(message interface{}) error {
+func (pr postgresRepo) Consume(message any) error {
 	if msg, ok := message.(protomfx.Message); ok {
 		msgs, err := messaging.SplitMessage(msg)
 		if err != nil {

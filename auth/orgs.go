@@ -14,7 +14,7 @@ var (
 )
 
 // OrgMetadata defines the Metadata type.
-type OrgMetadata map[string]interface{}
+type OrgMetadata map[string]any
 
 // Org represents the org information.
 type Org struct {

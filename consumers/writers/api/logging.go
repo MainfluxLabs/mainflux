@@ -28,7 +28,7 @@ func LoggingMiddleware(consumer consumers.Consumer, logger log.Logger) consumers
 	}
 }
 
-func (lm *loggingMiddleware) Consume(msgs interface{}) (err error) {
+func (lm *loggingMiddleware) Consume(msgs any) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method consume took %s to complete", time.Since(begin))
 		if err != nil {

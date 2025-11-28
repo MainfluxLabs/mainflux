@@ -14,7 +14,7 @@ import (
 
 // Metadata to be used for Mainflux thing or profile for customized
 // describing of particular thing or profile.
-type Metadata map[string]interface{}
+type Metadata map[string]any
 
 // User represents a Mainflux user account. Each user is identified given its
 // email and password.

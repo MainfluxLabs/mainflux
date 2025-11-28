@@ -165,7 +165,7 @@ func FormatMessage(pc *protomfx.PubConfByKeyRes, msg *protomfx.Message) error {
 
 func ToJSONMessage(message protomfx.Message) mfjson.Message {
 	created := message.Created
-	var payload map[string]interface{}
+	var payload map[string]any
 
 	if len(message.Payload) > 0 {
 		if err := json.Unmarshal(message.Payload, &payload); err == nil {
@@ -201,12 +201,12 @@ func ToSenMLMessage(message protomfx.Message) (senml.Message, error) {
 }
 
 func SplitMessage(message protomfx.Message) ([]protomfx.Message, error) {
-	var payload interface{}
+	var payload any
 	if err := json.Unmarshal(message.Payload, &payload); err != nil {
 		return nil, err
 	}
 
-	if pyds, ok := payload.([]interface{}); ok {
+	if pyds, ok := payload.([]any); ok {
 		var messages []protomfx.Message
 		for _, pyd := range pyds {
 			data, err := json.Marshal(pyd)

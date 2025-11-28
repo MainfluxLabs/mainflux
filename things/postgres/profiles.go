@@ -176,7 +176,7 @@ func (pr profileRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMeta
 	query := fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM profiles %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM profiles %s;`, whereClause)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"name":     name,
 		"metadata": m,
 		"limit":    pm.Limit,
@@ -195,7 +195,7 @@ func (pr profileRepository) RetrieveByThing(ctx context.Context, thID string) (t
 	q := `SELECT pr.id, pr.group_id, pr.name, pr.metadata, pr.config
 		FROM things ths, profiles pr
 		WHERE ths.profile_id = pr.id and ths.id = :thing;`
-	params := map[string]interface{}{
+	params := map[string]any{
 		"thing": thID,
 	}
 
@@ -259,7 +259,7 @@ func (pr profileRepository) RetrieveByGroups(ctx context.Context, groupIDs []str
 	query := fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM profiles %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM profiles %s;`, whereClause)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"name":     name,
 		"metadata": m,
 		"limit":    pm.Limit,
@@ -269,7 +269,7 @@ func (pr profileRepository) RetrieveByGroups(ctx context.Context, groupIDs []str
 	return pr.retrieve(ctx, query, cquery, params)
 }
 
-func (pr profileRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (things.ProfilesPage, error) {
+func (pr profileRepository) retrieve(ctx context.Context, query, cquery string, params map[string]any) (things.ProfilesPage, error) {
 	rows, err := pr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return things.ProfilesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
@@ -301,12 +301,12 @@ func (pr profileRepository) retrieve(ctx context.Context, query, cquery string, 
 }
 
 // dbJSONB type for handling JSONB data properly in database/sql.
-type dbJSONB map[string]interface{}
+type dbJSONB map[string]any
 
 // Scan implements the database/sql scanner interface.
 // When interface is nil `m` is set to nil.
 // If error occurs on casting data then m points to empty metadata.
-func (m *dbJSONB) Scan(value interface{}) error {
+func (m *dbJSONB) Scan(value any) error {
 	if value == nil {
 		m = nil
 		return nil

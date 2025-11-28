@@ -143,7 +143,7 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 	return mux
 }
 
-func decodeCreateProfiles(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeCreateProfiles(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -159,7 +159,7 @@ func decodeCreateProfiles(_ context.Context, r *http.Request) (interface{}, erro
 	return req, nil
 }
 
-func decodeUpdateProfile(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeUpdateProfile(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -175,7 +175,7 @@ func decodeUpdateProfile(_ context.Context, r *http.Request) (interface{}, error
 	return req, nil
 }
 
-func decodeRemoveProfiles(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRemoveProfiles(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -191,7 +191,7 @@ func decodeRemoveProfiles(_ context.Context, r *http.Request) (interface{}, erro
 	return req, nil
 }
 
-func decodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 	req := resourceReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
@@ -200,7 +200,7 @@ func decodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeViewByThing(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeViewByThing(_ context.Context, r *http.Request) (any, error) {
 	req := viewByThingReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
@@ -209,7 +209,7 @@ func decodeViewByThing(_ context.Context, r *http.Request) (interface{}, error) 
 	return req, nil
 }
 
-func decodeList(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeList(_ context.Context, r *http.Request) (any, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -223,7 +223,7 @@ func decodeList(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeListByGroup(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListByGroup(_ context.Context, r *http.Request) (any, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -238,7 +238,7 @@ func decodeListByGroup(_ context.Context, r *http.Request) (interface{}, error) 
 	return req, nil
 }
 
-func decodeListByOrg(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListByOrg(_ context.Context, r *http.Request) (any, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -253,7 +253,7 @@ func decodeListByOrg(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeSearch(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeSearch(_ context.Context, r *http.Request) (any, error) {
 	pm, err := apiutil.BuildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
@@ -267,7 +267,7 @@ func decodeSearch(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeSearchByGroup(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeSearchByGroup(_ context.Context, r *http.Request) (any, error) {
 	pm, err := apiutil.BuildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
@@ -282,7 +282,7 @@ func decodeSearchByGroup(_ context.Context, r *http.Request) (interface{}, error
 	return req, nil
 }
 
-func decodeSearchByOrg(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeSearchByOrg(_ context.Context, r *http.Request) (any, error) {
 	pm, err := apiutil.BuildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
@@ -297,7 +297,7 @@ func decodeSearchByOrg(_ context.Context, r *http.Request) (interface{}, error) 
 	return req, nil
 }
 
-func decodeBackupByGroup(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeBackupByGroup(_ context.Context, r *http.Request) (any, error) {
 	req := backupByGroupReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
@@ -305,7 +305,7 @@ func decodeBackupByGroup(_ context.Context, r *http.Request) (interface{}, error
 	return req, nil
 }
 
-func decodeRestoreByGroup(ctx context.Context, r *http.Request) (interface{}, error) {
+func decodeRestoreByGroup(ctx context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeOctetStream) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -327,7 +327,7 @@ func decodeRestoreByGroup(ctx context.Context, r *http.Request) (interface{}, er
 	return req, nil
 }
 
-func decodeBackupByOrg(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeBackupByOrg(_ context.Context, r *http.Request) (any, error) {
 	req := backupByOrgReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
@@ -335,7 +335,7 @@ func decodeBackupByOrg(_ context.Context, r *http.Request) (interface{}, error) 
 	return req, nil
 }
 
-func decodeRestoreByOrg(ctx context.Context, r *http.Request) (interface{}, error) {
+func decodeRestoreByOrg(ctx context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeOctetStream) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -357,7 +357,7 @@ func decodeRestoreByOrg(ctx context.Context, r *http.Request) (interface{}, erro
 	return req, nil
 }
 
-func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {

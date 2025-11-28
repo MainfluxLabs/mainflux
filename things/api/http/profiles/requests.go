@@ -13,10 +13,10 @@ const (
 )
 
 type createProfileReq struct {
-	Name     string                 `json:"name,omitempty"`
-	ID       string                 `json:"id,omitempty"`
-	Config   map[string]interface{} `json:"config,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Name     string         `json:"name,omitempty"`
+	ID       string         `json:"id,omitempty"`
+	Config   map[string]any `json:"config,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 type createProfilesReq struct {
@@ -56,9 +56,9 @@ func (req createProfilesReq) validate() error {
 type updateProfileReq struct {
 	token    string
 	id       string
-	Name     string                 `json:"name,omitempty"`
-	Config   map[string]interface{} `json:"config,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Name     string         `json:"name,omitempty"`
+	Config   map[string]any `json:"config,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 func (req updateProfileReq) validate() error {

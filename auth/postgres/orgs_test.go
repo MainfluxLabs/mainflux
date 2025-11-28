@@ -109,7 +109,7 @@ func TestUpdate(t *testing.T) {
 		OwnerID:     ownerID,
 		Name:        orgName,
 		Description: orgDesc,
-		Metadata:    map[string]interface{}{"key": "value"},
+		Metadata:    map[string]any{"key": "value"},
 	}
 
 	err = repo.Save(context.Background(), org)
@@ -119,7 +119,7 @@ func TestUpdate(t *testing.T) {
 		ID:          orgID,
 		Name:        "updated-name",
 		Description: "updated-description",
-		Metadata:    map[string]interface{}{"updated": "metadata"},
+		Metadata:    map[string]any{"updated": "metadata"},
 	}
 	updateOwnerOrg := auth.Org{ID: orgID, OwnerID: unknownID}
 	nonExistingOrg := auth.Org{ID: unknownID}
@@ -179,7 +179,7 @@ func TestDelete(t *testing.T) {
 		OwnerID:     ownerID,
 		Name:        orgName,
 		Description: orgDesc,
-		Metadata:    map[string]interface{}{"key": "value"},
+		Metadata:    map[string]any{"key": "value"},
 	}
 
 	err = repo.Save(context.Background(), org)
@@ -251,7 +251,7 @@ func TestRetrieveByID(t *testing.T) {
 		OwnerID:     ownerID,
 		Name:        orgName,
 		Description: orgDesc,
-		Metadata:    map[string]interface{}{"key": "value"},
+		Metadata:    map[string]any{"key": "value"},
 	}
 
 	err = repo.Save(context.Background(), org)
@@ -309,7 +309,7 @@ func TestBackupAll(t *testing.T) {
 			OwnerID:     ownerID,
 			Name:        fmt.Sprintf("%s-%d", orgName, i),
 			Description: fmt.Sprintf("%s-%d", orgDesc, i),
-			Metadata:    map[string]interface{}{fmt.Sprintf("key-%d", i): fmt.Sprintf("value-%d", i)},
+			Metadata:    map[string]any{fmt.Sprintf("key-%d", i): fmt.Sprintf("value-%d", i)},
 		}
 
 		err = repo.Save(context.Background(), org)
@@ -357,7 +357,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 			OwnerID:     ownerID,
 			Name:        fmt.Sprintf("%s-%d", orgName, i),
 			Description: orgDesc,
-			Metadata:    map[string]interface{}{fmt.Sprintf("key-%d", i): fmt.Sprintf("value-%d", i)},
+			Metadata:    map[string]any{fmt.Sprintf("key-%d", i): fmt.Sprintf("value-%d", i)},
 		}
 
 		err = repoOrg.Save(context.Background(), org)
@@ -402,7 +402,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 				Limit:    n,
 				Dir:      descDir,
 				Order:    idOrder,
-				Metadata: map[string]interface{}{"key-1": "value-1"},
+				Metadata: map[string]any{"key-1": "value-1"},
 			},
 			size: 1,
 			err:  nil,

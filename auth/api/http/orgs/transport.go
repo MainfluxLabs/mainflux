@@ -88,7 +88,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	return mux
 }
 
-func decodeListOrgs(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListOrgs(_ context.Context, r *http.Request) (any, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -102,7 +102,7 @@ func decodeListOrgs(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeSearchOrgs(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeSearchOrgs(_ context.Context, r *http.Request) (any, error) {
 	pm, err := apiutil.BuildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
@@ -116,7 +116,7 @@ func decodeSearchOrgs(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeCreateOrgs(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeCreateOrgs(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -129,7 +129,7 @@ func decodeCreateOrgs(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeUpdateOrg(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeUpdateOrg(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -145,7 +145,7 @@ func decodeUpdateOrg(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeOrgRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeOrgRequest(_ context.Context, r *http.Request) (any, error) {
 	req := orgReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
@@ -154,7 +154,7 @@ func decodeOrgRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeDeleteOrgs(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeDeleteOrgs(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -170,7 +170,7 @@ func decodeDeleteOrgs(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeBackup(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeBackup(_ context.Context, r *http.Request) (any, error) {
 	req := backupReq{
 		token: apiutil.ExtractBearerToken(r),
 	}
@@ -178,7 +178,7 @@ func decodeBackup(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRestore(_ context.Context, r *http.Request) (any, error) {
 	req := restoreReq{
 		token: apiutil.ExtractBearerToken(r),
 	}
@@ -190,7 +190,7 @@ func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {

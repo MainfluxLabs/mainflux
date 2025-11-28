@@ -69,7 +69,7 @@ func MakeHandler(svc certs.Service, tracer opentracing.Tracer, pkiAgent pki.Agen
 	return r
 }
 
-func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {
@@ -87,7 +87,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	return json.NewEncoder(w).Encode(response)
 }
 
-func decodeListSerialsByThing(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListSerialsByThing(_ context.Context, r *http.Request) (any, error) {
 	l, err := apiutil.ReadUintQuery(r, apiutil.LimitKey, apiutil.DefLimit)
 	if err != nil {
 		return nil, err
@@ -106,7 +106,7 @@ func decodeListSerialsByThing(_ context.Context, r *http.Request) (interface{}, 
 	return req, nil
 }
 
-func decodeViewCert(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeViewCert(_ context.Context, r *http.Request) (any, error) {
 	req := viewReq{
 		token:  apiutil.ExtractBearerToken(r),
 		serial: bone.GetValue(r, apiutil.SerialKey),
@@ -115,7 +115,7 @@ func decodeViewCert(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeCerts(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeCerts(_ context.Context, r *http.Request) (any, error) {
 	if r.Header.Get("Content-Type") != apiutil.ContentTypeJSON {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -128,7 +128,7 @@ func decodeCerts(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeRevokeCerts(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRevokeCerts(_ context.Context, r *http.Request) (any, error) {
 	req := revokeReq{
 		token:  apiutil.ExtractBearerToken(r),
 		serial: bone.GetValue(r, apiutil.SerialKey),

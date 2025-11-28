@@ -75,7 +75,7 @@ var (
 type agent struct {
 	mu     sync.RWMutex
 	caCert *x509.Certificate
-	caKey  interface{}
+	caKey  any
 	caPEM  string
 }
 
@@ -114,7 +114,7 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (Cert, error) {
 		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 
-	var privateKey interface{}
+	var privateKey any
 	var privKeyPEM string
 	var pkType string
 

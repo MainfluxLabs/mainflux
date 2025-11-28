@@ -100,7 +100,7 @@ func (lm loggingMiddleware) BackupAlarmsByThing(ctx context.Context, token, thin
 	return lm.svc.BackupAlarmsByThing(ctx, token, thingID, pm)
 }
 
-func (lm loggingMiddleware) Consume(alarm interface{}) (err error) {
+func (lm loggingMiddleware) Consume(alarm any) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method consume took %s to complete", time.Since(begin))
 		if err != nil {

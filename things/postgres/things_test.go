@@ -942,6 +942,6 @@ func testSortThings(t *testing.T, pm apiutil.PageMetadata, ths []things.Thing) {
 
 func cleanTestTable(ctx context.Context, table string, db dbutil.Database) error {
 	q := fmt.Sprintf(`DELETE FROM %s CASCADE;`, table)
-	_, err := db.NamedExecContext(ctx, q, map[string]interface{}{})
+	_, err := db.NamedExecContext(ctx, q, map[string]any{})
 	return err
 }

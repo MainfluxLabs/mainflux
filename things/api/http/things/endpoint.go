@@ -15,7 +15,7 @@ import (
 )
 
 func createThingsEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(createThingsReq)
 
 		if err := req.validate(); err != nil {
@@ -62,7 +62,7 @@ func createThingsEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func viewThingEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(resourceReq)
 
 		if err := req.validate(); err != nil {
@@ -88,7 +88,7 @@ func viewThingEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func viewMetadataByKeyEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(viewMetadataReq)
 
 		if err := req.validate(); err != nil {
@@ -109,7 +109,7 @@ func viewMetadataByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func listThingsEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listReq)
 
 		if err := req.validate(); err != nil {
@@ -126,7 +126,7 @@ func listThingsEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func listThingsByProfileEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listByProfileReq)
 
 		if err := req.validate(); err != nil {
@@ -143,7 +143,7 @@ func listThingsByProfileEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func listThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listByGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -159,7 +159,7 @@ func listThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func listThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listByOrgReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -175,7 +175,7 @@ func listThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func backupThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(backupByGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -192,7 +192,7 @@ func backupThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func restoreThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(restoreThingsByGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -209,7 +209,7 @@ func restoreThingsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func backupThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(backupByOrgReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -226,7 +226,7 @@ func backupThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func restoreThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(restoreThingsByOrgReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -243,7 +243,7 @@ func restoreThingsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func updateThingEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(updateThingReq)
 
 		if err := req.validate(); err != nil {
@@ -267,7 +267,7 @@ func updateThingEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func updateThingGroupAndProfileEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(updateThingGroupAndProfileReq)
 
 		if err := req.validate(); err != nil {
@@ -290,7 +290,7 @@ func updateThingGroupAndProfileEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func updateThingsMetadataEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(updateThingsMetadataReq)
 
 		if err := req.validate(); err != nil {
@@ -318,7 +318,7 @@ func updateThingsMetadataEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func removeThingEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(resourceReq)
 
 		if err := req.validate(); err != nil {
@@ -334,7 +334,7 @@ func removeThingEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func removeThingsEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(removeThingsReq)
 
 		if err := req.validate(); err != nil {
@@ -350,7 +350,7 @@ func removeThingsEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func identifyEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(identifyReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -400,7 +400,7 @@ func removeExternalKeyEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func backupEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(backupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -416,7 +416,7 @@ func backupEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func restoreEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(restoreReq)
 		if err := req.validate(); err != nil {
 			return nil, err

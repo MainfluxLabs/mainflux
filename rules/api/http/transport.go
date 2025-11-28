@@ -88,7 +88,7 @@ func MakeHandler(tracer opentracing.Tracer, svc rules.Service, logger log.Logger
 	return r
 }
 
-func decodeCreateRules(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeCreateRules(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -104,7 +104,7 @@ func decodeCreateRules(_ context.Context, r *http.Request) (interface{}, error) 
 	return req, nil
 }
 
-func decodeListRulesByThing(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListRulesByThing(_ context.Context, r *http.Request) (any, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func decodeListRulesByThing(_ context.Context, r *http.Request) (interface{}, er
 	return req, nil
 }
 
-func decodeListRulesByGroup(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListRulesByGroup(_ context.Context, r *http.Request) (any, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -133,7 +133,7 @@ func decodeListRulesByGroup(_ context.Context, r *http.Request) (interface{}, er
 	return req, nil
 }
 
-func decodeRuleReq(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRuleReq(_ context.Context, r *http.Request) (any, error) {
 	req := ruleReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
@@ -142,7 +142,7 @@ func decodeRuleReq(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeUpdateRule(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeUpdateRule(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -158,7 +158,7 @@ func decodeUpdateRule(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeRemoveRules(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRemoveRules(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -170,7 +170,7 @@ func decodeRemoveRules(_ context.Context, r *http.Request) (interface{}, error) 
 
 	return req, nil
 }
-func decodeThingRules(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeThingRules(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -186,7 +186,7 @@ func decodeThingRules(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {

@@ -10,7 +10,7 @@ import (
 // Event represents an event.
 type Event interface {
 	// Encode encodes event to map.
-	Encode() (map[string]interface{}, error)
+	Encode() (map[string]any, error)
 }
 
 // EventHandler represents event handler for Subscriber.

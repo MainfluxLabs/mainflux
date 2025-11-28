@@ -78,7 +78,7 @@ var (
 	usersList       = []users.User{admin, user, otherUser}
 	group           = things.Group{Name: "test-group", Description: "test-group-desc", OrgID: orgID}
 	orgsList        = []auth.Org{{ID: orgID, OwnerID: user.ID}, {ID: orgID2, OwnerID: user.ID}}
-	metadata        = map[string]interface{}{"test": "data"}
+	metadata        = map[string]any{"test": "data"}
 	invalidName     = strings.Repeat("m", maxNameSize+1)
 	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, invalidName)
 )
@@ -130,7 +130,7 @@ func newServer(svc things.Service) *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-func toJSON(data interface{}) string {
+func toJSON(data any) string {
 	jsonData, _ := json.Marshal(data)
 	return string(jsonData)
 }
@@ -895,7 +895,7 @@ func TestSearchThings(t *testing.T) {
 		name := "name_" + fmt.Sprintf("%03d", i+1)
 		id := fmt.Sprintf("%s%012d", prefix, i+1)
 
-		th := things.Thing{ID: id, Name: name, Metadata: map[string]interface{}{"test": name}}
+		th := things.Thing{ID: id, Name: name, Metadata: map[string]any{"test": name}}
 		ths, err := svc.CreateThings(context.Background(), token, prID, th)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		thing := ths[0]
@@ -2995,17 +2995,17 @@ type identifyReq struct {
 }
 
 type viewMetadataRes struct {
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 type thingRes struct {
-	ID          string                 `json:"id"`
-	GroupID     string                 `json:"group_id,omitempty"`
-	ProfileID   string                 `json:"profile_id,omitempty"`
-	Name        string                 `json:"name,omitempty"`
-	Key         string                 `json:"key"`
-	ExternalKey string                 `json:"external_key"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	ID          string         `json:"id"`
+	GroupID     string         `json:"group_id,omitempty"`
+	ProfileID   string         `json:"profile_id,omitempty"`
+	Name        string         `json:"name,omitempty"`
+	Key         string         `json:"key"`
+	ExternalKey string         `json:"external_key"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
 }
 
 type thingsPageRes struct {
@@ -3016,28 +3016,28 @@ type thingsPageRes struct {
 }
 
 type viewThingRes struct {
-	ID          string                 `json:"id"`
-	GroupID     string                 `json:"group_id,omitempty"`
-	ProfileID   string                 `json:"profile_id"`
-	Name        string                 `json:"name,omitempty"`
-	Key         string                 `json:"key"`
-	ExternalKey string                 `json:"external_key,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	ID          string         `json:"id"`
+	GroupID     string         `json:"group_id,omitempty"`
+	ProfileID   string         `json:"profile_id"`
+	Name        string         `json:"name,omitempty"`
+	Key         string         `json:"key"`
+	ExternalKey string         `json:"external_key,omitempty"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
 }
 
 type backupProfileRes struct {
-	ID       string                 `json:"id"`
-	GroupID  string                 `json:"group_id"`
-	Name     string                 `json:"name,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	ID       string         `json:"id"`
+	GroupID  string         `json:"group_id"`
+	Name     string         `json:"name,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 type viewGroupRes struct {
-	ID          string                 `json:"id"`
-	OrgID       string                 `json:"org_id"`
-	Name        string                 `json:"name"`
-	Description string                 `json:"description,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	ID          string         `json:"id"`
+	OrgID       string         `json:"org_id"`
+	Name        string         `json:"name"`
+	Description string         `json:"description,omitempty"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
 }
 
 type backupRes struct {
@@ -3047,26 +3047,26 @@ type backupRes struct {
 }
 
 type restoreThingReq struct {
-	ID          string                 `json:"id"`
-	Name        string                 `json:"name"`
-	Key         string                 `json:"key"`
-	ExternalKey string                 `json:"external_key"`
-	Metadata    map[string]interface{} `json:"metadata"`
+	ID          string         `json:"id"`
+	Name        string         `json:"name"`
+	Key         string         `json:"key"`
+	ExternalKey string         `json:"external_key"`
+	Metadata    map[string]any `json:"metadata"`
 }
 
 type restoreProfileReq struct {
-	ID       string                 `json:"id"`
-	Name     string                 `json:"name"`
-	Metadata map[string]interface{} `json:"metadata"`
+	ID       string         `json:"id"`
+	Name     string         `json:"name"`
+	Metadata map[string]any `json:"metadata"`
 }
 
 type restoreGroupReq struct {
-	ID          string                 `json:"id"`
-	Name        string                 `json:"name"`
-	Description string                 `json:"description,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
-	CreatedAt   time.Time              `json:"created_at"`
-	UpdatedAt   time.Time              `json:"updated_at"`
+	ID          string         `json:"id"`
+	Name        string         `json:"name"`
+	Description string         `json:"description,omitempty"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
 }
 
 type restoreReq struct {

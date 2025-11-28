@@ -193,7 +193,7 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, logger logger.Log
 	return mux
 }
 
-func decodeViewUser(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeViewUser(_ context.Context, r *http.Request) (any, error) {
 	req := viewUserReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, "id"),
@@ -202,13 +202,13 @@ func decodeViewUser(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeViewProfile(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeViewProfile(_ context.Context, r *http.Request) (any, error) {
 	req := viewUserReq{token: apiutil.ExtractBearerToken(r)}
 
 	return req, nil
 }
 
-func decodeListUsers(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListUsers(_ context.Context, r *http.Request) (any, error) {
 	o, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
 	if err != nil {
 		return nil, err
@@ -257,7 +257,7 @@ func decodeListUsers(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeSearchUsers(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeSearchUsers(_ context.Context, r *http.Request) (any, error) {
 	req := listUsersReq{
 		token:  apiutil.ExtractBearerToken(r),
 		status: users.EnabledStatusKey,
@@ -302,7 +302,7 @@ func decodeSearchUsers(_ context.Context, r *http.Request) (interface{}, error) 
 	return req, nil
 }
 
-func decodeUpdateUser(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeUpdateUser(_ context.Context, r *http.Request) (any, error) {
 	req := updateUserReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
@@ -311,7 +311,7 @@ func decodeUpdateUser(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeCredentials(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeCredentials(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -324,7 +324,7 @@ func decodeCredentials(_ context.Context, r *http.Request) (interface{}, error) 
 	return userReq{user}, nil
 }
 
-func decodeRegisterUser(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRegisterUser(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -343,7 +343,7 @@ func decodeRegisterUser(_ context.Context, r *http.Request) (interface{}, error)
 	return req, nil
 }
 
-func decodeSelfRegisterUser(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeSelfRegisterUser(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -382,7 +382,7 @@ func decodePlatformInviteRegister(_ context.Context, r *http.Request) (any, erro
 	return req, nil
 }
 
-func decodePasswordResetRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodePasswordResetRequest(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -396,7 +396,7 @@ func decodePasswordResetRequest(_ context.Context, r *http.Request) (interface{}
 	return req, nil
 }
 
-func decodePasswordReset(_ context.Context, r *http.Request) (interface{}, error) {
+func decodePasswordReset(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -409,7 +409,7 @@ func decodePasswordReset(_ context.Context, r *http.Request) (interface{}, error
 	return req, nil
 }
 
-func decodePasswordChange(_ context.Context, r *http.Request) (interface{}, error) {
+func decodePasswordChange(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -422,7 +422,7 @@ func decodePasswordChange(_ context.Context, r *http.Request) (interface{}, erro
 	return req, nil
 }
 
-func decodeChangeUserStatus(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeChangeUserStatus(_ context.Context, r *http.Request) (any, error) {
 	req := changeUserStatusReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, "id"),
@@ -431,13 +431,13 @@ func decodeChangeUserStatus(_ context.Context, r *http.Request) (interface{}, er
 	return req, nil
 }
 
-func decodeBackup(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeBackup(_ context.Context, r *http.Request) (any, error) {
 	req := backupReq{token: apiutil.ExtractBearerToken(r)}
 
 	return req, nil
 }
 
-func decodeRestore(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRestore(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -506,7 +506,7 @@ func buildPageMetadataInvites(r *http.Request) (users.PageMetadataInvites, error
 	return pm, nil
 }
 
-func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	if ar, ok := response.(apiutil.Response); ok {
 		for k, v := range ar.Headers() {
 			w.Header().Set(k, v)

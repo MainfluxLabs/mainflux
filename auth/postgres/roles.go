@@ -36,7 +36,7 @@ func (rr rolesRepository) SaveRole(ctx context.Context, userID, role string) err
 func (rr rolesRepository) RetrieveRole(ctx context.Context, userID string) (string, error) {
 	q := `SELECT role FROM users_roles WHERE user_id = :user_id;`
 
-	params := map[string]interface{}{"user_id": userID}
+	params := map[string]any{"user_id": userID}
 
 	rows, err := rr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {

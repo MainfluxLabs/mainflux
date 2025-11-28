@@ -69,9 +69,9 @@ func (req listNotifiersReq) validate() error {
 }
 
 type createNotifierReq struct {
-	Name     string                 `json:"name"`
-	Contacts []string               `json:"contacts"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Name     string         `json:"name"`
+	Contacts []string       `json:"contacts"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 type createNotifiersReq struct {
@@ -117,9 +117,9 @@ func (req createNotifierReq) validate() error {
 type updateNotifierReq struct {
 	token    string
 	id       string
-	Name     string                 `json:"name"`
-	Contacts []string               `json:"contacts"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Name     string         `json:"name"`
+	Contacts []string       `json:"contacts"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 func (req updateNotifierReq) validate() error {

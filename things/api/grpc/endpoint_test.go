@@ -23,8 +23,8 @@ import (
 const wrongID = ""
 
 var (
-	thing   = things.Thing{Name: "test_app", Metadata: map[string]interface{}{"test": "test"}}
-	profile = things.Profile{Name: "test", Metadata: map[string]interface{}{"test": "test", "config": things.Config{ContentType: "application/json"}}}
+	thing   = things.Thing{Name: "test_app", Metadata: map[string]any{"test": "test"}}
+	profile = things.Profile{Name: "test", Metadata: map[string]any{"test": "test", "config": things.Config{ContentType: "application/json"}}}
 	group   = things.Group{Name: "test-group", Description: "test-group-desc"}
 )
 

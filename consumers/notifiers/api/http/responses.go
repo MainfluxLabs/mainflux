@@ -8,11 +8,11 @@ import (
 )
 
 type notifierResponse struct {
-	ID       string                 `json:"id"`
-	GroupID  string                 `json:"group_id"`
-	Name     string                 `json:"name"`
-	Contacts []string               `json:"contacts"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	ID       string         `json:"id"`
+	GroupID  string         `json:"group_id"`
+	Name     string         `json:"name"`
+	Contacts []string       `json:"contacts"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 	updated  bool
 }
 

@@ -80,7 +80,7 @@ func (ms *metricsMiddleware) BackupAlarmsByThing(ctx context.Context, token, thi
 	return ms.svc.BackupAlarmsByThing(ctx, token, thingID, pm)
 }
 
-func (ms *metricsMiddleware) Consume(message interface{}) error {
+func (ms *metricsMiddleware) Consume(message any) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "consume").Add(1)
 		ms.latency.With("method", "consume").Observe(time.Since(begin).Seconds())

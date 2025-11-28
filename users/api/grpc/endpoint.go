@@ -12,7 +12,7 @@ import (
 )
 
 func listUsersByIDsEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(getUsersByIDsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -48,7 +48,7 @@ func listUsersByIDsEndpoint(svc users.Service) endpoint.Endpoint {
 }
 
 func listUsersByEmailsEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(getUsersByEmailsReq)
 		if err := req.validate(); err != nil {
 			return nil, err

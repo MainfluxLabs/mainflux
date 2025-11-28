@@ -37,8 +37,8 @@ const (
 )
 
 var (
-	metadata  = map[string]interface{}{"meta": "data"}
-	metadata2 = map[string]interface{}{"meta": "data2"}
+	metadata  = map[string]any{"meta": "data"}
+	metadata2 = map[string]any{"meta": "data2"}
 	th1       = sdk.Thing{GroupID: groupID, ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1", Key: thingKey, Metadata: metadata}
 	th2       = sdk.Thing{GroupID: groupID, ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2", Metadata: metadata}
 	profile   = sdk.Profile{ID: "fe6b4e92-cc98-425e-b0aa-000000000003", Name: "test1"}
@@ -390,7 +390,7 @@ func TestThings(t *testing.T) {
 		err      error
 		response []sdk.Thing
 		name     string
-		metadata map[string]interface{}
+		metadata map[string]any
 	}{
 		{
 			desc:     "get a list of things",
@@ -400,7 +400,7 @@ func TestThings(t *testing.T) {
 			dir:      ascDir,
 			err:      nil,
 			response: things[0:limit],
-			metadata: make(map[string]interface{}),
+			metadata: make(map[string]any),
 		},
 		{
 			desc:     "get a list of things with invalid token",
@@ -409,7 +409,7 @@ func TestThings(t *testing.T) {
 			limit:    limit,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: nil,
-			metadata: make(map[string]interface{}),
+			metadata: make(map[string]any),
 		},
 		{
 			desc:     "get a list of things with empty token",
@@ -418,7 +418,7 @@ func TestThings(t *testing.T) {
 			limit:    limit,
 			err:      createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
 			response: nil,
-			metadata: make(map[string]interface{}),
+			metadata: make(map[string]any),
 		},
 		{
 			desc:     "get a list of things with zero limit",
@@ -427,7 +427,7 @@ func TestThings(t *testing.T) {
 			limit:    0,
 			err:      createError(sdk.ErrFailedFetch, http.StatusBadRequest),
 			response: nil,
-			metadata: make(map[string]interface{}),
+			metadata: make(map[string]any),
 		},
 		{
 			desc:     "get a list of things with limit greater than max",
@@ -436,7 +436,7 @@ func TestThings(t *testing.T) {
 			limit:    invalidLimit,
 			err:      createError(sdk.ErrFailedFetch, http.StatusBadRequest),
 			response: nil,
-			metadata: make(map[string]interface{}),
+			metadata: make(map[string]any),
 		},
 		{
 			desc:     "get a list of things with offset greater than max",
@@ -445,7 +445,7 @@ func TestThings(t *testing.T) {
 			limit:    limit,
 			err:      nil,
 			response: []sdk.Thing{},
-			metadata: make(map[string]interface{}),
+			metadata: make(map[string]any),
 		},
 	}
 	for _, tc := range cases {

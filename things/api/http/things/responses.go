@@ -34,13 +34,13 @@ func (res removeRes) Empty() bool {
 }
 
 type thingRes struct {
-	ID          string                 `json:"id"`
-	GroupID     string                 `json:"group_id,omitempty"`
-	ProfileID   string                 `json:"profile_id"`
-	Name        string                 `json:"name,omitempty"`
-	Key         string                 `json:"key"`
-	ExternalKey string                 `json:"external_key,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	ID          string         `json:"id"`
+	GroupID     string         `json:"group_id,omitempty"`
+	ProfileID   string         `json:"profile_id"`
+	Name        string         `json:"name,omitempty"`
+	Key         string         `json:"key"`
+	ExternalKey string         `json:"external_key,omitempty"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
 	created     bool
 }
 
@@ -66,13 +66,13 @@ func (res thingsRes) Empty() bool {
 }
 
 type viewThingRes struct {
-	ID          string                 `json:"id"`
-	GroupID     string                 `json:"group_id,omitempty"`
-	ProfileID   string                 `json:"profile_id"`
-	Name        string                 `json:"name,omitempty"`
-	Key         string                 `json:"key"`
-	ExternalKey string                 `json:"external_key,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	ID          string         `json:"id"`
+	GroupID     string         `json:"group_id,omitempty"`
+	ProfileID   string         `json:"profile_id"`
+	Name        string         `json:"name,omitempty"`
+	Key         string         `json:"key"`
+	ExternalKey string         `json:"external_key,omitempty"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
 }
 
 func (res viewThingRes) Code() int {
@@ -88,7 +88,7 @@ func (res viewThingRes) Empty() bool {
 }
 
 type viewMetadataRes struct {
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 func (res viewMetadataRes) Code() int {
@@ -121,21 +121,21 @@ func (res thingsPageRes) Empty() bool {
 }
 
 type backupProfile struct {
-	ID       string                 `json:"id"`
-	GroupID  string                 `json:"group_id,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Config   map[string]interface{} `json:"config,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	ID       string         `json:"id"`
+	GroupID  string         `json:"group_id,omitempty"`
+	Name     string         `json:"name,omitempty"`
+	Config   map[string]any `json:"config,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 type backupGroup struct {
-	ID          string                 `json:"id"`
-	Name        string                 `json:"name"`
-	OrgID       string                 `json:"org_id"`
-	Description string                 `json:"description,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
-	CreatedAt   time.Time              `json:"created_at"`
-	UpdatedAt   time.Time              `json:"updated_at"`
+	ID          string         `json:"id"`
+	Name        string         `json:"name"`
+	OrgID       string         `json:"org_id"`
+	Description string         `json:"description,omitempty"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
 }
 
 type backupRes struct {
