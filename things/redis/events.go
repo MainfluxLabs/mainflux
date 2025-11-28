@@ -1,21 +1,9 @@
 package redis
 
-import "encoding/json"
+import (
+	"encoding/json"
 
-const (
-	thingPrefix                = "thing."
-	thingCreate                = thingPrefix + "create"
-	thingUpdate                = thingPrefix + "update"
-	thingUpdateGroupAndProfile = thingPrefix + "update_group_and_profile"
-	thingRemove                = thingPrefix + "remove"
-
-	profilePrefix = "profile."
-	profileCreate = profilePrefix + "create"
-	profileUpdate = profilePrefix + "update"
-	profileRemove = profilePrefix + "remove"
-
-	groupPrefix = "group."
-	groupRemove = groupPrefix + "remove"
+	"github.com/MainfluxLabs/mainflux/pkg/events"
 )
 
 type event interface {
@@ -44,7 +32,7 @@ func (cte createThingEvent) Encode() map[string]interface{} {
 		"id":         cte.id,
 		"group_id":   cte.groupID,
 		"profile_id": cte.profileID,
-		"operation":  thingCreate,
+		"operation":  events.ThingCreate,
 	}
 
 	if cte.name != "" {
@@ -74,7 +62,7 @@ func (ute updateThingEvent) Encode() map[string]interface{} {
 	val := map[string]interface{}{
 		"id":         ute.id,
 		"profile_id": ute.profileID,
-		"operation":  thingUpdate,
+		"operation":  events.ThingUpdate,
 	}
 
 	if ute.name != "" {
@@ -103,7 +91,7 @@ func (pte updateThingGroupAndProfileEvent) Encode() map[string]interface{} {
 	val := map[string]interface{}{
 		"id":         pte.id,
 		"profile_id": pte.profileID,
-		"operation":  thingUpdateGroupAndProfile,
+		"operation":  events.ThingUpdateGroupAndProfile,
 	}
 
 	if pte.groupID != "" {
@@ -120,7 +108,7 @@ type removeThingEvent struct {
 func (rte removeThingEvent) Encode() map[string]interface{} {
 	return map[string]interface{}{
 		"id":        rte.id,
-		"operation": thingRemove,
+		"operation": events.ThingRemove,
 	}
 }
 
@@ -135,7 +123,7 @@ func (cpe createProfileEvent) Encode() map[string]interface{} {
 	val := map[string]interface{}{
 		"id":        cpe.id,
 		"group_id":  cpe.groupID,
-		"operation": profileCreate,
+		"operation": events.ProfileCreate,
 	}
 
 	if cpe.name != "" {
@@ -164,7 +152,7 @@ type updateProfileEvent struct {
 func (upe updateProfileEvent) Encode() map[string]interface{} {
 	val := map[string]interface{}{
 		"id":        upe.id,
-		"operation": profileUpdate,
+		"operation": events.ProfileUpdate,
 	}
 
 	if upe.name != "" {
@@ -199,7 +187,7 @@ type removeProfileEvent struct {
 func (rpe removeProfileEvent) Encode() map[string]interface{} {
 	return map[string]interface{}{
 		"id":        rpe.id,
-		"operation": profileRemove,
+		"operation": events.ProfileRemove,
 	}
 }
 
@@ -210,6 +198,6 @@ type removeGroupEvent struct {
 func (rge removeGroupEvent) Encode() map[string]interface{} {
 	return map[string]interface{}{
 		"id":        rge.id,
-		"operation": groupRemove,
+		"operation": events.GroupRemove,
 	}
 }
