@@ -1,0 +1,67 @@
+name: Build & Push Docker Images
+on:
+  push:
+    branches: [ "master", "develop" ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  MF_DOCKER_IMAGE_NAME_PREFIX: mainfluxlabs
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      
+      - name: Run Go tests
+        run: go test ./...
+      
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Set VERSION from Git tag
+        id: version
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            VERSION=$(git describe --abbrev=0 --tags 2>/dev/null || echo "v0.0.0")
+            VERSION="${VERSION}-${GITHUB_SHA::7}"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Building version: ${VERSION}"
+      
+      - name: Build Docker images using Makefile
+        run: make dockers VERSION=${{ steps.version.outputs.version }}
+      
+      - name: Push Docker images
+        run: |
+          for svc in users things http coap ws mongodb-writer \
+            mongodb-reader postgres-writer postgres-reader timescale-writer timescale-reader cli \
+            auth mqtt certs smtp-notifier smpp-notifier alarms rules; do
+              docker push mainfluxlabs/$svc:${{ steps.version.outputs.version }}
+          done
+      
+      - name: Create release artifact
+        run: |
+          echo "${{ steps.version.outputs.version }}" > version.txt
+      
+      - name: Upload version artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: version
+          path: version.txt
