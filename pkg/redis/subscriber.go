@@ -9,7 +9,6 @@ import (
 	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -18,7 +17,7 @@ const (
 	exists     = "BUSYGROUP Consumer Group name already exists"
 )
 
-var _ events.Subscriber = (*subEventStore)(nil)
+var _ Subscriber = (*subEventStore)(nil)
 
 var (
 	// ErrEmptyStream is returned when stream name is empty.
@@ -39,7 +38,7 @@ type subEventStore struct {
 	logger   logger.Logger
 }
 
-func NewSubscriber(url, stream, group, consumer string, logger logger.Logger) (events.Subscriber, error) {
+func NewSubscriber(url, stream, group, consumer string, logger logger.Logger) (Subscriber, error) {
 	if stream == "" {
 		return nil, ErrEmptyStream
 	}
@@ -66,7 +65,7 @@ func NewSubscriber(url, stream, group, consumer string, logger logger.Logger) (e
 	}, nil
 }
 
-func (es *subEventStore) Subscribe(ctx context.Context, handler events.EventHandler) error {
+func (es *subEventStore) Subscribe(ctx context.Context, handler EventHandler) error {
 	err := es.client.XGroupCreateMkStream(ctx, es.stream, es.group, "$").Err()
 	if err != nil && err.Error() != exists {
 		return err
@@ -108,7 +107,7 @@ func (re redisEvent) Encode() (map[string]any, error) {
 	return re.Data, nil
 }
 
-func (es *subEventStore) handle(ctx context.Context, msgs []redis.XMessage, h events.EventHandler) {
+func (es *subEventStore) handle(ctx context.Context, msgs []redis.XMessage, h EventHandler) {
 	for _, msg := range msgs {
 		event := redisEvent{
 			Data: msg.Values,
