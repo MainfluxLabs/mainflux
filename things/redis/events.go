@@ -3,7 +3,7 @@ package redis
 import (
 	"encoding/json"
 
-	"github.com/MainfluxLabs/mainflux/pkg/redis"
+	"github.com/MainfluxLabs/mainflux/pkg/events"
 )
 
 type event interface {
@@ -32,7 +32,7 @@ func (cte createThingEvent) Encode() map[string]any {
 		"id":         cte.id,
 		"group_id":   cte.groupID,
 		"profile_id": cte.profileID,
-		"operation":  redis.ThingCreate,
+		"operation":  events.ThingCreate,
 	}
 
 	if cte.name != "" {
@@ -62,7 +62,7 @@ func (ute updateThingEvent) Encode() map[string]any {
 	val := map[string]any{
 		"id":         ute.id,
 		"profile_id": ute.profileID,
-		"operation":  redis.ThingUpdate,
+		"operation":  events.ThingUpdate,
 	}
 
 	if ute.name != "" {
@@ -91,7 +91,7 @@ func (pte updateThingGroupAndProfileEvent) Encode() map[string]any {
 	val := map[string]any{
 		"id":         pte.id,
 		"profile_id": pte.profileID,
-		"operation":  redis.ThingUpdateGroupAndProfile,
+		"operation":  events.ThingUpdateGroupAndProfile,
 	}
 
 	if pte.groupID != "" {
@@ -108,7 +108,7 @@ type removeThingEvent struct {
 func (rte removeThingEvent) Encode() map[string]any {
 	return map[string]any{
 		"id":        rte.id,
-		"operation": redis.ThingRemove,
+		"operation": events.ThingRemove,
 	}
 }
 
@@ -123,7 +123,7 @@ func (cpe createProfileEvent) Encode() map[string]any {
 	val := map[string]any{
 		"id":        cpe.id,
 		"group_id":  cpe.groupID,
-		"operation": redis.ProfileCreate,
+		"operation": events.ProfileCreate,
 	}
 
 	if cpe.name != "" {
@@ -152,7 +152,7 @@ type updateProfileEvent struct {
 func (upe updateProfileEvent) Encode() map[string]any {
 	val := map[string]any{
 		"id":        upe.id,
-		"operation": redis.ProfileUpdate,
+		"operation": events.ProfileUpdate,
 	}
 
 	if upe.name != "" {
@@ -187,7 +187,7 @@ type removeProfileEvent struct {
 func (rpe removeProfileEvent) Encode() map[string]any {
 	return map[string]any{
 		"id":        rpe.id,
-		"operation": redis.ProfileRemove,
+		"operation": events.ProfileRemove,
 	}
 }
 
@@ -198,6 +198,6 @@ type removeGroupEvent struct {
 func (rge removeGroupEvent) Encode() map[string]any {
 	return map[string]any{
 		"id":        rge.id,
-		"operation": redis.GroupRemove,
+		"operation": events.GroupRemove,
 	}
 }

@@ -1,7 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package redis
+package events
 
 import (
 	"context"
@@ -45,9 +45,9 @@ type Subscriber interface {
 	Close() error
 }
 
-// ReadEventField returns the string value stored under the given map key.
+// ReadField returns the string value stored under the given map key.
 // If the key is missing or not a string, it returns the provided default.
-func ReadEventField(event map[string]any, key, def string) string {
+func ReadField(event map[string]any, key, def string) string {
 	val, ok := event[key].(string)
 	if !ok {
 		return def
