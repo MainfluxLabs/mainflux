@@ -523,17 +523,19 @@ func (svc usersService) OAuthCallback(ctx context.Context, provider, code, verif
 
 	user, err := svc.users.RetrieveByEmail(ctx, email)
 	if err != nil {
-		if errors.Contains(err, dbutil.ErrNotFound) {
-			uid, _ := svc.idProvider.ID()
-			user = User{
-				ID:     uid,
-				Email:  email,
-				Status: EnabledStatusKey,
-			}
-			if _, err := svc.users.Save(ctx, user); err != nil {
-				return "", err
-			}
-		} else {
+		if !errors.Contains(err, dbutil.ErrNotFound) {
+			return "", err
+		}
+	}
+
+	if user.ID == "" {
+		uid, _ := svc.idProvider.ID()
+		user = User{
+			ID:     uid,
+			Email:  email,
+			Status: EnabledStatusKey,
+		}
+		if _, err := svc.users.Save(ctx, user); err != nil {
 			return "", err
 		}
 	}
