@@ -211,7 +211,7 @@ func (svc *mainfluxThings) GetPubConfByKey(context.Context, things.ThingKey) (th
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) GetConfigByThingID(context.Context, string) (map[string]interface{}, error) {
+func (svc *mainfluxThings) GetConfigByThingID(context.Context, string) (map[string]any, error) {
 	panic("not implemented")
 }
 

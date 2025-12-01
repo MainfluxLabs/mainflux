@@ -16,13 +16,13 @@ var (
 )
 
 type viewOrgRes struct {
-	ID          string                 `json:"id"`
-	Name        string                 `json:"name"`
-	OwnerID     string                 `json:"owner_id"`
-	Description string                 `json:"description,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
-	CreatedAt   time.Time              `json:"created_at"`
-	UpdatedAt   time.Time              `json:"updated_at"`
+	ID          string         `json:"id"`
+	Name        string         `json:"name"`
+	OwnerID     string         `json:"owner_id"`
+	Description string         `json:"description,omitempty"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
 }
 
 func (res viewOrgRes) Code() int {

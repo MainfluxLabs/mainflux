@@ -40,13 +40,13 @@ type pageRes struct {
 }
 
 type viewGroupRes struct {
-	ID          string                 `json:"id"`
-	Name        string                 `json:"name"`
-	OrgID       string                 `json:"org_id"`
-	Description string                 `json:"description,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
-	CreatedAt   time.Time              `json:"created_at"`
-	UpdatedAt   time.Time              `json:"updated_at"`
+	ID          string         `json:"id"`
+	Name        string         `json:"name"`
+	OrgID       string         `json:"org_id"`
+	Description string         `json:"description,omitempty"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
 }
 
 func (res viewGroupRes) Code() int {
@@ -62,11 +62,11 @@ func (res viewGroupRes) Empty() bool {
 }
 
 type groupRes struct {
-	ID          string                 `json:"id"`
-	OrgID       string                 `json:"org_id,omitempty"`
-	Name        string                 `json:"name,omitempty"`
-	Description string                 `json:"description,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	ID          string         `json:"id"`
+	OrgID       string         `json:"org_id,omitempty"`
+	Name        string         `json:"name,omitempty"`
+	Description string         `json:"description,omitempty"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
 	created     bool
 }
 

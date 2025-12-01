@@ -8,7 +8,7 @@ import (
 )
 
 func publishEndpoint(svc rules.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(publishReq)
 		if err := req.validate(); err != nil {
 			return nil, err

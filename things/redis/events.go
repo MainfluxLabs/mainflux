@@ -19,7 +19,7 @@ const (
 )
 
 type event interface {
-	Encode() map[string]interface{}
+	Encode() map[string]any
 }
 
 var (
@@ -36,11 +36,11 @@ type createThingEvent struct {
 	groupID   string
 	profileID string
 	name      string
-	metadata  map[string]interface{}
+	metadata  map[string]any
 }
 
-func (cte createThingEvent) Encode() map[string]interface{} {
-	val := map[string]interface{}{
+func (cte createThingEvent) Encode() map[string]any {
+	val := map[string]any{
 		"id":         cte.id,
 		"group_id":   cte.groupID,
 		"profile_id": cte.profileID,
@@ -67,11 +67,11 @@ type updateThingEvent struct {
 	id        string
 	profileID string
 	name      string
-	metadata  map[string]interface{}
+	metadata  map[string]any
 }
 
-func (ute updateThingEvent) Encode() map[string]interface{} {
-	val := map[string]interface{}{
+func (ute updateThingEvent) Encode() map[string]any {
+	val := map[string]any{
 		"id":         ute.id,
 		"profile_id": ute.profileID,
 		"operation":  thingUpdate,
@@ -99,8 +99,8 @@ type updateThingGroupAndProfileEvent struct {
 	groupID   string
 }
 
-func (pte updateThingGroupAndProfileEvent) Encode() map[string]interface{} {
-	val := map[string]interface{}{
+func (pte updateThingGroupAndProfileEvent) Encode() map[string]any {
+	val := map[string]any{
 		"id":         pte.id,
 		"profile_id": pte.profileID,
 		"operation":  thingUpdateGroupAndProfile,
@@ -117,8 +117,8 @@ type removeThingEvent struct {
 	id string
 }
 
-func (rte removeThingEvent) Encode() map[string]interface{} {
-	return map[string]interface{}{
+func (rte removeThingEvent) Encode() map[string]any {
+	return map[string]any{
 		"id":        rte.id,
 		"operation": thingRemove,
 	}
@@ -128,11 +128,11 @@ type createProfileEvent struct {
 	id       string
 	groupID  string
 	name     string
-	metadata map[string]interface{}
+	metadata map[string]any
 }
 
-func (cpe createProfileEvent) Encode() map[string]interface{} {
-	val := map[string]interface{}{
+func (cpe createProfileEvent) Encode() map[string]any {
+	val := map[string]any{
 		"id":        cpe.id,
 		"group_id":  cpe.groupID,
 		"operation": profileCreate,
@@ -157,12 +157,12 @@ func (cpe createProfileEvent) Encode() map[string]interface{} {
 type updateProfileEvent struct {
 	id       string
 	name     string
-	config   map[string]interface{}
-	metadata map[string]interface{}
+	config   map[string]any
+	metadata map[string]any
 }
 
-func (upe updateProfileEvent) Encode() map[string]interface{} {
-	val := map[string]interface{}{
+func (upe updateProfileEvent) Encode() map[string]any {
+	val := map[string]any{
 		"id":        upe.id,
 		"operation": profileUpdate,
 	}
@@ -196,8 +196,8 @@ type removeProfileEvent struct {
 	id string
 }
 
-func (rpe removeProfileEvent) Encode() map[string]interface{} {
-	return map[string]interface{}{
+func (rpe removeProfileEvent) Encode() map[string]any {
+	return map[string]any{
 		"id":        rpe.id,
 		"operation": profileRemove,
 	}
@@ -207,8 +207,8 @@ type removeGroupEvent struct {
 	id string
 }
 
-func (rge removeGroupEvent) Encode() map[string]interface{} {
-	return map[string]interface{}{
+func (rge removeGroupEvent) Encode() map[string]any {
+	return map[string]any{
 		"id":        rge.id,
 		"operation": groupRemove,
 	}

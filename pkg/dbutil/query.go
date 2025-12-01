@@ -25,7 +25,7 @@ func GetNameQuery(name string) (string, string) {
 	return nq, name
 }
 
-func GetMetadataQuery(m map[string]interface{}) (mb []byte, mq string, err error) {
+func GetMetadataQuery(m map[string]any) (mb []byte, mq string, err error) {
 	if len(m) > 0 {
 		mq = `metadata @> :metadata`
 
@@ -38,7 +38,7 @@ func GetMetadataQuery(m map[string]interface{}) (mb []byte, mq string, err error
 	return mb, mq, nil
 }
 
-func GetPayloadQuery(m map[string]interface{}) (mb []byte, mq string, err error) {
+func GetPayloadQuery(m map[string]any) (mb []byte, mq string, err error) {
 	if len(m) > 0 {
 		mq = `payload @> :payload`
 
@@ -86,7 +86,7 @@ func GetGroupIDsQuery(ids []string) string {
 	return fmt.Sprintf("group_id IN ('%s') ", strings.Join(ids, "','"))
 }
 
-func Total(ctx context.Context, db Database, query string, params interface{}) (uint64, error) {
+func Total(ctx context.Context, db Database, query string, params any) (uint64, error) {
 	rows, err := db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return 0, err

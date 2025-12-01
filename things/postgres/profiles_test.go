@@ -335,7 +335,7 @@ func TestRetrieveProfileByThing(t *testing.T) {
 		ID:       prID,
 		GroupID:  group.ID,
 		Name:     profileName,
-		Config:   map[string]interface{}{},
+		Config:   map[string]any{},
 		Metadata: things.Metadata{},
 	}
 	prs, err := profileRepo.Save(context.Background(), c)

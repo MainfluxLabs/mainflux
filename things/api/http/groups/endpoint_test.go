@@ -63,7 +63,7 @@ var (
 	group           = things.Group{Name: "test-group", Description: "test-group-desc", OrgID: orgID}
 	usersList       = []users.User{admin, user, otherUser}
 	orgsList        = []auth.Org{{ID: orgID, OwnerID: user.ID}}
-	metadata        = map[string]interface{}{"test": "data"}
+	metadata        = map[string]any{"test": "data"}
 	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, strings.Repeat("m", maxNameSize+1))
 )
 
@@ -114,7 +114,7 @@ func newServer(svc things.Service) *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-func toJSON(data interface{}) string {
+func toJSON(data any) string {
 	jsonData, _ := json.Marshal(data)
 	return string(jsonData)
 }
@@ -1426,11 +1426,11 @@ func TestRemoveGroups(t *testing.T) {
 }
 
 type groupRes struct {
-	ID          string                 `json:"id"`
-	Name        string                 `json:"name"`
-	OrgID       string                 `json:"org_id"`
-	Description string                 `json:"description,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	ID          string         `json:"id"`
+	Name        string         `json:"name"`
+	OrgID       string         `json:"org_id"`
+	Description string         `json:"description,omitempty"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
 }
 
 type groupsPageRes struct {

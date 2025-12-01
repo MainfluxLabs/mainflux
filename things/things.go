@@ -13,7 +13,7 @@ import (
 
 // Metadata to be used for Mainflux thing or profile for customized
 // describing of particular thing or profile.
-type Metadata map[string]interface{}
+type Metadata map[string]any
 
 // Thing represents a Mainflux thing. Each thing is owned by one user, and
 // it is assigned with the unique identifier and (temporary) access key.

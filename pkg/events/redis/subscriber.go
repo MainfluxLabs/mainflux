@@ -101,10 +101,10 @@ func (es *subEventStore) Close() error {
 }
 
 type redisEvent struct {
-	Data map[string]interface{}
+	Data map[string]any
 }
 
-func (re redisEvent) Encode() (map[string]interface{}, error) {
+func (re redisEvent) Encode() (map[string]any, error) {
 	return re.Data, nil
 }
 

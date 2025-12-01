@@ -60,7 +60,7 @@ func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.L
 	return r
 }
 
-func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+func decodeRequest(ctx context.Context, r *http.Request) (any, error) {
 	ct := r.Header.Get("Content-Type")
 	if !strings.Contains(ct, ctSenmlJSON) &&
 		!strings.Contains(ct, ctJSON) &&
@@ -101,7 +101,7 @@ func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	w.WriteHeader(http.StatusAccepted)
 	return nil
 }

@@ -33,7 +33,7 @@ func (cr certsRepository) RetrieveAll(ctx context.Context, offset, limit uint64)
 	q := `SELECT thing_id, serial, expires_at, client_cert, client_key, issuing_ca, 
 	      ca_chain, private_key_type FROM certs ORDER BY expires_at LIMIT :limit OFFSET :offset;`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"limit":  limit,
 		"offset": offset,
 	}
@@ -104,7 +104,7 @@ func (cr certsRepository) Remove(ctx context.Context, serial string) error {
 
 	q := `INSERT INTO revoked_certs (serial, thing_id, revoked_at) 
 	            VALUES (:serial, :thing_id, NOW())`
-	revokeParams := map[string]interface{}{
+	revokeParams := map[string]any{
 		"serial":   serial,
 		"thing_id": cert.ThingID,
 	}
@@ -113,7 +113,7 @@ func (cr certsRepository) Remove(ctx context.Context, serial string) error {
 	}
 
 	q = `DELETE FROM certs WHERE serial = :serial`
-	deleteParams := map[string]interface{}{
+	deleteParams := map[string]any{
 		"serial": serial,
 	}
 	if _, err := tx.NamedExecContext(ctx, q, deleteParams); err != nil {
@@ -130,7 +130,7 @@ func (cr certsRepository) Remove(ctx context.Context, serial string) error {
 func (cr certsRepository) RetrieveRevokedCerts(ctx context.Context) ([]certs.RevokedCert, error) {
 	q := `SELECT serial, revoked_at, thing_id FROM revoked_certs ORDER BY revoked_at DESC`
 
-	rows, err := cr.db.NamedQueryContext(ctx, q, map[string]interface{}{})
+	rows, err := cr.db.NamedQueryContext(ctx, q, map[string]any{})
 	if err != nil {
 		return nil, cr.handlePgError(err, dbutil.ErrRetrieveEntity)
 	}
@@ -157,7 +157,7 @@ func (cr certsRepository) RetrieveByThing(ctx context.Context, thingID string, o
 	      ca_chain, private_key_type FROM certs 
 	      WHERE thing_id = :thing_id ORDER BY expires_at LIMIT :limit OFFSET :offset;`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"thing_id": thingID,
 		"limit":    limit,
 		"offset":   offset,
@@ -194,7 +194,7 @@ func (cr certsRepository) RetrieveBySerial(ctx context.Context, serial string) (
 	q := `SELECT thing_id, serial, expires_at, client_cert, client_key, issuing_ca, 
 	      ca_chain, private_key_type FROM certs WHERE serial = :serial`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"serial": serial,
 	}
 
@@ -272,7 +272,7 @@ func toCert(cdb dbCert) certs.Cert {
 
 type StringArray []string
 
-func (a *StringArray) Scan(src interface{}) error {
+func (a *StringArray) Scan(src any) error {
 	if src == nil {
 		*a = []string{}
 		return nil

@@ -40,12 +40,12 @@ func (gs grpcServer) Publish(ctx context.Context, message *protomfx.PublishReq) 
 	return res.(*emptypb.Empty), nil
 }
 
-func decodePublishRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func decodePublishRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.PublishReq)
 	return publishReq{message: *req.Message}, nil
 }
 
-func encodeEmptyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+func encodeEmptyResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(emptyRes)
 	return &emptypb.Empty{}, encodeError(res.err)
 }

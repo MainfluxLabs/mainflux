@@ -57,7 +57,7 @@ var (
 	validPhones     = []string{"+381610120120", "+381622220123"}
 	invalidEmails   = []string{"invalid@example.com", "invalid@invalid"}
 	invalidPhones   = []string{"0610120120", "0622220123"}
-	metadata        = map[string]interface{}{"test": "data"}
+	metadata        = map[string]any{"test": "data"}
 	missingIDRes    = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingNotifierID.Error()})
 	missingTokenRes = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
 	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, strings.Repeat("m", maxNameSize+1))
@@ -69,7 +69,7 @@ func newHTTPServer(svc notifiers.Service) *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-func toJSON(data interface{}) string {
+func toJSON(data any) string {
 	jsonData, _ := json.Marshal(data)
 	return string(jsonData)
 }
@@ -243,11 +243,11 @@ func runCreateNotifiersTest(t *testing.T, validContacts string) {
 }
 
 type notifierRes struct {
-	ID       string                 `json:"id"`
-	GroupID  string                 `json:"group_id"`
-	Name     string                 `json:"name"`
-	Contacts []string               `json:"contacts"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	ID       string         `json:"id"`
+	GroupID  string         `json:"group_id"`
+	Name     string         `json:"name"`
+	Contacts []string       `json:"contacts"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 type notifiersPageRes struct {

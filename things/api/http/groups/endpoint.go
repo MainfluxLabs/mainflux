@@ -14,7 +14,7 @@ import (
 )
 
 func createGroupsEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(createGroupsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -56,7 +56,7 @@ func createGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func viewGroupEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(resourceReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -82,7 +82,7 @@ func viewGroupEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func viewGroupByThingEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(viewByThingReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -108,7 +108,7 @@ func viewGroupByThingEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func viewGroupByProfileEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(viewByProfileReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -134,7 +134,7 @@ func viewGroupByProfileEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func listGroupsEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -150,7 +150,7 @@ func listGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func listGroupsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listByOrgReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -166,7 +166,7 @@ func listGroupsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func backupGroupsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(backupByOrgReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -183,7 +183,7 @@ func backupGroupsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func restoreGroupsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(restoreByOrgReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -200,7 +200,7 @@ func restoreGroupsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func updateGroupEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(updateGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -224,7 +224,7 @@ func updateGroupEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func removeGroupEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(resourceReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -239,7 +239,7 @@ func removeGroupEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func removeGroupsEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(removeGroupsReq)
 		if err := req.validate(); err != nil {
 			return nil, err

@@ -144,57 +144,57 @@ func (s *grpcServer) ActivateOrgInvite(ctx context.Context, req *protomfx.Activa
 	return res.(*emptypb.Empty), nil
 }
 
-func decodeAssignRoleRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func decodeAssignRoleRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.AssignRoleReq)
 	return assignRoleReq{ID: req.GetId(), Role: req.GetRole()}, nil
 }
 
-func decodeRetrieveRoleRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func decodeRetrieveRoleRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.RetrieveRoleReq)
 	return retrieveRoleReq{id: req.GetId()}, nil
 }
 
-func encodeRetrieveRoleResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+func encodeRetrieveRoleResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(retrieveRoleRes)
 	return &protomfx.RetrieveRoleRes{Role: res.role}, nil
 }
 
-func decodeIssueRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func decodeIssueRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.IssueReq)
 	return issueReq{id: req.GetId(), email: req.GetEmail(), keyType: req.GetType()}, nil
 }
 
-func encodeIssueResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+func encodeIssueResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(issueRes)
 	return &protomfx.Token{Value: res.value}, nil
 }
 
-func decodeIdentifyRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func decodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.Token)
 	return identityReq{token: req.GetValue()}, nil
 }
 
-func encodeIdentifyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+func encodeIdentifyResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(identityRes)
 	return &protomfx.UserIdentity{Id: res.id, Email: res.email}, nil
 }
 
-func decodeAuthorizeRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func decodeAuthorizeRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.AuthorizeReq)
 	return authReq{Token: req.GetToken(), Object: req.GetObject(), Subject: req.GetSubject(), Action: req.GetAction()}, nil
 }
 
-func decodeGetOwnerIDByOrgIDRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func decodeGetOwnerIDByOrgIDRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.OrgID)
 	return ownerIDByOrgIDReq{orgID: req.GetValue()}, nil
 }
 
-func encodeGetOwnerIDByOrgIDResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+func encodeGetOwnerIDByOrgIDResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(ownerIDByOrgIDRes)
 	return &protomfx.OwnerID{Value: res.ownerID}, nil
 }
 
-func decodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq interface{}) (any, error) {
+func decodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.CreateDormantOrgInviteReq)
 	return createDormantOrgInviteReq{
 		token:            req.GetToken(),
@@ -204,7 +204,7 @@ func decodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq interface{})
 	}, nil
 }
 
-func decodeActivateOrgInviteRequest(_ context.Context, grpcReq interface{}) (any, error) {
+func decodeActivateOrgInviteRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.ActivateOrgInviteReq)
 	return activateOrgInviteReq{
 		platformInviteID: req.GetPlatformInviteID(),
@@ -213,7 +213,7 @@ func decodeActivateOrgInviteRequest(_ context.Context, grpcReq interface{}) (any
 	}, nil
 }
 
-func encodeEmptyResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+func encodeEmptyResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(emptyRes)
 	return &emptypb.Empty{}, encodeError(res.err)
 }

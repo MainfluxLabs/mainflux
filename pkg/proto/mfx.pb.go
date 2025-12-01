@@ -2108,7 +2108,7 @@ func RegisterThingsServiceServer(s *grpc.Server, srv ThingsServiceServer) {
 	s.RegisterService(&_ThingsService_serviceDesc, srv)
 }
 
-func _ThingsService_GetPubConfByKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ThingsService_GetPubConfByKey_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(ThingKey)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2120,13 +2120,13 @@ func _ThingsService_GetPubConfByKey_Handler(srv interface{}, ctx context.Context
 		Server:     srv,
 		FullMethod: "/protomfx.ThingsService/GetPubConfByKey",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ThingsServiceServer).GetPubConfByKey(ctx, req.(*ThingKey))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ThingsService_GetConfigByThingID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ThingsService_GetConfigByThingID_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(ThingID)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2138,13 +2138,13 @@ func _ThingsService_GetConfigByThingID_Handler(srv interface{}, ctx context.Cont
 		Server:     srv,
 		FullMethod: "/protomfx.ThingsService/GetConfigByThingID",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ThingsServiceServer).GetConfigByThingID(ctx, req.(*ThingID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ThingsService_CanUserAccessThing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ThingsService_CanUserAccessThing_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(UserAccessReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2156,13 +2156,13 @@ func _ThingsService_CanUserAccessThing_Handler(srv interface{}, ctx context.Cont
 		Server:     srv,
 		FullMethod: "/protomfx.ThingsService/CanUserAccessThing",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ThingsServiceServer).CanUserAccessThing(ctx, req.(*UserAccessReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ThingsService_CanUserAccessProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ThingsService_CanUserAccessProfile_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(UserAccessReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2174,13 +2174,13 @@ func _ThingsService_CanUserAccessProfile_Handler(srv interface{}, ctx context.Co
 		Server:     srv,
 		FullMethod: "/protomfx.ThingsService/CanUserAccessProfile",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ThingsServiceServer).CanUserAccessProfile(ctx, req.(*UserAccessReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ThingsService_CanUserAccessGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ThingsService_CanUserAccessGroup_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(UserAccessReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2192,13 +2192,13 @@ func _ThingsService_CanUserAccessGroup_Handler(srv interface{}, ctx context.Cont
 		Server:     srv,
 		FullMethod: "/protomfx.ThingsService/CanUserAccessGroup",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ThingsServiceServer).CanUserAccessGroup(ctx, req.(*UserAccessReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ThingsService_CanThingAccessGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ThingsService_CanThingAccessGroup_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(ThingAccessReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2210,13 +2210,13 @@ func _ThingsService_CanThingAccessGroup_Handler(srv interface{}, ctx context.Con
 		Server:     srv,
 		FullMethod: "/protomfx.ThingsService/CanThingAccessGroup",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ThingsServiceServer).CanThingAccessGroup(ctx, req.(*ThingAccessReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ThingsService_Identify_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ThingsService_Identify_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(ThingKey)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2228,13 +2228,13 @@ func _ThingsService_Identify_Handler(srv interface{}, ctx context.Context, dec f
 		Server:     srv,
 		FullMethod: "/protomfx.ThingsService/Identify",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ThingsServiceServer).Identify(ctx, req.(*ThingKey))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ThingsService_GetGroupIDByThingID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ThingsService_GetGroupIDByThingID_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(ThingID)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2246,13 +2246,13 @@ func _ThingsService_GetGroupIDByThingID_Handler(srv interface{}, ctx context.Con
 		Server:     srv,
 		FullMethod: "/protomfx.ThingsService/GetGroupIDByThingID",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ThingsServiceServer).GetGroupIDByThingID(ctx, req.(*ThingID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ThingsService_GetGroupIDByProfileID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ThingsService_GetGroupIDByProfileID_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(ProfileID)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2264,13 +2264,13 @@ func _ThingsService_GetGroupIDByProfileID_Handler(srv interface{}, ctx context.C
 		Server:     srv,
 		FullMethod: "/protomfx.ThingsService/GetGroupIDByProfileID",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ThingsServiceServer).GetGroupIDByProfileID(ctx, req.(*ProfileID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ThingsService_GetGroupIDsByOrg_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ThingsService_GetGroupIDsByOrg_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(OrgAccessReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2282,13 +2282,13 @@ func _ThingsService_GetGroupIDsByOrg_Handler(srv interface{}, ctx context.Contex
 		Server:     srv,
 		FullMethod: "/protomfx.ThingsService/GetGroupIDsByOrg",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ThingsServiceServer).GetGroupIDsByOrg(ctx, req.(*OrgAccessReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ThingsService_GetThingIDsByProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ThingsService_GetThingIDsByProfile_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(ProfileID)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2300,7 +2300,7 @@ func _ThingsService_GetThingIDsByProfile_Handler(srv interface{}, ctx context.Co
 		Server:     srv,
 		FullMethod: "/protomfx.ThingsService/GetThingIDsByProfile",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ThingsServiceServer).GetThingIDsByProfile(ctx, req.(*ProfileID))
 	}
 	return interceptor(ctx, in, info, handler)
@@ -2414,7 +2414,7 @@ func RegisterUsersServiceServer(s *grpc.Server, srv UsersServiceServer) {
 	s.RegisterService(&_UsersService_serviceDesc, srv)
 }
 
-func _UsersService_GetUsersByIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _UsersService_GetUsersByIDs_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(UsersByIDsReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2426,13 +2426,13 @@ func _UsersService_GetUsersByIDs_Handler(srv interface{}, ctx context.Context, d
 		Server:     srv,
 		FullMethod: "/protomfx.UsersService/GetUsersByIDs",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(UsersServiceServer).GetUsersByIDs(ctx, req.(*UsersByIDsReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UsersService_GetUsersByEmails_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _UsersService_GetUsersByEmails_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(UsersByEmailsReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2444,7 +2444,7 @@ func _UsersService_GetUsersByEmails_Handler(srv interface{}, ctx context.Context
 		Server:     srv,
 		FullMethod: "/protomfx.UsersService/GetUsersByEmails",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(UsersServiceServer).GetUsersByEmails(ctx, req.(*UsersByEmailsReq))
 	}
 	return interceptor(ctx, in, info, handler)
@@ -2606,7 +2606,7 @@ func RegisterAuthServiceServer(s *grpc.Server, srv AuthServiceServer) {
 	s.RegisterService(&_AuthService_serviceDesc, srv)
 }
 
-func _AuthService_Issue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _AuthService_Issue_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(IssueReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2618,13 +2618,13 @@ func _AuthService_Issue_Handler(srv interface{}, ctx context.Context, dec func(i
 		Server:     srv,
 		FullMethod: "/protomfx.AuthService/Issue",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(AuthServiceServer).Issue(ctx, req.(*IssueReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AuthService_Identify_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _AuthService_Identify_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(Token)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2636,13 +2636,13 @@ func _AuthService_Identify_Handler(srv interface{}, ctx context.Context, dec fun
 		Server:     srv,
 		FullMethod: "/protomfx.AuthService/Identify",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(AuthServiceServer).Identify(ctx, req.(*Token))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AuthService_Authorize_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _AuthService_Authorize_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(AuthorizeReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2654,13 +2654,13 @@ func _AuthService_Authorize_Handler(srv interface{}, ctx context.Context, dec fu
 		Server:     srv,
 		FullMethod: "/protomfx.AuthService/Authorize",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(AuthServiceServer).Authorize(ctx, req.(*AuthorizeReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AuthService_GetOwnerIDByOrgID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _AuthService_GetOwnerIDByOrgID_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(OrgID)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2672,13 +2672,13 @@ func _AuthService_GetOwnerIDByOrgID_Handler(srv interface{}, ctx context.Context
 		Server:     srv,
 		FullMethod: "/protomfx.AuthService/GetOwnerIDByOrgID",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(AuthServiceServer).GetOwnerIDByOrgID(ctx, req.(*OrgID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AuthService_AssignRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _AuthService_AssignRole_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(AssignRoleReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2690,13 +2690,13 @@ func _AuthService_AssignRole_Handler(srv interface{}, ctx context.Context, dec f
 		Server:     srv,
 		FullMethod: "/protomfx.AuthService/AssignRole",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(AuthServiceServer).AssignRole(ctx, req.(*AssignRoleReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AuthService_RetrieveRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _AuthService_RetrieveRole_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(RetrieveRoleReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2708,13 +2708,13 @@ func _AuthService_RetrieveRole_Handler(srv interface{}, ctx context.Context, dec
 		Server:     srv,
 		FullMethod: "/protomfx.AuthService/RetrieveRole",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(AuthServiceServer).RetrieveRole(ctx, req.(*RetrieveRoleReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AuthService_CreateDormantOrgInvite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _AuthService_CreateDormantOrgInvite_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(CreateDormantOrgInviteReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2726,13 +2726,13 @@ func _AuthService_CreateDormantOrgInvite_Handler(srv interface{}, ctx context.Co
 		Server:     srv,
 		FullMethod: "/protomfx.AuthService/CreateDormantOrgInvite",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(AuthServiceServer).CreateDormantOrgInvite(ctx, req.(*CreateDormantOrgInviteReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AuthService_ActivateOrgInvite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _AuthService_ActivateOrgInvite_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(ActivateOrgInviteReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2744,7 +2744,7 @@ func _AuthService_ActivateOrgInvite_Handler(srv interface{}, ctx context.Context
 		Server:     srv,
 		FullMethod: "/protomfx.AuthService/ActivateOrgInvite",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(AuthServiceServer).ActivateOrgInvite(ctx, req.(*ActivateOrgInviteReq))
 	}
 	return interceptor(ctx, in, info, handler)
@@ -2832,7 +2832,7 @@ func RegisterRulesServiceServer(s *grpc.Server, srv RulesServiceServer) {
 	s.RegisterService(&_RulesService_serviceDesc, srv)
 }
 
-func _RulesService_Publish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _RulesService_Publish_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(PublishReq)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2844,7 +2844,7 @@ func _RulesService_Publish_Handler(srv interface{}, ctx context.Context, dec fun
 		Server:     srv,
 		FullMethod: "/protomfx.RulesService/Publish",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(RulesServiceServer).Publish(ctx, req.(*PublishReq))
 	}
 	return interceptor(ctx, in, info, handler)
