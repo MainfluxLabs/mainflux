@@ -22,9 +22,9 @@ type eventStore struct {
 
 // NewEventStoreMiddleware returns wrapper around things service that sends
 // events to event store.
-func NewEventStoreMiddleware(Service things.Service, client *redis.Client) things.Service {
+func NewEventStoreMiddleware(svc things.Service, client *redis.Client) things.Service {
 	return eventStore{
-		Service: Service,
+		Service: svc,
 		client:  client,
 	}
 }
