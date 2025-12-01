@@ -37,9 +37,11 @@ const (
 	convertKey             = "convert"
 	filterKey              = "filter"
 	aggIntervalKey         = "agg_interval"
+	aggValueKey            = "agg_value"
 	aggTypeKey             = "agg_type"
 	aggFieldKey            = "agg_field"
 	publisherKey           = "publisher"
+	timeFormatKey          = "time_format"
 	jsonFormat             = "json"
 	csvFormat              = "csv"
 )
@@ -276,6 +278,11 @@ func decodeBackupJSONMessages(_ context.Context, r *http.Request) (interface{}, 
 		return nil, err
 	}
 
+	timeFormat, err := apiutil.ReadStringQuery(r, timeFormatKey, "")
+	if err != nil {
+		return readers.SenMLPageMetadata{}, err
+	}
+
 	pageMeta, err := BuildJSONPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -286,6 +293,7 @@ func decodeBackupJSONMessages(_ context.Context, r *http.Request) (interface{}, 
 	return backupJSONMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
 		convertFormat: convertFormat,
+		timeFormat:    timeFormat,
 		pageMeta:      pageMeta,
 	}, nil
 }
@@ -301,6 +309,11 @@ func decodeBackupSenMLMessages(_ context.Context, r *http.Request) (interface{},
 		return nil, err
 	}
 
+	timeFormat, err := apiutil.ReadStringQuery(r, timeFormatKey, "")
+	if err != nil {
+		return readers.SenMLPageMetadata{}, err
+	}
+
 	pageMeta, err := BuildSenMLPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -311,6 +324,7 @@ func decodeBackupSenMLMessages(_ context.Context, r *http.Request) (interface{},
 	return backupSenMLMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
 		convertFormat: convertFormat,
+		timeFormat:    timeFormat,
 		pageMeta:      pageMeta,
 	}, nil
 }
@@ -392,6 +406,11 @@ func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
 		return readers.JSONPageMetadata{}, err
 	}
 
+	av, err := apiutil.ReadUintQuery(r, aggValueKey, 1)
+	if err != nil {
+		return readers.JSONPageMetadata{}, err
+	}
+
 	at, err := apiutil.ReadStringQuery(r, aggTypeKey, "")
 	if err != nil {
 		return readers.JSONPageMetadata{}, err
@@ -402,14 +421,21 @@ func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
 		return readers.JSONPageMetadata{}, err
 	}
 
+	d, err := apiutil.ReadStringQuery(r, apiutil.DirKey, apiutil.DescDir)
+	if err != nil {
+		return readers.JSONPageMetadata{}, err
+	}
+
 	pageMeta := readers.JSONPageMetadata{
 		Subtopic:    subtopic,
 		Protocol:    protocol,
 		From:        from,
 		To:          to,
 		AggInterval: ai,
+		AggValue:    av,
 		AggType:     at,
 		AggField:    af,
+		Dir:         d,
 	}
 
 	return pageMeta, nil
@@ -471,12 +497,22 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 		return readers.SenMLPageMetadata{}, err
 	}
 
+	av, err := apiutil.ReadUintQuery(r, aggValueKey, 1)
+	if err != nil {
+		return readers.SenMLPageMetadata{}, err
+	}
+
 	at, err := apiutil.ReadStringQuery(r, aggTypeKey, "")
 	if err != nil {
 		return readers.SenMLPageMetadata{}, err
 	}
 
 	af, err := apiutil.ReadStringQuery(r, aggFieldKey, "")
+	if err != nil {
+		return readers.SenMLPageMetadata{}, err
+	}
+
+	d, err := apiutil.ReadStringQuery(r, apiutil.DirKey, apiutil.DescDir)
 	if err != nil {
 		return readers.SenMLPageMetadata{}, err
 	}
@@ -493,8 +529,10 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 		From:        from,
 		To:          to,
 		AggInterval: ai,
+		AggValue:    av,
 		AggType:     at,
 		AggField:    af,
+		Dir:         d,
 	}
 
 	return pageMeta, nil

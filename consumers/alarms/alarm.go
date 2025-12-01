@@ -42,4 +42,7 @@ type AlarmRepository interface {
 
 	// Remove removes alarms by their identifiers.
 	Remove(ctx context.Context, ids ...string) error
+
+	// BackupByThing backups alarms associated with a given thing ID.
+	BackupByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error)
 }
