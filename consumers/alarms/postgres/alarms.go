@@ -174,10 +174,31 @@ func (ar *alarmRepository) Remove(ctx context.Context, ids ...string) error {
 		dba := dbAlarm{ID: id}
 		q := `DELETE FROM alarms WHERE id = :id;`
 
-		_, err := ar.db.NamedExecContext(ctx, q, dba)
-		if err != nil {
+		if _, err := ar.db.NamedExecContext(ctx, q, dba); err != nil {
 			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
+	}
+
+	return nil
+}
+
+func (ar *alarmRepository) RemoveByThing(ctx context.Context, thingID string) error {
+	dba := dbAlarm{ThingID: thingID}
+	q := `DELETE FROM alarms WHERE thing_id = :thing_id;`
+
+	if _, err := ar.db.NamedExecContext(ctx, q, dba); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
+func (ar *alarmRepository) RemoveByGroup(ctx context.Context, groupID string) error {
+	dba := dbAlarm{GroupID: groupID}
+	q := `DELETE FROM alarms WHERE group_id = :group_id;`
+
+	if _, err := ar.db.NamedExecContext(ctx, q, dba); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil
