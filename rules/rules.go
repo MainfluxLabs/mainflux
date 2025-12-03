@@ -38,34 +38,38 @@ type RuleRepository interface {
 	// Successful operation is indicated by a non-nil error response.
 	Save(ctx context.Context, rules ...Rule) ([]Rule, error)
 
-	// RetrieveByID retrieves a rule having the provided identifier.
+	// RetrieveByID retrieves a rule having the provided ID.
 	RetrieveByID(ctx context.Context, id string) (Rule, error)
 
-	// RetrieveByThing retrieves rules assigned to a certain thing.
+	// RetrieveByThing retrieves rules assigned to a certain thing,
+	// identified by a given thing ID.
 	RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (RulesPage, error)
 
-	// RetrieveByGroup retrieves rules assigned to a certain group.
+	// RetrieveByGroup retrieves rules related to a certain group,
+	// identified by a given group ID.
 	RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (RulesPage, error)
 
 	// RetrieveThingIDsByRule retrieves all thing IDs that have the given rule assigned.
 	RetrieveThingIDsByRule(ctx context.Context, ruleID string) ([]string, error)
 
-	// Update performs an update to the existing rule. A non-nil error is
-	// returned to indicate operation failure.
+	// Update performs an update to the existing rule.
+	// A non-nil error is returned to indicate operation failure.
 	Update(ctx context.Context, r Rule) error
 
-	// Remove removes the rules having the provided identifiers.
+	// Remove removes rules having the provided IDs.
 	Remove(ctx context.Context, ids ...string) error
 
-	// RemoveByGroup removes
+	// RemoveByGroup removes rules related to a certain group,
+	// identified by a given group ID.
 	RemoveByGroup(ctx context.Context, groupID string) error
 
 	// Assign assigns rules to the specified thing.
 	Assign(ctx context.Context, thingID string, ruleIDs ...string) error
 
-	// Unassign removes rules from the specified thing.
+	// Unassign removes specific rule assignments from a given thing.
 	Unassign(ctx context.Context, thingID string, ruleIDs ...string) error
 
-	// UnassignByThing removes
+	// UnassignByThing removes all rule assignments for a certain thing,
+	// identified by a given thing ID.
 	UnassignByThing(ctx context.Context, thingID string) error
 }
