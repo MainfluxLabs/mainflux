@@ -177,7 +177,7 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 
 	q := fmt.Sprintf(`SELECT id, email, metadata FROM users %s ORDER BY %s %s %s;`, emq, oq, dq, olq)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
 		"email":    ep,
@@ -223,7 +223,7 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 func (ur userRepository) BackupAll(ctx context.Context) ([]users.User, error) {
 	q := `SELECT id, email, password, metadata, status FROM users;`
 
-	rows, err := ur.db.NamedQueryContext(ctx, q, map[string]interface{}{})
+	rows, err := ur.db.NamedQueryContext(ctx, q, map[string]any{})
 	if err != nil {
 		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
@@ -307,7 +307,7 @@ func toDBUser(u users.User) (dbUser, error) {
 }
 
 func toUser(dbu dbUser) (users.User, error) {
-	var metadata map[string]interface{}
+	var metadata map[string]any
 	if dbu.Metadata != nil {
 		if err := json.Unmarshal([]byte(dbu.Metadata), &metadata); err != nil {
 			return users.User{}, errors.Wrap(dbutil.ErrMalformedEntity, err)

@@ -70,7 +70,7 @@ var (
 	admin                 = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled"}
 	newUser               = users.User{Email: "newuser@example.com", Password: validPass, Status: "enabled"}
 	usersList             = []users.User{admin, user}
-	metadata              = map[string]interface{}{"key": "value"}
+	metadata              = map[string]any{"key": "value"}
 	notFoundRes           = toJSON(apiutil.ErrorRes{Err: dbutil.ErrNotFound.Error()})
 	unauthRes             = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
 	weakPassword          = toJSON(apiutil.ErrorRes{Err: users.ErrPasswordFormat.Error()})
@@ -167,7 +167,7 @@ func newServer(svc users.Service) *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-func toJSON(data interface{}) string {
+func toJSON(data any) string {
 	jsonData, _ := json.Marshal(data)
 	return string(jsonData)
 }
@@ -772,7 +772,7 @@ func TestUpdateUser(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	data := toJSON(metadata)
-	emptyData := toJSON(map[string]interface{}{})
+	emptyData := toJSON(map[string]any{})
 
 	cases := []struct {
 		desc     string

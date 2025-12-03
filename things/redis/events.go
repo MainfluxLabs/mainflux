@@ -1,25 +1,13 @@
 package redis
 
-import "encoding/json"
+import (
+	"encoding/json"
 
-const (
-	thingPrefix                = "thing."
-	thingCreate                = thingPrefix + "create"
-	thingUpdate                = thingPrefix + "update"
-	thingUpdateGroupAndProfile = thingPrefix + "update_group_and_profile"
-	thingRemove                = thingPrefix + "remove"
-
-	profilePrefix = "profile."
-	profileCreate = profilePrefix + "create"
-	profileUpdate = profilePrefix + "update"
-	profileRemove = profilePrefix + "remove"
-
-	groupPrefix = "group."
-	groupRemove = groupPrefix + "remove"
+	"github.com/MainfluxLabs/mainflux/pkg/events"
 )
 
 type event interface {
-	Encode() map[string]interface{}
+	Encode() map[string]any
 }
 
 var (
@@ -36,15 +24,15 @@ type createThingEvent struct {
 	groupID   string
 	profileID string
 	name      string
-	metadata  map[string]interface{}
+	metadata  map[string]any
 }
 
-func (cte createThingEvent) Encode() map[string]interface{} {
-	val := map[string]interface{}{
+func (cte createThingEvent) Encode() map[string]any {
+	val := map[string]any{
 		"id":         cte.id,
 		"group_id":   cte.groupID,
 		"profile_id": cte.profileID,
-		"operation":  thingCreate,
+		"operation":  events.ThingCreate,
 	}
 
 	if cte.name != "" {
@@ -67,14 +55,14 @@ type updateThingEvent struct {
 	id        string
 	profileID string
 	name      string
-	metadata  map[string]interface{}
+	metadata  map[string]any
 }
 
-func (ute updateThingEvent) Encode() map[string]interface{} {
-	val := map[string]interface{}{
+func (ute updateThingEvent) Encode() map[string]any {
+	val := map[string]any{
 		"id":         ute.id,
 		"profile_id": ute.profileID,
-		"operation":  thingUpdate,
+		"operation":  events.ThingUpdate,
 	}
 
 	if ute.name != "" {
@@ -99,11 +87,11 @@ type updateThingGroupAndProfileEvent struct {
 	groupID   string
 }
 
-func (pte updateThingGroupAndProfileEvent) Encode() map[string]interface{} {
-	val := map[string]interface{}{
+func (pte updateThingGroupAndProfileEvent) Encode() map[string]any {
+	val := map[string]any{
 		"id":         pte.id,
 		"profile_id": pte.profileID,
-		"operation":  thingUpdateGroupAndProfile,
+		"operation":  events.ThingUpdateGroupAndProfile,
 	}
 
 	if pte.groupID != "" {
@@ -117,10 +105,10 @@ type removeThingEvent struct {
 	id string
 }
 
-func (rte removeThingEvent) Encode() map[string]interface{} {
-	return map[string]interface{}{
+func (rte removeThingEvent) Encode() map[string]any {
+	return map[string]any{
 		"id":        rte.id,
-		"operation": thingRemove,
+		"operation": events.ThingRemove,
 	}
 }
 
@@ -128,14 +116,14 @@ type createProfileEvent struct {
 	id       string
 	groupID  string
 	name     string
-	metadata map[string]interface{}
+	metadata map[string]any
 }
 
-func (cpe createProfileEvent) Encode() map[string]interface{} {
-	val := map[string]interface{}{
+func (cpe createProfileEvent) Encode() map[string]any {
+	val := map[string]any{
 		"id":        cpe.id,
 		"group_id":  cpe.groupID,
-		"operation": profileCreate,
+		"operation": events.ProfileCreate,
 	}
 
 	if cpe.name != "" {
@@ -157,14 +145,14 @@ func (cpe createProfileEvent) Encode() map[string]interface{} {
 type updateProfileEvent struct {
 	id       string
 	name     string
-	config   map[string]interface{}
-	metadata map[string]interface{}
+	config   map[string]any
+	metadata map[string]any
 }
 
-func (upe updateProfileEvent) Encode() map[string]interface{} {
-	val := map[string]interface{}{
+func (upe updateProfileEvent) Encode() map[string]any {
+	val := map[string]any{
 		"id":        upe.id,
-		"operation": profileUpdate,
+		"operation": events.ProfileUpdate,
 	}
 
 	if upe.name != "" {
@@ -196,10 +184,10 @@ type removeProfileEvent struct {
 	id string
 }
 
-func (rpe removeProfileEvent) Encode() map[string]interface{} {
-	return map[string]interface{}{
+func (rpe removeProfileEvent) Encode() map[string]any {
+	return map[string]any{
 		"id":        rpe.id,
-		"operation": profileRemove,
+		"operation": events.ProfileRemove,
 	}
 }
 
@@ -207,9 +195,9 @@ type removeGroupEvent struct {
 	id string
 }
 
-func (rge removeGroupEvent) Encode() map[string]interface{} {
-	return map[string]interface{}{
+func (rge removeGroupEvent) Encode() map[string]any {
+	return map[string]any{
 		"id":        rge.id,
-		"operation": groupRemove,
+		"operation": events.GroupRemove,
 	}
 }

@@ -370,7 +370,7 @@ func TestUpdateUser(t *testing.T) {
 	token, err := svc.Login(context.Background(), registerUser)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	registerUser.Metadata = map[string]interface{}{"meta": "test"}
+	registerUser.Metadata = map[string]any{"meta": "test"}
 
 	cases := map[string]struct {
 		user  users.User

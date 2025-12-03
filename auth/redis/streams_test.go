@@ -44,7 +44,7 @@ const (
 )
 
 var (
-	org           = auth.Org{Name: name, Description: description, Metadata: map[string]interface{}{"test": "test"}}
+	org           = auth.Org{Name: name, Description: description, Metadata: map[string]any{"test": "test"}}
 	usersByEmails = map[string]users.User{ownerEmail: {ID: ownerID, Email: ownerEmail}}
 	usersByIDs    = map[string]users.User{ownerID: {ID: ownerID, Email: ownerEmail}}
 )
@@ -80,14 +80,14 @@ func TestCreateOrg(t *testing.T) {
 		token string
 		org   auth.Org
 		err   error
-		event map[string]interface{}
+		event map[string]any
 	}{
 		{
 			desc:  "create org successfully",
 			org:   org,
 			token: ownerToken,
 			err:   nil,
-			event: map[string]interface{}{
+			event: map[string]any{
 				"id":        "123e4567-e89b-12d3-a456-000000000001",
 				"operation": orgCreate,
 			},
@@ -112,7 +112,7 @@ func TestCreateOrg(t *testing.T) {
 			Block:   time.Second,
 		}).Val()
 
-		var event map[string]interface{}
+		var event map[string]any
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
 			msg := streams[0].Messages[0]
 			event = msg.Values
@@ -141,14 +141,14 @@ func TestRemoveOrg(t *testing.T) {
 		id    string
 		token string
 		err   error
-		event map[string]interface{}
+		event map[string]any
 	}{
 		{
 			desc:  "remove existing org successfully",
 			id:    org.ID,
 			token: ownerToken,
 			err:   nil,
-			event: map[string]interface{}{
+			event: map[string]any{
 				"id":        org.ID,
 				"operation": orgRemove,
 			},
@@ -173,7 +173,7 @@ func TestRemoveOrg(t *testing.T) {
 			Block:   time.Second,
 		}).Val()
 
-		var event map[string]interface{}
+		var event map[string]any
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
 			msg := streams[0].Messages[0]
 			event = msg.Values

@@ -11,7 +11,7 @@ import (
 )
 
 func selfRegistrationEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(selfRegisterUserReq)
 		if err := req.validate(); err != nil {
 			return selfRegisterRes{}, err
@@ -59,7 +59,7 @@ func verifyEmailEndpoint(svc users.Service) endpoint.Endpoint {
 }
 
 func registrationEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(registerUserReq)
 		if err := req.validate(); err != nil {
 			return createUserRes{}, err
@@ -83,7 +83,7 @@ func registrationEndpoint(svc users.Service) endpoint.Endpoint {
 // that the users receives in an e-mail message:
 // URL: {MF_HOST}+{redirect_path}+"?token="+<token>
 func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(passwResetReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -102,7 +102,7 @@ func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 // When user clicks on a link in email finally ends on this endpoint as explained in
 // the comment above.
 func passwordResetEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(resetTokenReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -116,7 +116,7 @@ func passwordResetEndpoint(svc users.Service) endpoint.Endpoint {
 }
 
 func viewUserEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(viewUserReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -135,7 +135,7 @@ func viewUserEndpoint(svc users.Service) endpoint.Endpoint {
 }
 
 func viewProfileEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(viewUserReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -156,7 +156,7 @@ func viewProfileEndpoint(svc users.Service) endpoint.Endpoint {
 }
 
 func listUsersEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listUsersReq)
 		if err := req.validate(); err != nil {
 			return users.UserPage{}, err
@@ -180,7 +180,7 @@ func listUsersEndpoint(svc users.Service) endpoint.Endpoint {
 }
 
 func updateUserEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(updateUserReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -197,7 +197,7 @@ func updateUserEndpoint(svc users.Service) endpoint.Endpoint {
 }
 
 func passwordChangeEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(passwChangeReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -211,7 +211,7 @@ func passwordChangeEndpoint(svc users.Service) endpoint.Endpoint {
 }
 
 func loginEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(userReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -226,7 +226,7 @@ func loginEndpoint(svc users.Service) endpoint.Endpoint {
 }
 
 func oauthLoginEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(oauthLoginReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -243,7 +243,7 @@ func oauthLoginEndpoint(svc users.Service) endpoint.Endpoint {
 }
 
 func oauthCallbackEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(oauthCallbackReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -259,7 +259,7 @@ func oauthCallbackEndpoint(svc users.Service) endpoint.Endpoint {
 }
 
 func enableUserEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(changeUserStatusReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -272,7 +272,7 @@ func enableUserEndpoint(svc users.Service) endpoint.Endpoint {
 }
 
 func disableUserEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(changeUserStatusReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -285,7 +285,7 @@ func disableUserEndpoint(svc users.Service) endpoint.Endpoint {
 }
 
 func backupEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(backupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -301,7 +301,7 @@ func backupEndpoint(svc users.Service) endpoint.Endpoint {
 }
 
 func restoreEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(restoreReq)
 		if err := req.validate(); err != nil {
 			return nil, err

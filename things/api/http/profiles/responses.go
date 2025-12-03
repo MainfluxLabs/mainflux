@@ -30,11 +30,11 @@ func (res removeRes) Empty() bool {
 }
 
 type profileRes struct {
-	ID       string                 `json:"id"`
-	GroupID  string                 `json:"group_id,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Config   map[string]interface{} `json:"config,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	ID       string         `json:"id"`
+	GroupID  string         `json:"group_id,omitempty"`
+	Name     string         `json:"name,omitempty"`
+	Config   map[string]any `json:"config,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 	created  bool
 }
 
@@ -86,11 +86,11 @@ type pageRes struct {
 }
 
 type viewProfileRes struct {
-	ID       string                 `json:"id"`
-	GroupID  string                 `json:"group_id"`
-	Name     string                 `json:"name"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
-	Config   map[string]interface{} `json:"config,omitempty"`
+	ID       string         `json:"id"`
+	GroupID  string         `json:"group_id"`
+	Name     string         `json:"name"`
+	Metadata map[string]any `json:"metadata,omitempty"`
+	Config   map[string]any `json:"config,omitempty"`
 }
 
 type restoreRes struct{}

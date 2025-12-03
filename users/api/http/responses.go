@@ -121,10 +121,10 @@ func (res updateUserRes) Empty() bool {
 }
 
 type viewUserRes struct {
-	ID       string                 `json:"id"`
-	Email    string                 `json:"email"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
-	Role     string                 `json:"role,omitempty"`
+	ID       string         `json:"id"`
+	Email    string         `json:"email"`
+	Metadata map[string]any `json:"metadata,omitempty"`
+	Role     string         `json:"role,omitempty"`
 }
 
 func (res viewUserRes) Code() int {
@@ -268,11 +268,11 @@ func (res revokePlatformInviteRes) Empty() bool {
 }
 
 type backupUserRes struct {
-	ID       string                 `json:"id"`
-	Email    string                 `json:"email"`
-	Password string                 `json:"password"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
-	Status   string                 `json:"status"`
+	ID       string         `json:"id"`
+	Email    string         `json:"email"`
+	Password string         `json:"password"`
+	Metadata map[string]any `json:"metadata,omitempty"`
+	Status   string         `json:"status"`
 }
 
 type backupRes struct {

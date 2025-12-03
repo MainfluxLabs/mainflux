@@ -83,7 +83,7 @@ func MakeHandler(tracer opentracing.Tracer, svc alarms.Service, logger log.Logge
 	return r
 }
 
-func decodeListAlarmsByThing(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListAlarmsByThing(_ context.Context, r *http.Request) (any, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func decodeListAlarmsByThing(_ context.Context, r *http.Request) (interface{}, e
 	}, nil
 }
 
-func decodeListGroupAlarms(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListGroupAlarms(_ context.Context, r *http.Request) (any, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -109,7 +109,7 @@ func decodeListGroupAlarms(_ context.Context, r *http.Request) (interface{}, err
 	}, nil
 }
 
-func decodeListAlarmsByOrg(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListAlarmsByOrg(_ context.Context, r *http.Request) (any, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -122,14 +122,14 @@ func decodeListAlarmsByOrg(_ context.Context, r *http.Request) (interface{}, err
 	}, nil
 }
 
-func decodeViewAlarm(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeViewAlarm(_ context.Context, r *http.Request) (any, error) {
 	return alarmReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}, nil
 }
 
-func decodeRemoveAlarms(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRemoveAlarms(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -145,7 +145,7 @@ func decodeRemoveAlarms(_ context.Context, r *http.Request) (interface{}, error)
 	return req, nil
 }
 
-func decodeBackupAlarmsByThing(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeBackupAlarmsByThing(_ context.Context, r *http.Request) (any, error) {
 	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, jsonFormat)
 	if err != nil {
 		return nil, err
@@ -170,7 +170,7 @@ func decodeBackupAlarmsByThing(_ context.Context, r *http.Request) (interface{},
 	}, nil
 }
 
-func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {
@@ -188,7 +188,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	return json.NewEncoder(w).Encode(response)
 }
 
-func encodeBackupFileResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeBackupFileResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	w.Header().Set("Content-Type", octetStreamContentType)
 
 	if ar, ok := response.(backupFileRes); ok {

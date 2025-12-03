@@ -13,7 +13,7 @@ type Alarm struct {
 	RuleID   string
 	Subtopic string
 	Protocol string
-	Payload  map[string]interface{}
+	Payload  map[string]any
 	Created  int64
 }
 

@@ -80,19 +80,19 @@ func (client grpcClient) GetUsersByEmails(ctx context.Context, req *protomfx.Use
 
 }
 
-func encodeGetUsersByIDsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeGetUsersByIDsRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(getUsersByIDsReq)
 	pm := toProtoPageMetadata(req.pageMetadata)
 
 	return &protomfx.UsersByIDsReq{Ids: req.ids, PageMetadata: &pm}, nil
 }
 
-func encodeGetUsersByEmailsRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+func encodeGetUsersByEmailsRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(getUsersByEmailsReq)
 	return &protomfx.UsersByEmailsReq{Emails: req.emails}, nil
 }
 
-func decodeGetUsersResponse(_ context.Context, grpcRes interface{}) (interface{}, error) {
+func decodeGetUsersResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.UsersRes)
 	return getUsersRes{users: res.GetUsers(), pageMetadata: res.GetPageMetadata()}, nil
 }

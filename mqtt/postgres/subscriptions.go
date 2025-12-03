@@ -100,7 +100,7 @@ func (mr *mqttRepository) RetrieveByGroupID(ctx context.Context, pm mqtt.PageMet
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
 	q := fmt.Sprintf(`SELECT subtopic, group_id, client_id, thing_id, status, created_at FROM subscriptions WHERE group_id= :group_id ORDER BY created_at %s;`, olq)
-	params := map[string]interface{}{
+	params := map[string]any{
 		"group_id": groupID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
