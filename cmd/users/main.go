@@ -36,6 +36,9 @@ import (
 	"github.com/jmoiron/sqlx"
 	opentracing "github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/github"
+	"golang.org/x/oauth2/google"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -82,6 +85,12 @@ const (
 	defSelfRegisterEnabled = "true" // By default, everybody can create a user. Otherwise, only admin can create a user.
 	defEmailVerifyEnabled  = "false"
 
+	defClientID         = ""
+	defClientSecret     = ""
+	defRedirectURL      = ""
+	defUserInfo         = ""
+	defRedirectLoginURL = ""
+
 	envLogLevel      = "MF_USERS_LOG_LEVEL"
 	envDBHost        = "MF_USERS_DB_HOST"
 	envDBPort        = "MF_USERS_DB_PORT"
@@ -121,6 +130,18 @@ const (
 	envEmailVerifyEnabled  = "MF_REQUIRE_EMAIL_VERIFICATION"
 
 	envInviteDuration = "MF_INVITE_DURATION"
+
+	envGoogleClientID     = "MF_GOOGLE_CLIENT_ID"
+	envGoogleClientSecret = "MF_GOOGLE_CLIENT_SECRET"
+	envGoogleRedirectURL  = "MF_GOOGLE_REDIRECT_URL"
+	envGoogleUserInfo     = "MF_GOOGLE_USER_INFO"
+
+	envGitHubClientID     = "MF_GITHUB_CLIENT_ID"
+	envGitHubClientSecret = "MF_GITHUB_CLIENT_SECRET"
+	envGitHubRedirectURL  = "MF_GITHUB_REDIRECT_URL"
+	envGitHubUserInfo     = "MF_GITHUB_USER_INFO"
+
+	envRedirectLoginURL = "MF_REDIRECT_LOGIN_URL"
 )
 
 type config struct {
@@ -139,6 +160,9 @@ type config struct {
 	selfRegisterEnabled bool
 	emailVerifyEnabled  bool
 	inviteDuration      time.Duration
+	googleOauthConfig   oauth2.Config
+	githubOauthConfig   oauth2.Config
+	urls                users.ConfigURLs
 }
 
 func main() {
@@ -264,6 +288,28 @@ func loadConfig() config {
 		ClientName: clients.Auth,
 	}
 
+	googleOauthConfig := oauth2.Config{
+		ClientID:     mainflux.Env(envGoogleClientID, defClientID),
+		ClientSecret: mainflux.Env(envGoogleClientSecret, defClientSecret),
+		RedirectURL:  fmt.Sprintf("%s%s", mainflux.Env(envHost, defHost), mainflux.Env(envGoogleRedirectURL, defRedirectURL)),
+		Scopes:       []string{"email"},
+		Endpoint:     google.Endpoint,
+	}
+
+	githubOauthConfig := oauth2.Config{
+		ClientID:     mainflux.Env(envGitHubClientID, defClientID),
+		ClientSecret: mainflux.Env(envGitHubClientSecret, defClientSecret),
+		RedirectURL:  fmt.Sprintf("%s%s", mainflux.Env(envHost, defHost), mainflux.Env(envGitHubRedirectURL, defRedirectURL)),
+		Scopes:       []string{"user:email"},
+		Endpoint:     github.Endpoint,
+	}
+
+	urls := users.ConfigURLs{
+		GoogleUserInfoURL: mainflux.Env(envGoogleUserInfo, defUserInfo),
+		GitHubUserInfoURL: mainflux.Env(envGitHubUserInfo, defUserInfo),
+		RedirectLoginURL:  fmt.Sprintf("%s%s", mainflux.Env(envHost, defHost), mainflux.Env(envRedirectLoginURL, defRedirectLoginURL)),
+	}
+
 	inviteDuration, err := time.ParseDuration(mainflux.Env(envInviteDuration, defInviteDuration))
 	if err != nil {
 		log.Fatal(err)
@@ -285,6 +331,9 @@ func loadConfig() config {
 		selfRegisterEnabled: selfRegisterEnabled,
 		emailVerifyEnabled:  emailVerifyEnabled,
 		inviteDuration:      inviteDuration,
+		googleOauthConfig:   googleOauthConfig,
+		githubOauthConfig:   githubOauthConfig,
+		urls:                urls,
 	}
 }
 
@@ -328,7 +377,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceC
 
 	idProvider := uuid.New()
 
-	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, c.inviteDuration, c.emailVerifyEnabled, c.selfRegisterEnabled, hasher, ac, svcEmailer, idProvider)
+	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, c.inviteDuration, c.emailVerifyEnabled, c.selfRegisterEnabled, hasher, ac, svcEmailer, idProvider, c.googleOauthConfig, c.githubOauthConfig, c.urls)
 	svc = httpapi.LoggingMiddleware(svc, logger)
 	svc = httpapi.MetricsMiddleware(
 		svc,
