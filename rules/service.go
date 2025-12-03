@@ -267,7 +267,7 @@ func (rs *rulesService) UnassignRules(ctx context.Context, token, thingID string
 }
 
 func (rs *rulesService) UnassignRulesByThing(ctx context.Context, thingID string) error {
-	return rs.rules.Unassign(ctx, thingID)
+	return rs.rules.UnassignByThing(ctx, thingID)
 }
 
 func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) error {
