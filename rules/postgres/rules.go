@@ -196,7 +196,6 @@ func (rr ruleRepository) Remove(ctx context.Context, ids ...string) error {
 
 	for _, id := range ids {
 		dbr := dbRule{ID: id}
-
 		if _, err := rr.db.NamedExecContext(ctx, q, dbr); err != nil {
 			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
@@ -207,8 +206,8 @@ func (rr ruleRepository) Remove(ctx context.Context, ids ...string) error {
 
 func (rr ruleRepository) RemoveByGroup(ctx context.Context, groupID string) error {
 	q := `DELETE FROM rules WHERE group_id = :group_id;`
-	dbr := dbRule{GroupID: groupID}
 
+	dbr := dbRule{GroupID: groupID}
 	if _, err := rr.db.NamedExecContext(ctx, q, dbr); err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
@@ -261,7 +260,6 @@ func (rr ruleRepository) Unassign(ctx context.Context, thingID string, ruleIDs .
 			"rule_id":  ruleID,
 			"thing_id": thingID,
 		}
-
 		if _, err := rr.db.NamedExecContext(ctx, q, params); err != nil {
 			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
@@ -276,7 +274,6 @@ func (rr ruleRepository) UnassignByThing(ctx context.Context, thingID string) er
 	params := map[string]any{
 		"thing_id": thingID,
 	}
-
 	if _, err := rr.db.NamedExecContext(ctx, q, params); err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}

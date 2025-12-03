@@ -25,13 +25,12 @@ func (es eventHandler) Handle(ctx context.Context, event events.Event) error {
 	}
 
 	switch msg["operation"] {
-	//TODO: Use consts
-	case "thing.remove":
+	case events.ThingRemove:
 		re := decodeRemoveEvent(msg)
 		if err := es.svc.UnassignRulesByThing(ctx, re.id); err != nil {
 			return err
 		}
-	case "group.remove":
+	case events.GroupRemove:
 		re := decodeRemoveEvent(msg)
 		if err := es.svc.RemoveRulesByGroup(ctx, re.id); err != nil {
 			return err
@@ -42,12 +41,7 @@ func (es eventHandler) Handle(ctx context.Context, event events.Event) error {
 }
 
 func decodeRemoveEvent(event map[string]interface{}) removeEvent {
-	val, ok := event["id"].(string)
-	if !ok {
-		return removeEvent{id: ""}
-	}
-
 	return removeEvent{
-		id: val,
+		id: events.ReadField(event, "id", ""),
 	}
 }

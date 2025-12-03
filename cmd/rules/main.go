@@ -14,7 +14,7 @@ import (
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/events/redis"
+	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
@@ -25,8 +25,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/rules"
 	"github.com/MainfluxLabs/mainflux/rules/api"
-	"github.com/MainfluxLabs/mainflux/rules/api/events"
 	httpapi "github.com/MainfluxLabs/mainflux/rules/api/http"
+	"github.com/MainfluxLabs/mainflux/rules/events"
 	"github.com/MainfluxLabs/mainflux/rules/postgres"
 	"github.com/MainfluxLabs/mainflux/rules/tracing"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
@@ -235,7 +235,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func subscribeToThingsES(ctx context.Context, svc rules.Service, cfg config, logger logger.Logger) error {
-	subscriber, err := redis.NewSubscriber(cfg.esURL, thingsStream, esGroupName, cfg.esConsumerName, logger)
+	subscriber, err := mfevents.NewSubscriber(cfg.esURL, thingsStream, esGroupName, cfg.esConsumerName, logger)
 	if err != nil {
 		return err
 	}
