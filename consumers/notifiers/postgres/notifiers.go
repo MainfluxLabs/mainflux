@@ -178,10 +178,10 @@ func (nr notifierRepository) Update(ctx context.Context, n notifiers.Notifier) e
 }
 
 func (nr notifierRepository) Remove(ctx context.Context, ids ...string) error {
+	q := `DELETE FROM notifiers WHERE id = :id;`
+
 	for _, id := range ids {
 		dbNf := dbNotifier{ID: id}
-		q := `DELETE FROM notifiers WHERE id = :id;`
-
 		if _, err := nr.db.NamedExecContext(ctx, q, dbNf); err != nil {
 			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
@@ -191,9 +191,9 @@ func (nr notifierRepository) Remove(ctx context.Context, ids ...string) error {
 }
 
 func (nr notifierRepository) RemoveByGroup(ctx context.Context, groupID string) error {
-	dbNf := dbNotifier{GroupID: groupID}
 	q := `DELETE FROM notifiers WHERE group_id = :group_id;`
 
+	dbNf := dbNotifier{GroupID: groupID}
 	if _, err := nr.db.NamedExecContext(ctx, q, dbNf); err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}

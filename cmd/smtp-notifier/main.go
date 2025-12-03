@@ -26,7 +26,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/email"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/events/redis"
+	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
@@ -37,7 +37,7 @@ import (
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/errgroup"
 )
@@ -262,7 +262,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func subscribeToThingsES(ctx context.Context, svc notifiers.Service, cfg config, logger logger.Logger) error {
-	subscriber, err := redis.NewSubscriber(cfg.esURL, thingsStream, esGroupName, cfg.esConsumerName, logger)
+	subscriber, err := mfevents.NewSubscriber(cfg.esURL, thingsStream, esGroupName, cfg.esConsumerName, logger)
 	if err != nil {
 		return err
 	}

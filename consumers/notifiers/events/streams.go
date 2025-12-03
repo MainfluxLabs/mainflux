@@ -25,8 +25,7 @@ func (es eventHandler) Handle(ctx context.Context, event events.Event) error {
 	}
 
 	switch msg["operation"] {
-	//TODO: Use const
-	case "group.remove":
+	case events.GroupRemove:
 		re := decodeRemoveGroupEvent(msg)
 		if err := es.svc.RemoveNotifiersByGroup(ctx, re.id); err != nil {
 			return err
@@ -37,12 +36,7 @@ func (es eventHandler) Handle(ctx context.Context, event events.Event) error {
 }
 
 func decodeRemoveGroupEvent(event map[string]interface{}) removeGroupEvent {
-	val, ok := event["id"].(string)
-	if !ok {
-		return removeGroupEvent{id: ""}
-	}
-
 	return removeGroupEvent{
-		id: val,
+		id: events.ReadField(event, "id", ""),
 	}
 }
