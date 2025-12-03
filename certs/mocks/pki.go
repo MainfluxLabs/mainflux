@@ -86,7 +86,7 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (certs.Cert, err
 		return certs.Cert{}, errors.Wrap(ErrFailedCertCreation, ErrMissingCACert)
 	}
 
-	var priv interface{}
+	var priv any
 	var err error
 
 	switch keyType {
@@ -222,7 +222,7 @@ func (a *agent) VerifyCert(certPEM string) (*x509.Certificate, error) {
 	return cert, nil
 }
 
-func publicKey(priv interface{}) (interface{}, error) {
+func publicKey(priv any) (any, error) {
 	if priv == nil {
 		return nil, errPrivateKeyEmpty
 	}
@@ -236,7 +236,7 @@ func publicKey(priv interface{}) (interface{}, error) {
 	}
 }
 
-func pemBlockForKey(priv interface{}) (*pem.Block, error) {
+func pemBlockForKey(priv any) (*pem.Block, error) {
 	switch k := priv.(type) {
 	case *rsa.PrivateKey:
 		return &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(k)}, nil

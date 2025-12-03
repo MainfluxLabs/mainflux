@@ -87,7 +87,7 @@ func TestCreateThings(t *testing.T) {
 
 	ths := []things.Thing{{
 		Name:     "a",
-		Metadata: map[string]interface{}{"test": "test"},
+		Metadata: map[string]any{"test": "test"},
 	}}
 
 	svc = redis.NewEventStoreMiddleware(svc, redisClient)
@@ -97,14 +97,14 @@ func TestCreateThings(t *testing.T) {
 		ths   []things.Thing
 		key   string
 		err   error
-		event map[string]interface{}
+		event map[string]any
 	}{
 		{
 			desc: "create things successfully",
 			ths:  ths,
 			key:  token,
 			err:  nil,
-			event: map[string]interface{}{
+			event: map[string]any{
 				"id":         "123e4567-e89b-12d3-a456-000000000003",
 				"name":       "a",
 				"group_id":   grID,
@@ -133,7 +133,7 @@ func TestCreateThings(t *testing.T) {
 			Block:   time.Second,
 		}).Val()
 
-		var event map[string]interface{}
+		var event map[string]any
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
 			msg := streams[0].Messages[0]
 			event = msg.Values
@@ -158,7 +158,7 @@ func TestUpdateThing(t *testing.T) {
 	prID := prs[0].ID
 
 	// Create thing without sending event.
-	th := things.Thing{Name: "a", Metadata: map[string]interface{}{"test": "test"}}
+	th := things.Thing{Name: "a", Metadata: map[string]any{"test": "test"}}
 	sths, err := svc.CreateThings(context.Background(), token, prID, th)
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
@@ -170,7 +170,7 @@ func TestUpdateThing(t *testing.T) {
 		thing things.Thing
 		key   string
 		err   error
-		event map[string]interface{}
+		event map[string]any
 	}{
 		{
 			desc: "update existing thing successfully",
@@ -178,11 +178,11 @@ func TestUpdateThing(t *testing.T) {
 				ID:        sth.ID,
 				ProfileID: prID,
 				Name:      "a",
-				Metadata:  map[string]interface{}{"test": "test"},
+				Metadata:  map[string]any{"test": "test"},
 			},
 			key: token,
 			err: nil,
-			event: map[string]interface{}{
+			event: map[string]any{
 				"id":         sth.ID,
 				"profile_id": sth.ProfileID,
 				"name":       "a",
@@ -202,7 +202,7 @@ func TestUpdateThing(t *testing.T) {
 			Block:   time.Second,
 		}).Val()
 
-		var event map[string]interface{}
+		var event map[string]any
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
 			msg := streams[0].Messages[0]
 			event = msg.Values
@@ -312,14 +312,14 @@ func TestRemoveThing(t *testing.T) {
 		id    string
 		key   string
 		err   error
-		event map[string]interface{}
+		event map[string]any
 	}{
 		{
 			desc: "remove existing thing successfully",
 			id:   sth.ID,
 			key:  token,
 			err:  nil,
-			event: map[string]interface{}{
+			event: map[string]any{
 				"id":        sth.ID,
 				"operation": thingRemove,
 			},
@@ -344,7 +344,7 @@ func TestRemoveThing(t *testing.T) {
 			Block:   time.Second,
 		}).Val()
 
-		var event map[string]interface{}
+		var event map[string]any
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
 			msg := streams[0].Messages[0]
 			event = msg.Values
@@ -371,15 +371,15 @@ func TestCreateProfiles(t *testing.T) {
 		token   string
 		groupID string
 		err     error
-		event   map[string]interface{}
+		event   map[string]any
 	}{
 		{
 			desc:    "create profiles successfully",
-			prs:     []things.Profile{{Name: "a", Metadata: map[string]interface{}{"test": "test"}}},
+			prs:     []things.Profile{{Name: "a", Metadata: map[string]any{"test": "test"}}},
 			token:   token,
 			groupID: gr.ID,
 			err:     nil,
-			event: map[string]interface{}{
+			event: map[string]any{
 				"id":        "123e4567-e89b-12d3-a456-000000000002",
 				"name":      "a",
 				"metadata":  "{\"test\":\"test\"}",
@@ -389,7 +389,7 @@ func TestCreateProfiles(t *testing.T) {
 		},
 		{
 			desc:    "create profiles with invalid credentials",
-			prs:     []things.Profile{{Name: "a", Metadata: map[string]interface{}{"test": "test"}}},
+			prs:     []things.Profile{{Name: "a", Metadata: map[string]any{"test": "test"}}},
 			token:   "",
 			groupID: gr.ID,
 			err:     errors.ErrAuthentication,
@@ -408,7 +408,7 @@ func TestCreateProfiles(t *testing.T) {
 			Block:   time.Second,
 		}).Val()
 
-		var event map[string]interface{}
+		var event map[string]any
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
 			msg := streams[0].Messages[0]
 			event = msg.Values
@@ -438,18 +438,18 @@ func TestUpdateProfile(t *testing.T) {
 		profile things.Profile
 		key     string
 		err     error
-		event   map[string]interface{}
+		event   map[string]any
 	}{
 		{
 			desc: "update profile successfully",
 			profile: things.Profile{
 				ID:       spr.ID,
 				Name:     "b",
-				Metadata: map[string]interface{}{"test": "test"},
+				Metadata: map[string]any{"test": "test"},
 			},
 			key: token,
 			err: nil,
-			event: map[string]interface{}{
+			event: map[string]any{
 				"id":        spr.ID,
 				"name":      "b",
 				"metadata":  "{\"test\":\"test\"}",
@@ -479,7 +479,7 @@ func TestUpdateProfile(t *testing.T) {
 			Block:   time.Second,
 		}).Val()
 
-		var event map[string]interface{}
+		var event map[string]any
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
 			msg := streams[0].Messages[0]
 			event = msg.Values
@@ -575,14 +575,14 @@ func TestRemoveProfile(t *testing.T) {
 		id    string
 		key   string
 		err   error
-		event map[string]interface{}
+		event map[string]any
 	}{
 		{
 			desc: "remove profile successfully",
 			id:   spr.ID,
 			key:  token,
 			err:  nil,
-			event: map[string]interface{}{
+			event: map[string]any{
 				"id":        spr.ID,
 				"operation": profileRemove,
 			},
@@ -607,7 +607,7 @@ func TestRemoveProfile(t *testing.T) {
 			Block:   time.Second,
 		}).Val()
 
-		var event map[string]interface{}
+		var event map[string]any
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
 			msg := streams[0].Messages[0]
 			event = msg.Values

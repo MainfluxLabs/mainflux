@@ -37,7 +37,7 @@ const (
 )
 
 var (
-	metadata      = map[string]interface{}{"test": "data"}
+	metadata      = map[string]any{"test": "data"}
 	validEmails   = []string{"user1@example.com", "user2@example.com"}
 	validPhones   = []string{"+381610120120", "+381622220123"}
 	invalidEmails = []string{"invalid@example.com", "invalid@invalid"}

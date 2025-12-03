@@ -19,7 +19,7 @@ type Notifier struct {
 	GroupID  string
 	Name     string
 	Contacts []string
-	Metadata map[string]interface{}
+	Metadata map[string]any
 }
 
 type NotifiersPage struct {

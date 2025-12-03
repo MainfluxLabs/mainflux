@@ -14,7 +14,7 @@ import (
 )
 
 func listJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listJSONMessagesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -34,7 +34,7 @@ func listJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 }
 
 func listSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listSenMLMessagesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -54,7 +54,7 @@ func listSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 }
 
 func deleteJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(deleteJSONMessagesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -69,7 +69,7 @@ func deleteJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 }
 
 func deleteSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(deleteSenMLMessagesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -84,7 +84,7 @@ func deleteSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 }
 
 func backupJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(backupJSONMessagesReq)
 
 		if err := req.validate(); err != nil {
@@ -99,11 +99,11 @@ func backupJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 		var data []byte
 		switch req.convertFormat {
 		case jsonFormat:
-			if data, err = GenerateJSON(page.MessagesPage); err != nil {
+			if data, err = ConvertJSONToJSONFile(page, req.timeFormat); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
 		default:
-			if data, err = GenerateCSVFromJSON(page.MessagesPage); err != nil {
+			if data, err = ConvertJSONToCSVFile(page, req.timeFormat); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
 		}
@@ -115,7 +115,7 @@ func backupJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 }
 
 func backupSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(backupSenMLMessagesReq)
 
 		if err := req.validate(); err != nil {
@@ -130,11 +130,11 @@ func backupSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 		var data []byte
 		switch req.convertFormat {
 		case jsonFormat:
-			if data, err = GenerateJSON(page.MessagesPage); err != nil {
+			if data, err = ConvertSenMLToJSONFile(page, req.timeFormat); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
 		default:
-			if data, err = GenerateCSVFromSenML(page.MessagesPage); err != nil {
+			if data, err = ConvertSenMLToCSVFile(page, req.timeFormat); err != nil {
 				return nil, errors.Wrap(errors.ErrBackupMessages, err)
 			}
 		}
@@ -146,7 +146,7 @@ func backupSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 }
 
 func restoreJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(restoreMessagesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -182,7 +182,7 @@ func restoreJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 }
 
 func restoreSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(restoreMessagesReq)
 		if err := req.validate(); err != nil {
 			return nil, err

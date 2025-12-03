@@ -11,7 +11,7 @@ import (
 )
 
 func listSubscriptions(svc mqtt.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listSubscriptionsReq)
 		if err := req.validate(); err != nil {
 			return nil, err

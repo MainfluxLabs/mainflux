@@ -20,6 +20,7 @@ type Service interface {
 	ListAlarmsByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (AlarmsPage, error)
 	ViewAlarm(ctx context.Context, token, id string) (Alarm, error)
 	RemoveAlarms(ctx context.Context, token string, id ...string) error
+	BackupAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error)
 	consumers.Consumer
 }
 
@@ -106,6 +107,20 @@ func (as *alarmService) RemoveAlarms(ctx context.Context, token string, ids ...s
 	return as.alarms.Remove(ctx, ids...)
 }
 
+func (as *alarmService) BackupAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
+	_, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer})
+	if err != nil {
+		return AlarmsPage{}, err
+	}
+
+	alarms, err := as.alarms.BackupByThing(ctx, thingID, pm)
+	if err != nil {
+		return AlarmsPage{}, err
+	}
+
+	return alarms, nil
+}
+
 func (as *alarmService) createAlarm(ctx context.Context, alarm *Alarm) error {
 	grID, err := as.things.GetGroupIDByThingID(ctx, &protomfx.ThingID{Value: alarm.ThingID})
 	if err != nil {
@@ -123,7 +138,7 @@ func (as *alarmService) createAlarm(ctx context.Context, alarm *Alarm) error {
 
 }
 
-func (as *alarmService) Consume(message interface{}) error {
+func (as *alarmService) Consume(message any) error {
 	ctx := context.Background()
 
 	msg, ok := message.(protomfx.Message)
@@ -137,7 +152,7 @@ func (as *alarmService) Consume(message interface{}) error {
 	}
 	ruleID := subject[1]
 
-	var payload map[string]interface{}
+	var payload map[string]any
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
 		return err
 	}

@@ -96,7 +96,7 @@ func createGroups() map[string]things.Group {
 			ID:          groupId,
 			Name:        fmt.Sprintf(name+"-%d", i),
 			Description: fmt.Sprintf(description+"-%d", i),
-			Metadata:    map[string]interface{}{"meta": "data"},
+			Metadata:    map[string]any{"meta": "data"},
 		}
 	}
 

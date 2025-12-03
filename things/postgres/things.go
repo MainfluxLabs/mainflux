@@ -142,7 +142,7 @@ func (tr thingRepository) RetrieveByGroups(ctx context.Context, groupIDs []strin
 	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, external_key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"name":     name,
 		"metadata": m,
 		"limit":    pm.Limit,
@@ -188,7 +188,7 @@ func (tr thingRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetada
 	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, external_key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"name":     name,
 		"metadata": m,
 		"limit":    pm.Limit,
@@ -218,7 +218,7 @@ func (tr thingRepository) RetrieveByProfile(ctx context.Context, prID string, pm
 	query := fmt.Sprintf(`SELECT id, group_id, name, key, external_key, metadata FROM things %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"profile_id": prID,
 		"metadata":   m,
 		"limit":      pm.Limit,
@@ -337,7 +337,7 @@ func (tr thingRepository) RemoveExternalKey(ctx context.Context, thingID string)
 	return nil
 }
 
-func (tr thingRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (things.ThingsPage, error) {
+func (tr thingRepository) retrieve(ctx context.Context, query, cquery string, params map[string]any) (things.ThingsPage, error) {
 	rows, err := tr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return things.ThingsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
@@ -462,7 +462,7 @@ func toDBThing(th things.Thing) (dbThing, error) {
 }
 
 func toThing(dbth dbThing) (things.Thing, error) {
-	var metadata map[string]interface{}
+	var metadata map[string]any
 	if err := json.Unmarshal([]byte(dbth.Metadata), &metadata); err != nil {
 		return things.Thing{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}

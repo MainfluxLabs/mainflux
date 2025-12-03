@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"go.mongodb.org/mongo-driver/bson"
@@ -65,7 +66,7 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 	}
 
 	coll := jr.db.Collection(jsonCollection)
-	var docs []interface{}
+	var docs []any
 	for _, msg := range messages {
 		docs = append(docs, msg)
 	}
@@ -81,8 +82,12 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	coll := jr.db.Collection(jsonCollection)
 	filter := jr.fmtCondition(rpm)
+	dir := 1
+	if rpm.Dir == apiutil.DescDir {
+		dir = -1
+	}
 
-	sortMap := bson.D{{Key: jsonOrder, Value: -1}}
+	sortMap := bson.D{{Key: jsonOrder, Value: dir}}
 
 	findOpts := options.Find().SetSort(sortMap)
 	if rpm.Limit != noLimit {
@@ -97,7 +102,7 @@ func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetad
 
 	var messages []readers.Message
 	for cursor.Next(ctx) {
-		var m map[string]interface{}
+		var m map[string]any
 		if err := cursor.Decode(&m); err != nil {
 			return readers.JSONMessagesPage{}, errors.Wrap(readers.ErrReadMessages, err)
 		}
@@ -121,7 +126,7 @@ func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetad
 func (jr *jsonRepository) fmtCondition(rpm readers.JSONPageMetadata) bson.D {
 	filter := bson.D{}
 
-	var query map[string]interface{}
+	var query map[string]any
 	meta, err := json.Marshal(rpm)
 	if err != nil {
 		return filter

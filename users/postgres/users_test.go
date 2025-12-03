@@ -343,7 +343,7 @@ func TestUpdateUser(t *testing.T) {
 		ID:       uid,
 		Email:    email,
 		Password: password,
-		Metadata: map[string]interface{}{"metadata": "test"},
+		Metadata: map[string]any{"metadata": "test"},
 		Status:   users.EnabledStatusKey,
 	}
 
@@ -352,7 +352,7 @@ func TestUpdateUser(t *testing.T) {
 
 	updtUser := user
 	updtUser.ID = updateID
-	updtUser.Metadata = map[string]interface{}{"updated": "metadata"}
+	updtUser.Metadata = map[string]any{"updated": "metadata"}
 
 	wrongEmailUser := user
 	wrongEmailUser.Email = "wrong@email.com"

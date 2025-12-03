@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -65,7 +66,7 @@ func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Mess
 	}
 
 	coll := sr.db.Collection(senmlCollection)
-	var docs []interface{}
+	var docs []any
 	for _, msg := range messages {
 		senmlMessage, ok := msg.(senml.Message)
 		if !ok {
@@ -85,8 +86,12 @@ func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Mess
 func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	coll := sr.db.Collection(senmlCollection)
 	filter := sr.fmtCondition(rpm)
+	dir := 1
+	if rpm.Dir == apiutil.DescDir {
+		dir = -1
+	}
 
-	sortMap := bson.D{{Key: senmlOrder, Value: -1}}
+	sortMap := bson.D{{Key: senmlOrder, Value: dir}}
 
 	findOpts := options.Find().SetSort(sortMap)
 	if rpm.Limit != noLimit {
@@ -125,7 +130,7 @@ func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLPageMet
 func (sr *senmlRepository) fmtCondition(rpm readers.SenMLPageMetadata) bson.D {
 	filter := bson.D{}
 
-	var query map[string]interface{}
+	var query map[string]any
 	meta, err := json.Marshal(rpm)
 	if err != nil {
 		return filter
@@ -137,7 +142,7 @@ func (sr *senmlRepository) fmtCondition(rpm readers.SenMLPageMetadata) bson.D {
 		case "subtopic", "publisher", "name", "protocol":
 			filter = append(filter, bson.E{Key: name, Value: value})
 		case "v":
-			var bsonFilter interface{} = value
+			var bsonFilter any = value
 			val, ok := query["comparator"]
 			if ok {
 				switch val.(string) {

@@ -73,7 +73,7 @@ func (repo *jsonRepositoryMock) readAll(rpm readers.JSONPageMetadata) (readers.J
 			if repo.messageMatchesFilter(m, rpm) {
 				switch msg := m.(type) {
 				case mfjson.Message:
-					msgMap := map[string]interface{}{
+					msgMap := map[string]any{
 						"created":   msg.Created,
 						"subtopic":  msg.Subtopic,
 						"publisher": msg.Publisher,
@@ -81,7 +81,7 @@ func (repo *jsonRepositoryMock) readAll(rpm readers.JSONPageMetadata) (readers.J
 						"payload":   msg.Payload,
 					}
 					filteredMessages = append(filteredMessages, msgMap)
-				case map[string]interface{}:
+				case map[string]any:
 					filteredMessages = append(filteredMessages, msg)
 				default:
 					continue
@@ -120,7 +120,7 @@ func (repo *jsonRepositoryMock) messageMatchesFilter(msg readers.Message, rpm re
 	switch m := msg.(type) {
 	case mfjson.Message:
 		return repo.checkJSONMessageFilter(m, rpm)
-	case map[string]interface{}:
+	case map[string]any:
 		return repo.checkJSONMapFilter(m, rpm)
 	default:
 		return false
@@ -146,7 +146,7 @@ func (repo *jsonRepositoryMock) checkJSONMessageFilter(jsonMsg mfjson.Message, r
 	return true
 }
 
-func (repo *jsonRepositoryMock) checkJSONMapFilter(jsonMap map[string]interface{}, rpm readers.JSONPageMetadata) bool {
+func (repo *jsonRepositoryMock) checkJSONMapFilter(jsonMap map[string]any, rpm readers.JSONPageMetadata) bool {
 	if rpm.Subtopic != "" {
 		if subtopic, ok := jsonMap["subtopic"].(string); !ok || subtopic != rpm.Subtopic {
 			return false

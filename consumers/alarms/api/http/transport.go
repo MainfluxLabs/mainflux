@@ -19,6 +19,14 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+const (
+	convertKey             = "convert"
+	jsonFormat             = "json"
+	csvFormat              = "csv"
+	timeFormatKey          = "time_format"
+	octetStreamContentType = "application/octet-stream"
+)
+
 // MakeHandler returns a HTTP handler for Alarm API endpoints.
 func MakeHandler(tracer opentracing.Tracer, svc alarms.Service, logger log.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
@@ -62,13 +70,20 @@ func MakeHandler(tracer opentracing.Tracer, svc alarms.Service, logger log.Logge
 		opts...,
 	))
 
+	r.Get("/things/:id/alarms/backup", kithttp.NewServer(
+		kitot.TraceServer(tracer, "backup_alarms_by_thing")(backupAlarmsByThingEndpoint(svc)),
+		decodeBackupAlarmsByThing,
+		encodeBackupFileResponse,
+		opts...,
+	))
+
 	r.GetFunc("/health", mainflux.Health("alarms"))
 	r.Handle("/metrics", promhttp.Handler())
 
 	return r
 }
 
-func decodeListAlarmsByThing(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListAlarmsByThing(_ context.Context, r *http.Request) (any, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -81,7 +96,7 @@ func decodeListAlarmsByThing(_ context.Context, r *http.Request) (interface{}, e
 	}, nil
 }
 
-func decodeListGroupAlarms(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListGroupAlarms(_ context.Context, r *http.Request) (any, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -94,7 +109,7 @@ func decodeListGroupAlarms(_ context.Context, r *http.Request) (interface{}, err
 	}, nil
 }
 
-func decodeListAlarmsByOrg(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListAlarmsByOrg(_ context.Context, r *http.Request) (any, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -107,14 +122,14 @@ func decodeListAlarmsByOrg(_ context.Context, r *http.Request) (interface{}, err
 	}, nil
 }
 
-func decodeViewAlarm(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeViewAlarm(_ context.Context, r *http.Request) (any, error) {
 	return alarmReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}, nil
 }
 
-func decodeRemoveAlarms(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRemoveAlarms(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -130,7 +145,32 @@ func decodeRemoveAlarms(_ context.Context, r *http.Request) (interface{}, error)
 	return req, nil
 }
 
-func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func decodeBackupAlarmsByThing(_ context.Context, r *http.Request) (any, error) {
+	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, jsonFormat)
+	if err != nil {
+		return nil, err
+	}
+
+	timeFormat, err := apiutil.ReadStringQuery(r, timeFormatKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	pm, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return backupAlarmsByThingReq{
+		token:         apiutil.ExtractBearerToken(r),
+		thingID:       bone.GetValue(r, apiutil.IDKey),
+		convertFormat: convertFormat,
+		timeFormat:    timeFormat,
+		pageMetadata:  pm,
+	}, nil
+}
+
+func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {
@@ -146,6 +186,26 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	}
 
 	return json.NewEncoder(w).Encode(response)
+}
+
+func encodeBackupFileResponse(_ context.Context, w http.ResponseWriter, response any) error {
+	w.Header().Set("Content-Type", octetStreamContentType)
+
+	if ar, ok := response.(backupFileRes); ok {
+		for k, v := range ar.Headers() {
+			w.Header().Set(k, v)
+		}
+
+		w.WriteHeader(ar.Code())
+
+		if ar.Empty() {
+			return nil
+		}
+
+		w.Write(ar.file)
+	}
+
+	return nil
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {

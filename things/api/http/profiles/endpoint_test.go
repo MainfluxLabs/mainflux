@@ -83,7 +83,7 @@ var (
 	usersList       = []users.User{admin, user, otherUser}
 	group           = things.Group{Name: "test-group", Description: "test-group-desc", OrgID: orgID}
 	orgsList        = []auth.Org{{ID: orgID, OwnerID: user.ID}, {ID: orgID2, OwnerID: user.ID}}
-	metadata        = map[string]interface{}{"test": "data"}
+	metadata        = map[string]any{"test": "data"}
 	invalidName     = strings.Repeat("m", maxNameSize+1)
 	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, invalidName)
 )
@@ -138,7 +138,7 @@ func newServer(svc things.Service) *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-func toJSON(data interface{}) string {
+func toJSON(data any) string {
 	jsonData, _ := json.Marshal(data)
 	return string(jsonData)
 }
@@ -1972,11 +1972,11 @@ func TestRemoveProfiles(t *testing.T) {
 }
 
 type profileRes struct {
-	ID       string                 `json:"id"`
-	Name     string                 `json:"name,omitempty"`
-	GroupID  string                 `json:"group_id,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
-	Config   map[string]interface{} `json:"config,omitempty"`
+	ID       string         `json:"id"`
+	Name     string         `json:"name,omitempty"`
+	GroupID  string         `json:"group_id,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
+	Config   map[string]any `json:"config,omitempty"`
 }
 
 type profilesPageRes struct {

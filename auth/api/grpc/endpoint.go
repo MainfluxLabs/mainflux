@@ -12,7 +12,7 @@ import (
 )
 
 func issueEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(issueReq)
 		if err := req.validate(); err != nil {
 			return issueRes{}, err
@@ -35,7 +35,7 @@ func issueEndpoint(svc auth.Service) endpoint.Endpoint {
 }
 
 func identifyEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(identityReq)
 		if err := req.validate(); err != nil {
 			return identityRes{}, err
@@ -56,7 +56,7 @@ func identifyEndpoint(svc auth.Service) endpoint.Endpoint {
 }
 
 func authorizeEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(authReq)
 
 		if err := req.validate(); err != nil {
@@ -79,7 +79,7 @@ func authorizeEndpoint(svc auth.Service) endpoint.Endpoint {
 }
 
 func getOwnerIDByOrgIDEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(orgIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -95,7 +95,7 @@ func getOwnerIDByOrgIDEndpoint(svc auth.Service) endpoint.Endpoint {
 }
 
 func assignRoleEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(assignRoleReq)
 
 		if err := req.validate(); err != nil {
@@ -111,7 +111,7 @@ func assignRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 }
 
 func retrieveRoleEndpoint(svc auth.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(retrieveRoleReq)
 
 		if err := req.validate(); err != nil {

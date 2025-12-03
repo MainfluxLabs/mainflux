@@ -79,7 +79,7 @@ func CheckError(resp *http.Response, expectedStatusCodes ...int) SDKError {
 		}
 	}
 
-	var content map[string]interface{}
+	var content map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&content); err != nil {
 		return NewSDKErrorWithStatus(err, resp.StatusCode)
 	}

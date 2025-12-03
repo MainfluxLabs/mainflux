@@ -8,11 +8,12 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/go-kit/kit/endpoint"
 )
 
 func listAlarmsByGroupEndpoint(svc alarms.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listAlarmsByGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -28,7 +29,7 @@ func listAlarmsByGroupEndpoint(svc alarms.Service) endpoint.Endpoint {
 }
 
 func listAlarmsByThingEndpoint(svc alarms.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listAlarmsByThingReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -44,7 +45,7 @@ func listAlarmsByThingEndpoint(svc alarms.Service) endpoint.Endpoint {
 }
 
 func listAlarmsByOrgEndpoint(svc alarms.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listAlarmsByOrgReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -60,7 +61,7 @@ func listAlarmsByOrgEndpoint(svc alarms.Service) endpoint.Endpoint {
 }
 
 func viewAlarmEndpoint(svc alarms.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(alarmReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -76,7 +77,7 @@ func viewAlarmEndpoint(svc alarms.Service) endpoint.Endpoint {
 }
 
 func removeAlarmsEndpoint(svc alarms.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(removeAlarmsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -87,6 +88,36 @@ func removeAlarmsEndpoint(svc alarms.Service) endpoint.Endpoint {
 		}
 
 		return removeRes{}, nil
+	}
+}
+
+func backupAlarmsByThingEndpoint(svc alarms.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(backupAlarmsByThingReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		page, err := svc.BackupAlarmsByThing(ctx, req.token, req.thingID, req.pageMetadata)
+		if err != nil {
+			return nil, err
+		}
+
+		var data []byte
+		switch req.convertFormat {
+		case jsonFormat:
+			if data, err = ConvertToJSONFile(page, req.timeFormat); err != nil {
+				return nil, errors.Wrap(errors.ErrBackupAlarms, err)
+			}
+		default:
+			if data, err = ConvertToCSVFile(page, req.timeFormat); err != nil {
+				return nil, errors.Wrap(errors.ErrBackupAlarms, err)
+			}
+		}
+
+		return backupFileRes{
+			file: data,
+		}, nil
 	}
 }
 

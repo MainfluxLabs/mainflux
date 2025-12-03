@@ -15,8 +15,8 @@ type Profile struct {
 	ID       string
 	GroupID  string
 	Name     string
-	Config   map[string]interface{}
-	Metadata map[string]interface{}
+	Config   map[string]any
+	Metadata map[string]any
 }
 
 type Config struct {

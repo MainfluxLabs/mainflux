@@ -12,7 +12,7 @@ import (
 // SPDX-License-Identifier: Apache-2.0
 
 func createRulesEndpoint(svc rules.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(createRulesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -40,7 +40,7 @@ func createRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 }
 
 func listRulesByThingEndpoint(svc rules.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listRulesByThingReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -56,7 +56,7 @@ func listRulesByThingEndpoint(svc rules.Service) endpoint.Endpoint {
 }
 
 func listRulesByGroupEndpoint(svc rules.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listRulesByGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -72,7 +72,7 @@ func listRulesByGroupEndpoint(svc rules.Service) endpoint.Endpoint {
 }
 
 func listThingIDsByRuleEndpoint(svc rules.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(ruleReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -89,7 +89,7 @@ func listThingIDsByRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 }
 
 func viewRuleEndpoint(svc rules.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(ruleReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -105,7 +105,7 @@ func viewRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 }
 
 func updateRuleEndpoint(svc rules.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(updateRuleReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -129,7 +129,7 @@ func updateRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 }
 
 func removeRulesEndpoint(svc rules.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(removeRulesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -144,7 +144,7 @@ func removeRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 }
 
 func assignRulesEndpoint(svc rules.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(thingRulesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -159,7 +159,7 @@ func assignRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 }
 
 func unassignRulesEndpoint(svc rules.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(thingRulesReq)
 		if err := req.validate(); err != nil {
 			return nil, err

@@ -12,7 +12,7 @@ import (
 type Consumer interface {
 	// Consume method is used to consumed received messages.
 	// A non-nil error is returned to indicate operation failure.
-	Consume(messages interface{}) error
+	Consume(messages any) error
 }
 
 // Start method starts consuming messages received from Message broker.
@@ -28,7 +28,7 @@ func Start(id string, sub messaging.Subscriber, consumer Consumer, subjects ...s
 
 func handle(c Consumer) handleFunc {
 	return func(msg protomfx.Message) error {
-		m := interface{}(msg)
+		m := any(msg)
 
 		return c.Consume(m)
 	}

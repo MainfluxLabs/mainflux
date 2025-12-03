@@ -14,15 +14,15 @@ type Message struct {
 	Payload   []byte `json:"payload,omitempty" db:"payload" bson:"payload,omitempty"`
 }
 
-func (msg Message) ToMap() (map[string]interface{}, error) {
-	ret := map[string]interface{}{
+func (msg Message) ToMap() (map[string]any, error) {
+	ret := map[string]any{
 		"created":   msg.Created,
 		"subtopic":  msg.Subtopic,
 		"publisher": msg.Publisher,
 		"protocol":  msg.Protocol,
-		"payload":   map[string]interface{}{},
+		"payload":   map[string]any{},
 	}
-	pld := make(map[string]interface{})
+	pld := make(map[string]any)
 	if err := json.Unmarshal(msg.Payload, &pld); err != nil {
 		return nil, err
 	}

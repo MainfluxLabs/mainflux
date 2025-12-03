@@ -10,7 +10,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
-	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -62,52 +61,52 @@ func (svc thingsServiceMock) GetConfigByThingID(context.Context, *protomfx.Thing
 func (svc thingsServiceMock) CanUserAccessThing(_ context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
 	th, ok := svc.things[req.GetToken()]
 	if !ok {
-		return &empty.Empty{}, errors.ErrAuthentication
+		return &emptypb.Empty{}, errors.ErrAuthentication
 	}
 
 	if req.GetId() == th.ID {
-		return &empty.Empty{}, nil
+		return &emptypb.Empty{}, nil
 	}
 
-	return &empty.Empty{}, errors.ErrAuthorization
+	return &emptypb.Empty{}, errors.ErrAuthorization
 }
 
 func (svc thingsServiceMock) CanUserAccessProfile(_ context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
 	gr, ok := svc.groups[req.GetToken()]
 	if !ok {
-		return &empty.Empty{}, errors.ErrAuthentication
+		return &emptypb.Empty{}, errors.ErrAuthentication
 	}
 
 	if pr, ok := svc.profiles[req.GetToken()]; ok {
 		if pr.GroupID == gr.ID {
-			return &empty.Empty{}, nil
+			return &emptypb.Empty{}, nil
 		}
 	}
 
-	return &empty.Empty{}, errors.ErrAuthorization
+	return &emptypb.Empty{}, errors.ErrAuthorization
 }
 
 func (svc thingsServiceMock) CanUserAccessGroup(_ context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
 	gr, ok := svc.groups[req.GetToken()]
 	if !ok {
-		return &empty.Empty{}, errors.ErrAuthentication
+		return &emptypb.Empty{}, errors.ErrAuthentication
 	}
 
 	if req.GetId() == gr.ID {
-		return &empty.Empty{}, nil
+		return &emptypb.Empty{}, nil
 	}
 
-	return &empty.Empty{}, errors.ErrAuthorization
+	return &emptypb.Empty{}, errors.ErrAuthorization
 }
 
 func (svc thingsServiceMock) CanThingAccessGroup(_ context.Context, req *protomfx.ThingAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
 	if th, ok := svc.things[req.GetKey()]; ok {
 		if th.GroupID == req.GetId() {
-			return &empty.Empty{}, nil
+			return &emptypb.Empty{}, nil
 		}
 	}
 
-	return &empty.Empty{}, errors.ErrAuthorization
+	return &emptypb.Empty{}, errors.ErrAuthorization
 }
 
 func (svc thingsServiceMock) Identify(_ context.Context, key *protomfx.ThingKey, _ ...grpc.CallOption) (*protomfx.ThingID, error) {

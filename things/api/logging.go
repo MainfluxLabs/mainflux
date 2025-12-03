@@ -315,7 +315,7 @@ func (lm *loggingMiddleware) GetPubConfByKey(ctx context.Context, key things.Thi
 	return lm.svc.GetPubConfByKey(ctx, key)
 }
 
-func (lm *loggingMiddleware) GetConfigByThingID(ctx context.Context, thingID string) (config map[string]interface{}, err error) {
+func (lm *loggingMiddleware) GetConfigByThingID(ctx context.Context, thingID string) (config map[string]any, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method get_config_by_thing_id for thing %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {

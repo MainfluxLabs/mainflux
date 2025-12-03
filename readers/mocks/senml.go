@@ -54,7 +54,7 @@ func (repo *senmlRepositoryMock) Remove(ctx context.Context, rpm readers.SenMLPa
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 
-	var query map[string]interface{}
+	var query map[string]any
 	meta, _ := json.Marshal(rpm)
 	json.Unmarshal(meta, &query)
 
@@ -74,7 +74,7 @@ func (repo *senmlRepositoryMock) readAll(rpm readers.SenMLPageMetadata) (readers
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 
-	var query map[string]interface{}
+	var query map[string]any
 	meta, _ := json.Marshal(rpm)
 	json.Unmarshal(meta, &query)
 
@@ -113,7 +113,7 @@ func (repo *senmlRepositoryMock) readAll(rpm readers.SenMLPageMetadata) (readers
 	}, nil
 }
 
-func (repo *senmlRepositoryMock) senmlMessageMatchesFilter(msg readers.Message, query map[string]interface{}, rpm readers.SenMLPageMetadata) bool {
+func (repo *senmlRepositoryMock) senmlMessageMatchesFilter(msg readers.Message, query map[string]any, rpm readers.SenMLPageMetadata) bool {
 	switch m := msg.(type) {
 	case senml.Message:
 		return repo.checkSenMLMessageFilter(m, query, rpm)
@@ -122,7 +122,7 @@ func (repo *senmlRepositoryMock) senmlMessageMatchesFilter(msg readers.Message, 
 	}
 }
 
-func (repo *senmlRepositoryMock) checkSenMLMessageFilter(senmlMsg senml.Message, query map[string]interface{}, rpm readers.SenMLPageMetadata) bool {
+func (repo *senmlRepositoryMock) checkSenMLMessageFilter(senmlMsg senml.Message, query map[string]any, rpm readers.SenMLPageMetadata) bool {
 	if rpm.Subtopic != "" && rpm.Subtopic != senmlMsg.Subtopic {
 		return false
 	}
@@ -149,7 +149,7 @@ func (repo *senmlRepositoryMock) checkSenMLMessageFilter(senmlMsg senml.Message,
 	return true
 }
 
-func (repo *senmlRepositoryMock) checkSenMLValueFilters(senmlMsg senml.Message, query map[string]interface{}, rpm readers.SenMLPageMetadata) bool {
+func (repo *senmlRepositoryMock) checkSenMLValueFilters(senmlMsg senml.Message, query map[string]any, rpm readers.SenMLPageMetadata) bool {
 	if _, hasValue := query["v"]; hasValue && senmlMsg.Value != nil {
 		comparator, hasComparator := query["comparator"]
 		if !hasComparator {

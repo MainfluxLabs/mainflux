@@ -22,7 +22,7 @@ var (
 )
 
 func TransformPayload(transformer protomfx.Transformer, msg *protomfx.Message) error {
-	var payload interface{}
+	var payload any
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
 		return errors.Wrap(ErrTransform, err)
 	}
@@ -30,7 +30,7 @@ func TransformPayload(transformer protomfx.Transformer, msg *protomfx.Message) e
 	extractedPayload := extractPayload(payload, transformer.DataField)
 
 	switch p := extractedPayload.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		ts, err := transformTimeField(p, transformer)
 		if err != nil {
 			return errors.Wrap(ErrInvalidTimeField, err)
@@ -48,10 +48,10 @@ func TransformPayload(transformer protomfx.Transformer, msg *protomfx.Message) e
 		msg.Payload = data
 		return nil
 
-	case []interface{}:
-		var payloads []map[string]interface{}
+	case []any:
+		var payloads []map[string]any
 		for _, val := range p {
-			v, ok := val.(map[string]interface{})
+			v, ok := val.(map[string]any)
 			if !ok {
 				return errors.Wrap(ErrTransform, errInvalidNestedJSON)
 			}
@@ -81,7 +81,7 @@ func TransformPayload(transformer protomfx.Transformer, msg *protomfx.Message) e
 	}
 }
 
-func transformTimeField(payload interface{}, transformer protomfx.Transformer) (int64, error) {
+func transformTimeField(payload any, transformer protomfx.Transformer) (int64, error) {
 	if transformer.TimeField == "" {
 		return 0, nil
 	}
@@ -91,18 +91,18 @@ func transformTimeField(payload interface{}, transformer protomfx.Transformer) (
 
 	for _, k := range keys {
 		switch v := val.(type) {
-		case map[string]interface{}:
+		case map[string]any:
 			current, exists := v[k]
 			if !exists {
 				return 0, nil
 			}
 			val = current
 
-		case []interface{}:
+		case []any:
 			if len(v) == 0 {
 				return 0, nil
 			}
-			firstItem, ok := v[0].(map[string]interface{})
+			firstItem, ok := v[0].(map[string]any)
 			if !ok {
 				return 0, nil
 			}
@@ -124,7 +124,7 @@ func transformTimeField(payload interface{}, transformer protomfx.Transformer) (
 	return t.UnixNano(), nil
 }
 
-func extractPayload(payload interface{}, dataField string) interface{} {
+func extractPayload(payload any, dataField string) any {
 	if dataField == "" {
 		return payload
 	}
@@ -134,18 +134,18 @@ func extractPayload(payload interface{}, dataField string) interface{} {
 
 	for _, k := range keys {
 		switch v := value.(type) {
-		case map[string]interface{}:
+		case map[string]any:
 			current, exists := v[k]
 			if !exists {
 				return nil
 			}
 			value = current
 
-		case []interface{}:
+		case []any:
 			if len(v) == 0 {
 				return nil
 			}
-			firstItem, ok := v[0].(map[string]interface{})
+			firstItem, ok := v[0].(map[string]any)
 			if !ok {
 				return nil
 			}
@@ -163,21 +163,21 @@ func extractPayload(payload interface{}, dataField string) interface{} {
 	return value
 }
 
-func filterPayloadFields(payload map[string]interface{}, dataFilters []string) map[string]interface{} {
+func filterPayloadFields(payload map[string]any, dataFilters []string) map[string]any {
 	if len(dataFilters) == 0 {
 		return payload
 	}
 
-	filteredPayload := make(map[string]interface{})
+	filteredPayload := make(map[string]any)
 
 	for _, key := range dataFilters {
 		// Split nested path
 		keys := strings.Split(key, ".")
-		var value interface{} = payload
+		var value any = payload
 
 		// Traverse nested structure
 		for _, k := range keys {
-			current, ok := value.(map[string]interface{})
+			current, ok := value.(map[string]any)
 			if !ok {
 				value = nil
 				break

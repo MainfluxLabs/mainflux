@@ -8,14 +8,14 @@ import (
 )
 
 type alarmResponse struct {
-	ID       string                 `json:"id"`
-	ThingID  string                 `json:"thing_id"`
-	GroupID  string                 `json:"group_id"`
-	RuleID   string                 `json:"rule_id"`
-	Subtopic string                 `json:"subtopic"`
-	Protocol string                 `json:"protocol"`
-	Payload  map[string]interface{} `json:"payload"`
-	Created  int64                  `json:"created"`
+	ID       string         `json:"id"`
+	ThingID  string         `json:"thing_id"`
+	GroupID  string         `json:"group_id"`
+	RuleID   string         `json:"rule_id"`
+	Subtopic string         `json:"subtopic"`
+	Protocol string         `json:"protocol"`
+	Payload  map[string]any `json:"payload"`
+	Created  int64          `json:"created"`
 }
 
 type AlarmsPageRes struct {
@@ -39,4 +39,20 @@ func (res removeRes) Headers() map[string]string {
 
 func (res removeRes) Empty() bool {
 	return true
+}
+
+type backupFileRes struct {
+	file []byte
+}
+
+func (res backupFileRes) Code() int {
+	return http.StatusOK
+}
+
+func (res backupFileRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res backupFileRes) Empty() bool {
+	return len(res.file) == 0
 }

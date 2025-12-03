@@ -61,7 +61,7 @@ type SenMLMessageRepository interface {
 }
 
 // Message represents any message format.
-type Message interface{}
+type Message any
 
 type MessagesPage struct {
 	Total    uint64
@@ -94,8 +94,10 @@ type SenMLPageMetadata struct {
 	From        int64   `json:"from,omitempty"`
 	To          int64   `json:"to,omitempty"`
 	AggInterval string  `json:"agg_interval,omitempty"`
+	AggValue    uint64  `json:"agg_value,omitempty"`
 	AggType     string  `json:"agg_type,omitempty"`
 	AggField    string  `json:"agg_field,omitempty"`
+	Dir         string  `json:"dir,omitempty"`
 }
 
 // JSONPageMetadata represents the parameters used to create database queries
@@ -109,12 +111,14 @@ type JSONPageMetadata struct {
 	To          int64  `json:"to,omitempty"`
 	Filter      string `json:"filter,omitempty"`
 	AggInterval string `json:"agg_interval,omitempty"`
+	AggValue    uint64 `json:"agg_value,omitempty"`
 	AggType     string `json:"agg_type,omitempty"`
 	AggField    string `json:"agg_field,omitempty"`
+	Dir         string `json:"dir,omitempty"`
 }
 
 // ParseValueComparator convert comparison operator keys into mathematic anotation
-func ParseValueComparator(query map[string]interface{}) string {
+func ParseValueComparator(query map[string]any) string {
 	comparator := "="
 	val, ok := query["comparator"]
 	if ok {

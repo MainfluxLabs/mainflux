@@ -48,7 +48,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	return mux
 }
 
-func decodeIssue(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeIssue(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -61,7 +61,7 @@ func decodeIssue(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func decodeKeyReq(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeKeyReq(_ context.Context, r *http.Request) (any, error) {
 	req := keyReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, "id"),
@@ -69,7 +69,7 @@ func decodeKeyReq(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
-func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {

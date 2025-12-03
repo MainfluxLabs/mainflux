@@ -73,7 +73,7 @@ var (
 	}
 	createdGroup = things.Group{OrgID: orgID, Name: "test-group", Description: "test-group-desc"}
 	orgsList     = []auth.Org{{ID: orgID, OwnerID: user.ID}}
-	metadata     = map[string]interface{}{"test": "data"}
+	metadata     = map[string]any{"test": "data"}
 )
 
 func newService() things.Service {
@@ -1045,7 +1045,7 @@ func TestViewProfile(t *testing.T) {
 		id       string
 		token    string
 		err      error
-		metadata map[string]interface{}
+		metadata map[string]any
 	}{
 		"view existing profile": {
 			id:    pr.ID,
@@ -2031,7 +2031,7 @@ func TestUpdateGroup(t *testing.T) {
 func TestViewGroup(t *testing.T) {
 	svc := newService()
 
-	createdGroup.Metadata = map[string]interface{}{"test": "meta"}
+	createdGroup.Metadata = map[string]any{"test": "meta"}
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	gr := grs[0]
@@ -2935,7 +2935,7 @@ func TestRestore(t *testing.T) {
 			Name:        "testThing",
 			Key:         thkey,
 			ExternalKey: "abc123",
-			Metadata:    map[string]interface{}{},
+			Metadata:    map[string]any{},
 		},
 	}
 
@@ -2945,7 +2945,7 @@ func TestRestore(t *testing.T) {
 		pr := things.Profile{
 			ID:       prID,
 			Name:     "testProfile",
-			Metadata: map[string]interface{}{},
+			Metadata: map[string]any{},
 		}
 		pr.Name = fmt.Sprintf("name-%d", i)
 		prs = append(prs, pr)

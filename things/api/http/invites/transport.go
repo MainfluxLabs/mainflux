@@ -74,7 +74,7 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 	return mux
 }
 
-func decodeCreateGroupInviteRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeCreateGroupInviteRequest(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -91,7 +91,7 @@ func decodeCreateGroupInviteRequest(_ context.Context, r *http.Request) (interfa
 	return req, nil
 }
 
-func decodeRespondGroupInviteRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRespondGroupInviteRequest(_ context.Context, r *http.Request) (any, error) {
 	req := respondGroupInviteReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
@@ -110,7 +110,7 @@ func decodeRespondGroupInviteRequest(_ context.Context, r *http.Request) (interf
 	return req, nil
 }
 
-func decodeListGroupInvitesByUserRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListGroupInvitesByUserRequest(_ context.Context, r *http.Request) (any, error) {
 	req := listGroupInvitesByUserReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
@@ -126,7 +126,7 @@ func decodeListGroupInvitesByUserRequest(_ context.Context, r *http.Request) (in
 	return req, nil
 }
 
-func decodeInviteRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeInviteRequest(_ context.Context, r *http.Request) (any, error) {
 	req := inviteReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
@@ -135,7 +135,7 @@ func decodeInviteRequest(_ context.Context, r *http.Request) (interface{}, error
 	return req, nil
 }
 
-func decodeListGroupInvitesByGroupRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListGroupInvitesByGroupRequest(_ context.Context, r *http.Request) (any, error) {
 	req := listGroupInvitesByGroupReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
@@ -151,7 +151,7 @@ func decodeListGroupInvitesByGroupRequest(_ context.Context, r *http.Request) (i
 	return req, nil
 }
 
-func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {

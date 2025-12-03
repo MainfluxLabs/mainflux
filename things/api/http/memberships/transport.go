@@ -76,7 +76,7 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 	return mux
 }
 
-func decodeListGroupMemberships(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListGroupMemberships(_ context.Context, r *http.Request) (any, error) {
 	pm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
@@ -98,7 +98,7 @@ func decodeListGroupMemberships(_ context.Context, r *http.Request) (interface{}
 	return req, nil
 }
 
-func decodeGroupMemberships(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeGroupMemberships(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -115,7 +115,7 @@ func decodeGroupMemberships(_ context.Context, r *http.Request) (interface{}, er
 	return req, nil
 }
 
-func decodeRemoveGroupMemberships(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRemoveGroupMemberships(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -132,7 +132,7 @@ func decodeRemoveGroupMemberships(_ context.Context, r *http.Request) (interface
 	return req, nil
 }
 
-func decodeBackupByGroup(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeBackupByGroup(_ context.Context, r *http.Request) (any, error) {
 	req := backupByGroupReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
@@ -140,7 +140,7 @@ func decodeBackupByGroup(_ context.Context, r *http.Request) (interface{}, error
 	return req, nil
 }
 
-func decodeRestoreByGroup(ctx context.Context, r *http.Request) (interface{}, error) {
+func decodeRestoreByGroup(ctx context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeOctetStream) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -162,7 +162,7 @@ func decodeRestoreByGroup(ctx context.Context, r *http.Request) (interface{}, er
 	return req, nil
 }
 
-func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {

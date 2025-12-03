@@ -13,7 +13,7 @@ type Alarm struct {
 	RuleID   string
 	Subtopic string
 	Protocol string
-	Payload  map[string]interface{}
+	Payload  map[string]any
 	Created  int64
 }
 
@@ -42,4 +42,7 @@ type AlarmRepository interface {
 
 	// Remove removes alarms by their identifiers.
 	Remove(ctx context.Context, ids ...string) error
+
+	// BackupByThing backups alarms associated with a given thing ID.
+	BackupByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error)
 }
