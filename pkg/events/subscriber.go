@@ -66,8 +66,6 @@ func NewSubscriber(url, stream, group, consumer string, logger logger.Logger) (S
 }
 
 func (es *subEventStore) Subscribe(ctx context.Context, handler EventHandler) error {
-	defer es.client.Close()
-
 	err := es.client.XGroupCreateMkStream(ctx, es.stream, es.group, "$").Err()
 	if err != nil && err.Error() != exists {
 		return err
