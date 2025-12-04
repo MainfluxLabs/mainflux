@@ -5,10 +5,10 @@ package events
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -66,33 +66,37 @@ func NewSubscriber(url, stream, group, consumer string, logger logger.Logger) (S
 }
 
 func (es *subEventStore) Subscribe(ctx context.Context, handler EventHandler) error {
+	defer es.client.Close()
+
 	err := es.client.XGroupCreateMkStream(ctx, es.stream, es.group, "$").Err()
 	if err != nil && err.Error() != exists {
 		return err
 	}
 
-	go func() {
-		for {
-			msgs, err := es.client.XReadGroup(ctx, &redis.XReadGroupArgs{
-				Group:    es.group,
-				Consumer: es.consumer,
-				Streams:  []string{es.stream, ">"},
-				Count:    eventCount,
-			}).Result()
-			if err != nil {
-				es.logger.Warn(fmt.Sprintf("failed to read from Redis stream: %s", err))
+	for {
+		msgs, err := es.client.XReadGroup(ctx, &redis.XReadGroupArgs{
+			Group:    es.group,
+			Consumer: es.consumer,
+			Streams:  []string{es.stream, ">"},
+			Count:    eventCount,
+		}).Result()
 
-				continue
-			}
-			if len(msgs) == 0 {
-				continue
+		if err != nil {
+			if errors.Contains(err, context.Canceled) || errors.Contains(err, context.DeadlineExceeded) {
+				return err
 			}
 
-			es.handle(ctx, msgs[0].Messages, handler)
+			es.logger.Warn(fmt.Sprintf("failed to read from Redis stream: %s", err))
+
+			continue
 		}
-	}()
 
-	return nil
+		if len(msgs) == 0 {
+			continue
+		}
+
+		es.handle(ctx, msgs[0].Messages, handler)
+	}
 }
 
 func (es *subEventStore) Close() error {
