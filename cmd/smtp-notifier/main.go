@@ -161,17 +161,16 @@ func main() {
 
 	svc := newService(cfg, logger, dbTracer, db, tc)
 
-	if err = subscribeToThingsES(ctx, svc, cfg, logger); err != nil {
-		logger.Error(fmt.Sprintf("failed to subscribe to things event store: %s", err))
-		return
-	}
-
 	if err = consumers.Start(svcName, pubSub, svc, nats.SubjectSmtp); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create SMTP notifier: %s", err))
 	}
 
 	g.Go(func() error {
 		return servershttp.Start(ctx, httpapi.MakeHandler(notifiersTracer, svc, logger), cfg.httpConfig, logger)
+	})
+
+	g.Go(func() error {
+		return subscribeToThingsES(ctx, svc, cfg, logger)
 	})
 
 	g.Go(func() error {
@@ -267,15 +266,15 @@ func subscribeToThingsES(ctx context.Context, svc notifiers.Service, cfg config,
 		return err
 	}
 
+	defer func() {
+		if err := subscriber.Close(); err != nil {
+			logger.Error(fmt.Sprintf("Failed to close subscriber: %s", err))
+		}
+	}()
+
 	handler := events.NewEventHandler(svc)
 
-	if err := subscriber.Subscribe(ctx, handler); err != nil {
-		return err
-	}
-
-	logger.Info("Subscribed to Redis Event Store")
-
-	return nil
+	return subscriber.Subscribe(ctx, handler)
 }
 
 func newService(c config, logger logger.Logger, dbTracer opentracing.Tracer, db *sqlx.DB, tc protomfx.ThingsServiceClient) notifiers.Service {
