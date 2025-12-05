@@ -16,6 +16,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers/api"
 	httpapi "github.com/MainfluxLabs/mainflux/consumers/notifiers/api/http"
+	"github.com/MainfluxLabs/mainflux/consumers/notifiers/events"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers/postgres"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers/smtp"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers/tracing"
@@ -25,6 +26,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/email"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
@@ -35,14 +37,17 @@ import (
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/errgroup"
 )
 
 const (
-	svcName              = "smtp-notifier"
-	stopWaitTime         = 5 * time.Second
+	svcName      = "smtp-notifier"
+	stopWaitTime = 5 * time.Second
+	thingsStream = "mainflux.things"
+	esGroupName  = svcName
+
 	defLogLevel          = "error"
 	defFrom              = ""
 	defJaegerURL         = ""
@@ -63,6 +68,8 @@ const (
 	defServerKey         = ""
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
+	defESURL             = "redis://localhost:6379/0"
+	defESConsumerName    = svcName
 
 	defEmailHost         = "localhost"
 	defEmailPort         = "25"
@@ -92,6 +99,8 @@ const (
 	envServerKey         = "MF_SMTP_NOTIFIER_SERVER_KEY"
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envESURL             = "MF_SMTP_NOTIFIER_ES_URL"
+	envESConsumerName    = "MF_SMTP_NOTIFIER_EVENT_CONSUMER"
 
 	envEmailHost         = "MF_EMAIL_HOST"
 	envEmailPort         = "MF_EMAIL_PORT"
@@ -112,6 +121,8 @@ type config struct {
 	from              string
 	jaegerURL         string
 	thingsGRPCTimeout time.Duration
+	esURL             string
+	esConsumerName    string
 }
 
 func main() {
@@ -156,6 +167,10 @@ func main() {
 
 	g.Go(func() error {
 		return servershttp.Start(ctx, httpapi.MakeHandler(notifiersTracer, svc, logger), cfg.httpConfig, logger)
+	})
+
+	g.Go(func() error {
+		return subscribeToThingsES(ctx, svc, cfg, logger)
 	})
 
 	g.Go(func() error {
@@ -230,6 +245,8 @@ func loadConfig() config {
 		from:              mainflux.Env(envFrom, defFrom),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
+		esURL:             mainflux.Env(envESURL, defESURL),
+		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 	}
 
 }
@@ -241,6 +258,23 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 		os.Exit(1)
 	}
 	return db
+}
+
+func subscribeToThingsES(ctx context.Context, svc notifiers.Service, cfg config, logger logger.Logger) error {
+	subscriber, err := mfevents.NewSubscriber(cfg.esURL, thingsStream, esGroupName, cfg.esConsumerName, logger)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := subscriber.Close(); err != nil {
+			logger.Error(fmt.Sprintf("Failed to close subscriber: %s", err))
+		}
+	}()
+
+	handler := events.NewEventHandler(svc)
+
+	return subscriber.Subscribe(ctx, handler)
 }
 
 func newService(c config, logger logger.Logger, dbTracer opentracing.Tracer, db *sqlx.DB, tc protomfx.ThingsServiceClient) notifiers.Service {

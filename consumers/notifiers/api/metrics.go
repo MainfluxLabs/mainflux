@@ -76,6 +76,15 @@ func (ms *metricsMiddleware) RemoveNotifiers(ctx context.Context, token string, 
 	return ms.svc.RemoveNotifiers(ctx, token, id...)
 }
 
+func (ms *metricsMiddleware) RemoveNotifiersByGroup(ctx context.Context, groupID string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "remove_notifiers_by_group").Add(1)
+		ms.latency.With("method", "remove_notifiers_by_group").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RemoveNotifiersByGroup(ctx, groupID)
+}
+
 func (ms *metricsMiddleware) Consume(msg any) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "consume").Add(1)
