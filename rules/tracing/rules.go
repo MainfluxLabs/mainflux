@@ -16,9 +16,11 @@ const (
 	retrieveRulesByGroup   = "retrieve_rules_by_group"
 	retrieveThingIDsByRule = "retrieve_thing_ids_by_rule"
 	updateRule             = "update_rule"
-	removeRule             = "remove_rule"
+	removeRules            = "remove_rules"
+	removeRulesByGroup     = "remove_rules_by_group"
 	assignRules            = "assign_rules"
 	unassignRules          = "unassign_rules"
+	unassignRulesByThing   = "unassign_rules_by_thing"
 )
 
 var (
@@ -87,11 +89,19 @@ func (rpm ruleRepositoryMiddleware) Update(ctx context.Context, rule rules.Rule)
 }
 
 func (rpm ruleRepositoryMiddleware) Remove(ctx context.Context, ids ...string) error {
-	span := dbutil.CreateSpan(ctx, rpm.tracer, removeRule)
+	span := dbutil.CreateSpan(ctx, rpm.tracer, removeRules)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return rpm.repo.Remove(ctx, ids...)
+}
+
+func (rpm ruleRepositoryMiddleware) RemoveByGroup(ctx context.Context, groupID string) error {
+	span := dbutil.CreateSpan(ctx, rpm.tracer, removeRulesByGroup)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return rpm.repo.RemoveByGroup(ctx, groupID)
 }
 
 func (rpm ruleRepositoryMiddleware) Assign(ctx context.Context, thingID string, ruleIDs ...string) error {
@@ -108,4 +118,12 @@ func (rpm ruleRepositoryMiddleware) Unassign(ctx context.Context, thingID string
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return rpm.repo.Unassign(ctx, thingID, ruleIDs...)
+}
+
+func (rpm ruleRepositoryMiddleware) UnassignByThing(ctx context.Context, thingID string) error {
+	span := dbutil.CreateSpan(ctx, rpm.tracer, unassignRulesByThing)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return rpm.repo.UnassignByThing(ctx, thingID)
 }
