@@ -87,6 +87,32 @@ func (lm loggingMiddleware) RemoveAlarms(ctx context.Context, token string, id .
 	return lm.svc.RemoveAlarms(ctx, token, id...)
 }
 
+func (lm loggingMiddleware) RemoveAlarmsByThing(ctx context.Context, thingID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_alarms_by_thing for id %s took %s to complete", thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RemoveAlarmsByThing(ctx, thingID)
+}
+
+func (lm loggingMiddleware) RemoveAlarmsByGroup(ctx context.Context, groupID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_alarms_by_group for id %s took %s to complete", groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RemoveAlarmsByGroup(ctx, groupID)
+}
+
 func (lm loggingMiddleware) BackupAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (_ alarms.AlarmsPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method backup_alarms_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
