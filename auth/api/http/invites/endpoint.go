@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/invites"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -14,7 +15,15 @@ func createOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		invite, err := svc.CreateOrgInvite(ctx, req.token, req.Email, req.Role, req.orgID, req.RedirectPath)
+		dormantGroupInvites := make([]auth.DormantGroupInvite, 0, len(req.Groups))
+		for _, gr := range req.Groups {
+			dormantGroupInvites = append(dormantGroupInvites, auth.DormantGroupInvite{
+				GroupID: gr.GroupID,
+				Role:    gr.Role,
+			})
+		}
+
+		invite, err := svc.CreateOrgInvite(ctx, req.token, req.Email, req.Role, req.orgID, req.RedirectPath, dormantGroupInvites...)
 		if err != nil {
 			return nil, err
 		}
@@ -66,7 +75,7 @@ func respondOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.RespondOrgInvite(ctx, req.token, req.id, req.accepted); err != nil {
+		if err := svc.RespondOrgInvite(ctx, req.token, req.id, req.accepted, req.RedirectPath); err != nil {
 			return nil, err
 		}
 
@@ -110,9 +119,9 @@ func listOrgInvitesByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func buildOrgInvitesPageRes(page auth.OrgInvitesPage, pm auth.PageMetadataInvites) orgInvitePageRes {
+func buildOrgInvitesPageRes(page auth.OrgInvitesPage, pm invites.PageMetadataInvites) orgInvitePageRes {
 	response := orgInvitePageRes{
-		pageRes: pageRes{
+		PageRes: invites.PageRes{
 			Limit:  pm.Limit,
 			Offset: pm.Offset,
 			Total:  page.Total,
@@ -131,17 +140,24 @@ func buildOrgInvitesPageRes(page auth.OrgInvitesPage, pm auth.PageMetadataInvite
 }
 
 func buildOrgInviteRes(inv auth.OrgInvite) orgInviteRes {
+	var inviteeID string
+	if inv.InviteeID.Valid {
+		inviteeID = inv.InviteeID.String
+	}
+
 	return orgInviteRes{
-		ID:           inv.ID,
-		InviteeID:    inv.InviteeID,
-		InviteeEmail: inv.InviteeEmail,
-		InviteeRole:  inv.InviteeRole,
-		InviterID:    inv.InviterID,
-		InviterEmail: inv.InviterEmail,
-		OrgID:        inv.OrgID,
-		OrgName:      inv.OrgName,
-		CreatedAt:    inv.CreatedAt,
-		ExpiresAt:    inv.ExpiresAt,
-		State:        inv.State,
+		InviteRes: invites.InviteRes{
+			ID:           inv.ID,
+			InviteeID:    inviteeID,
+			InviteeEmail: inv.InviteeEmail,
+			InviteeRole:  inv.InviteeRole,
+			InviterID:    inv.InviterID,
+			InviterEmail: inv.InviterEmail,
+			CreatedAt:    inv.CreatedAt,
+			ExpiresAt:    inv.ExpiresAt,
+			State:        inv.State,
+		},
+		OrgID:   inv.OrgID,
+		OrgName: inv.OrgName,
 	}
 }

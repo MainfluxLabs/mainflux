@@ -10,15 +10,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/invites"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
 	"github.com/opentracing/opentracing-go"
-)
-
-const (
-	responseActionKey = "action"
-	stateKey          = "state"
 )
 
 func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
@@ -62,14 +58,14 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	))
 
 	mux.Get("/users/:id/invites/received", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_org_invites_by_invitee")(listOrgInvitesByUserEndpoint(svc, auth.UserTypeInvitee)),
+		kitot.TraceServer(tracer, "list_org_invites_by_invitee")(listOrgInvitesByUserEndpoint(svc, invites.UserTypeInvitee)),
 		decodeListOrgInvitesByUserRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/users/:id/invites/sent", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_org_invites_by_inviter")(listOrgInvitesByUserEndpoint(svc, auth.UserTypeInviter)),
+		kitot.TraceServer(tracer, "list_org_invites_by_inviter")(listOrgInvitesByUserEndpoint(svc, invites.UserTypeInviter)),
 		decodeListOrgInvitesByUserRequest,
 		encodeResponse,
 		opts...,
@@ -96,19 +92,27 @@ func decodeCreateOrgInviteRequest(_ context.Context, r *http.Request) (any, erro
 }
 
 func decodeRespondOrgInviteRequest(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
 	req := respondOrgInviteReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
-	action := bone.GetValue(r, responseActionKey)
+	action := bone.GetValue(r, invites.ResponseActionKey)
 	switch action {
 	case "accept":
 		req.accepted = true
 	case "decline":
 		req.accepted = false
 	default:
-		return respondOrgInviteReq{}, auth.ErrInvalidInviteResponse
+		return respondOrgInviteReq{}, invites.ErrInvalidInviteResponse
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -120,7 +124,7 @@ func decodeListOrgInvitesByUserRequest(_ context.Context, r *http.Request) (any,
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
-	pm, err := buildPageMetadataInvites(r)
+	pm, err := invites.BuildPageMetadataInvites(r)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +149,7 @@ func decodeListOrgInvitesByOrgRequest(_ context.Context, r *http.Request) (any, 
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
-	pm, err := buildPageMetadataInvites(r)
+	pm, err := invites.BuildPageMetadataInvites(r)
 	if err != nil {
 		return nil, err
 	}
@@ -153,26 +157,6 @@ func decodeListOrgInvitesByOrgRequest(_ context.Context, r *http.Request) (any, 
 	req.pm = pm
 
 	return req, nil
-}
-
-func buildPageMetadataInvites(r *http.Request) (auth.PageMetadataInvites, error) {
-	pm := auth.PageMetadataInvites{}
-
-	apm, err := apiutil.BuildPageMetadata(r)
-	if err != nil {
-		return auth.PageMetadataInvites{}, err
-	}
-
-	pm.PageMetadata = apm
-
-	state, err := apiutil.ReadStringQuery(r, stateKey, "")
-	if err != nil {
-		return auth.PageMetadataInvites{}, err
-	}
-
-	pm.State = state
-
-	return pm, nil
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
@@ -195,7 +179,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response any) erro
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
-	case errors.Contains(err, auth.ErrInvalidInviteResponse):
+	case errors.Contains(err, invites.ErrInvalidInviteResponse):
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, auth.ErrOrgMembershipExists):
 		w.WriteHeader(http.StatusConflict)

@@ -49,4 +49,26 @@ CREATE TABLE things (
     CONSTRAINT fk_things_profile_id FOREIGN KEY (profile_id) REFERENCES profiles(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT things_group_id_fkey FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS group_invites (
+    id           UUID NOT NULL,
+    invitee_id   UUID NULL,         
+    inviter_id   UUID NOT NULL,
+    group_id     UUID NOT NULL,
+    invitee_role VARCHAR(12) NOT NULL,
+    created_at   TIMESTAMPTZ,
+    expires_at   TIMESTAMPTZ,
+    state        VARCHAR DEFAULT 'pending' NOT NULL,      
+    FOREIGN KEY  (group_id) REFERENCES groups (id) ON DELETE CASCADE,
+    PRIMARY KEY  (id)
+);
+
+CREATE UNIQUE INDEX unique_group_invitee_pending on group_invites (invitee_id, group_id) WHERE state='pending';
+
+CREATE TABLE IF NOT EXISTS dormant_group_invites (
+    group_invite_id UUID NOT NULL,
+    org_invite_id   UUID NOT NULL,
+    PRIMARY KEY (group_invite_id, org_invite_id),
+    FOREIGN KEY (group_invite_id) REFERENCES group_invites (id) ON DELETE CASCADE
+);
 ```

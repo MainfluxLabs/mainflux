@@ -3,6 +3,7 @@ package invites
 import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/invites"
 )
 
 const (
@@ -11,10 +12,14 @@ const (
 )
 
 type createOrgInviteReq struct {
-	token        string
-	orgID        string
-	Email        string `json:"email,omitempty"`
-	Role         string `json:"role,omitempty"`
+	token  string
+	orgID  string
+	Email  string `json:"email,omitempty"`
+	Role   string `json:"role,omitempty"`
+	Groups []struct {
+		GroupID string `json:"group_id"`
+		Role    string `json:"role"`
+	} `json:"groups,omitempty"`
 	RedirectPath string `json:"redirect_path,omitempty"`
 }
 
@@ -37,6 +42,16 @@ func (req createOrgInviteReq) validate() error {
 
 	if err := validateRole(req.Role); err != nil {
 		return err
+	}
+
+	for _, group := range req.Groups {
+		if group.GroupID == "" {
+			return apiutil.ErrMissingGroupID
+		}
+
+		if group.Role == "" {
+			return apiutil.ErrMissingRole
+		}
 	}
 
 	if req.Role == auth.Owner {
@@ -64,9 +79,10 @@ func (req inviteReq) validate() error {
 }
 
 type respondOrgInviteReq struct {
-	token    string
-	id       string
-	accepted bool
+	token        string
+	id           string
+	accepted     bool
+	RedirectPath string `json:"redirect_path"`
 }
 
 func (req respondOrgInviteReq) validate() error {
@@ -78,13 +94,17 @@ func (req respondOrgInviteReq) validate() error {
 		return apiutil.ErrMissingInviteID
 	}
 
+	if req.RedirectPath == "" {
+		return apiutil.ErrMissingRedirectPath
+	}
+
 	return nil
 }
 
 type listOrgInvitesByUserReq struct {
 	token string
 	id    string
-	pm    auth.PageMetadataInvites
+	pm    invites.PageMetadataInvites
 }
 
 func (req listOrgInvitesByUserReq) validate() error {
@@ -106,7 +126,7 @@ func (req listOrgInvitesByUserReq) validate() error {
 type listOrgInvitesByOrgReq struct {
 	token string
 	id    string
-	pm    auth.PageMetadataInvites
+	pm    invites.PageMetadataInvites
 }
 
 func (req listOrgInvitesByOrgReq) validate() error {

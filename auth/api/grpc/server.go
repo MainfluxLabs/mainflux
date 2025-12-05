@@ -27,6 +27,8 @@ type grpcServer struct {
 	getOwnerIDByOrgID      kitgrpc.Handler
 	assignRole             kitgrpc.Handler
 	retrieveRole           kitgrpc.Handler
+	viewOrg                kitgrpc.Handler
+	viewOrgMembership      kitgrpc.Handler
 	createDormantOrgInvite kitgrpc.Handler
 	activateOrgInvite      kitgrpc.Handler
 }
@@ -51,7 +53,7 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 		),
 		getOwnerIDByOrgID: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "get_owner_id_by_org_id")(getOwnerIDByOrgIDEndpoint(svc)),
-			decodeGetOwnerIDByOrgIDRequest,
+			decodeOrgIDRequest,
 			encodeGetOwnerIDByOrgIDResponse,
 		),
 		assignRole: kitgrpc.NewServer(
@@ -73,6 +75,16 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			kitot.TraceServer(tracer, "activate_org_invite")(activateOrgInviteEndpoint(svc)),
 			decodeActivateOrgInviteRequest,
 			encodeEmptyResponse,
+		),
+		viewOrg: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "view_org")(viewOrgEndpoint(svc)),
+			decodeViewOrgRequest,
+			encodeOrgResponse,
+		),
+		viewOrgMembership: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "view_org_membership")(viewOrgMembershipEndpoint(svc)),
+			decodeViewOrgMembershipRequest,
+			encodeOrgMembershipResponse,
 		),
 	}
 }
@@ -124,6 +136,23 @@ func (s *grpcServer) RetrieveRole(ctx context.Context, req *protomfx.RetrieveRol
 		return nil, encodeError(err)
 	}
 	return res.(*protomfx.RetrieveRoleRes), nil
+}
+
+func (s *grpcServer) ViewOrg(ctx context.Context, req *protomfx.ViewOrgReq) (*protomfx.Org, error) {
+	_, res, err := s.viewOrg.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*protomfx.Org), nil
+}
+
+func (s *grpcServer) ViewOrgMembership(ctx context.Context, req *protomfx.ViewOrgMembershipReq) (*protomfx.OrgMembership, error) {
+	_, res, err := s.viewOrgMembership.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+	return res.(*protomfx.OrgMembership), nil
 }
 
 func (s *grpcServer) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq) (*emptypb.Empty, error) {
@@ -184,13 +213,13 @@ func decodeAuthorizeRequest(_ context.Context, grpcReq any) (any, error) {
 	return authReq{Token: req.GetToken(), Object: req.GetObject(), Subject: req.GetSubject(), Action: req.GetAction()}, nil
 }
 
-func decodeGetOwnerIDByOrgIDRequest(_ context.Context, grpcReq any) (any, error) {
+func decodeOrgIDRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.OrgID)
-	return ownerIDByOrgIDReq{orgID: req.GetValue()}, nil
+	return orgIDReq{orgID: req.GetValue()}, nil
 }
 
 func encodeGetOwnerIDByOrgIDResponse(_ context.Context, grpcRes any) (any, error) {
-	res := grpcRes.(ownerIDByOrgIDRes)
+	res := grpcRes.(ownerIDRes)
 	return &protomfx.OwnerID{Value: res.ownerID}, nil
 }
 
@@ -210,6 +239,42 @@ func decodeActivateOrgInviteRequest(_ context.Context, grpcReq any) (any, error)
 		platformInviteID: req.GetPlatformInviteID(),
 		userID:           req.GetUserID(),
 		redirectPath:     req.GetRedirectPath(),
+	}, nil
+}
+
+func decodeViewOrgMembershipRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.ViewOrgMembershipReq)
+	return viewOrgMembershipReq{
+		token:    req.GetToken(),
+		orgID:    req.GetOrgID(),
+		memberID: req.GetMemberID(),
+	}, nil
+}
+
+func encodeOrgMembershipResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(orgMembershipRes)
+	return &protomfx.OrgMembership{
+		MemberID: res.memberID,
+		OrgID:    res.orgID,
+		Role:     res.role,
+	}, nil
+}
+
+func decodeViewOrgRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.ViewOrgReq)
+	return viewOrgReq{
+		token: req.GetToken(),
+		id:    req.GetId().GetValue(),
+	}, nil
+}
+
+func encodeOrgResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(orgRes)
+	return &protomfx.Org{
+		Id:          res.id,
+		OwnerID:     res.ownerID,
+		Name:        res.name,
+		Description: res.description,
 	}, nil
 }
 

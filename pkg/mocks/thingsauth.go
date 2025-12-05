@@ -149,3 +149,11 @@ func (svc thingsServiceMock) GetThingIDsByProfile(_ context.Context, in *protomf
 	}
 	return &protomfx.ThingIDs{Ids: ids}, nil
 }
+
+func (svc thingsServiceMock) ActivateGroupInvites(ctx context.Context, req *protomfx.ActivateGroupInvitesReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}
+
+func (svc thingsServiceMock) CreateDormantGroupInvites(ctx context.Context, req *protomfx.CreateDormantGroupInvitesReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}

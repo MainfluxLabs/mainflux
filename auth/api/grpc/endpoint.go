@@ -80,17 +80,17 @@ func authorizeEndpoint(svc auth.Service) endpoint.Endpoint {
 
 func getOwnerIDByOrgIDEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(ownerIDByOrgIDReq)
+		req := request.(orgIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
 		ownerID, err := svc.GetOwnerIDByOrgID(ctx, req.orgID)
 		if err != nil {
-			return ownerIDByOrgIDReq{}, err
+			return orgIDReq{}, err
 		}
 
-		return ownerIDByOrgIDRes{ownerID: ownerID}, nil
+		return ownerIDRes{ownerID: ownerID}, nil
 	}
 }
 
@@ -109,6 +109,7 @@ func assignRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 		return emptyRes{}, nil
 	}
 }
+
 func retrieveRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(retrieveRoleReq)
@@ -127,6 +128,49 @@ func retrieveRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		return res, nil
+	}
+}
+
+func viewOrgMembershipEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(viewOrgMembershipReq)
+
+		if err := req.validate(); err != nil {
+			return orgMembershipRes{}, nil
+		}
+
+		membership, err := svc.ViewOrgMembership(ctx, req.token, req.orgID, req.memberID)
+		if err != nil {
+			return orgMembershipRes{}, err
+		}
+
+		return orgMembershipRes{
+			orgID:    membership.OrgID,
+			memberID: membership.MemberID,
+			role:     membership.Role,
+		}, nil
+	}
+}
+
+func viewOrgEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(viewOrgReq)
+
+		if err := req.validate(); err != nil {
+			return orgRes{}, nil
+		}
+
+		org, err := svc.ViewOrg(ctx, req.token, req.id)
+		if err != nil {
+			return orgRes{}, err
+		}
+
+		return orgRes{
+			id:          org.ID,
+			ownerID:     org.OwnerID,
+			name:        org.Name,
+			description: org.Description,
+		}, nil
 	}
 }
 

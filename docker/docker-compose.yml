@@ -224,6 +224,9 @@ services:
   things:
     image: ${MF_RELEASE_PREFIX}/things:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-things
+    volumes:
+      - ./templates/base.tmpl:/base.tmpl
+      - ./templates/things/group_invite.tmpl:/group_invite.tmpl
     depends_on:
       - things-db
       - auth
@@ -246,6 +249,15 @@ services:
       MF_USERS_GRPC_URL: ${MF_USERS_GRPC_URL}
       MF_USERS_CA_CERTS: ${MF_USERS_CA_CERTS}
       MF_USERS_CLIENT_TLS: ${MF_USERS_CLIENT_TLS}
+      MF_EMAIL_HOST: ${MF_EMAIL_HOST}
+      MF_EMAIL_PORT: ${MF_EMAIL_PORT}
+      MF_EMAIL_USERNAME: ${MF_EMAIL_USERNAME}
+      MF_EMAIL_PASSWORD: ${MF_EMAIL_PASSWORD}
+      MF_EMAIL_FROM_ADDRESS: ${MF_EMAIL_FROM_ADDRESS}
+      MF_EMAIL_FROM_NAME: ${MF_EMAIL_FROM_NAME}
+      MF_EMAIL_BASE_TEMPLATE: ${MF_EMAIL_BASE_TEMPLATE}
+      MF_HOST: ${MF_HOST}
+      MF_INVITE_DURATION: ${MF_INVITE_DURATION}
     ports:
       - ${MF_THINGS_HTTP_PORT}:${MF_THINGS_HTTP_PORT}
       - ${MF_THINGS_AUTH_HTTP_PORT}:${MF_THINGS_AUTH_HTTP_PORT}
@@ -867,7 +879,7 @@ services:
       - mainfluxlabs-base-net
     volumes:
       - mainfluxlabs-uiconfigs-db-volume:/var/lib/postgresql/data
-
+  
   uiconfigs:
     image: ${MF_RELEASE_PREFIX}/uiconfigs:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-uiconfigs
