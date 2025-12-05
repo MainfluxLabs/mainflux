@@ -144,17 +144,16 @@ func main() {
 
 	svc := newService(things, dbTracer, db, logger)
 
-	if err = subscribeToThingsES(ctx, svc, cfg, logger); err != nil {
-		logger.Error(fmt.Sprintf("failed to subscribe to things event store: %s", err))
-		return
-	}
-
 	if err = consumers.Start(svcName, pubSub, svc, nats.SubjectAlarms); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Alarm: %s", err))
 	}
 
 	g.Go(func() error {
 		return servershttp.Start(ctx, httpapi.MakeHandler(alarmsTracer, svc, logger), cfg.httpConfig, logger)
+	})
+
+	g.Go(func() error {
+		return subscribeToThingsES(ctx, svc, cfg, logger)
 	})
 
 	g.Go(func() error {
@@ -236,15 +235,15 @@ func subscribeToThingsES(ctx context.Context, svc alarms.Service, cfg config, lo
 		return err
 	}
 
+	defer func() {
+		if err := subscriber.Close(); err != nil {
+			logger.Error(fmt.Sprintf("Failed to close subscriber: %s", err))
+		}
+	}()
+
 	handler := events.NewEventHandler(svc)
 
-	if err := subscriber.Subscribe(ctx, handler); err != nil {
-		return err
-	}
-
-	logger.Info("Subscribed to Redis Event Store")
-
-	return nil
+	return subscriber.Subscribe(ctx, handler)
 }
 
 func newService(ts protomfx.ThingsServiceClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) alarms.Service {
