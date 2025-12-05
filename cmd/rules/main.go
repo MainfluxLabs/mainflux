@@ -141,16 +141,16 @@ func main() {
 
 	svc := newService(dbTracer, db, tc, pub, logger)
 
-	if err = subscribeToThingsES(ctx, svc, cfg, logger); err != nil {
-		logger.Error(fmt.Sprintf("failed to subscribe to things event store: %s", err))
-		return
-	}
-
 	g.Go(func() error {
 		return servershttp.Start(ctx, httpapi.MakeHandler(rulesHttpTracer, svc, logger), cfg.httpConfig, logger)
 	})
+
 	g.Go(func() error {
 		return serversgrpc.Start(ctx, rulesGrpcTracer, svc, cfg.grpcConfig, logger)
+	})
+
+	g.Go(func() error {
+		return subscribeToThingsES(ctx, svc, cfg, logger)
 	})
 
 	g.Go(func() error {
@@ -240,15 +240,15 @@ func subscribeToThingsES(ctx context.Context, svc rules.Service, cfg config, log
 		return err
 	}
 
+	defer func() {
+		if err := subscriber.Close(); err != nil {
+			logger.Error(fmt.Sprintf("Failed to close subscriber: %s", err))
+		}
+	}()
+
 	handler := events.NewEventHandler(svc)
 
-	if err := subscriber.Subscribe(ctx, handler); err != nil {
-		return err
-	}
-
-	logger.Info("Subscribed to Redis Event Store")
-
-	return nil
+	return subscriber.Subscribe(ctx, handler)
 }
 
 func newService(dbTracer opentracing.Tracer, db *sqlx.DB, tc protomfx.ThingsServiceClient, pub messaging.Publisher, logger logger.Logger) rules.Service {
