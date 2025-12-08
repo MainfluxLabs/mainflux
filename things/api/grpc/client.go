@@ -19,18 +19,19 @@ import (
 var _ protomfx.ThingsServiceClient = (*grpcClient)(nil)
 
 type grpcClient struct {
-	timeout               time.Duration
-	getPubConfByKey       endpoint.Endpoint
-	getConfigByThingID    endpoint.Endpoint
-	canUserAccessThing    endpoint.Endpoint
-	canUserAccessProfile  endpoint.Endpoint
-	canUserAccessGroup    endpoint.Endpoint
-	canThingAccessGroup   endpoint.Endpoint
-	identify              endpoint.Endpoint
-	getGroupIDByThingID   endpoint.Endpoint
-	getGroupIDByProfileID endpoint.Endpoint
-	getGroupIDsByOrg      endpoint.Endpoint
-	getThingIDsByProfile  endpoint.Endpoint
+	timeout                time.Duration
+	getPubConfByKey        endpoint.Endpoint
+	getConfigByThingID     endpoint.Endpoint
+	canUserAccessThing     endpoint.Endpoint
+	canUserAccessProfile   endpoint.Endpoint
+	canUserAccessGroup     endpoint.Endpoint
+	canThingAccessGroup    endpoint.Endpoint
+	identify               endpoint.Endpoint
+	getGroupIDByThingID    endpoint.Endpoint
+	getGroupIDByProfileID  endpoint.Endpoint
+	getGroupIDsByOrg       endpoint.Endpoint
+	getThingIDsByProfile   endpoint.Endpoint
+	createGroupMemberships endpoint.Endpoint
 }
 
 // NewClient returns new gRPC client instance.
@@ -126,6 +127,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			encodeGetThingIDsByProfileRequest,
 			decodeGetThingIDsResponse,
 			protomfx.ThingIDs{},
+		).Endpoint()),
+		createGroupMemberships: kitot.TraceClient(tracer, "create_group_memebrships")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"CreateGroupMemberships",
+			encodeCreateGroupMembershipsRequest,
+			decodeEmptyResponse,
+			emptypb.Empty{},
 		).Endpoint()),
 	}
 }
@@ -268,6 +277,31 @@ func (client grpcClient) GetThingIDsByProfile(ctx context.Context, req *protomfx
 	return &protomfx.ThingIDs{Ids: ids.thingIDs}, nil
 }
 
+func (client grpcClient) CreateGroupMemberships(ctx context.Context, req *protomfx.CreateGroupMembershipsReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	memberships := req.GetMemberships()
+
+	clientReq := createGroupMembershipsReq{
+		memberships: make([]groupMembership, 0, len(memberships)),
+	}
+
+	for _, memb := range memberships {
+		clientReq.memberships = append(clientReq.memberships, groupMembership{
+			userID:  memb.GetUserID(),
+			groupID: memb.GetGroupID(),
+			role:    memb.GetRole(),
+		})
+	}
+
+	if _, err := client.createGroupMemberships(ctx, clientReq); err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
 func encodeGetPubConfByKeyRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(thingKey)
 	return &protomfx.ThingKey{Value: req.value, Type: req.keyType}, nil
@@ -326,6 +360,24 @@ func encodeGetThingIDsByProfileRequest(_ context.Context, grpcReq any) (any, err
 	return &protomfx.ProfileID{
 		Value: req.profileID,
 	}, nil
+}
+
+func encodeCreateGroupMembershipsRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(createGroupMembershipsReq)
+
+	protoReq := &protomfx.CreateGroupMembershipsReq{
+		Memberships: make([]*protomfx.GroupMembership, 0, len(req.memberships)),
+	}
+
+	for _, memb := range req.memberships {
+		protoReq.Memberships = append(protoReq.Memberships, &protomfx.GroupMembership{
+			UserID:  memb.userID,
+			GroupID: memb.groupID,
+			Role:    memb.role,
+		})
+	}
+
+	return protoReq, nil
 }
 
 func decodeIdentityResponse(_ context.Context, grpcRes any) (any, error) {

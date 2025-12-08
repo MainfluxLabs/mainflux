@@ -136,3 +136,31 @@ func (req orgAccessReq) validate() error {
 	}
 	return nil
 }
+
+type groupMembership struct {
+	userID  string
+	groupID string
+	role    string
+}
+
+type createGroupMembershipsReq struct {
+	memberships []groupMembership
+}
+
+func (req createGroupMembershipsReq) validate() error {
+	for _, memb := range req.memberships {
+		if memb.userID == "" {
+			return apiutil.ErrMissingUserID
+		}
+
+		if memb.groupID == "" {
+			return apiutil.ErrMissingGroupID
+		}
+
+		if memb.role == "" {
+			return apiutil.ErrMissingRole
+		}
+	}
+
+	return nil
+}

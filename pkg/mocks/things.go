@@ -291,6 +291,10 @@ func (svc *mainfluxThings) CreateGroupMemberships(context.Context, string, ...th
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) SaveGroupMemberships(context.Context, ...things.GroupMembership) error {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) ListGroupMemberships(context.Context, string, string, apiutil.PageMetadata) (things.GroupMembershipsPage, error) {
 	panic("not implemented")
 }

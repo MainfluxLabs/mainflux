@@ -34,6 +34,7 @@ func (e *emailer) SendOrgInvite(to []string, inv auth.OrgInvite, orgName, invRed
 	templateData := map[string]any{
 		"OrgName":    orgName,
 		"Role":       inv.InviteeRole,
+		"Groups":     inv.Groups,
 		"InviteLink": redirectURL,
 	}
 

@@ -234,10 +234,14 @@ type thingsService struct {
 	thingCache       ThingCache
 	groupCache       GroupCache
 	idProvider       uuid.IDProvider
+	email            Emailer
 }
 
 // New instantiates the things service implementation.
-func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, things ThingRepository, profiles ProfileRepository, groups GroupRepository, groupMemberships GroupMembershipsRepository, pcache ProfileCache, tcache ThingCache, gcache GroupCache, idp uuid.IDProvider) Service {
+func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, things ThingRepository, profiles ProfileRepository,
+	groups GroupRepository, groupMemberships GroupMembershipsRepository,
+	pcache ProfileCache, tcache ThingCache, gcache GroupCache, idp uuid.IDProvider,
+	emailer Emailer) Service {
 	return &thingsService{
 		auth:             auth,
 		users:            users,
@@ -249,6 +253,7 @@ func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, thi
 		thingCache:       tcache,
 		groupCache:       gcache,
 		idProvider:       idp,
+		email:            emailer,
 	}
 }
 

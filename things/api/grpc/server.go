@@ -22,17 +22,18 @@ import (
 var _ protomfx.ThingsServiceServer = (*grpcServer)(nil)
 
 type grpcServer struct {
-	getPubConfByKey       kitgrpc.Handler
-	getConfigByThingID    kitgrpc.Handler
-	canUserAccessThing    kitgrpc.Handler
-	canUserAccessProfile  kitgrpc.Handler
-	canUserAccessGroup    kitgrpc.Handler
-	canThingAccessGroup   kitgrpc.Handler
-	identify              kitgrpc.Handler
-	getGroupIDByThingID   kitgrpc.Handler
-	getGroupIDByProfileID kitgrpc.Handler
-	getGroupIDsByOrg      kitgrpc.Handler
-	getThingIDsByProfile  kitgrpc.Handler
+	getPubConfByKey        kitgrpc.Handler
+	getConfigByThingID     kitgrpc.Handler
+	canUserAccessThing     kitgrpc.Handler
+	canUserAccessProfile   kitgrpc.Handler
+	canUserAccessGroup     kitgrpc.Handler
+	canThingAccessGroup    kitgrpc.Handler
+	identify               kitgrpc.Handler
+	getGroupIDByThingID    kitgrpc.Handler
+	getGroupIDByProfileID  kitgrpc.Handler
+	getGroupIDsByOrg       kitgrpc.Handler
+	getThingIDsByProfile   kitgrpc.Handler
+	createGroupMemberships kitgrpc.Handler
 }
 
 // NewServer returns new ThingsServiceServer instance.
@@ -92,6 +93,11 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 			kitot.TraceServer(tracer, "get_thing_ids_by_profile")(getThingIDsByProfileEndpoint(svc)),
 			decodeGetThingIDsByProfileRequest,
 			encodeGetThingIDsByProfileResponse,
+		),
+		createGroupMemberships: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "create_group_memberships")(createGroupMembershipsEndpoint(svc)),
+			decodeCreateGroupMembershipsRequest,
+			encodeEmptyResponse,
 		),
 	}
 }
@@ -192,6 +198,15 @@ func (gs *grpcServer) GetThingIDsByProfile(ctx context.Context, req *protomfx.Pr
 	return res.(*protomfx.ThingIDs), nil
 }
 
+func (gs *grpcServer) CreateGroupMemberships(ctx context.Context, req *protomfx.CreateGroupMembershipsReq) (*emptypb.Empty, error) {
+	_, res, err := gs.createGroupMemberships.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*emptypb.Empty), nil
+}
+
 func decodeGetPubConfByKeyRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.ThingKey)
 	return thingKey{value: req.GetValue(), keyType: req.GetType()}, nil
@@ -245,6 +260,25 @@ func decodeGetGroupIDsByOrgRequest(_ context.Context, grpcReq any) (any, error) 
 func decodeGetThingIDsByProfileRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.ProfileID)
 	return profileIDReq{profileID: req.GetValue()}, nil
+}
+
+func decodeCreateGroupMembershipsRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.CreateGroupMembershipsReq)
+	memberships := req.GetMemberships()
+
+	ret := createGroupMembershipsReq{
+		memberships: make([]groupMembership, 0, len(memberships)),
+	}
+
+	for _, membership := range memberships {
+		ret.memberships = append(ret.memberships, groupMembership{
+			userID:  membership.GetUserID(),
+			groupID: membership.GetGroupID(),
+			role:    membership.GetRole(),
+		})
+	}
+
+	return ret, nil
 }
 
 func encodeIdentityResponse(_ context.Context, grpcRes any) (any, error) {

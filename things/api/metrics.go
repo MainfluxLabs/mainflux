@@ -498,6 +498,15 @@ func (ms *metricsMiddleware) CreateGroupMemberships(ctx context.Context, token s
 	return ms.svc.CreateGroupMemberships(ctx, token, gms...)
 }
 
+func (ms *metricsMiddleware) SaveGroupMemberships(ctx context.Context, gms ...things.GroupMembership) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "save_group_memberships").Add(1)
+		ms.latency.With("method", "save_group_memberships").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.SaveGroupMemberships(ctx, gms...)
+}
+
 func (ms *metricsMiddleware) ListGroupMemberships(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.GroupMembershipsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_group_memberships").Add(1)

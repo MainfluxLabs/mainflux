@@ -251,3 +251,27 @@ func getThingIDsByProfileEndpoint(svc things.Service) endpoint.Endpoint {
 		return thingIDsRes{thingIDs: thingIDs}, nil
 	}
 }
+
+func createGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(createGroupMembershipsReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		gms := make([]things.GroupMembership, 0, len(req.memberships))
+		for _, memb := range req.memberships {
+			gms = append(gms, things.GroupMembership{
+				GroupID:  memb.groupID,
+				MemberID: memb.userID,
+				Role:     memb.role,
+			})
+		}
+
+		if err := svc.SaveGroupMemberships(ctx, gms...); err != nil {
+			return emptyRes{}, err
+		}
+
+		return emptyRes{}, nil
+	}
+}

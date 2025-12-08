@@ -941,6 +941,14 @@ components:
           type: string
           example: "editor"
           description: The user's proposed role in the organization.
+        groups:
+          type: object
+          description: Optional mapping of Group IDs to roles within that group. If present, upon accepting the invite, the recipient is also assigned as a member of the groups.
+          additionalProperties:
+            type: string
+          example:
+            abcd-efgh-1: "viewer"
+            abcd-efgh-2: "admin"
         
   parameters:
     ApiKeyId:

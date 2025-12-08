@@ -24,9 +24,11 @@ type OrgInvite struct {
 	OrgID        string
 	OrgName      string
 	InviteeRole  string
-	CreatedAt    time.Time
-	ExpiresAt    time.Time
-	State        string
+	// Map of Group ID to proposed role in the group
+	Groups    map[string]string
+	CreatedAt time.Time
+	ExpiresAt time.Time
+	State     string
 }
 
 type OrgInvitesPage struct {
@@ -53,7 +55,9 @@ const (
 type Invites interface {
 	// CreateOrgInvite creates a pending Invite on behalf of the User authenticated by `token`,
 	// towards the user identified by `email`, to join the Org identified by `orgID` with an appropriate role.
-	CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string) (OrgInvite, error)
+	// `groups` is an optional mapping of Group IDs to a role within that Group. If present, the invitee will be additionally
+	// be assigned as a member of each of groups after they accept the Org invite.
+	CreateOrgInvite(ctx context.Context, token, email, role, orgID string, groups map[string]string, invRedirectPath string) (OrgInvite, error)
 
 	// CreateDormantOrgInvite creates a pending, dormant Org Invite associated with a specfic Platform Invite
 	// denoted by `platformInviteID`.
@@ -122,7 +126,7 @@ type OrgInvitesRepository interface {
 	UpdateOrgInviteState(ctx context.Context, inviteID, state string) error
 }
 
-func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string) (OrgInvite, error) {
+func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgID string, groups map[string]string, invRedirectPath string) (OrgInvite, error) {
 	// Check if currently authenticated User has "admin" or higher privileges within Org
 	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
 		return OrgInvite{}, err
@@ -177,6 +181,7 @@ func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgI
 		InviteeID:   inviteeID,
 		InviterID:   inviter.ID,
 		OrgID:       orgID,
+		Groups:      groups,
 		InviteeRole: role,
 		CreatedAt:   createdAt,
 		ExpiresAt:   createdAt.Add(svc.inviteDuration),
@@ -366,6 +371,25 @@ func (svc service) RespondOrgInvite(ctx context.Context, token, inviteID string,
 
 		if err := svc.memberships.Save(ctx, membership); err != nil {
 			return err
+		}
+
+		// Create one group membership in the things service for each group the invite was associated with
+		if len(invite.Groups) > 0 {
+			grpcReq := &protomfx.CreateGroupMembershipsReq{
+				Memberships: make([]*protomfx.GroupMembership, 0, len(invite.Groups)),
+			}
+
+			for groupID, role := range invite.Groups {
+				grpcReq.Memberships = append(grpcReq.Memberships, &protomfx.GroupMembership{
+					UserID:  invite.InviteeID,
+					GroupID: groupID,
+					Role:    role,
+				})
+			}
+
+			if _, err := svc.things.CreateGroupMemberships(ctx, grpcReq); err != nil {
+				return err
+			}
 		}
 	}
 

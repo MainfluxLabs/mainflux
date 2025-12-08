@@ -29,6 +29,7 @@ service ThingsService {
     rpc GetGroupIDByProfileID(ProfileID) returns (GroupID) {}
     rpc GetGroupIDsByOrg(OrgAccessReq) returns (GroupIDs) {}
     rpc GetThingIDsByProfile(ProfileID) returns (ThingIDs) {}
+    rpc CreateGroupMemberships(CreateGroupMembershipsReq) returns (google.protobuf.Empty) {}
 }
 
 service UsersService {
@@ -204,4 +205,14 @@ message ActivateOrgInviteReq {
     string platformInviteID = 1;
     string userID = 2;
     string redirectPath = 3;
+}
+
+message GroupMembership {
+    string userID = 1;
+    string groupID = 2;
+    string role = 3;
+}
+
+message CreateGroupMembershipsReq {
+    repeated GroupMembership memberships = 1;
 }

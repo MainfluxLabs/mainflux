@@ -17,6 +17,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/email"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -27,6 +28,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/api"
 	httpapi "github.com/MainfluxLabs/mainflux/things/api/http"
+	"github.com/MainfluxLabs/mainflux/things/emailer"
 	"github.com/MainfluxLabs/mainflux/things/postgres"
 	rediscache "github.com/MainfluxLabs/mainflux/things/redis"
 	localusers "github.com/MainfluxLabs/mainflux/things/standalone"
@@ -77,6 +79,16 @@ const (
 	defUsersGRPCURL    = "localhost:8184"
 	defTimeout         = "1s"
 
+	defEmailHost         = "localhost"
+	defEmailPort         = "25"
+	defEmailUsername     = "root"
+	defEmailPassword     = ""
+	defEmailFromAddress  = ""
+	defEmailFromName     = ""
+	defEmailBaseTemplate = "base.tmpl"
+
+	defHost = "http://localhost"
+
 	envLogLevel         = "MF_THINGS_LOG_LEVEL"
 	envDBHost           = "MF_THINGS_DB_HOST"
 	envDBPort           = "MF_THINGS_DB_PORT"
@@ -109,6 +121,16 @@ const (
 	envUsersCACerts     = "MF_USERS_CA_CERTS"
 	envUsersClientTLS   = "MF_USERS_CLIENT_TLS"
 	envUsersGRPCTimeout = "MF_USERS_GRPC_TIMEOUT"
+
+	envEmailHost         = "MF_EMAIL_HOST"
+	envEmailPort         = "MF_EMAIL_PORT"
+	envEmailUsername     = "MF_EMAIL_USERNAME"
+	envEmailPassword     = "MF_EMAIL_PASSWORD"
+	envEmailFromAddress  = "MF_EMAIL_FROM_ADDRESS"
+	envEmailFromName     = "MF_EMAIL_FROM_NAME"
+	envEmailBaseTemplate = "MF_EMAIL_BASE_TEMPLATE"
+
+	envHost = "MF_HOST"
 )
 
 type config struct {
@@ -119,6 +141,7 @@ type config struct {
 	grpcConfig       servers.Config
 	authConfig       clients.Config
 	usersConfig      clients.Config
+	emailConfig      email.Config
 	cacheURL         string
 	cachePass        string
 	cacheDB          string
@@ -130,6 +153,7 @@ type config struct {
 	jaegerURL        string
 	authGRPCTimeout  time.Duration
 	usersGRPCTimeout time.Duration
+	host             string
 }
 
 func main() {
@@ -177,7 +201,7 @@ func main() {
 
 	users := usersapi.NewClient(usrConn, usersTracer, cfg.usersGRPCTimeout)
 
-	svc := newService(auth, users, dbTracer, cacheTracer, db, cacheClient, esClient, logger)
+	svc := newService(auth, users, dbTracer, cacheTracer, db, cacheClient, esClient, logger, cfg)
 
 	g.Go(func() error {
 		return servershttp.Start(ctx, httpapi.MakeHandler(svc, thingsHttpTracer, logger), cfg.httpConfig, logger)
@@ -275,6 +299,16 @@ func loadConfig() config {
 		ClientName: clients.Users,
 	}
 
+	emailConfig := email.Config{
+		FromAddress:      mainflux.Env(envEmailFromAddress, defEmailFromAddress),
+		FromName:         mainflux.Env(envEmailFromName, defEmailFromName),
+		Host:             mainflux.Env(envEmailHost, defEmailHost),
+		Port:             mainflux.Env(envEmailPort, defEmailPort),
+		Username:         mainflux.Env(envEmailUsername, defEmailUsername),
+		Password:         mainflux.Env(envEmailPassword, defEmailPassword),
+		BaseTemplatePath: mainflux.Env(envEmailBaseTemplate, defEmailBaseTemplate),
+	}
+
 	return config{
 		logLevel:         mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:         dbConfig,
@@ -283,6 +317,7 @@ func loadConfig() config {
 		grpcConfig:       grpcConfig,
 		authConfig:       authConfig,
 		usersConfig:      usersConfig,
+		emailConfig:      emailConfig,
 		cacheURL:         mainflux.Env(envCacheURL, defCacheURL),
 		cachePass:        mainflux.Env(envCachePass, defCachePass),
 		cacheDB:          mainflux.Env(envCacheDB, defCacheDB),
@@ -294,6 +329,7 @@ func loadConfig() config {
 		jaegerURL:        mainflux.Env(envJaegerURL, defJaegerURL),
 		authGRPCTimeout:  authGRPCTimeout,
 		usersGRPCTimeout: usersGRPCTimeout,
+		host:             mainflux.Env(envHost, defHost),
 	}
 }
 
@@ -329,7 +365,9 @@ func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logge
 	return authapi.NewClient(conn, tracer, cfg.authGRPCTimeout), conn.Close
 }
 
-func newService(ac protomfx.AuthServiceClient, uc protomfx.UsersServiceClient, dbTracer opentracing.Tracer, cacheTracer opentracing.Tracer, db *sqlx.DB, cacheClient *redis.Client, esClient *redis.Client, logger logger.Logger) things.Service {
+func newService(ac protomfx.AuthServiceClient, uc protomfx.UsersServiceClient, dbTracer opentracing.Tracer,
+	cacheTracer opentracing.Tracer, db *sqlx.DB, cacheClient *redis.Client, esClient *redis.Client,
+	logger logger.Logger, cfg config) things.Service {
 	database := dbutil.NewDatabase(db)
 
 	thingsRepo := postgres.NewThingRepository(database)
@@ -354,7 +392,29 @@ func newService(ac protomfx.AuthServiceClient, uc protomfx.UsersServiceClient, d
 	groupMembershipsRepo := postgres.NewGroupMembershipsRepository(db)
 	groupMembershipsRepo = tracing.GroupMembershipsRepositoryMiddleware(dbTracer, groupMembershipsRepo)
 
-	svc := things.New(ac, uc, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider)
+	thingsEmailer, err := emailer.New(cfg.host, &cfg.emailConfig)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to configure e-mailing util: %s", err.Error()))
+	}
+
+	thingsEmailer = emailer.LoggingMiddleware(thingsEmailer, logger)
+	thingsEmailer = emailer.MetricsMiddleware(
+		thingsEmailer,
+		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: "things",
+			Subsystem: "email",
+			Name:      "request_count",
+			Help:      "Number of requests received.",
+		}, []string{"method"}),
+		kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
+			Namespace: "things",
+			Subsystem: "email",
+			Name:      "request_latency_microseconds",
+			Help:      "Total duration of requests in microseconds.",
+		}, []string{"method"}),
+	)
+
+	svc := things.New(ac, uc, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider, thingsEmailer)
 	svc = rediscache.NewEventStoreMiddleware(svc, esClient)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
