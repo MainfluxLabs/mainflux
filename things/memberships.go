@@ -2,6 +2,7 @@ package things
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -79,6 +80,11 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token strin
 			return err
 		}
 
+		group, err := ts.groups.RetrieveByID(ctx, gm.GroupID)
+		if err != nil {
+			return err
+		}
+
 		if err := ts.groupMemberships.Save(ctx, gm); err != nil {
 			return err
 		}
@@ -86,6 +92,33 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token strin
 		if err := ts.groupCache.SaveGroupMembership(ctx, gm.GroupID, gm.MemberID, gm.Role); err != nil {
 			return err
 		}
+
+		org, err := ts.auth.ViewOrg(ctx, &protomfx.ViewOrgReq{
+			Token: token,
+			OrgID: group.OrgID,
+		})
+
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		users, err := ts.users.GetUsersByIDs(ctx, &protomfx.UsersByIDsReq{
+			Ids: []string{gm.MemberID},
+		})
+
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		recipientEmail := users.GetUsers()[0].Email
+
+		// Send e-mail notification
+		go func() {
+			fmt.Println("sending group membership email notification")
+			ts.email.SendGroupMembershipNotification([]string{recipientEmail}, org.Name, group.Name, gm.Role)
+		}()
 	}
 
 	return nil

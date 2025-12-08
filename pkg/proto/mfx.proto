@@ -46,6 +46,7 @@ service AuthService {
     rpc RetrieveRole(RetrieveRoleReq) returns (RetrieveRoleRes) {}
     rpc CreateDormantOrgInvite(CreateDormantOrgInviteReq) returns (google.protobuf.Empty) {}
     rpc ActivateOrgInvite(ActivateOrgInviteReq) returns (google.protobuf.Empty) {}
+    rpc ViewOrg(ViewOrgReq) returns (Org) {}
 }
 
 service RulesService {
@@ -215,4 +216,16 @@ message GroupMembership {
 
 message CreateGroupMembershipsReq {
     repeated GroupMembership memberships = 1;
+}
+
+message ViewOrgReq {
+    string token = 1;
+    string orgID = 2;
+}
+
+message Org {
+    string id = 1;
+    string ownerID = 2;
+    string name = 3;
+    string description = 4;
 }

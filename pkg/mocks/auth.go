@@ -149,3 +149,7 @@ func (svc authServiceMock) CreateDormantOrgInvite(ctx context.Context, req *prot
 func (svc authServiceMock) ActivateOrgInvite(ctx context.Context, req *protomfx.ActivateOrgInviteReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
 	panic("not implemented")
 }
+
+func (svc authServiceMock) ViewOrg(ctx context.Context, req *protomfx.ViewOrgReq, _ ...grpc.CallOption) (r *protomfx.Org, err error) {
+	panic("not implemented")
+}
