@@ -151,5 +151,15 @@ func (svc authServiceMock) ActivateOrgInvite(ctx context.Context, req *protomfx.
 }
 
 func (svc authServiceMock) ViewOrg(ctx context.Context, req *protomfx.ViewOrgReq, _ ...grpc.CallOption) (r *protomfx.Org, err error) {
-	panic("not implemented")
+	org, ok := svc.orgs[req.GetOrgID()]
+	if !ok {
+		return nil, dbutil.ErrNotFound
+	}
+
+	return &protomfx.Org{
+		Id:          org.ID,
+		OwnerID:     org.OwnerID,
+		Name:        org.Name,
+		Description: org.Description,
+	}, nil
 }
