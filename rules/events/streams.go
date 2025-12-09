@@ -40,7 +40,7 @@ func (es eventHandler) Handle(ctx context.Context, event events.Event) error {
 	return nil
 }
 
-func decodeRemoveEvent(event map[string]interface{}) removeEvent {
+func decodeRemoveEvent(event map[string]any) removeEvent {
 	return removeEvent{
 		id: events.ReadField(event, "id", ""),
 	}
