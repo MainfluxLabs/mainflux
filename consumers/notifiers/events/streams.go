@@ -35,7 +35,7 @@ func (es eventHandler) Handle(ctx context.Context, event events.Event) error {
 	return nil
 }
 
-func decodeRemoveGroupEvent(event map[string]interface{}) removeGroupEvent {
+func decodeRemoveGroupEvent(event map[string]any) removeGroupEvent {
 	return removeGroupEvent{
 		id: events.ReadField(event, "id", ""),
 	}
