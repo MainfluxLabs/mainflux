@@ -19,7 +19,7 @@ func LoggingMiddleware(e auth.Emailer, logger log.Logger) auth.Emailer {
 	return &loggingMiddleware{e, logger}
 }
 
-func (lm *loggingMiddleware) SendOrgInvite(to []string, inv auth.OrgInvite, orgName, invRedirectPath string) (err error) {
+func (lm *loggingMiddleware) SendOrgInvite(to []string, inv auth.OrgInvite, orgName, invRedirectPath string, groupNames map[string]string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Emailer method send_org_invite took %s to complete", time.Since(begin))
 		if err != nil {
@@ -30,5 +30,5 @@ func (lm *loggingMiddleware) SendOrgInvite(to []string, inv auth.OrgInvite, orgN
 
 	}(time.Now())
 
-	return lm.emailer.SendOrgInvite(to, inv, orgName, invRedirectPath)
+	return lm.emailer.SendOrgInvite(to, inv, orgName, invRedirectPath, groupNames)
 }

@@ -92,7 +92,7 @@ type Invites interface {
 	ListOrgInvitesByOrg(ctx context.Context, token, orgID string, pm PageMetadataInvites) (OrgInvitesPage, error)
 
 	// SendOrgInviteEmail sends an e-mail notifying the invitee of the corresponding Invite.
-	SendOrgInviteEmail(ctx context.Context, invite OrgInvite, email, orgName, invRedirectPath string) error
+	SendOrgInviteEmail(ctx context.Context, token string, invite OrgInvite, email, orgName, invRedirectPath string) error
 }
 
 type OrgInvitesRepository interface {
@@ -193,7 +193,7 @@ func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgI
 	}
 
 	go func() {
-		svc.SendOrgInviteEmail(ctx, invite, email, org.Name, invRedirectPath)
+		svc.SendOrgInviteEmail(ctx, token, invite, email, org.Name, invRedirectPath)
 	}()
 
 	return invite, nil
@@ -292,7 +292,8 @@ func (svc service) ActivateOrgInvite(ctx context.Context, platformInviteID, user
 		}
 
 		go func() {
-			svc.SendOrgInviteEmail(ctx, invite, invite.InviteeEmail, invite.OrgName, orgInviteRedirectPath)
+			// TODO: what to do for the token?
+			svc.SendOrgInviteEmail(ctx, "", invite, invite.InviteeEmail, invite.OrgName, orgInviteRedirectPath)
 		}()
 	}
 
@@ -480,7 +481,23 @@ func (svc service) populateInviteInfo(ctx context.Context, invite *OrgInvite) er
 	return nil
 }
 
-func (svc service) SendOrgInviteEmail(ctx context.Context, invite OrgInvite, email, orgName, invRedirectPath string) error {
+func (svc service) SendOrgInviteEmail(ctx context.Context, token string, invite OrgInvite, email, orgName, invRedirectPath string) error {
 	to := []string{email}
-	return svc.email.SendOrgInvite(to, invite, orgName, invRedirectPath)
+
+	var groupNames map[string]string
+
+	if invite.Groups != nil {
+		groupNames = make(map[string]string, len(invite.Groups))
+
+		for groupID := range invite.Groups {
+			group, err := svc.things.ViewGroup(context.Background(), &protomfx.ViewGroupReq{Token: token, GroupID: groupID})
+			if err != nil {
+				return err
+			}
+
+			groupNames[groupID] = group.GetName()
+		}
+	}
+
+	return svc.email.SendOrgInvite(to, invite, orgName, invRedirectPath, groupNames)
 }

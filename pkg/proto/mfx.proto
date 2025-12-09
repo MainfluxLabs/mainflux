@@ -30,6 +30,7 @@ service ThingsService {
     rpc GetGroupIDsByOrg(OrgAccessReq) returns (GroupIDs) {}
     rpc GetThingIDsByProfile(ProfileID) returns (ThingIDs) {}
     rpc CreateGroupMemberships(CreateGroupMembershipsReq) returns (google.protobuf.Empty) {}
+    rpc ViewGroup(ViewGroupReq) returns (Group) {}
 }
 
 service UsersService {
@@ -226,6 +227,18 @@ message ViewOrgReq {
 message Org {
     string id = 1;
     string ownerID = 2;
+    string name = 3;
+    string description = 4;
+}
+
+message ViewGroupReq {
+    string token = 1;
+    string groupID = 2;
+}
+
+message Group {
+    string id = 1;
+    string orgID = 2;
     string name = 3;
     string description = 4;
 }

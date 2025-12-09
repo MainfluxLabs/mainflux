@@ -153,3 +153,17 @@ func (svc thingsServiceMock) GetThingIDsByProfile(_ context.Context, in *protomf
 func (svc thingsServiceMock) CreateGroupMemberships(_ context.Context, in *protomfx.CreateGroupMembershipsReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
 	return &emptypb.Empty{}, nil
 }
+
+func (svc thingsServiceMock) ViewGroup(_ context.Context, in *protomfx.ViewGroupReq, _ ...grpc.CallOption) (*protomfx.Group, error) {
+	group, ok := svc.groups[in.GetGroupID()]
+	if !ok {
+		return nil, dbutil.ErrNotFound
+	}
+
+	return &protomfx.Group{
+		Id:          group.ID,
+		OrgID:       group.OrgID,
+		Name:        group.Name,
+		Description: group.Description,
+	}, nil
+}

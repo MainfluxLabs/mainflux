@@ -275,3 +275,24 @@ func createGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 		return emptyRes{}, nil
 	}
 }
+
+func viewGroupEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(viewGroupReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		group, err := svc.ViewGroup(ctx, req.token, req.groupID)
+		if err != nil {
+			return groupRes{}, err
+		}
+
+		return groupRes{
+			id:          group.ID,
+			orgID:       group.OrgID,
+			name:        group.Name,
+			description: group.Description,
+		}, nil
+	}
+}
