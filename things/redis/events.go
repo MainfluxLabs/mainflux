@@ -201,3 +201,13 @@ func (rge removeGroupEvent) Encode() map[string]any {
 		"operation": events.GroupRemove,
 	}
 }
+
+type removeOrgEvent struct {
+	id string
+}
+
+func decodeRemoveOrgEvent(event map[string]any) removeOrgEvent {
+	return removeOrgEvent{
+		id: events.ReadField(event, "id", ""),
+	}
+}
