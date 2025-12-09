@@ -150,7 +150,6 @@ func (s *grpcServer) ActivateOrgInvite(ctx context.Context, req *protomfx.Activa
 	return res.(*emptypb.Empty), nil
 }
 
-// ViewOrg returns organization information for the requested org id.
 func (s *grpcServer) ViewOrg(ctx context.Context, req *protomfx.ViewOrgReq) (*protomfx.Org, error) {
 	_, res, err := s.viewOrg.ServeGRPC(ctx, req)
 	if err != nil {
