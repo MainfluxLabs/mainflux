@@ -112,9 +112,26 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 		return []readers.Message{}, 0, err
 	}
 
+	// Build count query with HAVING condition
 	timeTrunc := buildTruncTimeExpression(rpm.AggValue, rpm.AggInterval, jsonOrder)
-	countQuery := fmt.Sprintf(`SELECT COUNT(DISTINCT %s) FROM %s %s`,
-		timeTrunc, jsonTable, qp.Condition)
+	havingCondition := buildHavingConditionForCount(rpm.AggField, jsonTable)
+
+	countQuery := fmt.Sprintf(`
+		SELECT COUNT(*) FROM (
+			SELECT ti.interval_time
+			FROM (
+				SELECT DISTINCT %s as interval_time
+				FROM %s
+				%s
+			) ti
+			LEFT JOIN %s m ON %s = ti.interval_time
+			GROUP BY ti.interval_time
+			HAVING %s
+		) counted`,
+		timeTrunc, jsonTable, qp.Condition,
+		jsonTable,
+		strings.Replace(timeTrunc, jsonOrder, "m."+jsonOrder, 1),
+		havingCondition)
 
 	total, err := dbutil.Total(ctx, as.db, countQuery, params)
 	if err != nil {
@@ -181,9 +198,26 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 		return []readers.Message{}, 0, err
 	}
 
+	// Build count query with HAVING condition
 	timeTrunc := buildTruncTimeExpression(rpm.AggValue, rpm.AggInterval, senmlOrder)
-	countQuery := fmt.Sprintf(`SELECT COUNT(DISTINCT %s) FROM %s %s`,
-		timeTrunc, senmlTable, qp.Condition)
+	havingCondition := buildHavingConditionForCount([]string{rpm.AggField}, senmlTable)
+
+	countQuery := fmt.Sprintf(`
+		SELECT COUNT(*) FROM (
+			SELECT ti.interval_time
+			FROM (
+				SELECT DISTINCT %s as interval_time
+				FROM %s
+				%s
+			) ti
+			LEFT JOIN %s m ON %s = ti.interval_time
+			GROUP BY ti.interval_time
+			HAVING %s
+		) counted`,
+		timeTrunc, senmlTable, qp.Condition,
+		senmlTable,
+		strings.Replace(timeTrunc, senmlOrder, "m."+senmlOrder, 1),
+		havingCondition)
 
 	total, err := dbutil.Total(ctx, as.db, countQuery, params)
 	if err != nil {
@@ -428,7 +462,6 @@ func renderTemplate(templateStr string, qp QueryParams, strategy AggStrategy) st
 		"TimeJoinConditionIA": buildTimeJoinCondition(qp, intervalAggregations),
 		"ConditionForJoin":    qp.ConditionForJoin,
 		"SelectedFields":      strategy.GetSelectedFields(qp),
-		"ValueCondition":      buildValueCondition(qp),
 		"HavingCondition":     buildHavingCondition(qp),
 		"Condition":           qp.Condition,
 		"TimeColumn":          qp.TimeColumn,
@@ -561,20 +594,6 @@ func buildJSONPath(field string) string {
 	return path.String()
 }
 
-func buildAggregatedJSONSelect(aggField string, aggAlias string) string {
-	parts := strings.Split(aggField, ".")
-	if len(parts) == 1 {
-		return fmt.Sprintf(`m.created, m.subtopic, m.publisher, m.protocol,
-				jsonb_set(m.payload, '{%s}', to_jsonb(ia.%s)) as payload`,
-			parts[0], aggAlias)
-	}
-
-	pathArray := "{" + strings.Join(parts, ",") + "}"
-	return fmt.Sprintf(`m.created, m.subtopic, m.publisher, m.protocol,
-			jsonb_set(m.payload, '%s', to_jsonb(ia.%s)) as payload`,
-		pathArray, aggAlias)
-}
-
 func (as *aggregationService) getJSONConditions(rpm readers.JSONPageMetadata) []string {
 	var conditions []string
 
@@ -672,24 +691,24 @@ func buildHavingCondition(qp QueryParams) string {
 	return strings.Join(conditions, " OR ")
 }
 
-func buildValueCondition(qp QueryParams) string {
-	if len(qp.AggField) == 0 {
+func buildHavingConditionForCount(aggFields []string, table string) string {
+	if len(aggFields) == 0 {
 		return "1=1"
 	}
 
 	var conditions []string
-	switch qp.Table {
+	switch table {
 	case senmlTable:
-		conditions = append(conditions, "m.value = ia.agg_value")
+		conditions = append(conditions, "MAX(m.value) IS NOT NULL")
 	default:
-		for i, field := range qp.AggField {
+		for _, field := range aggFields {
 			jsonPath := buildJSONPath(field)
 			conditions = append(conditions,
-				fmt.Sprintf("CAST(m.%s as FLOAT) = ia.agg_value_%d", jsonPath, i))
+				fmt.Sprintf("MAX(CAST(m.%s AS FLOAT)) IS NOT NULL", jsonPath))
 		}
 	}
 
-	return "(" + strings.Join(conditions, " OR ") + ")"
+	return strings.Join(conditions, " OR ")
 }
 
 func buildAggregatedJSONSelectMultipleFromIA(aggFields []string, aggPrefix string) string {
