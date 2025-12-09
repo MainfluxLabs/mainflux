@@ -199,3 +199,24 @@ func (es eventStore) RemoveGroups(ctx context.Context, token string, ids ...stri
 
 	return nil
 }
+
+func (es eventStore) RemoveGroupsByOrg(ctx context.Context, orgID string) ([]string, error) {
+	ids, err := es.Service.RemoveGroupsByOrg(ctx, orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, id := range ids {
+		event := removeGroupEvent{
+			id: id,
+		}
+		record := &redis.XAddArgs{
+			Stream:       streamID,
+			MaxLenApprox: streamLen,
+			Values:       event.Encode(),
+		}
+		es.client.XAdd(ctx, record).Err()
+	}
+
+	return ids, nil
+}

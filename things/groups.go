@@ -36,31 +36,34 @@ type GroupPage struct {
 
 // GroupRepository specifies a group persistence API.
 type GroupRepository interface {
-	// Save group
+	// Save persists groups.
 	Save(ctx context.Context, g ...Group) ([]Group, error)
 
-	// Update a group
+	// Update performs an update to the existing group.
 	Update(ctx context.Context, g Group) (Group, error)
 
-	// Remove a groups
-	Remove(ctx context.Context, groupIDs ...string) error
+	// Remove removes groups by their IDs.
+	Remove(ctx context.Context, ids ...string) error
 
-	// RetrieveByID retrieves group by its id
+	// RemoveByOrg removes groups by org ID.
+	RemoveByOrg(ctx context.Context, orgID string) error
+
+	// RetrieveByID retrieves a group by its ID.
 	RetrieveByID(ctx context.Context, id string) (Group, error)
 
-	// RetrieveByIDs retrieves groups by their ids
-	RetrieveByIDs(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (GroupPage, error)
+	// RetrieveByIDs retrieves groups by their IDs.
+	RetrieveByIDs(ctx context.Context, ids []string, pm apiutil.PageMetadata) (GroupPage, error)
 
 	// BackupAll retrieves all groups.
 	BackupAll(ctx context.Context) ([]Group, error)
 
-	// BackupByOrg retrieves all groups by organization ID.
+	// BackupByOrg retrieves all groups by org ID.
 	BackupByOrg(ctx context.Context, orgID string) ([]Group, error)
 
-	// RetrieveIDsByOrgMembership retrieves group IDs by org membership
+	// RetrieveIDsByOrgMembership retrieves group IDs by org membership.
 	RetrieveIDsByOrgMembership(ctx context.Context, orgID, memberID string) ([]string, error)
 
-	// RetrieveIDsByOrg retrieves all group IDs by org
+	// RetrieveIDsByOrg retrieves all group IDs by org.
 	RetrieveIDsByOrg(ctx context.Context, orgID string) ([]string, error)
 
 	// RetrieveAll retrieves all groups with pagination.
@@ -94,6 +97,9 @@ type Groups interface {
 
 	// RemoveGroups removes the groups identified with the provided IDs.
 	RemoveGroups(ctx context.Context, token string, ids ...string) error
+
+	// RemoveGroupsByOrg removes groups related to an org identified by org ID.
+	RemoveGroupsByOrg(ctx context.Context, orgID string) ([]string, error)
 
 	// ViewGroupByProfile retrieves group that profile belongs to.
 	ViewGroupByProfile(ctx context.Context, token, profileID string) (Group, error)
@@ -218,6 +224,25 @@ func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...
 	}
 
 	return ts.groups.Remove(ctx, ids...)
+}
+
+func (ts *thingsService) RemoveGroupsByOrg(ctx context.Context, orgID string) ([]string, error) {
+	ids, err := ts.groups.RetrieveIDsByOrg(ctx, orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, id := range ids {
+		if err := ts.groupCache.RemoveGroupEntities(ctx, id); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := ts.groups.RemoveByOrg(ctx, orgID); err != nil {
+		return nil, err
+	}
+
+	return ids, nil
 }
 
 func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Group) (Group, error) {
