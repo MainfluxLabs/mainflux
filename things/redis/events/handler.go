@@ -1,4 +1,4 @@
-package redis
+package events
 
 import (
 	"context"
@@ -25,6 +25,7 @@ func (e eventHandler) Handle(ctx context.Context, event events.Event) error {
 	}
 
 	switch msg["operation"] {
+	// TODO: use const
 	case "org.remove":
 		re := decodeRemoveOrgEvent(msg)
 		if _, err := e.svc.RemoveGroupsByOrg(ctx, re.id); err != nil {
