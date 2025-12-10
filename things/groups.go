@@ -232,6 +232,10 @@ func (ts *thingsService) RemoveGroupsByOrg(ctx context.Context, orgID string) ([
 		return nil, err
 	}
 
+	if len(ids) == 0 {
+		return ids, nil
+	}
+
 	for _, id := range ids {
 		if err := ts.groupCache.RemoveGroupEntities(ctx, id); err != nil {
 			return nil, err
