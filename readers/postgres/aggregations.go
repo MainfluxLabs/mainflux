@@ -42,13 +42,10 @@ type QueryParams struct {
 }
 
 type AggStrategy interface {
-	// Function that builds the query for aggregation.
-	BuildQuery(qp QueryParams) string
-
 	// Function that returns selected strings.
 	GetSelectedFields(qp QueryParams) string
 
-	//Function containing aggregation expression.
+	// Function containing aggregation expression.
 	GetAggregateExpression(qp QueryParams) string
 }
 
@@ -93,7 +90,7 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 		return []readers.Message{}, 0, nil
 	}
 
-	query := strategy.BuildQuery(qp)
+	query := buildAggregationQuery(qp, strategy)
 	rows, err := as.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
@@ -179,7 +176,7 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 		return []readers.Message{}, 0, nil
 	}
 
-	query := strategy.BuildQuery(qp)
+	query := buildAggregationQuery(qp, strategy)
 	rows, err := as.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
@@ -198,7 +195,6 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 		return []readers.Message{}, 0, err
 	}
 
-	// Build count query with HAVING condition
 	timeTrunc := buildTruncTimeExpression(rpm.AggValue, rpm.AggInterval, senmlOrder)
 	havingCondition := buildHavingConditionForCount([]string{rpm.AggField}, senmlTable)
 
@@ -227,24 +223,7 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 	return messages, total, nil
 }
 
-func (as aggregationService) getAggregateStrategy(aggType string) AggStrategy {
-	switch aggType {
-	case readers.AggregationMax:
-		return MaxStrategy{}
-	case readers.AggregationMin:
-		return MinStrategy{}
-	case readers.AggregationAvg:
-		return AvgStrategy{}
-	case readers.AggregationCount:
-		return CountStrategy{}
-	default:
-		return nil
-	}
-}
-
-type MaxStrategy struct{}
-
-func (maxStrt MaxStrategy) BuildQuery(qp QueryParams) string {
+func buildAggregationQuery(qp QueryParams, strategy AggStrategy) string {
 	tmpl := `
 		WITH time_intervals AS (
 			{{.TimeIntervals}}
@@ -267,8 +246,25 @@ func (maxStrt MaxStrategy) BuildQuery(qp QueryParams) string {
 		FROM interval_aggs ia
 		ORDER BY ia.interval_time {{.Dir}};`
 
-	return renderTemplate(tmpl, qp, maxStrt)
+	return renderTemplate(tmpl, qp, strategy)
 }
+
+func (as aggregationService) getAggregateStrategy(aggType string) AggStrategy {
+	switch aggType {
+	case readers.AggregationMax:
+		return MaxStrategy{}
+	case readers.AggregationMin:
+		return MinStrategy{}
+	case readers.AggregationAvg:
+		return AvgStrategy{}
+	case readers.AggregationCount:
+		return CountStrategy{}
+	default:
+		return nil
+	}
+}
+
+type MaxStrategy struct{}
 
 func (maxStrt MaxStrategy) GetSelectedFields(qp QueryParams) string {
 	switch qp.Table {
@@ -306,32 +302,6 @@ func (maxStrt MaxStrategy) GetAggregateExpression(qp QueryParams) string {
 
 type MinStrategy struct{}
 
-func (minStrt MinStrategy) BuildQuery(qp QueryParams) string {
-	tmpl := `
-		WITH time_intervals AS (
-			{{.TimeIntervals}}
-		),
-		interval_aggs AS (
-			SELECT 
-				ti.interval_time,
-				{{.AggExpression}},
-				MAX(m.{{.TimeColumn}}) as max_time,
-				MAX(m.subtopic) as subtopic,
-				MAX(m.publisher) as publisher,
-				MAX(m.protocol) as protocol
-			FROM time_intervals ti
-			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
-				{{.ConditionForJoin}}
-			GROUP BY ti.interval_time
-			HAVING {{.HavingCondition}}
-		)
-		SELECT {{.SelectedFields}}
-		FROM interval_aggs ia
-		ORDER BY ia.interval_time {{.Dir}};`
-
-	return renderTemplate(tmpl, qp, minStrt)
-}
-
 func (minStrt MinStrategy) GetSelectedFields(qp QueryParams) string {
 	switch qp.Table {
 	case senmlTable:
@@ -367,32 +337,6 @@ func (minStrt MinStrategy) GetAggregateExpression(qp QueryParams) string {
 
 type AvgStrategy struct{}
 
-func (avgStrt AvgStrategy) BuildQuery(qp QueryParams) string {
-	tmpl := `
-		WITH time_intervals AS (
-			{{.TimeIntervals}}
-		),
-		interval_aggs AS (
-			SELECT 
-				ti.interval_time,
-				{{.AggExpression}},
-				MAX(m.{{.TimeColumn}}) as max_time,
-				MAX(m.subtopic) as subtopic,
-				MAX(m.publisher) as publisher,
-				MAX(m.protocol) as protocol
-			FROM time_intervals ti
-			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
-				{{.ConditionForJoin}}
-			GROUP BY ti.interval_time
-			HAVING {{.HavingCondition}} 
-		)
-		SELECT {{.SelectedFields}}
-		FROM interval_aggs ia
-		ORDER BY ia.interval_time {{.Dir}};`
-
-	return renderTemplate(tmpl, qp, avgStrt)
-}
-
 func (avgStrt AvgStrategy) GetSelectedFields(qp QueryParams) string {
 	switch qp.Table {
 	case senmlTable:
@@ -426,32 +370,6 @@ func (avgStrt AvgStrategy) GetAggregateExpression(qp QueryParams) string {
 }
 
 type CountStrategy struct{}
-
-func (countStrt CountStrategy) BuildQuery(qp QueryParams) string {
-	tmpl := `
-		WITH time_intervals AS (
-			{{.TimeIntervals}}
-		),
-		interval_aggs AS (
-			SELECT 
-				ti.interval_time,
-				{{.AggExpression}},
-				MAX(m.{{.TimeColumn}}) as max_time,
-				MAX(m.subtopic) as subtopic,
-				MAX(m.publisher) as publisher,
-				MAX(m.protocol) as protocol
-			FROM time_intervals ti
-			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
-				{{.ConditionForJoin}}
-			GROUP BY ti.interval_time
-			HAVING {{.HavingCondition}} 
-		)
-		SELECT {{.SelectedFields}}
-		FROM interval_aggs ia
-		ORDER BY ia.interval_time {{.Dir}};`
-
-	return renderTemplate(tmpl, qp, countStrt)
-}
 
 func renderTemplate(templateStr string, qp QueryParams, strategy AggStrategy) string {
 	data := map[string]string{
