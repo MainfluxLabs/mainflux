@@ -170,14 +170,35 @@ func (ar *alarmRepository) RetrieveByGroups(ctx context.Context, groupIDs []stri
 }
 
 func (ar *alarmRepository) Remove(ctx context.Context, ids ...string) error {
+	q := `DELETE FROM alarms WHERE id = :id;`
+
 	for _, id := range ids {
 		dba := dbAlarm{ID: id}
-		q := `DELETE FROM alarms WHERE id = :id;`
-
-		_, err := ar.db.NamedExecContext(ctx, q, dba)
-		if err != nil {
+		if _, err := ar.db.NamedExecContext(ctx, q, dba); err != nil {
 			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
+	}
+
+	return nil
+}
+
+func (ar *alarmRepository) RemoveByThing(ctx context.Context, thingID string) error {
+	q := `DELETE FROM alarms WHERE thing_id = :thing_id;`
+
+	dba := dbAlarm{ThingID: thingID}
+	if _, err := ar.db.NamedExecContext(ctx, q, dba); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
+func (ar *alarmRepository) RemoveByGroup(ctx context.Context, groupID string) error {
+	q := `DELETE FROM alarms WHERE group_id = :group_id;`
+
+	dba := dbAlarm{GroupID: groupID}
+	if _, err := ar.db.NamedExecContext(ctx, q, dba); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil
@@ -219,12 +240,12 @@ func (ar *alarmRepository) retrieve(ctx context.Context, query, cquery string, p
 
 	var items []alarms.Alarm
 	for rows.Next() {
-		var dbAlarm dbAlarm
-		if err := rows.StructScan(&dbAlarm); err != nil {
+		var dba dbAlarm
+		if err := rows.StructScan(&dba); err != nil {
 			return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
-		alarm, err := toAlarm(dbAlarm)
+		alarm, err := toAlarm(dba)
 		if err != nil {
 			return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
