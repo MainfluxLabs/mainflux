@@ -18,7 +18,7 @@ import (
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/events"
+	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
@@ -29,7 +29,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/things/api"
 	httpapi "github.com/MainfluxLabs/mainflux/things/api/http"
 	"github.com/MainfluxLabs/mainflux/things/postgres"
-	mfredis "github.com/MainfluxLabs/mainflux/things/redis"
+	rediscache "github.com/MainfluxLabs/mainflux/things/redis"
+	"github.com/MainfluxLabs/mainflux/things/redis/events"
 	localusers "github.com/MainfluxLabs/mainflux/things/standalone"
 	"github.com/MainfluxLabs/mainflux/things/tracing"
 	usersapi "github.com/MainfluxLabs/mainflux/users/api/grpc"
@@ -342,7 +343,7 @@ func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logge
 
 func subscribeToAuthES(ctx context.Context, svc things.Service, cfg config, logger logger.Logger) error {
 	url := fmt.Sprintf("redis://%s/%s", cfg.esURL, cfg.esDB)
-	subscriber, err := events.NewSubscriber(url, authStream, esGroupName, cfg.esConsumerName, logger)
+	subscriber, err := mfevents.NewSubscriber(url, authStream, esGroupName, cfg.esConsumerName, logger)
 	if err != nil {
 		return err
 	}
@@ -353,7 +354,7 @@ func subscribeToAuthES(ctx context.Context, svc things.Service, cfg config, logg
 		}
 	}()
 
-	handler := mfredis.NewEventHandler(svc)
+	handler := events.NewEventHandler(svc)
 
 	return subscriber.Subscribe(ctx, handler)
 }
@@ -370,13 +371,13 @@ func newService(ac protomfx.AuthServiceClient, uc protomfx.UsersServiceClient, d
 	groupsRepo := postgres.NewGroupRepository(database)
 	groupsRepo = tracing.GroupRepositoryMiddleware(dbTracer, groupsRepo)
 
-	profileCache := mfredis.NewProfileCache(cacheClient)
+	profileCache := rediscache.NewProfileCache(cacheClient)
 	profileCache = tracing.ProfileCacheMiddleware(cacheTracer, profileCache)
 
-	thingCache := mfredis.NewThingCache(cacheClient)
+	thingCache := rediscache.NewThingCache(cacheClient)
 	thingCache = tracing.ThingCacheMiddleware(cacheTracer, thingCache)
 
-	groupCache := mfredis.NewGroupCache(cacheClient)
+	groupCache := rediscache.NewGroupCache(cacheClient)
 	groupCache = tracing.GroupCacheMiddleware(cacheTracer, groupCache)
 	idProvider := uuid.New()
 
@@ -384,7 +385,7 @@ func newService(ac protomfx.AuthServiceClient, uc protomfx.UsersServiceClient, d
 	groupMembershipsRepo = tracing.GroupMembershipsRepositoryMiddleware(dbTracer, groupMembershipsRepo)
 
 	svc := things.New(ac, uc, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider)
-	svc = mfredis.NewEventStoreMiddleware(svc, esClient)
+	svc = events.NewEventStoreMiddleware(svc, esClient)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
