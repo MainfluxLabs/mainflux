@@ -445,19 +445,12 @@ func (svc service) populateInviteInfo(ctx context.Context, invite *OrgInvite) er
 		return err
 	}
 
-	users := usersRes.GetUsers()
-
-	if len(users) == 1 {
-		invite.InviterEmail = users[0].GetEmail()
-	} else {
-		// Order of results from gRPC call isn't guaranteed to match order of IDs in request
-		switch users[0].Id {
+	for _, user := range usersRes.GetUsers() {
+		switch user.GetId() {
 		case invite.InviterID:
-			invite.InviterEmail = users[0].GetEmail()
-			invite.InviteeEmail = users[1].GetEmail()
-		default:
-			invite.InviterEmail = users[1].GetEmail()
-			invite.InviteeEmail = users[0].GetEmail()
+			invite.InviterEmail = user.GetEmail()
+		case invite.InviteeID:
+			invite.InviteeEmail = user.GetEmail()
 		}
 	}
 
