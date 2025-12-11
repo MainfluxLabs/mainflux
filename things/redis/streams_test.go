@@ -15,6 +15,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -27,21 +28,11 @@ import (
 )
 
 const (
-	streamID       = "mainflux.things"
 	email          = "user@example.com"
 	adminEmail     = "admin@example.com"
 	otherUserEmail = "other.user@example.com"
 	password       = "password"
 	token          = email
-	thingPrefix    = "thing."
-	thingCreate    = thingPrefix + "create"
-	thingUpdate    = thingPrefix + "update"
-	thingRemove    = thingPrefix + "remove"
-
-	profilePrefix = "profile."
-	profileCreate = profilePrefix + "create"
-	profileUpdate = profilePrefix + "update"
-	profileRemove = profilePrefix + "remove"
 )
 
 var (
@@ -107,7 +98,7 @@ func TestCreateThings(t *testing.T) {
 				"group_id":   grID,
 				"profile_id": prID,
 				"metadata":   "{\"test\":\"test\"}",
-				"operation":  thingCreate,
+				"operation":  events.ThingCreate,
 			},
 		},
 		{
@@ -125,7 +116,7 @@ func TestCreateThings(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{streamID, lastID},
+			Streams: []string{events.ThingsStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
@@ -184,7 +175,7 @@ func TestUpdateThing(t *testing.T) {
 				"profile_id": sth.ProfileID,
 				"name":       "a",
 				"metadata":   "{\"test\":\"test\"}",
-				"operation":  thingUpdate,
+				"operation":  events.ThingUpdate,
 			},
 		},
 	}
@@ -194,7 +185,7 @@ func TestUpdateThing(t *testing.T) {
 		err := svc.UpdateThing(context.Background(), tc.key, tc.thing)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{streamID, lastID},
+			Streams: []string{events.ThingsStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
@@ -318,7 +309,7 @@ func TestRemoveThing(t *testing.T) {
 			err:  nil,
 			event: map[string]any{
 				"id":        sth.ID,
-				"operation": thingRemove,
+				"operation": events.ThingRemove,
 			},
 		},
 		{
@@ -336,7 +327,7 @@ func TestRemoveThing(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{streamID, lastID},
+			Streams: []string{events.ThingsStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
@@ -381,7 +372,7 @@ func TestCreateProfiles(t *testing.T) {
 				"name":      "a",
 				"metadata":  "{\"test\":\"test\"}",
 				"group_id":  gr.ID,
-				"operation": profileCreate,
+				"operation": events.ProfileCreate,
 			},
 		},
 		{
@@ -400,7 +391,7 @@ func TestCreateProfiles(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{streamID, lastID},
+			Streams: []string{events.ThingsStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
@@ -450,7 +441,7 @@ func TestUpdateProfile(t *testing.T) {
 				"id":        spr.ID,
 				"name":      "b",
 				"metadata":  "{\"test\":\"test\"}",
-				"operation": profileUpdate,
+				"operation": events.ProfileUpdate,
 			},
 		},
 		{
@@ -471,7 +462,7 @@ func TestUpdateProfile(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{streamID, lastID},
+			Streams: []string{events.ThingsStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
@@ -581,7 +572,7 @@ func TestRemoveProfile(t *testing.T) {
 			err:  nil,
 			event: map[string]any{
 				"id":        spr.ID,
-				"operation": profileRemove,
+				"operation": events.ProfileRemove,
 			},
 		},
 		{
@@ -599,7 +590,7 @@ func TestRemoveProfile(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{streamID, lastID},
+			Streams: []string{events.ThingsStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
