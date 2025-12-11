@@ -234,8 +234,13 @@ func renderTemplate(templateStr string, qp QueryParams, strategy AggStrategy) st
 func buildAggregationCountQuery(qp QueryParams) string {
 	timeTrunc := buildTruncTimeExpression(qp.AggValue, qp.AggInterval, qp.TimeColumn)
 	havingCondition := buildHavingConditionForCount(qp.AggField, qp.Table)
-
 	timeTruncWithAlias := strings.Replace(timeTrunc, qp.TimeColumn, "m."+qp.TimeColumn, 1)
+
+	dq := dbutil.GetDirQuery(qp.Dir)
+	lq := ""
+	if qp.Limit > 0 {
+		lq = fmt.Sprintf("LIMIT %d", qp.Limit)
+	}
 
 	return fmt.Sprintf(`
 		SELECT COUNT(*) FROM (
@@ -244,14 +249,18 @@ func buildAggregationCountQuery(qp QueryParams) string {
 				SELECT DISTINCT %s as interval_time
 				FROM %s
 				%s
+				ORDER BY interval_time %s
+				%s
 			) ti
 			LEFT JOIN %s m ON %s = ti.interval_time
+				%s
 			GROUP BY ti.interval_time
 			HAVING %s
 		) counted`,
-		timeTrunc, qp.Table, qp.Condition,
+		timeTrunc, qp.Table, qp.Condition, dq, lq,
 		qp.Table,
 		timeTruncWithAlias,
+		qp.ConditionForJoin,
 		havingCondition)
 }
 
