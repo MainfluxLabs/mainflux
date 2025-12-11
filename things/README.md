@@ -46,6 +46,13 @@ default values.
 | MF_JAEGER_URL              | Jaeger server URL                                                       | localhost:6831 |
 | MF_AUTH_GRPC_URL           | Auth service gRPC URL                                                   | localhost:8181 |
 | MF_AUTH_GRPC_TIMEOUT       | Auth service gRPC request timeout in seconds                            | 1s             |
+| MF_EMAIL_HOST              | Mail server host                                                        | localhost      |
+| MF_EMAIL_PORT              | Mail server port                                                        | 25             |
+| MF_EMAIL_USERNAME          | Mail server username                                                    |                |
+| MF_EMAIL_PASSWORD          | Mail server password                                                    |                |
+| MF_EMAIL_FROM_ADDRESS      | Email "from" address                                                    |                |
+| MF_EMAIL_FROM_NAME         | Email "from" name                                                       |                |
+| MF_EMAIL_BASE_TEMPLATE     | Path to base template for e-mails sent from the service                 | base.tmpl      |
 
 **Note** that if you want `things` service to have only one user locally, you should use `MF_THINGS_STANDALONE` env vars. By specifying these, you don't need `auth` service in your deployment for users' authorization.
 

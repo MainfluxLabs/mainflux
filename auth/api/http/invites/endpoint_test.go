@@ -223,7 +223,7 @@ func TestViewInvite(t *testing.T) {
 	org, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 
-	invite, err := svc.CreateOrgInvite(context.Background(), ownerToken, viewer.Email, viewer.Role, org.ID, redirectPathInvite)
+	invite, err := svc.CreateOrgInvite(context.Background(), ownerToken, viewer.Email, viewer.Role, org.ID, nil, redirectPathInvite)
 	assert.Nil(t, err, fmt.Sprintf("Inviting member expected to succeed: %s", err))
 
 	inviteID := invite.ID
@@ -289,7 +289,7 @@ func TestRevokeInvite(t *testing.T) {
 	org, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 
-	invite, err := svc.CreateOrgInvite(context.Background(), ownerToken, viewer.Email, viewer.Role, org.ID, redirectPathInvite)
+	invite, err := svc.CreateOrgInvite(context.Background(), ownerToken, viewer.Email, viewer.Role, org.ID, nil, redirectPathInvite)
 	assert.Nil(t, err, fmt.Sprintf("Inviting member expected to succeed: %s", err))
 
 	inviteID := invite.ID
@@ -367,7 +367,7 @@ func TestRespondInvite(t *testing.T) {
 	memberships := []auth.OrgMembership{viewer, editor, admin}
 	invites := []auth.OrgInvite{}
 	for _, membership := range memberships {
-		inv, err := svc.CreateOrgInvite(context.Background(), ownerToken, membership.Email, membership.Role, org.ID, redirectPathInvite)
+		inv, err := svc.CreateOrgInvite(context.Background(), ownerToken, membership.Email, membership.Role, org.ID, nil, redirectPathInvite)
 		assert.Nil(t, err, fmt.Sprintf("Inviting members expected to succeed: %s", err))
 
 		invites = append(invites, inv)
@@ -469,7 +469,7 @@ func TestListInvitesByInvitee(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 		orgIDs = append(orgIDs, org.ID)
 
-		inv, err := svc.CreateOrgInvite(context.Background(), ownerToken, viewerEmail, auth.Viewer, org.ID, redirectPathInvite)
+		inv, err := svc.CreateOrgInvite(context.Background(), ownerToken, viewerEmail, auth.Viewer, org.ID, nil, redirectPathInvite)
 
 		assert.Nil(t, err, fmt.Sprintf("Inviting member expected to succeed: %s", err))
 		invites = append(invites, inviteRes{

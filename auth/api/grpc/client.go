@@ -31,6 +31,7 @@ type grpcClient struct {
 	assignRole             endpoint.Endpoint
 	createDormantOrgInvite endpoint.Endpoint
 	activateOrgInvite      endpoint.Endpoint
+	viewOrg                endpoint.Endpoint
 	timeout                time.Duration
 }
 
@@ -100,6 +101,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			encodeActivateOrgInviteRequest,
 			decodeEmptyResponse,
 			emptypb.Empty{},
+		).Endpoint()),
+		viewOrg: kitot.TraceClient(tracer, "view_org")(kitgrpc.NewClient( // initialize viewOrg client
+			conn,
+			svcName,
+			"ViewOrg",
+			encodeViewOrgRequest,
+			decodeOrgResponse,
+			protomfx.Org{},
 		).Endpoint()),
 
 		timeout: timeout,
@@ -297,6 +306,42 @@ func encodeActivateOrgInviteRequest(_ context.Context, grpcReq any) (any, error)
 		PlatformInviteID: req.platformInviteID,
 		UserID:           req.userID,
 		RedirectPath:     req.redirectPath,
+	}, nil
+}
+
+func (client grpcClient) ViewOrg(ctx context.Context, req *protomfx.ViewOrgReq, _ ...grpc.CallOption) (*protomfx.Org, error) {
+	ctx, close := context.WithTimeout(ctx, client.timeout)
+	defer close()
+
+	res, err := client.viewOrg(ctx, viewOrgReq{orgID: req.GetOrgID(), token: req.GetToken()})
+	if err != nil {
+		return &protomfx.Org{}, err
+	}
+
+	or := res.(orgRes)
+	return &protomfx.Org{
+		Id:          or.id,
+		OwnerID:     or.ownerID,
+		Name:        or.name,
+		Description: or.description,
+	}, nil
+}
+
+func encodeViewOrgRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(viewOrgReq)
+	return &protomfx.ViewOrgReq{
+		Token: req.token,
+		OrgID: req.orgID,
+	}, nil
+}
+
+func decodeOrgResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(*protomfx.Org)
+	return orgRes{
+		id:          res.GetId(),
+		ownerID:     res.GetOwnerID(),
+		name:        res.GetName(),
+		description: res.GetDescription(),
 	}, nil
 }
 
