@@ -166,15 +166,10 @@ func (req createGroupMembershipsReq) validate() error {
 }
 
 type viewGroupReq struct {
-	token   string
 	groupID string
 }
 
 func (req viewGroupReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
 	if req.groupID == "" {
 		return apiutil.ErrMissingGroupID
 	}

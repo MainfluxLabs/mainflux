@@ -426,6 +426,15 @@ func (ms *metricsMiddleware) ViewGroup(ctx context.Context, token, id string) (t
 	return ms.svc.ViewGroup(ctx, token, id)
 }
 
+func (ms *metricsMiddleware) ViewGroupInternal(ctx context.Context, id string) (things.Group, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "view_group_internal").Add(1)
+		ms.latency.With("method", "view_group_internal").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ViewGroupInternal(ctx, id)
+}
+
 func (ms *metricsMiddleware) ListGroups(ctx context.Context, token string, pm apiutil.PageMetadata) (things.GroupPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_groups").Add(1)

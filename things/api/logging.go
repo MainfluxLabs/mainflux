@@ -598,6 +598,19 @@ func (lm *loggingMiddleware) ViewGroup(ctx context.Context, token, id string) (g
 	return lm.svc.ViewGroup(ctx, token, id)
 }
 
+func (lm *loggingMiddleware) ViewGroupInternal(ctx context.Context, id string) (g things.Group, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method view_group_internal for id %s took %s to complete", id, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ViewGroupInternal(ctx, id)
+}
+
 func (lm *loggingMiddleware) ListGroups(ctx context.Context, token string, pm apiutil.PageMetadata) (g things.GroupPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_groups took %s to complete", time.Since(begin))

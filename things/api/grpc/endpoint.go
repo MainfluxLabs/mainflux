@@ -283,7 +283,7 @@ func viewGroupEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		group, err := svc.ViewGroup(ctx, req.token, req.groupID)
+		group, err := svc.ViewGroupInternal(ctx, req.groupID)
 		if err != nil {
 			return groupRes{}, err
 		}

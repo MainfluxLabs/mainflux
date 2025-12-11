@@ -171,8 +171,8 @@ func (es eventStore) ListOrgInvitesByOrg(ctx context.Context, token, orgID strin
 	return es.svc.ListOrgInvitesByOrg(ctx, token, orgID, pm)
 }
 
-func (es eventStore) SendOrgInviteEmail(ctx context.Context, token string, invite auth.OrgInvite, email, orgName, invRedirectPath string) error {
-	return es.svc.SendOrgInviteEmail(ctx, token, invite, email, orgName, invRedirectPath)
+func (es eventStore) SendOrgInviteEmail(ctx context.Context, invite auth.OrgInvite, email, orgName, invRedirectPath string) error {
+	return es.svc.SendOrgInviteEmail(ctx, invite, email, orgName, invRedirectPath)
 }
 
 func (es eventStore) Issue(ctx context.Context, token string, key auth.Key) (auth.Key, string, error) {

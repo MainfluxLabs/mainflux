@@ -275,6 +275,10 @@ func (svc *mainfluxThings) ViewGroup(context.Context, string, string) (things.Gr
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) ViewGroupInternal(context.Context, string) (things.Group, error) {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) ViewGroupByThing(context.Context, string, string) (things.Group, error) {
 	panic("not implemented")
 }

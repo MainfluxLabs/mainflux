@@ -92,7 +92,7 @@ type Invites interface {
 	ListOrgInvitesByOrg(ctx context.Context, token, orgID string, pm PageMetadataInvites) (OrgInvitesPage, error)
 
 	// SendOrgInviteEmail sends an e-mail notifying the invitee of the corresponding Invite.
-	SendOrgInviteEmail(ctx context.Context, token string, invite OrgInvite, email, orgName, invRedirectPath string) error
+	SendOrgInviteEmail(ctx context.Context, invite OrgInvite, email, orgName, invRedirectPath string) error
 }
 
 type OrgInvitesRepository interface {
@@ -193,7 +193,7 @@ func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgI
 	}
 
 	go func() {
-		svc.SendOrgInviteEmail(ctx, token, invite, email, org.Name, invRedirectPath)
+		svc.SendOrgInviteEmail(ctx, invite, email, org.Name, invRedirectPath)
 	}()
 
 	return invite, nil
@@ -292,8 +292,7 @@ func (svc service) ActivateOrgInvite(ctx context.Context, platformInviteID, user
 		}
 
 		go func() {
-			// TODO: what to do for the token?
-			svc.SendOrgInviteEmail(ctx, "", invite, invite.InviteeEmail, invite.OrgName, orgInviteRedirectPath)
+			svc.SendOrgInviteEmail(ctx, invite, invite.InviteeEmail, invite.OrgName, orgInviteRedirectPath)
 		}()
 	}
 
@@ -481,7 +480,7 @@ func (svc service) populateInviteInfo(ctx context.Context, invite *OrgInvite) er
 	return nil
 }
 
-func (svc service) SendOrgInviteEmail(ctx context.Context, token string, invite OrgInvite, email, orgName, invRedirectPath string) error {
+func (svc service) SendOrgInviteEmail(ctx context.Context, invite OrgInvite, email, orgName, invRedirectPath string) error {
 	to := []string{email}
 
 	var groupNames map[string]string
@@ -490,7 +489,7 @@ func (svc service) SendOrgInviteEmail(ctx context.Context, token string, invite 
 		groupNames = make(map[string]string, len(invite.Groups))
 
 		for groupID := range invite.Groups {
-			group, err := svc.things.ViewGroup(context.Background(), &protomfx.ViewGroupReq{Token: token, GroupID: groupID})
+			group, err := svc.things.ViewGroup(context.Background(), &protomfx.ViewGroupReq{GroupID: groupID})
 			if err != nil {
 				return err
 			}

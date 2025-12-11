@@ -232,8 +232,7 @@ message Org {
 }
 
 message ViewGroupReq {
-    string token = 1;
-    string groupID = 2;
+    string groupID = 1;
 }
 
 message Group {

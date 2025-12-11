@@ -315,7 +315,7 @@ func (client grpcClient) ViewGroup(ctx context.Context, req *protomfx.ViewGroupR
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.viewGroup(ctx, viewGroupReq{token: req.GetToken(), groupID: req.GetGroupID()})
+	res, err := client.viewGroup(ctx, viewGroupReq{groupID: req.GetGroupID()})
 	if err != nil {
 		return nil, err
 	}
@@ -409,7 +409,7 @@ func encodeCreateGroupMembershipsRequest(_ context.Context, grpcReq any) (any, e
 
 func encodeViewGroupRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(viewGroupReq)
-	return &protomfx.ViewGroupReq{Token: req.token, GroupID: req.groupID}, nil
+	return &protomfx.ViewGroupReq{GroupID: req.groupID}, nil
 }
 
 func decodeIdentityResponse(_ context.Context, grpcRes any) (any, error) {

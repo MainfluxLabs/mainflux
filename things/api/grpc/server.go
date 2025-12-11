@@ -298,7 +298,7 @@ func decodeCreateGroupMembershipsRequest(_ context.Context, grpcReq any) (any, e
 
 func decodeViewGroupRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.ViewGroupReq)
-	return viewGroupReq{token: req.GetToken(), groupID: req.GetGroupID()}, nil
+	return viewGroupReq{groupID: req.GetGroupID()}, nil
 }
 
 func encodeIdentityResponse(_ context.Context, grpcRes any) (any, error) {
