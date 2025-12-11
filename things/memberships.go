@@ -56,8 +56,8 @@ type GroupMemberships interface {
 	// CreateGroupMemberships adds memberships to a group identified by the provided ID.
 	CreateGroupMemberships(ctx context.Context, token string, gms ...GroupMembership) error
 
-	// SaveGroupMemberships saves group memberships without requiring authentication.
-	SaveGroupMemberships(ctx context.Context, gms ...GroupMembership) error
+	// CreateGroupMembershipsInternal saves group memberships without requiring authentication.
+	CreateGroupMembershipsInternal(ctx context.Context, gms ...GroupMembership) error
 
 	// ListGroupMemberships retrieves a paginated list of group memberships for the given group.
 	ListGroupMemberships(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (GroupMembershipsPage, error)
@@ -116,7 +116,6 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token strin
 
 		// Send e-mail notification
 		go func() {
-			fmt.Println("sending group membership email notification")
 			ts.email.SendGroupMembershipNotification([]string{recipientEmail}, org.Name, group.Name, gm.Role)
 		}()
 	}
@@ -124,7 +123,7 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token strin
 	return nil
 }
 
-func (ts *thingsService) SaveGroupMemberships(ctx context.Context, gms ...GroupMembership) error {
+func (ts *thingsService) CreateGroupMembershipsInternal(ctx context.Context, gms ...GroupMembership) error {
 	for _, gm := range gms {
 		if err := ts.groupMemberships.Save(ctx, gm); err != nil {
 			return err

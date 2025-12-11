@@ -714,7 +714,7 @@ func (lm *loggingMiddleware) CreateGroupMemberships(ctx context.Context, token s
 	return lm.svc.CreateGroupMemberships(ctx, token, gms...)
 }
 
-func (lm *loggingMiddleware) SaveGroupMemberships(ctx context.Context, gms ...things.GroupMembership) (err error) {
+func (lm *loggingMiddleware) CreateGroupMembershipsInternal(ctx context.Context, gms ...things.GroupMembership) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method save_group_memberships took %s to complete", time.Since(begin))
 		if err != nil {
@@ -723,7 +723,7 @@ func (lm *loggingMiddleware) SaveGroupMemberships(ctx context.Context, gms ...th
 		}
 	}(time.Now())
 
-	return lm.svc.SaveGroupMemberships(ctx, gms...)
+	return lm.svc.CreateGroupMembershipsInternal(ctx, gms...)
 }
 
 func (lm *loggingMiddleware) ListGroupMemberships(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (gpp things.GroupMembershipsPage, err error) {

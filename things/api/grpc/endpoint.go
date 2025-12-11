@@ -268,7 +268,7 @@ func createGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 			})
 		}
 
-		if err := svc.SaveGroupMemberships(ctx, gms...); err != nil {
+		if err := svc.CreateGroupMembershipsInternal(ctx, gms...); err != nil {
 			return emptyRes{}, err
 		}
 

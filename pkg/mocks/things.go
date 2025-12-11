@@ -295,7 +295,7 @@ func (svc *mainfluxThings) CreateGroupMemberships(context.Context, string, ...th
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) SaveGroupMemberships(context.Context, ...things.GroupMembership) error {
+func (svc *mainfluxThings) CreateGroupMembershipsInternal(context.Context, ...things.GroupMembership) error {
 	panic("not implemented")
 }
 
