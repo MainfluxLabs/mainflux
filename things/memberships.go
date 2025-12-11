@@ -2,7 +2,6 @@ package things
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -99,7 +98,6 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token strin
 		})
 
 		if err != nil {
-			fmt.Println(err)
 			continue
 		}
 
@@ -108,7 +106,6 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token strin
 		})
 
 		if err != nil {
-			fmt.Println(err)
 			continue
 		}
 
