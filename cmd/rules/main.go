@@ -40,7 +40,6 @@ import (
 const (
 	svcName      = "rules"
 	stopWaitTime = 5 * time.Second
-	thingsStream = "mainflux.things"
 	esGroupName  = svcName
 
 	defBrokerURL         = "nats://localhost:4222"
@@ -235,7 +234,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func subscribeToThingsES(ctx context.Context, svc rules.Service, cfg config, logger logger.Logger) error {
-	subscriber, err := mfevents.NewSubscriber(cfg.esURL, thingsStream, esGroupName, cfg.esConsumerName, logger)
+	subscriber, err := mfevents.NewSubscriber(cfg.esURL, mfevents.ThingsStream, esGroupName, cfg.esConsumerName, logger)
 	if err != nil {
 		return err
 	}

@@ -8,9 +8,11 @@ import (
 )
 
 const (
-	thingPrefix   = "thing."
-	profilePrefix = "profile."
-	groupPrefix   = "group."
+	thingPrefix    = "thing."
+	profilePrefix  = "profile."
+	groupPrefix    = "group."
+	orgPrefix      = "org."
+	mainfluxPrefix = "mainflux."
 
 	ThingCreate                = thingPrefix + "create"
 	ThingUpdate                = thingPrefix + "update"
@@ -22,6 +24,12 @@ const (
 	ProfileRemove = profilePrefix + "remove"
 
 	GroupRemove = groupPrefix + "remove"
+
+	OrgCreate = orgPrefix + "create"
+	OrgRemove = orgPrefix + "remove"
+
+	ThingsStream = mainfluxPrefix + "things"
+	AuthStream   = mainfluxPrefix + "auth"
 )
 
 // Event represents an event.

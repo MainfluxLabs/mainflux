@@ -6,14 +6,12 @@ package redis
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-redis/redis/v8"
 )
 
-const (
-	streamID  = "mainflux.things"
-	streamLen = 1000
-)
+const streamLen = 1000
 
 type eventStore struct {
 	things.Service
@@ -44,7 +42,7 @@ func (es eventStore) CreateThings(ctx context.Context, token, profileID string, 
 			metadata:  th.Metadata,
 		}
 		record := &redis.XAddArgs{
-			Stream:       streamID,
+			Stream:       events.ThingsStream,
 			MaxLenApprox: streamLen,
 			Values:       event.Encode(),
 		}
@@ -66,7 +64,7 @@ func (es eventStore) UpdateThing(ctx context.Context, token string, thing things
 		metadata:  thing.Metadata,
 	}
 	record := &redis.XAddArgs{
-		Stream:       streamID,
+		Stream:       events.ThingsStream,
 		MaxLenApprox: streamLen,
 		Values:       event.Encode(),
 	}
@@ -87,7 +85,7 @@ func (es eventStore) UpdateThingGroupAndProfile(ctx context.Context, token strin
 	}
 
 	record := &redis.XAddArgs{
-		Stream:       streamID,
+		Stream:       events.ThingsStream,
 		MaxLenApprox: streamLen,
 		Values:       event.Encode(),
 	}
@@ -107,7 +105,7 @@ func (es eventStore) RemoveThings(ctx context.Context, token string, ids ...stri
 			id: id,
 		}
 		record := &redis.XAddArgs{
-			Stream:       streamID,
+			Stream:       events.ThingsStream,
 			MaxLenApprox: streamLen,
 			Values:       event.Encode(),
 		}
@@ -131,7 +129,7 @@ func (es eventStore) CreateProfiles(ctx context.Context, token, groupID string, 
 			metadata: pr.Metadata,
 		}
 		record := &redis.XAddArgs{
-			Stream:       streamID,
+			Stream:       events.ThingsStream,
 			MaxLenApprox: streamLen,
 			Values:       event.Encode(),
 		}
@@ -153,7 +151,7 @@ func (es eventStore) UpdateProfile(ctx context.Context, token string, profile th
 		metadata: profile.Metadata,
 	}
 	record := &redis.XAddArgs{
-		Stream:       streamID,
+		Stream:       events.ThingsStream,
 		MaxLenApprox: streamLen,
 		Values:       event.Encode(),
 	}
@@ -172,7 +170,7 @@ func (es eventStore) RemoveProfiles(ctx context.Context, token string, ids ...st
 			id: id,
 		}
 		record := &redis.XAddArgs{
-			Stream:       streamID,
+			Stream:       events.ThingsStream,
 			MaxLenApprox: streamLen,
 			Values:       event.Encode(),
 		}
@@ -192,7 +190,7 @@ func (es eventStore) RemoveGroups(ctx context.Context, token string, ids ...stri
 			id: id,
 		}
 		record := &redis.XAddArgs{
-			Stream:       streamID,
+			Stream:       events.ThingsStream,
 			MaxLenApprox: streamLen,
 			Values:       event.Encode(),
 		}

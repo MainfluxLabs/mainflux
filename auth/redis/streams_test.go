@@ -17,6 +17,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth/redis"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/events"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
@@ -26,21 +27,14 @@ import (
 )
 
 const (
-	streamID = "mainflux.auth"
-
 	secret      = "secret"
 	ownerEmail  = "owner@test.com"
 	ownerID     = "ownerID"
 	description = "description"
 	name        = "name"
-	n           = 10
 
 	loginDuration  = 30 * time.Minute
 	inviteDuration = 7 * 24 * time.Hour
-
-	orgPrefix = "org."
-	orgCreate = orgPrefix + "create"
-	orgRemove = orgPrefix + "remove"
 )
 
 var (
@@ -89,7 +83,7 @@ func TestCreateOrg(t *testing.T) {
 			err:   nil,
 			event: map[string]any{
 				"id":        "123e4567-e89b-12d3-a456-000000000001",
-				"operation": orgCreate,
+				"operation": events.OrgCreate,
 			},
 		},
 		{
@@ -107,7 +101,7 @@ func TestCreateOrg(t *testing.T) {
 		assert.True(t, errors.Contains(err, oc.err), fmt.Sprintf("%s: expected %s got %s\n", oc.desc, oc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{streamID, lastID},
+			Streams: []string{events.AuthStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
@@ -150,7 +144,7 @@ func TestRemoveOrg(t *testing.T) {
 			err:   nil,
 			event: map[string]any{
 				"id":        org.ID,
-				"operation": orgRemove,
+				"operation": events.OrgRemove,
 			},
 		},
 		{
@@ -168,7 +162,7 @@ func TestRemoveOrg(t *testing.T) {
 		assert.True(t, errors.Contains(err, oc.err), fmt.Sprintf("%s: expected %s got %s\n", oc.desc, oc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{streamID, lastID},
+			Streams: []string{events.AuthStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
