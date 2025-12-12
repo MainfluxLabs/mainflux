@@ -624,14 +624,12 @@ func buildHavingConditionForCount(aggFields []string, table string) string {
 
 func buildAggregatedJSONSelectMultipleFromIA(aggFields []string, aggPrefix string) string {
 	if len(aggFields) == 0 {
-		return "ia.max_time as created, ia.subtopic, ia.publisher, ia.protocol, '{}'::jsonb as payload"
+		return "ia.max_time as created, ia.subtopic, ia.publisher, ia.protocol, CAST('{}' AS jsonb) as payload"
 	}
 
 	var jsonbPairs []string
 	for i, field := range aggFields {
-		parts := strings.Split(field, ".")
-		key := parts[len(parts)-1]
-		jsonbPairs = append(jsonbPairs, fmt.Sprintf("'%s', ia.%s_%d", key, aggPrefix, i))
+		jsonbPairs = append(jsonbPairs, fmt.Sprintf("'%s', ia.%s_%d", field, aggPrefix, i))
 	}
 
 	return fmt.Sprintf(`ia.max_time as created, ia.subtopic, ia.publisher, ia.protocol,
