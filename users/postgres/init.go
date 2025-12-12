@@ -94,6 +94,15 @@ func migrateDB(db *sqlx.DB) error {
 					`DROP INDEX IF EXISTS unique_invitee_email_pending`,
 				},
 			},
+			{
+				Id: "users_4",
+				Up: []string{
+					`ALTER TABLE users ALTER COLUMN password DROP NOT NULL`,
+				},
+				Down: []string{
+					`ALTER TABLE users ALTER COLUMN password SET NOT NULL`,
+				},
+			},
 		},
 	}
 

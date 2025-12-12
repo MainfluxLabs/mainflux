@@ -5,6 +5,10 @@ package users
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
@@ -13,6 +17,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -20,6 +25,8 @@ const (
 	DisabledStatusKey = "disabled"
 	AllStatusKey      = "all"
 	rootAdminRole     = "root"
+	GoogleProvider    = "google"
+	GitHubProvider    = "github"
 )
 
 var (
@@ -77,6 +84,12 @@ type Service interface {
 	// authentication generates new access token. Failed invocations are
 	// identified by the non-nil error values in the response.
 	Login(ctx context.Context, user User) (string, error)
+
+	// OAuthLogin returns the URL to initiate OAuth login.
+	OAuthLogin(provider string) (state, verifier, redirectURL string)
+
+	// OAuthCallback exchanges the OAuth code for user info and logs in/creates the user.
+	OAuthCallback(ctx context.Context, provider, code, verifier string) (string, error)
 
 	// ViewUser retrieves user info for a given user ID and an authorized token.
 	ViewUser(ctx context.Context, token, id string) (User, error)
@@ -142,6 +155,12 @@ type UserPage struct {
 	Users []User
 }
 
+type ConfigURLs struct {
+	GoogleUserInfoURL string
+	GitHubUserInfoURL string
+	RedirectLoginURL  string
+}
+
 var _ Service = (*usersService)(nil)
 
 type usersService struct {
@@ -155,10 +174,13 @@ type usersService struct {
 	email               Emailer
 	auth                protomfx.AuthServiceClient
 	idProvider          uuid.IDProvider
+	googleOAuth         oauth2.Config
+	githubOAuth         oauth2.Config
+	urls                ConfigURLs
 }
 
 // New instantiates the users service implementation
-func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, inviteDuration time.Duration, emailVerifyEnabled bool, selfRegisterEnabled bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider) Service {
+func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, inviteDuration time.Duration, emailVerifyEnabled bool, selfRegisterEnabled bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider, googleOAuth, githubOAuth oauth2.Config, urls ConfigURLs) Service {
 	return &usersService{
 		users:               users,
 		emailVerifications:  verifications,
@@ -170,6 +192,9 @@ func New(users UserRepository, verifications EmailVerificationRepository, invite
 		auth:                auth,
 		email:               e,
 		idProvider:          idp,
+		googleOAuth:         googleOAuth,
+		githubOAuth:         githubOAuth,
+		urls:                urls,
 	}
 }
 
@@ -420,6 +445,108 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 		return "", errors.Wrap(errors.ErrAuthentication, err)
 	}
 	return svc.issue(ctx, dbUser.ID, dbUser.Email, auth.LoginKey)
+}
+
+func (svc usersService) OAuthLogin(provider string) (state, verifier, redirectURL string) {
+	var oauthCfg oauth2.Config
+	switch provider {
+	case GoogleProvider:
+		oauthCfg = svc.googleOAuth
+	case GitHubProvider:
+		oauthCfg = svc.githubOAuth
+	}
+
+	verifier = oauth2.GenerateVerifier()
+	state = generateRandomState()
+	redirectURL = oauthCfg.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.S256ChallengeOption(verifier))
+	return state, verifier, redirectURL
+}
+
+func (svc usersService) OAuthCallback(ctx context.Context, provider, code, verifier string) (string, error) {
+	var email string
+
+	switch provider {
+	case GoogleProvider:
+		oauthToken, err := svc.googleOAuth.Exchange(ctx, code, oauth2.VerifierOption(verifier))
+		if err != nil {
+			return "", err
+		}
+
+		client := svc.googleOAuth.Client(ctx, oauthToken)
+		resp, err := client.Get(svc.urls.GoogleUserInfoURL)
+		if err != nil {
+			return "", err
+		}
+		defer resp.Body.Close()
+
+		var gUser struct {
+			Email string `json:"email"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&gUser); err != nil {
+			return "", err
+		}
+		email = gUser.Email
+
+	case GitHubProvider:
+		oauthToken, err := svc.githubOAuth.Exchange(ctx, code, oauth2.VerifierOption(verifier))
+		if err != nil {
+			return "", err
+		}
+
+		client := svc.githubOAuth.Client(ctx, oauthToken)
+		resp, err := client.Get(svc.urls.GitHubUserInfoURL)
+		if err != nil {
+			return "", err
+		}
+		defer resp.Body.Close()
+
+		var emails []struct {
+			Email    string `json:"email"`
+			Primary  bool   `json:"primary"`
+			Verified bool   `json:"verified"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&emails); err != nil {
+			return "", err
+		}
+
+		for _, e := range emails {
+			if e.Primary && e.Verified {
+				email = e.Email
+				break
+			}
+		}
+
+		if email == "" && len(emails) > 0 {
+			email = emails[0].Email
+		}
+	}
+
+	user, err := svc.users.RetrieveByEmail(ctx, email)
+	if err != nil {
+		if !errors.Contains(err, dbutil.ErrNotFound) {
+			return "", err
+		}
+	}
+
+	if user.ID == "" {
+		uid, _ := svc.idProvider.ID()
+		user = User{
+			ID:     uid,
+			Email:  email,
+			Status: EnabledStatusKey,
+		}
+		if _, err := svc.users.Save(ctx, user); err != nil {
+			return "", err
+		}
+	}
+
+	token, err := svc.issue(ctx, user.ID, user.Email, auth.LoginKey)
+	if err != nil {
+		return "", err
+	}
+
+	redirectURL := fmt.Sprintf("%s?token=%s", svc.urls.RedirectLoginURL, token)
+	return redirectURL, nil
 }
 
 func (svc usersService) ViewUser(ctx context.Context, token, id string) (User, error) {
@@ -714,4 +841,10 @@ func (svc usersService) isAdmin(ctx context.Context, token string) error {
 	}
 
 	return nil
+}
+
+func generateRandomState() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return base64.URLEncoding.EncodeToString(b)
 }
