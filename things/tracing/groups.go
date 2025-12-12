@@ -13,6 +13,7 @@ const (
 	saveGroup                       = "save_group"
 	updateGroup                     = "update_group"
 	removeGroup                     = "remove_group"
+	removeGroupsByOrg               = "remove_groups_by_org"
 	retrieveAllGroups               = "retrieve_all_groups"
 	backupAllGroups                 = "backup_all_groups"
 	backupGroupsByOrg               = "backup_groups_by_org"
@@ -63,6 +64,14 @@ func (grm groupRepositoryMiddleware) Remove(ctx context.Context, groupIDs ...str
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return grm.repo.Remove(ctx, groupIDs...)
+}
+
+func (grm groupRepositoryMiddleware) RemoveByOrg(ctx context.Context, orgID string) error {
+	span := dbutil.CreateSpan(ctx, grm.tracer, removeGroupsByOrg)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.RemoveByOrg(ctx, orgID)
 }
 
 func (grm groupRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.Group, error) {

@@ -267,6 +267,10 @@ func (svc *mainfluxThings) RemoveGroups(context.Context, string, ...string) erro
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) RemoveGroupsByOrg(context.Context, string) ([]string, error) {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) UpdateGroup(context.Context, string, things.Group) (things.Group, error) {
 	panic("not implemented")
 }
