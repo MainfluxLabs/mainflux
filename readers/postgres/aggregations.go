@@ -194,9 +194,9 @@ func buildAggregationQuery(qp QueryParams, strategy AggStrategy) string {
 				ti.interval_time,
 				{{.AggExpression}},
 				MAX(m.{{.TimeColumn}}) as max_time,
-				MAX(m.subtopic) as subtopic,
-				MAX(m.publisher) as publisher,
-				MAX(m.protocol) as protocol
+				MAX(CAST(m.subtopic AS text)) as subtopic,
+				MAX(CAST(m.publisher AS text)) as publisher,
+				MAX(CAST(m.protocol AS text)) as protocol
 			FROM time_intervals ti
 			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
 				{{.ConditionForJoin}}
@@ -234,7 +234,7 @@ func renderTemplate(templateStr string, qp QueryParams, strategy AggStrategy) st
 func buildAggregationCountQuery(qp QueryParams) string {
 	timeTrunc := buildTruncTimeExpression(qp.AggValue, qp.AggInterval, qp.TimeColumn)
 	havingCondition := buildHavingConditionForCount(qp.AggField, qp.Table)
-	timeTruncWithAlias := strings.Replace(timeTrunc, qp.TimeColumn, "m."+qp.TimeColumn, 1)
+	timeTruncWithAlias := buildTruncTimeExpression(qp.AggValue, qp.AggInterval, "m."+qp.TimeColumn)
 
 	dq := dbutil.GetDirQuery(qp.Dir)
 	lq := ""
