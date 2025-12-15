@@ -102,7 +102,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			decodeEmptyResponse,
 			emptypb.Empty{},
 		).Endpoint()),
-		viewOrg: kitot.TraceClient(tracer, "view_org")(kitgrpc.NewClient( // initialize viewOrg client
+		viewOrg: kitot.TraceClient(tracer, "view_org")(kitgrpc.NewClient(
 			conn,
 			svcName,
 			"ViewOrg",
