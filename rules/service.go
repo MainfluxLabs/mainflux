@@ -19,7 +19,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
-// Service specifies an API for managing rules.
+// Service specifies an API that must be fullfiled by the domain service
+// implementation, and all of its decorators (e.g. logging & metrics).
+// All methods that accept a token parameter use it to identify and authorize
+// the user performing the operation.
 type Service interface {
 	// CreateRules creates rules.
 	CreateRules(ctx context.Context, token, groupID string, rules ...Rule) ([]Rule, error)
@@ -42,11 +45,17 @@ type Service interface {
 	// RemoveRules removes the rules identified with the provided IDs.
 	RemoveRules(ctx context.Context, token string, ids ...string) error
 
+	// RemoveRulesByGroup removes the rules identified with the provided IDs.
+	RemoveRulesByGroup(ctx context.Context, groupID string) error
+
 	// AssignRules assigns rules to a specific thing.
 	AssignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error
 
 	// UnassignRules removes rule assignments from a specific thing.
 	UnassignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error
+
+	// UnassignRulesByThing removes all rule assignments from a specific thing.
+	UnassignRulesByThing(ctx context.Context, thingID string) error
 
 	// Publish publishes messages on a topic related to a certain rule action
 	Publish(ctx context.Context, message protomfx.Message) error
@@ -197,6 +206,10 @@ func (rs *rulesService) RemoveRules(ctx context.Context, token string, ids ...st
 	return rs.rules.Remove(ctx, ids...)
 }
 
+func (rs *rulesService) RemoveRulesByGroup(ctx context.Context, groupID string) error {
+	return rs.rules.RemoveByGroup(ctx, groupID)
+}
+
 func (rs *rulesService) AssignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error {
 	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
 		return err
@@ -251,6 +264,10 @@ func (rs *rulesService) UnassignRules(ctx context.Context, token, thingID string
 	}
 
 	return nil
+}
+
+func (rs *rulesService) UnassignRulesByThing(ctx context.Context, thingID string) error {
+	return rs.rules.UnassignByThing(ctx, thingID)
 }
 
 func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) error {
