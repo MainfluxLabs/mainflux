@@ -211,7 +211,7 @@ func (es eventStore) RemoveGroupsByOrg(ctx context.Context, orgID string) ([]str
 			id: id,
 		}
 		record := &redis.XAddArgs{
-			Stream:       streamID,
+			Stream:       events.ThingsStream,
 			MaxLenApprox: streamLen,
 			Values:       event.Encode(),
 		}

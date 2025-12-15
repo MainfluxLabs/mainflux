@@ -45,7 +45,6 @@ import (
 const (
 	stopWaitTime = 5 * time.Second
 	svcName      = "things"
-	authStream   = "mainflux.auth"
 	esGroupName  = svcName
 
 	defLogLevel        = "error"
@@ -343,7 +342,7 @@ func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logge
 
 func subscribeToAuthES(ctx context.Context, svc things.Service, cfg config, logger logger.Logger) error {
 	url := fmt.Sprintf("redis://%s/%s", cfg.esURL, cfg.esDB)
-	subscriber, err := mfevents.NewSubscriber(url, authStream, esGroupName, cfg.esConsumerName, logger)
+	subscriber, err := mfevents.NewSubscriber(url, mfevents.AuthStream, esGroupName, cfg.esConsumerName, logger)
 	if err != nil {
 		return err
 	}

@@ -15,7 +15,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/events"
+	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -98,7 +98,7 @@ func TestCreateThings(t *testing.T) {
 				"group_id":   grID,
 				"profile_id": prID,
 				"metadata":   "{\"test\":\"test\"}",
-				"operation":  events.ThingCreate,
+				"operation":  mfevents.ThingCreate,
 			},
 		},
 		{
@@ -116,7 +116,7 @@ func TestCreateThings(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{events.ThingsStream, lastID},
+			Streams: []string{mfevents.ThingsStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
@@ -175,7 +175,7 @@ func TestUpdateThing(t *testing.T) {
 				"profile_id": sth.ProfileID,
 				"name":       "a",
 				"metadata":   "{\"test\":\"test\"}",
-				"operation":  events.ThingUpdate,
+				"operation":  mfevents.ThingUpdate,
 			},
 		},
 	}
@@ -185,7 +185,7 @@ func TestUpdateThing(t *testing.T) {
 		err := svc.UpdateThing(context.Background(), tc.key, tc.thing)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{events.ThingsStream, lastID},
+			Streams: []string{mfevents.ThingsStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
@@ -309,7 +309,7 @@ func TestRemoveThing(t *testing.T) {
 			err:  nil,
 			event: map[string]any{
 				"id":        sth.ID,
-				"operation": events.ThingRemove,
+				"operation": mfevents.ThingRemove,
 			},
 		},
 		{
@@ -327,7 +327,7 @@ func TestRemoveThing(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{events.ThingsStream, lastID},
+			Streams: []string{mfevents.ThingsStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
@@ -372,7 +372,7 @@ func TestCreateProfiles(t *testing.T) {
 				"name":      "a",
 				"metadata":  "{\"test\":\"test\"}",
 				"group_id":  gr.ID,
-				"operation": events.ProfileCreate,
+				"operation": mfevents.ProfileCreate,
 			},
 		},
 		{
@@ -391,7 +391,7 @@ func TestCreateProfiles(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{events.ThingsStream, lastID},
+			Streams: []string{mfevents.ThingsStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
@@ -441,7 +441,7 @@ func TestUpdateProfile(t *testing.T) {
 				"id":        spr.ID,
 				"name":      "b",
 				"metadata":  "{\"test\":\"test\"}",
-				"operation": events.ProfileUpdate,
+				"operation": mfevents.ProfileUpdate,
 			},
 		},
 		{
@@ -462,7 +462,7 @@ func TestUpdateProfile(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{events.ThingsStream, lastID},
+			Streams: []string{mfevents.ThingsStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
@@ -572,7 +572,7 @@ func TestRemoveProfile(t *testing.T) {
 			err:  nil,
 			event: map[string]any{
 				"id":        spr.ID,
-				"operation": events.ProfileRemove,
+				"operation": mfevents.ProfileRemove,
 			},
 		},
 		{
@@ -590,7 +590,7 @@ func TestRemoveProfile(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{events.ThingsStream, lastID},
+			Streams: []string{mfevents.ThingsStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
