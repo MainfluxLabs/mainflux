@@ -7,13 +7,11 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/go-redis/redis/v8"
 )
 
-const (
-	streamID  = "mainflux.auth"
-	streamLen = 1000
-)
+const streamLen = 1000
 
 type eventStore struct {
 	auth.Service
@@ -39,7 +37,7 @@ func (es eventStore) CreateOrg(ctx context.Context, token string, org auth.Org) 
 		id: sorg.ID,
 	}
 	record := &redis.XAddArgs{
-		Stream:       streamID,
+		Stream:       events.AuthStream,
 		MaxLenApprox: streamLen,
 		Values:       event.Encode(),
 	}
@@ -58,7 +56,7 @@ func (es eventStore) RemoveOrgs(ctx context.Context, token string, ids ...string
 			id: id,
 		}
 		record := &redis.XAddArgs{
-			Stream:       streamID,
+			Stream:       events.AuthStream,
 			MaxLenApprox: streamLen,
 			Values:       event.Encode(),
 		}
