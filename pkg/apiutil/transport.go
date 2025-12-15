@@ -426,6 +426,10 @@ func ReadStringArrayQuery(r *http.Request, key string, def []string) ([]string, 
 		return def, nil
 	}
 
+	if len(vals) > 10 {
+		return nil, ErrInvalidQueryParams
+	}
+
 	return vals, nil
 }
 
