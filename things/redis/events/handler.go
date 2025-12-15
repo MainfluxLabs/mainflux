@@ -25,8 +25,7 @@ func (e eventHandler) Handle(ctx context.Context, event events.Event) error {
 	}
 
 	switch msg["operation"] {
-	// TODO: use const
-	case "org.remove":
+	case events.OrgRemove:
 		re := decodeRemoveOrgEvent(msg)
 		if _, err := e.svc.RemoveGroupsByOrg(ctx, re.id); err != nil {
 			return err
