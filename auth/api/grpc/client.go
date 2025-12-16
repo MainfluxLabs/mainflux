@@ -320,10 +320,9 @@ func (client grpcClient) ViewOrg(ctx context.Context, req *protomfx.ViewOrgReq, 
 
 	or := res.(orgRes)
 	return &protomfx.Org{
-		Id:          or.id,
-		OwnerID:     or.ownerID,
-		Name:        or.name,
-		Description: or.description,
+		Id:      or.id,
+		OwnerID: or.ownerID,
+		Name:    or.name,
 	}, nil
 }
 
@@ -338,10 +337,9 @@ func encodeViewOrgRequest(_ context.Context, grpcReq any) (any, error) {
 func decodeOrgResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.Org)
 	return orgRes{
-		id:          res.GetId(),
-		ownerID:     res.GetOwnerID(),
-		name:        res.GetName(),
-		description: res.GetDescription(),
+		id:      res.GetId(),
+		ownerID: res.GetOwnerID(),
+		name:    res.GetName(),
 	}, nil
 }
 

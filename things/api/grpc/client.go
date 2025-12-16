@@ -322,10 +322,9 @@ func (client grpcClient) ViewGroup(ctx context.Context, req *protomfx.ViewGroupR
 
 	gr := res.(groupRes)
 	return &protomfx.Group{
-		Id:          gr.id,
-		OrgID:       gr.orgID,
-		Name:        gr.name,
-		Description: gr.description,
+		Id:    gr.id,
+		OrgID: gr.orgID,
+		Name:  gr.name,
 	}, nil
 }
 
@@ -449,9 +448,8 @@ func decodeGetThingIDsResponse(_ context.Context, grpcRes any) (any, error) {
 func decodeViewGroupResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.Group)
 	return groupRes{
-		id:          res.GetId(),
-		orgID:       res.GetOrgID(),
-		name:        res.GetName(),
-		description: res.GetDescription(),
+		id:    res.GetId(),
+		orgID: res.GetOrgID(),
+		name:  res.GetName(),
 	}, nil
 }

@@ -161,9 +161,8 @@ func (svc thingsServiceMock) ViewGroup(_ context.Context, in *protomfx.ViewGroup
 	}
 
 	return &protomfx.Group{
-		Id:          group.ID,
-		OrgID:       group.OrgID,
-		Name:        group.Name,
-		Description: group.Description,
+		Id:    group.ID,
+		OrgID: group.OrgID,
+		Name:  group.Name,
 	}, nil
 }

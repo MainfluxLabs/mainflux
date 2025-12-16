@@ -345,10 +345,9 @@ func encodeViewGroupResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(groupRes)
 
 	return &protomfx.Group{
-		Id:          res.id,
-		OrgID:       res.orgID,
-		Name:        res.name,
-		Description: res.description,
+		Id:    res.id,
+		OrgID: res.orgID,
+		Name:  res.name,
 	}, nil
 }
 

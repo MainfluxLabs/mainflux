@@ -235,10 +235,9 @@ func decodeViewOrgRequest(_ context.Context, grpcReq any) (any, error) {
 func encodeViewOrgResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(orgRes)
 	return &protomfx.Org{
-		Id:          res.id,
-		OwnerID:     res.ownerID,
-		Name:        res.name,
-		Description: res.description,
+		Id:      res.id,
+		OwnerID: res.ownerID,
+		Name:    res.name,
 	}, nil
 }
 

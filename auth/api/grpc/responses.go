@@ -25,8 +25,7 @@ type ownerIDByOrgIDRes struct {
 }
 
 type orgRes struct {
-	id          string
-	ownerID     string
-	name        string
-	description string
+	id      string
+	ownerID string
+	name    string
 }

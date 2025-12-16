@@ -157,9 +157,8 @@ func (svc authServiceMock) ViewOrg(ctx context.Context, req *protomfx.ViewOrgReq
 	}
 
 	return &protomfx.Org{
-		Id:          org.ID,
-		OwnerID:     org.OwnerID,
-		Name:        org.Name,
-		Description: org.Description,
+		Id:      org.ID,
+		OwnerID: org.OwnerID,
+		Name:    org.Name,
 	}, nil
 }

@@ -177,10 +177,9 @@ func viewOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		return orgRes{
-			id:          org.ID,
-			ownerID:     org.OwnerID,
-			name:        org.Name,
-			description: org.Description,
+			id:      org.ID,
+			ownerID: org.OwnerID,
+			name:    org.Name,
 		}, nil
 	}
 }
