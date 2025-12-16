@@ -60,7 +60,22 @@ func deleteJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.DeleteJSONMessages(ctx, req.token, req.thingKey, req.pageMeta); err != nil {
+		if err := svc.DeleteJSONMessages(ctx, req.token, req.pageMeta); err != nil {
+			return nil, err
+		}
+
+		return removeRes{}, nil
+	}
+}
+
+func deleteJSONMessagesWithPublisherEndpoint(svc readers.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(deleteJSONMessagesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.DeleteJSONMessages(ctx, req.token, req.pageMeta); err != nil {
 			return nil, err
 		}
 
@@ -75,7 +90,22 @@ func deleteSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.DeleteSenMLMessages(ctx, req.token, req.thingKey, req.pageMeta); err != nil {
+		if err := svc.DeleteSenMLMessages(ctx, req.token, req.pageMeta); err != nil {
+			return nil, err
+		}
+
+		return removeRes{}, nil
+	}
+}
+
+func deleteSenMLMessagesWithPublisherEndpoint(svc readers.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(deleteSenMLMessagesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.DeleteSenMLMessages(ctx, req.token, req.pageMeta); err != nil {
 			return nil, err
 		}
 

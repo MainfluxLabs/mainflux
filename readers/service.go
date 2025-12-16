@@ -7,7 +7,6 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 )
@@ -36,10 +35,10 @@ type Service interface {
 	RestoreSenMLMessages(ctx context.Context, token string, messages ...Message) error
 
 	// DeleteJSONMessages deletes the json messages within a time range.
-	DeleteJSONMessages(ctx context.Context, token string, key things.ThingKey, rpm JSONPageMetadata) error
+	DeleteJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) error
 
 	// DeleteSenMLMessages deletes the senml messages within a time range.
-	DeleteSenMLMessages(ctx context.Context, token string, key things.ThingKey, rpm SenMLPageMetadata) error
+	DeleteSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) error
 }
 
 type readersService struct {
@@ -150,37 +149,17 @@ func (rs *readersService) RestoreSenMLMessages(ctx context.Context, token string
 	return rs.senml.Restore(ctx, messages...)
 }
 
-func (rs *readersService) DeleteJSONMessages(ctx context.Context, token string, key things.ThingKey, rpm JSONPageMetadata) error {
-	switch {
-	case key.Value != "":
-		pc, err := rs.getPubConfByKey(ctx, key)
-		if err != nil {
-			return errors.Wrap(errors.ErrAuthentication, err)
-		}
-		rpm.Publisher = pc.PublisherID
-
-	default:
-		if err := rs.isAdmin(ctx, token); err != nil {
-			return err
-		}
+func (rs *readersService) DeleteJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) error {
+	if err := rs.isAdmin(ctx, token); err != nil {
+		return err
 	}
 
 	return rs.json.Remove(ctx, rpm)
 }
 
-func (rs *readersService) DeleteSenMLMessages(ctx context.Context, token string, key things.ThingKey, rpm SenMLPageMetadata) error {
-	switch {
-	case key.Value != "":
-		pc, err := rs.getPubConfByKey(ctx, key)
-		if err != nil {
-			return errors.Wrap(errors.ErrAuthentication, err)
-		}
-		rpm.Publisher = pc.PublisherID
-
-	default:
-		if err := rs.isAdmin(ctx, token); err != nil {
-			return err
-		}
+func (rs *readersService) DeleteSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) error {
+	if err := rs.isAdmin(ctx, token); err != nil {
+		return err
 	}
 
 	return rs.senml.Remove(ctx, rpm)
