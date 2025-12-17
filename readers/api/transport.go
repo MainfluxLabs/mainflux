@@ -258,7 +258,7 @@ func decodeDeleteJSONMessagesByPublisher(_ context.Context, r *http.Request) (an
 		return nil, err
 	}
 
-	req := deleteJSONMessagesReq{
+	req := deleteJSONMessagesByPublisherReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.JSONPageMetadata{
 			Publisher: publisherID,
@@ -308,7 +308,7 @@ func decodeDeleteSenMLMessagesByPublisher(_ context.Context, r *http.Request) (a
 		return nil, err
 	}
 
-	req := deleteSenMLMessagesReq{
+	req := deleteSenMLMessagesByPublisherReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.SenMLPageMetadata{
 			Publisher: publisher,
