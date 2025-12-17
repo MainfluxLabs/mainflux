@@ -175,6 +175,40 @@ func (req deleteJSONMessagesReq) validate() error {
 	return nil
 }
 
+type deleteJSONMessagesByPublisherReq struct {
+	token    string
+	pageMeta readers.JSONPageMetadata
+}
+
+func (req deleteJSONMessagesByPublisherReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.pageMeta.Publisher == "" {
+		return apiutil.ErrMissingPublisherID
+	}
+
+	return nil
+}
+
+type deleteSenMLMessagesByPublisherReq struct {
+	token    string
+	pageMeta readers.SenMLPageMetadata
+}
+
+func (req deleteSenMLMessagesByPublisherReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.pageMeta.Publisher == "" {
+		return apiutil.ErrMissingPublisherID
+	}
+
+	return nil
+}
+
 func validateAggregation(aggType, aggInterval string, aggValue uint64) error {
 	if aggInterval == "" || aggType == "" {
 		return nil
@@ -191,7 +225,6 @@ func validateAggregation(aggType, aggInterval string, aggValue uint64) error {
 		return apiutil.ErrInvalidAggType
 	}
 }
-
 
 func validateDir(dir string) error {
 	if dir == "" || dir == apiutil.AscDir || dir == apiutil.DescDir {
