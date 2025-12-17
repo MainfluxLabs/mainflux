@@ -62,6 +62,37 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
 
+
+  /json/{publisherID}:
+    delete:
+      summary: Delete JSON messages by publisher ID
+      security:
+        - bearerAuth: []
+      description: |
+        Deletes JSON messages for a specific publisher ID within the specified time range and optional filters.
+      tags:
+        - json messages
+      parameters:
+        - name: publisherID
+          in: path
+          required: true
+          description: Publisher's unique identifier.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Subtopic"
+        - $ref: "#/components/parameters/Protocol"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        '200':
+          description: Messages successfully deleted.
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
   /senml:
     get:
       summary: Retrieves SenML messages
@@ -122,6 +153,36 @@ paths:
           description: Failed due to malformed query parameters.
         '401':
           description: Missing or invalid access token or thing key provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+
+  /senml/{publisherID}:
+    delete:
+      summary: Delete SenML messages by publisher ID
+      security:
+        - bearerAuth: []
+      description: |
+        Deletes SenML messages for a specific publisher ID within the specified time range.
+      tags:
+        - senml messages
+      parameters:
+        - name: publisherID
+          in: path
+          required: true
+          description: Publisher's unique identifier.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Subtopic"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        '200':
+          description: Messages successfully deleted.
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
 
