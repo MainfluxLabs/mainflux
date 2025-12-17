@@ -76,7 +76,7 @@ func MakeHandler(svc readers.Service, tracer opentracing.Tracer, svcName string,
 	))
 
 	mux.Delete("/json/:publisherID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "delete_json_messages")(deleteJSONMessagesWithPublisherEndpoint(svc)),
+		kitot.TraceServer(tracer, "delete_json_messages_by_publisher")(deleteJSONMessagesWithPublisherEndpoint(svc)),
 		decodeDeleteJSONMessagesWithPublisher,
 		encodeResponse,
 		opts...,
@@ -90,7 +90,7 @@ func MakeHandler(svc readers.Service, tracer opentracing.Tracer, svcName string,
 	))
 
 	mux.Delete("/senml/:publisherID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "delete_senml_messages")(deleteSenMLMessagesWithPublisherEndpoint(svc)),
+		kitot.TraceServer(tracer, "delete_senml_messages_by_publisher")(deleteSenMLMessagesEndpoint(svc)),
 		decodeDeleteSenMLMessagesWithPublisher,
 		encodeResponse,
 		opts...,
