@@ -258,10 +258,11 @@ func (req inviteReq) validate() error {
 
 type createPlatformInviteRequest struct {
 	token        string
-	Email        string `json:"email,omitempty"`
-	OrgID        string `json:"org_id"`
-	Role         string `json:"role"`
-	RedirectPath string `json:"redirect_path,omitempty"`
+	Email        string            `json:"email,omitempty"`
+	OrgID        string            `json:"org_id"`
+	Role         string            `json:"role"`
+	Groups       map[string]string `json:"groups"`
+	RedirectPath string            `json:"redirect_path,omitempty"`
 }
 
 func (req createPlatformInviteRequest) validate() error {

@@ -201,6 +201,7 @@ message CreateDormantOrgInviteReq {
     string orgID = 2;
     string inviteeRole = 3;
     string platformInviteID = 4;
+    map<string, string> groups = 5;
 }
 
 message ActivateOrgInviteReq {

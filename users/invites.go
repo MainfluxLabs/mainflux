@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -42,8 +43,9 @@ type PageMetadataInvites struct {
 type PlatformInvites interface {
 	// CreatePlatformInvite creates a pending platform Invite for the appropriate email address.
 	// The user can optionally also be invited to an Organization with a certain role - the invites become visible once the user
-	// completes registration via the platform invite. Only usable by the platform Root Admin.
-	CreatePlatformInvite(ctx context.Context, token, redirectPath, email, orgID, role string) (PlatformInvite, error)
+	// completes registration via the platform invite. Additionally, the Org Invite can optionally be paired with one or more Group assignments
+	// by supplying a mapping of Group IDs to roles in `groups`. Only usable by the platform Root Admin.
+	CreatePlatformInvite(ctx context.Context, token, redirectPath, email, orgID, role string, groups map[string]string) (PlatformInvite, error)
 
 	// RevokePlatformInvite revokes a specific pending PlatformInvite. Only usable by the platform Root Admin.
 	RevokePlatformInvite(ctx context.Context, token, inviteID string) error
@@ -77,7 +79,9 @@ type PlatformInvitesRepository interface {
 	UpdatePlatformInviteState(ctx context.Context, inviteID, state string) error
 }
 
-func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirectPath, email, orgID, role string) (PlatformInvite, error) {
+func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirectPath, email, orgID, role string, groups map[string]string) (PlatformInvite, error) {
+	fmt.Printf("users: createPlatformInvite svc: groups: %+v\n", groups)
+
 	if err := svc.isAdmin(ctx, token); err != nil {
 		return PlatformInvite{}, err
 	}
@@ -116,6 +120,7 @@ func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirec
 			Token:            token,
 			OrgID:            orgID,
 			InviteeRole:      role,
+			Groups:           groups,
 			PlatformInviteID: inviteID,
 		}
 

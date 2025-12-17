@@ -261,6 +261,7 @@ func (client grpcClient) CreateDormantOrgInvite(ctx context.Context, req *protom
 		token:            req.GetToken(),
 		orgID:            req.GetOrgID(),
 		inviteeRole:      req.GetInviteeRole(),
+		groups:           req.GetGroups(),
 		platformInviteID: req.GetPlatformInviteID(),
 	})
 
@@ -278,6 +279,7 @@ func encodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, e
 		Token:            req.token,
 		OrgID:            req.orgID,
 		InviteeRole:      req.inviteeRole,
+		Groups:           req.groups,
 		PlatformInviteID: req.platformInviteID,
 	}, nil
 }

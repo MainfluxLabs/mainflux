@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -14,6 +15,7 @@ import (
 
 // ErrInvalidInviteResponse indicates an invalid Invite response action string.
 var ErrInvalidInviteResponse = errors.New("invalid invite response action")
+var ErrGroupsDifferingOrgs = errors.New("groups belong to differing organizations")
 
 type OrgInvite struct {
 	ID           string
@@ -61,7 +63,9 @@ type Invites interface {
 
 	// CreateDormantOrgInvite creates a pending, dormant Org Invite associated with a specfic Platform Invite
 	// denoted by `platformInviteID`.
-	CreateDormantOrgInvite(ctx context.Context, token, orgID, role, platformInviteID string) (OrgInvite, error)
+	// `groups` is an optional mapping of Group IDs to a role within that Group. If present, the invitee will be additionally
+	// be assigned as a member of each of groups after they accept the Org invite.
+	CreateDormantOrgInvite(ctx context.Context, token, orgID, role string, groups map[string]string, platformInviteID string) (OrgInvite, error)
 
 	// RevokeOrgInvite revokes a specific pending Invite. An existing pending Invite can only be revoked
 	// by its original inviter (creator).
@@ -170,6 +174,18 @@ func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgI
 		return OrgInvite{}, ErrOrgMembershipExists
 	}
 
+	// If the invite is associated with one or more Groups, make sure that they all belong to the target Org
+	if groups != nil {
+		groupIDs := make([]string, 0, len(groups))
+		for groupID := range groups {
+			groupIDs = append(groupIDs, groupID)
+		}
+
+		if err := svc.validateGroupsSameOrg(ctx, orgID, groupIDs); err != nil {
+			return OrgInvite{}, err
+		}
+	}
+
 	createdAt := getTimestamp()
 	inviteID, err := svc.idProvider.ID()
 	if err != nil {
@@ -199,9 +215,21 @@ func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgI
 	return invite, nil
 }
 
-func (svc service) CreateDormantOrgInvite(ctx context.Context, token, orgID, role, platformInviteID string) (OrgInvite, error) {
+func (svc service) CreateDormantOrgInvite(ctx context.Context, token, orgID, role string, groups map[string]string, platformInviteID string) (OrgInvite, error) {
 	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
 		return OrgInvite{}, err
+	}
+
+	// If the invite is associated with one or more Groups, make sure that they all belong to the target Org
+	if groups != nil {
+		groupIDs := make([]string, 0, len(groups))
+		for groupID := range groups {
+			groupIDs = append(groupIDs, groupID)
+		}
+
+		if err := svc.validateGroupsSameOrg(ctx, orgID, groupIDs); err != nil {
+			return OrgInvite{}, err
+		}
 	}
 
 	inviter, err := svc.identify(ctx, token)
@@ -222,10 +250,13 @@ func (svc service) CreateDormantOrgInvite(ctx context.Context, token, orgID, rol
 		InviterID:   inviter.ID,
 		OrgID:       orgID,
 		InviteeRole: role,
+		Groups:      groups,
 		CreatedAt:   createdAt,
 		ExpiresAt:   createdAt.Add(svc.inviteDuration),
 		State:       InviteStatePending,
 	}
+
+	fmt.Printf("CreateDormantOrgInvite: groups arg: %+v\n", groups)
 
 	if err := svc.invites.SaveOrgInvite(ctx, invite); err != nil {
 		return OrgInvite{}, err
@@ -475,6 +506,26 @@ func (svc service) populateInviteInfo(ctx context.Context, invite *OrgInvite) er
 			invite.InviterEmail = user.GetEmail()
 		case invite.InviteeID:
 			invite.InviteeEmail = user.GetEmail()
+		}
+	}
+
+	return nil
+}
+
+// Validates that all passed Groups (denoted by their IDs) belong to the same Organization denoted by `orgID`. Returns ErrGroupsDifferingOrgs
+// if at least one of the Groups belongs to a different Org, and nil otherwise.
+func (svc service) validateGroupsSameOrg(ctx context.Context, orgID string, groupIDs []string) error {
+	for _, groupID := range groupIDs {
+		group, err := svc.things.ViewGroup(ctx, &protomfx.ViewGroupReq{
+			GroupID: groupID,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		if group.OrgID != orgID {
+			return ErrGroupsDifferingOrgs
 		}
 	}
 
