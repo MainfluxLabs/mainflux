@@ -93,6 +93,9 @@ var (
 	// ErrEmptyList indicates that entity data is empty.
 	ErrEmptyList = errors.New("empty list provided")
 
+	// ErrMissingPublisherID indicates missing publisher identifier.
+	ErrMissingPublisherID = errors.New("missing publisherID")
+
 	// ErrMissingSerial indicates missing serial.
 	ErrMissingSerial = errors.New("missing serial")
 
