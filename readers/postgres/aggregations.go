@@ -233,7 +233,7 @@ func renderTemplate(templateStr string, qp QueryParams, strategy AggStrategy) st
 
 func buildAggregationCountQuery(qp QueryParams) string {
 	timeTrunc := buildTruncTimeExpression(qp.AggValue, qp.AggInterval, qp.TimeColumn)
-	havingCondition := buildHavingConditionForCount(qp.AggField, qp.Table)
+	havingCondition := buildConditionForCount(qp.AggField, qp.Table)
 	timeTruncWithAlias := buildTruncTimeExpression(qp.AggValue, qp.AggInterval, "m."+qp.TimeColumn)
 
 	dq := dbutil.GetDirQuery(qp.Dir)
@@ -602,7 +602,7 @@ func buildHavingCondition(qp QueryParams) string {
 	return strings.Join(conditions, " OR ")
 }
 
-func buildHavingConditionForCount(aggFields []string, table string) string {
+func buildConditionForCount(aggFields []string, table string) string {
 	if len(aggFields) == 0 {
 		return "1=1"
 	}
