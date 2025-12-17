@@ -26,13 +26,13 @@ type PageMetadata struct {
 }
 
 type Repository interface {
-	// RetrieveByGroupID retrieves all subscriptions that belong to the specified group.
-	RetrieveByGroupID(ctx context.Context, pm PageMetadata, groupID string) (Page, error)
+	// RetrieveByGroup retrieves all subscriptions that belong to the specified group.
+	RetrieveByGroup(ctx context.Context, pm PageMetadata, groupID string) (Page, error)
 	// Save will save the subscription.
 	Save(ctx context.Context, sub Subscription) error
 	// Remove will remove the subscription.
 	Remove(ctx context.Context, sub Subscription) error
-	// Update will update the subscription status.
+	// UpdateStatus will update the subscription status.
 	UpdateStatus(ctx context.Context, sub Subscription) error
 	// HasClientID will update the subscription status.
 	HasClientID(ctx context.Context, clientID string) error
