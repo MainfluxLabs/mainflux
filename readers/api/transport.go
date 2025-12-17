@@ -76,8 +76,8 @@ func MakeHandler(svc readers.Service, tracer opentracing.Tracer, svcName string,
 	))
 
 	mux.Delete("/json/:publisherID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "delete_json_messages_by_publisher")(deleteJSONMessagesWithPublisherEndpoint(svc)),
-		decodeDeleteJSONMessagesWithPublisher,
+		kitot.TraceServer(tracer, "delete_json_messages_by_publisher")(deleteJSONMessagesEndpoint(svc)),
+		decodeDeleteJSONMessagesByPublisher,
 		encodeResponse,
 		opts...,
 	))
@@ -91,7 +91,7 @@ func MakeHandler(svc readers.Service, tracer opentracing.Tracer, svcName string,
 
 	mux.Delete("/senml/:publisherID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "delete_senml_messages_by_publisher")(deleteSenMLMessagesEndpoint(svc)),
-		decodeDeleteSenMLMessagesWithPublisher,
+		decodeDeleteSenMLMessagesByPublisher,
 		encodeResponse,
 		opts...,
 	))
@@ -235,7 +235,7 @@ func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeDeleteJSONMessagesWithPublisher(_ context.Context, r *http.Request) (any, error) {
+func decodeDeleteJSONMessagesByPublisher(_ context.Context, r *http.Request) (any, error) {
 	publisherID := bone.GetValue(r, publisherIDKey)
 
 	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
@@ -295,7 +295,7 @@ func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (any, error) 
 	return req, nil
 }
 
-func decodeDeleteSenMLMessagesWithPublisher(_ context.Context, r *http.Request) (any, error) {
+func decodeDeleteSenMLMessagesByPublisher(_ context.Context, r *http.Request) (any, error) {
 	publisher := bone.GetValue(r, publisherIDKey)
 
 	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
