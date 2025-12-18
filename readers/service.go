@@ -156,32 +156,18 @@ func (rs *readersService) RestoreSenMLMessages(ctx context.Context, token string
 }
 
 func (rs *readersService) DeleteJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) error {
-	switch {
-	case rpm.Publisher != "":
-		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: auth.Viewer})
-		if err != nil {
-			return err
-		}
-	default:
-		if err := rs.isAdmin(ctx, token); err != nil {
-			return err
-		}
+	_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: auth.Viewer})
+	if err != nil {
+		return err
 	}
 
 	return rs.json.Remove(ctx, rpm)
 }
 
 func (rs *readersService) DeleteSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) error {
-	switch {
-	case rpm.Publisher != "":
-		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: auth.Viewer})
-		if err != nil {
-			return err
-		}
-	default:
-		if err := rs.isAdmin(ctx, token); err != nil {
-			return err
-		}
+	_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: auth.Viewer})
+	if err != nil {
+		return err
 	}
 
 	return rs.senml.Remove(ctx, rpm)

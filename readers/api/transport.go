@@ -222,8 +222,7 @@ func decodeDeleteAllJSONMessages(_ context.Context, r *http.Request) (any, error
 	}
 
 	req := deleteAllJSONMessagesReq{
-		token:    apiutil.ExtractBearerToken(r),
-		thingKey: things.ExtractThingKey(r),
+		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.JSONPageMetadata{
 			Subtopic: subtopic,
 			Protocol: protocol,
@@ -284,8 +283,7 @@ func decodeDeleteAllSenMLMessages(_ context.Context, r *http.Request) (any, erro
 	}
 
 	req := deleteAllSenMLMessagesReq{
-		token:    apiutil.ExtractBearerToken(r),
-		thingKey: things.ExtractThingKey(r),
+		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.SenMLPageMetadata{
 			From: from,
 			To:   to,
