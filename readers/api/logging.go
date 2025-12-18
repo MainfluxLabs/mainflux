@@ -147,7 +147,7 @@ func (lm *loggingMiddleware) DeleteAllJSONMessages(ctx context.Context, token st
 	return lm.svc.DeleteAllJSONMessages(ctx, token, rpm)
 }
 
-func (lm *loggingMiddleware) DeleteALlSenMLMessages(ctx context.Context, token string, rpm readers.SenMLPageMetadata) (err error) {
+func (lm *loggingMiddleware) DeleteAllSenMLMessages(ctx context.Context, token string, rpm readers.SenMLPageMetadata) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method delete_all_senml_messages took %s to complete", time.Since(begin))
 		if err != nil {
