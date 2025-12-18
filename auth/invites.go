@@ -490,7 +490,7 @@ func (svc service) SendOrgInviteEmail(ctx context.Context, invite OrgInvite, ema
 		groupNames = make(map[string]string, len(invite.Groups))
 
 		for groupID := range invite.Groups {
-			group, err := svc.things.ViewGroup(context.Background(), &protomfx.ViewGroupReq{GroupID: groupID})
+			group, err := svc.things.GetGroup(context.Background(), &protomfx.GetGroupReq{GroupID: groupID})
 			if err != nil {
 				return err
 			}

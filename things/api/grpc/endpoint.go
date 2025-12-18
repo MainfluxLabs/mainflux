@@ -276,9 +276,9 @@ func createGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func viewGroupEndpoint(svc things.Service) endpoint.Endpoint {
+func getGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(viewGroupReq)
+		req := request.(getGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
