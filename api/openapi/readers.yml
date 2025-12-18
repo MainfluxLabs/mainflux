@@ -62,8 +62,7 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
 
-
-  /json/{publisherID}:
+  /json/{publisherId}:
     delete:
       summary: Delete JSON messages by publisher ID
       security:
@@ -73,7 +72,7 @@ paths:
       tags:
         - json messages
       parameters:
-        - name: publisherID
+        - name: publisherId
           in: path
           required: true
           description: Publisher's unique identifier.
@@ -156,8 +155,7 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
 
-
-  /senml/{publisherID}:
+  /senml/{publisherId}:
     delete:
       summary: Delete SenML messages by publisher ID
       security:
@@ -167,7 +165,7 @@ paths:
       tags:
         - senml messages
       parameters:
-        - name: publisherID
+        - name: publisherId
           in: path
           required: true
           description: Publisher's unique identifier.
@@ -175,6 +173,7 @@ paths:
             type: string
         - $ref: "#/components/parameters/Subtopic"
         - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/Protocol"
         - $ref: "#/components/parameters/To"
       responses:
         '200':
