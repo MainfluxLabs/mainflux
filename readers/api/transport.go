@@ -70,28 +70,28 @@ func MakeHandler(svc readers.Service, tracer opentracing.Tracer, svcName string,
 
 	mux.Delete("/json", kithttp.NewServer(
 		kitot.TraceServer(tracer, "delete_all_json_messages")(deleteAllJSONMessagesEndpoint(svc)),
-		decodeDeleteJSONMessages,
+		decodeDeleteAllJSONMessages,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/json/:publisherID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "delete_json_messages")(deleteJSONMessagesEndpoint(svc)),
-		decodeDeleteJSONMessagesByPublisher,
+		decodeDeleteJSONMessages,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/senml", kithttp.NewServer(
 		kitot.TraceServer(tracer, "delete_all_senml_messages")(deleteAllSenMLMessagesEndpoint(svc)),
-		decodeDeleteSenMLMessages,
+		decodeDeleteAllSenMLMessages,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/senml/:publisherID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "delete_senml_messages")(deleteSenMLMessagesEndpoint(svc)),
-		decodeDeleteSenMLMessagesByPublisher,
+		decodeDeleteSenMLMessages,
 		encodeResponse,
 		opts...,
 	))
@@ -200,7 +200,7 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (any, error) {
 	}, nil
 }
 
-func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (any, error) {
+func decodeDeleteAllJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
 	if err != nil {
 		return readers.JSONPageMetadata{}, err
@@ -235,7 +235,7 @@ func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeDeleteJSONMessagesByPublisher(_ context.Context, r *http.Request) (any, error) {
+func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	publisherID := bone.GetValue(r, publisherIDKey)
 
 	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
@@ -272,7 +272,7 @@ func decodeDeleteJSONMessagesByPublisher(_ context.Context, r *http.Request) (an
 	return req, nil
 }
 
-func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (any, error) {
+func decodeDeleteAllSenMLMessages(_ context.Context, r *http.Request) (any, error) {
 	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
 	if err != nil {
 		return nil, err
@@ -295,7 +295,7 @@ func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (any, error) 
 	return req, nil
 }
 
-func decodeDeleteSenMLMessagesByPublisher(_ context.Context, r *http.Request) (any, error) {
+func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (any, error) {
 	publisher := bone.GetValue(r, publisherIDKey)
 
 	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
