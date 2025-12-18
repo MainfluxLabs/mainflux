@@ -12,11 +12,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/things"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -29,7 +28,7 @@ func MakeHandler(tracer opentracing.Tracer, svc mqtt.Service, logger logger.Logg
 	r := bone.New()
 
 	r.Get("/groups/:id/subscriptions", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_subscriptions")(listSubscriptions(svc)),
+		kitot.TraceServer(tracer, "list_subscriptions")(listSubscriptionsEndpoint(svc)),
 		decodeListSubscriptions,
 		encodeResponse,
 		opts...,
@@ -53,9 +52,8 @@ func decodeListSubscriptions(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	return listSubscriptionsReq{
-		groupID:  bone.GetValue(r, "id"),
-		token:    apiutil.ExtractBearerToken(r),
-		thingKey: things.ExtractThingKey(r),
+		groupID: bone.GetValue(r, apiutil.IDKey),
+		token:   apiutil.ExtractBearerToken(r),
 		pageMetadata: mqtt.PageMetadata{
 			Offset: o,
 			Limit:  l,
