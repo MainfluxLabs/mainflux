@@ -146,13 +146,13 @@ func (req restoreMessagesReq) validate() error {
 	return nil
 }
 
-type deleteSenMLMessagesReq struct {
+type deleteAllSenMLMessagesReq struct {
 	token    string
 	thingKey things.ThingKey
 	pageMeta readers.SenMLPageMetadata
 }
 
-func (req deleteSenMLMessagesReq) validate() error {
+func (req deleteAllSenMLMessagesReq) validate() error {
 	err := req.thingKey.Validate()
 	if req.token == "" && err != nil {
 		return apiutil.ErrBearerToken
@@ -161,13 +161,13 @@ func (req deleteSenMLMessagesReq) validate() error {
 	return nil
 }
 
-type deleteJSONMessagesReq struct {
+type deleteAllJSONMessagesReq struct {
 	token    string
 	thingKey things.ThingKey
 	pageMeta readers.JSONPageMetadata
 }
 
-func (req deleteJSONMessagesReq) validate() error {
+func (req deleteAllJSONMessagesReq) validate() error {
 	err := req.thingKey.Validate()
 	if req.token == "" && err != nil {
 		return apiutil.ErrBearerToken
@@ -175,12 +175,12 @@ func (req deleteJSONMessagesReq) validate() error {
 	return nil
 }
 
-type deleteJSONMessagesByPublisherReq struct {
+type deleteJSONMessagesReq struct {
 	token    string
 	pageMeta readers.JSONPageMetadata
 }
 
-func (req deleteJSONMessagesByPublisherReq) validate() error {
+func (req deleteJSONMessagesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -192,12 +192,12 @@ func (req deleteJSONMessagesByPublisherReq) validate() error {
 	return nil
 }
 
-type deleteSenMLMessagesByPublisherReq struct {
+type deleteSenMLMessagesReq struct {
 	token    string
 	pageMeta readers.SenMLPageMetadata
 }
 
-func (req deleteSenMLMessagesByPublisherReq) validate() error {
+func (req deleteSenMLMessagesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

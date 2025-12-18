@@ -102,3 +102,21 @@ func (mm *metricsMiddleware) DeleteSenMLMessages(ctx context.Context, token stri
 
 	return mm.svc.DeleteSenMLMessages(ctx, token, rpm)
 }
+
+func (mm *metricsMiddleware) DeleteAllJSONMessages(ctx context.Context, token string, rpm readers.JSONPageMetadata) error {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "delete_all_json_messages").Add(1)
+		mm.latency.With("method", "delete_all_json_messages").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.DeleteJSONMessages(ctx, token, rpm)
+}
+
+func (mm *metricsMiddleware) DeleteAllSenMLMessages(ctx context.Context, token string, rpm readers.SenMLPageMetadata) error {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "delete_all_senml_messages").Add(1)
+		mm.latency.With("method", "delete_all_senml_messages").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.DeleteSenMLMessages(ctx, token, rpm)
+}

@@ -69,28 +69,28 @@ func MakeHandler(svc readers.Service, tracer opentracing.Tracer, svcName string,
 	))
 
 	mux.Delete("/json", kithttp.NewServer(
-		kitot.TraceServer(tracer, "delete_json_messages")(deleteJSONMessagesEndpoint(svc)),
+		kitot.TraceServer(tracer, "delete_json_messages")(deleteAllJSONMessagesEndpoint(svc)),
 		decodeDeleteJSONMessages,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/json/:publisherID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "delete_json_messages_by_publisher")(deleteJSONMessagesByPublisherEndpoint(svc)),
+		kitot.TraceServer(tracer, "delete_json_messages_by_publisher")(deleteJSONMessagesEndpoint(svc)),
 		decodeDeleteJSONMessagesByPublisher,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/senml", kithttp.NewServer(
-		kitot.TraceServer(tracer, "delete_senml_messages")(deleteSenMLMessagesEndpoint(svc)),
+		kitot.TraceServer(tracer, "delete_senml_messages")(deleteAllSenMLMessagesEndpoint(svc)),
 		decodeDeleteSenMLMessages,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/senml/:publisherID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "delete_senml_messages_by_publisher")(deleteSenMLMessagesByPublisherEndpoint(svc)),
+		kitot.TraceServer(tracer, "delete_senml_messages_by_publisher")(deleteSenMLMessagesEndpoint(svc)),
 		decodeDeleteSenMLMessagesByPublisher,
 		encodeResponse,
 		opts...,
@@ -221,7 +221,7 @@ func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	req := deleteJSONMessagesReq{
+	req := deleteAllJSONMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
 		thingKey: things.ExtractThingKey(r),
 		pageMeta: readers.JSONPageMetadata{
@@ -258,7 +258,7 @@ func decodeDeleteJSONMessagesByPublisher(_ context.Context, r *http.Request) (an
 		return nil, err
 	}
 
-	req := deleteJSONMessagesByPublisherReq{
+	req := deleteJSONMessagesReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.JSONPageMetadata{
 			Publisher: publisherID,
@@ -283,7 +283,7 @@ func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (any, error) 
 		return nil, err
 	}
 
-	req := deleteSenMLMessagesReq{
+	req := deleteAllSenMLMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
 		thingKey: things.ExtractThingKey(r),
 		pageMeta: readers.SenMLPageMetadata{
@@ -318,7 +318,7 @@ func decodeDeleteSenMLMessagesByPublisher(_ context.Context, r *http.Request) (a
 		return nil, err
 	}
 
-	req := deleteSenMLMessagesByPublisherReq{
+	req := deleteSenMLMessagesReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.SenMLPageMetadata{
 			Publisher: publisher,

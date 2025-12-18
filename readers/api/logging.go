@@ -133,3 +133,29 @@ func (lm *loggingMiddleware) DeleteSenMLMessages(ctx context.Context, token stri
 
 	return lm.svc.DeleteSenMLMessages(ctx, token, rpm)
 }
+
+func (lm *loggingMiddleware) DeleteAllJSONMessages(ctx context.Context, token string, rpm readers.JSONPageMetadata) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method delete_all_json_messages took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.DeleteJSONMessages(ctx, token, rpm)
+}
+
+func (lm *loggingMiddleware) DeleteAllSenMLMessages(ctx context.Context, token string, rpm readers.SenMLPageMetadata) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method delete_all_senml_messages took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.DeleteSenMLMessages(ctx, token, rpm)
+}
