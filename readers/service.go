@@ -39,6 +39,12 @@ type Service interface {
 
 	// DeleteSenMLMessages deletes the senml messages within a time range.
 	DeleteSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) error
+
+	// DeleteJSONMessages deletes the json messages within a time range.
+	DeleteAllJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) error
+
+	// DeleteSenMLMessages deletes the senml messages within a time range.
+	DeleteAllSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) error
 }
 
 type readersService struct {
@@ -150,7 +156,6 @@ func (rs *readersService) RestoreSenMLMessages(ctx context.Context, token string
 }
 
 func (rs *readersService) DeleteJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) error {
-
 	switch {
 	case rpm.Publisher != "":
 		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: auth.Viewer})
@@ -177,6 +182,22 @@ func (rs *readersService) DeleteSenMLMessages(ctx context.Context, token string,
 		if err := rs.isAdmin(ctx, token); err != nil {
 			return err
 		}
+	}
+
+	return rs.senml.Remove(ctx, rpm)
+}
+
+func (rs *readersService) DeleteAllJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) error {
+	if err := rs.isAdmin(ctx, token); err != nil {
+		return err
+	}
+
+	return rs.json.Remove(ctx, rpm)
+}
+
+func (rs *readersService) DeleteAllSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) error {
+	if err := rs.isAdmin(ctx, token); err != nil {
+		return err
 	}
 
 	return rs.senml.Remove(ctx, rpm)
