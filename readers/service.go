@@ -34,16 +34,16 @@ type Service interface {
 	// RestoreSenMLMessages restores the senml messages.
 	RestoreSenMLMessages(ctx context.Context, token string, messages ...Message) error
 
-	// DeleteJSONMessages deletes the json messages within a time range.
+	// DeleteJSONMessages deletes the json messages by publisher within a time range.
 	DeleteJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) error
 
-	// DeleteSenMLMessages deletes the senml messages within a time range.
+	// DeleteSenMLMessages deletes the senml messages by publisher within a time range.
 	DeleteSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) error
 
-	// DeleteJSONMessages deletes the json messages within a time range.
+	// DeleteAllJSONMessages deletes the senml messages within a time range, requires admin privileges.
 	DeleteAllJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) error
 
-	// DeleteSenMLMessages deletes the senml messages within a time range.
+	// DeleteAllSenMLMessages deletes the senml messages within a time range, requires admin privileges.
 	DeleteAllSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) error
 }
 
