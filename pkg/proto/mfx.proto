@@ -30,7 +30,7 @@ service ThingsService {
     rpc GetGroupIDsByOrg(OrgAccessReq) returns (GroupIDs) {}
     rpc GetThingIDsByProfile(ProfileID) returns (ThingIDs) {}
     rpc CreateGroupMemberships(CreateGroupMembershipsReq) returns (google.protobuf.Empty) {}
-    rpc ViewGroup(ViewGroupReq) returns (Group) {}
+    rpc GetGroup(GetGroupReq) returns (Group) {}
 }
 
 service UsersService {
@@ -231,7 +231,7 @@ message Org {
     string name = 3;
 }
 
-message ViewGroupReq {
+message GetGroupReq {
     string groupID = 1;
 }
 

@@ -32,7 +32,7 @@ type grpcClient struct {
 	getGroupIDsByOrg       endpoint.Endpoint
 	getThingIDsByProfile   endpoint.Endpoint
 	createGroupMemberships endpoint.Endpoint
-	viewGroup              endpoint.Endpoint
+	getGroup               endpoint.Endpoint
 }
 
 // NewClient returns new gRPC client instance.
@@ -137,12 +137,12 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			decodeEmptyResponse,
 			emptypb.Empty{},
 		).Endpoint()),
-		viewGroup: kitot.TraceClient(tracer, "view_group")(kitgrpc.NewClient(
+		getGroup: kitot.TraceClient(tracer, "get_group")(kitgrpc.NewClient(
 			conn,
 			svcName,
-			"ViewGroup",
-			encodeViewGroupRequest,
-			decodeViewGroupResponse,
+			"GetGroup",
+			encodeGetGroupRequest,
+			decodeGetGroupResponse,
 			protomfx.Group{},
 		).Endpoint()),
 	}
@@ -311,11 +311,11 @@ func (client grpcClient) CreateGroupMemberships(ctx context.Context, req *protom
 	return &emptypb.Empty{}, nil
 }
 
-func (client grpcClient) ViewGroup(ctx context.Context, req *protomfx.ViewGroupReq, _ ...grpc.CallOption) (*protomfx.Group, error) {
+func (client grpcClient) GetGroup(ctx context.Context, req *protomfx.GetGroupReq, _ ...grpc.CallOption) (*protomfx.Group, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.viewGroup(ctx, viewGroupReq{groupID: req.GetGroupID()})
+	res, err := client.getGroup(ctx, getGroupReq{groupID: req.GetGroupID()})
 	if err != nil {
 		return nil, err
 	}
@@ -406,9 +406,9 @@ func encodeCreateGroupMembershipsRequest(_ context.Context, grpcReq any) (any, e
 	return protoReq, nil
 }
 
-func encodeViewGroupRequest(_ context.Context, grpcReq any) (any, error) {
-	req := grpcReq.(viewGroupReq)
-	return &protomfx.ViewGroupReq{GroupID: req.groupID}, nil
+func encodeGetGroupRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(getGroupReq)
+	return &protomfx.GetGroupReq{GroupID: req.groupID}, nil
 }
 
 func decodeIdentityResponse(_ context.Context, grpcRes any) (any, error) {
@@ -445,7 +445,7 @@ func decodeGetThingIDsResponse(_ context.Context, grpcRes any) (any, error) {
 	return thingIDsRes{thingIDs: res.GetIds()}, nil
 }
 
-func decodeViewGroupResponse(_ context.Context, grpcRes any) (any, error) {
+func decodeGetGroupResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.Group)
 	return groupRes{
 		id:    res.GetId(),

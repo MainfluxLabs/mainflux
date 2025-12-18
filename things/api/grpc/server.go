@@ -34,7 +34,7 @@ type grpcServer struct {
 	getGroupIDsByOrg       kitgrpc.Handler
 	getThingIDsByProfile   kitgrpc.Handler
 	createGroupMemberships kitgrpc.Handler
-	viewGroup              kitgrpc.Handler
+	getGroup               kitgrpc.Handler
 }
 
 // NewServer returns new ThingsServiceServer instance.
@@ -100,10 +100,10 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 			decodeCreateGroupMembershipsRequest,
 			encodeEmptyResponse,
 		),
-		viewGroup: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "view_group")(viewGroupEndpoint(svc)),
-			decodeViewGroupRequest,
-			encodeViewGroupResponse,
+		getGroup: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "get_group")(getGroupEndpoint(svc)),
+			decodeGetGroupRequest,
+			encodeGetGroupResponse,
 		),
 	}
 }
@@ -213,8 +213,8 @@ func (gs *grpcServer) CreateGroupMemberships(ctx context.Context, req *protomfx.
 	return res.(*emptypb.Empty), nil
 }
 
-func (gs *grpcServer) ViewGroup(ctx context.Context, req *protomfx.ViewGroupReq) (*protomfx.Group, error) {
-	_, res, err := gs.viewGroup.ServeGRPC(ctx, req)
+func (gs *grpcServer) GetGroup(ctx context.Context, req *protomfx.GetGroupReq) (*protomfx.Group, error) {
+	_, res, err := gs.getGroup.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -296,9 +296,9 @@ func decodeCreateGroupMembershipsRequest(_ context.Context, grpcReq any) (any, e
 	return ret, nil
 }
 
-func decodeViewGroupRequest(_ context.Context, grpcReq any) (any, error) {
-	req := grpcReq.(*protomfx.ViewGroupReq)
-	return viewGroupReq{groupID: req.GetGroupID()}, nil
+func decodeGetGroupRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.GetGroupReq)
+	return getGroupReq{groupID: req.GetGroupID()}, nil
 }
 
 func encodeIdentityResponse(_ context.Context, grpcRes any) (any, error) {
@@ -341,7 +341,7 @@ func encodeGetThingIDsByProfileResponse(_ context.Context, grpcRes any) (any, er
 	return &protomfx.ThingIDs{Ids: res.thingIDs}, nil
 }
 
-func encodeViewGroupResponse(_ context.Context, grpcRes any) (any, error) {
+func encodeGetGroupResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(groupRes)
 
 	return &protomfx.Group{

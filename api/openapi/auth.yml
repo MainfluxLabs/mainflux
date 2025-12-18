@@ -947,8 +947,8 @@ components:
           additionalProperties:
             type: string
           example:
-            abcd-efgh-1: "viewer"
-            abcd-efgh-2: "admin"
+            f7f88d65-72bf-4363-87db-61755aa041a9: "viewer"
+            4263c43e-7447-473f-9923-0dc4f0635d39: "admin"
         
   parameters:
     ApiKeyId:

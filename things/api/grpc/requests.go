@@ -165,11 +165,11 @@ func (req createGroupMembershipsReq) validate() error {
 	return nil
 }
 
-type viewGroupReq struct {
+type getGroupReq struct {
 	groupID string
 }
 
-func (req viewGroupReq) validate() error {
+func (req getGroupReq) validate() error {
 	if req.groupID == "" {
 		return apiutil.ErrMissingGroupID
 	}

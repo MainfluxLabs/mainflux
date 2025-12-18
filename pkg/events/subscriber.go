@@ -6,6 +6,7 @@ package events
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -77,9 +78,10 @@ func (es *subEventStore) Subscribe(ctx context.Context, handler EventHandler) er
 			Consumer: es.consumer,
 			Streams:  []string{es.stream, ">"},
 			Count:    eventCount,
+			Block:    5 * time.Second,
 		}).Result()
 
-		if err != nil {
+		if err != nil && err != redis.Nil {
 			if errors.Contains(err, context.Canceled) || errors.Contains(err, context.DeadlineExceeded) {
 				return err
 			}
