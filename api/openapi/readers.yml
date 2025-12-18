@@ -172,8 +172,8 @@ paths:
           schema:
             type: string
         - $ref: "#/components/parameters/Subtopic"
-        - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/Protocol"
+        - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
       responses:
         '200':
