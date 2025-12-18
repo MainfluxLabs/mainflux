@@ -516,7 +516,7 @@ func (svc service) populateInviteInfo(ctx context.Context, invite *OrgInvite) er
 // if at least one of the Groups belongs to a different Org, and nil otherwise.
 func (svc service) validateGroupsSameOrg(ctx context.Context, orgID string, groupIDs []string) error {
 	for _, groupID := range groupIDs {
-		group, err := svc.things.ViewGroup(ctx, &protomfx.ViewGroupReq{
+		group, err := svc.things.GetGroup(ctx, &protomfx.GetGroupReq{
 			GroupID: groupID,
 		})
 
