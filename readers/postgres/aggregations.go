@@ -232,36 +232,21 @@ func renderTemplate(templateStr string, qp QueryParams, strategy AggStrategy) st
 }
 
 func buildAggregationCountQuery(qp QueryParams) string {
-	timeTrunc := buildTruncTimeExpression(qp.AggValue, qp.AggInterval, qp.TimeColumn)
+	timeIntervals := buildTimeIntervals(qp)
+	timeJoinCondition := buildTimeJoinCondition(qp, "ti")
 	havingCondition := buildConditionForCount(qp.AggField, qp.Table)
-	timeTruncWithAlias := buildTruncTimeExpression(qp.AggValue, qp.AggInterval, "m."+qp.TimeColumn)
-
-	dq := dbutil.GetDirQuery(qp.Dir)
-	lq := ""
-	if qp.Limit > 0 {
-		lq = fmt.Sprintf("LIMIT %d", qp.Limit)
-	}
 
 	return fmt.Sprintf(`
+		WITH time_intervals AS (%s)
 		SELECT COUNT(*) FROM (
 			SELECT ti.interval_time
-			FROM (
-				SELECT DISTINCT %s as interval_time
-				FROM %s
-				%s
-				ORDER BY interval_time %s
-				%s
-			) ti
-			LEFT JOIN %s m ON %s = ti.interval_time
+			FROM time_intervals ti
+			LEFT JOIN %s m ON %s
 				%s
 			GROUP BY ti.interval_time
 			HAVING %s
 		) counted`,
-		timeTrunc, qp.Table, qp.Condition, dq, lq,
-		qp.Table,
-		timeTruncWithAlias,
-		qp.ConditionForJoin,
-		havingCondition)
+		timeIntervals, qp.Table, timeJoinCondition, qp.ConditionForJoin, havingCondition)
 }
 
 func (as aggregationService) getAggregateStrategy(aggType string) AggStrategy {
@@ -279,144 +264,89 @@ func (as aggregationService) getAggregateStrategy(aggType string) AggStrategy {
 	}
 }
 
-type MaxStrategy struct{}
-
-func (maxStrt MaxStrategy) GetSelectedFields(qp QueryParams) string {
-	switch qp.Table {
-	case senmlTable:
-		return `ia.max_time as time, ia.subtopic, ia.publisher, ia.protocol, 
-				'' as name, '' as unit,
-				ia.agg_value as value,
-				'' as string_value, false as bool_value, '' as data_value, 
-				0 as sum, ia.max_time as update_time`
-	default:
-		return buildJSONSelect(qp.AggField, "agg_value")
-	}
+func buildSenMLSelectFields() string {
+	return `ia.max_time as time, ia.subtopic, ia.publisher, ia.protocol, 
+		'' as name, '' as unit,
+		ia.agg_value as value,
+		'' as string_value, false as bool_value, '' as data_value, 
+		0 as sum, ia.max_time as update_time`
 }
 
-func (maxStrt MaxStrategy) GetAggregateExpression(qp QueryParams) string {
+func buildAggregateExpression(qp QueryParams, aggFunc string) string {
 	if len(qp.AggField) == 0 {
 		return ""
 	}
 
 	var expressions []string
-
 	switch qp.Table {
 	case senmlTable:
-		expressions = append(expressions, "MAX(m.value) as agg_value")
+		expressions = append(expressions, fmt.Sprintf("%s(m.value) as agg_value", aggFunc))
 	default:
 		for i, field := range qp.AggField {
 			jsonPath := buildJSONPath(field)
-			expressions = append(expressions,
-				fmt.Sprintf("MAX(CAST(m.%s as FLOAT)) as agg_value_%d", jsonPath, i))
+			if aggFunc == "COUNT" {
+				expressions = append(expressions,
+					fmt.Sprintf("%s(m.%s) as agg_value_%d", aggFunc, jsonPath, i))
+			} else {
+				expressions = append(expressions,
+					fmt.Sprintf("%s(CAST(m.%s as FLOAT)) as agg_value_%d", aggFunc, jsonPath, i))
+			}
 		}
 	}
-
 	return strings.Join(expressions, ",\n\t\t\t\t")
+}
+
+type MaxStrategy struct{}
+
+func (MaxStrategy) GetSelectedFields(qp QueryParams) string {
+	if qp.Table == senmlTable {
+		return buildSenMLSelectFields()
+	}
+	return buildJSONSelect(qp.AggField, "agg_value")
+}
+
+func (MaxStrategy) GetAggregateExpression(qp QueryParams) string {
+	return buildAggregateExpression(qp, "MAX")
 }
 
 type MinStrategy struct{}
 
-func (minStrt MinStrategy) GetSelectedFields(qp QueryParams) string {
-	switch qp.Table {
-	case senmlTable:
-		return `ia.max_time as time, ia.subtopic, ia.publisher, ia.protocol, 
-				'' as name, '' as unit,
-				ia.agg_value as value,
-				'' as string_value, false as bool_value, '' as data_value, 
-				0 as sum, ia.max_time as update_time`
-	default:
-		return buildJSONSelect(qp.AggField, "agg_value")
+func (MinStrategy) GetSelectedFields(qp QueryParams) string {
+	if qp.Table == senmlTable {
+		return buildSenMLSelectFields()
 	}
+	return buildJSONSelect(qp.AggField, "agg_value")
 }
 
-func (minStrt MinStrategy) GetAggregateExpression(qp QueryParams) string {
-	if len(qp.AggField) == 0 {
-		return ""
-	}
-
-	var expressions []string
-	switch qp.Table {
-	case senmlTable:
-		expressions = append(expressions, "MIN(m.value) as agg_value")
-	default:
-		for i, field := range qp.AggField {
-			jsonPath := buildJSONPath(field)
-			expressions = append(expressions,
-				fmt.Sprintf("MIN(CAST(m.%s as FLOAT)) as agg_value_%d", jsonPath, i))
-		}
-	}
-	return strings.Join(expressions, ",\n\t\t\t\t")
+func (MinStrategy) GetAggregateExpression(qp QueryParams) string {
+	return buildAggregateExpression(qp, "MIN")
 }
 
 type AvgStrategy struct{}
 
-func (avgStrt AvgStrategy) GetSelectedFields(qp QueryParams) string {
-	switch qp.Table {
-	case senmlTable:
-		return `ia.max_time as time, ia.subtopic, ia.publisher, ia.protocol, 
-				'' as name, '' as unit,
-				ia.avg_value_0 as value,
-				'' as string_value, false as bool_value, '' as data_value, 
-				0 as sum, ia.max_time as update_time`
-	default:
-		return buildJSONSelect(qp.AggField, "avg_value")
+func (AvgStrategy) GetSelectedFields(qp QueryParams) string {
+	if qp.Table == senmlTable {
+		return buildSenMLSelectFields()
 	}
+	return buildJSONSelect(qp.AggField, "agg_value")
 }
 
-func (avgStrt AvgStrategy) GetAggregateExpression(qp QueryParams) string {
-	if len(qp.AggField) == 0 {
-		return ""
-	}
-
-	var expressions []string
-	switch qp.Table {
-	case senmlTable:
-		expressions = append(expressions, "AVG(m.value) as avg_value_0")
-	default:
-		for i, field := range qp.AggField {
-			jsonPath := buildJSONPath(field)
-			expressions = append(expressions,
-				fmt.Sprintf("AVG(CAST(m.%s AS float)) as avg_value_%d", jsonPath, i))
-		}
-	}
-	return strings.Join(expressions, ",\n\t\t\t\t")
+func (AvgStrategy) GetAggregateExpression(qp QueryParams) string {
+	return buildAggregateExpression(qp, "AVG")
 }
 
 type CountStrategy struct{}
 
-func (countStrt CountStrategy) GetSelectedFields(qp QueryParams) string {
-	switch qp.Table {
-	case senmlTable:
-		return `ia.max_time as time, ia.subtopic, ia.publisher, ia.protocol, 
-				'' as name, '' as unit,
-				ia.sum_value_0 as value,
-				'' as string_value, false as bool_value, '' as data_value, 
-				0 as sum, ia.max_time as update_time`
-	default:
-		return buildJSONSelect(qp.AggField, "sum_value")
+func (CountStrategy) GetSelectedFields(qp QueryParams) string {
+	if qp.Table == senmlTable {
+		return buildSenMLSelectFields()
 	}
+	return buildJSONSelect(qp.AggField, "agg_value")
 }
 
-func (countStrt CountStrategy) GetAggregateExpression(qp QueryParams) string {
-	if len(qp.AggField) == 0 {
-		return ""
-	}
-
-	var expressions []string
-	switch qp.Table {
-	case senmlTable:
-		expressions = append(expressions, "COUNT(m.value) as sum_value_0")
-	default:
-		for i, field := range qp.AggField {
-			jsonPath := buildJSONPath(field)
-			expressions = append(expressions,
-				fmt.Sprintf("COUNT(m.%s) as sum_value_%d", jsonPath, i))
-		}
-	}
-	return strings.Join(expressions, ",\n\t\t\t\t")
+func (CountStrategy) GetAggregateExpression(qp QueryParams) string {
+	return buildAggregateExpression(qp, "COUNT")
 }
-
 func buildTimeIntervals(qp QueryParams) string {
 	dq := dbutil.GetDirQuery(qp.Dir)
 	lq := fmt.Sprintf("LIMIT %d", qp.Limit)
