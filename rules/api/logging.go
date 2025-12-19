@@ -77,7 +77,7 @@ func (lm loggingMiddleware) ListThingIDsByRule(ctx context.Context, token, ruleI
 
 func (lm loggingMiddleware) ViewRule(ctx context.Context, token, id string) (_ rules.Rule, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_rule rule for id %s took %s to complete", id, time.Since(begin))
+		message := fmt.Sprintf("Method view_rule for rule id %s took %s to complete", id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
