@@ -21,8 +21,9 @@ import (
 var _ session.Handler = (*handler)(nil)
 
 const (
-	protocol  = "mqtt"
-	connected = "connected"
+	protocol     = "mqtt"
+	connected    = "connected"
+	disconnected = "disconnected"
 )
 
 const (
@@ -32,22 +33,20 @@ const (
 	LogInfoDisconnected = "disconnected client_id %s"
 	LogInfoPublished    = "published with client_id %s to the topic %s"
 
-	LogErrFailedConnect                = "failed to connect: "
-	LogErrFailedSubscribe              = "failed to subscribe: "
-	LogErrFailedUnsubscribe            = "failed to unsubscribe: "
-	LogErrFailedDisconnect             = "failed to disconnect: "
-	LogErrFailedPublishDisconnectEvent = "failed to publish disconnect event: "
-	logErrFailedParseSubtopic          = "failed to parse subtopic: "
-	LogErrFailedPublishConnectEvent    = "failed to publish connect event: "
+	LogErrFailedConnect             = "failed to connect: "
+	LogErrFailedSubscribe           = "failed to subscribe: "
+	LogErrFailedUnsubscribe         = "failed to unsubscribe: "
+	LogErrFailedDisconnect          = "failed to disconnect: "
+	logErrFailedParseSubtopic       = "failed to parse subtopic: "
+	LogErrFailedPublishConnectEvent = "failed to publish connect event: "
 )
 
 var (
-	ErrMalformedSubtopic         = errors.New("malformed subtopic")
-	ErrClientNotInitialized      = errors.New("client is not initialized")
-	ErrMissingClientID           = errors.New("client_id not found")
-	ErrMissingTopicPub           = errors.New("failed to publish due to missing topic")
-	ErrMissingTopicSub           = errors.New("failed to subscribe due to missing topic")
-	ErrSubscriptionAlreadyExists = errors.New("subscription already exists")
+	ErrMalformedSubtopic    = errors.New("malformed subtopic")
+	ErrClientNotInitialized = errors.New("client is not initialized")
+	ErrMissingClientID      = errors.New("client_id not found")
+	ErrMissingTopicPub      = errors.New("failed to publish due to missing topic")
+	ErrMissingTopicSub      = errors.New("failed to subscribe due to missing topic")
 )
 
 // Event implements events.Event interface
@@ -197,12 +196,11 @@ func (h *handler) Subscribe(c *session.Client, topics *[]string) {
 	}
 
 	for _, s := range subs {
-		err = h.service.CreateSubscription(context.Background(), s)
-		if err != nil {
-			h.logger.Error(LogErrFailedSubscribe + (ErrSubscriptionAlreadyExists).Error())
-			return
+		if err := h.service.CreateSubscription(context.Background(), s); err != nil {
+			h.logger.Error(LogErrFailedSubscribe + err.Error())
 		}
 	}
+
 	h.logger.Info(fmt.Sprintf(LogInfoSubscribed, c.ID, strings.Join(*topics, ",")))
 }
 
@@ -215,7 +213,7 @@ func (h *handler) Unsubscribe(c *session.Client, topics *[]string) {
 
 	subs, err := h.getSubscriptions(c, topics)
 	if err != nil {
-		h.logger.Error(LogErrFailedSubscribe + err.Error())
+		h.logger.Error(LogErrFailedUnsubscribe + err.Error())
 		return
 	}
 
@@ -235,12 +233,16 @@ func (h *handler) Disconnect(c *session.Client) {
 		return
 	}
 
-	thingID, _ := h.identify(c)
-
-	h.logger.Error(fmt.Sprintf(LogInfoDisconnected, c.ID))
-	if err := h.es.Disconnect(thingID); err != nil {
-		h.logger.Error(LogErrFailedPublishDisconnectEvent + err.Error())
+	s := Subscription{
+		ClientID: c.ID,
+		Status:   disconnected,
 	}
+	if err := h.service.UpdateStatus(context.Background(), s); err != nil {
+		h.logger.Error(LogErrFailedDisconnect + (ErrClientNotInitialized).Error())
+		return
+	}
+
+	h.logger.Info(fmt.Sprintf(LogInfoDisconnected, c.ID))
 }
 
 func (h *handler) identify(c *session.Client) (string, error) {
@@ -270,6 +272,7 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 			return nil, err
 		}
 
+		// TODO: CreateSubject handles topics start with /messages, similar is needed for /commands
 		subject, err := messaging.CreateSubject(t)
 		if err != nil {
 			return nil, err

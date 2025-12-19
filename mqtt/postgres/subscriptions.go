@@ -24,7 +24,9 @@ func NewRepository(db dbutil.Database) mqtt.Repository {
 
 func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error {
 	q := `INSERT INTO subscriptions (subtopic, thing_id, group_id, client_id, status, created_at)
-		VALUES (:subtopic, :thing_id, :group_id, :client_id, :status, :created_at)`
+		  VALUES (:subtopic, :thing_id, :group_id, :client_id, :status, :created_at)
+		  ON CONFLICT (client_id, subtopic, group_id, thing_id)
+		  DO UPDATE SET status = EXCLUDED.status;`
 	dbSub := dbSubscription{
 		Subtopic:  sub.Subtopic,
 		ThingID:   sub.ThingID,
@@ -47,12 +49,11 @@ func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error
 }
 
 func (mr *mqttRepository) UpdateStatus(ctx context.Context, sub mqtt.Subscription) error {
-	q := `UPDATE subscriptions SET status = :status, created_at = :created_at WHERE client_id = :client_id;`
+	q := `UPDATE subscriptions SET status = :status WHERE client_id = :client_id;`
 
 	dbSub := dbSubscription{
-		ClientID:  sub.ClientID,
-		Status:    sub.Status,
-		CreatedAt: sub.CreatedAt,
+		ClientID: sub.ClientID,
+		Status:   sub.Status,
 	}
 
 	row, err := mr.db.NamedQueryContext(ctx, q, dbSub)
