@@ -290,7 +290,7 @@ func (maxStrt MaxStrategy) GetSelectedFields(qp QueryParams) string {
 				'' as string_value, false as bool_value, '' as data_value, 
 				0 as sum, ia.max_time as update_time`
 	default:
-		return buildAggregatedJSONSelectMultipleFromIA(qp.AggField, "agg_value")
+		return buildJSONSelect(qp.AggField, "agg_value")
 	}
 }
 
@@ -326,7 +326,7 @@ func (minStrt MinStrategy) GetSelectedFields(qp QueryParams) string {
 				'' as string_value, false as bool_value, '' as data_value, 
 				0 as sum, ia.max_time as update_time`
 	default:
-		return buildAggregatedJSONSelectMultipleFromIA(qp.AggField, "agg_value")
+		return buildJSONSelect(qp.AggField, "agg_value")
 	}
 }
 
@@ -360,7 +360,7 @@ func (avgStrt AvgStrategy) GetSelectedFields(qp QueryParams) string {
 				'' as string_value, false as bool_value, '' as data_value, 
 				0 as sum, ia.max_time as update_time`
 	default:
-		return buildAggregatedJSONSelectMultipleFromIA(qp.AggField, "avg_value")
+		return buildJSONSelect(qp.AggField, "avg_value")
 	}
 }
 
@@ -394,7 +394,7 @@ func (countStrt CountStrategy) GetSelectedFields(qp QueryParams) string {
 				'' as string_value, false as bool_value, '' as data_value, 
 				0 as sum, ia.max_time as update_time`
 	default:
-		return buildAggregatedJSONSelectMultipleFromIA(qp.AggField, "sum_value")
+		return buildJSONSelect(qp.AggField, "sum_value")
 	}
 }
 
@@ -622,7 +622,7 @@ func buildConditionForCount(aggFields []string, table string) string {
 	return strings.Join(conditions, " OR ")
 }
 
-func buildAggregatedJSONSelectMultipleFromIA(aggFields []string, aggPrefix string) string {
+func buildJSONSelect(aggFields []string, aggPrefix string) string {
 	if len(aggFields) == 0 {
 		return "ia.max_time as created, ia.subtopic, ia.publisher, ia.protocol, CAST('{}' AS jsonb) as payload"
 	}
