@@ -704,7 +704,7 @@ func (lm *loggingMiddleware) ListProfilesByGroup(ctx context.Context, token, gro
 
 func (lm *loggingMiddleware) CreateGroupMemberships(ctx context.Context, token string, gms ...things.GroupMembership) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_group_memberships for memberships %+v took %s to complete", gms, time.Since(begin))
+		message := fmt.Sprintf("Method create_group_memberships for memberships %v took %s to complete", gms, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
