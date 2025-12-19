@@ -219,7 +219,7 @@ func renderTemplate(templateStr string, qp QueryParams, strategy AggStrategy) st
 		"TimeJoinConditionIA": buildTimeJoinCondition(qp, intervalAggregations),
 		"ConditionForJoin":    qp.ConditionForJoin,
 		"SelectedFields":      strategy.GetSelectedFields(qp),
-		"HavingCondition":     buildHavingCondition(qp),
+		"HavingCondition":     buildConditionForCount(qp),
 		"Condition":           qp.Condition,
 		"TimeColumn":          qp.TimeColumn,
 		"Dir":                 dbutil.GetDirQuery(qp.Dir),
@@ -234,7 +234,7 @@ func renderTemplate(templateStr string, qp QueryParams, strategy AggStrategy) st
 func buildAggregationCountQuery(qp QueryParams) string {
 	timeIntervals := buildTimeIntervals(qp)
 	timeJoinCondition := buildTimeJoinCondition(qp, "ti")
-	havingCondition := buildConditionForCount(qp.AggField, qp.Table)
+	havingCondition := buildConditionForCount(qp)
 
 	return fmt.Sprintf(`
 		WITH time_intervals AS (%s)
@@ -512,7 +512,7 @@ func (as *aggregationService) parseComparator(comparator string) string {
 	}
 }
 
-func buildHavingCondition(qp QueryParams) string {
+func buildConditionForCount(qp QueryParams) string {
 	if len(qp.AggField) == 0 {
 		return "1=1"
 	}
@@ -523,26 +523,6 @@ func buildHavingCondition(qp QueryParams) string {
 		conditions = append(conditions, "MAX(m.value) IS NOT NULL")
 	default:
 		for _, field := range qp.AggField {
-			jsonPath := buildJSONPath(field)
-			conditions = append(conditions,
-				fmt.Sprintf("MAX(CAST(m.%s AS FLOAT)) IS NOT NULL", jsonPath))
-		}
-	}
-
-	return strings.Join(conditions, " OR ")
-}
-
-func buildConditionForCount(aggFields []string, table string) string {
-	if len(aggFields) == 0 {
-		return "1=1"
-	}
-
-	var conditions []string
-	switch table {
-	case senmlTable:
-		conditions = append(conditions, "MAX(m.value) IS NOT NULL")
-	default:
-		for _, field := range aggFields {
 			jsonPath := buildJSONPath(field)
 			conditions = append(conditions,
 				fmt.Sprintf("MAX(CAST(m.%s AS FLOAT)) IS NOT NULL", jsonPath))
