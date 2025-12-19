@@ -13,6 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 )
@@ -65,8 +66,21 @@ func (svc *adapterService) Publish(ctx context.Context, key things.ThingKey, mes
 		return err
 	}
 
-	if _, err = svc.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &message}); err != nil {
-		return err
+	msg := message
+	go func(m protomfx.Message) {
+		if _, err := svc.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &m}); err != nil {
+			svc.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
+		}
+	}(msg)
+
+	subs := nats.GetSubjects(msg.Subtopic)
+	for _, sub := range subs {
+		m := msg
+		m.Subject = sub
+
+		if err := svc.pubsub.Publish(m); err != nil {
+			svc.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
+		}
 	}
 
 	return nil

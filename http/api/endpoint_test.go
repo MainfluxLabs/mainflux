@@ -25,7 +25,8 @@ import (
 const ServiceErrToken = "unavailable"
 
 func newService(tc protomfx.ThingsServiceClient, rc protomfx.RulesServiceClient, logger logger.Logger) adapter.Service {
-	return adapter.New(tc, rc, logger)
+	pub := mocks.NewPublisher()
+	return adapter.New(pub, tc, rc, logger)
 }
 
 func newHTTPServer(svc adapter.Service) *httptest.Server {

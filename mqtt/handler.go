@@ -13,6 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/mqtt/redis"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mproxy/pkg/session"
 )
@@ -25,15 +26,15 @@ const (
 )
 
 const (
-	LogInfoSubscribed                  = "subscribed with client_id %s to topics %s"
-	LogInfoUnsubscribed                = "unsubscribed client_id %s from topics %s"
-	LogInfoConnected                   = "connected with client_id %s"
-	LogInfoDisconnected                = "disconnected client_id %s"
-	LogInfoPublished                   = "published with client_id %s to the topic %s"
+	LogInfoSubscribed   = "subscribed with client_id %s to topics %s"
+	LogInfoUnsubscribed = "unsubscribed client_id %s from topics %s"
+	LogInfoConnected    = "connected with client_id %s"
+	LogInfoDisconnected = "disconnected client_id %s"
+	LogInfoPublished    = "published with client_id %s to the topic %s"
+
 	LogErrFailedConnect                = "failed to connect: "
 	LogErrFailedSubscribe              = "failed to subscribe: "
 	LogErrFailedUnsubscribe            = "failed to unsubscribe: "
-	LogErrFailedPublish                = "failed to publish: "
 	LogErrFailedDisconnect             = "failed to disconnect: "
 	LogErrFailedPublishDisconnectEvent = "failed to publish disconnect event: "
 	logErrFailedParseSubtopic          = "failed to parse subtopic: "
@@ -46,7 +47,6 @@ var (
 	ErrMissingClientID           = errors.New("client_id not found")
 	ErrMissingTopicPub           = errors.New("failed to publish due to missing topic")
 	ErrMissingTopicSub           = errors.New("failed to subscribe due to missing topic")
-	ErrAuthentication            = errors.New("failed to perform authentication over the entity")
 	ErrSubscriptionAlreadyExists = errors.New("subscription already exists")
 )
 
@@ -143,7 +143,7 @@ func (h *handler) Connect(c *session.Client) {
 // Publish - after client successfully published
 func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	if c == nil {
-		h.logger.Error(LogErrFailedPublish + ErrClientNotInitialized.Error())
+		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, ErrClientNotInitialized).Error())
 		return
 	}
 	h.logger.Info(fmt.Sprintf(LogInfoPublished, c.ID, *topic))
@@ -161,7 +161,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 
 	pc, err := h.things.GetPubConfByKey(context.Background(), thingKeyReq)
 	if err != nil {
-		h.logger.Error(LogErrFailedPublish + (ErrAuthentication).Error())
+		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, errors.ErrAuthentication).Error())
 	}
 
 	message := protomfx.Message{
@@ -171,11 +171,24 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	}
 
 	if err := messaging.FormatMessage(pc, &message); err != nil {
-		h.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
+		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 	}
 
-	if _, err = h.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &message}); err != nil {
-		h.logger.Error(err.Error())
+	msg := message
+	go func(m protomfx.Message) {
+		if _, err := h.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &m}); err != nil {
+			h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
+		}
+	}(msg)
+
+	subs := nats.GetSubjects(msg.Subtopic)
+	for _, sub := range subs {
+		m := msg
+		m.Subject = sub
+
+		if err := h.publisher.Publish(m); err != nil {
+			h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
+		}
 	}
 }
 
@@ -277,7 +290,7 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 			ThingID:   thingID,
 			ClientID:  c.ID,
 			Status:    connected,
-			CreatedAt: float64(time.Now().UnixNano()) / float64(1e9),
+			CreatedAt: float64(time.Now().UnixNano()) / 1e9,
 		}
 		subs = append(subs, sub)
 	}

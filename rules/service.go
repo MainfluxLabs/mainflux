@@ -69,10 +69,6 @@ const (
 	OperatorAND = "AND"
 	OperatorOR  = "OR"
 
-	// subjectMessages represents subject used to publish all incoming messages.
-	subjectMessages = "messages"
-	// subjectWriters represents subject used to publish messages that should be persisted.
-	subjectWriters = "writers"
 	// subjectAlarms represents subject used to publish messages that trigger an alarm.
 	subjectAlarms = "alarms"
 	// subjectSMTP represents subject used to publish messages that trigger an SMTP notification.
@@ -276,17 +272,10 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 		return err
 	}
 
-	// publish a message to default subjects independently of rule check
-	go func(msg protomfx.Message) {
-		if err := rs.publishToDefaultSubjects(msg); err != nil {
-			rs.logger.Error(err.Error())
-		}
-	}(message)
-
 	for _, rule := range rp.Rules {
 		triggered, payloads, err := processPayload(message.Payload, rule.Conditions, rule.Operator, message.ContentType)
 		if err != nil {
-			return errors.Wrap(messaging.ErrPublishMessage, err)
+			return err
 		}
 		if !triggered {
 			continue
@@ -309,28 +298,12 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 				}
 
 				if err := rs.publisher.Publish(newMsg); err != nil {
-					return errors.Wrap(messaging.ErrPublishMessage, err)
+					return err
 				}
 			}
 		}
 	}
 
-	return nil
-}
-
-func (rs *rulesService) publishToDefaultSubjects(msg protomfx.Message) error {
-	subjects := []string{subjectMessages, subjectWriters}
-	if msg.Subtopic != "" {
-		subjects = append(subjects, fmt.Sprintf("%s.%s", subjectMessages, msg.Subtopic))
-	}
-
-	for _, sub := range subjects {
-		m := msg
-		m.Subject = sub
-		if err := rs.publisher.Publish(m); err != nil {
-			return errors.Wrap(messaging.ErrPublishMessage, err)
-		}
-	}
 	return nil
 }
 

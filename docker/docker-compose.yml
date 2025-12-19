@@ -329,7 +329,6 @@ services:
       MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
     ports:
       - ${MF_MQTT_ADAPTER_HTTP_PORT}:${MF_MQTT_ADAPTER_HTTP_PORT}
-
     networks:
       - mainfluxlabs-base-net
 
@@ -339,10 +338,12 @@ services:
     depends_on:
       - things
       - rules
+      - broker
     restart: on-failure
     environment:
       MF_HTTP_ADAPTER_LOG_LEVEL: debug
       MF_HTTP_ADAPTER_PORT: ${MF_HTTP_ADAPTER_PORT}
+      MF_BROKER_URL: ${MF_NATS_URL}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}

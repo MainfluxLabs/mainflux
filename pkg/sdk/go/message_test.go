@@ -21,7 +21,8 @@ import (
 )
 
 func newMessageService(tc protomfx.ThingsServiceClient, rc protomfx.RulesServiceClient, logger logger.Logger) adapter.Service {
-	return adapter.New(tc, rc, logger)
+	pub := mocks.NewPublisher()
+	return adapter.New(pub, tc, rc, logger)
 }
 
 func newMessageServer(svc adapter.Service) *httptest.Server {

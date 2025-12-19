@@ -9,7 +9,9 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 )
@@ -23,17 +25,19 @@ type Service interface {
 var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
-	things protomfx.ThingsServiceClient
-	rules  protomfx.RulesServiceClient
-	logger logger.Logger
+	publisher messaging.Publisher
+	things    protomfx.ThingsServiceClient
+	rules     protomfx.RulesServiceClient
+	logger    logger.Logger
 }
 
 // New instantiates the HTTP adapter implementation.
-func New(things protomfx.ThingsServiceClient, rules protomfx.RulesServiceClient, logger logger.Logger) Service {
+func New(publisher messaging.Publisher, things protomfx.ThingsServiceClient, rules protomfx.RulesServiceClient, logger logger.Logger) Service {
 	return &adapterService{
-		things: things,
-		rules:  rules,
-		logger: logger,
+		publisher: publisher,
+		things:    things,
+		rules:     rules,
+		logger:    logger,
 	}
 }
 
@@ -48,8 +52,21 @@ func (as *adapterService) Publish(ctx context.Context, key things.ThingKey, mess
 		return err
 	}
 
-	if _, err = as.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &message}); err != nil {
-		return err
+	msg := message
+	go func(m protomfx.Message) {
+		if _, err := as.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &m}); err != nil {
+			as.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
+		}
+	}(msg)
+
+	subs := nats.GetSubjects(msg.Subtopic)
+	for _, sub := range subs {
+		m := msg
+		m.Subject = sub
+
+		if err := as.publisher.Publish(m); err != nil {
+			as.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
+		}
 	}
 
 	return nil
