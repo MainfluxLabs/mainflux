@@ -22,7 +22,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
-	rulesapi "github.com/MainfluxLabs/mainflux/rules/api/grpc"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
@@ -41,8 +40,6 @@ const (
 	defBrokerURL         = "nats://localhost:4222"
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
-	defRulesGRPCURL      = "localhost:8186"
-	defRulesGRPCTimeout  = "1s"
 
 	envLogLevel          = "MF_HTTP_ADAPTER_LOG_LEVEL"
 	envClientTLS         = "MF_HTTP_ADAPTER_CLIENT_TLS"
@@ -52,19 +49,15 @@ const (
 	envBrokerURL         = "MF_BROKER_URL"
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
-	envRulesGRPCURL      = "MF_RULES_GRPC_URL"
-	envRulesGRPCTimeout  = "MF_RULES_GRPC_TIMEOUT"
 )
 
 type config struct {
 	httpConfig        servers.Config
 	thingsConfig      clients.Config
-	rulesConfig       clients.Config
 	logLevel          string
 	brokerURL         string
 	jaegerURL         string
 	thingsGRPCTimeout time.Duration
-	rulesGRPCTimeout  time.Duration
 }
 
 func main() {
@@ -86,12 +79,6 @@ func main() {
 	thingsTracer, thingsCloser := jaeger.Init("http_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	rConn := clientsgrpc.Connect(cfg.rulesConfig, logger)
-	defer rConn.Close()
-
-	rulesTracer, rulesCloser := jaeger.Init("http_rules", cfg.jaegerURL, logger)
-	defer rulesCloser.Close()
-
 	pub, err := brokers.NewPublisher(cfg.brokerURL)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
@@ -100,8 +87,7 @@ func main() {
 	defer pub.Close()
 
 	tc := thingsapi.NewClient(tConn, thingsTracer, cfg.thingsGRPCTimeout)
-	rc := rulesapi.NewClient(rConn, rulesTracer, cfg.rulesGRPCTimeout)
-	svc := adapter.New(pub, tc, rc, logger)
+	svc := adapter.New(pub, tc, logger)
 
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
@@ -148,11 +134,6 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
 
-	rulesGRPCTimeout, err := time.ParseDuration(mainflux.Env(envRulesGRPCTimeout, defRulesGRPCTimeout))
-	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envRulesGRPCTimeout, err.Error())
-	}
-
 	httpConfig := servers.Config{
 		ServerName:   svcName,
 		Port:         mainflux.Env(envPort, defPort),
@@ -166,21 +147,12 @@ func loadConfig() config {
 		ClientName: clients.Things,
 	}
 
-	rulesConfig := clients.Config{
-		ClientTLS:  tls,
-		CaCerts:    mainflux.Env(envCACerts, defCACerts),
-		URL:        mainflux.Env(envRulesGRPCURL, defRulesGRPCURL),
-		ClientName: clients.Rules,
-	}
-
 	return config{
 		httpConfig:        httpConfig,
 		thingsConfig:      thingsConfig,
-		rulesConfig:       rulesConfig,
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
-		rulesGRPCTimeout:  rulesGRPCTimeout,
 	}
 }

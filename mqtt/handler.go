@@ -54,7 +54,6 @@ var (
 type handler struct {
 	publisher messaging.Publisher
 	things    protomfx.ThingsServiceClient
-	rules     protomfx.RulesServiceClient
 	logger    logger.Logger
 	es        redis.EventStore
 	service   Service
@@ -62,13 +61,12 @@ type handler struct {
 
 // NewHandler creates new Handler entity
 func NewHandler(publisher messaging.Publisher, es redis.EventStore,
-	logger logger.Logger, things protomfx.ThingsServiceClient, rules protomfx.RulesServiceClient, svc Service) session.Handler {
+	logger logger.Logger, things protomfx.ThingsServiceClient, svc Service) session.Handler {
 	return &handler{
 		es:        es,
 		logger:    logger,
 		publisher: publisher,
 		things:    things,
-		rules:     rules,
 		service:   svc,
 	}
 }
@@ -98,7 +96,7 @@ func (h *handler) AuthConnect(c *session.Client) error {
 
 // AuthPublish is called on device publish,
 // prior forwarding to the MQTT broker
-func (h *handler) AuthPublish(c *session.Client, topic *string, payload *[]byte) error {
+func (h *handler) AuthPublish(c *session.Client, topic *string, _ *[]byte) error {
 	if c == nil {
 		return ErrClientNotInitialized
 	}
@@ -174,16 +172,9 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 	}
 
-	msg := message
-	go func(m protomfx.Message) {
-		if _, err := h.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &m}); err != nil {
-			h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
-		}
-	}(msg)
-
-	subs := nats.GetSubjects(msg.Subtopic)
+	subs := nats.GetSubjects(message.Subtopic)
 	for _, sub := range subs {
-		m := msg
+		m := message
 		m.Subject = sub
 
 		if err := h.publisher.Publish(m); err != nil {

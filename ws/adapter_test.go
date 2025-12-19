@@ -33,16 +33,15 @@ var msg = protomfx.Message{
 	Payload:   []byte(`[{"n":"current","t":-5,"v":1.2}]`),
 }
 
-func newService(tc protomfx.ThingsServiceClient, rc protomfx.RulesServiceClient, logger logger.Logger) (ws.Service, mocks.MockPubSub) {
+func newService(tc protomfx.ThingsServiceClient, logger logger.Logger) (ws.Service, mocks.MockPubSub) {
 	pubsub := mocks.NewPubSub()
-	return ws.New(tc, rc, pubsub, logger), pubsub
+	return ws.New(tc, pubsub, logger), pubsub
 }
 
 func TestPublish(t *testing.T) {
-	thingsClient := pkgmock.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
-	rulesClient := pkgmock.NewRulesServiceClient()
-	logger := logger.NewMock()
-	svc, _ := newService(thingsClient, rulesClient, logger)
+	tc := pkgmock.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
+	lm := logger.NewMock()
+	svc, _ := newService(tc, lm)
 
 	cases := []struct {
 		desc     string
@@ -95,10 +94,9 @@ func TestPublish(t *testing.T) {
 }
 
 func TestSubscribe(t *testing.T) {
-	thingsClient := pkgmock.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
-	rulesClient := pkgmock.NewRulesServiceClient()
-	logger := logger.NewMock()
-	svc, pubsub := newService(thingsClient, rulesClient, logger)
+	tc := pkgmock.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
+	lm := logger.NewMock()
+	svc, pubsub := newService(tc, lm)
 
 	c := ws.NewClient(nil)
 
@@ -154,10 +152,9 @@ func TestSubscribe(t *testing.T) {
 }
 
 func TestUnsubscribe(t *testing.T) {
-	thingsClient := pkgmock.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
-	rulesClient := pkgmock.NewRulesServiceClient()
-	logger := logger.NewMock()
-	svc, pubsub := newService(thingsClient, rulesClient, logger)
+	tc := pkgmock.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
+	lm := logger.NewMock()
+	svc, pubsub := newService(tc, lm)
 
 	cases := []struct {
 		desc     string

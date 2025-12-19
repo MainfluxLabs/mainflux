@@ -47,16 +47,14 @@ var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
 	things protomfx.ThingsServiceClient
-	rules  protomfx.RulesServiceClient
 	pubsub messaging.PubSub
 	logger logger.Logger
 }
 
 // New instantiates the WS adapter implementation
-func New(things protomfx.ThingsServiceClient, rules protomfx.RulesServiceClient, pubsub messaging.PubSub, logger logger.Logger) Service {
+func New(things protomfx.ThingsServiceClient, pubsub messaging.PubSub, logger logger.Logger) Service {
 	return &adapterService{
 		things: things,
-		rules:  rules,
 		pubsub: pubsub,
 		logger: logger,
 	}
@@ -76,16 +74,9 @@ func (svc *adapterService) Publish(ctx context.Context, key things.ThingKey, mes
 		return err
 	}
 
-	msg := message
-	go func(m protomfx.Message) {
-		if _, err := svc.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &m}); err != nil {
-			svc.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
-		}
-	}(msg)
-
-	subs := nats.GetSubjects(msg.Subtopic)
+	subs := nats.GetSubjects(message.Subtopic)
 	for _, sub := range subs {
-		m := msg
+		m := message
 		m.Subject = sub
 
 		if err := svc.pubsub.Publish(m); err != nil {

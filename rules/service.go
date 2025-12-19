@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -57,8 +58,7 @@ type Service interface {
 	// UnassignRulesByThing removes all rule assignments from a specific thing.
 	UnassignRulesByThing(ctx context.Context, thingID string) error
 
-	// Publish publishes messages on a topic related to a certain rule action
-	Publish(ctx context.Context, message protomfx.Message) error
+	consumers.Consumer
 }
 
 const (
@@ -82,7 +82,7 @@ var errInvalidObject = errors.New("invalid JSON object")
 type rulesService struct {
 	rules      RuleRepository
 	things     protomfx.ThingsServiceClient
-	publisher  messaging.Publisher
+	pubsub     messaging.PubSub
 	idProvider uuid.IDProvider
 	logger     logger.Logger
 }
@@ -90,11 +90,11 @@ type rulesService struct {
 var _ Service = (*rulesService)(nil)
 
 // New instantiates the rules service implementation.
-func New(rules RuleRepository, things protomfx.ThingsServiceClient, publisher messaging.Publisher, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(rules RuleRepository, things protomfx.ThingsServiceClient, pubsub messaging.PubSub, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &rulesService{
 		rules:      rules,
 		things:     things,
-		publisher:  publisher,
+		pubsub:     pubsub,
 		idProvider: idp,
 		logger:     logger,
 	}
@@ -266,14 +266,21 @@ func (rs *rulesService) UnassignRulesByThing(ctx context.Context, thingID string
 	return rs.rules.UnassignByThing(ctx, thingID)
 }
 
-func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) error {
-	rp, err := rs.rules.RetrieveByThing(ctx, message.GetPublisher(), apiutil.PageMetadata{})
+func (rs *rulesService) Consume(message any) error {
+	ctx := context.Background()
+
+	msg, ok := message.(protomfx.Message)
+	if !ok {
+		return errors.ErrMessage
+	}
+
+	rp, err := rs.rules.RetrieveByThing(ctx, msg.Publisher, apiutil.PageMetadata{})
 	if err != nil {
 		return err
 	}
 
 	for _, rule := range rp.Rules {
-		triggered, payloads, err := processPayload(message.Payload, rule.Conditions, rule.Operator, message.ContentType)
+		triggered, payloads, err := processPayload(msg.Payload, rule.Conditions, rule.Operator, msg.ContentType)
 		if err != nil {
 			return err
 		}
@@ -283,7 +290,7 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 
 		for _, action := range rule.Actions {
 			for _, payload := range payloads {
-				newMsg := message
+				newMsg := msg
 				newMsg.Payload = payload
 
 				switch action.Type {
@@ -297,7 +304,7 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 					continue
 				}
 
-				if err := rs.publisher.Publish(newMsg); err != nil {
+				if err := rs.pubsub.Publish(newMsg); err != nil {
 					return err
 				}
 			}
