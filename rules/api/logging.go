@@ -114,6 +114,19 @@ func (lm loggingMiddleware) RemoveRules(ctx context.Context, token string, ids .
 	return lm.svc.RemoveRules(ctx, token, ids...)
 }
 
+func (lm loggingMiddleware) RemoveRulesByGroup(ctx context.Context, groupID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_rules_by_group for id %s took %s to complete", groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RemoveRulesByGroup(ctx, groupID)
+}
+
 func (lm loggingMiddleware) AssignRules(ctx context.Context, token, thingID string, ruleIDs ...string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method assign_rules took %s to complete", time.Since(begin))
@@ -138,6 +151,19 @@ func (lm loggingMiddleware) UnassignRules(ctx context.Context, token, thingID st
 	}(time.Now())
 
 	return lm.svc.UnassignRules(ctx, token, thingID, ruleIDs...)
+}
+
+func (lm loggingMiddleware) UnassignRulesByThing(ctx context.Context, thingID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method unassign_rules_by_thing for id %s took %s to complete", thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.UnassignRulesByThing(ctx, thingID)
 }
 
 func (lm loggingMiddleware) Publish(ctx context.Context, msg protomfx.Message) (err error) {

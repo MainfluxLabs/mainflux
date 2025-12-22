@@ -87,7 +87,7 @@ func (nr notifierRepository) RetrieveByGroup(ctx context.Context, groupID string
 	q := fmt.Sprintf(`SELECT id, group_id, name, contacts, metadata FROM notifiers %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM notifiers %s;`, whereClause)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"group_id": groupID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
@@ -178,14 +178,24 @@ func (nr notifierRepository) Update(ctx context.Context, n notifiers.Notifier) e
 }
 
 func (nr notifierRepository) Remove(ctx context.Context, ids ...string) error {
+	q := `DELETE FROM notifiers WHERE id = :id;`
+
 	for _, id := range ids {
 		dbNf := dbNotifier{ID: id}
-		q := `DELETE FROM notifiers WHERE id = :id;`
-
-		_, err := nr.db.NamedExecContext(ctx, q, dbNf)
-		if err != nil {
+		if _, err := nr.db.NamedExecContext(ctx, q, dbNf); err != nil {
 			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
+	}
+
+	return nil
+}
+
+func (nr notifierRepository) RemoveByGroup(ctx context.Context, groupID string) error {
+	q := `DELETE FROM notifiers WHERE group_id = :group_id;`
+
+	dbNf := dbNotifier{GroupID: groupID}
+	if _, err := nr.db.NamedExecContext(ctx, q, dbNf); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil
@@ -220,7 +230,7 @@ func toDBNotifier(nf notifiers.Notifier) (dbNotifier, error) {
 }
 
 func toNotifier(dbN dbNotifier) (notifiers.Notifier, error) {
-	var metadata map[string]interface{}
+	var metadata map[string]any
 	contacts := strings.Split(dbN.Contacts, ",")
 
 	if err := json.Unmarshal([]byte(dbN.Metadata), &metadata); err != nil {

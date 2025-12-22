@@ -96,11 +96,15 @@ func (mr *mqttRepository) HasClientID(ctx context.Context, clientID string) erro
 	return nil
 }
 
-func (mr *mqttRepository) RetrieveByGroupID(ctx context.Context, pm mqtt.PageMetadata, groupID string) (mqtt.Page, error) {
+func (mr *mqttRepository) RetrieveByGroup(ctx context.Context, pm mqtt.PageMetadata, groupID string) (mqtt.Page, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
-	q := fmt.Sprintf(`SELECT subtopic, group_id, client_id, thing_id, status, created_at FROM subscriptions WHERE group_id= :group_id ORDER BY created_at %s;`, olq)
-	params := map[string]interface{}{
+	q := fmt.Sprintf(`SELECT subtopic, group_id, client_id, thing_id, status, created_at 
+					  FROM subscriptions 
+					  WHERE group_id = :group_id 
+					  ORDER BY created_at 
+					  %s;`, olq)
+	params := map[string]any{
 		"group_id": groupID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
@@ -121,7 +125,7 @@ func (mr *mqttRepository) RetrieveByGroupID(ctx context.Context, pm mqtt.PageMet
 		items = append(items, fromDBSub(item))
 	}
 
-	cq := `SELECT COUNT(*) FROM subscriptions WHERE group_id= :group_id;`
+	cq := `SELECT COUNT(*) FROM subscriptions WHERE group_id = :group_id;`
 	total, err := dbutil.Total(ctx, mr.db, cq, params)
 	if err != nil {
 		return mqtt.Page{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)

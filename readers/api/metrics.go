@@ -85,20 +85,38 @@ func (mm *metricsMiddleware) RestoreSenMLMessages(ctx context.Context, token str
 	return mm.svc.RestoreSenMLMessages(ctx, token, messages...)
 }
 
-func (mm *metricsMiddleware) DeleteJSONMessages(ctx context.Context, token string, key things.ThingKey, rpm readers.JSONPageMetadata) error {
+func (mm *metricsMiddleware) DeleteJSONMessages(ctx context.Context, token string, rpm readers.JSONPageMetadata) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "delete_json_messages").Add(1)
 		mm.latency.With("method", "delete_json_messages").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.DeleteJSONMessages(ctx, token, key, rpm)
+	return mm.svc.DeleteJSONMessages(ctx, token, rpm)
 }
 
-func (mm *metricsMiddleware) DeleteSenMLMessages(ctx context.Context, token string, key things.ThingKey, rpm readers.SenMLPageMetadata) error {
+func (mm *metricsMiddleware) DeleteSenMLMessages(ctx context.Context, token string, rpm readers.SenMLPageMetadata) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "delete_senml_messages").Add(1)
 		mm.latency.With("method", "delete_senml_messages").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.DeleteSenMLMessages(ctx, token, key, rpm)
+	return mm.svc.DeleteSenMLMessages(ctx, token, rpm)
+}
+
+func (mm *metricsMiddleware) DeleteAllJSONMessages(ctx context.Context, token string, rpm readers.JSONPageMetadata) error {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "delete_all_json_messages").Add(1)
+		mm.latency.With("method", "delete_all_json_messages").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.DeleteAllJSONMessages(ctx, token, rpm)
+}
+
+func (mm *metricsMiddleware) DeleteAllSenMLMessages(ctx context.Context, token string, rpm readers.SenMLPageMetadata) error {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "delete_all_senml_messages").Add(1)
+		mm.latency.With("method", "delete_all_senml_messages").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.DeleteAllSenMLMessages(ctx, token, rpm)
 }

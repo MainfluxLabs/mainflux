@@ -41,6 +41,7 @@ const (
 	aggTypeKey             = "agg_type"
 	aggFieldKey            = "agg_field"
 	publisherKey           = "publisher"
+	publisherIDKey         = "publisherID"
 	timeFormatKey          = "time_format"
 	jsonFormat             = "json"
 	csvFormat              = "csv"
@@ -68,6 +69,13 @@ func MakeHandler(svc readers.Service, tracer opentracing.Tracer, svcName string,
 	))
 
 	mux.Delete("/json", kithttp.NewServer(
+		kitot.TraceServer(tracer, "delete_all_json_messages")(deleteAllJSONMessagesEndpoint(svc)),
+		decodeDeleteAllJSONMessages,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Delete("/json/:publisherID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "delete_json_messages")(deleteJSONMessagesEndpoint(svc)),
 		decodeDeleteJSONMessages,
 		encodeResponse,
@@ -75,6 +83,13 @@ func MakeHandler(svc readers.Service, tracer opentracing.Tracer, svcName string,
 	))
 
 	mux.Delete("/senml", kithttp.NewServer(
+		kitot.TraceServer(tracer, "delete_all_senml_messages")(deleteAllSenMLMessagesEndpoint(svc)),
+		decodeDeleteAllSenMLMessages,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Delete("/senml/:publisherID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "delete_senml_messages")(deleteSenMLMessagesEndpoint(svc)),
 		decodeDeleteSenMLMessages,
 		encodeResponse,
@@ -115,7 +130,7 @@ func MakeHandler(svc readers.Service, tracer opentracing.Tracer, svcName string,
 	return mux
 }
 
-func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	publisher, err := apiutil.ReadStringQuery(r, publisherKey, "")
 	if err != nil {
 		return nil, err
@@ -153,7 +168,7 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (interface{}, er
 	}, nil
 }
 
-func decodeListSenMLMessages(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeListSenMLMessages(_ context.Context, r *http.Request) (any, error) {
 	publisher, err := apiutil.ReadStringQuery(r, publisherKey, "")
 	if err != nil {
 		return nil, err
@@ -185,7 +200,43 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (interface{}, e
 	}, nil
 }
 
-func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeDeleteAllJSONMessages(_ context.Context, r *http.Request) (any, error) {
+	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
+	if err != nil {
+		return readers.JSONPageMetadata{}, err
+	}
+
+	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
+	if err != nil {
+		return readers.JSONPageMetadata{}, err
+	}
+
+	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	to, err := apiutil.ReadIntQuery(r, toKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	req := deleteAllJSONMessagesReq{
+		token: apiutil.ExtractBearerToken(r),
+		pageMeta: readers.JSONPageMetadata{
+			Subtopic: subtopic,
+			Protocol: protocol,
+			From:     from,
+			To:       to,
+		},
+	}
+
+	return req, nil
+}
+
+func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (any, error) {
+	publisherID := bone.GetValue(r, publisherIDKey)
+
 	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
 	if err != nil {
 		return readers.JSONPageMetadata{}, err
@@ -207,20 +258,54 @@ func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (interface{}, 
 	}
 
 	req := deleteJSONMessagesReq{
-		token:    apiutil.ExtractBearerToken(r),
-		thingKey: things.ExtractThingKey(r),
+		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.JSONPageMetadata{
-			Subtopic: subtopic,
-			Protocol: protocol,
-			From:     from,
-			To:       to,
+			Publisher: publisherID,
+			Subtopic:  subtopic,
+			Protocol:  protocol,
+			From:      from,
+			To:        to,
 		},
 	}
 
 	return req, nil
 }
 
-func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeDeleteAllSenMLMessages(_ context.Context, r *http.Request) (any, error) {
+	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	to, err := apiutil.ReadIntQuery(r, toKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	req := deleteAllSenMLMessagesReq{
+		token: apiutil.ExtractBearerToken(r),
+		pageMeta: readers.SenMLPageMetadata{
+			From: from,
+			To:   to,
+		},
+	}
+
+	return req, nil
+}
+
+func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (any, error) {
+	publisher := bone.GetValue(r, publisherIDKey)
+
+	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
+	if err != nil {
+		return readers.JSONPageMetadata{}, err
+	}
+
+	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
+	if err != nil {
+		return readers.JSONPageMetadata{}, err
+	}
+
 	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
 	if err != nil {
 		return nil, err
@@ -232,18 +317,20 @@ func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (interface{},
 	}
 
 	req := deleteSenMLMessagesReq{
-		token:    apiutil.ExtractBearerToken(r),
-		thingKey: things.ExtractThingKey(r),
+		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.SenMLPageMetadata{
-			From: from,
-			To:   to,
+			Publisher: publisher,
+			Subtopic:  subtopic,
+			Protocol:  protocol,
+			From:      from,
+			To:        to,
 		},
 	}
 
 	return req, nil
 }
 
-func decodeRestoreMessages(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeRestoreMessages(_ context.Context, r *http.Request) (any, error) {
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
@@ -267,7 +354,7 @@ func decodeRestoreMessages(_ context.Context, r *http.Request) (interface{}, err
 	}, nil
 }
 
-func decodeBackupJSONMessages(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeBackupJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	publisher, err := apiutil.ReadStringQuery(r, publisherKey, "")
 	if err != nil {
 		return nil, err
@@ -298,7 +385,7 @@ func decodeBackupJSONMessages(_ context.Context, r *http.Request) (interface{}, 
 	}, nil
 }
 
-func decodeBackupSenMLMessages(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeBackupSenMLMessages(_ context.Context, r *http.Request) (any, error) {
 	publisher, err := apiutil.ReadStringQuery(r, publisherKey, "")
 	if err != nil {
 		return nil, err
@@ -329,7 +416,7 @@ func decodeBackupSenMLMessages(_ context.Context, r *http.Request) (interface{},
 	}, nil
 }
 
-func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {
@@ -347,7 +434,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	return json.NewEncoder(w).Encode(response)
 }
 
-func encodeBackupFileResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeBackupFileResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	w.Header().Set("Content-Type", octetStreamContentType)
 
 	if ar, ok := response.(backupFileRes); ok {

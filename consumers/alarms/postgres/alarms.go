@@ -100,7 +100,7 @@ func (ar *alarmRepository) RetrieveByThing(ctx context.Context, thingID string, 
 	                  FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"thing_id": thingID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
@@ -131,7 +131,7 @@ func (ar *alarmRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 	                  FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"group_id": groupID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
@@ -159,7 +159,7 @@ func (ar *alarmRepository) RetrieveByGroups(ctx context.Context, groupIDs []stri
 	query := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, subtopic, protocol, payload, created FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"limit":     pm.Limit,
 		"offset":    pm.Offset,
 		"payload":   p,
@@ -170,12 +170,11 @@ func (ar *alarmRepository) RetrieveByGroups(ctx context.Context, groupIDs []stri
 }
 
 func (ar *alarmRepository) Remove(ctx context.Context, ids ...string) error {
+	q := `DELETE FROM alarms WHERE id = :id;`
+
 	for _, id := range ids {
 		dba := dbAlarm{ID: id}
-		q := `DELETE FROM alarms WHERE id = :id;`
-
-		_, err := ar.db.NamedExecContext(ctx, q, dba)
-		if err != nil {
+		if _, err := ar.db.NamedExecContext(ctx, q, dba); err != nil {
 			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
 	}
@@ -183,7 +182,56 @@ func (ar *alarmRepository) Remove(ctx context.Context, ids ...string) error {
 	return nil
 }
 
-func (ar *alarmRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (alarms.AlarmsPage, error) {
+func (ar *alarmRepository) RemoveByThing(ctx context.Context, thingID string) error {
+	q := `DELETE FROM alarms WHERE thing_id = :thing_id;`
+
+	dba := dbAlarm{ThingID: thingID}
+	if _, err := ar.db.NamedExecContext(ctx, q, dba); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
+func (ar *alarmRepository) RemoveByGroup(ctx context.Context, groupID string) error {
+	q := `DELETE FROM alarms WHERE group_id = :group_id;`
+
+	dba := dbAlarm{GroupID: groupID}
+	if _, err := ar.db.NamedExecContext(ctx, q, dba); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
+func (ar *alarmRepository) BackupByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+	if _, err := uuid.FromString(thingID); err != nil {
+		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrNotFound, err)
+	}
+
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
+	p, pq, err := dbutil.GetPayloadQuery(pm.Payload)
+	if err != nil {
+		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	thingFilter := "thing_id = :thing_id"
+	whereClause := dbutil.BuildWhereClause(thingFilter, pq)
+
+	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, subtopic, protocol, payload, created 
+	                  FROM alarms %s ORDER BY %s %s;`, whereClause, oq, dq)
+	qc := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
+
+	params := map[string]any{
+		"thing_id": thingID,
+		"payload":  p,
+	}
+
+	return ar.retrieve(ctx, q, qc, params)
+}
+
+func (ar *alarmRepository) retrieve(ctx context.Context, query, cquery string, params map[string]any) (alarms.AlarmsPage, error) {
 	rows, err := ar.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
@@ -192,12 +240,12 @@ func (ar *alarmRepository) retrieve(ctx context.Context, query, cquery string, p
 
 	var items []alarms.Alarm
 	for rows.Next() {
-		var dbAlarm dbAlarm
-		if err := rows.StructScan(&dbAlarm); err != nil {
+		var dba dbAlarm
+		if err := rows.StructScan(&dba); err != nil {
 			return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
-		alarm, err := toAlarm(dbAlarm)
+		alarm, err := toAlarm(dba)
 		if err != nil {
 			return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
@@ -248,7 +296,7 @@ func toDBAlarm(alarm alarms.Alarm) (dbAlarm, error) {
 }
 
 func toAlarm(dbAlarm dbAlarm) (alarms.Alarm, error) {
-	var payload map[string]interface{}
+	var payload map[string]any
 	if err := json.Unmarshal(dbAlarm.Payload, &payload); err != nil {
 		return alarms.Alarm{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}

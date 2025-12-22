@@ -1,15 +1,15 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package redis
+package events
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/events"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -18,7 +18,7 @@ const (
 	exists     = "BUSYGROUP Consumer Group name already exists"
 )
 
-var _ events.Subscriber = (*subEventStore)(nil)
+var _ Subscriber = (*subEventStore)(nil)
 
 var (
 	// ErrEmptyStream is returned when stream name is empty.
@@ -39,7 +39,7 @@ type subEventStore struct {
 	logger   logger.Logger
 }
 
-func NewSubscriber(url, stream, group, consumer string, logger logger.Logger) (events.Subscriber, error) {
+func NewSubscriber(url, stream, group, consumer string, logger logger.Logger) (Subscriber, error) {
 	if stream == "" {
 		return nil, ErrEmptyStream
 	}
@@ -66,34 +66,37 @@ func NewSubscriber(url, stream, group, consumer string, logger logger.Logger) (e
 	}, nil
 }
 
-func (es *subEventStore) Subscribe(ctx context.Context, handler events.EventHandler) error {
+func (es *subEventStore) Subscribe(ctx context.Context, handler EventHandler) error {
 	err := es.client.XGroupCreateMkStream(ctx, es.stream, es.group, "$").Err()
 	if err != nil && err.Error() != exists {
 		return err
 	}
 
-	go func() {
-		for {
-			msgs, err := es.client.XReadGroup(ctx, &redis.XReadGroupArgs{
-				Group:    es.group,
-				Consumer: es.consumer,
-				Streams:  []string{es.stream, ">"},
-				Count:    eventCount,
-			}).Result()
-			if err != nil {
-				es.logger.Warn(fmt.Sprintf("failed to read from Redis stream: %s", err))
+	for {
+		msgs, err := es.client.XReadGroup(ctx, &redis.XReadGroupArgs{
+			Group:    es.group,
+			Consumer: es.consumer,
+			Streams:  []string{es.stream, ">"},
+			Count:    eventCount,
+			Block:    5 * time.Second,
+		}).Result()
 
-				continue
-			}
-			if len(msgs) == 0 {
-				continue
+		if err != nil && err != redis.Nil {
+			if errors.Contains(err, context.Canceled) || errors.Contains(err, context.DeadlineExceeded) {
+				return err
 			}
 
-			es.handle(ctx, msgs[0].Messages, handler)
+			es.logger.Warn(fmt.Sprintf("failed to read from Redis stream: %s", err))
+
+			continue
 		}
-	}()
 
-	return nil
+		if len(msgs) == 0 {
+			continue
+		}
+
+		es.handle(ctx, msgs[0].Messages, handler)
+	}
 }
 
 func (es *subEventStore) Close() error {
@@ -101,14 +104,14 @@ func (es *subEventStore) Close() error {
 }
 
 type redisEvent struct {
-	Data map[string]interface{}
+	Data map[string]any
 }
 
-func (re redisEvent) Encode() (map[string]interface{}, error) {
+func (re redisEvent) Encode() (map[string]any, error) {
 	return re.Data, nil
 }
 
-func (es *subEventStore) handle(ctx context.Context, msgs []redis.XMessage, h events.EventHandler) {
+func (es *subEventStore) handle(ctx context.Context, msgs []redis.XMessage, h EventHandler) {
 	for _, msg := range msgs {
 		event := redisEvent{
 			Data: msg.Values,

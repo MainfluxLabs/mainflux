@@ -13,7 +13,7 @@ import (
 )
 
 func getPubConfByKeyEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(thingKey)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -39,7 +39,7 @@ func getPubConfByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func getConfigByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(thingIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -60,7 +60,7 @@ func getConfigByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func canUserAccessThingEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(userAccessThingReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -81,7 +81,7 @@ func canUserAccessThingEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func canUserAccessProfileEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(userAccessProfileReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -102,7 +102,7 @@ func canUserAccessProfileEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func canUserAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(userAccessGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -123,7 +123,7 @@ func canUserAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func canThingAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(thingAccessGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -146,7 +146,7 @@ func canThingAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func identifyEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(thingKey)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -162,7 +162,7 @@ func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func getGroupIDByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(thingIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -178,7 +178,7 @@ func getGroupIDByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func getGroupIDByProfileIDEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(profileIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -193,7 +193,7 @@ func getGroupIDByProfileIDEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func buildConfigResponse(conf map[string]interface{}) (*protomfx.Config, error) {
+func buildConfigResponse(conf map[string]any) (*protomfx.Config, error) {
 	cb, err := json.Marshal(conf)
 	if err != nil {
 		return &protomfx.Config{}, err
@@ -221,7 +221,7 @@ func buildConfigResponse(conf map[string]interface{}) (*protomfx.Config, error) 
 }
 
 func getGroupIDsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(orgAccessReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -237,7 +237,7 @@ func getGroupIDsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func getThingIDsByProfileEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(profileIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err

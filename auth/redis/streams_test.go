@@ -17,6 +17,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth/redis"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/events"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
@@ -26,25 +27,18 @@ import (
 )
 
 const (
-	streamID = "mainflux.auth"
-
 	secret      = "secret"
 	ownerEmail  = "owner@test.com"
 	ownerID     = "ownerID"
 	description = "description"
 	name        = "name"
-	n           = 10
 
 	loginDuration  = 30 * time.Minute
 	inviteDuration = 7 * 24 * time.Hour
-
-	orgPrefix = "org."
-	orgCreate = orgPrefix + "create"
-	orgRemove = orgPrefix + "remove"
 )
 
 var (
-	org           = auth.Org{Name: name, Description: description, Metadata: map[string]interface{}{"test": "test"}}
+	org           = auth.Org{Name: name, Description: description, Metadata: map[string]any{"test": "test"}}
 	usersByEmails = map[string]users.User{ownerEmail: {ID: ownerID, Email: ownerEmail}}
 	usersByIDs    = map[string]users.User{ownerID: {ID: ownerID, Email: ownerEmail}}
 )
@@ -80,16 +74,16 @@ func TestCreateOrg(t *testing.T) {
 		token string
 		org   auth.Org
 		err   error
-		event map[string]interface{}
+		event map[string]any
 	}{
 		{
 			desc:  "create org successfully",
 			org:   org,
 			token: ownerToken,
 			err:   nil,
-			event: map[string]interface{}{
+			event: map[string]any{
 				"id":        "123e4567-e89b-12d3-a456-000000000001",
-				"operation": orgCreate,
+				"operation": events.OrgCreate,
 			},
 		},
 		{
@@ -107,12 +101,12 @@ func TestCreateOrg(t *testing.T) {
 		assert.True(t, errors.Contains(err, oc.err), fmt.Sprintf("%s: expected %s got %s\n", oc.desc, oc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{streamID, lastID},
+			Streams: []string{events.AuthStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
 
-		var event map[string]interface{}
+		var event map[string]any
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
 			msg := streams[0].Messages[0]
 			event = msg.Values
@@ -141,16 +135,16 @@ func TestRemoveOrg(t *testing.T) {
 		id    string
 		token string
 		err   error
-		event map[string]interface{}
+		event map[string]any
 	}{
 		{
 			desc:  "remove existing org successfully",
 			id:    org.ID,
 			token: ownerToken,
 			err:   nil,
-			event: map[string]interface{}{
+			event: map[string]any{
 				"id":        org.ID,
-				"operation": orgRemove,
+				"operation": events.OrgRemove,
 			},
 		},
 		{
@@ -168,12 +162,12 @@ func TestRemoveOrg(t *testing.T) {
 		assert.True(t, errors.Contains(err, oc.err), fmt.Sprintf("%s: expected %s got %s\n", oc.desc, oc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{streamID, lastID},
+			Streams: []string{events.AuthStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
 
-		var event map[string]interface{}
+		var event map[string]any
 		if len(streams) > 0 && len(streams[0].Messages) > 0 {
 			msg := streams[0].Messages[0]
 			event = msg.Values

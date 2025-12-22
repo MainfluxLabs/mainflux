@@ -92,7 +92,20 @@ func (lm *loggingMiddleware) RemoveNotifiers(ctx context.Context, token string, 
 	return lm.svc.RemoveNotifiers(ctx, token, id...)
 }
 
-func (lm *loggingMiddleware) Consume(msg interface{}) (err error) {
+func (lm *loggingMiddleware) RemoveNotifiersByGroup(ctx context.Context, groupID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_notifiers_by_group for id %s took %s to complete", groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RemoveNotifiersByGroup(ctx, groupID)
+}
+
+func (lm *loggingMiddleware) Consume(msg any) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method consume took %s to complete", time.Since(begin))
 		if err != nil {

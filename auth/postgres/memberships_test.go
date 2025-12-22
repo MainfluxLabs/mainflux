@@ -34,7 +34,7 @@ func TestSaveOrgMemberships(t *testing.T) {
 		OwnerID:     ownerID,
 		Name:        orgName,
 		Description: orgDesc,
-		Metadata:    map[string]interface{}{"key": "value"},
+		Metadata:    map[string]any{"key": "value"},
 	}
 
 	err = repoOrg.Save(context.Background(), org)
@@ -138,7 +138,7 @@ func TestRemoveOrgMemberships(t *testing.T) {
 		OwnerID:     ownerID,
 		Name:        orgName,
 		Description: orgDesc,
-		Metadata:    map[string]interface{}{"key": "value"},
+		Metadata:    map[string]any{"key": "value"},
 	}
 
 	err = repoOrg.Save(context.Background(), org)
@@ -434,7 +434,7 @@ func TestRetrieveOrgMemberships(t *testing.T) {
 		OwnerID:     ownerID,
 		Name:        orgName,
 		Description: orgDesc,
-		Metadata:    map[string]interface{}{"key": "value"},
+		Metadata:    map[string]any{"key": "value"},
 	}
 
 	err = repoOrg.Save(context.Background(), org)
@@ -537,7 +537,7 @@ func TestRetrieveAllMemberships(t *testing.T) {
 		OwnerID:     ownerID,
 		Name:        orgName,
 		Description: orgDesc,
-		Metadata:    map[string]interface{}{"key": "value"},
+		Metadata:    map[string]any{"key": "value"},
 	}
 
 	err = repoOrg.Save(context.Background(), org)

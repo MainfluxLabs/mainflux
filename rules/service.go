@@ -19,7 +19,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
-// Service specifies an API for managing rules.
+// Service specifies an API that must be fullfiled by the domain service
+// implementation, and all of its decorators (e.g. logging & metrics).
+// All methods that accept a token parameter use it to identify and authorize
+// the user performing the operation.
 type Service interface {
 	// CreateRules creates rules.
 	CreateRules(ctx context.Context, token, groupID string, rules ...Rule) ([]Rule, error)
@@ -42,11 +45,17 @@ type Service interface {
 	// RemoveRules removes the rules identified with the provided IDs.
 	RemoveRules(ctx context.Context, token string, ids ...string) error
 
+	// RemoveRulesByGroup removes the rules identified with the provided IDs.
+	RemoveRulesByGroup(ctx context.Context, groupID string) error
+
 	// AssignRules assigns rules to a specific thing.
 	AssignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error
 
 	// UnassignRules removes rule assignments from a specific thing.
 	UnassignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error
+
+	// UnassignRulesByThing removes all rule assignments from a specific thing.
+	UnassignRulesByThing(ctx context.Context, thingID string) error
 
 	// Publish publishes messages on a topic related to a certain rule action
 	Publish(ctx context.Context, message protomfx.Message) error
@@ -197,6 +206,10 @@ func (rs *rulesService) RemoveRules(ctx context.Context, token string, ids ...st
 	return rs.rules.Remove(ctx, ids...)
 }
 
+func (rs *rulesService) RemoveRulesByGroup(ctx context.Context, groupID string) error {
+	return rs.rules.RemoveByGroup(ctx, groupID)
+}
+
 func (rs *rulesService) AssignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error {
 	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
 		return err
@@ -251,6 +264,10 @@ func (rs *rulesService) UnassignRules(ctx context.Context, token, thingID string
 	}
 
 	return nil
+}
+
+func (rs *rulesService) UnassignRulesByThing(ctx context.Context, thingID string) error {
+	return rs.rules.UnassignByThing(ctx, thingID)
 }
 
 func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) error {
@@ -318,16 +335,16 @@ func (rs *rulesService) publishToDefaultSubjects(msg protomfx.Message) error {
 }
 
 func processPayload(payload []byte, conditions []Condition, operator string, contentType string) (bool, [][]byte, error) {
-	var parsedData interface{}
+	var parsedData any
 	if err := json.Unmarshal(payload, &parsedData); err != nil {
 		return false, nil, err
 	}
 
 	switch data := parsedData.(type) {
-	case []interface{}:
+	case []any:
 		var triggerPayloads [][]byte
 		for _, item := range data {
-			obj, ok := item.(map[string]interface{})
+			obj, ok := item.(map[string]any)
 			if !ok {
 				continue
 			}
@@ -347,7 +364,7 @@ func processPayload(payload []byte, conditions []Condition, operator string, con
 		}
 
 		return len(triggerPayloads) > 0, triggerPayloads, nil
-	case map[string]interface{}:
+	case map[string]any:
 		triggered, err := checkConditionsMet(data, conditions, operator, contentType)
 		if err != nil {
 			return false, nil, err
@@ -367,7 +384,7 @@ func processPayload(payload []byte, conditions []Condition, operator string, con
 	}
 }
 
-func checkConditionsMet(payloadMap map[string]interface{}, conditions []Condition, operator, contentType string) (bool, error) {
+func checkConditionsMet(payloadMap map[string]any, conditions []Condition, operator, contentType string) (bool, error) {
 	results := make([]bool, len(conditions))
 
 	for i, condition := range conditions {
@@ -437,7 +454,7 @@ func isConditionMet(comparator string, val1, val2 float64) bool {
 	}
 }
 
-func findPayloadParam(payload map[string]interface{}, param string, contentType string) interface{} {
+func findPayloadParam(payload map[string]any, param string, contentType string) any {
 	switch contentType {
 	case messaging.SenMLContentType:
 		if name, ok := payload["name"].(string); ok && name == param {
@@ -453,7 +470,7 @@ func findPayloadParam(payload map[string]interface{}, param string, contentType 
 	}
 }
 
-func findParam(payload map[string]interface{}, param string) interface{} {
+func findParam(payload map[string]any, param string) any {
 	if param == "" {
 		return nil
 	}
@@ -468,7 +485,7 @@ func findParam(payload map[string]interface{}, param string) interface{} {
 		}
 
 		if i < len(parts)-1 {
-			nested, ok := val.(map[string]interface{})
+			nested, ok := val.(map[string]any)
 			if !ok {
 				return nil
 			}

@@ -144,6 +144,17 @@ func (gr groupRepository) Remove(ctx context.Context, groupIDs ...string) error 
 	return nil
 }
 
+func (gr groupRepository) RemoveByOrg(ctx context.Context, orgID string) error {
+	q := `DELETE FROM groups WHERE org_id = :org_id;`
+
+	dbg := dbGroup{OrgID: orgID}
+	if _, err := gr.db.NamedExecContext(ctx, q, dbg); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
 func (gr groupRepository) BackupAll(ctx context.Context) ([]things.Group, error) {
 	query := "SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups"
 
@@ -190,7 +201,7 @@ func (gr groupRepository) BackupByOrg(ctx context.Context, orgID string) ([]thin
 
 func (gr groupRepository) RetrieveIDsByOrg(ctx context.Context, orgID string) ([]string, error) {
 	q := `SELECT id FROM groups WHERE org_id = :org_id`
-	params := map[string]interface{}{
+	params := map[string]any{
 		"org_id": orgID,
 	}
 
@@ -202,7 +213,7 @@ func (gr groupRepository) RetrieveIDsByOrgMembership(ctx context.Context, orgID,
           JOIN group_memberships gm ON g.id = gm.group_id
           WHERE g.org_id = :org_id AND gm.member_id = :member_id`
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"org_id":    orgID,
 		"member_id": memberID,
 	}
@@ -244,7 +255,7 @@ func (gr groupRepository) RetrieveByIDs(ctx context.Context, groupIDs []string, 
 	query := fmt.Sprintf(`SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM groups %s;`, whereClause)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"name":     name,
 		"metadata": m,
 		"limit":    pm.Limit,
@@ -268,7 +279,7 @@ func (gr groupRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetada
 	query := fmt.Sprintf(`SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM groups %s;`, whereClause)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"name":     name,
 		"metadata": m,
 		"limit":    pm.Limit,
@@ -278,7 +289,7 @@ func (gr groupRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetada
 	return gr.retrieve(ctx, query, cquery, params)
 }
 
-func (gr groupRepository) retrieveIDs(ctx context.Context, query string, params map[string]interface{}) ([]string, error) {
+func (gr groupRepository) retrieveIDs(ctx context.Context, query string, params map[string]any) ([]string, error) {
 	var ids []string
 	rows, err := gr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
@@ -297,7 +308,7 @@ func (gr groupRepository) retrieveIDs(ctx context.Context, query string, params 
 	return ids, nil
 }
 
-func (gr groupRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (things.GroupPage, error) {
+func (gr groupRepository) retrieve(ctx context.Context, query, cquery string, params map[string]any) (things.GroupPage, error) {
 	rows, err := gr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return things.GroupPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)

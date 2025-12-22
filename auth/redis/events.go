@@ -1,13 +1,9 @@
 package redis
 
-const (
-	orgPrefix = "org."
-	orgCreate = orgPrefix + "create"
-	orgRemove = orgPrefix + "remove"
-)
+import "github.com/MainfluxLabs/mainflux/pkg/events"
 
 type event interface {
-	Encode() map[string]interface{}
+	Encode() map[string]any
 }
 
 var (
@@ -19,10 +15,10 @@ type createOrgEvent struct {
 	id string
 }
 
-func (coe createOrgEvent) Encode() map[string]interface{} {
-	val := map[string]interface{}{
+func (coe createOrgEvent) Encode() map[string]any {
+	val := map[string]any{
 		"id":        coe.id,
-		"operation": orgCreate,
+		"operation": events.OrgCreate,
 	}
 
 	return val
@@ -32,9 +28,9 @@ type removeOrgEvent struct {
 	id string
 }
 
-func (rte removeOrgEvent) Encode() map[string]interface{} {
-	return map[string]interface{}{
+func (rte removeOrgEvent) Encode() map[string]any {
+	return map[string]any{
 		"id":        rte.id,
-		"operation": orgRemove,
+		"operation": events.OrgRemove,
 	}
 }

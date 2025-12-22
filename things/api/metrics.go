@@ -193,7 +193,7 @@ func (ms *metricsMiddleware) GetPubConfByKey(ctx context.Context, key things.Thi
 	return ms.svc.GetPubConfByKey(ctx, key)
 }
 
-func (ms *metricsMiddleware) GetConfigByThingID(ctx context.Context, thingID string) (map[string]interface{}, error) {
+func (ms *metricsMiddleware) GetConfigByThingID(ctx context.Context, thingID string) (map[string]any, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "get_config_by_thing_id").Add(1)
 		ms.latency.With("method", "get_config_by_thing_id").Observe(time.Since(begin).Seconds())
@@ -469,6 +469,15 @@ func (ms *metricsMiddleware) RemoveGroups(ctx context.Context, token string, ids
 	}(time.Now())
 
 	return ms.svc.RemoveGroups(ctx, token, ids...)
+}
+
+func (ms *metricsMiddleware) RemoveGroupsByOrg(ctx context.Context, orgID string) ([]string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "remove_groups_by_org").Add(1)
+		ms.latency.With("method", "remove_groups_by_org").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RemoveGroupsByOrg(ctx, orgID)
 }
 
 func (ms *metricsMiddleware) ListProfilesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {

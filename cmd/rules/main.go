@@ -14,6 +14,7 @@ import (
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
@@ -25,6 +26,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/rules"
 	"github.com/MainfluxLabs/mainflux/rules/api"
 	httpapi "github.com/MainfluxLabs/mainflux/rules/api/http"
+	"github.com/MainfluxLabs/mainflux/rules/events"
 	"github.com/MainfluxLabs/mainflux/rules/postgres"
 	"github.com/MainfluxLabs/mainflux/rules/tracing"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
@@ -38,6 +40,7 @@ import (
 const (
 	svcName      = "rules"
 	stopWaitTime = 5 * time.Second
+	esGroupName  = svcName
 
 	defBrokerURL         = "nats://localhost:4222"
 	defLogLevel          = "error"
@@ -45,7 +48,7 @@ const (
 	defDBPort            = "5432"
 	defDBUser            = "mainflux"
 	defDBPass            = "mainflux"
-	defDB                = "rules"
+	defDB                = svcName
 	defDBSSLMode         = "disable"
 	defDBSSLCert         = ""
 	defDBSSLKey          = ""
@@ -59,6 +62,8 @@ const (
 	defServerKey         = ""
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
+	defESURL             = "redis://localhost:6379/0"
+	defESConsumerName    = svcName
 
 	envBrokerURL         = "MF_BROKER_URL"
 	envLogLevel          = "MF_RULES_LOG_LEVEL"
@@ -80,6 +85,8 @@ const (
 	envJaegerURL         = "MF_JAEGER_URL"
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envESURL             = "MF_RULES_ES_URL"
+	envESConsumerName    = "MF_RULES_EVENT_CONSUMER"
 )
 
 type config struct {
@@ -91,6 +98,8 @@ type config struct {
 	thingsConfig      clients.Config
 	jaegerURL         string
 	thingsGRPCTimeout time.Duration
+	esURL             string
+	esConsumerName    string
 }
 
 func main() {
@@ -134,8 +143,13 @@ func main() {
 	g.Go(func() error {
 		return servershttp.Start(ctx, httpapi.MakeHandler(rulesHttpTracer, svc, logger), cfg.httpConfig, logger)
 	})
+
 	g.Go(func() error {
 		return serversgrpc.Start(ctx, rulesGrpcTracer, svc, cfg.grpcConfig, logger)
+	})
+
+	g.Go(func() error {
+		return subscribeToThingsES(ctx, svc, cfg, logger)
 	})
 
 	g.Go(func() error {
@@ -205,6 +219,8 @@ func loadConfig() config {
 		thingsConfig:      thingsConfig,
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
+		esURL:             mainflux.Env(envESURL, defESURL),
+		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 	}
 }
 
@@ -215,6 +231,23 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 		os.Exit(1)
 	}
 	return db
+}
+
+func subscribeToThingsES(ctx context.Context, svc rules.Service, cfg config, logger logger.Logger) error {
+	subscriber, err := mfevents.NewSubscriber(cfg.esURL, mfevents.ThingsStream, esGroupName, cfg.esConsumerName, logger)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := subscriber.Close(); err != nil {
+			logger.Error(fmt.Sprintf("Failed to close subscriber: %s", err))
+		}
+	}()
+
+	handler := events.NewEventHandler(svc)
+
+	return subscriber.Subscribe(ctx, handler)
 }
 
 func newService(dbTracer opentracing.Tracer, db *sqlx.DB, tc protomfx.ThingsServiceClient, pub messaging.Publisher, logger logger.Logger) rules.Service {

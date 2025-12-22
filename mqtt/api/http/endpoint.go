@@ -10,14 +10,14 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-func listSubscriptions(svc mqtt.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+func listSubscriptionsEndpoint(svc mqtt.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listSubscriptionsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		subs, err := svc.ListSubscriptions(ctx, req.groupID, req.token, req.thingKey, req.pageMetadata)
+		subs, err := svc.ListSubscriptions(ctx, req.groupID, req.token, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}

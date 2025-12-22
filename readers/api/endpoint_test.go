@@ -503,7 +503,7 @@ func TestListJSONMessages(t *testing.T) {
 		}
 
 		// Mix different value types
-		payload := make(map[string]interface{})
+		payload := make(map[string]any)
 		count := i % valueFields
 		switch count {
 		case 0:

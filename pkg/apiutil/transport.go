@@ -55,14 +55,14 @@ const (
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
 	Total    uint64
-	Offset   uint64                 `json:"offset,omitempty"`
-	Limit    uint64                 `json:"limit,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Order    string                 `json:"order,omitempty"`
-	Dir      string                 `json:"dir,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
-	Email    string                 `json:"email,omitempty"`
-	Payload  map[string]interface{} `json:"payload,omitempty"`
+	Offset   uint64         `json:"offset,omitempty"`
+	Limit    uint64         `json:"limit,omitempty"`
+	Name     string         `json:"name,omitempty"`
+	Order    string         `json:"order,omitempty"`
+	Dir      string         `json:"dir,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
+	Email    string         `json:"email,omitempty"`
+	Payload  map[string]any `json:"payload,omitempty"`
 }
 
 // LoggingErrorEncoder is a go-kit error encoder logging decorator.
@@ -261,7 +261,7 @@ func WriteErrorResponse(err error, w http.ResponseWriter) {
 	}
 }
 
-func EncodeFileResponse(_ context.Context, w http.ResponseWriter, response interface{}) (err error) {
+func EncodeFileResponse(_ context.Context, w http.ResponseWriter, response any) (err error) {
 	w.Header().Set("Content-Type", ContentTypeOctetStream)
 
 	if fr, ok := response.(ViewFileRes); ok {
@@ -361,7 +361,7 @@ func ReadStringQuery(r *http.Request, key string, def string) (string, error) {
 }
 
 // ReadMetadataQuery reads the value of json http query parameters for a given key
-func ReadMetadataQuery(r *http.Request, key string, def map[string]interface{}) (map[string]interface{}, error) {
+func ReadMetadataQuery(r *http.Request, key string, def map[string]any) (map[string]any, error) {
 	vals := bone.GetQuery(r, key)
 	if len(vals) > 1 {
 		return nil, ErrInvalidQueryParams
@@ -371,7 +371,7 @@ func ReadMetadataQuery(r *http.Request, key string, def map[string]interface{}) 
 		return def, nil
 	}
 
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	err := json.Unmarshal([]byte(vals[0]), &m)
 	if err != nil {
 		return nil, errors.Wrap(ErrInvalidQueryParams, err)

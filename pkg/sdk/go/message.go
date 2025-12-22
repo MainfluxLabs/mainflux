@@ -37,7 +37,7 @@ func (sdk mfSDK) SendMessage(subtopic, msg string, key things.ThingKey) error {
 	return nil
 }
 
-func (sdk mfSDK) ReadMessages(isAdmin bool, pm PageMetadata, keyType, token string) (map[string]interface{}, error) {
+func (sdk mfSDK) ReadMessages(isAdmin bool, pm PageMetadata, keyType, token string) (map[string]any, error) {
 	url, err := sdk.withQueryParams(sdk.readerURL, messagesEndpoint, pm)
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func (sdk mfSDK) ReadMessages(isAdmin bool, pm PageMetadata, keyType, token stri
 	return decodeMessages(response)
 }
 
-func decodeMessages(response *http.Response) (map[string]interface{}, error) {
+func decodeMessages(response *http.Response) (map[string]any, error) {
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func decodeMessages(response *http.Response) (map[string]interface{}, error) {
 		return nil, errors.Wrap(ErrFailedRead, errors.New(response.Status))
 	}
 
-	var mp map[string]interface{}
+	var mp map[string]any
 	if err := json.Unmarshal(body, &mp); err != nil {
 		return nil, err
 	}

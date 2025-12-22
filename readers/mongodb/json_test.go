@@ -32,12 +32,12 @@ func TestListJSONMessages(t *testing.T) {
 	id1, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
-	pyd := map[string]interface{}{
+	pyd := map[string]any{
 		"field_1": 123.0,
 		"field_2": "value",
 		"field_3": false,
 		"field_4": 12.344,
-		"field_5": map[string]interface{}{
+		"field_5": map[string]any{
 			"field_1": "value",
 			"field_2": 42.0,
 		},
@@ -63,7 +63,7 @@ func TestListJSONMessages(t *testing.T) {
 
 	id2, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	pyd2 := map[string]interface{}{
+	pyd2 := map[string]any{
 		"field_1":     "other_value",
 		"false_value": false,
 		"field_pi":    3.14159265,
@@ -88,7 +88,7 @@ func TestListJSONMessages(t *testing.T) {
 		messages = append(messages, msg)
 	}
 
-	var msgs, httpMsgs []map[string]interface{}
+	var msgs, httpMsgs []map[string]any
 	for _, m := range messages {
 		err := writer.Consume(m)
 		assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
@@ -134,7 +134,7 @@ func TestListJSONMessages(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
 		for i := 0; i < len(result.Messages); i++ {
-			if msgMap, ok := result.Messages[i].(map[string]interface{}); ok {
+			if msgMap, ok := result.Messages[i].(map[string]any); ok {
 				result.Messages[i] = cleanMap(msgMap)
 			}
 		}
@@ -143,7 +143,7 @@ func TestListJSONMessages(t *testing.T) {
 	}
 }
 
-func fromJSON(msg []map[string]interface{}) []readers.Message {
+func fromJSON(msg []map[string]any) []readers.Message {
 	var ret []readers.Message
 	for _, m := range msg {
 		ret = append(ret, m)
@@ -151,8 +151,8 @@ func fromJSON(msg []map[string]interface{}) []readers.Message {
 	return ret
 }
 
-func toMap(msg protomfx.Message) map[string]interface{} {
-	return map[string]interface{}{
+func toMap(msg protomfx.Message) map[string]any {
+	return map[string]any{
 		"created":   msg.Created,
 		"subtopic":  msg.Subtopic,
 		"publisher": msg.Publisher,
@@ -161,7 +161,7 @@ func toMap(msg protomfx.Message) map[string]interface{} {
 	}
 }
 
-func cleanMap(msg map[string]interface{}) map[string]interface{} {
+func cleanMap(msg map[string]any) map[string]any {
 	delete(msg, "_id")
 
 	if bin, ok := msg["payload"].(primitive.Binary); ok {

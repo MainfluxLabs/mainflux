@@ -15,11 +15,11 @@ const (
 )
 
 type createThingReq struct {
-	Name        string                 `json:"name,omitempty"`
-	Key         string                 `json:"key,omitempty"`
-	ExternalKey string                 `json:"external_key,omitempty"`
-	ID          string                 `json:"id,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	Name        string         `json:"name,omitempty"`
+	Key         string         `json:"key,omitempty"`
+	ExternalKey string         `json:"external_key,omitempty"`
+	ID          string         `json:"id,omitempty"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
 }
 
 type createThingsReq struct {
@@ -59,9 +59,9 @@ func (req createThingsReq) validate() error {
 type updateThingReq struct {
 	token    string
 	id       string
-	Key      string                 `json:"key,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Key      string         `json:"key,omitempty"`
+	Name     string         `json:"name,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 func (req updateThingReq) validate() error {
@@ -112,8 +112,8 @@ func (req updateThingGroupAndProfileReq) validate() error {
 }
 
 type updateMetadataReq struct {
-	ID       string                 `json:"id,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	ID       string         `json:"id,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 type updateThingsMetadataReq struct {

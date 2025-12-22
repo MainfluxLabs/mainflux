@@ -19,7 +19,7 @@ type Notifier struct {
 	GroupID  string
 	Name     string
 	Contacts []string
-	Metadata map[string]interface{}
+	Metadata map[string]any
 }
 
 type NotifiersPage struct {
@@ -45,16 +45,21 @@ type NotifierRepository interface {
 	// Successful operation is indicated by non-nil error response.
 	Save(ctx context.Context, nfs ...Notifier) ([]Notifier, error)
 
-	// RetrieveByGroup retrieves notifiers related to a certain group identified by a given ID.
+	// RetrieveByGroup retrieves notifiers related to a certain group,
+	// identified by a given ID.
 	RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (NotifiersPage, error)
 
-	// RetrieveByID retrieves the notifier having the provided identifier
+	// RetrieveByID retrieves the notifier having the provided ID.
 	RetrieveByID(ctx context.Context, id string) (Notifier, error)
 
-	// Update performs an update to the existing notifier. A non-nil error is
-	// returned to indicate operation failure.
+	// Update performs an update to the existing notifier.
+	// A non-nil error is returned to indicate operation failure.
 	Update(ctx context.Context, n Notifier) error
 
-	// Remove removes the notifiers having the provided identifiers
+	// Remove removes notifiers having the provided IDs.
 	Remove(ctx context.Context, ids ...string) error
+
+	// RemoveByGroup removes notifiers related to a certain group,
+	// identified by a given group ID.
+	RemoveByGroup(ctx context.Context, groupID string) error
 }

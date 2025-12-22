@@ -61,7 +61,7 @@ func (svc tokenizer) Issue(key auth.Key) (string, error) {
 
 func (svc tokenizer) Parse(token string) (auth.Key, error) {
 	c := claims{}
-	_, err := jwt.ParseWithClaims(token, &c, func(token *jwt.Token) (interface{}, error) {
+	_, err := jwt.ParseWithClaims(token, &c, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.ErrAuthentication
 		}

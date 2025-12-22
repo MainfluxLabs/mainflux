@@ -14,7 +14,7 @@ import (
 )
 
 func createGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(groupMembershipsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -39,7 +39,7 @@ func createGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func listGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listGroupMembershipsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -55,7 +55,7 @@ func listGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func updateGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(groupMembershipsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -80,7 +80,7 @@ func updateGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func removeGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(removeGroupMembershipsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -95,7 +95,7 @@ func removeGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func backupGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(backupByGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
@@ -112,7 +112,7 @@ func backupGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 }
 
 func restoreGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
+	return func(ctx context.Context, request any) (any, error) {
 		req := request.(restoreByGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err

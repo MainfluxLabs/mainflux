@@ -30,6 +30,9 @@ var (
 	// ErrMessage indicates an error converting a message to Mainflux message.
 	ErrMessage = New("failed to convert to Mainflux message")
 
+	// ErrBackupAlarms indicates failure occurred while backing up alarms from the database.
+	ErrBackupAlarms = New("failed to backup alarms")
+
 	// ErrInvalidPassword indicates that current password is invalid.
 	ErrInvalidPassword = New("invalid current password")
 )

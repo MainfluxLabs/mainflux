@@ -31,7 +31,7 @@ func New(db *sqlx.DB) consumers.Consumer {
 	return &timescaleRepo{db: db}
 }
 
-func (tr timescaleRepo) Consume(message interface{}) error {
+func (tr timescaleRepo) Consume(message any) error {
 	if msg, ok := message.(protomfx.Message); ok {
 		msgs, err := messaging.SplitMessage(msg)
 		if err != nil {

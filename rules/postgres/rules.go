@@ -82,7 +82,7 @@ func (rr ruleRepository) RetrieveByGroup(ctx context.Context, groupID string, pm
 	q := fmt.Sprintf(`SELECT id, group_id, name, description, conditions, operator, actions FROM rules %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM rules WHERE %s;`, gq)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"group_id": groupID,
 		"name":     name,
 		"limit":    pm.Limit,
@@ -119,7 +119,7 @@ func (rr ruleRepository) RetrieveByThing(ctx context.Context, thingID string, pm
 		INNER JOIN rules_things rt ON r.id = rt.rule_id
 		%s;`, whereClause)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"thing_id": thingID,
 		"name":     name,
 		"limit":    pm.Limit,
@@ -192,14 +192,24 @@ func (rr ruleRepository) Update(ctx context.Context, r rules.Rule) error {
 }
 
 func (rr ruleRepository) Remove(ctx context.Context, ids ...string) error {
+	q := `DELETE FROM rules WHERE id = :id;`
+
 	for _, id := range ids {
 		dbr := dbRule{ID: id}
-		q := `DELETE FROM rules WHERE id = :id;`
-
-		_, err := rr.db.NamedExecContext(ctx, q, dbr)
-		if err != nil {
+		if _, err := rr.db.NamedExecContext(ctx, q, dbr); err != nil {
 			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
+	}
+
+	return nil
+}
+
+func (rr ruleRepository) RemoveByGroup(ctx context.Context, groupID string) error {
+	q := `DELETE FROM rules WHERE group_id = :group_id;`
+
+	dbr := dbRule{GroupID: groupID}
+	if _, err := rr.db.NamedExecContext(ctx, q, dbr); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil
@@ -215,7 +225,7 @@ func (rr ruleRepository) Assign(ctx context.Context, thingID string, ruleIDs ...
 	q := `INSERT INTO rules_things (rule_id, thing_id) VALUES (:rule_id, :thing_id);`
 
 	for _, ruleID := range ruleIDs {
-		params := map[string]interface{}{
+		params := map[string]any{
 			"rule_id":  ruleID,
 			"thing_id": thingID,
 		}
@@ -246,11 +256,10 @@ func (rr ruleRepository) Unassign(ctx context.Context, thingID string, ruleIDs .
 	q := `DELETE FROM rules_things WHERE rule_id = :rule_id AND thing_id = :thing_id;`
 
 	for _, ruleID := range ruleIDs {
-		params := map[string]interface{}{
+		params := map[string]any{
 			"rule_id":  ruleID,
 			"thing_id": thingID,
 		}
-
 		if _, err := rr.db.NamedExecContext(ctx, q, params); err != nil {
 			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
@@ -259,7 +268,20 @@ func (rr ruleRepository) Unassign(ctx context.Context, thingID string, ruleIDs .
 	return nil
 }
 
-func (rr ruleRepository) retrieve(ctx context.Context, query, cquery string, params map[string]interface{}) (rules.RulesPage, error) {
+func (rr ruleRepository) UnassignByThing(ctx context.Context, thingID string) error {
+	q := `DELETE FROM rules_things WHERE thing_id = :thing_id;`
+
+	params := map[string]any{
+		"thing_id": thingID,
+	}
+	if _, err := rr.db.NamedExecContext(ctx, q, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
+func (rr ruleRepository) retrieve(ctx context.Context, query, cquery string, params map[string]any) (rules.RulesPage, error) {
 	rows, err := rr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return rules.RulesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)

@@ -313,7 +313,7 @@ func (lm *loggingMiddleware) GetPubConfByKey(ctx context.Context, key things.Thi
 	return lm.svc.GetPubConfByKey(ctx, key)
 }
 
-func (lm *loggingMiddleware) GetConfigByThingID(ctx context.Context, thingID string) (config map[string]interface{}, err error) {
+func (lm *loggingMiddleware) GetConfigByThingID(ctx context.Context, thingID string) (config map[string]any, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method get_config_by_thing_id for thing %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
@@ -661,6 +661,19 @@ func (lm *loggingMiddleware) RemoveGroups(ctx context.Context, token string, ids
 	}(time.Now())
 
 	return lm.svc.RemoveGroups(ctx, token, ids...)
+}
+
+func (lm *loggingMiddleware) RemoveGroupsByOrg(ctx context.Context, orgID string) (_ []string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_groups_by_org for id %s took %s to complete", orgID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RemoveGroupsByOrg(ctx, orgID)
 }
 
 func (lm *loggingMiddleware) ViewGroupByProfile(ctx context.Context, token, profileID string) (gr things.Group, err error) {

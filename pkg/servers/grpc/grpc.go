@@ -26,7 +26,7 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-func Start(ctx context.Context, tracer opentracing.Tracer, svc interface{}, cfg servers.Config, logger logger.Logger) error {
+func Start(ctx context.Context, tracer opentracing.Tracer, svc any, cfg servers.Config, logger logger.Logger) error {
 	p := fmt.Sprintf(":%s", cfg.Port)
 	errCh := make(chan error)
 
