@@ -28,7 +28,7 @@ type PageMetadata struct {
 type Repository interface {
 	// RetrieveByGroup retrieves all subscriptions that belong to the specified group.
 	RetrieveByGroup(ctx context.Context, pm PageMetadata, groupID string) (Page, error)
-	// Save will save the subscription.
+	// Save will save a new subscription or update the status of an existing one.
 	Save(ctx context.Context, sub Subscription) error
 	// Remove will remove the subscription.
 	Remove(ctx context.Context, sub Subscription) error

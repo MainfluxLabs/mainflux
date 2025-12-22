@@ -14,13 +14,14 @@ type Service interface {
 	// ListSubscriptions lists all subscriptions that belong to the specified group.
 	ListSubscriptions(ctx context.Context, groupID, token string, pm PageMetadata) (Page, error)
 
-	// CreateSubscription create a subscription.
-	CreateSubscription(ctx context.Context, sub Subscription) error
+	// UpsertSubscription creates a subscription if it does not exist,
+	// otherwise it updates its status.
+	UpsertSubscription(ctx context.Context, sub Subscription) error
 
 	// RemoveSubscription removes the subscription having the provided identifier.
 	RemoveSubscription(ctx context.Context, sub Subscription) error
 
-	// HasClientID  indicates if a subscription exist for a given client ID.
+	// HasClientID indicates if a subscription exists for a given client ID.
 	HasClientID(ctx context.Context, clientID string) error
 
 	// UpdateStatus updates the subscription status for a given client ID.
@@ -44,7 +45,7 @@ func NewMqttService(auth protomfx.AuthServiceClient, things protomfx.ThingsServi
 	}
 }
 
-func (ms *mqttService) CreateSubscription(ctx context.Context, sub Subscription) error {
+func (ms *mqttService) UpsertSubscription(ctx context.Context, sub Subscription) error {
 	return ms.subscriptions.Save(ctx, sub)
 }
 

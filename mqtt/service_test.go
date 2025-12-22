@@ -36,7 +36,7 @@ func newService() mqtt.Service {
 	return mqtt.NewMqttService(ac, tc, repo, idProvider)
 }
 
-func TestCreateSubscription(t *testing.T) {
+func TestUpsertSubscription(t *testing.T) {
 	svc := newService()
 
 	gID, err := idProvider.ID()
@@ -62,14 +62,14 @@ func TestCreateSubscription(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc: "create with existing subscription",
+			desc: "update status for existing subscription",
 			sub:  sub,
-			err:  dbutil.ErrConflict,
+			err:  nil,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.CreateSubscription(context.Background(), tc.sub)
+		err := svc.UpsertSubscription(context.Background(), tc.sub)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -89,7 +89,7 @@ func TestRemoveSubscription(t *testing.T) {
 		ThingID:  thID,
 	}
 
-	err = svc.CreateSubscription(context.Background(), sub)
+	err = svc.UpsertSubscription(context.Background(), sub)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
@@ -129,7 +129,7 @@ func TestRetrieveByGroup(t *testing.T) {
 			GroupID:  groupID,
 		}
 
-		err = svc.CreateSubscription(context.Background(), sub)
+		err = svc.UpsertSubscription(context.Background(), sub)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		subs = append(subs, sub)

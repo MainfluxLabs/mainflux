@@ -196,7 +196,7 @@ func (h *handler) Subscribe(c *session.Client, topics *[]string) {
 	}
 
 	for _, s := range subs {
-		if err := h.service.CreateSubscription(context.Background(), s); err != nil {
+		if err := h.service.UpsertSubscription(context.Background(), s); err != nil {
 			h.logger.Error(LogErrFailedSubscribe + err.Error())
 		}
 	}

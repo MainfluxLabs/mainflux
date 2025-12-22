@@ -41,13 +41,13 @@ func (ms *metricsMiddleware) ListSubscriptions(ctx context.Context, groupID, tok
 	return ms.svc.ListSubscriptions(ctx, groupID, token, pm)
 }
 
-func (ms *metricsMiddleware) CreateSubscription(ctx context.Context, sub mqtt.Subscription) error {
+func (ms *metricsMiddleware) UpsertSubscription(ctx context.Context, sub mqtt.Subscription) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "create_subscription").Add(1)
-		ms.latency.With("method", "create_subscription").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "upsert_subscription").Add(1)
+		ms.latency.With("method", "upsert_subscription").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateSubscription(ctx, sub)
+	return ms.svc.UpsertSubscription(ctx, sub)
 }
 
 func (ms *metricsMiddleware) RemoveSubscription(ctx context.Context, sub mqtt.Subscription) error {

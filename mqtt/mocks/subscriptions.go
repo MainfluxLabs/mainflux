@@ -56,7 +56,7 @@ func (srm *subRepoMock) Save(_ context.Context, sub mqtt.Subscription) error {
 	for _, s := range srm.subs {
 		for _, m := range s {
 			if m.Subtopic == sub.Subtopic && m.ThingID == sub.ThingID && m.GroupID == sub.GroupID {
-				return dbutil.ErrConflict
+				m.Status = sub.Status
 			}
 		}
 	}
