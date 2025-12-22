@@ -82,7 +82,7 @@ func (lm *loggingMiddleware) HasClientID(ctx context.Context, clientID string) (
 	return lm.svc.HasClientID(ctx, clientID)
 }
 
-func (lm *loggingMiddleware) UpdateStatus(ctx context.Context, sub mqtt.Subscription) (err error) {
+func (lm *loggingMiddleware) UpdateStatus(ctx context.Context, clientID, status string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method update_status for thing id %s, group id %s and subtopic %s took %s to complete",
 			sub.ThingID, sub.GroupID, sub.Subtopic, time.Since(begin))
@@ -93,5 +93,5 @@ func (lm *loggingMiddleware) UpdateStatus(ctx context.Context, sub mqtt.Subscrip
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.UpdateStatus(ctx, sub)
+	return lm.svc.UpdateStatus(ctx, clientID, status)
 }

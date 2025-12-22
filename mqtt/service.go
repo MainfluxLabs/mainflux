@@ -25,7 +25,7 @@ type Service interface {
 	HasClientID(ctx context.Context, clientID string) error
 
 	// UpdateStatus updates the subscription status for a given client ID.
-	UpdateStatus(ctx context.Context, sub Subscription) error
+	UpdateStatus(ctx context.Context, clientID, status string) error
 }
 
 type mqttService struct {
@@ -61,8 +61,8 @@ func (ms *mqttService) ListSubscriptions(ctx context.Context, groupID, token str
 	return ms.subscriptions.RetrieveByGroup(ctx, pm, groupID)
 }
 
-func (ms *mqttService) UpdateStatus(ctx context.Context, sub Subscription) error {
-	return ms.subscriptions.UpdateStatus(ctx, sub)
+func (ms *mqttService) UpdateStatus(ctx context.Context, clientID, status string) error {
+	return ms.subscriptions.UpdateStatus(ctx, clientID, status)
 }
 
 func (ms *mqttService) HasClientID(ctx context.Context, clientID string) error {

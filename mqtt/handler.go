@@ -233,11 +233,7 @@ func (h *handler) Disconnect(c *session.Client) {
 		return
 	}
 
-	s := Subscription{
-		ClientID: c.ID,
-		Status:   disconnected,
-	}
-	if err := h.service.UpdateStatus(context.Background(), s); err != nil {
+	if err := h.service.UpdateStatus(context.Background(), c.ID, disconnected); err != nil {
 		h.logger.Error(LogErrFailedDisconnect + (ErrClientNotInitialized).Error())
 		return
 	}

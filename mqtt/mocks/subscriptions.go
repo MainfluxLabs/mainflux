@@ -81,7 +81,7 @@ func (srm *subRepoMock) Remove(_ context.Context, sub mqtt.Subscription) error {
 	return dbutil.ErrNotFound
 }
 
-func (srm *subRepoMock) UpdateStatus(context.Context, mqtt.Subscription) error {
+func (srm *subRepoMock) UpdateStatus(context.Context, string, string) error {
 	return nil
 }
 

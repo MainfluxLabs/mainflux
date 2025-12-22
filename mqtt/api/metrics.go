@@ -68,11 +68,11 @@ func (ms *metricsMiddleware) HasClientID(ctx context.Context, clientID string) e
 	return ms.svc.HasClientID(ctx, clientID)
 }
 
-func (ms *metricsMiddleware) UpdateStatus(ctx context.Context, sub mqtt.Subscription) error {
+func (ms *metricsMiddleware) UpdateStatus(ctx context.Context, clientID, status string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_status").Add(1)
 		ms.latency.With("method", "update_status").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.UpdateStatus(ctx, sub)
+	return ms.svc.UpdateStatus(ctx, clientID, status)
 }

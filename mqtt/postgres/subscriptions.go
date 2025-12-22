@@ -48,12 +48,12 @@ func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error
 	return nil
 }
 
-func (mr *mqttRepository) UpdateStatus(ctx context.Context, sub mqtt.Subscription) error {
+func (mr *mqttRepository) UpdateStatus(ctx context.Context, clientID, status string) error {
 	q := `UPDATE subscriptions SET status = :status WHERE client_id = :client_id;`
 
 	dbSub := dbSubscription{
-		ClientID: sub.ClientID,
-		Status:   sub.Status,
+		ClientID: clientID,
+		Status:   status,
 	}
 
 	row, err := mr.db.NamedQueryContext(ctx, q, dbSub)
