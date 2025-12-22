@@ -518,8 +518,8 @@ func (ms *metricsMiddleware) CreateGroupMemberships(ctx context.Context, token s
 
 func (ms *metricsMiddleware) CreateGroupMembershipsInternal(ctx context.Context, gms ...things.GroupMembership) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "save_group_memberships").Add(1)
-		ms.latency.With("method", "save_group_memberships").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "create_group_memberships_internal").Add(1)
+		ms.latency.With("method", "create_group_memberships_internal").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.svc.CreateGroupMembershipsInternal(ctx, gms...)

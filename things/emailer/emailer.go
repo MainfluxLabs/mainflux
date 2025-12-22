@@ -27,7 +27,6 @@ func New(host string, config *email.Config) (things.Emailer, error) {
 }
 
 func (e *emailer) SendGroupMembershipNotification(to []string, orgName, groupName, groupRole string) error {
-
 	templateData := map[string]any{
 		"GroupName": groupName,
 		"OrgName":   orgName,

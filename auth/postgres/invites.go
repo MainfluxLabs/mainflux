@@ -491,10 +491,6 @@ func (ir invitesRepository) syncOrgInviteStateByID(ctx context.Context, inviteID
 }
 
 func (ir invitesRepository) saveOrgInviteGroups(ctx context.Context, tx *sqlx.Tx, invite auth.OrgInvite) error {
-	if len(invite.Groups) == 0 {
-		return nil
-	}
-
 	qIns := `
 		INSERT INTO org_invites_groups (org_invite_id, group_id, group_role)
 		VALUES (:org_invite_id, :group_id, :group_role)

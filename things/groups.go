@@ -80,7 +80,7 @@ type Groups interface {
 	// ViewGroup retrieves data about the group identified by ID.
 	ViewGroup(ctx context.Context, token, id string) (Group, error)
 
-	// ViewGroupInternal retrieves data about the Group identiified by ID, without requiring authentication.
+	// ViewGroupInternal retrieves data about the Group identified by ID, without requiring authentication.
 	ViewGroupInternal(ctx context.Context, id string) (Group, error)
 
 	// ListGroups retrieves page of all groups.
