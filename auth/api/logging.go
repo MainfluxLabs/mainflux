@@ -59,7 +59,7 @@ func (lm *loggingMiddleware) Revoke(ctx context.Context, token, id string) (err 
 
 func (lm *loggingMiddleware) RetrieveKey(ctx context.Context, token, id string) (key auth.Key, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method retrieve for key id %s took %s to complete", id, time.Since(begin))
+		message := fmt.Sprintf("Method retrieve_key for key id %s took %s to complete", id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -416,7 +416,7 @@ func (lm *loggingMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth
 
 func (lm *loggingMiddleware) ViewOrgInvite(ctx context.Context, token, inviteID string) (invite auth.OrgInvite, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_org_invite %s for invite id took %s to complete", inviteID, time.Since(begin))
+		message := fmt.Sprintf("Method view_org_invite for invite id %s took %s to complete", inviteID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

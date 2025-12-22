@@ -142,7 +142,7 @@ func (lm loggingMiddleware) AssignRules(ctx context.Context, token, thingID stri
 
 func (lm loggingMiddleware) UnassignRules(ctx context.Context, token, thingID string, ruleIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method unassign_rules for rule ids %v took %s to complete", ruleIDs, time.Since(begin))
+		message := fmt.Sprintf("Method unassign_rules for thing id %s and rule ids %v took %s to complete", thingID, ruleIDs, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
