@@ -272,7 +272,6 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 			return nil, err
 		}
 
-		// TODO: CreateSubject handles topics start with /messages, similar is needed for /commands
 		subject, err := messaging.CreateSubject(t)
 		if err != nil {
 			return nil, err
