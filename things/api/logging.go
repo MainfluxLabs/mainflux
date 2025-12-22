@@ -729,7 +729,7 @@ func (lm *loggingMiddleware) CreateGroupMemberships(ctx context.Context, token s
 
 func (lm *loggingMiddleware) CreateGroupMembershipsInternal(ctx context.Context, gms ...things.GroupMembership) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method save_group_memberships took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method create_group_memberships_internal took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
