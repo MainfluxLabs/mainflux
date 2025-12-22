@@ -83,20 +83,6 @@ func (mr *mqttRepository) Remove(ctx context.Context, sub mqtt.Subscription) err
 	return nil
 }
 
-func (mr *mqttRepository) HasClientID(ctx context.Context, clientID string) error {
-	q := `SELECT EXISTS (SELECT 1 FROM subscriptions WHERE client_id = $1);`
-	exists := false
-	if err := mr.db.QueryRowxContext(ctx, q, clientID).Scan(&exists); err != nil {
-		return errors.Wrap(dbutil.ErrRetrieveEntity, err)
-	}
-
-	if !exists {
-		return dbutil.ErrNotFound
-	}
-
-	return nil
-}
-
 func (mr *mqttRepository) RetrieveByGroup(ctx context.Context, pm mqtt.PageMetadata, groupID string) (mqtt.Page, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 

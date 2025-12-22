@@ -34,6 +34,4 @@ type Repository interface {
 	Remove(ctx context.Context, sub Subscription) error
 	// UpdateStatus will update the subscription status.
 	UpdateStatus(ctx context.Context, clientID, status string) error
-	// HasClientID will update the subscription status.
-	HasClientID(ctx context.Context, clientID string) error
 }
