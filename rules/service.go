@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -57,8 +58,7 @@ type Service interface {
 	// UnassignRulesByThing removes all rule assignments from a specific thing.
 	UnassignRulesByThing(ctx context.Context, thingID string) error
 
-	// Publish publishes messages on a topic related to a certain rule action
-	Publish(ctx context.Context, message protomfx.Message) error
+	consumers.Consumer
 }
 
 const (
@@ -69,10 +69,6 @@ const (
 	OperatorAND = "AND"
 	OperatorOR  = "OR"
 
-	// subjectMessages represents subject used to publish all incoming messages.
-	subjectMessages = "messages"
-	// subjectWriters represents subject used to publish messages that should be persisted.
-	subjectWriters = "writers"
 	// subjectAlarms represents subject used to publish messages that trigger an alarm.
 	subjectAlarms = "alarms"
 	// subjectSMTP represents subject used to publish messages that trigger an SMTP notification.
@@ -86,7 +82,7 @@ var errInvalidObject = errors.New("invalid JSON object")
 type rulesService struct {
 	rules      RuleRepository
 	things     protomfx.ThingsServiceClient
-	publisher  messaging.Publisher
+	pubsub     messaging.PubSub
 	idProvider uuid.IDProvider
 	logger     logger.Logger
 }
@@ -94,11 +90,11 @@ type rulesService struct {
 var _ Service = (*rulesService)(nil)
 
 // New instantiates the rules service implementation.
-func New(rules RuleRepository, things protomfx.ThingsServiceClient, publisher messaging.Publisher, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(rules RuleRepository, things protomfx.ThingsServiceClient, pubsub messaging.PubSub, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &rulesService{
 		rules:      rules,
 		things:     things,
-		publisher:  publisher,
+		pubsub:     pubsub,
 		idProvider: idp,
 		logger:     logger,
 	}
@@ -270,23 +266,23 @@ func (rs *rulesService) UnassignRulesByThing(ctx context.Context, thingID string
 	return rs.rules.UnassignByThing(ctx, thingID)
 }
 
-func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) error {
-	rp, err := rs.rules.RetrieveByThing(ctx, message.GetPublisher(), apiutil.PageMetadata{})
+func (rs *rulesService) Consume(message any) error {
+	ctx := context.Background()
+
+	msg, ok := message.(protomfx.Message)
+	if !ok {
+		return errors.ErrMessage
+	}
+
+	rp, err := rs.rules.RetrieveByThing(ctx, msg.Publisher, apiutil.PageMetadata{})
 	if err != nil {
 		return err
 	}
 
-	// publish a message to default subjects independently of rule check
-	go func(msg protomfx.Message) {
-		if err := rs.publishToDefaultSubjects(msg); err != nil {
-			rs.logger.Error(err.Error())
-		}
-	}(message)
-
 	for _, rule := range rp.Rules {
-		triggered, payloads, err := processPayload(message.Payload, rule.Conditions, rule.Operator, message.ContentType)
+		triggered, payloads, err := processPayload(msg.Payload, rule.Conditions, rule.Operator, msg.ContentType)
 		if err != nil {
-			return errors.Wrap(messaging.ErrPublishMessage, err)
+			return err
 		}
 		if !triggered {
 			continue
@@ -294,7 +290,7 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 
 		for _, action := range rule.Actions {
 			for _, payload := range payloads {
-				newMsg := message
+				newMsg := msg
 				newMsg.Payload = payload
 
 				switch action.Type {
@@ -308,29 +304,13 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 					continue
 				}
 
-				if err := rs.publisher.Publish(newMsg); err != nil {
-					return errors.Wrap(messaging.ErrPublishMessage, err)
+				if err := rs.pubsub.Publish(newMsg); err != nil {
+					return err
 				}
 			}
 		}
 	}
 
-	return nil
-}
-
-func (rs *rulesService) publishToDefaultSubjects(msg protomfx.Message) error {
-	subjects := []string{subjectMessages, subjectWriters}
-	if msg.Subtopic != "" {
-		subjects = append(subjects, fmt.Sprintf("%s.%s", subjectMessages, msg.Subtopic))
-	}
-
-	for _, sub := range subjects {
-		m := msg
-		m.Subject = sub
-		if err := rs.publisher.Publish(m); err != nil {
-			return errors.Wrap(messaging.ErrPublishMessage, err)
-		}
-	}
 	return nil
 }
 

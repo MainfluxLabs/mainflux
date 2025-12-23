@@ -7,7 +7,6 @@ import (
 
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/rules"
 )
 
@@ -166,9 +165,9 @@ func (lm loggingMiddleware) UnassignRulesByThing(ctx context.Context, thingID st
 	return lm.svc.UnassignRulesByThing(ctx, thingID)
 }
 
-func (lm loggingMiddleware) Publish(ctx context.Context, msg protomfx.Message) (err error) {
+func (lm loggingMiddleware) Consume(msg any) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method publish took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method consume took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -176,5 +175,5 @@ func (lm loggingMiddleware) Publish(ctx context.Context, msg protomfx.Message) (
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Publish(ctx, msg)
+	return lm.svc.Consume(msg)
 }
