@@ -419,7 +419,7 @@ func ReadFloatQuery(r *http.Request, key string, def float64) (float64, error) {
 	return val, nil
 }
 
-func ReadStringArrayQuery(r *http.Request, key string, def []string) ([]string, error) {
+func ReadStringArrayQuery(r *http.Request, key string) ([]string, error) {
 	vals := bone.GetQuery(r, key)
 
 	if len(vals) > 10 {
