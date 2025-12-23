@@ -71,7 +71,7 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 	qp := QueryParams{
 		Table:       jsonTable,
 		TimeColumn:  jsonOrder,
-		AggFields:   rpm.AggField,
+		AggFields:   rpm.AggFields,
 		AggInterval: rpm.AggInterval,
 		AggValue:    rpm.AggValue,
 		AggType:     rpm.AggType,
@@ -137,7 +137,7 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 	qp := QueryParams{
 		Table:       senmlTable,
 		TimeColumn:  senmlOrder,
-		AggFields:   []string{rpm.AggField},
+		AggFields:   rpm.AggFields,
 		AggInterval: rpm.AggInterval,
 		AggValue:    rpm.AggValue,
 		AggType:     rpm.AggType,
