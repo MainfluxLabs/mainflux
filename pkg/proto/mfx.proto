@@ -47,14 +47,6 @@ service AuthService {
     rpc ActivateOrgInvite(ActivateOrgInviteReq) returns (google.protobuf.Empty) {}
 }
 
-service RulesService {
-    rpc Publish(PublishReq) returns (google.protobuf.Empty) {}
-}
-
-message PublishReq {
-    Message message = 1;
-}
-
 message ThingKey {
     string value = 1;
     string type  = 2;

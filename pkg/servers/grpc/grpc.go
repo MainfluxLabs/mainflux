@@ -14,8 +14,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
-	"github.com/MainfluxLabs/mainflux/rules"
-	grpcrules "github.com/MainfluxLabs/mainflux/rules/api/grpc"
 	"github.com/MainfluxLabs/mainflux/things"
 	grpcthings "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	"github.com/MainfluxLabs/mainflux/users"
@@ -56,8 +54,6 @@ func Start(ctx context.Context, tracer opentracing.Tracer, svc any, cfg servers.
 		protomfx.RegisterUsersServiceServer(server, grpcusers.NewServer(tracer, v))
 	case auth.Service:
 		protomfx.RegisterAuthServiceServer(server, grpcauth.NewServer(tracer, v))
-	case rules.Service:
-		protomfx.RegisterRulesServiceServer(server, grpcrules.NewServer(tracer, v))
 	default:
 		return fmt.Errorf("unknown service: %s", cfg.ServerName)
 	}

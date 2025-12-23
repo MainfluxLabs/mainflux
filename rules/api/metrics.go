@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/rules"
 	"github.com/go-kit/kit/metrics"
 )
@@ -126,11 +125,11 @@ func (ms metricsMiddleware) UnassignRulesByThing(ctx context.Context, thingID st
 	return ms.svc.UnassignRulesByThing(ctx, thingID)
 }
 
-func (ms metricsMiddleware) Publish(ctx context.Context, message protomfx.Message) error {
+func (ms metricsMiddleware) Consume(message any) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "publish").Add(1)
-		ms.latency.With("method", "publish").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "consume").Add(1)
+		ms.latency.With("method", "consume").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Publish(ctx, message)
+	return ms.svc.Consume(message)
 }

@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	// SubjectMessages represents subject used to subscribe to the global message stream.
+	// SubjectMessages represents subject used to publish/subscribe to the global message stream.
 	SubjectMessages = "messages"
-	//SubjectWriters represents subject used to subscribe to messages that should be persisted.
+	//SubjectWriters represents subject used to publish/subscribe to messages that should be persisted.
 	SubjectWriters = "writers"
 	// SubjectSmtp represents subject used to subscribe to SMTP notifications.
 	SubjectSmtp = "smtp.*"

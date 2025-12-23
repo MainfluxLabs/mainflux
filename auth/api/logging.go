@@ -46,7 +46,7 @@ func (lm *loggingMiddleware) Issue(ctx context.Context, token string, newKey aut
 
 func (lm *loggingMiddleware) Revoke(ctx context.Context, token, id string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method revoke for key %s took %s to complete", id, time.Since(begin))
+		message := fmt.Sprintf("Method revoke for key id %s took %s to complete", id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -59,7 +59,7 @@ func (lm *loggingMiddleware) Revoke(ctx context.Context, token, id string) (err 
 
 func (lm *loggingMiddleware) RetrieveKey(ctx context.Context, token, id string) (key auth.Key, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method retrieve for key %s took %s to complete", id, time.Since(begin))
+		message := fmt.Sprintf("Method retrieve_key for key id %s took %s to complete", id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -162,7 +162,7 @@ func (lm *loggingMiddleware) ListOrgs(ctx context.Context, token string, pm apiu
 
 func (lm *loggingMiddleware) GetOwnerIDByOrgID(ctx context.Context, orgID string) (ownerID string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method get_owner_id_by_org_id for id %s took %s to complete", orgID, time.Since(begin))
+		message := fmt.Sprintf("Method get_owner_id_by_org_id for org id %s took %s to complete", orgID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -316,7 +316,7 @@ func (lm *loggingMiddleware) RetrieveRole(ctx context.Context, id string) (role 
 
 func (lm *loggingMiddleware) CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string) (invite auth.OrgInvite, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_org_invite took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method create_org_invite for org id %s, role %s and user email %s took %s to complete", orgID, role, email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -346,7 +346,7 @@ func (lm *loggingMiddleware) CreateDormantOrgInvite(ctx context.Context, token, 
 
 func (lm *loggingMiddleware) RevokeOrgInvite(ctx context.Context, token, inviteID string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method revoke_org_invite took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method revoke_org_invite for invite id %s took %s to complete", inviteID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -360,7 +360,7 @@ func (lm *loggingMiddleware) RevokeOrgInvite(ctx context.Context, token, inviteI
 
 func (lm *loggingMiddleware) RespondOrgInvite(ctx context.Context, token, inviteID string, accept bool) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method respond_org_invite took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method respond_org_invite for invite id %s and accept %t took %s to complete", inviteID, accept, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -388,7 +388,7 @@ func (lm *loggingMiddleware) ListOrgInvitesByUser(ctx context.Context, token, us
 
 func (lm *loggingMiddleware) ListOrgInvitesByOrg(ctx context.Context, token string, orgID string, pm auth.PageMetadataInvites) (invPage auth.OrgInvitesPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_org_invites_by_org took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method list_org_invites_by_org for org id %s took %s to complete", orgID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -402,7 +402,7 @@ func (lm *loggingMiddleware) ListOrgInvitesByOrg(ctx context.Context, token stri
 
 func (lm *loggingMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth.OrgInvite, email, orgName, invRedirectPath string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method send_org_invite_email took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method send_org_invite_email for invite id %s and user email %s took %s to complete", invite.ID, email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -416,7 +416,7 @@ func (lm *loggingMiddleware) SendOrgInviteEmail(ctx context.Context, invite auth
 
 func (lm *loggingMiddleware) ViewOrgInvite(ctx context.Context, token, inviteID string) (invite auth.OrgInvite, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_org_invite took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method view_org_invite for invite id %s took %s to complete", inviteID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

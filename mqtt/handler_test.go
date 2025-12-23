@@ -17,12 +17,11 @@ import (
 )
 
 const (
-	thingID   = "513d02d2-16c1-4f23-98be-9e12f8fee898"
-	groupID   = "9e12f8fe-e89b-a456-12d3-513d02d21212"
-	invalidID = "invalidID"
-	clientID  = "clientID"
-	password  = "password"
-	subtopic  = "testSubtopic"
+	thingID  = "513d02d2-16c1-4f23-98be-9e12f8fee898"
+	groupID  = "9e12f8fe-e89b-a456-12d3-513d02d21212"
+	clientID = "clientID"
+	password = "password"
+	subtopic = "testSubtopic"
 )
 
 var (
@@ -346,7 +345,6 @@ func newHandler() session.Handler {
 	}
 
 	thingsClient := pkgmocks.NewThingsServiceClient(nil, map[string]things.Thing{password: {ID: thingID}, thingID: {ID: thingID}}, nil)
-	rulesClient := pkgmocks.NewRulesServiceClient()
 	eventStore := mocks.NewEventStore()
-	return mqtt.NewHandler(pkgmocks.NewPublisher(), eventStore, logger, thingsClient, rulesClient, newService())
+	return mqtt.NewHandler(pkgmocks.NewPublisher(), eventStore, logger, thingsClient, newService())
 }
