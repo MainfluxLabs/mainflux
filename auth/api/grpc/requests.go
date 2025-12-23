@@ -110,6 +110,7 @@ type createDormantOrgInviteReq struct {
 	token            string
 	orgID            string
 	inviteeRole      string
+	groups           map[string]string
 	platformInviteID string
 }
 
@@ -150,6 +151,23 @@ func (req activateOrgInviteReq) validate() error {
 
 	if req.redirectPath == "" {
 		return apiutil.ErrMissingRedirectPath
+	}
+
+	return nil
+}
+
+type viewOrgReq struct {
+	token string
+	orgID string
+}
+
+func (req viewOrgReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.orgID == "" {
+		return apiutil.ErrMissingOrgID
 	}
 
 	return nil

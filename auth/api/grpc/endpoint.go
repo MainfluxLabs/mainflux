@@ -138,7 +138,7 @@ func createDormantOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 			return emptyRes{}, err
 		}
 
-		_, err := svc.CreateDormantOrgInvite(ctx, req.token, req.orgID, req.inviteeRole, req.platformInviteID)
+		_, err := svc.CreateDormantOrgInvite(ctx, req.token, req.orgID, req.inviteeRole, req.groups, req.platformInviteID)
 		if err != nil {
 			return emptyRes{}, err
 		}
@@ -161,5 +161,25 @@ func activateOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		return emptyRes{}, nil
+	}
+}
+
+func viewOrgEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(viewOrgReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		org, err := svc.ViewOrg(ctx, req.token, req.orgID)
+		if err != nil {
+			return nil, err
+		}
+
+		return orgRes{
+			id:      org.ID,
+			ownerID: org.OwnerID,
+			name:    org.Name,
+		}, nil
 	}
 }
