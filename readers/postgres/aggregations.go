@@ -36,7 +36,7 @@ type QueryParams struct {
 	Limit            uint64
 	AggInterval      string
 	AggValue         uint64
-	AggField         []string
+	AggFields        []string
 	AggType          string
 	Dir              string
 }
@@ -71,7 +71,7 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 	qp := QueryParams{
 		Table:       jsonTable,
 		TimeColumn:  jsonOrder,
-		AggField:    rpm.AggField,
+		AggFields:   rpm.AggField,
 		AggInterval: rpm.AggInterval,
 		AggValue:    rpm.AggValue,
 		AggType:     rpm.AggType,
@@ -90,7 +90,7 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 		return []readers.Message{}, 0, nil
 	}
 
-	query := buildAggregationQuery(qp, strategy)
+	query := buildAggQuery(qp, strategy)
 	rows, err := as.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
@@ -109,7 +109,7 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 		return []readers.Message{}, 0, err
 	}
 
-	cq := buildAggregationCountQuery(qp)
+	cq := buildAggCountQuery(qp)
 	total, err := dbutil.Total(ctx, as.db, cq, params)
 	if err != nil {
 		return []readers.Message{}, 0, err
@@ -137,7 +137,7 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 	qp := QueryParams{
 		Table:       senmlTable,
 		TimeColumn:  senmlOrder,
-		AggField:    []string{rpm.AggField},
+		AggFields:   []string{rpm.AggField},
 		AggInterval: rpm.AggInterval,
 		AggValue:    rpm.AggValue,
 		AggType:     rpm.AggType,
@@ -156,7 +156,7 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 		return []readers.Message{}, 0, nil
 	}
 
-	query := buildAggregationQuery(qp, strategy)
+	query := buildAggQuery(qp, strategy)
 	rows, err := as.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
@@ -175,7 +175,7 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 		return []readers.Message{}, 0, err
 	}
 
-	cq := buildAggregationCountQuery(qp)
+	cq := buildAggCountQuery(qp)
 	total, err := dbutil.Total(ctx, as.db, cq, params)
 	if err != nil {
 		return []readers.Message{}, 0, err
@@ -184,7 +184,7 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 	return messages, total, nil
 }
 
-func buildAggregationQuery(qp QueryParams, strategy AggStrategy) string {
+func buildAggQuery(qp QueryParams, strategy AggStrategy) string {
 	tmpl := `
 		WITH time_intervals AS (
 			{{.TimeIntervals}}
@@ -231,7 +231,7 @@ func renderTemplate(templateStr string, qp QueryParams, strategy AggStrategy) st
 	return result.String()
 }
 
-func buildAggregationCountQuery(qp QueryParams) string {
+func buildAggCountQuery(qp QueryParams) string {
 	timeIntervals := buildTimeIntervals(qp)
 	timeJoinCondition := buildTimeJoinCondition(qp, "ti")
 	havingCondition := buildConditionForCount(qp)
@@ -273,7 +273,7 @@ func buildSenMLSelectFields() string {
 }
 
 func buildAggregateExpression(qp QueryParams, aggFunc string) string {
-	if len(qp.AggField) == 0 {
+	if len(qp.AggFields) == 0 {
 		return ""
 	}
 
@@ -282,7 +282,7 @@ func buildAggregateExpression(qp QueryParams, aggFunc string) string {
 	case senmlTable:
 		expressions = append(expressions, fmt.Sprintf("%s(m.value) as agg_value", aggFunc))
 	default:
-		for i, field := range qp.AggField {
+		for i, field := range qp.AggFields {
 			jsonPath := buildJSONPath(field)
 			if aggFunc == "COUNT" {
 				expressions = append(expressions,
@@ -302,7 +302,7 @@ func (MaxStrategy) GetSelectedFields(qp QueryParams) string {
 	if qp.Table == senmlTable {
 		return buildSenMLSelectFields()
 	}
-	return buildJSONSelect(qp.AggField, "agg_value")
+	return buildJSONSelect(qp.AggFields, "agg_value")
 }
 
 func (MaxStrategy) GetAggregateExpression(qp QueryParams) string {
@@ -315,7 +315,7 @@ func (MinStrategy) GetSelectedFields(qp QueryParams) string {
 	if qp.Table == senmlTable {
 		return buildSenMLSelectFields()
 	}
-	return buildJSONSelect(qp.AggField, "agg_value")
+	return buildJSONSelect(qp.AggFields, "agg_value")
 }
 
 func (MinStrategy) GetAggregateExpression(qp QueryParams) string {
@@ -328,7 +328,7 @@ func (AvgStrategy) GetSelectedFields(qp QueryParams) string {
 	if qp.Table == senmlTable {
 		return buildSenMLSelectFields()
 	}
-	return buildJSONSelect(qp.AggField, "agg_value")
+	return buildJSONSelect(qp.AggFields, "agg_value")
 }
 
 func (AvgStrategy) GetAggregateExpression(qp QueryParams) string {
@@ -341,7 +341,7 @@ func (CountStrategy) GetSelectedFields(qp QueryParams) string {
 	if qp.Table == senmlTable {
 		return buildSenMLSelectFields()
 	}
-	return buildJSONSelect(qp.AggField, "agg_value")
+	return buildJSONSelect(qp.AggFields, "agg_value")
 }
 
 func (CountStrategy) GetAggregateExpression(qp QueryParams) string {
@@ -513,7 +513,7 @@ func (as *aggregationService) parseComparator(comparator string) string {
 }
 
 func buildConditionForCount(qp QueryParams) string {
-	if len(qp.AggField) == 0 {
+	if len(qp.AggFields) == 0 {
 		return "1=1"
 	}
 
@@ -522,7 +522,7 @@ func buildConditionForCount(qp QueryParams) string {
 	case senmlTable:
 		conditions = append(conditions, "MAX(m.value) IS NOT NULL")
 	default:
-		for _, field := range qp.AggField {
+		for _, field := range qp.AggFields {
 			jsonPath := buildJSONPath(field)
 			conditions = append(conditions,
 				fmt.Sprintf("MAX(CAST(m.%s AS FLOAT)) IS NOT NULL", jsonPath))
