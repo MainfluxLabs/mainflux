@@ -279,6 +279,10 @@ func (svc *mainfluxThings) ViewGroup(context.Context, string, string) (things.Gr
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) ViewGroupInternal(context.Context, string) (things.Group, error) {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) ViewGroupByThing(context.Context, string, string) (things.Group, error) {
 	panic("not implemented")
 }
@@ -292,6 +296,10 @@ func (svc *mainfluxThings) ListProfilesByGroup(context.Context, string, string, 
 }
 
 func (svc *mainfluxThings) CreateGroupMemberships(context.Context, string, ...things.GroupMembership) error {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) CreateGroupMembershipsInternal(context.Context, ...things.GroupMembership) error {
 	panic("not implemented")
 }
 
