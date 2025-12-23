@@ -37,8 +37,7 @@ type thingIDsRes struct {
 }
 
 type groupRes struct {
-	id          string
-	orgID       string
-	name        string
-	description string
+	id    string
+	orgID string
+	name  string
 }

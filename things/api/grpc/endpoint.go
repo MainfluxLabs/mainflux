@@ -289,10 +289,9 @@ func getGroupEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		return groupRes{
-			id:          group.ID,
-			orgID:       group.OrgID,
-			name:        group.Name,
-			description: group.Description,
+			id:    group.ID,
+			orgID: group.OrgID,
+			name:  group.Name,
 		}, nil
 	}
 }
