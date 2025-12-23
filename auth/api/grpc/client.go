@@ -313,7 +313,7 @@ func (client grpcClient) ViewOrg(ctx context.Context, req *protomfx.ViewOrgReq, 
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := client.viewOrg(ctx, viewOrgReq{orgID: req.GetOrgID(), token: req.GetToken()})
+	res, err := client.viewOrg(ctx, viewOrgReq{id: req.GetOrgID(), token: req.GetToken()})
 	if err != nil {
 		return &protomfx.Org{}, err
 	}
@@ -330,7 +330,7 @@ func encodeViewOrgRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(viewOrgReq)
 	return &protomfx.ViewOrgReq{
 		Token: req.token,
-		OrgID: req.orgID,
+		OrgID: req.id,
 	}, nil
 }
 

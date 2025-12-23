@@ -229,7 +229,7 @@ func decodeActivateOrgInviteRequest(_ context.Context, grpcReq any) (any, error)
 
 func decodeViewOrgRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.ViewOrgReq)
-	return viewOrgReq{orgID: req.GetOrgID(), token: req.GetToken()}, nil
+	return viewOrgReq{id: req.GetOrgID(), token: req.GetToken()}, nil
 }
 
 func encodeViewOrgResponse(_ context.Context, grpcRes any) (any, error) {
