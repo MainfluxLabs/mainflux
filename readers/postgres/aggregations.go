@@ -85,7 +85,7 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 		qp.ConditionForJoin = "AND " + strings.Join(conditions, " AND ")
 	}
 
-	strategy := as.getAggregateStrategy(rpm.AggType)
+	strategy := as.getAggStrategy(rpm.AggType)
 	if strategy == nil {
 		return []readers.Message{}, 0, nil
 	}
@@ -151,7 +151,7 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 		qp.ConditionForJoin = "AND " + strings.Join(conditions, " AND ")
 	}
 
-	strategy := as.getAggregateStrategy(rpm.AggType)
+	strategy := as.getAggStrategy(rpm.AggType)
 	if strategy == nil {
 		return []readers.Message{}, 0, nil
 	}
@@ -249,7 +249,7 @@ func buildAggCountQuery(qp QueryParams) string {
 		timeIntervals, qp.Table, timeJoinCondition, qp.ConditionForJoin, havingCondition)
 }
 
-func (as aggregationService) getAggregateStrategy(aggType string) AggStrategy {
+func (as aggregationService) getAggStrategy(aggType string) AggStrategy {
 	switch aggType {
 	case readers.AggregationMax:
 		return MaxStrategy{}
@@ -272,7 +272,7 @@ func buildSenMLSelectFields() string {
 		0 as sum, ia.max_time as update_time`
 }
 
-func buildAggregateExpression(qp QueryParams, aggFunc string) string {
+func buildAggExpression(qp QueryParams, aggFunc string) string {
 	if len(qp.AggFields) == 0 {
 		return ""
 	}
@@ -306,7 +306,7 @@ func (MaxStrategy) GetSelectedFields(qp QueryParams) string {
 }
 
 func (MaxStrategy) GetAggregateExpression(qp QueryParams) string {
-	return buildAggregateExpression(qp, "MAX")
+	return buildAggExpression(qp, "MAX")
 }
 
 type MinStrategy struct{}
@@ -319,7 +319,7 @@ func (MinStrategy) GetSelectedFields(qp QueryParams) string {
 }
 
 func (MinStrategy) GetAggregateExpression(qp QueryParams) string {
-	return buildAggregateExpression(qp, "MIN")
+	return buildAggExpression(qp, "MIN")
 }
 
 type AvgStrategy struct{}
@@ -332,7 +332,7 @@ func (AvgStrategy) GetSelectedFields(qp QueryParams) string {
 }
 
 func (AvgStrategy) GetAggregateExpression(qp QueryParams) string {
-	return buildAggregateExpression(qp, "AVG")
+	return buildAggExpression(qp, "AVG")
 }
 
 type CountStrategy struct{}
@@ -345,7 +345,7 @@ func (CountStrategy) GetSelectedFields(qp QueryParams) string {
 }
 
 func (CountStrategy) GetAggregateExpression(qp QueryParams) string {
-	return buildAggregateExpression(qp, "COUNT")
+	return buildAggExpression(qp, "COUNT")
 }
 func buildTimeIntervals(qp QueryParams) string {
 	dq := dbutil.GetDirQuery(qp.Dir)
