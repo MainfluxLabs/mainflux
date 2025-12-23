@@ -422,10 +422,6 @@ func ReadFloatQuery(r *http.Request, key string, def float64) (float64, error) {
 func ReadStringArrayQuery(r *http.Request, key string, def []string) ([]string, error) {
 	vals := bone.GetQuery(r, key)
 
-	if len(vals) == 0 {
-		return def, nil
-	}
-
 	if len(vals) > 10 {
 		return nil, ErrInvalidQueryParams
 	}

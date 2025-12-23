@@ -416,7 +416,7 @@ func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
 		return readers.JSONPageMetadata{}, err
 	}
 
-	af, err := apiutil.ReadStringArrayQuery(r, aggFieldKey, nil)
+	af, err := apiutil.ReadStringArrayQuery(r, aggFieldKey)
 	if err != nil {
 		return readers.JSONPageMetadata{}, err
 	}
