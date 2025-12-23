@@ -26,12 +26,6 @@ const (
 	jsonOrder            = "created"
 	senmlTable           = "senml"
 	senmlOrder           = "time"
-	minuteInterval       = "minute"
-	hourInterval         = "hour"
-	dayInterval          = "day"
-	weekInterval         = "week"
-	monthInterval        = "month"
-	yearInterval         = "year"
 )
 
 type QueryParams struct {
@@ -42,19 +36,16 @@ type QueryParams struct {
 	Limit            uint64
 	AggInterval      string
 	AggValue         uint64
-	AggField         string
+	AggFields        []string
 	AggType          string
 	Dir              string
 }
 
 type AggStrategy interface {
-	// Function that builds the query for aggregation.
-	BuildQuery(qp QueryParams) string
-
 	// Function that returns selected strings.
 	GetSelectedFields(qp QueryParams) string
 
-	//Function containing aggregation expression.
+	// Function containing aggregation expression.
 	GetAggregateExpression(qp QueryParams) string
 }
 
@@ -80,7 +71,7 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 	qp := QueryParams{
 		Table:       jsonTable,
 		TimeColumn:  jsonOrder,
-		AggField:    rpm.AggField,
+		AggFields:   rpm.AggFields,
 		AggInterval: rpm.AggInterval,
 		AggValue:    rpm.AggValue,
 		AggType:     rpm.AggType,
@@ -94,12 +85,12 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 		qp.ConditionForJoin = "AND " + strings.Join(conditions, " AND ")
 	}
 
-	strategy := as.getAggregateStrategy(rpm.AggType)
+	strategy := as.getAggStrategy(rpm.AggType)
 	if strategy == nil {
 		return []readers.Message{}, 0, nil
 	}
 
-	query := strategy.BuildQuery(qp)
+	query := buildAggQuery(qp, strategy)
 	rows, err := as.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
@@ -118,11 +109,8 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 		return []readers.Message{}, 0, err
 	}
 
-	timeTrunc := buildTruncTimeExpression(rpm.AggValue, rpm.AggInterval, jsonOrder)
-	countQuery := fmt.Sprintf(`SELECT COUNT(DISTINCT %s) FROM %s %s`,
-		timeTrunc, jsonTable, qp.Condition)
-
-	total, err := dbutil.Total(ctx, as.db, countQuery, params)
+	cq := buildAggCountQuery(qp)
+	total, err := dbutil.Total(ctx, as.db, cq, params)
 	if err != nil {
 		return []readers.Message{}, 0, err
 	}
@@ -149,7 +137,7 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 	qp := QueryParams{
 		Table:       senmlTable,
 		TimeColumn:  senmlOrder,
-		AggField:    rpm.AggField,
+		AggFields:   rpm.AggFields,
 		AggInterval: rpm.AggInterval,
 		AggValue:    rpm.AggValue,
 		AggType:     rpm.AggType,
@@ -158,22 +146,17 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 	}
 
 	conditions := as.getSenMLConditions(rpm)
-	if rpm.AggField != "" {
-		conditions = append(conditions, "name = :agg_field")
-		params["agg_field"] = rpm.AggField
-	}
-
 	if len(conditions) > 0 {
 		qp.Condition = "WHERE " + strings.Join(conditions, " AND ")
 		qp.ConditionForJoin = "AND " + strings.Join(conditions, " AND ")
 	}
 
-	strategy := as.getAggregateStrategy(rpm.AggType)
+	strategy := as.getAggStrategy(rpm.AggType)
 	if strategy == nil {
 		return []readers.Message{}, 0, nil
 	}
 
-	query := strategy.BuildQuery(qp)
+	query := buildAggQuery(qp, strategy)
 	rows, err := as.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
@@ -192,11 +175,8 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 		return []readers.Message{}, 0, err
 	}
 
-	timeTrunc := buildTruncTimeExpression(rpm.AggValue, rpm.AggInterval, senmlOrder)
-	countQuery := fmt.Sprintf(`SELECT COUNT(DISTINCT %s) FROM %s %s`,
-		timeTrunc, senmlTable, qp.Condition)
-
-	total, err := dbutil.Total(ctx, as.db, countQuery, params)
+	cq := buildAggCountQuery(qp)
+	total, err := dbutil.Total(ctx, as.db, cq, params)
 	if err != nil {
 		return []readers.Message{}, 0, err
 	}
@@ -204,7 +184,72 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 	return messages, total, nil
 }
 
-func (as aggregationService) getAggregateStrategy(aggType string) AggStrategy {
+func buildAggQuery(qp QueryParams, strategy AggStrategy) string {
+	tmpl := `
+		WITH time_intervals AS (
+			{{.TimeIntervals}}
+		),
+		interval_aggs AS (
+			SELECT 
+				ti.interval_time,
+				{{.AggExpression}},
+				MAX(m.{{.TimeColumn}}) as max_time,
+				MAX(CAST(m.subtopic AS text)) as subtopic,
+				MAX(CAST(m.publisher AS text)) as publisher,
+				MAX(CAST(m.protocol AS text)) as protocol
+			FROM time_intervals ti
+			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
+				{{.ConditionForJoin}}
+			GROUP BY ti.interval_time
+			HAVING {{.HavingCondition}}
+		)
+		SELECT {{.SelectedFields}}
+		FROM interval_aggs ia
+		ORDER BY ia.interval_time {{.Dir}};`
+
+	return renderTemplate(tmpl, qp, strategy)
+}
+
+func renderTemplate(templateStr string, qp QueryParams, strategy AggStrategy) string {
+	data := map[string]string{
+		"TimeIntervals":       buildTimeIntervals(qp),
+		"AggExpression":       strategy.GetAggregateExpression(qp),
+		"Table":               qp.Table,
+		"TimeJoinCondition":   buildTimeJoinCondition(qp, timeIntervals),
+		"TimeJoinConditionIA": buildTimeJoinCondition(qp, intervalAggregations),
+		"ConditionForJoin":    qp.ConditionForJoin,
+		"SelectedFields":      strategy.GetSelectedFields(qp),
+		"HavingCondition":     buildConditionForCount(qp),
+		"Condition":           qp.Condition,
+		"TimeColumn":          qp.TimeColumn,
+		"Dir":                 dbutil.GetDirQuery(qp.Dir),
+	}
+
+	tmpl := template.Must(template.New("query").Parse(templateStr))
+	var result strings.Builder
+	tmpl.Execute(&result, data)
+	return result.String()
+}
+
+func buildAggCountQuery(qp QueryParams) string {
+	timeIntervals := buildTimeIntervals(qp)
+	timeJoinCondition := buildTimeJoinCondition(qp, "ti")
+	havingCondition := buildConditionForCount(qp)
+
+	return fmt.Sprintf(`
+		WITH time_intervals AS (%s)
+		SELECT COUNT(*) FROM (
+			SELECT ti.interval_time
+			FROM time_intervals ti
+			LEFT JOIN %s m ON %s
+				%s
+			GROUP BY ti.interval_time
+			HAVING %s
+		) counted`,
+		timeIntervals, qp.Table, timeJoinCondition, qp.ConditionForJoin, havingCondition)
+}
+
+func (as aggregationService) getAggStrategy(aggType string) AggStrategy {
 	switch aggType {
 	case readers.AggregationMax:
 		return MaxStrategy{}
@@ -219,209 +264,89 @@ func (as aggregationService) getAggregateStrategy(aggType string) AggStrategy {
 	}
 }
 
-type MaxStrategy struct{}
-
-func (maxStrt MaxStrategy) BuildQuery(qp QueryParams) string {
-	tmpl := `
-		WITH time_intervals AS (
-			{{.TimeIntervals}}
-		),
-		interval_aggs AS (
-			SELECT 
-				ti.interval_time,
-				{{.AggExpression}} as agg_value
-			FROM time_intervals ti
-			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
-				{{.ConditionForJoin}}
-			GROUP BY ti.interval_time
-			HAVING {{.AggExpression}} IS NOT NULL
-		)
-		SELECT DISTINCT ON (ia.interval_time) {{.SelectedFields}}
-		FROM {{.Table}} m
-		JOIN interval_aggs ia ON {{.TimeJoinConditionIA}}
-			AND {{.ValueCondition}}
-		{{.Condition}}
-		ORDER BY ia.interval_time {{.Dir}}, {{.TimeColumn}} {{.Dir}};`
-
-	return renderTemplate(tmpl, qp, maxStrt)
+func buildSenMLSelectFields() string {
+	return `ia.max_time as time, ia.subtopic, ia.publisher, ia.protocol, 
+		'' as name, '' as unit,
+		ia.agg_value as value,
+		'' as string_value, false as bool_value, '' as data_value, 
+		0 as sum, ia.max_time as update_time`
 }
 
-func (maxStrt MaxStrategy) GetSelectedFields(qp QueryParams) string {
-	return "m.*"
-}
+func buildAggExpression(qp QueryParams, aggFunc string) string {
+	if len(qp.AggFields) == 0 {
+		return ""
+	}
 
-func (maxStrt MaxStrategy) GetAggregateExpression(qp QueryParams) string {
+	var expressions []string
 	switch qp.Table {
 	case senmlTable:
-		return "MAX(m.value)"
+		expressions = append(expressions, fmt.Sprintf("%s(m.value) as agg_value", aggFunc))
 	default:
-		jsonPath := buildJSONPath(qp.AggField)
-		return fmt.Sprintf("MAX(CAST(m.%s AS float))", jsonPath)
+		for i, field := range qp.AggFields {
+			jsonPath := buildJSONPath(field)
+			if aggFunc == "COUNT" {
+				expressions = append(expressions,
+					fmt.Sprintf("%s(m.%s) as agg_value_%d", aggFunc, jsonPath, i))
+			} else {
+				expressions = append(expressions,
+					fmt.Sprintf("%s(CAST(m.%s as FLOAT)) as agg_value_%d", aggFunc, jsonPath, i))
+			}
+		}
 	}
+	return strings.Join(expressions, ",\n\t\t\t\t")
+}
+
+type MaxStrategy struct{}
+
+func (MaxStrategy) GetSelectedFields(qp QueryParams) string {
+	if qp.Table == senmlTable {
+		return buildSenMLSelectFields()
+	}
+	return buildJSONSelect(qp.AggFields, "agg_value")
+}
+
+func (MaxStrategy) GetAggregateExpression(qp QueryParams) string {
+	return buildAggExpression(qp, "MAX")
 }
 
 type MinStrategy struct{}
 
-func (minStrt MinStrategy) BuildQuery(qp QueryParams) string {
-	tmpl := `
-		WITH time_intervals AS (
-			{{.TimeIntervals}}
-		),
-		interval_aggs AS (
-			SELECT 
-				ti.interval_time,
-				{{.AggExpression}} as agg_value
-			FROM time_intervals ti
-			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
-				{{.ConditionForJoin}}
-			GROUP BY ti.interval_time
-			HAVING {{.AggExpression}} IS NOT NULL
-		)
-		SELECT DISTINCT ON (ia.interval_time) {{.SelectedFields}}
-		FROM {{.Table}} m
-		JOIN interval_aggs ia ON {{.TimeJoinConditionIA}}
-			AND {{.ValueCondition}}
-		{{.Condition}}
-		ORDER BY ia.interval_time {{.Dir}}, {{.TimeColumn}} {{.Dir}};`
-
-	return renderTemplate(tmpl, qp, minStrt)
-}
-
-func (minStrt MinStrategy) GetSelectedFields(qp QueryParams) string {
-	return "m.*"
-}
-
-func (minStrt MinStrategy) GetAggregateExpression(qp QueryParams) string {
-	switch qp.Table {
-	case senmlTable:
-		return "MIN(m.value)"
-	default:
-		jsonPath := buildJSONPath(qp.AggField)
-		return fmt.Sprintf("MIN(CAST(m.%s AS float))", jsonPath)
+func (MinStrategy) GetSelectedFields(qp QueryParams) string {
+	if qp.Table == senmlTable {
+		return buildSenMLSelectFields()
 	}
+	return buildJSONSelect(qp.AggFields, "agg_value")
+}
+
+func (MinStrategy) GetAggregateExpression(qp QueryParams) string {
+	return buildAggExpression(qp, "MIN")
 }
 
 type AvgStrategy struct{}
 
-func (avgStrt AvgStrategy) BuildQuery(qp QueryParams) string {
-	tmpl := `
-		WITH time_intervals AS (
-			{{.TimeIntervals}}
-		),
-		interval_aggs AS (
-			SELECT 
-				ti.interval_time,
-				{{.AggExpression}} as avg_value,
-				MAX(m.{{.TimeColumn}}) as max_time  
-			FROM time_intervals ti
-			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
-				{{.ConditionForJoin}}
-			GROUP BY ti.interval_time
-			HAVING {{.AggExpression}} IS NOT NULL
-		)
-		SELECT DISTINCT ON (ia.interval_time) {{.SelectedFields}}
-		FROM {{.Table}} m
-		JOIN interval_aggs ia ON {{.TimeJoinConditionIA}}
-			AND m.{{.TimeColumn}} = ia.max_time
-		{{.Condition}}
-		ORDER BY ia.interval_time {{.Dir}}, m.{{.TimeColumn}} {{.Dir}};`
-
-	return renderTemplate(tmpl, qp, avgStrt)
+func (AvgStrategy) GetSelectedFields(qp QueryParams) string {
+	if qp.Table == senmlTable {
+		return buildSenMLSelectFields()
+	}
+	return buildJSONSelect(qp.AggFields, "agg_value")
 }
 
-func (avgStrt AvgStrategy) GetSelectedFields(qp QueryParams) string {
-	switch qp.Table {
-	case senmlTable:
-		return `m.subtopic, m.publisher, m.protocol, m.name, m.unit,
-				ia.avg_value as value, 
-				m.string_value, m.bool_value, m.data_value, m.sum,
-				m.time, m.update_time`
-	default:
-		return buildAggregatedJSONSelect(qp.AggField, "avg_value")
-	}
-}
-
-func (avgStrt AvgStrategy) GetAggregateExpression(qp QueryParams) string {
-	switch qp.Table {
-	case senmlTable:
-		return "AVG(m.value)"
-	default:
-		jsonPath := buildJSONPath(qp.AggField)
-		return fmt.Sprintf("AVG(CAST(m.%s AS float))", jsonPath)
-	}
+func (AvgStrategy) GetAggregateExpression(qp QueryParams) string {
+	return buildAggExpression(qp, "AVG")
 }
 
 type CountStrategy struct{}
 
-func (countStrt CountStrategy) BuildQuery(qp QueryParams) string {
-	tmpl := `
-		WITH time_intervals AS (
-			{{.TimeIntervals}}
-		),
-		interval_aggs AS (
-			SELECT 
-				ti.interval_time,
-				{{.AggExpression}} as sum_value,
-				MAX(m.{{.TimeColumn}}) as max_time  
-			FROM time_intervals ti
-			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
-				{{.ConditionForJoin}}
-			GROUP BY ti.interval_time
-			HAVING {{.AggExpression}} IS NOT NULL
-		)
-		SELECT DISTINCT ON (ia.interval_time) {{.SelectedFields}}
-		FROM {{.Table}} m
-		JOIN interval_aggs ia ON {{.TimeJoinConditionIA}}
-			AND m.{{.TimeColumn}} = ia.max_time
-		{{.Condition}}
-		ORDER BY ia.interval_time {{.Dir}}, m.{{.TimeColumn}} {{.Dir}};`
-
-	return renderTemplate(tmpl, qp, countStrt)
-}
-
-func renderTemplate(templateStr string, qp QueryParams, strategy AggStrategy) string {
-	data := map[string]string{
-		"TimeIntervals":       buildTimeIntervals(qp),
-		"AggExpression":       strategy.GetAggregateExpression(qp),
-		"Table":               qp.Table,
-		"TimeJoinCondition":   buildTimeJoinCondition(qp, timeIntervals),
-		"TimeJoinConditionIA": buildTimeJoinCondition(qp, intervalAggregations),
-		"ConditionForJoin":    qp.ConditionForJoin,
-		"SelectedFields":      strategy.GetSelectedFields(qp),
-		"ValueCondition":      buildValueCondition(qp),
-		"Condition":           qp.Condition,
-		"TimeColumn":          qp.TimeColumn,
-		"Dir":                 dbutil.GetDirQuery(qp.Dir),
+func (CountStrategy) GetSelectedFields(qp QueryParams) string {
+	if qp.Table == senmlTable {
+		return buildSenMLSelectFields()
 	}
-
-	tmpl := template.Must(template.New("query").Parse(templateStr))
-	var result strings.Builder
-	tmpl.Execute(&result, data)
-	return result.String()
+	return buildJSONSelect(qp.AggFields, "agg_value")
 }
 
-func (countStrt CountStrategy) GetSelectedFields(qp QueryParams) string {
-	switch qp.Table {
-	case senmlTable:
-		return `m.subtopic, m.publisher, m.protocol, m.name, m.unit,
-				ia.sum_value as value, 
-				m.string_value, m.bool_value, m.data_value, m.sum,
-				m.time, m.update_time`
-	default:
-		return buildAggregatedJSONSelect(qp.AggField, "sum_value")
-	}
+func (CountStrategy) GetAggregateExpression(qp QueryParams) string {
+	return buildAggExpression(qp, "COUNT")
 }
-
-func (countStrt CountStrategy) GetAggregateExpression(qp QueryParams) string {
-	switch qp.Table {
-	case senmlTable:
-		return "COUNT(m.value)"
-	default:
-		jsonPath := buildJSONPath(qp.AggField)
-		return fmt.Sprintf("COUNT(m.%s)", jsonPath)
-	}
-}
-
 func buildTimeIntervals(qp QueryParams) string {
 	dq := dbutil.GetDirQuery(qp.Dir)
 	lq := fmt.Sprintf("LIMIT %d", qp.Limit)
@@ -458,17 +383,6 @@ func buildTruncTimeExpression(intervalVal uint64, intervalUnit string, timeColum
 func buildTimeJoinCondition(qp QueryParams, tableAlias string) string {
 	timeTrunc := buildTruncTimeExpression(qp.AggValue, qp.AggInterval, "m."+qp.TimeColumn)
 	return fmt.Sprintf("%s = %s.interval_time", timeTrunc, tableAlias)
-}
-
-func buildValueCondition(qp QueryParams) string {
-	switch qp.Table {
-	case senmlTable:
-		// Always match on 'value' column for SenML
-		return "m.value = ia.agg_value"
-	default:
-		jsonPath := buildJSONPath(qp.AggField)
-		return fmt.Sprintf("CAST(m.%s as FLOAT) = ia.agg_value", jsonPath)
-	}
 }
 
 func (as *aggregationService) scanAggregatedMessages(rows *sqlx.Rows, format string) ([]readers.Message, error) {
@@ -519,20 +433,6 @@ func buildJSONPath(field string) string {
 	}
 
 	return path.String()
-}
-
-func buildAggregatedJSONSelect(aggField string, aggAlias string) string {
-	parts := strings.Split(aggField, ".")
-	if len(parts) == 1 {
-		return fmt.Sprintf(`m.created, m.subtopic, m.publisher, m.protocol,
-				jsonb_set(m.payload, '{%s}', to_jsonb(ia.%s)) as payload`,
-			parts[0], aggAlias)
-	}
-
-	pathArray := "{" + strings.Join(parts, ",") + "}"
-	return fmt.Sprintf(`m.created, m.subtopic, m.publisher, m.protocol,
-			jsonb_set(m.payload, '%s', to_jsonb(ia.%s)) as payload`,
-		pathArray, aggAlias)
 }
 
 func (as *aggregationService) getJSONConditions(rpm readers.JSONPageMetadata) []string {
@@ -612,12 +512,36 @@ func (as *aggregationService) parseComparator(comparator string) string {
 	}
 }
 
-func isStandardInterval(interval string) bool {
-	switch interval {
-	case minuteInterval, hourInterval, dayInterval, weekInterval,
-		monthInterval, yearInterval:
-		return true
-	default:
-		return false
+func buildConditionForCount(qp QueryParams) string {
+	if len(qp.AggFields) == 0 {
+		return "1=1"
 	}
+
+	var conditions []string
+	switch qp.Table {
+	case senmlTable:
+		conditions = append(conditions, "MAX(m.value) IS NOT NULL")
+	default:
+		for _, field := range qp.AggFields {
+			jsonPath := buildJSONPath(field)
+			conditions = append(conditions,
+				fmt.Sprintf("MAX(CAST(m.%s AS FLOAT)) IS NOT NULL", jsonPath))
+		}
+	}
+
+	return strings.Join(conditions, " OR ")
+}
+
+func buildJSONSelect(aggFields []string, aggPrefix string) string {
+	if len(aggFields) == 0 {
+		return "ia.max_time as created, ia.subtopic, ia.publisher, ia.protocol, CAST('{}' AS jsonb) as payload"
+	}
+
+	var jsonbPairs []string
+	for i, field := range aggFields {
+		jsonbPairs = append(jsonbPairs, fmt.Sprintf("'%s', ia.%s_%d", field, aggPrefix, i))
+	}
+
+	return fmt.Sprintf(`ia.max_time as created, ia.subtopic, ia.publisher, ia.protocol,
+		jsonb_build_object(%s) as payload`, strings.Join(jsonbPairs, ", "))
 }

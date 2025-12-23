@@ -419,6 +419,16 @@ func ReadFloatQuery(r *http.Request, key string, def float64) (float64, error) {
 	return val, nil
 }
 
+func ReadStringArrayQuery(r *http.Request, key string) ([]string, error) {
+	vals := bone.GetQuery(r, key)
+
+	if len(vals) > 10 {
+		return nil, ErrInvalidQueryParams
+	}
+
+	return vals, nil
+}
+
 func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 	o, err := ReadUintQuery(r, OffsetKey, DefOffset)
 	if err != nil {

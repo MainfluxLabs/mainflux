@@ -503,7 +503,7 @@ func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
 		return readers.JSONPageMetadata{}, err
 	}
 
-	af, err := apiutil.ReadStringQuery(r, aggFieldKey, "")
+	af, err := apiutil.ReadStringArrayQuery(r, aggFieldKey)
 	if err != nil {
 		return readers.JSONPageMetadata{}, err
 	}
@@ -521,7 +521,7 @@ func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
 		AggInterval: ai,
 		AggValue:    av,
 		AggType:     at,
-		AggField:    af,
+		AggFields:   af,
 		Dir:         d,
 	}
 
@@ -594,7 +594,7 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 		return readers.SenMLPageMetadata{}, err
 	}
 
-	af, err := apiutil.ReadStringQuery(r, aggFieldKey, "")
+	af, err := apiutil.ReadStringArrayQuery(r, aggFieldKey)
 	if err != nil {
 		return readers.SenMLPageMetadata{}, err
 	}
@@ -618,7 +618,7 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 		AggInterval: ai,
 		AggValue:    av,
 		AggType:     at,
-		AggField:    af,
+		AggFields:   af,
 		Dir:         d,
 	}
 
