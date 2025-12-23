@@ -80,24 +80,24 @@ type SenMLMessagesPage struct {
 
 // SenMLPageMetadata represents the parameters used to create database queries
 type SenMLPageMetadata struct {
-	Offset      uint64  `json:"offset"`
-	Limit       uint64  `json:"limit"`
-	Subtopic    string  `json:"subtopic,omitempty"`
-	Publisher   string  `json:"publisher,omitempty"`
-	Protocol    string  `json:"protocol,omitempty"`
-	Name        string  `json:"name,omitempty"`
-	Value       float64 `json:"v,omitempty"`
-	Comparator  string  `json:"comparator,omitempty"`
-	BoolValue   bool    `json:"vb,omitempty"`
-	StringValue string  `json:"vs,omitempty"`
-	DataValue   string  `json:"vd,omitempty"`
-	From        int64   `json:"from,omitempty"`
-	To          int64   `json:"to,omitempty"`
-	AggInterval string  `json:"agg_interval,omitempty"`
-	AggValue    uint64  `json:"agg_value,omitempty"`
-	AggType     string  `json:"agg_type,omitempty"`
-	AggField    string  `json:"agg_field,omitempty"`
-	Dir         string  `json:"dir,omitempty"`
+	Offset      uint64   `json:"offset"`
+	Limit       uint64   `json:"limit"`
+	Subtopic    string   `json:"subtopic,omitempty"`
+	Publisher   string   `json:"publisher,omitempty"`
+	Protocol    string   `json:"protocol,omitempty"`
+	Name        string   `json:"name,omitempty"`
+	Value       float64  `json:"v,omitempty"`
+	Comparator  string   `json:"comparator,omitempty"`
+	BoolValue   bool     `json:"vb,omitempty"`
+	StringValue string   `json:"vs,omitempty"`
+	DataValue   string   `json:"vd,omitempty"`
+	From        int64    `json:"from,omitempty"`
+	To          int64    `json:"to,omitempty"`
+	AggInterval string   `json:"agg_interval,omitempty"`
+	AggValue    uint64   `json:"agg_value,omitempty"`
+	AggType     string   `json:"agg_type,omitempty"`
+	AggFields   []string `json:"agg_fields,omitempty"`
+	Dir         string   `json:"dir,omitempty"`
 }
 
 // JSONPageMetadata represents the parameters used to create database queries
@@ -113,7 +113,7 @@ type JSONPageMetadata struct {
 	AggInterval string   `json:"agg_interval,omitempty"`
 	AggValue    uint64   `json:"agg_value,omitempty"`
 	AggType     string   `json:"agg_type,omitempty"`
-	AggField    []string `json:"agg_field,omitempty"`
+	AggFields   []string `json:"agg_fields,omitempty"`
 	Dir         string   `json:"dir,omitempty"`
 }
 
