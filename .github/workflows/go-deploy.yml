@@ -47,7 +47,7 @@ jobs:
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
             echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           else
-            echo "version=dev-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+            echo "version=${git describe --abbrev=0 --tags}" >> $GITHUB_OUTPUT
           fi
       
       - name: Build and push Docker images
