@@ -12,39 +12,19 @@ env:
   MF_DOCKER_IMAGE_NAME_PREFIX: mainfluxlabs
 
 jobs:
-  build-and-push:
+  lint-and-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v4
       
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: "1.22"
 
-      - name: Auto-format Go code
+      - name: Formatting
         run: go fmt ./...
-      
-      - name: Check for formatting changes
-        id: verify-changed-files
-        run: |
-          if git diff --quiet; then
-            echo "changed=false" >> $GITHUB_OUTPUT
-          else
-            echo "changed=true" >> $GITHUB_OUTPUT
-          fi
-      
-      - name: Commit formatting changes
-        if: steps.verify-changed-files.outputs.changed == 'true'
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add -A
-          git commit -m "chore: auto-format code with go fmt [skip ci]"
-          git push
 
       - name: Run go vet
         run: go vet -mod=vendor -tags nats ./...
@@ -52,19 +32,25 @@ jobs:
       - name: Run Go tests
         run: go test ./...
 
-      - name: Set VERSION from Git tag or commit
+  build-and-push:
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set version
         id: version
         run: |
-          if [[ $GITHUB_REF == refs/tags/* ]]; then
-            VERSION=${GITHUB_REF#refs/tags/}
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           else
-            VERSION=$(git describe --tags --abbrev=0 2>/dev/null)
-            VERSION="${VERSION}-${GITHUB_SHA::7}"
+            echo "version=dev-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
           fi
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "Building version: ${VERSION}"
       
-      - name: Build Docker images
+      - name: Build and push Docker images
         run: |
           make dockers \
             VERSION=${{ steps.version.outputs.version }} \
