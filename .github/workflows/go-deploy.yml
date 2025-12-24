@@ -25,7 +25,13 @@ jobs:
           cache: true
 
       - name: Formatting
-        run: go fmt ./...
+      - name: Check formatting
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "These files need formatting:"
+            gofmt -l .
+            exit 1
+          fi
 
       - name: Run go vet
         run: go vet -mod=vendor -tags nats ./...
