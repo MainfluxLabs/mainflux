@@ -50,7 +50,7 @@ jobs:
         run: go vet -mod=vendor -tags nats ./...
       
       - name: Run Go tests
-        run: make test
+        run: go test ./...
 
       - name: Set VERSION from Git tag or commit
         id: version
