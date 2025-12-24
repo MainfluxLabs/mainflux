@@ -1,0 +1,29 @@
+name: Test
+
+on:
+  pull_request:
+    branches: [ "master", "feature/cicd" ]
+  push:
+    branches: [ "master", "feature/cicd" ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+      
+      - name: Formatting
+        run: go fmt ./...
+      
+      - name: Run go vet
+        run: go vet -mod=vendor -tags nats ./...
+
+      - name: Run Go tests
+        run: go test ./...
