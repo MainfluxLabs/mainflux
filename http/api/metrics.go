@@ -40,3 +40,12 @@ func (mm *metricsMiddleware) Publish(ctx context.Context, key things.ThingKey, m
 
 	return mm.svc.Publish(ctx, key, msg)
 }
+
+func (mm *metricsMiddleware) SendCommandByThing(ctx context.Context, token, thingID string, msg protomfx.Message) error {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "send_command_by_thing").Add(1)
+		mm.latency.With("method", "send_command_by_thing").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.SendCommandByThing(ctx, token, thingID, msg)
+}
