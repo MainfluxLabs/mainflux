@@ -54,18 +54,22 @@ func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.L
 		opts...,
 	))
 
+	r.Post("/things/:id/commands", kithttp.NewServer(
+		kitot.TraceServer(tracer, "send_command_by_thing")(sendCommandByThingEndpoint(svc)),
+		decodeSendCommandByThing,
+		encodeResponse,
+		opts...,
+	))
+
 	r.GetFunc("/health", mainflux.Health("http"))
 	r.Handle("/metrics", promhttp.Handler())
 
 	return r
 }
 
-func decodeRequest(ctx context.Context, r *http.Request) (any, error) {
-	ct := r.Header.Get("Content-Type")
-	if !strings.Contains(ct, ctSenmlJSON) &&
-		!strings.Contains(ct, ctJSON) &&
-		!strings.Contains(ct, ctSenmlCBOR) {
-		return nil, apiutil.ErrUnsupportedContentType
+func decodeRequest(_ context.Context, r *http.Request) (any, error) {
+	if err := validateCT(r.Header.Get("Content-Type")); err != nil {
+		return nil, err
 	}
 
 	subtopic, err := messaging.CreateSubtopic(r.URL.Path)
@@ -101,7 +105,57 @@ func decodeRequest(ctx context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
+func decodeSendCommandByThing(_ context.Context, r *http.Request) (any, error) {
+	if err := validateCT(r.Header.Get("Content-Type")); err != nil {
+		return nil, err
+	}
+
+	payload, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, apiutil.ErrMalformedEntity
+	}
+	defer r.Body.Close()
+
+	subtopic := r.Header.Get("X-MF-Subtopic")
+	if subtopic != "" {
+		// Commands must be published to concrete NATS subjects.
+		// Wildcards (*, >) are subscription-only semantics.
+		if strings.ContainsAny(subtopic, "*>") {
+			return nil, apiutil.ErrMalformedEntity
+		}
+
+		// CreateSubject mixes publish and subscribe semantics; refactor needed.
+		// It's here used only for normalization/validation, wildcards are disallowed.
+		var err error
+		if subtopic, err = messaging.CreateSubject(subtopic); err != nil {
+			return nil, err
+		}
+	}
+
+	req := commandByThingReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, apiutil.IDKey),
+		msg: protomfx.Message{
+			Subtopic: subtopic,
+			Protocol: protocol,
+			Payload:  payload,
+			Created:  time.Now().UnixNano(),
+		},
+	}
+
+	return req, nil
+}
+
+func validateCT(ct string) error {
+	if !strings.Contains(ct, ctSenmlJSON) &&
+		!strings.Contains(ct, ctJSON) &&
+		!strings.Contains(ct, ctSenmlCBOR) {
+		return apiutil.ErrUnsupportedContentType
+	}
+	return nil
+}
+
+func encodeResponse(_ context.Context, w http.ResponseWriter, _ any) error {
 	w.WriteHeader(http.StatusAccepted)
 	return nil
 }

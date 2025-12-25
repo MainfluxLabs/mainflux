@@ -7,6 +7,7 @@ package http
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
@@ -18,6 +19,8 @@ import (
 type Service interface {
 	// Publish Message
 	Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error
+	// SendCommandByThing publishes a command message to the specified thing.
+	SendCommandByThing(ctx context.Context, token, thingID string, msg protomfx.Message) error
 }
 
 var _ Service = (*adapterService)(nil)
@@ -52,4 +55,18 @@ func (as *adapterService) Publish(ctx context.Context, key things.ThingKey, msg 
 	}
 
 	return nil
+}
+
+func (as *adapterService) SendCommandByThing(ctx context.Context, token, thingID string, msg protomfx.Message) error {
+	if _, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
+		return err
+	}
+
+	subject := fmt.Sprintf("%s.%s", nats.CommandsPrefix, thingID)
+	if msg.Subtopic != "" {
+		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
+	}
+	msg.Subject = subject
+
+	return as.publisher.Publish(msg)
 }

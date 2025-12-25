@@ -40,3 +40,16 @@ func (lm *loggingMiddleware) Publish(ctx context.Context, key things.ThingKey, m
 
 	return lm.svc.Publish(ctx, key, msg)
 }
+
+func (lm *loggingMiddleware) SendCommandByThing(ctx context.Context, token, thingID string, msg protomfx.Message) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method send_command_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.SendCommandByThing(ctx, token, thingID, msg)
+}
