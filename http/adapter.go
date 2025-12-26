@@ -14,6 +14,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
+const (
+	thingsCmdPrefix = "commands.things"
+	groupsCmdPrefix = "commands.groups"
+)
+
 // Service specifies coap service API.
 type Service interface {
 	// Publish Message
@@ -63,7 +68,7 @@ func (as *adapterService) SendCommandByThing(ctx context.Context, token, thingID
 		return err
 	}
 
-	msg.Subject = formatCmdSubject(thingID, msg.Subtopic)
+	msg.Subject = formatCmdSubject(thingsCmdPrefix, thingID, msg.Subtopic)
 	return as.publisher.Publish(msg)
 }
 
@@ -72,14 +77,15 @@ func (as *adapterService) SendCommandByGroup(ctx context.Context, token, groupID
 		return err
 	}
 
-	// TODO: list thing IDs by group
-	msg.Subject = formatCmdSubject("thingID", msg.Subtopic)
-
+	msg.Subject = formatCmdSubject(groupsCmdPrefix, groupID, msg.Subtopic)
 	return as.publisher.Publish(msg)
 }
 
-func formatCmdSubject(id, subtopic string) string {
-	subject := "commands" + id
+func formatCmdSubject(prefix, id, subtopic string) string {
+	// formats subtopic into commands.groups.<groupID>[.subtopic]
+	// or commands.things.<thingID>[.subtopic]
+	subject := prefix + id
+
 	if subtopic != "" {
 		subject += "." + subtopic
 	}
