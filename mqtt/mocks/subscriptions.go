@@ -56,7 +56,7 @@ func (srm *subRepoMock) Save(_ context.Context, sub mqtt.Subscription) error {
 	for _, s := range srm.subs {
 		for _, m := range s {
 			if m.Subtopic == sub.Subtopic && m.ThingID == sub.ThingID && m.GroupID == sub.GroupID {
-				return dbutil.ErrConflict
+				m.Status = sub.Status
 			}
 		}
 	}
@@ -81,10 +81,6 @@ func (srm *subRepoMock) Remove(_ context.Context, sub mqtt.Subscription) error {
 	return dbutil.ErrNotFound
 }
 
-func (srm *subRepoMock) UpdateStatus(context.Context, mqtt.Subscription) error {
-	return nil
-}
-
-func (srm *subRepoMock) HasClientID(context.Context, string) error {
+func (srm *subRepoMock) UpdateStatus(context.Context, string, string) error {
 	return nil
 }

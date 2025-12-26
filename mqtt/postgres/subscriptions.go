@@ -24,7 +24,9 @@ func NewRepository(db dbutil.Database) mqtt.Repository {
 
 func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error {
 	q := `INSERT INTO subscriptions (subtopic, thing_id, group_id, client_id, status, created_at)
-		VALUES (:subtopic, :thing_id, :group_id, :client_id, :status, :created_at)`
+		  VALUES (:subtopic, :thing_id, :group_id, :client_id, :status, :created_at)
+		  ON CONFLICT (client_id, subtopic, group_id, thing_id)
+		  DO UPDATE SET status = EXCLUDED.status;`
 	dbSub := dbSubscription{
 		Subtopic:  sub.Subtopic,
 		ThingID:   sub.ThingID,
@@ -46,13 +48,12 @@ func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error
 	return nil
 }
 
-func (mr *mqttRepository) UpdateStatus(ctx context.Context, sub mqtt.Subscription) error {
-	q := `UPDATE subscriptions SET status = :status, created_at = :created_at WHERE client_id = :client_id;`
+func (mr *mqttRepository) UpdateStatus(ctx context.Context, clientID, status string) error {
+	q := `UPDATE subscriptions SET status = :status WHERE client_id = :client_id;`
 
 	dbSub := dbSubscription{
-		ClientID:  sub.ClientID,
-		Status:    sub.Status,
-		CreatedAt: sub.CreatedAt,
+		ClientID: clientID,
+		Status:   status,
 	}
 
 	row, err := mr.db.NamedQueryContext(ctx, q, dbSub)
@@ -77,20 +78,6 @@ func (mr *mqttRepository) Remove(ctx context.Context, sub mqtt.Subscription) err
 	_, err := mr.db.NamedExecContext(ctx, q, dbSub)
 	if err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
-	}
-
-	return nil
-}
-
-func (mr *mqttRepository) HasClientID(ctx context.Context, clientID string) error {
-	q := `SELECT EXISTS (SELECT 1 FROM subscriptions WHERE client_id = $1);`
-	exists := false
-	if err := mr.db.QueryRowxContext(ctx, q, clientID).Scan(&exists); err != nil {
-		return errors.Wrap(dbutil.ErrRetrieveEntity, err)
-	}
-
-	if !exists {
-		return dbutil.ErrNotFound
 	}
 
 	return nil

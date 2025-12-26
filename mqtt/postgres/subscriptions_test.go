@@ -61,7 +61,7 @@ func TestSave(t *testing.T) {
 		{
 			desc: "save existing subscription",
 			sub:  sub,
-			err:  dbutil.ErrConflict,
+			err:  nil,
 		},
 		{
 			desc: "save invalid subscription",

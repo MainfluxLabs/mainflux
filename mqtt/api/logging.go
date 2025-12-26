@@ -40,10 +40,11 @@ func (lm *loggingMiddleware) ListSubscriptions(ctx context.Context, groupID, tok
 	return lm.svc.ListSubscriptions(ctx, groupID, token, pm)
 }
 
-func (lm *loggingMiddleware) CreateSubscription(ctx context.Context, sub mqtt.Subscription) (err error) {
+func (lm *loggingMiddleware) UpsertSubscription(ctx context.Context, sub mqtt.Subscription) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_subscription for thing id %s, group id %s, and subtopic %s took %s to complete",
-			sub.ThingID, sub.GroupID, sub.Subtopic, time.Since(begin))
+		message := fmt.Sprintf("Method upsert_subscription for client id %s, thing id %s, group id %s, and subtopic %s took %s to complete",
+			sub.ClientID, sub.ThingID, sub.GroupID, sub.Subtopic, time.Since(begin))
+
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -51,13 +52,13 @@ func (lm *loggingMiddleware) CreateSubscription(ctx context.Context, sub mqtt.Su
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CreateSubscription(ctx, sub)
+	return lm.svc.UpsertSubscription(ctx, sub)
 }
 
 func (lm *loggingMiddleware) RemoveSubscription(ctx context.Context, sub mqtt.Subscription) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_subscription for thing id %s, group id %s, and subtopic %s took %s to complete",
-			sub.ThingID, sub.GroupID, sub.Subtopic, time.Since(begin))
+		message := fmt.Sprintf("Method remove_subscription for client id %s, thing id %s, group id %s, and subtopic %s took %s to complete",
+			sub.ClientID, sub.ThingID, sub.GroupID, sub.Subtopic, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -68,9 +69,10 @@ func (lm *loggingMiddleware) RemoveSubscription(ctx context.Context, sub mqtt.Su
 	return lm.svc.RemoveSubscription(ctx, sub)
 }
 
-func (lm *loggingMiddleware) HasClientID(ctx context.Context, clientID string) (err error) {
+func (lm *loggingMiddleware) UpdateStatus(ctx context.Context, clientID, status string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method has_client_id for client id %s took %s to complete", clientID, time.Since(begin))
+		message := fmt.Sprintf("Method update_status for client id %s and status %s took %s to complete",
+			clientID, status, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -78,19 +80,5 @@ func (lm *loggingMiddleware) HasClientID(ctx context.Context, clientID string) (
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.HasClientID(ctx, clientID)
-}
-
-func (lm *loggingMiddleware) UpdateStatus(ctx context.Context, sub mqtt.Subscription) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_status for thing id %s, group id %s and subtopic %s took %s to complete",
-			sub.ThingID, sub.GroupID, sub.Subtopic, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.UpdateStatus(ctx, sub)
+	return lm.svc.UpdateStatus(ctx, clientID, status)
 }

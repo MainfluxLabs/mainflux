@@ -16,7 +16,6 @@ import (
 	mqttapi "github.com/MainfluxLabs/mainflux/mqtt/api"
 	mqttapihttp "github.com/MainfluxLabs/mainflux/mqtt/api/http"
 	"github.com/MainfluxLabs/mainflux/mqtt/postgres"
-	mqttredis "github.com/MainfluxLabs/mainflux/mqtt/redis"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -64,9 +63,6 @@ const (
 	defClientTLS         = "false"
 	defCACerts           = ""
 	defInstance          = ""
-	defESURL             = "localhost:6379"
-	defESPass            = ""
-	defESDB              = "0"
 	defAuthCacheURL      = "localhost:6379"
 	defAuthCachePass     = ""
 	defAuthCacheDB       = "0"
@@ -103,9 +99,6 @@ const (
 	envClientTLS         = "MF_MQTT_ADAPTER_CLIENT_TLS"
 	envCACerts           = "MF_MQTT_ADAPTER_CA_CERTS"
 	envInstance          = "MF_MQTT_ADAPTER_INSTANCE"
-	envESURL             = "MF_MQTT_ADAPTER_ES_URL"
-	envESPass            = "MF_MQTT_ADAPTER_ES_PASS"
-	envESDB              = "MF_MQTT_ADAPTER_ES_DB"
 	envAuthCacheURL      = "MF_AUTH_CACHE_URL"
 	envAuthCachePass     = "MF_AUTH_CACHE_PASS"
 	envAuthCacheDB       = "MF_AUTH_CACHE_DB"
@@ -143,9 +136,6 @@ type config struct {
 	thingsGRPCTimeout time.Duration
 	brokerURL         string
 	instance          string
-	esURL             string
-	esPass            string
-	esDB              string
 	authCacheURL      string
 	authPass          string
 	authCacheDB       string
@@ -181,9 +171,6 @@ func main() {
 	tConn := clientsgrpc.Connect(cfg.thingsConfig, logger)
 	defer tConn.Close()
 
-	ec := connectToRedis(cfg.esURL, cfg.esPass, cfg.esDB, logger)
-	defer ec.Close()
-
 	nps, err := brokers.NewPubSub(cfg.brokerURL, "mqtt", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
@@ -213,8 +200,6 @@ func main() {
 	}
 	defer np.Close()
 
-	es := mqttredis.NewEventStore(ec, cfg.instance)
-
 	ac := connectToRedis(cfg.authCacheURL, cfg.authPass, cfg.authCacheDB, logger)
 	defer ac.Close()
 
@@ -236,8 +221,7 @@ func main() {
 
 	svc := newService(usersAuth, tc, db, logger)
 
-	// Event handler for MQTT hooks
-	h := mqtt.NewHandler(np, es, logger, tc, svc)
+	h := mqtt.NewHandler(np, logger, tc, svc)
 
 	logger.Info(fmt.Sprintf("Starting MQTT proxy on port %s", cfg.port))
 	g.Go(func() error {
@@ -340,9 +324,6 @@ func loadConfig() config {
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		instance:          mainflux.Env(envInstance, defInstance),
-		esURL:             mainflux.Env(envESURL, defESURL),
-		esPass:            mainflux.Env(envESPass, defESPass),
-		esDB:              mainflux.Env(envESDB, defESDB),
 		authCacheURL:      mainflux.Env(envAuthCacheURL, defAuthCacheURL),
 		authPass:          mainflux.Env(envAuthCachePass, defAuthCachePass),
 		authCacheDB:       mainflux.Env(envAuthCacheDB, defAuthCacheDB),
