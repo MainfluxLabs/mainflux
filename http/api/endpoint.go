@@ -33,3 +33,15 @@ func sendCommandByThingEndpoint(svc http.Service) endpoint.Endpoint {
 		return nil, svc.SendCommandByThing(ctx, req.token, req.id, req.msg)
 	}
 }
+
+func sendCommandByGroupEndpoint(svc http.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(commandByGroupReq)
+
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		return nil, svc.SendCommandByGroup(ctx, req.token, req.id, req.msg)
+	}
+}

@@ -22,10 +22,14 @@ func (req publishReq) validate() error {
 	return nil
 }
 
-type commandByThingReq struct {
+type cmdReq struct {
 	token string
 	id    string
 	msg   protomfx.Message
+}
+
+type commandByThingReq struct {
+	cmdReq
 }
 
 func (req commandByThingReq) validate() error {
@@ -35,6 +39,22 @@ func (req commandByThingReq) validate() error {
 
 	if req.id == "" {
 		return apiutil.ErrMissingThingID
+	}
+
+	return nil
+}
+
+type commandByGroupReq struct {
+	cmdReq
+}
+
+func (req commandByGroupReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.id == "" {
+		return apiutil.ErrMissingGroupID
 	}
 
 	return nil

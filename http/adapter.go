@@ -7,7 +7,6 @@ package http
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
@@ -21,6 +20,8 @@ type Service interface {
 	Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error
 	// SendCommandByThing publishes a command message to the specified thing.
 	SendCommandByThing(ctx context.Context, token, thingID string, msg protomfx.Message) error
+	// SendCommandByGroup publishes a command message to things that belong to a specified group.
+	SendCommandByGroup(ctx context.Context, token, groupID string, msg protomfx.Message) error
 }
 
 var _ Service = (*adapterService)(nil)
@@ -62,11 +63,25 @@ func (as *adapterService) SendCommandByThing(ctx context.Context, token, thingID
 		return err
 	}
 
-	subject := fmt.Sprintf("%s.%s", nats.CommandsPrefix, thingID)
-	if msg.Subtopic != "" {
-		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
+	msg.Subject = formatCmdSubject(thingID, msg.Subtopic)
+	return as.publisher.Publish(msg)
+}
+
+func (as *adapterService) SendCommandByGroup(ctx context.Context, token, groupID string, msg protomfx.Message) error {
+	if _, err := as.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Editor}); err != nil {
+		return err
 	}
-	msg.Subject = subject
+
+	// TODO: list thing IDs by group
+	msg.Subject = formatCmdSubject("thingID", msg.Subtopic)
 
 	return as.publisher.Publish(msg)
+}
+
+func formatCmdSubject(id, subtopic string) string {
+	subject := "commands" + id
+	if subtopic != "" {
+		subject += "." + subtopic
+	}
+	return subject
 }
