@@ -16,14 +16,14 @@ import (
 )
 
 const (
-	CommandsPrefix = "commands"
+	CommandsPrefix = "commands."
 
 	// SubjectMessages represents subject used to publish/subscribe to the global message stream.
 	SubjectMessages = "messages"
 	//SubjectWriters represents subject used to publish/subscribe to messages that should be persisted.
 	SubjectWriters = "writers"
 	// SubjectCommands represents subject used to subscribe to commands.
-	SubjectCommands = CommandsPrefix + ".>"
+	SubjectCommands = CommandsPrefix + ">"
 	// SubjectSmtp represents subject used to subscribe to SMTP notifications.
 	SubjectSmtp = "smtp.*"
 	// SubjectSmpp represents subject used to subscribe to SMPP notifications.

@@ -7,7 +7,6 @@ package http
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -23,6 +22,8 @@ type Service interface {
 	Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error
 	// SendCommandByThing publishes a command message to the specified thing.
 	SendCommandByThing(ctx context.Context, token, thingID string, msg protomfx.Message) error
+	// SendCommandByGroup publishes a command message to things that belong to a specified group.
+	SendCommandByGroup(ctx context.Context, token, groupID string, msg protomfx.Message) error
 }
 
 var _ Service = (*adapterService)(nil)
@@ -42,20 +43,20 @@ func New(publisher messaging.Publisher, things protomfx.ThingsServiceClient, log
 	}
 }
 
-func (as *adapterService) Publish(ctx context.Context, key things.ThingKey, message protomfx.Message) error {
+func (as *adapterService) Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error {
 	cr := &protomfx.ThingKey{Value: key.Value, Type: key.Type}
 	pc, err := as.things.GetPubConfByKey(ctx, cr)
 	if err != nil {
 		return err
 	}
 
-	if err := messaging.FormatMessage(pc, &message); err != nil {
+	if err := messaging.FormatMessage(pc, &msg); err != nil {
 		return err
 	}
 
-	subs := nats.GetSubjects(message.Subtopic)
+	subs := nats.GetSubjects(msg.Subtopic)
 	for _, sub := range subs {
-		m := message
+		m := msg
 		m.Subject = sub
 
 		if err := as.publisher.Publish(m); err != nil {
@@ -71,11 +72,25 @@ func (as *adapterService) SendCommandByThing(ctx context.Context, token, thingID
 		return err
 	}
 
-	subject := fmt.Sprintf("%s.%s", nats.CommandsPrefix, thingID)
-	if msg.Subtopic != "" {
-		subject = fmt.Sprintf("%s.%s", subject, msg.Subtopic)
+	msg.Subject = formatCmdSubject(thingID, msg.Subtopic)
+	return as.publisher.Publish(msg)
+}
+
+func (as *adapterService) SendCommandByGroup(ctx context.Context, token, groupID string, msg protomfx.Message) error {
+	if _, err := as.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Editor}); err != nil {
+		return err
 	}
-	msg.Subject = subject
+
+	// TODO: list thing IDs by group
+	msg.Subject = formatCmdSubject("thingID", msg.Subtopic)
 
 	return as.publisher.Publish(msg)
+}
+
+func formatCmdSubject(id, subtopic string) string {
+	subject := nats.CommandsPrefix + id
+	if subtopic != "" {
+		subject += "." + subtopic
+	}
+	return subject
 }

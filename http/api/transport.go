@@ -21,7 +21,7 @@ import (
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -30,6 +30,8 @@ const (
 	ctSenmlJSON = "application/senml+json"
 	ctSenmlCBOR = "application/senml+cbor"
 	ctJSON      = "application/json"
+	headerCT    = "Content-Type"
+	headerSub   = "MF-Subtopic"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -61,6 +63,13 @@ func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.L
 		opts...,
 	))
 
+	r.Post("/groups/:id/commands", kithttp.NewServer(
+		kitot.TraceServer(tracer, "send_command_by_group")(sendCommandByGroupEndpoint(svc)),
+		decodeSendCommandByGroup,
+		encodeResponse,
+		opts...,
+	))
+
 	r.GetFunc("/health", mainflux.Health("http"))
 	r.Handle("/metrics", promhttp.Handler())
 
@@ -68,7 +77,7 @@ func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.L
 }
 
 func decodeRequest(_ context.Context, r *http.Request) (any, error) {
-	if err := validateCT(r.Header.Get("Content-Type")); err != nil {
+	if err := validateCT(r.Header.Get(headerCT)); err != nil {
 		return nil, err
 	}
 
@@ -106,7 +115,7 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeSendCommandByThing(_ context.Context, r *http.Request) (any, error) {
-	if err := validateCT(r.Header.Get("Content-Type")); err != nil {
+	if err := validateCT(r.Header.Get(headerCT)); err != nil {
 		return nil, err
 	}
 
@@ -116,30 +125,53 @@ func decodeSendCommandByThing(_ context.Context, r *http.Request) (any, error) {
 	}
 	defer r.Body.Close()
 
-	subtopic := r.Header.Get("X-MF-Subtopic")
-	if subtopic != "" {
-		// Commands must be published to concrete NATS subjects.
-		// Wildcards (*, >) are subscription-only semantics.
-		if strings.ContainsAny(subtopic, "*>") {
-			return nil, apiutil.ErrMalformedEntity
-		}
-
-		// CreateSubject mixes publish and subscribe semantics; refactor needed.
-		// It's here used only for normalization/validation, wildcards are disallowed.
-		var err error
-		if subtopic, err = messaging.CreateSubject(subtopic); err != nil {
-			return nil, err
-		}
+	subtopic, err := parseSubtopic(r.Header.Get(headerSub))
+	if err != nil {
+		return nil, err
 	}
 
 	req := commandByThingReq{
-		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, apiutil.IDKey),
-		msg: protomfx.Message{
-			Subtopic: subtopic,
-			Protocol: protocol,
-			Payload:  payload,
-			Created:  time.Now().UnixNano(),
+		cmdReq{
+			token: apiutil.ExtractBearerToken(r),
+			id:    bone.GetValue(r, apiutil.IDKey),
+			msg: protomfx.Message{
+				Subtopic: subtopic,
+				Protocol: protocol,
+				Payload:  payload,
+				Created:  time.Now().UnixNano(),
+			},
+		},
+	}
+
+	return req, nil
+}
+
+func decodeSendCommandByGroup(_ context.Context, r *http.Request) (any, error) {
+	if err := validateCT(r.Header.Get(headerCT)); err != nil {
+		return nil, err
+	}
+
+	payload, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, apiutil.ErrMalformedEntity
+	}
+	defer r.Body.Close()
+
+	subtopic, err := parseSubtopic(r.Header.Get(headerSub))
+	if err != nil {
+		return nil, err
+	}
+
+	req := commandByGroupReq{
+		cmdReq{
+			token: apiutil.ExtractBearerToken(r),
+			id:    bone.GetValue(r, apiutil.IDKey),
+			msg: protomfx.Message{
+				Subtopic: subtopic,
+				Protocol: protocol,
+				Payload:  payload,
+				Created:  time.Now().UnixNano(),
+			},
 		},
 	}
 
@@ -153,6 +185,21 @@ func validateCT(ct string) error {
 		return apiutil.ErrUnsupportedContentType
 	}
 	return nil
+}
+
+func parseSubtopic(subtopic string) (string, error) {
+	if subtopic == "" {
+		return "", nil
+	}
+
+	// Wildcards (*, >) are subscription-only semantics.
+	if strings.ContainsAny(subtopic, "*>") {
+		return "", messaging.ErrMalformedSubtopic
+	}
+
+	// CreateSubject mixes publish and subscribe semantics; refactor needed.
+	// It's here used only for normalization/validation.
+	return messaging.CreateSubject(subtopic)
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, _ any) error {

@@ -49,3 +49,12 @@ func (mm *metricsMiddleware) SendCommandByThing(ctx context.Context, token, thin
 
 	return mm.svc.SendCommandByThing(ctx, token, thingID, msg)
 }
+
+func (mm *metricsMiddleware) SendCommandByGroup(ctx context.Context, token, groupID string, msg protomfx.Message) error {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "send_command_by_group").Add(1)
+		mm.latency.With("method", "send_command_by_group").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.SendCommandByGroup(ctx, token, groupID, msg)
+}

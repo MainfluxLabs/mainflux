@@ -53,3 +53,16 @@ func (lm *loggingMiddleware) SendCommandByThing(ctx context.Context, token, thin
 
 	return lm.svc.SendCommandByThing(ctx, token, thingID, msg)
 }
+
+func (lm *loggingMiddleware) SendCommandByGroup(ctx context.Context, token, groupID string, msg protomfx.Message) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method send_command_by_group for group id %s took %s to complete", groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.SendCommandByGroup(ctx, token, groupID, msg)
+}
