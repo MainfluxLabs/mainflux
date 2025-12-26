@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/mqtt/redis"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
@@ -33,12 +32,11 @@ const (
 	LogInfoDisconnected = "disconnected client_id %s"
 	LogInfoPublished    = "published with client_id %s to the topic %s"
 
-	LogErrFailedConnect             = "failed to connect: "
-	LogErrFailedSubscribe           = "failed to subscribe: "
-	LogErrFailedUnsubscribe         = "failed to unsubscribe: "
-	LogErrFailedDisconnect          = "failed to disconnect: "
-	logErrFailedParseSubtopic       = "failed to parse subtopic: "
-	LogErrFailedPublishConnectEvent = "failed to publish connect event: "
+	LogErrFailedConnect       = "failed to connect: "
+	LogErrFailedSubscribe     = "failed to subscribe: "
+	LogErrFailedUnsubscribe   = "failed to unsubscribe: "
+	LogErrFailedDisconnect    = "failed to disconnect: "
+	logErrFailedParseSubtopic = "failed to parse subtopic: "
 )
 
 var (
@@ -54,15 +52,12 @@ type handler struct {
 	publisher messaging.Publisher
 	things    protomfx.ThingsServiceClient
 	logger    logger.Logger
-	es        redis.EventStore
 	service   Service
 }
 
 // NewHandler creates new Handler entity
-func NewHandler(publisher messaging.Publisher, es redis.EventStore,
-	logger logger.Logger, things protomfx.ThingsServiceClient, svc Service) session.Handler {
+func NewHandler(publisher messaging.Publisher, logger logger.Logger, things protomfx.ThingsServiceClient, svc Service) session.Handler {
 	return &handler{
-		es:        es,
 		logger:    logger,
 		publisher: publisher,
 		things:    things,
@@ -81,13 +76,9 @@ func (h *handler) AuthConnect(c *session.Client) error {
 		return ErrMissingClientID
 	}
 
-	thingID, err := h.identify(c)
+	_, err := h.identify(c)
 	if err != nil {
 		return err
-	}
-
-	if err := h.es.Connect(thingID); err != nil {
-		h.logger.Error(LogErrFailedPublishConnectEvent + err.Error())
 	}
 
 	return nil
