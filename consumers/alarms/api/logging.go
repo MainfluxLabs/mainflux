@@ -63,7 +63,7 @@ func (lm loggingMiddleware) ListAlarmsByOrg(ctx context.Context, token, orgID st
 
 func (lm loggingMiddleware) ViewAlarm(ctx context.Context, token, id string) (_ alarms.Alarm, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_alarm for id %s took %s to complete", id, time.Since(begin))
+		message := fmt.Sprintf("Method view_alarm for alarm id %s took %s to complete", id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -76,7 +76,7 @@ func (lm loggingMiddleware) ViewAlarm(ctx context.Context, token, id string) (_ 
 
 func (lm loggingMiddleware) RemoveAlarms(ctx context.Context, token string, id ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_alarms for id %s took %s to complete", id, time.Since(begin))
+		message := fmt.Sprintf("Method remove_alarms for alarm id %s took %s to complete", id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -89,7 +89,7 @@ func (lm loggingMiddleware) RemoveAlarms(ctx context.Context, token string, id .
 
 func (lm loggingMiddleware) RemoveAlarmsByThing(ctx context.Context, thingID string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_alarms_by_thing for id %s took %s to complete", thingID, time.Since(begin))
+		message := fmt.Sprintf("Method remove_alarms_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -102,7 +102,7 @@ func (lm loggingMiddleware) RemoveAlarmsByThing(ctx context.Context, thingID str
 
 func (lm loggingMiddleware) RemoveAlarmsByGroup(ctx context.Context, groupID string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_alarms_by_group for id %s took %s to complete", groupID, time.Since(begin))
+		message := fmt.Sprintf("Method remove_alarms_by_group for group id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

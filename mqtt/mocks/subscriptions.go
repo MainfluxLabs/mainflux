@@ -21,7 +21,7 @@ func NewRepo(subs map[string][]mqtt.Subscription) mqtt.Repository {
 	}
 }
 
-func (srm *subRepoMock) RetrieveByGroupID(_ context.Context, pm mqtt.PageMetadata, groupID string) (mqtt.Page, error) {
+func (srm *subRepoMock) RetrieveByGroup(_ context.Context, pm mqtt.PageMetadata, groupID string) (mqtt.Page, error) {
 	srm.mu.Lock()
 	defer srm.mu.Unlock()
 
@@ -81,10 +81,10 @@ func (srm *subRepoMock) Remove(_ context.Context, sub mqtt.Subscription) error {
 	return dbutil.ErrNotFound
 }
 
-func (srm *subRepoMock) UpdateStatus(_ context.Context, sub mqtt.Subscription) error {
+func (srm *subRepoMock) UpdateStatus(context.Context, mqtt.Subscription) error {
 	return nil
 }
 
-func (srm *subRepoMock) HasClientID(_ context.Context, clientID string) error {
+func (srm *subRepoMock) HasClientID(context.Context, string) error {
 	return nil
 }

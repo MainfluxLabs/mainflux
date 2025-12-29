@@ -4,6 +4,8 @@
 package nats
 
 import (
+	"fmt"
+
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/gogo/protobuf/proto"
@@ -50,4 +52,14 @@ func (pub *publisher) Publish(msg protomfx.Message) (err error) {
 func (pub *publisher) Close() error {
 	pub.conn.Close()
 	return nil
+}
+
+func GetSubjects(subtopic string) []string {
+	subs := []string{SubjectMessages, SubjectWriters}
+
+	if subtopic != "" {
+		subs = append(subs, fmt.Sprintf("%s.%s", SubjectMessages, subtopic))
+	}
+
+	return subs
 }

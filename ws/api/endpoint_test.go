@@ -28,9 +28,9 @@ const (
 
 var msg = []byte(`[{"n":"current","t":-1,"v":1.6}]`)
 
-func newService(tc protomfx.ThingsServiceClient, rc protomfx.RulesServiceClient, logger logger.Logger) (ws.Service, mocks.MockPubSub) {
+func newService(tc protomfx.ThingsServiceClient, logger logger.Logger) (ws.Service, mocks.MockPubSub) {
 	pubsub := mocks.NewPubSub()
-	return ws.New(tc, rc, pubsub, logger), pubsub
+	return ws.New(tc, pubsub, logger), pubsub
 }
 
 func newHTTPServer(svc ws.Service) *httptest.Server {
@@ -75,9 +75,8 @@ func handshake(tsURL, subtopic, thingKey string, addHeader bool) (*websocket.Con
 
 func TestHandshake(t *testing.T) {
 	thingsClient := pkgmocks.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
-	rulesClient := pkgmocks.NewRulesServiceClient()
-	logger := logger.NewMock()
-	svc, _ := newService(thingsClient, rulesClient, logger)
+	lm := logger.NewMock()
+	svc, _ := newService(thingsClient, lm)
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 

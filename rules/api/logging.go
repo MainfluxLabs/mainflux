@@ -7,7 +7,6 @@ import (
 
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/rules"
 )
 
@@ -38,7 +37,7 @@ func (lm loggingMiddleware) CreateRules(ctx context.Context, token, groupID stri
 
 func (lm loggingMiddleware) ListRulesByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (_ rules.RulesPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_rules_by_thing for id %s took %s to complete", thingID, time.Since(begin))
+		message := fmt.Sprintf("Method list_rules_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -51,7 +50,7 @@ func (lm loggingMiddleware) ListRulesByThing(ctx context.Context, token, thingID
 
 func (lm loggingMiddleware) ListRulesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (_ rules.RulesPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_rules_by_group for id %s took %s to complete", groupID, time.Since(begin))
+		message := fmt.Sprintf("Method list_rules_by_group for group id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -64,7 +63,7 @@ func (lm loggingMiddleware) ListRulesByGroup(ctx context.Context, token, groupID
 
 func (lm loggingMiddleware) ListThingIDsByRule(ctx context.Context, token, ruleID string) (_ []string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_thing_ids_by_rule for id %s took %s to complete", ruleID, time.Since(begin))
+		message := fmt.Sprintf("Method list_thing_ids_by_rule for rule id %s took %s to complete", ruleID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -77,7 +76,7 @@ func (lm loggingMiddleware) ListThingIDsByRule(ctx context.Context, token, ruleI
 
 func (lm loggingMiddleware) ViewRule(ctx context.Context, token, id string) (_ rules.Rule, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_rule for id %s took %s to complete", id, time.Since(begin))
+		message := fmt.Sprintf("Method view_rule for rule id %s took %s to complete", id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -90,7 +89,7 @@ func (lm loggingMiddleware) ViewRule(ctx context.Context, token, id string) (_ r
 
 func (lm loggingMiddleware) UpdateRule(ctx context.Context, token string, rule rules.Rule) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_rule for id %s took %s to complete", rule.ID, time.Since(begin))
+		message := fmt.Sprintf("Method update_rule for rule id %s took %s to complete", rule.ID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -103,7 +102,7 @@ func (lm loggingMiddleware) UpdateRule(ctx context.Context, token string, rule r
 
 func (lm loggingMiddleware) RemoveRules(ctx context.Context, token string, ids ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_rules took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method remove_rules for rule ids %v took %s to complete", ids, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -116,7 +115,7 @@ func (lm loggingMiddleware) RemoveRules(ctx context.Context, token string, ids .
 
 func (lm loggingMiddleware) RemoveRulesByGroup(ctx context.Context, groupID string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_rules_by_group for id %s took %s to complete", groupID, time.Since(begin))
+		message := fmt.Sprintf("Method remove_rules_by_group for group id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -142,7 +141,7 @@ func (lm loggingMiddleware) AssignRules(ctx context.Context, token, thingID stri
 
 func (lm loggingMiddleware) UnassignRules(ctx context.Context, token, thingID string, ruleIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method unassign_rules took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method unassign_rules for thing id %s and rule ids %v took %s to complete", thingID, ruleIDs, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -155,7 +154,7 @@ func (lm loggingMiddleware) UnassignRules(ctx context.Context, token, thingID st
 
 func (lm loggingMiddleware) UnassignRulesByThing(ctx context.Context, thingID string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method unassign_rules_by_thing for id %s took %s to complete", thingID, time.Since(begin))
+		message := fmt.Sprintf("Method unassign_rules_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -166,9 +165,9 @@ func (lm loggingMiddleware) UnassignRulesByThing(ctx context.Context, thingID st
 	return lm.svc.UnassignRulesByThing(ctx, thingID)
 }
 
-func (lm loggingMiddleware) Publish(ctx context.Context, msg protomfx.Message) (err error) {
+func (lm loggingMiddleware) Consume(msg any) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method publish took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method consume took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -176,5 +175,5 @@ func (lm loggingMiddleware) Publish(ctx context.Context, msg protomfx.Message) (
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Publish(ctx, msg)
+	return lm.svc.Consume(msg)
 }
