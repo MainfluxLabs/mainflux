@@ -146,13 +146,13 @@ func (req restoreMessagesReq) validate() error {
 	return nil
 }
 
-type deleteSenMLMessagesReq struct {
+type deleteAllSenMLMessagesReq struct {
 	token    string
 	thingKey things.ThingKey
 	pageMeta readers.SenMLPageMetadata
 }
 
-func (req deleteSenMLMessagesReq) validate() error {
+func (req deleteAllSenMLMessagesReq) validate() error {
 	err := req.thingKey.Validate()
 	if req.token == "" && err != nil {
 		return apiutil.ErrBearerToken
@@ -161,17 +161,51 @@ func (req deleteSenMLMessagesReq) validate() error {
 	return nil
 }
 
-type deleteJSONMessagesReq struct {
+type deleteAllJSONMessagesReq struct {
 	token    string
 	thingKey things.ThingKey
 	pageMeta readers.JSONPageMetadata
 }
 
-func (req deleteJSONMessagesReq) validate() error {
+func (req deleteAllJSONMessagesReq) validate() error {
 	err := req.thingKey.Validate()
 	if req.token == "" && err != nil {
 		return apiutil.ErrBearerToken
 	}
+	return nil
+}
+
+type deleteJSONMessagesReq struct {
+	token    string
+	pageMeta readers.JSONPageMetadata
+}
+
+func (req deleteJSONMessagesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.pageMeta.Publisher == "" {
+		return apiutil.ErrMissingPublisherID
+	}
+
+	return nil
+}
+
+type deleteSenMLMessagesReq struct {
+	token    string
+	pageMeta readers.SenMLPageMetadata
+}
+
+func (req deleteSenMLMessagesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.pageMeta.Publisher == "" {
+		return apiutil.ErrMissingPublisherID
+	}
+
 	return nil
 }
 
@@ -191,7 +225,6 @@ func validateAggregation(aggType, aggInterval string, aggValue uint64) error {
 		return apiutil.ErrInvalidAggType
 	}
 }
-
 
 func validateDir(dir string) error {
 	if dir == "" || dir == apiutil.AscDir || dir == apiutil.DescDir {

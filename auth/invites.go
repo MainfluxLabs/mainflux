@@ -387,48 +387,13 @@ func (svc service) RespondOrgInvite(ctx context.Context, token, inviteID string,
 	newState := InviteStateDeclined
 
 	if accept {
-		// User has accepted the Invite, assign them as a member of the appropriate Org
-		// with the appropriate role
 		newState = InviteStateAccepted
-		ts := getTimestamp()
-
-		membership := OrgMembership{
-			MemberID:  user.ID,
-			OrgID:     invite.OrgID,
-			Role:      invite.InviteeRole,
-			CreatedAt: ts,
-			UpdatedAt: ts,
-		}
-
-		if err := svc.memberships.Save(ctx, membership); err != nil {
+		if err := svc.acceptInvite(ctx, invite); err != nil {
 			return err
 		}
-
-		// Create one group membership in the things service for each group the invite was associated with
-		if len(invite.Groups) > 0 {
-			grpcReq := &protomfx.CreateGroupMembershipsReq{
-				Memberships: make([]*protomfx.GroupMembership, 0, len(invite.Groups)),
-			}
-
-			for groupID, role := range invite.Groups {
-				grpcReq.Memberships = append(grpcReq.Memberships, &protomfx.GroupMembership{
-					UserID:  invite.InviteeID,
-					GroupID: groupID,
-					Role:    role,
-				})
-			}
-
-			if _, err := svc.things.CreateGroupMemberships(ctx, grpcReq); err != nil {
-				return err
-			}
-		}
 	}
 
-	if err := svc.invites.UpdateOrgInviteState(ctx, inviteID, newState); err != nil {
-		return err
-	}
-
-	return nil
+	return svc.invites.UpdateOrgInviteState(ctx, inviteID, newState)
 }
 
 func (svc service) ListOrgInvitesByOrg(ctx context.Context, token, orgID string, pm PageMetadataInvites) (OrgInvitesPage, error) {
@@ -526,6 +491,45 @@ func (svc service) validateGroupsSameOrg(ctx context.Context, orgID string, grou
 
 		if group.OrgID != orgID {
 			return ErrGroupsDifferingOrgs
+		}
+	}
+
+	return nil
+}
+
+// acceptInvite is a helper that assigns the invitee as a member of the invite's destination Org, and optionally
+// any associated Groups. Note that it does not update the invite state.
+func (svc service) acceptInvite(ctx context.Context, invite OrgInvite) error {
+	ts := getTimestamp()
+
+	membership := OrgMembership{
+		MemberID:  invite.InviteeID,
+		OrgID:     invite.OrgID,
+		Role:      invite.InviteeRole,
+		CreatedAt: ts,
+		UpdatedAt: ts,
+	}
+
+	if err := svc.memberships.Save(ctx, membership); err != nil {
+		return err
+	}
+
+	// Create one group membership in the things service for each group the invite was associated with
+	if len(invite.Groups) > 0 {
+		grpcReq := &protomfx.CreateGroupMembershipsReq{
+			Memberships: make([]*protomfx.GroupMembership, 0, len(invite.Groups)),
+		}
+
+		for groupID, role := range invite.Groups {
+			grpcReq.Memberships = append(grpcReq.Memberships, &protomfx.GroupMembership{
+				UserID:  invite.InviteeID,
+				GroupID: groupID,
+				Role:    role,
+			})
+		}
+
+		if _, err := svc.things.CreateGroupMemberships(ctx, grpcReq); err != nil {
+			return err
 		}
 	}
 

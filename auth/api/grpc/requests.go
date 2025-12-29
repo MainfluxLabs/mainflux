@@ -158,7 +158,7 @@ func (req activateOrgInviteReq) validate() error {
 
 type viewOrgReq struct {
 	token string
-	orgID string
+	id    string
 }
 
 func (req viewOrgReq) validate() error {
@@ -166,7 +166,7 @@ func (req viewOrgReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.orgID == "" {
+	if req.id == "" {
 		return apiutil.ErrMissingOrgID
 	}
 

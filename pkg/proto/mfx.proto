@@ -50,14 +50,6 @@ service AuthService {
     rpc ViewOrg(ViewOrgReq) returns (Org) {}
 }
 
-service RulesService {
-    rpc Publish(PublishReq) returns (google.protobuf.Empty) {}
-}
-
-message PublishReq {
-    Message message = 1;
-}
-
 message ThingKey {
     string value = 1;
     string type  = 2;

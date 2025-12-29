@@ -327,8 +327,6 @@ services:
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
-      MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
-      MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
       MF_AUTH_CACHE_URL: auth-redis:${MF_REDIS_TCP_PORT}
       MF_MQTT_ADAPTER_DB_PORT: ${MF_MQTT_ADAPTER_DB_PORT}
       MF_MQTT_ADAPTER_DB_USER: ${MF_MQTT_ADAPTER_DB_USER}
@@ -340,7 +338,6 @@ services:
       MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
     ports:
       - ${MF_MQTT_ADAPTER_HTTP_PORT}:${MF_MQTT_ADAPTER_HTTP_PORT}
-
     networks:
       - mainfluxlabs-base-net
 
@@ -349,16 +346,15 @@ services:
     container_name: mainfluxlabs-http
     depends_on:
       - things
-      - rules
+      - broker
     restart: on-failure
     environment:
       MF_HTTP_ADAPTER_LOG_LEVEL: debug
       MF_HTTP_ADAPTER_PORT: ${MF_HTTP_ADAPTER_PORT}
+      MF_BROKER_URL: ${MF_NATS_URL}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
-      MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
-      MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
     ports:
       - ${MF_HTTP_ADAPTER_PORT}:${MF_HTTP_ADAPTER_PORT}
     networks:
@@ -378,7 +374,6 @@ services:
     container_name: mainfluxlabs-coap
     depends_on:
       - things
-      - rules
       - broker
     restart: on-failure
     environment:
@@ -388,8 +383,6 @@ services:
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
-      MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
-      MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
     ports:
       - ${MF_COAP_ADAPTER_PORT}:${MF_COAP_ADAPTER_PORT}/udp
       - ${MF_COAP_ADAPTER_PORT}:${MF_COAP_ADAPTER_PORT}/tcp
@@ -401,7 +394,6 @@ services:
     container_name: mainfluxlabs-ws
     depends_on:
       - things
-      - rules
       - broker
     restart: on-failure
     environment:
@@ -411,8 +403,6 @@ services:
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
-      MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
-      MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
     ports:
       - ${MF_WS_ADAPTER_PORT}:${MF_WS_ADAPTER_PORT}
     networks:
@@ -642,7 +632,6 @@ services:
     container_name: mainfluxlabs-downlinks
     depends_on:
       - things
-      - rules
       - downlinks-db
     restart: on-failure
     environment:
@@ -658,8 +647,6 @@ services:
       MF_DOWNLINKS_SERVER_KEY: ${MF_DOWNLINKS_SERVER_KEY}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
-      MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
-      MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
       MF_DOWNLINKS_ES_URL: ${MF_DOWNLINKS_ES_URL}
       MF_DOWNLINKS_EVENT_CONSUMER: ${MF_DOWNLINKS_EVENT_CONSUMER}
     ports:
@@ -685,7 +672,6 @@ services:
     container_name: mainfluxlabs-modbus
     depends_on:
       - things
-      - rules
       - modbus-db
     restart: on-failure
     environment:
@@ -701,8 +687,6 @@ services:
       MF_MODBUS_SERVER_KEY: ${MF_MODBUS_SERVER_KEY}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
-      MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
-      MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
       MF_MODBUS_ES_URL: ${MF_MODBUS_ES_URL}
       MF_MODBUS_EVENT_CONSUMER: ${MF_MODBUS_EVENT_CONSUMER}
     ports:
@@ -716,7 +700,6 @@ services:
     restart: on-failure
     depends_on:
       - things
-      - rules
     environment:
       MF_CONVERTERS_LOG_LEVEL: ${MF_CONVERTERS_LOG_LEVEL}
       MF_CONVERTERS_CLIENT_TLS: ${MF_CONVERTERS_CLIENT_TLS}
@@ -725,8 +708,6 @@ services:
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
-      MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
-      MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
     ports:
       - ${MF_CONVERTERS_PORT}:${MF_CONVERTERS_PORT}
     networks:
@@ -802,7 +783,6 @@ services:
       MF_RULES_DB_PASS: ${MF_RULES_DB_PASS}
       MF_RULES_DB: ${MF_RULES_DB}
       MF_RULES_HTTP_PORT: ${MF_RULES_HTTP_PORT}
-      MF_RULES_GRPC_PORT: ${MF_RULES_GRPC_PORT}
       MF_RULES_SERVER_CERT: ${MF_RULES_SERVER_CERT}
       MF_RULES_SERVER_KEY: ${MF_RULES_SERVER_KEY}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
@@ -812,7 +792,6 @@ services:
       MF_RULES_EVENT_CONSUMER: ${MF_RULES_EVENT_CONSUMER}
     ports:
       - ${MF_RULES_HTTP_PORT}:${MF_RULES_HTTP_PORT}
-      - ${MF_RULES_GRPC_PORT}:${MF_RULES_GRPC_PORT}
     networks:
       - mainfluxlabs-base-net
 

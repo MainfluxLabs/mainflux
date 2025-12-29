@@ -171,7 +171,7 @@ func viewOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		org, err := svc.ViewOrg(ctx, req.token, req.orgID)
+		org, err := svc.ViewOrg(ctx, req.token, req.id)
 		if err != nil {
 			return nil, err
 		}

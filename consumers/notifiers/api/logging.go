@@ -29,7 +29,7 @@ func LoggingMiddleware(svc notifiers.Service, logger log.Logger) notifiers.Servi
 
 func (lm *loggingMiddleware) CreateNotifiers(ctx context.Context, token, groupID string, notifiers ...notifiers.Notifier) (response []notifiers.Notifier, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_notifiers for notifiers %s took %s to complete", response, time.Since(begin))
+		message := fmt.Sprintf("Method create_notifiers for notifiers %v took %s to complete", response, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -42,7 +42,7 @@ func (lm *loggingMiddleware) CreateNotifiers(ctx context.Context, token, groupID
 
 func (lm *loggingMiddleware) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (res notifiers.NotifiersPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_notifiers_by_group for id %s took %s to complete", groupID, time.Since(begin))
+		message := fmt.Sprintf("Method list_notifiers_by_group for group id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -55,7 +55,7 @@ func (lm *loggingMiddleware) ListNotifiersByGroup(ctx context.Context, token str
 
 func (lm *loggingMiddleware) ViewNotifier(ctx context.Context, token, id string) (response notifiers.Notifier, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_notifier for id %s took %s to complete", id, time.Since(begin))
+		message := fmt.Sprintf("Method view_notifier for notifier id %s took %s to complete", id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -68,7 +68,7 @@ func (lm *loggingMiddleware) ViewNotifier(ctx context.Context, token, id string)
 
 func (lm *loggingMiddleware) UpdateNotifier(ctx context.Context, token string, notifier notifiers.Notifier) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_notifier for id %s took %s to complete", notifier.ID, time.Since(begin))
+		message := fmt.Sprintf("Method update_notifier for notifier id %s took %s to complete", notifier.ID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -81,7 +81,7 @@ func (lm *loggingMiddleware) UpdateNotifier(ctx context.Context, token string, n
 
 func (lm *loggingMiddleware) RemoveNotifiers(ctx context.Context, token string, id ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_notifiers took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method remove_notifiers for notifier ids %v took %s to complete", id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -94,7 +94,7 @@ func (lm *loggingMiddleware) RemoveNotifiers(ctx context.Context, token string, 
 
 func (lm *loggingMiddleware) RemoveNotifiersByGroup(ctx context.Context, groupID string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_notifiers_by_group for id %s took %s to complete", groupID, time.Since(begin))
+		message := fmt.Sprintf("Method remove_notifiers_by_group for group id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

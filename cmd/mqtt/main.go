@@ -28,7 +28,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/ulid"
-	rulesapi "github.com/MainfluxLabs/mainflux/rules/api/grpc"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	"github.com/MainfluxLabs/mproxy/logger"
 	mp "github.com/MainfluxLabs/mproxy/pkg/mqtt"
@@ -84,8 +83,6 @@ const (
 	defServerKey         = ""
 	defServerCert        = ""
 	defAuthGRPCTimeout   = "1s"
-	defRulesGRPCURL      = "localhost:8186"
-	defRulesGRPCTimeout  = "1s"
 
 	envLogLevel          = "MF_MQTT_ADAPTER_LOG_LEVEL"
 	envMQTTPort          = "MF_MQTT_ADAPTER_MQTT_PORT"
@@ -125,8 +122,6 @@ const (
 	envDBSSLRootCert     = "MF_MQTT_ADAPTER_DB_SSL_ROOT_CERT"
 	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
 	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
-	envRulesGRPCURL      = "MF_RULES_GRPC_URL"
-	envRulesGRPCTimeout  = "MF_RULES_GRPC_TIMEOUT"
 )
 
 type config struct {
@@ -134,7 +129,6 @@ type config struct {
 	httpConfig        servers.Config
 	authConfig        clients.Config
 	thingsConfig      clients.Config
-	rulesConfig       clients.Config
 	targetHost        string
 	targetPort        string
 	forwarder         string
@@ -147,7 +141,6 @@ type config struct {
 	jaegerURL         string
 	logLevel          string
 	thingsGRPCTimeout time.Duration
-	rulesGRPCTimeout  time.Duration
 	brokerURL         string
 	instance          string
 	esURL             string
@@ -235,23 +228,16 @@ func main() {
 	authTracer, authCloser := jaeger.Init("mqtt_auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
-	rulesTracer, rulesCloser := jaeger.Init("mqtt_rules", cfg.jaegerURL, logger)
-	defer rulesCloser.Close()
-
 	aConn := clientsgrpc.Connect(cfg.authConfig, logger)
 	defer aConn.Close()
 
-	rConn := clientsgrpc.Connect(cfg.rulesConfig, logger)
-	defer rConn.Close()
-
 	usersAuth := authapi.NewClient(aConn, authTracer, cfg.authGRPCTimeout)
 	tc := thingsapi.NewClient(tConn, thingsTracer, cfg.thingsGRPCTimeout)
-	rc := rulesapi.NewClient(rConn, rulesTracer, cfg.rulesGRPCTimeout)
 
 	svc := newService(usersAuth, tc, db, logger)
 
 	// Event handler for MQTT hooks
-	h := mqtt.NewHandler(np, es, logger, tc, rc, svc)
+	h := mqtt.NewHandler(np, es, logger, tc, svc)
 
 	logger.Info(fmt.Sprintf("Starting MQTT proxy on port %s", cfg.port))
 	g.Go(func() error {
@@ -289,11 +275,6 @@ func loadConfig() config {
 	thingsGRPCTimeout, err := time.ParseDuration(mainflux.Env(envThingsGRPCTimeout, defThingsGRPCTimeout))
 	if err != nil {
 		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
-	}
-
-	rulesGRPCTimeout, err := time.ParseDuration(mainflux.Env(envRulesGRPCTimeout, defRulesGRPCTimeout))
-	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envRulesGRPCTimeout, err.Error())
 	}
 
 	mqttTimeout, err := time.ParseDuration(mainflux.Env(envTimeout, defTimeout))
@@ -340,18 +321,10 @@ func loadConfig() config {
 		ClientName: clients.Auth,
 	}
 
-	rulesConfig := clients.Config{
-		ClientTLS:  tls,
-		CaCerts:    mainflux.Env(envCACerts, defCACerts),
-		URL:        mainflux.Env(envRulesGRPCURL, defRulesGRPCURL),
-		ClientName: clients.Rules,
-	}
-
 	return config{
 		port:              mainflux.Env(envMQTTPort, defMQTTPort),
 		httpConfig:        httpConfig,
 		authConfig:        authConfig,
-		rulesConfig:       rulesConfig,
 		thingsConfig:      thingsConfig,
 		targetHost:        mainflux.Env(envTargetHost, defTargetHost),
 		targetPort:        mainflux.Env(envTargetPort, defTargetPort),
@@ -364,7 +337,6 @@ func loadConfig() config {
 		httpTargetPath:    mainflux.Env(envHTTPTargetPath, defHTTPTargetPath),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
-		rulesGRPCTimeout:  rulesGRPCTimeout,
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		instance:          mainflux.Env(envInstance, defInstance),
