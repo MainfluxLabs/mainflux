@@ -23,11 +23,11 @@ func MetricsMiddleware(emailer auth.Emailer, counter metrics.Counter, latency me
 	}
 }
 
-func (ms *metricsMiddleware) SendOrgInvite(to []string, invite auth.OrgInvite, orgName, invRedirectPath string) error {
+func (ms *metricsMiddleware) SendOrgInvite(to []string, invite auth.OrgInvite, orgName, invRedirectPath string, groupNames map[string]string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "send_org_invite").Add(1)
 		ms.latency.With("method", "send_org_invite").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.emailer.SendOrgInvite(to, invite, orgName, invRedirectPath)
+	return ms.emailer.SendOrgInvite(to, invite, orgName, invRedirectPath, groupNames)
 }

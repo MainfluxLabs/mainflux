@@ -55,6 +55,9 @@ type GroupMemberships interface {
 	// CreateGroupMemberships adds memberships to a group identified by the provided ID.
 	CreateGroupMemberships(ctx context.Context, token string, gms ...GroupMembership) error
 
+	// CreateGroupMembershipsInternal saves group memberships without requiring authentication.
+	CreateGroupMembershipsInternal(ctx context.Context, gms ...GroupMembership) error
+
 	// ListGroupMemberships retrieves a paginated list of group memberships for the given group.
 	ListGroupMemberships(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (GroupMembershipsPage, error)
 
@@ -76,6 +79,49 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token strin
 			return err
 		}
 
+		group, err := ts.groups.RetrieveByID(ctx, gm.GroupID)
+		if err != nil {
+			return err
+		}
+
+		if err := ts.groupMemberships.Save(ctx, gm); err != nil {
+			return err
+		}
+
+		if err := ts.groupCache.SaveGroupMembership(ctx, gm.GroupID, gm.MemberID, gm.Role); err != nil {
+			return err
+		}
+
+		org, err := ts.auth.ViewOrg(ctx, &protomfx.ViewOrgReq{
+			Token: token,
+			OrgID: group.OrgID,
+		})
+
+		if err != nil {
+			continue
+		}
+
+		users, err := ts.users.GetUsersByIDs(ctx, &protomfx.UsersByIDsReq{
+			Ids: []string{gm.MemberID},
+		})
+
+		if err != nil {
+			continue
+		}
+
+		recipientEmail := users.GetUsers()[0].Email
+
+		// Send e-mail notification
+		go func() {
+			ts.email.SendGroupMembershipNotification([]string{recipientEmail}, org.Name, group.Name, gm.Role)
+		}()
+	}
+
+	return nil
+}
+
+func (ts *thingsService) CreateGroupMembershipsInternal(ctx context.Context, gms ...GroupMembership) error {
+	for _, gm := range gms {
 		if err := ts.groupMemberships.Save(ctx, gm); err != nil {
 			return err
 		}
