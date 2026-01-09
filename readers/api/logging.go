@@ -92,7 +92,7 @@ func (lm *loggingMiddleware) RestoreJSONMessages(ctx context.Context, token stri
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.RestoreSenMLMessages(ctx, token, messages...)
+	return lm.svc.RestoreJSONMessages(ctx, token, messages...)
 }
 
 func (lm *loggingMiddleware) RestoreSenMLMessages(ctx context.Context, token string, messages ...readers.Message) (err error) {
