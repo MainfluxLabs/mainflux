@@ -110,7 +110,7 @@ type createDormantOrgInviteReq struct {
 	token            string
 	orgID            string
 	inviteeRole      string
-	groups           map[string]string
+	groups           []auth.OrgInviteGroup
 	platformInviteID string
 }
 

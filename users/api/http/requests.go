@@ -6,6 +6,7 @@ package http
 import (
 	"regexp"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
@@ -258,11 +259,11 @@ func (req inviteReq) validate() error {
 
 type createPlatformInviteRequest struct {
 	token        string
-	Email        string            `json:"email,omitempty"`
-	OrgID        string            `json:"org_id"`
-	Role         string            `json:"role"`
-	Groups       map[string]string `json:"groups"`
-	RedirectPath string            `json:"redirect_path,omitempty"`
+	Email        string                `json:"email,omitempty"`
+	OrgID        string                `json:"org_id"`
+	Role         string                `json:"role"`
+	Groups       []auth.OrgInviteGroup `json:"groups"`
+	RedirectPath string                `json:"redirect_path,omitempty"`
 }
 
 func (req createPlatformInviteRequest) validate() error {

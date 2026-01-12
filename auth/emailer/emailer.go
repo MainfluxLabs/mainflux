@@ -39,10 +39,10 @@ func (e *emailer) SendOrgInvite(to []string, inv auth.OrgInvite, orgName, invRed
 
 	// If the Org invite is associated with one or more Group assignments, we build a mapping of group names to group roles using the passed-in
 	// `groupNames` map and the group IDs from inv.Groups.
-	if inv.Groups != nil {
+	if len(inv.Groups) > 0 {
 		templateGroups := make(map[string]string, len(inv.Groups))
-		for groupID, role := range inv.Groups {
-			templateGroups[groupNames[groupID]] = role
+		for _, group := range inv.Groups {
+			templateGroups[groupNames[group.GroupID]] = group.MemberRole
 		}
 
 		templateData["Groups"] = templateGroups

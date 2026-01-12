@@ -7,13 +7,13 @@
     <p class="mb-16"><strong>Role:</strong> {{ .Role }}</p>
 
     {{ if .Groups }}
-        <p class="mb-8>
+        <p class="mb-8">
             By accepting the invite, you will additionally be granted access to the following Groups within the Organization:
         </p>
 
         <ul>
             {{ range $name, $role := .Groups }}
-                <li><strong>{{ $name }}</strong>: {{ $role }}</li>
+                <li class="mb-8"><strong>{{ $name }}</strong>: {{ $role }}</li>
             {{ end }}
         </ul>
     {{ end }}
