@@ -2,7 +2,6 @@ package users
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -80,8 +79,6 @@ type PlatformInvitesRepository interface {
 }
 
 func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirectPath, email, orgID, role string, groups map[string]string) (PlatformInvite, error) {
-	fmt.Printf("users: createPlatformInvite svc: groups: %+v\n", groups)
-
 	if err := svc.isAdmin(ctx, token); err != nil {
 		return PlatformInvite{}, err
 	}
