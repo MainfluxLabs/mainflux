@@ -13,6 +13,6 @@ func NewEmailer() auth.Emailer {
 	return &emailerMock{}
 }
 
-func (e *emailerMock) SendOrgInvite(to []string, inv auth.OrgInvite, orgName, invRedirectPath string) error {
+func (e *emailerMock) SendOrgInvite(to []string, inv auth.OrgInvite, orgName, invRedirectPath string, groupNames map[string]string) error {
 	return nil
 }

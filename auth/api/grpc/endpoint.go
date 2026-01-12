@@ -163,3 +163,23 @@ func activateOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 		return emptyRes{}, nil
 	}
 }
+
+func viewOrgEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(viewOrgReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		org, err := svc.ViewOrg(ctx, req.token, req.id)
+		if err != nil {
+			return nil, err
+		}
+
+		return orgRes{
+			id:      org.ID,
+			ownerID: org.OwnerID,
+			name:    org.Name,
+		}, nil
+	}
+}

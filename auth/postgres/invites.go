@@ -14,6 +14,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jmoiron/sqlx"
 )
 
 type invitesRepository struct {
@@ -56,6 +57,10 @@ func (ir invitesRepository) SaveOrgInvite(ctx context.Context, invites ...auth.O
 			}
 
 			return errors.Wrap(dbutil.ErrCreateEntity, err)
+		}
+
+		if err := ir.saveOrgInviteGroups(ctx, tx, invite); err != nil {
+			return err
 		}
 	}
 
@@ -180,7 +185,16 @@ func (ir invitesRepository) RetrieveOrgInviteByID(ctx context.Context, inviteID 
 		return auth.OrgInvite{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
-	return toOrgInvite(dbI), nil
+	invite := toOrgInvite(dbI)
+
+	groups, err := ir.retrieveOrgInviteGroups(ctx, inviteID)
+	if err != nil {
+		return auth.OrgInvite{}, err
+	}
+
+	invite.Groups = groups
+
+	return invite, nil
 }
 
 func (ir invitesRepository) RemoveOrgInvite(ctx context.Context, inviteID string) error {
@@ -208,6 +222,10 @@ func (ir invitesRepository) RemoveOrgInvite(ctx context.Context, inviteID string
 
 	if cnt != 1 {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	if err := ir.removeOrgInviteGroupsByID(ctx, inviteID); err != nil {
+		return err
 	}
 
 	return nil
@@ -282,7 +300,13 @@ func (ir invitesRepository) RetrieveOrgInvitesByOrg(ctx context.Context, orgID s
 			return auth.OrgInvitesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
+		groupIDs, err := ir.retrieveOrgInviteGroups(ctx, dbInv.ID)
+		if err != nil {
+			return auth.OrgInvitesPage{}, err
+		}
+
 		inv := toOrgInvite(dbInv)
+		inv.Groups = groupIDs
 		invites = append(invites, inv)
 	}
 
@@ -356,7 +380,14 @@ func (ir invitesRepository) RetrieveOrgInvitesByUser(ctx context.Context, userTy
 			return auth.OrgInvitesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
+		groupIDs, err := ir.retrieveOrgInviteGroups(ctx, dbInv.ID)
+		if err != nil {
+			return auth.OrgInvitesPage{}, err
+		}
+
 		inv := toOrgInvite(dbInv)
+		inv.Groups = groupIDs
+
 		invites = append(invites, inv)
 	}
 
@@ -454,6 +485,79 @@ func (ir invitesRepository) syncOrgInviteStateByID(ctx context.Context, inviteID
 			}
 		}
 		return errors.Wrap(dbutil.ErrUpdateEntity, err)
+	}
+
+	return nil
+}
+
+func (ir invitesRepository) saveOrgInviteGroups(ctx context.Context, tx *sqlx.Tx, invite auth.OrgInvite) error {
+	qIns := `
+		INSERT INTO org_invites_groups (org_invite_id, group_id, group_role)
+		VALUES (:org_invite_id, :group_id, :group_role)
+	`
+
+	for groupID, groupRole := range invite.Groups {
+		values := map[string]any{
+			"org_invite_id": invite.ID,
+			"group_id":      groupID,
+			"group_role":    groupRole,
+		}
+
+		if _, err := tx.NamedExecContext(ctx, qIns, values); err != nil {
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation:
+					return errors.Wrap(dbutil.ErrMalformedEntity, err)
+				case pgerrcode.UniqueViolation:
+					return errors.Wrap(dbutil.ErrConflict, err)
+				}
+			}
+
+			return errors.Wrap(dbutil.ErrCreateEntity, err)
+		}
+	}
+
+	return nil
+}
+
+func (ir invitesRepository) retrieveOrgInviteGroups(ctx context.Context, inviteID string) (map[string]string, error) {
+	query := `
+		SELECT group_id, group_role
+		FROM org_invites_groups
+		WHERE org_invite_id = :org_invite_id
+	`
+
+	groups := make(map[string]string)
+
+	rows, err := ir.db.NamedQueryContext(ctx, query, map[string]any{"org_invite_id": inviteID})
+	if err != nil {
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var groupID, groupRole string
+		if err := rows.Scan(&groupID, &groupRole); err != nil {
+			return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		}
+
+		groups[groupID] = groupRole
+	}
+
+	return groups, nil
+}
+
+func (ir invitesRepository) removeOrgInviteGroupsByID(ctx context.Context, inviteID string) error {
+	query := `
+		DELETE FROM org_invites_groups
+		WHERE org_invite_id = :id
+	`
+
+	_, err := ir.db.NamedExecContext(ctx, query, map[string]any{"id": inviteID})
+	if err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil

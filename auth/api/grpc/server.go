@@ -29,6 +29,7 @@ type grpcServer struct {
 	retrieveRole           kitgrpc.Handler
 	createDormantOrgInvite kitgrpc.Handler
 	activateOrgInvite      kitgrpc.Handler
+	viewOrg                kitgrpc.Handler
 }
 
 // NewServer returns new AuthServiceServer instance.
@@ -73,6 +74,11 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			kitot.TraceServer(tracer, "activate_org_invite")(activateOrgInviteEndpoint(svc)),
 			decodeActivateOrgInviteRequest,
 			encodeEmptyResponse,
+		),
+		viewOrg: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "view_org")(viewOrgEndpoint(svc)),
+			decodeViewOrgRequest,
+			encodeViewOrgResponse,
 		),
 	}
 }
@@ -144,6 +150,14 @@ func (s *grpcServer) ActivateOrgInvite(ctx context.Context, req *protomfx.Activa
 	return res.(*emptypb.Empty), nil
 }
 
+func (s *grpcServer) ViewOrg(ctx context.Context, req *protomfx.ViewOrgReq) (*protomfx.Org, error) {
+	_, res, err := s.viewOrg.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+	return res.(*protomfx.Org), nil
+}
+
 func decodeAssignRoleRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.AssignRoleReq)
 	return assignRoleReq{ID: req.GetId(), Role: req.GetRole()}, nil
@@ -210,6 +224,20 @@ func decodeActivateOrgInviteRequest(_ context.Context, grpcReq any) (any, error)
 		platformInviteID: req.GetPlatformInviteID(),
 		userID:           req.GetUserID(),
 		redirectPath:     req.GetRedirectPath(),
+	}, nil
+}
+
+func decodeViewOrgRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.ViewOrgReq)
+	return viewOrgReq{id: req.GetOrgID(), token: req.GetToken()}, nil
+}
+
+func encodeViewOrgResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(orgRes)
+	return &protomfx.Org{
+		Id:      res.id,
+		OwnerID: res.ownerID,
+		Name:    res.name,
 	}, nil
 }
 

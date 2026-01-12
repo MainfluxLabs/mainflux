@@ -133,6 +133,21 @@ func migrateDB(db *sqlx.DB) error {
 					`DROP TABLE IF EXISTS dormant_org_invites;`,
 				},
 			},
+			{
+				Id: "auth_5",
+				Up: []string{
+					`CREATE TABLE IF NOT EXISTS org_invites_groups (
+						org_invite_id UUID NOT NULL,
+						group_id      UUID NOT NULL,
+						group_role    VARCHAR NOT NULL,
+						PRIMARY KEY (org_invite_id, group_id),
+						FOREIGN KEY (org_invite_id) REFERENCES org_invites (id) ON DELETE CASCADE
+					)`,
+				},
+				Down: []string{
+					`DROP TABLE IF EXISTS org_invites_groups`,
+				},
+			},
 		},
 	}
 

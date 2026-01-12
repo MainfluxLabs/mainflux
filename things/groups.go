@@ -80,6 +80,9 @@ type Groups interface {
 	// ViewGroup retrieves data about the group identified by ID.
 	ViewGroup(ctx context.Context, token, id string) (Group, error)
 
+	// ViewGroupInternal retrieves data about the Group identified by ID, without requiring authentication.
+	ViewGroupInternal(ctx context.Context, id string) (Group, error)
+
 	// ListGroups retrieves page of all groups.
 	ListGroups(ctx context.Context, token string, pm apiutil.PageMetadata) (GroupPage, error)
 
@@ -263,6 +266,15 @@ func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Gr
 	return ts.groups.Update(ctx, group)
 }
 
+func (ts *thingsService) viewGroup(ctx context.Context, groupID string) (Group, error) {
+	gr, err := ts.groups.RetrieveByID(ctx, groupID)
+	if err != nil {
+		return Group{}, err
+	}
+
+	return gr, nil
+}
+
 func (ts *thingsService) ViewGroup(ctx context.Context, token, groupID string) (Group, error) {
 	ar := UserAccessReq{
 		Token:  token,
@@ -273,12 +285,11 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, groupID string) (
 		return Group{}, err
 	}
 
-	gr, err := ts.groups.RetrieveByID(ctx, groupID)
-	if err != nil {
-		return Group{}, err
-	}
+	return ts.viewGroup(ctx, groupID)
+}
 
-	return gr, nil
+func (ts *thingsService) ViewGroupInternal(ctx context.Context, groupID string) (Group, error) {
+	return ts.viewGroup(ctx, groupID)
 }
 
 func (ts *thingsService) ViewGroupByProfile(ctx context.Context, token, profileID string) (Group, error) {

@@ -246,6 +246,14 @@ services:
       MF_USERS_GRPC_URL: ${MF_USERS_GRPC_URL}
       MF_USERS_CA_CERTS: ${MF_USERS_CA_CERTS}
       MF_USERS_CLIENT_TLS: ${MF_USERS_CLIENT_TLS}
+      MF_EMAIL_HOST: ${MF_EMAIL_HOST}
+      MF_EMAIL_PORT: ${MF_EMAIL_PORT}
+      MF_EMAIL_USERNAME: ${MF_EMAIL_USERNAME}
+      MF_EMAIL_PASSWORD: ${MF_EMAIL_PASSWORD}
+      MF_EMAIL_FROM_ADDRESS: ${MF_EMAIL_FROM_ADDRESS}
+      MF_EMAIL_FROM_NAME: ${MF_EMAIL_FROM_NAME}
+      MF_EMAIL_BASE_TEMPLATE: ${MF_EMAIL_BASE_TEMPLATE}
+      MF_HOST: ${MF_HOST}
       MF_THINGS_EVENT_CONSUMER: ${MF_THINGS_EVENT_CONSUMER}
     ports:
       - ${MF_THINGS_HTTP_PORT}:${MF_THINGS_HTTP_PORT}
@@ -253,6 +261,9 @@ services:
       - ${MF_THINGS_AUTH_GRPC_PORT}:${MF_THINGS_AUTH_GRPC_PORT}
     networks:
       - mainfluxlabs-base-net
+    volumes:
+      - ./templates/base.tmpl:/base.tmpl
+      - ./templates/things/group_membership.tmpl:/group_membership.tmpl
 
   jaeger:
     image: jaegertracing/all-in-one:1.20
