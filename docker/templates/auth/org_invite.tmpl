@@ -7,7 +7,9 @@
     <p class="mb-16"><strong>Role:</strong> {{ .Role }}</p>
 
     {{ if .Groups }}
-        By accepting the invite, you will additionally be granted access to the following Groups within the Organization:
+        <p class="mb-8>
+            By accepting the invite, you will additionally be granted access to the following Groups within the Organization:
+        </p>
 
         <ul>
             {{ range $name, $role := .Groups }}
