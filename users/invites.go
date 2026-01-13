@@ -44,7 +44,7 @@ type PlatformInvites interface {
 	// CreatePlatformInvite creates a pending platform Invite for the appropriate email address.
 	// The user can optionally also be invited to an Organization with a certain role - the invites become visible once the user
 	// completes registration via the platform invite. Additionally, the Org Invite can optionally be paired with one or more Group assignments
-	// by supplying a slice of mappings of Group IDs to roles in `groups`. Only usable by the platform Root Admin.
+	// by supplying Group memberships in `gis`. Only usable by the platform Root Admin.
 	CreatePlatformInvite(ctx context.Context, token, redirectPath, email, orgID, role string, gis []auth.GroupInvite) (PlatformInvite, error)
 
 	// RevokePlatformInvite revokes a specific pending PlatformInvite. Only usable by the platform Root Admin.
