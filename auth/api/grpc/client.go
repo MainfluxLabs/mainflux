@@ -258,9 +258,9 @@ func (client grpcClient) CreateDormantOrgInvite(ctx context.Context, req *protom
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	groups := []auth.GroupInvite{}
+	gis := []auth.GroupInvite{}
 	for _, group := range req.GetGroups() {
-		groups = append(groups, auth.GroupInvite{
+		gis = append(gis, auth.GroupInvite{
 			GroupID:    group.GroupID,
 			MemberRole: group.MemberRole,
 		})
@@ -270,7 +270,7 @@ func (client grpcClient) CreateDormantOrgInvite(ctx context.Context, req *protom
 		token:            req.GetToken(),
 		orgID:            req.GetOrgID(),
 		inviteeRole:      req.GetInviteeRole(),
-		groups:           groups,
+		groups:           gis,
 		platformInviteID: req.GetPlatformInviteID(),
 	})
 

@@ -45,7 +45,7 @@ type PlatformInvites interface {
 	// The user can optionally also be invited to an Organization with a certain role - the invites become visible once the user
 	// completes registration via the platform invite. Additionally, the Org Invite can optionally be paired with one or more Group assignments
 	// by supplying a slice of mappings of Group IDs to roles in `groups`. Only usable by the platform Root Admin.
-	CreatePlatformInvite(ctx context.Context, token, redirectPath, email, orgID, role string, groups []auth.GroupInvite) (PlatformInvite, error)
+	CreatePlatformInvite(ctx context.Context, token, redirectPath, email, orgID, role string, gis []auth.GroupInvite) (PlatformInvite, error)
 
 	// RevokePlatformInvite revokes a specific pending PlatformInvite. Only usable by the platform Root Admin.
 	RevokePlatformInvite(ctx context.Context, token, inviteID string) error
@@ -79,7 +79,7 @@ type PlatformInvitesRepository interface {
 	UpdatePlatformInviteState(ctx context.Context, inviteID, state string) error
 }
 
-func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirectPath, email, orgID, role string, groups []auth.GroupInvite) (PlatformInvite, error) {
+func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirectPath, email, orgID, role string, gis []auth.GroupInvite) (PlatformInvite, error) {
 	if err := svc.isAdmin(ctx, token); err != nil {
 		return PlatformInvite{}, err
 	}
@@ -115,7 +115,7 @@ func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirec
 
 	if orgID != "" {
 		var reqGroups []*protomfx.OrgInviteGroup
-		for _, group := range groups {
+		for _, group := range gis {
 			reqGroups = append(reqGroups, &protomfx.OrgInviteGroup{
 				GroupID:    group.GroupID,
 				MemberRole: group.MemberRole,

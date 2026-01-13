@@ -528,7 +528,7 @@ func (ir invitesRepository) retrieveOrgInviteGroups(ctx context.Context, inviteI
 		WHERE org_invite_id = :org_invite_id
 	`
 
-	groups := []auth.GroupInvite{}
+	gis := []auth.GroupInvite{}
 
 	rows, err := ir.db.NamedQueryContext(ctx, query, map[string]any{"org_invite_id": inviteID})
 	if err != nil {
@@ -543,13 +543,13 @@ func (ir invitesRepository) retrieveOrgInviteGroups(ctx context.Context, inviteI
 			return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
-		groups = append(groups, auth.GroupInvite{
+		gis = append(gis, auth.GroupInvite{
 			GroupID:    groupID,
 			MemberRole: memberRole,
 		})
 	}
 
-	return groups, nil
+	return gis, nil
 }
 
 func (ir invitesRepository) removeOrgInviteGroupsByID(ctx context.Context, inviteID string) error {
