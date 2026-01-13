@@ -58,7 +58,7 @@ func ConvertSenMLToCSVFile(page readers.SenMLMessagesPage, timeFormat string) ([
 				getValue(m.BoolValue, ""),
 				getValue(m.DataValue, ""),
 				getValue(m.Sum, ""),
-				formatTime(m.Time, timeFormat),
+				fmt.Sprintf("%v", formatTime(m.Time, timeFormat)),
 				fmt.Sprintf("%v", m.UpdateTime),
 			}
 
@@ -118,7 +118,7 @@ func ConvertJSONToCSVFile(page readers.JSONMessagesPage, timeFormat string) ([]b
 
 		created := ""
 		if v, ok := m["created"].(int64); ok {
-			created = formatTime(v, timeFormat)
+			created = fmt.Sprintf("%v", formatTime(v, timeFormat))
 		}
 
 		row := []string{
@@ -172,11 +172,11 @@ func getValue(ptr any, defaultValue string) string {
 	return defaultValue
 }
 
-func formatTime(ns int64, timeFormat string) string {
+func formatTime(ns int64, timeFormat string) any {
 	if strings.ToLower(timeFormat) == "rfc3339" {
 		return time.Unix(0, ns).UTC().Format(time.RFC3339)
 	}
-	return fmt.Sprintf("%v", ns)
+	return ns
 }
 
 func Flatten(m map[string]any, prefix string) map[string]any {
