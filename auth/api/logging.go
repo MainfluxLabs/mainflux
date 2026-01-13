@@ -314,7 +314,7 @@ func (lm *loggingMiddleware) RetrieveRole(ctx context.Context, id string) (role 
 	return lm.svc.RetrieveRole(ctx, id)
 }
 
-func (lm *loggingMiddleware) CreateOrgInvite(ctx context.Context, token, email, role, orgID string, groups []auth.OrgInviteGroup, invRedirectPath string) (invite auth.OrgInvite, err error) {
+func (lm *loggingMiddleware) CreateOrgInvite(ctx context.Context, token, email, role, orgID string, groups []auth.GroupInvite, invRedirectPath string) (invite auth.OrgInvite, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_org_invite for org id %s, role %s and user email %s took %s to complete", orgID, role, email, time.Since(begin))
 		if err != nil {
@@ -328,7 +328,7 @@ func (lm *loggingMiddleware) CreateOrgInvite(ctx context.Context, token, email, 
 	return lm.svc.CreateOrgInvite(ctx, token, email, role, orgID, groups, invRedirectPath)
 }
 
-func (lm *loggingMiddleware) CreateDormantOrgInvite(ctx context.Context, token, orgID, role string, groups []auth.OrgInviteGroup, platformInviteID string) (invite auth.OrgInvite, err error) {
+func (lm *loggingMiddleware) CreateDormantOrgInvite(ctx context.Context, token, orgID, role string, groups []auth.GroupInvite, platformInviteID string) (invite auth.OrgInvite, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_dormant_org_invite for org id %s, role %s and platform invite id %s took %s to complete",
 			orgID, role, platformInviteID, time.Since(begin))

@@ -13,10 +13,10 @@ const (
 type createOrgInviteReq struct {
 	token        string
 	orgID        string
-	Email        string                `json:"email,omitempty"`
-	Role         string                `json:"role,omitempty"`
-	Groups       []auth.OrgInviteGroup `json:"groups,omitempty"`
-	RedirectPath string                `json:"redirect_path,omitempty"`
+	Email        string             `json:"email,omitempty"`
+	Role         string             `json:"role,omitempty"`
+	Groups       []auth.GroupInvite `json:"groups,omitempty"`
+	RedirectPath string             `json:"redirect_path,omitempty"`
 }
 
 func (req createOrgInviteReq) validate() error {

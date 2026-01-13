@@ -211,10 +211,10 @@ func encodeGetOwnerIDByOrgIDResponse(_ context.Context, grpcRes any) (any, error
 func decodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.CreateDormantOrgInviteReq)
 
-	groups := []auth.OrgInviteGroup{}
+	groups := []auth.GroupInvite{}
 
 	for _, group := range req.GetGroups() {
-		groups = append(groups, auth.OrgInviteGroup{
+		groups = append(groups, auth.GroupInvite{
 			GroupID:    group.GroupID,
 			MemberRole: group.MemberRole,
 		})

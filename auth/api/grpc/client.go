@@ -258,9 +258,9 @@ func (client grpcClient) CreateDormantOrgInvite(ctx context.Context, req *protom
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	groups := []auth.OrgInviteGroup{}
+	groups := []auth.GroupInvite{}
 	for _, group := range req.GetGroups() {
-		groups = append(groups, auth.OrgInviteGroup{
+		groups = append(groups, auth.GroupInvite{
 			GroupID:    group.GroupID,
 			MemberRole: group.MemberRole,
 		})

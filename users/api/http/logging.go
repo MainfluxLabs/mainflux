@@ -284,7 +284,7 @@ func (lm *loggingMiddleware) Restore(ctx context.Context, token string, admin us
 	return lm.svc.Restore(ctx, token, admin, users)
 }
 
-func (lm *loggingMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email, orgID, role string, groups []auth.OrgInviteGroup) (invite users.PlatformInvite, err error) {
+func (lm *loggingMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email, orgID, role string, groups []auth.GroupInvite) (invite users.PlatformInvite, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_platform_invite took %s to complete", time.Since(begin))
 		if err != nil {

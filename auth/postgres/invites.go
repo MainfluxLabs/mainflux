@@ -521,14 +521,14 @@ func (ir invitesRepository) saveOrgInviteGroups(ctx context.Context, tx *sqlx.Tx
 	return nil
 }
 
-func (ir invitesRepository) retrieveOrgInviteGroups(ctx context.Context, inviteID string) ([]auth.OrgInviteGroup, error) {
+func (ir invitesRepository) retrieveOrgInviteGroups(ctx context.Context, inviteID string) ([]auth.GroupInvite, error) {
 	query := `
 		SELECT group_id, member_role
 		FROM org_invites_groups
 		WHERE org_invite_id = :org_invite_id
 	`
 
-	groups := []auth.OrgInviteGroup{}
+	groups := []auth.GroupInvite{}
 
 	rows, err := ir.db.NamedQueryContext(ctx, query, map[string]any{"org_invite_id": inviteID})
 	if err != nil {
@@ -543,7 +543,7 @@ func (ir invitesRepository) retrieveOrgInviteGroups(ctx context.Context, inviteI
 			return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
-		groups = append(groups, auth.OrgInviteGroup{
+		groups = append(groups, auth.GroupInvite{
 			GroupID:    groupID,
 			MemberRole: memberRole,
 		})
