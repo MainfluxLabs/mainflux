@@ -184,7 +184,7 @@ func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgI
 			groupIDs = append(groupIDs, group.GroupID)
 		}
 
-		if err := svc.validateGroupsSameOrg(ctx, orgID, groupIDs); err != nil {
+		if err := svc.groupsBelongToOrg(ctx, orgID, groupIDs); err != nil {
 			return OrgInvite{}, err
 		}
 	}
@@ -230,7 +230,7 @@ func (svc service) CreateDormantOrgInvite(ctx context.Context, token, orgID, rol
 			groupIDs = append(groupIDs, group.GroupID)
 		}
 
-		if err := svc.validateGroupsSameOrg(ctx, orgID, groupIDs); err != nil {
+		if err := svc.groupsBelongToOrg(ctx, orgID, groupIDs); err != nil {
 			return OrgInvite{}, err
 		}
 	}
@@ -480,7 +480,7 @@ func (svc service) populateInviteInfo(ctx context.Context, invite *OrgInvite) er
 
 // Validates that all passed Groups (denoted by their IDs) belong to the same Organization denoted by `orgID`. Returns ErrGroupsDifferingOrgs
 // if at least one of the Groups belongs to a different Org, and nil otherwise.
-func (svc service) validateGroupsSameOrg(ctx context.Context, orgID string, groupIDs []string) error {
+func (svc service) groupsBelongToOrg(ctx context.Context, orgID string, groupIDs []string) error {
 	for _, groupID := range groupIDs {
 		group, err := svc.things.GetGroup(ctx, &protomfx.GetGroupReq{
 			GroupID: groupID,
