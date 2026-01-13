@@ -557,13 +557,10 @@ components:
           description: The invited user's role in the Organization. Only required if "org_id" is supplied.
           enum: [admin, editor, viewer]
         groups:
-          type: object
+          type: array
           description: Optional mapping of Group IDs to roles within that group. If present, upon accepting the invite, the recipient is also assigned as a member of the groups.
-          additionalProperties:
-            type: string
-          example:
-            49993661-f633-4465-83c2-4d1a01f0ec61: "viewer"
-            a9a43577-d0ba-4e3e-a625-3b8113aa5578: "admin"
+          items:
+            $ref: "#/components/schemas/InviteGroup"
       required:
         - redirect_path
         - email
@@ -690,6 +687,17 @@ components:
         error:
           type: string
           description: Error message
+    InviteGroup:
+      type: object
+      properties:
+        group_id:
+          type: string
+          format: uuid
+          description: The ID of the group.
+        member_role:
+          type: string
+          description: The member's proposed role in the group.
+          example: "admin"
 
   parameters:
     Referer:

@@ -942,13 +942,22 @@ components:
           example: "editor"
           description: The user's proposed role in the organization.
         groups:
-          type: object
-          description: Optional mapping of Group IDs to roles within that group. If present, upon accepting the invite, the recipient is also assigned as a member of the groups.
-          additionalProperties:
-            type: string
-          example:
-            f7f88d65-72bf-4363-87db-61755aa041a9: "viewer"
-            4263c43e-7447-473f-9923-0dc4f0635d39: "admin"
+          type: array
+          description: Optional array a list of Groups and roles within those groups. If present, upon accepting the invite, the recipient is also assigned as a member of the groups.
+          items:
+            $ref: '#/components/schemas/InviteGroup'
+
+    InviteGroup:
+      type: object
+      properties:
+        group_id:
+          type: string
+          format: uuid
+          description: The ID of the group.
+        member_role:
+          type: string
+          description: The member's proposed role in the group.
+          example: "admin"
         
   parameters:
     ApiKeyId:
