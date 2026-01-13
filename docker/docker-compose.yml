@@ -307,7 +307,6 @@ services:
     depends_on:
       - vernemq
       - things
-      - rules
       - broker
       - mqtt-db
     restart: on-failure
@@ -540,6 +539,7 @@ services:
     depends_on:
       - things
       - webhooks-db
+      - broker
     restart: on-failure
     environment:
       MF_WEBHOOKS_LOG_LEVEL: ${MF_WEBHOOKS_LOG_LEVEL}
@@ -633,6 +633,7 @@ services:
     depends_on:
       - things
       - downlinks-db
+      - broker
     restart: on-failure
     environment:
       MF_DOWNLINKS_LOG_LEVEL: ${MF_DOWNLINKS_LOG_LEVEL}
@@ -649,6 +650,7 @@ services:
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
       MF_DOWNLINKS_ES_URL: ${MF_DOWNLINKS_ES_URL}
       MF_DOWNLINKS_EVENT_CONSUMER: ${MF_DOWNLINKS_EVENT_CONSUMER}
+      MF_BROKER_URL: ${MF_NATS_URL}
     ports:
       - ${MF_DOWNLINKS_HTTP_PORT}:${MF_DOWNLINKS_HTTP_PORT}
     networks:
@@ -673,6 +675,7 @@ services:
     depends_on:
       - things
       - modbus-db
+      - broker
     restart: on-failure
     environment:
       MF_MODBUS_LOG_LEVEL: debug
@@ -689,6 +692,7 @@ services:
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
       MF_MODBUS_ES_URL: ${MF_MODBUS_ES_URL}
       MF_MODBUS_EVENT_CONSUMER: ${MF_MODBUS_EVENT_CONSUMER}
+      MF_BROKER_URL: ${MF_NATS_URL}
     ports:
       - ${MF_MODBUS_HTTP_PORT}:${MF_MODBUS_HTTP_PORT}
     networks:
@@ -700,6 +704,7 @@ services:
     restart: on-failure
     depends_on:
       - things
+      - broker
     environment:
       MF_CONVERTERS_LOG_LEVEL: ${MF_CONVERTERS_LOG_LEVEL}
       MF_CONVERTERS_CLIENT_TLS: ${MF_CONVERTERS_CLIENT_TLS}
@@ -708,6 +713,7 @@ services:
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_BROKER_URL: ${MF_NATS_URL}
     ports:
       - ${MF_CONVERTERS_PORT}:${MF_CONVERTERS_PORT}
     networks:
