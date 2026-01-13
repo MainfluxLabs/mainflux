@@ -187,12 +187,12 @@ func (ir invitesRepository) RetrieveOrgInviteByID(ctx context.Context, inviteID 
 
 	invite := toOrgInvite(dbI)
 
-	groups, err := ir.retrieveOrgInviteGroups(ctx, inviteID)
+	groupInvites, err := ir.retrieveOrgInviteGroups(ctx, inviteID)
 	if err != nil {
 		return auth.OrgInvite{}, err
 	}
 
-	invite.GroupInvites = groups
+	invite.GroupInvites = groupInvites
 
 	return invite, nil
 }
