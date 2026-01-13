@@ -262,7 +262,7 @@ type createPlatformInviteRequest struct {
 	Email        string             `json:"email,omitempty"`
 	OrgID        string             `json:"org_id"`
 	Role         string             `json:"role"`
-	Groups       []auth.GroupInvite `json:"groups"`
+	GroupInvites []auth.GroupInvite `json:"group_invites"`
 	RedirectPath string             `json:"redirect_path,omitempty"`
 }
 

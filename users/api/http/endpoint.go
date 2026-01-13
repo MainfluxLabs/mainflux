@@ -366,7 +366,7 @@ func createPlatformInviteEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		invite, err := svc.CreatePlatformInvite(ctx, req.token, req.RedirectPath, req.Email, req.OrgID, req.Role, req.Groups)
+		invite, err := svc.CreatePlatformInvite(ctx, req.token, req.RedirectPath, req.Email, req.OrgID, req.Role, req.GroupInvites)
 		if err != nil {
 			return nil, err
 		}

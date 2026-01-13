@@ -556,7 +556,7 @@ components:
           type: string
           description: The invited user's role in the Organization. Only required if "org_id" is supplied.
           enum: [admin, editor, viewer]
-        groups:
+        group_invites:
           type: array
           description: Optional mapping of Group IDs to roles within that group. If present, upon accepting the invite, the recipient is also assigned as a member of the groups.
           items:

@@ -15,7 +15,7 @@ type createOrgInviteReq struct {
 	orgID        string
 	Email        string             `json:"email,omitempty"`
 	Role         string             `json:"role,omitempty"`
-	Groups       []auth.GroupInvite `json:"groups,omitempty"`
+	GroupInvites []auth.GroupInvite `json:"group_invites,omitempty"`
 	RedirectPath string             `json:"redirect_path,omitempty"`
 }
 
@@ -44,7 +44,7 @@ func (req createOrgInviteReq) validate() error {
 		return apiutil.ErrMalformedEntity
 	}
 
-	for _, gi := range req.Groups {
+	for _, gi := range req.GroupInvites {
 		if err := validateRole(gi.MemberRole); err != nil {
 			return err
 		}
