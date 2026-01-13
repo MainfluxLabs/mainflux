@@ -52,10 +52,6 @@ jobs:
       
       - name: Build and push Docker images
         run: |
-          make dockers \
-            VERSION=${{ steps.version.outputs.version }} \
-            COMMIT=${GITHUB_SHA} \
-            TIME="$(date +%F_%T)"
           make latest VERSION=${{ steps.version.outputs.version }}
       
       - name: Build summary
