@@ -148,6 +148,13 @@ func migrateDB(db *sqlx.DB) error {
 					`DROP TABLE IF EXISTS org_invites_groups`,
 				},
 			},
+			{
+				Id: "auth_6",
+				Up: []string{
+					`ALTER TABLE org_invites_groups RENAME COLUMN group_role TO member_role;`,
+				},
+				Down: []string{},
+			},
 		},
 	}
 

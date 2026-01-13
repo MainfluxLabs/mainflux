@@ -492,15 +492,15 @@ func (ir invitesRepository) syncOrgInviteStateByID(ctx context.Context, inviteID
 
 func (ir invitesRepository) saveOrgInviteGroups(ctx context.Context, tx *sqlx.Tx, invite auth.OrgInvite) error {
 	qIns := `
-		INSERT INTO org_invites_groups (org_invite_id, group_id, group_role)
-		VALUES (:org_invite_id, :group_id, :group_role)
+		INSERT INTO org_invites_groups (org_invite_id, group_id, member_role)
+		VALUES (:org_invite_id, :group_id, :member_role)
 	`
 
 	for _, group := range invite.Groups {
 		values := map[string]any{
 			"org_invite_id": invite.ID,
 			"group_id":      group.GroupID,
-			"group_role":    group.MemberRole,
+			"member_role":   group.MemberRole,
 		}
 
 		if _, err := tx.NamedExecContext(ctx, qIns, values); err != nil {
@@ -523,7 +523,7 @@ func (ir invitesRepository) saveOrgInviteGroups(ctx context.Context, tx *sqlx.Tx
 
 func (ir invitesRepository) retrieveOrgInviteGroups(ctx context.Context, inviteID string) ([]auth.OrgInviteGroup, error) {
 	query := `
-		SELECT group_id, group_role
+		SELECT group_id, member_role
 		FROM org_invites_groups
 		WHERE org_invite_id = :org_invite_id
 	`
@@ -538,14 +538,14 @@ func (ir invitesRepository) retrieveOrgInviteGroups(ctx context.Context, inviteI
 	defer rows.Close()
 
 	for rows.Next() {
-		var groupID, groupRole string
-		if err := rows.Scan(&groupID, &groupRole); err != nil {
+		var groupID, memberRole string
+		if err := rows.Scan(&groupID, &memberRole); err != nil {
 			return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		groups = append(groups, auth.OrgInviteGroup{
 			GroupID:    groupID,
-			MemberRole: groupRole,
+			MemberRole: memberRole,
 		})
 	}
 
