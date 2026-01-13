@@ -945,9 +945,9 @@ components:
           type: array
           description: Optional array a list of Groups and roles within those groups. If present, upon accepting the invite, the recipient is also assigned as a member of the groups.
           items:
-            $ref: '#/components/schemas/InviteGroup'
+            $ref: '#/components/schemas/GroupInvite'
 
-    InviteGroup:
+    GroupInvite:
       type: object
       properties:
         group_id:
