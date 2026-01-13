@@ -44,8 +44,8 @@ func (req createOrgInviteReq) validate() error {
 		return apiutil.ErrMalformedEntity
 	}
 
-	for _, group := range req.Groups {
-		if err := validateRole(group.MemberRole); err != nil {
+	for _, gi := range req.Groups {
+		if err := validateRole(gi.MemberRole); err != nil {
 			return err
 		}
 	}

@@ -41,8 +41,8 @@ func (e *emailer) SendOrgInvite(to []string, inv auth.OrgInvite, orgName, invRed
 	// `groupNames` map and the group IDs from inv.Groups.
 	if len(inv.Groups) > 0 {
 		templateGroups := make(map[string]string, len(inv.Groups))
-		for _, group := range inv.Groups {
-			templateGroups[groupNames[group.GroupID]] = group.MemberRole
+		for _, gi := range inv.Groups {
+			templateGroups[groupNames[gi.GroupID]] = gi.MemberRole
 		}
 
 		templateData["Groups"] = templateGroups

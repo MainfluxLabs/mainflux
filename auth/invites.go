@@ -226,8 +226,8 @@ func (svc service) CreateDormantOrgInvite(ctx context.Context, token, orgID, rol
 	// If the invite is associated with one or more Groups, make sure that they all belong to the target Org
 	if len(gis) > 0 {
 		groupIDs := make([]string, 0, len(gis))
-		for _, group := range gis {
-			groupIDs = append(groupIDs, group.GroupID)
+		for _, gi := range gis {
+			groupIDs = append(groupIDs, gi.GroupID)
 		}
 
 		if err := svc.groupsBelongToOrg(ctx, orgID, groupIDs); err != nil {
@@ -521,11 +521,11 @@ func (svc service) acceptInvite(ctx context.Context, invite OrgInvite) error {
 			Memberships: make([]*protomfx.GroupMembership, 0, len(invite.Groups)),
 		}
 
-		for _, group := range invite.Groups {
+		for _, gi := range invite.Groups {
 			grpcReq.Memberships = append(grpcReq.Memberships, &protomfx.GroupMembership{
 				UserID:  invite.InviteeID,
-				GroupID: group.GroupID,
-				Role:    group.MemberRole,
+				GroupID: gi.GroupID,
+				Role:    gi.MemberRole,
 			})
 		}
 

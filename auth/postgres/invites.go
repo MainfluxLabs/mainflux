@@ -496,11 +496,11 @@ func (ir invitesRepository) saveOrgInviteGroups(ctx context.Context, tx *sqlx.Tx
 		VALUES (:org_invite_id, :group_id, :member_role)
 	`
 
-	for _, group := range invite.Groups {
+	for _, gi := range invite.Groups {
 		values := map[string]any{
 			"org_invite_id": invite.ID,
-			"group_id":      group.GroupID,
-			"member_role":   group.MemberRole,
+			"group_id":      gi.GroupID,
+			"member_role":   gi.MemberRole,
 		}
 
 		if _, err := tx.NamedExecContext(ctx, qIns, values); err != nil {

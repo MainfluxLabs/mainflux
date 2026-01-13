@@ -114,9 +114,9 @@ func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirec
 	}
 
 	if orgID != "" {
-		var reqGroups []*protomfx.OrgInviteGroup
+		var reqGroupInvites []*protomfx.GroupInvite
 		for _, group := range gis {
-			reqGroups = append(reqGroups, &protomfx.OrgInviteGroup{
+			reqGroupInvites = append(reqGroupInvites, &protomfx.GroupInvite{
 				GroupID:    group.GroupID,
 				MemberRole: group.MemberRole,
 			})
@@ -126,7 +126,7 @@ func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirec
 			Token:            token,
 			OrgID:            orgID,
 			InviteeRole:      role,
-			Groups:           reqGroups,
+			GroupInvites:     reqGroupInvites,
 			PlatformInviteID: inviteID,
 		}
 

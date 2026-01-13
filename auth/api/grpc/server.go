@@ -213,10 +213,10 @@ func decodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, e
 
 	gis := []auth.GroupInvite{}
 
-	for _, group := range req.GetGroups() {
+	for _, gi := range req.GetGroupInvites() {
 		gis = append(gis, auth.GroupInvite{
-			GroupID:    group.GroupID,
-			MemberRole: group.MemberRole,
+			GroupID:    gi.GroupID,
+			MemberRole: gi.MemberRole,
 		})
 	}
 

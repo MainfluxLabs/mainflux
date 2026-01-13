@@ -188,7 +188,7 @@ message OrgAccessReq {
     string token  = 2;
 }
 
-message OrgInviteGroup {
+message GroupInvite {
     string groupID = 1;
     string memberRole = 2;
 }
@@ -198,7 +198,7 @@ message CreateDormantOrgInviteReq {
     string orgID = 2;
     string inviteeRole = 3;
     string platformInviteID = 4;
-    repeated OrgInviteGroup groups = 5;
+    repeated GroupInvite groupInvites = 5;
 }
 
 message ActivateOrgInviteReq {
