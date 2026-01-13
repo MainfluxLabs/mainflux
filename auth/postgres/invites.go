@@ -192,7 +192,7 @@ func (ir invitesRepository) RetrieveOrgInviteByID(ctx context.Context, inviteID 
 		return auth.OrgInvite{}, err
 	}
 
-	invite.Groups = groups
+	invite.GroupInvites = groups
 
 	return invite, nil
 }
@@ -306,7 +306,7 @@ func (ir invitesRepository) RetrieveOrgInvitesByOrg(ctx context.Context, orgID s
 		}
 
 		inv := toOrgInvite(dbInv)
-		inv.Groups = groupIDs
+		inv.GroupInvites = groupIDs
 		invites = append(invites, inv)
 	}
 
@@ -386,7 +386,7 @@ func (ir invitesRepository) RetrieveOrgInvitesByUser(ctx context.Context, userTy
 		}
 
 		inv := toOrgInvite(dbInv)
-		inv.Groups = groupIDs
+		inv.GroupInvites = groupIDs
 
 		invites = append(invites, inv)
 	}
@@ -496,7 +496,7 @@ func (ir invitesRepository) saveOrgInviteGroups(ctx context.Context, tx *sqlx.Tx
 		VALUES (:org_invite_id, :group_id, :member_role)
 	`
 
-	for _, gi := range invite.Groups {
+	for _, gi := range invite.GroupInvites {
 		values := map[string]any{
 			"org_invite_id": invite.ID,
 			"group_id":      gi.GroupID,

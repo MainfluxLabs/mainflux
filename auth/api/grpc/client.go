@@ -270,7 +270,7 @@ func (client grpcClient) CreateDormantOrgInvite(ctx context.Context, req *protom
 		token:            req.GetToken(),
 		orgID:            req.GetOrgID(),
 		inviteeRole:      req.GetInviteeRole(),
-		groups:           gis,
+		groupInvites:     gis,
 		platformInviteID: req.GetPlatformInviteID(),
 	})
 
@@ -285,8 +285,8 @@ func (client grpcClient) CreateDormantOrgInvite(ctx context.Context, req *protom
 func encodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(createDormantOrgInviteReq)
 
-	gis := make([]*protomfx.GroupInvite, 0, len(req.groups))
-	for _, gi := range req.groups {
+	gis := make([]*protomfx.GroupInvite, 0, len(req.groupInvites))
+	for _, gi := range req.groupInvites {
 		gis = append(gis, &protomfx.GroupInvite{
 			GroupID:    gi.GroupID,
 			MemberRole: gi.MemberRole,

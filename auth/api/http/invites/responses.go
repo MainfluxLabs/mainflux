@@ -78,7 +78,7 @@ type orgInviteRes struct {
 	OrgID        string             `json:"org_id"`
 	OrgName      string             `json:"org_name"`
 	InviteeRole  string             `json:"invitee_role"`
-	Groups       []auth.GroupInvite `json:"groups,omitempty"`
+	GroupInvites []auth.GroupInvite `json:"group_invites,omitempty"`
 	CreatedAt    time.Time          `json:"created_at"`
 	ExpiresAt    time.Time          `json:"expires_at"`
 	State        string             `json:"state"`

@@ -224,7 +224,7 @@ func decodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, e
 		token:            req.GetToken(),
 		orgID:            req.GetOrgID(),
 		inviteeRole:      req.GetInviteeRole(),
-		groups:           gis,
+		groupInvites:     gis,
 		platformInviteID: req.GetPlatformInviteID(),
 	}, nil
 }

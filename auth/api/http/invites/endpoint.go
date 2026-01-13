@@ -140,7 +140,7 @@ func buildOrgInviteRes(inv auth.OrgInvite) orgInviteRes {
 		InviterEmail: inv.InviterEmail,
 		OrgID:        inv.OrgID,
 		OrgName:      inv.OrgName,
-		Groups:       inv.Groups,
+		GroupInvites: inv.GroupInvites,
 		CreatedAt:    inv.CreatedAt,
 		ExpiresAt:    inv.ExpiresAt,
 		State:        inv.State,

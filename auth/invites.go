@@ -25,7 +25,7 @@ type OrgInvite struct {
 	OrgID        string
 	OrgName      string
 	InviteeRole  string
-	Groups       []GroupInvite
+	GroupInvites []GroupInvite
 	CreatedAt    time.Time
 	ExpiresAt    time.Time
 	State        string
@@ -196,15 +196,15 @@ func (svc service) CreateOrgInvite(ctx context.Context, token, email, role, orgI
 	}
 
 	invite := OrgInvite{
-		ID:          inviteID,
-		InviteeID:   inviteeID,
-		InviterID:   inviter.ID,
-		OrgID:       orgID,
-		Groups:      gis,
-		InviteeRole: role,
-		CreatedAt:   createdAt,
-		ExpiresAt:   createdAt.Add(svc.inviteDuration),
-		State:       InviteStatePending,
+		ID:           inviteID,
+		InviteeID:    inviteeID,
+		InviterID:    inviter.ID,
+		OrgID:        orgID,
+		GroupInvites: gis,
+		InviteeRole:  role,
+		CreatedAt:    createdAt,
+		ExpiresAt:    createdAt.Add(svc.inviteDuration),
+		State:        InviteStatePending,
 	}
 
 	if err := svc.invites.SaveOrgInvite(ctx, invite); err != nil {
@@ -248,15 +248,15 @@ func (svc service) CreateDormantOrgInvite(ctx context.Context, token, orgID, rol
 	}
 
 	invite := OrgInvite{
-		ID:          inviteID,
-		InviteeID:   "",
-		InviterID:   inviter.ID,
-		OrgID:       orgID,
-		InviteeRole: role,
-		Groups:      gis,
-		CreatedAt:   createdAt,
-		ExpiresAt:   createdAt.Add(svc.inviteDuration),
-		State:       InviteStatePending,
+		ID:           inviteID,
+		InviteeID:    "",
+		InviterID:    inviter.ID,
+		OrgID:        orgID,
+		InviteeRole:  role,
+		GroupInvites: gis,
+		CreatedAt:    createdAt,
+		ExpiresAt:    createdAt.Add(svc.inviteDuration),
+		State:        InviteStatePending,
 	}
 
 	if err := svc.invites.SaveOrgInvite(ctx, invite); err != nil {
@@ -516,12 +516,12 @@ func (svc service) acceptInvite(ctx context.Context, invite OrgInvite) error {
 	}
 
 	// Create one group membership in the things service for each group the invite was associated with
-	if len(invite.Groups) > 0 {
+	if len(invite.GroupInvites) > 0 {
 		grpcReq := &protomfx.CreateGroupMembershipsReq{
-			Memberships: make([]*protomfx.GroupMembership, 0, len(invite.Groups)),
+			Memberships: make([]*protomfx.GroupMembership, 0, len(invite.GroupInvites)),
 		}
 
-		for _, gi := range invite.Groups {
+		for _, gi := range invite.GroupInvites {
 			grpcReq.Memberships = append(grpcReq.Memberships, &protomfx.GroupMembership{
 				UserID:  invite.InviteeID,
 				GroupID: gi.GroupID,
@@ -542,10 +542,10 @@ func (svc service) SendOrgInviteEmail(ctx context.Context, invite OrgInvite, ema
 
 	var groupNames map[string]string
 
-	if len(invite.Groups) > 0 {
-		groupNames = make(map[string]string, len(invite.Groups))
+	if len(invite.GroupInvites) > 0 {
+		groupNames = make(map[string]string, len(invite.GroupInvites))
 
-		for _, inviteGroup := range invite.Groups {
+		for _, inviteGroup := range invite.GroupInvites {
 			group, err := svc.things.GetGroup(context.Background(), &protomfx.GetGroupReq{GroupID: inviteGroup.GroupID})
 			if err != nil {
 				return err
