@@ -300,13 +300,13 @@ func (ir invitesRepository) RetrieveOrgInvitesByOrg(ctx context.Context, orgID s
 			return auth.OrgInvitesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
-		groupIDs, err := ir.retrieveOrgInviteGroups(ctx, dbInv.ID)
+		groupInvites, err := ir.retrieveOrgInviteGroups(ctx, dbInv.ID)
 		if err != nil {
 			return auth.OrgInvitesPage{}, err
 		}
 
 		inv := toOrgInvite(dbInv)
-		inv.GroupInvites = groupIDs
+		inv.GroupInvites = groupInvites
 		invites = append(invites, inv)
 	}
 
@@ -380,13 +380,13 @@ func (ir invitesRepository) RetrieveOrgInvitesByUser(ctx context.Context, userTy
 			return auth.OrgInvitesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
-		groupIDs, err := ir.retrieveOrgInviteGroups(ctx, dbInv.ID)
+		groupInvites, err := ir.retrieveOrgInviteGroups(ctx, dbInv.ID)
 		if err != nil {
 			return auth.OrgInvitesPage{}, err
 		}
 
 		inv := toOrgInvite(dbInv)
-		inv.GroupInvites = groupIDs
+		inv.GroupInvites = groupInvites
 
 		invites = append(invites, inv)
 	}
