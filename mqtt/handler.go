@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/mqtt/redis"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
@@ -32,19 +31,17 @@ const (
 	LogInfoDisconnected = "disconnected client_id %s"
 	LogInfoPublished    = "published with client_id %s to the topic %s"
 
-	LogErrFailedConnect                = "failed to connect: "
-	LogErrFailedSubscribe              = "failed to subscribe: "
-	LogErrFailedUnsubscribe            = "failed to unsubscribe: "
-	LogErrFailedDisconnect             = "failed to disconnect: "
-	LogErrFailedPublishDisconnectEvent = "failed to publish disconnect event: "
-	logErrFailedParseSubtopic          = "failed to parse subtopic: "
-	LogErrFailedPublishConnectEvent    = "failed to publish connect event: "
+	LogErrFailedConnect       = "failed to connect: "
+	LogErrFailedSubscribe     = "failed to subscribe: "
+	LogErrFailedUnsubscribe   = "failed to unsubscribe: "
+	LogErrFailedDisconnect    = "failed to disconnect: "
+	logErrFailedParseSubtopic = "failed to parse subtopic: "
 )
 
 var (
 	ErrMalformedSubtopic         = errors.New("malformed subtopic")
 	ErrClientNotInitialized      = errors.New("client is not initialized")
-	ErrMissingClientID           = errors.New("client_id not found")
+	ErrMissingClientID           = errors.New("missing client id")
 	ErrMissingTopicPub           = errors.New("failed to publish due to missing topic")
 	ErrMissingTopicSub           = errors.New("failed to subscribe due to missing topic")
 	ErrSubscriptionAlreadyExists = errors.New("subscription already exists")
@@ -55,15 +52,13 @@ type handler struct {
 	publisher messaging.Publisher
 	things    protomfx.ThingsServiceClient
 	logger    logger.Logger
-	es        redis.EventStore
 	service   Service
 }
 
 // NewHandler creates new Handler entity
-func NewHandler(publisher messaging.Publisher, es redis.EventStore,
-	logger logger.Logger, things protomfx.ThingsServiceClient, svc Service) session.Handler {
+func NewHandler(publisher messaging.Publisher, logger logger.Logger,
+	things protomfx.ThingsServiceClient, svc Service) session.Handler {
 	return &handler{
-		es:        es,
 		logger:    logger,
 		publisher: publisher,
 		things:    things,
@@ -82,13 +77,8 @@ func (h *handler) AuthConnect(c *session.Client) error {
 		return ErrMissingClientID
 	}
 
-	thingID, err := h.identify(c)
-	if err != nil {
+	if _, err := h.identify(c); err != nil {
 		return err
-	}
-
-	if err := h.es.Connect(thingID); err != nil {
-		h.logger.Error(LogErrFailedPublishConnectEvent + err.Error())
 	}
 
 	return nil
@@ -212,7 +202,7 @@ func (h *handler) Unsubscribe(c *session.Client, topics *[]string) {
 
 	subs, err := h.getSubscriptions(c, topics)
 	if err != nil {
-		h.logger.Error(LogErrFailedSubscribe + err.Error())
+		h.logger.Error(LogErrFailedUnsubscribe + err.Error())
 		return
 	}
 
@@ -232,12 +222,12 @@ func (h *handler) Disconnect(c *session.Client) {
 		return
 	}
 
-	thingID, _ := h.identify(c)
+	if _, err := h.identify(c); err != nil {
+		h.logger.Error(LogErrFailedDisconnect + err.Error())
+		return
+	}
 
 	h.logger.Error(fmt.Sprintf(LogInfoDisconnected, c.ID))
-	if err := h.es.Disconnect(thingID); err != nil {
-		h.logger.Error(LogErrFailedPublishDisconnectEvent + err.Error())
-	}
 }
 
 func (h *handler) identify(c *session.Client) (string, error) {
