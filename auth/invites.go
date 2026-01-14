@@ -75,13 +75,13 @@ const (
 type Invites interface {
 	// CreateOrgInvite creates a pending Invite on behalf of the User authenticated by `token`,
 	// towards the user identified by `email`, to join the Org identified by `orgID` with an appropriate role.
-	// `gis` is an optional list Group memberships. If present, the invitee will be additionally
+	// orgInvite.GroupInvites is an optional list Group memberships. If present, the invitee will be additionally
 	// be assigned as a member of each of groups after they accept the Org invite.
 	CreateOrgInvite(ctx context.Context, token string, orgInvite OrgInviteRequest) (OrgInvite, error)
 
 	// CreateDormantOrgInvite creates a pending, dormant Org Invite associated with a specfic Platform Invite
 	// denoted by `platformInviteID`.
-	// `gis` is an optional list of Group memberships. If present, the invitee will be additionally
+	// orgInvite.GroupInvites is an optional list of Group memberships. If present, the invitee will be additionally
 	// be assigned as a member of each of groups after they accept the Org invite.
 	CreateDormantOrgInvite(ctx context.Context, token string, orgInvite DormantOrgInviteRequest) (OrgInvite, error)
 
