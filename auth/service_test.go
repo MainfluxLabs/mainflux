@@ -1316,7 +1316,7 @@ func TestCreateOrgInvite(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_, err := svc.CreateOrgInvite(context.Background(), tc.token, auth.CreateOrgInviteInput{
+		_, err := svc.CreateOrgInvite(context.Background(), tc.token, auth.OrgInviteRequest{
 			Email:        tc.membership.Email,
 			Role:         tc.membership.Role,
 			OrgID:        tc.orgID,
@@ -1340,7 +1340,7 @@ func TestRevokeInvite(t *testing.T) {
 	testOrg, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	testInvite, err := svc.CreateOrgInvite(context.Background(), ownerToken, auth.CreateOrgInviteInput{
+	testInvite, err := svc.CreateOrgInvite(context.Background(), ownerToken, auth.OrgInviteRequest{
 		Email:        invitee.Email,
 		Role:         auth.Viewer,
 		OrgID:        testOrg.ID,
@@ -1393,7 +1393,7 @@ func TestRespondInvite(t *testing.T) {
 
 	testInvites := []auth.OrgInvite{}
 	for i := range 3 {
-		inv, err := svc.CreateOrgInvite(context.Background(), ownerToken, auth.CreateOrgInviteInput{
+		inv, err := svc.CreateOrgInvite(context.Background(), ownerToken, auth.OrgInviteRequest{
 			Email:        fmt.Sprintf("example%d@test.com", i+1),
 			Role:         auth.Viewer,
 			OrgID:        testOrg.ID,
@@ -1475,7 +1475,7 @@ func TestViewInvite(t *testing.T) {
 
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	invite, err := svc.CreateOrgInvite(context.Background(), inviterToken, auth.CreateOrgInviteInput{
+	invite, err := svc.CreateOrgInvite(context.Background(), inviterToken, auth.OrgInviteRequest{
 		Email:        invitee.Email,
 		Role:         auth.Viewer,
 		OrgID:        testOrg.ID,
@@ -1547,7 +1547,7 @@ func TestListInvitesByUser(t *testing.T) {
 
 		assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 
-		_, err = svc.CreateOrgInvite(context.Background(), ownerToken, auth.CreateOrgInviteInput{
+		_, err = svc.CreateOrgInvite(context.Background(), ownerToken, auth.OrgInviteRequest{
 			Email:        invitee.Email,
 			Role:         auth.Viewer,
 			OrgID:        org.ID,

@@ -46,14 +46,14 @@ type PageMetadataInvites struct {
 	State string `json:"state,omitempty"`
 }
 
-type CreateDormantOrgInviteInput struct {
+type DormantOrgInviteRequest struct {
 	OrgID            string
 	Role             string
 	GroupInvites     []GroupInvite
 	PlatformInviteID string
 }
 
-type CreateOrgInviteInput struct {
+type OrgInviteRequest struct {
 	Email        string
 	Role         string
 	OrgID        string
@@ -77,13 +77,13 @@ type Invites interface {
 	// towards the user identified by `email`, to join the Org identified by `orgID` with an appropriate role.
 	// `gis` is an optional list Group memberships. If present, the invitee will be additionally
 	// be assigned as a member of each of groups after they accept the Org invite.
-	CreateOrgInvite(ctx context.Context, token string, orgInvite CreateOrgInviteInput) (OrgInvite, error)
+	CreateOrgInvite(ctx context.Context, token string, orgInvite OrgInviteRequest) (OrgInvite, error)
 
 	// CreateDormantOrgInvite creates a pending, dormant Org Invite associated with a specfic Platform Invite
 	// denoted by `platformInviteID`.
 	// `gis` is an optional list of Group memberships. If present, the invitee will be additionally
 	// be assigned as a member of each of groups after they accept the Org invite.
-	CreateDormantOrgInvite(ctx context.Context, token string, orgInvite CreateDormantOrgInviteInput) (OrgInvite, error)
+	CreateDormantOrgInvite(ctx context.Context, token string, orgInvite DormantOrgInviteRequest) (OrgInvite, error)
 
 	// RevokeOrgInvite revokes a specific pending Invite. An existing pending Invite can only be revoked
 	// by its original inviter (creator).
@@ -148,7 +148,7 @@ type OrgInvitesRepository interface {
 	UpdateOrgInviteState(ctx context.Context, inviteID, state string) error
 }
 
-func (svc service) CreateOrgInvite(ctx context.Context, token string, orgInvite CreateOrgInviteInput) (OrgInvite, error) {
+func (svc service) CreateOrgInvite(ctx context.Context, token string, orgInvite OrgInviteRequest) (OrgInvite, error) {
 	// Check if currently authenticated User has "admin" or higher privileges within Org
 	if err := svc.canAccessOrg(ctx, token, orgInvite.OrgID, Admin); err != nil {
 		return OrgInvite{}, err
@@ -233,7 +233,7 @@ func (svc service) CreateOrgInvite(ctx context.Context, token string, orgInvite 
 	return invite, nil
 }
 
-func (svc service) CreateDormantOrgInvite(ctx context.Context, token string, orgInvite CreateDormantOrgInviteInput) (OrgInvite, error) {
+func (svc service) CreateDormantOrgInvite(ctx context.Context, token string, orgInvite DormantOrgInviteRequest) (OrgInvite, error) {
 	if err := svc.canAccessOrg(ctx, token, orgInvite.OrgID, Admin); err != nil {
 		return OrgInvite{}, err
 	}

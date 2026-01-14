@@ -223,7 +223,7 @@ func TestViewInvite(t *testing.T) {
 	org, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 
-	invite, err := svc.CreateOrgInvite(context.Background(), ownerToken, auth.CreateOrgInviteInput{
+	invite, err := svc.CreateOrgInvite(context.Background(), ownerToken, auth.OrgInviteRequest{
 		Email:        viewer.Email,
 		Role:         viewer.Role,
 		OrgID:        org.ID,
@@ -294,7 +294,7 @@ func TestRevokeInvite(t *testing.T) {
 	org, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 
-	invite, err := svc.CreateOrgInvite(context.Background(), ownerToken, auth.CreateOrgInviteInput{
+	invite, err := svc.CreateOrgInvite(context.Background(), ownerToken, auth.OrgInviteRequest{
 		Email:        viewer.Email,
 		Role:         viewer.Role,
 		OrgID:        org.ID,
@@ -377,7 +377,7 @@ func TestRespondInvite(t *testing.T) {
 	memberships := []auth.OrgMembership{viewer, editor, admin}
 	invites := []auth.OrgInvite{}
 	for _, membership := range memberships {
-		inv, err := svc.CreateOrgInvite(context.Background(), ownerToken, auth.CreateOrgInviteInput{
+		inv, err := svc.CreateOrgInvite(context.Background(), ownerToken, auth.OrgInviteRequest{
 			Email:        membership.Email,
 			Role:         membership.Role,
 			OrgID:        org.ID,
@@ -484,7 +484,7 @@ func TestListInvitesByInvitee(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 		orgIDs = append(orgIDs, org.ID)
 
-		inv, err := svc.CreateOrgInvite(context.Background(), ownerToken, auth.CreateOrgInviteInput{
+		inv, err := svc.CreateOrgInvite(context.Background(), ownerToken, auth.OrgInviteRequest{
 			Email:        viewer.Email,
 			Role:         auth.Viewer,
 			OrgID:        org.ID,
