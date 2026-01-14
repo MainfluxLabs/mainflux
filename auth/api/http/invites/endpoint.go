@@ -14,7 +14,15 @@ func createOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		invite, err := svc.CreateOrgInvite(ctx, req.token, req.Email, req.Role, req.orgID, req.GroupInvites, req.RedirectPath)
+		orgInvite := auth.CreateOrgInviteInput{
+			Email:        req.Email,
+			Role:         req.Role,
+			OrgID:        req.orgID,
+			GroupInvites: req.GroupInvites,
+			RedirectPath: req.RedirectPath,
+		}
+
+		invite, err := svc.CreateOrgInvite(ctx, req.token, orgInvite)
 		if err != nil {
 			return nil, err
 		}
