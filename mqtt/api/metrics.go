@@ -58,21 +58,3 @@ func (ms *metricsMiddleware) RemoveSubscription(ctx context.Context, sub mqtt.Su
 
 	return ms.svc.RemoveSubscription(ctx, sub)
 }
-
-func (ms *metricsMiddleware) HasClientID(ctx context.Context, clientID string) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "has_client_id").Add(1)
-		ms.latency.With("method", "has_client_id").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.HasClientID(ctx, clientID)
-}
-
-func (ms *metricsMiddleware) UpdateStatus(ctx context.Context, sub mqtt.Subscription) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "update_status").Add(1)
-		ms.latency.With("method", "update_status").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.UpdateStatus(ctx, sub)
-}

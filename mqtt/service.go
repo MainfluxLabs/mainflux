@@ -19,12 +19,6 @@ type Service interface {
 
 	// RemoveSubscription removes the subscription having the provided identifier.
 	RemoveSubscription(ctx context.Context, sub Subscription) error
-
-	// HasClientID  indicates if a subscription exist for a given client ID.
-	HasClientID(ctx context.Context, clientID string) error
-
-	// UpdateStatus updates the subscription status for a given client ID.
-	UpdateStatus(ctx context.Context, sub Subscription) error
 }
 
 type mqttService struct {
@@ -58,12 +52,4 @@ func (ms *mqttService) ListSubscriptions(ctx context.Context, groupID, token str
 	}
 
 	return ms.subscriptions.RetrieveByGroup(ctx, pm, groupID)
-}
-
-func (ms *mqttService) UpdateStatus(ctx context.Context, sub Subscription) error {
-	return ms.subscriptions.UpdateStatus(ctx, sub)
-}
-
-func (ms *mqttService) HasClientID(ctx context.Context, clientID string) error {
-	return ms.subscriptions.HasClientID(ctx, clientID)
 }
