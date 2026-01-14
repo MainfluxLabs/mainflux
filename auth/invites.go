@@ -545,13 +545,13 @@ func (svc service) SendOrgInviteEmail(ctx context.Context, invite OrgInvite, ema
 	if len(invite.GroupInvites) > 0 {
 		groupNames = make(map[string]string, len(invite.GroupInvites))
 
-		for _, inviteGroup := range invite.GroupInvites {
-			group, err := svc.things.GetGroup(context.Background(), &protomfx.GetGroupReq{GroupID: inviteGroup.GroupID})
+		for _, groupInvite := range invite.GroupInvites {
+			group, err := svc.things.GetGroup(context.Background(), &protomfx.GetGroupReq{GroupID: groupInvite.GroupID})
 			if err != nil {
 				return err
 			}
 
-			groupNames[inviteGroup.GroupID] = group.GetName()
+			groupNames[groupInvite.GroupID] = group.GetName()
 		}
 	}
 
