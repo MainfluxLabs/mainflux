@@ -277,7 +277,6 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 			GroupID:   groupID.GetValue(),
 			ThingID:   thingID,
 			ClientID:  c.ID,
-			Status:    connected,
 			CreatedAt: float64(time.Now().UnixNano()) / 1e9,
 		}
 		subs = append(subs, sub)

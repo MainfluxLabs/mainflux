@@ -28,7 +28,7 @@ type viewSubRes struct {
 	ThingID   string  `json:"thing_id"`
 	GroupID   string  `json:"group_id"`
 	ClientID  string  `json:"client_id"`
-	Status    string  `json:"status"`
+	Status    string  `json:"status,omitempty"`
 	CreatedAt float64 `json:"created_at"`
 }
 

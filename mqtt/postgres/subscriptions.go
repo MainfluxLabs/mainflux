@@ -23,14 +23,13 @@ func NewRepository(db dbutil.Database) mqtt.Repository {
 }
 
 func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error {
-	q := `INSERT INTO subscriptions (subtopic, thing_id, group_id, client_id, status, created_at)
-		VALUES (:subtopic, :thing_id, :group_id, :client_id, :status, :created_at)`
+	q := `INSERT INTO subscriptions (subtopic, thing_id, group_id, client_id, created_at)
+		  VALUES (:subtopic, :thing_id, :group_id, :client_id, :created_at)`
 	dbSub := dbSubscription{
 		Subtopic:  sub.Subtopic,
 		ThingID:   sub.ThingID,
 		GroupID:   sub.GroupID,
 		ClientID:  sub.ClientID,
-		Status:    sub.Status,
 		CreatedAt: sub.CreatedAt,
 	}
 
@@ -46,26 +45,9 @@ func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error
 	return nil
 }
 
-func (mr *mqttRepository) UpdateStatus(ctx context.Context, sub mqtt.Subscription) error {
-	q := `UPDATE subscriptions SET status = :status, created_at = :created_at WHERE client_id = :client_id;`
-
-	dbSub := dbSubscription{
-		ClientID:  sub.ClientID,
-		Status:    sub.Status,
-		CreatedAt: sub.CreatedAt,
-	}
-
-	row, err := mr.db.NamedQueryContext(ctx, q, dbSub)
-	if err != nil {
-		return errors.Wrap(dbutil.ErrUpdateEntity, err)
-	}
-	defer row.Close()
-
-	return nil
-}
-
 func (mr *mqttRepository) Remove(ctx context.Context, sub mqtt.Subscription) error {
-	q := `DELETE FROM subscriptions WHERE client_id = :client_id AND subtopic = :subtopic AND thing_id = :thing_id AND group_id = :group_id;`
+	q := `DELETE FROM subscriptions 
+          WHERE client_id = :client_id AND subtopic = :subtopic AND thing_id = :thing_id AND group_id = :group_id;`
 
 	dbSub := dbSubscription{
 		ClientID: sub.ClientID,
@@ -82,24 +64,10 @@ func (mr *mqttRepository) Remove(ctx context.Context, sub mqtt.Subscription) err
 	return nil
 }
 
-func (mr *mqttRepository) HasClientID(ctx context.Context, clientID string) error {
-	q := `SELECT EXISTS (SELECT 1 FROM subscriptions WHERE client_id = $1);`
-	exists := false
-	if err := mr.db.QueryRowxContext(ctx, q, clientID).Scan(&exists); err != nil {
-		return errors.Wrap(dbutil.ErrRetrieveEntity, err)
-	}
-
-	if !exists {
-		return dbutil.ErrNotFound
-	}
-
-	return nil
-}
-
 func (mr *mqttRepository) RetrieveByGroup(ctx context.Context, pm mqtt.PageMetadata, groupID string) (mqtt.Page, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
-	q := fmt.Sprintf(`SELECT subtopic, group_id, client_id, thing_id, status, created_at 
+	q := fmt.Sprintf(`SELECT subtopic, group_id, client_id, thing_id, created_at 
 					  FROM subscriptions 
 					  WHERE group_id = :group_id 
 					  ORDER BY created_at 
@@ -143,7 +111,6 @@ type dbSubscription struct {
 	ThingID   string  `db:"thing_id"`
 	GroupID   string  `db:"group_id"`
 	ClientID  string  `db:"client_id"`
-	Status    string  `db:"status"`
 	CreatedAt float64 `db:"created_at"`
 }
 
@@ -153,7 +120,6 @@ func fromDBSub(sub dbSubscription) mqtt.Subscription {
 		ThingID:   sub.ThingID,
 		GroupID:   sub.GroupID,
 		ClientID:  sub.ClientID,
-		Status:    sub.Status,
 		CreatedAt: sub.CreatedAt,
 	}
 }
