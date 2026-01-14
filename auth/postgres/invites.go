@@ -59,7 +59,7 @@ func (ir invitesRepository) SaveOrgInvite(ctx context.Context, invites ...auth.O
 			return errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 
-		if err := ir.saveOrgInviteGroups(ctx, tx, invite); err != nil {
+		if err := ir.saveGroupInvites(ctx, tx, invite); err != nil {
 			return err
 		}
 	}
@@ -187,7 +187,7 @@ func (ir invitesRepository) RetrieveOrgInviteByID(ctx context.Context, inviteID 
 
 	invite := toOrgInvite(dbI)
 
-	groupInvites, err := ir.retrieveOrgInviteGroups(ctx, inviteID)
+	groupInvites, err := ir.retrieveGroupInvitesByOrgInvite(ctx, inviteID)
 	if err != nil {
 		return auth.OrgInvite{}, err
 	}
@@ -224,7 +224,7 @@ func (ir invitesRepository) RemoveOrgInvite(ctx context.Context, inviteID string
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
-	if err := ir.removeOrgInviteGroupsByID(ctx, inviteID); err != nil {
+	if err := ir.removeGroupInvitesByOrgInvite(ctx, inviteID); err != nil {
 		return err
 	}
 
@@ -300,7 +300,7 @@ func (ir invitesRepository) RetrieveOrgInvitesByOrg(ctx context.Context, orgID s
 			return auth.OrgInvitesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
-		groupInvites, err := ir.retrieveOrgInviteGroups(ctx, dbInv.ID)
+		groupInvites, err := ir.retrieveGroupInvitesByOrgInvite(ctx, dbInv.ID)
 		if err != nil {
 			return auth.OrgInvitesPage{}, err
 		}
@@ -380,7 +380,7 @@ func (ir invitesRepository) RetrieveOrgInvitesByUser(ctx context.Context, userTy
 			return auth.OrgInvitesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
-		groupInvites, err := ir.retrieveOrgInviteGroups(ctx, dbInv.ID)
+		groupInvites, err := ir.retrieveGroupInvitesByOrgInvite(ctx, dbInv.ID)
 		if err != nil {
 			return auth.OrgInvitesPage{}, err
 		}
@@ -490,7 +490,7 @@ func (ir invitesRepository) syncOrgInviteStateByID(ctx context.Context, inviteID
 	return nil
 }
 
-func (ir invitesRepository) saveOrgInviteGroups(ctx context.Context, tx *sqlx.Tx, invite auth.OrgInvite) error {
+func (ir invitesRepository) saveGroupInvites(ctx context.Context, tx *sqlx.Tx, invite auth.OrgInvite) error {
 	qIns := `
 		INSERT INTO org_invites_groups (org_invite_id, group_id, member_role)
 		VALUES (:org_invite_id, :group_id, :member_role)
@@ -521,7 +521,7 @@ func (ir invitesRepository) saveOrgInviteGroups(ctx context.Context, tx *sqlx.Tx
 	return nil
 }
 
-func (ir invitesRepository) retrieveOrgInviteGroups(ctx context.Context, inviteID string) ([]auth.GroupInvite, error) {
+func (ir invitesRepository) retrieveGroupInvitesByOrgInvite(ctx context.Context, inviteID string) ([]auth.GroupInvite, error) {
 	query := `
 		SELECT group_id, member_role
 		FROM org_invites_groups
@@ -552,7 +552,7 @@ func (ir invitesRepository) retrieveOrgInviteGroups(ctx context.Context, inviteI
 	return gis, nil
 }
 
-func (ir invitesRepository) removeOrgInviteGroupsByID(ctx context.Context, inviteID string) error {
+func (ir invitesRepository) removeGroupInvitesByOrgInvite(ctx context.Context, inviteID string) error {
 	query := `
 		DELETE FROM org_invites_groups
 		WHERE org_invite_id = :id
