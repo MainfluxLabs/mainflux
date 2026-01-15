@@ -6,6 +6,7 @@ package http
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -366,7 +367,13 @@ func createPlatformInviteEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		invite, err := svc.CreatePlatformInvite(ctx, req.token, req.RedirectPath, req.Email, req.OrgID, req.Role, req.GroupInvites)
+		orgInvite := auth.OrgInvite{
+			OrgID:        req.OrgID,
+			InviteeRole:  req.Role,
+			GroupInvites: req.GroupInvites,
+		}
+
+		invite, err := svc.CreatePlatformInvite(ctx, req.token, req.RedirectPath, req.Email, orgInvite)
 		if err != nil {
 			return nil, err
 		}
