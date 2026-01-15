@@ -138,14 +138,13 @@ func createDormantOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 			return emptyRes{}, err
 		}
 
-		orgInvite := auth.DormantOrgInviteRequest{
-			OrgID:            req.orgID,
-			Role:             req.inviteeRole,
-			GroupInvites:     req.groupInvites,
-			PlatformInviteID: req.platformInviteID,
+		orgInvite := auth.OrgInvite{
+			OrgID:        req.orgID,
+			InviteeRole:  req.inviteeRole,
+			GroupInvites: req.groupInvites,
 		}
 
-		if _, err := svc.CreateDormantOrgInvite(ctx, req.token, orgInvite); err != nil {
+		if _, err := svc.CreateDormantOrgInvite(ctx, req.token, orgInvite, req.platformInviteID); err != nil {
 			return emptyRes{}, err
 		}
 

@@ -46,21 +46,6 @@ type PageMetadataInvites struct {
 	State string `json:"state,omitempty"`
 }
 
-type DormantOrgInviteRequest struct {
-	OrgID            string
-	Role             string
-	GroupInvites     []GroupInvite
-	PlatformInviteID string
-}
-
-type OrgInviteRequest struct {
-	Email        string
-	Role         string
-	OrgID        string
-	GroupInvites []GroupInvite
-	RedirectPath string
-}
-
 const (
 	UserTypeInvitee = "invitee"
 	UserTypeInviter = "inviter"
@@ -74,16 +59,16 @@ const (
 
 type Invites interface {
 	// CreateOrgInvite creates a pending Invite on behalf of the User authenticated by `token`,
-	// towards the user identified by `email`, to join the Org identified by `orgID` with the appropriate role.
-	// orgInvite.GroupInvites is an optional list of Group memberships. If present, the invitee will additionally
+	// towards the user identified by invite.Email, to join the Org identified by invite.OrgID with the invite.Role role.
+	// invite.GroupInvites is an optional list of Group memberships. If present, the invitee will additionally
 	// be assigned as a member of each of the groups after they accept the Org invite.
-	CreateOrgInvite(ctx context.Context, token string, orgInvite OrgInviteRequest) (OrgInvite, error)
+	CreateOrgInvite(ctx context.Context, token string, invite OrgInvite, invRedirectPath string) (OrgInvite, error)
 
 	// CreateDormantOrgInvite creates a pending, dormant Org Invite associated with a specific Platform Invite
 	// denoted by `platformInviteID`.
 	// orgInvite.GroupInvites is an optional list of Group memberships. If present, the invitee will additionally
 	// be assigned as a member of each group after they accept the Org invite.
-	CreateDormantOrgInvite(ctx context.Context, token string, orgInvite DormantOrgInviteRequest) (OrgInvite, error)
+	CreateDormantOrgInvite(ctx context.Context, token string, invite OrgInvite, platformInviteID string) (OrgInvite, error)
 
 	// RevokeOrgInvite revokes a specific pending Invite. An existing pending Invite can only be revoked
 	// by its original inviter (creator).
@@ -148,9 +133,9 @@ type OrgInvitesRepository interface {
 	UpdateOrgInviteState(ctx context.Context, inviteID, state string) error
 }
 
-func (svc service) CreateOrgInvite(ctx context.Context, token string, orgInvite OrgInviteRequest) (OrgInvite, error) {
+func (svc service) CreateOrgInvite(ctx context.Context, token string, invite OrgInvite, invRedirectPath string) (OrgInvite, error) {
 	// Check if currently authenticated User has "admin" or higher privileges within Org
-	if err := svc.canAccessOrg(ctx, token, orgInvite.OrgID, Admin); err != nil {
+	if err := svc.canAccessOrg(ctx, token, invite.OrgID, Admin); err != nil {
 		return OrgInvite{}, err
 	}
 
@@ -159,12 +144,12 @@ func (svc service) CreateOrgInvite(ctx context.Context, token string, orgInvite 
 		return OrgInvite{}, err
 	}
 
-	org, err := svc.orgs.RetrieveByID(ctx, orgInvite.OrgID)
+	org, err := svc.orgs.RetrieveByID(ctx, invite.OrgID)
 	if err != nil {
 		return OrgInvite{}, err
 	}
 
-	muReq := protomfx.UsersByEmailsReq{Emails: []string{orgInvite.Email}}
+	muReq := protomfx.UsersByEmailsReq{Emails: []string{invite.InviteeEmail}}
 	users, err := svc.users.GetUsersByEmails(ctx, &muReq)
 
 	if err != nil {
@@ -183,7 +168,7 @@ func (svc service) CreateOrgInvite(ctx context.Context, token string, orgInvite 
 
 	inviteeID := users.Users[0].Id
 
-	_, err = svc.memberships.RetrieveRole(ctx, inviteeID, orgInvite.OrgID)
+	_, err = svc.memberships.RetrieveRole(ctx, inviteeID, invite.OrgID)
 	if err != nil && !errors.Contains(err, dbutil.ErrNotFound) {
 		return OrgInvite{}, err
 	}
@@ -193,13 +178,13 @@ func (svc service) CreateOrgInvite(ctx context.Context, token string, orgInvite 
 	}
 
 	// If the invite is associated with one or more Groups, make sure that they all belong to the target Org
-	if len(orgInvite.GroupInvites) > 0 {
-		groupIDs := make([]string, 0, len(orgInvite.GroupInvites))
-		for _, gi := range orgInvite.GroupInvites {
+	if len(invite.GroupInvites) > 0 {
+		groupIDs := make([]string, 0, len(invite.GroupInvites))
+		for _, gi := range invite.GroupInvites {
 			groupIDs = append(groupIDs, gi.GroupID)
 		}
 
-		if err := svc.groupsBelongToOrg(ctx, orgInvite.OrgID, groupIDs); err != nil {
+		if err := svc.groupsBelongToOrg(ctx, invite.OrgID, groupIDs); err != nil {
 			return OrgInvite{}, err
 		}
 	}
@@ -210,13 +195,13 @@ func (svc service) CreateOrgInvite(ctx context.Context, token string, orgInvite 
 		return OrgInvite{}, err
 	}
 
-	invite := OrgInvite{
+	invite = OrgInvite{
 		ID:           inviteID,
 		InviteeID:    inviteeID,
 		InviterID:    inviter.ID,
-		OrgID:        orgInvite.OrgID,
-		GroupInvites: orgInvite.GroupInvites,
-		InviteeRole:  orgInvite.Role,
+		OrgID:        invite.OrgID,
+		GroupInvites: invite.GroupInvites,
+		InviteeRole:  invite.InviteeRole,
 		CreatedAt:    createdAt,
 		ExpiresAt:    createdAt.Add(svc.inviteDuration),
 		State:        InviteStatePending,
@@ -227,25 +212,25 @@ func (svc service) CreateOrgInvite(ctx context.Context, token string, orgInvite 
 	}
 
 	go func() {
-		svc.SendOrgInviteEmail(ctx, invite, orgInvite.Email, org.Name, orgInvite.RedirectPath)
+		svc.SendOrgInviteEmail(ctx, invite, invite.InviteeEmail, org.Name, invRedirectPath)
 	}()
 
 	return invite, nil
 }
 
-func (svc service) CreateDormantOrgInvite(ctx context.Context, token string, orgInvite DormantOrgInviteRequest) (OrgInvite, error) {
-	if err := svc.canAccessOrg(ctx, token, orgInvite.OrgID, Admin); err != nil {
+func (svc service) CreateDormantOrgInvite(ctx context.Context, token string, invite OrgInvite, platformInviteID string) (OrgInvite, error) {
+	if err := svc.canAccessOrg(ctx, token, invite.OrgID, Admin); err != nil {
 		return OrgInvite{}, err
 	}
 
 	// If the invite is associated with one or more Groups, make sure that they all belong to the target Org
-	if len(orgInvite.GroupInvites) > 0 {
-		groupIDs := make([]string, 0, len(orgInvite.GroupInvites))
-		for _, gi := range orgInvite.GroupInvites {
+	if len(invite.GroupInvites) > 0 {
+		groupIDs := make([]string, 0, len(invite.GroupInvites))
+		for _, gi := range invite.GroupInvites {
 			groupIDs = append(groupIDs, gi.GroupID)
 		}
 
-		if err := svc.groupsBelongToOrg(ctx, orgInvite.OrgID, groupIDs); err != nil {
+		if err := svc.groupsBelongToOrg(ctx, invite.OrgID, groupIDs); err != nil {
 			return OrgInvite{}, err
 		}
 	}
@@ -262,13 +247,13 @@ func (svc service) CreateDormantOrgInvite(ctx context.Context, token string, org
 		return OrgInvite{}, err
 	}
 
-	invite := OrgInvite{
+	invite = OrgInvite{
 		ID:           inviteID,
 		InviteeID:    "",
 		InviterID:    inviter.ID,
-		OrgID:        orgInvite.OrgID,
-		InviteeRole:  orgInvite.Role,
-		GroupInvites: orgInvite.GroupInvites,
+		OrgID:        invite.OrgID,
+		InviteeRole:  invite.InviteeRole,
+		GroupInvites: invite.GroupInvites,
 		CreatedAt:    createdAt,
 		ExpiresAt:    createdAt.Add(svc.inviteDuration),
 		State:        InviteStatePending,
@@ -278,7 +263,7 @@ func (svc service) CreateDormantOrgInvite(ctx context.Context, token string, org
 		return OrgInvite{}, err
 	}
 
-	if err := svc.invites.SaveDormantInviteRelation(ctx, inviteID, orgInvite.PlatformInviteID); err != nil {
+	if err := svc.invites.SaveDormantInviteRelation(ctx, inviteID, platformInviteID); err != nil {
 		if err := svc.invites.RemoveOrgInvite(ctx, inviteID); err != nil {
 			return OrgInvite{}, err
 		}
