@@ -74,15 +74,15 @@ const (
 
 type Invites interface {
 	// CreateOrgInvite creates a pending Invite on behalf of the User authenticated by `token`,
-	// towards the user identified by `email`, to join the Org identified by `orgID` with an appropriate role.
-	// orgInvite.GroupInvites is an optional list Group memberships. If present, the invitee will be additionally
-	// be assigned as a member of each of groups after they accept the Org invite.
+	// towards the user identified by `email`, to join the Org identified by `orgID` with the appropriate role.
+	// orgInvite.GroupInvites is an optional list of Group memberships. If present, the invitee will additionally
+	// be assigned as a member of each of the groups after they accept the Org invite.
 	CreateOrgInvite(ctx context.Context, token string, orgInvite OrgInviteRequest) (OrgInvite, error)
 
-	// CreateDormantOrgInvite creates a pending, dormant Org Invite associated with a specfic Platform Invite
+	// CreateDormantOrgInvite creates a pending, dormant Org Invite associated with a specific Platform Invite
 	// denoted by `platformInviteID`.
-	// orgInvite.GroupInvites is an optional list of Group memberships. If present, the invitee will be additionally
-	// be assigned as a member of each of groups after they accept the Org invite.
+	// orgInvite.GroupInvites is an optional list of Group memberships. If present, the invitee will additionally
+	// be assigned as a member of each group after they accept the Org invite.
 	CreateDormantOrgInvite(ctx context.Context, token string, orgInvite DormantOrgInviteRequest) (OrgInvite, error)
 
 	// RevokeOrgInvite revokes a specific pending Invite. An existing pending Invite can only be revoked

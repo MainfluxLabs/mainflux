@@ -943,7 +943,7 @@ components:
           description: The user's proposed role in the organization.
         group_invites:
           type: array
-          description: Optional array a list of Groups and roles within those groups. If present, upon accepting the invite, the recipient is also assigned as a member of the groups.
+          description: Optional list of Groups and roles within those groups. If present, upon accepting the invite, the recipient is also assigned as a member of the groups.
           items:
             $ref: '#/components/schemas/GroupInvite'
 

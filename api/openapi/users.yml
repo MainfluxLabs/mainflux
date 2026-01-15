@@ -558,7 +558,7 @@ components:
           enum: [admin, editor, viewer]
         group_invites:
           type: array
-          description: Optional mapping of Group IDs to roles within that group. If present, upon accepting the invite, the recipient is also assigned as a member of the groups.
+          description: Optional list of Groups and roles within those groups. If present, upon accepting the invite, the recipient is also assigned as a member of the groups.
           items:
             $ref: "#/components/schemas/GroupInvite"
       required:
