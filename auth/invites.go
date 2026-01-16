@@ -198,6 +198,7 @@ func (svc service) CreateOrgInvite(ctx context.Context, token string, oi OrgInvi
 	oi = OrgInvite{
 		ID:           inviteID,
 		InviteeID:    inviteeID,
+		InviteeEmail: oi.InviteeEmail,
 		InviterID:    inviter.ID,
 		OrgID:        oi.OrgID,
 		GroupInvites: oi.GroupInvites,
