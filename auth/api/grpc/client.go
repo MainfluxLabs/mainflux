@@ -7,6 +7,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
@@ -257,10 +258,19 @@ func (client grpcClient) CreateDormantOrgInvite(ctx context.Context, req *protom
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
+	gis := []auth.GroupInvite{}
+	for _, gi := range req.GetGroupInvites() {
+		gis = append(gis, auth.GroupInvite{
+			GroupID:    gi.GroupID,
+			MemberRole: gi.MemberRole,
+		})
+	}
+
 	res, err := client.createDormantOrgInvite(ctx, createDormantOrgInviteReq{
 		token:            req.GetToken(),
 		orgID:            req.GetOrgID(),
 		inviteeRole:      req.GetInviteeRole(),
+		groupInvites:     gis,
 		platformInviteID: req.GetPlatformInviteID(),
 	})
 
@@ -274,10 +284,20 @@ func (client grpcClient) CreateDormantOrgInvite(ctx context.Context, req *protom
 
 func encodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(createDormantOrgInviteReq)
+
+	gis := make([]*protomfx.GroupInvite, 0, len(req.groupInvites))
+	for _, gi := range req.groupInvites {
+		gis = append(gis, &protomfx.GroupInvite{
+			GroupID:    gi.GroupID,
+			MemberRole: gi.MemberRole,
+		})
+	}
+
 	return &protomfx.CreateDormantOrgInviteReq{
 		Token:            req.token,
 		OrgID:            req.orgID,
 		InviteeRole:      req.inviteeRole,
+		GroupInvites:     gis,
 		PlatformInviteID: req.platformInviteID,
 	}, nil
 }

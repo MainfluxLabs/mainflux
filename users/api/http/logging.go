@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/users"
 )
@@ -283,7 +284,7 @@ func (lm *loggingMiddleware) Restore(ctx context.Context, token string, admin us
 	return lm.svc.Restore(ctx, token, admin, users)
 }
 
-func (lm *loggingMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email, orgID, role string) (invite users.PlatformInvite, err error) {
+func (lm *loggingMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite auth.OrgInvite) (invite users.PlatformInvite, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_platform_invite took %s to complete", time.Since(begin))
 		if err != nil {
@@ -294,7 +295,7 @@ func (lm *loggingMiddleware) CreatePlatformInvite(ctx context.Context, token, re
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CreatePlatformInvite(ctx, token, redirectPath, email, orgID, role)
+	return lm.svc.CreatePlatformInvite(ctx, token, redirectPath, email, orgInvite)
 }
 
 func (lm *loggingMiddleware) RevokePlatformInvite(ctx context.Context, token, inviteID string) (err error) {

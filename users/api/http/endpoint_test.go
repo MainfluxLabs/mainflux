@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -1125,7 +1126,7 @@ func TestViewPlatformInvite(t *testing.T) {
 	tokenRegular, err := svc.Login(context.Background(), user)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s\n", err))
 
-	invite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "new@user.com", "", "")
+	invite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "new@user.com", auth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Inviting platform member expected to succeed: %s\n", err))
 
 	cases := []struct {
@@ -1194,10 +1195,10 @@ func TestListPlatformInvites(t *testing.T) {
 	tokenRegular, err := svc.Login(context.Background(), user)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s\n", err))
 
-	_, err = svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "new@user.com", "", "")
+	_, err = svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "new@user.com", auth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Inviting platform member expected to succeed: %s\n", err))
 
-	_, err = svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "new1@user.com", "", "")
+	_, err = svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "new1@user.com", auth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Inviting platform member expected to succeed: %s\n", err))
 
 	cases := []struct {
@@ -1255,7 +1256,7 @@ func TestRevokePlatformInvite(t *testing.T) {
 	tokenRegular, err := svc.Login(context.Background(), user)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s\n", err))
 
-	invite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "new@user.com", "", "")
+	invite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "new@user.com", auth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Inviting platform member expected to succeed: %s\n", err))
 
 	cases := []struct {

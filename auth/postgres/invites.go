@@ -59,7 +59,7 @@ func (ir invitesRepository) SaveOrgInvite(ctx context.Context, invites ...auth.O
 			return errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 
-		if err := ir.saveOrgInviteGroups(ctx, tx, invite); err != nil {
+		if err := ir.saveGroupInvites(ctx, tx, invite); err != nil {
 			return err
 		}
 	}
@@ -187,12 +187,12 @@ func (ir invitesRepository) RetrieveOrgInviteByID(ctx context.Context, inviteID 
 
 	invite := toOrgInvite(dbI)
 
-	groups, err := ir.retrieveOrgInviteGroups(ctx, inviteID)
+	groupInvites, err := ir.retrieveGroupInvitesByOrgInvite(ctx, inviteID)
 	if err != nil {
 		return auth.OrgInvite{}, err
 	}
 
-	invite.Groups = groups
+	invite.GroupInvites = groupInvites
 
 	return invite, nil
 }
@@ -224,7 +224,7 @@ func (ir invitesRepository) RemoveOrgInvite(ctx context.Context, inviteID string
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
-	if err := ir.removeOrgInviteGroupsByID(ctx, inviteID); err != nil {
+	if err := ir.removeGroupInvitesByOrgInvite(ctx, inviteID); err != nil {
 		return err
 	}
 
@@ -300,13 +300,13 @@ func (ir invitesRepository) RetrieveOrgInvitesByOrg(ctx context.Context, orgID s
 			return auth.OrgInvitesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
-		groupIDs, err := ir.retrieveOrgInviteGroups(ctx, dbInv.ID)
+		groupInvites, err := ir.retrieveGroupInvitesByOrgInvite(ctx, dbInv.ID)
 		if err != nil {
 			return auth.OrgInvitesPage{}, err
 		}
 
 		inv := toOrgInvite(dbInv)
-		inv.Groups = groupIDs
+		inv.GroupInvites = groupInvites
 		invites = append(invites, inv)
 	}
 
@@ -380,13 +380,13 @@ func (ir invitesRepository) RetrieveOrgInvitesByUser(ctx context.Context, userTy
 			return auth.OrgInvitesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
-		groupIDs, err := ir.retrieveOrgInviteGroups(ctx, dbInv.ID)
+		groupInvites, err := ir.retrieveGroupInvitesByOrgInvite(ctx, dbInv.ID)
 		if err != nil {
 			return auth.OrgInvitesPage{}, err
 		}
 
 		inv := toOrgInvite(dbInv)
-		inv.Groups = groupIDs
+		inv.GroupInvites = groupInvites
 
 		invites = append(invites, inv)
 	}
@@ -490,17 +490,17 @@ func (ir invitesRepository) syncOrgInviteStateByID(ctx context.Context, inviteID
 	return nil
 }
 
-func (ir invitesRepository) saveOrgInviteGroups(ctx context.Context, tx *sqlx.Tx, invite auth.OrgInvite) error {
+func (ir invitesRepository) saveGroupInvites(ctx context.Context, tx *sqlx.Tx, invite auth.OrgInvite) error {
 	qIns := `
-		INSERT INTO org_invites_groups (org_invite_id, group_id, group_role)
-		VALUES (:org_invite_id, :group_id, :group_role)
+		INSERT INTO org_invites_groups (org_invite_id, group_id, member_role)
+		VALUES (:org_invite_id, :group_id, :member_role)
 	`
 
-	for groupID, groupRole := range invite.Groups {
+	for _, gi := range invite.GroupInvites {
 		values := map[string]any{
 			"org_invite_id": invite.ID,
-			"group_id":      groupID,
-			"group_role":    groupRole,
+			"group_id":      gi.GroupID,
+			"member_role":   gi.MemberRole,
 		}
 
 		if _, err := tx.NamedExecContext(ctx, qIns, values); err != nil {
@@ -521,14 +521,14 @@ func (ir invitesRepository) saveOrgInviteGroups(ctx context.Context, tx *sqlx.Tx
 	return nil
 }
 
-func (ir invitesRepository) retrieveOrgInviteGroups(ctx context.Context, inviteID string) (map[string]string, error) {
+func (ir invitesRepository) retrieveGroupInvitesByOrgInvite(ctx context.Context, inviteID string) ([]auth.GroupInvite, error) {
 	query := `
-		SELECT group_id, group_role
+		SELECT group_id, member_role
 		FROM org_invites_groups
 		WHERE org_invite_id = :org_invite_id
 	`
 
-	groups := make(map[string]string)
+	gis := []auth.GroupInvite{}
 
 	rows, err := ir.db.NamedQueryContext(ctx, query, map[string]any{"org_invite_id": inviteID})
 	if err != nil {
@@ -538,18 +538,21 @@ func (ir invitesRepository) retrieveOrgInviteGroups(ctx context.Context, inviteI
 	defer rows.Close()
 
 	for rows.Next() {
-		var groupID, groupRole string
-		if err := rows.Scan(&groupID, &groupRole); err != nil {
+		var groupID, memberRole string
+		if err := rows.Scan(&groupID, &memberRole); err != nil {
 			return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
-		groups[groupID] = groupRole
+		gis = append(gis, auth.GroupInvite{
+			GroupID:    groupID,
+			MemberRole: memberRole,
+		})
 	}
 
-	return groups, nil
+	return gis, nil
 }
 
-func (ir invitesRepository) removeOrgInviteGroupsByID(ctx context.Context, inviteID string) error {
+func (ir invitesRepository) removeGroupInvitesByOrgInvite(ctx context.Context, inviteID string) error {
 	query := `
 		DELETE FROM org_invites_groups
 		WHERE org_invite_id = :id
