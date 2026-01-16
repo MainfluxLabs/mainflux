@@ -7,8 +7,6 @@ type Subscription struct {
 	Subtopic  string
 	ThingID   string
 	GroupID   string
-	ClientID  string
-	Status    string
 	CreatedAt float64
 }
 
@@ -26,14 +24,12 @@ type PageMetadata struct {
 }
 
 type Repository interface {
-	// RetrieveByGroup retrieves all subscriptions that belong to the specified group.
-	RetrieveByGroup(ctx context.Context, pm PageMetadata, groupID string) (Page, error)
 	// Save will save the subscription.
 	Save(ctx context.Context, sub Subscription) error
+
+	// RetrieveByGroup retrieves all subscriptions that belong to the specified group.
+	RetrieveByGroup(ctx context.Context, pm PageMetadata, groupID string) (Page, error)
+
 	// Remove will remove the subscription.
 	Remove(ctx context.Context, sub Subscription) error
-	// UpdateStatus will update the subscription status.
-	UpdateStatus(ctx context.Context, sub Subscription) error
-	// HasClientID will update the subscription status.
-	HasClientID(ctx context.Context, clientID string) error
 }
