@@ -253,13 +253,13 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 		return nil, err
 	}
 
+	groupID, err := h.things.GetGroupIDByThingID(context.Background(), &protomfx.ThingID{Value: thingID})
+	if err != nil {
+		return nil, err
+	}
+
 	var subs []Subscription
 	for _, t := range *topics {
-		groupID, err := h.things.GetGroupIDByThingID(context.Background(), &protomfx.ThingID{Value: thingID})
-		if err != nil {
-			return nil, err
-		}
-
 		subject, err := messaging.CreateSubject(t)
 		if err != nil {
 			return nil, err
@@ -269,7 +269,6 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 			Subtopic:  subject,
 			GroupID:   groupID.GetValue(),
 			ThingID:   thingID,
-			ClientID:  c.ID,
 			CreatedAt: float64(time.Now().UnixNano()) / 1e9,
 		}
 		subs = append(subs, sub)
