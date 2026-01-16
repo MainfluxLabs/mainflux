@@ -69,6 +69,9 @@ func migrateDB(db *sqlx.DB) error {
 				Id: "mqtt_3",
 				Up: []string{
 					`ALTER TABLE subscriptions DROP COLUMN IF EXISTS status`,
+					`ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS subscriptions_pkey`,
+					`ALTER TABLE subscriptions ADD PRIMARY KEY (subtopic, group_id, thing_id)`,
+					`ALTER TABLE subscriptions DROP COLUMN IF EXISTS client_id`,
 				},
 			},
 		},
