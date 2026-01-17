@@ -20,6 +20,8 @@ const (
 	SubjectMessages = "messages"
 	//SubjectWriters represents subject used to publish/subscribe to messages that should be persisted.
 	SubjectWriters = "writers"
+	// SubjectCommands represents subject used to subscribe to commands.
+	SubjectCommands = "commands.>"
 	// SubjectSmtp represents subject used to subscribe to SMTP notifications.
 	SubjectSmtp = "smtp.*"
 	// SubjectSmpp represents subject used to subscribe to SMPP notifications.
