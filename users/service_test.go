@@ -21,6 +21,7 @@ import (
 	usmocks "github.com/MainfluxLabs/mainflux/users/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -75,8 +76,10 @@ func newService() users.Service {
 	invitesRepo := usmocks.NewPlatformInvitesRepository()
 	authSvc := mocks.NewAuthService(admin.ID, usersList, nil)
 	e := usmocks.NewEmailer()
-
-	return users.New(userRepo, verificationRepo, invitesRepo, inviteDuration, true, true, hasher, authSvc, e, idProvider)
+	oauthGoogleCfg := oauth2.Config{}
+	oauthGithubCfg := oauth2.Config{}
+	cfgURLs := users.ConfigURLs{}
+	return users.New(userRepo, verificationRepo, invitesRepo, inviteDuration, true, true, hasher, authSvc, e, idProvider, oauthGoogleCfg, oauthGithubCfg, cfgURLs)
 }
 
 func TestSelfRegister(t *testing.T) {
