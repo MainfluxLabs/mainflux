@@ -172,14 +172,11 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 	}
 
-	subs := nats.GetSubjects(message.Subtopic)
-	for _, sub := range subs {
-		m := message
-		m.Subject = sub
+	m := message
+	m.Subject = nats.GetSubject(message.Publisher, message.Subtopic)
 
-		if err := h.publisher.Publish(m); err != nil {
-			h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
-		}
+	if err := h.publisher.Publish(m); err != nil {
+		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 	}
 }
 

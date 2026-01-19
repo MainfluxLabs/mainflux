@@ -50,14 +50,11 @@ func (as *adapterService) Publish(ctx context.Context, key things.ThingKey, mess
 		return err
 	}
 
-	subs := nats.GetSubjects(message.Subtopic)
-	for _, sub := range subs {
-		m := message
-		m.Subject = sub
+	m := message
+	m.Subject = nats.GetSubject(message.Publisher, message.Subtopic)
 
-		if err := as.publisher.Publish(m); err != nil {
-			as.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
-		}
+	if err := as.publisher.Publish(m); err != nil {
+		as.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 	}
 
 	return nil

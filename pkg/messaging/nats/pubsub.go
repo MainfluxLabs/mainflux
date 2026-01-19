@@ -17,9 +17,7 @@ import (
 
 const (
 	// SubjectMessages represents subject used to publish/subscribe to the global message stream.
-	SubjectMessages = "messages"
-	//SubjectWriters represents subject used to publish/subscribe to messages that should be persisted.
-	SubjectWriters = "writers"
+	SubjectMessages = "things.*.messages"
 	// SubjectSmtp represents subject used to subscribe to SMTP notifications.
 	SubjectSmtp = "smtp.*"
 	// SubjectSmpp represents subject used to subscribe to SMPP notifications.

@@ -54,12 +54,12 @@ func (pub *publisher) Close() error {
 	return nil
 }
 
-func GetSubjects(subtopic string) []string {
-	subs := []string{SubjectMessages, SubjectWriters}
+func GetSubject(thingID, subtopic string) string {
+	sub := fmt.Sprintf("things.%s.messages", thingID)
 
 	if subtopic != "" {
-		subs = append(subs, fmt.Sprintf("%s.%s", SubjectMessages, subtopic))
+		sub = fmt.Sprintf("%s.%s", sub, subtopic)
 	}
 
-	return subs
+	return sub
 }
