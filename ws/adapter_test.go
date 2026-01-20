@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	pkgmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -33,15 +32,14 @@ var msg = protomfx.Message{
 	Payload:   []byte(`[{"n":"current","t":-5,"v":1.2}]`),
 }
 
-func newService(tc protomfx.ThingsServiceClient, logger logger.Logger) (ws.Service, mocks.MockPubSub) {
+func newService(tc protomfx.ThingsServiceClient) (ws.Service, mocks.MockPubSub) {
 	pubsub := mocks.NewPubSub()
-	return ws.New(tc, pubsub, logger), pubsub
+	return ws.New(tc, pubsub), pubsub
 }
 
 func TestPublish(t *testing.T) {
 	tc := pkgmock.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
-	lm := logger.NewMock()
-	svc, _ := newService(tc, lm)
+	svc, _ := newService(tc)
 
 	cases := []struct {
 		desc     string
@@ -95,8 +93,7 @@ func TestPublish(t *testing.T) {
 
 func TestSubscribe(t *testing.T) {
 	tc := pkgmock.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
-	lm := logger.NewMock()
-	svc, pubsub := newService(tc, lm)
+	svc, pubsub := newService(tc)
 
 	c := ws.NewClient(nil)
 
@@ -153,8 +150,7 @@ func TestSubscribe(t *testing.T) {
 
 func TestUnsubscribe(t *testing.T) {
 	tc := pkgmock.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
-	lm := logger.NewMock()
-	svc, pubsub := newService(tc, lm)
+	svc, pubsub := newService(tc)
 
 	cases := []struct {
 		desc     string
