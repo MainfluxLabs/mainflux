@@ -146,7 +146,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	}
 	h.logger.Info(fmt.Sprintf(LogInfoPublished, c.ID, *topic))
 
-	subject, err := messaging.CreateSubtopic(*topic)
+	subtopic, err := messaging.CreateSubtopic(*topic)
 	if err != nil {
 		h.logger.Error(logErrFailedParseSubtopic + err.Error())
 		return
@@ -164,7 +164,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 
 	message := protomfx.Message{
 		Protocol: protocol,
-		Subtopic: subject,
+		Subtopic: subtopic,
 		Payload:  *payload,
 	}
 
