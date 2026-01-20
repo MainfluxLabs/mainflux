@@ -86,7 +86,7 @@ func main() {
 	}
 	defer nps.Close()
 
-	svc := coap.New(tc, nps, logger)
+	svc := coap.New(tc, nps)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

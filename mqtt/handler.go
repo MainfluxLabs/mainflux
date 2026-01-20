@@ -146,7 +146,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	}
 	h.logger.Info(fmt.Sprintf(LogInfoPublished, c.ID, *topic))
 
-	subject, err := messaging.CreateSubject(*topic)
+	subtopic, err := messaging.CreateSubtopic(*topic)
 	if err != nil {
 		h.logger.Error(logErrFailedParseSubtopic + err.Error())
 		return
@@ -164,7 +164,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 
 	message := protomfx.Message{
 		Protocol: protocol,
-		Subtopic: subject,
+		Subtopic: subtopic,
 		Payload:  *payload,
 	}
 
@@ -172,14 +172,11 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 	}
 
-	subs := nats.GetSubjects(message.Subtopic)
-	for _, sub := range subs {
-		m := message
-		m.Subject = sub
+	m := message
+	m.Subject = nats.GetSubject(message.Publisher, message.Subtopic)
 
-		if err := h.publisher.Publish(m); err != nil {
-			h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
-		}
+	if err := h.publisher.Publish(m); err != nil {
+		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 	}
 }
 
@@ -270,13 +267,13 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 			return nil, err
 		}
 
-		subject, err := messaging.CreateSubject(t)
+		subtopic, err := messaging.CreateSubtopic(t)
 		if err != nil {
 			return nil, err
 		}
 
 		sub := Subscription{
-			Subtopic:  subject,
+			Subtopic:  subtopic,
 			GroupID:   groupID.GetValue(),
 			ThingID:   thingID,
 			ClientID:  c.ID,

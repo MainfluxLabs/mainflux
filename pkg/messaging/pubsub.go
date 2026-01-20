@@ -93,7 +93,7 @@ type PubSub interface {
 	Subscriber
 }
 
-func CreateSubject(topic string) (string, error) {
+func CreateSubtopic(topic string) (string, error) {
 	// Handle cases where full path might be passed (backward compatibility)
 	if strings.HasPrefix(topic, "/messages/") {
 		topic = strings.TrimPrefix(topic, "/messages/")
@@ -102,11 +102,6 @@ func CreateSubject(topic string) (string, error) {
 	}
 
 	if topic == "" {
-		return topic, nil
-	}
-
-	// Handle wildcards
-	if topic == ">" || strings.Contains(topic, "*") {
 		return topic, nil
 	}
 

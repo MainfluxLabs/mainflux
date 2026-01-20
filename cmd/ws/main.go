@@ -136,7 +136,7 @@ func loadConfig() config {
 }
 
 func newService(tc protomfx.ThingsServiceClient, nps messaging.PubSub, logger logger.Logger) adapter.Service {
-	svc := adapter.New(tc, nps, logger)
+	svc := adapter.New(tc, nps)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

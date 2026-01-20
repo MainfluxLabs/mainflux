@@ -24,9 +24,9 @@ import (
 
 const ServiceErrToken = "unavailable"
 
-func newService(tc protomfx.ThingsServiceClient, logger logger.Logger) adapter.Service {
+func newService(tc protomfx.ThingsServiceClient) adapter.Service {
 	pub := mocks.NewPublisher()
-	return adapter.New(pub, tc, logger)
+	return adapter.New(pub, tc)
 }
 
 func newHTTPServer(svc adapter.Service) *httptest.Server {
@@ -74,8 +74,7 @@ func TestPublish(t *testing.T) {
 	msgJSON := `{"field1":"val1","field2":"val2"}`
 	msgCBOR := `81A3616E6763757272656E746174206176FB3FF999999999999A`
 	thingsClient := mocks.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
-	lm := logger.NewMock()
-	svc := newService(thingsClient, lm)
+	svc := newService(thingsClient)
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
