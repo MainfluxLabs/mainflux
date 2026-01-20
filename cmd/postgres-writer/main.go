@@ -86,7 +86,8 @@ func main() {
 
 	repo := newService(db, logger)
 
-	if err = consumers.Start(svcName, pubSub, repo, nats.SubjectMessages); err != nil {
+	subjects := []string{nats.SubjectMessages, nats.SubjectMessagesWithSubtopic}
+	if err = consumers.Start(svcName, pubSub, repo, subjects...); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Postgres writer: %s", err))
 	}
 

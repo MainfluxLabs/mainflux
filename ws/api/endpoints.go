@@ -74,7 +74,7 @@ func decodeRequest(r *http.Request) (getConnByKey, error) {
 		ThingKey: authKey,
 	}
 
-	subject, err := messaging.CreateSubject(r.RequestURI)
+	subject, err := messaging.CreateSubtopic(r.RequestURI)
 	if err != nil {
 		return getConnByKey{}, err
 	}

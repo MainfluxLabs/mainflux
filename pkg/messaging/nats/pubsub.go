@@ -16,8 +16,10 @@ import (
 )
 
 const (
-	// SubjectMessages represents subject used to publish/subscribe to the global message stream.
+	// SubjectMessages represents subject used to subscribe to the global message stream.
 	SubjectMessages = "things.*.messages"
+	// SubjectMessagesWithSubtopic represents subject used to subscribe to the global message stream with subtopic.
+	SubjectMessagesWithSubtopic = "things.*.messages.>"
 	// SubjectSmtp represents subject used to subscribe to SMTP notifications.
 	SubjectSmtp = "smtp.*"
 	// SubjectSmpp represents subject used to subscribe to SMPP notifications.
