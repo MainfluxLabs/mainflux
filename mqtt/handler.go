@@ -267,13 +267,13 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 			return nil, err
 		}
 
-		subject, err := messaging.CreateSubtopic(t)
+		subtopic, err := messaging.CreateSubtopic(t)
 		if err != nil {
 			return nil, err
 		}
 
 		sub := Subscription{
-			Subtopic:  subject,
+			Subtopic:  subtopic,
 			GroupID:   groupID.GetValue(),
 			ThingID:   thingID,
 			ClientID:  c.ID,
