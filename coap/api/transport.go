@@ -133,14 +133,14 @@ func decodeMessage(msg *mux.Message) (protomfx.Message, error) {
 		return protomfx.Message{}, err
 	}
 
-	subject, err := messaging.CreateSubtopic(path)
+	subtopic, err := messaging.CreateSubtopic(path)
 	if err != nil {
 		return protomfx.Message{}, err
 	}
 
 	ret := protomfx.Message{
 		Protocol: protocol,
-		Subtopic: subject,
+		Subtopic: subtopic,
 		Payload:  []byte{},
 		Created:  time.Now().UnixNano(),
 	}
