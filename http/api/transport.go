@@ -68,7 +68,7 @@ func decodeRequest(ctx context.Context, r *http.Request) (any, error) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	subject, err := messaging.CreateSubtopic(r.URL.Path)
+	subtopic, err := messaging.CreateSubtopic(r.URL.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func decodeRequest(ctx context.Context, r *http.Request) (any, error) {
 	req := publishReq{
 		msg: protomfx.Message{
 			Protocol: protocol,
-			Subtopic: subject,
+			Subtopic: subtopic,
 			Payload:  payload,
 			Created:  time.Now().UnixNano(),
 		},
