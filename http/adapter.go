@@ -8,8 +8,6 @@ package http
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -27,15 +25,13 @@ var _ Service = (*adapterService)(nil)
 type adapterService struct {
 	publisher messaging.Publisher
 	things    protomfx.ThingsServiceClient
-	logger    logger.Logger
 }
 
 // New instantiates the HTTP adapter implementation.
-func New(publisher messaging.Publisher, things protomfx.ThingsServiceClient, logger logger.Logger) Service {
+func New(publisher messaging.Publisher, things protomfx.ThingsServiceClient) Service {
 	return &adapterService{
 		publisher: publisher,
 		things:    things,
-		logger:    logger,
 	}
 }
 
@@ -54,7 +50,7 @@ func (as *adapterService) Publish(ctx context.Context, key things.ThingKey, mess
 	m.Subject = nats.GetSubject(message.Publisher, message.Subtopic)
 
 	if err := as.publisher.Publish(m); err != nil {
-		as.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
+		return err
 	}
 
 	return nil

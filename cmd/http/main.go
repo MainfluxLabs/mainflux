@@ -87,7 +87,7 @@ func main() {
 	defer pub.Close()
 
 	tc := thingsapi.NewClient(tConn, thingsTracer, cfg.thingsGRPCTimeout)
-	svc := adapter.New(pub, tc, logger)
+	svc := adapter.New(pub, tc)
 
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
