@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt"
+	"github.com/MainfluxLabs/mainflux/mqtt/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -345,5 +346,5 @@ func newHandler() session.Handler {
 
 	thingsClient := pkgmocks.NewThingsServiceClient(nil, map[string]things.Thing{password: {ID: thingID}, thingID: {ID: thingID}}, nil)
 
-	return mqtt.NewHandler(pkgmocks.NewPublisher(), thingsClient, newService(), nil, logger)
+	return mqtt.NewHandler(pkgmocks.NewPublisher(), thingsClient, newService(), mocks.NewCache(), logger)
 }
