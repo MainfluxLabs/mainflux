@@ -63,10 +63,6 @@ const (
 	defJaegerURL         = ""
 	defClientTLS         = "false"
 	defCACerts           = ""
-	defInstance          = ""
-	defESURL             = "localhost:6379"
-	defESPass            = ""
-	defESDB              = "0"
 	defAuthCacheURL      = "localhost:6379"
 	defAuthCachePass     = ""
 	defAuthCacheDB       = "0"
@@ -102,10 +98,6 @@ const (
 	envJaegerURL         = "MF_JAEGER_URL"
 	envClientTLS         = "MF_MQTT_ADAPTER_CLIENT_TLS"
 	envCACerts           = "MF_MQTT_ADAPTER_CA_CERTS"
-	envInstance          = "MF_MQTT_ADAPTER_INSTANCE"
-	envESURL             = "MF_MQTT_ADAPTER_ES_URL"
-	envESPass            = "MF_MQTT_ADAPTER_ES_PASS"
-	envESDB              = "MF_MQTT_ADAPTER_ES_DB"
 	envAuthCacheURL      = "MF_AUTH_CACHE_URL"
 	envAuthCachePass     = "MF_AUTH_CACHE_PASS"
 	envAuthCacheDB       = "MF_AUTH_CACHE_DB"
@@ -142,10 +134,6 @@ type config struct {
 	logLevel          string
 	thingsGRPCTimeout time.Duration
 	brokerURL         string
-	instance          string
-	esURL             string
-	esPass            string
-	esDB              string
 	authCacheURL      string
 	authPass          string
 	authCacheDB       string
@@ -180,9 +168,6 @@ func main() {
 
 	tConn := clientsgrpc.Connect(cfg.thingsConfig, logger)
 	defer tConn.Close()
-
-	ec := connectToRedis(cfg.esURL, cfg.esPass, cfg.esDB, logger)
-	defer ec.Close()
 
 	nps, err := brokers.NewPubSub(cfg.brokerURL, "mqtt", logger)
 	if err != nil {
@@ -339,10 +324,6 @@ func loadConfig() config {
 		thingsGRPCTimeout: thingsGRPCTimeout,
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
-		instance:          mainflux.Env(envInstance, defInstance),
-		esURL:             mainflux.Env(envESURL, defESURL),
-		esPass:            mainflux.Env(envESPass, defESPass),
-		esDB:              mainflux.Env(envESDB, defESDB),
 		authCacheURL:      mainflux.Env(envAuthCacheURL, defAuthCacheURL),
 		authPass:          mainflux.Env(envAuthCachePass, defAuthCachePass),
 		authCacheDB:       mainflux.Env(envAuthCacheDB, defAuthCacheDB),
