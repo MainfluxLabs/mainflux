@@ -27,7 +27,7 @@ func LoggingMiddleware(svc mqtt.Service, logger log.Logger) mqtt.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) ListSubscriptions(ctx context.Context, groupID, token string, pm mqtt.PageMetadata) (page mqtt.Page, err error) {
+func (lm *loggingMiddleware) ListSubscriptions(ctx context.Context, groupID, token string, pm mqtt.PageMetadata) (_ mqtt.Page, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_subscriptions for group id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
