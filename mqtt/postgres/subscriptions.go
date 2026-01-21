@@ -7,8 +7,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5/pgconn"
 )
 
 var _ mqtt.Repository = (*mqttRepository)(nil)
@@ -23,8 +21,17 @@ func NewRepository(db dbutil.Database) mqtt.Repository {
 }
 
 func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error {
+	// Subscriptions are defined per (thing, group, subtopic), not per MQTT client.
+	// A single thing may connect multiple times or from multiple clients and
+	// subscribe to the same topic repeatedly.
+	// Attempting to create an already existing subscription is therefore
+	// an expected and valid scenario and should be treated as a no-op,
+	// not as an error. The primary key still guarantees uniqueness.
 	q := `INSERT INTO subscriptions (subtopic, thing_id, group_id, created_at)
-		  VALUES (:subtopic, :thing_id, :group_id, :created_at)`
+		  VALUES (:subtopic, :thing_id, :group_id, :created_at)
+		  ON CONFLICT (subtopic, group_id, thing_id)
+		  DO NOTHING;`
+
 	dbSub := dbSubscription{
 		Subtopic:  sub.Subtopic,
 		ThingID:   sub.ThingID,
@@ -32,14 +39,9 @@ func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error
 		CreatedAt: sub.CreatedAt,
 	}
 
-	row, err := mr.db.NamedQueryContext(ctx, q, dbSub)
-	if err != nil {
-		if pqErr, ok := err.(*pgconn.PgError); ok && pqErr.Code == pgerrcode.UniqueViolation {
-			return errors.Wrap(dbutil.ErrConflict, err)
-		}
+	if _, err := mr.db.NamedExecContext(ctx, q, dbSub); err != nil {
 		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
-	defer row.Close()
 
 	return nil
 }

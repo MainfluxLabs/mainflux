@@ -16,6 +16,7 @@ import (
 	mqttapi "github.com/MainfluxLabs/mainflux/mqtt/api"
 	mqttapihttp "github.com/MainfluxLabs/mainflux/mqtt/api/http"
 	"github.com/MainfluxLabs/mainflux/mqtt/postgres"
+	mqttredis "github.com/MainfluxLabs/mainflux/mqtt/redis"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -233,8 +234,10 @@ func main() {
 
 	svc := newService(usersAuth, tc, db, logger)
 
+	mc := mqttredis.NewCache(ac)
+
 	// Event handler for MQTT hooks
-	h := mqtt.NewHandler(np, logger, tc, svc)
+	h := mqtt.NewHandler(np, tc, svc, mc, logger)
 
 	logger.Info(fmt.Sprintf("Starting MQTT proxy on port %s", cfg.port))
 	g.Go(func() error {
@@ -429,10 +432,10 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func newService(ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, db *sqlx.DB, logger logger.Logger) mqtt.Service {
-	subscriptions := postgres.NewRepository(db)
 	idp := ulid.New()
-	svc := mqtt.NewMqttService(ac, tc, subscriptions, idp)
+	subscriptions := postgres.NewRepository(db)
 
+	svc := mqtt.NewMqttService(ac, tc, subscriptions, idp)
 	svc = mqttapi.LoggingMiddleware(svc, logger)
 	svc = mqttapi.MetricsMiddleware(
 		svc,

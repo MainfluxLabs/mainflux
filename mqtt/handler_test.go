@@ -345,5 +345,5 @@ func newHandler() session.Handler {
 
 	thingsClient := pkgmocks.NewThingsServiceClient(nil, map[string]things.Thing{password: {ID: thingID}, thingID: {ID: thingID}}, nil)
 
-	return mqtt.NewHandler(pkgmocks.NewPublisher(), logger, thingsClient, newService())
+	return mqtt.NewHandler(pkgmocks.NewPublisher(), thingsClient, newService(), nil, logger)
 }
