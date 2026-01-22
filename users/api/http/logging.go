@@ -57,7 +57,7 @@ func (lm *loggingMiddleware) VerifyEmail(ctx context.Context, confirmationToken 
 
 func (lm *loggingMiddleware) RegisterByInvite(ctx context.Context, user users.User, inviteID, orgInviteRedirectPath string) (_ string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method register_by_invite for user %s and inviteID %s took %s to complete", user.Email, inviteID, time.Since(begin))
+		message := fmt.Sprintf("Method register_by_invite for user %s and invite id %s took %s to complete", user.Email, inviteID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

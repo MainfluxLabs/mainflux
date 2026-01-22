@@ -689,7 +689,7 @@ func (lm *loggingMiddleware) RemoveGroupsByOrg(ctx context.Context, orgID string
 	return lm.svc.RemoveGroupsByOrg(ctx, orgID)
 }
 
-func (lm *loggingMiddleware) ViewGroupByProfile(ctx context.Context, token, profileID string) (gr things.Group, err error) {
+func (lm *loggingMiddleware) ViewGroupByProfile(ctx context.Context, token, profileID string) (_ things.Group, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view_group_by_profile for profile id %s took %s to complete", profileID, time.Since(begin))
 		if err != nil {
