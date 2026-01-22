@@ -29,11 +29,13 @@ const (
 	LogInfoDisconnected = "disconnected client_id %s"
 	LogInfoPublished    = "published with client_id %s to the topic %s"
 
-	LogErrFailedConnect       = "failed to connect: "
-	LogErrFailedSubscribe     = "failed to subscribe: "
-	LogErrFailedUnsubscribe   = "failed to unsubscribe: "
-	LogErrFailedDisconnect    = "failed to disconnect: "
-	logErrFailedParseSubtopic = "failed to parse subtopic: "
+	LogErrFailedConnect            = "failed to connect: "
+	LogErrFailedSubscribe          = "failed to subscribe: "
+	LogErrFailedUnsubscribe        = "failed to unsubscribe: "
+	LogErrFailedDisconnect         = "failed to disconnect: "
+	logErrFailedParseSubtopic      = "failed to parse subtopic: "
+	logErrFailedCacheConnection    = "failed to cache connection: "
+	logErrFailedCacheDisconnection = "failed to remove connection from cache: "
 )
 
 var (
@@ -76,7 +78,7 @@ func (h *handler) AuthConnect(c *session.Client) error {
 		return ErrMissingClientID
 	}
 
-	if _, err := h.getThingID(c); err != nil {
+	if _, err := h.identify(c); err != nil {
 		return err
 	}
 
@@ -94,7 +96,7 @@ func (h *handler) AuthPublish(c *session.Client, topic *string, _ *[]byte) error
 		return ErrMissingTopicPub
 	}
 
-	if _, err := h.getThingID(c); err != nil {
+	if _, err := h.identify(c); err != nil {
 		return err
 	}
 
@@ -112,7 +114,7 @@ func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 		return ErrMissingTopicSub
 	}
 
-	if _, err := h.getThingID(c); err != nil {
+	if _, err := h.identify(c); err != nil {
 		return err
 	}
 
@@ -224,14 +226,13 @@ func (h *handler) Disconnect(c *session.Client) {
 	}
 
 	if err := h.cache.Disconnect(context.Background(), c.ID); err != nil {
-		h.logger.Error(LogErrFailedDisconnect + err.Error())
-		return
+		h.logger.Error(logErrFailedCacheDisconnection + err.Error())
 	}
 
 	h.logger.Info(fmt.Sprintf(LogInfoDisconnected, c.ID))
 }
 
-func (h *handler) getThingID(c *session.Client) (string, error) {
+func (h *handler) identify(c *session.Client) (string, error) {
 	// Use cache to avoid repeated Identify calls for the same MQTT client.
 	if thingID := h.cache.GetThingByClient(context.Background(), c.ID); thingID != "" {
 		return thingID, nil
@@ -249,14 +250,14 @@ func (h *handler) getThingID(c *session.Client) (string, error) {
 	thingID := keyRes.GetValue()
 
 	if err := h.cache.Connect(context.Background(), c.ID, thingID); err != nil {
-		h.logger.Warn(fmt.Sprintf("failed to cache mapping for client %s and thing %s: %v", c.ID, thingID, err))
+		h.logger.Error(logErrFailedCacheConnection + err.Error())
 	}
 
 	return thingID, nil
 }
 
 func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subscription, error) {
-	thingID, err := h.getThingID(c)
+	thingID, err := h.identify(c)
 	if err != nil {
 		return nil, err
 	}
