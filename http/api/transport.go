@@ -31,7 +31,6 @@ const (
 	ctSenmlCBOR = "application/senml+cbor"
 	ctJSON      = "application/json"
 	headerCT    = "Content-Type"
-	headerSub   = "MF-Subtopic"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -63,7 +62,21 @@ func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.L
 		opts...,
 	))
 
+	r.Post("/things/:id/commands/*", kithttp.NewServer(
+		kitot.TraceServer(tracer, "send_command_by_thing")(sendCommandByThingEndpoint(svc)),
+		decodeSendCommandByThing,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Post("/groups/:id/commands", kithttp.NewServer(
+		kitot.TraceServer(tracer, "send_command_by_group")(sendCommandByGroupEndpoint(svc)),
+		decodeSendCommandByGroup,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Post("/groups/:id/commands/*", kithttp.NewServer(
 		kitot.TraceServer(tracer, "send_command_by_group")(sendCommandByGroupEndpoint(svc)),
 		decodeSendCommandByGroup,
 		encodeResponse,
@@ -125,7 +138,7 @@ func decodeSendCommandByThing(_ context.Context, r *http.Request) (any, error) {
 	}
 	defer r.Body.Close()
 
-	subtopic, err := parseSubtopic(r.Header.Get(headerSub))
+	subtopic, err := messaging.CreateSubtopic(r.URL.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +170,7 @@ func decodeSendCommandByGroup(_ context.Context, r *http.Request) (any, error) {
 	}
 	defer r.Body.Close()
 
-	subtopic, err := parseSubtopic(r.Header.Get(headerSub))
+	subtopic, err := messaging.CreateSubtopic(r.URL.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -185,21 +198,6 @@ func validateCT(ct string) error {
 		return apiutil.ErrUnsupportedContentType
 	}
 	return nil
-}
-
-func parseSubtopic(subtopic string) (string, error) {
-	if subtopic == "" {
-		return "", nil
-	}
-
-	// Wildcards (*, >) are subscription-only semantics.
-	if strings.ContainsAny(subtopic, "*>") {
-		return "", messaging.ErrMalformedSubtopic
-	}
-
-	// CreateSubject mixes publish and subscribe semantics; refactor needed.
-	// It's here used only for normalization/validation.
-	return messaging.CreateSubject(subtopic)
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, _ any) error {

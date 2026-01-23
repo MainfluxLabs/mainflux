@@ -20,9 +20,14 @@ const (
 	SubjectMessages = "things.*.messages"
 	// SubjectMessagesWithSubtopic represents subject used to subscribe to the global message stream with subtopic.
 	SubjectMessagesWithSubtopic = "things.*.messages.>"
-	CommandsPrefix              = "commands."
-	// SubjectCommands represents subject used to subscribe to commands.
-	SubjectCommands = "commands.>"
+	// SubjectThingCommands represents subject used to subscribe to thing commands.
+	SubjectThingCommands = "things.*.commands"
+	// SubjectThingCommandsWithSubtopic represents subject used to subscribe to thing commands with subtopic.
+	SubjectThingCommandsWithSubtopic = "things.*.commands.>"
+	// SubjectGroupCommands represents subject used to subscribe to group commands.
+	SubjectGroupCommands = "groups.*.commands"
+	// SubjectGroupCommandsWithSubtopic represents subject used to subscribe to group commands with subtopic.
+	SubjectGroupCommandsWithSubtopic = "groups.*.commands.>"
 	// SubjectSmtp represents subject used to subscribe to SMTP notifications.
 	SubjectSmtp = "smtp.*"
 	// SubjectSmpp represents subject used to subscribe to SMPP notifications.
