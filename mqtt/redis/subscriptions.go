@@ -37,19 +37,19 @@ func NewCache(client *redis.Client) Cache {
 }
 
 func (m mqttCache) Connect(ctx context.Context, clientID, thingID string) error {
-	key := thingByClientKey(clientID)
+	key := thingByClientIDKey(clientID)
 
 	return m.client.Set(ctx, key, thingID, 0).Err()
 }
 
 func (m mqttCache) Disconnect(ctx context.Context, clientID string) error {
-	key := thingByClientKey(clientID)
+	key := thingByClientIDKey(clientID)
 
 	return m.client.Del(ctx, key).Err()
 }
 
 func (m mqttCache) RetrieveThingByClient(ctx context.Context, clientID string) string {
-	key := thingByClientKey(clientID)
+	key := thingByClientIDKey(clientID)
 
 	val, err := m.client.Get(ctx, key).Result()
 	if err != nil {
@@ -59,6 +59,6 @@ func (m mqttCache) RetrieveThingByClient(ctx context.Context, clientID string) s
 	return val
 }
 
-func thingByClientKey(clientID string) string {
+func thingByClientIDKey(clientID string) string {
 	return fmt.Sprintf("%s:%s", thingByClientPrefix, clientID)
 }
