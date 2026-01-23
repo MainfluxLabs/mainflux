@@ -35,7 +35,7 @@ func (c *CacheMock) Disconnect(_ context.Context, clientID string) error {
 	return nil
 }
 
-func (c *CacheMock) GetThingByClient(_ context.Context, clientID string) string {
+func (c *CacheMock) RetrieveThingByClient(_ context.Context, clientID string) string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

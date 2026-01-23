@@ -234,7 +234,7 @@ func (h *handler) Disconnect(c *session.Client) {
 
 func (h *handler) identify(c *session.Client) (string, error) {
 	// Use cache to avoid repeated Identify calls for the same MQTT client.
-	if thingID := h.cache.GetThingByClient(context.Background(), c.ID); thingID != "" {
+	if thingID := h.cache.RetrieveThingByClient(context.Background(), c.ID); thingID != "" {
 		return thingID, nil
 	}
 

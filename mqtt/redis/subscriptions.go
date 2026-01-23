@@ -20,9 +20,9 @@ type Cache interface {
 	// Disconnect removes the cached mapping for the given MQTT client ID.
 	Disconnect(ctx context.Context, clientID string) error
 
-	// GetThingByClient returns the Thing ID associated with the given MQTT client ID.
+	// RetrieveThingByClient returns the Thing ID associated with the given MQTT client ID.
 	// If no mapping exists, an empty string is returned.
-	GetThingByClient(ctx context.Context, clientID string) string
+	RetrieveThingByClient(ctx context.Context, clientID string) string
 }
 
 type mqttCache struct {
@@ -48,7 +48,7 @@ func (m mqttCache) Disconnect(ctx context.Context, clientID string) error {
 	return m.client.Del(ctx, key).Err()
 }
 
-func (m mqttCache) GetThingByClient(ctx context.Context, clientID string) string {
+func (m mqttCache) RetrieveThingByClient(ctx context.Context, clientID string) string {
 	key := thingByClientKey(clientID)
 
 	val, err := m.client.Get(ctx, key).Result()
