@@ -20,10 +20,7 @@ import (
 
 var _ session.Handler = (*handler)(nil)
 
-const (
-	protocol  = "mqtt"
-	connected = "connected"
-)
+const protocol = "mqtt"
 
 const (
 	LogInfoSubscribed   = "subscribed with client_id %s to topics %s"
@@ -32,42 +29,41 @@ const (
 	LogInfoDisconnected = "disconnected client_id %s"
 	LogInfoPublished    = "published with client_id %s to the topic %s"
 
-	LogErrFailedConnect                = "failed to connect: "
-	LogErrFailedSubscribe              = "failed to subscribe: "
-	LogErrFailedUnsubscribe            = "failed to unsubscribe: "
-	LogErrFailedDisconnect             = "failed to disconnect: "
-	LogErrFailedPublishDisconnectEvent = "failed to publish disconnect event: "
-	logErrFailedParseSubtopic          = "failed to parse subtopic: "
-	LogErrFailedPublishConnectEvent    = "failed to publish connect event: "
+	LogErrFailedConnect            = "failed to connect: "
+	LogErrFailedSubscribe          = "failed to subscribe: "
+	LogErrFailedUnsubscribe        = "failed to unsubscribe: "
+	LogErrFailedDisconnect         = "failed to disconnect: "
+	logErrFailedParseSubtopic      = "failed to parse subtopic: "
+	logErrFailedCacheConnection    = "failed to cache connection: "
+	logErrFailedCacheDisconnection = "failed to remove connection from cache: "
 )
 
 var (
-	ErrMalformedSubtopic         = errors.New("malformed subtopic")
-	ErrClientNotInitialized      = errors.New("client is not initialized")
-	ErrMissingClientID           = errors.New("client_id not found")
-	ErrMissingTopicPub           = errors.New("failed to publish due to missing topic")
-	ErrMissingTopicSub           = errors.New("failed to subscribe due to missing topic")
-	ErrSubscriptionAlreadyExists = errors.New("subscription already exists")
+	ErrMalformedSubtopic    = errors.New("malformed subtopic")
+	ErrClientNotInitialized = errors.New("client is not initialized")
+	ErrMissingClientID      = errors.New("missing client id")
+	ErrMissingTopicPub      = errors.New("failed to publish due to missing topic")
+	ErrMissingTopicSub      = errors.New("failed to subscribe due to missing topic")
 )
 
 // Event implements events.Event interface
 type handler struct {
 	publisher messaging.Publisher
 	things    protomfx.ThingsServiceClient
-	logger    logger.Logger
-	es        redis.EventStore
 	service   Service
+	cache     redis.Cache
+	logger    logger.Logger
 }
 
 // NewHandler creates new Handler entity
-func NewHandler(publisher messaging.Publisher, es redis.EventStore,
-	logger logger.Logger, things protomfx.ThingsServiceClient, svc Service) session.Handler {
+func NewHandler(publisher messaging.Publisher, things protomfx.ThingsServiceClient,
+	svc Service, cache redis.Cache, logger logger.Logger) session.Handler {
 	return &handler{
-		es:        es,
-		logger:    logger,
 		publisher: publisher,
 		things:    things,
 		service:   svc,
+		cache:     cache,
+		logger:    logger,
 	}
 }
 
@@ -82,13 +78,8 @@ func (h *handler) AuthConnect(c *session.Client) error {
 		return ErrMissingClientID
 	}
 
-	thingID, err := h.identify(c)
-	if err != nil {
+	if _, err := h.identify(c); err != nil {
 		return err
-	}
-
-	if err := h.es.Connect(thingID); err != nil {
-		h.logger.Error(LogErrFailedPublishConnectEvent + err.Error())
 	}
 
 	return nil
@@ -100,6 +91,7 @@ func (h *handler) AuthPublish(c *session.Client, topic *string, _ *[]byte) error
 	if c == nil {
 		return ErrClientNotInitialized
 	}
+
 	if topic == nil {
 		return ErrMissingTopicPub
 	}
@@ -117,6 +109,7 @@ func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 	if c == nil {
 		return ErrClientNotInitialized
 	}
+
 	if topics == nil || *topics == nil {
 		return ErrMissingTopicSub
 	}
@@ -194,12 +187,12 @@ func (h *handler) Subscribe(c *session.Client, topics *[]string) {
 	}
 
 	for _, s := range subs {
-		err = h.service.CreateSubscription(context.Background(), s)
-		if err != nil {
-			h.logger.Error(LogErrFailedSubscribe + (ErrSubscriptionAlreadyExists).Error())
+		if err = h.service.CreateSubscription(context.Background(), s); err != nil {
+			h.logger.Error(LogErrFailedSubscribe + err.Error())
 			return
 		}
 	}
+
 	h.logger.Info(fmt.Sprintf(LogInfoSubscribed, c.ID, strings.Join(*topics, ",")))
 }
 
@@ -212,7 +205,7 @@ func (h *handler) Unsubscribe(c *session.Client, topics *[]string) {
 
 	subs, err := h.getSubscriptions(c, topics)
 	if err != nil {
-		h.logger.Error(LogErrFailedSubscribe + err.Error())
+		h.logger.Error(LogErrFailedUnsubscribe + err.Error())
 		return
 	}
 
@@ -232,15 +225,19 @@ func (h *handler) Disconnect(c *session.Client) {
 		return
 	}
 
-	thingID, _ := h.identify(c)
-
-	h.logger.Error(fmt.Sprintf(LogInfoDisconnected, c.ID))
-	if err := h.es.Disconnect(thingID); err != nil {
-		h.logger.Error(LogErrFailedPublishDisconnectEvent + err.Error())
+	if err := h.cache.Disconnect(context.Background(), c.ID); err != nil {
+		h.logger.Error(logErrFailedCacheDisconnection + err.Error())
 	}
+
+	h.logger.Info(fmt.Sprintf(LogInfoDisconnected, c.ID))
 }
 
 func (h *handler) identify(c *session.Client) (string, error) {
+	// Use cache to avoid repeated Identify calls for the same MQTT client.
+	if thingID := h.cache.RetrieveThingByClient(context.Background(), c.ID); thingID != "" {
+		return thingID, nil
+	}
+
 	thingKeyReq := &protomfx.ThingKey{
 		Value: string(c.Password),
 		Type:  c.Username,
@@ -250,8 +247,13 @@ func (h *handler) identify(c *session.Client) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	thingID := keyRes.GetValue()
 
-	return keyRes.GetValue(), nil
+	if err := h.cache.Connect(context.Background(), c.ID, thingID); err != nil {
+		h.logger.Error(logErrFailedCacheConnection + err.Error())
+	}
+
+	return thingID, nil
 }
 
 func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subscription, error) {
@@ -260,13 +262,13 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 		return nil, err
 	}
 
+	groupID, err := h.things.GetGroupIDByThingID(context.Background(), &protomfx.ThingID{Value: thingID})
+	if err != nil {
+		return nil, err
+	}
+
 	var subs []Subscription
 	for _, t := range *topics {
-		groupID, err := h.things.GetGroupIDByThingID(context.Background(), &protomfx.ThingID{Value: thingID})
-		if err != nil {
-			return nil, err
-		}
-
 		subtopic, err := messaging.CreateSubtopic(t)
 		if err != nil {
 			return nil, err
@@ -276,8 +278,6 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 			Subtopic:  subtopic,
 			GroupID:   groupID.GetValue(),
 			ThingID:   thingID,
-			ClientID:  c.ID,
-			Status:    connected,
 			CreatedAt: float64(time.Now().UnixNano()) / 1e9,
 		}
 		subs = append(subs, sub)
