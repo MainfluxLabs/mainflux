@@ -252,6 +252,38 @@ func getThingIDsByProfileEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func getThingIDsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(groupIDReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		thingIDs, err := svc.GetThingIDsByGroup(ctx, req.groupID)
+		if err != nil {
+			return thingIDsRes{}, err
+		}
+
+		return thingIDsRes{thingIDs: thingIDs}, nil
+	}
+}
+
+func getThingIDsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(orgIDReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		thingIDs, err := svc.GetThingIDsByOrg(ctx, req.orgID)
+		if err != nil {
+			return thingIDsRes{}, err
+		}
+
+		return thingIDsRes{thingIDs: thingIDs}, nil
+	}
+}
+
 func createGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(createGroupMembershipsReq)

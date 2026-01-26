@@ -29,6 +29,8 @@ service ThingsService {
     rpc GetGroupIDByProfileID(ProfileID) returns (GroupID) {}
     rpc GetGroupIDsByOrg(OrgAccessReq) returns (GroupIDs) {}
     rpc GetThingIDsByProfile(ProfileID) returns (ThingIDs) {}
+    rpc GetThingIDsByGroup(GroupID) returns (ThingIDs) {}
+    rpc GetThingIDsByOrg(OrgID) returns (ThingIDs) {}
     rpc CreateGroupMemberships(CreateGroupMembershipsReq) returns (google.protobuf.Empty) {}
     rpc GetGroup(GetGroupReq) returns (Group) {}
 }

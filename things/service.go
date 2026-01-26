@@ -177,6 +177,12 @@ type Service interface {
 	// GetThingIDsByProfile returns the IDs of all things associated with the given profile ID.
 	GetThingIDsByProfile(ctx context.Context, profileID string) ([]string, error)
 
+	// GetThingIDsByGroup returns the IDs of all things associated with the given group ID.
+	GetThingIDsByGroup(ctx context.Context, groupID string) ([]string, error)
+
+	// GetThingIDsByOrg returns the IDs of all things associated with the given org ID.
+	GetThingIDsByOrg(ctx context.Context, orgID string) ([]string, error)
+
 	Groups
 
 	GroupMemberships
@@ -1136,6 +1142,37 @@ func (ts *thingsService) GetGroupIDsByOrg(ctx context.Context, orgID string, tok
 
 func (ts *thingsService) GetThingIDsByProfile(ctx context.Context, profileID string) ([]string, error) {
 	page, err := ts.things.RetrieveByProfile(ctx, profileID, apiutil.PageMetadata{})
+	if err != nil {
+		return []string{}, err
+	}
+
+	var thingIDs []string
+	for _, t := range page.Things {
+		thingIDs = append(thingIDs, t.ID)
+	}
+	return thingIDs, nil
+}
+
+func (ts *thingsService) GetThingIDsByGroup(ctx context.Context, groupID string) ([]string, error) {
+	page, err := ts.things.RetrieveByGroups(ctx, []string{groupID}, apiutil.PageMetadata{})
+	if err != nil {
+		return []string{}, err
+	}
+
+	var thingIDs []string
+	for _, t := range page.Things {
+		thingIDs = append(thingIDs, t.ID)
+	}
+	return thingIDs, nil
+}
+
+func (ts *thingsService) GetThingIDsByOrg(ctx context.Context, orgID string) ([]string, error) {
+	grIDs, err := ts.groups.RetrieveIDsByOrg(ctx, orgID)
+	if err != nil {
+		return []string{}, err
+	}
+
+	page, err := ts.things.RetrieveByGroups(ctx, grIDs, apiutil.PageMetadata{})
 	if err != nil {
 		return []string{}, err
 	}
