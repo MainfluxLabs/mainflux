@@ -17,6 +17,11 @@ const (
 	// Value -1 represents an unlimited number of reconnect retries, i.e. the client
 	// will never give up on retrying to re-establish connection to NATS server.
 	maxReconnects = -1
+
+	thingsPrefix   = "things"
+	groupsPrefix   = "groups"
+	messagesSuffix = "messages"
+	commandsSuffix = "commands"
 )
 
 var _ messaging.Publisher = (*publisher)(nil)
@@ -54,12 +59,22 @@ func (pub *publisher) Close() error {
 	return nil
 }
 
-func GetSubject(thingID, subtopic string) string {
-	sub := fmt.Sprintf("things.%s.messages", thingID)
+func MessagesSubject(thingID, subtopic string) string {
+	return createSubject(thingsPrefix, thingID, messagesSuffix, subtopic)
+}
 
+func ThingCommandsSubject(thingID, subtopic string) string {
+	return createSubject(thingsPrefix, thingID, commandsSuffix, subtopic)
+}
+
+func GroupCommandsSubject(groupID, subtopic string) string {
+	return createSubject(groupsPrefix, groupID, commandsSuffix, subtopic)
+}
+
+func createSubject(entity, id, suffix, subtopic string) string {
+	subject := fmt.Sprintf("%s.%s.%s", entity, id, suffix)
 	if subtopic != "" {
-		sub = fmt.Sprintf("%s.%s", sub, subtopic)
+		subject = fmt.Sprintf("%s.%s", subject, subtopic)
 	}
-
-	return sub
+	return subject
 }

@@ -14,11 +14,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
-const (
-	thingsCmdPrefix = "commands.things"
-	groupsCmdPrefix = "commands.groups"
-)
-
 // Service specifies coap service API.
 type Service interface {
 	// Publish Message
@@ -55,7 +50,7 @@ func (as *adapterService) Publish(ctx context.Context, key things.ThingKey, msg 
 		return err
 	}
 
-	msg.Subject = nats.GetSubject(msg.Publisher, msg.Subtopic)
+	msg.Subject = nats.MessagesSubject(msg.Publisher, msg.Subtopic)
 	if err := as.publisher.Publish(msg); err != nil {
 		return err
 	}
@@ -63,31 +58,28 @@ func (as *adapterService) Publish(ctx context.Context, key things.ThingKey, msg 
 	return nil
 }
 
-func (as *adapterService) SendCommandByThing(ctx context.Context, token, thingID string, msg protomfx.Message) error {
+func (as *adapterService) SendCommandByThing(ctx context.Context, token, thingID string, message protomfx.Message) error {
 	if _, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
 		return err
 	}
 
-	msg.Subject = formatCmdSubject(thingsCmdPrefix, thingID, msg.Subtopic)
-	return as.publisher.Publish(msg)
+	message.Subject = nats.ThingCommandsSubject(thingID, message.Subtopic)
+	if err := as.publisher.Publish(message); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (as *adapterService) SendCommandByGroup(ctx context.Context, token, groupID string, msg protomfx.Message) error {
+func (as *adapterService) SendCommandByGroup(ctx context.Context, token, groupID string, message protomfx.Message) error {
 	if _, err := as.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Editor}); err != nil {
 		return err
 	}
 
-	msg.Subject = formatCmdSubject(groupsCmdPrefix, groupID, msg.Subtopic)
-	return as.publisher.Publish(msg)
-}
-
-func formatCmdSubject(prefix, id, subtopic string) string {
-	// formats subtopic into commands.groups.<groupID>[.subtopic]
-	// or commands.things.<thingID>[.subtopic]
-	subject := prefix + id
-
-	if subtopic != "" {
-		subject += "." + subtopic
+	message.Subject = nats.GroupCommandsSubject(groupID, message.Subtopic)
+	if err := as.publisher.Publish(message); err != nil {
+		return err
 	}
-	return subject
+
+	return nil
 }
