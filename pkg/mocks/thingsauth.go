@@ -150,6 +150,34 @@ func (svc thingsServiceMock) GetThingIDsByProfile(_ context.Context, in *protomf
 	return &protomfx.ThingIDs{Ids: ids}, nil
 }
 
+func (svc thingsServiceMock) GetThingIDsByGroup(_ context.Context, in *protomfx.GroupID, _ ...grpc.CallOption) (*protomfx.ThingIDs, error) {
+	var ids []string
+	for _, t := range svc.things {
+		if t.GroupID == in.GetValue() {
+			ids = append(ids, t.ID)
+		}
+	}
+	return &protomfx.ThingIDs{Ids: ids}, nil
+}
+
+func (svc thingsServiceMock) GetThingIDsByOrg(_ context.Context, in *protomfx.OrgID, _ ...grpc.CallOption) (*protomfx.ThingIDs, error) {
+	groupIDs := make(map[string]struct{})
+	for _, g := range svc.groups {
+		if g.OrgID == in.GetValue() {
+			groupIDs[g.ID] = struct{}{}
+		}
+	}
+
+	var ids []string
+	for _, t := range svc.things {
+		if _, ok := groupIDs[t.GroupID]; ok {
+			ids = append(ids, t.ID)
+		}
+	}
+
+	return &protomfx.ThingIDs{Ids: ids}, nil
+}
+
 func (svc thingsServiceMock) CreateGroupMemberships(_ context.Context, in *protomfx.CreateGroupMembershipsReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
 	return &emptypb.Empty{}, nil
 }

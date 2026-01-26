@@ -326,3 +326,11 @@ func (svc *mainfluxThings) RemoveExternalKey(context.Context, string, string) er
 func (svc *mainfluxThings) GetThingIDsByProfile(context.Context, string) ([]string, error) {
 	panic("not implemented")
 }
+
+func (svc *mainfluxThings) GetThingIDsByGroup(context.Context, string) ([]string, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) GetThingIDsByOrg(context.Context, string) ([]string, error) {
+	panic("not implemented")
+}
