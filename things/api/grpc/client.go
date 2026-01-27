@@ -308,7 +308,7 @@ func (client grpcClient) GetThingIDsByGroup(ctx context.Context, req *protomfx.G
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.getThingIDsByGroup(ctx, groupIDReq{groupID: req.GetValue()})
+	res, err := client.getThingIDsByGroup(ctx, getGroupReq{groupID: req.GetValue()})
 	if err != nil {
 		return nil, err
 	}
@@ -433,7 +433,7 @@ func encodeGetThingIDsByProfileRequest(_ context.Context, grpcReq any) (any, err
 }
 
 func encodeGetThingIDsByGroupRequest(_ context.Context, grpcReq any) (any, error) {
-	req := grpcReq.(groupIDReq)
+	req := grpcReq.(getGroupReq)
 	return &protomfx.GroupID{
 		Value: req.groupID,
 	}, nil

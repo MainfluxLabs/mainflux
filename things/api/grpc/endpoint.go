@@ -254,7 +254,7 @@ func getThingIDsByProfileEndpoint(svc things.Service) endpoint.Endpoint {
 
 func getThingIDsByGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(groupIDReq)
+		req := request.(getGroupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}

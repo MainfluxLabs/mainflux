@@ -122,18 +122,6 @@ func (req profileIDReq) validate() error {
 	return nil
 }
 
-type groupIDReq struct {
-	groupID string
-}
-
-func (req groupIDReq) validate() error {
-	if req.groupID == "" {
-		return apiutil.ErrMissingGroupID
-	}
-
-	return nil
-}
-
 type orgIDReq struct {
 	orgID string
 }

@@ -307,7 +307,7 @@ func decodeGetThingIDsByProfileRequest(_ context.Context, grpcReq any) (any, err
 
 func decodeGetThingIDsByGroupRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.GroupID)
-	return groupIDReq{groupID: req.GetValue()}, nil
+	return getGroupReq{groupID: req.GetValue()}, nil
 }
 
 func decodeGetThingIDsByOrgRequest(_ context.Context, grpcReq any) (any, error) {
