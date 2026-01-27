@@ -1159,7 +1159,7 @@ func (ts *thingsService) GetThingIDsByGroup(ctx context.Context, groupID string)
 		return []string{}, err
 	}
 
-	var thingIDs []string
+	thingIDs := make([]string, 0, len(page.Things))
 	for _, t := range page.Things {
 		thingIDs = append(thingIDs, t.ID)
 	}
@@ -1177,7 +1177,7 @@ func (ts *thingsService) GetThingIDsByOrg(ctx context.Context, orgID string) ([]
 		return []string{}, err
 	}
 
-	var thingIDs []string
+	thingIDs := make([]string, 0, len(page.Things))
 	for _, t := range page.Things {
 		thingIDs = append(thingIDs, t.ID)
 	}
