@@ -155,20 +155,18 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, errors.ErrAuthentication).Error())
 	}
 
-	message := protomfx.Message{
+	msg := protomfx.Message{
 		Protocol: protocol,
 		Subtopic: subtopic,
 		Payload:  *payload,
 	}
 
-	if err := messaging.FormatMessage(pc, &message); err != nil {
+	if err := messaging.FormatMessage(pc, &msg); err != nil {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 	}
 
-	m := message
-	m.Subject = nats.GetSubject(message.Publisher, message.Subtopic)
-
-	if err := h.publisher.Publish(m); err != nil {
+	msg.Subject = nats.GetSubject(msg.Publisher, msg.Subtopic)
+	if err := h.publisher.Publish(msg); err != nil {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 	}
 }
