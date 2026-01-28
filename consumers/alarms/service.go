@@ -45,9 +45,9 @@ type Service interface {
 	// identified by the provided group ID.
 	RemoveAlarmsByGroup(ctx context.Context, groupID string) error
 
-	// BackupAlarmsByThing retrieves a subset of alarms related to the specified thing
-	// identified by the provided thing ID, intended for backup.
-	BackupAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error)
+	// ReportAlarmsByThing retrieves a subset of alarms related to the specified thing
+	// identified by the provided thing ID, intended for reporting.
+	ReportAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error)
 
 	consumers.Consumer
 }
@@ -143,13 +143,13 @@ func (as *alarmService) RemoveAlarmsByGroup(ctx context.Context, groupID string)
 	return as.alarms.RemoveByGroup(ctx, groupID)
 }
 
-func (as *alarmService) BackupAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
+func (as *alarmService) ReportAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
 	_, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer})
 	if err != nil {
 		return AlarmsPage{}, err
 	}
 
-	alarms, err := as.alarms.BackupByThing(ctx, thingID, pm)
+	alarms, err := as.alarms.ReportByThing(ctx, thingID, pm)
 	if err != nil {
 		return AlarmsPage{}, err
 	}
