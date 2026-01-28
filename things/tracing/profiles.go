@@ -23,7 +23,6 @@ const (
 	removeGroupIDByProfileID   = "remove_group_id_by_profile_id"
 	retrieveAllProfiles        = "retrieve_all_profiles"
 	backupAllProfiles          = "backup_all_profiles"
-	backupProfilesByGroups     = "backup_profiles_by_groups"
 	retrieveGroupIDByProfileID = "retrieve_group_id_by_profile_id"
 )
 
@@ -100,14 +99,6 @@ func (prm profileRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return prm.repo.BackupAll(ctx)
-}
-
-func (prm profileRepositoryMiddleware) BackupByGroups(ctx context.Context, groupIDs []string) ([]things.Profile, error) {
-	span := dbutil.CreateSpan(ctx, prm.tracer, backupProfilesByGroups)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return prm.repo.BackupByGroups(ctx, groupIDs)
 }
 
 func (prm profileRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {

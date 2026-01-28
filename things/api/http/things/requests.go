@@ -254,36 +254,6 @@ func (req removeThingsReq) validate() error {
 	return nil
 }
 
-type backupByGroupReq struct {
-	id    string
-	token string
-}
-
-func (req backupByGroupReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-	if req.id == "" {
-		return apiutil.ErrMissingGroupID
-	}
-	return nil
-}
-
-type backupByOrgReq struct {
-	id    string
-	token string
-}
-
-func (req backupByOrgReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-	if req.id == "" {
-		return apiutil.ErrMissingOrgID
-	}
-	return nil
-}
-
 type backupReq struct {
 	token string
 }
@@ -291,48 +261,6 @@ type backupReq struct {
 func (req backupReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
-	}
-
-	return nil
-}
-
-type restoreThingsByGroupReq struct {
-	id     string
-	token  string
-	Things []viewThingRes
-}
-
-func (req restoreThingsByGroupReq) validate() error {
-	if req.id == "" {
-		return apiutil.ErrMissingGroupID
-	}
-
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if len(req.Things) == 0 {
-		return apiutil.ErrEmptyList
-	}
-
-	return nil
-}
-
-type restoreThingsByOrgReq struct {
-	id     string
-	token  string
-	Things []viewThingRes
-}
-
-func (req restoreThingsByOrgReq) validate() error {
-	if req.id == "" {
-		return apiutil.ErrMissingOrgID
-	}
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-	if len(req.Things) == 0 {
-		return apiutil.ErrEmptyList
 	}
 
 	return nil
