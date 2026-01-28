@@ -297,6 +297,7 @@ func (lm *loggingMiddleware) AssignRole(ctx context.Context, id, role string) (e
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
 	return lm.svc.AssignRole(ctx, id, role)
@@ -309,6 +310,7 @@ func (lm *loggingMiddleware) RetrieveRole(ctx context.Context, id string) (_ str
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
 	return lm.svc.RetrieveRole(ctx, id)
