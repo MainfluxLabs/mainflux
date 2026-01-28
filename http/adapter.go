@@ -18,6 +18,10 @@ import (
 type Service interface {
 	// Publish Message
 	Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error
+	// SendCommandByThing publishes a command message to the specified thing.
+	SendCommandByThing(ctx context.Context, token, thingID string, msg protomfx.Message) error
+	// SendCommandByGroup publishes a command message to things that belong to a specified group.
+	SendCommandByGroup(ctx context.Context, token, groupID string, msg protomfx.Message) error
 }
 
 var _ Service = (*adapterService)(nil)
@@ -46,8 +50,34 @@ func (as *adapterService) Publish(ctx context.Context, key things.ThingKey, msg 
 		return err
 	}
 
-	msg.Subject = nats.GetSubject(msg.Publisher, msg.Subtopic)
+	msg.Subject = nats.MessagesSubject(msg.Publisher, msg.Subtopic)
 	if err := as.publisher.Publish(msg); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (as *adapterService) SendCommandByThing(ctx context.Context, token, thingID string, message protomfx.Message) error {
+	if _, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
+		return err
+	}
+
+	message.Subject = nats.ThingCommandsSubject(thingID, message.Subtopic)
+	if err := as.publisher.Publish(message); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (as *adapterService) SendCommandByGroup(ctx context.Context, token, groupID string, message protomfx.Message) error {
+	if _, err := as.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Editor}); err != nil {
+		return err
+	}
+
+	message.Subject = nats.GroupCommandsSubject(groupID, message.Subtopic)
+	if err := as.publisher.Publish(message); err != nil {
 		return err
 	}
 
