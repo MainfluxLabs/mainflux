@@ -162,20 +162,6 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		opts...,
 	))
 
-	mux.Get("/backup", kithttp.NewServer(
-		kitot.TraceServer(tracer, "backup")(backupEndpoint(svc)),
-		decodeBackup,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Post("/restore", kithttp.NewServer(
-		kitot.TraceServer(tracer, "restore")(restoreEndpoint(svc)),
-		decodeRestore,
-		encodeResponse,
-		opts...,
-	))
-
 	mux.GetFunc("/health", mainflux.Health("things"))
 	mux.Handle("/metrics", promhttp.Handler())
 
@@ -393,25 +379,6 @@ func decodeUpdateThingsMetadata(_ context.Context, r *http.Request) (any, error)
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req.Things); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeBackup(_ context.Context, r *http.Request) (any, error) {
-	req := backupReq{token: apiutil.ExtractBearerToken(r)}
-
-	return req, nil
-}
-
-func decodeRestore(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	req := restoreReq{token: apiutil.ExtractBearerToken(r)}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
