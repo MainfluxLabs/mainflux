@@ -26,7 +26,6 @@ const (
 	retrieveThingIDByKey       = "retrieve_id_by_key"
 	retrieveAllThings          = "retrieve_all_things"
 	backupAllThings            = "backup_all_things"
-	backupThingsByGroups       = "backup_things_by_groups"
 	saveGroupIDByThingID       = "save_group_id_by_thing_id"
 	retrieveGroupIDByThingID   = "retrieve_group_id_by_thing_id"
 	removeGroupIDByThingID     = "remove_group_id_by_thing_id"
@@ -131,14 +130,6 @@ func (trm thingRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return trm.repo.RetrieveAll(ctx, pm)
-}
-
-func (trm thingRepositoryMiddleware) BackupByGroups(ctx context.Context, groupIDs []string) ([]things.Thing, error) {
-	span := dbutil.CreateSpan(ctx, trm.tracer, backupThingsByGroups)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return trm.repo.BackupByGroups(ctx, groupIDs)
 }
 
 func (trm thingRepositoryMiddleware) UpdateExternalKey(ctx context.Context, key, thingID string) error {

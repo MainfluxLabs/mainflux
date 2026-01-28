@@ -6,7 +6,6 @@ package memberships
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"strings"
 
@@ -41,20 +40,6 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 	mux.Get("/groups/:id/memberships", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_group_memberships")(listGroupMembershipsEndpoint(svc)),
 		decodeListGroupMemberships,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Get("/groups/:id/memberships/backup", kithttp.NewServer(
-		kitot.TraceServer(tracer, "backup_group_memberships")(backupGroupMembershipsEndpoint(svc)),
-		decodeBackupByGroup,
-		apiutil.EncodeFileResponse,
-		opts...,
-	))
-
-	mux.Post("/groups/:id/memberships/restore", kithttp.NewServer(
-		kitot.TraceServer(tracer, "restore_group_memberships")(restoreGroupMembershipsEndpoint(svc)),
-		decodeRestoreByGroup,
 		encodeResponse,
 		opts...,
 	))
@@ -126,36 +111,6 @@ func decodeRemoveGroupMemberships(_ context.Context, r *http.Request) (any, erro
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeBackupByGroup(_ context.Context, r *http.Request) (any, error) {
-	req := backupByGroupReq{
-		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, apiutil.IDKey),
-	}
-	return req, nil
-}
-
-func decodeRestoreByGroup(ctx context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeOctetStream) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	req := restoreByGroupReq{
-		id:    bone.GetValue(r, apiutil.IDKey),
-		token: apiutil.ExtractBearerToken(r),
-	}
-
-	data, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	if err := json.Unmarshal(data, &req.GroupMemberships); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 

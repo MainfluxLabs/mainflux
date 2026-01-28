@@ -6,7 +6,6 @@ package things
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"strings"
 
@@ -107,34 +106,6 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 		opts...,
 	))
 
-	mux.Get("/groups/:id/things/backup", kithttp.NewServer(
-		kitot.TraceServer(tracer, "backup_things_by_group")(backupThingsByGroupEndpoint(svc)),
-		decodeBackupThingsByGroup,
-		apiutil.EncodeFileResponse,
-		opts...,
-	))
-
-	mux.Post("/groups/:id/things/restore", kithttp.NewServer(
-		kitot.TraceServer(tracer, "restore_things_by_group")(restoreThingsByGroupEndpoint(svc)),
-		decodeRestoreThingsByGroup,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Get("/orgs/:id/things/backup", kithttp.NewServer(
-		kitot.TraceServer(tracer, "backup_things_by_org")(backupThingsByOrgEndpoint(svc)),
-		decodeBackupThingsByOrg,
-		apiutil.EncodeFileResponse,
-		opts...,
-	))
-
-	mux.Post("/orgs/:id/things/restore", kithttp.NewServer(
-		kitot.TraceServer(tracer, "restore_things_by_org")(restoreThingsByOrgEndpoint(svc)),
-		decodeRestoreThingsByOrg,
-		encodeResponse,
-		opts...,
-	))
-
 	mux.Put("/things/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_thing")(updateThingEndpoint(svc)),
 		decodeUpdateThing,
@@ -187,20 +158,6 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 	mux.Post("/identify", kithttp.NewServer(
 		kitot.TraceServer(tracer, "identify")(identifyEndpoint(svc)),
 		decodeIdentify,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Get("/backup", kithttp.NewServer(
-		kitot.TraceServer(tracer, "backup")(backupEndpoint(svc)),
-		decodeBackup,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Post("/restore", kithttp.NewServer(
-		kitot.TraceServer(tracer, "restore")(restoreEndpoint(svc)),
-		decodeRestore,
 		encodeResponse,
 		opts...,
 	))
@@ -422,85 +379,6 @@ func decodeUpdateThingsMetadata(_ context.Context, r *http.Request) (any, error)
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req.Things); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeBackup(_ context.Context, r *http.Request) (any, error) {
-	req := backupReq{token: apiutil.ExtractBearerToken(r)}
-
-	return req, nil
-}
-
-func decodeBackupThingsByGroup(_ context.Context, r *http.Request) (any, error) {
-	req := backupByGroupReq{
-		id:    bone.GetValue(r, apiutil.IDKey),
-		token: apiutil.ExtractBearerToken(r),
-	}
-	return req, nil
-}
-
-func decodeBackupThingsByOrg(_ context.Context, r *http.Request) (any, error) {
-	req := backupByOrgReq{
-		id:    bone.GetValue(r, apiutil.IDKey),
-		token: apiutil.ExtractBearerToken(r),
-	}
-	return req, nil
-}
-
-func decodeRestoreThingsByGroup(ctx context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeOctetStream) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	req := restoreThingsByGroupReq{
-		id:    bone.GetValue(r, apiutil.IDKey),
-		token: apiutil.ExtractBearerToken(r),
-	}
-
-	data, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	if err := json.Unmarshal(data, &req.Things); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeRestoreThingsByOrg(ctx context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeOctetStream) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	req := restoreThingsByOrgReq{
-		id:    bone.GetValue(r, apiutil.IDKey),
-		token: apiutil.ExtractBearerToken(r),
-	}
-
-	data, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	if err := json.Unmarshal(data, &req.Things); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeRestore(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	req := restoreReq{token: apiutil.ExtractBearerToken(r)}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 

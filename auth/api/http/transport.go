@@ -7,6 +7,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/auth/api/http/backup"
 	"github.com/MainfluxLabs/mainflux/auth/api/http/invites"
 	"github.com/MainfluxLabs/mainflux/auth/api/http/keys"
 	"github.com/MainfluxLabs/mainflux/auth/api/http/memberships"
@@ -24,6 +25,7 @@ func MakeHandler(svc auth.Service, tracer opentracing.Tracer, logger logger.Logg
 	mux = keys.MakeHandler(svc, mux, tracer, logger)
 	mux = memberships.MakeHandler(svc, mux, tracer, logger)
 	mux = invites.MakeHandler(svc, mux, tracer, logger)
+	mux = backup.MakeHandler(svc, mux, tracer, logger)
 
 	mux.GetFunc("/health", mainflux.Health("auth"))
 	mux.Handle("/metrics", promhttp.Handler())

@@ -54,7 +54,7 @@ type AlarmRepository interface {
 	// identified by a given group ID.
 	RemoveByGroup(ctx context.Context, groupID string) error
 
-	// BackupByThing backups alarms related to a certain thing,
+	// ReportByThing retrieves alarms related to a certain thing,
 	// identified by a given thing ID.
-	BackupByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error)
+	ReportByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error)
 }

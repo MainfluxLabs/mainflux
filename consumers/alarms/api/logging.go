@@ -113,9 +113,9 @@ func (lm loggingMiddleware) RemoveAlarmsByGroup(ctx context.Context, groupID str
 	return lm.svc.RemoveAlarmsByGroup(ctx, groupID)
 }
 
-func (lm loggingMiddleware) BackupAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (_ alarms.AlarmsPage, err error) {
+func (lm loggingMiddleware) ReportAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (_ alarms.AlarmsPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method backup_alarms_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
+		message := fmt.Sprintf("Method report_alarms_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -123,7 +123,7 @@ func (lm loggingMiddleware) BackupAlarmsByThing(ctx context.Context, token, thin
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.BackupAlarmsByThing(ctx, token, thingID, pm)
+	return lm.svc.ReportAlarmsByThing(ctx, token, thingID, pm)
 }
 
 func (lm loggingMiddleware) Consume(alarm any) (err error) {

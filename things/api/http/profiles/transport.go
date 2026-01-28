@@ -6,7 +6,6 @@ package profiles
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"strings"
 
@@ -87,34 +86,6 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 	mux.Post("/orgs/:id/profiles/search", kithttp.NewServer(
 		kitot.TraceServer(tracer, "search_profiles_by_org")(listProfilesByOrgEndpoint(svc)),
 		decodeSearchByOrg,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Get("/orgs/:id/profiles/backup", kithttp.NewServer(
-		kitot.TraceServer(tracer, "backup_profiles_by_org")(backupProfilesByOrgEndpoint(svc)),
-		decodeBackupByOrg,
-		apiutil.EncodeFileResponse,
-		opts...,
-	))
-
-	mux.Post("/orgs/:id/profiles/restore", kithttp.NewServer(
-		kitot.TraceServer(tracer, "restore_profiles_by_org")(restoreProfilesByOrgEndpoint(svc)),
-		decodeRestoreByOrg,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Get("/groups/:id/profiles/backup", kithttp.NewServer(
-		kitot.TraceServer(tracer, "backup_profiles_by_group")(backupProfilesByGroupEndpoint(svc)),
-		decodeBackupByGroup,
-		apiutil.EncodeFileResponse,
-		opts...,
-	))
-
-	mux.Post("/groups/:id/profiles/restore", kithttp.NewServer(
-		kitot.TraceServer(tracer, "restore_profiles_by_group")(restoreProfilesByGroupEndpoint(svc)),
-		decodeRestoreByGroup,
 		encodeResponse,
 		opts...,
 	))
@@ -292,66 +263,6 @@ func decodeSearchByOrg(_ context.Context, r *http.Request) (any, error) {
 		id:           bone.GetValue(r, apiutil.IDKey),
 		token:        apiutil.ExtractBearerToken(r),
 		pageMetadata: pm,
-	}
-
-	return req, nil
-}
-
-func decodeBackupByGroup(_ context.Context, r *http.Request) (any, error) {
-	req := backupByGroupReq{
-		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, apiutil.IDKey),
-	}
-	return req, nil
-}
-
-func decodeRestoreByGroup(ctx context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeOctetStream) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	req := restoreByGroupReq{
-		id:    bone.GetValue(r, apiutil.IDKey),
-		token: apiutil.ExtractBearerToken(r),
-	}
-
-	data, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	if err := json.Unmarshal(data, &req.Profiles); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeBackupByOrg(_ context.Context, r *http.Request) (any, error) {
-	req := backupByOrgReq{
-		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, apiutil.IDKey),
-	}
-	return req, nil
-}
-
-func decodeRestoreByOrg(ctx context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeOctetStream) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	req := restoreByOrgReq{
-		id:    bone.GetValue(r, apiutil.IDKey),
-		token: apiutil.ExtractBearerToken(r),
-	}
-
-	data, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	if err := json.Unmarshal(data, &req.Profiles); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return req, nil

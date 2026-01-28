@@ -18,7 +18,7 @@ const (
 	removeAlarms           = "remove_alarms"
 	removeAlarmsByThing    = "remove_alarms_by_thing"
 	removeAlarmsByGroup    = "remove_alarms_by_group"
-	backupAlarmsByThing    = "backup_alarms_by_thing"
+	reportAlarmsByThing    = "report_alarms_by_thing"
 )
 
 var (
@@ -103,10 +103,10 @@ func (arm alarmRepositoryMiddleware) RemoveByGroup(ctx context.Context, groupID 
 	return arm.repo.RemoveByGroup(ctx, groupID)
 }
 
-func (arm alarmRepositoryMiddleware) BackupByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
-	span := dbutil.CreateSpan(ctx, arm.tracer, backupAlarmsByThing)
+func (arm alarmRepositoryMiddleware) ReportByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+	span := dbutil.CreateSpan(ctx, arm.tracer, reportAlarmsByThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return arm.repo.BackupByThing(ctx, thingID, pm)
+	return arm.repo.ReportByThing(ctx, thingID, pm)
 }
