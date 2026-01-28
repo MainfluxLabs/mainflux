@@ -126,7 +126,8 @@ func (lm *loggingMiddleware) ListThingsByProfile(ctx context.Context, token, prI
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_things_by_profile for profile id %s took %s to complete", prID, time.Since(begin))
 		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s", message, err))
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
@@ -138,7 +139,8 @@ func (lm *loggingMiddleware) ListThingsByOrg(ctx context.Context, token string, 
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_things_by_org for org id %s took %s to complete", orgID, time.Since(begin))
 		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s", message, err))
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
@@ -267,7 +269,8 @@ func (lm *loggingMiddleware) ListProfilesByOrg(ctx context.Context, token string
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_profiles_by_org for org id %s took %s to complete", orgID, time.Since(begin))
 		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s", message, err))
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
@@ -279,7 +282,8 @@ func (lm *loggingMiddleware) ViewProfileByThing(ctx context.Context, token, thID
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view_profile_by_thing for id %s took %s to complete", thID, time.Since(begin))
 		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s", message, err))
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
@@ -722,6 +726,7 @@ func (lm *loggingMiddleware) CreateGroupMemberships(ctx context.Context, token s
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
 	return lm.svc.CreateGroupMemberships(ctx, token, gms...)
@@ -734,6 +739,7 @@ func (lm *loggingMiddleware) CreateGroupMembershipsInternal(ctx context.Context,
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
 	return lm.svc.CreateGroupMembershipsInternal(ctx, gms...)
@@ -744,6 +750,7 @@ func (lm *loggingMiddleware) ListGroupMemberships(ctx context.Context, token, gr
 		message := fmt.Sprintf("Method list_group_memberships for group id %s and email %s took %s to complete", groupID, pm.Email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
@@ -758,6 +765,7 @@ func (lm *loggingMiddleware) UpdateGroupMemberships(ctx context.Context, token s
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
 	return lm.svc.UpdateGroupMemberships(ctx, token, gms...)
@@ -770,6 +778,7 @@ func (lm *loggingMiddleware) RemoveGroupMemberships(ctx context.Context, token, 
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
 	return lm.svc.RemoveGroupMemberships(ctx, token, groupID, memberIDs...)
@@ -782,6 +791,7 @@ func (lm *loggingMiddleware) UpdateExternalKey(ctx context.Context, token, key, 
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
 	return lm.svc.UpdateExternalKey(ctx, token, key, thingID)
@@ -794,6 +804,7 @@ func (lm *loggingMiddleware) RemoveExternalKey(ctx context.Context, token, thing
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
 	return lm.svc.RemoveExternalKey(ctx, token, thingID)
@@ -806,6 +817,7 @@ func (lm *loggingMiddleware) GetThingIDsByProfile(ctx context.Context, profileID
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
 	return lm.svc.GetThingIDsByProfile(ctx, profileID)
