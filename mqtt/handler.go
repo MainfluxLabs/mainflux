@@ -139,7 +139,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	}
 	h.logger.Info(fmt.Sprintf(LogInfoPublished, c.ID, *topic))
 
-	subtopic, err := messaging.CreateSubtopic(*topic)
+	subtopic, err := messaging.NormalizeSubtopic(*topic)
 	if err != nil {
 		h.logger.Error(logErrFailedParseSubtopic + err.Error())
 		return
@@ -267,7 +267,7 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 
 	var subs []Subscription
 	for _, t := range *topics {
-		subtopic, err := messaging.CreateSubtopic(t)
+		subtopic, err := messaging.NormalizeSubtopic(t)
 		if err != nil {
 			return nil, err
 		}

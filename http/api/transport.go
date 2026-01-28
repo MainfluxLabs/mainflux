@@ -5,6 +5,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -31,6 +32,10 @@ const (
 	ctSenmlCBOR = "application/senml+cbor"
 	ctJSON      = "application/json"
 	headerCT    = "Content-Type"
+
+	messagesBasePath      = "/messages"
+	thingCommandsBasePath = "/things/%s/commands"
+	groupCommandsBasePath = "/groups/%s/commands"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -42,14 +47,14 @@ func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.L
 	r := bone.New()
 
 	r.Post("/messages", kithttp.NewServer(
-		kitot.TraceServer(tracer, "publish")(sendMessageEndpoint(svc)),
+		kitot.TraceServer(tracer, "send_message")(sendMessageEndpoint(svc)),
 		decodeRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Post("/messages/*", kithttp.NewServer(
-		kitot.TraceServer(tracer, "publish")(sendMessageEndpoint(svc)),
+		kitot.TraceServer(tracer, "send_message")(sendMessageEndpoint(svc)),
 		decodeRequest,
 		encodeResponse,
 		opts...,
@@ -94,11 +99,6 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	subtopic, err := messaging.CreateSubtopic(r.URL.Path)
-	if err != nil {
-		return nil, err
-	}
-
 	var thingKey things.ThingKey
 	_, pass, ok := r.BasicAuth()
 	switch {
@@ -113,6 +113,12 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 		return nil, apiutil.ErrMalformedEntity
 	}
 	defer r.Body.Close()
+
+	subtopic := extractSubtopicFromPath(r.URL.Path, messagesBasePath)
+	subtopic, err = messaging.NormalizeSubtopic(subtopic)
+	if err != nil {
+		return nil, err
+	}
 
 	req := publishReq{
 		msg: protomfx.Message{
@@ -138,7 +144,10 @@ func decodeSendCommandByThing(_ context.Context, r *http.Request) (any, error) {
 	}
 	defer r.Body.Close()
 
-	subtopic, err := messaging.CreateSubtopic(r.URL.Path)
+	id := bone.GetValue(r, apiutil.IDKey)
+
+	subtopic := extractSubtopicFromPath(r.URL.Path, fmt.Sprintf(thingCommandsBasePath, id))
+	subtopic, err = messaging.NormalizeSubtopic(subtopic)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +155,7 @@ func decodeSendCommandByThing(_ context.Context, r *http.Request) (any, error) {
 	req := commandByThingReq{
 		cmdReq{
 			token: apiutil.ExtractBearerToken(r),
-			id:    bone.GetValue(r, apiutil.IDKey),
+			id:    id,
 			msg: protomfx.Message{
 				Subtopic: subtopic,
 				Protocol: protocol,
@@ -170,7 +179,10 @@ func decodeSendCommandByGroup(_ context.Context, r *http.Request) (any, error) {
 	}
 	defer r.Body.Close()
 
-	subtopic, err := messaging.CreateSubtopic(r.URL.Path)
+	id := bone.GetValue(r, apiutil.IDKey)
+
+	subtopic := extractSubtopicFromPath(r.URL.Path, fmt.Sprintf(groupCommandsBasePath, id))
+	subtopic, err = messaging.NormalizeSubtopic(subtopic)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +190,7 @@ func decodeSendCommandByGroup(_ context.Context, r *http.Request) (any, error) {
 	req := commandByGroupReq{
 		cmdReq{
 			token: apiutil.ExtractBearerToken(r),
-			id:    bone.GetValue(r, apiutil.IDKey),
+			id:    id,
 			msg: protomfx.Message{
 				Subtopic: subtopic,
 				Protocol: protocol,
@@ -198,6 +210,18 @@ func validateCT(ct string) error {
 		return apiutil.ErrUnsupportedContentType
 	}
 	return nil
+}
+
+func extractSubtopicFromPath(fullPath string, basePath string) string {
+	if fullPath == basePath {
+		return ""
+	}
+
+	if strings.HasPrefix(fullPath, basePath+"/") {
+		return strings.TrimPrefix(fullPath, basePath+"/")
+	}
+
+	return ""
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, _ any) error {
