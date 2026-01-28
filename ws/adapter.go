@@ -57,24 +57,22 @@ func New(things protomfx.ThingsServiceClient, pubsub messaging.PubSub) Service {
 	}
 }
 
-func (svc *adapterService) Publish(ctx context.Context, key things.ThingKey, message protomfx.Message) error {
+func (svc *adapterService) Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error {
 	pc, err := svc.authorize(ctx, key)
 	if err != nil {
 		return ErrUnauthorizedAccess
 	}
 
-	if len(message.Payload) == 0 {
+	if len(msg.Payload) == 0 {
 		return messaging.ErrPublishMessage
 	}
 
-	if err := messaging.FormatMessage(pc, &message); err != nil {
+	if err := messaging.FormatMessage(pc, &msg); err != nil {
 		return err
 	}
 
-	m := message
-	m.Subject = nats.GetSubject(message.Publisher, message.Subtopic)
-
-	if err := svc.pubsub.Publish(m); err != nil {
+	msg.Subject = nats.GetSubject(msg.Publisher, msg.Subtopic)
+	if err := svc.pubsub.Publish(msg); err != nil {
 		return err
 	}
 

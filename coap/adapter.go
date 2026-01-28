@@ -50,21 +50,20 @@ func New(things protomfx.ThingsServiceClient, pubsub messaging.PubSub) Service {
 	return as
 }
 
-func (svc *adapterService) Publish(ctx context.Context, key things.ThingKey, message protomfx.Message) error {
+func (svc *adapterService) Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error {
 	cr := &protomfx.ThingKey{Value: key.Value, Type: key.Type}
 	pc, err := svc.things.GetPubConfByKey(ctx, cr)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	if err := messaging.FormatMessage(pc, &message); err != nil {
+	if err := messaging.FormatMessage(pc, &msg); err != nil {
 		return err
 	}
 
-	m := message
-	m.Subject = nats.GetSubject(message.Publisher, message.Subtopic)
+	msg.Subject = nats.GetSubject(msg.Publisher, msg.Subtopic)
 
-	if err := svc.pubsub.Publish(m); err != nil {
+	if err := svc.pubsub.Publish(msg); err != nil {
 		return err
 	}
 
