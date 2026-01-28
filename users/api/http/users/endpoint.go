@@ -1,12 +1,11 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package http
+package users
 
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -24,22 +23,6 @@ func selfRegistrationEndpoint(svc users.Service) endpoint.Endpoint {
 		}
 
 		return selfRegisterRes{}, nil
-	}
-}
-
-func inviteRegistrationEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(registerByInviteReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		userID, err := svc.RegisterByInvite(ctx, req.User, req.inviteID, req.RedirectPath)
-		if err != nil {
-			return nil, err
-		}
-
-		return createUserRes{created: true, ID: userID}, nil
 	}
 }
 
@@ -252,40 +235,6 @@ func disableUserEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
-func backupEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(backupReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		admin, users, err := svc.Backup(ctx, req.token)
-		if err != nil {
-			return nil, err
-		}
-
-		return buildBackupResponse(admin, users), nil
-	}
-}
-
-func restoreEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(restoreReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		admin, users := buildBackup(req)
-
-		err := svc.Restore(ctx, req.token, admin, users)
-		if err != nil {
-			return nil, err
-		}
-
-		return restoreRes{}, nil
-	}
-}
-
 func buildUsersResponse(up users.UserPage, pm users.PageMetadata) userPageRes {
 	res := userPageRes{
 		pageRes: pageRes{
@@ -308,153 +257,4 @@ func buildUsersResponse(up users.UserPage, pm users.PageMetadata) userPageRes {
 		res.Users = append(res.Users, view)
 	}
 	return res
-}
-
-func buildBackupResponse(admin users.User, users []users.User) backupRes {
-	res := backupRes{
-		Admin: backupUserRes{
-			ID:       admin.ID,
-			Email:    admin.Email,
-			Password: admin.Password,
-			Metadata: admin.Metadata,
-			Status:   admin.Status,
-		},
-		Users: []backupUserRes{},
-	}
-
-	for _, user := range users {
-		view := backupUserRes{
-			ID:       user.ID,
-			Email:    user.Email,
-			Password: user.Password,
-			Metadata: user.Metadata,
-			Status:   user.Status,
-		}
-		res.Users = append(res.Users, view)
-	}
-
-	return res
-}
-
-func buildBackup(req restoreReq) (users.User, []users.User) {
-	admin := users.User{
-		ID:       req.Admin.ID,
-		Email:    req.Admin.Email,
-		Password: req.Admin.Password,
-		Metadata: req.Admin.Metadata,
-		Status:   req.Admin.Status,
-	}
-
-	u := []users.User{}
-	for _, user := range req.Users {
-		view := users.User{
-			ID:       user.ID,
-			Email:    user.Email,
-			Password: user.Password,
-			Metadata: user.Metadata,
-			Status:   user.Status,
-		}
-		u = append(u, view)
-	}
-
-	return admin, u
-}
-
-func createPlatformInviteEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(createPlatformInviteRequest)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		orgInvite := auth.OrgInvite{
-			OrgID:        req.OrgID,
-			InviteeRole:  req.Role,
-			GroupInvites: req.GroupInvites,
-		}
-
-		invite, err := svc.CreatePlatformInvite(ctx, req.token, req.RedirectPath, req.Email, orgInvite)
-		if err != nil {
-			return nil, err
-		}
-
-		return createPlatformInviteRes{
-			ID:      invite.ID,
-			created: true,
-		}, nil
-	}
-}
-
-func listPlatformInvitesEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(listPlatformInvitesRequest)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		page, err := svc.ListPlatformInvites(ctx, req.token, req.pm)
-		if err != nil {
-			return nil, err
-		}
-
-		response := platformInvitePageRes{
-			pageRes: pageRes{
-				Limit:  page.Limit,
-				Offset: page.Offset,
-				Total:  page.Total,
-			},
-			Invites: []platformInviteRes{},
-		}
-
-		for _, inv := range page.Invites {
-			resInv := platformInviteRes{
-				ID:           inv.ID,
-				InviteeEmail: inv.InviteeEmail,
-				CreatedAt:    inv.CreatedAt,
-				ExpiresAt:    inv.ExpiresAt,
-				State:        inv.State,
-			}
-
-			response.Invites = append(response.Invites, resInv)
-		}
-
-		return response, nil
-	}
-}
-
-func viewPlatformInviteEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(inviteReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		invite, err := svc.ViewPlatformInvite(ctx, req.token, req.inviteID)
-		if err != nil {
-			return nil, err
-		}
-
-		return platformInviteRes{
-			ID:           invite.ID,
-			InviteeEmail: invite.InviteeEmail,
-			CreatedAt:    invite.CreatedAt,
-			ExpiresAt:    invite.ExpiresAt,
-			State:        invite.State,
-		}, nil
-	}
-}
-
-func revokePlatformInviteEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(inviteReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		if err := svc.RevokePlatformInvite(ctx, req.token, req.inviteID); err != nil {
-			return nil, err
-		}
-
-		return revokePlatformInviteRes{}, nil
-	}
 }
