@@ -5,8 +5,6 @@ package memberships
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -94,40 +92,6 @@ func removeGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func backupGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(backupByGroupReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		backup, err := svc.BackupGroupMemberships(ctx, req.token, req.id)
-		if err != nil {
-			return nil, err
-		}
-
-		fileName := fmt.Sprintf("group-memberships-backup-%s.json", req.id)
-		return buildBackupResponse(backup, fileName)
-	}
-}
-
-func restoreGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(restoreByGroupReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		groupMembershipsBackup := buildGroupMembershipsBackup(req.GroupMemberships)
-
-		if err := svc.RestoreGroupMemberships(ctx, req.token, req.id, groupMembershipsBackup); err != nil {
-			return nil, err
-		}
-
-		return restoreRes{}, nil
-	}
-}
-
 func buildGroupMembershipsResponse(gpp things.GroupMembershipsPage, pm apiutil.PageMetadata) listGroupMembershipsRes {
 	res := listGroupMembershipsRes{
 		pageRes: pageRes{
@@ -151,39 +115,4 @@ func buildGroupMembershipsResponse(gpp things.GroupMembershipsPage, pm apiutil.P
 	}
 
 	return res
-}
-
-func buildGroupMembershipsBackup(groupMemberships []ViewGroupMembershipRes) (backup things.GroupMembershipsBackup) {
-	for _, membership := range groupMemberships {
-		gm := things.GroupMembership{
-			MemberID: membership.MemberID,
-			GroupID:  membership.GroupID,
-			Email:    membership.Email,
-			Role:     membership.Role,
-		}
-		backup.GroupMemberships = append(backup.GroupMemberships, gm)
-	}
-	return backup
-}
-
-func buildBackupResponse(b things.GroupMembershipsBackup, fileName string) (apiutil.ViewFileRes, error) {
-	views := make([]ViewGroupMembershipRes, 0, len(b.GroupMemberships))
-	for _, membership := range b.GroupMemberships {
-		views = append(views, ViewGroupMembershipRes{
-			MemberID: membership.MemberID,
-			GroupID:  membership.GroupID,
-			Email:    membership.Email,
-			Role:     membership.Role,
-		})
-	}
-
-	data, err := json.MarshalIndent(views, "", "  ")
-	if err != nil {
-		return apiutil.ViewFileRes{}, err
-	}
-
-	return apiutil.ViewFileRes{
-		File:     data,
-		FileName: fileName,
-	}, nil
 }

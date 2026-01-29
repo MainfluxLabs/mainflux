@@ -70,10 +70,10 @@ func MakeHandler(tracer opentracing.Tracer, svc alarms.Service, logger log.Logge
 		opts...,
 	))
 
-	r.Get("/things/:id/alarms/backup", kithttp.NewServer(
-		kitot.TraceServer(tracer, "backup_alarms_by_thing")(backupAlarmsByThingEndpoint(svc)),
-		decodeBackupAlarmsByThing,
-		encodeBackupFileResponse,
+	r.Get("/things/:id/alarms/export", kithttp.NewServer(
+		kitot.TraceServer(tracer, "export_alarms_by_thing")(exportAlarmsByThingEndpoint(svc)),
+		decodeExportAlarmsByThing,
+		encodeFileResponse,
 		opts...,
 	))
 
@@ -145,7 +145,7 @@ func decodeRemoveAlarms(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeBackupAlarmsByThing(_ context.Context, r *http.Request) (any, error) {
+func decodeExportAlarmsByThing(_ context.Context, r *http.Request) (any, error) {
 	convertFormat, err := apiutil.ReadStringQuery(r, convertKey, jsonFormat)
 	if err != nil {
 		return nil, err
@@ -161,7 +161,7 @@ func decodeBackupAlarmsByThing(_ context.Context, r *http.Request) (any, error) 
 		return nil, err
 	}
 
-	return backupAlarmsByThingReq{
+	return exportAlarmsByThingReq{
 		token:         apiutil.ExtractBearerToken(r),
 		thingID:       bone.GetValue(r, apiutil.IDKey),
 		convertFormat: convertFormat,
@@ -188,10 +188,10 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response any) erro
 	return json.NewEncoder(w).Encode(response)
 }
 
-func encodeBackupFileResponse(_ context.Context, w http.ResponseWriter, response any) error {
+func encodeFileResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	w.Header().Set("Content-Type", octetStreamContentType)
 
-	if ar, ok := response.(backupFileRes); ok {
+	if ar, ok := response.(exportFileRes); ok {
 		for k, v := range ar.Headers() {
 			w.Header().Set(k, v)
 		}

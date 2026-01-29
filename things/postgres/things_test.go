@@ -687,66 +687,6 @@ func TestRetrieveByProfile(t *testing.T) {
 	}
 }
 
-func TestBackupThingsByGroups(t *testing.T) {
-	dbMiddleware := dbutil.NewDatabase(db)
-	thingRepo := postgres.NewThingRepository(dbMiddleware)
-	profileRepo := postgres.NewProfileRepository(dbMiddleware)
-
-	n := uint64(101)
-	group := createGroup(t, dbMiddleware)
-	prID := generateUUID(t)
-
-	p := things.Profile{
-		ID:      prID,
-		GroupID: group.ID,
-		Name:    profileName,
-	}
-	_, err := profileRepo.Save(context.Background(), p)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	var ths []things.Thing
-	for i := uint64(0); i < n; i++ {
-		suffix := 2*n + i + 1
-		thkey, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-		th := things.Thing{
-			ID:        fmt.Sprintf("%s%012d", prefixID, suffix),
-			GroupID:   group.ID,
-			ProfileID: prID,
-			Name:      fmt.Sprintf("%s-%d", thingName, suffix),
-			Key:       thkey,
-		}
-		ths = append(ths, th)
-	}
-
-	_, err = thingRepo.Save(context.Background(), ths...)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	cases := map[string]struct {
-		groupIDs []string
-		size     uint64
-		err      error
-	}{
-		"backup things by group IDs": {
-			groupIDs: []string{group.ID},
-			size:     n,
-			err:      nil,
-		},
-		"backup things for empty group list": {
-			groupIDs: []string{},
-			size:     0,
-			err:      nil,
-		},
-	}
-
-	for desc, tc := range cases {
-		things, err := thingRepo.BackupByGroups(context.Background(), tc.groupIDs)
-		size := uint64(len(things))
-		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
-		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
-	}
-}
-
 func TestRemoveThing(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
