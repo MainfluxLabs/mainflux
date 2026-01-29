@@ -1,7 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package api
+package messages
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -74,14 +74,14 @@ func (req listJSONMessagesReq) validate() error {
 	return nil
 }
 
-type backupSenMLMessagesReq struct {
+type reportSenMLMessagesReq struct {
 	token         string
 	convertFormat string
 	timeFormat    string
 	pageMeta      readers.SenMLPageMetadata
 }
 
-func (req backupSenMLMessagesReq) validate() error {
+func (req reportSenMLMessagesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -101,14 +101,14 @@ func (req backupSenMLMessagesReq) validate() error {
 	return nil
 }
 
-type backupJSONMessagesReq struct {
+type reportJSONMessagesReq struct {
 	token         string
 	convertFormat string
 	timeFormat    string
 	pageMeta      readers.JSONPageMetadata
 }
 
-func (req backupJSONMessagesReq) validate() error {
+func (req reportJSONMessagesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -123,24 +123,6 @@ func (req backupJSONMessagesReq) validate() error {
 
 	if err := validateDir(req.pageMeta.Dir); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-type restoreMessagesReq struct {
-	token    string
-	fileType string
-	Messages []byte
-}
-
-func (req restoreMessagesReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if len(req.Messages) == 0 {
-		return apiutil.ErrEmptyList
 	}
 
 	return nil

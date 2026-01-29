@@ -1,7 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package api
+package messages
 
 import (
 	"net/http"
@@ -66,19 +66,19 @@ func (res restoreMessagesRes) Empty() bool {
 	return true
 }
 
-type backupFileRes struct {
+type reportFileRes struct {
 	file []byte
 }
 
-func (res backupFileRes) Code() int {
+func (res reportFileRes) Code() int {
 	return http.StatusOK
 }
 
-func (res backupFileRes) Headers() map[string]string {
+func (res reportFileRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res backupFileRes) Empty() bool {
+func (res reportFileRes) Empty() bool {
 	return len(res.file) == 0
 }
 
