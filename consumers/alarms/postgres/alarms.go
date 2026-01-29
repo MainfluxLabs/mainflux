@@ -204,7 +204,7 @@ func (ar *alarmRepository) RemoveByGroup(ctx context.Context, groupID string) er
 	return nil
 }
 
-func (ar *alarmRepository) ReportByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+func (ar *alarmRepository) ExportByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
 	if _, err := uuid.FromString(thingID); err != nil {
 		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}

@@ -91,14 +91,14 @@ func removeAlarmsEndpoint(svc alarms.Service) endpoint.Endpoint {
 	}
 }
 
-func reportAlarmsByThingEndpoint(svc alarms.Service) endpoint.Endpoint {
+func exportAlarmsByThingEndpoint(svc alarms.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(reportAlarmsByThingReq)
+		req := request.(exportAlarmsByThingReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		page, err := svc.ReportAlarmsByThing(ctx, req.token, req.thingID, req.pageMetadata)
+		page, err := svc.ExportAlarmsByThing(ctx, req.token, req.thingID, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
@@ -115,7 +115,7 @@ func reportAlarmsByThingEndpoint(svc alarms.Service) endpoint.Endpoint {
 			}
 		}
 
-		return reportFileRes{
+		return exportFileRes{
 			file: data,
 		}, nil
 	}

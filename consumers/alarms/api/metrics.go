@@ -89,13 +89,13 @@ func (ms *metricsMiddleware) RemoveAlarmsByGroup(ctx context.Context, groupID st
 	return ms.svc.RemoveAlarmsByGroup(ctx, groupID)
 }
 
-func (ms *metricsMiddleware) ReportAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+func (ms *metricsMiddleware) ExportAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "report_alarms_by_thing").Add(1)
-		ms.latency.With("method", "report_alarms_by_thing").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "export_alarms_by_thing").Add(1)
+		ms.latency.With("method", "export_alarms_by_thing").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ReportAlarmsByThing(ctx, token, thingID, pm)
+	return ms.svc.ExportAlarmsByThing(ctx, token, thingID, pm)
 }
 
 func (ms *metricsMiddleware) Consume(message any) error {
