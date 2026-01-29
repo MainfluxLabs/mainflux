@@ -27,9 +27,10 @@ const (
 var (
 	// ErrFailedHandleMessage indicates that the message couldn't be handled.
 	errFailedHandleMessage = errors.New("failed to handle mainflux message")
-	pubID                  = "publisher"
-	c1, c2, c3, c4         = "c1", "c2", "c3", "c4"
-	data                   = []byte("payload")
+
+	pubID                                      = "pid"
+	clientID1, clientID2, clientID3, clientID4 = "cid1", "cid2", "cid3", "cid4"
+	data                                       = []byte("payload")
 )
 
 func TestPublisher(t *testing.T) {
@@ -125,44 +126,44 @@ func TestSubscribe(t *testing.T) {
 		{
 			desc:     "Subscribe to a topic with an ID",
 			topic:    topic,
-			clientID: c1,
+			clientID: clientID1,
 			err:      nil,
-			handler:  handler{false, c1, msgChan},
+			handler:  handler{false, clientID1, msgChan},
 		},
 		{
 			desc:     "Subscribe to the same topic with a different ID",
 			topic:    topic,
-			clientID: c2,
+			clientID: clientID2,
 			err:      nil,
-			handler:  handler{false, c2, msgChan},
+			handler:  handler{false, clientID2, msgChan},
 		},
 		{
 			desc:     "Subscribe to an already subscribed topic with an ID",
 			topic:    topic,
-			clientID: c1,
+			clientID: clientID1,
 			err:      nil,
-			handler:  handler{false, c1, msgChan},
+			handler:  handler{false, clientID1, msgChan},
 		},
 		{
 			desc:     "Subscribe to a topic with a subtopic with an ID",
 			topic:    topicWithSubtopic,
-			clientID: c1,
+			clientID: clientID1,
 			err:      nil,
-			handler:  handler{false, c1, msgChan},
+			handler:  handler{false, clientID1, msgChan},
 		},
 		{
 			desc:     "Subscribe to an already subscribed topic with a subtopic with an ID",
 			topic:    topicWithSubtopic,
-			clientID: c1,
+			clientID: clientID1,
 			err:      nil,
-			handler:  handler{false, c1, msgChan},
+			handler:  handler{false, clientID1, msgChan},
 		},
 		{
 			desc:     "Subscribe to an empty topic with an ID",
 			topic:    "",
-			clientID: c1,
+			clientID: clientID1,
 			err:      messaging.ErrEmptyTopic,
-			handler:  handler{false, c1, msgChan},
+			handler:  handler{false, clientID1, msgChan},
 		},
 		{
 			desc:     "Subscribe to a topic with empty id",
@@ -208,30 +209,30 @@ func TestPubSub(t *testing.T) {
 		{
 			desc:     "Subscribe to a topic with an ID",
 			topic:    topic,
-			clientID: c3,
+			clientID: clientID3,
 			err:      nil,
-			handler:  handler{false, c3, msgChan},
+			handler:  handler{false, clientID3, msgChan},
 		},
 		{
 			desc:     "Subscribe to the same topic with a different ID",
 			topic:    topic,
-			clientID: c4,
+			clientID: clientID4,
 			err:      nil,
-			handler:  handler{false, c4, msgChan},
+			handler:  handler{false, clientID4, msgChan},
 		},
 		{
 			desc:     "Subscribe to a topic with a subtopic with an ID",
 			topic:    topicWithSubtopic,
-			clientID: c3,
+			clientID: clientID3,
 			err:      nil,
-			handler:  handler{false, c3, msgChan},
+			handler:  handler{false, clientID3, msgChan},
 		},
 		{
 			desc:     "Subscribe to an empty topic with an ID",
 			topic:    "",
-			clientID: c3,
+			clientID: clientID3,
 			err:      messaging.ErrEmptyTopic,
-			handler:  handler{false, c3, msgChan},
+			handler:  handler{false, clientID3, msgChan},
 		},
 		{
 			desc:     "Subscribe to a topic with empty id",
@@ -269,95 +270,95 @@ func TestUnsubscribe(t *testing.T) {
 	msgChan := make(chan protomfx.Message)
 	topic2 := "test"
 	topicWithSubtopic2 := topic2 + "/" + "subtopic"
-	c5, c6 := "c5", "c6"
+	clientID5, clientID6, clientID7, clientID8 := "cid5", "cid6", "cid7", "cid8"
 
 	cases := []struct {
 		desc      string
 		topic     string
 		clientID  string
 		err       error
-		subscribe bool // True for subscribe and false for unsubscribe.
+		subscribe bool // True for subscribing and false for unsubscribing.
 		handler   messaging.MessageHandler
 	}{
 		{
 			desc:      "Subscribe to a topic with an ID",
 			topic:     topic,
-			clientID:  c4,
+			clientID:  clientID5,
 			err:       nil,
 			subscribe: true,
-			handler:   handler{false, c4, msgChan},
+			handler:   handler{false, clientID5, msgChan},
 		},
 		{
 			desc:      "Subscribe to the same topic with a different ID",
 			topic:     topic,
-			clientID:  c5,
+			clientID:  clientID6,
 			err:       nil,
 			subscribe: true,
-			handler:   handler{false, c5, msgChan},
+			handler:   handler{false, clientID6, msgChan},
 		},
 		{
 			desc:      "Unsubscribe from a topic with an ID",
 			topic:     topic,
-			clientID:  c4,
+			clientID:  clientID5,
 			err:       nil,
 			subscribe: false,
-			handler:   handler{false, c4, msgChan},
+			handler:   handler{false, clientID5, msgChan},
 		},
 		{
 			desc:      "Unsubscribe from same topic with different ID",
 			topic:     topic,
-			clientID:  c5,
+			clientID:  clientID6,
 			err:       nil,
 			subscribe: false,
-			handler:   handler{false, c5, msgChan},
+			handler:   handler{false, clientID6, msgChan},
 		},
 		{
 			desc:      "Unsubscribe from a non-existent topic with an ID",
 			topic:     "h",
-			clientID:  c4,
+			clientID:  clientID5,
 			err:       messaging.ErrNotSubscribed,
 			subscribe: false,
-			handler:   handler{false, c4, msgChan},
+			handler:   handler{false, clientID5, msgChan},
 		},
 		{
 			desc:      "Unsubscribe from an already unsubscribed topic with an ID",
 			topic:     topic,
-			clientID:  c4,
+			clientID:  clientID5,
 			err:       messaging.ErrNotSubscribed,
 			subscribe: false,
-			handler:   handler{false, c4, msgChan},
+			handler:   handler{false, clientID5, msgChan},
 		},
 		{
 			desc:      "Subscribe to a topic with a subtopic with an ID",
 			topic:     topicWithSubtopic,
-			clientID:  c4,
+			clientID:  clientID7,
 			err:       nil,
 			subscribe: true,
-			handler:   handler{false, c4, msgChan},
+			handler:   handler{false, clientID7, msgChan},
 		},
 		{
 			desc:      "Unsubscribe from a topic with a subtopic with an ID",
 			topic:     topicWithSubtopic,
-			clientID:  c4,
+			clientID:  clientID7,
 			err:       nil,
 			subscribe: false,
-			handler:   handler{false, c4, msgChan},
+			handler:   handler{false, clientID7, msgChan},
 		},
 		{
 			desc:      "Unsubscribe from an already unsubscribed topic with a subtopic with an ID",
 			topic:     topicWithSubtopic,
-			clientID:  c4,
+			clientID:  clientID7,
 			err:       messaging.ErrNotSubscribed,
 			subscribe: false,
-			handler:   handler{false, c4, msgChan},
+			handler:   handler{false, clientID7, msgChan},
 		},
 		{
 			desc:      "Unsubscribe from an empty topic with an ID",
 			topic:     "",
-			clientID:  c4,
+			clientID:  clientID5,
 			err:       messaging.ErrEmptyTopic,
 			subscribe: false,
-			handler:   handler{false, c4, msgChan},
+			handler:   handler{false, clientID5, msgChan},
 		},
 		{
 			desc:      "Unsubscribe from a topic with empty ID",
@@ -370,34 +371,34 @@ func TestUnsubscribe(t *testing.T) {
 		{
 			desc:      "Subscribe to a new topic with an ID",
 			topic:     topic2,
-			clientID:  c6,
+			clientID:  clientID8,
 			err:       nil,
 			subscribe: true,
-			handler:   handler{true, c6, msgChan},
+			handler:   handler{true, clientID8, msgChan},
 		},
 		{
 			desc:      "Unsubscribe from a topic with an ID with failing handler",
 			topic:     topic2,
-			clientID:  c6,
+			clientID:  clientID8,
 			err:       errFailedHandleMessage,
 			subscribe: false,
-			handler:   handler{true, c6, msgChan},
+			handler:   handler{true, clientID8, msgChan},
 		},
 		{
 			desc:      "Subscribe to a new topic with subtopic with an ID",
 			topic:     topicWithSubtopic2,
-			clientID:  c6,
+			clientID:  clientID8,
 			err:       nil,
 			subscribe: true,
-			handler:   handler{true, c6, msgChan},
+			handler:   handler{true, clientID8, msgChan},
 		},
 		{
 			desc:      "Unsubscribe from a topic with subtopic with an ID with failing handler",
 			topic:     topicWithSubtopic2,
-			clientID:  c6,
+			clientID:  clientID8,
 			err:       errFailedHandleMessage,
 			subscribe: false,
-			handler:   handler{true, c6, msgChan},
+			handler:   handler{true, clientID8, msgChan},
 		},
 	}
 	for _, tc := range cases {
