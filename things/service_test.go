@@ -3689,13 +3689,13 @@ func TestGetThingIDsByProfile(t *testing.T) {
 			desc:      "get thing ids by non-existing profile",
 			profileID: wrongValue,
 			size:      0,
-			err:       nil,
+			err:       dbutil.ErrNotFound,
 		},
 		{
 			desc:      "get thing ids by empty profile",
 			profileID: emptyValue,
 			size:      0,
-			err:       nil,
+			err:       dbutil.ErrNotFound,
 		},
 	}
 
