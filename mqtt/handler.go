@@ -165,7 +165,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 	}
 
-	msg.Subject = nats.MessagesSubject(msg.Publisher, msg.Subtopic)
+	msg.Subject = nats.GetMessagesSubject(msg.Publisher, msg.Subtopic)
 	if err := h.publisher.Publish(msg); err != nil {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 	}

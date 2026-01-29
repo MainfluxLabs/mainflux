@@ -60,7 +60,7 @@ func (svc *adapterService) Publish(ctx context.Context, key things.ThingKey, msg
 		return err
 	}
 
-	msg.Subject = nats.MessagesSubject(msg.Publisher, msg.Subtopic)
+	msg.Subject = nats.GetMessagesSubject(msg.Publisher, msg.Subtopic)
 	if err := svc.pubsub.Publish(msg); err != nil {
 		return err
 	}

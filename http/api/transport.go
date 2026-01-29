@@ -95,8 +95,11 @@ func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.L
 }
 
 func decodeRequest(_ context.Context, r *http.Request) (any, error) {
-	if err := validateCT(r.Header.Get(headerCT)); err != nil {
-		return nil, err
+	ct := r.Header.Get(headerCT)
+	if !strings.Contains(ct, ctSenmlJSON) &&
+		!strings.Contains(ct, ctJSON) &&
+		!strings.Contains(ct, ctSenmlCBOR) {
+		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	var thingKey things.ThingKey
@@ -108,11 +111,10 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 		thingKey = things.ExtractThingKey(r)
 	}
 
-	payload, err := ioutil.ReadAll(r.Body)
+	payload, err := readPayload(r)
 	if err != nil {
-		return nil, apiutil.ErrMalformedEntity
+		return nil, err
 	}
-	defer r.Body.Close()
 
 	subtopic := extractSubtopicFromPath(r.URL.Path, messagesBasePath)
 	subtopic, err = messaging.NormalizeSubtopic(subtopic)
@@ -134,15 +136,14 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeSendCommandByThing(_ context.Context, r *http.Request) (any, error) {
-	if err := validateCT(r.Header.Get(headerCT)); err != nil {
-		return nil, err
+	if !strings.Contains(r.Header.Get(headerCT), ctJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	payload, err := ioutil.ReadAll(r.Body)
+	payload, err := readPayload(r)
 	if err != nil {
-		return nil, apiutil.ErrMalformedEntity
+		return nil, err
 	}
-	defer r.Body.Close()
 
 	id := bone.GetValue(r, apiutil.IDKey)
 
@@ -169,15 +170,14 @@ func decodeSendCommandByThing(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeSendCommandByGroup(_ context.Context, r *http.Request) (any, error) {
-	if err := validateCT(r.Header.Get(headerCT)); err != nil {
-		return nil, err
+	if !strings.Contains(r.Header.Get(headerCT), ctJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	payload, err := ioutil.ReadAll(r.Body)
+	payload, err := readPayload(r)
 	if err != nil {
-		return nil, apiutil.ErrMalformedEntity
+		return nil, err
 	}
-	defer r.Body.Close()
 
 	id := bone.GetValue(r, apiutil.IDKey)
 
@@ -203,13 +203,14 @@ func decodeSendCommandByGroup(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func validateCT(ct string) error {
-	if !strings.Contains(ct, ctSenmlJSON) &&
-		!strings.Contains(ct, ctJSON) &&
-		!strings.Contains(ct, ctSenmlCBOR) {
-		return apiutil.ErrUnsupportedContentType
+func readPayload(r *http.Request) ([]byte, error) {
+	payload, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, apiutil.ErrMalformedEntity
 	}
-	return nil
+	defer r.Body.Close()
+
+	return payload, nil
 }
 
 func extractSubtopicFromPath(fullPath string, basePath string) string {

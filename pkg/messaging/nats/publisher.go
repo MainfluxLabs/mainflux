@@ -59,15 +59,15 @@ func (pub *publisher) Close() error {
 	return nil
 }
 
-func MessagesSubject(thingID, subtopic string) string {
+func GetMessagesSubject(thingID, subtopic string) string {
 	return createSubject(thingsPrefix, thingID, messagesSuffix, subtopic)
 }
 
-func ThingCommandsSubject(thingID, subtopic string) string {
+func GetThingCommandsSubject(thingID, subtopic string) string {
 	return createSubject(thingsPrefix, thingID, commandsSuffix, subtopic)
 }
 
-func GroupCommandsSubject(groupID, subtopic string) string {
+func GetGroupCommandsSubject(groupID, subtopic string) string {
 	return createSubject(groupsPrefix, groupID, commandsSuffix, subtopic)
 }
 

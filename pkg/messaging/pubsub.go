@@ -17,7 +17,6 @@ import (
 
 const (
 	SenMLContentType = "application/senml+json"
-	CBORContentType  = "application/senml+cbor"
 	JSONContentType  = "application/json"
 )
 
