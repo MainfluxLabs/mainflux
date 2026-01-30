@@ -185,14 +185,14 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
 
-  /json/backup:
+  /json/export:
     get:
-      summary: Backup JSON messages
+      summary: Export JSON messages
       security:
         - bearerAuth: []
       description: |
-        Creates a backup of JSON messages with optional filtering and format conversion.
-      tags: 
+        Creates an export of JSON messages with optional filtering and format conversion.
+      tags:
         - json messages
       parameters:
         - $ref: "#/components/parameters/Publisher"
@@ -206,7 +206,7 @@ paths:
         - $ref: "#/components/parameters/AggField"
       responses:
         '200':
-          description: Backup file created successfully.
+          description: Export file created successfully.
           content:
             application/octet-stream:
               schema:
@@ -219,13 +219,13 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
 
-  /senml/backup:
+  /senml/export:
     get:
-      summary: Backup SenML messages
+      summary: Export SenML messages
       security:
         - bearerAuth: []
       description: |
-        Creates a backup of SenML messages with optional filtering and format conversion.
+        Creates an export of SenML messages with optional filtering and format conversion.
       tags:
         - senml messages
       parameters:
@@ -246,7 +246,7 @@ paths:
         - $ref: "#/components/parameters/AggField"
       responses:
         '200':
-          description: Backup file created successfully.
+          description: Export file created successfully.
           content:
             application/octet-stream:
               schema:
@@ -259,27 +259,64 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
 
-  /json/restore:
-    post:
-      summary: Restore JSON messages
+  /backup:
+    get:
+      summary: Retrieves backup of the readers service.
       security:
         - bearerAuth: []
       description: |
-        Restores JSON messages from a backup file. Requires admin privileges.
+        Retrieves backup of the readers service. Backup is a JSON file that contains
+        all JSON and SenML messages.
       tags:
-        - json messages
+        - backup
+      responses:
+        '200':
+          description: Backup file created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  json_messages:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/JSONMessage"
+                  senml_messages:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SenMLMessage"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /restore:
+    post:
+      summary: Restores readers service from backup.
+      security:
+        - bearerAuth: []
+      description: |
+        Restores service from backup. Backup is a JSON file that contains
+        all JSON and SenML messages that will be restored. Requires admin privileges.
+      tags:
+        - backup
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: "#/components/schemas/JSONMessage"
-          text/csv:
-            schema:
-              type: string
-              format: binary
+              type: object
+              properties:
+                json_messages:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/JSONMessage"
+                senml_messages:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/SenMLMessage"
       responses:
         '200':
           description: Messages successfully restored.
@@ -291,40 +328,6 @@ paths:
           description: Unsupported content type.
         '500':
           $ref: "#/components/responses/ServiceError"
-
-  /senml/restore:
-    post:
-      security:
-        - bearerAuth: []
-      summary: Restore SenML messages
-      description: |
-        Restores SenML messages from a backup file. Requires admin privileges.
-      tags:
-        - senml messages
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: "#/components/schemas/SenMLMessage"
-          text/csv:
-            schema:
-              type: string
-              format: binary
-      responses:
-        '200':
-          description: Messages successfully restored.
-        '400':
-          description: Failed due to malformed query parameters.
-        '401':
-          description: Missing or invalid access token provided.
-        '415':
-          description: Unsupported content type.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-
   /health:
     get:
       summary: Retrieves service health check info.
