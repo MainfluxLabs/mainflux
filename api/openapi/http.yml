@@ -55,6 +55,120 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
 
+  /things/{thingId}/commands:
+    post:
+      summary: Send a command to a thing
+      description: |
+        Sends a command to a specific thing.
+        Commands represent instructions for device behavior
+        (e.g. reboot, configuration update).
+      tags:
+        - commands
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      requestBody:
+        $ref: "#/components/requestBodies/CommandReq"
+      responses:
+        "202":
+          description: Command accepted for processing.
+        "400":
+          description: Invalid command payload.
+        "401":
+          description: Missing or invalid access token provided.
+        "500":
+          $ref: "#/components/responses/ServiceError"
+
+  /things/{thingId}/commands/{subtopic}:
+    post:
+      summary: Send a command to a thing subtopic
+      description: |
+        Sends a command to a specific subtopic of a thing.
+        Subtopics can be used to route commands to
+        specific device modules or capabilities.
+        Example subtopics:
+          - "firmware"
+          - "config/network"
+          - "actuators/relay1"
+      tags:
+        - commands
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+        - name: subtopic
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Subtopic path for command routing.
+      requestBody:
+        $ref: "#/components/requestBodies/CommandReq"
+      responses:
+        "202":
+          description: Command accepted for processing.
+        "400":
+          description: Invalid command payload.
+        "401":
+          description: Missing or invalid access token provided.
+        "500":
+          $ref: "#/components/responses/ServiceError"
+
+  /groups/{groupId}/commands:
+    post:
+      summary: Send a command to a group
+      description: |
+        Sends a command to all things within a group.
+        Commands represent instructions for device behavior
+        (e.g. reboot, configuration update).
+        Each thing in the group will receive the same command.
+      tags:
+        - commands
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/CommandReq"
+      responses:
+        "202":
+          description: Command accepted for processing.
+        "400":
+          description: Invalid command payload.
+        "401":
+          description: Missing or invalid access token provided.
+        "500":
+          $ref: "#/components/responses/ServiceError"
+
+  /groups/{groupId}/commands/{subtopic}:
+    post:
+      summary: Send a command to a group subtopic
+      description: |
+        Sends a command to a specific subtopic of all things
+        within a group.
+        Subtopics can be used to route commands to
+        specific device modules or capabilities.
+        Example subtopics:
+          - "firmware"
+          - "config/network"
+          - "actuators/relay1"
+      tags:
+        - commands
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - name: subtopic
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Subtopic path for command routing.
+      requestBody:
+        $ref: "#/components/requestBodies/CommandReq"
+      responses:
+        "202":
+          description: Command accepted for processing.
+        "400":
+          description: Invalid command payload.
+        "401":
+          description: Missing or invalid access token provided.
+        "500":
+          $ref: "#/components/responses/ServiceError"
+
   /health:
     get:
       summary: Retrieves service health check info.
@@ -129,6 +243,43 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/SenMLRecord"
+    CommandPayload:
+      type: object
+      required:
+        - command
+      properties:
+        command:
+          type: string
+          description: |
+            Name of the command to be executed by the thing
+            (e.g. "reboot", "set_threshold", "start_firmware_update").
+        params:
+          type: object
+          additionalProperties: true
+          description: Command-specific parameters.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Optional metadata (request id, timestamps, etc).
+
+  parameters:
+    ThingId:
+      name: thingId
+      description: Unique thing identifier.
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+    GroupId:
+      name: groupId
+      description: Unique group identifier.
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+
   requestBodies:
     MessageReq:
       description: |
@@ -142,6 +293,16 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/SenMLArray"
+    CommandReq:
+      description: |
+        Command instruction sent to a thing or group.
+        Payload usually represents an action
+        that the target thing(s) should execute.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CommandPayload"
 
   responses:
     ServiceError:

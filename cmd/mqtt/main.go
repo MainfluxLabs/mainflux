@@ -183,7 +183,11 @@ func main() {
 	}
 
 	if cfg.forwarder == "true" {
-		subjects := []string{nats.SubjectMessages, nats.SubjectMessagesWithSubtopic}
+		subjects := []string{
+			nats.SubjectMessages, nats.SubjectMessagesWithSubtopic,
+			nats.SubjectThingCommands, nats.SubjectThingCommandsWithSubtopic,
+			nats.SubjectGroupCommands, nats.SubjectGroupCommandsWithSubtopic,
+		}
 		fwd := mqtt.NewForwarder(subjects, logger)
 		if err := fwd.Forward(svcName, nps, mpub); err != nil {
 			logger.Error(fmt.Sprintf("Failed to forward message broker messages: %s", err))

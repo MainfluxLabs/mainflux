@@ -133,7 +133,7 @@ func decodeMessage(msg *mux.Message) (protomfx.Message, error) {
 		return protomfx.Message{}, err
 	}
 
-	subtopic, err := messaging.CreateSubtopic(path)
+	subtopic, err := messaging.NormalizeSubtopic(path)
 	if err != nil {
 		return protomfx.Message{}, err
 	}

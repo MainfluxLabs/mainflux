@@ -19,7 +19,7 @@ import (
 
 // Service specifies CoAP service API.
 type Service interface {
-	// Publish Messssage
+	// Publish Message
 	Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error
 
 	// Subscribe subscribes to profile with specified id, subtopic and adds subscription to
@@ -27,12 +27,11 @@ type Service interface {
 	Subscribe(ctx context.Context, key things.ThingKey, subtopic string, c Client) error
 
 	// Unsubscribe method is used to stop observing resource.
-	Unsubscribe(ctx context.Context, key things.ThingKey, subptopic, token string) error
+	Unsubscribe(ctx context.Context, key things.ThingKey, subtopic, token string) error
 }
 
 var _ Service = (*adapterService)(nil)
 
-// Observers is a map of maps,
 type adapterService struct {
 	things  protomfx.ThingsServiceClient
 	pubsub  messaging.PubSub
@@ -61,8 +60,7 @@ func (svc *adapterService) Publish(ctx context.Context, key things.ThingKey, msg
 		return err
 	}
 
-	msg.Subject = nats.GetSubject(msg.Publisher, msg.Subtopic)
-
+	msg.Subject = nats.GetMessagesSubject(msg.Publisher, msg.Subtopic)
 	if err := svc.pubsub.Publish(msg); err != nil {
 		return err
 	}

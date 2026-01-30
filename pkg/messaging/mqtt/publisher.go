@@ -9,15 +9,8 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mproxy/pkg/errors"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gogo/protobuf/proto"
-)
-
-const (
-	messages    = "messages"
-	senmlFormat = "senml"
-	jsonFormat  = "json"
 )
 
 var _ messaging.Publisher = (*publisher)(nil)
@@ -42,20 +35,7 @@ func NewPublisher(address string, timeout time.Duration) (messaging.Publisher, e
 }
 
 func (pub publisher) Publish(msg protomfx.Message) error {
-	var format string
-	switch msg.ContentType {
-	case messaging.SenMLContentType, messaging.CBORContentType:
-		format = senmlFormat
-	case messaging.JSONContentType:
-		format = jsonFormat
-	default:
-		return errors.ErrUnsupportedContentType
-	}
-
-	topic := format + "/" + messages
-	if msg.Subtopic != "" {
-		topic += "/" + strings.ReplaceAll(msg.Subtopic, ".", "/")
-	}
+	topic := strings.ReplaceAll(msg.Subject, ".", "/")
 
 	data, err := proto.Marshal(&msg)
 	if err != nil {
