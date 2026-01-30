@@ -61,28 +61,28 @@ func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.L
 	))
 
 	r.Post("/things/:id/commands", kithttp.NewServer(
-		kitot.TraceServer(tracer, "send_command_by_thing")(sendCommandByThingEndpoint(svc)),
-		decodeSendCommandByThing,
+		kitot.TraceServer(tracer, "send_command_to_thing")(sendCommandToThingEndpoint(svc)),
+		decodeSendCommandToThing,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Post("/things/:id/commands/*", kithttp.NewServer(
-		kitot.TraceServer(tracer, "send_command_by_thing")(sendCommandByThingEndpoint(svc)),
-		decodeSendCommandByThing,
+		kitot.TraceServer(tracer, "send_command_to_thing")(sendCommandToThingEndpoint(svc)),
+		decodeSendCommandToThing,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Post("/groups/:id/commands", kithttp.NewServer(
-		kitot.TraceServer(tracer, "send_command_by_group")(sendCommandByGroupEndpoint(svc)),
+		kitot.TraceServer(tracer, "send_command_to_group")(sendCommandToGroupEndpoint(svc)),
 		decodeSendCommandByGroup,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Post("/groups/:id/commands/*", kithttp.NewServer(
-		kitot.TraceServer(tracer, "send_command_by_group")(sendCommandByGroupEndpoint(svc)),
+		kitot.TraceServer(tracer, "send_command_to_group")(sendCommandToGroupEndpoint(svc)),
 		decodeSendCommandByGroup,
 		encodeResponse,
 		opts...,
@@ -135,7 +135,7 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeSendCommandByThing(_ context.Context, r *http.Request) (any, error) {
+func decodeSendCommandToThing(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get(headerCT), ctJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
@@ -153,7 +153,7 @@ func decodeSendCommandByThing(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	req := commandByThingReq{
+	req := thingCommandReq{
 		cmdReq{
 			token: apiutil.ExtractBearerToken(r),
 			id:    id,
@@ -187,7 +187,7 @@ func decodeSendCommandByGroup(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	req := commandByGroupReq{
+	req := groupCommandReq{
 		cmdReq{
 			token: apiutil.ExtractBearerToken(r),
 			id:    id,

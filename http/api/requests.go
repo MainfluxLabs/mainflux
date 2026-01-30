@@ -28,11 +28,11 @@ type cmdReq struct {
 	msg   protomfx.Message
 }
 
-type commandByThingReq struct {
+type thingCommandReq struct {
 	cmdReq
 }
 
-func (req commandByThingReq) validate() error {
+func (req thingCommandReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -44,11 +44,11 @@ func (req commandByThingReq) validate() error {
 	return nil
 }
 
-type commandByGroupReq struct {
+type groupCommandReq struct {
 	cmdReq
 }
 
-func (req commandByGroupReq) validate() error {
+func (req groupCommandReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

@@ -41,9 +41,9 @@ func (lm *loggingMiddleware) Publish(ctx context.Context, key things.ThingKey, m
 	return lm.svc.Publish(ctx, key, msg)
 }
 
-func (lm *loggingMiddleware) SendCommandByThing(ctx context.Context, token, thingID string, msg protomfx.Message) (err error) {
+func (lm *loggingMiddleware) SendCommandToThing(ctx context.Context, token, thingID string, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method send_command_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
+		message := fmt.Sprintf("Method send_command_to_thing for thing id %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -51,12 +51,12 @@ func (lm *loggingMiddleware) SendCommandByThing(ctx context.Context, token, thin
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.SendCommandByThing(ctx, token, thingID, msg)
+	return lm.svc.SendCommandToThing(ctx, token, thingID, msg)
 }
 
-func (lm *loggingMiddleware) SendCommandByGroup(ctx context.Context, token, groupID string, msg protomfx.Message) (err error) {
+func (lm *loggingMiddleware) SendCommandToGroup(ctx context.Context, token, groupID string, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method send_command_by_group for group id %s took %s to complete", groupID, time.Since(begin))
+		message := fmt.Sprintf("Method send_command_to_group for group id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -64,5 +64,5 @@ func (lm *loggingMiddleware) SendCommandByGroup(ctx context.Context, token, grou
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.SendCommandByGroup(ctx, token, groupID, msg)
+	return lm.svc.SendCommandToGroup(ctx, token, groupID, msg)
 }
