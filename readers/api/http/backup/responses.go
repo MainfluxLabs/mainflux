@@ -4,10 +4,10 @@
 package backup
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/readers"
 )
 
 var (
@@ -28,19 +28,19 @@ func (res restoreRes) Empty() bool {
 	return true
 }
 
-type backupRes struct {
-	JSONMessages  []readers.Message `json:"json_messages"`
-	SenMLMessages []readers.Message `json:"senml_messages"`
+type backupFileRes struct {
+	JSONMessages  json.RawMessage `json:"json_messages"`
+	SenMLMessages json.RawMessage `json:"senml_messages"`
 }
 
-func (res backupRes) Code() int {
+func (res backupFileRes) Code() int {
 	return http.StatusOK
 }
 
-func (res backupRes) Headers() map[string]string {
+func (res backupFileRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res backupRes) Empty() bool {
-	return false
+func (res backupFileRes) Empty() bool {
+	return len(res.JSONMessages) == 0 && len(res.SenMLMessages) == 0
 }

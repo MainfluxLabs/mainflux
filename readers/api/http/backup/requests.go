@@ -4,6 +4,8 @@
 package backup
 
 import (
+	"encoding/json"
+
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
@@ -19,8 +21,9 @@ func (req backupReq) validate() error {
 }
 
 type restoreReq struct {
-	token    string
-	Messages []byte
+	token         string
+	JSONMessages  json.RawMessage `json:"json_messages"`
+	SenMLMessages json.RawMessage `json:"senml_messages"`
 }
 
 func (req restoreReq) validate() error {
@@ -28,7 +31,7 @@ func (req restoreReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.Messages) == 0 {
+	if len(req.JSONMessages) == 0 && len(req.SenMLMessages) == 0 {
 		return apiutil.ErrEmptyList
 	}
 

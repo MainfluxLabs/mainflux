@@ -6,7 +6,6 @@ package backup
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"strings"
 
@@ -52,19 +51,19 @@ func decodeBackup(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeRestore(_ context.Context, r *http.Request) (any, error) {
-	data, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	return restoreReq{
-		token:    apiutil.ExtractBearerToken(r),
-		Messages: data,
-	}, nil
+	req := restoreReq{
+		token: apiutil.ExtractBearerToken(r),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
