@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/readers"
 )
 
 var (
@@ -27,18 +28,19 @@ func (res restoreMessagesRes) Empty() bool {
 	return true
 }
 
-type backupFileRes struct {
-	file []byte
+type backupRes struct {
+	JSONMessages  []readers.Message `json:"json_messages"`
+	SenMLMessages []readers.Message `json:"senml_messages"`
 }
 
-func (res backupFileRes) Code() int {
+func (res backupRes) Code() int {
 	return http.StatusOK
 }
 
-func (res backupFileRes) Headers() map[string]string {
+func (res backupRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res backupFileRes) Empty() bool {
-	return len(res.file) == 0
+func (res backupRes) Empty() bool {
+	return false
 }

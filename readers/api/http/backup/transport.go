@@ -29,15 +29,15 @@ func MakeHandler(svc readers.Service, mux *bone.Mux, tracer opentracing.Tracer, 
 	}
 
 	mux.Get("/backup", kithttp.NewServer(
-		kitot.TraceServer(tracer, "backup_messages")(backupMessagesEndpoint(svc)),
-		decodeBackupMessages,
-		encodeFileResponse,
+		kitot.TraceServer(tracer, "backup")(backupEndpoint(svc)),
+		decodeBackup,
+		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/restore", kithttp.NewServer(
-		kitot.TraceServer(tracer, "restore_messages")(restoreMessagesEndpoint(svc)),
-		decodeRestoreMessages,
+		kitot.TraceServer(tracer, "restore")(restoreEndpoint(svc)),
+		decodeRestore,
 		encodeResponse,
 		opts...,
 	))
@@ -45,7 +45,13 @@ func MakeHandler(svc readers.Service, mux *bone.Mux, tracer opentracing.Tracer, 
 	return mux
 }
 
-func decodeRestoreMessages(_ context.Context, r *http.Request) (any, error) {
+func decodeBackup(_ context.Context, r *http.Request) (any, error) {
+	return backupReq{
+		token: apiutil.ExtractBearerToken(r),
+	}, nil
+}
+
+func decodeRestore(_ context.Context, r *http.Request) (any, error) {
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
@@ -55,15 +61,9 @@ func decodeRestoreMessages(_ context.Context, r *http.Request) (any, error) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	return restoreMessagesReq{
+	return restoreReq{
 		token:    apiutil.ExtractBearerToken(r),
 		Messages: data,
-	}, nil
-}
-
-func decodeBackupMessages(_ context.Context, r *http.Request) (any, error) {
-	return backupMessagesReq{
-		token: apiutil.ExtractBearerToken(r),
 	}, nil
 }
 
@@ -83,26 +83,6 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response any) erro
 	}
 
 	return json.NewEncoder(w).Encode(response)
-}
-
-func encodeFileResponse(_ context.Context, w http.ResponseWriter, response any) error {
-	w.Header().Set("Content-Type", octetStreamContentType)
-
-	if ar, ok := response.(backupFileRes); ok {
-		for k, v := range ar.Headers() {
-			w.Header().Set(k, v)
-		}
-
-		w.WriteHeader(ar.Code())
-
-		if ar.Empty() {
-			return nil
-		}
-
-		w.Write(ar.file)
-	}
-
-	return nil
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {

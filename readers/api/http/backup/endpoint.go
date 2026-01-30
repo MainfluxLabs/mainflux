@@ -5,15 +5,14 @@ package backup
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/go-kit/kit/endpoint"
 )
 
-func backupMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
+func backupEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(backupMessagesReq)
+		req := request.(backupReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -23,20 +22,13 @@ func backupMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		data, err := buildMessagesBackupResponse(backup)
-		if err != nil {
-			return nil, err
-		}
-
-		return backupFileRes{
-			file: data,
-		}, nil
+		return buildBackupResponse(backup), nil
 	}
 }
 
-func restoreMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
+func restoreEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(restoreMessagesReq)
+		req := request.(restoreReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -107,17 +99,10 @@ func restoreMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 //
 // }
 
-// Add senml/json name
-func buildMessagesBackupResponse(backup readers.Backup) ([]byte, error) {
-	allMsgs := make([]any, 0, len(backup.JSONMessages.Messages)+len(backup.SenMLMessages.Messages))
-
-	for _, m := range backup.JSONMessages.Messages {
-		allMsgs = append(allMsgs, m)
+func buildBackupResponse(backup readers.Backup) backupRes {
+	res := backupRes{
+		JSONMessages:  backup.JSONMessages.Messages,
+		SenMLMessages: backup.SenMLMessages.Messages,
 	}
-
-	for _, m := range backup.SenMLMessages.Messages {
-		allMsgs = append(allMsgs, m)
-	}
-
-	return json.Marshal(allMsgs)
+	return res
 }

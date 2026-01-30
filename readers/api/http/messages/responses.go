@@ -66,19 +66,19 @@ func (res restoreMessagesRes) Empty() bool {
 	return true
 }
 
-type reportFileRes struct {
+type exportFileRes struct {
 	file []byte
 }
 
-func (res reportFileRes) Code() int {
+func (res exportFileRes) Code() int {
 	return http.StatusOK
 }
 
-func (res reportFileRes) Headers() map[string]string {
+func (res exportFileRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res reportFileRes) Empty() bool {
+func (res exportFileRes) Empty() bool {
 	return len(res.file) == 0
 }
 

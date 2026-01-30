@@ -7,23 +7,23 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
-type backupMessagesReq struct {
+type backupReq struct {
 	token string
 }
 
-func (req backupMessagesReq) validate() error {
+func (req backupReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 	return nil
 }
 
-type restoreMessagesReq struct {
+type restoreReq struct {
 	token    string
 	Messages []byte
 }
 
-func (req restoreMessagesReq) validate() error {
+func (req restoreReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

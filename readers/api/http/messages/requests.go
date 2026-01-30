@@ -74,14 +74,14 @@ func (req listJSONMessagesReq) validate() error {
 	return nil
 }
 
-type reportSenMLMessagesReq struct {
+type exportSenMLMessagesReq struct {
 	token         string
 	convertFormat string
 	timeFormat    string
 	pageMeta      readers.SenMLPageMetadata
 }
 
-func (req reportSenMLMessagesReq) validate() error {
+func (req exportSenMLMessagesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -101,14 +101,14 @@ func (req reportSenMLMessagesReq) validate() error {
 	return nil
 }
 
-type reportJSONMessagesReq struct {
+type exportJSONMessagesReq struct {
 	token         string
 	convertFormat string
 	timeFormat    string
 	pageMeta      readers.JSONPageMetadata
 }
 
-func (req reportJSONMessagesReq) validate() error {
+func (req exportJSONMessagesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

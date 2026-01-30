@@ -111,15 +111,15 @@ func deleteSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	}
 }
 
-func reportJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
+func exportJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(reportJSONMessagesReq)
+		req := request.(exportJSONMessagesReq)
 
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		page, err := svc.BackupJSONMessages(ctx, req.token, req.pageMeta)
+		page, err := svc.ExportJSONMessages(ctx, req.token, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -136,21 +136,21 @@ func reportJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			}
 		}
 
-		return reportFileRes{
+		return exportFileRes{
 			file: data,
 		}, nil
 	}
 }
 
-func reportSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
+func exportSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(reportSenMLMessagesReq)
+		req := request.(exportSenMLMessagesReq)
 
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		page, err := svc.BackupSenMLMessages(ctx, req.token, req.pageMeta)
+		page, err := svc.ExportSenMLMessages(ctx, req.token, req.pageMeta)
 		if err != nil {
 			return nil, err
 		}
@@ -167,7 +167,7 @@ func reportSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			}
 		}
 
-		return reportFileRes{
+		return exportFileRes{
 			file: data,
 		}, nil
 	}

@@ -58,40 +58,22 @@ func (mm *metricsMiddleware) Backup(ctx context.Context, token string) (readers.
 	return mm.svc.Backup(ctx, token)
 }
 
-func (mm *metricsMiddleware) BackupJSONMessages(ctx context.Context, token string, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
+func (mm *metricsMiddleware) ExportJSONMessages(ctx context.Context, token string, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	defer func(begin time.Time) {
-		mm.counter.With("method", "backup_json_messages").Add(1)
-		mm.latency.With("method", "backup_json_messages").Observe(time.Since(begin).Seconds())
+		mm.counter.With("method", "export_json_messages").Add(1)
+		mm.latency.With("method", "export_json_messages").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.BackupJSONMessages(ctx, token, rpm)
+	return mm.svc.ExportJSONMessages(ctx, token, rpm)
 }
 
-func (mm *metricsMiddleware) BackupSenMLMessages(ctx context.Context, token string, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
+func (mm *metricsMiddleware) ExportSenMLMessages(ctx context.Context, token string, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
 	defer func(begin time.Time) {
-		mm.counter.With("method", "backup_senml_messages").Add(1)
-		mm.latency.With("method", "backup_senml_messages").Observe(time.Since(begin).Seconds())
+		mm.counter.With("method", "export_senml_messages").Add(1)
+		mm.latency.With("method", "export_senml_messages").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.BackupSenMLMessages(ctx, token, rpm)
-}
-
-func (mm *metricsMiddleware) ReportJSONMessages(ctx context.Context, token string, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
-	defer func(begin time.Time) {
-		mm.counter.With("method", "report_json_messages").Add(1)
-		mm.latency.With("method", "report_json_messages").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return mm.svc.ReportJSONMessages(ctx, token, rpm)
-}
-
-func (mm *metricsMiddleware) ReportSenMLMessages(ctx context.Context, token string, rpm readers.SenMLPageMetadata) (readers.SenMLMessagesPage, error) {
-	defer func(begin time.Time) {
-		mm.counter.With("method", "report_senml_messages").Add(1)
-		mm.latency.With("method", "report_senml_messages").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return mm.svc.ReportSenMLMessages(ctx, token, rpm)
+	return mm.svc.ExportSenMLMessages(ctx, token, rpm)
 }
 
 func (mm *metricsMiddleware) RestoreJSONMessages(ctx context.Context, token string, messages ...readers.Message) error {

@@ -91,16 +91,16 @@ func MakeHandler(svc readers.Service, mux *bone.Mux, tracer opentracing.Tracer, 
 		opts...,
 	))
 
-	mux.Get("/json/report", kithttp.NewServer(
-		kitot.TraceServer(tracer, "report_json_messages")(reportJSONMessagesEndpoint(svc)),
-		decodeReportJSONMessages,
+	mux.Get("/json/export", kithttp.NewServer(
+		kitot.TraceServer(tracer, "export_json_messages")(exportJSONMessagesEndpoint(svc)),
+		decodeExportJSONMessages,
 		encodeFileResponse,
 		opts...,
 	))
 
-	mux.Get("/senml/report", kithttp.NewServer(
-		kitot.TraceServer(tracer, "report_senml_messages")(reportSenMLMessagesEndpoint(svc)),
-		decodeReportSenMLMessages,
+	mux.Get("/senml/export", kithttp.NewServer(
+		kitot.TraceServer(tracer, "export_senml_messages")(exportSenMLMessagesEndpoint(svc)),
+		decodeExportSenMLMessages,
 		encodeFileResponse,
 		opts...,
 	))
@@ -308,7 +308,7 @@ func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (any, error) 
 	return req, nil
 }
 
-func decodeReportJSONMessages(_ context.Context, r *http.Request) (any, error) {
+func decodeExportJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	publisher, err := apiutil.ReadStringQuery(r, publisherKey, "")
 	if err != nil {
 		return nil, err
@@ -331,7 +331,7 @@ func decodeReportJSONMessages(_ context.Context, r *http.Request) (any, error) {
 
 	pageMeta.Publisher = publisher
 
-	return reportJSONMessagesReq{
+	return exportJSONMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
 		convertFormat: convertFormat,
 		timeFormat:    timeFormat,
@@ -339,7 +339,7 @@ func decodeReportJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	}, nil
 }
 
-func decodeReportSenMLMessages(_ context.Context, r *http.Request) (any, error) {
+func decodeExportSenMLMessages(_ context.Context, r *http.Request) (any, error) {
 	publisher, err := apiutil.ReadStringQuery(r, publisherKey, "")
 	if err != nil {
 		return nil, err
@@ -362,7 +362,7 @@ func decodeReportSenMLMessages(_ context.Context, r *http.Request) (any, error) 
 
 	pageMeta.Publisher = publisher
 
-	return reportSenMLMessagesReq{
+	return exportSenMLMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
 		convertFormat: convertFormat,
 		timeFormat:    timeFormat,
@@ -391,7 +391,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response any) erro
 func encodeFileResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	w.Header().Set("Content-Type", octetStreamContentType)
 
-	if ar, ok := response.(reportFileRes); ok {
+	if ar, ok := response.(exportFileRes); ok {
 		for k, v := range ar.Headers() {
 			w.Header().Set(k, v)
 		}
