@@ -115,7 +115,7 @@ func (req removeAlarmsReq) validate() error {
 	return nil
 }
 
-type backupAlarmsByThingReq struct {
+type exportAlarmsByThingReq struct {
 	token         string
 	thingID       string
 	convertFormat string
@@ -123,7 +123,7 @@ type backupAlarmsByThingReq struct {
 	pageMetadata  apiutil.PageMetadata
 }
 
-func (req backupAlarmsByThingReq) validate() error {
+func (req exportAlarmsByThingReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

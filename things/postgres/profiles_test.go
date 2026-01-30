@@ -492,67 +492,6 @@ func TestBackupAllProfiles(t *testing.T) {
 	}
 }
 
-func TestBackupProfilesByGroups(t *testing.T) {
-	dbMiddleware := dbutil.NewDatabase(db)
-	profileRepo := postgres.NewProfileRepository(dbMiddleware)
-
-	err := cleanTestTable(context.Background(), "things", dbMiddleware)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	err = cleanTestTable(context.Background(), "profiles", dbMiddleware)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	metadata := things.Metadata{
-		"field": "value",
-	}
-	metaNum := uint64(3)
-	group := createGroup(t, dbMiddleware)
-
-	prs := []things.Profile{}
-	n := uint64(101)
-
-	for i := uint64(0); i < n; i++ {
-		suffix := i + 1
-		pr := things.Profile{
-			ID:      fmt.Sprintf("%s%012d", prefixID, suffix),
-			GroupID: group.ID,
-			Name:    fmt.Sprintf("%s-%d", profileName, suffix),
-		}
-		if i < metaNum {
-			pr.Metadata = metadata
-		}
-
-		prs = append(prs, pr)
-	}
-
-	_, err = profileRepo.Save(context.Background(), prs...)
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-
-	cases := map[string]struct {
-		groupIDs []string
-		size     uint64
-		err      error
-	}{
-		"backup profiles by group IDs": {
-			groupIDs: []string{group.ID},
-			size:     n,
-			err:      nil,
-		},
-		"backup profiles for empty group list": {
-			groupIDs: []string{},
-			size:     0,
-			err:      nil,
-		},
-	}
-
-	for desc, tc := range cases {
-		profiles, err := profileRepo.BackupByGroups(context.Background(), tc.groupIDs)
-		size := uint64(len(profiles))
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
-		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
-		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
-	}
-}
-
 func testSortProfiles(t *testing.T, pm apiutil.PageMetadata, prs []things.Profile) {
 	switch pm.Order {
 	case "name":

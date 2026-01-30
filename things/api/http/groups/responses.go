@@ -107,17 +107,3 @@ func (res groupPageRes) Headers() map[string]string {
 func (res groupPageRes) Empty() bool {
 	return false
 }
-
-type restoreRes struct{}
-
-func (res restoreRes) Code() int {
-	return http.StatusCreated
-}
-
-func (res restoreRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res restoreRes) Empty() bool {
-	return true
-}

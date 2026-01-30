@@ -228,34 +228,6 @@ func (tr thingRepository) RetrieveByProfile(ctx context.Context, prID string, pm
 	return tr.retrieve(ctx, query, cquery, params)
 }
 
-func (tr thingRepository) BackupByGroups(ctx context.Context, groupIDs []string) ([]things.Thing, error) {
-	if len(groupIDs) == 0 {
-		return []things.Thing{}, nil
-	}
-
-	giq := dbutil.GetGroupIDsQuery(groupIDs)
-	whereClause := dbutil.BuildWhereClause(giq)
-	query := fmt.Sprintf("SELECT id, group_id, profile_id, name, key, external_key, metadata FROM things %s", whereClause)
-
-	var items []dbThing
-	err := tr.db.SelectContext(ctx, &items, query)
-	if err != nil {
-		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-	}
-
-	var ths []things.Thing
-	for _, i := range items {
-		th, err := toThing(i)
-		if err != nil {
-			return []things.Thing{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-		}
-
-		ths = append(ths, th)
-	}
-
-	return ths, nil
-}
-
 func (tr thingRepository) Remove(ctx context.Context, ids ...string) error {
 	for _, id := range ids {
 		dbth := dbThing{

@@ -6,7 +6,6 @@ package things
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
-	"github.com/MainfluxLabs/mainflux/things/api/http/memberships"
 )
 
 const (
@@ -249,110 +248,6 @@ func (req removeThingsReq) validate() error {
 		if thingID == "" {
 			return apiutil.ErrMissingThingID
 		}
-	}
-
-	return nil
-}
-
-type backupByGroupReq struct {
-	id    string
-	token string
-}
-
-func (req backupByGroupReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-	if req.id == "" {
-		return apiutil.ErrMissingGroupID
-	}
-	return nil
-}
-
-type backupByOrgReq struct {
-	id    string
-	token string
-}
-
-func (req backupByOrgReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-	if req.id == "" {
-		return apiutil.ErrMissingOrgID
-	}
-	return nil
-}
-
-type backupReq struct {
-	token string
-}
-
-func (req backupReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	return nil
-}
-
-type restoreThingsByGroupReq struct {
-	id     string
-	token  string
-	Things []viewThingRes
-}
-
-func (req restoreThingsByGroupReq) validate() error {
-	if req.id == "" {
-		return apiutil.ErrMissingGroupID
-	}
-
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if len(req.Things) == 0 {
-		return apiutil.ErrEmptyList
-	}
-
-	return nil
-}
-
-type restoreThingsByOrgReq struct {
-	id     string
-	token  string
-	Things []viewThingRes
-}
-
-func (req restoreThingsByOrgReq) validate() error {
-	if req.id == "" {
-		return apiutil.ErrMissingOrgID
-	}
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-	if len(req.Things) == 0 {
-		return apiutil.ErrEmptyList
-	}
-
-	return nil
-}
-
-type restoreReq struct {
-	token            string
-	Things           []viewThingRes                       `json:"things"`
-	Profiles         []backupProfile                      `json:"profiles"`
-	Groups           []backupGroup                        `json:"groups"`
-	GroupMemberships []memberships.ViewGroupMembershipRes `json:"group_memberships"`
-}
-
-func (req restoreReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if len(req.Things) == 0 {
-		return apiutil.ErrEmptyList
 	}
 
 	return nil
