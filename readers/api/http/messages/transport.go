@@ -1,15 +1,13 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package api
+package messages
 
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -20,7 +18,6 @@ import (
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
 	"github.com/opentracing/opentracing-go"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
@@ -47,12 +44,10 @@ const (
 	csvFormat              = "csv"
 )
 
-func MakeHandler(svc readers.Service, tracer opentracing.Tracer, svcName string, logger logger.Logger) http.Handler {
+func MakeHandler(svc readers.Service, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
-
-	mux := bone.New()
 
 	mux.Get("/json", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_json_messages")(listJSONMessagesEndpoint(svc)),
@@ -96,36 +91,19 @@ func MakeHandler(svc readers.Service, tracer opentracing.Tracer, svcName string,
 		opts...,
 	))
 
-	mux.Get("/json/backup", kithttp.NewServer(
-		kitot.TraceServer(tracer, "backup_json_messages")(backupJSONMessagesEndpoint(svc)),
-		decodeBackupJSONMessages,
-		encodeBackupFileResponse,
+	mux.Get("/json/export", kithttp.NewServer(
+		kitot.TraceServer(tracer, "export_json_messages")(exportJSONMessagesEndpoint(svc)),
+		decodeExportJSONMessages,
+		encodeFileResponse,
 		opts...,
 	))
 
-	mux.Get("/senml/backup", kithttp.NewServer(
-		kitot.TraceServer(tracer, "backup_senml_messages")(backupSenMLMessagesEndpoint(svc)),
-		decodeBackupSenMLMessages,
-		encodeBackupFileResponse,
+	mux.Get("/senml/export", kithttp.NewServer(
+		kitot.TraceServer(tracer, "export_senml_messages")(exportSenMLMessagesEndpoint(svc)),
+		decodeExportSenMLMessages,
+		encodeFileResponse,
 		opts...,
 	))
-
-	mux.Post("/json/restore", kithttp.NewServer(
-		kitot.TraceServer(tracer, "restore_json_messages")(restoreJSONMessagesEndpoint(svc)),
-		decodeRestoreMessages,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Post("/senml/restore", kithttp.NewServer(
-		kitot.TraceServer(tracer, "restore_senml_messages")(restoreSenMLMessagesEndpoint(svc)),
-		decodeRestoreMessages,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.GetFunc("/health", mainflux.Health(svcName))
-	mux.Handle("/metrics", promhttp.Handler())
 
 	return mux
 }
@@ -330,31 +308,7 @@ func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (any, error) 
 	return req, nil
 }
 
-func decodeRestoreMessages(_ context.Context, r *http.Request) (any, error) {
-	data, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	var fileType string
-	contentType := r.Header.Get("Content-Type")
-	switch contentType {
-	case apiutil.ContentTypeJSON:
-		fileType = jsonFormat
-	case apiutil.ContentTypeCSV:
-		fileType = csvFormat
-	default:
-		return nil, errors.Wrap(apiutil.ErrUnsupportedContentType, err)
-	}
-
-	return restoreMessagesReq{
-		token:    apiutil.ExtractBearerToken(r),
-		fileType: fileType,
-		Messages: data,
-	}, nil
-}
-
-func decodeBackupJSONMessages(_ context.Context, r *http.Request) (any, error) {
+func decodeExportJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	publisher, err := apiutil.ReadStringQuery(r, publisherKey, "")
 	if err != nil {
 		return nil, err
@@ -377,7 +331,7 @@ func decodeBackupJSONMessages(_ context.Context, r *http.Request) (any, error) {
 
 	pageMeta.Publisher = publisher
 
-	return backupJSONMessagesReq{
+	return exportJSONMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
 		convertFormat: convertFormat,
 		timeFormat:    timeFormat,
@@ -385,7 +339,7 @@ func decodeBackupJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	}, nil
 }
 
-func decodeBackupSenMLMessages(_ context.Context, r *http.Request) (any, error) {
+func decodeExportSenMLMessages(_ context.Context, r *http.Request) (any, error) {
 	publisher, err := apiutil.ReadStringQuery(r, publisherKey, "")
 	if err != nil {
 		return nil, err
@@ -408,7 +362,7 @@ func decodeBackupSenMLMessages(_ context.Context, r *http.Request) (any, error) 
 
 	pageMeta.Publisher = publisher
 
-	return backupSenMLMessagesReq{
+	return exportSenMLMessagesReq{
 		token:         apiutil.ExtractBearerToken(r),
 		convertFormat: convertFormat,
 		timeFormat:    timeFormat,
@@ -434,10 +388,10 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response any) erro
 	return json.NewEncoder(w).Encode(response)
 }
 
-func encodeBackupFileResponse(_ context.Context, w http.ResponseWriter, response any) error {
+func encodeFileResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	w.Header().Set("Content-Type", octetStreamContentType)
 
-	if ar, ok := response.(backupFileRes); ok {
+	if ar, ok := response.(exportFileRes); ok {
 		for k, v := range ar.Headers() {
 			w.Header().Set(k, v)
 		}

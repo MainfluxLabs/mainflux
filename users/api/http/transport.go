@@ -25,7 +25,7 @@ func MakeHandler(svc svcusers.Service, tracer opentracing.Tracer, logger log.Log
 	mux = users.MakeHandler(svc, mux, tracer, logger, passwordRegex)
 	mux = invites.MakeHandler(svc, mux, tracer, logger, passwordRegex)
 	mux = backup.MakeHandler(svc, mux, tracer, logger)
-	mux.GetFunc("/health", mainflux.Health("things"))
+	mux.GetFunc("/health", mainflux.Health("users"))
 	mux.Handle("/metrics", promhttp.Handler())
 	return mux
 }

@@ -1,7 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package api
+package messages
 
 import (
 	"net/http"
@@ -13,7 +13,6 @@ import (
 var (
 	_ apiutil.Response = (*listJSONMessagesRes)(nil)
 	_ apiutil.Response = (*listSenMLMessagesRes)(nil)
-	_ apiutil.Response = (*restoreMessagesRes)(nil)
 )
 
 type listJSONMessagesRes struct {
@@ -52,33 +51,19 @@ func (res listSenMLMessagesRes) Empty() bool {
 	return false
 }
 
-type restoreMessagesRes struct{}
-
-func (res restoreMessagesRes) Code() int {
-	return http.StatusCreated
-}
-
-func (res restoreMessagesRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res restoreMessagesRes) Empty() bool {
-	return true
-}
-
-type backupFileRes struct {
+type exportFileRes struct {
 	file []byte
 }
 
-func (res backupFileRes) Code() int {
+func (res exportFileRes) Code() int {
 	return http.StatusOK
 }
 
-func (res backupFileRes) Headers() map[string]string {
+func (res exportFileRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res backupFileRes) Empty() bool {
+func (res exportFileRes) Empty() bool {
 	return len(res.file) == 0
 }
 
