@@ -37,11 +37,8 @@ type Service interface {
 	// Backup backups all json and senml messages.
 	Backup(ctx context.Context, token string) (Backup, error)
 
-	// RestoreJSONMessages restores the json messages.
-	RestoreJSONMessages(ctx context.Context, token string, messages ...Message) error
-
-	// RestoreSenMLMessages restores the senml messages.
-	RestoreSenMLMessages(ctx context.Context, token string, messages ...Message) error
+	// Restore restores json and senml messages.
+	Restore(ctx context.Context, token string, backup Backup) error
 
 	// DeleteJSONMessages deletes the json messages by publisher within a time range.
 	DeleteJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) error
@@ -177,20 +174,20 @@ func (rs *readersService) Backup(ctx context.Context, token string) (Backup, err
 	}, nil
 }
 
-func (rs *readersService) RestoreJSONMessages(ctx context.Context, token string, messages ...Message) error {
+func (rs *readersService) Restore(ctx context.Context, token string, backup Backup) error {
 	if err := rs.isAdmin(ctx, token); err != nil {
 		return err
 	}
 
-	return rs.json.Restore(ctx, messages...)
-}
-
-func (rs *readersService) RestoreSenMLMessages(ctx context.Context, token string, messages ...Message) error {
-	if err := rs.isAdmin(ctx, token); err != nil {
+	if err := rs.json.Restore(ctx, backup.JSONMessages.Messages...); err != nil {
 		return err
 	}
 
-	return rs.senml.Restore(ctx, messages...)
+	if err := rs.senml.Restore(ctx, backup.SenMLMessages.Messages...); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (rs *readersService) DeleteJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) error {

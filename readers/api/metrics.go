@@ -58,6 +58,15 @@ func (mm *metricsMiddleware) Backup(ctx context.Context, token string) (readers.
 	return mm.svc.Backup(ctx, token)
 }
 
+func (mm *metricsMiddleware) Restore(ctx context.Context, token string, backup readers.Backup) error {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "restore").Add(1)
+		mm.latency.With("method", "restore").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.Restore(ctx, token, backup)
+}
+
 func (mm *metricsMiddleware) ExportJSONMessages(ctx context.Context, token string, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "export_json_messages").Add(1)
@@ -74,24 +83,6 @@ func (mm *metricsMiddleware) ExportSenMLMessages(ctx context.Context, token stri
 	}(time.Now())
 
 	return mm.svc.ExportSenMLMessages(ctx, token, rpm)
-}
-
-func (mm *metricsMiddleware) RestoreJSONMessages(ctx context.Context, token string, messages ...readers.Message) error {
-	defer func(begin time.Time) {
-		mm.counter.With("method", "restore_json_messages").Add(1)
-		mm.latency.With("method", "restore_json_messages").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return mm.svc.RestoreJSONMessages(ctx, token, messages...)
-}
-
-func (mm *metricsMiddleware) RestoreSenMLMessages(ctx context.Context, token string, messages ...readers.Message) error {
-	defer func(begin time.Time) {
-		mm.counter.With("method", "restore_senml_messages").Add(1)
-		mm.latency.With("method", "restore_senml_messages").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return mm.svc.RestoreSenMLMessages(ctx, token, messages...)
 }
 
 func (mm *metricsMiddleware) DeleteJSONMessages(ctx context.Context, token string, rpm readers.JSONPageMetadata) error {

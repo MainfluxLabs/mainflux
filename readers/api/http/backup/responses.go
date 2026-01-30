@@ -11,20 +11,20 @@ import (
 )
 
 var (
-	_ apiutil.Response = (*restoreMessagesRes)(nil)
+	_ apiutil.Response = (*restoreRes)(nil)
 )
 
-type restoreMessagesRes struct{}
+type restoreRes struct{}
 
-func (res restoreMessagesRes) Code() int {
+func (res restoreRes) Code() int {
 	return http.StatusCreated
 }
 
-func (res restoreMessagesRes) Headers() map[string]string {
+func (res restoreRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res restoreMessagesRes) Empty() bool {
+func (res restoreRes) Empty() bool {
 	return true
 }
 

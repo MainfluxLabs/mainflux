@@ -69,6 +69,19 @@ func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (_ reader
 	return lm.svc.Backup(ctx, token)
 }
 
+func (lm *loggingMiddleware) Restore(ctx context.Context, token string, backup readers.Backup) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method restore took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.Restore(ctx, token, backup)
+}
+
 func (lm *loggingMiddleware) ExportJSONMessages(ctx context.Context, token string, rpm readers.JSONPageMetadata) (_ readers.JSONMessagesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method export_json_messages took %s to complete", time.Since(begin))
@@ -93,32 +106,6 @@ func (lm *loggingMiddleware) ExportSenMLMessages(ctx context.Context, token stri
 	}(time.Now())
 
 	return lm.svc.ExportSenMLMessages(ctx, token, rpm)
-}
-
-func (lm *loggingMiddleware) RestoreJSONMessages(ctx context.Context, token string, messages ...readers.Message) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method restore_json_messages took %s to complete", time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.RestoreJSONMessages(ctx, token, messages...)
-}
-
-func (lm *loggingMiddleware) RestoreSenMLMessages(ctx context.Context, token string, messages ...readers.Message) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method restore_senml_messages took %s to complete", time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.RestoreSenMLMessages(ctx, token, messages...)
 }
 
 func (lm *loggingMiddleware) DeleteJSONMessages(ctx context.Context, token string, rpm readers.JSONPageMetadata) (err error) {

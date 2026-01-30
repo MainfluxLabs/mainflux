@@ -13,7 +13,6 @@ import (
 var (
 	_ apiutil.Response = (*listJSONMessagesRes)(nil)
 	_ apiutil.Response = (*listSenMLMessagesRes)(nil)
-	_ apiutil.Response = (*restoreMessagesRes)(nil)
 )
 
 type listJSONMessagesRes struct {
@@ -50,20 +49,6 @@ func (res listSenMLMessagesRes) Code() int {
 
 func (res listSenMLMessagesRes) Empty() bool {
 	return false
-}
-
-type restoreMessagesRes struct{}
-
-func (res restoreMessagesRes) Code() int {
-	return http.StatusCreated
-}
-
-func (res restoreMessagesRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res restoreMessagesRes) Empty() bool {
-	return true
 }
 
 type exportFileRes struct {
