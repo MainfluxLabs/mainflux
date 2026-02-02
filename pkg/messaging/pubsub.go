@@ -17,7 +17,6 @@ import (
 
 const (
 	SenMLContentType = "application/senml+json"
-	CBORContentType  = "application/senml+cbor"
 	JSONContentType  = "application/json"
 )
 
@@ -93,14 +92,7 @@ type PubSub interface {
 	Subscriber
 }
 
-func CreateSubtopic(topic string) (string, error) {
-	// Handle cases where full path might be passed (backward compatibility)
-	if strings.HasPrefix(topic, "/messages/") {
-		topic = strings.TrimPrefix(topic, "/messages/")
-	} else if topic == "/messages" {
-		return "", nil
-	}
-
+func NormalizeSubtopic(topic string) (string, error) {
 	if topic == "" {
 		return topic, nil
 	}
