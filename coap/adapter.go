@@ -50,8 +50,11 @@ func New(things protomfx.ThingsServiceClient, pubsub messaging.PubSub) Service {
 }
 
 func (svc *adapterService) Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error {
-	cr := &protomfx.ThingKey{Value: key.Value, Type: key.Type}
-	pc, err := svc.things.GetPubConfByKey(ctx, cr)
+	tk := &protomfx.ThingKey{
+		Value: key.Value,
+		Type:  key.Type,
+	}
+	pc, err := svc.things.GetPubConfigByKey(ctx, tk)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
@@ -69,11 +72,11 @@ func (svc *adapterService) Publish(ctx context.Context, key things.ThingKey, msg
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key things.ThingKey, subtopic string, c Client) error {
-	cr := &protomfx.ThingKey{
+	tk := &protomfx.ThingKey{
 		Value: key.Value,
 		Type:  key.Type,
 	}
-	if _, err := svc.things.GetPubConfByKey(ctx, cr); err != nil {
+	if _, err := svc.things.GetPubConfigByKey(ctx, tk); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -81,12 +84,11 @@ func (svc *adapterService) Subscribe(ctx context.Context, key things.ThingKey, s
 }
 
 func (svc *adapterService) Unsubscribe(ctx context.Context, key things.ThingKey, subtopic, token string) error {
-	cr := &protomfx.ThingKey{
+	tk := &protomfx.ThingKey{
 		Value: key.Value,
 		Type:  key.Type,
 	}
-	_, err := svc.things.GetPubConfByKey(ctx, cr)
-	if err != nil {
+	if _, err := svc.things.GetPubConfigByKey(ctx, tk); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 

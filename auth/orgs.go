@@ -63,8 +63,8 @@ type Orgs interface {
 	// RemoveOrgs removes the orgs identified with the provided IDs.
 	RemoveOrgs(ctx context.Context, token string, ids ...string) error
 
-	// GetOwnerIDByOrgID returns an owner ID for a given org ID.
-	GetOwnerIDByOrgID(ctx context.Context, orgID string) (string, error)
+	// GetOwnerIDByOrg returns an owner ID for a given org ID.
+	GetOwnerIDByOrg(ctx context.Context, orgID string) (string, error)
 
 	// Backup retrieves all orgs and org memberships. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
@@ -206,7 +206,7 @@ func (svc service) ViewOrg(ctx context.Context, token, id string) (Org, error) {
 	return org, nil
 }
 
-func (svc service) GetOwnerIDByOrgID(ctx context.Context, orgID string) (string, error) {
+func (svc service) GetOwnerIDByOrg(ctx context.Context, orgID string) (string, error) {
 	org, err := svc.orgs.RetrieveByID(ctx, orgID)
 	if err != nil {
 		return "", err

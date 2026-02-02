@@ -125,7 +125,7 @@ func NormalizeSubtopic(topic string) (string, error) {
 	return strings.Join(filteredElems, "."), nil
 }
 
-func FormatMessage(pc *protomfx.PubConfByKeyRes, msg *protomfx.Message) error {
+func FormatMessage(pc *protomfx.PubConfigByKeyRes, msg *protomfx.Message) error {
 	msg.Publisher = pc.PublisherID
 	msg.Created = time.Now().UnixNano()
 
