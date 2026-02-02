@@ -184,7 +184,6 @@ func main() {
 
 	if cfg.forwarder == "true" {
 		subjects := []string{
-			nats.SubjectMessages, nats.SubjectMessagesWithSubtopic,
 			nats.SubjectThingCommands, nats.SubjectThingCommandsWithSubtopic,
 			nats.SubjectGroupCommands, nats.SubjectGroupCommandsWithSubtopic,
 		}
