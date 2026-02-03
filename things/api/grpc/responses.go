@@ -36,6 +36,10 @@ type thingIDsRes struct {
 	thingIDs []string
 }
 
+type thingKeyRes struct {
+	key string
+}
+
 type groupRes struct {
 	id    string
 	orgID string

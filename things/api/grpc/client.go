@@ -33,6 +33,7 @@ type grpcClient struct {
 	getThingIDsByProfile   endpoint.Endpoint
 	createGroupMemberships endpoint.Endpoint
 	getGroup               endpoint.Endpoint
+	getKeyByThingID        endpoint.Endpoint
 }
 
 // NewClient returns new gRPC client instance.
@@ -144,6 +145,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			encodeGetGroupRequest,
 			decodeGetGroupResponse,
 			protomfx.Group{},
+		).Endpoint()),
+		getKeyByThingID: kitot.TraceClient(tracer, "get_key_by_thing_id")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"GetKeyByThingID",
+			encodeGetKeyByThingIDRequest,
+			decodeGetKeyByThingIDResponse,
+			protomfx.ThingKeyRes{},
 		).Endpoint()),
 	}
 }
@@ -311,6 +320,19 @@ func (client grpcClient) CreateGroupMemberships(ctx context.Context, req *protom
 	return &emptypb.Empty{}, nil
 }
 
+func (client grpcClient) GetKeyByThingID(ctx context.Context, req *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ThingKeyRes, error) {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	res, err := client.getKeyByThingID(ctx, thingIDReq{thingID: req.GetValue()})
+	if err != nil {
+		return nil, err
+	}
+
+	tk := res.(thingKeyRes)
+	return &protomfx.ThingKeyRes{Value: tk.key}, nil
+}
+
 func (client grpcClient) GetGroup(ctx context.Context, req *protomfx.GetGroupReq, _ ...grpc.CallOption) (*protomfx.Group, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
@@ -452,4 +474,14 @@ func decodeGetGroupResponse(_ context.Context, grpcRes any) (any, error) {
 		orgID: res.GetOrgID(),
 		name:  res.GetName(),
 	}, nil
+}
+
+func encodeGetKeyByThingIDRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(thingIDReq)
+	return &protomfx.ThingID{Value: req.thingID}, nil
+}
+
+func decodeGetKeyByThingIDResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(*protomfx.ThingKeyRes)
+	return thingKeyRes{key: res.GetValue()}, nil
 }

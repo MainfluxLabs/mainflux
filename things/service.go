@@ -116,6 +116,9 @@ type Service interface {
 	// Identify returns thing ID for given thing key.
 	Identify(ctx context.Context, key ThingKey) (string, error)
 
+	// GetKeyByThingID returns a thing's key for given thing ID.
+	GetKeyByThingID(ctx context.Context, thingID string) (string, error)
+
 	// GetGroupIDByThingID returns a thing's group ID for given thing ID.
 	GetGroupIDByThingID(ctx context.Context, thingID string) (string, error)
 
@@ -689,6 +692,14 @@ func (ts *thingsService) RemoveExternalKey(ctx context.Context, token, thingID s
 	}
 
 	return nil
+}
+
+func (ts *thingsService) GetKeyByThingID(ctx context.Context, thingID string) (string, error) {
+	thing, err := ts.things.RetrieveByID(ctx, thingID)
+	if err != nil {
+		return "", err
+	}
+	return thing.Key, nil
 }
 
 func (ts *thingsService) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {

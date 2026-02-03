@@ -13,7 +13,6 @@ import (
 	"encoding/pem"
 	"fmt"
 	"math/big"
-	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
@@ -22,17 +21,12 @@ import (
 	"github.com/MainfluxLabs/mainflux/certs"
 	"github.com/MainfluxLabs/mainflux/certs/mocks"
 	"github.com/MainfluxLabs/mainflux/certs/pki"
-	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	authmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/things"
-	httpapi "github.com/MainfluxLabs/mainflux/things/api/http"
 	"github.com/MainfluxLabs/mainflux/users"
-	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -68,13 +62,17 @@ var usersList = []users.User{{Email: email, Password: password}}
 
 func newService() (certs.Service, pki.Agent, error) {
 	auth := authmock.NewAuthService("", usersList, nil)
-	ac := auth
-	server := newThingsServer(newThingsService(ac))
-	config := mfsdk.Config{
-		ThingsURL: server.URL,
-	}
-	sdk := mfsdk.NewSDK(config)
 	repo := mocks.NewCertsRepository()
+
+	ths := make(map[string]things.Thing, thingsNum)
+	for i := 0; i < thingsNum; i++ {
+		id := strconv.Itoa(i + 1)
+		ths[id] = things.Thing{
+			ID:  id,
+			Key: thingKey,
+		}
+	}
+	tc := thmocks.NewThingsServiceClient(map[string]things.Profile{}, ths, map[string]things.Group{})
 
 	tlsCert, caCert, err := loadCertificates(caPath, caKeyPath)
 	if err != nil {
@@ -106,19 +104,7 @@ func newService() (certs.Service, pki.Agent, error) {
 		AuthTimeout:    authTimeout,
 	}
 
-	return certs.New(auth, repo, sdk, c, pkiAgent), pkiAgent, nil
-}
-
-func newThingsService(auth protomfx.AuthServiceClient) things.Service {
-	ths := make(map[string]things.Thing, thingsNum)
-	for i := 0; i < thingsNum; i++ {
-		id := strconv.Itoa(i + 1)
-		ths[id] = things.Thing{
-			ID:  id,
-			Key: thingKey,
-		}
-	}
-	return thmocks.NewThingsService(ths, map[string]things.Profile{}, auth)
+	return certs.New(auth, tc, repo, c, pkiAgent), pkiAgent, nil
 }
 
 func TestIssueCert(t *testing.T) {
@@ -464,12 +450,6 @@ func TestRenewCert(t *testing.T) {
 			assert.True(t, renewedCert.ExpiresAt.After(issuedCert.ExpiresAt), fmt.Sprintf("%s: renewed cert should expire later", tc.desc))
 		}
 	}
-}
-
-func newThingsServer(svc things.Service) *httptest.Server {
-	logger := logger.NewMock()
-	mux := httpapi.MakeHandler(svc, mocktracer.New(), logger)
-	return httptest.NewServer(mux)
 }
 
 func loadCertificates(caPath, caKeyPath string) (tls.Certificate, *x509.Certificate, error) {

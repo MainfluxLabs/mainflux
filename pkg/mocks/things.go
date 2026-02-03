@@ -187,6 +187,10 @@ func (svc *mainfluxThings) Identify(context.Context, things.ThingKey) (string, e
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) GetKeyByThingID(context.Context, string) (string, error) {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) GetGroupIDByThingID(context.Context, string) (string, error) {
 	panic("not implemented")
 }
