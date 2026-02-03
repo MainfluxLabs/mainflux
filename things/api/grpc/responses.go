@@ -11,12 +11,12 @@ type identityRes struct {
 	id string
 }
 
-type pubConfByKeyRes struct {
+type pubConfigByKeyRes struct {
 	publisherID   string
 	profileConfig *protomfx.Config
 }
 
-type configByThingIDRes struct {
+type configByThingRes struct {
 	config *protomfx.Config
 }
 

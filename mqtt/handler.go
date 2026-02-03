@@ -145,12 +145,12 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		return
 	}
 
-	thingKeyReq := &protomfx.ThingKey{
+	tk := &protomfx.ThingKey{
 		Value: string(c.Password),
 		Type:  c.Username,
 	}
 
-	pc, err := h.things.GetPubConfByKey(context.Background(), thingKeyReq)
+	pc, err := h.things.GetPubConfigByKey(context.Background(), tk)
 	if err != nil {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, errors.ErrAuthentication).Error())
 	}
@@ -260,7 +260,7 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 		return nil, err
 	}
 
-	groupID, err := h.things.GetGroupIDByThingID(context.Background(), &protomfx.ThingID{Value: thingID})
+	groupID, err := h.things.GetGroupIDByThing(context.Background(), &protomfx.ThingID{Value: thingID})
 	if err != nil {
 		return nil, err
 	}

@@ -51,26 +51,26 @@ func (svc authServiceMock) Authorize(_ context.Context, req *protomfx.AuthorizeR
 	return &emptypb.Empty{}, nil
 }
 
-func (svc authServiceMock) GetOwnerIDByOrgID(_ context.Context, _ *protomfx.OrgID, _ ...grpc.CallOption) (*protomfx.OwnerID, error) {
+func (svc authServiceMock) GetOwnerIDByOrg(context.Context, *protomfx.OrgID, ...grpc.CallOption) (*protomfx.OwnerID, error) {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) AssignRole(_ context.Context, _ *protomfx.AssignRoleReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
+func (svc authServiceMock) AssignRole(context.Context, *protomfx.AssignRoleReq, ...grpc.CallOption) (*emptypb.Empty, error) {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) RetrieveRole(_ context.Context, _ *protomfx.RetrieveRoleReq, _ ...grpc.CallOption) (r *protomfx.RetrieveRoleRes, err error) {
+func (svc authServiceMock) RetrieveRole(context.Context, *protomfx.RetrieveRoleReq, ...grpc.CallOption) (*protomfx.RetrieveRoleRes, error) {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
+func (svc authServiceMock) CreateDormantOrgInvite(context.Context, *protomfx.CreateDormantOrgInviteReq, ...grpc.CallOption) (*emptypb.Empty, error) {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) ActivateOrgInvite(ctx context.Context, req *protomfx.ActivateOrgInviteReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
+func (svc authServiceMock) ActivateOrgInvite(context.Context, *protomfx.ActivateOrgInviteReq, ...grpc.CallOption) (*emptypb.Empty, error) {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) ViewOrg(ctx context.Context, req *protomfx.ViewOrgReq, _ ...grpc.CallOption) (r *protomfx.Org, err error) {
+func (svc authServiceMock) ViewOrg(context.Context, *protomfx.ViewOrgReq, ...grpc.CallOption) (*protomfx.Org, error) {
 	panic("not implemented")
 }

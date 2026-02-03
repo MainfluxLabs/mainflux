@@ -25,7 +25,7 @@ var (
 	ErrProfileAssigned = errors.New("profile currently assigned to thing(s)")
 )
 
-// Service specifies an API that must be fullfiled by the domain service
+// Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
 	// CreateThings adds things to the user identified by the token.
@@ -94,12 +94,12 @@ type Service interface {
 	// belongs to the user identified by the provided key.
 	RemoveProfiles(ctx context.Context, token string, ids ...string) error
 
-	// GetPubConfByKey determines whether the profile can be accessed using the
-	// provided key and returns thing's id if access is allowed.
-	GetPubConfByKey(ctx context.Context, key ThingKey) (PubConfInfo, error)
+	// GetPubConfigByKey retrieves the thing ID and its corresponding profile config
+	// associated with the provided key.
+	GetPubConfigByKey(ctx context.Context, key ThingKey) (PubConfigInfo, error)
 
-	// GetConfigByThingID returns profile config for given thing ID.
-	GetConfigByThingID(ctx context.Context, thingID string) (map[string]any, error)
+	// GetConfigByThing returns profile config for given thing ID.
+	GetConfigByThing(ctx context.Context, thingID string) (map[string]any, error)
 
 	// CanUserAccessThing determines whether a user has access to a thing.
 	CanUserAccessThing(ctx context.Context, req UserAccessReq) error
@@ -116,11 +116,11 @@ type Service interface {
 	// Identify returns thing ID for given thing key.
 	Identify(ctx context.Context, key ThingKey) (string, error)
 
-	// GetGroupIDByThingID returns a thing's group ID for given thing ID.
-	GetGroupIDByThingID(ctx context.Context, thingID string) (string, error)
+	// GetGroupIDByThing returns a thing's group ID for given thing ID.
+	GetGroupIDByThing(ctx context.Context, thingID string) (string, error)
 
-	// GetGroupIDByProfileID returns a profile's group ID for given profile ID.
-	GetGroupIDByProfileID(ctx context.Context, profileID string) (string, error)
+	// GetGroupIDByProfile returns a profile's group ID for given profile ID.
+	GetGroupIDByProfile(ctx context.Context, profileID string) (string, error)
 
 	// GetGroupIDsByOrg returns all group IDs belonging to an org.
 	GetGroupIDsByOrg(ctx context.Context, orgID string, token string) ([]string, error)
@@ -164,7 +164,7 @@ type ThingAccessReq struct {
 	ID string
 }
 
-type PubConfInfo struct {
+type PubConfigInfo struct {
 	PublisherID   string
 	ProfileConfig map[string]any
 }
@@ -206,7 +206,7 @@ func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, thi
 }
 
 func (ts *thingsService) CreateThings(ctx context.Context, token, profileID string, things ...Thing) ([]Thing, error) {
-	groupID, err := ts.getGroupIDByProfileID(ctx, profileID)
+	groupID, err := ts.getGroupIDByProfile(ctx, profileID)
 	if err != nil {
 		return []Thing{}, err
 	}
@@ -276,7 +276,7 @@ func (ts *thingsService) UpdateThingGroupAndProfile(ctx context.Context, token s
 		return err
 	}
 
-	prGrID, err := ts.getGroupIDByProfileID(ctx, thing.ProfileID)
+	prGrID, err := ts.getGroupIDByProfile(ctx, thing.ProfileID)
 	if err != nil {
 		return err
 	}
@@ -359,7 +359,7 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm apiuti
 		return ThingsPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	grIDs, err := ts.getGroupIDsByMemberID(ctx, res.GetId())
+	grIDs, err := ts.getGroupIDsByMember(ctx, res.GetId())
 	if err != nil {
 		return ThingsPage{}, err
 	}
@@ -491,7 +491,7 @@ func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm apiu
 		return ProfilesPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	grIDs, err := ts.getGroupIDsByMemberID(ctx, res.GetId())
+	grIDs, err := ts.getGroupIDsByMember(ctx, res.GetId())
 	if err != nil {
 		return ProfilesPage{}, err
 	}
@@ -546,29 +546,34 @@ func (ts *thingsService) RemoveProfiles(ctx context.Context, token string, ids .
 	return ts.profiles.Remove(ctx, ids...)
 }
 
-func (ts *thingsService) GetPubConfByKey(ctx context.Context, key ThingKey) (PubConfInfo, error) {
+func (ts *thingsService) GetPubConfigByKey(ctx context.Context, key ThingKey) (PubConfigInfo, error) {
 	thID, err := ts.thingCache.ID(ctx, key)
 	if err != nil {
 		id, err := ts.things.RetrieveByKey(ctx, key)
 		if err != nil {
-			return PubConfInfo{}, err
+			return PubConfigInfo{}, err
 		}
 		thID = id
 
 		if err := ts.thingCache.Save(ctx, key, thID); err != nil {
-			return PubConfInfo{}, err
+			return PubConfigInfo{}, err
 		}
 	}
 
 	profile, err := ts.profiles.RetrieveByThing(ctx, thID)
 	if err != nil {
-		return PubConfInfo{}, err
+		return PubConfigInfo{}, err
 	}
 
-	return PubConfInfo{PublisherID: thID, ProfileConfig: profile.Config}, nil
+	res := PubConfigInfo{
+		PublisherID:   thID,
+		ProfileConfig: profile.Config,
+	}
+
+	return res, nil
 }
 
-func (ts *thingsService) GetConfigByThingID(ctx context.Context, thingID string) (map[string]any, error) {
+func (ts *thingsService) GetConfigByThing(ctx context.Context, thingID string) (map[string]any, error) {
 	profile, err := ts.profiles.RetrieveByThing(ctx, thingID)
 	if err != nil {
 		return map[string]any{}, err
@@ -578,7 +583,7 @@ func (ts *thingsService) GetConfigByThingID(ctx context.Context, thingID string)
 }
 
 func (ts *thingsService) CanUserAccessThing(ctx context.Context, req UserAccessReq) error {
-	grID, err := ts.getGroupIDByThingID(ctx, req.ID)
+	grID, err := ts.getGroupIDByThing(ctx, req.ID)
 	if err != nil {
 		return err
 	}
@@ -587,7 +592,7 @@ func (ts *thingsService) CanUserAccessThing(ctx context.Context, req UserAccessR
 }
 
 func (ts *thingsService) CanUserAccessProfile(ctx context.Context, req UserAccessReq) error {
-	grID, err := ts.getGroupIDByProfileID(ctx, req.ID)
+	grID, err := ts.getGroupIDByProfile(ctx, req.ID)
 	if err != nil {
 		return err
 	}
@@ -608,7 +613,7 @@ func (ts *thingsService) CanThingAccessGroup(ctx context.Context, req ThingAcces
 		return err
 	}
 
-	grID, err := ts.getGroupIDByThingID(ctx, thID)
+	grID, err := ts.getGroupIDByThing(ctx, thID)
 	if err != nil {
 		return err
 	}
@@ -691,12 +696,12 @@ func (ts *thingsService) RemoveExternalKey(ctx context.Context, token, thingID s
 	return nil
 }
 
-func (ts *thingsService) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {
-	return ts.getGroupIDByThingID(ctx, thingID)
+func (ts *thingsService) GetGroupIDByThing(ctx context.Context, thingID string) (string, error) {
+	return ts.getGroupIDByThing(ctx, thingID)
 }
 
-func (ts *thingsService) GetGroupIDByProfileID(ctx context.Context, profileID string) (string, error) {
-	return ts.getGroupIDByProfileID(ctx, profileID)
+func (ts *thingsService) GetGroupIDByProfile(ctx context.Context, profileID string) (string, error) {
+	return ts.getGroupIDByProfile(ctx, profileID)
 }
 
 func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, error) {
@@ -824,7 +829,7 @@ func (ts *thingsService) canAccessOrg(ctx context.Context, token, orgID, subject
 	return nil
 }
 
-func (ts *thingsService) getGroupIDByThingID(ctx context.Context, thID string) (string, error) {
+func (ts *thingsService) getGroupIDByThing(ctx context.Context, thID string) (string, error) {
 	grID, err := ts.thingCache.ViewGroup(ctx, thID)
 	if err != nil {
 		th, err := ts.things.RetrieveByID(ctx, thID)
@@ -841,7 +846,7 @@ func (ts *thingsService) getGroupIDByThingID(ctx context.Context, thID string) (
 	return grID, nil
 }
 
-func (ts *thingsService) getGroupIDByProfileID(ctx context.Context, prID string) (string, error) {
+func (ts *thingsService) getGroupIDByProfile(ctx context.Context, prID string) (string, error) {
 	grID, err := ts.profileCache.ViewGroup(ctx, prID)
 	if err != nil {
 		pr, err := ts.profiles.RetrieveByID(ctx, prID)
@@ -858,7 +863,7 @@ func (ts *thingsService) getGroupIDByProfileID(ctx context.Context, prID string)
 	return grID, nil
 }
 
-func (ts *thingsService) getGroupIDsByMemberID(ctx context.Context, memberID string) ([]string, error) {
+func (ts *thingsService) getGroupIDsByMember(ctx context.Context, memberID string) ([]string, error) {
 	grIDs, err := ts.groupCache.RetrieveGroupIDsByMember(ctx, memberID)
 	if err != nil {
 		grIDs, err = ts.groupMemberships.RetrieveGroupIDsByMember(ctx, memberID)

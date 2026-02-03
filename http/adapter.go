@@ -40,8 +40,11 @@ func New(publisher messaging.Publisher, things protomfx.ThingsServiceClient) Ser
 }
 
 func (as *adapterService) Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error {
-	cr := &protomfx.ThingKey{Value: key.Value, Type: key.Type}
-	pc, err := as.things.GetPubConfByKey(ctx, cr)
+	tk := &protomfx.ThingKey{
+		Value: key.Value,
+		Type:  key.Type,
+	}
+	pc, err := as.things.GetPubConfigByKey(ctx, tk)
 	if err != nil {
 		return err
 	}

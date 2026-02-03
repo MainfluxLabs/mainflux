@@ -12,7 +12,7 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -24,7 +24,7 @@ type grpcServer struct {
 	issue                  kitgrpc.Handler
 	identify               kitgrpc.Handler
 	authorize              kitgrpc.Handler
-	getOwnerIDByOrgID      kitgrpc.Handler
+	getOwnerIDByOrg        kitgrpc.Handler
 	assignRole             kitgrpc.Handler
 	retrieveRole           kitgrpc.Handler
 	createDormantOrgInvite kitgrpc.Handler
@@ -50,10 +50,10 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			decodeAuthorizeRequest,
 			encodeEmptyResponse,
 		),
-		getOwnerIDByOrgID: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "get_owner_id_by_org_id")(getOwnerIDByOrgIDEndpoint(svc)),
-			decodeGetOwnerIDByOrgIDRequest,
-			encodeGetOwnerIDByOrgIDResponse,
+		getOwnerIDByOrg: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "get_owner_id_by_org")(getOwnerIDByOrgEndpoint(svc)),
+			decodeGetOwnerIDByOrgRequest,
+			encodeGetOwnerIDByOrgResponse,
 		),
 		assignRole: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "assign_role")(assignRoleEndpoint(svc)),
@@ -107,8 +107,8 @@ func (s *grpcServer) Authorize(ctx context.Context, req *protomfx.AuthorizeReq) 
 	return res.(*emptypb.Empty), nil
 }
 
-func (s *grpcServer) GetOwnerIDByOrgID(ctx context.Context, req *protomfx.OrgID) (*protomfx.OwnerID, error) {
-	_, res, err := s.getOwnerIDByOrgID.ServeGRPC(ctx, req)
+func (s *grpcServer) GetOwnerIDByOrg(ctx context.Context, req *protomfx.OrgID) (*protomfx.OwnerID, error) {
+	_, res, err := s.getOwnerIDByOrg.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -198,13 +198,13 @@ func decodeAuthorizeRequest(_ context.Context, grpcReq any) (any, error) {
 	return authReq{Token: req.GetToken(), Object: req.GetObject(), Subject: req.GetSubject(), Action: req.GetAction()}, nil
 }
 
-func decodeGetOwnerIDByOrgIDRequest(_ context.Context, grpcReq any) (any, error) {
+func decodeGetOwnerIDByOrgRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.OrgID)
-	return ownerIDByOrgIDReq{orgID: req.GetValue()}, nil
+	return ownerIDByOrgReq{orgID: req.GetValue()}, nil
 }
 
-func encodeGetOwnerIDByOrgIDResponse(_ context.Context, grpcRes any) (any, error) {
-	res := grpcRes.(ownerIDByOrgIDRes)
+func encodeGetOwnerIDByOrgResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(ownerIDByOrgRes)
 	return &protomfx.OwnerID{Value: res.ownerID}, nil
 }
 

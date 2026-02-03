@@ -211,7 +211,7 @@ func (rs *rulesService) AssignRules(ctx context.Context, token, thingID string, 
 		return err
 	}
 
-	grID, err := rs.things.GetGroupIDByThingID(ctx, &protomfx.ThingID{Value: thingID})
+	grID, err := rs.things.GetGroupIDByThing(ctx, &protomfx.ThingID{Value: thingID})
 	if err != nil {
 		return err
 	}
@@ -239,7 +239,7 @@ func (rs *rulesService) UnassignRules(ctx context.Context, token, thingID string
 		return err
 	}
 
-	grID, err := rs.things.GetGroupIDByThingID(ctx, &protomfx.ThingID{Value: thingID})
+	grID, err := rs.things.GetGroupIDByThing(ctx, &protomfx.ThingID{Value: thingID})
 	if err != nil {
 		return err
 	}
