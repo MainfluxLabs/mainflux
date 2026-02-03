@@ -116,6 +116,13 @@ func (svc thingsServiceMock) Identify(_ context.Context, key *protomfx.ThingKey,
 	return nil, errors.ErrAuthentication
 }
 
+func (svc thingsServiceMock) GetKeyByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ThingKey, error) {
+	if th, ok := svc.things[in.GetValue()]; ok {
+		return &protomfx.ThingKey{Value: th.Key}, nil
+	}
+	return nil, dbutil.ErrNotFound
+}
+
 func (svc thingsServiceMock) GetGroupIDByThing(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.GroupID, error) {
 	if th, ok := svc.things[in.GetValue()]; ok {
 		return &protomfx.GroupID{Value: th.GroupID}, nil

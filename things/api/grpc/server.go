@@ -35,6 +35,7 @@ type grpcServer struct {
 	getThingIDsByProfile   kitgrpc.Handler
 	createGroupMemberships kitgrpc.Handler
 	getGroup               kitgrpc.Handler
+	getKeyByThingID        kitgrpc.Handler
 }
 
 // NewServer returns new ThingsServiceServer instance.
@@ -104,6 +105,11 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 			kitot.TraceServer(tracer, "get_group")(getGroupEndpoint(svc)),
 			decodeGetGroupRequest,
 			encodeGetGroupResponse,
+		),
+		getKeyByThingID: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "get_key_by_thing_id")(getKeyByThingIDEndpoint(svc)),
+			decodeGetKeyByThingIDRequest,
+			encodeGetKeyByThingIDResponse,
 		),
 	}
 }
@@ -220,6 +226,15 @@ func (gs *grpcServer) GetGroup(ctx context.Context, req *protomfx.GetGroupReq) (
 	}
 
 	return res.(*protomfx.Group), nil
+}
+
+func (gs *grpcServer) GetKeyByThingID(ctx context.Context, req *protomfx.ThingID) (*protomfx.ThingKey, error) {
+	_, res, err := gs.getKeyByThingID.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*protomfx.ThingKey), nil
 }
 
 func decodeGetPubConfigByKeyRequest(_ context.Context, grpcReq any) (any, error) {
@@ -349,6 +364,16 @@ func encodeGetGroupResponse(_ context.Context, grpcRes any) (any, error) {
 		OrgID: res.orgID,
 		Name:  res.name,
 	}, nil
+}
+
+func decodeGetKeyByThingIDRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.ThingID)
+	return thingIDReq{thingID: req.GetValue()}, nil
+}
+
+func encodeGetKeyByThingIDResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(thingKeyRes)
+	return &protomfx.ThingKey{Value: res.value, Type: res.keyType}, nil
 }
 
 func encodeError(err error) error {

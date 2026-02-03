@@ -161,6 +161,22 @@ func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func getKeyByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(thingIDReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		key, err := svc.GetKeyByThingID(ctx, req.thingID)
+		if err != nil {
+			return thingKeyRes{}, err
+		}
+
+		return thingKeyRes{value: key.Value, keyType: key.Type}, nil
+	}
+}
+
 func getGroupIDByThingEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(thingIDReq)
