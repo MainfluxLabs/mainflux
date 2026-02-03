@@ -152,7 +152,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			"GetKeyByThingID",
 			encodeGetKeyByThingIDRequest,
 			decodeGetKeyByThingIDResponse,
-			protomfx.ThingKeyRes{},
+			protomfx.ThingKey{},
 		).Endpoint()),
 	}
 }
@@ -320,7 +320,7 @@ func (client grpcClient) CreateGroupMemberships(ctx context.Context, req *protom
 	return &emptypb.Empty{}, nil
 }
 
-func (client grpcClient) GetKeyByThingID(ctx context.Context, req *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ThingKeyRes, error) {
+func (client grpcClient) GetKeyByThingID(ctx context.Context, req *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ThingKey, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
@@ -330,7 +330,7 @@ func (client grpcClient) GetKeyByThingID(ctx context.Context, req *protomfx.Thin
 	}
 
 	tk := res.(thingKeyRes)
-	return &protomfx.ThingKeyRes{Value: tk.key}, nil
+	return &protomfx.ThingKey{Value: tk.key}, nil
 }
 
 func (client grpcClient) GetGroup(ctx context.Context, req *protomfx.GetGroupReq, _ ...grpc.CallOption) (*protomfx.Group, error) {
@@ -482,6 +482,6 @@ func encodeGetKeyByThingIDRequest(_ context.Context, grpcReq any) (any, error) {
 }
 
 func decodeGetKeyByThingIDResponse(_ context.Context, grpcRes any) (any, error) {
-	res := grpcRes.(*protomfx.ThingKeyRes)
+	res := grpcRes.(*protomfx.ThingKey)
 	return thingKeyRes{key: res.GetValue()}, nil
 }

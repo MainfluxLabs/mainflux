@@ -228,13 +228,13 @@ func (gs *grpcServer) GetGroup(ctx context.Context, req *protomfx.GetGroupReq) (
 	return res.(*protomfx.Group), nil
 }
 
-func (gs *grpcServer) GetKeyByThingID(ctx context.Context, req *protomfx.ThingID) (*protomfx.ThingKeyRes, error) {
+func (gs *grpcServer) GetKeyByThingID(ctx context.Context, req *protomfx.ThingID) (*protomfx.ThingKey, error) {
 	_, res, err := gs.getKeyByThingID.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
 
-	return res.(*protomfx.ThingKeyRes), nil
+	return res.(*protomfx.ThingKey), nil
 }
 
 func decodeGetPubConfByKeyRequest(_ context.Context, grpcReq any) (any, error) {
@@ -373,7 +373,7 @@ func decodeGetKeyByThingIDRequest(_ context.Context, grpcReq any) (any, error) {
 
 func encodeGetKeyByThingIDResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(thingKeyRes)
-	return &protomfx.ThingKeyRes{Value: res.key}, nil
+	return &protomfx.ThingKey{Value: res.key}, nil
 }
 
 func encodeError(err error) error {

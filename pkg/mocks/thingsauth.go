@@ -116,9 +116,9 @@ func (svc thingsServiceMock) Identify(_ context.Context, key *protomfx.ThingKey,
 	return nil, errors.ErrAuthentication
 }
 
-func (svc thingsServiceMock) GetKeyByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ThingKeyRes, error) {
+func (svc thingsServiceMock) GetKeyByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ThingKey, error) {
 	if th, ok := svc.things[in.GetValue()]; ok {
-		return &protomfx.ThingKeyRes{Value: th.Key}, nil
+		return &protomfx.ThingKey{Value: th.Key}, nil
 	}
 	return nil, dbutil.ErrNotFound
 }

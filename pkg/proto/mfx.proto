@@ -31,7 +31,7 @@ service ThingsService {
     rpc GetThingIDsByProfile(ProfileID) returns (ThingIDs) {}
     rpc CreateGroupMemberships(CreateGroupMembershipsReq) returns (google.protobuf.Empty) {}
     rpc GetGroup(GetGroupReq) returns (Group) {}
-    rpc GetKeyByThingID(ThingID) returns (ThingKeyRes) {}
+    rpc GetKeyByThingID(ThingID) returns (ThingKey) {}
 }
 
 service UsersService {
@@ -239,6 +239,3 @@ message Group {
     string name = 3;
 }
 
-message ThingKeyRes {
-    string value = 1;
-}
