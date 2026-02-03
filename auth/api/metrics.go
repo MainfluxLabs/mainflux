@@ -117,13 +117,13 @@ func (ms *metricsMiddleware) ListOrgs(ctx context.Context, token string, pm apiu
 	return ms.svc.ListOrgs(ctx, token, pm)
 }
 
-func (ms *metricsMiddleware) GetOwnerIDByOrgID(ctx context.Context, orgID string) (string, error) {
+func (ms *metricsMiddleware) GetOwnerIDByOrg(ctx context.Context, orgID string) (string, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "get_owner_id_by_org_id").Add(1)
-		ms.latency.With("method", "get_owner_id_by_org_id").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "get_owner_id_by_org").Add(1)
+		ms.latency.With("method", "get_owner_id_by_org").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.GetOwnerIDByOrgID(ctx, orgID)
+	return ms.svc.GetOwnerIDByOrg(ctx, orgID)
 }
 
 func (ms *metricsMiddleware) CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...auth.OrgMembership) error {

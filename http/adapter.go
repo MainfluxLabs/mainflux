@@ -18,6 +18,10 @@ import (
 type Service interface {
 	// Publish Message
 	Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error
+	// SendCommandToThing publishes a command message to the specified thing.
+	SendCommandToThing(ctx context.Context, token, thingID string, msg protomfx.Message) error
+	// SendCommandToGroup publishes a command message to things that belong to a specified group.
+	SendCommandToGroup(ctx context.Context, token, groupID string, msg protomfx.Message) error
 }
 
 var _ Service = (*adapterService)(nil)
@@ -36,8 +40,11 @@ func New(publisher messaging.Publisher, things protomfx.ThingsServiceClient) Ser
 }
 
 func (as *adapterService) Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error {
-	cr := &protomfx.ThingKey{Value: key.Value, Type: key.Type}
-	pc, err := as.things.GetPubConfByKey(ctx, cr)
+	tk := &protomfx.ThingKey{
+		Value: key.Value,
+		Type:  key.Type,
+	}
+	pc, err := as.things.GetPubConfigByKey(ctx, tk)
 	if err != nil {
 		return err
 	}
@@ -46,8 +53,34 @@ func (as *adapterService) Publish(ctx context.Context, key things.ThingKey, msg 
 		return err
 	}
 
-	msg.Subject = nats.GetSubject(msg.Publisher, msg.Subtopic)
+	msg.Subject = nats.GetMessagesSubject(msg.Publisher, msg.Subtopic)
 	if err := as.publisher.Publish(msg); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (as *adapterService) SendCommandToThing(ctx context.Context, token, thingID string, message protomfx.Message) error {
+	if _, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
+		return err
+	}
+
+	message.Subject = nats.GetThingCommandsSubject(thingID, message.Subtopic)
+	if err := as.publisher.Publish(message); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (as *adapterService) SendCommandToGroup(ctx context.Context, token, groupID string, message protomfx.Message) error {
+	if _, err := as.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Editor}); err != nil {
+		return err
+	}
+
+	message.Subject = nats.GetGroupCommandsSubject(groupID, message.Subtopic)
+	if err := as.publisher.Publish(message); err != nil {
 		return err
 	}
 

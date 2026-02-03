@@ -12,24 +12,24 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-func getPubConfByKeyEndpoint(svc things.Service) endpoint.Endpoint {
+func getPubConfigByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(thingKey)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		pc, err := svc.GetPubConfByKey(ctx, things.ThingKey{Type: req.keyType, Value: req.value})
+		pc, err := svc.GetPubConfigByKey(ctx, things.ThingKey{Type: req.keyType, Value: req.value})
 		if err != nil {
-			return pubConfByKeyRes{}, err
+			return pubConfigByKeyRes{}, err
 		}
 
 		config, err := buildConfigResponse(pc.ProfileConfig)
 		if err != nil {
-			return pubConfByKeyRes{}, err
+			return pubConfigByKeyRes{}, err
 		}
 
-		res := pubConfByKeyRes{
+		res := pubConfigByKeyRes{
 			publisherID:   pc.PublisherID,
 			profileConfig: config,
 		}
@@ -38,24 +38,24 @@ func getPubConfByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func getConfigByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
+func getConfigByThingEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(thingIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		c, err := svc.GetConfigByThingID(ctx, req.thingID)
+		c, err := svc.GetConfigByThing(ctx, req.thingID)
 		if err != nil {
-			return configByThingIDRes{}, err
+			return configByThingRes{}, err
 		}
 
 		config, err := buildConfigResponse(c)
 		if err != nil {
-			return pubConfByKeyRes{}, err
+			return pubConfigByKeyRes{}, err
 		}
 
-		return configByThingIDRes{config: config}, nil
+		return configByThingRes{config: config}, nil
 	}
 }
 
@@ -177,14 +177,14 @@ func getKeyByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func getGroupIDByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
+func getGroupIDByThingEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(thingIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		groupID, err := svc.GetGroupIDByThingID(ctx, req.thingID)
+		groupID, err := svc.GetGroupIDByThing(ctx, req.thingID)
 		if err != nil {
 			return groupIDRes{}, err
 		}
@@ -193,14 +193,14 @@ func getGroupIDByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func getGroupIDByProfileIDEndpoint(svc things.Service) endpoint.Endpoint {
+func getGroupIDByProfileEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(profileIDReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		groupID, err := svc.GetGroupIDByProfileID(ctx, req.profileID)
+		groupID, err := svc.GetGroupIDByProfile(ctx, req.profileID)
 		if err != nil {
 			return groupIDRes{}, err
 		}

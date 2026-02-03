@@ -159,11 +159,11 @@ func (svc *mainfluxThings) RemoveProfiles(context.Context, string, ...string) er
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) GetPubConfByKey(context.Context, things.ThingKey) (things.PubConfInfo, error) {
+func (svc *mainfluxThings) GetPubConfigByKey(context.Context, things.ThingKey) (things.PubConfigInfo, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) GetConfigByThingID(context.Context, string) (map[string]any, error) {
+func (svc *mainfluxThings) GetConfigByThing(context.Context, string) (map[string]any, error) {
 	panic("not implemented")
 }
 
@@ -191,11 +191,11 @@ func (svc *mainfluxThings) GetKeyByThingID(context.Context, string) (string, err
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) GetGroupIDByThingID(context.Context, string) (string, error) {
+func (svc *mainfluxThings) GetGroupIDByThing(context.Context, string) (string, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) GetGroupIDByProfileID(context.Context, string) (string, error) {
+func (svc *mainfluxThings) GetGroupIDByProfile(context.Context, string) (string, error) {
 	panic("not implemented")
 }
 
