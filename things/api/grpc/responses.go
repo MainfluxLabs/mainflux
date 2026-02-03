@@ -37,7 +37,7 @@ type thingIDsRes struct {
 }
 
 type thingKeyRes struct {
-	key string
+	key *protomfx.ThingKey
 }
 
 type groupRes struct {

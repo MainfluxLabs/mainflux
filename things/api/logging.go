@@ -342,7 +342,7 @@ func (lm *loggingMiddleware) Identify(ctx context.Context, key things.ThingKey) 
 	return lm.svc.Identify(ctx, key)
 }
 
-func (lm *loggingMiddleware) GetKeyByThingID(ctx context.Context, thingID string) (_ string, err error) {
+func (lm *loggingMiddleware) GetKeyByThingID(ctx context.Context, thingID string) (_ things.ThingKey, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method get_key_by_thing_id for thing id %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {

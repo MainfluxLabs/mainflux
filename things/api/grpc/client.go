@@ -330,7 +330,7 @@ func (client grpcClient) GetKeyByThingID(ctx context.Context, req *protomfx.Thin
 	}
 
 	tk := res.(thingKeyRes)
-	return &protomfx.ThingKey{Value: tk.key}, nil
+	return &protomfx.ThingKey{Value: tk.key.Value, Type: tk.key.Type}, nil
 }
 
 func (client grpcClient) GetGroup(ctx context.Context, req *protomfx.GetGroupReq, _ ...grpc.CallOption) (*protomfx.Group, error) {
@@ -483,5 +483,5 @@ func encodeGetKeyByThingIDRequest(_ context.Context, grpcReq any) (any, error) {
 
 func decodeGetKeyByThingIDResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.ThingKey)
-	return thingKeyRes{key: res.GetValue()}, nil
+	return thingKeyRes{key: &protomfx.ThingKey{Value: res.GetValue(), Type: res.GetType()}}, nil
 }

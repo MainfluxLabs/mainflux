@@ -246,7 +246,7 @@ func (ms *metricsMiddleware) Identify(ctx context.Context, key things.ThingKey) 
 	return ms.svc.Identify(ctx, key)
 }
 
-func (ms *metricsMiddleware) GetKeyByThingID(ctx context.Context, thingID string) (string, error) {
+func (ms *metricsMiddleware) GetKeyByThingID(ctx context.Context, thingID string) (things.ThingKey, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "get_key_by_thing_id").Add(1)
 		ms.latency.With("method", "get_key_by_thing_id").Observe(time.Since(begin).Seconds())
