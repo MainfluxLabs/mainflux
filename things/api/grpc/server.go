@@ -373,7 +373,7 @@ func decodeGetKeyByThingIDRequest(_ context.Context, grpcReq any) (any, error) {
 
 func encodeGetKeyByThingIDResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(thingKeyRes)
-	return &protomfx.ThingKey{Value: res.key.Value, Type: res.key.Type}, nil
+	return &protomfx.ThingKey{Value: res.value, Type: res.keyType}, nil
 }
 
 func encodeError(err error) error {

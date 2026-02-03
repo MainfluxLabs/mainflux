@@ -173,7 +173,7 @@ func getKeyByThingIDEndpoint(svc things.Service) endpoint.Endpoint {
 			return thingKeyRes{}, err
 		}
 
-		return thingKeyRes{key: &protomfx.ThingKey{Value: key.Value, Type: key.Type}}, nil
+		return thingKeyRes{value: key.Value, keyType: key.Type}, nil
 	}
 }
 
