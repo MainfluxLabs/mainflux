@@ -15,7 +15,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
-	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
@@ -156,7 +155,7 @@ func TestListSenMLMessages(t *testing.T) {
 
 	adminToken := adminTok.GetValue()
 
-	thSvc := thmocks.NewThingsServiceClient(nil, map[string]things.Thing{
+	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
 		adminToken: {ID: pubID},
 	}, nil)
 
@@ -486,14 +485,7 @@ func TestListJSONMessages(t *testing.T) {
 
 	now := time.Now().Unix()
 
-	var (
-		messages   []mfjson.Message
-		queryMsgs  []mfjson.Message
-		valueMsgs  []mfjson.Message
-		boolMsgs   []mfjson.Message
-		stringMsgs []mfjson.Message
-		dataMsgs   []mfjson.Message
-	)
+	var messages []mfjson.Message
 
 	for i := 0; i < numOfMessages; i++ {
 		msg := mfjson.Message{
@@ -508,21 +500,16 @@ func TestListJSONMessages(t *testing.T) {
 		switch count {
 		case 0:
 			payload["value"] = v
-			valueMsgs = append(valueMsgs, msg)
 		case 1:
 			payload["bool_value"] = vb
-			boolMsgs = append(boolMsgs, msg)
 		case 2:
 			payload["string_value"] = vs
-			stringMsgs = append(stringMsgs, msg)
 		case 3:
 			payload["data_value"] = vd
-			dataMsgs = append(dataMsgs, msg)
 		case 4:
 			msg.Subtopic = subtopic
 			msg.Protocol = httpProt
 			payload["name"] = msgName
-			queryMsgs = append(queryMsgs, msg)
 		}
 
 		msg.Payload, _ = json.Marshal(payload)
@@ -536,7 +523,7 @@ func TestListJSONMessages(t *testing.T) {
 
 	adminToken := adminTok.GetValue()
 
-	thSvc := thmocks.NewThingsServiceClient(nil, map[string]things.Thing{
+	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
 		adminToken: {ID: pubID},
 	}, nil)
 

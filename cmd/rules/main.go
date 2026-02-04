@@ -106,7 +106,7 @@ func main() {
 	g, ctx := errgroup.WithContext(ctx)
 	logger, err := logger.New(os.Stdout, cfg.logLevel)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err)
 	}
 
 	db := connectToDB(cfg.dbConfig, logger)

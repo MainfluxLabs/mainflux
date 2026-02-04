@@ -138,7 +138,7 @@ func main() {
 
 	logger, err := logger.New(os.Stdout, cfg.logLevel)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err)
 	}
 
 	certsHttpTracer, certsHttpCloser := jaeger.Init("certs_http", cfg.jaegerURL, logger)

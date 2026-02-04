@@ -434,10 +434,6 @@ func TestDeleteSenMLMessages(t *testing.T) {
 	}
 
 	messages := []senml.Message{}
-	valueMsgs := []senml.Message{}
-	boolMsgs := []senml.Message{}
-	stringMsgs := []senml.Message{}
-	dataMsgs := []senml.Message{}
 	queryMsgs := []senml.Message{}
 
 	now := int64(time.Now().Unix())
@@ -449,16 +445,12 @@ func TestDeleteSenMLMessages(t *testing.T) {
 		switch count {
 		case 0:
 			msg.Value = &v
-			valueMsgs = append(valueMsgs, msg)
 		case 1:
 			msg.BoolValue = &vb
-			boolMsgs = append(boolMsgs, msg)
 		case 2:
 			msg.StringValue = &vs
-			stringMsgs = append(stringMsgs, msg)
 		case 3:
 			msg.DataValue = &vd
-			dataMsgs = append(dataMsgs, msg)
 		case 4:
 			msg.Sum = &sum
 			msg.Subtopic = subtopic

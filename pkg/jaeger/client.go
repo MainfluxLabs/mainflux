@@ -6,7 +6,6 @@ package jaeger
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/MainfluxLabs/mainflux/logger"
@@ -16,7 +15,7 @@ import (
 
 func Init(svcName, url string, logger logger.Logger) (opentracing.Tracer, io.Closer) {
 	if url == "" {
-		return opentracing.NoopTracer{}, ioutil.NopCloser(nil)
+		return opentracing.NoopTracer{}, io.NopCloser(nil)
 	}
 
 	tracer, closer, err := jconfig.Configuration{

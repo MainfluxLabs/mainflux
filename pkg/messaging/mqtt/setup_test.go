@@ -46,14 +46,14 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not start container: %s", err)
 	}
 
-	handleInterrupt(m, pool, container)
+	handleInterrupt(pool, container)
 
 	address = fmt.Sprintf("%s:%s", "localhost", container.GetPort(port))
 	pool.MaxWait = poolMaxWait
 
 	logger, err = mainflux_log.New(os.Stdout, mainflux_log.Debug.String())
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err)
 	}
 
 	if err := pool.Retry(func() error {
@@ -73,12 +73,12 @@ func TestMain(m *testing.M) {
 	defer func() {
 		err = pubsub.Close()
 		if err != nil {
-			log.Fatalf(err.Error())
+			log.Fatal(err)
 		}
 	}()
 }
 
-func handleInterrupt(m *testing.M, pool *dockertest.Pool, container *dockertest.Resource) {
+func handleInterrupt(pool *dockertest.Pool, container *dockertest.Resource) {
 	c := make(chan os.Signal, 2)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {

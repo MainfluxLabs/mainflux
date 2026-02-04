@@ -65,11 +65,8 @@ var (
 		Description: description,
 		Metadata:    map[string]any{"key": "value"},
 	}
-	idProvider      = uuid.New()
-	viewer          = auth.OrgMembership{MemberID: viewerID, Email: viewerEmail, Role: auth.Viewer}
-	editor          = auth.OrgMembership{MemberID: editorID, Email: editorEmail, Role: auth.Editor}
-	admin           = auth.OrgMembership{MemberID: adminID, Email: adminEmail, Role: auth.Admin}
-	usersByEmails   = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, email: {ID: id, Email: email}}
+	idProvider    = uuid.New()
+	usersByEmails = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, email: {ID: id, Email: email}}
 	usersByIDs      = map[string]users.User{adminID: {ID: adminID, Email: adminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, id: {ID: id, Email: email}}
 	metadata        = map[string]any{"test": "data"}
 	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, strings.Repeat("m", maxNameSize+1))

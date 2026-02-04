@@ -23,8 +23,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	authmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
-	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
+	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/stretchr/testify/assert"
@@ -61,7 +60,7 @@ const (
 var usersList = []users.User{{Email: email, Password: password}}
 
 func newService() (certs.Service, pki.Agent, error) {
-	auth := authmock.NewAuthService("", usersList, nil)
+	auth := pkgmocks.NewAuthService("", usersList, nil)
 	repo := mocks.NewCertsRepository()
 
 	ths := make(map[string]things.Thing, thingsNum)
@@ -72,7 +71,7 @@ func newService() (certs.Service, pki.Agent, error) {
 			Key: thingKey,
 		}
 	}
-	tc := thmocks.NewThingsServiceClient(map[string]things.Profile{}, ths, map[string]things.Group{})
+	tc := pkgmocks.NewThingsServiceClient(map[string]things.Profile{}, ths, map[string]things.Group{})
 
 	tlsCert, caCert, err := loadCertificates(caPath, caKeyPath)
 	if err != nil {

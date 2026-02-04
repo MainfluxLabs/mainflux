@@ -95,7 +95,7 @@ func main() {
 
 	logger, err := logger.New(os.Stdout, cfg.logLevel)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err)
 	}
 
 	timescaleHttpTracer, timescaleHttpCloser := jaeger.Init("timescale_http", cfg.jaegerURL, logger)
