@@ -71,7 +71,7 @@ func (svc *adapterService) Publish(ctx context.Context, key things.ThingKey, msg
 		return err
 	}
 
-	msg.Subject = nats.GetSubject(msg.Publisher, msg.Subtopic)
+	msg.Subject = nats.GetMessagesSubject(msg.Publisher, msg.Subtopic)
 	if err := svc.pubsub.Publish(msg); err != nil {
 		return err
 	}
@@ -107,12 +107,12 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, key things.ThingKey,
 	return svc.pubsub.Unsubscribe(pc.PublisherID, subtopic)
 }
 
-func (svc *adapterService) authorize(ctx context.Context, key things.ThingKey) (*protomfx.PubConfByKeyRes, error) {
-	ar := &protomfx.ThingKey{
+func (svc *adapterService) authorize(ctx context.Context, key things.ThingKey) (*protomfx.PubConfigByKeyRes, error) {
+	tk := &protomfx.ThingKey{
 		Value: key.Value,
 		Type:  key.Type,
 	}
-	pc, err := svc.things.GetPubConfByKey(ctx, ar)
+	pc, err := svc.things.GetPubConfigByKey(ctx, tk)
 	if err != nil {
 		return nil, errors.Wrap(errors.ErrAuthorization, err)
 	}

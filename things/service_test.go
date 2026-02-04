@@ -1523,7 +1523,7 @@ func TestRemoveProfile(t *testing.T) {
 	}
 }
 
-func TestGetPubConfByKey(t *testing.T) {
+func TestGetPubConfigByKey(t *testing.T) {
 	svc := newService()
 
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
@@ -1553,7 +1553,7 @@ func TestGetPubConfByKey(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, err := svc.GetPubConfByKey(context.Background(), things.ThingKey{Type: things.KeyTypeInternal, Value: tc.key})
+		_, err := svc.GetPubConfigByKey(context.Background(), things.ThingKey{Type: things.KeyTypeInternal, Value: tc.key})
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected '%s' got '%s'\n", desc, tc.err, err))
 	}
 }
