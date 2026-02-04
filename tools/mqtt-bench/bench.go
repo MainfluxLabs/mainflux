@@ -8,7 +8,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"strconv"
@@ -26,14 +26,15 @@ func Benchmark(cfg Config) {
 	var caByte []byte
 	if cfg.MQTT.TLS.MTLS {
 		caFile, err := os.Open(cfg.MQTT.TLS.CA)
-		defer caFile.Close()
 		if err != nil {
 			fmt.Println(err)
+		} else {
+			defer caFile.Close()
+			caByte, _ = io.ReadAll(caFile)
 		}
-		caByte, _ = ioutil.ReadAll(caFile)
 	}
 
-	data, err := ioutil.ReadFile(cfg.Mf.ConnFile)
+	data, err := os.ReadFile(cfg.Mf.ConnFile)
 	if err != nil {
 		log.Fatalf("Error loading connections file: %s", err)
 	}

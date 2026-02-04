@@ -469,7 +469,6 @@ func TestListInvitesByInvitee(t *testing.T) {
 	_, viewerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	orgIDs := []string{}
 	invites := []inviteRes{}
 
 	n := 5
@@ -479,7 +478,6 @@ func TestListInvitesByInvitee(t *testing.T) {
 		})
 
 		assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
-		orgIDs = append(orgIDs, org.ID)
 
 		inv, err := svc.CreateOrgInvite(context.Background(), ownerToken, auth.OrgInvite{
 			InviteeEmail: viewer.Email,

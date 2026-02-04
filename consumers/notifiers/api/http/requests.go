@@ -13,10 +13,6 @@ const (
 	maxNameSize  = 254
 )
 
-type apiReq interface {
-	validate() error
-}
-
 type notifierReq struct {
 	token string
 	id    string

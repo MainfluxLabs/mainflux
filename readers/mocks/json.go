@@ -56,9 +56,7 @@ func (repo *jsonRepositoryMock) Remove(ctx context.Context, rpm readers.JSONPage
 func (repo *jsonRepositoryMock) Restore(ctx context.Context, messages ...readers.Message) error {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	for _, msg := range messages {
-		repo.messages[""] = append(repo.messages[""], msg)
-	}
+	repo.messages[""] = append(repo.messages[""], messages...)
 	return nil
 }
 

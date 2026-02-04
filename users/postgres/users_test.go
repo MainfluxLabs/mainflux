@@ -296,7 +296,6 @@ func TestBackupAll(t *testing.T) {
 		"field": "value",
 	}
 
-	var ids []string
 	for i := uint64(0); i < nUsers; i++ {
 		uid, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -310,7 +309,6 @@ func TestBackupAll(t *testing.T) {
 		if i < metaNum {
 			user.Metadata = meta
 		}
-		ids = append(ids, uid)
 		_, err = userRepo.Save(context.Background(), user)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
