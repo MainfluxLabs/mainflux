@@ -15,7 +15,6 @@ import (
 )
 
 const (
-	profilesPrefix = "profiles"
 	// SubjectAllProfiles represents subject to subscribe for all the profiles.
 	SubjectAllProfiles = "profiles.#"
 	exchangeName       = "mainflux-exchange"

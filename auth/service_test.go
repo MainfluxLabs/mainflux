@@ -1673,13 +1673,6 @@ func TestBackup(t *testing.T) {
 	_, superAdminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: rootAdminID, Subject: superAdminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	var grIDs []string
-	for i := 0; i < n; i++ {
-		groupID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-		grIDs = append(grIDs, groupID)
-	}
-
 	or, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
@@ -1748,15 +1741,10 @@ func TestRestore(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
 
 	var memberIDs []string
-	var groupIDs []string
 	for i := 0; i < n; i++ {
 		memberID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 		memberIDs = append(memberIDs, memberID)
-
-		groupID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-		groupIDs = append(groupIDs, groupID)
 	}
 
 	orgs := []auth.Org{{ID: id, OwnerID: ownerID, Name: name}}
