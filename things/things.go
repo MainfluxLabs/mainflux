@@ -106,9 +106,6 @@ type ThingRepository interface {
 	// RetrieveByProfile retrieves the subset of things assigned to the specified profile.
 	RetrieveByProfile(ctx context.Context, prID string, pm apiutil.PageMetadata) (ThingsPage, error)
 
-	// BackupByGroups retrieves all things specified by given group ids.
-	BackupByGroups(ctx context.Context, groupIDs []string) ([]Thing, error)
-
 	// Remove removes the things having the provided identifiers, that is owned
 	// by the specified user.
 	Remove(ctx context.Context, ids ...string) error

@@ -22,7 +22,6 @@ const (
 	exampleUser1 = "email1@example.com"
 	adminUser    = "admin@example.com"
 	invalidUser  = "invalid@example.com"
-	key          = "thing-key"
 )
 
 var idProvider = uuid.NewMock()
@@ -116,7 +115,7 @@ func TestRemoveSubscription(t *testing.T) {
 	}
 }
 
-func TestRetrieveByGroupID(t *testing.T) {
+func TestRetrieveByGroup(t *testing.T) {
 	svc := newService()
 
 	var subs []mqtt.Subscription
@@ -146,7 +145,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 		err      error
 	}{
 		{
-			desc:    "retrieve subscriptions by group as user",
+			desc:    "retrieve subscriptions by group",
 			groupID: groupID,
 			token:   exampleUser1,
 			pageMeta: mqtt.PageMetadata{
@@ -161,7 +160,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 			err: nil,
 		},
 		{
-			desc:    "retrieve subscriptions by group as user with no limit",
+			desc:    "retrieve subscriptions by group with no limit",
 			groupID: groupID,
 			token:   exampleUser1,
 			pageMeta: mqtt.PageMetadata{
@@ -189,64 +188,9 @@ func TestRetrieveByGroupID(t *testing.T) {
 			err: errors.ErrAuthentication,
 		},
 		{
-			desc:    "retrieve subscriptions as user with empty token",
+			desc:    "retrieve subscriptions with empty token",
 			groupID: groupID,
 			token:   "",
-			pageMeta: mqtt.PageMetadata{
-				Total: 0,
-			},
-			page: mqtt.Page{
-				Total:         0,
-				Subscriptions: nil,
-			},
-			err: errors.ErrAuthentication,
-		},
-		{
-			desc:    "retrieve subscriptions by group as thing",
-			groupID: groupID,
-			key:     key,
-			pageMeta: mqtt.PageMetadata{
-				Total:  total,
-				Offset: 0,
-				Limit:  10,
-			},
-			page: mqtt.Page{
-				Total:         total,
-				Subscriptions: subs[:10],
-			},
-			err: nil,
-		},
-		{
-			desc:    "retrieve subscriptions by group as thing with no limit",
-			groupID: groupID,
-			key:     key,
-			pageMeta: mqtt.PageMetadata{
-				Total:  total,
-				Offset: 0,
-				Limit:  noLimit,
-			},
-			page: mqtt.Page{
-				Total:         total,
-				Subscriptions: subs,
-			},
-			err: nil,
-		},
-		{
-			desc:    "retrieve subscriptions as thing with invalid group",
-			groupID: invalidID,
-			key:     key,
-			pageMeta: mqtt.PageMetadata{
-				Total: 0,
-			},
-			page: mqtt.Page{
-				Total:         0,
-				Subscriptions: nil,
-			},
-			err: dbutil.ErrNotFound,
-		},
-		{
-			desc:    "retrieve subscriptions by group without thing key",
-			groupID: groupID,
 			pageMeta: mqtt.PageMetadata{
 				Total: 0,
 			},
@@ -259,7 +203,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		page, err := svc.ListSubscriptions(context.Background(), tc.groupID, tc.token, things.ThingKey{Type: things.KeyTypeInternal, Value: tc.key}, tc.pageMeta)
+		page, err := svc.ListSubscriptions(context.Background(), tc.groupID, tc.token, tc.pageMeta)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.page, page, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.page, page))
 	}

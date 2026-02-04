@@ -36,31 +36,31 @@ type GroupPage struct {
 
 // GroupRepository specifies a group persistence API.
 type GroupRepository interface {
-	// Save group
+	// Save persists groups.
 	Save(ctx context.Context, g ...Group) ([]Group, error)
 
-	// Update a group
+	// Update performs an update to the existing group.
 	Update(ctx context.Context, g Group) (Group, error)
 
-	// Remove a groups
-	Remove(ctx context.Context, groupIDs ...string) error
+	// Remove removes groups by their IDs.
+	Remove(ctx context.Context, ids ...string) error
 
-	// RetrieveByID retrieves group by its id
+	// RemoveByOrg removes groups by org ID.
+	RemoveByOrg(ctx context.Context, orgID string) error
+
+	// RetrieveByID retrieves a group by its ID.
 	RetrieveByID(ctx context.Context, id string) (Group, error)
 
-	// RetrieveByIDs retrieves groups by their ids
-	RetrieveByIDs(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (GroupPage, error)
+	// RetrieveByIDs retrieves groups by their IDs.
+	RetrieveByIDs(ctx context.Context, ids []string, pm apiutil.PageMetadata) (GroupPage, error)
 
 	// BackupAll retrieves all groups.
 	BackupAll(ctx context.Context) ([]Group, error)
 
-	// BackupByOrg retrieves all groups by organization ID.
-	BackupByOrg(ctx context.Context, orgID string) ([]Group, error)
-
-	// RetrieveIDsByOrgMembership retrieves group IDs by org membership
+	// RetrieveIDsByOrgMembership retrieves group IDs by org membership.
 	RetrieveIDsByOrgMembership(ctx context.Context, orgID, memberID string) ([]string, error)
 
-	// RetrieveIDsByOrg retrieves all group IDs by org
+	// RetrieveIDsByOrg retrieves all group IDs by org.
 	RetrieveIDsByOrg(ctx context.Context, orgID string) ([]string, error)
 
 	// RetrieveAll retrieves all groups with pagination.
@@ -76,6 +76,9 @@ type Groups interface {
 
 	// ViewGroup retrieves data about the group identified by ID.
 	ViewGroup(ctx context.Context, token, id string) (Group, error)
+
+	// ViewGroupInternal retrieves data about the Group identified by ID, without requiring authentication.
+	ViewGroupInternal(ctx context.Context, id string) (Group, error)
 
 	// ListGroups retrieves page of all groups.
 	ListGroups(ctx context.Context, token string, pm apiutil.PageMetadata) (GroupPage, error)
@@ -94,6 +97,9 @@ type Groups interface {
 
 	// RemoveGroups removes the groups identified with the provided IDs.
 	RemoveGroups(ctx context.Context, token string, ids ...string) error
+
+	// RemoveGroupsByOrg removes groups related to an org identified by org ID.
+	RemoveGroupsByOrg(ctx context.Context, orgID string) ([]string, error)
 
 	// ViewGroupByProfile retrieves group that profile belongs to.
 	ViewGroupByProfile(ctx context.Context, token, profileID string) (Group, error)
@@ -124,7 +130,7 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token, orgID string, 
 	}
 	userID := user.GetId()
 
-	oid, err := ts.auth.GetOwnerIDByOrgID(ctx, &protomfx.OrgID{Value: orgID})
+	oid, err := ts.auth.GetOwnerIDByOrg(ctx, &protomfx.OrgID{Value: orgID})
 	if err != nil {
 		return []Group{}, err
 	}
@@ -184,7 +190,7 @@ func (ts *thingsService) ListGroups(ctx context.Context, token string, pm apiuti
 		return GroupPage{}, err
 	}
 
-	grIDs, err := ts.getGroupIDsByMemberID(ctx, user.GetId())
+	grIDs, err := ts.getGroupIDsByMember(ctx, user.GetId())
 	if err != nil {
 		return GroupPage{}, err
 	}
@@ -220,6 +226,29 @@ func (ts *thingsService) RemoveGroups(ctx context.Context, token string, ids ...
 	return ts.groups.Remove(ctx, ids...)
 }
 
+func (ts *thingsService) RemoveGroupsByOrg(ctx context.Context, orgID string) ([]string, error) {
+	ids, err := ts.groups.RetrieveIDsByOrg(ctx, orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(ids) == 0 {
+		return ids, nil
+	}
+
+	for _, id := range ids {
+		if err := ts.groupCache.RemoveGroupEntities(ctx, id); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := ts.groups.RemoveByOrg(ctx, orgID); err != nil {
+		return nil, err
+	}
+
+	return ids, nil
+}
+
 func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Group) (Group, error) {
 	ar := UserAccessReq{
 		Token:  token,
@@ -234,6 +263,15 @@ func (ts *thingsService) UpdateGroup(ctx context.Context, token string, group Gr
 	return ts.groups.Update(ctx, group)
 }
 
+func (ts *thingsService) viewGroup(ctx context.Context, groupID string) (Group, error) {
+	gr, err := ts.groups.RetrieveByID(ctx, groupID)
+	if err != nil {
+		return Group{}, err
+	}
+
+	return gr, nil
+}
+
 func (ts *thingsService) ViewGroup(ctx context.Context, token, groupID string) (Group, error) {
 	ar := UserAccessReq{
 		Token:  token,
@@ -244,12 +282,11 @@ func (ts *thingsService) ViewGroup(ctx context.Context, token, groupID string) (
 		return Group{}, err
 	}
 
-	gr, err := ts.groups.RetrieveByID(ctx, groupID)
-	if err != nil {
-		return Group{}, err
-	}
+	return ts.viewGroup(ctx, groupID)
+}
 
-	return gr, nil
+func (ts *thingsService) ViewGroupInternal(ctx context.Context, groupID string) (Group, error) {
+	return ts.viewGroup(ctx, groupID)
 }
 
 func (ts *thingsService) ViewGroupByProfile(ctx context.Context, token, profileID string) (Group, error) {
@@ -262,7 +299,7 @@ func (ts *thingsService) ViewGroupByProfile(ctx context.Context, token, profileI
 		return Group{}, err
 	}
 
-	grID, err := ts.getGroupIDByProfileID(ctx, profileID)
+	grID, err := ts.getGroupIDByProfile(ctx, profileID)
 	if err != nil {
 		return Group{}, err
 	}
@@ -285,7 +322,7 @@ func (ts *thingsService) ViewGroupByThing(ctx context.Context, token string, thi
 		return Group{}, err
 	}
 
-	grID, err := ts.getGroupIDByThingID(ctx, thingID)
+	grID, err := ts.getGroupIDByThing(ctx, thingID)
 	if err != nil {
 		return Group{}, err
 	}

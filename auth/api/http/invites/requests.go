@@ -13,9 +13,10 @@ const (
 type createOrgInviteReq struct {
 	token        string
 	orgID        string
-	Email        string `json:"email,omitempty"`
-	Role         string `json:"role,omitempty"`
-	RedirectPath string `json:"redirect_path,omitempty"`
+	Email        string             `json:"email,omitempty"`
+	Role         string             `json:"role,omitempty"`
+	GroupInvites []auth.GroupInvite `json:"group_invites,omitempty"`
+	RedirectPath string             `json:"redirect_path,omitempty"`
 }
 
 func (req createOrgInviteReq) validate() error {
@@ -41,6 +42,12 @@ func (req createOrgInviteReq) validate() error {
 
 	if req.Role == auth.Owner {
 		return apiutil.ErrMalformedEntity
+	}
+
+	for _, gi := range req.GroupInvites {
+		if err := validateRole(gi.MemberRole); err != nil {
+			return err
+		}
 	}
 
 	return nil

@@ -1,8 +1,13 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
+
 package http
 
-import "github.com/MainfluxLabs/mainflux/pkg/apiutil"
+import (
+	"net/http"
+
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+)
 
 var _ apiutil.Response = (*listSubscriptionsRes)(nil)
 
@@ -12,7 +17,7 @@ type listSubscriptionsRes struct {
 }
 
 func (res listSubscriptionsRes) Code() int {
-	return 200
+	return http.StatusOK
 }
 
 func (res listSubscriptionsRes) Headers() map[string]string {
@@ -27,8 +32,6 @@ type viewSubRes struct {
 	Subtopic  string  `json:"subtopic"`
 	ThingID   string  `json:"thing_id"`
 	GroupID   string  `json:"group_id"`
-	ClientID  string  `json:"client_id"`
-	Status    string  `json:"status"`
 	CreatedAt float64 `json:"created_at"`
 }
 

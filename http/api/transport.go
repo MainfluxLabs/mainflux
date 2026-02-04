@@ -5,6 +5,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -21,7 +22,7 @@ import (
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -30,6 +31,11 @@ const (
 	ctSenmlJSON = "application/senml+json"
 	ctSenmlCBOR = "application/senml+cbor"
 	ctJSON      = "application/json"
+	headerCT    = "Content-Type"
+
+	messagesBasePath      = "/messages"
+	thingCommandsBasePath = "/things/%s/commands"
+	groupCommandsBasePath = "/groups/%s/commands"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -41,15 +47,43 @@ func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.L
 	r := bone.New()
 
 	r.Post("/messages", kithttp.NewServer(
-		kitot.TraceServer(tracer, "publish")(sendMessageEndpoint(svc)),
+		kitot.TraceServer(tracer, "send_message")(sendMessageEndpoint(svc)),
 		decodeRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Post("/messages/*", kithttp.NewServer(
-		kitot.TraceServer(tracer, "publish")(sendMessageEndpoint(svc)),
+		kitot.TraceServer(tracer, "send_message")(sendMessageEndpoint(svc)),
 		decodeRequest,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Post("/things/:id/commands", kithttp.NewServer(
+		kitot.TraceServer(tracer, "send_command_to_thing")(sendCommandToThingEndpoint(svc)),
+		decodeSendCommandToThing,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Post("/things/:id/commands/*", kithttp.NewServer(
+		kitot.TraceServer(tracer, "send_command_to_thing")(sendCommandToThingEndpoint(svc)),
+		decodeSendCommandToThing,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Post("/groups/:id/commands", kithttp.NewServer(
+		kitot.TraceServer(tracer, "send_command_to_group")(sendCommandToGroupEndpoint(svc)),
+		decodeSendCommandByGroup,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Post("/groups/:id/commands/*", kithttp.NewServer(
+		kitot.TraceServer(tracer, "send_command_to_group")(sendCommandToGroupEndpoint(svc)),
+		decodeSendCommandByGroup,
 		encodeResponse,
 		opts...,
 	))
@@ -60,17 +94,12 @@ func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.L
 	return r
 }
 
-func decodeRequest(ctx context.Context, r *http.Request) (any, error) {
-	ct := r.Header.Get("Content-Type")
+func decodeRequest(_ context.Context, r *http.Request) (any, error) {
+	ct := r.Header.Get(headerCT)
 	if !strings.Contains(ct, ctSenmlJSON) &&
 		!strings.Contains(ct, ctJSON) &&
 		!strings.Contains(ct, ctSenmlCBOR) {
 		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	subject, err := messaging.CreateSubject(r.URL.Path)
-	if err != nil {
-		return nil, err
 	}
 
 	var thingKey things.ThingKey
@@ -82,16 +111,21 @@ func decodeRequest(ctx context.Context, r *http.Request) (any, error) {
 		thingKey = things.ExtractThingKey(r)
 	}
 
-	payload, err := ioutil.ReadAll(r.Body)
+	payload, err := readPayload(r)
 	if err != nil {
-		return nil, apiutil.ErrMalformedEntity
+		return nil, err
 	}
-	defer r.Body.Close()
+
+	subtopic := extractSubtopicFromPath(r.URL.Path, messagesBasePath)
+	subtopic, err = messaging.NormalizeSubtopic(subtopic)
+	if err != nil {
+		return nil, err
+	}
 
 	req := publishReq{
 		msg: protomfx.Message{
 			Protocol: protocol,
-			Subtopic: subject,
+			Subtopic: subtopic,
 			Payload:  payload,
 			Created:  time.Now().UnixNano(),
 		},
@@ -101,7 +135,97 @@ func decodeRequest(ctx context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
+func decodeSendCommandToThing(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get(headerCT), ctJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	payload, err := readPayload(r)
+	if err != nil {
+		return nil, err
+	}
+
+	id := bone.GetValue(r, apiutil.IDKey)
+
+	subtopic := extractSubtopicFromPath(r.URL.Path, fmt.Sprintf(thingCommandsBasePath, id))
+	subtopic, err = messaging.NormalizeSubtopic(subtopic)
+	if err != nil {
+		return nil, err
+	}
+
+	req := thingCommandReq{
+		cmdReq{
+			token: apiutil.ExtractBearerToken(r),
+			id:    id,
+			msg: protomfx.Message{
+				Subtopic: subtopic,
+				Protocol: protocol,
+				Payload:  payload,
+				Created:  time.Now().UnixNano(),
+			},
+		},
+	}
+
+	return req, nil
+}
+
+func decodeSendCommandByGroup(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get(headerCT), ctJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	payload, err := readPayload(r)
+	if err != nil {
+		return nil, err
+	}
+
+	id := bone.GetValue(r, apiutil.IDKey)
+
+	subtopic := extractSubtopicFromPath(r.URL.Path, fmt.Sprintf(groupCommandsBasePath, id))
+	subtopic, err = messaging.NormalizeSubtopic(subtopic)
+	if err != nil {
+		return nil, err
+	}
+
+	req := groupCommandReq{
+		cmdReq{
+			token: apiutil.ExtractBearerToken(r),
+			id:    id,
+			msg: protomfx.Message{
+				Subtopic: subtopic,
+				Protocol: protocol,
+				Payload:  payload,
+				Created:  time.Now().UnixNano(),
+			},
+		},
+	}
+
+	return req, nil
+}
+
+func readPayload(r *http.Request) ([]byte, error) {
+	payload, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, apiutil.ErrMalformedEntity
+	}
+	defer r.Body.Close()
+
+	return payload, nil
+}
+
+func extractSubtopicFromPath(fullPath string, basePath string) string {
+	if fullPath == basePath {
+		return ""
+	}
+
+	if strings.HasPrefix(fullPath, basePath+"/") {
+		return strings.TrimPrefix(fullPath, basePath+"/")
+	}
+
+	return ""
+}
+
+func encodeResponse(_ context.Context, w http.ResponseWriter, _ any) error {
 	w.WriteHeader(http.StatusAccepted)
 	return nil
 }

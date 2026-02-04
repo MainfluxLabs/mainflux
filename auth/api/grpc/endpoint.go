@@ -78,19 +78,19 @@ func authorizeEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func getOwnerIDByOrgIDEndpoint(svc auth.Service) endpoint.Endpoint {
+func getOwnerIDByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(ownerIDByOrgIDReq)
+		req := request.(ownerIDByOrgReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		ownerID, err := svc.GetOwnerIDByOrgID(ctx, req.orgID)
+		ownerID, err := svc.GetOwnerIDByOrg(ctx, req.orgID)
 		if err != nil {
-			return ownerIDByOrgIDReq{}, err
+			return ownerIDByOrgReq{}, err
 		}
 
-		return ownerIDByOrgIDRes{ownerID: ownerID}, nil
+		return ownerIDByOrgRes{ownerID: ownerID}, nil
 	}
 }
 
@@ -138,8 +138,13 @@ func createDormantOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 			return emptyRes{}, err
 		}
 
-		_, err := svc.CreateDormantOrgInvite(ctx, req.token, req.orgID, req.inviteeRole, req.platformInviteID)
-		if err != nil {
+		orgInvite := auth.OrgInvite{
+			OrgID:        req.orgID,
+			InviteeRole:  req.inviteeRole,
+			GroupInvites: req.groupInvites,
+		}
+
+		if _, err := svc.CreateDormantOrgInvite(ctx, req.token, orgInvite, req.platformInviteID); err != nil {
 			return emptyRes{}, err
 		}
 
@@ -161,5 +166,25 @@ func activateOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		return emptyRes{}, nil
+	}
+}
+
+func viewOrgEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(viewOrgReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		org, err := svc.ViewOrg(ctx, req.token, req.id)
+		if err != nil {
+			return nil, err
+		}
+
+		return orgRes{
+			id:      org.ID,
+			ownerID: org.OwnerID,
+			name:    org.Name,
+		}, nil
 	}
 }

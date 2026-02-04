@@ -22,7 +22,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
-	rulesapi "github.com/MainfluxLabs/mainflux/rules/api/grpc"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	gocoap "github.com/plgd-dev/go-coap/v2"
@@ -42,8 +41,6 @@ const (
 	defJaegerURL         = ""
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
-	defRulesGRPCURL      = "localhost:8186"
-	defRulesGRPCTimeout  = "1s"
 
 	envPort              = "MF_COAP_ADAPTER_PORT"
 	envBrokerURL         = "MF_BROKER_URL"
@@ -53,19 +50,15 @@ const (
 	envJaegerURL         = "MF_JAEGER_URL"
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
-	envRulesGRPCURL      = "MF_RULES_GRPC_URL"
-	envRulesGRPCTimeout  = "MF_RULES_GRPC_TIMEOUT"
 )
 
 type config struct {
 	coapConfig        servers.Config
 	thingsConfig      clients.Config
-	rulesConfig       clients.Config
 	brokerURL         string
 	logLevel          string
 	jaegerURL         string
 	thingsGRPCTimeout time.Duration
-	rulesGRPCTimeout  time.Duration
 }
 
 func main() {
@@ -86,14 +79,6 @@ func main() {
 
 	tc := thingsapi.NewClient(tConn, thingsTracer, cfg.thingsGRPCTimeout)
 
-	rConn := clientsgrpc.Connect(cfg.rulesConfig, logger)
-	defer rConn.Close()
-
-	rulesTracer, rulesCloser := jaeger.Init("coap_rules", cfg.jaegerURL, logger)
-	defer rulesCloser.Close()
-
-	rc := rulesapi.NewClient(rConn, rulesTracer, cfg.rulesGRPCTimeout)
-
 	nps, err := brokers.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
@@ -101,7 +86,7 @@ func main() {
 	}
 	defer nps.Close()
 
-	svc := coap.New(tc, rc, nps, logger)
+	svc := coap.New(tc, nps)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
@@ -157,11 +142,6 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
 
-	rulesGRPCTimeout, err := time.ParseDuration(mainflux.Env(envRulesGRPCTimeout, defRulesGRPCTimeout))
-	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envRulesGRPCTimeout, err.Error())
-	}
-
 	thingsConfig := clients.Config{
 		ClientTLS:  tls,
 		CaCerts:    mainflux.Env(envCACerts, defCACerts),
@@ -169,22 +149,13 @@ func loadConfig() config {
 		ClientName: clients.Things,
 	}
 
-	rulesConfig := clients.Config{
-		ClientTLS:  tls,
-		CaCerts:    mainflux.Env(envCACerts, defCACerts),
-		URL:        mainflux.Env(envRulesGRPCURL, defRulesGRPCURL),
-		ClientName: clients.Rules,
-	}
-
 	return config{
 		coapConfig:        coapConfig,
 		thingsConfig:      thingsConfig,
-		rulesConfig:       rulesConfig,
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
-		rulesGRPCTimeout:  rulesGRPCTimeout,
 	}
 }
 

@@ -28,7 +28,7 @@ var (
 	group   = things.Group{Name: "test-group", Description: "test-group-desc"}
 )
 
-func TestGetPubConfByKey(t *testing.T) {
+func TestGetPubConfigByKey(t *testing.T) {
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grID := grs[0].ID
@@ -64,7 +64,7 @@ func TestGetPubConfByKey(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, err := cli.GetPubConfByKey(ctx, &protomfx.ThingKey{Value: tc.key, Type: things.KeyTypeInternal})
+		_, err := cli.GetPubConfigByKey(ctx, &protomfx.ThingKey{Value: tc.key, Type: things.KeyTypeInternal})
 		e, ok := status.FromError(err)
 		assert.True(t, ok, "OK expected to be true")
 		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", desc, tc.code, e.Code()))

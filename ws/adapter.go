@@ -9,9 +9,9 @@ package ws
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 )
@@ -46,36 +46,33 @@ var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
 	things protomfx.ThingsServiceClient
-	rules  protomfx.RulesServiceClient
 	pubsub messaging.PubSub
-	logger logger.Logger
 }
 
 // New instantiates the WS adapter implementation
-func New(things protomfx.ThingsServiceClient, rules protomfx.RulesServiceClient, pubsub messaging.PubSub, logger logger.Logger) Service {
+func New(things protomfx.ThingsServiceClient, pubsub messaging.PubSub) Service {
 	return &adapterService{
 		things: things,
-		rules:  rules,
 		pubsub: pubsub,
-		logger: logger,
 	}
 }
 
-func (svc *adapterService) Publish(ctx context.Context, key things.ThingKey, message protomfx.Message) error {
+func (svc *adapterService) Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error {
 	pc, err := svc.authorize(ctx, key)
 	if err != nil {
 		return ErrUnauthorizedAccess
 	}
 
-	if len(message.Payload) == 0 {
+	if len(msg.Payload) == 0 {
 		return messaging.ErrPublishMessage
 	}
 
-	if err := messaging.FormatMessage(pc, &message); err != nil {
+	if err := messaging.FormatMessage(pc, &msg); err != nil {
 		return err
 	}
 
-	if _, err = svc.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &message}); err != nil {
+	msg.Subject = nats.GetMessagesSubject(msg.Publisher, msg.Subtopic)
+	if err := svc.pubsub.Publish(msg); err != nil {
 		return err
 	}
 
@@ -110,12 +107,12 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, key things.ThingKey,
 	return svc.pubsub.Unsubscribe(pc.PublisherID, subtopic)
 }
 
-func (svc *adapterService) authorize(ctx context.Context, key things.ThingKey) (*protomfx.PubConfByKeyRes, error) {
-	ar := &protomfx.ThingKey{
+func (svc *adapterService) authorize(ctx context.Context, key things.ThingKey) (*protomfx.PubConfigByKeyRes, error) {
+	tk := &protomfx.ThingKey{
 		Value: key.Value,
 		Type:  key.Type,
 	}
-	pc, err := svc.things.GetPubConfByKey(ctx, ar)
+	pc, err := svc.things.GetPubConfigByKey(ctx, tk)
 	if err != nil {
 		return nil, errors.Wrap(errors.ErrAuthorization, err)
 	}

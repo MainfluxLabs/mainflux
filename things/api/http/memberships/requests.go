@@ -92,38 +92,3 @@ func (req removeGroupMembershipsReq) validate() error {
 
 	return nil
 }
-
-type backupByGroupReq struct {
-	token string
-	id    string
-}
-
-func (req backupByGroupReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-	if req.id == "" {
-		return apiutil.ErrMissingGroupID
-	}
-	return nil
-}
-
-type restoreByGroupReq struct {
-	id               string
-	token            string
-	GroupMemberships []ViewGroupMembershipRes
-}
-
-func (req restoreByGroupReq) validate() error {
-	if req.id == "" {
-		return apiutil.ErrMissingGroupID
-	}
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-	if len(req.GroupMemberships) == 0 {
-		return apiutil.ErrEmptyList
-	}
-
-	return nil
-}

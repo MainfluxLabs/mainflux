@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/mqtt"
-	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -33,13 +32,13 @@ func MetricsMiddleware(svc mqtt.Service, counter metrics.Counter, latency metric
 	}
 }
 
-func (ms *metricsMiddleware) ListSubscriptions(ctx context.Context, groupID, token string, key things.ThingKey, pm mqtt.PageMetadata) (mqtt.Page, error) {
+func (ms *metricsMiddleware) ListSubscriptions(ctx context.Context, groupID, token string, pm mqtt.PageMetadata) (mqtt.Page, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_subscriptions").Add(1)
 		ms.latency.With("method", "list_subscriptions").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListSubscriptions(ctx, groupID, token, key, pm)
+	return ms.svc.ListSubscriptions(ctx, groupID, token, pm)
 }
 
 func (ms *metricsMiddleware) CreateSubscription(ctx context.Context, sub mqtt.Subscription) error {
@@ -58,22 +57,4 @@ func (ms *metricsMiddleware) RemoveSubscription(ctx context.Context, sub mqtt.Su
 	}(time.Now())
 
 	return ms.svc.RemoveSubscription(ctx, sub)
-}
-
-func (ms *metricsMiddleware) HasClientID(ctx context.Context, clientID string) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "has_client_id").Add(1)
-		ms.latency.With("method", "has_client_id").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.HasClientID(ctx, clientID)
-}
-
-func (ms *metricsMiddleware) UpdateStatus(ctx context.Context, sub mqtt.Subscription) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "update_status").Add(1)
-		ms.latency.With("method", "update_status").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.UpdateStatus(ctx, sub)
 }

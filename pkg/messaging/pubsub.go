@@ -17,7 +17,6 @@ import (
 
 const (
 	SenMLContentType = "application/senml+json"
-	CBORContentType  = "application/senml+cbor"
 	JSONContentType  = "application/json"
 )
 
@@ -93,20 +92,8 @@ type PubSub interface {
 	Subscriber
 }
 
-func CreateSubject(topic string) (string, error) {
-	// Handle cases where full path might be passed (backward compatibility)
-	if strings.HasPrefix(topic, "/messages/") {
-		topic = strings.TrimPrefix(topic, "/messages/")
-	} else if topic == "/messages" {
-		return "", nil
-	}
-
+func NormalizeSubtopic(topic string) (string, error) {
 	if topic == "" {
-		return topic, nil
-	}
-
-	// Handle wildcards
-	if topic == ">" || strings.Contains(topic, "*") {
 		return topic, nil
 	}
 
@@ -138,7 +125,7 @@ func CreateSubject(topic string) (string, error) {
 	return strings.Join(filteredElems, "."), nil
 }
 
-func FormatMessage(pc *protomfx.PubConfByKeyRes, msg *protomfx.Message) error {
+func FormatMessage(pc *protomfx.PubConfigByKeyRes, msg *protomfx.Message) error {
 	msg.Publisher = pc.PublisherID
 	msg.Created = time.Now().UnixNano()
 

@@ -255,12 +255,24 @@ services:
       MF_USERS_GRPC_URL: ${MF_USERS_GRPC_URL}
       MF_USERS_CA_CERTS: ${MF_USERS_CA_CERTS}
       MF_USERS_CLIENT_TLS: ${MF_USERS_CLIENT_TLS}
+      MF_EMAIL_HOST: ${MF_EMAIL_HOST}
+      MF_EMAIL_PORT: ${MF_EMAIL_PORT}
+      MF_EMAIL_USERNAME: ${MF_EMAIL_USERNAME}
+      MF_EMAIL_PASSWORD: ${MF_EMAIL_PASSWORD}
+      MF_EMAIL_FROM_ADDRESS: ${MF_EMAIL_FROM_ADDRESS}
+      MF_EMAIL_FROM_NAME: ${MF_EMAIL_FROM_NAME}
+      MF_EMAIL_BASE_TEMPLATE: ${MF_EMAIL_BASE_TEMPLATE}
+      MF_HOST: ${MF_HOST}
+      MF_THINGS_EVENT_CONSUMER: ${MF_THINGS_EVENT_CONSUMER}
     ports:
       - ${MF_THINGS_HTTP_PORT}:${MF_THINGS_HTTP_PORT}
       - ${MF_THINGS_AUTH_HTTP_PORT}:${MF_THINGS_AUTH_HTTP_PORT}
       - ${MF_THINGS_AUTH_GRPC_PORT}:${MF_THINGS_AUTH_GRPC_PORT}
     networks:
       - mainfluxlabs-base-net
+    volumes:
+      - ./templates/base.tmpl:/base.tmpl
+      - ./templates/things/group_membership.tmpl:/group_membership.tmpl
 
   jaeger:
     image: jaegertracing/all-in-one:1.20
@@ -304,7 +316,6 @@ services:
     depends_on:
       - vernemq
       - things
-      - rules
       - broker
       - mqtt-db
     restart: on-failure
@@ -313,7 +324,6 @@ services:
       MF_MQTT_ADAPTER_MQTT_PORT: ${MF_MQTT_ADAPTER_MQTT_PORT}
       MF_MQTT_ADAPTER_WS_PORT: ${MF_MQTT_ADAPTER_WS_PORT}
       MF_MQTT_ADAPTER_HTTP_PORT: ${MF_MQTT_ADAPTER_HTTP_PORT}
-      MF_MQTT_ADAPTER_ES_URL: es-redis:${MF_REDIS_TCP_PORT}
       MF_MQTT_ADAPTER_FORWARDER: ${MF_MQTT_ADAPTER_FORWARDER}
       MF_BROKER_URL: ${MF_BROKER_URL}
       MF_MQTT_ADAPTER_MQTT_TARGET_HOST: vernemq
@@ -324,8 +334,6 @@ services:
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
-      MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
-      MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
       MF_AUTH_CACHE_URL: auth-redis:${MF_REDIS_TCP_PORT}
       MF_MQTT_ADAPTER_DB_PORT: ${MF_MQTT_ADAPTER_DB_PORT}
       MF_MQTT_ADAPTER_DB_USER: ${MF_MQTT_ADAPTER_DB_USER}
@@ -337,7 +345,6 @@ services:
       MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
     ports:
       - ${MF_MQTT_ADAPTER_HTTP_PORT}:${MF_MQTT_ADAPTER_HTTP_PORT}
-
     networks:
       - mainfluxlabs-base-net
 
@@ -346,16 +353,15 @@ services:
     container_name: mainfluxlabs-http
     depends_on:
       - things
-      - rules
+      - broker
     restart: on-failure
     environment:
       MF_HTTP_ADAPTER_LOG_LEVEL: debug
       MF_HTTP_ADAPTER_PORT: ${MF_HTTP_ADAPTER_PORT}
+      MF_BROKER_URL: ${MF_NATS_URL}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
-      MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
-      MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
     ports:
       - ${MF_HTTP_ADAPTER_PORT}:${MF_HTTP_ADAPTER_PORT}
     networks:
@@ -375,7 +381,6 @@ services:
     container_name: mainfluxlabs-coap
     depends_on:
       - things
-      - rules
       - broker
     restart: on-failure
     environment:
@@ -385,8 +390,6 @@ services:
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
-      MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
-      MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
     ports:
       - ${MF_COAP_ADAPTER_PORT}:${MF_COAP_ADAPTER_PORT}/udp
       - ${MF_COAP_ADAPTER_PORT}:${MF_COAP_ADAPTER_PORT}/tcp
@@ -398,7 +401,6 @@ services:
     container_name: mainfluxlabs-ws
     depends_on:
       - things
-      - rules
       - broker
     restart: on-failure
     environment:
@@ -408,8 +410,6 @@ services:
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
-      MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
-      MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
     ports:
       - ${MF_WS_ADAPTER_PORT}:${MF_WS_ADAPTER_PORT}
     networks:
@@ -547,6 +547,7 @@ services:
     depends_on:
       - things
       - webhooks-db
+      - broker
     restart: on-failure
     environment:
       MF_WEBHOOKS_LOG_LEVEL: ${MF_WEBHOOKS_LOG_LEVEL}
@@ -611,6 +612,8 @@ services:
       MF_SMTP_NOTIFIER_SERVER_KEY: ${MF_SMTP_NOTIFIER_SERVER_KEY}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_SMTP_NOTIFIER_ES_URL: ${MF_SMTP_NOTIFIER_ES_URL}
+      MF_SMTP_NOTIFIER_EVENT_CONSUMER: ${MF_SMTP_NOTIFIER_EVENT_CONSUMER}
     ports:
       - ${MF_SMTP_NOTIFIER_PORT}:${MF_SMTP_NOTIFIER_PORT}
     networks:
@@ -637,8 +640,8 @@ services:
     container_name: mainfluxlabs-downlinks
     depends_on:
       - things
-      - rules
       - downlinks-db
+      - broker
     restart: on-failure
     environment:
       MF_DOWNLINKS_LOG_LEVEL: ${MF_DOWNLINKS_LOG_LEVEL}
@@ -653,10 +656,9 @@ services:
       MF_DOWNLINKS_SERVER_KEY: ${MF_DOWNLINKS_SERVER_KEY}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
-      MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
-      MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
       MF_DOWNLINKS_ES_URL: ${MF_DOWNLINKS_ES_URL}
       MF_DOWNLINKS_EVENT_CONSUMER: ${MF_DOWNLINKS_EVENT_CONSUMER}
+      MF_BROKER_URL: ${MF_NATS_URL}
     ports:
       - ${MF_DOWNLINKS_HTTP_PORT}:${MF_DOWNLINKS_HTTP_PORT}
     networks:
@@ -680,8 +682,8 @@ services:
     container_name: mainfluxlabs-modbus
     depends_on:
       - things
-      - rules
       - modbus-db
+      - broker
     restart: on-failure
     environment:
       MF_MODBUS_LOG_LEVEL: debug
@@ -696,10 +698,9 @@ services:
       MF_MODBUS_SERVER_KEY: ${MF_MODBUS_SERVER_KEY}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
-      MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
-      MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
       MF_MODBUS_ES_URL: ${MF_MODBUS_ES_URL}
       MF_MODBUS_EVENT_CONSUMER: ${MF_MODBUS_EVENT_CONSUMER}
+      MF_BROKER_URL: ${MF_NATS_URL}
     ports:
       - ${MF_MODBUS_HTTP_PORT}:${MF_MODBUS_HTTP_PORT}
     networks:
@@ -711,7 +712,7 @@ services:
     restart: on-failure
     depends_on:
       - things
-      - rules
+      - broker
     environment:
       MF_CONVERTERS_LOG_LEVEL: ${MF_CONVERTERS_LOG_LEVEL}
       MF_CONVERTERS_CLIENT_TLS: ${MF_CONVERTERS_CLIENT_TLS}
@@ -720,8 +721,7 @@ services:
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
-      MF_RULES_GRPC_URL: ${MF_RULES_GRPC_URL}
-      MF_RULES_GRPC_TIMEOUT: ${MF_RULES_GRPC_TIMEOUT}
+      MF_BROKER_URL: ${MF_NATS_URL}
     ports:
       - ${MF_CONVERTERS_PORT}:${MF_CONVERTERS_PORT}
     networks:
@@ -761,6 +761,8 @@ services:
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_ALARMS_ES_URL: ${MF_ALARMS_ES_URL}
+      MF_ALARMS_EVENT_CONSUMER: ${MF_ALARMS_EVENT_CONSUMER}
     ports:
       - ${MF_ALARMS_HTTP_PORT}:${MF_ALARMS_HTTP_PORT}
     networks:
@@ -795,15 +797,15 @@ services:
       MF_RULES_DB_PASS: ${MF_RULES_DB_PASS}
       MF_RULES_DB: ${MF_RULES_DB}
       MF_RULES_HTTP_PORT: ${MF_RULES_HTTP_PORT}
-      MF_RULES_GRPC_PORT: ${MF_RULES_GRPC_PORT}
       MF_RULES_SERVER_CERT: ${MF_RULES_SERVER_CERT}
       MF_RULES_SERVER_KEY: ${MF_RULES_SERVER_KEY}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_RULES_ES_URL: ${MF_RULES_ES_URL}
+      MF_RULES_EVENT_CONSUMER: ${MF_RULES_EVENT_CONSUMER}
     ports:
       - ${MF_RULES_HTTP_PORT}:${MF_RULES_HTTP_PORT}
-      - ${MF_RULES_GRPC_PORT}:${MF_RULES_GRPC_PORT}
     networks:
       - mainfluxlabs-base-net
 
@@ -855,11 +857,11 @@ services:
       MF_VAULT_CA_NAME: ${MF_VAULT_CA_NAME}
       MF_VAULT_CA_ROLE_NAME: ${MF_VAULT_CA_ROLE_NAME}
       MF_VAULT_PKI_PATH: ${MF_VAULT_PKI_PATH}
-      MF_THINGS_URL: ${MF_THINGS_URL}
-      MF_SDK_THINGS_PREFIX: ${MF_SDK_THINGS_PREFIX}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
       MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
+      MF_THINGS_GRPC_URL: ${MF_THINGS_GRPC_URL}
+      MF_THINGS_GRPC_TIMEOUT: ${MF_THINGS_GRPC_TIMEOUT}
       MF_CERTS_VAULT_HOST: ${MF_CERTS_VAULT_HOST}
     volumes:
       - ./ssl/certs/ca.key:/etc/ssl/certs/ca.key

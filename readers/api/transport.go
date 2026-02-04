@@ -41,6 +41,7 @@ const (
 	aggTypeKey             = "agg_type"
 	aggFieldKey            = "agg_field"
 	publisherKey           = "publisher"
+	publisherIDKey         = "publisherID"
 	timeFormatKey          = "time_format"
 	jsonFormat             = "json"
 	csvFormat              = "csv"
@@ -68,6 +69,13 @@ func MakeHandler(svc readers.Service, tracer opentracing.Tracer, svcName string,
 	))
 
 	mux.Delete("/json", kithttp.NewServer(
+		kitot.TraceServer(tracer, "delete_all_json_messages")(deleteAllJSONMessagesEndpoint(svc)),
+		decodeDeleteAllJSONMessages,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Delete("/json/:publisherID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "delete_json_messages")(deleteJSONMessagesEndpoint(svc)),
 		decodeDeleteJSONMessages,
 		encodeResponse,
@@ -75,6 +83,13 @@ func MakeHandler(svc readers.Service, tracer opentracing.Tracer, svcName string,
 	))
 
 	mux.Delete("/senml", kithttp.NewServer(
+		kitot.TraceServer(tracer, "delete_all_senml_messages")(deleteAllSenMLMessagesEndpoint(svc)),
+		decodeDeleteAllSenMLMessages,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Delete("/senml/:publisherID", kithttp.NewServer(
 		kitot.TraceServer(tracer, "delete_senml_messages")(deleteSenMLMessagesEndpoint(svc)),
 		decodeDeleteSenMLMessages,
 		encodeResponse,
@@ -185,7 +200,43 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (any, error) {
 	}, nil
 }
 
+func decodeDeleteAllJSONMessages(_ context.Context, r *http.Request) (any, error) {
+	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
+	if err != nil {
+		return readers.JSONPageMetadata{}, err
+	}
+
+	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
+	if err != nil {
+		return readers.JSONPageMetadata{}, err
+	}
+
+	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	to, err := apiutil.ReadIntQuery(r, toKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	req := deleteAllJSONMessagesReq{
+		token: apiutil.ExtractBearerToken(r),
+		pageMeta: readers.JSONPageMetadata{
+			Subtopic: subtopic,
+			Protocol: protocol,
+			From:     from,
+			To:       to,
+		},
+	}
+
+	return req, nil
+}
+
 func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (any, error) {
+	publisherID := bone.GetValue(r, publisherIDKey)
+
 	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
 	if err != nil {
 		return readers.JSONPageMetadata{}, err
@@ -207,13 +258,35 @@ func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	req := deleteJSONMessagesReq{
-		token:    apiutil.ExtractBearerToken(r),
-		thingKey: things.ExtractThingKey(r),
+		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.JSONPageMetadata{
-			Subtopic: subtopic,
-			Protocol: protocol,
-			From:     from,
-			To:       to,
+			Publisher: publisherID,
+			Subtopic:  subtopic,
+			Protocol:  protocol,
+			From:      from,
+			To:        to,
+		},
+	}
+
+	return req, nil
+}
+
+func decodeDeleteAllSenMLMessages(_ context.Context, r *http.Request) (any, error) {
+	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	to, err := apiutil.ReadIntQuery(r, toKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	req := deleteAllSenMLMessagesReq{
+		token: apiutil.ExtractBearerToken(r),
+		pageMeta: readers.SenMLPageMetadata{
+			From: from,
+			To:   to,
 		},
 	}
 
@@ -221,6 +294,18 @@ func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (any, error) {
+	publisher := bone.GetValue(r, publisherIDKey)
+
+	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
+	if err != nil {
+		return readers.JSONPageMetadata{}, err
+	}
+
+	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
+	if err != nil {
+		return readers.JSONPageMetadata{}, err
+	}
+
 	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
 	if err != nil {
 		return nil, err
@@ -232,11 +317,13 @@ func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (any, error) 
 	}
 
 	req := deleteSenMLMessagesReq{
-		token:    apiutil.ExtractBearerToken(r),
-		thingKey: things.ExtractThingKey(r),
+		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.SenMLPageMetadata{
-			From: from,
-			To:   to,
+			Publisher: publisher,
+			Subtopic:  subtopic,
+			Protocol:  protocol,
+			From:      from,
+			To:        to,
 		},
 	}
 
@@ -416,7 +503,7 @@ func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
 		return readers.JSONPageMetadata{}, err
 	}
 
-	af, err := apiutil.ReadStringQuery(r, aggFieldKey, "")
+	af, err := apiutil.ReadStringArrayQuery(r, aggFieldKey)
 	if err != nil {
 		return readers.JSONPageMetadata{}, err
 	}
@@ -434,7 +521,7 @@ func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
 		AggInterval: ai,
 		AggValue:    av,
 		AggType:     at,
-		AggField:    af,
+		AggFields:   af,
 		Dir:         d,
 	}
 
@@ -507,7 +594,7 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 		return readers.SenMLPageMetadata{}, err
 	}
 
-	af, err := apiutil.ReadStringQuery(r, aggFieldKey, "")
+	af, err := apiutil.ReadStringArrayQuery(r, aggFieldKey)
 	if err != nil {
 		return readers.SenMLPageMetadata{}, err
 	}
@@ -531,7 +618,7 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 		AggInterval: ai,
 		AggValue:    av,
 		AggType:     at,
-		AggField:    af,
+		AggFields:   af,
 		Dir:         d,
 	}
 

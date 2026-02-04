@@ -74,7 +74,7 @@ paths:
         '422':
           description: Database can't process request.
         '500':
-          $ref: "#/components/responses/ServiceError"        
+          $ref: "#/components/responses/ServiceError"
 
   /alarms/{alarmId}:
     get:
@@ -177,6 +177,14 @@ components:
       in: path
       required: true
       description: Group identifier for which alarms are created.
+      schema:
+        type: string
+        format: uuid
+    OrgId:
+      name: orgId
+      in: path
+      required: true  
+      description: Org identifier for which alarms are created.
       schema:
         type: string
         format: uuid

@@ -8,8 +8,8 @@ package http
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 )
@@ -18,37 +18,69 @@ import (
 type Service interface {
 	// Publish Message
 	Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error
+	// SendCommandToThing publishes a command message to the specified thing.
+	SendCommandToThing(ctx context.Context, token, thingID string, msg protomfx.Message) error
+	// SendCommandToGroup publishes a command message to things that belong to a specified group.
+	SendCommandToGroup(ctx context.Context, token, groupID string, msg protomfx.Message) error
 }
 
 var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
-	things protomfx.ThingsServiceClient
-	rules  protomfx.RulesServiceClient
-	logger logger.Logger
+	publisher messaging.Publisher
+	things    protomfx.ThingsServiceClient
 }
 
 // New instantiates the HTTP adapter implementation.
-func New(things protomfx.ThingsServiceClient, rules protomfx.RulesServiceClient, logger logger.Logger) Service {
+func New(publisher messaging.Publisher, things protomfx.ThingsServiceClient) Service {
 	return &adapterService{
-		things: things,
-		rules:  rules,
-		logger: logger,
+		publisher: publisher,
+		things:    things,
 	}
 }
 
-func (as *adapterService) Publish(ctx context.Context, key things.ThingKey, message protomfx.Message) error {
-	cr := &protomfx.ThingKey{Value: key.Value, Type: key.Type}
-	pc, err := as.things.GetPubConfByKey(ctx, cr)
+func (as *adapterService) Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error {
+	tk := &protomfx.ThingKey{
+		Value: key.Value,
+		Type:  key.Type,
+	}
+	pc, err := as.things.GetPubConfigByKey(ctx, tk)
 	if err != nil {
 		return err
 	}
 
-	if err := messaging.FormatMessage(pc, &message); err != nil {
+	if err := messaging.FormatMessage(pc, &msg); err != nil {
 		return err
 	}
 
-	if _, err = as.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &message}); err != nil {
+	msg.Subject = nats.GetMessagesSubject(msg.Publisher, msg.Subtopic)
+	if err := as.publisher.Publish(msg); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (as *adapterService) SendCommandToThing(ctx context.Context, token, thingID string, message protomfx.Message) error {
+	if _, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
+		return err
+	}
+
+	message.Subject = nats.GetThingCommandsSubject(thingID, message.Subtopic)
+	if err := as.publisher.Publish(message); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (as *adapterService) SendCommandToGroup(ctx context.Context, token, groupID string, message protomfx.Message) error {
+	if _, err := as.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Editor}); err != nil {
+		return err
+	}
+
+	message.Subject = nats.GetGroupCommandsSubject(groupID, message.Subtopic)
+	if err := as.publisher.Publish(message); err != nil {
 		return err
 	}
 

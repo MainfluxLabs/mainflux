@@ -16,7 +16,9 @@ const (
 	retrieveAlarmsByGroups = "retrieve_alarms_by_groups"
 	retrieveAlarmByID      = "retrieve_alarm_by_id"
 	removeAlarms           = "remove_alarms"
-	backupAlarmsByThing    = "backup_alarms_by_thing"
+	removeAlarmsByThing    = "remove_alarms_by_thing"
+	removeAlarmsByGroup    = "remove_alarms_by_group"
+	exportAlarmsByThing    = "export_alarms_by_thing"
 )
 
 var (
@@ -85,10 +87,26 @@ func (arm alarmRepositoryMiddleware) Remove(ctx context.Context, ids ...string) 
 	return arm.repo.Remove(ctx, ids...)
 }
 
-func (arm alarmRepositoryMiddleware) BackupByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
-	span := dbutil.CreateSpan(ctx, arm.tracer, backupAlarmsByThing)
+func (arm alarmRepositoryMiddleware) RemoveByThing(ctx context.Context, thingID string) error {
+	span := dbutil.CreateSpan(ctx, arm.tracer, removeAlarmsByThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return arm.repo.BackupByThing(ctx, thingID, pm)
+	return arm.repo.RemoveByThing(ctx, thingID)
+}
+
+func (arm alarmRepositoryMiddleware) RemoveByGroup(ctx context.Context, groupID string) error {
+	span := dbutil.CreateSpan(ctx, arm.tracer, removeAlarmsByGroup)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return arm.repo.RemoveByGroup(ctx, groupID)
+}
+
+func (arm alarmRepositoryMiddleware) ExportByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+	span := dbutil.CreateSpan(ctx, arm.tracer, exportAlarmsByThing)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return arm.repo.ExportByThing(ctx, thingID, pm)
 }

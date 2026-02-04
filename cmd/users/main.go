@@ -27,6 +27,7 @@ import (
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
+	"github.com/MainfluxLabs/mainflux/users/api"
 	httpapi "github.com/MainfluxLabs/mainflux/users/api/http"
 	"github.com/MainfluxLabs/mainflux/users/bcrypt"
 	"github.com/MainfluxLabs/mainflux/users/emailer"
@@ -378,8 +379,8 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceC
 	idProvider := uuid.New()
 
 	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, c.inviteDuration, c.emailVerifyEnabled, c.selfRegisterEnabled, hasher, ac, svcEmailer, idProvider, c.googleOauthConfig, c.githubOauthConfig, c.urls)
-	svc = httpapi.LoggingMiddleware(svc, logger)
-	svc = httpapi.MetricsMiddleware(
+	svc = api.LoggingMiddleware(svc, logger)
+	svc = api.MetricsMiddleware(
 		svc,
 		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: "users",

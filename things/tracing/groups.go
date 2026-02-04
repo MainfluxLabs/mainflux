@@ -13,9 +13,9 @@ const (
 	saveGroup                       = "save_group"
 	updateGroup                     = "update_group"
 	removeGroup                     = "remove_group"
+	removeGroupsByOrg               = "remove_groups_by_org"
 	retrieveAllGroups               = "retrieve_all_groups"
 	backupAllGroups                 = "backup_all_groups"
-	backupGroupsByOrg               = "backup_groups_by_org"
 	retrieveGroupByID               = "retrieve_group_by_id"
 	retrieveGroupByIDs              = "retrieve_group_by_ids"
 	retrieveGroupIDsByOrg           = "retrieve_group_ids_by_org"
@@ -65,20 +65,20 @@ func (grm groupRepositoryMiddleware) Remove(ctx context.Context, groupIDs ...str
 	return grm.repo.Remove(ctx, groupIDs...)
 }
 
+func (grm groupRepositoryMiddleware) RemoveByOrg(ctx context.Context, orgID string) error {
+	span := dbutil.CreateSpan(ctx, grm.tracer, removeGroupsByOrg)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.RemoveByOrg(ctx, orgID)
+}
+
 func (grm groupRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.Group, error) {
 	span := dbutil.CreateSpan(ctx, grm.tracer, backupAllGroups)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return grm.repo.BackupAll(ctx)
-}
-
-func (grm groupRepositoryMiddleware) BackupByOrg(ctx context.Context, orgID string) ([]things.Group, error) {
-	span := dbutil.CreateSpan(ctx, grm.tracer, backupGroupsByOrg)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return grm.repo.BackupByOrg(ctx, orgID)
 }
 
 func (grm groupRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.GroupPage, error) {

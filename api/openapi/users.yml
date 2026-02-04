@@ -556,6 +556,11 @@ components:
           type: string
           description: The invited user's role in the Organization. Only required if "org_id" is supplied.
           enum: [admin, editor, viewer]
+        group_invites:
+          type: array
+          description: Optional list of Groups and roles within those groups. If present, upon accepting the invite, the recipient is also assigned as a member of the groups.
+          items:
+            $ref: "#/components/schemas/GroupInvite"
       required:
         - redirect_path
         - email
@@ -682,6 +687,17 @@ components:
         error:
           type: string
           description: Error message
+    GroupInvite:
+      type: object
+      properties:
+        group_id:
+          type: string
+          format: uuid
+          description: The ID of the group.
+        member_role:
+          type: string
+          description: The member's proposed role in the group.
+          example: "admin"
 
   parameters:
     Referer:

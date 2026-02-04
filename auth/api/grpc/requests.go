@@ -65,11 +65,11 @@ func (req authReq) validate() error {
 	return nil
 }
 
-type ownerIDByOrgIDReq struct {
+type ownerIDByOrgReq struct {
 	orgID string
 }
 
-func (req ownerIDByOrgIDReq) validate() error {
+func (req ownerIDByOrgReq) validate() error {
 	if req.orgID == "" {
 		return apiutil.ErrMissingOrgID
 	}
@@ -110,6 +110,7 @@ type createDormantOrgInviteReq struct {
 	token            string
 	orgID            string
 	inviteeRole      string
+	groupInvites     []auth.GroupInvite
 	platformInviteID string
 }
 
@@ -150,6 +151,23 @@ func (req activateOrgInviteReq) validate() error {
 
 	if req.redirectPath == "" {
 		return apiutil.ErrMissingRedirectPath
+	}
+
+	return nil
+}
+
+type viewOrgReq struct {
+	token string
+	id    string
+}
+
+func (req viewOrgReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.id == "" {
+		return apiutil.ErrMissingOrgID
 	}
 
 	return nil

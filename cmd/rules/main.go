@@ -9,22 +9,25 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
-	serversgrpc "github.com/MainfluxLabs/mainflux/pkg/servers/grpc"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/rules"
 	"github.com/MainfluxLabs/mainflux/rules/api"
 	httpapi "github.com/MainfluxLabs/mainflux/rules/api/http"
+	"github.com/MainfluxLabs/mainflux/rules/events"
 	"github.com/MainfluxLabs/mainflux/rules/postgres"
 	"github.com/MainfluxLabs/mainflux/rules/tracing"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
@@ -38,6 +41,7 @@ import (
 const (
 	svcName      = "rules"
 	stopWaitTime = 5 * time.Second
+	esGroupName  = svcName
 
 	defBrokerURL         = "nats://localhost:4222"
 	defLogLevel          = "error"
@@ -45,7 +49,7 @@ const (
 	defDBPort            = "5432"
 	defDBUser            = "mainflux"
 	defDBPass            = "mainflux"
-	defDB                = "rules"
+	defDB                = svcName
 	defDBSSLMode         = "disable"
 	defDBSSLCert         = ""
 	defDBSSLKey          = ""
@@ -53,12 +57,13 @@ const (
 	defClientTLS         = "false"
 	defCACerts           = ""
 	defHTTPPort          = "9027"
-	defGRPCPort          = "8186"
 	defJaegerURL         = ""
 	defServerCert        = ""
 	defServerKey         = ""
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
+	defESURL             = "redis://localhost:6379/0"
+	defESConsumerName    = svcName
 
 	envBrokerURL         = "MF_BROKER_URL"
 	envLogLevel          = "MF_RULES_LOG_LEVEL"
@@ -74,12 +79,13 @@ const (
 	envClientTLS         = "MF_RULES_CLIENT_TLS"
 	envCACerts           = "MF_RULES_CA_CERTS"
 	envHTTPPort          = "MF_RULES_HTTP_PORT"
-	envGRPCPort          = "MF_RULES_GRPC_PORT"
 	envServerCert        = "MF_RULES_SERVER_CERT"
 	envServerKey         = "MF_RULES_SERVER_KEY"
 	envJaegerURL         = "MF_JAEGER_URL"
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envESURL             = "MF_RULES_ES_URL"
+	envESConsumerName    = "MF_RULES_EVENT_CONSUMER"
 )
 
 type config struct {
@@ -87,10 +93,11 @@ type config struct {
 	logLevel          string
 	dbConfig          postgres.Config
 	httpConfig        servers.Config
-	grpcConfig        servers.Config
 	thingsConfig      clients.Config
 	jaegerURL         string
 	thingsGRPCTimeout time.Duration
+	esURL             string
+	esConsumerName    string
 }
 
 func main() {
@@ -108,9 +115,6 @@ func main() {
 	rulesHttpTracer, rulesHttpCloser := jaeger.Init("rules_http", cfg.jaegerURL, logger)
 	defer rulesHttpCloser.Close()
 
-	rulesGrpcTracer, rulesGrpcCloser := jaeger.Init("rules_grpc", cfg.jaegerURL, logger)
-	defer rulesGrpcCloser.Close()
-
 	dbTracer, dbCloser := jaeger.Init("rules_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
@@ -120,22 +124,28 @@ func main() {
 	thingsTracer, thingsCloser := jaeger.Init("rules_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	pub, err := brokers.NewPublisher(cfg.brokerURL)
+	ps, err := brokers.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
 	}
-	defer pub.Close()
+	defer ps.Close()
 
 	tc := thingsapi.NewClient(thConn, thingsTracer, cfg.thingsGRPCTimeout)
 
-	svc := newService(dbTracer, db, tc, pub, logger)
+	svc := newService(dbTracer, db, tc, ps, logger)
+
+	subjects := []string{nats.SubjectMessages, nats.SubjectMessagesWithSubtopic}
+	if err = consumers.Start(svcName, ps, svc, subjects...); err != nil {
+		logger.Error(fmt.Sprintf("Failed to create rule engine: %s", err))
+	}
 
 	g.Go(func() error {
 		return servershttp.Start(ctx, httpapi.MakeHandler(rulesHttpTracer, svc, logger), cfg.httpConfig, logger)
 	})
+
 	g.Go(func() error {
-		return serversgrpc.Start(ctx, rulesGrpcTracer, svc, cfg.grpcConfig, logger)
+		return subscribeToThingsES(ctx, svc, cfg, logger)
 	})
 
 	g.Go(func() error {
@@ -181,14 +191,6 @@ func loadConfig() config {
 		StopWaitTime: stopWaitTime,
 	}
 
-	grpcConfig := servers.Config{
-		ServerName:   svcName,
-		ServerCert:   mainflux.Env(envServerCert, defServerCert),
-		ServerKey:    mainflux.Env(envServerKey, defServerKey),
-		Port:         mainflux.Env(envGRPCPort, defGRPCPort),
-		StopWaitTime: stopWaitTime,
-	}
-
 	thingsConfig := clients.Config{
 		ClientTLS:  tls,
 		CaCerts:    mainflux.Env(envCACerts, defCACerts),
@@ -201,10 +203,11 @@ func loadConfig() config {
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:          dbConfig,
 		httpConfig:        httpConfig,
-		grpcConfig:        grpcConfig,
 		thingsConfig:      thingsConfig,
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
+		esURL:             mainflux.Env(envESURL, defESURL),
+		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 	}
 }
 
@@ -217,14 +220,31 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(dbTracer opentracing.Tracer, db *sqlx.DB, tc protomfx.ThingsServiceClient, pub messaging.Publisher, logger logger.Logger) rules.Service {
+func subscribeToThingsES(ctx context.Context, svc rules.Service, cfg config, logger logger.Logger) error {
+	subscriber, err := mfevents.NewSubscriber(cfg.esURL, mfevents.ThingsStream, esGroupName, cfg.esConsumerName, logger)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := subscriber.Close(); err != nil {
+			logger.Error(fmt.Sprintf("Failed to close subscriber: %s", err))
+		}
+	}()
+
+	handler := events.NewEventHandler(svc)
+
+	return subscriber.Subscribe(ctx, handler)
+}
+
+func newService(dbTracer opentracing.Tracer, db *sqlx.DB, tc protomfx.ThingsServiceClient, nps messaging.PubSub, logger logger.Logger) rules.Service {
 	database := dbutil.NewDatabase(db)
 
 	rulesRepo := postgres.NewRuleRepository(database)
 	rulesRepo = tracing.RuleRepositoryMiddleware(dbTracer, rulesRepo)
 
 	idProvider := uuid.New()
-	svc := rules.New(rulesRepo, tc, pub, idProvider, logger)
+	svc := rules.New(rulesRepo, tc, nps, idProvider, logger)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

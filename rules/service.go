@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -19,7 +20,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
-// Service specifies an API for managing rules.
+// Service specifies an API that must be fullfiled by the domain service
+// implementation, and all of its decorators (e.g. logging & metrics).
+// All methods that accept a token parameter use it to identify and authorize
+// the user performing the operation.
 type Service interface {
 	// CreateRules creates rules.
 	CreateRules(ctx context.Context, token, groupID string, rules ...Rule) ([]Rule, error)
@@ -42,14 +46,19 @@ type Service interface {
 	// RemoveRules removes the rules identified with the provided IDs.
 	RemoveRules(ctx context.Context, token string, ids ...string) error
 
+	// RemoveRulesByGroup removes the rules identified with the provided IDs.
+	RemoveRulesByGroup(ctx context.Context, groupID string) error
+
 	// AssignRules assigns rules to a specific thing.
 	AssignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error
 
 	// UnassignRules removes rule assignments from a specific thing.
 	UnassignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error
 
-	// Publish publishes messages on a topic related to a certain rule action
-	Publish(ctx context.Context, message protomfx.Message) error
+	// UnassignRulesByThing removes all rule assignments from a specific thing.
+	UnassignRulesByThing(ctx context.Context, thingID string) error
+
+	consumers.Consumer
 }
 
 const (
@@ -60,10 +69,6 @@ const (
 	OperatorAND = "AND"
 	OperatorOR  = "OR"
 
-	// subjectMessages represents subject used to publish all incoming messages.
-	subjectMessages = "messages"
-	// subjectWriters represents subject used to publish messages that should be persisted.
-	subjectWriters = "writers"
 	// subjectAlarms represents subject used to publish messages that trigger an alarm.
 	subjectAlarms = "alarms"
 	// subjectSMTP represents subject used to publish messages that trigger an SMTP notification.
@@ -77,7 +82,7 @@ var errInvalidObject = errors.New("invalid JSON object")
 type rulesService struct {
 	rules      RuleRepository
 	things     protomfx.ThingsServiceClient
-	publisher  messaging.Publisher
+	pubsub     messaging.PubSub
 	idProvider uuid.IDProvider
 	logger     logger.Logger
 }
@@ -85,11 +90,11 @@ type rulesService struct {
 var _ Service = (*rulesService)(nil)
 
 // New instantiates the rules service implementation.
-func New(rules RuleRepository, things protomfx.ThingsServiceClient, publisher messaging.Publisher, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(rules RuleRepository, things protomfx.ThingsServiceClient, pubsub messaging.PubSub, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &rulesService{
 		rules:      rules,
 		things:     things,
-		publisher:  publisher,
+		pubsub:     pubsub,
 		idProvider: idp,
 		logger:     logger,
 	}
@@ -197,12 +202,16 @@ func (rs *rulesService) RemoveRules(ctx context.Context, token string, ids ...st
 	return rs.rules.Remove(ctx, ids...)
 }
 
+func (rs *rulesService) RemoveRulesByGroup(ctx context.Context, groupID string) error {
+	return rs.rules.RemoveByGroup(ctx, groupID)
+}
+
 func (rs *rulesService) AssignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error {
 	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
 		return err
 	}
 
-	grID, err := rs.things.GetGroupIDByThingID(ctx, &protomfx.ThingID{Value: thingID})
+	grID, err := rs.things.GetGroupIDByThing(ctx, &protomfx.ThingID{Value: thingID})
 	if err != nil {
 		return err
 	}
@@ -230,7 +239,7 @@ func (rs *rulesService) UnassignRules(ctx context.Context, token, thingID string
 		return err
 	}
 
-	grID, err := rs.things.GetGroupIDByThingID(ctx, &protomfx.ThingID{Value: thingID})
+	grID, err := rs.things.GetGroupIDByThing(ctx, &protomfx.ThingID{Value: thingID})
 	if err != nil {
 		return err
 	}
@@ -253,23 +262,27 @@ func (rs *rulesService) UnassignRules(ctx context.Context, token, thingID string
 	return nil
 }
 
-func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) error {
-	rp, err := rs.rules.RetrieveByThing(ctx, message.GetPublisher(), apiutil.PageMetadata{})
+func (rs *rulesService) UnassignRulesByThing(ctx context.Context, thingID string) error {
+	return rs.rules.UnassignByThing(ctx, thingID)
+}
+
+func (rs *rulesService) Consume(message any) error {
+	ctx := context.Background()
+
+	msg, ok := message.(protomfx.Message)
+	if !ok {
+		return errors.ErrMessage
+	}
+
+	rp, err := rs.rules.RetrieveByThing(ctx, msg.Publisher, apiutil.PageMetadata{})
 	if err != nil {
 		return err
 	}
 
-	// publish a message to default subjects independently of rule check
-	go func(msg protomfx.Message) {
-		if err := rs.publishToDefaultSubjects(msg); err != nil {
-			rs.logger.Error(err.Error())
-		}
-	}(message)
-
 	for _, rule := range rp.Rules {
-		triggered, payloads, err := processPayload(message.Payload, rule.Conditions, rule.Operator, message.ContentType)
+		triggered, payloads, err := processPayload(msg.Payload, rule.Conditions, rule.Operator, msg.ContentType)
 		if err != nil {
-			return errors.Wrap(messaging.ErrPublishMessage, err)
+			return err
 		}
 		if !triggered {
 			continue
@@ -277,7 +290,7 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 
 		for _, action := range rule.Actions {
 			for _, payload := range payloads {
-				newMsg := message
+				newMsg := msg
 				newMsg.Payload = payload
 
 				switch action.Type {
@@ -291,29 +304,13 @@ func (rs *rulesService) Publish(ctx context.Context, message protomfx.Message) e
 					continue
 				}
 
-				if err := rs.publisher.Publish(newMsg); err != nil {
-					return errors.Wrap(messaging.ErrPublishMessage, err)
+				if err := rs.pubsub.Publish(newMsg); err != nil {
+					return err
 				}
 			}
 		}
 	}
 
-	return nil
-}
-
-func (rs *rulesService) publishToDefaultSubjects(msg protomfx.Message) error {
-	subjects := []string{subjectMessages, subjectWriters}
-	if msg.Subtopic != "" {
-		subjects = append(subjects, fmt.Sprintf("%s.%s", subjectMessages, msg.Subtopic))
-	}
-
-	for _, sub := range subjects {
-		m := msg
-		m.Subject = sub
-		if err := rs.publisher.Publish(m); err != nil {
-			return errors.Wrap(messaging.ErrPublishMessage, err)
-		}
-	}
 	return nil
 }
 

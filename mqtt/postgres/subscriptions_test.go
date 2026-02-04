@@ -59,11 +59,6 @@ func TestSave(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc: "save existing subscription",
-			sub:  sub,
-			err:  dbutil.ErrConflict,
-		},
-		{
 			desc: "save invalid subscription",
 			sub:  invalidSub,
 			err:  dbutil.ErrCreateEntity,
@@ -93,7 +88,6 @@ func TestRemove(t *testing.T) {
 		Subtopic: subtopic,
 		ThingID:  thingID,
 		GroupID:  grID,
-		ClientID: "client-id-1",
 	}
 
 	nonExistingSub := sub
@@ -125,7 +119,7 @@ func TestRemove(t *testing.T) {
 	}
 }
 
-func TestRetrieveByGroupID(t *testing.T) {
+func TestRetrieveByGroup(t *testing.T) {
 	_, err := db.Exec("DELETE FROM subscriptions")
 	require.Nil(t, err, fmt.Sprintf("cleanup must not fail: %s", err))
 
@@ -148,7 +142,6 @@ func TestRetrieveByGroupID(t *testing.T) {
 			Subtopic: subtopic,
 			ThingID:  thID,
 			GroupID:  grID,
-			ClientID: fmt.Sprintf("client-id-%d", i),
 		}
 
 		err = repo.Save(context.Background(), sub)
@@ -223,7 +216,7 @@ func TestRetrieveByGroupID(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		page, err := repo.RetrieveByGroupID(context.Background(), tc.pageMeta, tc.groupID)
+		page, err := repo.RetrieveByGroup(context.Background(), tc.pageMeta, tc.groupID)
 		size := len(page.Subscriptions)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.pageMeta.Total, page.Total, fmt.Sprintf("%s: expected total %d got %d\n", tc.desc, tc.pageMeta.Total, page.Total))

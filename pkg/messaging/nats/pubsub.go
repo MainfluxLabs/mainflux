@@ -17,9 +17,17 @@ import (
 
 const (
 	// SubjectMessages represents subject used to subscribe to the global message stream.
-	SubjectMessages = "messages"
-	//SubjectWriters represents subject used to subscribe to messages that should be persisted.
-	SubjectWriters = "writers"
+	SubjectMessages = "things.*.messages"
+	// SubjectMessagesWithSubtopic represents subject used to subscribe to the global message stream with subtopic.
+	SubjectMessagesWithSubtopic = "things.*.messages.>"
+	// SubjectThingCommands represents subject used to subscribe to thing commands.
+	SubjectThingCommands = "things.*.commands"
+	// SubjectThingCommandsWithSubtopic represents subject used to subscribe to thing commands with subtopic.
+	SubjectThingCommandsWithSubtopic = "things.*.commands.>"
+	// SubjectGroupCommands represents subject used to subscribe to group commands.
+	SubjectGroupCommands = "groups.*.commands"
+	// SubjectGroupCommandsWithSubtopic represents subject used to subscribe to group commands with subtopic.
+	SubjectGroupCommandsWithSubtopic = "groups.*.commands.>"
 	// SubjectSmtp represents subject used to subscribe to SMTP notifications.
 	SubjectSmtp = "smtp.*"
 	// SubjectSmpp represents subject used to subscribe to SMPP notifications.

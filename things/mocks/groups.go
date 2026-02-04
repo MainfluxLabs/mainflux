@@ -21,15 +21,7 @@ var _ things.GroupRepository = (*groupRepositoryMock)(nil)
 type groupRepositoryMock struct {
 	mu sync.Mutex
 	// Map of groups where group id is a key and group is a value.
-	groups map[string]things.Group
-	// Map of group thing membership where thing id is a key and group id is a value.
-	thingMembership map[string]string
-	// Map of group thing where group id is a key and thing ids are values.
-	things map[string][]string
-	// Map of group profile membership where profile id is a key and group id is a value.
-	profileMembership map[string]string
-	// Map of group profile where group id is a key and profile ids are values.
-	profiles             map[string][]string
+	groups               map[string]things.Group
 	groupMembershipsRepo things.GroupMembershipsRepository
 }
 
@@ -37,10 +29,6 @@ type groupRepositoryMock struct {
 func NewGroupRepository(groupMembershipsRepo things.GroupMembershipsRepository) things.GroupRepository {
 	return &groupRepositoryMock{
 		groups:               make(map[string]things.Group),
-		thingMembership:      make(map[string]string),
-		things:               make(map[string][]string),
-		profileMembership:    make(map[string]string),
-		profiles:             make(map[string][]string),
 		groupMembershipsRepo: groupMembershipsRepo,
 	}
 }
@@ -51,7 +39,6 @@ func (grm *groupRepositoryMock) Save(_ context.Context, groups ...things.Group) 
 
 	for _, gr := range groups {
 		if _, ok := grm.groups[gr.ID]; ok {
-			println("HHELO", gr.ID)
 			return []things.Group{}, dbutil.ErrConflict
 		}
 
@@ -86,19 +73,23 @@ func (grm *groupRepositoryMock) Remove(_ context.Context, ids ...string) error {
 			return dbutil.ErrNotFound
 		}
 
-		for _, thingID := range grm.things[id] {
-			delete(grm.thingMembership, thingID)
-		}
-
-		for _, profileID := range grm.profiles[id] {
-			delete(grm.profileMembership, profileID)
-		}
-
-		// This is not quite exact, it should go in depth
 		delete(grm.groups, id)
 	}
-	return nil
 
+	return nil
+}
+
+func (grm *groupRepositoryMock) RemoveByOrg(_ context.Context, orgID string) error {
+	grm.mu.Lock()
+	defer grm.mu.Unlock()
+
+	for id, group := range grm.groups {
+		if group.OrgID == orgID {
+			delete(grm.groups, id)
+		}
+	}
+
+	return nil
 }
 
 func (grm *groupRepositoryMock) BackupAll(_ context.Context) ([]things.Group, error) {

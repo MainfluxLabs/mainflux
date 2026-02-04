@@ -112,7 +112,7 @@ paths:
         '401':
           description: Missing or invalid access token provided.
         '500':
-          $ref: "#/components/responses/ServiceError"      
+          $ref: "#/components/responses/ServiceError"
   /orgs/search:
     post:
       summary: Search and retrieve organizations.
@@ -300,50 +300,6 @@ paths:
           description: Missing or invalid access token provided.
         '404':
           description: Failed due to non existing organization.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-  /orgs/{orgId}/memberships/backup:
-    get:
-      summary: Retrieves organization membership backup.
-      description: |
-        Retrieves a backup of all organization memberships. The response is a JSON object containing all related organization memberships. 
-      tags:
-        - auth
-      parameters:
-        - $ref: "#/components/parameters/OrgId"
-      responses:
-        '200':
-          $ref: "#/components/responses/OrgMembershipsBackupRes"
-        '401':
-          description: Missing or invalid access token provided.
-        '403':
-          description: Failed to perform authorization over the entity.
-        '404':
-          description: Failed due to non existing organization or related entities.
-        '422':
-          description: Database can't process request.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-  /orgs/{orgId}/memberships/restore:
-    post:
-      summary: Restores organization memberships backup.
-      description: |
-        Restores organization memberships from backup. Backup is a JSON file that contains all organization memberships that will be restored.
-      tags:
-        - auth
-      parameters:
-        - $ref: "#/components/parameters/OrgId"
-      requestBody:
-        $ref: "#/components/requestBodies/RestoreOrgMembershipsReq"
-      responses:
-        '201':
-          description: Backup restored.
-        '400':
-          description: Failed due to malformed JSON.
-        '401':
-          description: Missing or invalid access token provided.
-        '415':
-          description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
   /orgs/{orgId}/invites:
@@ -830,12 +786,6 @@ components:
         - org_id
         - created_at
         - updated_at
-    BackupAndRestoreOrgMembershipsSchema:
-      type: array
-      minItems: 0
-      uniqueItems: true
-      items:
-        $ref: "#/components/schemas/OrgMembershipsResSchema"
 
     BackupAndResponseSchema:
       type: object
@@ -941,7 +891,24 @@ components:
           type: string
           example: "editor"
           description: The user's proposed role in the organization.
-        
+        group_invites:
+          type: array
+          description: Optional list of Groups and roles within those groups. If present, upon accepting the invite, the recipient is also assigned as a member of the groups.
+          items:
+            $ref: '#/components/schemas/GroupInvite'
+
+    GroupInvite:
+      type: object
+      properties:
+        group_id:
+          type: string
+          format: uuid
+          description: The ID of the group.
+        member_role:
+          type: string
+          description: The member's proposed role in the group.
+          example: "admin"
+
   parameters:
     ApiKeyId:
       name: id
@@ -1070,13 +1037,6 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/OrgMembershipsSchema"
-    RestoreOrgMembershipsReq:
-      description: Binary-encoded JSON file describing restore organization memberships request.
-      required: true
-      content:
-        application/octet-stream:
-          schema:
-            $ref: "#/components/schemas/BackupAndRestoreOrgMembershipsSchema"
     RemoveOrgMembershipsReq:
       description: JSON-formatted document describing a membership removal request.
       required: true
@@ -1131,12 +1091,6 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/OrgMembership"
-    OrgMembershipsBackupRes:
-      description: Successfully retrieved organization membership backup.
-      content:
-        application/octet-stream:
-          schema:
-            $ref: "#/components/schemas/BackupAndRestoreOrgMembershipsSchema"
     InvitesPageRes:
       description: Data retrieved.
       content:

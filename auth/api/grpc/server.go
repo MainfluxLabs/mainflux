@@ -12,7 +12,7 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -24,11 +24,12 @@ type grpcServer struct {
 	issue                  kitgrpc.Handler
 	identify               kitgrpc.Handler
 	authorize              kitgrpc.Handler
-	getOwnerIDByOrgID      kitgrpc.Handler
+	getOwnerIDByOrg        kitgrpc.Handler
 	assignRole             kitgrpc.Handler
 	retrieveRole           kitgrpc.Handler
 	createDormantOrgInvite kitgrpc.Handler
 	activateOrgInvite      kitgrpc.Handler
+	viewOrg                kitgrpc.Handler
 }
 
 // NewServer returns new AuthServiceServer instance.
@@ -49,10 +50,10 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			decodeAuthorizeRequest,
 			encodeEmptyResponse,
 		),
-		getOwnerIDByOrgID: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "get_owner_id_by_org_id")(getOwnerIDByOrgIDEndpoint(svc)),
-			decodeGetOwnerIDByOrgIDRequest,
-			encodeGetOwnerIDByOrgIDResponse,
+		getOwnerIDByOrg: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "get_owner_id_by_org")(getOwnerIDByOrgEndpoint(svc)),
+			decodeGetOwnerIDByOrgRequest,
+			encodeGetOwnerIDByOrgResponse,
 		),
 		assignRole: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "assign_role")(assignRoleEndpoint(svc)),
@@ -73,6 +74,11 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			kitot.TraceServer(tracer, "activate_org_invite")(activateOrgInviteEndpoint(svc)),
 			decodeActivateOrgInviteRequest,
 			encodeEmptyResponse,
+		),
+		viewOrg: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "view_org")(viewOrgEndpoint(svc)),
+			decodeViewOrgRequest,
+			encodeViewOrgResponse,
 		),
 	}
 }
@@ -101,8 +107,8 @@ func (s *grpcServer) Authorize(ctx context.Context, req *protomfx.AuthorizeReq) 
 	return res.(*emptypb.Empty), nil
 }
 
-func (s *grpcServer) GetOwnerIDByOrgID(ctx context.Context, req *protomfx.OrgID) (*protomfx.OwnerID, error) {
-	_, res, err := s.getOwnerIDByOrgID.ServeGRPC(ctx, req)
+func (s *grpcServer) GetOwnerIDByOrg(ctx context.Context, req *protomfx.OrgID) (*protomfx.OwnerID, error) {
+	_, res, err := s.getOwnerIDByOrg.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -142,6 +148,14 @@ func (s *grpcServer) ActivateOrgInvite(ctx context.Context, req *protomfx.Activa
 	}
 
 	return res.(*emptypb.Empty), nil
+}
+
+func (s *grpcServer) ViewOrg(ctx context.Context, req *protomfx.ViewOrgReq) (*protomfx.Org, error) {
+	_, res, err := s.viewOrg.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+	return res.(*protomfx.Org), nil
 }
 
 func decodeAssignRoleRequest(_ context.Context, grpcReq any) (any, error) {
@@ -184,22 +198,33 @@ func decodeAuthorizeRequest(_ context.Context, grpcReq any) (any, error) {
 	return authReq{Token: req.GetToken(), Object: req.GetObject(), Subject: req.GetSubject(), Action: req.GetAction()}, nil
 }
 
-func decodeGetOwnerIDByOrgIDRequest(_ context.Context, grpcReq any) (any, error) {
+func decodeGetOwnerIDByOrgRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.OrgID)
-	return ownerIDByOrgIDReq{orgID: req.GetValue()}, nil
+	return ownerIDByOrgReq{orgID: req.GetValue()}, nil
 }
 
-func encodeGetOwnerIDByOrgIDResponse(_ context.Context, grpcRes any) (any, error) {
-	res := grpcRes.(ownerIDByOrgIDRes)
+func encodeGetOwnerIDByOrgResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(ownerIDByOrgRes)
 	return &protomfx.OwnerID{Value: res.ownerID}, nil
 }
 
 func decodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.CreateDormantOrgInviteReq)
+
+	gis := []auth.GroupInvite{}
+
+	for _, gi := range req.GetGroupInvites() {
+		gis = append(gis, auth.GroupInvite{
+			GroupID:    gi.GroupID,
+			MemberRole: gi.MemberRole,
+		})
+	}
+
 	return createDormantOrgInviteReq{
 		token:            req.GetToken(),
 		orgID:            req.GetOrgID(),
 		inviteeRole:      req.GetInviteeRole(),
+		groupInvites:     gis,
 		platformInviteID: req.GetPlatformInviteID(),
 	}, nil
 }
@@ -210,6 +235,20 @@ func decodeActivateOrgInviteRequest(_ context.Context, grpcReq any) (any, error)
 		platformInviteID: req.GetPlatformInviteID(),
 		userID:           req.GetUserID(),
 		redirectPath:     req.GetRedirectPath(),
+	}, nil
+}
+
+func decodeViewOrgRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.ViewOrgReq)
+	return viewOrgReq{id: req.GetOrgID(), token: req.GetToken()}, nil
+}
+
+func encodeViewOrgResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(orgRes)
+	return &protomfx.Org{
+		Id:      res.id,
+		OwnerID: res.ownerID,
+		Name:    res.name,
 	}, nil
 }
 

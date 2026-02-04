@@ -28,7 +28,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/ulid"
-	rulesapi "github.com/MainfluxLabs/mainflux/rules/api/grpc"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	"github.com/MainfluxLabs/mproxy/logger"
 	mp "github.com/MainfluxLabs/mproxy/pkg/mqtt"
@@ -64,10 +63,6 @@ const (
 	defJaegerURL         = ""
 	defClientTLS         = "false"
 	defCACerts           = ""
-	defInstance          = ""
-	defESURL             = "localhost:6379"
-	defESPass            = ""
-	defESDB              = "0"
 	defAuthCacheURL      = "localhost:6379"
 	defAuthCachePass     = ""
 	defAuthCacheDB       = "0"
@@ -84,8 +79,6 @@ const (
 	defServerKey         = ""
 	defServerCert        = ""
 	defAuthGRPCTimeout   = "1s"
-	defRulesGRPCURL      = "localhost:8186"
-	defRulesGRPCTimeout  = "1s"
 
 	envLogLevel          = "MF_MQTT_ADAPTER_LOG_LEVEL"
 	envMQTTPort          = "MF_MQTT_ADAPTER_MQTT_PORT"
@@ -105,10 +98,6 @@ const (
 	envJaegerURL         = "MF_JAEGER_URL"
 	envClientTLS         = "MF_MQTT_ADAPTER_CLIENT_TLS"
 	envCACerts           = "MF_MQTT_ADAPTER_CA_CERTS"
-	envInstance          = "MF_MQTT_ADAPTER_INSTANCE"
-	envESURL             = "MF_MQTT_ADAPTER_ES_URL"
-	envESPass            = "MF_MQTT_ADAPTER_ES_PASS"
-	envESDB              = "MF_MQTT_ADAPTER_ES_DB"
 	envAuthCacheURL      = "MF_AUTH_CACHE_URL"
 	envAuthCachePass     = "MF_AUTH_CACHE_PASS"
 	envAuthCacheDB       = "MF_AUTH_CACHE_DB"
@@ -125,8 +114,6 @@ const (
 	envDBSSLRootCert     = "MF_MQTT_ADAPTER_DB_SSL_ROOT_CERT"
 	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
 	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
-	envRulesGRPCURL      = "MF_RULES_GRPC_URL"
-	envRulesGRPCTimeout  = "MF_RULES_GRPC_TIMEOUT"
 )
 
 type config struct {
@@ -134,7 +121,6 @@ type config struct {
 	httpConfig        servers.Config
 	authConfig        clients.Config
 	thingsConfig      clients.Config
-	rulesConfig       clients.Config
 	targetHost        string
 	targetPort        string
 	forwarder         string
@@ -147,12 +133,7 @@ type config struct {
 	jaegerURL         string
 	logLevel          string
 	thingsGRPCTimeout time.Duration
-	rulesGRPCTimeout  time.Duration
 	brokerURL         string
-	instance          string
-	esURL             string
-	esPass            string
-	esDB              string
 	authCacheURL      string
 	authPass          string
 	authCacheDB       string
@@ -188,9 +169,6 @@ func main() {
 	tConn := clientsgrpc.Connect(cfg.thingsConfig, logger)
 	defer tConn.Close()
 
-	ec := connectToRedis(cfg.esURL, cfg.esPass, cfg.esDB, logger)
-	defer ec.Close()
-
 	nps, err := brokers.NewPubSub(cfg.brokerURL, "mqtt", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
@@ -205,7 +183,10 @@ func main() {
 	}
 
 	if cfg.forwarder == "true" {
-		subjects := []string{nats.SubjectWriters}
+		subjects := []string{
+			nats.SubjectThingCommands, nats.SubjectThingCommandsWithSubtopic,
+			nats.SubjectGroupCommands, nats.SubjectGroupCommandsWithSubtopic,
+		}
 		fwd := mqtt.NewForwarder(subjects, logger)
 		if err := fwd.Forward(svcName, nps, mpub); err != nil {
 			logger.Error(fmt.Sprintf("Failed to forward message broker messages: %s", err))
@@ -220,8 +201,6 @@ func main() {
 	}
 	defer np.Close()
 
-	es := mqttredis.NewEventStore(ec, cfg.instance)
-
 	ac := connectToRedis(cfg.authCacheURL, cfg.authPass, cfg.authCacheDB, logger)
 	defer ac.Close()
 
@@ -235,23 +214,18 @@ func main() {
 	authTracer, authCloser := jaeger.Init("mqtt_auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
-	rulesTracer, rulesCloser := jaeger.Init("mqtt_rules", cfg.jaegerURL, logger)
-	defer rulesCloser.Close()
-
 	aConn := clientsgrpc.Connect(cfg.authConfig, logger)
 	defer aConn.Close()
 
-	rConn := clientsgrpc.Connect(cfg.rulesConfig, logger)
-	defer rConn.Close()
-
 	usersAuth := authapi.NewClient(aConn, authTracer, cfg.authGRPCTimeout)
 	tc := thingsapi.NewClient(tConn, thingsTracer, cfg.thingsGRPCTimeout)
-	rc := rulesapi.NewClient(rConn, rulesTracer, cfg.rulesGRPCTimeout)
 
 	svc := newService(usersAuth, tc, db, logger)
 
+	mc := mqttredis.NewCache(ac)
+
 	// Event handler for MQTT hooks
-	h := mqtt.NewHandler(np, es, logger, tc, rc, svc)
+	h := mqtt.NewHandler(np, tc, svc, mc, logger)
 
 	logger.Info(fmt.Sprintf("Starting MQTT proxy on port %s", cfg.port))
 	g.Go(func() error {
@@ -289,11 +263,6 @@ func loadConfig() config {
 	thingsGRPCTimeout, err := time.ParseDuration(mainflux.Env(envThingsGRPCTimeout, defThingsGRPCTimeout))
 	if err != nil {
 		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
-	}
-
-	rulesGRPCTimeout, err := time.ParseDuration(mainflux.Env(envRulesGRPCTimeout, defRulesGRPCTimeout))
-	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envRulesGRPCTimeout, err.Error())
 	}
 
 	mqttTimeout, err := time.ParseDuration(mainflux.Env(envTimeout, defTimeout))
@@ -340,18 +309,10 @@ func loadConfig() config {
 		ClientName: clients.Auth,
 	}
 
-	rulesConfig := clients.Config{
-		ClientTLS:  tls,
-		CaCerts:    mainflux.Env(envCACerts, defCACerts),
-		URL:        mainflux.Env(envRulesGRPCURL, defRulesGRPCURL),
-		ClientName: clients.Rules,
-	}
-
 	return config{
 		port:              mainflux.Env(envMQTTPort, defMQTTPort),
 		httpConfig:        httpConfig,
 		authConfig:        authConfig,
-		rulesConfig:       rulesConfig,
 		thingsConfig:      thingsConfig,
 		targetHost:        mainflux.Env(envTargetHost, defTargetHost),
 		targetPort:        mainflux.Env(envTargetPort, defTargetPort),
@@ -364,13 +325,8 @@ func loadConfig() config {
 		httpTargetPath:    mainflux.Env(envHTTPTargetPath, defHTTPTargetPath),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
-		rulesGRPCTimeout:  rulesGRPCTimeout,
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
-		instance:          mainflux.Env(envInstance, defInstance),
-		esURL:             mainflux.Env(envESURL, defESURL),
-		esPass:            mainflux.Env(envESPass, defESPass),
-		esDB:              mainflux.Env(envESDB, defESDB),
 		authCacheURL:      mainflux.Env(envAuthCacheURL, defAuthCacheURL),
 		authPass:          mainflux.Env(envAuthCachePass, defAuthCachePass),
 		authCacheDB:       mainflux.Env(envAuthCacheDB, defAuthCacheDB),
@@ -460,10 +416,10 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func newService(ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, db *sqlx.DB, logger logger.Logger) mqtt.Service {
-	subscriptions := postgres.NewRepository(db)
 	idp := ulid.New()
-	svc := mqtt.NewMqttService(ac, tc, subscriptions, idp)
+	subscriptions := postgres.NewRepository(db)
 
+	svc := mqtt.NewMqttService(ac, tc, subscriptions, idp)
 	svc = mqttapi.LoggingMiddleware(svc, logger)
 	svc = mqttapi.MetricsMiddleware(
 		svc,

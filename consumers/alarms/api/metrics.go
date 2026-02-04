@@ -71,13 +71,31 @@ func (ms *metricsMiddleware) RemoveAlarms(ctx context.Context, token string, id 
 	return ms.svc.RemoveAlarms(ctx, token, id...)
 }
 
-func (ms *metricsMiddleware) BackupAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+func (ms *metricsMiddleware) RemoveAlarmsByThing(ctx context.Context, thingID string) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "backup_alarms_by_thing").Add(1)
-		ms.latency.With("method", "backup_alarms_by_thing").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "remove_alarms_by_thing").Add(1)
+		ms.latency.With("method", "remove_alarms_by_thing").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.BackupAlarmsByThing(ctx, token, thingID, pm)
+	return ms.svc.RemoveAlarmsByThing(ctx, thingID)
+}
+
+func (ms *metricsMiddleware) RemoveAlarmsByGroup(ctx context.Context, groupID string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "remove_alarms_by_group").Add(1)
+		ms.latency.With("method", "remove_alarms_by_group").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RemoveAlarmsByGroup(ctx, groupID)
+}
+
+func (ms *metricsMiddleware) ExportAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "export_alarms_by_thing").Add(1)
+		ms.latency.With("method", "export_alarms_by_thing").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ExportAlarmsByThing(ctx, token, thingID, pm)
 }
 
 func (ms *metricsMiddleware) Consume(message any) error {

@@ -11,8 +11,6 @@ import (
 var (
 	_ apiutil.Response = (*orgRes)(nil)
 	_ apiutil.Response = (*deleteRes)(nil)
-	_ apiutil.Response = (*backupRes)(nil)
-	_ apiutil.Response = (*restoreRes)(nil)
 )
 
 type viewOrgRes struct {
@@ -110,35 +108,4 @@ type viewOrgMembership struct {
 	Role      string    `json:"role"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-}
-
-type backupRes struct {
-	Orgs           []viewOrgRes        `json:"orgs"`
-	OrgMemberships []viewOrgMembership `json:"org_memberships"`
-}
-
-func (res backupRes) Code() int {
-	return http.StatusOK
-}
-
-func (res backupRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res backupRes) Empty() bool {
-	return false
-}
-
-type restoreRes struct{}
-
-func (res restoreRes) Code() int {
-	return http.StatusCreated
-}
-
-func (res restoreRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res restoreRes) Empty() bool {
-	return true
 }

@@ -117,13 +117,13 @@ func (ms *metricsMiddleware) ListOrgs(ctx context.Context, token string, pm apiu
 	return ms.svc.ListOrgs(ctx, token, pm)
 }
 
-func (ms *metricsMiddleware) GetOwnerIDByOrgID(ctx context.Context, orgID string) (string, error) {
+func (ms *metricsMiddleware) GetOwnerIDByOrg(ctx context.Context, orgID string) (string, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "get_owner_id_by_org_id").Add(1)
-		ms.latency.With("method", "get_owner_id_by_org_id").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "get_owner_id_by_org").Add(1)
+		ms.latency.With("method", "get_owner_id_by_org").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.GetOwnerIDByOrgID(ctx, orgID)
+	return ms.svc.GetOwnerIDByOrg(ctx, orgID)
 }
 
 func (ms *metricsMiddleware) CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...auth.OrgMembership) error {
@@ -180,24 +180,6 @@ func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (auth.Bac
 	return ms.svc.Backup(ctx, token)
 }
 
-func (ms *metricsMiddleware) BackupOrgMemberships(ctx context.Context, token string, orgID string) (auth.OrgMembershipsBackup, error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "backup_org_memberships").Add(1)
-		ms.latency.With("method", "backup_org_memberships").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.BackupOrgMemberships(ctx, token, orgID)
-}
-
-func (ms *metricsMiddleware) RestoreOrgMemberships(ctx context.Context, token string, orgID string, backup auth.OrgMembershipsBackup) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "restore_org_memberships").Add(1)
-		ms.latency.With("method", "restore_org_memberships").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.RestoreOrgMemberships(ctx, token, orgID, backup)
-}
-
 func (ms *metricsMiddleware) Restore(ctx context.Context, token string, backup auth.Backup) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "restore").Add(1)
@@ -225,22 +207,22 @@ func (ms *metricsMiddleware) RetrieveRole(ctx context.Context, id string) (strin
 	return ms.svc.RetrieveRole(ctx, id)
 }
 
-func (ms *metricsMiddleware) CreateOrgInvite(ctx context.Context, token, email, role, orgID, invRedirectPath string) (auth.OrgInvite, error) {
+func (ms *metricsMiddleware) CreateOrgInvite(ctx context.Context, token string, oi auth.OrgInvite, invRedirectPath string) (auth.OrgInvite, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_org_invite").Add(1)
 		ms.latency.With("method", "create_org_invite").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateOrgInvite(ctx, token, email, role, orgID, invRedirectPath)
+	return ms.svc.CreateOrgInvite(ctx, token, oi, invRedirectPath)
 }
 
-func (ms *metricsMiddleware) CreateDormantOrgInvite(ctx context.Context, token, orgID, role, platformInviteID string) (auth.OrgInvite, error) {
+func (ms *metricsMiddleware) CreateDormantOrgInvite(ctx context.Context, token string, oi auth.OrgInvite, platformInviteID string) (auth.OrgInvite, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_dormant_org_invite").Add(1)
 		ms.latency.With("method", "create_dormant_org_invite").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateDormantOrgInvite(ctx, token, orgID, role, platformInviteID)
+	return ms.svc.CreateDormantOrgInvite(ctx, token, oi, platformInviteID)
 }
 
 func (ms *metricsMiddleware) ViewOrgInvite(ctx context.Context, token, inviteID string) (auth.OrgInvite, error) {

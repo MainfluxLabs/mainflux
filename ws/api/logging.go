@@ -32,11 +32,11 @@ func (lm *loggingMiddleware) Publish(ctx context.Context, key things.ThingKey, m
 	defer func(begin time.Time) {
 		dest := ""
 		if msg.Subtopic != "" {
-			dest = fmt.Sprintf("to %s", msg.Subtopic)
+			dest = fmt.Sprintf("to subtopic %s", msg.Subtopic)
 		}
 		message := fmt.Sprintf("Method publish %s took %s to complete", dest, time.Since(begin))
 		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s", message, err))
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
@@ -47,9 +47,9 @@ func (lm *loggingMiddleware) Publish(ctx context.Context, key things.ThingKey, m
 
 func (lm *loggingMiddleware) Subscribe(ctx context.Context, key things.ThingKey, subtopic string, c *ws.Client) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method subscribe took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method subscribe for subtopic %s took %s to complete", subtopic, time.Since(begin))
 		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s", message, err))
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
@@ -60,9 +60,9 @@ func (lm *loggingMiddleware) Subscribe(ctx context.Context, key things.ThingKey,
 
 func (lm *loggingMiddleware) Unsubscribe(ctx context.Context, key things.ThingKey, subtopic string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method unsubscribe took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method unsubscribe for subtopic %s took %s to complete", subtopic, time.Since(begin))
 		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s", message, err))
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))

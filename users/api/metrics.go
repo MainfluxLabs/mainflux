@@ -3,12 +3,13 @@
 
 //go:build !test
 
-package http
+package api
 
 import (
 	"context"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-kit/kit/metrics"
 )
@@ -228,13 +229,13 @@ func (ms *metricsMiddleware) Restore(ctx context.Context, token string, admin us
 	return ms.svc.Restore(ctx, token, admin, users)
 }
 
-func (ms *metricsMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email, orgID, role string) (users.PlatformInvite, error) {
+func (ms *metricsMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite auth.OrgInvite) (users.PlatformInvite, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_platform_invite").Add(1)
 		ms.latency.With("method", "create_platform_invite").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreatePlatformInvite(ctx, token, redirectPath, email, orgID, role)
+	return ms.svc.CreatePlatformInvite(ctx, token, redirectPath, email, orgInvite)
 }
 
 func (ms *metricsMiddleware) RevokePlatformInvite(ctx context.Context, token string, inviteID string) error {

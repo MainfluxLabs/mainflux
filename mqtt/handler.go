@@ -13,63 +13,57 @@ import (
 	"github.com/MainfluxLabs/mainflux/mqtt/redis"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mproxy/pkg/session"
 )
 
 var _ session.Handler = (*handler)(nil)
 
-const (
-	protocol  = "mqtt"
-	connected = "connected"
-)
+const protocol = "mqtt"
 
 const (
-	LogInfoSubscribed                  = "subscribed with client_id %s to topics %s"
-	LogInfoUnsubscribed                = "unsubscribed client_id %s from topics %s"
-	LogInfoConnected                   = "connected with client_id %s"
-	LogInfoDisconnected                = "disconnected client_id %s"
-	LogInfoPublished                   = "published with client_id %s to the topic %s"
-	LogErrFailedConnect                = "failed to connect: "
-	LogErrFailedSubscribe              = "failed to subscribe: "
-	LogErrFailedUnsubscribe            = "failed to unsubscribe: "
-	LogErrFailedPublish                = "failed to publish: "
-	LogErrFailedDisconnect             = "failed to disconnect: "
-	LogErrFailedPublishDisconnectEvent = "failed to publish disconnect event: "
-	logErrFailedParseSubtopic          = "failed to parse subtopic: "
-	LogErrFailedPublishConnectEvent    = "failed to publish connect event: "
+	LogInfoSubscribed   = "subscribed with client_id %s to topics %s"
+	LogInfoUnsubscribed = "unsubscribed client_id %s from topics %s"
+	LogInfoConnected    = "connected with client_id %s"
+	LogInfoDisconnected = "disconnected client_id %s"
+	LogInfoPublished    = "published with client_id %s to the topic %s"
+
+	LogErrFailedConnect            = "failed to connect: "
+	LogErrFailedSubscribe          = "failed to subscribe: "
+	LogErrFailedUnsubscribe        = "failed to unsubscribe: "
+	LogErrFailedDisconnect         = "failed to disconnect: "
+	logErrFailedParseSubtopic      = "failed to parse subtopic: "
+	logErrFailedCacheConnection    = "failed to cache connection: "
+	logErrFailedCacheDisconnection = "failed to remove connection from cache: "
 )
 
 var (
-	ErrMalformedSubtopic         = errors.New("malformed subtopic")
-	ErrClientNotInitialized      = errors.New("client is not initialized")
-	ErrMissingClientID           = errors.New("client_id not found")
-	ErrMissingTopicPub           = errors.New("failed to publish due to missing topic")
-	ErrMissingTopicSub           = errors.New("failed to subscribe due to missing topic")
-	ErrAuthentication            = errors.New("failed to perform authentication over the entity")
-	ErrSubscriptionAlreadyExists = errors.New("subscription already exists")
+	ErrMalformedSubtopic    = errors.New("malformed subtopic")
+	ErrClientNotInitialized = errors.New("client is not initialized")
+	ErrMissingClientID      = errors.New("missing client id")
+	ErrMissingTopicPub      = errors.New("failed to publish due to missing topic")
+	ErrMissingTopicSub      = errors.New("failed to subscribe due to missing topic")
 )
 
 // Event implements events.Event interface
 type handler struct {
 	publisher messaging.Publisher
 	things    protomfx.ThingsServiceClient
-	rules     protomfx.RulesServiceClient
-	logger    logger.Logger
-	es        redis.EventStore
 	service   Service
+	cache     redis.Cache
+	logger    logger.Logger
 }
 
 // NewHandler creates new Handler entity
-func NewHandler(publisher messaging.Publisher, es redis.EventStore,
-	logger logger.Logger, things protomfx.ThingsServiceClient, rules protomfx.RulesServiceClient, svc Service) session.Handler {
+func NewHandler(publisher messaging.Publisher, things protomfx.ThingsServiceClient,
+	svc Service, cache redis.Cache, logger logger.Logger) session.Handler {
 	return &handler{
-		es:        es,
-		logger:    logger,
 		publisher: publisher,
 		things:    things,
-		rules:     rules,
 		service:   svc,
+		cache:     cache,
+		logger:    logger,
 	}
 }
 
@@ -84,13 +78,8 @@ func (h *handler) AuthConnect(c *session.Client) error {
 		return ErrMissingClientID
 	}
 
-	thingID, err := h.identify(c)
-	if err != nil {
+	if _, err := h.identify(c); err != nil {
 		return err
-	}
-
-	if err := h.es.Connect(thingID); err != nil {
-		h.logger.Error(LogErrFailedPublishConnectEvent + err.Error())
 	}
 
 	return nil
@@ -98,10 +87,11 @@ func (h *handler) AuthConnect(c *session.Client) error {
 
 // AuthPublish is called on device publish,
 // prior forwarding to the MQTT broker
-func (h *handler) AuthPublish(c *session.Client, topic *string, payload *[]byte) error {
+func (h *handler) AuthPublish(c *session.Client, topic *string, _ *[]byte) error {
 	if c == nil {
 		return ErrClientNotInitialized
 	}
+
 	if topic == nil {
 		return ErrMissingTopicPub
 	}
@@ -119,6 +109,7 @@ func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 	if c == nil {
 		return ErrClientNotInitialized
 	}
+
 	if topics == nil || *topics == nil {
 		return ErrMissingTopicSub
 	}
@@ -143,39 +134,40 @@ func (h *handler) Connect(c *session.Client) {
 // Publish - after client successfully published
 func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	if c == nil {
-		h.logger.Error(LogErrFailedPublish + ErrClientNotInitialized.Error())
+		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, ErrClientNotInitialized).Error())
 		return
 	}
 	h.logger.Info(fmt.Sprintf(LogInfoPublished, c.ID, *topic))
 
-	subject, err := messaging.CreateSubject(*topic)
+	subtopic, err := messaging.NormalizeSubtopic(*topic)
 	if err != nil {
 		h.logger.Error(logErrFailedParseSubtopic + err.Error())
 		return
 	}
 
-	thingKeyReq := &protomfx.ThingKey{
+	tk := &protomfx.ThingKey{
 		Value: string(c.Password),
 		Type:  c.Username,
 	}
 
-	pc, err := h.things.GetPubConfByKey(context.Background(), thingKeyReq)
+	pc, err := h.things.GetPubConfigByKey(context.Background(), tk)
 	if err != nil {
-		h.logger.Error(LogErrFailedPublish + (ErrAuthentication).Error())
+		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, errors.ErrAuthentication).Error())
 	}
 
-	message := protomfx.Message{
+	msg := protomfx.Message{
 		Protocol: protocol,
-		Subtopic: subject,
+		Subtopic: subtopic,
 		Payload:  *payload,
 	}
 
-	if err := messaging.FormatMessage(pc, &message); err != nil {
-		h.logger.Error(fmt.Sprintf("%s: %s", messaging.ErrPublishMessage, err))
+	if err := messaging.FormatMessage(pc, &msg); err != nil {
+		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 	}
 
-	if _, err = h.rules.Publish(context.Background(), &protomfx.PublishReq{Message: &message}); err != nil {
-		h.logger.Error(err.Error())
+	msg.Subject = nats.GetMessagesSubject(msg.Publisher, msg.Subtopic)
+	if err := h.publisher.Publish(msg); err != nil {
+		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 	}
 }
 
@@ -193,12 +185,12 @@ func (h *handler) Subscribe(c *session.Client, topics *[]string) {
 	}
 
 	for _, s := range subs {
-		err = h.service.CreateSubscription(context.Background(), s)
-		if err != nil {
-			h.logger.Error(LogErrFailedSubscribe + (ErrSubscriptionAlreadyExists).Error())
+		if err = h.service.CreateSubscription(context.Background(), s); err != nil {
+			h.logger.Error(LogErrFailedSubscribe + err.Error())
 			return
 		}
 	}
+
 	h.logger.Info(fmt.Sprintf(LogInfoSubscribed, c.ID, strings.Join(*topics, ",")))
 }
 
@@ -211,7 +203,7 @@ func (h *handler) Unsubscribe(c *session.Client, topics *[]string) {
 
 	subs, err := h.getSubscriptions(c, topics)
 	if err != nil {
-		h.logger.Error(LogErrFailedSubscribe + err.Error())
+		h.logger.Error(LogErrFailedUnsubscribe + err.Error())
 		return
 	}
 
@@ -231,15 +223,19 @@ func (h *handler) Disconnect(c *session.Client) {
 		return
 	}
 
-	thingID, _ := h.identify(c)
-
-	h.logger.Error(fmt.Sprintf(LogInfoDisconnected, c.ID))
-	if err := h.es.Disconnect(thingID); err != nil {
-		h.logger.Error(LogErrFailedPublishDisconnectEvent + err.Error())
+	if err := h.cache.Disconnect(context.Background(), c.ID); err != nil {
+		h.logger.Error(logErrFailedCacheDisconnection + err.Error())
 	}
+
+	h.logger.Info(fmt.Sprintf(LogInfoDisconnected, c.ID))
 }
 
 func (h *handler) identify(c *session.Client) (string, error) {
+	// Use cache to avoid repeated Identify calls for the same MQTT client.
+	if thingID := h.cache.RetrieveThingByClient(context.Background(), c.ID); thingID != "" {
+		return thingID, nil
+	}
+
 	thingKeyReq := &protomfx.ThingKey{
 		Value: string(c.Password),
 		Type:  c.Username,
@@ -249,8 +245,13 @@ func (h *handler) identify(c *session.Client) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	thingID := keyRes.GetValue()
 
-	return keyRes.GetValue(), nil
+	if err := h.cache.Connect(context.Background(), c.ID, thingID); err != nil {
+		h.logger.Error(logErrFailedCacheConnection + err.Error())
+	}
+
+	return thingID, nil
 }
 
 func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subscription, error) {
@@ -259,25 +260,23 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 		return nil, err
 	}
 
+	groupID, err := h.things.GetGroupIDByThing(context.Background(), &protomfx.ThingID{Value: thingID})
+	if err != nil {
+		return nil, err
+	}
+
 	var subs []Subscription
 	for _, t := range *topics {
-		groupID, err := h.things.GetGroupIDByThingID(context.Background(), &protomfx.ThingID{Value: thingID})
-		if err != nil {
-			return nil, err
-		}
-
-		subject, err := messaging.CreateSubject(t)
+		subtopic, err := messaging.NormalizeSubtopic(t)
 		if err != nil {
 			return nil, err
 		}
 
 		sub := Subscription{
-			Subtopic:  subject,
+			Subtopic:  subtopic,
 			GroupID:   groupID.GetValue(),
 			ThingID:   thingID,
-			ClientID:  c.ID,
-			Status:    connected,
-			CreatedAt: float64(time.Now().UnixNano()) / float64(1e9),
+			CreatedAt: float64(time.Now().UnixNano()) / 1e9,
 		}
 		subs = append(subs, sub)
 	}

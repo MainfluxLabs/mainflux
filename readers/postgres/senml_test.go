@@ -397,10 +397,10 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"avg aggregation on sum field": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit:    noLimit,
-				Name:     msgName,
-				AggType:  avgAgg,
-				AggField: "sum",
+				Limit:     noLimit,
+				Name:      msgName,
+				AggType:   avgAgg,
+				AggFields: []string{"sum"},
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{

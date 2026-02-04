@@ -15,11 +15,12 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 	thmocks "github.com/MainfluxLabs/mainflux/things/mocks"
-	"github.com/MainfluxLabs/mainflux/things/redis"
+	"github.com/MainfluxLabs/mainflux/things/redis/events"
 	"github.com/MainfluxLabs/mainflux/users"
 	r "github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
@@ -27,21 +28,11 @@ import (
 )
 
 const (
-	streamID       = "mainflux.things"
 	email          = "user@example.com"
 	adminEmail     = "admin@example.com"
 	otherUserEmail = "other.user@example.com"
 	password       = "password"
 	token          = email
-	thingPrefix    = "thing."
-	thingCreate    = thingPrefix + "create"
-	thingUpdate    = thingPrefix + "update"
-	thingRemove    = thingPrefix + "remove"
-
-	profilePrefix = "profile."
-	profileCreate = profilePrefix + "create"
-	profileUpdate = profilePrefix + "update"
-	profileRemove = profilePrefix + "remove"
 )
 
 var (
@@ -65,8 +56,9 @@ func newService() things.Service {
 	thingCache := thmocks.NewThingCache()
 	groupCache := thmocks.NewGroupCache()
 	idProvider := uuid.NewMock()
+	emailerMock := thmocks.NewEmailer()
 
-	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider)
+	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider, emailerMock)
 }
 
 func TestCreateThings(t *testing.T) {
@@ -87,7 +79,7 @@ func TestCreateThings(t *testing.T) {
 		Metadata: map[string]any{"test": "test"},
 	}}
 
-	svc = redis.NewEventStoreMiddleware(svc, redisClient)
+	svc = events.NewEventStoreMiddleware(svc, redisClient)
 
 	cases := []struct {
 		desc  string
@@ -107,7 +99,7 @@ func TestCreateThings(t *testing.T) {
 				"group_id":   grID,
 				"profile_id": prID,
 				"metadata":   "{\"test\":\"test\"}",
-				"operation":  thingCreate,
+				"operation":  mfevents.ThingCreate,
 			},
 		},
 		{
@@ -125,7 +117,7 @@ func TestCreateThings(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{streamID, lastID},
+			Streams: []string{mfevents.ThingsStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
@@ -160,7 +152,7 @@ func TestUpdateThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
 
-	svc = redis.NewEventStoreMiddleware(svc, redisClient)
+	svc = events.NewEventStoreMiddleware(svc, redisClient)
 
 	cases := []struct {
 		desc  string
@@ -184,7 +176,7 @@ func TestUpdateThing(t *testing.T) {
 				"profile_id": sth.ProfileID,
 				"name":       "a",
 				"metadata":   "{\"test\":\"test\"}",
-				"operation":  thingUpdate,
+				"operation":  mfevents.ThingUpdate,
 			},
 		},
 	}
@@ -194,7 +186,7 @@ func TestUpdateThing(t *testing.T) {
 		err := svc.UpdateThing(context.Background(), tc.key, tc.thing)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{streamID, lastID},
+			Streams: []string{mfevents.ThingsStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
@@ -228,7 +220,7 @@ func TestViewThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
 
-	essvc := redis.NewEventStoreMiddleware(svc, redisClient)
+	essvc := events.NewEventStoreMiddleware(svc, redisClient)
 	esth, eserr := essvc.ViewThing(context.Background(), token, sth.ID)
 	th, err := svc.ViewThing(context.Background(), token, sth.ID)
 	assert.Equal(t, th, esth, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", th, esth))
@@ -252,7 +244,7 @@ func TestListThings(t *testing.T) {
 	_, err = svc.CreateThings(context.Background(), token, prID, things.Thing{Name: "a"})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 
-	essvc := redis.NewEventStoreMiddleware(svc, redisClient)
+	essvc := events.NewEventStoreMiddleware(svc, redisClient)
 	esths, eserr := essvc.ListThings(context.Background(), token, apiutil.PageMetadata{Offset: 0, Limit: 10})
 	ths, err := svc.ListThings(context.Background(), token, apiutil.PageMetadata{Offset: 0, Limit: 10})
 	assert.Equal(t, ths, esths, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", ths, esths))
@@ -277,7 +269,7 @@ func TestListThingsByProfile(t *testing.T) {
 	_, err = svc.CreateThings(context.Background(), token, pr.ID, things.Thing{Name: "a"})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 
-	essvc := redis.NewEventStoreMiddleware(svc, redisClient)
+	essvc := events.NewEventStoreMiddleware(svc, redisClient)
 	esths, eserr := essvc.ListThingsByProfile(context.Background(), token, pr.ID, apiutil.PageMetadata{Offset: 0, Limit: 10})
 	thps, err := svc.ListThingsByProfile(context.Background(), token, pr.ID, apiutil.PageMetadata{Offset: 0, Limit: 10})
 	assert.Equal(t, thps, esths, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", thps, esths))
@@ -302,7 +294,7 @@ func TestRemoveThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
 
-	svc = redis.NewEventStoreMiddleware(svc, redisClient)
+	svc = events.NewEventStoreMiddleware(svc, redisClient)
 
 	cases := []struct {
 		desc  string
@@ -318,7 +310,7 @@ func TestRemoveThing(t *testing.T) {
 			err:  nil,
 			event: map[string]any{
 				"id":        sth.ID,
-				"operation": thingRemove,
+				"operation": mfevents.ThingRemove,
 			},
 		},
 		{
@@ -336,7 +328,7 @@ func TestRemoveThing(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{streamID, lastID},
+			Streams: []string{mfevents.ThingsStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
@@ -356,7 +348,7 @@ func TestCreateProfiles(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService()
-	svc = redis.NewEventStoreMiddleware(svc, redisClient)
+	svc = events.NewEventStoreMiddleware(svc, redisClient)
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
 
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -381,7 +373,7 @@ func TestCreateProfiles(t *testing.T) {
 				"name":      "a",
 				"metadata":  "{\"test\":\"test\"}",
 				"group_id":  gr.ID,
-				"operation": profileCreate,
+				"operation": mfevents.ProfileCreate,
 			},
 		},
 		{
@@ -400,7 +392,7 @@ func TestCreateProfiles(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{streamID, lastID},
+			Streams: []string{mfevents.ThingsStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
@@ -428,7 +420,7 @@ func TestUpdateProfile(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	spr := sprs[0]
 
-	svc = redis.NewEventStoreMiddleware(svc, redisClient)
+	svc = events.NewEventStoreMiddleware(svc, redisClient)
 
 	cases := []struct {
 		desc    string
@@ -450,7 +442,7 @@ func TestUpdateProfile(t *testing.T) {
 				"id":        spr.ID,
 				"name":      "b",
 				"metadata":  "{\"test\":\"test\"}",
-				"operation": profileUpdate,
+				"operation": mfevents.ProfileUpdate,
 			},
 		},
 		{
@@ -471,7 +463,7 @@ func TestUpdateProfile(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{streamID, lastID},
+			Streams: []string{mfevents.ThingsStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()
@@ -500,7 +492,7 @@ func TestViewProfile(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	spr := sprs[0]
 
-	essvc := redis.NewEventStoreMiddleware(svc, redisClient)
+	essvc := events.NewEventStoreMiddleware(svc, redisClient)
 	espr, eserr := essvc.ViewProfile(context.Background(), token, spr.ID)
 	pr, err := svc.ViewProfile(context.Background(), token, spr.ID)
 	assert.Equal(t, pr, espr, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", pr, espr))
@@ -519,7 +511,7 @@ func TestListProfiles(t *testing.T) {
 	_, err = svc.CreateProfiles(context.Background(), token, gr.ID, things.Profile{Name: "a"})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 
-	essvc := redis.NewEventStoreMiddleware(svc, redisClient)
+	essvc := events.NewEventStoreMiddleware(svc, redisClient)
 	esprs, eserr := essvc.ListProfiles(context.Background(), token, apiutil.PageMetadata{Offset: 0, Limit: 10})
 	prs, err := svc.ListProfiles(context.Background(), token, apiutil.PageMetadata{Offset: 0, Limit: 10})
 	assert.Equal(t, prs, esprs, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", prs, esprs))
@@ -545,7 +537,7 @@ func TestListProfilesByThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
 
-	essvc := redis.NewEventStoreMiddleware(svc, redisClient)
+	essvc := events.NewEventStoreMiddleware(svc, redisClient)
 	esprs, eserr := essvc.ViewProfileByThing(context.Background(), token, sth.ID)
 	prps, err := svc.ViewProfileByThing(context.Background(), token, sth.ID)
 	assert.Equal(t, prps, esprs, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", prps, esprs))
@@ -565,7 +557,7 @@ func TestRemoveProfile(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	spr := sprs[0]
 
-	svc = redis.NewEventStoreMiddleware(svc, redisClient)
+	svc = events.NewEventStoreMiddleware(svc, redisClient)
 
 	cases := []struct {
 		desc  string
@@ -581,7 +573,7 @@ func TestRemoveProfile(t *testing.T) {
 			err:  nil,
 			event: map[string]any{
 				"id":        spr.ID,
-				"operation": profileRemove,
+				"operation": mfevents.ProfileRemove,
 			},
 		},
 		{
@@ -599,7 +591,7 @@ func TestRemoveProfile(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
-			Streams: []string{streamID, lastID},
+			Streams: []string{mfevents.ThingsStream, lastID},
 			Count:   1,
 			Block:   time.Second,
 		}).Val()

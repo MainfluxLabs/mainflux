@@ -184,21 +184,21 @@ func (ms *metricsMiddleware) RemoveProfiles(ctx context.Context, token string, i
 	return ms.svc.RemoveProfiles(ctx, token, ids...)
 }
 
-func (ms *metricsMiddleware) GetPubConfByKey(ctx context.Context, key things.ThingKey) (things.PubConfInfo, error) {
+func (ms *metricsMiddleware) GetPubConfigByKey(ctx context.Context, key things.ThingKey) (things.PubConfigInfo, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "get_pub_conf_by_key").Add(1)
-		ms.latency.With("method", "get_pub_conf_by_key").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "get_pub_config_by_key").Add(1)
+		ms.latency.With("method", "get_pub_config_by_key").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.GetPubConfByKey(ctx, key)
+	return ms.svc.GetPubConfigByKey(ctx, key)
 }
 
-func (ms *metricsMiddleware) GetConfigByThingID(ctx context.Context, thingID string) (map[string]any, error) {
+func (ms *metricsMiddleware) GetConfigByThing(ctx context.Context, thingID string) (map[string]any, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "get_config_by_thing_id").Add(1)
-		ms.latency.With("method", "get_config_by_thing_id").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "get_config_by_thing").Add(1)
+		ms.latency.With("method", "get_config_by_thing").Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return ms.svc.GetConfigByThingID(ctx, thingID)
+	return ms.svc.GetConfigByThing(ctx, thingID)
 }
 
 func (ms *metricsMiddleware) CanUserAccessThing(ctx context.Context, req things.UserAccessReq) error {
@@ -246,22 +246,31 @@ func (ms *metricsMiddleware) Identify(ctx context.Context, key things.ThingKey) 
 	return ms.svc.Identify(ctx, key)
 }
 
-func (ms *metricsMiddleware) GetGroupIDByThingID(ctx context.Context, thingID string) (string, error) {
+func (ms *metricsMiddleware) GetKeyByThingID(ctx context.Context, thingID string) (things.ThingKey, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "get_group_id_by_thing_id").Add(1)
-		ms.latency.With("method", "get_group_id_by_thing_id").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "get_key_by_thing_id").Add(1)
+		ms.latency.With("method", "get_key_by_thing_id").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.GetGroupIDByThingID(ctx, thingID)
+	return ms.svc.GetKeyByThingID(ctx, thingID)
 }
 
-func (ms *metricsMiddleware) GetGroupIDByProfileID(ctx context.Context, profileID string) (string, error) {
+func (ms *metricsMiddleware) GetGroupIDByThing(ctx context.Context, thingID string) (string, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "get_group_id_by_profile_id").Add(1)
-		ms.latency.With("method", "get_group_id_by_profile_id").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "get_group_id_by_thing").Add(1)
+		ms.latency.With("method", "get_group_id_by_thing").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.GetGroupIDByProfileID(ctx, profileID)
+	return ms.svc.GetGroupIDByThing(ctx, thingID)
+}
+
+func (ms *metricsMiddleware) GetGroupIDByProfile(ctx context.Context, profileID string) (string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "get_group_id_by_profile").Add(1)
+		ms.latency.With("method", "get_group_id_by_profile").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.GetGroupIDByProfile(ctx, profileID)
 }
 
 func (ms *metricsMiddleware) GetGroupIDsByOrg(ctx context.Context, orgID string, token string) ([]string, error) {
@@ -280,114 +289,6 @@ func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (bk thing
 	}(time.Now())
 
 	return ms.svc.Backup(ctx, token)
-}
-
-func (ms *metricsMiddleware) BackupGroupsByOrg(ctx context.Context, token string, orgID string) (bk things.GroupsBackup, err error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "backup_groups_by_org").Add(1)
-		ms.latency.With("method", "backup_groups_by_org").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.BackupGroupsByOrg(ctx, token, orgID)
-}
-
-func (ms *metricsMiddleware) RestoreGroupsByOrg(ctx context.Context, token string, orgID string, backup things.GroupsBackup) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "restore_groups_by_org").Add(1)
-		ms.latency.With("method", "restore_groups_by_org").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.RestoreGroupsByOrg(ctx, token, orgID, backup)
-}
-
-func (ms *metricsMiddleware) BackupGroupMemberships(ctx context.Context, token string, groupID string) (bk things.GroupMembershipsBackup, err error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "backup_group_memberships").Add(1)
-		ms.latency.With("method", "backup_group_memberships").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.BackupGroupMemberships(ctx, token, groupID)
-}
-
-func (ms *metricsMiddleware) RestoreGroupMemberships(ctx context.Context, token string, groupID string, backup things.GroupMembershipsBackup) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "restore_group_memberships").Add(1)
-		ms.latency.With("method", "restore_group_memberships").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.RestoreGroupMemberships(ctx, token, groupID, backup)
-}
-
-func (ms *metricsMiddleware) BackupProfilesByOrg(ctx context.Context, token string, orgID string) (pb things.ProfilesBackup, err error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "backup_profiles_by_org").Add(1)
-		ms.latency.With("method", "backup_profiles_by_org").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.BackupProfilesByOrg(ctx, token, orgID)
-}
-
-func (ms *metricsMiddleware) RestoreProfilesByOrg(ctx context.Context, token string, orgID string, backup things.ProfilesBackup) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "restore_profiles_by_org").Add(1)
-		ms.latency.With("method", "restore_profiles_by_org").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.RestoreProfilesByOrg(ctx, token, orgID, backup)
-}
-
-func (ms *metricsMiddleware) BackupProfilesByGroup(ctx context.Context, token string, groupID string) (pb things.ProfilesBackup, err error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "backup_profiles_by_group").Add(1)
-		ms.latency.With("method", "backup_profiles_by_group").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.BackupProfilesByGroup(ctx, token, groupID)
-}
-
-func (ms *metricsMiddleware) RestoreProfilesByGroup(ctx context.Context, token string, groupID string, backup things.ProfilesBackup) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "restore_profiles_by_group").Add(1)
-		ms.latency.With("method", "restore_profiles_by_group").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.RestoreProfilesByGroup(ctx, token, groupID, backup)
-}
-
-func (ms *metricsMiddleware) BackupThingsByGroup(ctx context.Context, token string, groupID string) (tb things.ThingsBackup, err error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "backup_things_by_group").Add(1)
-		ms.latency.With("method", "backup_things_by_group").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.BackupThingsByGroup(ctx, token, groupID)
-}
-
-func (ms *metricsMiddleware) RestoreThingsByGroup(ctx context.Context, token string, groupID string, backup things.ThingsBackup) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "restore_things_by_group").Add(1)
-		ms.latency.With("method", "restore_things_by_group").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.RestoreThingsByGroup(ctx, token, groupID, backup)
-}
-
-func (ms *metricsMiddleware) BackupThingsByOrg(ctx context.Context, token string, orgID string) (tb things.ThingsBackup, err error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "backup_things_by_org").Add(1)
-		ms.latency.With("method", "backup_things_by_org").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.BackupThingsByOrg(ctx, token, orgID)
-}
-
-func (ms *metricsMiddleware) RestoreThingsByOrg(ctx context.Context, token string, orgID string, backup things.ThingsBackup) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "restore_things_by_org").Add(1)
-		ms.latency.With("method", "restore_things_by_org").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.RestoreThingsByOrg(ctx, token, orgID, backup)
 }
 
 func (ms *metricsMiddleware) Restore(ctx context.Context, token string, backup things.Backup) error {
@@ -424,6 +325,15 @@ func (ms *metricsMiddleware) ViewGroup(ctx context.Context, token, id string) (t
 	}(time.Now())
 
 	return ms.svc.ViewGroup(ctx, token, id)
+}
+
+func (ms *metricsMiddleware) ViewGroupInternal(ctx context.Context, id string) (things.Group, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "view_group_internal").Add(1)
+		ms.latency.With("method", "view_group_internal").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ViewGroupInternal(ctx, id)
 }
 
 func (ms *metricsMiddleware) ListGroups(ctx context.Context, token string, pm apiutil.PageMetadata) (things.GroupPage, error) {
@@ -471,6 +381,15 @@ func (ms *metricsMiddleware) RemoveGroups(ctx context.Context, token string, ids
 	return ms.svc.RemoveGroups(ctx, token, ids...)
 }
 
+func (ms *metricsMiddleware) RemoveGroupsByOrg(ctx context.Context, orgID string) ([]string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "remove_groups_by_org").Add(1)
+		ms.latency.With("method", "remove_groups_by_org").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RemoveGroupsByOrg(ctx, orgID)
+}
+
 func (ms *metricsMiddleware) ListProfilesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_profiles_by_group").Add(1)
@@ -496,6 +415,15 @@ func (ms *metricsMiddleware) CreateGroupMemberships(ctx context.Context, token s
 	}(time.Now())
 
 	return ms.svc.CreateGroupMemberships(ctx, token, gms...)
+}
+
+func (ms *metricsMiddleware) CreateGroupMembershipsInternal(ctx context.Context, gms ...things.GroupMembership) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "create_group_memberships_internal").Add(1)
+		ms.latency.With("method", "create_group_memberships_internal").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.CreateGroupMembershipsInternal(ctx, gms...)
 }
 
 func (ms *metricsMiddleware) ListGroupMemberships(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (things.GroupMembershipsPage, error) {

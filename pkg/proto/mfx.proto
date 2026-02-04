@@ -18,17 +18,20 @@ message Message {
 }
 
 service ThingsService {
-    rpc GetPubConfByKey(ThingKey) returns (PubConfByKeyRes) {}
-    rpc GetConfigByThingID(ThingID) returns (ConfigByThingIDRes){}
+    rpc GetPubConfigByKey(ThingKey) returns (PubConfigByKeyRes) {}
+    rpc GetConfigByThing(ThingID) returns (ConfigByThingRes){}
     rpc CanUserAccessThing(UserAccessReq) returns (google.protobuf.Empty) {}
     rpc CanUserAccessProfile(UserAccessReq) returns (google.protobuf.Empty) {}
     rpc CanUserAccessGroup(UserAccessReq) returns (google.protobuf.Empty) {}
     rpc CanThingAccessGroup(ThingAccessReq) returns (google.protobuf.Empty) {}
     rpc Identify(ThingKey) returns (ThingID) {}
-    rpc GetGroupIDByThingID(ThingID) returns (GroupID) {}
-    rpc GetGroupIDByProfileID(ProfileID) returns (GroupID) {}
+    rpc GetGroupIDByThing(ThingID) returns (GroupID) {}
+    rpc GetGroupIDByProfile(ProfileID) returns (GroupID) {}
     rpc GetGroupIDsByOrg(OrgAccessReq) returns (GroupIDs) {}
     rpc GetThingIDsByProfile(ProfileID) returns (ThingIDs) {}
+    rpc CreateGroupMemberships(CreateGroupMembershipsReq) returns (google.protobuf.Empty) {}
+    rpc GetGroup(GetGroupReq) returns (Group) {}
+    rpc GetKeyByThingID(ThingID) returns (ThingKey) {}
 }
 
 service UsersService {
@@ -40,19 +43,12 @@ service AuthService {
     rpc Issue(IssueReq) returns (Token) {}
     rpc Identify(Token) returns (UserIdentity) {}
     rpc Authorize(AuthorizeReq) returns (google.protobuf.Empty) {}
-    rpc GetOwnerIDByOrgID(OrgID) returns (OwnerID) {}
+    rpc GetOwnerIDByOrg(OrgID) returns (OwnerID) {}
     rpc AssignRole(AssignRoleReq) returns (google.protobuf.Empty) {}
     rpc RetrieveRole(RetrieveRoleReq) returns (RetrieveRoleRes) {}
     rpc CreateDormantOrgInvite(CreateDormantOrgInviteReq) returns (google.protobuf.Empty) {}
     rpc ActivateOrgInvite(ActivateOrgInviteReq) returns (google.protobuf.Empty) {}
-}
-
-service RulesService {
-    rpc Publish(PublishReq) returns (google.protobuf.Empty) {}
-}
-
-message PublishReq {
-    Message message = 1;
+    rpc ViewOrg(ViewOrgReq) returns (Org) {}
 }
 
 message ThingKey {
@@ -60,7 +56,7 @@ message ThingKey {
     string type  = 2;
 }
 
-message PubConfByKeyRes {
+message PubConfigByKeyRes {
     string publisherID   = 1;
     Config profileConfig = 2;
 }
@@ -70,7 +66,7 @@ message Config {
     Transformer transformer = 2;
 }
 
-message ConfigByThingIDRes{
+message ConfigByThingRes{
     Config config = 1;
 }
 
@@ -193,11 +189,17 @@ message OrgAccessReq {
     string token  = 2;
 }
 
+message GroupInvite {
+    string groupID = 1;
+    string memberRole = 2;
+}
+
 message CreateDormantOrgInviteReq {
     string token = 1;
     string orgID = 2;
     string inviteeRole = 3;
     string platformInviteID = 4;
+    repeated GroupInvite groupInvites = 5;
 }
 
 message ActivateOrgInviteReq {
@@ -205,3 +207,35 @@ message ActivateOrgInviteReq {
     string userID = 2;
     string redirectPath = 3;
 }
+
+message GroupMembership {
+    string userID = 1;
+    string groupID = 2;
+    string role = 3;
+}
+
+message CreateGroupMembershipsReq {
+    repeated GroupMembership memberships = 1;
+}
+
+message ViewOrgReq {
+    string token = 1;
+    string orgID = 2;
+}
+
+message Org {
+    string id = 1;
+    string ownerID = 2;
+    string name = 3;
+}
+
+message GetGroupReq {
+    string groupID = 1;
+}
+
+message Group {
+    string id = 1;
+    string orgID = 2;
+    string name = 3;
+}
+

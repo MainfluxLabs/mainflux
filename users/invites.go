@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -41,9 +42,10 @@ type PageMetadataInvites struct {
 
 type PlatformInvites interface {
 	// CreatePlatformInvite creates a pending platform Invite for the appropriate email address.
-	// The user can optionally also be invited to an Organization with a certain role - the invites become visible once the user
-	// completes registration via the platform invite. Only usable by the platform Root Admin.
-	CreatePlatformInvite(ctx context.Context, token, redirectPath, email, orgID, role string) (PlatformInvite, error)
+	// The user can optionally also be invited to an Organization with a certain role by supplying the `orgInvite` argument - the invite
+	// becomes visible once the user completes registration via the platform invite.
+	// temp:orgid, role, gis
+	CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite auth.OrgInvite) (PlatformInvite, error)
 
 	// RevokePlatformInvite revokes a specific pending PlatformInvite. Only usable by the platform Root Admin.
 	RevokePlatformInvite(ctx context.Context, token, inviteID string) error
@@ -77,7 +79,7 @@ type PlatformInvitesRepository interface {
 	UpdatePlatformInviteState(ctx context.Context, inviteID, state string) error
 }
 
-func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirectPath, email, orgID, role string) (PlatformInvite, error) {
+func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite auth.OrgInvite) (PlatformInvite, error) {
 	if err := svc.isAdmin(ctx, token); err != nil {
 		return PlatformInvite{}, err
 	}
@@ -111,11 +113,20 @@ func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirec
 		return PlatformInvite{}, err
 	}
 
-	if orgID != "" {
+	if orgInvite.OrgID != "" {
+		var reqGroupInvites []*protomfx.GroupInvite
+		for _, gi := range orgInvite.GroupInvites {
+			reqGroupInvites = append(reqGroupInvites, &protomfx.GroupInvite{
+				GroupID:    gi.GroupID,
+				MemberRole: gi.MemberRole,
+			})
+		}
+
 		dormantInviteReq := &protomfx.CreateDormantOrgInviteReq{
 			Token:            token,
-			OrgID:            orgID,
-			InviteeRole:      role,
+			OrgID:            orgInvite.OrgID,
+			InviteeRole:      orgInvite.InviteeRole,
+			GroupInvites:     reqGroupInvites,
 			PlatformInviteID: inviteID,
 		}
 

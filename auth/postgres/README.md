@@ -54,4 +54,11 @@ CREATE TABLE IF NOT EXISTS org_invites (
 
 CREATE UNIQUE INDEX ux_org_invites_invitee_id_org_id on org_invites (invitee_id, org_id) WHERE state='pending';
 
+CREATE TABLE IF NOT EXISTS org_invites_groups (
+    org_invite_id  UUID NOT NULL,
+    group_id       UUID NOT NULL,
+    member_role    VARCHAR NOT NULL,
+    PRIMARY KEY (org_invite_id, group_id),
+    FOREIGN KEY (org_invite_id) REFERENCES org_invites (id) ON DELETE CASCADE
+);
 ```

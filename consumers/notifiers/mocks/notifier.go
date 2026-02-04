@@ -150,3 +150,16 @@ func (nrm *notifierRepositoryMock) Remove(_ context.Context, ids ...string) erro
 
 	return nil
 }
+
+func (nrm *notifierRepositoryMock) RemoveByGroup(_ context.Context, groupID string) error {
+	nrm.mu.Lock()
+	defer nrm.mu.Unlock()
+
+	for id, n := range nrm.notifiers {
+		if n.GroupID == groupID {
+			delete(nrm.notifiers, id)
+		}
+	}
+
+	return nil
+}

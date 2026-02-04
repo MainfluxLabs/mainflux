@@ -144,33 +144,22 @@ func (gr groupRepository) Remove(ctx context.Context, groupIDs ...string) error 
 	return nil
 }
 
+func (gr groupRepository) RemoveByOrg(ctx context.Context, orgID string) error {
+	q := `DELETE FROM groups WHERE org_id = :org_id;`
+
+	dbg := dbGroup{OrgID: orgID}
+	if _, err := gr.db.NamedExecContext(ctx, q, dbg); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
 func (gr groupRepository) BackupAll(ctx context.Context) ([]things.Group, error) {
 	query := "SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups"
 
 	var items []dbGroup
 	err := gr.db.SelectContext(ctx, &items, query)
-	if err != nil {
-		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-	}
-
-	var groups []things.Group
-	for _, i := range items {
-		gr, err := toGroup(i)
-		if err != nil {
-			return []things.Group{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-		}
-
-		groups = append(groups, gr)
-	}
-
-	return groups, nil
-}
-
-func (gr groupRepository) BackupByOrg(ctx context.Context, orgID string) ([]things.Group, error) {
-	query := "SELECT id, name, org_id, description, metadata, created_at, updated_at FROM groups WHERE org_id = $1"
-
-	var items []dbGroup
-	err := gr.db.SelectContext(ctx, &items, query, orgID)
 	if err != nil {
 		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}

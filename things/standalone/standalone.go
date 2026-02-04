@@ -49,7 +49,7 @@ func (repo singleUserRepo) Authorize(ctx context.Context, req *protomfx.Authoriz
 	return &emptypb.Empty{}, errUnsupported
 }
 
-func (repo singleUserRepo) GetOwnerIDByOrgID(ctx context.Context, in *protomfx.OrgID, opts ...grpc.CallOption) (*protomfx.OwnerID, error) {
+func (repo singleUserRepo) GetOwnerIDByOrg(ctx context.Context, in *protomfx.OrgID, opts ...grpc.CallOption) (*protomfx.OwnerID, error) {
 	return &protomfx.OwnerID{}, errUnsupported
 }
 
@@ -66,5 +66,9 @@ func (repo singleUserRepo) CreateDormantOrgInvite(ctx context.Context, req *prot
 }
 
 func (repo singleUserRepo) ActivateOrgInvite(ctx context.Context, req *protomfx.ActivateOrgInviteReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
+	panic("not implemented")
+}
+
+func (repo singleUserRepo) ViewOrg(ctx context.Context, req *protomfx.ViewOrgReq, _ ...grpc.CallOption) (r *protomfx.Org, err error) {
 	panic("not implemented")
 }

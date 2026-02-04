@@ -65,6 +65,21 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS subscriptions_client_id_key`,
 				},
 			},
+			{
+				Id: "mqtt_3",
+				Up: []string{
+					`ALTER TABLE subscriptions DROP COLUMN IF EXISTS status`,
+					`DELETE FROM subscriptions s1
+					 USING subscriptions s2
+					 WHERE s1.subtopic = s2.subtopic
+						AND s1.group_id = s2.group_id
+						AND s1.thing_id = s2.thing_id
+						AND s1.created_at > s2.created_at`,
+					`ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS subscriptions_pkey`,
+					`ALTER TABLE subscriptions ADD PRIMARY KEY (subtopic, group_id, thing_id)`,
+					`ALTER TABLE subscriptions DROP COLUMN IF EXISTS client_id`,
+				},
+			},
 		},
 	}
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)

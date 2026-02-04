@@ -28,13 +28,24 @@ func New(host string, config *email.Config) (auth.Emailer, error) {
 	}, nil
 }
 
-func (e *emailer) SendOrgInvite(to []string, inv auth.OrgInvite, orgName, invRedirectPath string) error {
+func (e *emailer) SendOrgInvite(to []string, inv auth.OrgInvite, orgName, invRedirectPath string, groupNames map[string]string) error {
 	redirectURL := fmt.Sprintf("%s%s/%s", e.host, invRedirectPath, inv.ID)
 
 	templateData := map[string]any{
 		"OrgName":    orgName,
 		"Role":       inv.InviteeRole,
 		"InviteLink": redirectURL,
+	}
+
+	// If the Org invite is associated with one or more Group assignments, we build a mapping of group names to group roles using the passed-in
+	// `groupNames` map and the group IDs from inv.Groups.
+	if len(inv.GroupInvites) > 0 {
+		templateGroups := make(map[string]string, len(inv.GroupInvites))
+		for _, gi := range inv.GroupInvites {
+			templateGroups[groupNames[gi.GroupID]] = gi.MemberRole
+		}
+
+		templateData["Groups"] = templateGroups
 	}
 
 	subject := fmt.Sprintf(subjectOrgInvite, orgName)
