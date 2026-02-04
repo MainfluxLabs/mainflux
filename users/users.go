@@ -34,6 +34,12 @@ type EmailVerification struct {
 	ExpiresAt time.Time
 }
 
+type Identity struct {
+	UserID         string
+	Provider       string
+	ProviderUserID string
+}
+
 // Validate returns an error if user representation is invalid.
 func (u User) Validate(passRegex *regexp.Regexp) error {
 	if !email.IsEmail(u.Email) {
@@ -84,4 +90,12 @@ type UserRepository interface {
 
 	// BackupAll retrieves all users.
 	BackupAll(ctx context.Context) ([]User, error)
+}
+
+type IdentityRepository interface {
+	// Save persists the user Identity
+	Save(ctx context.Context, identity Identity) error
+
+	// Retrieve fetches an Identity by provider and providerUserID.
+	Retrieve(ctx context.Context, provider, providerUserID string) (Identity, error)
 }

@@ -98,8 +98,17 @@ func migrateDB(db *sqlx.DB) error {
 				Id: "users_4",
 				Up: []string{
 					`ALTER TABLE users ALTER COLUMN password DROP NOT NULL`,
+
+					`CREATE TABLE user_identities (
+						user_id UUID NOT NULL REFERENCES users(id),
+						provider VARCHAR(32) NOT NULL,
+						provider_user_id VARCHAR(128) NOT NULL,
+						PRIMARY KEY (user_id, provider),
+						UNIQUE (provider, provider_user_id)
+					)`,
 				},
 				Down: []string{
+					`DROP TABLE IF EXISTS user_identities`,
 					`ALTER TABLE users ALTER COLUMN password SET NOT NULL`,
 				},
 			},

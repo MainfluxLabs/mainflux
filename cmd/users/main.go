@@ -353,6 +353,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceC
 	userRepo := tracing.UserRepositoryMiddleware(postgres.NewUserRepo(database), tracer)
 	verificationRepo := tracing.VerificationRepositoryMiddleware(postgres.NewEmailVerificationRepo(database), tracer)
 	platformInvitesRepo := tracing.PlatformInvitesRepositoryMiddleware(postgres.NewPlatformInvitesRepo(database), tracer)
+	identityRepo := tracing.IdentityRepositoryMiddleware(postgres.NewIdentityRepo(database), tracer)
 
 	svcEmailer, err := emailer.New(c.host, &c.emailConf)
 	if err != nil {
@@ -378,7 +379,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceC
 
 	idProvider := uuid.New()
 
-	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, c.inviteDuration, c.emailVerifyEnabled, c.selfRegisterEnabled, hasher, ac, svcEmailer, idProvider, c.googleOauthConfig, c.githubOauthConfig, c.urls)
+	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, identityRepo, c.inviteDuration, c.emailVerifyEnabled, c.selfRegisterEnabled, hasher, ac, svcEmailer, idProvider, c.googleOauthConfig, c.githubOauthConfig, c.urls)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

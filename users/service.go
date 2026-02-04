@@ -167,6 +167,7 @@ type usersService struct {
 	users               UserRepository
 	emailVerifications  EmailVerificationRepository
 	invites             PlatformInvitesRepository
+	identity            IdentityRepository
 	inviteDuration      time.Duration
 	emailVerifyEnabled  bool
 	selfRegisterEnabled bool
@@ -180,11 +181,12 @@ type usersService struct {
 }
 
 // New instantiates the users service implementation
-func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, inviteDuration time.Duration, emailVerifyEnabled bool, selfRegisterEnabled bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider, googleOAuth, githubOAuth oauth2.Config, urls ConfigURLs) Service {
+func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, identity IdentityRepository, inviteDuration time.Duration, emailVerifyEnabled bool, selfRegisterEnabled bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider, googleOAuth, githubOAuth oauth2.Config, urls ConfigURLs) Service {
 	return &usersService{
 		users:               users,
 		emailVerifications:  verifications,
 		invites:             invites,
+		identity:            identity,
 		inviteDuration:      inviteDuration,
 		emailVerifyEnabled:  emailVerifyEnabled,
 		selfRegisterEnabled: selfRegisterEnabled,
@@ -463,81 +465,23 @@ func (svc usersService) OAuthLogin(provider string) (state, verifier, redirectUR
 }
 
 func (svc usersService) OAuthCallback(ctx context.Context, provider, code, verifier string) (string, error) {
-	var email string
+	var email, providerUserID string
+	var err error
 
 	switch provider {
 	case GoogleProvider:
-		oauthToken, err := svc.googleOAuth.Exchange(ctx, code, oauth2.VerifierOption(verifier))
-		if err != nil {
-			return "", err
-		}
-
-		client := svc.googleOAuth.Client(ctx, oauthToken)
-		resp, err := client.Get(svc.urls.GoogleUserInfoURL)
-		if err != nil {
-			return "", err
-		}
-		defer resp.Body.Close()
-
-		var gUser struct {
-			Email string `json:"email"`
-		}
-		if err := json.NewDecoder(resp.Body).Decode(&gUser); err != nil {
-			return "", err
-		}
-		email = gUser.Email
-
+		email, providerUserID, err = svc.fetchGoogleUser(ctx, code, verifier)
 	case GitHubProvider:
-		oauthToken, err := svc.githubOAuth.Exchange(ctx, code, oauth2.VerifierOption(verifier))
-		if err != nil {
-			return "", err
-		}
-
-		client := svc.githubOAuth.Client(ctx, oauthToken)
-		resp, err := client.Get(svc.urls.GitHubUserInfoURL)
-		if err != nil {
-			return "", err
-		}
-		defer resp.Body.Close()
-
-		var emails []struct {
-			Email    string `json:"email"`
-			Primary  bool   `json:"primary"`
-			Verified bool   `json:"verified"`
-		}
-		if err := json.NewDecoder(resp.Body).Decode(&emails); err != nil {
-			return "", err
-		}
-
-		for _, e := range emails {
-			if e.Primary && e.Verified {
-				email = e.Email
-				break
-			}
-		}
-
-		if email == "" && len(emails) > 0 {
-			email = emails[0].Email
-		}
+		email, providerUserID, err = svc.fetchGitHubUser(ctx, code, verifier)
 	}
 
-	user, err := svc.users.RetrieveByEmail(ctx, email)
 	if err != nil {
-		if !errors.Contains(err, dbutil.ErrNotFound) {
-			return "", err
-		}
+		return "", err
 	}
 
-	if user.ID == "" {
-		uid, _ := svc.idProvider.ID()
-		user = User{
-			ID:     uid,
-			Email:  email,
-			Status: EnabledStatusKey,
-		}
-		if _, err := svc.users.Save(ctx, user); err != nil {
-			return "", err
-		}
+	user, err := svc.handleIdentity(ctx, provider, email, providerUserID)
+	if err != nil {
+		return "", err
 	}
 
 	token, err := svc.issue(ctx, user.ID, user.Email, auth.LoginKey)
@@ -545,9 +489,199 @@ func (svc usersService) OAuthCallback(ctx context.Context, provider, code, verif
 		return "", err
 	}
 
-	redirectURL := fmt.Sprintf("%s?token=%s", svc.urls.RedirectLoginURL, token)
-	return redirectURL, nil
+	return fmt.Sprintf("%s?token=%s", svc.urls.RedirectLoginURL, token), nil
 }
+
+func (svc usersService) fetchGoogleUser(ctx context.Context, code, verifier string) (string, string, error) {
+	oauthToken, err := svc.googleOAuth.Exchange(ctx, code, oauth2.VerifierOption(verifier))
+	if err != nil {
+		return "", "", err
+	}
+	client := svc.googleOAuth.Client(ctx, oauthToken)
+	resp, err := client.Get(svc.urls.GoogleUserInfoURL)
+	if err != nil {
+		return "", "", err
+	}
+	defer resp.Body.Close()
+
+	var gUser struct {
+		ID    string `json:"id"`
+		Email string `json:"email"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&gUser); err != nil {
+		return "", "", err
+	}
+
+	return gUser.Email, gUser.ID, nil
+}
+
+func (svc usersService) fetchGitHubUser(ctx context.Context, code, verifier string) (string, string, error) {
+	oauthToken, err := svc.githubOAuth.Exchange(ctx, code, oauth2.VerifierOption(verifier))
+	if err != nil {
+		return "", "", err
+	}
+	client := svc.githubOAuth.Client(ctx, oauthToken)
+	resp, err := client.Get(svc.urls.GitHubUserInfoURL)
+	if err != nil {
+		return "", "", err
+	}
+	defer resp.Body.Close()
+
+	var ghUser struct {
+		ID     string `json:"id"`
+		Emails []struct {
+			Email    string `json:"email"`
+			Primary  bool   `json:"primary"`
+			Verified bool   `json:"verified"`
+		} `json:"emails,omitempty"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&ghUser); err != nil {
+		return "", "", err
+	}
+
+	email := ""
+	for _, e := range ghUser.Emails {
+		if e.Primary && e.Verified {
+			email = e.Email
+			break
+		}
+	}
+	if email == "" && len(ghUser.Emails) > 0 {
+		email = ghUser.Emails[0].Email
+	}
+
+	return email, ghUser.ID, nil
+}
+
+func (svc usersService) handleIdentity(ctx context.Context, provider, email, providerUserID string) (User, error) {
+	identity, err := svc.identity.Retrieve(ctx, provider, providerUserID)
+	if err != nil && !errors.Contains(err, dbutil.ErrNotFound) {
+		return User{}, err
+	}
+
+	var user User
+	if identity.UserID != "" {
+		user, err = svc.users.RetrieveByID(ctx, identity.UserID)
+		if err != nil {
+			return User{}, err
+		}
+
+		if user.Email != email {
+			user.Email = email
+			if _, err := svc.users.Save(ctx, user); err != nil {
+				return User{}, err
+			}
+		}
+	} else {
+		uid, _ := svc.idProvider.ID()
+		user = User{
+			ID:     uid,
+			Email:  email,
+			Status: EnabledStatusKey,
+		}
+		if _, err := svc.users.Save(ctx, user); err != nil {
+			return User{}, err
+		}
+
+		newIdentity := Identity{
+			UserID:         user.ID,
+			Provider:       provider,
+			ProviderUserID: providerUserID,
+		}
+		if err := svc.identity.Save(ctx, newIdentity); err != nil {
+			return User{}, err
+		}
+	}
+
+	return user, nil
+}
+
+// func (svc usersService) OAuthCallback(ctx context.Context, provider, code, verifier string) (string, error) {
+// 	var email string
+
+// 	switch provider {
+// 	case GoogleProvider:
+// 		oauthToken, err := svc.googleOAuth.Exchange(ctx, code, oauth2.VerifierOption(verifier))
+// 		if err != nil {
+// 			return "", err
+// 		}
+
+// 		client := svc.googleOAuth.Client(ctx, oauthToken)
+// 		resp, err := client.Get(svc.urls.GoogleUserInfoURL)
+// 		if err != nil {
+// 			return "", err
+// 		}
+// 		defer resp.Body.Close()
+
+// 		var gUser struct {
+// 			Email string `json:"email"`
+// 		}
+// 		if err := json.NewDecoder(resp.Body).Decode(&gUser); err != nil {
+// 			return "", err
+// 		}
+// 		email = gUser.Email
+
+// 	case GitHubProvider:
+// 		oauthToken, err := svc.githubOAuth.Exchange(ctx, code, oauth2.VerifierOption(verifier))
+// 		if err != nil {
+// 			return "", err
+// 		}
+
+// 		client := svc.githubOAuth.Client(ctx, oauthToken)
+// 		resp, err := client.Get(svc.urls.GitHubUserInfoURL)
+// 		if err != nil {
+// 			return "", err
+// 		}
+// 		defer resp.Body.Close()
+
+// 		var emails []struct {
+// 			Email    string `json:"email"`
+// 			Primary  bool   `json:"primary"`
+// 			Verified bool   `json:"verified"`
+// 		}
+// 		if err := json.NewDecoder(resp.Body).Decode(&emails); err != nil {
+// 			return "", err
+// 		}
+
+// 		for _, e := range emails {
+// 			if e.Primary && e.Verified {
+// 				email = e.Email
+// 				break
+// 			}
+// 		}
+
+// 		if email == "" && len(emails) > 0 {
+// 			email = emails[0].Email
+// 		}
+// 	}
+
+// 	user, err := svc.users.RetrieveByEmail(ctx, email)
+// 	if err != nil {
+// 		if !errors.Contains(err, dbutil.ErrNotFound) {
+// 			return "", err
+// 		}
+// 	}
+
+// 	if user.ID == "" {
+// 		uid, _ := svc.idProvider.ID()
+// 		user = User{
+// 			ID:     uid,
+// 			Email:  email,
+// 			Status: EnabledStatusKey,
+// 		}
+// 		if _, err := svc.users.Save(ctx, user); err != nil {
+// 			return "", err
+// 		}
+// 	}
+
+// 	token, err := svc.issue(ctx, user.ID, user.Email, auth.LoginKey)
+// 	if err != nil {
+// 		return "", err
+// 	}
+
+// 	redirectURL := fmt.Sprintf("%s?token=%s", svc.urls.RedirectLoginURL, token)
+// 	return redirectURL, nil
+// }
 
 func (svc usersService) ViewUser(ctx context.Context, token, id string) (User, error) {
 	user, err := svc.identify(ctx, token)
