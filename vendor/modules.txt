@@ -20,6 +20,12 @@ github.com/Microsoft/go-winio/pkg/guid
 # github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5
 ## explicit
 github.com/Nvveen/Gotty
+# github.com/Shopify/go-lua v0.0.0-20250718183320-1e37f32ad7d0
+## explicit; go 1.22
+github.com/Shopify/go-lua
+# github.com/Shopify/goluago v0.0.0-20240527182001-ec4ec6c26eab
+## explicit; go 1.22
+github.com/Shopify/goluago/util
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
 github.com/beorn7/perks/quantile
@@ -285,6 +291,8 @@ github.com/ory/dockertest/v3/docker/types/network
 github.com/ory/dockertest/v3/docker/types/registry
 github.com/ory/dockertest/v3/docker/types/strslice
 github.com/ory/dockertest/v3/docker/types/versions
+# github.com/pborman/uuid v0.0.0-20160216163710-c55201b03606
+## explicit
 # github.com/pelletier/go-toml v1.9.5
 ## explicit; go 1.12
 github.com/pelletier/go-toml

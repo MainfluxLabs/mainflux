@@ -1,9 +1,14 @@
 package rules
 
 import (
-	"context"
+	"encoding/json"
+	"fmt"
+	"strconv"
+	"strings"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 type Rule struct {
@@ -32,44 +37,206 @@ type RulesPage struct {
 	Rules []Rule
 }
 
-type RuleRepository interface {
-	// Save persists multiple rules. Rules are saved using a transaction.
-	// If one rule fails then none will be saved.
-	// Successful operation is indicated by a non-nil error response.
-	Save(ctx context.Context, rules ...Rule) ([]Rule, error)
+const (
+	ActionTypeSMTP  = "smtp"
+	ActionTypeSMPP  = "smpp"
+	ActionTypeAlarm = "alarm"
 
-	// RetrieveByID retrieves a rule having the provided ID.
-	RetrieveByID(ctx context.Context, id string) (Rule, error)
+	OperatorAND = "AND"
+	OperatorOR  = "OR"
+)
 
-	// RetrieveByThing retrieves rules assigned to a certain thing,
-	// identified by a given thing ID.
-	RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (RulesPage, error)
+var errInvalidObject = errors.New("invalid JSON object")
 
-	// RetrieveByGroup retrieves rules related to a certain group,
-	// identified by a given group ID.
-	RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (RulesPage, error)
+func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, rule Rule) error {
+	triggered, payloads, err := processPayload(parsedPayload, rule.Conditions, rule.Operator, msg.ContentType)
+	if err != nil {
+		return err
+	}
 
-	// RetrieveThingIDsByRule retrieves all thing IDs that have the given rule assigned.
-	RetrieveThingIDsByRule(ctx context.Context, ruleID string) ([]string, error)
+	if !triggered {
+		return nil
+	}
 
-	// Update performs an update to the existing rule.
-	// A non-nil error is returned to indicate operation failure.
-	Update(ctx context.Context, r Rule) error
+	for _, action := range rule.Actions {
+		for _, payload := range payloads {
+			newMsg := msg
+			newMsg.Payload = payload
 
-	// Remove removes rules having the provided IDs.
-	Remove(ctx context.Context, ids ...string) error
+			switch action.Type {
+			case ActionTypeSMTP:
+				newMsg.Subject = fmt.Sprintf("%s.%s", subjectSMTP, action.ID)
+			case ActionTypeSMPP:
+				newMsg.Subject = fmt.Sprintf("%s.%s", subjectSMPP, action.ID)
+			case ActionTypeAlarm:
+				newMsg.Subject = fmt.Sprintf("%s.%s", subjectAlarms, rule.ID)
+			default:
+				continue
+			}
 
-	// RemoveByGroup removes rules related to a certain group,
-	// identified by a given group ID.
-	RemoveByGroup(ctx context.Context, groupID string) error
+			if err := rs.pubsub.Publish(*newMsg); err != nil {
+				return err
+			}
+		}
+	}
 
-	// Assign assigns rules to the specified thing.
-	Assign(ctx context.Context, thingID string, ruleIDs ...string) error
+	return nil
+}
 
-	// Unassign removes specific rule assignments from a given thing.
-	Unassign(ctx context.Context, thingID string, ruleIDs ...string) error
+func processPayload(payload any, conditions []Condition, operator string, contentType string) (bool, [][]byte, error) {
+	switch data := payload.(type) {
+	case []any:
+		var triggerPayloads [][]byte
+		for _, item := range data {
+			obj, ok := item.(map[string]any)
+			if !ok {
+				continue
+			}
 
-	// UnassignByThing removes all rule assignments for a certain thing,
-	// identified by a given thing ID.
-	UnassignByThing(ctx context.Context, thingID string) error
+			triggered, err := checkConditionsMet(obj, conditions, operator, contentType)
+			if err != nil {
+				return false, nil, err
+			}
+
+			if triggered {
+				extractedPayload, err := json.Marshal(obj)
+				if err != nil {
+					return false, nil, err
+				}
+				triggerPayloads = append(triggerPayloads, extractedPayload)
+			}
+		}
+
+		return len(triggerPayloads) > 0, triggerPayloads, nil
+	case map[string]any:
+		triggered, err := checkConditionsMet(data, conditions, operator, contentType)
+		if err != nil {
+			return false, nil, err
+		}
+
+		if triggered {
+			extractedPayload, err := json.Marshal(data)
+			if err != nil {
+				return false, nil, err
+			}
+			return true, [][]byte{extractedPayload}, nil
+		}
+
+		return false, nil, nil
+	default:
+		return false, nil, errInvalidObject
+	}
+}
+
+func checkConditionsMet(payloadMap map[string]any, conditions []Condition, operator, contentType string) (bool, error) {
+	results := make([]bool, len(conditions))
+
+	for i, condition := range conditions {
+		value := findPayloadParam(payloadMap, condition.Field, contentType)
+		if value == nil {
+			results[i] = false
+			continue
+		}
+
+		var payloadValue float64
+		switch v := value.(type) {
+		case string:
+			val, err := strconv.ParseFloat(v, 64)
+			if err != nil {
+				return false, err
+			}
+			payloadValue = val
+		case float64:
+			payloadValue = v
+		case int:
+			payloadValue = float64(v)
+		case int64:
+			payloadValue = float64(v)
+		case uint:
+			payloadValue = float64(v)
+		case uint64:
+			payloadValue = float64(v)
+		default:
+			results[i] = false
+			continue
+		}
+
+		results[i] = isConditionMet(condition.Comparator, payloadValue, *condition.Threshold)
+	}
+
+	if operator == OperatorOR {
+		for _, r := range results {
+			if r {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+
+	for _, r := range results {
+		if !r {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func isConditionMet(comparator string, val1, val2 float64) bool {
+	switch comparator {
+	case "==":
+		return val1 == val2
+	case ">=":
+		return val1 >= val2
+	case "<=":
+		return val1 <= val2
+	case ">":
+		return val1 > val2
+	case "<":
+		return val1 < val2
+	default:
+		return false
+	}
+}
+
+func findPayloadParam(payload map[string]any, param string, contentType string) any {
+	switch contentType {
+	case messaging.SenMLContentType:
+		if name, ok := payload["name"].(string); ok && name == param {
+			if value, exists := payload["value"]; exists {
+				return value
+			}
+		}
+		return nil
+	case messaging.JSONContentType:
+		return findParam(payload, param)
+	default:
+		return nil
+	}
+}
+
+func findParam(payload map[string]any, param string) any {
+	if param == "" {
+		return nil
+	}
+
+	parts := strings.Split(param, ".")
+	current := payload
+
+	for i, key := range parts {
+		val, ok := current[key]
+		if !ok {
+			return nil
+		}
+
+		if i < len(parts)-1 {
+			nested, ok := val.(map[string]any)
+			if !ok {
+				return nil
+			}
+			current = nested
+		} else {
+			return val
+		}
+	}
+	return nil
 }

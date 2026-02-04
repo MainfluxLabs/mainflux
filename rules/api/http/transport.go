@@ -82,6 +82,83 @@ func MakeHandler(tracer opentracing.Tracer, svc rules.Service, logger log.Logger
 		opts...,
 	))
 
+	r.Post("/groups/:id/scripts", kithttp.NewServer(
+		kitot.TraceServer(tracer, "create_scripts")(createScriptsEndpoint(svc)),
+		decodeCreateScripts,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/things/:id/scripts", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_scripts_by_thing")(listScriptsByThingEndpoint(svc)),
+		decodeListScriptsByThing,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/groups/:id/scripts", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_scripts_by_group")(listScriptsByGroupEndpoint(svc)),
+		decodeListScriptsByGroup,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/scripts/:id/things", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_thing_ids_by_script")(listThingIDsByScriptEndpoint(svc)),
+		decodeScriptReq,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/scripts/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_script")(viewScriptEndpoint(svc)),
+		decodeScriptReq,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Put("/scripts/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_script")(updateScriptEndpoint(svc)),
+		decodeUpdateScript,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Patch("/scripts", kithttp.NewServer(
+		kitot.TraceServer(tracer, "remove_scripts")(removeScriptsEndpoint(svc)),
+		decodeRemoveScripts,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Post("/things/:id/scripts", kithttp.NewServer(
+		kitot.TraceServer(tracer, "assign_scripts")(assignScriptsEndpoint(svc)),
+		decodeModifyThingScripts,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Patch("/things/:id/scripts", kithttp.NewServer(
+		kitot.TraceServer(tracer, "unassign_scripts")(unassignScriptsEndpoint(svc)),
+		decodeModifyThingScripts,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/things/:id/runs", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_script_runs_by_thing")(listScriptRunsByThingEndpoint(svc)),
+		decodeListScriptRunsByThing,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Patch("/runs", kithttp.NewServer(
+		kitot.TraceServer(tracer, "remove_script_runs")(removeScriptRunsEndpoint(svc)),
+		decodeRemoveScriptRuns,
+		encodeResponse,
+		opts...,
+	))
+
 	r.GetFunc("/health", mainflux.Health("rules"))
 	r.Handle("/metrics", promhttp.Handler())
 
@@ -179,6 +256,141 @@ func decodeThingRules(_ context.Context, r *http.Request) (any, error) {
 		token:   apiutil.ExtractBearerToken(r),
 		thingID: bone.GetValue(r, apiutil.IDKey),
 	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeCreateScripts(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := createScriptsReq{
+		token:   apiutil.ExtractBearerToken(r),
+		groupID: bone.GetValue(r, apiutil.IDKey),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeListScriptsByThing(_ context.Context, r *http.Request) (any, error) {
+	pm, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listScriptsByThingReq{
+		token:        apiutil.ExtractBearerToken(r),
+		thingID:      bone.GetValue(r, apiutil.IDKey),
+		pageMetadata: pm,
+	}
+	return req, nil
+}
+
+func decodeListScriptsByGroup(_ context.Context, r *http.Request) (any, error) {
+	pm, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listScriptsByGroupReq{
+		token:        apiutil.ExtractBearerToken(r),
+		groupID:      bone.GetValue(r, apiutil.IDKey),
+		pageMetadata: pm,
+	}
+	return req, nil
+}
+
+func decodeScriptReq(_ context.Context, r *http.Request) (any, error) {
+	req := scriptReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, apiutil.IDKey),
+	}
+
+	return req, nil
+}
+
+func decodeUpdateScript(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := updateScriptReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, apiutil.IDKey),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeRemoveScripts(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := removeScriptsReq{
+		token: apiutil.ExtractBearerToken(r),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeModifyThingScripts(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := thingScriptsReq{
+		token:   apiutil.ExtractBearerToken(r),
+		thingID: bone.GetValue(r, apiutil.IDKey),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeListScriptRunsByThing(_ context.Context, r *http.Request) (any, error) {
+	pm, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listScriptRunsByThingReq{
+		token:        apiutil.ExtractBearerToken(r),
+		thingID:      bone.GetValue(r, apiutil.IDKey),
+		pageMetadata: pm,
+	}
+	return req, nil
+}
+
+func decodeRemoveScriptRuns(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := removeScriptRunsReq{
+		token: apiutil.ExtractBearerToken(r),
+	}
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}

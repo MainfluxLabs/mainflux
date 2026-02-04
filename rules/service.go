@@ -7,8 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/logger"
@@ -58,17 +56,43 @@ type Service interface {
 	// UnassignRulesByThing removes all rule assignments from a specific thing.
 	UnassignRulesByThing(ctx context.Context, thingID string) error
 
+	// CreateScripts persists multiple Lua scripts.
+	CreateScripts(ctx context.Context, token, groupID string, scripts ...LuaScript) ([]LuaScript, error)
+
+	// ListScriptsByThing retrieves a list of Scripts associated with a specific Thing.
+	ListScriptsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (LuaScriptsPage, error)
+
+	// ListScriptsByGroup retrieves a list of scripts belonging to a specific Group.
+	ListScriptsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (LuaScriptsPage, error)
+
+	// ListThingIDsByScript retrieves a list of IDs of Things associated with a specific Script.
+	ListThingIDsByScript(ctx context.Context, token, scriptID string) ([]string, error)
+
+	// ViewScript retrieves a specific Script by its ID.
+	ViewScript(ctx context.Context, token, id string) (LuaScript, error)
+
+	// UpdateScript updates the Script identified by the provided ID.
+	UpdateScript(ctx context.Context, token string, script LuaScript) error
+
+	// RemoveScripts removes the Scripts identified by the provided IDs.
+	RemoveScripts(ctx context.Context, token string, ids ...string) error
+
+	// AssignScripts assigns one or more Scripts to a specific Thing.
+	AssignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) error
+
+	// UnassignScripts unassigns one or omre scripts from a specific Thing.
+	UnassignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) error
+
+	// ListScriptRunsByThing retrieves a list of Script Runs associated with a specific Thing.
+	ListScriptRunsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (ScriptRunsPage, error)
+
+	// RemoveScriptRuns removes the Runs identified by the provided IDs.
+	RemoveScriptRuns(ctx context.Context, token string, ids ...string) error
+
 	consumers.Consumer
 }
 
 const (
-	ActionTypeSMTP  = "smtp"
-	ActionTypeSMPP  = "smpp"
-	ActionTypeAlarm = "alarm"
-
-	OperatorAND = "AND"
-	OperatorOR  = "OR"
-
 	// subjectAlarms represents subject used to publish messages that trigger an alarm.
 	subjectAlarms = "alarms"
 	// subjectSMTP represents subject used to publish messages that trigger an SMTP notification.
@@ -77,26 +101,26 @@ const (
 	subjectSMPP = "smpp"
 )
 
-var errInvalidObject = errors.New("invalid JSON object")
-
 type rulesService struct {
-	rules      RuleRepository
-	things     protomfx.ThingsServiceClient
-	pubsub     messaging.PubSub
-	idProvider uuid.IDProvider
-	logger     logger.Logger
+	rules          RuleRepository
+	things         protomfx.ThingsServiceClient
+	pubsub         messaging.PubSub
+	idProvider     uuid.IDProvider
+	logger         logger.Logger
+	scriptsEnabled bool
 }
 
 var _ Service = (*rulesService)(nil)
 
 // New instantiates the rules service implementation.
-func New(rules RuleRepository, things protomfx.ThingsServiceClient, pubsub messaging.PubSub, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(rules RuleRepository, things protomfx.ThingsServiceClient, pubsub messaging.PubSub, idp uuid.IDProvider, logger logger.Logger, scriptsEnabled bool) Service {
 	return &rulesService{
-		rules:      rules,
-		things:     things,
-		pubsub:     pubsub,
-		idProvider: idp,
-		logger:     logger,
+		rules:          rules,
+		things:         things,
+		pubsub:         pubsub,
+		idProvider:     idp,
+		logger:         logger,
+		scriptsEnabled: scriptsEnabled,
 	}
 }
 
@@ -266,6 +290,177 @@ func (rs *rulesService) UnassignRulesByThing(ctx context.Context, thingID string
 	return rs.rules.UnassignByThing(ctx, thingID)
 }
 
+func (rs *rulesService) CreateScripts(ctx context.Context, token, groupID string, scripts ...LuaScript) ([]LuaScript, error) {
+	_, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Editor})
+	if err != nil {
+		return []LuaScript{}, err
+	}
+
+	for i := range scripts {
+		scripts[i].GroupID = groupID
+
+		id, err := rs.idProvider.ID()
+		if err != nil {
+			return []LuaScript{}, err
+		}
+		scripts[i].ID = id
+	}
+
+	return rs.rules.SaveScripts(ctx, scripts...)
+}
+
+func (rs *rulesService) ListScriptsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (LuaScriptsPage, error) {
+	_, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer})
+	if err != nil {
+		return LuaScriptsPage{}, err
+	}
+
+	return rs.rules.RetrieveScriptsByThing(ctx, thingID, pm)
+}
+
+func (rs *rulesService) ListScriptsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (LuaScriptsPage, error) {
+	_, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer})
+	if err != nil {
+		return LuaScriptsPage{}, err
+	}
+
+	return rs.rules.RetrieveScriptsByGroup(ctx, groupID, pm)
+}
+
+func (rs *rulesService) ListThingIDsByScript(ctx context.Context, token, scriptID string) ([]string, error) {
+	script, err := rs.rules.RetrieveScriptByID(ctx, scriptID)
+	if err != nil {
+		return []string{}, err
+	}
+
+	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: script.GroupID, Action: things.Viewer}); err != nil {
+		return []string{}, err
+	}
+
+	return rs.rules.RetrieveThingIDsByScript(ctx, scriptID)
+}
+
+func (rs *rulesService) ViewScript(ctx context.Context, token, id string) (LuaScript, error) {
+	script, err := rs.rules.RetrieveScriptByID(ctx, id)
+	if err != nil {
+		return LuaScript{}, err
+	}
+
+	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: script.GroupID, Action: things.Viewer}); err != nil {
+		return LuaScript{}, err
+	}
+
+	return script, nil
+}
+
+func (rs *rulesService) UpdateScript(ctx context.Context, token string, script LuaScript) error {
+	existingScript, err := rs.rules.RetrieveScriptByID(ctx, script.ID)
+	if err != nil {
+		return err
+	}
+
+	req := &protomfx.UserAccessReq{Token: token, Id: existingScript.GroupID, Action: things.Editor}
+	if _, err := rs.things.CanUserAccessGroup(ctx, req); err != nil {
+		return err
+	}
+
+	return rs.rules.UpdateScript(ctx, script)
+}
+
+func (rs *rulesService) RemoveScripts(ctx context.Context, token string, ids ...string) error {
+	for _, id := range ids {
+		script, err := rs.rules.RetrieveScriptByID(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: script.GroupID, Action: things.Editor}); err != nil {
+			return err
+		}
+	}
+
+	return rs.rules.RemoveScripts(ctx, ids...)
+}
+
+func (rs *rulesService) AssignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) error {
+	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
+		return err
+	}
+
+	grID, err := rs.things.GetGroupIDByThingID(ctx, &protomfx.ThingID{Value: thingID})
+	if err != nil {
+		return err
+	}
+
+	for _, id := range scriptIDs {
+		script, err := rs.rules.RetrieveScriptByID(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		if script.GroupID != grID.GetValue() {
+			return errors.ErrAuthorization
+		}
+	}
+
+	if err := rs.rules.AssignScripts(ctx, thingID, scriptIDs...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (rs *rulesService) UnassignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) error {
+	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
+		return err
+	}
+
+	grID, err := rs.things.GetGroupIDByThingID(ctx, &protomfx.ThingID{Value: thingID})
+	if err != nil {
+		return err
+	}
+
+	for _, id := range scriptIDs {
+		script, err := rs.rules.RetrieveScriptByID(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		if script.GroupID != grID.GetValue() {
+			return errors.ErrAuthorization
+		}
+	}
+
+	if err := rs.rules.UnassignScripts(ctx, thingID, scriptIDs...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (rs *rulesService) ListScriptRunsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (ScriptRunsPage, error) {
+	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer}); err != nil {
+		return ScriptRunsPage{}, err
+	}
+
+	return rs.rules.RetrieveScriptRunsByThing(ctx, thingID, pm)
+}
+
+func (rs *rulesService) RemoveScriptRuns(ctx context.Context, token string, ids ...string) error {
+	for _, id := range ids {
+		run, err := rs.rules.RetrieveScriptRunByID(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: run.ThingID, Action: things.Editor}); err != nil {
+			return err
+		}
+	}
+
+	return rs.rules.RemoveScriptRuns(ctx, ids...)
+}
+
 func (rs *rulesService) Consume(message any) error {
 	ctx := context.Background()
 
@@ -274,205 +469,115 @@ func (rs *rulesService) Consume(message any) error {
 		return errors.ErrMessage
 	}
 
-	rp, err := rs.rules.RetrieveByThing(ctx, msg.Publisher, apiutil.PageMetadata{})
+	var payload any
+	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
+		return err
+	}
+
+	rulesPage, err := rs.rules.RetrieveByThing(ctx, msg.Publisher, apiutil.PageMetadata{})
 	if err != nil {
 		return err
 	}
 
-	for _, rule := range rp.Rules {
-		triggered, payloads, err := processPayload(msg.Payload, rule.Conditions, rule.Operator, msg.ContentType)
-		if err != nil {
-			return err
-		}
-		if !triggered {
-			continue
-		}
-
-		for _, action := range rule.Actions {
-			for _, payload := range payloads {
-				newMsg := msg
-				newMsg.Payload = payload
-
-				switch action.Type {
-				case ActionTypeSMTP:
-					newMsg.Subject = fmt.Sprintf("%s.%s", subjectSMTP, action.ID)
-				case ActionTypeSMPP:
-					newMsg.Subject = fmt.Sprintf("%s.%s", subjectSMPP, action.ID)
-				case ActionTypeAlarm:
-					newMsg.Subject = fmt.Sprintf("%s.%s", subjectAlarms, rule.ID)
-				default:
-					continue
-				}
-
-				if err := rs.pubsub.Publish(newMsg); err != nil {
-					return err
-				}
-			}
+	// Process simple rules assigned to Publisher
+	for _, rule := range rulesPage.Rules {
+		if err := rs.processRule(&msg, payload, rule); err != nil {
+			rs.logger.Error(fmt.Sprintf("processing rule with id %s failed with error: %v", rule.ID, err))
 		}
 	}
+
+	if !rs.scriptsEnabled {
+		return nil
+	}
+
+	scriptsPage, err := rs.rules.RetrieveScriptsByThing(ctx, msg.Publisher, apiutil.PageMetadata{})
+	if err != nil {
+		return err
+	}
+
+	// Process Lua scripts assigned to Publisher
+	rs.processLuaScripts(ctx, &msg, payload, scriptsPage.Scripts...)
 
 	return nil
 }
 
-func processPayload(payload []byte, conditions []Condition, operator string, contentType string) (bool, [][]byte, error) {
-	var parsedData any
-	if err := json.Unmarshal(payload, &parsedData); err != nil {
-		return false, nil, err
-	}
+type RuleRepository interface {
+	// Save persists multiple rules. Rules are saved using a transaction.
+	// If one rule fails then none will be saved.
+	// Successful operation is indicated by a non-nil error response.
+	Save(ctx context.Context, rules ...Rule) ([]Rule, error)
 
-	switch data := parsedData.(type) {
-	case []any:
-		var triggerPayloads [][]byte
-		for _, item := range data {
-			obj, ok := item.(map[string]any)
-			if !ok {
-				continue
-			}
+	// RetrieveByID retrieves a rule having the provided ID.
+	RetrieveByID(ctx context.Context, id string) (Rule, error)
 
-			triggered, err := checkConditionsMet(obj, conditions, operator, contentType)
-			if err != nil {
-				return false, nil, err
-			}
+	// RetrieveByThing retrieves rules assigned to a certain thing,
+	// identified by a given thing ID.
+	RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (RulesPage, error)
 
-			if triggered {
-				extractedPayload, err := json.Marshal(obj)
-				if err != nil {
-					return false, nil, err
-				}
-				triggerPayloads = append(triggerPayloads, extractedPayload)
-			}
-		}
+	// RetrieveByGroup retrieves rules related to a certain group,
+	// identified by a given group ID.
+	RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (RulesPage, error)
 
-		return len(triggerPayloads) > 0, triggerPayloads, nil
-	case map[string]any:
-		triggered, err := checkConditionsMet(data, conditions, operator, contentType)
-		if err != nil {
-			return false, nil, err
-		}
+	// RetrieveThingIDsByRule retrieves all thing IDs that have the given rule assigned.
+	RetrieveThingIDsByRule(ctx context.Context, ruleID string) ([]string, error)
 
-		if triggered {
-			extractedPayload, err := json.Marshal(data)
-			if err != nil {
-				return false, nil, err
-			}
-			return true, [][]byte{extractedPayload}, nil
-		}
+	// Update performs an update to the existing rule.
+	// A non-nil error is returned to indicate operation failure.
+	Update(ctx context.Context, r Rule) error
 
-		return false, nil, nil
-	default:
-		return false, nil, errInvalidObject
-	}
-}
+	// Remove removes rules having the provided IDs.
+	Remove(ctx context.Context, ids ...string) error
 
-func checkConditionsMet(payloadMap map[string]any, conditions []Condition, operator, contentType string) (bool, error) {
-	results := make([]bool, len(conditions))
+	// RemoveByGroup removes rules related to a certain group,
+	// identified by a given group ID.
+	RemoveByGroup(ctx context.Context, groupID string) error
 
-	for i, condition := range conditions {
-		value := findPayloadParam(payloadMap, condition.Field, contentType)
-		if value == nil {
-			results[i] = false
-			continue
-		}
+	// Assign assigns rules to the specified thing.
+	Assign(ctx context.Context, thingID string, ruleIDs ...string) error
 
-		var payloadValue float64
-		switch v := value.(type) {
-		case string:
-			val, err := strconv.ParseFloat(v, 64)
-			if err != nil {
-				return false, err
-			}
-			payloadValue = val
-		case float64:
-			payloadValue = v
-		case int:
-			payloadValue = float64(v)
-		case int64:
-			payloadValue = float64(v)
-		case uint:
-			payloadValue = float64(v)
-		case uint64:
-			payloadValue = float64(v)
-		default:
-			results[i] = false
-			continue
-		}
+	// Unassign removes specific rule assignments from a given thing.
+	Unassign(ctx context.Context, thingID string, ruleIDs ...string) error
 
-		results[i] = isConditionMet(condition.Comparator, payloadValue, *condition.Threshold)
-	}
+	// UnassignByThing removes all rule assignments for a certain thing,
+	// identified by a given thing ID.
+	UnassignByThing(ctx context.Context, thingID string) error
 
-	if operator == OperatorOR {
-		for _, r := range results {
-			if r {
-				return true, nil
-			}
-		}
-		return false, nil
-	}
+	// SaveScripts persists multiple Lua scripts.
+	SaveScripts(ctx context.Context, scripts ...LuaScript) ([]LuaScript, error)
 
-	for _, r := range results {
-		if !r {
-			return false, nil
-		}
-	}
-	return true, nil
-}
+	// RetrieveScriptByID retrieves a single Lua script denoted by ID.
+	RetrieveScriptByID(ctx context.Context, id string) (LuaScript, error)
 
-func isConditionMet(comparator string, val1, val2 float64) bool {
-	switch comparator {
-	case "==":
-		return val1 == val2
-	case ">=":
-		return val1 >= val2
-	case "<=":
-		return val1 <= val2
-	case ">":
-		return val1 > val2
-	case "<":
-		return val1 < val2
-	default:
-		return false
-	}
-}
+	// RetrieveScriptsByThing retrieves a list of Lua scripts assigned to a specific Thing.
+	RetrieveScriptsByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (LuaScriptsPage, error)
 
-func findPayloadParam(payload map[string]any, param string, contentType string) any {
-	switch contentType {
-	case messaging.SenMLContentType:
-		if name, ok := payload["name"].(string); ok && name == param {
-			if value, exists := payload["value"]; exists {
-				return value
-			}
-		}
-		return nil
-	case messaging.JSONContentType:
-		return findParam(payload, param)
-	default:
-		return nil
-	}
-}
+	// RetrieveScriptsByGroup retrieves a list of Lua scripts belonging to a specific Group.
+	RetrieveScriptsByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (LuaScriptsPage, error)
 
-func findParam(payload map[string]any, param string) any {
-	if param == "" {
-		return nil
-	}
+	//R etrieveThingIDsByScript retrieves a list of Thing IDs to which the specific Lua script is assigned.
+	RetrieveThingIDsByScript(ctx context.Context, scriptID string) ([]string, error)
 
-	parts := strings.Split(param, ".")
-	current := payload
+	// UpdateScript updates the script denoted by script.ID.
+	UpdateScript(ctx context.Context, script LuaScript) error
 
-	for i, key := range parts {
-		val, ok := current[key]
-		if !ok {
-			return nil
-		}
+	// RemoveScripts removes Lua scripts with the provided ids.
+	RemoveScripts(ctx context.Context, ids ...string) error
 
-		if i < len(parts)-1 {
-			nested, ok := val.(map[string]any)
-			if !ok {
-				return nil
-			}
-			current = nested
-		} else {
-			return val
-		}
-	}
-	return nil
+	// AssignScripts assigns one or more Lua scripts to a specific Thing.
+	AssignScripts(ctx context.Context, thingID string, scriptIDs ...string) error
+
+	// Unassign unassgins one or omre Lua scripts from a specific Thing.
+	UnassignScripts(ctx context.Context, thingID string, scriptIDs ...string) error
+
+	// SaveScriptRuns preserves multiple ScriptRuns.
+	SaveScriptRuns(ctx context.Context, runs ...ScriptRun) ([]ScriptRun, error)
+
+	// RetrieveScriptRunByID retrieves a single ScriptRun based on its ID.
+	RetrieveScriptRunByID(ctx context.Context, id string) (ScriptRun, error)
+
+	// RetrieveScriptRunsByThing retrieves a list of Script runs by Thing ID.
+	RetrieveScriptRunsByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (ScriptRunsPage, error)
+
+	// RemoveScriptRuns removes one or more Script runs by IDs.
+	RemoveScriptRuns(ctx context.Context, ids ...string) error
 }
