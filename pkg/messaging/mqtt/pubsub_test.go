@@ -12,7 +12,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -96,11 +95,8 @@ func TestPublisher(t *testing.T) {
 		err := pubsub.Publish(msg)
 		assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
 
-		data, err := proto.Marshal(&msg)
-		assert.Nil(t, err, fmt.Sprintf("%s: failed to serialize protobuf error: %s\n", tc.desc, err))
-
 		receivedMsg := <-msgChan
-		assert.Equal(t, data, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, data, receivedMsg))
+		assert.Equal(t, msg.Payload, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, msg.Payload, receivedMsg))
 	}
 }
 
@@ -178,20 +174,12 @@ func TestSubscribe(t *testing.T) {
 		assert.Equal(t, err, tc.err, fmt.Sprintf("%s: expected: %s, but got: %s", tc.desc, err, tc.err))
 
 		if tc.err == nil {
-			expectedMsg := protomfx.Message{
-				Publisher: pubID,
-				Subtopic:  subtopic,
-				Payload:   data,
-			}
-			data, err := proto.Marshal(&expectedMsg)
-			assert.Nil(t, err, fmt.Sprintf("%s: failed to serialize protobuf error: %s\n", tc.desc, err))
-
 			token := client.Publish(tc.topic, qos, false, data)
 			token.WaitTimeout(tokenTimeout)
 			assert.Nil(t, token.Error(), fmt.Sprintf("got unexpected error: %s", token.Error()))
 
 			receivedMsg := <-msgChan
-			assert.Equal(t, expectedMsg.Payload, receivedMsg.Payload, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, expectedMsg, receivedMsg))
+			assert.Equal(t, data, receivedMsg.Payload, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, data, receivedMsg.Payload))
 		}
 	}
 }
@@ -248,7 +236,7 @@ func TestPubSub(t *testing.T) {
 
 		if tc.err == nil {
 			// Use pubsub to subscribe to a topic, and then publish messages to that topic.
-			expectedMsg := protomfx.Message{
+			msg := protomfx.Message{
 				Publisher:   pubID,
 				Subtopic:    subtopic,
 				Subject:     topic,
@@ -256,12 +244,12 @@ func TestPubSub(t *testing.T) {
 				ContentType: senmlContentType,
 			}
 
-			// Publish message, and then receive it on message profile.
-			err := pubsub.Publish(expectedMsg)
+			err := pubsub.Publish(msg)
 			assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
 
 			receivedMsg := <-msgChan
-			assert.Equal(t, expectedMsg, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, expectedMsg, receivedMsg))
+			assert.Equal(t, msg.Payload, receivedMsg.Payload, fmt.Sprintf("%s: expected %+v got %+v\n",
+				tc.desc, msg.Payload, receivedMsg.Payload))
 		}
 	}
 }
