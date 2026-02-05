@@ -3468,7 +3468,7 @@ func TestCanThingAccessGroup(t *testing.T) {
 	}
 }
 
-func TestGetConfigByThingID(t *testing.T) {
+func TestGetConfigByThing(t *testing.T) {
 	svc := newService()
 
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
@@ -3510,7 +3510,7 @@ func TestGetConfigByThingID(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		config, err := svc.GetConfigByThingID(context.Background(), tc.thingID)
+		config, err := svc.GetConfigByThing(context.Background(), tc.thingID)
 		if err == nil {
 			assert.NotNil(t, config, fmt.Sprintf("%s: expected config to be non-nil\n", tc.desc))
 		}
@@ -3518,7 +3518,7 @@ func TestGetConfigByThingID(t *testing.T) {
 	}
 }
 
-func TestGetGroupIDByThingID(t *testing.T) {
+func TestGetGroupIDByThing(t *testing.T) {
 	svc := newService()
 
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
@@ -3560,13 +3560,13 @@ func TestGetGroupIDByThingID(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		groupID, err := svc.GetGroupIDByThingID(context.Background(), tc.thingID)
+		groupID, err := svc.GetGroupIDByThing(context.Background(), tc.thingID)
 		assert.Equal(t, tc.groupID, groupID, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.groupID, groupID))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
-func TestGetGroupIDByProfileID(t *testing.T) {
+func TestGetGroupIDByProfile(t *testing.T) {
 	svc := newService()
 
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
@@ -3604,7 +3604,7 @@ func TestGetGroupIDByProfileID(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		groupID, err := svc.GetGroupIDByProfileID(context.Background(), tc.profileID)
+		groupID, err := svc.GetGroupIDByProfile(context.Background(), tc.profileID)
 		assert.Equal(t, tc.groupID, groupID, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.groupID, groupID))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
