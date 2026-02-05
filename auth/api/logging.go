@@ -160,9 +160,9 @@ func (lm *loggingMiddleware) ListOrgs(ctx context.Context, token string, pm apiu
 	return lm.svc.ListOrgs(ctx, token, pm)
 }
 
-func (lm *loggingMiddleware) GetOwnerIDByOrgID(ctx context.Context, orgID string) (_ string, err error) {
+func (lm *loggingMiddleware) GetOwnerIDByOrg(ctx context.Context, orgID string) (_ string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method get_owner_id_by_org_id for org id %s took %s to complete", orgID, time.Since(begin))
+		message := fmt.Sprintf("Method get_owner_id_by_org for org id %s took %s to complete", orgID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -170,7 +170,7 @@ func (lm *loggingMiddleware) GetOwnerIDByOrgID(ctx context.Context, orgID string
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.GetOwnerIDByOrgID(ctx, orgID)
+	return lm.svc.GetOwnerIDByOrg(ctx, orgID)
 }
 
 func (lm *loggingMiddleware) CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...auth.OrgMembership) (err error) {
@@ -249,32 +249,6 @@ func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (backup a
 	}(time.Now())
 
 	return lm.svc.Backup(ctx, token)
-}
-
-func (lm *loggingMiddleware) BackupOrgMemberships(ctx context.Context, token string, orgID string) (_ auth.OrgMembershipsBackup, err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method backup_org_memberships took %s to complete", time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.BackupOrgMemberships(ctx, token, orgID)
-}
-
-func (lm *loggingMiddleware) RestoreOrgMemberships(ctx context.Context, token string, orgID string, backup auth.OrgMembershipsBackup) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method restore_org_memberships took %s to complete", time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.RestoreOrgMemberships(ctx, token, orgID, backup)
 }
 
 func (lm *loggingMiddleware) Restore(ctx context.Context, token string, backup auth.Backup) (err error) {

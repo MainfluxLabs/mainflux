@@ -6,7 +6,6 @@ package groups
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"strings"
 
@@ -66,20 +65,6 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 	mux.Get("/orgs/:id/groups", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_groups_by_org")(listGroupsByOrgEndpoint(svc)),
 		decodeListByOrg,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Get("/orgs/:id/groups/backup", kithttp.NewServer(
-		kitot.TraceServer(tracer, "backup_groups_by_org")(backupGroupsByOrgEndpoint(svc)),
-		decodeBackupByOrg,
-		apiutil.EncodeFileResponse,
-		opts...,
-	))
-
-	mux.Post("/orgs/:id/groups/restore", kithttp.NewServer(
-		kitot.TraceServer(tracer, "restore_groups_by_org")(restoreGroupsByOrgEndpoint(svc)),
-		decodeRestoreByOrg,
 		encodeResponse,
 		opts...,
 	))
@@ -255,28 +240,6 @@ func decodeRemoveGroups(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeRestoreByOrg(ctx context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeOctetStream) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	req := restoreByOrgReq{
-		id:    bone.GetValue(r, apiutil.IDKey),
-		token: apiutil.ExtractBearerToken(r),
-	}
-
-	data, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	if err := json.Unmarshal(data, &req.Groups); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
 func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 
@@ -293,15 +256,6 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response any) erro
 	}
 
 	return json.NewEncoder(w).Encode(response)
-}
-
-func decodeBackupByOrg(_ context.Context, r *http.Request) (any, error) {
-	req := backupByOrgReq{
-		token: apiutil.ExtractBearerToken(r),
-		id:    bone.GetValue(r, apiutil.IDKey),
-	}
-
-	return req, nil
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {

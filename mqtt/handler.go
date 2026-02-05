@@ -139,18 +139,18 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	}
 	h.logger.Info(fmt.Sprintf(LogInfoPublished, c.ID, *topic))
 
-	subtopic, err := messaging.CreateSubtopic(*topic)
+	subtopic, err := messaging.NormalizeSubtopic(*topic)
 	if err != nil {
 		h.logger.Error(logErrFailedParseSubtopic + err.Error())
 		return
 	}
 
-	thingKeyReq := &protomfx.ThingKey{
+	tk := &protomfx.ThingKey{
 		Value: string(c.Password),
 		Type:  c.Username,
 	}
 
-	pc, err := h.things.GetPubConfByKey(context.Background(), thingKeyReq)
+	pc, err := h.things.GetPubConfigByKey(context.Background(), tk)
 	if err != nil {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, errors.ErrAuthentication).Error())
 	}
@@ -165,7 +165,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 	}
 
-	msg.Subject = nats.GetSubject(msg.Publisher, msg.Subtopic)
+	msg.Subject = nats.GetMessagesSubject(msg.Publisher, msg.Subtopic)
 	if err := h.publisher.Publish(msg); err != nil {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 	}
@@ -260,14 +260,14 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 		return nil, err
 	}
 
-	groupID, err := h.things.GetGroupIDByThingID(context.Background(), &protomfx.ThingID{Value: thingID})
+	groupID, err := h.things.GetGroupIDByThing(context.Background(), &protomfx.ThingID{Value: thingID})
 	if err != nil {
 		return nil, err
 	}
 
 	var subs []Subscription
 	for _, t := range *topics {
-		subtopic, err := messaging.CreateSubtopic(t)
+		subtopic, err := messaging.NormalizeSubtopic(t)
 		if err != nil {
 			return nil, err
 		}

@@ -45,9 +45,9 @@ type Service interface {
 	// identified by the provided group ID.
 	RemoveAlarmsByGroup(ctx context.Context, groupID string) error
 
-	// BackupAlarmsByThing retrieves a subset of alarms related to the specified thing
-	// identified by the provided thing ID, intended for backup.
-	BackupAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error)
+	// ExportAlarmsByThing retrieves a subset of alarms related to the specified thing
+	// identified by the provided thing ID, intended for exporting.
+	ExportAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error)
 
 	consumers.Consumer
 }
@@ -143,13 +143,13 @@ func (as *alarmService) RemoveAlarmsByGroup(ctx context.Context, groupID string)
 	return as.alarms.RemoveByGroup(ctx, groupID)
 }
 
-func (as *alarmService) BackupAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
+func (as *alarmService) ExportAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
 	_, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer})
 	if err != nil {
 		return AlarmsPage{}, err
 	}
 
-	alarms, err := as.alarms.BackupByThing(ctx, thingID, pm)
+	alarms, err := as.alarms.ExportByThing(ctx, thingID, pm)
 	if err != nil {
 		return AlarmsPage{}, err
 	}
@@ -158,7 +158,7 @@ func (as *alarmService) BackupAlarmsByThing(ctx context.Context, token, thingID 
 }
 
 func (as *alarmService) createAlarm(ctx context.Context, alarm *Alarm) error {
-	grID, err := as.things.GetGroupIDByThingID(ctx, &protomfx.ThingID{Value: alarm.ThingID})
+	grID, err := as.things.GetGroupIDByThing(ctx, &protomfx.ThingID{Value: alarm.ThingID})
 	if err != nil {
 		return err
 	}

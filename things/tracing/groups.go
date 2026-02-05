@@ -16,7 +16,6 @@ const (
 	removeGroupsByOrg               = "remove_groups_by_org"
 	retrieveAllGroups               = "retrieve_all_groups"
 	backupAllGroups                 = "backup_all_groups"
-	backupGroupsByOrg               = "backup_groups_by_org"
 	retrieveGroupByID               = "retrieve_group_by_id"
 	retrieveGroupByIDs              = "retrieve_group_by_ids"
 	retrieveGroupIDsByOrg           = "retrieve_group_ids_by_org"
@@ -80,14 +79,6 @@ func (grm groupRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.Gr
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return grm.repo.BackupAll(ctx)
-}
-
-func (grm groupRepositoryMiddleware) BackupByOrg(ctx context.Context, orgID string) ([]things.Group, error) {
-	span := dbutil.CreateSpan(ctx, grm.tracer, backupGroupsByOrg)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return grm.repo.BackupByOrg(ctx, orgID)
 }
 
 func (grm groupRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.GroupPage, error) {

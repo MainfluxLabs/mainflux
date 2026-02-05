@@ -12,7 +12,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	mfsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 )
 
 var (
@@ -79,17 +78,17 @@ type Config struct {
 
 type certsService struct {
 	auth      protomfx.AuthServiceClient
+	things    protomfx.ThingsServiceClient
 	certsRepo Repository
-	sdk       mfsdk.SDK
 	conf      Config
 	pki       pki.Agent
 }
 
 // New returns new Certs service.
-func New(auth protomfx.AuthServiceClient, certs Repository, sdk mfsdk.SDK, config Config, pkiAgent pki.Agent) Service {
+func New(auth protomfx.AuthServiceClient, things protomfx.ThingsServiceClient, certs Repository, config Config, pkiAgent pki.Agent) Service {
 	return &certsService{
 		certsRepo: certs,
-		sdk:       sdk,
+		things:    things,
 		auth:      auth,
 		conf:      config,
 		pki:       pkiAgent,
@@ -119,12 +118,12 @@ func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, tt
 		return Cert{}, err
 	}
 
-	thing, err := cs.sdk.GetThing(thingID, token)
+	thingKeyRes, err := cs.things.GetKeyByThingID(ctx, &protomfx.ThingID{Value: thingID})
 	if err != nil {
 		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 
-	pkiCert, err := cs.pki.IssueCert(thing.Key, ttl, keyType, keyBits)
+	pkiCert, err := cs.pki.IssueCert(thingKeyRes.GetValue(), ttl, keyType, keyBits)
 	if err != nil {
 		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}

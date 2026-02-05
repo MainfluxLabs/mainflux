@@ -71,7 +71,7 @@ func (rs *readersService) ListJSONMessages(ctx context.Context, token string, ke
 			return JSONMessagesPage{}, err
 		}
 	case key.Value != "":
-		pc, err := rs.getPubConfByKey(ctx, key)
+		pc, err := rs.getPubConfigByKey(ctx, key)
 		if err != nil {
 			return JSONMessagesPage{}, err
 		}
@@ -93,7 +93,7 @@ func (rs *readersService) ListSenMLMessages(ctx context.Context, token string, k
 			return SenMLMessagesPage{}, err
 		}
 	case key.Value != "":
-		pc, err := rs.getPubConfByKey(ctx, key)
+		pc, err := rs.getPubConfigByKey(ctx, key)
 		if err != nil {
 			return SenMLMessagesPage{}, err
 		}
@@ -202,8 +202,8 @@ func (rs *readersService) isAdmin(ctx context.Context, token string) error {
 	return nil
 }
 
-func (rs *readersService) getPubConfByKey(ctx context.Context, key things.ThingKey) (*protomfx.PubConfByKeyRes, error) {
-	pc, err := rs.thingc.GetPubConfByKey(ctx, &protomfx.ThingKey{Value: key.Value, Type: key.Type})
+func (rs *readersService) getPubConfigByKey(ctx context.Context, key things.ThingKey) (*protomfx.PubConfigByKeyRes, error) {
+	pc, err := rs.thingc.GetPubConfigByKey(ctx, &protomfx.ThingKey{Value: key.Value, Type: key.Type})
 	if err != nil {
 		return nil, err
 	}

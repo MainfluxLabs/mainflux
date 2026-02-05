@@ -19,7 +19,7 @@ import (
 
 // Service specifies CoAP service API.
 type Service interface {
-	// Publish Messssage
+	// Publish Message
 	Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error
 
 	// Subscribe subscribes to profile with specified id, subtopic and adds subscription to
@@ -27,12 +27,11 @@ type Service interface {
 	Subscribe(ctx context.Context, key things.ThingKey, subtopic string, c Client) error
 
 	// Unsubscribe method is used to stop observing resource.
-	Unsubscribe(ctx context.Context, key things.ThingKey, subptopic, token string) error
+	Unsubscribe(ctx context.Context, key things.ThingKey, subtopic, token string) error
 }
 
 var _ Service = (*adapterService)(nil)
 
-// Observers is a map of maps,
 type adapterService struct {
 	things  protomfx.ThingsServiceClient
 	pubsub  messaging.PubSub
@@ -51,8 +50,11 @@ func New(things protomfx.ThingsServiceClient, pubsub messaging.PubSub) Service {
 }
 
 func (svc *adapterService) Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error {
-	cr := &protomfx.ThingKey{Value: key.Value, Type: key.Type}
-	pc, err := svc.things.GetPubConfByKey(ctx, cr)
+	tk := &protomfx.ThingKey{
+		Value: key.Value,
+		Type:  key.Type,
+	}
+	pc, err := svc.things.GetPubConfigByKey(ctx, tk)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
@@ -61,8 +63,7 @@ func (svc *adapterService) Publish(ctx context.Context, key things.ThingKey, msg
 		return err
 	}
 
-	msg.Subject = nats.GetSubject(msg.Publisher, msg.Subtopic)
-
+	msg.Subject = nats.GetMessagesSubject(msg.Publisher, msg.Subtopic)
 	if err := svc.pubsub.Publish(msg); err != nil {
 		return err
 	}
@@ -71,11 +72,11 @@ func (svc *adapterService) Publish(ctx context.Context, key things.ThingKey, msg
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key things.ThingKey, subtopic string, c Client) error {
-	cr := &protomfx.ThingKey{
+	tk := &protomfx.ThingKey{
 		Value: key.Value,
 		Type:  key.Type,
 	}
-	if _, err := svc.things.GetPubConfByKey(ctx, cr); err != nil {
+	if _, err := svc.things.GetPubConfigByKey(ctx, tk); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -83,12 +84,11 @@ func (svc *adapterService) Subscribe(ctx context.Context, key things.ThingKey, s
 }
 
 func (svc *adapterService) Unsubscribe(ctx context.Context, key things.ThingKey, subtopic, token string) error {
-	cr := &protomfx.ThingKey{
+	tk := &protomfx.ThingKey{
 		Value: key.Value,
 		Type:  key.Type,
 	}
-	_, err := svc.things.GetPubConfByKey(ctx, cr)
-	if err != nil {
+	if _, err := svc.things.GetPubConfigByKey(ctx, tk); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 

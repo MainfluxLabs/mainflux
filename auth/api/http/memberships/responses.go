@@ -87,17 +87,3 @@ func (res removeRes) Headers() map[string]string {
 func (res removeRes) Empty() bool {
 	return true
 }
-
-type restoreRes struct{}
-
-func (res restoreRes) Code() int {
-	return http.StatusCreated
-}
-
-func (res restoreRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res restoreRes) Empty() bool {
-	return true
-}

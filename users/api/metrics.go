@@ -3,7 +3,7 @@
 
 //go:build !test
 
-package http
+package api
 
 import (
 	"context"
