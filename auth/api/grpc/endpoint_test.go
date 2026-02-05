@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 )
 
@@ -51,7 +52,7 @@ func startGRPCServer(svc auth.Service, port int) {
 
 func TestIssue(t *testing.T) {
 	authAddr := fmt.Sprintf("localhost:%d", port)
-	conn, _ := grpc.Dial(authAddr, grpc.WithInsecure())
+	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
 
 	cases := []struct {
@@ -123,7 +124,7 @@ func TestIdentify(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
 
 	authAddr := fmt.Sprintf("localhost:%d", port)
-	conn, _ := grpc.Dial(authAddr, grpc.WithInsecure())
+	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
 
 	cases := []struct {

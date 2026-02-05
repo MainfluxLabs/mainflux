@@ -88,7 +88,7 @@ func main() {
 	g, ctx := errgroup.WithContext(ctx)
 	logger, err := logger.New(os.Stdout, cfg.logLevel)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err)
 	}
 
 	mongodbHttpTracer, mongodbHttpCloser := jaeger.Init("mongodb_http", cfg.jaegerURL, logger)

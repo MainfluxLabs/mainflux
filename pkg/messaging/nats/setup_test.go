@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 
 	logger, err := logger.New(os.Stdout, "error")
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err)
 	}
 	if err := pool.Retry(func() error {
 		pubsub, err = nats.NewPubSub(address, "", logger)

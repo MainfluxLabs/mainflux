@@ -6,7 +6,7 @@ package api
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -204,7 +204,7 @@ func decodeSendCommandByGroup(_ context.Context, r *http.Request) (any, error) {
 }
 
 func readPayload(r *http.Request) ([]byte, error) {
-	payload, err := ioutil.ReadAll(r.Body)
+	payload, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, apiutil.ErrMalformedEntity
 	}

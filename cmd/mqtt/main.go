@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -148,7 +148,7 @@ func main() {
 
 	logger, err := logger.New(os.Stdout, cfg.logLevel)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err)
 	}
 
 	db := connectToDB(cfg.dbConfig, logger)
@@ -395,7 +395,7 @@ func healthcheck(cfg config) func() error {
 			return err
 		}
 		defer res.Body.Close()
-		body, err := ioutil.ReadAll(res.Body)
+		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			return err
 		}

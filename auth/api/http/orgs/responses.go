@@ -101,11 +101,3 @@ func (res deleteRes) Headers() map[string]string {
 func (res deleteRes) Empty() bool {
 	return true
 }
-
-type viewOrgMembership struct {
-	MemberID  string    `json:"member_id"`
-	OrgID     string    `json:"org_id"`
-	Role      string    `json:"role"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
