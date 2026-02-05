@@ -28,19 +28,19 @@ func (res restoreRes) Empty() bool {
 	return true
 }
 
-type backupFileRes struct {
+type backupRes struct {
 	JSONMessages  json.RawMessage `json:"json_messages"`
 	SenMLMessages json.RawMessage `json:"senml_messages"`
 }
 
-func (res backupFileRes) Code() int {
+func (res backupRes) Code() int {
 	return http.StatusOK
 }
 
-func (res backupFileRes) Headers() map[string]string {
+func (res backupRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res backupFileRes) Empty() bool {
+func (res backupRes) Empty() bool {
 	return len(res.JSONMessages) == 0 && len(res.SenMLMessages) == 0
 }

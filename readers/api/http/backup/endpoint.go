@@ -32,7 +32,7 @@ func backupEndpoint(svc readers.Service) endpoint.Endpoint {
 			return nil, errors.Wrap(errors.ErrBackupMessages, err)
 		}
 
-		return backupFileRes{
+		return backupRes{
 			JSONMessages:  json,
 			SenMLMessages: senml,
 		}, nil
@@ -42,7 +42,6 @@ func backupEndpoint(svc readers.Service) endpoint.Endpoint {
 func restoreEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(restoreReq)
-
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
