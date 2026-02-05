@@ -31,7 +31,7 @@ type Service interface {
 	// ExportJSONMessages retrieves the json messages with given filters, intended for exporting.
 	ExportJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) (JSONMessagesPage, error)
 
-	// ExportSenMLMessages retrieved the senml messages with given filters, intended for exporting.
+	// ExportSenMLMessages retrieves the senml messages with given filters, intended for exporting.
 	ExportSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) (SenMLMessagesPage, error)
 
 	// Backup backups all json and senml messages.
