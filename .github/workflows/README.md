@@ -11,8 +11,8 @@ The `release.yml` workflow automates the process of building and pushing Docker 
 The workflow is triggered when a tag matching the pattern `v*` is pushed:
 
 ```bash
-git tag v0.0.<version>
-git push origin v0.0.<version>
+git tag v<version>
+git push origin v<version>
 ```
 
 ### Jobs
@@ -49,10 +49,10 @@ Before using this workflow, configure the following repository secrets:
 
 ```bash
 # Create a version tag
-git tag v0.0.<version>
+git tag v<version>
 
 # Push the tag to trigger the workflow
-git push origin v0.0.<version>
+git push origin v<version>
 ```
 
 ### Adding New Architectures
