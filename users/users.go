@@ -70,6 +70,9 @@ type UserRepository interface {
 	// operation failure.
 	Save(ctx context.Context, u User) (string, error)
 
+	// Update updates the user.
+	Update(ctx context.Context, u User) error
+
 	// UpdateUser updates the user metadata.
 	UpdateUser(ctx context.Context, u User) error
 

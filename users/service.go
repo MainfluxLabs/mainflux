@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
@@ -156,9 +157,10 @@ type UserPage struct {
 }
 
 type ConfigURLs struct {
-	GoogleUserInfoURL string
-	GitHubUserInfoURL string
-	RedirectLoginURL  string
+	GoogleUserInfoURL   string
+	GitHubUserInfoURL   string
+	GitHubUserEmailsURL string
+	RedirectLoginURL    string
 }
 
 var _ Service = (*usersService)(nil)
@@ -521,36 +523,47 @@ func (svc usersService) fetchGitHubUser(ctx context.Context, code, verifier stri
 		return "", "", err
 	}
 	client := svc.githubOAuth.Client(ctx, oauthToken)
+
+	var ghUser struct {
+		ID int64 `json:"id"`
+	}
 	resp, err := client.Get(svc.urls.GitHubUserInfoURL)
 	if err != nil {
 		return "", "", err
 	}
 	defer resp.Body.Close()
-
-	var ghUser struct {
-		ID     string `json:"id"`
-		Emails []struct {
-			Email    string `json:"email"`
-			Primary  bool   `json:"primary"`
-			Verified bool   `json:"verified"`
-		} `json:"emails,omitempty"`
-	}
 	if err := json.NewDecoder(resp.Body).Decode(&ghUser); err != nil {
+		return "", "", err
+	}
+	providerUserID := strconv.FormatInt(ghUser.ID, 10)
+
+	resp2, err := client.Get(svc.urls.GitHubUserEmailsURL)
+	if err != nil {
+		return "", "", err
+	}
+	defer resp2.Body.Close()
+
+	var emails []struct {
+		Email    string `json:"email"`
+		Primary  bool   `json:"primary"`
+		Verified bool   `json:"verified"`
+	}
+	if err := json.NewDecoder(resp2.Body).Decode(&emails); err != nil {
 		return "", "", err
 	}
 
 	email := ""
-	for _, e := range ghUser.Emails {
+	for _, e := range emails {
 		if e.Primary && e.Verified {
 			email = e.Email
 			break
 		}
 	}
-	if email == "" && len(ghUser.Emails) > 0 {
-		email = ghUser.Emails[0].Email
+	if email == "" && len(emails) > 0 {
+		email = emails[0].Email
 	}
 
-	return email, ghUser.ID, nil
+	return email, providerUserID, nil
 }
 
 func (svc usersService) handleIdentity(ctx context.Context, provider, email, providerUserID string) (User, error) {
@@ -560,6 +573,7 @@ func (svc usersService) handleIdentity(ctx context.Context, provider, email, pro
 	}
 
 	var user User
+
 	if identity.UserID != "" {
 		user, err = svc.users.RetrieveByID(ctx, identity.UserID)
 		if err != nil {
@@ -568,19 +582,27 @@ func (svc usersService) handleIdentity(ctx context.Context, provider, email, pro
 
 		if user.Email != email {
 			user.Email = email
-			if _, err := svc.users.Save(ctx, user); err != nil {
+			if err := svc.users.Update(ctx, user); err != nil {
 				return User{}, err
 			}
 		}
+
 	} else {
-		uid, _ := svc.idProvider.ID()
-		user = User{
-			ID:     uid,
-			Email:  email,
-			Status: EnabledStatusKey,
-		}
-		if _, err := svc.users.Save(ctx, user); err != nil {
-			return User{}, err
+		user, err = svc.users.RetrieveByEmail(ctx, email)
+		if err != nil {
+			if errors.Contains(err, dbutil.ErrNotFound) {
+				uid, _ := svc.idProvider.ID()
+				user = User{
+					ID:     uid,
+					Email:  email,
+					Status: EnabledStatusKey,
+				}
+				if _, err := svc.users.Save(ctx, user); err != nil {
+					return User{}, err
+				}
+			} else {
+				return User{}, err
+			}
 		}
 
 		newIdentity := Identity{

@@ -119,7 +119,7 @@ const (
 	envEmailFromName     = "MF_EMAIL_FROM_NAME"
 	envEmailBaseTemplate = "MF_EMAIL_BASE_TEMPLATE"
 
-	envHost = "MF_HOST"
+	envHost = "http://localhost"
 
 	envAuthTLS         = "MF_AUTH_CLIENT_TLS"
 	envAuthCACerts     = "MF_AUTH_CA_CERTS"
@@ -141,6 +141,7 @@ const (
 	envGitHubClientSecret = "MF_GITHUB_CLIENT_SECRET"
 	envGitHubRedirectURL  = "MF_GITHUB_REDIRECT_URL"
 	envGitHubUserInfo     = "MF_GITHUB_USER_INFO"
+	envGitHubUserEmails   = "MF_GITHUB_USER_EMAILS"
 
 	envRedirectLoginURL = "MF_REDIRECT_LOGIN_URL"
 )
@@ -306,9 +307,10 @@ func loadConfig() config {
 	}
 
 	urls := users.ConfigURLs{
-		GoogleUserInfoURL: mainflux.Env(envGoogleUserInfo, defUserInfo),
-		GitHubUserInfoURL: mainflux.Env(envGitHubUserInfo, defUserInfo),
-		RedirectLoginURL:  fmt.Sprintf("%s%s", mainflux.Env(envHost, defHost), mainflux.Env(envRedirectLoginURL, defRedirectLoginURL)),
+		GoogleUserInfoURL:   mainflux.Env(envGoogleUserInfo, defUserInfo),
+		GitHubUserInfoURL:   mainflux.Env(envGitHubUserInfo, defUserInfo),
+		GitHubUserEmailsURL: mainflux.Env(envGitHubUserEmails, defUserInfo),
+		RedirectLoginURL:    fmt.Sprintf("%s%s", mainflux.Env(envHost, defHost), mainflux.Env(envRedirectLoginURL, defRedirectLoginURL)),
 	}
 
 	inviteDuration, err := time.ParseDuration(mainflux.Env(envInviteDuration, defInviteDuration))
