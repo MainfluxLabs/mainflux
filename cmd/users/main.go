@@ -119,7 +119,7 @@ const (
 	envEmailFromName     = "MF_EMAIL_FROM_NAME"
 	envEmailBaseTemplate = "MF_EMAIL_BASE_TEMPLATE"
 
-	envHost = "http://localhost"
+	envHost = "MF_HOST"
 
 	envAuthTLS         = "MF_AUTH_CLIENT_TLS"
 	envAuthCACerts     = "MF_AUTH_CA_CERTS"
