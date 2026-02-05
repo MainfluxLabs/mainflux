@@ -907,6 +907,10 @@ func (ts *thingsService) GetGroupIDsByOrg(ctx context.Context, orgID string, tok
 }
 
 func (ts *thingsService) GetThingIDsByProfile(ctx context.Context, profileID string) ([]string, error) {
+	if _, err := ts.profiles.RetrieveByID(ctx, profileID); err != nil {
+		return []string{}, err
+	}
+
 	page, err := ts.things.RetrieveByProfile(ctx, profileID, apiutil.PageMetadata{})
 	if err != nil {
 		return []string{}, err
