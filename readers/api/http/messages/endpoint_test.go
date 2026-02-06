@@ -1,7 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package api_test
+package messages_test
 
 import (
 	"context"
@@ -20,7 +20,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/readers"
-	"github.com/MainfluxLabs/mainflux/readers/api"
+	httpapi "github.com/MainfluxLabs/mainflux/readers/api/http"
 	rmocks "github.com/MainfluxLabs/mainflux/readers/mocks"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/users"
@@ -65,7 +65,7 @@ func newServer(jsonMessages []mfjson.Message, senmlMessaages []senml.Message, tc
 	senmlRepo := rmocks.NewSenMLRepository("", fromSenml(senmlMessaages))
 	svc := readers.New(ac, tc, jsonRepo, senmlRepo)
 
-	mux := api.MakeHandler(svc, mocktracer.New(), svcName, logger)
+	mux := httpapi.MakeHandler(svc, mocktracer.New(), svcName, logger)
 
 	id, _ := idProvider.ID()
 	user.ID = id
