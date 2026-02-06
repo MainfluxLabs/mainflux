@@ -4,6 +4,7 @@
 package mqtt
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -35,7 +36,12 @@ func NewPublisher(address string, timeout time.Duration) (messaging.Publisher, e
 
 func (pub publisher) Publish(msg protomfx.Message) error {
 	topic := strings.ReplaceAll(msg.Subject, ".", "/")
-	token := pub.client.Publish(topic, qos, false, msg.Payload)
+	payload, err := json.Marshal(messaging.ToJSONMessage(msg))
+	if err != nil {
+		return err
+	}
+
+	token := pub.client.Publish(topic, qos, false, payload)
 	if !token.WaitTimeout(pub.timeout) {
 		return messaging.ErrPublishTimeout
 	}
