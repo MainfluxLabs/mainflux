@@ -115,6 +115,7 @@ release:
 			--build-arg COMMIT=$(COMMIT) \
 			--build-arg TIME=$(TIME) \
 			--tag=$(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc:$(VERSION) \
+			--tag=$(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc:latest \
 			-f docker/Dockerfile . --push; \
 	done
 
