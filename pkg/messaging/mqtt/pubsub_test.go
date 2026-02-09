@@ -4,6 +4,7 @@
 package mqtt_test
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"testing"
@@ -12,7 +13,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,7 +21,6 @@ const (
 	subtopic          = "engine"
 	topicWithSubtopic = topic + "/" + subtopic
 	tokenTimeout      = 100 * time.Millisecond
-	senmlContentType  = "application/senml+json"
 )
 
 var (
@@ -30,7 +29,7 @@ var (
 
 	pubID                                      = "pid"
 	clientID1, clientID2, clientID3, clientID4 = "cid1", "cid2", "cid3", "cid4"
-	data                                       = []byte("payload")
+	data                                       = []byte(`{"test":"payload"}`)
 )
 
 func TestPublisher(t *testing.T) {
@@ -87,20 +86,19 @@ func TestPublisher(t *testing.T) {
 	}
 	for _, tc := range cases {
 		msg := protomfx.Message{
-			Publisher:   pubID,
-			Subject:     tc.subject,
-			Payload:     tc.payload,
-			ContentType: senmlContentType,
+			Publisher: pubID,
+			Subject:   tc.subject,
+			Payload:   tc.payload,
 		}
 
 		err := pubsub.Publish(msg)
 		assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
 
-		data, err := proto.Marshal(&msg)
-		assert.Nil(t, err, fmt.Sprintf("%s: failed to serialize protobuf error: %s\n", tc.desc, err))
+		expectedMsg, err := json.Marshal(messaging.ToJSONMessage(msg))
+		assert.Nil(t, err, fmt.Sprintf("failed to marshal message: %s", err))
 
 		receivedMsg := <-msgChan
-		assert.Equal(t, data, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, data, receivedMsg))
+		assert.Equal(t, expectedMsg, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, expectedMsg, receivedMsg))
 	}
 }
 
@@ -178,20 +176,25 @@ func TestSubscribe(t *testing.T) {
 		assert.Equal(t, err, tc.err, fmt.Sprintf("%s: expected: %s, but got: %s", tc.desc, err, tc.err))
 
 		if tc.err == nil {
-			expectedMsg := protomfx.Message{
+			msg := protomfx.Message{
 				Publisher: pubID,
 				Subtopic:  subtopic,
 				Payload:   data,
 			}
-			data, err := proto.Marshal(&expectedMsg)
-			assert.Nil(t, err, fmt.Sprintf("%s: failed to serialize protobuf error: %s\n", tc.desc, err))
+			expectedJSON := messaging.ToJSONMessage(msg)
+			payload, err := json.Marshal(expectedJSON)
+			if err != nil {
+				t.Errorf("failed to marshal message: %v", err)
+			}
 
-			token := client.Publish(tc.topic, qos, false, data)
+			token := client.Publish(tc.topic, qos, false, payload)
 			token.WaitTimeout(tokenTimeout)
 			assert.Nil(t, token.Error(), fmt.Sprintf("got unexpected error: %s", token.Error()))
 
 			receivedMsg := <-msgChan
-			assert.Equal(t, expectedMsg.Payload, receivedMsg.Payload, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, expectedMsg, receivedMsg))
+			expectedMsg := expectedJSON.ToProtoMessage()
+			assert.Equal(t, expectedMsg, receivedMsg,
+				fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, expectedMsg, receivedMsg))
 		}
 	}
 }
@@ -248,20 +251,21 @@ func TestPubSub(t *testing.T) {
 
 		if tc.err == nil {
 			// Use pubsub to subscribe to a topic, and then publish messages to that topic.
-			expectedMsg := protomfx.Message{
-				Publisher:   pubID,
-				Subtopic:    subtopic,
-				Subject:     topic,
-				Payload:     data,
-				ContentType: senmlContentType,
+			msg := protomfx.Message{
+				Publisher: pubID,
+				Subtopic:  subtopic,
+				Subject:   topic,
+				Payload:   data,
 			}
 
-			// Publish message, and then receive it on message profile.
-			err := pubsub.Publish(expectedMsg)
+			err := pubsub.Publish(msg)
 			assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
+			expectedJSON := messaging.ToJSONMessage(msg)
 
 			receivedMsg := <-msgChan
-			assert.Equal(t, expectedMsg, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n", tc.desc, expectedMsg, receivedMsg))
+			expectedMsg := expectedJSON.ToProtoMessage()
+			assert.Equal(t, expectedMsg, receivedMsg, fmt.Sprintf("%s: expected %+v got %+v\n",
+				tc.desc, expectedMsg, receivedMsg))
 		}
 	}
 }

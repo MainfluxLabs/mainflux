@@ -4,15 +4,15 @@
 package mqtt
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/gogo/protobuf/proto"
 )
 
 const (
@@ -171,12 +171,13 @@ func newClient(address, id string, timeout time.Duration) (mqtt.Client, error) {
 
 func (ps *pubsub) mqttHandler(h messaging.MessageHandler) mqtt.MessageHandler {
 	return func(c mqtt.Client, m mqtt.Message) {
-		var msg protomfx.Message
-		if err := proto.Unmarshal(m.Payload(), &msg); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received message: %s", err))
+		var msg mfjson.Message
+		if err := json.Unmarshal(m.Payload(), &msg); err != nil {
+			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal MQTT payload: %s", err))
 			return
 		}
-		if err := h.Handle(msg); err != nil {
+
+		if err := h.Handle(msg.ToProtoMessage()); err != nil {
 			ps.logger.Warn(fmt.Sprintf("Failed to handle Mainflux message: %s", err))
 		}
 	}
