@@ -63,6 +63,13 @@ func MakeHandler(svc readers.Service, mux *bone.Mux, tracer opentracing.Tracer, 
 		opts...,
 	))
 
+	mux.Post("/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_messages")(searchMessagesEndpoint(svc)),
+		decodeSearchMessags,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Delete("/json", kithttp.NewServer(
 		kitot.TraceServer(tracer, "delete_all_json_messages")(deleteAllJSONMessagesEndpoint(svc)),
 		decodeDeleteAllJSONMessages,
@@ -176,6 +183,22 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (any, error) {
 		thingKey: things.ExtractThingKey(r),
 		pageMeta: pageMeta,
 	}, nil
+}
+
+func decodeSearchMessags(_ context.Context, r *http.Request) (any, error) {
+	if r.Body == nil || r.ContentLength == 0 {
+		return nil, apiutil.ErrMalformedEntity
+	}
+
+	var req searchMessagesReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	req.token = apiutil.ExtractBearerToken(r)
+	req.thingKey = things.ExtractThingKey(r)
+
+	return req, nil
 }
 
 func decodeDeleteAllJSONMessages(_ context.Context, r *http.Request) (any, error) {
