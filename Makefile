@@ -104,7 +104,6 @@ latest: dockers
 		docker tag $(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc:$(VERSION) $(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc:latest; \
 	done
 	$(call docker_push,$(VERSION))
-	$(call docker_push,latest)
 
 release:
 	for svc in $(SERVICES); do \
@@ -115,7 +114,6 @@ release:
 			--build-arg COMMIT=$(COMMIT) \
 			--build-arg TIME=$(TIME) \
 			--tag=$(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc:$(VERSION) \
-			--tag=$(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc:latest \
 			-f docker/Dockerfile . --push; \
 	done
 
