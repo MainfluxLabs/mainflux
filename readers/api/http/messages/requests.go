@@ -191,6 +191,73 @@ func (req deleteSenMLMessagesReq) validate() error {
 	return nil
 }
 
+type searchRequest struct {
+	Type  string                     `json:"type"`
+	JSON  *readers.JSONPageMetadata  `json:"json_params, omitempty"`
+	SenML *readers.SenMLPageMetadata `json:"senml_params, omitempty"`
+}
+
+type searchMessagesReq struct {
+	token    string
+	thingKey things.ThingKey
+	Searches []searchRequest `json:"searches"`
+}
+
+func (req searchMessagesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if len(req.Searches) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, s := range req.Searches {
+		if s.Type != "json" && s.Type != "senml" {
+			return apiutil.ErrInvalidQueryParams
+		}
+
+		if s.Type == "json" && s.JSON == nil {
+			return apiutil.ErrMalformedEntity
+		}
+		if s.Type == "senml" && s.SenML == nil {
+			return apiutil.ErrMalformedEntity
+		}
+
+		if s.Type == "json" {
+			if s.JSON.Limit == 0 {
+				s.JSON.Limit = apiutil.DefLimit
+			}
+			if s.JSON.Limit > maxLimitSize {
+				return apiutil.ErrLimitSize
+			}
+			if err := validateDir(s.JSON.Dir); err != nil {
+				return err
+			}
+			if err := validateAggregation(s.JSON.AggType, s.JSON.AggInterval, s.JSON.AggValue); err != nil {
+				return err
+			}
+		}
+
+		if s.Type == "senml" {
+			if s.SenML.Limit == 0 {
+				s.SenML.Limit = apiutil.DefLimit
+			}
+			if s.SenML.Limit > maxLimitSize {
+				return apiutil.ErrLimitSize
+			}
+			if err := validateDir(s.SenML.Dir); err != nil {
+				return err
+			}
+			if err := validateAggregation(s.SenML.AggType, s.SenML.AggInterval, s.SenML.AggValue); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func validateAggregation(aggType, aggInterval string, aggValue uint64) error {
 	if aggInterval == "" || aggType == "" {
 		return nil
