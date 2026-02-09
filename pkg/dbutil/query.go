@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -53,23 +52,18 @@ func GetPayloadQuery(m map[string]any) (mb []byte, mq string, err error) {
 }
 
 func GetOrderQuery(order string) string {
-	allowed_columns := []string{
-		"created", "created_at", "updated", "updated_at", "invitee_email", "inviter_email", "invitee_id", "inviter_id", "role",
-		"org_id", "group_id", "state",
-	}
-
 	switch order {
 	case "name":
 		return "LOWER(name)"
 	case "email":
 		return "LOWER(email)"
-	}
-
-	if slices.Contains(allowed_columns, order) {
+	case "created", "created_at", "updated", "updated_at",
+		"invitee_email", "inviter_email", "invitee_id", "inviter_id",
+		"role", "org_id", "group_id", "state":
 		return order
+	default:
+		return "id"
 	}
-
-	return "id"
 }
 
 func GetDirQuery(dir string) string {
