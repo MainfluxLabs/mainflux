@@ -5,6 +5,7 @@ package messages
 
 import (
 	"context"
+	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -48,6 +49,67 @@ func listSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			Total:             page.Total,
 			Messages:          page.Messages,
 		}, nil
+	}
+}
+
+func searchMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(searchMessagesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		results := make([]searchResultItem, len(req.Searches))
+
+		var (
+			wg       sync.WaitGroup
+			mu       sync.Mutex
+			firstErr error
+		)
+
+		for i, search := range req.Searches {
+			wg.Add(1)
+			go func(idx int, s searchRequest) {
+				defer wg.Done()
+
+				item := searchResultItem{Type: s.Type}
+
+				switch s.Type {
+				case "json":
+					page, err := svc.ListJSONMessages(ctx, req.token, req.thingKey, *s.JSON)
+					if err != nil {
+						item.Error = err.Error()
+						mu.Lock()
+						if firstErr == nil {
+							firstErr = err
+						}
+						mu.Unlock()
+					} else {
+						item.Total = page.Total
+						item.Messages = page.Messages
+					}
+				case "senml":
+					page, err := svc.ListSenMLMessages(ctx, req.token, req.thingKey, *s.SenML)
+					if err != nil {
+						item.Error = err.Error()
+						mu.Lock()
+						if firstErr == nil {
+							firstErr = err
+						}
+						mu.Unlock()
+					} else {
+						item.Total = page.Total
+						item.Messages = page.Messages
+					}
+				}
+				mu.Lock()
+				results[idx] = item
+				mu.Unlock()
+			}(i, search)
+		}
+
+		wg.Wait()
+		return searchMessagesRes{Results: results}, nil
 	}
 }
 
