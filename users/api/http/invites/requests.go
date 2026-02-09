@@ -79,8 +79,10 @@ func (req createPlatformInviteRequest) validate() error {
 		return apiutil.ErrMissingRedirectPath
 	}
 
-	if req.OrgID != "" && req.Role == "" {
-		return apiutil.ErrMissingRole
+	if req.OrgID != "" {
+		if err := auth.ValidateInviteeRole(req.Role); err != nil {
+			return err
+		}
 	}
 
 	return nil
