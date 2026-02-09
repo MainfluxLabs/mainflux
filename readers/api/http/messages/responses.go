@@ -80,3 +80,26 @@ func (res removeRes) Headers() map[string]string {
 func (res removeRes) Empty() bool {
 	return true
 }
+
+type searchResultItem struct {
+	Type     string            `json:"type"`
+	Total    uint64            `json:"total"`
+	Messages []readers.Message `json:"messages"`
+	Error    string            `json:"error,omitempty"`
+}
+
+type searchMessagesRes struct {
+	Results []searchResultItem `json:"results"`
+}
+
+func (res searchMessagesRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res searchMessagesRes) Code() int {
+	return http.StatusOK
+}
+
+func (res searchMessagesRes) Empty() bool {
+	return false
+}
