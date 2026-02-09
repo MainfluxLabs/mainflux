@@ -236,8 +236,8 @@ func (svc service) isAdmin(ctx context.Context, token string) error {
 	return nil
 }
 
-func ValidateRole(role string) error {
-	if role != Owner && role != Admin && role != Editor && role != Viewer {
+func ValidateInviteeRole(role string) error {
+	if role != Admin && role != Editor && role != Viewer {
 		return apiutil.ErrInvalidRole
 	}
 

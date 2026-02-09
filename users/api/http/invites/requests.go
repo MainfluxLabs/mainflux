@@ -80,12 +80,8 @@ func (req createPlatformInviteRequest) validate() error {
 	}
 
 	if req.OrgID != "" {
-		if err := auth.ValidateRole(req.Role); err != nil {
+		if err := auth.ValidateInviteeRole(req.Role); err != nil {
 			return err
-		}
-
-		if req.Role == auth.Owner {
-			return apiutil.ErrInvalidRole
 		}
 	}
 

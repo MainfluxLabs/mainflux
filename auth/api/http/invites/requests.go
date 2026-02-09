@@ -36,7 +36,7 @@ func (req createOrgInviteReq) validate() error {
 		return apiutil.ErrMissingEmail
 	}
 
-	if err := auth.ValidateRole(req.Role); err != nil {
+	if err := auth.ValidateInviteeRole(req.Role); err != nil {
 		return err
 	}
 
@@ -45,7 +45,7 @@ func (req createOrgInviteReq) validate() error {
 	}
 
 	for _, gi := range req.GroupInvites {
-		if err := auth.ValidateRole(gi.MemberRole); err != nil {
+		if err := auth.ValidateInviteeRole(gi.MemberRole); err != nil {
 			return err
 		}
 	}
