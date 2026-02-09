@@ -79,11 +79,9 @@ func searchMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 					page, err := svc.ListJSONMessages(ctx, req.token, req.thingKey, *s.JSON)
 					if err != nil {
 						item.Error = err.Error()
-						mu.Lock()
 						if firstErr == nil {
 							firstErr = err
 						}
-						mu.Unlock()
 					} else {
 						item.Total = page.Total
 						item.Messages = page.Messages
@@ -92,11 +90,9 @@ func searchMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 					page, err := svc.ListSenMLMessages(ctx, req.token, req.thingKey, *s.SenML)
 					if err != nil {
 						item.Error = err.Error()
-						mu.Lock()
 						if firstErr == nil {
 							firstErr = err
 						}
-						mu.Unlock()
 					} else {
 						item.Total = page.Total
 						item.Messages = page.Messages
