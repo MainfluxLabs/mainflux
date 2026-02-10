@@ -326,6 +326,20 @@ func (lm *loggingMiddleware) ViewPlatformInvite(ctx context.Context, token, invi
 	return lm.svc.ViewPlatformInvite(ctx, token, inviteID)
 }
 
+func (lm *loggingMiddleware) ViewPlatformInvitePublic(ctx context.Context, inviteID string) (_ users.PlatformInvite, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method view_platform_invite_public for invite id %s took %s to complete", inviteID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ViewPlatformInvitePublic(ctx, inviteID)
+}
+
 func (lm *loggingMiddleware) ListPlatformInvites(ctx context.Context, token string, pm users.PageMetadataInvites) (_ users.PlatformInvitesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_platform_invites took %s to complete", time.Since(begin))

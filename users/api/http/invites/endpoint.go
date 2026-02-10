@@ -111,6 +111,24 @@ func viewPlatformInviteEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
+func viewPlatformInvitePublicEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(publicInviteReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		invite, err := svc.ViewPlatformInvitePublic(ctx, req.inviteID)
+		if err != nil {
+			return nil, err
+		}
+
+		return platformInviteRes{
+			InviteeEmail: invite.InviteeEmail,
+		}, nil
+	}
+}
+
 func revokePlatformInviteEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(inviteReq)

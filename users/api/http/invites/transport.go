@@ -58,6 +58,13 @@ func MakeHandler(svc users.Service, mux *bone.Mux, tracer opentracing.Tracer, lo
 		opts...,
 	))
 
+	mux.Get("/invites/:id/public", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_platform_invite_public")(viewPlatformInvitePublicEndpoint(svc)),
+		decodePublicInviteRequest,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Delete("/invites/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "revoke_platform_invite")(revokePlatformInviteEndpoint(svc)),
 		decodeInviteRequest,
@@ -83,6 +90,14 @@ func decodePlatformInviteRegister(_ context.Context, r *http.Request) (any, erro
 func decodeInviteRequest(_ context.Context, r *http.Request) (any, error) {
 	req := inviteReq{
 		token:    apiutil.ExtractBearerToken(r),
+		inviteID: bone.GetValue(r, apiutil.IDKey),
+	}
+
+	return req, nil
+}
+
+func decodePublicInviteRequest(_ context.Context, r *http.Request) (any, error) {
+	req := publicInviteReq{
 		inviteID: bone.GetValue(r, apiutil.IDKey),
 	}
 

@@ -61,6 +61,10 @@ type PlatformInvites interface {
 	// If no such valid platform invite is found in the database, it instead returns errors.ErrAuthorization.
 	ValidatePlatformInvite(ctx context.Context, inviteID, email string) error
 
+	// ViewPlatformInvitePublic retrieves a single PlatformInvite by its ID without authentication.
+	// This is used by the UI to get the invitee's email for pre-filling the registration form.
+	ViewPlatformInvitePublic(ctx context.Context, inviteID string) (PlatformInvite, error)
+
 	// SendPlatformInviteEmail sends an e-mail notifying the invitee about the corresponding platform invite.
 	SendPlatformInviteEmail(ctx context.Context, invite PlatformInvite, redirectPath string) error
 }
@@ -172,6 +176,15 @@ func (svc usersService) ViewPlatformInvite(ctx context.Context, token, inviteID 
 		return PlatformInvite{}, err
 	}
 
+	invite, err := svc.invites.RetrievePlatformInviteByID(ctx, inviteID)
+	if err != nil {
+		return PlatformInvite{}, err
+	}
+
+	return invite, nil
+}
+
+func (svc usersService) ViewPlatformInvitePublic(ctx context.Context, inviteID string) (PlatformInvite, error) {
 	invite, err := svc.invites.RetrievePlatformInviteByID(ctx, inviteID)
 	if err != nil {
 		return PlatformInvite{}, err
