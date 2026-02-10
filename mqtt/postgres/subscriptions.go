@@ -46,23 +46,6 @@ func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error
 	return nil
 }
 
-func (mr *mqttRepository) Remove(ctx context.Context, sub mqtt.Subscription) error {
-	q := `DELETE FROM subscriptions 
-          WHERE subtopic = :subtopic AND thing_id = :thing_id AND group_id = :group_id;`
-
-	dbSub := dbSubscription{
-		Subtopic: sub.Subtopic,
-		ThingID:  sub.ThingID,
-		GroupID:  sub.GroupID,
-	}
-
-	if _, err := mr.db.NamedExecContext(ctx, q, dbSub); err != nil {
-		return errors.Wrap(dbutil.ErrRemoveEntity, err)
-	}
-
-	return nil
-}
-
 func (mr *mqttRepository) RetrieveByGroup(ctx context.Context, pm mqtt.PageMetadata, groupID string) (mqtt.Page, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
@@ -103,6 +86,51 @@ func (mr *mqttRepository) RetrieveByGroup(ctx context.Context, pm mqtt.PageMetad
 		Subscriptions: items,
 	}, nil
 
+}
+
+func (mr *mqttRepository) Remove(ctx context.Context, sub mqtt.Subscription) error {
+	q := `DELETE FROM subscriptions 
+          WHERE subtopic = :subtopic AND thing_id = :thing_id AND group_id = :group_id;`
+
+	dbSub := dbSubscription{
+		Subtopic: sub.Subtopic,
+		ThingID:  sub.ThingID,
+		GroupID:  sub.GroupID,
+	}
+
+	if _, err := mr.db.NamedExecContext(ctx, q, dbSub); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
+func (mr *mqttRepository) RemoveByThing(ctx context.Context, thingID string) error {
+	q := `DELETE FROM subscriptions WHERE thing_id = :thing_id;`
+
+	params := map[string]any{
+		"thing_id": thingID,
+	}
+
+	if _, err := mr.db.NamedExecContext(ctx, q, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
+func (mr *mqttRepository) RemoveByGroup(ctx context.Context, groupID string) error {
+	q := `DELETE FROM subscriptions WHERE group_id = :group_id;`
+
+	params := map[string]any{
+		"group_id": groupID,
+	}
+
+	if _, err := mr.db.NamedExecContext(ctx, q, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	return nil
 }
 
 type dbSubscription struct {

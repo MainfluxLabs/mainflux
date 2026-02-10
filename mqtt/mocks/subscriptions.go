@@ -80,3 +80,43 @@ func (srm *subRepoMock) Remove(_ context.Context, sub mqtt.Subscription) error {
 
 	return dbutil.ErrNotFound
 }
+
+func (srm *subRepoMock) RemoveByThing(_ context.Context, thingID string) error {
+	srm.mu.Lock()
+	defer srm.mu.Unlock()
+
+	found := false
+	for groupID, subs := range srm.subs {
+		var remaining []mqtt.Subscription
+		for _, sub := range subs {
+			if sub.ThingID != thingID {
+				remaining = append(remaining, sub)
+			} else {
+				found = true
+			}
+		}
+		if len(remaining) == 0 {
+			delete(srm.subs, groupID)
+		} else {
+			srm.subs[groupID] = remaining
+		}
+	}
+
+	if !found {
+		return dbutil.ErrNotFound
+	}
+
+	return nil
+}
+
+func (srm *subRepoMock) RemoveByGroup(_ context.Context, groupID string) error {
+	srm.mu.Lock()
+	defer srm.mu.Unlock()
+
+	if _, ok := srm.subs[groupID]; !ok {
+		return dbutil.ErrNotFound
+	}
+
+	delete(srm.subs, groupID)
+	return nil
+}

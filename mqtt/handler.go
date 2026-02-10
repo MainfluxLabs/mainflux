@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/mqtt/redis"
+	"github.com/MainfluxLabs/mainflux/mqtt/redis/cache"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
@@ -51,13 +51,13 @@ type handler struct {
 	publisher messaging.Publisher
 	things    protomfx.ThingsServiceClient
 	service   Service
-	cache     redis.Cache
+	cache     cache.ConnectionCache
 	logger    logger.Logger
 }
 
 // NewHandler creates new Handler entity
 func NewHandler(publisher messaging.Publisher, things protomfx.ThingsServiceClient,
-	svc Service, cache redis.Cache, logger logger.Logger) session.Handler {
+	svc Service, cache cache.ConnectionCache, logger logger.Logger) session.Handler {
 	return &handler{
 		publisher: publisher,
 		things:    things,
