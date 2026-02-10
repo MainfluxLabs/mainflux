@@ -91,12 +91,12 @@ func listPlatformInvitesEndpoint(svc users.Service) endpoint.Endpoint {
 
 func viewPlatformInviteEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(inviteReq)
+		req := request.(viewInviteReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		invite, err := svc.ViewPlatformInvite(ctx, req.token, req.inviteID)
+		invite, err := svc.ViewPlatformInvite(ctx, req.inviteID)
 		if err != nil {
 			return nil, err
 		}
@@ -105,26 +105,6 @@ func viewPlatformInviteEndpoint(svc users.Service) endpoint.Endpoint {
 			ID:           invite.ID,
 			InviteeEmail: invite.InviteeEmail,
 			CreatedAt:    invite.CreatedAt,
-			ExpiresAt:    invite.ExpiresAt,
-			State:        invite.State,
-		}, nil
-	}
-}
-
-func viewPlatformInvitePublicEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(publicInviteReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		invite, err := svc.ViewPlatformInvitePublic(ctx, req.inviteID)
-		if err != nil {
-			return nil, err
-		}
-
-		return platformInviteRes{
-			InviteeEmail: invite.InviteeEmail,
 			ExpiresAt:    invite.ExpiresAt,
 			State:        invite.State,
 		}, nil

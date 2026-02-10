@@ -50,8 +50,9 @@ type PlatformInvites interface {
 	// RevokePlatformInvite revokes a specific pending PlatformInvite. Only usable by the platform Root Admin.
 	RevokePlatformInvite(ctx context.Context, token, inviteID string) error
 
-	// ViewPlatformInvite retrieves a single PlatformInvite denoted by its ID. Only usable by the platform Root Admin.
-	ViewPlatformInvite(ctx context.Context, token, inviteID string) (PlatformInvite, error)
+	// ViewPlatformInvite retrieves a single PlatformInvite denoted by its ID.
+	// This endpoint is public - the invite UUID acts as the access secret.
+	ViewPlatformInvite(ctx context.Context, inviteID string) (PlatformInvite, error)
 
 	// ListPlatformInvites retrieves a list of platform invites. Only usable by the platform Root Admin.
 	ListPlatformInvites(ctx context.Context, token string, pm PageMetadataInvites) (PlatformInvitesPage, error)
@@ -60,10 +61,6 @@ type PlatformInvites interface {
 	// the passed ID and user e-mail. If so, it marks that invite's state as 'accepted', and returns nil.
 	// If no such valid platform invite is found in the database, it instead returns errors.ErrAuthorization.
 	ValidatePlatformInvite(ctx context.Context, inviteID, email string) error
-
-	// ViewPlatformInvitePublic retrieves a single PlatformInvite by its ID without authentication.
-	// This is used by the UI to get the invitee's email for pre-filling the registration form.
-	ViewPlatformInvitePublic(ctx context.Context, inviteID string) (PlatformInvite, error)
 
 	// SendPlatformInviteEmail sends an e-mail notifying the invitee about the corresponding platform invite.
 	SendPlatformInviteEmail(ctx context.Context, invite PlatformInvite, redirectPath string) error
@@ -171,20 +168,7 @@ func (svc usersService) RevokePlatformInvite(ctx context.Context, token, inviteI
 	return nil
 }
 
-func (svc usersService) ViewPlatformInvite(ctx context.Context, token, inviteID string) (PlatformInvite, error) {
-	if err := svc.isAdmin(ctx, token); err != nil {
-		return PlatformInvite{}, err
-	}
-
-	invite, err := svc.invites.RetrievePlatformInviteByID(ctx, inviteID)
-	if err != nil {
-		return PlatformInvite{}, err
-	}
-
-	return invite, nil
-}
-
-func (svc usersService) ViewPlatformInvitePublic(ctx context.Context, inviteID string) (PlatformInvite, error) {
+func (svc usersService) ViewPlatformInvite(ctx context.Context, inviteID string) (PlatformInvite, error) {
 	invite, err := svc.invites.RetrievePlatformInviteByID(ctx, inviteID)
 	if err != nil {
 		return PlatformInvite{}, err

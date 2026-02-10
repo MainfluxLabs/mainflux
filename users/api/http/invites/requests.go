@@ -57,11 +57,11 @@ func (req inviteReq) validate() error {
 	return nil
 }
 
-type publicInviteReq struct {
+type viewInviteReq struct {
 	inviteID string
 }
 
-func (req publicInviteReq) validate() error {
+func (req viewInviteReq) validate() error {
 	if req.inviteID == "" {
 		return apiutil.ErrMissingInviteID
 	}
