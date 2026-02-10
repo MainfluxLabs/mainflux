@@ -125,6 +125,8 @@ func viewPlatformInvitePublicEndpoint(svc users.Service) endpoint.Endpoint {
 
 		return platformInviteRes{
 			InviteeEmail: invite.InviteeEmail,
+			ExpiresAt:    invite.ExpiresAt,
+			State:        invite.State,
 		}, nil
 	}
 }
