@@ -57,6 +57,18 @@ func (req inviteReq) validate() error {
 	return nil
 }
 
+type viewInviteReq struct {
+	inviteID string
+}
+
+func (req viewInviteReq) validate() error {
+	if req.inviteID == "" {
+		return apiutil.ErrMissingInviteID
+	}
+
+	return nil
+}
+
 type createPlatformInviteRequest struct {
 	token        string
 	Email        string             `json:"email,omitempty"`
