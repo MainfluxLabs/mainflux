@@ -81,9 +81,7 @@ func (res removeRes) Empty() bool {
 	return true
 }
 
-type searchJSONMessagesRes struct {
-	Results []searchJSONResultItem `json:"results"`
-}
+type searchJSONMessagesRes []searchJSONResultItem
 
 type searchJSONResultItem struct {
 	Total    uint64            `json:"total"`
@@ -103,9 +101,7 @@ func (res searchJSONMessagesRes) Empty() bool {
 	return false
 }
 
-type searchSenMLMessagesRes struct {
-	Results []searchSenMLResultItem `json:"results"`
-}
+type searchSenMLMessagesRes []searchSenMLResultItem
 
 type searchSenMLResultItem struct {
 	Total    uint64            `json:"total"`

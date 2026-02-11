@@ -78,7 +78,7 @@ func searchJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 		}
 
 		wg.Wait()
-		return searchJSONMessagesRes{Results: results}, nil
+		return searchJSONMessagesRes(results), nil
 	}
 }
 
@@ -108,7 +108,7 @@ func searchSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 		}
 
 		wg.Wait()
-		return searchSenMLMessagesRes{Results: results}, nil
+		return searchSenMLMessagesRes(results), nil
 	}
 }
 

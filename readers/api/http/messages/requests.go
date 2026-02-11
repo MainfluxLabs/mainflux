@@ -194,7 +194,7 @@ func (req deleteSenMLMessagesReq) validate() error {
 type searchJSONMessagesReq struct {
 	token    string
 	thingKey things.ThingKey
-	Searches []readers.JSONPageMetadata `json:"searches"`
+	Searches []readers.JSONPageMetadata
 }
 
 func (req searchJSONMessagesReq) validate() error {
@@ -224,7 +224,7 @@ func (req searchJSONMessagesReq) validate() error {
 type searchSenMLMessagesReq struct {
 	token    string
 	thingKey things.ThingKey
-	Searches []readers.SenMLPageMetadata `json:"searches"`
+	Searches []readers.SenMLPageMetadata
 }
 
 func (req searchSenMLMessagesReq) validate() error {

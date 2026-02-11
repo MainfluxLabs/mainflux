@@ -196,26 +196,32 @@ func decodeSearchJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	if r.Body == nil || r.ContentLength == 0 {
 		return nil, apiutil.ErrMalformedEntity
 	}
-	var req searchJSONMessagesReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+
+	var searches []readers.JSONPageMetadata
+	if err := json.NewDecoder(r.Body).Decode(&searches); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
-	req.token = apiutil.ExtractBearerToken(r)
-	req.thingKey = things.ExtractThingKey(r)
-	return req, nil
+
+	return searchJSONMessagesReq{
+		token:    apiutil.ExtractBearerToken(r),
+		thingKey: things.ExtractThingKey(r),
+		Searches: searches,
+	}, nil
 }
 
 func decodeSearchSenMLMessages(_ context.Context, r *http.Request) (any, error) {
 	if r.Body == nil || r.ContentLength == 0 {
 		return nil, apiutil.ErrMalformedEntity
 	}
-	var req searchSenMLMessagesReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var searches []readers.SenMLPageMetadata
+	if err := json.NewDecoder(r.Body).Decode(&searches); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
-	req.token = apiutil.ExtractBearerToken(r)
-	req.thingKey = things.ExtractThingKey(r)
-	return req, nil
+	return searchSenMLMessagesReq{
+		token:    apiutil.ExtractBearerToken(r),
+		thingKey: things.ExtractThingKey(r),
+		Searches: searches,
+	}, nil
 }
 
 func decodeDeleteAllJSONMessages(_ context.Context, r *http.Request) (any, error) {
