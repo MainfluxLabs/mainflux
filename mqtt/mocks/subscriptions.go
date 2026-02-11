@@ -89,15 +89,17 @@ func (srm *subRepoMock) RemoveByThing(_ context.Context, thingID string) error {
 	for groupID, subs := range srm.subs {
 		var remaining []mqtt.Subscription
 		for _, sub := range subs {
-			if sub.ThingID != thingID {
-				remaining = append(remaining, sub)
-			} else {
+			if sub.ThingID == thingID {
 				found = true
+				continue
 			}
+			remaining = append(remaining, sub)
 		}
-		if len(remaining) == 0 {
+
+		switch len(remaining) {
+		case 0:
 			delete(srm.subs, groupID)
-		} else {
+		default:
 			srm.subs[groupID] = remaining
 		}
 	}
