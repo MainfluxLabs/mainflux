@@ -67,3 +67,31 @@ func (lm *loggingMiddleware) RemoveSubscription(ctx context.Context, sub mqtt.Su
 
 	return lm.svc.RemoveSubscription(ctx, sub)
 }
+
+func (lm *loggingMiddleware) RemoveSubscriptionsByThing(ctx context.Context, thingID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_subscriptions_by_thing for thing id %s took %s to complete",
+			thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RemoveSubscriptionsByThing(ctx, thingID)
+}
+
+func (lm *loggingMiddleware) RemoveSubscriptionsByGroup(ctx context.Context, groupID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_subscriptions_by_group for group id %s took %s to complete",
+			groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RemoveSubscriptionsByGroup(ctx, groupID)
+}
