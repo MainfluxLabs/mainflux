@@ -94,6 +94,11 @@ func (res searchJSONMessagesRes) Headers() map[string]string {
 }
 
 func (res searchJSONMessagesRes) Code() int {
+	for _, r := range res {
+		if r.Error != "" {
+			return http.StatusMultiStatus
+		}
+	}
 	return http.StatusOK
 }
 
@@ -114,6 +119,11 @@ func (res searchSenMLMessagesRes) Headers() map[string]string {
 }
 
 func (res searchSenMLMessagesRes) Code() int {
+	for _, r := range res {
+		if r.Error != "" {
+			return http.StatusMultiStatus
+		}
+	}
 	return http.StatusOK
 }
 
