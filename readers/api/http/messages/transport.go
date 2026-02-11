@@ -63,9 +63,16 @@ func MakeHandler(svc readers.Service, mux *bone.Mux, tracer opentracing.Tracer, 
 		opts...,
 	))
 
-	mux.Post("/search", kithttp.NewServer(
-		kitot.TraceServer(tracer, "search_messages")(searchMessagesEndpoint(svc)),
-		decodeSearchMessags,
+	mux.Post("/json/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_json_messages")(searchJSONMessagesEndpoint(svc)),
+		decodeSearchJSONMessages,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/senml/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_senml_messages")(searchSenMLMessagesEndpoint(svc)),
+		decodeSearchSenMLMessages,
 		encodeResponse,
 		opts...,
 	))
@@ -185,19 +192,29 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (any, error) {
 	}, nil
 }
 
-func decodeSearchMessags(_ context.Context, r *http.Request) (any, error) {
+func decodeSearchJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	if r.Body == nil || r.ContentLength == 0 {
 		return nil, apiutil.ErrMalformedEntity
 	}
-
-	var req searchMessagesReq
+	var req searchJSONMessagesReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
-
 	req.token = apiutil.ExtractBearerToken(r)
 	req.thingKey = things.ExtractThingKey(r)
+	return req, nil
+}
 
+func decodeSearchSenMLMessages(_ context.Context, r *http.Request) (any, error) {
+	if r.Body == nil || r.ContentLength == 0 {
+		return nil, apiutil.ErrMalformedEntity
+	}
+	var req searchSenMLMessagesReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+	req.token = apiutil.ExtractBearerToken(r)
+	req.thingKey = things.ExtractThingKey(r)
 	return req, nil
 }
 

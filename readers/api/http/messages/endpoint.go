@@ -52,60 +52,63 @@ func listSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	}
 }
 
-func searchMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
+func searchJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(searchMessagesReq)
+		req := request.(searchJSONMessagesReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		results := make([]searchResultItem, len(req.Searches))
-
-		var (
-			wg       sync.WaitGroup
-			mu       sync.Mutex
-			firstErr error
-		)
+		results := make([]searchJSONResultItem, len(req.Searches))
+		var wg sync.WaitGroup
 
 		for i, search := range req.Searches {
 			wg.Add(1)
-			go func(idx int, s searchRequest) {
+			go func(idx int, pm readers.JSONPageMetadata) {
 				defer wg.Done()
-
-				item := searchResultItem{Type: s.Type}
-
-				switch s.Type {
-				case "json":
-					page, err := svc.ListJSONMessages(ctx, req.token, req.thingKey, *s.JSON)
-					if err != nil {
-						item.Error = err.Error()
-						if firstErr == nil {
-							firstErr = err
-						}
-					} else {
-						item.Total = page.Total
-						item.Messages = page.Messages
-					}
-				case "senml":
-					page, err := svc.ListSenMLMessages(ctx, req.token, req.thingKey, *s.SenML)
-					if err != nil {
-						item.Error = err.Error()
-						if firstErr == nil {
-							firstErr = err
-						}
-					} else {
-						item.Total = page.Total
-						item.Messages = page.Messages
-					}
+				var item searchJSONResultItem
+				if page, err := svc.ListJSONMessages(ctx, req.token, req.thingKey, pm); err != nil {
+					item.Error = err.Error()
+				} else {
+					item.Total = page.Total
+					item.Messages = page.Messages
 				}
-				mu.Lock()
 				results[idx] = item
-				mu.Unlock()
 			}(i, search)
 		}
 
 		wg.Wait()
-		return searchMessagesRes{Results: results}, nil
+		return searchJSONMessagesRes{Results: results}, nil
+	}
+}
+
+func searchSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(searchSenMLMessagesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		results := make([]searchSenMLResultItem, len(req.Searches))
+		var wg sync.WaitGroup
+
+		for i, search := range req.Searches {
+			wg.Add(1)
+			go func(idx int, pm readers.SenMLPageMetadata) {
+				defer wg.Done()
+				var item searchSenMLResultItem
+				if page, err := svc.ListSenMLMessages(ctx, req.token, req.thingKey, pm); err != nil {
+					item.Error = err.Error()
+				} else {
+					item.Total = page.Total
+					item.Messages = page.Messages
+				}
+				results[idx] = item
+			}(i, search)
+		}
+
+		wg.Wait()
+		return searchSenMLMessagesRes{Results: results}, nil
 	}
 }
 

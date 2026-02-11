@@ -81,25 +81,46 @@ func (res removeRes) Empty() bool {
 	return true
 }
 
-type searchResultItem struct {
-	Type     string            `json:"type"`
+type searchJSONMessagesRes struct {
+	Results []searchJSONResultItem `json:"results"`
+}
+
+type searchJSONResultItem struct {
 	Total    uint64            `json:"total"`
 	Messages []readers.Message `json:"messages"`
 	Error    string            `json:"error,omitempty"`
 }
 
-type searchMessagesRes struct {
-	Results []searchResultItem `json:"results"`
-}
-
-func (res searchMessagesRes) Headers() map[string]string {
+func (res searchJSONMessagesRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res searchMessagesRes) Code() int {
+func (res searchJSONMessagesRes) Code() int {
 	return http.StatusOK
 }
 
-func (res searchMessagesRes) Empty() bool {
+func (res searchJSONMessagesRes) Empty() bool {
+	return false
+}
+
+type searchSenMLMessagesRes struct {
+	Results []searchSenMLResultItem `json:"results"`
+}
+
+type searchSenMLResultItem struct {
+	Total    uint64            `json:"total"`
+	Messages []readers.Message `json:"messages"`
+	Error    string            `json:"error,omitempty"`
+}
+
+func (res searchSenMLMessagesRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res searchSenMLMessagesRes) Code() int {
+	return http.StatusOK
+}
+
+func (res searchSenMLMessagesRes) Empty() bool {
 	return false
 }

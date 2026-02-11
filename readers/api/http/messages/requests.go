@@ -191,70 +191,71 @@ func (req deleteSenMLMessagesReq) validate() error {
 	return nil
 }
 
-type searchRequest struct {
-	Type  string                     `json:"type"`
-	JSON  *readers.JSONPageMetadata  `json:"json_params, omitempty"`
-	SenML *readers.SenMLPageMetadata `json:"senml_params, omitempty"`
-}
-
-type searchMessagesReq struct {
+type searchJSONMessagesReq struct {
 	token    string
 	thingKey things.ThingKey
-	Searches []searchRequest `json:"searches"`
+	Searches []readers.JSONPageMetadata `json:"searches"`
 }
 
-func (req searchMessagesReq) validate() error {
+func (req searchJSONMessagesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
-
 	if len(req.Searches) == 0 {
 		return apiutil.ErrEmptyList
 	}
-
-	for _, s := range req.Searches {
-		if s.Type != "json" && s.Type != "senml" {
-			return apiutil.ErrInvalidQueryParams
+	for i := range req.Searches {
+		if req.Searches[i].Limit == 0 {
+			req.Searches[i].Limit = apiutil.DefLimit
 		}
-
-		if s.Type == "json" && s.JSON == nil {
-			return apiutil.ErrMalformedEntity
+		if req.Searches[i].Limit > maxLimitSize {
+			return apiutil.ErrLimitSize
 		}
-		if s.Type == "senml" && s.SenML == nil {
-			return apiutil.ErrMalformedEntity
+		if err := validateDir(req.Searches[i].Dir); err != nil {
+			return err
 		}
-
-		if s.Type == "json" {
-			if s.JSON.Limit == 0 {
-				s.JSON.Limit = apiutil.DefLimit
-			}
-			if s.JSON.Limit > maxLimitSize {
-				return apiutil.ErrLimitSize
-			}
-			if err := validateDir(s.JSON.Dir); err != nil {
-				return err
-			}
-			if err := validateAggregation(s.JSON.AggType, s.JSON.AggInterval, s.JSON.AggValue); err != nil {
-				return err
-			}
-		}
-
-		if s.Type == "senml" {
-			if s.SenML.Limit == 0 {
-				s.SenML.Limit = apiutil.DefLimit
-			}
-			if s.SenML.Limit > maxLimitSize {
-				return apiutil.ErrLimitSize
-			}
-			if err := validateDir(s.SenML.Dir); err != nil {
-				return err
-			}
-			if err := validateAggregation(s.SenML.AggType, s.SenML.AggInterval, s.SenML.AggValue); err != nil {
-				return err
-			}
+		if err := validateAggregation(req.Searches[i].AggType, req.Searches[i].AggInterval, req.Searches[i].AggValue); err != nil {
+			return err
 		}
 	}
+	return nil
+}
 
+type searchSenMLMessagesReq struct {
+	token    string
+	thingKey things.ThingKey
+	Searches []readers.SenMLPageMetadata `json:"searches"`
+}
+
+func (req searchSenMLMessagesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if len(req.Searches) == 0 {
+		return apiutil.ErrEmptyList
+	}
+	for i := range req.Searches {
+		if req.Searches[i].Limit == 0 {
+			req.Searches[i].Limit = apiutil.DefLimit
+		}
+		if req.Searches[i].Limit > maxLimitSize {
+			return apiutil.ErrLimitSize
+		}
+		if err := validateDir(req.Searches[i].Dir); err != nil {
+			return err
+		}
+		if err := validateAggregation(req.Searches[i].AggType, req.Searches[i].AggInterval, req.Searches[i].AggValue); err != nil {
+			return err
+		}
+		if req.Searches[i].Comparator != "" &&
+			req.Searches[i].Comparator != readers.EqualKey &&
+			req.Searches[i].Comparator != readers.LowerThanKey &&
+			req.Searches[i].Comparator != readers.LowerThanEqualKey &&
+			req.Searches[i].Comparator != readers.GreaterThanKey &&
+			req.Searches[i].Comparator != readers.GreaterThanEqualKey {
+			return apiutil.ErrInvalidComparator
+		}
+	}
 	return nil
 }
 
