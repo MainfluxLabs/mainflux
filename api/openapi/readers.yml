@@ -91,52 +91,68 @@ paths:
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
+
   /json/search:
-      post:
-        summary: Search JSON messages across multiple publishers
-        security:
-          - bearerAuth: []
-          - thingAuth: []
-        description: |
-          Executes multiple JSON message queries concurrently and returns
-          results for each query. Each item in the request array accepts
-          the same parameters as the GET /json endpoint.
-        tags:
-          - json messages
-        requestBody:
-          required: true
+    post:
+      summary: Search JSON messages across multiple publishers
+      security:
+        - bearerAuth: []
+        - thingAuth: []
+      description: |
+        Executes multiple JSON message queries concurrently and returns
+        results for each query. Each item in the request array accepts
+        the same parameters as the GET /json endpoint.
+      tags:
+        - json messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/JSONSearchRequest"
+              minItems: 1
+            example:
+              - publisher: "f9b2815c-8d8f-44f0-a1fe-6d72f15f5021"
+                limit: 10
+                offset: 0
+              - publisher: "a1b2c3d4-0000-1111-2222-333344445555"
+                agg_type: "max"
+                agg_interval: "day"
+                agg_value: 1
+                agg_fields: ["humidity", "temperature"]
+                limit: 5
+
+      responses:
+        '200':
+          description: All queries returned successfully.
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/JSONSearchRequest"
-                minItems: 1
-              example:
-                - publisher: "f9b2815c-8d8f-44f0-a1fe-6d72f15f5021"
-                  limit: 10
-                  offset: 0
-                - publisher: "a1b2c3d4-0000-1111-2222-333344445555"
-                  agg_type: "max"
-                  agg_interval: "day"
-                  agg_value: 1
-                  agg_fields: ["humidity", "temperature"]
-                  limit: 5
-        responses:
-          '200':
-            description: Search results returned successfully.
-            content:
-              application/json:
-                schema:
-                  type: array
-                  items:
-                    $ref: "#/components/schemas/JSONSearchResultItem"
-          '400':
-            description: Failed due to malformed request body.
-          '401':
-            description: Missing or invalid access token or thing key provided.
-          '500':
-            $ref: "#/components/responses/ServiceError"
+                  $ref: "#/components/schemas/JSONSearchResultItem"
+        '207':
+          description: Some queries failed. Each result item contains its own error field.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JSONSearchResultItem"
+        '400':
+          description: Failed due to malformed request body.
+        '401':
+          description: Missing or invalid access token or thing key provided.
+        '500':
+          description: All queries failed.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JSONSearchResultItem"
 
   /senml:
     get:
@@ -261,9 +277,18 @@ paths:
                 comparator: "gt"
                 v: 60
                 limit: 10
+
       responses:
         '200':
-          description: Search results returned successfully.
+          description: All queries returned successfully.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SenMLSearchResultItem"
+        '207':
+          description: Some queries failed. Each result item contains its own error field.
           content:
             application/json:
               schema:
@@ -275,7 +300,13 @@ paths:
         '401':
           description: Missing or invalid access token or thing key provided.
         '500':
-          $ref: "#/components/responses/ServiceError"
+          description: All queries failed.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SenMLSearchResultItem"
 
   /json/export:
     get:
@@ -673,10 +704,10 @@ components:
         messages:
           type: array
           items:
-          $ref: "#/components/schemas/SenMLMessage"
-      error:
-        type: string
-        description: Error message if this particular query failed.
+            $ref: "#/components/schemas/SenMLMessage"
+        error:
+          type: string
+          description: Error message if this particular query failed.
 
   parameters:
     Publisher:
