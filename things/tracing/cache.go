@@ -12,9 +12,10 @@ import (
 )
 
 const (
-	saveThing                = "save_thing"
-	removeKey                = "remove_key"
-	retrieveThingIDByKey     = "retrieve_id_by_key"
+	saveThingIDByKey         = "save_thing_id_by_key"
+	retrieveThingIDByKey     = "retrieve_thing_id_by_key"
+	removeThingIDByKey       = "remove_thing_id_by_key"
+	removeThingByID          = "remove_thing_by_id"
 	saveGroupIDByThingID     = "save_group_id_by_thing_id"
 	retrieveGroupIDByThingID = "retrieve_group_id_by_thing_id"
 	removeGroupIDByThingID   = "remove_group_id_by_thing_id"
@@ -37,7 +38,7 @@ func ThingCacheMiddleware(tracer opentracing.Tracer, cache things.ThingCache) th
 }
 
 func (tcm thingCacheMiddleware) Save(ctx context.Context, key things.ThingKey, thingID string) error {
-	span := dbutil.CreateSpan(ctx, tcm.tracer, saveThing)
+	span := dbutil.CreateSpan(ctx, tcm.tracer, saveThingIDByKey)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -53,7 +54,7 @@ func (tcm thingCacheMiddleware) ID(ctx context.Context, key things.ThingKey) (st
 }
 
 func (tcm thingCacheMiddleware) RemoveThing(ctx context.Context, thingID string) error {
-	span := dbutil.CreateSpan(ctx, tcm.tracer, removeThing)
+	span := dbutil.CreateSpan(ctx, tcm.tracer, removeThingByID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -61,7 +62,7 @@ func (tcm thingCacheMiddleware) RemoveThing(ctx context.Context, thingID string)
 }
 
 func (tcm thingCacheMiddleware) RemoveKey(ctx context.Context, key things.ThingKey) error {
-	span := dbutil.CreateSpan(ctx, tcm.tracer, removeKey)
+	span := dbutil.CreateSpan(ctx, tcm.tracer, removeThingIDByKey)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
