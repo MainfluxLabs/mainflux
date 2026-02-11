@@ -12,13 +12,15 @@ import (
 )
 
 const (
-	maxLimitSize = 200
-	maxEmailSize = 1024
-	maxNameSize  = 254
-	EmailOrder   = "email"
-	IDOrder      = "id"
-	AscDir       = "asc"
-	DescDir      = "desc"
+	maxLimitSize   = 200
+	maxEmailSize   = 1024
+	maxNameSize    = 254
+	EmailOrder     = "email"
+	IDOrder        = "id"
+	AscDir         = "asc"
+	DescDir        = "desc"
+	GoogleProvider = "google"
+	GitHubProvider = "github"
 )
 
 var userPasswordRegex *regexp.Regexp
@@ -42,6 +44,41 @@ func (req selfRegisterUserReq) validate() error {
 	}
 
 	return req.User.Validate(userPasswordRegex)
+}
+
+type oauthLoginReq struct {
+	provider string
+}
+
+func (req oauthLoginReq) validate() error {
+	if req.provider != GoogleProvider && req.provider != GitHubProvider {
+		return apiutil.ErrMissingProvider
+	}
+	return nil
+}
+
+type oauthCallbackReq struct {
+	provider      string
+	code          string
+	state         string
+	originalState string
+	verifier      string
+}
+
+func (req oauthCallbackReq) validate() error {
+	if req.provider != GoogleProvider && req.provider != GitHubProvider {
+		return apiutil.ErrMissingProvider
+	}
+
+	if req.code == "" {
+		return apiutil.ErrMissingProviderCode
+	}
+
+	if req.state == "" || req.originalState == "" || req.state != req.originalState {
+		return apiutil.ErrMissingState
+	}
+
+	return nil
 }
 
 type verifyEmailReq struct {
