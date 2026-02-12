@@ -149,11 +149,13 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token, orgID string, 
 		timestamp := getTimestamp()
 		group.CreatedAt, group.UpdatedAt = timestamp, timestamp
 
-		id, err := ts.idProvider.ID()
-		if err != nil {
-			return []Group{}, err
+		if group.ID == "" {
+			id, err := ts.idProvider.ID()
+			if err != nil {
+				return []Group{}, err
+			}
+			group.ID = id
 		}
-		group.ID = id
 		group.OrgID = orgID
 
 		grs = append(grs, group)

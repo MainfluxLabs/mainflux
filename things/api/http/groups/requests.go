@@ -13,6 +13,7 @@ const (
 )
 
 type createGroupReq struct {
+	ID          string         `json:"id,omitempty"`
 	Name        string         `json:"name,omitempty"`
 	Description string         `json:"description,omitempty"`
 	Metadata    map[string]any `json:"metadata,omitempty"`
