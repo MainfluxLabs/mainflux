@@ -193,7 +193,6 @@ func (req deleteSenMLMessagesReq) validate() error {
 
 type searchJSONMessagesReq struct {
 	token    string
-	thingKey things.ThingKey
 	Searches []readers.JSONPageMetadata
 }
 
@@ -205,16 +204,8 @@ func (req searchJSONMessagesReq) validate() error {
 		return apiutil.ErrEmptyList
 	}
 	for i := range req.Searches {
-		if req.Searches[i].Limit == 0 {
-			req.Searches[i].Limit = apiutil.DefLimit
-		}
-		if req.Searches[i].Limit > maxLimitSize {
-			return apiutil.ErrLimitSize
-		}
-		if err := validateDir(req.Searches[i].Dir); err != nil {
-			return err
-		}
-		if err := validateAggregation(req.Searches[i].AggType, req.Searches[i].AggInterval, req.Searches[i].AggValue); err != nil {
+		s := &req.Searches[i]
+		if err := validateSearchParams(&s.Limit, s.Dir, s.AggType, s.AggInterval, s.AggValue); err != nil {
 			return err
 		}
 	}
@@ -223,7 +214,6 @@ func (req searchJSONMessagesReq) validate() error {
 
 type searchSenMLMessagesReq struct {
 	token    string
-	thingKey things.ThingKey
 	Searches []readers.SenMLPageMetadata
 }
 
@@ -235,18 +225,11 @@ func (req searchSenMLMessagesReq) validate() error {
 		return apiutil.ErrEmptyList
 	}
 	for i := range req.Searches {
-		if req.Searches[i].Limit == 0 {
-			req.Searches[i].Limit = apiutil.DefLimit
-		}
-		if req.Searches[i].Limit > maxLimitSize {
-			return apiutil.ErrLimitSize
-		}
-		if err := validateDir(req.Searches[i].Dir); err != nil {
+		s := &req.Searches[i]
+		if err := validateSearchParams(&s.Limit, s.Dir, s.AggType, s.AggInterval, s.AggValue); err != nil {
 			return err
 		}
-		if err := validateAggregation(req.Searches[i].AggType, req.Searches[i].AggInterval, req.Searches[i].AggValue); err != nil {
-			return err
-		}
+
 		if req.Searches[i].Comparator != "" &&
 			req.Searches[i].Comparator != readers.EqualKey &&
 			req.Searches[i].Comparator != readers.LowerThanKey &&
@@ -257,6 +240,22 @@ func (req searchSenMLMessagesReq) validate() error {
 		}
 	}
 	return nil
+}
+
+func validateSearchParams(limit *uint64, dir, aggType, aggInterval string, aggValue uint64) error {
+	if *limit == 0 {
+		*limit = apiutil.DefLimit
+	}
+
+	if *limit > maxLimitSize {
+		return apiutil.ErrLimitSize
+	}
+
+	if err := validateDir(dir); err != nil {
+		return err
+	}
+
+	return validateAggregation(aggType, aggInterval, aggValue)
 }
 
 func validateAggregation(aggType, aggInterval string, aggValue uint64) error {
