@@ -204,8 +204,8 @@ func (req searchJSONMessagesReq) validate() error {
 		return apiutil.ErrEmptyList
 	}
 	for i := range req.Searches {
-		s := &req.Searches[i]
-		if err := validateSearchParams(&s.Limit, s.Dir, s.AggType, s.AggInterval, s.AggValue); err != nil {
+		s := req.Searches[i]
+		if err := validateSearchParams(s.Limit, s.Dir, s.AggType, s.AggInterval, s.AggValue); err != nil {
 			return err
 		}
 	}
@@ -225,8 +225,8 @@ func (req searchSenMLMessagesReq) validate() error {
 		return apiutil.ErrEmptyList
 	}
 	for i := range req.Searches {
-		s := &req.Searches[i]
-		if err := validateSearchParams(&s.Limit, s.Dir, s.AggType, s.AggInterval, s.AggValue); err != nil {
+		s := req.Searches[i]
+		if err := validateSearchParams(s.Limit, s.Dir, s.AggType, s.AggInterval, s.AggValue); err != nil {
 			return err
 		}
 
@@ -242,12 +242,8 @@ func (req searchSenMLMessagesReq) validate() error {
 	return nil
 }
 
-func validateSearchParams(limit *uint64, dir, aggType, aggInterval string, aggValue uint64) error {
-	if *limit == 0 {
-		*limit = apiutil.DefLimit
-	}
-
-	if *limit > maxLimitSize {
+func validateSearchParams(limit uint64, dir, aggType, aggInterval string, aggValue uint64) error {
+	if limit > maxLimitSize {
 		return apiutil.ErrLimitSize
 	}
 
