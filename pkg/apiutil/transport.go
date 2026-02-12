@@ -50,7 +50,7 @@ const (
 	ContentTypeOctetStream = "application/octet-stream"
 	DefOffset              = 0
 	DefLimit               = 10
-	MaxConcurrency         = 10
+	ConcurrencyLimit       = 10
 )
 
 // PageMetadata contains page metadata that helps navigation.

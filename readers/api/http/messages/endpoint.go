@@ -62,7 +62,7 @@ func searchJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 		}
 
 		results := make([]searchJSONResultItem, len(req.Searches))
-		sem := make(chan struct{}, apiutil.MaxConcurrency)
+		sem := make(chan struct{}, apiutil.ConcurrencyLimit)
 		var wg sync.WaitGroup
 
 		for i, search := range req.Searches {
@@ -96,7 +96,7 @@ func searchSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 		}
 
 		results := make([]searchSenMLResultItem, len(req.Searches))
-		sem := make(chan struct{}, apiutil.MaxConcurrency)
+		sem := make(chan struct{}, apiutil.ConcurrencyLimit)
 		var wg sync.WaitGroup
 
 		for i, search := range req.Searches {
