@@ -9,6 +9,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/readers"
+	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -67,7 +68,7 @@ func searchJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			go func(idx int, pm readers.JSONPageMetadata) {
 				defer wg.Done()
 				var item searchJSONResultItem
-				if page, err := svc.ListJSONMessages(ctx, req.token, req.thingKey, pm); err != nil {
+				if page, err := svc.ListJSONMessages(ctx, req.token, things.ThingKey{}, pm); err != nil {
 					item.Error = err.Error()
 				} else {
 					item.Total = page.Total
@@ -97,7 +98,7 @@ func searchSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			go func(idx int, pm readers.SenMLPageMetadata) {
 				defer wg.Done()
 				var item searchSenMLResultItem
-				if page, err := svc.ListSenMLMessages(ctx, req.token, req.thingKey, pm); err != nil {
+				if page, err := svc.ListSenMLMessages(ctx, req.token, things.ThingKey{}, pm); err != nil {
 					item.Error = err.Error()
 				} else {
 					item.Total = page.Total

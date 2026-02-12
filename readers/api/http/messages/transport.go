@@ -204,7 +204,6 @@ func decodeSearchJSONMessages(_ context.Context, r *http.Request) (any, error) {
 
 	return searchJSONMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
-		thingKey: things.ExtractThingKey(r),
 		Searches: searches,
 	}, nil
 }
@@ -219,7 +218,6 @@ func decodeSearchSenMLMessages(_ context.Context, r *http.Request) (any, error) 
 	}
 	return searchSenMLMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
-		thingKey: things.ExtractThingKey(r),
 		Searches: searches,
 	}, nil
 }
