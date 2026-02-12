@@ -57,107 +57,86 @@ func newAggregationService(db dbutil.Database) *aggregationService {
 	return &aggregationService{db: db}
 }
 
+// aggInput holds the data needed to execute an aggregation query.
+type aggInput struct {
+	params     map[string]any
+	qp         QueryParams
+	conditions []string
+}
+
 func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) ([]readers.Message, uint64, error) {
-	params := map[string]any{
-		"limit":     rpm.Limit,
-		"offset":    rpm.Offset,
-		"subtopic":  rpm.Subtopic,
-		"publisher": rpm.Publisher,
-		"protocol":  rpm.Protocol,
-		"from":      rpm.From,
-		"to":        rpm.To,
+	input := aggInput{
+		params: map[string]any{
+			"limit":     rpm.Limit,
+			"offset":    rpm.Offset,
+			"subtopic":  rpm.Subtopic,
+			"publisher": rpm.Publisher,
+			"protocol":  rpm.Protocol,
+			"from":      rpm.From,
+			"to":        rpm.To,
+		},
+		qp: QueryParams{
+			Table:       jsonTable,
+			TimeColumn:  jsonOrder,
+			AggFields:   rpm.AggFields,
+			AggInterval: rpm.AggInterval,
+			AggValue:    rpm.AggValue,
+			AggType:     rpm.AggType,
+			Limit:       rpm.Limit,
+			Dir:         rpm.Dir,
+		},
+		conditions: jsonConditions(rpm),
 	}
 
-	qp := QueryParams{
-		Table:       jsonTable,
-		TimeColumn:  jsonOrder,
-		AggFields:   rpm.AggFields,
-		AggInterval: rpm.AggInterval,
-		AggValue:    rpm.AggValue,
-		AggType:     rpm.AggType,
-		Limit:       rpm.Limit,
-		Dir:         rpm.Dir,
-	}
-
-	conditions := as.getJSONConditions(rpm)
-	if len(conditions) > 0 {
-		qp.Condition = "WHERE " + strings.Join(conditions, " AND ")
-		qp.ConditionForJoin = "AND " + strings.Join(conditions, " AND ")
-	}
-
-	strategy := as.getAggStrategy(rpm.AggType)
-	if strategy == nil {
-		return []readers.Message{}, 0, nil
-	}
-
-	query := buildAggQuery(qp, strategy)
-	rows, err := as.db.NamedQueryContext(ctx, query, params)
-	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
-			return []readers.Message{}, 0, nil
-		}
-		return []readers.Message{}, 0, errors.Wrap(readers.ErrReadMessages, err)
-	}
-
-	if rows == nil {
-		return []readers.Message{}, 0, nil
-	}
-	defer rows.Close()
-
-	messages, err := as.scanAggregatedMessages(rows, jsonTable)
-	if err != nil {
-		return []readers.Message{}, 0, err
-	}
-
-	cq := buildAggCountQuery(qp)
-	total, err := dbutil.Total(ctx, as.db, cq, params)
-	if err != nil {
-		return []readers.Message{}, 0, err
-	}
-
-	return messages, total, nil
+	return as.readAggregatedMessages(ctx, input)
 }
 
 func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) ([]readers.Message, uint64, error) {
-	params := map[string]any{
-		"limit":        rpm.Limit,
-		"offset":       rpm.Offset,
-		"subtopic":     rpm.Subtopic,
-		"publisher":    rpm.Publisher,
-		"name":         rpm.Name,
-		"protocol":     rpm.Protocol,
-		"value":        rpm.Value,
-		"bool_value":   rpm.BoolValue,
-		"string_value": rpm.StringValue,
-		"data_value":   rpm.DataValue,
-		"from":         rpm.From,
-		"to":           rpm.To,
+	input := aggInput{
+		params: map[string]any{
+			"limit":        rpm.Limit,
+			"offset":       rpm.Offset,
+			"subtopic":     rpm.Subtopic,
+			"publisher":    rpm.Publisher,
+			"name":         rpm.Name,
+			"protocol":     rpm.Protocol,
+			"value":        rpm.Value,
+			"bool_value":   rpm.BoolValue,
+			"string_value": rpm.StringValue,
+			"data_value":   rpm.DataValue,
+			"from":         rpm.From,
+			"to":           rpm.To,
+		},
+		qp: QueryParams{
+			Table:       senmlTable,
+			TimeColumn:  senmlOrder,
+			AggFields:   rpm.AggFields,
+			AggInterval: rpm.AggInterval,
+			AggValue:    rpm.AggValue,
+			AggType:     rpm.AggType,
+			Limit:       rpm.Limit,
+			Dir:         rpm.Dir,
+		},
+		conditions: senmlConditions(rpm),
 	}
 
-	qp := QueryParams{
-		Table:       senmlTable,
-		TimeColumn:  senmlOrder,
-		AggFields:   rpm.AggFields,
-		AggInterval: rpm.AggInterval,
-		AggValue:    rpm.AggValue,
-		AggType:     rpm.AggType,
-		Limit:       rpm.Limit,
-		Dir:         rpm.Dir,
+	return as.readAggregatedMessages(ctx, input)
+}
+
+func (as *aggregationService) readAggregatedMessages(ctx context.Context, input aggInput) ([]readers.Message, uint64, error) {
+	qp := input.qp
+	if len(input.conditions) > 0 {
+		qp.Condition = "WHERE " + strings.Join(input.conditions, " AND ")
+		qp.ConditionForJoin = "AND " + strings.Join(input.conditions, " AND ")
 	}
 
-	conditions := as.getSenMLConditions(rpm)
-	if len(conditions) > 0 {
-		qp.Condition = "WHERE " + strings.Join(conditions, " AND ")
-		qp.ConditionForJoin = "AND " + strings.Join(conditions, " AND ")
-	}
-
-	strategy := as.getAggStrategy(rpm.AggType)
+	strategy := as.getAggStrategy(qp.AggType)
 	if strategy == nil {
 		return []readers.Message{}, 0, nil
 	}
 
 	query := buildAggQuery(qp, strategy)
-	rows, err := as.db.NamedQueryContext(ctx, query, params)
+	rows, err := as.db.NamedQueryContext(ctx, query, input.params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
 			return []readers.Message{}, 0, nil
@@ -167,16 +146,15 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 	if rows == nil {
 		return []readers.Message{}, 0, nil
 	}
-
 	defer rows.Close()
 
-	messages, err := as.scanAggregatedMessages(rows, senmlTable)
+	messages, err := as.scanAggregatedMessages(rows, qp.Table)
 	if err != nil {
 		return []readers.Message{}, 0, err
 	}
 
 	cq := buildAggCountQuery(qp)
-	total, err := dbutil.Total(ctx, as.db, cq, params)
+	total, err := dbutil.Total(ctx, as.db, cq, input.params)
 	if err != nil {
 		return []readers.Message{}, 0, err
 	}
@@ -435,81 +413,73 @@ func buildJSONPath(field string) string {
 	return path.String()
 }
 
-func (as *aggregationService) getJSONConditions(rpm readers.JSONPageMetadata) []string {
-	var conditions []string
-
-	if rpm.Subtopic != "" {
-		conditions = append(conditions, "subtopic = :subtopic")
-	}
-	if rpm.Publisher != "" {
-		conditions = append(conditions, "publisher = :publisher")
-	}
-	if rpm.Protocol != "" {
-		conditions = append(conditions, "protocol = :protocol")
-	}
-	if rpm.From != 0 {
-		conditions = append(conditions, fmt.Sprintf("%s >= :from", jsonOrder))
-	}
-	if rpm.To != 0 {
-		conditions = append(conditions, fmt.Sprintf("%s <= :to", jsonOrder))
-	}
-
-	return conditions
+// baseFilter holds fields shared between JSON and SenML page metadata.
+type baseFilter struct {
+	subtopic   string
+	publisher  string
+	protocol   string
+	from       int64
+	to         int64
+	timeColumn string
 }
 
-func (as *aggregationService) getSenMLConditions(rpm readers.SenMLPageMetadata) []string {
-	var conditions []string
-
-	if rpm.Subtopic != "" {
-		conditions = append(conditions, "subtopic = :subtopic")
+func (f baseFilter) conditions() []string {
+	var conds []string
+	if f.subtopic != "" {
+		conds = append(conds, "subtopic = :subtopic")
 	}
-	if rpm.Publisher != "" {
-		conditions = append(conditions, "publisher = :publisher")
+	if f.publisher != "" {
+		conds = append(conds, "publisher = :publisher")
 	}
-	if rpm.Protocol != "" {
-		conditions = append(conditions, "protocol = :protocol")
+	if f.protocol != "" {
+		conds = append(conds, "protocol = :protocol")
 	}
-	if rpm.Name != "" {
-		conditions = append(conditions, "name = :name")
+	if f.from != 0 {
+		conds = append(conds, fmt.Sprintf("%s >= :from", f.timeColumn))
 	}
-	if rpm.Value != 0 {
-		comparator := as.parseComparator(rpm.Comparator)
-		conditions = append(conditions, fmt.Sprintf("value %s :value", comparator))
+	if f.to != 0 {
+		conds = append(conds, fmt.Sprintf("%s <= :to", f.timeColumn))
 	}
-	if rpm.BoolValue {
-		conditions = append(conditions, "bool_value = :bool_value")
-	}
-	if rpm.StringValue != "" {
-		conditions = append(conditions, "string_value = :string_value")
-	}
-	if rpm.DataValue != "" {
-		conditions = append(conditions, "data_value = :data_value")
-	}
-	if rpm.From != 0 {
-		conditions = append(conditions, fmt.Sprintf("%s >= :from", senmlOrder))
-	}
-	if rpm.To != 0 {
-		conditions = append(conditions, fmt.Sprintf("%s <= :to", senmlOrder))
-	}
-
-	return conditions
+	return conds
 }
 
-func (as *aggregationService) parseComparator(comparator string) string {
-	switch comparator {
-	case readers.EqualKey:
-		return "="
-	case readers.LowerThanKey:
-		return "<"
-	case readers.LowerThanEqualKey:
-		return "<="
-	case readers.GreaterThanKey:
-		return ">"
-	case readers.GreaterThanEqualKey:
-		return ">="
-	default:
-		return "="
+func jsonConditions(pm readers.JSONPageMetadata) []string {
+	return baseFilter{
+		subtopic:   pm.Subtopic,
+		publisher:  pm.Publisher,
+		protocol:   pm.Protocol,
+		from:       pm.From,
+		to:         pm.To,
+		timeColumn: jsonOrder,
+	}.conditions()
+}
+
+func senmlConditions(pm readers.SenMLPageMetadata) []string {
+	conds := baseFilter{
+		subtopic:   pm.Subtopic,
+		publisher:  pm.Publisher,
+		protocol:   pm.Protocol,
+		from:       pm.From,
+		to:         pm.To,
+		timeColumn: senmlOrder,
+	}.conditions()
+
+	if pm.Name != "" {
+		conds = append(conds, "name = :name")
 	}
+	if pm.Value != 0 {
+		conds = append(conds, fmt.Sprintf("value %s :value", readers.ComparatorSymbol(pm.Comparator)))
+	}
+	if pm.BoolValue {
+		conds = append(conds, "bool_value = :bool_value")
+	}
+	if pm.StringValue != "" {
+		conds = append(conds, "string_value = :string_value")
+	}
+	if pm.DataValue != "" {
+		conds = append(conds, "data_value = :data_value")
+	}
+	return conds
 }
 
 func buildConditionForCount(qp QueryParams) string {
