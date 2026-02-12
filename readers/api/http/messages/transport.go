@@ -193,7 +193,7 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeSearchJSONMessages(_ context.Context, r *http.Request) (any, error) {
-	if r.Body == nil || r.ContentLength == 0 {
+	if r.Body == nil {
 		return nil, apiutil.ErrMalformedEntity
 	}
 
@@ -209,7 +209,7 @@ func decodeSearchJSONMessages(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeSearchSenMLMessages(_ context.Context, r *http.Request) (any, error) {
-	if r.Body == nil || r.ContentLength == 0 {
+	if r.Body == nil {
 		return nil, apiutil.ErrMalformedEntity
 	}
 	var searches []readers.SenMLPageMetadata
