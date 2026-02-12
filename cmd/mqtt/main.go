@@ -18,6 +18,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/mqtt/postgres"
 	mqttredis "github.com/MainfluxLabs/mainflux/mqtt/redis/cache"
 	"github.com/MainfluxLabs/mainflux/mqtt/redis/events"
+	"github.com/MainfluxLabs/mainflux/mqtt/tracing"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -39,6 +40,7 @@ import (
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
+	"github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/errgroup"
 )
@@ -213,11 +215,16 @@ func main() {
 	ac := connectToRedis(cfg.authCacheURL, cfg.authPass, cfg.authCacheDB, logger)
 	defer ac.Close()
 
+	dbTracer, dbCloser := jaeger.Init("mqtt_db", cfg.jaegerURL, logger)
+	defer dbCloser.Close()
+
+	cacheTracer, cacheCloser := jaeger.Init("mqtt_cache", cfg.jaegerURL, logger)
+	defer cacheCloser.Close()
+
 	thingsTracer, thingsCloser := jaeger.Init("mqtt_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
 	mqttTracer, closer := jaeger.Init(svcName, cfg.jaegerURL, logger)
-
 	defer closer.Close()
 
 	authTracer, authCloser := jaeger.Init("mqtt_auth", cfg.jaegerURL, logger)
@@ -230,8 +237,9 @@ func main() {
 	tc := thingsapi.NewClient(tConn, thingsTracer, cfg.thingsGRPCTimeout)
 
 	cc := mqttredis.NewConnectionCache(ac)
+	cc = tracing.ConnectionCacheMiddleware(cacheTracer, cc)
 
-	svc := newService(usersAuth, tc, db, cc, logger)
+	svc := newService(usersAuth, tc, db, cc, dbTracer, logger)
 
 	// Event handler for MQTT hooks
 	h := mqtt.NewHandler(np, tc, svc, cc, logger)
@@ -447,9 +455,10 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, db *sqlx.DB, cache mqttredis.ConnectionCache, logger logger.Logger) mqtt.Service {
+func newService(ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, db *sqlx.DB, cache mqttredis.ConnectionCache, dbTracer opentracing.Tracer, logger logger.Logger) mqtt.Service {
 	idp := ulid.New()
 	subscriptions := postgres.NewRepository(db)
+	subscriptions = tracing.SubscriptionRepositoryMiddleware(dbTracer, subscriptions)
 
 	svc := mqtt.NewMqttService(ac, tc, subscriptions, cache, idp)
 	svc = mqttapi.LoggingMiddleware(svc, logger)
