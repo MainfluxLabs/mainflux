@@ -97,7 +97,6 @@ paths:
       summary: Search JSON messages across multiple publishers
       security:
         - bearerAuth: []
-        - thingAuth: []
       description: |
         Executes multiple JSON message queries concurrently and returns
         results for each query. Each item in the request array accepts
@@ -252,7 +251,6 @@ paths:
       summary: Search SenML messages across multiple publishers
       security:
         - bearerAuth: []
-        - thingAuth: []
       description: |
         Executes multiple SenML message queries concurrently and returns
         results for each query. Each item in the request array accepts
