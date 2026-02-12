@@ -7,6 +7,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -61,12 +62,16 @@ func searchJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 		}
 
 		results := make([]searchJSONResultItem, len(req.Searches))
+		sem := make(chan struct{}, apiutil.MaxConcurrency)
 		var wg sync.WaitGroup
 
 		for i, search := range req.Searches {
 			wg.Add(1)
+			sem <- struct{}{}
 			go func(idx int, pm readers.JSONPageMetadata) {
 				defer wg.Done()
+				defer func() { <-sem }()
+
 				var item searchJSONResultItem
 				if page, err := svc.ListJSONMessages(ctx, req.token, things.ThingKey{}, pm); err != nil {
 					item.Error = err.Error()
@@ -91,12 +96,16 @@ func searchSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 		}
 
 		results := make([]searchSenMLResultItem, len(req.Searches))
+		sem := make(chan struct{}, apiutil.MaxConcurrency)
 		var wg sync.WaitGroup
 
 		for i, search := range req.Searches {
 			wg.Add(1)
+			sem <- struct{}{}
 			go func(idx int, pm readers.SenMLPageMetadata) {
 				defer wg.Done()
+				defer func() { <-sem }()
+
 				var item searchSenMLResultItem
 				if page, err := svc.ListSenMLMessages(ctx, req.token, things.ThingKey{}, pm); err != nil {
 					item.Error = err.Error()
