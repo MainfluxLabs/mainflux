@@ -192,8 +192,8 @@ func (req deleteSenMLMessagesReq) validate() error {
 }
 
 type searchJSONMessagesReq struct {
-	token    string
-	Searches []readers.JSONPageMetadata
+	token             string
+	jsonPageMetadatas []readers.JSONPageMetadata
 }
 
 func (req searchJSONMessagesReq) validate() error {
@@ -201,12 +201,12 @@ func (req searchJSONMessagesReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.Searches) == 0 {
+	if len(req.jsonPageMetadatas) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
-	for i := range req.Searches {
-		s := req.Searches[i]
+	for i := range req.jsonPageMetadatas {
+		s := req.jsonPageMetadatas[i]
 		if err := validateSearchParams(s.Limit, s.Dir, s.AggType, s.AggInterval, s.AggValue); err != nil {
 			return err
 		}
@@ -215,8 +215,8 @@ func (req searchJSONMessagesReq) validate() error {
 }
 
 type searchSenMLMessagesReq struct {
-	token    string
-	Searches []readers.SenMLPageMetadata
+	token              string
+	senmlPageMetadatas []readers.SenMLPageMetadata
 }
 
 func (req searchSenMLMessagesReq) validate() error {
@@ -224,22 +224,22 @@ func (req searchSenMLMessagesReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.Searches) == 0 {
+	if len(req.senmlPageMetadatas) == 0 {
 		return apiutil.ErrEmptyList
 	}
 
-	for i := range req.Searches {
-		s := req.Searches[i]
+	for i := range req.senmlPageMetadatas {
+		s := req.senmlPageMetadatas[i]
 		if err := validateSearchParams(s.Limit, s.Dir, s.AggType, s.AggInterval, s.AggValue); err != nil {
 			return err
 		}
 
-		if req.Searches[i].Comparator != "" &&
-			req.Searches[i].Comparator != readers.EqualKey &&
-			req.Searches[i].Comparator != readers.LowerThanKey &&
-			req.Searches[i].Comparator != readers.LowerThanEqualKey &&
-			req.Searches[i].Comparator != readers.GreaterThanKey &&
-			req.Searches[i].Comparator != readers.GreaterThanEqualKey {
+		if req.senmlPageMetadatas[i].Comparator != "" &&
+			req.senmlPageMetadatas[i].Comparator != readers.EqualKey &&
+			req.senmlPageMetadatas[i].Comparator != readers.LowerThanKey &&
+			req.senmlPageMetadatas[i].Comparator != readers.LowerThanEqualKey &&
+			req.senmlPageMetadatas[i].Comparator != readers.GreaterThanKey &&
+			req.senmlPageMetadatas[i].Comparator != readers.GreaterThanEqualKey {
 			return apiutil.ErrInvalidComparator
 		}
 	}

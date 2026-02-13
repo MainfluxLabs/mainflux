@@ -61,11 +61,11 @@ func searchJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		results := make([]searchJSONResultItem, len(req.Searches))
+		results := make([]searchJSONResultItem, len(req.jsonPageMetadatas))
 		sem := make(chan struct{}, apiutil.ConcurrencyLimit)
 		var wg sync.WaitGroup
 
-		for i, search := range req.Searches {
+		for i, search := range req.jsonPageMetadatas {
 			wg.Add(1)
 			sem <- struct{}{}
 			go func(idx int, pm readers.JSONPageMetadata) {
@@ -95,11 +95,11 @@ func searchSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		results := make([]searchSenMLResultItem, len(req.Searches))
+		results := make([]searchSenMLResultItem, len(req.senmlPageMetadatas))
 		sem := make(chan struct{}, apiutil.ConcurrencyLimit)
 		var wg sync.WaitGroup
 
-		for i, search := range req.Searches {
+		for i, search := range req.senmlPageMetadatas {
 			wg.Add(1)
 			sem <- struct{}{}
 			go func(idx int, pm readers.SenMLPageMetadata) {

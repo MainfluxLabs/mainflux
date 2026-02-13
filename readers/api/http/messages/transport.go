@@ -203,8 +203,8 @@ func decodeSearchJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	return searchJSONMessagesReq{
-		token:    apiutil.ExtractBearerToken(r),
-		Searches: searches,
+		token:             apiutil.ExtractBearerToken(r),
+		jsonPageMetadatas: searches,
 	}, nil
 }
 
@@ -217,8 +217,8 @@ func decodeSearchSenMLMessages(_ context.Context, r *http.Request) (any, error) 
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 	return searchSenMLMessagesReq{
-		token:    apiutil.ExtractBearerToken(r),
-		Searches: searches,
+		token:              apiutil.ExtractBearerToken(r),
+		senmlPageMetadatas: searches,
 	}, nil
 }
 
