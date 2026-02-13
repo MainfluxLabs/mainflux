@@ -92,6 +92,67 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
 
+  /json/search:
+    post:
+      summary: Search JSON messages across multiple publishers
+      security:
+        - bearerAuth: []
+      description: |
+        Executes multiple JSON message queries concurrently and returns
+        results for each query. Each item in the request array accepts
+        the same parameters as the GET /json endpoint.
+      tags:
+        - json messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/JSONSearchRequest"
+              minItems: 1
+            example:
+              - publisher: "f9b2815c-8d8f-44f0-a1fe-6d72f15f5021"
+                limit: 10
+                offset: 0
+              - publisher: "a1b2c3d4-0000-1111-2222-333344445555"
+                agg_type: "max"
+                agg_interval: "day"
+                agg_value: 1
+                agg_fields: ["humidity", "temperature"]
+                limit: 5
+
+      responses:
+        '200':
+          description: All queries returned successfully.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JSONSearchResultItem"
+        '207':
+          description: Some queries failed. Each result item contains its own error field.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JSONSearchResultItem"
+        '400':
+          description: Failed due to malformed request body.
+        '401':
+          description: Missing or invalid access token or thing key provided.
+        '500':
+          description: All queries failed.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JSONSearchResultItem"
+
   /senml:
     get:
       summary: Retrieves SenML messages
@@ -184,6 +245,66 @@ paths:
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
+
+  /senml/search:
+    post:
+      summary: Search SenML messages across multiple publishers
+      security:
+        - bearerAuth: []
+      description: |
+        Executes multiple SenML message queries concurrently and returns
+        results for each query. Each item in the request array accepts
+        the same parameters as the GET /senml endpoint.
+      tags:
+        - senml messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/SenMLSearchRequest"
+              minItems: 1
+            example:
+              - publisher: "4f611fd7-15d5-4575-b5d5-8c1075beb6e2"
+                name: "temperature"
+                limit: 5
+              - publisher: "4f611fd7-15d5-4575-b5d5-8c1075beb6e2"
+                name: "humidity"
+                comparator: "gt"
+                v: 60
+                limit: 10
+
+      responses:
+        '200':
+          description: All queries returned successfully.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SenMLSearchResultItem"
+        '207':
+          description: Some queries failed. Each result item contains its own error field.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SenMLSearchResultItem"
+        '400':
+          description: Failed due to malformed request body.
+        '401':
+          description: Missing or invalid access token or thing key provided.
+        '500':
+          description: All queries failed.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SenMLSearchResultItem"
 
   /json/export:
     get:
@@ -456,6 +577,135 @@ components:
           uniqueItems: true
           items:
             $ref: "#/components/schemas/SenMLMessage"
+
+    JSONSearchRequest:
+      type: object
+      properties:
+        publisher:
+          type: string
+          description: Publisher's unique identifier.
+        offset:
+          type: integer
+          default: 0
+        limit:
+          type: integer
+          default: 10
+          maximum: 1000
+        subtopic:
+          type: string
+        protocol:
+          type: string
+        from:
+          type: integer
+          format: int64
+          description: Start time in nanoseconds.
+        to:
+          type: integer
+          format: int64
+          description: End time in nanoseconds.
+        filter:
+          type: string
+        agg_interval:
+          type: string
+          enum: [minute, hour, day, week, month, year]
+        agg_value:
+          type: integer
+          default: 1
+        agg_type:
+          type: string
+          enum: [min, max, avg, count]
+        agg_fields:
+          type: array
+          items:
+            type: string
+        dir:
+          type: string
+          enum: [asc, desc]
+          default: desc
+
+    SenMLSearchRequest:
+      type: object
+      properties:
+        publisher:
+          type: string
+          description: Publisher's unique identifier.
+        offset:
+          type: integer
+          default: 0
+        limit:
+          type: integer
+          default: 10
+          maximum: 1000
+        name:
+          type: string
+        subtopic:
+          type: string
+        protocol:
+          type: string
+        v:
+          type: number
+        comparator:
+          type: string
+          enum: [eq, lt, le, gt, ge]
+        vb:
+          type: boolean
+        vs:
+          type: string
+        vd:
+          type: string
+        from:
+          type: integer
+          format: int64
+          description: Start time in nanoseconds.
+        to:
+          type: integer
+          format: int64
+          description: End time in nanoseconds.
+        agg_interval:
+          type: string
+          enum: [minute, hour, day, week, month, year]
+        agg_value:
+          type: integer
+          default: 1
+        agg_type:
+          type: string
+          enum: [min, max, avg, count]
+        agg_fields:
+          type: array
+          items:
+            type: string
+        dir:
+          type: string
+          enum: [asc, desc]
+          default: desc
+
+    JSONSearchResultItem:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of messages matching the query.
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/JSONMessage"
+        error:
+          type: string
+          description: Error message if this particular query failed.
+
+    SenMLSearchResultItem:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of messages matching the query.
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/SenMLMessage"
+        error:
+          type: string
+          description: Error message if this particular query failed.
 
   parameters:
     Publisher:
