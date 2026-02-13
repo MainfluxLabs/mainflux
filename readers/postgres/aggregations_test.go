@@ -35,8 +35,8 @@ func TestBuildJSONPath(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := buildJSONPath(tc.field)
-			assert.Equal(t, tc.want, got)
+			result := buildJSONPath(tc.field)
+			assert.Equal(t, tc.want, result)
 		})
 	}
 }
@@ -66,9 +66,9 @@ func TestBuildJSONSelect(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := buildJSONSelect(tc.aggFields)
-			assert.Contains(t, got, tc.wantPart)
-			assert.Contains(t, got, "ia.max_time as created")
+			result := buildJSONSelect(tc.aggFields)
+			assert.Contains(t, result, tc.wantPart)
+			assert.Contains(t, result, "ia.max_time as created")
 		})
 	}
 }
@@ -112,8 +112,8 @@ func TestBuildConditionForCount(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := buildConditionForCount(tc.qp)
-			assert.Equal(t, tc.want, got)
+			result := buildConditionForCount(tc.qp)
+			assert.Equal(t, tc.want, result)
 		})
 	}
 }
@@ -151,9 +151,9 @@ func TestBuildTruncTimeExpression(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := buildTruncTimeExpression(tc.intervalVal, tc.intervalUnit, tc.timeColumn)
-			assert.Contains(t, got, tc.wantPart)
-			assert.Contains(t, got, "to_timestamp")
+			result := buildTruncTimeExpression(tc.intervalVal, tc.intervalUnit, tc.timeColumn)
+			assert.Contains(t, result, tc.wantPart)
+			assert.Contains(t, result, "to_timestamp")
 		})
 	}
 }
@@ -165,10 +165,10 @@ func TestBuildTimeJoinCondition(t *testing.T) {
 		timeColumn:  "time",
 	}
 
-	got := buildTimeJoinCondition(qp)
+	result := buildTimeJoinCondition(qp)
 
-	assert.Contains(t, got, "ti.interval_time")
-	assert.Contains(t, got, "m.time")
+	assert.Contains(t, result, "ti.interval_time")
+	assert.Contains(t, result, "m.time")
 }
 
 func TestBuildTimeIntervals(t *testing.T) {
@@ -217,19 +217,19 @@ func TestBuildTimeIntervals(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := buildTimeIntervals(tc.qp)
-			assert.Contains(t, got, "SELECT DISTINCT")
-			assert.Contains(t, got, tc.qp.table)
+			result := buildTimeIntervals(tc.qp)
+			assert.Contains(t, result, "SELECT DISTINCT")
+			assert.Contains(t, result, tc.qp.table)
 			if tc.noLimit {
-				assert.NotContains(t, got, "LIMIT")
+				assert.NotContains(t, result, "LIMIT")
 			} else if tc.wantPart != "" {
-				assert.Contains(t, got, tc.wantPart)
+				assert.Contains(t, result, tc.wantPart)
 			}
 		})
 	}
 }
 
-func TestAggStrategyFor(t *testing.T) {
+func TestNewAggStrategy(t *testing.T) {
 	cases := []struct {
 		desc    string
 		aggType string
@@ -270,11 +270,11 @@ func TestAggStrategyFor(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := aggStrategyFor(tc.aggType)
+			result := newAggStrategy(tc.aggType)
 			if tc.isNil {
-				assert.Nil(t, got)
+				assert.Nil(t, result)
 			} else {
-				assert.Equal(t, tc.want, got)
+				assert.Equal(t, tc.want, result)
 			}
 		})
 	}
@@ -317,8 +317,8 @@ func TestSqlAggFuncSelectedFields(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := tc.fn.selectedFields(tc.qp)
-			assert.Contains(t, got, tc.wantPart)
+			result := tc.fn.selectedFields(tc.qp)
+			assert.Contains(t, result, tc.wantPart)
 		})
 	}
 }
@@ -379,37 +379,40 @@ func TestSqlAggFuncAggregateExpr(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := tc.fn.aggregateExpr(tc.qp)
+			result := tc.fn.aggregateExpr(tc.qp)
 			if tc.isEmpty {
-				assert.Empty(t, got)
+				assert.Empty(t, result)
 			} else {
-				assert.Contains(t, got, tc.wantPart)
+				assert.Contains(t, result, tc.wantPart)
 			}
 		})
 	}
 }
 
-func TestBaseFilterConditions(t *testing.T) {
+func TestBaseConditions(t *testing.T) {
 	cases := []struct {
-		desc string
-		f    baseFilter
-		want []string
+		desc       string
+		subtopic   string
+		publisher  string
+		protocol   string
+		from       int64
+		to         int64
+		timeColumn string
+		want       []string
 	}{
 		{
-			desc: "empty filter",
-			f:    baseFilter{timeColumn: "time"},
-			want: nil,
+			desc:       "empty filter",
+			timeColumn: "time",
+			want:       nil,
 		},
 		{
-			desc: "all fields",
-			f: baseFilter{
-				subtopic:   "sub",
-				publisher:  "pub",
-				protocol:   "mqtt",
-				from:       1000,
-				to:         2000,
-				timeColumn: "time",
-			},
+			desc:       "all fields",
+			subtopic:   "sub",
+			publisher:  "pub",
+			protocol:   "mqtt",
+			from:       1000,
+			to:         2000,
+			timeColumn: "time",
 			want: []string{
 				"subtopic = :subtopic",
 				"publisher = :publisher",
@@ -419,12 +422,10 @@ func TestBaseFilterConditions(t *testing.T) {
 			},
 		},
 		{
-			desc: "partial fields",
-			f: baseFilter{
-				publisher:  "pub",
-				from:       1000,
-				timeColumn: "created",
-			},
+			desc:       "partial fields",
+			publisher:  "pub",
+			from:       1000,
+			timeColumn: "created",
 			want: []string{
 				"publisher = :publisher",
 				"created >= :from",
@@ -434,8 +435,8 @@ func TestBaseFilterConditions(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := tc.f.conditions()
-			assert.Equal(t, tc.want, got)
+			result := baseConditions(tc.subtopic, tc.publisher, tc.protocol, tc.from, tc.to, tc.timeColumn)
+			assert.Equal(t, tc.want, result)
 		})
 	}
 }
@@ -447,11 +448,11 @@ func TestJsonConditions(t *testing.T) {
 		From:      1000,
 	}
 
-	got := jsonConditions(pm)
+	result := jsonConditions(pm)
 
-	assert.Contains(t, got, "subtopic = :subtopic")
-	assert.Contains(t, got, "publisher = :publisher")
-	assert.Contains(t, got, "created >= :from")
+	assert.Contains(t, result, "subtopic = :subtopic")
+	assert.Contains(t, result, "publisher = :publisher")
+	assert.Contains(t, result, "created >= :from")
 }
 
 func TestSenmlConditions(t *testing.T) {
@@ -500,8 +501,8 @@ func TestSenmlConditions(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := senmlConditions(tc.pm)
-			assert.Contains(t, got, tc.wantPart)
+			result := senmlConditions(tc.pm)
+			assert.Contains(t, result, tc.wantPart)
 		})
 	}
 }
@@ -519,13 +520,13 @@ func TestBuildAggQuery(t *testing.T) {
 	}
 	strategy := sqlAggFunc("MAX")
 
-	got := buildAggQuery(qp, strategy)
+	result := buildAggQuery(qp, strategy)
 
-	assert.Contains(t, got, "WITH time_intervals AS")
-	assert.Contains(t, got, "interval_aggs AS")
-	assert.Contains(t, got, "MAX(m.value) as agg_value")
-	assert.Contains(t, got, "LEFT JOIN senml m ON")
-	assert.Contains(t, got, "ORDER BY ia.interval_time")
+	assert.Contains(t, result, "WITH time_intervals AS")
+	assert.Contains(t, result, "interval_aggs AS")
+	assert.Contains(t, result, "MAX(m.value) as agg_value")
+	assert.Contains(t, result, "LEFT JOIN senml m ON")
+	assert.Contains(t, result, "ORDER BY ia.interval_time")
 }
 
 func TestBuildAggCountQuery(t *testing.T) {
@@ -538,10 +539,10 @@ func TestBuildAggCountQuery(t *testing.T) {
 		conditionForJoin: "AND publisher = :publisher",
 	}
 
-	got := buildAggCountQuery(qp)
+	result := buildAggCountQuery(qp)
 
-	assert.Contains(t, got, "WITH time_intervals AS")
-	assert.Contains(t, got, "SELECT COUNT(*) FROM")
-	assert.Contains(t, got, "LEFT JOIN senml m ON")
-	assert.Contains(t, got, "HAVING")
+	assert.Contains(t, result, "WITH time_intervals AS")
+	assert.Contains(t, result, "SELECT COUNT(*) FROM")
+	assert.Contains(t, result, "LEFT JOIN senml m ON")
+	assert.Contains(t, result, "HAVING")
 }

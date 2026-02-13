@@ -126,7 +126,7 @@ func (as *aggregationService) readAggregatedMessages(ctx context.Context, input 
 		qp.conditionForJoin = "AND " + strings.Join(input.conditions, " AND ")
 	}
 
-	strategy := aggStrategyFor(qp.aggType)
+	strategy := newAggStrategy(qp.aggType)
 	if strategy == nil {
 		return []readers.Message{}, 0, nil
 	}
@@ -224,7 +224,7 @@ func renderTemplate(tmpl string, qp queryParams, strategy aggStrategy) string {
 // sqlAggFunc implements aggStrategy for SQL aggregate functions.
 type sqlAggFunc string
 
-func aggStrategyFor(aggType string) aggStrategy {
+func newAggStrategy(aggType string) aggStrategy {
 	switch aggType {
 	case readers.AggregationMax:
 		return sqlAggFunc("MAX")
@@ -360,56 +360,32 @@ func buildJSONPath(field string) string {
 	return path.String()
 }
 
-// baseFilter holds fields shared between JSON and SenML page metadata.
-type baseFilter struct {
-	subtopic   string
-	publisher  string
-	protocol   string
-	from       int64
-	to         int64
-	timeColumn string
-}
-
-func (f baseFilter) conditions() []string {
+func baseConditions(subtopic, publisher, protocol string, from, to int64, timeColumn string) []string {
 	var conds []string
-	if f.subtopic != "" {
+	if subtopic != "" {
 		conds = append(conds, "subtopic = :subtopic")
 	}
-	if f.publisher != "" {
+	if publisher != "" {
 		conds = append(conds, "publisher = :publisher")
 	}
-	if f.protocol != "" {
+	if protocol != "" {
 		conds = append(conds, "protocol = :protocol")
 	}
-	if f.from != 0 {
-		conds = append(conds, fmt.Sprintf("%s >= :from", f.timeColumn))
+	if from != 0 {
+		conds = append(conds, fmt.Sprintf("%s >= :from", timeColumn))
 	}
-	if f.to != 0 {
-		conds = append(conds, fmt.Sprintf("%s <= :to", f.timeColumn))
+	if to != 0 {
+		conds = append(conds, fmt.Sprintf("%s <= :to", timeColumn))
 	}
 	return conds
 }
 
 func jsonConditions(pm readers.JSONPageMetadata) []string {
-	return baseFilter{
-		subtopic:   pm.Subtopic,
-		publisher:  pm.Publisher,
-		protocol:   pm.Protocol,
-		from:       pm.From,
-		to:         pm.To,
-		timeColumn: jsonOrder,
-	}.conditions()
+	return baseConditions(pm.Subtopic, pm.Publisher, pm.Protocol, pm.From, pm.To, jsonOrder)
 }
 
 func senmlConditions(pm readers.SenMLPageMetadata) []string {
-	conds := baseFilter{
-		subtopic:   pm.Subtopic,
-		publisher:  pm.Publisher,
-		protocol:   pm.Protocol,
-		from:       pm.From,
-		to:         pm.To,
-		timeColumn: senmlOrder,
-	}.conditions()
+	conds := baseConditions(pm.Subtopic, pm.Publisher, pm.Protocol, pm.From, pm.To, senmlOrder)
 
 	if pm.Name != "" {
 		conds = append(conds, "name = :name")
