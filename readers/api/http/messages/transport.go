@@ -197,14 +197,14 @@ func decodeSearchJSONMessages(_ context.Context, r *http.Request) (any, error) {
 		return nil, apiutil.ErrMalformedEntity
 	}
 
-	var searches []readers.JSONPageMetadata
-	if err := json.NewDecoder(r.Body).Decode(&searches); err != nil {
+	var jpms []readers.JSONPageMetadata
+	if err := json.NewDecoder(r.Body).Decode(&jpms); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return searchJSONMessagesReq{
 		token:             apiutil.ExtractBearerToken(r),
-		jsonPageMetadatas: searches,
+		jsonPageMetadatas: jpms,
 	}, nil
 }
 
@@ -213,14 +213,14 @@ func decodeSearchSenMLMessages(_ context.Context, r *http.Request) (any, error) 
 		return nil, apiutil.ErrMalformedEntity
 	}
 
-	var searches []readers.SenMLPageMetadata
-	if err := json.NewDecoder(r.Body).Decode(&searches); err != nil {
+	var spms []readers.SenMLPageMetadata
+	if err := json.NewDecoder(r.Body).Decode(&spms); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
 	return searchSenMLMessagesReq{
 		token:              apiutil.ExtractBearerToken(r),
-		senmlPageMetadatas: searches,
+		senmlPageMetadatas: spms,
 	}, nil
 }
 
