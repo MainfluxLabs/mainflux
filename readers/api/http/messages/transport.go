@@ -212,10 +212,12 @@ func decodeSearchSenMLMessages(_ context.Context, r *http.Request) (any, error) 
 	if r.Body == nil {
 		return nil, apiutil.ErrMalformedEntity
 	}
+
 	var searches []readers.SenMLPageMetadata
 	if err := json.NewDecoder(r.Body).Decode(&searches); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
+
 	return searchSenMLMessagesReq{
 		token:              apiutil.ExtractBearerToken(r),
 		senmlPageMetadatas: searches,
