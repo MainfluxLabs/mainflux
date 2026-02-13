@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"text/template"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -158,55 +159,66 @@ func (as *aggregationService) readAggregatedMessages(ctx context.Context, input 
 }
 
 func buildAggQuery(qp queryParams, strategy aggStrategy) string {
-	return fmt.Sprintf(`
+	tmpl := `
 		WITH time_intervals AS (
-			%s
+			{{.TimeIntervals}}
 		),
 		interval_aggs AS (
 			SELECT
 				ti.interval_time,
-				%s,
-				MAX(m.%s) as max_time,
+				{{.AggExpression}},
+				MAX(m.{{.TimeColumn}}) as max_time,
 				MAX(CAST(m.subtopic AS text)) as subtopic,
 				MAX(CAST(m.publisher AS text)) as publisher,
 				MAX(CAST(m.protocol AS text)) as protocol
 			FROM time_intervals ti
-			LEFT JOIN %s m ON %s
-				%s
+			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
+				{{.ConditionForJoin}}
 			GROUP BY ti.interval_time
-			HAVING %s
+			HAVING {{.HavingCondition}}
 		)
-		SELECT %s
+		SELECT {{.SelectedFields}}
 		FROM interval_aggs ia
-		ORDER BY ia.interval_time %s;`,
-		buildTimeIntervals(qp),
-		strategy.aggregateExpr(qp),
-		qp.timeColumn,
-		qp.table,
-		buildTimeJoinCondition(qp),
-		qp.conditionForJoin,
-		buildConditionForCount(qp),
-		strategy.selectedFields(qp),
-		dbutil.GetDirQuery(qp.dir),
-	)
+		ORDER BY ia.interval_time {{.Dir}};`
+
+	return renderTemplate(tmpl, qp, strategy)
 }
 
 func buildAggCountQuery(qp queryParams) string {
-	intervals := buildTimeIntervals(qp)
-	joinCond := buildTimeJoinCondition(qp)
-	havingCond := buildConditionForCount(qp)
-
-	return fmt.Sprintf(`
-		WITH time_intervals AS (%s)
+	tmpl := `
+		WITH time_intervals AS ({{.TimeIntervals}})
 		SELECT COUNT(*) FROM (
 			SELECT ti.interval_time
 			FROM time_intervals ti
-			LEFT JOIN %s m ON %s
-				%s
+			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
+				{{.ConditionForJoin}}
 			GROUP BY ti.interval_time
-			HAVING %s
-		) counted`,
-		intervals, qp.table, joinCond, qp.conditionForJoin, havingCond)
+			HAVING {{.HavingCondition}}
+		) counted`
+
+	return renderTemplate(tmpl, qp, nil)
+}
+
+func renderTemplate(tmpl string, qp queryParams, strategy aggStrategy) string {
+	data := map[string]string{
+		"TimeIntervals":     buildTimeIntervals(qp),
+		"TimeColumn":        qp.timeColumn,
+		"Table":             qp.table,
+		"TimeJoinCondition": buildTimeJoinCondition(qp),
+		"ConditionForJoin":  qp.conditionForJoin,
+		"HavingCondition":   buildConditionForCount(qp),
+		"Dir":               dbutil.GetDirQuery(qp.dir),
+	}
+
+	if strategy != nil {
+		data["AggExpression"] = strategy.aggregateExpr(qp)
+		data["SelectedFields"] = strategy.selectedFields(qp)
+	}
+
+	t := template.Must(template.New("query").Parse(tmpl))
+	var b strings.Builder
+	t.Execute(&b, data)
+	return b.String()
 }
 
 // sqlAggFunc implements aggStrategy for SQL aggregate functions.

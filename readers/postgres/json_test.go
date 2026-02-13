@@ -132,6 +132,90 @@ func TestListJSONMessages(t *testing.T) {
 	}
 }
 
+func TestJSONAggregation(t *testing.T) {
+	reader := preader.NewJSONRepository(db)
+	writer := pwriter.New(db)
+
+	pubID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	pyd := map[string]any{
+		"temperature": 25.5,
+		"humidity":    60.0,
+		"nested": map[string]any{
+			"value": 42.0,
+		},
+	}
+	payload, err := json.Marshal(pyd)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	now := time.Now().Unix()
+	for i := 0; i < 10; i++ {
+		msg := protomfx.Message{
+			Publisher:   pubID,
+			Subtopic:    subtopic,
+			Protocol:    mqttProt,
+			Payload:     payload,
+			ContentType: jsonCT,
+			Created:     now + int64(i),
+		}
+		err := writer.Consume(msg)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	}
+
+	cases := map[string]struct {
+		pageMeta readers.JSONPageMetadata
+	}{
+		"max aggregation": {
+			pageMeta: readers.JSONPageMetadata{
+				Limit:       noLimit,
+				Publisher:   pubID,
+				AggType:     maxAgg,
+				AggInterval: "hour",
+				AggValue:    1,
+				AggFields:   []string{"temperature"},
+			},
+		},
+		"avg aggregation": {
+			pageMeta: readers.JSONPageMetadata{
+				Limit:       noLimit,
+				Publisher:   pubID,
+				AggType:     avgAgg,
+				AggInterval: "hour",
+				AggValue:    1,
+				AggFields:   []string{"humidity"},
+			},
+		},
+		"count aggregation": {
+			pageMeta: readers.JSONPageMetadata{
+				Limit:       noLimit,
+				Publisher:   pubID,
+				AggType:     countAgg,
+				AggInterval: "hour",
+				AggValue:    1,
+				AggFields:   []string{"temperature"},
+			},
+		},
+		"nested field aggregation": {
+			pageMeta: readers.JSONPageMetadata{
+				Limit:       noLimit,
+				Publisher:   pubID,
+				AggType:     maxAgg,
+				AggInterval: "hour",
+				AggValue:    1,
+				AggFields:   []string{"nested.value"},
+			},
+		},
+	}
+
+	for desc, tc := range cases {
+		result, err := reader.Retrieve(context.Background(), tc.pageMeta)
+		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
+		assert.NotEmpty(t, result.Messages, fmt.Sprintf("%s: expected non-empty messages", desc))
+		assert.GreaterOrEqual(t, result.Total, uint64(1), fmt.Sprintf("%s: expected total >= 1", desc))
+	}
+}
+
 func TestDeleteJSONMessages(t *testing.T) {
 	reader := preader.NewJSONRepository(db)
 	writer := pwriter.New(db)
