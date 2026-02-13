@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"text/template"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -20,11 +19,10 @@ import (
 )
 
 const (
-	timeIntervals = "ti"
-	jsonTable     = "json"
-	jsonOrder     = "created"
-	senmlTable    = "senml"
-	senmlOrder    = "time"
+	jsonTable  = "json"
+	jsonOrder  = "created"
+	senmlTable = "senml"
+	senmlOrder = "time"
 )
 
 // queryParams holds parameters for building aggregation SQL queries.
@@ -160,54 +158,42 @@ func (as *aggregationService) readAggregatedMessages(ctx context.Context, input 
 }
 
 func buildAggQuery(qp queryParams, strategy aggStrategy) string {
-	tmpl := `
+	return fmt.Sprintf(`
 		WITH time_intervals AS (
-			{{.TimeIntervals}}
+			%s
 		),
 		interval_aggs AS (
-			SELECT 
+			SELECT
 				ti.interval_time,
-				{{.AggExpression}},
-				MAX(m.{{.TimeColumn}}) as max_time,
+				%s,
+				MAX(m.%s) as max_time,
 				MAX(CAST(m.subtopic AS text)) as subtopic,
 				MAX(CAST(m.publisher AS text)) as publisher,
 				MAX(CAST(m.protocol AS text)) as protocol
 			FROM time_intervals ti
-			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
-				{{.ConditionForJoin}}
+			LEFT JOIN %s m ON %s
+				%s
 			GROUP BY ti.interval_time
-			HAVING {{.HavingCondition}}
+			HAVING %s
 		)
-		SELECT {{.SelectedFields}}
+		SELECT %s
 		FROM interval_aggs ia
-		ORDER BY ia.interval_time {{.Dir}};`
-
-	return renderTemplate(tmpl, qp, strategy)
-}
-
-func renderTemplate(templateStr string, qp queryParams, strategy aggStrategy) string {
-	data := map[string]string{
-		"TimeIntervals":     buildTimeIntervals(qp),
-		"AggExpression":     strategy.aggregateExpr(qp),
-		"Table":             qp.table,
-		"TimeJoinCondition": buildTimeJoinCondition(qp, timeIntervals),
-		"ConditionForJoin":  qp.conditionForJoin,
-		"SelectedFields":    strategy.selectedFields(qp),
-		"HavingCondition":   buildConditionForCount(qp),
-		"Condition":         qp.condition,
-		"TimeColumn":        qp.timeColumn,
-		"Dir":               dbutil.GetDirQuery(qp.dir),
-	}
-
-	tmpl := template.Must(template.New("query").Parse(templateStr))
-	var result strings.Builder
-	tmpl.Execute(&result, data)
-	return result.String()
+		ORDER BY ia.interval_time %s;`,
+		buildTimeIntervals(qp),
+		strategy.aggregateExpr(qp),
+		qp.timeColumn,
+		qp.table,
+		buildTimeJoinCondition(qp),
+		qp.conditionForJoin,
+		buildConditionForCount(qp),
+		strategy.selectedFields(qp),
+		dbutil.GetDirQuery(qp.dir),
+	)
 }
 
 func buildAggCountQuery(qp queryParams) string {
 	intervals := buildTimeIntervals(qp)
-	joinCond := buildTimeJoinCondition(qp, "ti")
+	joinCond := buildTimeJoinCondition(qp)
 	havingCond := buildConditionForCount(qp)
 
 	return fmt.Sprintf(`
@@ -249,7 +235,7 @@ func (f sqlAggFunc) selectedFields(qp queryParams) string {
 		'' as string_value, false as bool_value, '' as data_value,
 		0 as sum, ia.max_time as update_time`
 	}
-	return buildJSONSelect(qp.aggFields, "agg_value")
+	return buildJSONSelect(qp.aggFields)
 }
 
 func (f sqlAggFunc) aggregateExpr(qp queryParams) string {
@@ -276,19 +262,20 @@ func (f sqlAggFunc) aggregateExpr(qp queryParams) string {
 }
 
 func buildTimeIntervals(qp queryParams) string {
-	dq := dbutil.GetDirQuery(qp.dir)
-	lq := fmt.Sprintf("LIMIT %d", qp.limit)
-	if qp.limit <= 0 {
-		lq = ""
-	}
 	timeTrunc := buildTruncTimeExpression(qp.aggValue, qp.aggInterval, qp.timeColumn)
-	return fmt.Sprintf(`
+	dir := dbutil.GetDirQuery(qp.dir)
+
+	q := fmt.Sprintf(`
         SELECT DISTINCT %s as interval_time
-        FROM %s 
+        FROM %s
         %s
-        ORDER BY interval_time %s 
-		%s`,
-		timeTrunc, qp.table, qp.condition, dq, lq)
+        ORDER BY interval_time %s`,
+		timeTrunc, qp.table, qp.condition, dir)
+
+	if qp.limit > 0 {
+		q += fmt.Sprintf(" LIMIT %d", qp.limit)
+	}
+	return q
 }
 
 func buildTruncTimeExpression(intervalVal uint64, intervalUnit string, timeColumn string) string {
@@ -308,9 +295,9 @@ func buildTruncTimeExpression(intervalVal uint64, intervalUnit string, timeColum
 	)
 }
 
-func buildTimeJoinCondition(qp queryParams, tableAlias string) string {
+func buildTimeJoinCondition(qp queryParams) string {
 	timeTrunc := buildTruncTimeExpression(qp.aggValue, qp.aggInterval, "m."+qp.timeColumn)
-	return fmt.Sprintf("%s = %s.interval_time", timeTrunc, tableAlias)
+	return fmt.Sprintf("%s = ti.interval_time", timeTrunc)
 }
 
 func (as *aggregationService) scanAggregatedMessages(rows *sqlx.Rows, format string) ([]readers.Message, error) {
@@ -450,16 +437,16 @@ func buildConditionForCount(qp queryParams) string {
 	return strings.Join(conditions, " OR ")
 }
 
-func buildJSONSelect(aggFields []string, aggPrefix string) string {
+func buildJSONSelect(aggFields []string) string {
 	if len(aggFields) == 0 {
 		return "ia.max_time as created, ia.subtopic, ia.publisher, ia.protocol, CAST('{}' AS jsonb) as payload"
 	}
 
-	var jsonbPairs []string
+	var pairs []string
 	for i, field := range aggFields {
-		jsonbPairs = append(jsonbPairs, fmt.Sprintf("'%s', ia.%s_%d", field, aggPrefix, i))
+		pairs = append(pairs, fmt.Sprintf("'%s', ia.agg_value_%d", field, i))
 	}
 
 	return fmt.Sprintf(`ia.max_time as created, ia.subtopic, ia.publisher, ia.protocol,
-		jsonb_build_object(%s) as payload`, strings.Join(jsonbPairs, ", "))
+		jsonb_build_object(%s) as payload`, strings.Join(pairs, ", "))
 }
