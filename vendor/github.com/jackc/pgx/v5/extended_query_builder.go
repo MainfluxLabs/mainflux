@@ -1,6 +1,7 @@
 package pgx
 
 import (
+	"database/sql/driver"
 	"fmt"
 
 	"github.com/jackc/pgx/v5/internal/anynil"
@@ -35,7 +36,7 @@ func (eqb *ExtendedQueryBuilder) Build(m *pgtype.Map, sd *pgconn.StatementDescri
 	for i := range args {
 		err := eqb.appendParam(m, sd.ParamOIDs[i], -1, args[i])
 		if err != nil {
-			err = fmt.Errorf("failed to encode args[%d]: %v", i, err)
+			err = fmt.Errorf("failed to encode args[%d]: %w", i, err)
 			return err
 		}
 	}
@@ -178,6 +179,19 @@ func (eqb *ExtendedQueryBuilder) appendParamsForQueryExecModeExec(m *pgtype.Map,
 					dt, ok = m.TypeForOID(pgtype.TextOID)
 					if ok {
 						arg = t
+					}
+				}
+			}
+			if !ok {
+				var dv driver.Valuer
+				if dv, ok = arg.(driver.Valuer); ok {
+					v, err := dv.Value()
+					if err != nil {
+						return err
+					}
+					dt, ok = m.TypeForValue(v)
+					if ok {
+						arg = v
 					}
 				}
 			}
