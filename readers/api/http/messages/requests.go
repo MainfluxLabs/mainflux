@@ -200,9 +200,11 @@ func (req searchJSONMessagesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
+
 	if len(req.Searches) == 0 {
 		return apiutil.ErrEmptyList
 	}
+
 	for i := range req.Searches {
 		s := req.Searches[i]
 		if err := validateSearchParams(s.Limit, s.Dir, s.AggType, s.AggInterval, s.AggValue); err != nil {
@@ -221,9 +223,11 @@ func (req searchSenMLMessagesReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
+
 	if len(req.Searches) == 0 {
 		return apiutil.ErrEmptyList
 	}
+
 	for i := range req.Searches {
 		s := req.Searches[i]
 		if err := validateSearchParams(s.Limit, s.Dir, s.AggType, s.AggInterval, s.AggValue); err != nil {
