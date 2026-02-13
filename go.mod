@@ -16,7 +16,7 @@ require (
 	github.com/go-zoo/bone v1.3.0
 	github.com/gofrs/uuid v4.2.0+incompatible
 	github.com/gogo/protobuf v1.3.2
-	github.com/golang-jwt/jwt/v4 v4.0.0
+	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/golang/protobuf v1.5.4
 	github.com/gorilla/websocket v1.5.0
 	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f
