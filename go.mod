@@ -5,6 +5,8 @@ go 1.22.5
 require (
 	github.com/MainfluxLabs/mproxy v0.2.3
 	github.com/MainfluxLabs/senml v1.0.5
+	github.com/Shopify/go-lua v0.0.0-20250718183320-1e37f32ad7d0
+	github.com/Shopify/goluago v0.0.0-20240527182001-ec4ec6c26eab
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/docker/docker v20.10.17+incompatible
 	github.com/eclipse/paho.mqtt.golang v1.4.1

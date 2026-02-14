@@ -197,6 +197,236 @@ paths:
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /groups/{groupId}/scripts:
+    post:
+      summary: Create Lua scripts.
+      description: Add new Lua scripts to a specific Group
+      tags:
+        - scripts
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateScriptsReq"
+      responses:
+        '201':
+          $ref: "#/components/responses/CreateScriptsRes"
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    get:
+      summary: Retrieves Scripts by group
+      description: Retrieves list of Lua scripts related to a certain group identified by the provided ID.
+      tags:
+        - scripts
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListScriptsRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /things/{thingId}/scripts:
+    get:
+      summary: Retrieves scripts assigned to a thing
+      description: Retrieves list of Lua scripts assigned to a specific thing identified by the provided ID.
+      tags:
+        - scripts
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListScriptsRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    post:
+      summary: Assigns Scripts to a Thing.
+      description: Assigns Lua scripts to a specific thing identified by the provided ID.
+      tags:
+        - scripts
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      requestBody:
+        $ref: "#/components/requestBodies/ThingScriptsReq"
+      responses:
+        '200':
+          description: Scripts assigned successfully.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Thing or one of the scripts does not exist.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    patch:
+      summary: Unassigns Scripts from Thing.
+      description: Unassigns Lua scripts from a specific thing identified by the provided ID.
+      tags:
+        - scripts
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      requestBody:
+        $ref: "#/components/requestBodies/ThingScriptsReq"
+      responses:
+        '200':
+          description: Scripts unassigned successfully.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Thing or one of the scripts does not exist.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /scripts/{scriptId}/things:
+    get:
+      summary: Retrieves list of IDs of Things assigned a specific Script identified by the provided ID.
+      description: Retrieves list of IDs of Things assigned a specific Script identified by the provided ID.
+      tags:
+        - scripts
+      parameters:
+        - $ref: "#/components/parameters/ScriptId"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListThingIDsRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Script does not exist.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /scripts/{scriptId}:
+    get:
+      summary: Retrieve Script.
+      tags:
+        - scripts
+      parameters:
+        - $ref: "#/components/parameters/ScriptId"
+      responses:
+        '200':
+          $ref: "#/components/responses/ScriptRes"
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Script does not exist.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    put:
+      summary: Update Script.
+      description: Update script data.
+      tags:
+        - scripts
+      parameters:
+        - $ref: "#/components/parameters/ScriptId"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateScriptReq"
+      responses:
+        '200':
+          description: Script updated.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Script does not exist.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /scripts:
+    patch:
+      summary: Remove scripts.
+      description: Removes one or more Lua scripts with provided IDs.
+      tags:
+        - scripts
+      requestBody:
+        $ref: "#/components/requestBodies/RemoveScriptsReq"
+      responses:
+        '204':
+          description: Scripts removed.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /things/{thingId}/runs:
+    get:
+      summary: Retrieves script runs for a Thing.
+      description: Retrieves list of script run history for a specific Thing identified by the provided ID.
+      tags:
+        - script-runs
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListScriptRunsRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /runs:
+    patch:
+      summary: Removes script runs
+      description: Removes script run records with provided IDs.
+      tags:
+        - script-runs
+      requestBody:
+        $ref: "#/components/requestBodies/RemoveScriptRunsReq"
+      responses:
+        '204':
+          description: Script runs removed.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
 
 components:
   schemas:
@@ -284,6 +514,88 @@ components:
             type: string
             format: uuid
           example: ["123e4567-e89b-12d3-a456-426614174000", "123e4567-e89b-12d3-a456-426614174001"]
+    ScriptReqSchema:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Temperature Data Transformation"
+        description:
+          type: string
+          example: "Converts temperature from Celsius to Fahrenheit and adds metadata"
+        script:
+          type: string
+          example: |
+            function process(msg)
+              local temp_c = msg.payload.temperature
+              local temp_f = (temp_c * 9/5) + 32
+              msg.payload.temperature_f = temp_f
+              return msg
+            end
+      required: [name, script]
+    ScriptResSchema:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "456e4567-e89b-12d3-a456-426614174abc"
+        group_id:
+          type: string
+          format: uuid
+          example: "321e4567-e89b-12d3-a456-426614174def"
+        name:
+          type: string
+          example: "Temperature Data Transformation"
+        description:
+          type: string
+          example: "Converts temperature from Celsius to Fahrenheit and adds metadata"
+        script:
+          type: string
+          example: |
+            function process(msg)
+              local temp_c = msg.payload.temperature
+              local temp_f = (temp_c * 9/5) + 32
+              msg.payload.temperature_f = temp_f
+              return msg
+            end
+      required: [id, group_id, name, script]
+    ScriptRunResSchema:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "789e4567-e89b-12d3-a456-426614174xyz"
+        script_id:
+          type: string
+          format: uuid
+          example: "456e4567-e89b-12d3-a456-426614174abc"
+        thing_id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        logs:
+          type: array
+          items:
+            type: string
+          example: ["Processing message", "Temperature converted successfully"]
+        started_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        finished_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:01Z"
+        status:
+          type: string
+          enum: [success, fail]
+          example: "success"
+        error:
+          type: string
+          example: ""
+      required: [id, script_id, thing_id, logs, started_at, finished_at, status]
 
   parameters:
     RuleId:
@@ -312,6 +624,15 @@ components:
         type: string
         format: uuid
       example: "123e4567-e89b-12d3-a456-426614174000"
+      required: true
+    ScriptId:
+      name: scriptId
+      description: Unique script identifier.
+      in: path
+      schema:
+        type: string
+        format: uuid
+      example: "456e4567-e89b-12d3-a456-426614174abc"
       required: true
 
   requestBodies:
@@ -399,6 +720,103 @@ components:
             rule_ids:
               - "789e4567-e89b-12d3-a456-426614174abc"
               - "654e4567-e89b-12d3-a456-426614174999"
+    CreateScriptsReq:
+      description: JSON-formatted document describing the new Lua scripts.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              scripts:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScriptReqSchema"
+            required:
+              - scripts
+          example:
+            scripts:
+              - name: "Low temperature notifier"
+                description: "Create alarm and send SMTP notification on low temperature."
+                script: |
+                  temp = mfx.message.payload["temperature"]
+                  if temp < 3.5 then
+                      mfx.create_alarm()
+                      mfx.smtp_notify("654e4567-e89b-12d3-a456-426614174999")
+                  end
+    UpdateScriptReq:
+      description: JSON-formatted document describing the updated Lua script.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ScriptReqSchema"
+          example:
+            name: "Enhanced Temperature Transformation"
+            description: "Converts temperature and adds validation"
+            script: |
+                temp = mfx.message.payload["temperature"]
+                if temp < 3.5 then
+                    mfx.create_alarm()
+                    mfx.smtp_notify("654e4567-e89b-12d3-a456-426614174999")
+                end
+    RemoveScriptsReq:
+      description: JSON-formatted document describing the IDs of scripts for deleting.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              script_ids:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+            required:
+              - script_ids
+          example:
+            script_ids:
+              - "456e4567-e89b-12d3-a456-426614174abc"
+              - "789e4567-e89b-12d3-a456-426614174def"
+    ThingScriptsReq:
+      description: JSON-formatted document describing the script IDs to assign/unassign.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              script_ids:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+            required:
+              - script_ids
+          example:
+            script_ids:
+              - "456e4567-e89b-12d3-a456-426614174abc"
+              - "789e4567-e89b-12d3-a456-426614174def"
+    RemoveScriptRunsReq:
+      description: JSON-formatted document describing the IDs of script runs to delete.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              script_run_ids:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+            required:
+              - script_run_ids
+          example:
+            script_run_ids:
+              - "789e4567-e89b-12d3-a456-426614174xyz"
+              - "123e4567-e89b-12d3-a456-426614174qrs"
 
   responses:
     CreateRulesRes:
@@ -480,6 +898,122 @@ components:
             thing_ids:
               - "123e4567-e89b-12d3-a456-426614174000"
               - "123e4567-e89b-12d3-a456-426614174001"
+    CreateScriptsRes:
+      description: Scripts created.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              scripts:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScriptResSchema"
+            required:
+              - scripts
+          example:
+            scripts:
+              - id: "456e4567-e89b-12d3-a456-426614174abc"
+                group_id: "321e4567-e89b-12d3-a456-426614174def"
+                name: "Temperature Data Transformation"
+                description: "Converts temperature from Celsius to Fahrenheit"
+                script: |
+                  temp = mfx.message.payload["temperature"]
+                  if temp < 3.5 then
+                      mfx.create_alarm()
+                      mfx.smtp_notify("654e4567-e89b-12d3-a456-426614174999")
+                  end
+    ScriptRes:
+      description: Script data retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ScriptResSchema"
+          example:
+            id: "456e4567-e89b-12d3-a456-426614174abc"
+            group_id: "321e4567-e89b-12d3-a456-426614174def"
+            name: "Low temperature notifier"
+            description: "Create alarm and send SMTP notifier on low temperature value"
+            script: |
+                temp = mfx.message.payload["temperature"]
+                if temp < 3.5 then
+                    mfx.create_alarm()
+                    mfx.smtp_notify("654e4567-e89b-12d3-a456-426614174999")
+                end
+    ListScriptsRes:
+      description: Scripts retrieved.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              scripts:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScriptResSchema"
+              total:
+                type: integer
+                example: 2
+              offset:
+                type: integer
+                example: 0
+              limit:
+                type: integer
+                example: 10
+            required:
+              - scripts
+          example:
+            total: 2
+            offset: 0
+            limit: 10
+            scripts:
+              - id: "456e4567-e89b-12d3-a456-426614174abc"
+                group_id: "321e4567-e89b-12d3-a456-426614174def"
+                name: "Low temperature notifier"
+                description: "Create alarm and send SMTP notifier on low temperature value"
+                script: |
+                  temp = mfx.message.payload["temperature"]
+                  if temp < 3.5 then
+                      mfx.create_alarm()
+                      mfx.smtp_notify("654e4567-e89b-12d3-a456-426614174999")
+                  end
+    ListScriptRunsRes:
+      description: Script runs retrieved.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              runs:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScriptRunResSchema"
+              total:
+                type: integer
+                example: 5
+              offset:
+                type: integer
+                example: 0
+              limit:
+                type: integer
+                example: 10
+            required:
+              - runs
+          example:
+            total: 5
+            offset: 0
+            limit: 10
+            runs:
+              - id: "789e4567-e89b-12d3-a456-426614174xyz"
+                script_id: "456e4567-e89b-12d3-a456-426614174abc"
+                thing_id: "123e4567-e89b-12d3-a456-426614174000"
+                logs:
+                  - "Processing message"
+                  - "temp = 10.7"
+                started_at: "2024-01-15T10:30:00Z"
+                finished_at: "2024-01-15T10:30:01Z"
+                status: "success"
+                error: ""
     ServiceError:
       description: Unexpected server-side error occurred.
       content:
