@@ -191,6 +191,73 @@ func (req deleteSenMLMessagesReq) validate() error {
 	return nil
 }
 
+type searchJSONMessagesReq struct {
+	token             string
+	jsonPageMetadatas []readers.JSONPageMetadata
+}
+
+func (req searchJSONMessagesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if len(req.jsonPageMetadatas) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	for i := range req.jsonPageMetadatas {
+		s := req.jsonPageMetadatas[i]
+		if err := validateSearchParams(s.Limit, s.Dir, s.AggType, s.AggInterval, s.AggValue); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type searchSenMLMessagesReq struct {
+	token              string
+	senmlPageMetadatas []readers.SenMLPageMetadata
+}
+
+func (req searchSenMLMessagesReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if len(req.senmlPageMetadatas) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	for i := range req.senmlPageMetadatas {
+		s := req.senmlPageMetadatas[i]
+		if err := validateSearchParams(s.Limit, s.Dir, s.AggType, s.AggInterval, s.AggValue); err != nil {
+			return err
+		}
+
+		if req.senmlPageMetadatas[i].Comparator != "" &&
+			req.senmlPageMetadatas[i].Comparator != readers.EqualKey &&
+			req.senmlPageMetadatas[i].Comparator != readers.LowerThanKey &&
+			req.senmlPageMetadatas[i].Comparator != readers.LowerThanEqualKey &&
+			req.senmlPageMetadatas[i].Comparator != readers.GreaterThanKey &&
+			req.senmlPageMetadatas[i].Comparator != readers.GreaterThanEqualKey {
+			return apiutil.ErrInvalidComparator
+		}
+	}
+	return nil
+}
+
+func validateSearchParams(limit uint64, dir, aggType, aggInterval string, aggValue uint64) error {
+	if limit > maxLimitSize {
+		return apiutil.ErrLimitSize
+	}
+
+	if err := validateDir(dir); err != nil {
+		return err
+	}
+
+	return validateAggregation(aggType, aggInterval, aggValue)
+}
+
 func validateAggregation(aggType, aggInterval string, aggValue uint64) error {
 	if aggInterval == "" || aggType == "" {
 		return nil

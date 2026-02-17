@@ -5,9 +5,12 @@ package messages
 
 import (
 	"context"
+	"sync"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/readers"
+	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -48,6 +51,74 @@ func listSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			Total:             page.Total,
 			Messages:          page.Messages,
 		}, nil
+	}
+}
+
+func searchJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(searchJSONMessagesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		results := make([]searchJSONResultItem, len(req.jsonPageMetadatas))
+		sem := make(chan struct{}, apiutil.ConcurrencyLimit)
+		var wg sync.WaitGroup
+
+		for i, search := range req.jsonPageMetadatas {
+			wg.Add(1)
+			sem <- struct{}{}
+			go func(idx int, pm readers.JSONPageMetadata) {
+				defer wg.Done()
+				defer func() { <-sem }()
+
+				var item searchJSONResultItem
+				if page, err := svc.ListJSONMessages(ctx, req.token, things.ThingKey{}, pm); err != nil {
+					item.Error = err.Error()
+				} else {
+					item.Total = page.Total
+					item.Messages = page.Messages
+				}
+				results[idx] = item
+			}(i, search)
+		}
+
+		wg.Wait()
+		return searchJSONMessagesRes(results), nil
+	}
+}
+
+func searchSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(searchSenMLMessagesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		results := make([]searchSenMLResultItem, len(req.senmlPageMetadatas))
+		sem := make(chan struct{}, apiutil.ConcurrencyLimit)
+		var wg sync.WaitGroup
+
+		for i, search := range req.senmlPageMetadatas {
+			wg.Add(1)
+			sem <- struct{}{}
+			go func(idx int, pm readers.SenMLPageMetadata) {
+				defer wg.Done()
+				defer func() { <-sem }()
+
+				var item searchSenMLResultItem
+				if page, err := svc.ListSenMLMessages(ctx, req.token, things.ThingKey{}, pm); err != nil {
+					item.Error = err.Error()
+				} else {
+					item.Total = page.Total
+					item.Messages = page.Messages
+				}
+				results[idx] = item
+			}(i, search)
+		}
+
+		wg.Wait()
+		return searchSenMLMessagesRes(results), nil
 	}
 }
 

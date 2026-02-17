@@ -63,6 +63,20 @@ func MakeHandler(svc readers.Service, mux *bone.Mux, tracer opentracing.Tracer, 
 		opts...,
 	))
 
+	mux.Post("/json/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_json_messages")(searchJSONMessagesEndpoint(svc)),
+		decodeSearchJSONMessages,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/senml/search", kithttp.NewServer(
+		kitot.TraceServer(tracer, "search_senml_messages")(searchSenMLMessagesEndpoint(svc)),
+		decodeSearchSenMLMessages,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Delete("/json", kithttp.NewServer(
 		kitot.TraceServer(tracer, "delete_all_json_messages")(deleteAllJSONMessagesEndpoint(svc)),
 		decodeDeleteAllJSONMessages,
@@ -175,6 +189,38 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (any, error) {
 		token:    apiutil.ExtractBearerToken(r),
 		thingKey: things.ExtractThingKey(r),
 		pageMeta: pageMeta,
+	}, nil
+}
+
+func decodeSearchJSONMessages(_ context.Context, r *http.Request) (any, error) {
+	if r.Body == nil {
+		return nil, apiutil.ErrMalformedEntity
+	}
+
+	var jpms []readers.JSONPageMetadata
+	if err := json.NewDecoder(r.Body).Decode(&jpms); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return searchJSONMessagesReq{
+		token:             apiutil.ExtractBearerToken(r),
+		jsonPageMetadatas: jpms,
+	}, nil
+}
+
+func decodeSearchSenMLMessages(_ context.Context, r *http.Request) (any, error) {
+	if r.Body == nil {
+		return nil, apiutil.ErrMalformedEntity
+	}
+
+	var spms []readers.SenMLPageMetadata
+	if err := json.NewDecoder(r.Body).Decode(&spms); err != nil {
+		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	return searchSenMLMessagesReq{
+		token:              apiutil.ExtractBearerToken(r),
+		senmlPageMetadatas: spms,
 	}, nil
 }
 
