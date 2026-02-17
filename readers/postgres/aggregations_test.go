@@ -12,77 +12,77 @@ import (
 
 func TestBuildJSONPath(t *testing.T) {
 	cases := []struct {
-		desc   string
-		field  string
-		result string
+		desc  string
+		field string
+		res   string
 	}{
 		{
-			desc:   "single field",
-			field:  "temperature",
-			result: "payload->>'temperature'",
+			desc:  "single field",
+			field: "temperature",
+			res:   "payload->>'temperature'",
 		},
 		{
-			desc:   "nested field",
-			field:  "sensor.temperature",
-			result: "payload->'sensor'->>'temperature'",
+			desc:  "nested field",
+			field: "sensor.temperature",
+			res:   "payload->'sensor'->>'temperature'",
 		},
 		{
-			desc:   "deeply nested field",
-			field:  "data.sensor.readings.temperature",
-			result: "payload->'data'->'sensor'->'readings'->>'temperature'",
+			desc:  "deeply nested field",
+			field: "data.sensor.readings.temperature",
+			res:   "payload->'data'->'sensor'->'readings'->>'temperature'",
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := buildJSONPath(tc.field)
-			assert.Equal(t, tc.result, got)
+			result := buildJSONPath(tc.field)
+			assert.Equal(t, tc.res, result)
 		})
 	}
 }
 
 func TestBuildJSONSelect(t *testing.T) {
 	cases := []struct {
-		desc       string
-		aggFields  []string
-		resultPart string
+		desc      string
+		aggFields []string
+		resPart   string
 	}{
 		{
-			desc:       "empty fields",
-			aggFields:  []string{},
-			resultPart: "CAST('{}' AS jsonb) as payload",
+			desc:      "empty fields",
+			aggFields: []string{},
+			resPart:   "CAST('{}' AS jsonb) as payload",
 		},
 		{
-			desc:       "single field",
-			aggFields:  []string{"temperature"},
-			resultPart: "jsonb_build_object('temperature', ia.agg_value_0)",
+			desc:      "single field",
+			aggFields: []string{"temperature"},
+			resPart:   "jsonb_build_object('temperature', ia.agg_value_0)",
 		},
 		{
-			desc:       "multiple fields",
-			aggFields:  []string{"temperature", "humidity"},
-			resultPart: "jsonb_build_object('temperature', ia.agg_value_0, 'humidity', ia.agg_value_1)",
+			desc:      "multiple fields",
+			aggFields: []string{"temperature", "humidity"},
+			resPart:   "jsonb_build_object('temperature', ia.agg_value_0, 'humidity', ia.agg_value_1)",
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := buildJSONSelect(tc.aggFields)
-			assert.Contains(t, got, tc.resultPart)
-			assert.Contains(t, got, "ia.max_time as created")
+			result := buildJSONSelect(tc.aggFields)
+			assert.Contains(t, result, tc.resPart)
+			assert.Contains(t, result, "ia.max_time as created")
 		})
 	}
 }
 
 func TestBuildConditionForCount(t *testing.T) {
 	cases := []struct {
-		desc   string
-		qp     queryParams
-		result string
+		desc string
+		qp   queryParams
+		res  string
 	}{
 		{
-			desc:   "no agg fields",
-			qp:     queryParams{},
-			result: "1=1",
+			desc: "no agg fields",
+			qp:   queryParams{},
+			res:  "1=1",
 		},
 		{
 			desc: "senml table",
@@ -90,7 +90,7 @@ func TestBuildConditionForCount(t *testing.T) {
 				table:     senmlTable,
 				aggFields: []string{"value"},
 			},
-			result: "MAX(m.value) IS NOT NULL",
+			res: "MAX(m.value) IS NOT NULL",
 		},
 		{
 			desc: "json table single field",
@@ -98,7 +98,7 @@ func TestBuildConditionForCount(t *testing.T) {
 				table:     jsonTable,
 				aggFields: []string{"temperature"},
 			},
-			result: "MAX(CAST(m.payload->>'temperature' AS FLOAT)) IS NOT NULL",
+			res: "MAX(CAST(m.payload->>'temperature' AS FLOAT)) IS NOT NULL",
 		},
 		{
 			desc: "json table multiple fields",
@@ -106,14 +106,14 @@ func TestBuildConditionForCount(t *testing.T) {
 				table:     jsonTable,
 				aggFields: []string{"temperature", "humidity"},
 			},
-			result: "MAX(CAST(m.payload->>'temperature' AS FLOAT)) IS NOT NULL OR MAX(CAST(m.payload->>'humidity' AS FLOAT)) IS NOT NULL",
+			res: "MAX(CAST(m.payload->>'temperature' AS FLOAT)) IS NOT NULL OR MAX(CAST(m.payload->>'humidity' AS FLOAT)) IS NOT NULL",
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := buildConditionForCount(tc.qp)
-			assert.Equal(t, tc.result, got)
+			result := buildConditionForCount(tc.qp)
+			assert.Equal(t, tc.res, result)
 		})
 	}
 }
@@ -124,36 +124,36 @@ func TestBuildTruncTimeExpression(t *testing.T) {
 		intervalVal  uint64
 		intervalUnit string
 		timeColumn   string
-		resultPart   string
+		resPart      string
 	}{
 		{
 			desc:         "single hour",
 			intervalVal:  1,
 			intervalUnit: "hour",
 			timeColumn:   "time",
-			resultPart:   "date_trunc('hour'",
+			resPart:      "date_trunc('hour'",
 		},
 		{
 			desc:         "multiple hours",
 			intervalVal:  5,
 			intervalUnit: "hour",
 			timeColumn:   "time",
-			resultPart:   "interval '5 hours'",
+			resPart:      "interval '5 hours'",
 		},
 		{
 			desc:         "single day",
 			intervalVal:  1,
 			intervalUnit: "day",
 			timeColumn:   "created",
-			resultPart:   "date_trunc('day'",
+			resPart:      "date_trunc('day'",
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := buildTruncTimeExpression(tc.intervalVal, tc.intervalUnit, tc.timeColumn)
-			assert.Contains(t, got, tc.resultPart)
-			assert.Contains(t, got, "to_timestamp")
+			result := buildTruncTimeExpression(tc.intervalVal, tc.intervalUnit, tc.timeColumn)
+			assert.Contains(t, result, tc.resPart)
+			assert.Contains(t, result, "to_timestamp")
 		})
 	}
 }
@@ -173,10 +173,10 @@ func TestBuildTimeJoinCondition(t *testing.T) {
 
 func TestBuildTimeIntervals(t *testing.T) {
 	cases := []struct {
-		desc       string
-		qp         queryParams
-		resultPart string
-		noLimit    bool
+		desc        string
+		qp          queryParams
+		resPart     string
+		notContains string
 	}{
 		{
 			desc: "with limit",
@@ -188,7 +188,7 @@ func TestBuildTimeIntervals(t *testing.T) {
 				limit:       100,
 				dir:         "desc",
 			},
-			resultPart: "LIMIT 100",
+			resPart: "LIMIT 100",
 		},
 		{
 			desc: "without limit",
@@ -200,7 +200,7 @@ func TestBuildTimeIntervals(t *testing.T) {
 				limit:       0,
 				dir:         "asc",
 			},
-			noLimit: true,
+			notContains: "LIMIT",
 		},
 		{
 			desc: "with condition",
@@ -211,70 +211,76 @@ func TestBuildTimeIntervals(t *testing.T) {
 				aggValue:    1,
 				aggInterval: "hour",
 			},
-			resultPart: "WHERE publisher = :publisher",
+			resPart: "WHERE publisher = :publisher",
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := buildTimeIntervals(tc.qp)
-			assert.Contains(t, got, "SELECT DISTINCT")
-			assert.Contains(t, got, tc.qp.table)
-			if tc.noLimit {
-				assert.NotContains(t, got, "LIMIT")
-			} else if tc.resultPart != "" {
-				assert.Contains(t, got, tc.resultPart)
+			result := buildTimeIntervals(tc.qp)
+			assert.Contains(t, result, "SELECT DISTINCT")
+			assert.Contains(t, result, tc.qp.table)
+			switch {
+			case tc.notContains != "":
+				assert.NotContains(t, result, tc.notContains)
+			case tc.resPart != "":
+				assert.Contains(t, result, tc.resPart)
 			}
 		})
 	}
 }
 
 func TestNewAggStrategy(t *testing.T) {
+	max := sqlAggFunc("MAX")
+	min := sqlAggFunc("MIN")
+	avg := sqlAggFunc("AVG")
+	count := sqlAggFunc("COUNT")
+
 	cases := []struct {
 		desc    string
 		aggType string
-		result  sqlAggFunc
-		isNil   bool
+		res     *sqlAggFunc
 	}{
 		{
 			desc:    "max",
 			aggType: readers.AggregationMax,
-			result:  sqlAggFunc("MAX"),
+			res:     &max,
 		},
 		{
 			desc:    "min",
 			aggType: readers.AggregationMin,
-			result:  sqlAggFunc("MIN"),
+			res:     &min,
 		},
 		{
 			desc:    "avg",
 			aggType: readers.AggregationAvg,
-			result:  sqlAggFunc("AVG"),
+			res:     &avg,
 		},
 		{
 			desc:    "count",
 			aggType: readers.AggregationCount,
-			result:  sqlAggFunc("COUNT"),
+			res:     &count,
 		},
 		{
 			desc:    "invalid",
 			aggType: "invalid",
-			isNil:   true,
+			res:     nil,
 		},
 		{
 			desc:    "empty",
 			aggType: "",
-			isNil:   true,
+			res:     nil,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := newAggStrategy(tc.aggType)
-			if tc.isNil {
-				assert.Nil(t, got)
-			} else {
-				assert.Equal(t, tc.result, got)
+			result := newAggStrategy(tc.aggType)
+			switch {
+			case tc.res == nil:
+				assert.Nil(t, result)
+			default:
+				assert.Equal(t, *tc.res, result)
 			}
 		})
 	}
@@ -282,10 +288,10 @@ func TestNewAggStrategy(t *testing.T) {
 
 func TestSqlAggFuncSelectedFields(t *testing.T) {
 	cases := []struct {
-		desc       string
-		fn         sqlAggFunc
-		qp         queryParams
-		resultPart string
+		desc    string
+		fn      sqlAggFunc
+		qp      queryParams
+		resPart string
 	}{
 		{
 			desc: "senml table",
@@ -293,7 +299,7 @@ func TestSqlAggFuncSelectedFields(t *testing.T) {
 			qp: queryParams{
 				table: senmlTable,
 			},
-			resultPart: "ia.agg_value as value",
+			resPart: "ia.agg_value as value",
 		},
 		{
 			desc: "json table",
@@ -302,7 +308,7 @@ func TestSqlAggFuncSelectedFields(t *testing.T) {
 				table:     jsonTable,
 				aggFields: []string{"temperature"},
 			},
-			resultPart: "jsonb_build_object",
+			resPart: "jsonb_build_object",
 		},
 		{
 			desc: "json table empty fields",
@@ -311,25 +317,25 @@ func TestSqlAggFuncSelectedFields(t *testing.T) {
 				table:     jsonTable,
 				aggFields: []string{},
 			},
-			resultPart: "CAST('{}' AS jsonb)",
+			resPart: "CAST('{}' AS jsonb)",
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := tc.fn.selectedFields(tc.qp)
-			assert.Contains(t, got, tc.resultPart)
+			result := tc.fn.selectedFields(tc.qp)
+			assert.Contains(t, result, tc.resPart)
 		})
 	}
 }
 
 func TestSqlAggFuncAggregateExpr(t *testing.T) {
 	cases := []struct {
-		desc       string
-		fn         sqlAggFunc
-		qp         queryParams
-		resultPart string
-		isEmpty    bool
+		desc    string
+		fn      sqlAggFunc
+		qp      queryParams
+		resPart string
+		isEmpty bool
 	}{
 		{
 			desc: "empty agg fields",
@@ -346,7 +352,7 @@ func TestSqlAggFuncAggregateExpr(t *testing.T) {
 				table:     senmlTable,
 				aggFields: []string{"value"},
 			},
-			resultPart: "MAX(m.value) as agg_value",
+			resPart: "MAX(m.value) as agg_value",
 		},
 		{
 			desc: "senml count",
@@ -355,7 +361,7 @@ func TestSqlAggFuncAggregateExpr(t *testing.T) {
 				table:     senmlTable,
 				aggFields: []string{"value"},
 			},
-			resultPart: "COUNT(m.value) as agg_value",
+			resPart: "COUNT(m.value) as agg_value",
 		},
 		{
 			desc: "json max",
@@ -364,7 +370,7 @@ func TestSqlAggFuncAggregateExpr(t *testing.T) {
 				table:     jsonTable,
 				aggFields: []string{"temperature"},
 			},
-			resultPart: "MAX(CAST(m.payload->>'temperature' as FLOAT)) as agg_value_0",
+			resPart: "MAX(CAST(m.payload->>'temperature' as FLOAT)) as agg_value_0",
 		},
 		{
 			desc: "json count",
@@ -373,17 +379,17 @@ func TestSqlAggFuncAggregateExpr(t *testing.T) {
 				table:     jsonTable,
 				aggFields: []string{"temperature"},
 			},
-			resultPart: "COUNT(m.payload->>'temperature') as agg_value_0",
+			resPart: "COUNT(m.payload->>'temperature') as agg_value_0",
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := tc.fn.aggregateExpr(tc.qp)
+			result := tc.fn.aggregateExpr(tc.qp)
 			if tc.isEmpty {
-				assert.Empty(t, got)
+				assert.Empty(t, result)
 			} else {
-				assert.Contains(t, got, tc.resultPart)
+				assert.Contains(t, result, tc.resPart)
 			}
 		})
 	}
@@ -398,12 +404,12 @@ func TestBaseConditions(t *testing.T) {
 		from       int64
 		to         int64
 		timeColumn string
-		result     []string
+		res        []string
 	}{
 		{
 			desc:       "empty filter",
 			timeColumn: "time",
-			result:     nil,
+			res:        nil,
 		},
 		{
 			desc:       "all fields",
@@ -413,7 +419,7 @@ func TestBaseConditions(t *testing.T) {
 			from:       1000,
 			to:         2000,
 			timeColumn: "time",
-			result: []string{
+			res: []string{
 				"subtopic = :subtopic",
 				"publisher = :publisher",
 				"protocol = :protocol",
@@ -426,7 +432,7 @@ func TestBaseConditions(t *testing.T) {
 			publisher:  "pub",
 			from:       1000,
 			timeColumn: "created",
-			result: []string{
+			res: []string{
 				"publisher = :publisher",
 				"created >= :from",
 			},
@@ -435,8 +441,8 @@ func TestBaseConditions(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := baseConditions(tc.subtopic, tc.publisher, tc.protocol, tc.from, tc.to, tc.timeColumn)
-			assert.Equal(t, tc.result, got)
+			result := baseConditions(tc.subtopic, tc.publisher, tc.protocol, tc.from, tc.to, tc.timeColumn)
+			assert.Equal(t, tc.res, result)
 		})
 	}
 }
@@ -457,16 +463,16 @@ func TestJsonConditions(t *testing.T) {
 
 func TestSenmlConditions(t *testing.T) {
 	cases := []struct {
-		desc       string
-		pm         readers.SenMLPageMetadata
-		resultPart string
+		desc    string
+		pm      readers.SenMLPageMetadata
+		resPart string
 	}{
 		{
 			desc: "with name",
 			pm: readers.SenMLPageMetadata{
 				Name: "temperature",
 			},
-			resultPart: "name = :name",
+			resPart: "name = :name",
 		},
 		{
 			desc: "with value",
@@ -474,35 +480,35 @@ func TestSenmlConditions(t *testing.T) {
 				Value:      5.0,
 				Comparator: "gt",
 			},
-			resultPart: "value > :value",
+			resPart: "value > :value",
 		},
 		{
 			desc: "with bool value",
 			pm: readers.SenMLPageMetadata{
 				BoolValue: true,
 			},
-			resultPart: "bool_value = :bool_value",
+			resPart: "bool_value = :bool_value",
 		},
 		{
 			desc: "with string value",
 			pm: readers.SenMLPageMetadata{
 				StringValue: "test",
 			},
-			resultPart: "string_value = :string_value",
+			resPart: "string_value = :string_value",
 		},
 		{
 			desc: "with data value",
 			pm: readers.SenMLPageMetadata{
 				DataValue: "data",
 			},
-			resultPart: "data_value = :data_value",
+			resPart: "data_value = :data_value",
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := senmlConditions(tc.pm)
-			assert.Contains(t, got, tc.resultPart)
+			result := senmlConditions(tc.pm)
+			assert.Contains(t, result, tc.resPart)
 		})
 	}
 }
