@@ -104,7 +104,7 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (certs.Cert, err
 		case 224:
 			curve = elliptic.P224()
 		case 256, 0:
-			keyBits = 256 // Set default for ECDSA
+			keyBits = 256
 			curve = elliptic.P256()
 		case 384:
 			curve = elliptic.P384()
