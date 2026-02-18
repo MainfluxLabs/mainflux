@@ -415,22 +415,6 @@ func (rs *rulesService) UnassignScripts(ctx context.Context, token, thingID stri
 		return err
 	}
 
-	grID, err := rs.things.GetGroupIDByThingID(ctx, &protomfx.ThingID{Value: thingID})
-	if err != nil {
-		return err
-	}
-
-	for _, id := range scriptIDs {
-		script, err := rs.rules.RetrieveScriptByID(ctx, id)
-		if err != nil {
-			return err
-		}
-
-		if script.GroupID != grID.GetValue() {
-			return errors.ErrAuthorization
-		}
-	}
-
 	if err := rs.rules.UnassignScripts(ctx, thingID, scriptIDs...); err != nil {
 		return err
 	}
@@ -566,7 +550,7 @@ type RuleRepository interface {
 	// AssignScripts assigns one or more Lua scripts to a specific Thing.
 	AssignScripts(ctx context.Context, thingID string, scriptIDs ...string) error
 
-	// Unassign unassgins one or omre Lua scripts from a specific Thing.
+	// Unassign unassgins one or more Lua scripts from a specific Thing.
 	UnassignScripts(ctx context.Context, thingID string, scriptIDs ...string) error
 
 	// SaveScriptRuns preserves multiple ScriptRuns.
