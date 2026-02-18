@@ -77,7 +77,7 @@ var luaAlarmCreate = luaAPIFunc{
 		}
 	},
 	identifier:     "create_alarm",
-	maxInvocations: 2,
+	maxInvocations: 1,
 }
 
 // Log a string message to the environment's log buffer.
