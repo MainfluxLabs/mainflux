@@ -92,6 +92,7 @@ func decodeListSerialsByThing(_ context.Context, r *http.Request) (any, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	o, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
 	if err != nil {
 		return nil, err
@@ -103,6 +104,7 @@ func decodeListSerialsByThing(_ context.Context, r *http.Request) (any, error) {
 		limit:   l,
 		offset:  o,
 	}
+
 	return req, nil
 }
 

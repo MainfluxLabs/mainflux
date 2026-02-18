@@ -20,12 +20,14 @@ type certsPageRes struct {
 }
 
 type certsRes struct {
-	ThingID    string    `json:"thing_id"`
-	ClientCert string    `json:"client_cert"`
-	ClientKey  string    `json:"client_key"`
-	CertSerial string    `json:"cert_serial"`
-	ExpiresAt  time.Time `json:"expires_at"`
-	created    bool
+	ThingID        string    `json:"thing_id"`
+	ClientCert     string    `json:"client_cert,omitempty"`
+	ClientKey      string    `json:"client_key,omitempty"`
+	CertSerial     string    `json:"cert_serial"`
+	PrivateKeyType string    `json:"private_key_type,omitempty"`
+	KeyBits        int       `json:"key_bits,omitempty"`
+	ExpiresAt      time.Time `json:"expires_at"`
+	created        bool
 }
 
 func (res certsPageRes) Code() int {

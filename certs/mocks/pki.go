@@ -88,19 +88,23 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (certs.Cert, err
 
 	var priv any
 	var err error
+	var normalizedKeyType string
 
 	switch keyType {
 	case "rsa", "":
+		normalizedKeyType = "rsa"
 		if keyBits == 0 {
 			keyBits = 2048
 		}
 		priv, err = rsa.GenerateKey(rand.Reader, keyBits)
 	case "ecdsa", "ec":
+		normalizedKeyType = "ecdsa"
 		var curve elliptic.Curve
 		switch keyBits {
 		case 224:
 			curve = elliptic.P224()
 		case 256, 0:
+			keyBits = 256 // Set default for ECDSA
 			curve = elliptic.P256()
 		case 384:
 			curve = elliptic.P384()
@@ -189,7 +193,8 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (certs.Cert, err
 		ClientKey:      keyPEM,
 		IssuingCA:      a.caPEM,
 		CAChain:        []string{a.caPEM},
-		PrivateKeyType: keyType,
+		PrivateKeyType: normalizedKeyType,
+		KeyBits:        keyBits,
 		Serial:         x509cert.SerialNumber.String(),
 		ExpiresAt:      x509cert.NotAfter,
 	}

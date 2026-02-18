@@ -108,6 +108,7 @@ type Cert struct {
 	CAChain        []string  `json:"ca_chain" mapstructure:"ca_chain"`
 	ClientKey      string    `json:"client_key" mapstructure:"private_key"`
 	PrivateKeyType string    `json:"private_key_type" mapstructure:"private_key_type"`
+	KeyBits        int       `json:"key_bits" mapstructure:"key_bits"`
 	Serial         string    `json:"serial" mapstructure:"serial_number"`
 	ExpiresAt      time.Time `json:"expires_at" mapstructure:"-"`
 }
@@ -135,6 +136,7 @@ func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, tt
 		CAChain:        pkiCert.CAChain,
 		ClientKey:      pkiCert.ClientKey,
 		PrivateKeyType: pkiCert.PrivateKeyType,
+		KeyBits:        pkiCert.KeyBits,
 		Serial:         pkiCert.Serial,
 		ExpiresAt:      pkiCert.Expire,
 	}
@@ -220,5 +222,17 @@ func (cs *certsService) RenewCert(ctx context.Context, token, serial string) (Ce
 		return Cert{}, errors.New("certificate not eligible for renewal yet")
 	}
 
-	return cs.IssueCert(ctx, token, oldCert.ThingID, defaultRenewalTTL, defaultRenewalKeyBits, defaultRenewalKeyType)
+	// Preserve the original certificate's key type and bits during renewal.
+	// Fall back to defaults if the original values are not available (e.g., legacy certificates).
+	keyType := oldCert.PrivateKeyType
+	if keyType == "" {
+		keyType = defaultRenewalKeyType
+	}
+
+	keyBits := oldCert.KeyBits
+	if keyBits == 0 {
+		keyBits = defaultRenewalKeyBits
+	}
+
+	return cs.IssueCert(ctx, token, oldCert.ThingID, defaultRenewalTTL, keyBits, keyType)
 }
