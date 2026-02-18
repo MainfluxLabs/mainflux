@@ -27,23 +27,17 @@ const (
 	ecKeyBlockType  = "EC PRIVATE KEY"
 	certificateType = "CERTIFICATE"
 
-	DefaultRSAKeyBits   = 2048
-	DefaultECDSAKeyBits = 256
+	RSAKeyBits2048 = 2048
+	RSAKeyBits4096 = 4096
+
+	ECDSAKeyBits224 = 224
+	ECDSAKeyBits256 = 256
+	ECDSAKeyBits384 = 384
+	ECDSAKeyBits521 = 521
+
+	DefaultRSAKeyBits   = RSAKeyBits2048
+	DefaultECDSAKeyBits = ECDSAKeyBits256
 )
-
-// ValidRSAKeySizes contains the set of accepted RSA key sizes.
-var ValidRSAKeySizes = map[int]bool{
-	2048: true,
-	4096: true,
-}
-
-// ValidECDSAKeySizes contains the set of accepted ECDSA curve sizes.
-var ValidECDSAKeySizes = map[int]bool{
-	224: true,
-	256: true,
-	384: true,
-	521: true,
-}
 
 type Cert struct {
 	ClientCert     string    `json:"client_cert" mapstructure:"certificate"`
@@ -148,15 +142,15 @@ func ValidateKeyParams(keyType string, keyBits int) (string, int, error) {
 		if keyBits == 0 {
 			keyBits = DefaultRSAKeyBits
 		}
-		if !ValidRSAKeySizes[keyBits] {
-			return "", 0, fmt.Errorf("%w: RSA supports 2048 or 4096, got %d", ErrInvalidKeyBits, keyBits)
+		if keyBits != RSAKeyBits2048 && keyBits != RSAKeyBits4096 {
+			return "", 0, fmt.Errorf("%w: RSA supports %d or %d, got %d", ErrInvalidKeyBits, RSAKeyBits2048, RSAKeyBits4096, keyBits)
 		}
 	case ECDSAKeyType:
 		if keyBits == 0 {
 			keyBits = DefaultECDSAKeyBits
 		}
-		if !ValidECDSAKeySizes[keyBits] {
-			return "", 0, fmt.Errorf("%w: ECDSA supports 224, 256, 384, or 521, got %d", ErrInvalidKeyBits, keyBits)
+		if keyBits != ECDSAKeyBits224 && keyBits != ECDSAKeyBits256 && keyBits != ECDSAKeyBits384 && keyBits != ECDSAKeyBits521 {
+			return "", 0, fmt.Errorf("%w: ECDSA supports %d, %d, %d, or %d, got %d", ErrInvalidKeyBits, ECDSAKeyBits224, ECDSAKeyBits256, ECDSAKeyBits384, ECDSAKeyBits521, keyBits)
 		}
 	}
 
@@ -308,11 +302,11 @@ func (a *agent) VerifyCert(certPEM string) (*x509.Certificate, error) {
 
 func ecdsaCurve(keyBits int) elliptic.Curve {
 	switch keyBits {
-	case 224:
+	case ECDSAKeyBits224:
 		return elliptic.P224()
-	case 384:
+	case ECDSAKeyBits384:
 		return elliptic.P384()
-	case 521:
+	case ECDSAKeyBits521:
 		return elliptic.P521()
 	default:
 		return elliptic.P256()
