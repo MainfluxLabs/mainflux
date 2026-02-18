@@ -50,8 +50,9 @@ type PlatformInvites interface {
 	// RevokePlatformInvite revokes a specific pending PlatformInvite. Only usable by the platform Root Admin.
 	RevokePlatformInvite(ctx context.Context, token, inviteID string) error
 
-	// ViewPlatformInvite retrieves a single PlatformInvite denoted by its ID. Only usable by the platform Root Admin.
-	ViewPlatformInvite(ctx context.Context, token, inviteID string) (PlatformInvite, error)
+	// ViewPlatformInvite retrieves a single PlatformInvite denoted by its ID.
+	// This endpoint is public - the invite UUID acts as the access secret.
+	ViewPlatformInvite(ctx context.Context, inviteID string) (PlatformInvite, error)
 
 	// ListPlatformInvites retrieves a list of platform invites. Only usable by the platform Root Admin.
 	ListPlatformInvites(ctx context.Context, token string, pm PageMetadataInvites) (PlatformInvitesPage, error)
@@ -167,11 +168,7 @@ func (svc usersService) RevokePlatformInvite(ctx context.Context, token, inviteI
 	return nil
 }
 
-func (svc usersService) ViewPlatformInvite(ctx context.Context, token, inviteID string) (PlatformInvite, error) {
-	if err := svc.isAdmin(ctx, token); err != nil {
-		return PlatformInvite{}, err
-	}
-
+func (svc usersService) ViewPlatformInvite(ctx context.Context, inviteID string) (PlatformInvite, error) {
 	invite, err := svc.invites.RetrievePlatformInviteByID(ctx, inviteID)
 	if err != nil {
 		return PlatformInvite{}, err

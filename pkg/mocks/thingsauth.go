@@ -29,7 +29,7 @@ func NewThingsServiceClient(profiles map[string]things.Profile, things map[strin
 	return &thingsServiceMock{profiles, things, groups}
 }
 
-func (svc thingsServiceMock) GetPubConfByKey(_ context.Context, in *protomfx.ThingKey, _ ...grpc.CallOption) (*protomfx.PubConfByKeyRes, error) {
+func (svc thingsServiceMock) GetPubConfigByKey(_ context.Context, in *protomfx.ThingKey, _ ...grpc.CallOption) (*protomfx.PubConfigByKeyRes, error) {
 	key := in.GetValue()
 
 	if key == "invalid" {
@@ -51,10 +51,10 @@ func (svc thingsServiceMock) GetPubConfByKey(_ context.Context, in *protomfx.Thi
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
-	return &protomfx.PubConfByKeyRes{PublisherID: svc.things[key].ID}, nil
+	return &protomfx.PubConfigByKeyRes{PublisherID: svc.things[key].ID}, nil
 }
 
-func (svc thingsServiceMock) GetConfigByThingID(context.Context, *protomfx.ThingID, ...grpc.CallOption) (*protomfx.ConfigByThingIDRes, error) {
+func (svc thingsServiceMock) GetConfigByThing(context.Context, *protomfx.ThingID, ...grpc.CallOption) (*protomfx.ConfigByThingRes, error) {
 	panic("not implemented")
 }
 
@@ -116,14 +116,21 @@ func (svc thingsServiceMock) Identify(_ context.Context, key *protomfx.ThingKey,
 	return nil, errors.ErrAuthentication
 }
 
-func (svc thingsServiceMock) GetGroupIDByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.GroupID, error) {
+func (svc thingsServiceMock) GetKeyByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ThingKey, error) {
+	if th, ok := svc.things[in.GetValue()]; ok {
+		return &protomfx.ThingKey{Value: th.Key}, nil
+	}
+	return nil, dbutil.ErrNotFound
+}
+
+func (svc thingsServiceMock) GetGroupIDByThing(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.GroupID, error) {
 	if th, ok := svc.things[in.GetValue()]; ok {
 		return &protomfx.GroupID{Value: th.GroupID}, nil
 	}
 	return nil, dbutil.ErrNotFound
 }
 
-func (svc thingsServiceMock) GetGroupIDByProfileID(_ context.Context, in *protomfx.ProfileID, _ ...grpc.CallOption) (*protomfx.GroupID, error) {
+func (svc thingsServiceMock) GetGroupIDByProfile(_ context.Context, in *protomfx.ProfileID, _ ...grpc.CallOption) (*protomfx.GroupID, error) {
 	if pr, ok := svc.profiles[in.GetValue()]; ok {
 		return &protomfx.GroupID{Value: pr.GroupID}, nil
 	}

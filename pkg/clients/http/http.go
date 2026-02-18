@@ -72,7 +72,7 @@ func SendRequest(method, path string, body []byte, headers map[string]string) (*
 
 func isRetryableError(err error) bool {
 	netErr, ok := err.(net.Error)
-	return ok && (netErr.Timeout() || netErr.Temporary())
+	return ok && netErr.Timeout()
 }
 
 func isRetryableStatus(status int) bool {

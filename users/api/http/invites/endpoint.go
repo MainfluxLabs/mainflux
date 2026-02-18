@@ -91,12 +91,12 @@ func listPlatformInvitesEndpoint(svc users.Service) endpoint.Endpoint {
 
 func viewPlatformInviteEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(inviteReq)
+		req := request.(viewInviteReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		invite, err := svc.ViewPlatformInvite(ctx, req.token, req.inviteID)
+		invite, err := svc.ViewPlatformInvite(ctx, req.inviteID)
 		if err != nil {
 			return nil, err
 		}

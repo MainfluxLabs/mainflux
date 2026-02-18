@@ -58,3 +58,21 @@ func (ms *metricsMiddleware) RemoveSubscription(ctx context.Context, sub mqtt.Su
 
 	return ms.svc.RemoveSubscription(ctx, sub)
 }
+
+func (ms *metricsMiddleware) RemoveSubscriptionsByThing(ctx context.Context, thingID string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "remove_subscriptions_by_thing").Add(1)
+		ms.latency.With("method", "remove_subscriptions_by_thing").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RemoveSubscriptionsByThing(ctx, thingID)
+}
+
+func (ms *metricsMiddleware) RemoveSubscriptionsByGroup(ctx context.Context, groupID string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "remove_subscriptions_by_group").Add(1)
+		ms.latency.With("method", "remove_subscriptions_by_group").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RemoveSubscriptionsByGroup(ctx, groupID)
+}

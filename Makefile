@@ -100,7 +100,10 @@ changelog:
 	git log $(shell git describe --tags --abbrev=0)..HEAD --pretty=format:"- %s"
 
 latest: dockers
-	$(call docker_push,latest)
+	for svc in $(SERVICES); do \
+		docker tag $(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc:$(VERSION) $(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc:latest; \
+	done
+	$(call docker_push,$(VERSION))
 
 release:
 	for svc in $(SERVICES); do \

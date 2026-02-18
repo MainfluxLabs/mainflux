@@ -312,7 +312,7 @@ func (lm *loggingMiddleware) RevokePlatformInvite(ctx context.Context, token, in
 	return lm.svc.RevokePlatformInvite(ctx, token, inviteID)
 }
 
-func (lm *loggingMiddleware) ViewPlatformInvite(ctx context.Context, token, inviteID string) (_ users.PlatformInvite, err error) {
+func (lm *loggingMiddleware) ViewPlatformInvite(ctx context.Context, inviteID string) (_ users.PlatformInvite, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view_platform_invite for invite id %s took %s to complete", inviteID, time.Since(begin))
 		if err != nil {
@@ -323,7 +323,7 @@ func (lm *loggingMiddleware) ViewPlatformInvite(ctx context.Context, token, invi
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ViewPlatformInvite(ctx, token, inviteID)
+	return lm.svc.ViewPlatformInvite(ctx, inviteID)
 }
 
 func (lm *loggingMiddleware) ListPlatformInvites(ctx context.Context, token string, pm users.PageMetadataInvites) (_ users.PlatformInvitesPage, err error) {

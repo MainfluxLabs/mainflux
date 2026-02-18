@@ -130,7 +130,7 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token, orgID string, 
 	}
 	userID := user.GetId()
 
-	oid, err := ts.auth.GetOwnerIDByOrgID(ctx, &protomfx.OrgID{Value: orgID})
+	oid, err := ts.auth.GetOwnerIDByOrg(ctx, &protomfx.OrgID{Value: orgID})
 	if err != nil {
 		return []Group{}, err
 	}
@@ -149,11 +149,13 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token, orgID string, 
 		timestamp := getTimestamp()
 		group.CreatedAt, group.UpdatedAt = timestamp, timestamp
 
-		id, err := ts.idProvider.ID()
-		if err != nil {
-			return []Group{}, err
+		if group.ID == "" {
+			id, err := ts.idProvider.ID()
+			if err != nil {
+				return []Group{}, err
+			}
+			group.ID = id
 		}
-		group.ID = id
 		group.OrgID = orgID
 
 		grs = append(grs, group)
@@ -190,7 +192,7 @@ func (ts *thingsService) ListGroups(ctx context.Context, token string, pm apiuti
 		return GroupPage{}, err
 	}
 
-	grIDs, err := ts.getGroupIDsByMemberID(ctx, user.GetId())
+	grIDs, err := ts.getGroupIDsByMember(ctx, user.GetId())
 	if err != nil {
 		return GroupPage{}, err
 	}
@@ -299,7 +301,7 @@ func (ts *thingsService) ViewGroupByProfile(ctx context.Context, token, profileI
 		return Group{}, err
 	}
 
-	grID, err := ts.getGroupIDByProfileID(ctx, profileID)
+	grID, err := ts.getGroupIDByProfile(ctx, profileID)
 	if err != nil {
 		return Group{}, err
 	}
@@ -322,7 +324,7 @@ func (ts *thingsService) ViewGroupByThing(ctx context.Context, token string, thi
 		return Group{}, err
 	}
 
-	grID, err := ts.getGroupIDByThingID(ctx, thingID)
+	grID, err := ts.getGroupIDByThing(ctx, thingID)
 	if err != nil {
 		return Group{}, err
 	}

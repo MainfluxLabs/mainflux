@@ -44,9 +44,7 @@ func (repo *senmlRepositoryMock) Restore(ctx context.Context, messages ...reader
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 
-	for _, msg := range messages {
-		repo.messages[""] = append(repo.messages[""], msg)
-	}
+	repo.messages[""] = append(repo.messages[""], messages...)
 	return nil
 }
 

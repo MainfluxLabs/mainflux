@@ -56,7 +56,7 @@ func TestMain(m *testing.M) {
 
 	logger, err = mflog.New(os.Stdout, mflog.Debug.String())
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err)
 	}
 	if err := pool.Retry(func() error {
 		pubsub, err = rabbitmq.NewPubSub(address, "mainflux", logger)

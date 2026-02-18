@@ -23,6 +23,7 @@ import (
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/MainfluxLabs/mainflux/readers/api"
+	httpapi "github.com/MainfluxLabs/mainflux/readers/api/http"
 	"github.com/MainfluxLabs/mainflux/readers/mongodb"
 	"github.com/MainfluxLabs/mainflux/readers/tracing"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
@@ -88,7 +89,7 @@ func main() {
 	g, ctx := errgroup.WithContext(ctx)
 	logger, err := logger.New(os.Stdout, cfg.logLevel)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err)
 	}
 
 	mongodbHttpTracer, mongodbHttpCloser := jaeger.Init("mongodb_http", cfg.jaegerURL, logger)
@@ -118,7 +119,7 @@ func main() {
 	svc := newService(db, dbTracer, auth, tc, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, api.MakeHandler(svc, mongodbHttpTracer, svcName, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(svc, mongodbHttpTracer, svcName, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {

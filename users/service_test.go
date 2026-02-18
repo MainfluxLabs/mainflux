@@ -542,23 +542,19 @@ func TestViewPlatformInvite(t *testing.T) {
 	tokenAdmin, err := svc.Login(context.Background(), admin)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	tokenUser, err := svc.Login(context.Background(), user)
-	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-
 	pendingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test1@example.com", auth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Creating platform invite expected to succeed: %s", err))
 
 	cases := map[string]struct {
-		token    string
 		inviteID string
 		err      error
 	}{
-		"view platform invite":                        {tokenAdmin, pendingInvite.ID, nil},
-		"view platform invite as non-root-admin user": {tokenUser, pendingInvite.ID, errors.ErrAuthorization},
+		"view platform invite":                 {pendingInvite.ID, nil},
+		"view platform invite with invalid id": {"invalid-id", dbutil.ErrNotFound},
 	}
 
 	for desc, tc := range cases {
-		_, err := svc.ViewPlatformInvite(context.Background(), tc.token, tc.inviteID)
+		_, err := svc.ViewPlatformInvite(context.Background(), tc.inviteID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }

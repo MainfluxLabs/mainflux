@@ -158,7 +158,7 @@ func (as *alarmService) ExportAlarmsByThing(ctx context.Context, token, thingID 
 }
 
 func (as *alarmService) createAlarm(ctx context.Context, alarm *Alarm) error {
-	grID, err := as.things.GetGroupIDByThingID(ctx, &protomfx.ThingID{Value: alarm.ThingID})
+	grID, err := as.things.GetGroupIDByThing(ctx, &protomfx.ThingID{Value: alarm.ThingID})
 	if err != nil {
 		return err
 	}
