@@ -223,7 +223,7 @@ func (cs *certsService) RenewCert(ctx context.Context, token, serial string) (Ce
 	}
 
 	// Preserve the original certificate's key type and bits during renewal.
-	// Fall back to defaults if the original values are not available (e.g., legacy certificates).
+	// Fall back to defaults if the original values are not available.
 	keyType := oldCert.PrivateKeyType
 	if keyType == "" {
 		keyType = defaultRenewalKeyType
