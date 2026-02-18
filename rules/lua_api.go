@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/Shopify/go-lua"
 )
 
@@ -64,7 +65,7 @@ var luaAlarmCreate = luaAPIFunc{
 
 			msg := env.message
 			msg.Payload = encodedPayload
-			msg.Subject = fmt.Sprintf("%s.%s", subjectAlarms, env.script.ID)
+			msg.Subject = fmt.Sprintf("%s.%s.%s", subjectAlarms, alarms.AlarmOriginScript, env.script.ID)
 
 			if err := env.service.pubsub.Publish(msg); err != nil {
 				ls.PushBoolean(false)

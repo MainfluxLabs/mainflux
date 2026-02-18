@@ -25,7 +25,7 @@ const (
 	// SubjectSmpp represents subject used to subscribe to SMPP notifications.
 	SubjectSmpp = "smpp.*"
 	// SubjectAlarms represents subject used to subscribe to alarm triggers.
-	SubjectAlarms = "alarms.*"
+	SubjectAlarms = "alarms.*.*"
 )
 
 var _ messaging.PubSub = (*pubsub)(nil)

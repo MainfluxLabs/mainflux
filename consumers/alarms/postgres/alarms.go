@@ -34,8 +34,8 @@ func (ar *alarmRepository) Save(ctx context.Context, alarms ...alarms.Alarm) err
 	}
 	defer tx.Rollback()
 
-	q := `INSERT INTO alarms (id, thing_id, group_id, rule_id, subtopic, protocol, payload, created)
-	      VALUES (:id, :thing_id, :group_id, :rule_id, :subtopic, :protocol, :payload, :created);`
+	q := `INSERT INTO alarms (id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, created)
+	      VALUES (:id, :thing_id, :group_id, :rule_id, :script_id, :subtopic, :protocol, :payload, :created);`
 
 	for _, alarm := range alarms {
 		dbAlarm, err := toDBAlarm(alarm)
@@ -66,7 +66,7 @@ func (ar *alarmRepository) Save(ctx context.Context, alarms ...alarms.Alarm) err
 }
 
 func (ar *alarmRepository) RetrieveByID(ctx context.Context, id string) (alarms.Alarm, error) {
-	q := `SELECT id, thing_id, group_id, rule_id, subtopic, protocol, payload, created FROM alarms WHERE id = $1;`
+	q := `SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, created FROM alarms WHERE id = $1;`
 
 	var dba dbAlarm
 	if err := ar.db.QueryRowxContext(ctx, q, id).StructScan(&dba); err != nil {
@@ -96,7 +96,7 @@ func (ar *alarmRepository) RetrieveByThing(ctx context.Context, thingID string, 
 	thingFilter := "thing_id = :thing_id"
 	whereClause := dbutil.BuildWhereClause(thingFilter, pq)
 
-	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, subtopic, protocol, payload, created 
+	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, created 
 	                  FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
 
@@ -127,7 +127,7 @@ func (ar *alarmRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 	groupFilter := "group_id = :group_id"
 	whereClause := dbutil.BuildWhereClause(groupFilter, pq)
 
-	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, subtopic, protocol, payload, created 
+	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, created 
 	                  FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
 
@@ -156,7 +156,7 @@ func (ar *alarmRepository) RetrieveByGroups(ctx context.Context, groupIDs []stri
 	}
 
 	whereClause := dbutil.BuildWhereClause(giq, pq)
-	query := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, subtopic, protocol, payload, created FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	query := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, created FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
 
 	params := map[string]any{
@@ -219,7 +219,7 @@ func (ar *alarmRepository) ExportByThing(ctx context.Context, thingID string, pm
 	thingFilter := "thing_id = :thing_id"
 	whereClause := dbutil.BuildWhereClause(thingFilter, pq)
 
-	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, subtopic, protocol, payload, created 
+	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, created 
 	                  FROM alarms %s ORDER BY %s %s;`, whereClause, oq, dq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
 
@@ -267,14 +267,15 @@ func (ar *alarmRepository) retrieve(ctx context.Context, query, cquery string, p
 }
 
 type dbAlarm struct {
-	ID       string `db:"id"`
-	ThingID  string `db:"thing_id"`
-	GroupID  string `db:"group_id"`
-	RuleID   string `db:"rule_id"`
-	Subtopic string `db:"subtopic"`
-	Protocol string `db:"protocol"`
-	Payload  []byte `db:"payload"`
-	Created  int64  `db:"created"`
+	ID       string         `db:"id"`
+	ThingID  string         `db:"thing_id"`
+	GroupID  string         `db:"group_id"`
+	RuleID   sql.NullString `db:"rule_id"`
+	ScriptID sql.NullString `db:"script_id"`
+	Subtopic string         `db:"subtopic"`
+	Protocol string         `db:"protocol"`
+	Payload  []byte         `db:"payload"`
+	Created  int64          `db:"created"`
 }
 
 func toDBAlarm(alarm alarms.Alarm) (dbAlarm, error) {
@@ -287,7 +288,8 @@ func toDBAlarm(alarm alarms.Alarm) (dbAlarm, error) {
 		ID:       alarm.ID,
 		ThingID:  alarm.ThingID,
 		GroupID:  alarm.GroupID,
-		RuleID:   alarm.RuleID,
+		RuleID:   sql.NullString{String: alarm.RuleID, Valid: alarm.RuleID != ""},
+		ScriptID: sql.NullString{String: alarm.ScriptID, Valid: alarm.ScriptID != ""},
 		Subtopic: alarm.Subtopic,
 		Protocol: alarm.Protocol,
 		Payload:  payload,
@@ -305,7 +307,8 @@ func toAlarm(dbAlarm dbAlarm) (alarms.Alarm, error) {
 		ID:       dbAlarm.ID,
 		ThingID:  dbAlarm.ThingID,
 		GroupID:  dbAlarm.GroupID,
-		RuleID:   dbAlarm.RuleID,
+		RuleID:   dbAlarm.RuleID.String,
+		ScriptID: dbAlarm.ScriptID.String,
 		Subtopic: dbAlarm.Subtopic,
 		Protocol: dbAlarm.Protocol,
 		Payload:  payload,
