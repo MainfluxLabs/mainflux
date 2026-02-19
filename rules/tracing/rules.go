@@ -141,7 +141,6 @@ func (rpm ruleRepositoryMiddleware) UnassignByThing(ctx context.Context, thingID
 	return rpm.repo.UnassignByThing(ctx, thingID)
 }
 
-// SaveScripts tracing middleware.
 func (rpm ruleRepositoryMiddleware) SaveScripts(ctx context.Context, scripts ...rules.LuaScript) ([]rules.LuaScript, error) {
 	span := dbutil.CreateSpan(ctx, rpm.tracer, saveScript)
 	defer span.Finish()
