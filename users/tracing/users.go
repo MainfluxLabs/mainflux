@@ -48,6 +48,14 @@ func (urm userRepositoryMiddleware) Save(ctx context.Context, user users.User) (
 	return urm.repo.Save(ctx, user)
 }
 
+func (urm userRepositoryMiddleware) Update(ctx context.Context, user users.User) error {
+	span := dbutil.CreateSpan(ctx, urm.tracer, updateUser)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return urm.repo.Update(ctx, user)
+}
+
 func (urm userRepositoryMiddleware) UpdateUser(ctx context.Context, user users.User) error {
 	span := dbutil.CreateSpan(ctx, urm.tracer, updateUser)
 	defer span.Finish()
