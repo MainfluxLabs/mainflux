@@ -47,8 +47,13 @@ The following are needed to run Mainflux:
 
 Developing Mainflux will also require:
 
-- [Go](https://golang.org/dl/) (version 1.24.13)
+<<<<<<< HEAD
+- [Go](https://golang.org/dl/) (version 1.25.7)
 - [Protobuf](https://github.com/protocolbuffers/protobuf) (version 3.x)
+
+## Install
+
+Once the prerequisites are installed, execute the following commands from the project's root:
 
 ## Installation
 
