@@ -109,6 +109,8 @@ release:
 	for svc in $(SERVICES); do \
 		docker buildx build --platform=linux/amd64,linux/arm64 \
 			--no-cache \
+			--sbom=true \
+			--provenance=mode=max \
 			--build-arg SVC=$$svc \
 			--build-arg VERSION=$(VERSION) \
 			--build-arg COMMIT=$(COMMIT) \
