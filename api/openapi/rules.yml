@@ -526,12 +526,11 @@ components:
         script:
           type: string
           example: |
-            function process(msg)
-              local temp_c = msg.payload.temperature
-              local temp_f = (temp_c * 9/5) + 32
-              msg.payload.temperature_f = temp_f
-              return msg
-            end
+              temp = mfx.message.payload["temperature"]
+              if temp < 3.5 then
+                  mfx.create_alarm()
+                  mfx.smtp_notify("654e4567-e89b-12d3-a456-426614174999")
+              end
       required: [name, script]
     ScriptResSchema:
       type: object
@@ -553,11 +552,10 @@ components:
         script:
           type: string
           example: |
-            function process(msg)
-              local temp_c = msg.payload.temperature
-              local temp_f = (temp_c * 9/5) + 32
-              msg.payload.temperature_f = temp_f
-              return msg
+            temp = mfx.message.payload["temperature"]
+            if temp < 3.5 then
+                mfx.create_alarm()
+                mfx.smtp_notify("654e4567-e89b-12d3-a456-426614174999")
             end
       required: [id, group_id, name, script]
     ScriptRunResSchema:
