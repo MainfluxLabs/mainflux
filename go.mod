@@ -1,6 +1,6 @@
 module github.com/MainfluxLabs/mainflux
 
-go 1.24.13
+go 1.25.7
 
 require (
 	github.com/MainfluxLabs/mproxy v0.2.3
