@@ -16,10 +16,13 @@ import (
 	mqttapi "github.com/MainfluxLabs/mainflux/mqtt/api"
 	mqttapihttp "github.com/MainfluxLabs/mainflux/mqtt/api/http"
 	"github.com/MainfluxLabs/mainflux/mqtt/postgres"
-	mqttredis "github.com/MainfluxLabs/mainflux/mqtt/redis"
+	mqttredis "github.com/MainfluxLabs/mainflux/mqtt/redis/cache"
+	"github.com/MainfluxLabs/mainflux/mqtt/redis/events"
+	"github.com/MainfluxLabs/mainflux/mqtt/tracing"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	mqttpub "github.com/MainfluxLabs/mainflux/pkg/messaging/mqtt"
@@ -37,6 +40,7 @@ import (
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
+	"github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/errgroup"
 )
@@ -44,13 +48,14 @@ import (
 const (
 	svcName      = "mqtt-adapter"
 	stopWaitTime = 5 * time.Second
+	esGroupName  = svcName
 
 	defLogLevel          = "error"
 	defMQTTPort          = "1883"
 	defTargetHost        = "0.0.0.0"
 	defTargetPort        = "1883"
 	defForwarder         = "false"
-	defTimeout           = "30s" // 30 seconds
+	defTimeout           = "30s"
 	defTargetHealthCheck = ""
 	defHTTPPort          = "8080"
 	defHTTPTargetHost    = "localhost"
@@ -66,6 +71,8 @@ const (
 	defAuthCacheURL      = "localhost:6379"
 	defAuthCachePass     = ""
 	defAuthCacheDB       = "0"
+	defESURL             = "redis://localhost:6379/0"
+	defESConsumerName    = svcName
 	defDBHost            = "localhost"
 	defAuthGRPCURL       = "localhost:8181"
 	defDBPort            = "5432"
@@ -101,6 +108,8 @@ const (
 	envAuthCacheURL      = "MF_AUTH_CACHE_URL"
 	envAuthCachePass     = "MF_AUTH_CACHE_PASS"
 	envAuthCacheDB       = "MF_AUTH_CACHE_DB"
+	envESURL             = "MF_MQTT_ADAPTER_ES_URL"
+	envESConsumerName    = "MF_MQTT_ADAPTER_EVENT_CONSUMER"
 	envServerCert        = "MF_MQTT_ADAPTER_SERVER_CERT"
 	envServerKey         = "MF_MQTT_ADAPTER_SERVER_KEY"
 	envDBHost            = "MF_MQTT_ADAPTER_DB_HOST"
@@ -139,6 +148,8 @@ type config struct {
 	authCacheDB       string
 	authGRPCTimeout   time.Duration
 	dbConfig          postgres.Config
+	esURL             string
+	esConsumerName    string
 }
 
 func main() {
@@ -204,11 +215,16 @@ func main() {
 	ac := connectToRedis(cfg.authCacheURL, cfg.authPass, cfg.authCacheDB, logger)
 	defer ac.Close()
 
+	dbTracer, dbCloser := jaeger.Init("mqtt_db", cfg.jaegerURL, logger)
+	defer dbCloser.Close()
+
+	cacheTracer, cacheCloser := jaeger.Init("mqtt_cache", cfg.jaegerURL, logger)
+	defer cacheCloser.Close()
+
 	thingsTracer, thingsCloser := jaeger.Init("mqtt_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
 	mqttTracer, closer := jaeger.Init(svcName, cfg.jaegerURL, logger)
-
 	defer closer.Close()
 
 	authTracer, authCloser := jaeger.Init("mqtt_auth", cfg.jaegerURL, logger)
@@ -220,12 +236,17 @@ func main() {
 	usersAuth := authapi.NewClient(aConn, authTracer, cfg.authGRPCTimeout)
 	tc := thingsapi.NewClient(tConn, thingsTracer, cfg.thingsGRPCTimeout)
 
-	svc := newService(usersAuth, tc, db, logger)
+	cc := mqttredis.NewConnectionCache(ac)
+	cc = tracing.ConnectionCacheMiddleware(cacheTracer, cc)
 
-	mc := mqttredis.NewCache(ac)
+	svc := newService(usersAuth, tc, db, cc, dbTracer, logger)
 
 	// Event handler for MQTT hooks
-	h := mqtt.NewHandler(np, tc, svc, mc, logger)
+	h := mqtt.NewHandler(np, tc, svc, cc, logger)
+
+	g.Go(func() error {
+		return subscribeToThingsES(ctx, svc, cfg, logger)
+	})
 
 	logger.Info(fmt.Sprintf("Starting MQTT proxy on port %s", cfg.port))
 	g.Go(func() error {
@@ -330,6 +351,8 @@ func loadConfig() config {
 		authCacheURL:      mainflux.Env(envAuthCacheURL, defAuthCacheURL),
 		authPass:          mainflux.Env(envAuthCachePass, defAuthCachePass),
 		authCacheDB:       mainflux.Env(envAuthCacheDB, defAuthCacheDB),
+		esURL:             mainflux.Env(envESURL, defESURL),
+		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 		authGRPCTimeout:   authGRPCTimeout,
 		dbConfig:          dbConfig,
 	}
@@ -347,6 +370,23 @@ func connectToRedis(redisURL, redisPass, redisDB string, logger logger.Logger) *
 		Password: redisPass,
 		DB:       db,
 	})
+}
+
+func subscribeToThingsES(ctx context.Context, svc mqtt.Service, cfg config, logger logger.Logger) error {
+	subscriber, err := mfevents.NewSubscriber(cfg.esURL, mfevents.ThingsStream, esGroupName, cfg.esConsumerName, logger)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := subscriber.Close(); err != nil {
+			logger.Error(fmt.Sprintf("Failed to close subscriber: %s", err))
+		}
+	}()
+
+	handler := events.NewEventHandler(svc)
+
+	return subscriber.Subscribe(ctx, handler)
 }
 
 func proxyMQTT(ctx context.Context, cfg config, logger logger.Logger, handler session.Handler) error {
@@ -415,11 +455,12 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, db *sqlx.DB, logger logger.Logger) mqtt.Service {
+func newService(ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, db *sqlx.DB, cache mqttredis.ConnectionCache, dbTracer opentracing.Tracer, logger logger.Logger) mqtt.Service {
 	idp := ulid.New()
 	subscriptions := postgres.NewRepository(db)
+	subscriptions = tracing.SubscriptionRepositoryMiddleware(dbTracer, subscriptions)
 
-	svc := mqtt.NewMqttService(ac, tc, subscriptions, idp)
+	svc := mqtt.NewMqttService(ac, tc, subscriptions, cache, idp)
 	svc = mqttapi.LoggingMiddleware(svc, logger)
 	svc = mqttapi.MetricsMiddleware(
 		svc,

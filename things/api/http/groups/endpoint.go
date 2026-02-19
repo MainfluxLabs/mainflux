@@ -21,6 +21,7 @@ func createGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 		grs := []things.Group{}
 		for _, g := range req.Groups {
 			group := things.Group{
+				ID:          g.ID,
 				Name:        g.Name,
 				Description: g.Description,
 				Metadata:    g.Metadata,

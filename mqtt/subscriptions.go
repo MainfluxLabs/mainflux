@@ -32,4 +32,10 @@ type Repository interface {
 
 	// Remove will remove the subscription.
 	Remove(ctx context.Context, sub Subscription) error
+
+	// RemoveByThing removes all subscriptions associated with the specified thing ID.
+	RemoveByThing(ctx context.Context, thingID string) error
+
+	// RemoveByGroup removes all subscriptions associated with the specified group ID.
+	RemoveByGroup(ctx context.Context, groupID string) error
 }

@@ -75,8 +75,8 @@ func (req orgMembershipsReq) validate() error {
 	}
 
 	for _, m := range req.OrgMemberships {
-		if m.Role != auth.Admin && m.Role != auth.Viewer && m.Role != auth.Editor {
-			return apiutil.ErrInvalidRole
+		if err := auth.ValidateInviteeRole(m.Role); err != nil {
+			return err
 		}
 	}
 

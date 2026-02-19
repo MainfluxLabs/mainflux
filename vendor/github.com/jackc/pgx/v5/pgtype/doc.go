@@ -57,27 +57,7 @@ JSON Support
 
 pgtype automatically marshals and unmarshals data from json and jsonb PostgreSQL types.
 
-Array Support
-
-ArrayCodec implements support for arrays. If pgtype supports type T then it can easily support []T by registering an
-ArrayCodec for the appropriate PostgreSQL OID. In addition, Array[T] type can support multi-dimensional arrays.
-
-Composite Support
-
-CompositeCodec implements support for PostgreSQL composite types. Go structs can be scanned into if the public fields of
-the struct are in the exact order and type of the PostgreSQL type or by implementing CompositeIndexScanner and
-CompositeIndexGetter.
-
-Enum Support
-
-PostgreSQL enums can usually be treated as text. However, EnumCodec implements support for interning strings which can
-reduce memory usage.
-
-Array, Composite, and Enum Type Registration
-
-Array, composite, and enum types can be easily registered from a pgx.Conn with the LoadType method.
-
-Extending Existing Type Support
+Extending Existing PostgreSQL Type Support
 
 Generally, all Codecs will support interfaces that can be implemented to enable scanning and encoding. For example,
 PointCodec can use any Go type that implements the PointScanner and PointValuer interfaces. So rather than use
@@ -87,14 +67,61 @@ See example_custom_type_test.go for an example of a custom type for the PostgreS
 
 Sometimes pgx supports a PostgreSQL type such as numeric but the Go type is in an external package that does not have
 pgx support such as github.com/shopspring/decimal. These types can be registered with pgtype with custom conversion
-logic. See https://github.com/jackc/pgx-shopspring-decimal and https://github.com/jackc/pgx-gofrs-uuid for a example
+logic. See https://github.com/jackc/pgx-shopspring-decimal and https://github.com/jackc/pgx-gofrs-uuid for example
 integrations.
 
-Entirely New Type Support
+New PostgreSQL Type Support
 
-If the PostgreSQL type is not already supported then an OID / Codec mapping can be registered with Map.RegisterType.
-There is no difference between a Codec defined and registered by the application and a Codec built in to pgtype. See any
-of the Codecs in pgtype for Codec examples and for examples of type registration.
+pgtype uses the PostgreSQL OID to determine how to encode or decode a value. pgtype supports array, composite, domain,
+and enum types. However, any type created in PostgreSQL with CREATE TYPE will receive a new OID. This means that the OID
+of each new PostgreSQL type must be registered for pgtype to handle values of that type with the correct Codec.
+
+The pgx.Conn LoadType method can return a *Type for array, composite, domain, and enum types by inspecting the database
+metadata. This *Type can then be registered with Map.RegisterType.
+
+For example, the following function could be called after a connection is established:
+
+    func RegisterDataTypes(ctx context.Context, conn *pgx.Conn) error {
+      dataTypeNames := []string{
+        "foo",
+        "_foo",
+        "bar",
+        "_bar",
+      }
+
+      for _, typeName := range dataTypeNames {
+        dataType, err := conn.LoadType(ctx, typeName)
+        if err != nil {
+          return err
+        }
+        conn.TypeMap().RegisterType(dataType)
+      }
+
+      return nil
+    }
+
+A type cannot be registered unless all types it depends on are already registered. e.g. An array type cannot be
+registered until its element type is registered.
+
+ArrayCodec implements support for arrays. If pgtype supports type T then it can easily support []T by registering an
+ArrayCodec for the appropriate PostgreSQL OID. In addition, Array[T] type can support multi-dimensional arrays.
+
+CompositeCodec implements support for PostgreSQL composite types. Go structs can be scanned into if the public fields of
+the struct are in the exact order and type of the PostgreSQL type or by implementing CompositeIndexScanner and
+CompositeIndexGetter.
+
+Domain types are treated as their underlying type if the underlying type and the domain type are registered.
+
+PostgreSQL enums can usually be treated as text. However, EnumCodec implements support for interning strings which can
+reduce memory usage.
+
+While pgtype will often still work with unregistered types it is highly recommended that all types be registered due to
+an improvement in performance and the elimination of certain edge cases.
+
+If an entirely new PostgreSQL type (e.g. PostGIS types) is used then the application or a library can create a new
+Codec. Then the OID / Codec mapping can be registered with Map.RegisterType. There is no difference between a Codec
+defined and registered by the application and a Codec built in to pgtype. See any of the Codecs in pgtype for Codec
+examples and for examples of type registration.
 
 Encoding Unknown Types
 
@@ -122,7 +149,7 @@ Overview of Scanning Implementation
 The first step is to use the OID to lookup the correct Codec. If the OID is unavailable, Map will try to find the OID
 from previous calls of Map.RegisterDefaultPgType. The Map will call the Codec's PlanScan method to get a plan for
 scanning into the Go value. A Codec will support scanning into one or more Go types. Oftentime these Go types are
-interfaces rather than explicit types. For example, PointCodec can use any Go type that implments the PointScanner and
+interfaces rather than explicit types. For example, PointCodec can use any Go type that implements the PointScanner and
 PointValuer interfaces.
 
 If a Go value is not supported directly by a Codec then Map will try wrapping it with additional logic and try again.

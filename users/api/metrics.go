@@ -247,13 +247,13 @@ func (ms *metricsMiddleware) RevokePlatformInvite(ctx context.Context, token str
 	return ms.svc.RevokePlatformInvite(ctx, token, inviteID)
 }
 
-func (ms *metricsMiddleware) ViewPlatformInvite(ctx context.Context, token string, inviteID string) (users.PlatformInvite, error) {
+func (ms *metricsMiddleware) ViewPlatformInvite(ctx context.Context, inviteID string) (users.PlatformInvite, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_platform_invite").Add(1)
 		ms.latency.With("method", "view_platform_invite").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ViewPlatformInvite(ctx, token, inviteID)
+	return ms.svc.ViewPlatformInvite(ctx, inviteID)
 }
 
 func (ms *metricsMiddleware) ListPlatformInvites(ctx context.Context, token string, pm users.PageMetadataInvites) (users.PlatformInvitesPage, error) {

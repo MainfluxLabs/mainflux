@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -20,7 +19,6 @@ import (
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
 	"github.com/opentracing/opentracing-go"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
@@ -152,9 +150,6 @@ func MakeHandler(svc users.Service, mux *bone.Mux, tracer opentracing.Tracer, lo
 		encodeResponse,
 		opts...,
 	))
-
-	mux.GetFunc("/health", mainflux.Health("users"))
-	mux.Handle("/metrics", promhttp.Handler())
 
 	return mux
 }

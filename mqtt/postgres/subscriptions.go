@@ -46,23 +46,6 @@ func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error
 	return nil
 }
 
-func (mr *mqttRepository) Remove(ctx context.Context, sub mqtt.Subscription) error {
-	q := `DELETE FROM subscriptions 
-          WHERE subtopic = :subtopic AND thing_id = :thing_id AND group_id = :group_id;`
-
-	dbSub := dbSubscription{
-		Subtopic: sub.Subtopic,
-		ThingID:  sub.ThingID,
-		GroupID:  sub.GroupID,
-	}
-
-	if _, err := mr.db.NamedExecContext(ctx, q, dbSub); err != nil {
-		return errors.Wrap(dbutil.ErrRemoveEntity, err)
-	}
-
-	return nil
-}
-
 func (mr *mqttRepository) RetrieveByGroup(ctx context.Context, pm mqtt.PageMetadata, groupID string) (mqtt.Page, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
@@ -103,6 +86,34 @@ func (mr *mqttRepository) RetrieveByGroup(ctx context.Context, pm mqtt.PageMetad
 		Subscriptions: items,
 	}, nil
 
+}
+
+func (mr *mqttRepository) Remove(ctx context.Context, sub mqtt.Subscription) error {
+	q := `DELETE FROM subscriptions 
+          WHERE subtopic = :subtopic AND thing_id = :thing_id AND group_id = :group_id;`
+	dbSub := dbSubscription{
+		Subtopic: sub.Subtopic,
+		ThingID:  sub.ThingID,
+		GroupID:  sub.GroupID,
+	}
+	return mr.executeDelete(ctx, q, dbSub)
+}
+
+func (mr *mqttRepository) RemoveByThing(ctx context.Context, thingID string) error {
+	q := `DELETE FROM subscriptions WHERE thing_id = :thing_id;`
+	return mr.executeDelete(ctx, q, dbSubscription{ThingID: thingID})
+}
+
+func (mr *mqttRepository) RemoveByGroup(ctx context.Context, groupID string) error {
+	q := `DELETE FROM subscriptions WHERE group_id = :group_id;`
+	return mr.executeDelete(ctx, q, dbSubscription{GroupID: groupID})
+}
+
+func (mr *mqttRepository) executeDelete(ctx context.Context, query string, dbSub dbSubscription) error {
+	if _, err := mr.db.NamedExecContext(ctx, query, dbSub); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+	return nil
 }
 
 type dbSubscription struct {

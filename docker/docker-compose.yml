@@ -276,7 +276,7 @@ services:
       - ./templates/things/group_membership.tmpl:/group_membership.tmpl
 
   jaeger:
-    image: jaegertracing/all-in-one:1.20
+    image: jaegertracing/all-in-one:1.53
     container_name: mainfluxlabs-jaeger
     ports:
       - ${MF_JAEGER_PORT}:${MF_JAEGER_PORT}/udp
@@ -286,17 +286,15 @@ services:
     networks:
       - mainfluxlabs-base-net
 
-  vernemq:
-    image: ${MF_RELEASE_PREFIX}/vernemq:0.13.2
-    container_name: mainfluxlabs-vernemq
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mainfluxlabs-mosquitto
     restart: on-failure
-    environment:
-      DOCKER_VERNEMQ_ALLOW_ANONYMOUS: ${MF_DOCKER_VERNEMQ_ALLOW_ANONYMOUS}
-      DOCKER_VERNEMQ_LOG__CONSOLE__LEVEL: ${MF_DOCKER_VERNEMQ_LOG__CONSOLE__LEVEL}
     networks:
       - mainfluxlabs-base-net
     volumes:
-      - mainfluxlabs-mqtt-broker-volume:/var/lib/vernemq
+      - mainfluxlabs-mqtt-broker-volume:/mosquitto/data
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
 
   mqtt-db:
     image: postgres:13.3-alpine
@@ -315,7 +313,7 @@ services:
     image: ${MF_RELEASE_PREFIX}/mqtt:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-mqtt
     depends_on:
-      - vernemq
+      - mosquitto
       - things
       - broker
       - mqtt-db
@@ -327,15 +325,17 @@ services:
       MF_MQTT_ADAPTER_HTTP_PORT: ${MF_MQTT_ADAPTER_HTTP_PORT}
       MF_MQTT_ADAPTER_FORWARDER: ${MF_MQTT_ADAPTER_FORWARDER}
       MF_BROKER_URL: ${MF_BROKER_URL}
-      MF_MQTT_ADAPTER_MQTT_TARGET_HOST: vernemq
+      MF_MQTT_ADAPTER_MQTT_TARGET_HOST: mosquitto
       MF_MQTT_ADAPTER_MQTT_TARGET_PORT: ${MF_MQTT_BROKER_PORT}
-      MF_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK: http://vernemq:8888/health
-      MF_MQTT_ADAPTER_WS_TARGET_HOST: vernemq
+      MF_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK: ""
+      MF_MQTT_ADAPTER_WS_TARGET_HOST: mosquitto
       MF_MQTT_ADAPTER_WS_TARGET_PORT: ${MF_MQTT_BROKER_WS_PORT}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
       MF_AUTH_CACHE_URL: auth-redis:${MF_REDIS_TCP_PORT}
+      MF_MQTT_ADAPTER_ES_URL: ${MF_MQTT_ADAPTER_ES_URL}
+      MF_MQTT_ADAPTER_EVENT_CONSUMER: ${MF_MQTT_ADAPTER_EVENT_CONSUMER}
       MF_MQTT_ADAPTER_DB_PORT: ${MF_MQTT_ADAPTER_DB_PORT}
       MF_MQTT_ADAPTER_DB_USER: ${MF_MQTT_ADAPTER_DB_USER}
       MF_MQTT_ADAPTER_DB_PASS: ${MF_MQTT_ADAPTER_DB_PASS}
@@ -854,16 +854,11 @@ services:
       MF_CERTS_SIGN_CA_KEY_PATH: ${MF_CERTS_SIGN_CA_KEY_PATH}
       MF_CERTS_SIGN_HOURS_VALID: ${MF_CERTS_SIGN_HOURS_VALID}
       MF_CERTS_SIGN_RSA_BITS: ${MF_CERTS_SIGN_RSA_BITS}
-      MF_VAULT_TOKEN: ${MF_VAULT_TOKEN}
-      MF_VAULT_CA_NAME: ${MF_VAULT_CA_NAME}
-      MF_VAULT_CA_ROLE_NAME: ${MF_VAULT_CA_ROLE_NAME}
-      MF_VAULT_PKI_PATH: ${MF_VAULT_PKI_PATH}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
       MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
       MF_THINGS_GRPC_URL: ${MF_THINGS_GRPC_URL}
       MF_THINGS_GRPC_TIMEOUT: ${MF_THINGS_GRPC_TIMEOUT}
-      MF_CERTS_VAULT_HOST: ${MF_CERTS_VAULT_HOST}
     volumes:
       - ./ssl/certs/ca.key:/etc/ssl/certs/ca.key
       - ./ssl/certs/ca.crt:/etc/ssl/certs/ca.crt

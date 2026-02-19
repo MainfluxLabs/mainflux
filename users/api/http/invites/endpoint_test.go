@@ -228,9 +228,6 @@ func TestViewPlatformInvite(t *testing.T) {
 	tokenAdmin, err := svc.Login(context.Background(), admin)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s\n", err))
 
-	tokenRegular, err := svc.Login(context.Background(), user)
-	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s\n", err))
-
 	invite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "new@user.com", auth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Inviting platform member expected to succeed: %s\n", err))
 
@@ -238,37 +235,16 @@ func TestViewPlatformInvite(t *testing.T) {
 		desc     string
 		inviteID string
 		status   int
-		token    string
 	}{
 		{
 			"view platform invite",
 			invite.ID,
 			http.StatusOK,
-			tokenAdmin,
 		},
 		{
 			"view platform invite with invalid id",
 			"invalid-123",
 			http.StatusNotFound,
-			tokenAdmin,
-		},
-		{
-			"view platform invite as non-root-admin user",
-			invite.ID,
-			http.StatusForbidden,
-			tokenRegular,
-		},
-		{
-			"view platform invite with empty auth token",
-			invite.ID,
-			http.StatusUnauthorized,
-			"",
-		},
-		{
-			"view platform invite with invalid auth token",
-			invite.ID,
-			http.StatusUnauthorized,
-			"invalid123",
 		},
 	}
 
@@ -277,7 +253,6 @@ func TestViewPlatformInvite(t *testing.T) {
 			client: client,
 			method: http.MethodGet,
 			url:    fmt.Sprintf("%s/invites/%s", ts.URL, tc.inviteID),
-			token:  tc.token,
 		}
 
 		res, err := req.make()

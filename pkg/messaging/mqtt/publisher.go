@@ -4,13 +4,13 @@
 package mqtt
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/gogo/protobuf/proto"
 )
 
 var _ messaging.Publisher = (*publisher)(nil)
@@ -36,17 +36,13 @@ func NewPublisher(address string, timeout time.Duration) (messaging.Publisher, e
 
 func (pub publisher) Publish(msg protomfx.Message) error {
 	topic := strings.ReplaceAll(msg.Subject, ".", "/")
-
-	data, err := proto.Marshal(&msg)
+	payload, err := json.Marshal(messaging.ToJSONMessage(msg))
 	if err != nil {
 		return err
 	}
-	token := pub.client.Publish(topic, qos, false, data)
-	if token.Error() != nil {
-		return token.Error()
-	}
-	ok := token.WaitTimeout(pub.timeout)
-	if !ok {
+
+	token := pub.client.Publish(topic, qos, false, payload)
+	if !token.WaitTimeout(pub.timeout) {
 		return messaging.ErrPublishTimeout
 	}
 

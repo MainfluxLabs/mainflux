@@ -231,7 +231,7 @@ func (w *uint64Wrapper) ScanNumeric(v Numeric) error {
 
 	bi, err := v.toBigInt()
 	if err != nil {
-		return fmt.Errorf("cannot scan into *uint64: %v", err)
+		return fmt.Errorf("cannot scan into *uint64: %w", err)
 	}
 
 	if !bi.IsUint64() {
@@ -284,7 +284,7 @@ func (w *uintWrapper) ScanNumeric(v Numeric) error {
 
 	bi, err := v.toBigInt()
 	if err != nil {
-		return fmt.Errorf("cannot scan into *uint: %v", err)
+		return fmt.Errorf("cannot scan into *uint: %w", err)
 	}
 
 	if !bi.IsUint64() {
@@ -909,4 +909,44 @@ func (a *anyMultiDimSliceArray) ScanIndexType() any {
 	for ; lowestSliceType.Elem().Kind() == reflect.Slice; lowestSliceType = lowestSliceType.Elem() {
 	}
 	return reflect.New(lowestSliceType.Elem()).Interface()
+}
+
+type anyArrayArrayReflect struct {
+	array reflect.Value
+}
+
+func (a anyArrayArrayReflect) Dimensions() []ArrayDimension {
+	return []ArrayDimension{{Length: int32(a.array.Len()), LowerBound: 1}}
+}
+
+func (a anyArrayArrayReflect) Index(i int) any {
+	return a.array.Index(i).Interface()
+}
+
+func (a anyArrayArrayReflect) IndexType() any {
+	return reflect.New(a.array.Type().Elem()).Elem().Interface()
+}
+
+func (a *anyArrayArrayReflect) SetDimensions(dimensions []ArrayDimension) error {
+	if dimensions == nil {
+		return fmt.Errorf("anyArrayArrayReflect: cannot scan NULL into %v", a.array.Type().String())
+	}
+
+	if len(dimensions) != 1 {
+		return fmt.Errorf("anyArrayArrayReflect: cannot scan multi-dimensional array into %v", a.array.Type().String())
+	}
+
+	if int(dimensions[0].Length) != a.array.Len() {
+		return fmt.Errorf("anyArrayArrayReflect: cannot scan array with length %v into %v", dimensions[0].Length, a.array.Type().String())
+	}
+
+	return nil
+}
+
+func (a *anyArrayArrayReflect) ScanIndex(i int) any {
+	return a.array.Index(i).Addr().Interface()
+}
+
+func (a *anyArrayArrayReflect) ScanIndexType() any {
+	return reflect.New(a.array.Type().Elem()).Interface()
 }

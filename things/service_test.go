@@ -2979,6 +2979,733 @@ func TestRestore(t *testing.T) {
 	}
 }
 
+func TestUpdateThingsMetadata(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	prID := prs[0].ID
+
+	thingWithMetadata := things.Thing{
+		Name:     "test",
+		Metadata: map[string]any{"initial": "data"},
+	}
+	ths, err := svc.CreateThings(context.Background(), token, prID, thingWithMetadata, thingWithMetadata)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	th1, th2 := ths[0], ths[1]
+
+	newMetadata := map[string]any{"updated": "metadata"}
+	th1.Metadata = newMetadata
+	th2.Metadata = newMetadata
+
+	cases := []struct {
+		desc   string
+		things []things.Thing
+		token  string
+		err    error
+	}{
+		{
+			desc:   "update metadata of existing things",
+			things: []things.Thing{th1, th2},
+			token:  token,
+			err:    nil,
+		},
+		{
+			desc:   "update metadata with wrong credentials",
+			things: []things.Thing{th1},
+			token:  wrongValue,
+			err:    errors.ErrAuthentication,
+		},
+		{
+			desc:   "update metadata of non-existing thing",
+			things: []things.Thing{{ID: wrongValue, Metadata: newMetadata}},
+			token:  token,
+			err:    dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.UpdateThingsMetadata(context.Background(), tc.token, tc.things...)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestViewGroupInternal(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	cases := []struct {
+		desc    string
+		groupID string
+		err     error
+	}{
+		{
+			desc:    "view group internal with valid id",
+			groupID: gr.ID,
+			err:     nil,
+		},
+		{
+			desc:    "view group internal with non-existing id",
+			groupID: wrongValue,
+			err:     dbutil.ErrNotFound,
+		},
+		{
+			desc:    "view group internal with empty id",
+			groupID: emptyValue,
+			err:     dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		_, err := svc.ViewGroupInternal(context.Background(), tc.groupID)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestListThingsByGroup(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	prID := prs[0].ID
+
+	var thingCount uint64 = 5
+	var ths []things.Thing
+	for i := uint64(0); i < thingCount; i++ {
+		suffix := i + 1
+		th := thing
+		th.Name = fmt.Sprintf("thing-%012d", suffix)
+		th.ID = fmt.Sprintf("%s%012d", prefixID, suffix)
+		ths = append(ths, th)
+	}
+	_, err = svc.CreateThings(context.Background(), token, prID, ths...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	cases := []struct {
+		desc    string
+		token   string
+		groupID string
+		meta    apiutil.PageMetadata
+		size    uint64
+		err     error
+	}{
+		{
+			desc:    "list things by group",
+			token:   token,
+			groupID: grID,
+			meta:    apiutil.PageMetadata{Offset: 0, Limit: thingCount},
+			size:    thingCount,
+			err:     nil,
+		},
+		{
+			desc:    "list things by group with wrong credentials",
+			token:   wrongValue,
+			groupID: grID,
+			meta:    apiutil.PageMetadata{},
+			size:    0,
+			err:     errors.ErrAuthentication,
+		},
+		{
+			desc:    "list things by non-existing group",
+			token:   token,
+			groupID: wrongValue,
+			meta:    apiutil.PageMetadata{},
+			size:    0,
+			err:     dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		page, err := svc.ListThingsByGroup(context.Background(), tc.token, tc.groupID, tc.meta)
+		size := uint64(len(page.Things))
+		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected %d got %d\n", tc.desc, tc.size, size))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestListProfilesByGroup(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	var profileCount uint64 = 5
+	var prs []things.Profile
+	for i := uint64(0); i < profileCount; i++ {
+		suffix := i + 1
+		pr := profile
+		pr.Name = fmt.Sprintf("profile-%012d", suffix)
+		pr.ID = fmt.Sprintf("%s%012d", prefixID, suffix)
+		prs = append(prs, pr)
+	}
+	_, err = svc.CreateProfiles(context.Background(), token, grID, prs...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	cases := []struct {
+		desc    string
+		token   string
+		groupID string
+		meta    apiutil.PageMetadata
+		size    uint64
+		err     error
+	}{
+		{
+			desc:    "list profiles by group",
+			token:   token,
+			groupID: grID,
+			meta:    apiutil.PageMetadata{Offset: 0, Limit: profileCount},
+			size:    profileCount,
+			err:     nil,
+		},
+		{
+			desc:    "list profiles by group with wrong credentials",
+			token:   wrongValue,
+			groupID: grID,
+			meta:    apiutil.PageMetadata{},
+			size:    0,
+			err:     errors.ErrAuthentication,
+		},
+		{
+			desc:    "list profiles by non-existing group",
+			token:   token,
+			groupID: wrongValue,
+			meta:    apiutil.PageMetadata{},
+			size:    0,
+			err:     dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		page, err := svc.ListProfilesByGroup(context.Background(), tc.token, tc.groupID, tc.meta)
+		size := uint64(len(page.Profiles))
+		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected %d got %d\n", tc.desc, tc.size, size))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestCreateGroupMembershipsInternal(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	gms := []things.GroupMembership{
+		{MemberID: user.ID, GroupID: gr.ID, Email: userEmail, Role: things.Viewer},
+		{MemberID: otherUser.ID, GroupID: gr.ID, Email: otherUserEmail, Role: things.Editor},
+	}
+
+	cases := []struct {
+		desc        string
+		memberships []things.GroupMembership
+		err         error
+	}{
+		{
+			desc:        "create group memberships internal",
+			memberships: gms,
+			err:         nil,
+		},
+		{
+			desc:        "create group memberships internal with non-existing group",
+			memberships: []things.GroupMembership{{MemberID: user.ID, GroupID: wrongValue, Email: userEmail, Role: things.Viewer}},
+			err:         nil,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.CreateGroupMembershipsInternal(context.Background(), tc.memberships...)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestCanUserAccessThing(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	prID := prs[0].ID
+
+	ths, err := svc.CreateThings(context.Background(), token, prID, thing)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	th := ths[0]
+
+	for i := range memberships {
+		memberships[i].GroupID = grID
+	}
+	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	cases := []struct {
+		desc string
+		req  things.UserAccessReq
+		err  error
+	}{
+		{
+			desc: "check user access to thing as owner",
+			req:  things.UserAccessReq{Token: token, ID: th.ID, Action: things.Owner},
+			err:  nil,
+		},
+		{
+			desc: "check user access to thing as admin",
+			req:  things.UserAccessReq{Token: otherToken, ID: th.ID, Action: things.Admin},
+			err:  nil,
+		},
+		{
+			desc: "check user access to thing as editor",
+			req:  things.UserAccessReq{Token: editorToken, ID: th.ID, Action: things.Editor},
+			err:  nil,
+		},
+		{
+			desc: "check user access to thing as viewer",
+			req:  things.UserAccessReq{Token: viewerToken, ID: th.ID, Action: things.Viewer},
+			err:  nil,
+		},
+		{
+			desc: "check user access to thing with wrong credentials",
+			req:  things.UserAccessReq{Token: wrongValue, ID: th.ID, Action: things.Viewer},
+			err:  errors.ErrAuthentication,
+		},
+		{
+			desc: "check user access to non-existing thing",
+			req:  things.UserAccessReq{Token: token, ID: wrongValue, Action: things.Viewer},
+			err:  dbutil.ErrNotFound,
+		},
+		{
+			desc: "check unauthorized user access to thing",
+			req:  things.UserAccessReq{Token: unauthToken, ID: th.ID, Action: things.Viewer},
+			err:  dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.CanUserAccessThing(context.Background(), tc.req)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestCanUserAccessProfile(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	pr := prs[0]
+
+	for i := range memberships {
+		memberships[i].GroupID = grID
+	}
+	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	cases := []struct {
+		desc string
+		req  things.UserAccessReq
+		err  error
+	}{
+		{
+			desc: "check user access to profile as owner",
+			req:  things.UserAccessReq{Token: token, ID: pr.ID, Action: things.Owner},
+			err:  nil,
+		},
+		{
+			desc: "check user access to profile as admin",
+			req:  things.UserAccessReq{Token: otherToken, ID: pr.ID, Action: things.Admin},
+			err:  nil,
+		},
+		{
+			desc: "check user access to profile as editor",
+			req:  things.UserAccessReq{Token: editorToken, ID: pr.ID, Action: things.Editor},
+			err:  nil,
+		},
+		{
+			desc: "check user access to profile as viewer",
+			req:  things.UserAccessReq{Token: viewerToken, ID: pr.ID, Action: things.Viewer},
+			err:  nil,
+		},
+		{
+			desc: "check user access to profile with wrong credentials",
+			req:  things.UserAccessReq{Token: wrongValue, ID: pr.ID, Action: things.Viewer},
+			err:  errors.ErrAuthentication,
+		},
+		{
+			desc: "check user access to non-existing profile",
+			req:  things.UserAccessReq{Token: token, ID: wrongValue, Action: things.Viewer},
+			err:  dbutil.ErrNotFound,
+		},
+		{
+			desc: "check unauthorized user access to profile",
+			req:  things.UserAccessReq{Token: unauthToken, ID: pr.ID, Action: things.Viewer},
+			err:  dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.CanUserAccessProfile(context.Background(), tc.req)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestCanUserAccessGroup(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	for i := range memberships {
+		memberships[i].GroupID = gr.ID
+	}
+	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	cases := []struct {
+		desc string
+		req  things.UserAccessReq
+		err  error
+	}{
+		{
+			desc: "check user access to group as owner",
+			req:  things.UserAccessReq{Token: token, ID: gr.ID, Action: things.Owner},
+			err:  nil,
+		},
+		{
+			desc: "check user access to group as admin",
+			req:  things.UserAccessReq{Token: otherToken, ID: gr.ID, Action: things.Admin},
+			err:  nil,
+		},
+		{
+			desc: "check user access to group as editor",
+			req:  things.UserAccessReq{Token: editorToken, ID: gr.ID, Action: things.Editor},
+			err:  nil,
+		},
+		{
+			desc: "check user access to group as viewer",
+			req:  things.UserAccessReq{Token: viewerToken, ID: gr.ID, Action: things.Viewer},
+			err:  nil,
+		},
+		{
+			desc: "check user access to group with wrong credentials",
+			req:  things.UserAccessReq{Token: wrongValue, ID: gr.ID, Action: things.Viewer},
+			err:  errors.ErrAuthentication,
+		},
+		{
+			desc: "check user access to non-existing group",
+			req:  things.UserAccessReq{Token: token, ID: wrongValue, Action: things.Viewer},
+			err:  dbutil.ErrNotFound,
+		},
+		{
+			desc: "check unauthorized user access to group",
+			req:  things.UserAccessReq{Token: unauthToken, ID: gr.ID, Action: things.Viewer},
+			err:  dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.CanUserAccessGroup(context.Background(), tc.req)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestCanThingAccessGroup(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	prID := prs[0].ID
+
+	ths, err := svc.CreateThings(context.Background(), token, prID, thing)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	th := ths[0]
+
+	cases := []struct {
+		desc string
+		req  things.ThingAccessReq
+		err  error
+	}{
+		{
+			desc: "check thing access to group",
+			req:  things.ThingAccessReq{ThingKey: things.ThingKey{Value: th.Key, Type: things.KeyTypeInternal}, ID: grID},
+			err:  nil,
+		},
+		{
+			desc: "check thing access to group with wrong key",
+			req:  things.ThingAccessReq{ThingKey: things.ThingKey{Value: wrongValue, Type: things.KeyTypeInternal}, ID: grID},
+			err:  dbutil.ErrNotFound,
+		},
+		{
+			desc: "check thing access to non-existing group",
+			req:  things.ThingAccessReq{ThingKey: things.ThingKey{Value: th.Key, Type: things.KeyTypeInternal}, ID: wrongValue},
+			err:  errors.ErrAuthorization,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.CanThingAccessGroup(context.Background(), tc.req)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestGetConfigByThing(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	profileWithConfig := things.Profile{
+		Name:   "test",
+		Config: map[string]any{"key": "value"},
+	}
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profileWithConfig)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	pr := prs[0]
+
+	ths, err := svc.CreateThings(context.Background(), token, pr.ID, thing)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	th := ths[0]
+
+	cases := []struct {
+		desc    string
+		thingID string
+		err     error
+	}{
+		{
+			desc:    "get config by thing id",
+			thingID: th.ID,
+			err:     nil,
+		},
+		{
+			desc:    "get config by non-existing thing id",
+			thingID: wrongValue,
+			err:     dbutil.ErrNotFound,
+		},
+		{
+			desc:    "get config by empty thing id",
+			thingID: emptyValue,
+			err:     dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		config, err := svc.GetConfigByThing(context.Background(), tc.thingID)
+		if err == nil {
+			assert.NotNil(t, config, fmt.Sprintf("%s: expected config to be non-nil\n", tc.desc))
+		}
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestGetGroupIDByThing(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	prID := prs[0].ID
+
+	ths, err := svc.CreateThings(context.Background(), token, prID, thing)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	th := ths[0]
+
+	cases := []struct {
+		desc    string
+		thingID string
+		groupID string
+		err     error
+	}{
+		{
+			desc:    "get group id by thing id",
+			thingID: th.ID,
+			groupID: grID,
+			err:     nil,
+		},
+		{
+			desc:    "get group id by non-existing thing id",
+			thingID: wrongValue,
+			groupID: emptyValue,
+			err:     dbutil.ErrNotFound,
+		},
+		{
+			desc:    "get group id by empty thing id",
+			thingID: emptyValue,
+			groupID: emptyValue,
+			err:     dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		groupID, err := svc.GetGroupIDByThing(context.Background(), tc.thingID)
+		assert.Equal(t, tc.groupID, groupID, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.groupID, groupID))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestGetGroupIDByProfile(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	pr := prs[0]
+
+	cases := []struct {
+		desc      string
+		profileID string
+		groupID   string
+		err       error
+	}{
+		{
+			desc:      "get group id by profile id",
+			profileID: pr.ID,
+			groupID:   grID,
+			err:       nil,
+		},
+		{
+			desc:      "get group id by non-existing profile id",
+			profileID: wrongValue,
+			groupID:   emptyValue,
+			err:       dbutil.ErrNotFound,
+		},
+		{
+			desc:      "get group id by empty profile id",
+			profileID: emptyValue,
+			groupID:   emptyValue,
+			err:       dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		groupID, err := svc.GetGroupIDByProfile(context.Background(), tc.profileID)
+		assert.Equal(t, tc.groupID, groupID, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.groupID, groupID))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestGetGroupIDsByOrg(t *testing.T) {
+	svc := newService()
+
+	var groupCount = 5
+	for i := 0; i < groupCount; i++ {
+		_, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	}
+
+	cases := []struct {
+		desc  string
+		orgID string
+		token string
+		size  int
+		err   error
+	}{
+		{
+			desc:  "get group ids by org",
+			orgID: orgID,
+			token: token,
+			size:  groupCount,
+			err:   nil,
+		},
+		{
+			desc:  "get group ids by org with wrong credentials",
+			orgID: orgID,
+			token: wrongValue,
+			size:  0,
+			err:   errors.ErrAuthentication,
+		},
+		{
+			desc:  "get group ids by non-existing org",
+			orgID: wrongValue,
+			token: token,
+			size:  0,
+			err:   nil,
+		},
+	}
+
+	for _, tc := range cases {
+		groupIDs, err := svc.GetGroupIDsByOrg(context.Background(), tc.orgID, tc.token)
+		assert.Equal(t, tc.size, len(groupIDs), fmt.Sprintf("%s: expected %d got %d\n", tc.desc, tc.size, len(groupIDs)))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestGetThingIDsByProfile(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	prID := prs[0].ID
+
+	var thingCount = 5
+	for i := 0; i < thingCount; i++ {
+		_, err := svc.CreateThings(context.Background(), token, prID, thing)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	}
+
+	cases := []struct {
+		desc      string
+		profileID string
+		size      int
+		err       error
+	}{
+		{
+			desc:      "get thing ids by profile",
+			profileID: prID,
+			size:      thingCount,
+			err:       nil,
+		},
+		{
+			desc:      "get thing ids by non-existing profile",
+			profileID: wrongValue,
+			size:      0,
+			err:       dbutil.ErrNotFound,
+		},
+		{
+			desc:      "get thing ids by empty profile",
+			profileID: emptyValue,
+			size:      0,
+			err:       dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		thingIDs, err := svc.GetThingIDsByProfile(context.Background(), tc.profileID)
+		assert.Equal(t, tc.size, len(thingIDs), fmt.Sprintf("%s: expected %d got %d\n", tc.desc, tc.size, len(thingIDs)))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
 func testSortEntities[T any](t *testing.T, pm apiutil.PageMetadata, entities []T, getName func(T) string) {
 	if len(entities) == 0 {
 		return

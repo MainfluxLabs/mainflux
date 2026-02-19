@@ -57,6 +57,10 @@ func GetOrderQuery(order string) string {
 		return "LOWER(name)"
 	case "email":
 		return "LOWER(email)"
+	case "created", "created_at", "updated", "updated_at",
+		"invitee_email", "inviter_email", "invitee_id", "inviter_id",
+		"role", "org_id", "group_id", "state":
+		return order
 	default:
 		return "id"
 	}

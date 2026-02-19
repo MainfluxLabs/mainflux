@@ -102,6 +102,19 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE messages RENAME TO senml;`,
 				},
 			},
+			{
+				Id: "messages_6",
+				Up: []string{
+					`CREATE INDEX IF NOT EXISTS idx_json_created ON json(created DESC)`,
+					`CREATE INDEX IF NOT EXISTS idx_json_publisher_created ON json(publisher, created DESC)`,
+					`CREATE INDEX IF NOT EXISTS idx_senml_publisher_time ON senml(publisher, time DESC)`,
+				},
+				Down: []string{
+					"DROP INDEX IF EXISTS idx_json_created",
+					"DROP INDEX IF EXISTS idx_json_publisher_created",
+					"DROP INDEX IF EXISTS idx_senml_publisher_time",
+				},
+			},
 		},
 	}
 
