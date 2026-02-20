@@ -571,6 +571,9 @@ golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 golang.org/x/text/width
+# golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
+## explicit
+golang.org/x/time/rate
 # gonum.org/v1/gonum v0.11.0
 ## explicit; go 1.17
 gonum.org/v1/gonum/blas
