@@ -414,6 +414,7 @@ func (ir invitesRepository) syncOrgInviteStateByUserID(ctx context.Context, user
 		UPDATE org_invites
 		SET state='expired'
 		WHERE %s=:userID AND state='pending' AND expires_at < NOW()
+		  AND invitee_id IS NOT NULL
 	`
 
 	var col string
@@ -450,6 +451,7 @@ func (ir invitesRepository) syncOrgInviteStateByInvite(ctx context.Context, invi
 		UPDATE org_invites
 		SET state='expired'
 		WHERE invitee_id=:invitee_id AND org_id=:org_id AND inviter_id=:inviter_id AND state='pending' AND expires_at < NOW()
+		  AND invitee_id IS NOT NULL
 	`
 
 	dbInvite := toDBOrgInvite(invite)
@@ -475,6 +477,7 @@ func (ir invitesRepository) syncOrgInviteStateByID(ctx context.Context, inviteID
 		UPDATE org_invites
 		SET state='expired'
 		WHERE id=:inviteID AND state='pending' AND expires_at < NOW()
+		  AND invitee_id IS NOT NULL
 	`
 
 	_, err := ir.db.NamedExecContext(ctx, query, map[string]any{"inviteID": inviteID})
