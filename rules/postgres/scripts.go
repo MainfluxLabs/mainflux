@@ -158,10 +158,10 @@ func (rr ruleRepository) RetrieveScriptsByGroup(ctx context.Context, groupID str
 		FROM lua_scripts %s ORDER BY %s %s %s;
 	`
 
-	queryCount := `SELECT COUNT(*) FROM lua_scripts WHERE %s;`
+	queryCount := `SELECT COUNT(*) FROM lua_scripts %s;`
 
 	query = fmt.Sprintf(query, whereClause, oq, dq, olq)
-	queryCount = fmt.Sprintf(queryCount, gq)
+	queryCount = fmt.Sprintf(queryCount, whereClause)
 
 	params := map[string]any{
 		"group_id": groupID,
