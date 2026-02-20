@@ -114,7 +114,7 @@ func main() {
 
 	logger, err := logger.New(os.Stdout, cfg.logLevel)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err.Error())
 	}
 
 	uiTracer, uiCloser := jaeger.Init(svcName, cfg.jaegerURL, logger)
