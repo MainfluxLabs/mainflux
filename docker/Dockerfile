@@ -11,8 +11,8 @@ RUN apk update \
     && make $SVC \
     && mv build/mainfluxlabs-$SVC /exe
 
-FROM scratch
-# Certificates are needed so that mailing util can work.
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+# scratch has no user concept; distroless/static provides a non-root user required by security policy.
+FROM gcr.io/distroless/static:nonroot
 COPY --from=builder /exe /
+USER nonroot
 ENTRYPOINT ["/exe"]
