@@ -214,7 +214,7 @@ func toInvocationLimitedLuaFunc(luaFunc lua.Function, maxInvocations uint) lua.F
 	limitedFunc := func(ls *lua.State) int {
 		if currentInvocations >= maxInvocations {
 			ls.PushBoolean(false)
-			ls.PushString("invocation limit exceeed")
+			ls.PushString("invocation limit exceeded")
 			return 2
 		}
 
