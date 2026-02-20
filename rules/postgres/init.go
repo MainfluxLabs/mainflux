@@ -116,7 +116,7 @@ func migrateDB(db *sqlx.DB) error {
 					);`,
 				},
 				Down: []string{
-					`DROP TABLE IF EXSTS lua_scripts;`,
+					`DROP TABLE IF EXISTS lua_scripts;`,
 					`DROP TABLE IF EXISTS lua_scripts_things;`,
 					`DROP TABLE IF EXISTS lua_script_runs;`,
 				},
