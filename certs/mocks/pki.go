@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/certs"
+	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
@@ -91,14 +92,14 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (certs.Cert, err
 	var normalizedKeyType string
 
 	switch keyType {
-	case "rsa", "":
-		normalizedKeyType = "rsa"
+	case pki.RSAKeyType, "":
+		normalizedKeyType = pki.RSAKeyType
 		if keyBits == 0 {
 			keyBits = 2048
 		}
 		priv, err = rsa.GenerateKey(rand.Reader, keyBits)
-	case "ecdsa", "ec":
-		normalizedKeyType = "ecdsa"
+	case pki.ECDSAKeyType, pki.ECKeyType:
+		normalizedKeyType = pki.ECDSAKeyType
 		var curve elliptic.Curve
 		switch keyBits {
 		case 224:

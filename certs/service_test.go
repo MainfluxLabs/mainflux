@@ -40,8 +40,10 @@ const (
 	thingID    = "1"
 	ttl        = "1h"
 	keyBits    = 2048
-	keyType    = "rsa"
-	certNum    = 10
+	keyType      = "rsa"
+	ecdsaKeyType = "ecdsa"
+	ecKeyType    = "ec"
+	certNum      = 10
 
 	cfgLogLevel       = "error"
 	cfgClientTLS      = false
@@ -161,7 +163,7 @@ func TestIssueCert(t *testing.T) {
 			token:   token,
 			thingID: thingID,
 			ttl:     ttl,
-			keyType: "ecdsa",
+			keyType: ecdsaKeyType,
 			keyBits: 0,
 			err:     nil,
 		},
@@ -170,7 +172,7 @@ func TestIssueCert(t *testing.T) {
 			token:   token,
 			thingID: thingID,
 			ttl:     ttl,
-			keyType: "ec",
+			keyType: ecKeyType,
 			keyBits: pki.ECDSAKeyBits256,
 			err:     nil,
 		},
@@ -179,7 +181,7 @@ func TestIssueCert(t *testing.T) {
 			token:   token,
 			thingID: thingID,
 			ttl:     ttl,
-			keyType: "ecdsa",
+			keyType: ecdsaKeyType,
 			keyBits: pki.ECDSAKeyBits384,
 			err:     nil,
 		},
@@ -188,7 +190,7 @@ func TestIssueCert(t *testing.T) {
 			token:   token,
 			thingID: thingID,
 			ttl:     ttl,
-			keyType: "ecdsa",
+			keyType: ecdsaKeyType,
 			keyBits: pki.ECDSAKeyBits521,
 			err:     nil,
 		},
@@ -197,7 +199,7 @@ func TestIssueCert(t *testing.T) {
 			token:   token,
 			thingID: thingID,
 			ttl:     ttl,
-			keyType: "ecdsa",
+			keyType: ecdsaKeyType,
 			keyBits: 512,
 			err:     certs.ErrFailedCertCreation,
 		},
@@ -215,11 +217,11 @@ func TestIssueCert(t *testing.T) {
 			assert.Greater(t, c.KeyBits, 0, fmt.Sprintf("%s: key bits should be positive", tc.desc))
 
 			expectedKeyType := tc.keyType
-			if expectedKeyType == "ec" {
-				expectedKeyType = pki.ECDSAKeyType
+			if expectedKeyType == ecKeyType {
+				expectedKeyType = ecdsaKeyType
 			}
 			if expectedKeyType == "" {
-				expectedKeyType = pki.RSAKeyType
+				expectedKeyType = keyType
 			}
 			assert.Equal(t, expectedKeyType, c.PrivateKeyType, fmt.Sprintf("%s: key type mismatch", tc.desc))
 
