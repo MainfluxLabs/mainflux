@@ -269,8 +269,9 @@ func (ir invitesRepository) RetrieveOrgInvitesByOrg(ctx context.Context, orgID s
 	if pm.State != "" {
 		filterState = "state = :state"
 	}
+	filterNonDormant := `invitee_id IS NOT NULL`
 
-	whereClause := dbutil.BuildWhereClause(filterOrgID, filterState)
+	whereClause := dbutil.BuildWhereClause(filterOrgID, filterState, filterNonDormant)
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
@@ -345,8 +346,9 @@ func (ir invitesRepository) RetrieveOrgInvitesByUser(ctx context.Context, userTy
 	if pm.State != "" {
 		filterState = "state = :state"
 	}
+	filterNonDormant := `invitee_id IS NOT NULL`
 
-	whereClause := dbutil.BuildWhereClause(filterUserType, filterState)
+	whereClause := dbutil.BuildWhereClause(filterUserType, filterState, filterNonDormant)
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
