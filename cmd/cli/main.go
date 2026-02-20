@@ -20,6 +20,7 @@ func main() {
 		AuthURL:         fmt.Sprintf("%s/svcauth", defURL),
 		ThingsURL:       fmt.Sprintf("%s/svcthings", defURL),
 		UsersURL:        fmt.Sprintf("%s/svcusers", defURL),
+		WebhooksURL:     fmt.Sprintf("%s/svcwebhooks", defURL),
 		ReaderURL:       fmt.Sprintf("%s/reader", defURL),
 		HTTPAdapterURL:  fmt.Sprintf("%s/http", defURL),
 		CertsURL:        defURL,
@@ -46,6 +47,7 @@ func main() {
 	orgsCmd := cli.NewOrgsCmd()
 	orgMembershipsCmd := cli.NewOrgMembershipsCmd()
 	groupMembershipsCmd := cli.NewGroupMembershipsCmd()
+	webhooksCmd := cli.NewWebhooksCmd()
 	messagesCmd := cli.NewMessagesCmd()
 	provisionCmd := cli.NewProvisionCmd()
 	certsCmd := cli.NewCertsCmd()
@@ -60,6 +62,7 @@ func main() {
 	rootCmd.AddCommand(orgsCmd)
 	rootCmd.AddCommand(orgMembershipsCmd)
 	rootCmd.AddCommand(groupMembershipsCmd)
+	rootCmd.AddCommand(webhooksCmd)
 	rootCmd.AddCommand(messagesCmd)
 	rootCmd.AddCommand(provisionCmd)
 	rootCmd.AddCommand(certsCmd)
@@ -96,6 +99,14 @@ func main() {
 		"u",
 		sdkConf.UsersURL,
 		"Users service URL",
+	)
+
+	rootCmd.PersistentFlags().StringVarP(
+		&sdkConf.WebhooksURL,
+		"webhooks-url",
+		"w",
+		sdkConf.WebhooksURL,
+		"Webhooks service URL",
 	)
 
 	rootCmd.PersistentFlags().StringVarP(
