@@ -519,10 +519,10 @@ components:
       properties:
         name:
           type: string
-          example: "Temperature Data Transformation"
+          example: "Low temperature notifier"
         description:
           type: string
-          example: "Converts temperature from Celsius to Fahrenheit and adds metadata"
+          example: "Creates alarm and executes SMTP notifier on low temperature reading"
         script:
           type: string
           example: |
@@ -545,10 +545,10 @@ components:
           example: "321e4567-e89b-12d3-a456-426614174def"
         name:
           type: string
-          example: "Temperature Data Transformation"
+          example: "Low temperature notifier"
         description:
           type: string
-          example: "Converts temperature from Celsius to Fahrenheit and adds metadata"
+          example: "Creates alarm and executes SMTP notifier on low temperature reading"
         script:
           type: string
           example: |
