@@ -21,15 +21,16 @@ import (
 var _ protomfx.AuthServiceServer = (*grpcServer)(nil)
 
 type grpcServer struct {
-	issue                  kitgrpc.Handler
-	identify               kitgrpc.Handler
-	authorize              kitgrpc.Handler
-	getOwnerIDByOrg        kitgrpc.Handler
-	assignRole             kitgrpc.Handler
-	retrieveRole           kitgrpc.Handler
-	createDormantOrgInvite kitgrpc.Handler
-	activateOrgInvite      kitgrpc.Handler
-	viewOrg                kitgrpc.Handler
+	issue                            kitgrpc.Handler
+	identify                         kitgrpc.Handler
+	authorize                        kitgrpc.Handler
+	getOwnerIDByOrg                  kitgrpc.Handler
+	assignRole                       kitgrpc.Handler
+	retrieveRole                     kitgrpc.Handler
+	createDormantOrgInvite           kitgrpc.Handler
+	activateOrgInvite                kitgrpc.Handler
+	getDormantInviteByPlatformInvite kitgrpc.Handler
+	viewOrg                          kitgrpc.Handler
 }
 
 // NewServer returns new AuthServiceServer instance.
@@ -74,6 +75,11 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			kitot.TraceServer(tracer, "activate_org_invite")(activateOrgInviteEndpoint(svc)),
 			decodeActivateOrgInviteRequest,
 			encodeEmptyResponse,
+		),
+		getDormantInviteByPlatformInvite: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "get_dormant_invite_by_platform_invite")(getDormantInviteByPlatformInviteEndpoint(svc)),
+			decodeGetDormantInviteByPlatformInviteRequest,
+			encodeOrgInviteResponse,
 		),
 		viewOrg: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "view_org")(viewOrgEndpoint(svc)),
@@ -148,6 +154,14 @@ func (s *grpcServer) ActivateOrgInvite(ctx context.Context, req *protomfx.Activa
 	}
 
 	return res.(*emptypb.Empty), nil
+}
+
+func (s *grpcServer) GetDormantInviteByPlatformInvite(ctx context.Context, req *protomfx.GetDormantInviteByPlatformInviteReq) (*protomfx.OrgInvite, error) {
+	_, res, err := s.getDormantInviteByPlatformInvite.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+	return res.(*protomfx.OrgInvite), nil
 }
 
 func (s *grpcServer) ViewOrg(ctx context.Context, req *protomfx.ViewOrgReq) (*protomfx.Org, error) {
@@ -226,6 +240,28 @@ func decodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, e
 		inviteeRole:      req.GetInviteeRole(),
 		groupInvites:     gis,
 		platformInviteID: req.GetPlatformInviteID(),
+	}, nil
+}
+
+func decodeGetDormantInviteByPlatformInviteRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.GetDormantInviteByPlatformInviteReq)
+	return getDormantInviteByPlatformInviteReq{platformInviteID: req.GetPlatformInviteID()}, nil
+}
+
+func encodeOrgInviteResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(orgInviteRes)
+	gis := make([]*protomfx.GroupInvite, 0, len(res.invite.GroupInvites))
+	for _, gi := range res.invite.GroupInvites {
+		gis = append(gis, &protomfx.GroupInvite{
+			GroupID:    gi.GroupID,
+			MemberRole: gi.MemberRole,
+		})
+	}
+	return &protomfx.OrgInvite{
+		Id:           res.invite.ID,
+		OrgID:        res.invite.OrgID,
+		InviteeRole:  res.invite.InviteeRole,
+		GroupInvites: gis,
 	}, nil
 }
 

@@ -3,6 +3,8 @@
 
 package grpc
 
+import "github.com/MainfluxLabs/mainflux/auth"
+
 type identityRes struct {
 	id    string
 	email string
@@ -28,4 +30,8 @@ type orgRes struct {
 	id      string
 	ownerID string
 	name    string
+}
+
+type orgInviteRes struct {
+	invite auth.OrgInvite
 }
