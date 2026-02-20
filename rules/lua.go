@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/Shopify/go-lua"
 	luautil "github.com/Shopify/goluago/util"
@@ -18,11 +17,6 @@ const (
 
 	maxLogLineLength = 2_048
 	maxLogLineCount  = 256
-)
-
-var (
-	// ErrLuaScriptRuntime indicates a Lua environment runtime error occurred during the execution of a Lua script
-	ErrLuaScriptRuntime = errors.New("error executing lua script")
 )
 
 // LuaScript represents a specific Lua script.

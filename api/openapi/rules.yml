@@ -413,7 +413,7 @@ paths:
   /runs:
     patch:
       summary: Removes script runs
-      description: Remove script run records with provided IDs..
+      description: Remove script run records with provided IDs.
       tags:
         - script-runs
       requestBody:
@@ -751,7 +751,7 @@ components:
             $ref: "#/components/schemas/ScriptReqSchema"
           example:
             name: "Enhanced Temperature Transformation"
-            description: "Converts temperature and adds validation"
+            description: "Low temperature notifier"
             script: |
                 temp = mfx.message.payload["temperature"]
                 if temp < 3.5 then
@@ -914,7 +914,7 @@ components:
               - id: "456e4567-e89b-12d3-a456-426614174abc"
                 group_id: "321e4567-e89b-12d3-a456-426614174def"
                 name: "Temperature Data Transformation"
-                description: "Converts temperature from Celsius to Fahrenheit"
+                description: "Low temperature notifier"
                 script: |
                   temp = mfx.message.payload["temperature"]
                   if temp < 3.5 then
@@ -931,7 +931,7 @@ components:
             id: "456e4567-e89b-12d3-a456-426614174abc"
             group_id: "321e4567-e89b-12d3-a456-426614174def"
             name: "Low temperature notifier"
-            description: "Create alarm and send SMTP notifier on low temperature value"
+            description: "Low temperature notifier"
             script: |
                 temp = mfx.message.payload["temperature"]
                 if temp < 3.5 then
