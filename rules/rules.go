@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -69,7 +70,7 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 			case ActionTypeSMPP:
 				newMsg.Subject = fmt.Sprintf("%s.%s", subjectSMPP, action.ID)
 			case ActionTypeAlarm:
-				newMsg.Subject = fmt.Sprintf("%s.%s", subjectAlarms, rule.ID)
+				newMsg.Subject = fmt.Sprintf("%s.%s.%s", subjectAlarms, alarms.AlarmOriginRule, rule.ID)
 			default:
 				continue
 			}
