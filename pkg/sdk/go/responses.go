@@ -123,3 +123,13 @@ func (res retrieveKeyRes) Headers() map[string]string {
 func (res retrieveKeyRes) Empty() bool {
 	return false
 }
+
+type createWebhooksRes struct {
+	Webhooks []Webhook `json:"webhooks"`
+}
+
+// WebhooksPage contains list of webhooks in a page with proper metadata.
+type WebhooksPage struct {
+	Webhooks []Webhook `json:"webhooks"`
+	pageRes
+}
