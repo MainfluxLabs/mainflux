@@ -187,7 +187,7 @@ func (env *luaEnv) execute() (ScriptRun, error) {
 	return run, err
 }
 
-// Create a table containing Mainflux Message data and push it to the Lua stack. The fields of the table are as follows:
+// Create a table containing Mainflux Message data and push it to the Lua stack. The fields of the table are:
 //   - "payload": a table containing the Message payload
 //   - "subtopic": the subtopic the message was published to
 //   - "created": message creation time (unix timestamp)
@@ -225,8 +225,8 @@ func toInvocationLimitedLuaFunc(luaFunc lua.Function, maxInvocations uint) lua.F
 	return limitedFunc
 }
 
-// For each passed Lua script, create a new Lua envrionment and execute the associated script which processes the msg Mainflux message.
-// msg.Payload is ignored. parsedPayload represents the entire parsed payload of the associated Message.
+// For each passed Lua script, create a new Lua environment and execute the associated script which processes the `msg` Mainflux message.
+// msg.Payload is ignored. parsedPayload represents the entire parsed payload of the associated message.
 // For each of the passed Lua scripts:
 // - If parsedPayload represents a top-level JSON object, it is passed to the Lua script environment in its entirety.
 // - If parsedPayload represents a top-level JSON array, a separate Lua script environment is created for each of its children (which must be JSON objects).

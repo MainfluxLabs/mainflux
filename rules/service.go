@@ -80,7 +80,7 @@ type Service interface {
 	// AssignScripts assigns one or more Scripts to a specific Thing.
 	AssignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) error
 
-	// UnassignScripts unassigns one or omre scripts from a specific Thing.
+	// UnassignScripts unassigns one or more scripts from a specific Thing.
 	UnassignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) error
 
 	// ListScriptRunsByThing retrieves a list of Script Runs associated with a specific Thing.
@@ -538,7 +538,7 @@ type RuleRepository interface {
 	// RetrieveScriptsByGroup retrieves a list of Lua scripts belonging to a specific Group.
 	RetrieveScriptsByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (LuaScriptsPage, error)
 
-	//R etrieveThingIDsByScript retrieves a list of Thing IDs to which the specific Lua script is assigned.
+	// RetrieveThingIDsByScript retrieves a list of Thing IDs to which the specific Lua script is assigned.
 	RetrieveThingIDsByScript(ctx context.Context, scriptID string) ([]string, error)
 
 	// UpdateScript updates the script denoted by script.ID.
