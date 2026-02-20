@@ -241,9 +241,10 @@ func (rs *rulesService) processLuaScripts(ctx context.Context, msg *protomfx.Mes
 			subObjPayload, ok := subPayload.(map[string]any)
 			if !ok {
 				rs.logger.Error("malformed payload array")
+				continue
 			}
 
-			payload = append(payload, subObjPayload)
+			payloads = append(payloads, subObjPayload)
 		}
 	}
 
