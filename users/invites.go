@@ -9,6 +9,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -245,6 +247,15 @@ func (svc usersService) attachDormantOrgInvite(ctx context.Context, platformInvi
 	})
 
 	if err != nil {
+		st, ok := status.FromError(err)
+		if !ok {
+			return err
+		}
+
+		if st.Code() == codes.NotFound {
+			return nil
+		}
+
 		return err
 	}
 
