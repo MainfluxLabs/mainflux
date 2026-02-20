@@ -32,16 +32,16 @@ import (
 func keepalive(c *client, conn io.Writer) {
 	defer c.workers.Done()
 	DEBUG.Println(PNG, "keepalive starting")
-	var checkInterval int64
+	var checkInterval time.Duration
 	var pingSent time.Time
 
 	if c.options.KeepAlive > 10 {
-		checkInterval = 5
+		checkInterval = 5 * time.Second
 	} else {
-		checkInterval = c.options.KeepAlive / 2
+		checkInterval = time.Duration(c.options.KeepAlive) * time.Second / 4
 	}
 
-	intervalTicker := time.NewTicker(time.Duration(checkInterval * int64(time.Second)))
+	intervalTicker := time.NewTicker(checkInterval)
 	defer intervalTicker.Stop()
 
 	for {
@@ -58,8 +58,8 @@ func keepalive(c *client, conn io.Writer) {
 				if atomic.LoadInt32(&c.pingOutstanding) == 0 {
 					DEBUG.Println(PNG, "keepalive sending ping")
 					ping := packets.NewControlPacket(packets.Pingreq).(*packets.PingreqPacket)
-					// We don't want to wait behind large messages being sent, the Write call
-					// will block until it it able to send the packet.
+					// We don't want to wait behind large messages being sent, the `Write` call
+					// will block until it is able to send the packet.
 					atomic.StoreInt32(&c.pingOutstanding, 1)
 					if err := ping.Write(conn); err != nil {
 						ERROR.Println(PNG, err)
