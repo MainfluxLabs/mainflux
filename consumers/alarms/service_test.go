@@ -492,6 +492,10 @@ func TestRemoveAlarmsByThing(t *testing.T) {
 		err := svc.RemoveAlarmsByThing(context.Background(), tc.thingID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
+
+	page, err = svc.ListAlarmsByThing(context.Background(), token, thingID, apiutil.PageMetadata{})
+	require.Nil(t, err)
+	assert.Equal(t, 0, len(page.Alarms), "expected no alarms after removal by thing")
 }
 
 func TestRemoveAlarmsByGroup(t *testing.T) {
@@ -524,6 +528,10 @@ func TestRemoveAlarmsByGroup(t *testing.T) {
 		err := svc.RemoveAlarmsByGroup(context.Background(), tc.groupID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
+
+	page, err = svc.ListAlarmsByGroup(context.Background(), token, groupID, apiutil.PageMetadata{})
+	require.Nil(t, err)
+	assert.Equal(t, 0, len(page.Alarms), "expected no alarms after removal by group")
 }
 
 func TestExportAlarmsByThing(t *testing.T) {
