@@ -59,6 +59,17 @@ func migrateDB(db *sqlx.DB) error {
 				},
 				Down: []string{"DROP TABLE alarms"},
 			},
+			{
+				Id: "alarms_2",
+				Up: []string{
+					`ALTER TABLE alarms ALTER COLUMN rule_id DROP NOT NULL;`,
+					`ALTER TABLE alarms ADD COLUMN script_id UUID;`,
+				},
+				Down: []string{
+					`ALTER TABLE alarms ALTER COLUMN rule_id SET NOT NULL;`,
+					`ALTER TABLE alarms DROP COLUMN IF EXISTS script_id;`,
+				},
+			},
 		},
 	}
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)
