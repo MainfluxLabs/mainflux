@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
@@ -52,12 +53,20 @@ func (res createUserRes) Empty() bool {
 	return true
 }
 
+type dormantOrgInvite struct {
+	ID           string             `json:"id"`
+	OrgID        string             `json:"org_id"`
+	InviteeRole  string             `json:"invitee_role"`
+	GroupInvites []auth.GroupInvite `json:"group_invites,omitempty"`
+}
+
 type platformInviteRes struct {
-	ID           string    `json:"id,omitempty"`
-	InviteeEmail string    `json:"invitee_email,omitempty"`
-	CreatedAt    time.Time `json:"created_at,omitempty"`
-	ExpiresAt    time.Time `json:"expires_at,omitempty"`
-	State        string    `json:"state,omitempty"`
+	ID           string            `json:"id,omitempty"`
+	InviteeEmail string            `json:"invitee_email,omitempty"`
+	CreatedAt    time.Time         `json:"created_at,omitempty"`
+	ExpiresAt    time.Time         `json:"expires_at,omitempty"`
+	State        string            `json:"state,omitempty"`
+	OrgInvite    *dormantOrgInvite `json:"org_invite,omitempty"`
 }
 
 func (res platformInviteRes) Code() int {

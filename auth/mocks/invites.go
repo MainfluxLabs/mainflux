@@ -152,6 +152,23 @@ func (irm *invitesRepositoryMock) RetrieveOrgInvitesByUser(ctx context.Context, 
 	}, nil
 }
 
+func (irm *invitesRepositoryMock) RetrieveOrgInviteByPlatformInviteID(ctx context.Context, platformInviteID string) (auth.OrgInvite, error) {
+	irm.mu.Lock()
+	defer irm.mu.Unlock()
+
+	orgInviteIDs, ok := irm.dormantOrgInvitesByPlatformInvite[platformInviteID]
+	if !ok || len(orgInviteIDs) == 0 {
+		return auth.OrgInvite{}, dbutil.ErrNotFound
+	}
+
+	invite, ok := irm.orgInvites[orgInviteIDs[0]]
+	if !ok {
+		return auth.OrgInvite{}, dbutil.ErrNotFound
+	}
+
+	return invite, nil
+}
+
 func (irm *invitesRepositoryMock) UpdateOrgInviteState(ctx context.Context, inviteID, state string) error {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()

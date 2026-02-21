@@ -48,6 +48,7 @@ service AuthService {
     rpc RetrieveRole(RetrieveRoleReq) returns (RetrieveRoleRes) {}
     rpc CreateDormantOrgInvite(CreateDormantOrgInviteReq) returns (google.protobuf.Empty) {}
     rpc ActivateOrgInvite(ActivateOrgInviteReq) returns (google.protobuf.Empty) {}
+    rpc GetDormantInviteByPlatformInvite(GetDormantInviteByPlatformInviteReq) returns (OrgInvite) {}
     rpc ViewOrg(ViewOrgReq) returns (Org) {}
 }
 
@@ -216,6 +217,17 @@ message GroupMembership {
 
 message CreateGroupMembershipsReq {
     repeated GroupMembership memberships = 1;
+}
+
+message GetDormantInviteByPlatformInviteReq {
+    string platformInviteID = 1;
+}
+
+message OrgInvite {
+    string id                         = 1;
+    string orgID                      = 3;
+    string inviteeRole                = 4;
+    repeated GroupInvite groupInvites = 5;
 }
 
 message ViewOrgReq {

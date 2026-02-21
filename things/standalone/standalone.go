@@ -69,6 +69,10 @@ func (repo singleUserRepo) ActivateOrgInvite(ctx context.Context, req *protomfx.
 	panic("not implemented")
 }
 
+func (repo singleUserRepo) GetDormantInviteByPlatformInvite(ctx context.Context, req *protomfx.GetDormantInviteByPlatformInviteReq, _ ...grpc.CallOption) (r *protomfx.OrgInvite, err error) {
+	panic("not implemented")
+}
+
 func (repo singleUserRepo) ViewOrg(ctx context.Context, req *protomfx.ViewOrgReq, _ ...grpc.CallOption) (r *protomfx.Org, err error) {
 	panic("not implemented")
 }

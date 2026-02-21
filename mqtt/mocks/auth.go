@@ -74,3 +74,7 @@ func (svc authServiceMock) ActivateOrgInvite(context.Context, *protomfx.Activate
 func (svc authServiceMock) ViewOrg(context.Context, *protomfx.ViewOrgReq, ...grpc.CallOption) (*protomfx.Org, error) {
 	panic("not implemented")
 }
+
+func (svc authServiceMock) GetDormantInviteByPlatformInvite(context.Context, *protomfx.GetDormantInviteByPlatformInviteReq, ...grpc.CallOption) (*protomfx.OrgInvite, error) {
+	panic("not implemented")
+}
