@@ -1,0 +1,527 @@
+openapi: 3.0.1
+info:
+  title: Mainflux modbus service
+  description: HTTP API for managing Modbus TCP clients that poll device registers and publish readings to the platform.
+  version: 1.0.0
+
+paths:
+  /things/{thingId}/clients:
+    post:
+      summary: Create Modbus clients for a thing
+      description: Creates one or more Modbus clients associated with the thing identified by the provided ID.
+      tags:
+        - clients
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateClientsReq"
+      responses:
+        '201':
+          $ref: "#/components/responses/CreateClientsRes"
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    get:
+      summary: List Modbus clients by thing
+      description: Retrieves a list of Modbus clients related to the thing identified by the provided ID.
+      tags:
+        - clients
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListClientsRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /groups/{groupId}/clients:
+    get:
+      summary: List Modbus clients by group
+      description: Retrieves a list of Modbus clients related to the group identified by the provided ID.
+      tags:
+        - clients
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListClientsRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /clients/{clientId}:
+    get:
+      summary: View a Modbus client
+      description: Retrieves Modbus client details by its identifier.
+      tags:
+        - clients
+      parameters:
+        - $ref: "#/components/parameters/ClientId"
+      responses:
+        '200':
+          $ref: "#/components/responses/ClientRes"
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Client does not exist.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    put:
+      summary: Update a Modbus client
+      description: Update is performed by replacing the current resource data with values provided in a request payload.
+      tags:
+        - clients
+      parameters:
+        - $ref: "#/components/parameters/ClientId"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateClientReq"
+      responses:
+        '200':
+          description: Client updated.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Client does not exist.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /clients:
+    patch:
+      summary: Remove Modbus clients
+      description: Removes Modbus clients with provided identifiers.
+      tags:
+        - clients
+      requestBody:
+        $ref: "#/components/requestBodies/RemoveClientsReq"
+      responses:
+        '204':
+          description: Clients removed.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+components:
+  schemas:
+    Week:
+      type: object
+      properties:
+        days:
+          type: array
+          items:
+            type: string
+            enum: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
+          example: ["Monday", "Wednesday", "Friday"]
+        time:
+          type: string
+          description: Time in HH:MM format.
+          example: "08:00"
+
+    Scheduler:
+      type: object
+      properties:
+        time_zone:
+          type: string
+          example: "Europe/Berlin"
+        frequency:
+          type: string
+          enum: [once, minutely, hourly, daily, weekly]
+          example: "minutely"
+        date_time:
+          type: string
+          description: ISO 8601 date-time string, required when frequency is "once".
+          example: "2024-06-01T08:00:00"
+        week:
+          $ref: "#/components/schemas/Week"
+        day_time:
+          type: string
+          description: Time in HH:MM format, used with daily frequency.
+          example: "08:00"
+        hour:
+          type: integer
+          description: Hour interval, used with hourly frequency.
+          example: 2
+        minute:
+          type: integer
+          description: Minute interval, used with minutely frequency.
+          example: 5
+      required: [frequency]
+
+    DataField:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "temperature"
+        type:
+          type: string
+          enum: [bool, int16, uint16, int32, uint32, float32, string]
+          example: "float32"
+        unit:
+          type: string
+          example: "°C"
+        scale:
+          type: number
+          format: double
+          example: 0.1
+        byte_order:
+          type: string
+          enum: [ABCD, DCBA, CDAB, BADC]
+          example: "ABCD"
+        address:
+          type: integer
+          example: 0
+        length:
+          type: integer
+          description: Register count (auto-calculated from type; set manually only for string fields).
+          example: 2
+      required: [name, type, byte_order, address]
+
+    ClientReqSchema:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Temperature sensor"
+        ip_address:
+          type: string
+          example: "192.168.1.100"
+        port:
+          type: string
+          example: "502"
+        slave_id:
+          type: integer
+          minimum: 0
+          maximum: 255
+          example: 1
+        function_code:
+          type: string
+          enum: [ReadCoils, ReadDiscreteInputs, ReadInputRegisters, ReadHoldingRegisters]
+          example: "ReadHoldingRegisters"
+        scheduler:
+          $ref: "#/components/schemas/Scheduler"
+        data_fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/DataField"
+          minItems: 1
+        metadata:
+          type: object
+          additionalProperties: true
+      required: [name, ip_address, port, function_code, scheduler, data_fields]
+
+    ClientResSchema:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "c1d2e3f4-a5b6-7890-cdef-012345678901"
+        group_id:
+          type: string
+          format: uuid
+          example: "321e4567-e89b-12d3-a456-426614174def"
+        thing_id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        name:
+          type: string
+          example: "Temperature sensor"
+        ip_address:
+          type: string
+          example: "192.168.1.100"
+        port:
+          type: string
+          example: "502"
+        slave_id:
+          type: integer
+          example: 1
+        function_code:
+          type: string
+          example: "ReadHoldingRegisters"
+        scheduler:
+          $ref: "#/components/schemas/Scheduler"
+        data_fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/DataField"
+        metadata:
+          type: object
+          additionalProperties: true
+      required: [id, group_id, thing_id, name, ip_address, port, function_code, scheduler, data_fields]
+
+    ClientsPageRes:
+      type: object
+      properties:
+        total:
+          type: integer
+        offset:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        clients:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClientResSchema'
+      required: [total, offset, limit, clients]
+
+  parameters:
+    ThingId:
+      name: thingId
+      in: path
+      required: true
+      description: Unique thing identifier.
+      schema:
+        type: string
+        format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174000"
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      description: Unique group identifier.
+      schema:
+        type: string
+        format: uuid
+      example: "321e4567-e89b-12d3-a456-426614174def"
+    ClientId:
+      name: clientId
+      in: path
+      required: true
+      description: Unique Modbus client identifier.
+      schema:
+        type: string
+        format: uuid
+      example: "c1d2e3f4-a5b6-7890-cdef-012345678901"
+    Offset:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+
+  requestBodies:
+    CreateClientsReq:
+      description: JSON-formatted array of Modbus clients to create.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/ClientReqSchema"
+            minItems: 1
+          example:
+            - name: "Temperature sensor"
+              ip_address: "192.168.1.100"
+              port: "502"
+              slave_id: 1
+              function_code: "ReadHoldingRegisters"
+              scheduler:
+                frequency: "minutely"
+                minute: 5
+                time_zone: "UTC"
+              data_fields:
+                - name: "temperature"
+                  type: "float32"
+                  unit: "°C"
+                  scale: 0.1
+                  byte_order: "ABCD"
+                  address: 0
+    UpdateClientReq:
+      description: JSON-formatted document describing the updated Modbus client.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ClientReqSchema"
+          example:
+            name: "Temperature sensor"
+            ip_address: "192.168.1.100"
+            port: "502"
+            slave_id: 1
+            function_code: "ReadHoldingRegisters"
+            scheduler:
+              frequency: "minutely"
+              minute: 10
+              time_zone: "UTC"
+            data_fields:
+              - name: "temperature"
+                type: "float32"
+                unit: "°C"
+                scale: 0.1
+                byte_order: "ABCD"
+                address: 0
+    RemoveClientsReq:
+      description: JSON-formatted document describing the identifiers of clients to delete.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              client_ids:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+            required:
+              - client_ids
+          example:
+            client_ids:
+              - "c1d2e3f4-a5b6-7890-cdef-012345678901"
+              - "d2e3f4a5-b6c7-8901-defa-123456789012"
+
+  responses:
+    CreateClientsRes:
+      description: Clients created.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              clients:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClientResSchema"
+          example:
+            clients:
+              - id: "c1d2e3f4-a5b6-7890-cdef-012345678901"
+                group_id: "321e4567-e89b-12d3-a456-426614174def"
+                thing_id: "123e4567-e89b-12d3-a456-426614174000"
+                name: "Temperature sensor"
+                ip_address: "192.168.1.100"
+                port: "502"
+                slave_id: 1
+                function_code: "ReadHoldingRegisters"
+                scheduler:
+                  frequency: "minutely"
+                  minute: 5
+                  time_zone: "UTC"
+                data_fields:
+                  - name: "temperature"
+                    type: "float32"
+                    unit: "°C"
+                    scale: 0.1
+                    byte_order: "ABCD"
+                    address: 0
+    ClientRes:
+      description: Client details retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ClientResSchema"
+          example:
+            id: "c1d2e3f4-a5b6-7890-cdef-012345678901"
+            group_id: "321e4567-e89b-12d3-a456-426614174def"
+            thing_id: "123e4567-e89b-12d3-a456-426614174000"
+            name: "Temperature sensor"
+            ip_address: "192.168.1.100"
+            port: "502"
+            slave_id: 1
+            function_code: "ReadHoldingRegisters"
+            scheduler:
+              frequency: "minutely"
+              minute: 5
+              time_zone: "UTC"
+            data_fields:
+              - name: "temperature"
+                type: "float32"
+                unit: "°C"
+                scale: 0.1
+                byte_order: "ABCD"
+                address: 0
+    ListClientsRes:
+      description: Clients retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ClientsPageRes"
+          example:
+            total: 1
+            offset: 0
+            limit: 10
+            clients:
+              - id: "c1d2e3f4-a5b6-7890-cdef-012345678901"
+                group_id: "321e4567-e89b-12d3-a456-426614174def"
+                thing_id: "123e4567-e89b-12d3-a456-426614174000"
+                name: "Temperature sensor"
+                ip_address: "192.168.1.100"
+                port: "502"
+                slave_id: 1
+                function_code: "ReadHoldingRegisters"
+                scheduler:
+                  frequency: "minutely"
+                  minute: 5
+                  time_zone: "UTC"
+                data_fields:
+                  - name: "temperature"
+                    type: "float32"
+                    unit: "°C"
+                    byte_order: "ABCD"
+                    address: 0
+    ServiceError:
+      description: Unexpected server-side error occurred.
+      content:
+        application/json:
+          schema:
+            type: string
+            format: byte
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        * Users access: "Authorization: Bearer <user_token>"
+
+security:
+  - bearerAuth: []

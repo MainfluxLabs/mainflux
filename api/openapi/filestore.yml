@@ -1,0 +1,473 @@
+openapi: 3.0.1
+info:
+  title: Mainflux filestore service
+  description: HTTP API for managing files stored for things and groups.
+  version: 1.0.0
+
+paths:
+  /files:
+    post:
+      summary: Save a file for a thing
+      description: Uploads and stores a file scoped to the thing identified by its key.
+      tags:
+        - files
+      security:
+        - thingKeyAuth: []
+      requestBody:
+        $ref: "#/components/requestBodies/SaveFileReq"
+      responses:
+        '201':
+          description: File saved.
+        '400':
+          description: Failed due to malformed request.
+        '401':
+          description: Missing or invalid thing key provided.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    get:
+      summary: List files for a thing
+      description: Retrieves a list of files stored for the thing identified by its key.
+      tags:
+        - files
+      security:
+        - thingKeyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Dir"
+        - $ref: "#/components/parameters/FileName"
+        - $ref: "#/components/parameters/FileFormat"
+        - $ref: "#/components/parameters/FileClass"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListFilesRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid thing key provided.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /files/{name}:
+    get:
+      summary: View a file for a thing
+      description: Downloads the file identified by name, scoped to the thing identified by its key.
+      tags:
+        - files
+      security:
+        - thingKeyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/FileNamePath"
+      responses:
+        '200':
+          $ref: "#/components/responses/FileDownloadRes"
+        '401':
+          description: Missing or invalid thing key provided.
+        '404':
+          description: File does not exist.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    put:
+      summary: Update file metadata for a thing
+      description: Updates the metadata of a file scoped to the thing identified by its key.
+      tags:
+        - files
+      security:
+        - thingKeyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/FileNamePath"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateFileReq"
+      responses:
+        '200':
+          description: File updated.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid thing key provided.
+        '404':
+          description: File does not exist.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    delete:
+      summary: Remove a file for a thing
+      description: Removes the file identified by name, scoped to the thing identified by its key.
+      tags:
+        - files
+      security:
+        - thingKeyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/FileNamePath"
+      responses:
+        '204':
+          description: File removed.
+        '401':
+          description: Missing or invalid thing key provided.
+        '404':
+          description: File does not exist.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /groups/{groupId}/files:
+    post:
+      summary: Save a file for a group
+      description: Uploads and stores a file scoped to the specified group.
+      tags:
+        - group files
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/SaveFileReq"
+      responses:
+        '201':
+          description: Group file saved.
+        '400':
+          description: Failed due to malformed request.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    get:
+      summary: List files for a group
+      description: Retrieves a list of files stored for the specified group.
+      tags:
+        - group files
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Dir"
+        - $ref: "#/components/parameters/FileName"
+        - $ref: "#/components/parameters/FileFormat"
+        - $ref: "#/components/parameters/FileClass"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListFilesRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /groups/{groupId}/files/{name}:
+    get:
+      summary: View a file for a group
+      description: Downloads the file identified by name, scoped to the specified group.
+      tags:
+        - group files
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/FileNamePath"
+      responses:
+        '200':
+          $ref: "#/components/responses/FileDownloadRes"
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: File does not exist.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    put:
+      summary: Update file metadata for a group
+      description: Updates the metadata of a file scoped to the specified group.
+      tags:
+        - group files
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/FileNamePath"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateFileReq"
+      responses:
+        '200':
+          description: Group file updated.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: File does not exist.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    delete:
+      summary: Remove a file for a group
+      description: Removes the file identified by name, scoped to the specified group.
+      tags:
+        - group files
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/FileNamePath"
+      responses:
+        '204':
+          description: Group file removed.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: File does not exist.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /groupfiles/{name}:
+    get:
+      summary: View a group file by thing key
+      description: Downloads a group file identified by name, resolving the group via the thing key.
+      tags:
+        - group files
+      security:
+        - thingKeyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/FileNamePath"
+      responses:
+        '200':
+          $ref: "#/components/responses/FileDownloadRes"
+        '401':
+          description: Missing or invalid thing key provided.
+        '404':
+          description: File does not exist.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+components:
+  schemas:
+    FileInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "sensor-data.csv"
+        class:
+          type: string
+          example: "document"
+        format:
+          type: string
+          example: "csv"
+        time:
+          type: number
+          format: double
+          example: 1706786130.0
+        metadata:
+          type: object
+          additionalProperties: true
+
+    FilesPageRes:
+      type: object
+      properties:
+        total:
+          type: integer
+        offset:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 200
+        files_info:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileInfo'
+      required: [total, offset, limit, files_info]
+
+  parameters:
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      description: Unique group identifier.
+      schema:
+        type: string
+        format: uuid
+      example: "321e4567-e89b-12d3-a456-426614174def"
+    FileNamePath:
+      name: name
+      in: path
+      required: true
+      description: File name.
+      schema:
+        type: string
+      example: "sensor-data.csv"
+    Offset:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+    Order:
+      name: order
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [time, name]
+        default: time
+    Dir:
+      name: dir
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: desc
+    FileName:
+      name: name
+      in: query
+      required: false
+      description: Filter by file name.
+      schema:
+        type: string
+    FileFormat:
+      name: format
+      in: query
+      required: false
+      description: Filter by file format (e.g. csv, pdf, png).
+      schema:
+        type: string
+    FileClass:
+      name: class
+      in: query
+      required: false
+      description: Filter by file class (e.g. document, image).
+      schema:
+        type: string
+
+  requestBodies:
+    SaveFileReq:
+      description: Multipart form containing the file and optional metadata.
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              file:
+                type: string
+                format: binary
+                description: The file to upload.
+              metadata:
+                type: string
+                description: JSON-encoded metadata object.
+                example: '{"sensor": "temperature"}'
+              time:
+                type: number
+                format: double
+                description: Unix timestamp (seconds) associated with the file.
+                example: 1706786130.0
+            required:
+              - file
+    UpdateFileReq:
+      description: JSON-formatted document describing the updated file metadata.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                example: "sensor-data.csv"
+              class:
+                type: string
+                example: "document"
+              format:
+                type: string
+                example: "csv"
+              time:
+                type: number
+                format: double
+                example: 1706786130.0
+              metadata:
+                type: object
+                additionalProperties: true
+          example:
+            name: "sensor-data.csv"
+            class: "document"
+            format: "csv"
+            metadata:
+              sensor: "temperature"
+
+  responses:
+    ListFilesRes:
+      description: Files retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/FilesPageRes"
+          example:
+            total: 2
+            offset: 0
+            limit: 10
+            files_info:
+              - name: "sensor-data.csv"
+                class: "document"
+                format: "csv"
+                time: 1706786130.0
+                metadata:
+                  sensor: "temperature"
+              - name: "photo.png"
+                class: "image"
+                format: "png"
+                time: 1706789999.0
+                metadata: {}
+    FileDownloadRes:
+      description: File content.
+      content:
+        application/octet-stream:
+          schema:
+            type: string
+            format: binary
+    ServiceError:
+      description: Unexpected server-side error occurred.
+      content:
+        application/json:
+          schema:
+            type: string
+            format: byte
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        * Users access: "Authorization: Bearer <user_token>"
+    thingKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        * Things access: "Authorization: Thing <thing_key>"
+
+security:
+  - bearerAuth: []
