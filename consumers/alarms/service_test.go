@@ -120,12 +120,12 @@ func TestConsume(t *testing.T) {
 		{
 			desc: "consume message with invalid payload",
 			msg:  invalidPayloadMsg,
-			err:  errors.New("invalid character"),
+			err:  errors.ErrInvalidPayload,
 		},
 		{
 			desc: "consume message with invalid subject",
 			msg:  invalidSubjectMsg,
-			err:  errors.New("invalid subject"),
+			err:  errors.ErrInvalidSubject,
 		},
 		{
 			desc: "consume message with unknown thing",
@@ -141,11 +141,7 @@ func TestConsume(t *testing.T) {
 
 	for _, tc := range cases {
 		err := svc.Consume(tc.msg)
-		if tc.err == nil {
-			assert.Nil(t, err, fmt.Sprintf("%s: expected no error, got %s", tc.desc, err))
-		} else {
-			assert.NotNil(t, err, fmt.Sprintf("%s: expected error, got nil", tc.desc))
-		}
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 

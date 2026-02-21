@@ -28,7 +28,6 @@ const (
 	wrongValue = "wrong-value"
 	thingID    = "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
 	groupID    = "574106f7-030e-4881-8ab0-151195c29f94"
-	otherGroup = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
 )
 
 func threshold(v float64) *float64 { return &v }
@@ -102,7 +101,6 @@ func TestConsume(t *testing.T) {
 		conditions []rules.Condition
 		operator   string
 		msg        any
-		wantErr    bool
 		err        error
 	}{
 		{
@@ -155,8 +153,6 @@ func TestConsume(t *testing.T) {
 			err: nil,
 		},
 		{
-			// json.Unmarshal returns a stdlib error whose message varies by input,
-			// so we only assert that an error is returned.
 			desc:       "invalid JSON payload returns error",
 			conditions: defaultConditions,
 			operator:   rules.OperatorAND,
@@ -165,13 +161,12 @@ func TestConsume(t *testing.T) {
 				Payload:     []byte("not-json"),
 				ContentType: "application/json",
 			},
-			wantErr: true,
+			err: errors.ErrInvalidPayload,
 		},
 		{
-			desc:    "non-Message type returns error",
-			msg:     "not-a-message",
-			wantErr: false,
-			err:     errors.ErrMessage,
+			desc: "non-Message type returns error",
+			msg:  "not-a-message",
+			err:  errors.ErrMessage,
 		},
 		{
 			desc:       "unknown publisher has no assigned rules",
@@ -298,11 +293,7 @@ func TestConsume(t *testing.T) {
 		}
 
 		err := svc.Consume(tc.msg)
-		if tc.wantErr {
-			assert.NotNil(t, err, fmt.Sprintf("%s: expected an error, got nil", tc.desc))
-		} else {
-			assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
-		}
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
