@@ -24,7 +24,7 @@ func (req addCertsReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	if req.TTL == "" || req.KeyType == "" || req.KeyBits == 0 {
+	if req.TTL == "" {
 		return apiutil.ErrMissingCertData
 	}
 

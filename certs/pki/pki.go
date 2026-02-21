@@ -20,12 +20,23 @@ import (
 )
 
 const (
-	rsaKeyType      = "rsa"
-	ecdsaKeyType    = "ecdsa"
-	ecKeyType       = "ec"
+	RSAKeyType      = "rsa"
+	ECDSAKeyType    = "ecdsa"
+	ECKeyType       = "ec"
 	rsaKeyBlockType = "RSA PRIVATE KEY"
 	ecKeyBlockType  = "EC PRIVATE KEY"
 	certificateType = "CERTIFICATE"
+
+	RSAKeyBits2048 = 2048
+	RSAKeyBits4096 = 4096
+
+	ECDSAKeyBits224 = 224
+	ECDSAKeyBits256 = 256
+	ECDSAKeyBits384 = 384
+	ECDSAKeyBits521 = 521
+
+	DefaultRSAKeyBits   = RSAKeyBits2048
+	DefaultECDSAKeyBits = ECDSAKeyBits256
 )
 
 type Cert struct {
@@ -34,6 +45,7 @@ type Cert struct {
 	CAChain        []string  `json:"ca_chain" mapstructure:"ca_chain"`
 	ClientKey      string    `json:"client_key" mapstructure:"private_key"`
 	PrivateKeyType string    `json:"private_key_type" mapstructure:"private_key_type"`
+	KeyBits        int       `json:"key_bits" mapstructure:"key_bits"`
 	Serial         string    `json:"serial" mapstructure:"serial_number"`
 	Expire         time.Time `json:"expire" mapstructure:"-"`
 }
@@ -64,6 +76,9 @@ var (
 
 	// ErrPrivateKeyUnsupportedType indicates that private key type is not supported.
 	ErrPrivateKeyUnsupportedType = errors.New("unsupported key type")
+
+	// ErrInvalidKeyBits indicates that the key size is not supported.
+	ErrInvalidKeyBits = errors.New("unsupported key size")
 
 	// ErrFailedCACertParsing indicates certificate failed to parse.
 	ErrFailedCACertParsing = errors.New("failed to parse ca certificate")
@@ -105,6 +120,43 @@ func NewAgent(tlsCert tls.Certificate) (Agent, error) {
 	}, nil
 }
 
+func NormalizeKeyType(keyType string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(keyType)) {
+	case RSAKeyType, "":
+		return RSAKeyType, nil
+	case ECKeyType, ECDSAKeyType:
+		return ECDSAKeyType, nil
+	default:
+		return "", ErrPrivateKeyUnsupportedType
+	}
+}
+
+func ValidateKeyParams(keyType string, keyBits int) (string, int, error) {
+	kt, err := NormalizeKeyType(keyType)
+	if err != nil {
+		return "", 0, err
+	}
+
+	switch kt {
+	case RSAKeyType:
+		if keyBits == 0 {
+			keyBits = DefaultRSAKeyBits
+		}
+		if keyBits != RSAKeyBits2048 && keyBits != RSAKeyBits4096 {
+			return "", 0, fmt.Errorf("%w: RSA supports %d or %d, got %d", ErrInvalidKeyBits, RSAKeyBits2048, RSAKeyBits4096, keyBits)
+		}
+	case ECDSAKeyType:
+		if keyBits == 0 {
+			keyBits = DefaultECDSAKeyBits
+		}
+		if keyBits != ECDSAKeyBits224 && keyBits != ECDSAKeyBits256 && keyBits != ECDSAKeyBits384 && keyBits != ECDSAKeyBits521 {
+			return "", 0, fmt.Errorf("%w: ECDSA supports %d, %d, %d, or %d, got %d", ErrInvalidKeyBits, ECDSAKeyBits224, ECDSAKeyBits256, ECDSAKeyBits384, ECDSAKeyBits521, keyBits)
+		}
+	}
+
+	return kt, keyBits, nil
+}
+
 func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (Cert, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -114,21 +166,21 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (Cert, error) {
 		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 
+	normalizedKeyType, resolvedKeyBits, err := ValidateKeyParams(keyType, keyBits)
+	if err != nil {
+		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
+	}
+
 	var privateKey any
 	var privKeyPEM string
-	var pkType string
 
-	switch strings.ToLower(keyType) {
-	case rsaKeyType, "":
-		if keyBits == 0 {
-			keyBits = 2048
-		}
-		rsaKey, err := rsa.GenerateKey(rand.Reader, keyBits)
+	switch normalizedKeyType {
+	case RSAKeyType:
+		rsaKey, err := rsa.GenerateKey(rand.Reader, resolvedKeyBits)
 		if err != nil {
 			return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 		}
 		privateKey = rsaKey
-		pkType = rsaKeyType
 
 		privKeyBytes := x509.MarshalPKCS1PrivateKey(rsaKey)
 		privKeyPEM = string(pem.EncodeToMemory(&pem.Block{
@@ -136,27 +188,13 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (Cert, error) {
 			Bytes: privKeyBytes,
 		}))
 
-	case ecKeyType, ecdsaKeyType:
-		var curve elliptic.Curve
-		switch keyBits {
-		case 224:
-			curve = elliptic.P224()
-		case 256, 0:
-			curve = elliptic.P256()
-		case 384:
-			curve = elliptic.P384()
-		case 521:
-			curve = elliptic.P521()
-		default:
-			return Cert{}, errors.New("unsupported ec key size, use 224, 256, 384, or 521")
-		}
-
+	case ECDSAKeyType:
+		curve := ecdsaCurve(resolvedKeyBits)
 		ecKey, err := ecdsa.GenerateKey(curve, rand.Reader)
 		if err != nil {
 			return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 		}
 		privateKey = ecKey
-		pkType = ecKeyType
 
 		privKeyBytes, err := x509.MarshalECPrivateKey(ecKey)
 		if err != nil {
@@ -166,9 +204,6 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (Cert, error) {
 			Type:  ecKeyBlockType,
 			Bytes: privKeyBytes,
 		}))
-
-	default:
-		return Cert{}, ErrPrivateKeyUnsupportedType
 	}
 
 	serialNumber, err := generateSerialNumber()
@@ -190,6 +225,10 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (Cert, error) {
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 		BasicConstraintsValid: true,
 		IsCA:                  false,
+	}
+
+	if normalizedKeyType == ECDSAKeyType {
+		template.KeyUsage = x509.KeyUsageDigitalSignature
 	}
 
 	var certDER []byte
@@ -218,7 +257,8 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (Cert, error) {
 		IssuingCA:      a.caPEM,
 		CAChain:        caChain,
 		ClientKey:      privKeyPEM,
-		PrivateKeyType: pkType,
+		PrivateKeyType: normalizedKeyType,
+		KeyBits:        resolvedKeyBits,
 		Serial:         serialNumber.String(),
 		Expire:         notAfter,
 	}
@@ -258,6 +298,19 @@ func (a *agent) VerifyCert(certPEM string) (*x509.Certificate, error) {
 	}
 
 	return cert, nil
+}
+
+func ecdsaCurve(keyBits int) elliptic.Curve {
+	switch keyBits {
+	case ECDSAKeyBits224:
+		return elliptic.P224()
+	case ECDSAKeyBits384:
+		return elliptic.P384()
+	case ECDSAKeyBits521:
+		return elliptic.P521()
+	default:
+		return elliptic.P256()
+	}
 }
 
 func generateSerialNumber() (*big.Int, error) {

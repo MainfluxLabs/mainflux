@@ -22,12 +22,14 @@ func issueCertEndpoint(svc certs.Service) endpoint.Endpoint {
 		}
 
 		return certsRes{
-			CertSerial: res.Serial,
-			ThingID:    res.ThingID,
-			ClientCert: res.ClientCert,
-			ClientKey:  res.ClientKey,
-			ExpiresAt:  res.ExpiresAt,
-			created:    true,
+			CertSerial:     res.Serial,
+			ThingID:        res.ThingID,
+			ClientCert:     res.ClientCert,
+			ClientKey:      res.ClientKey,
+			ExpiresAt:      res.ExpiresAt,
+			PrivateKeyType: res.PrivateKeyType,
+			KeyBits:        res.KeyBits,
+			created:        true,
 		}, nil
 	}
 }
@@ -54,9 +56,11 @@ func listSerialsByThingEndpoint(svc certs.Service) endpoint.Endpoint {
 
 		for _, cert := range page.Certs {
 			cr := certsRes{
-				CertSerial: cert.Serial,
-				ThingID:    cert.ThingID,
-				ExpiresAt:  cert.ExpiresAt,
+				CertSerial:     cert.Serial,
+				ThingID:        cert.ThingID,
+				ExpiresAt:      cert.ExpiresAt,
+				PrivateKeyType: cert.PrivateKeyType,
+				KeyBits:        cert.KeyBits,
 			}
 			res.Certs = append(res.Certs, cr)
 		}
@@ -77,10 +81,12 @@ func viewCertEndpoint(svc certs.Service) endpoint.Endpoint {
 		}
 
 		certRes := certsRes{
-			CertSerial: cert.Serial,
-			ThingID:    cert.ThingID,
-			ClientCert: cert.ClientCert,
-			ExpiresAt:  cert.ExpiresAt,
+			CertSerial:     cert.Serial,
+			ThingID:        cert.ThingID,
+			ClientCert:     cert.ClientCert,
+			ExpiresAt:      cert.ExpiresAt,
+			PrivateKeyType: cert.PrivateKeyType,
+			KeyBits:        cert.KeyBits,
 		}
 
 		return certRes, nil
@@ -110,12 +116,14 @@ func renewCertEndpoint(svc certs.Service) endpoint.Endpoint {
 		}
 
 		return certsRes{
-			CertSerial: cert.Serial,
-			ThingID:    cert.ThingID,
-			ClientCert: cert.ClientCert,
-			ClientKey:  cert.ClientKey,
-			ExpiresAt:  cert.ExpiresAt,
-			created:    true,
+			CertSerial:     cert.Serial,
+			ThingID:        cert.ThingID,
+			ClientCert:     cert.ClientCert,
+			ClientKey:      cert.ClientKey,
+			ExpiresAt:      cert.ExpiresAt,
+			PrivateKeyType: cert.PrivateKeyType,
+			KeyBits:        cert.KeyBits,
+			created:        true,
 		}, nil
 	}
 }

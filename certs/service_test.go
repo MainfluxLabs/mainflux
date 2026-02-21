@@ -40,8 +40,10 @@ const (
 	thingID    = "1"
 	ttl        = "1h"
 	keyBits    = 2048
-	keyType    = "rsa"
-	certNum    = 10
+	keyType      = "rsa"
+	ecdsaKeyType = "ecdsa"
+	ecKeyType    = "ec"
+	certNum      = 10
 
 	cfgLogLevel       = "error"
 	cfgClientTLS      = false
@@ -156,6 +158,51 @@ func TestIssueCert(t *testing.T) {
 			keyBits: -2,
 			err:     certs.ErrFailedCertCreation,
 		},
+		{
+			desc:    "issue new ecdsa cert with default bits",
+			token:   token,
+			thingID: thingID,
+			ttl:     ttl,
+			keyType: ecdsaKeyType,
+			keyBits: 0,
+			err:     nil,
+		},
+		{
+			desc:    "issue new ec alias cert with 256 bits",
+			token:   token,
+			thingID: thingID,
+			ttl:     ttl,
+			keyType: ecKeyType,
+			keyBits: pki.ECDSAKeyBits256,
+			err:     nil,
+		},
+		{
+			desc:    "issue new ecdsa cert with 384 bits",
+			token:   token,
+			thingID: thingID,
+			ttl:     ttl,
+			keyType: ecdsaKeyType,
+			keyBits: pki.ECDSAKeyBits384,
+			err:     nil,
+		},
+		{
+			desc:    "issue new ecdsa cert with 521 bits",
+			token:   token,
+			thingID: thingID,
+			ttl:     ttl,
+			keyType: ecdsaKeyType,
+			keyBits: pki.ECDSAKeyBits521,
+			err:     nil,
+		},
+		{
+			desc:    "issue ecdsa cert with invalid bits",
+			token:   token,
+			thingID: thingID,
+			ttl:     ttl,
+			keyType: ecdsaKeyType,
+			keyBits: 512,
+			err:     certs.ErrFailedCertCreation,
+		},
 	}
 
 	for _, tc := range cases {
@@ -166,6 +213,17 @@ func TestIssueCert(t *testing.T) {
 			assert.NotEmpty(t, c.ClientKey, fmt.Sprintf("%s: client key should not be empty", tc.desc))
 			assert.NotEmpty(t, c.Serial, fmt.Sprintf("%s: serial should not be empty", tc.desc))
 			assert.Equal(t, tc.thingID, c.ThingID, fmt.Sprintf("%s: thing mismatch", tc.desc))
+			assert.NotEmpty(t, c.PrivateKeyType, fmt.Sprintf("%s: private key type should not be empty", tc.desc))
+			assert.Greater(t, c.KeyBits, 0, fmt.Sprintf("%s: key bits should be positive", tc.desc))
+
+			expectedKeyType := tc.keyType
+			if expectedKeyType == ecKeyType {
+				expectedKeyType = ecdsaKeyType
+			}
+			if expectedKeyType == "" {
+				expectedKeyType = keyType
+			}
+			assert.Equal(t, expectedKeyType, c.PrivateKeyType, fmt.Sprintf("%s: key type mismatch", tc.desc))
 
 			cert, _ := readCert([]byte(c.ClientCert))
 			if cert != nil {
