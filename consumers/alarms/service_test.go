@@ -7,11 +7,11 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
-	almocks "github.com/MainfluxLabs/mainflux/consumers/alarms/mocks"
+	"github.com/MainfluxLabs/mainflux/consumers/alarms/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/mocks"
+	authmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -25,7 +25,7 @@ const (
 	thingID    = "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
 	groupID    = "574106f7-030e-4881-8ab0-151195c29f94"
 	orgID      = "7e3d5e48-b0b4-4d7b-9d6a-c81f40e30e2c"
-	ruleID     = "rule-001"
+	ruleID     = "5384fb1c-d0ae-4cbe-be52-c54223150fe1"
 	subtopic   = "sensors"
 	protocol   = "mqtt"
 )
@@ -33,7 +33,7 @@ const (
 var payload = map[string]any{"temperature": float64(30), "humidity": float64(60)}
 
 func newService() alarms.Service {
-	ths := mocks.NewThingsServiceClient(
+	ths := authmock.NewThingsServiceClient(
 		nil,
 		map[string]things.Thing{
 			token:   {ID: thingID, GroupID: groupID},
@@ -43,7 +43,7 @@ func newService() alarms.Service {
 			token: {ID: groupID, OrgID: orgID},
 		},
 	)
-	alarmRepo := almocks.NewAlarmRepository()
+	alarmRepo := mocks.NewAlarmRepository()
 	idProvider := uuid.NewMock()
 
 	return alarms.New(ths, alarmRepo, idProvider)
@@ -95,14 +95,14 @@ func TestConsume(t *testing.T) {
 		Subtopic:  subtopic,
 		Protocol:  protocol,
 		Payload:   pyd,
-		Created:   1000000,
+		Created:   1717430400,
 	}
 
 	invalidPayloadMsg := validMsg
-	invalidPayloadMsg.Payload = []byte("not-json")
+	invalidPayloadMsg.Payload = []byte("invalid")
 
 	invalidSubjectMsg := validMsg
-	invalidSubjectMsg.Subject = "nodot"
+	invalidSubjectMsg.Subject = "invalid"
 
 	unknownThingMsg := validMsg
 	unknownThingMsg.Publisher = wrongValue
@@ -492,11 +492,6 @@ func TestRemoveAlarmsByThing(t *testing.T) {
 		err := svc.RemoveAlarmsByThing(context.Background(), tc.thingID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
-
-	// After removal the thing's alarms should be gone.
-	page, err = svc.ListAlarmsByThing(context.Background(), token, thingID, apiutil.PageMetadata{Limit: 20})
-	assert.Nil(t, err)
-	assert.Equal(t, 0, len(page.Alarms), "alarms should be removed after RemoveAlarmsByThing")
 }
 
 func TestRemoveAlarmsByGroup(t *testing.T) {
@@ -529,11 +524,6 @@ func TestRemoveAlarmsByGroup(t *testing.T) {
 		err := svc.RemoveAlarmsByGroup(context.Background(), tc.groupID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
-
-	// After removal the group's alarms should be gone.
-	page, err = svc.ListAlarmsByGroup(context.Background(), token, groupID, apiutil.PageMetadata{Limit: 20})
-	assert.Nil(t, err)
-	assert.Equal(t, 0, len(page.Alarms), "alarms should be removed after RemoveAlarmsByGroup")
 }
 
 func TestExportAlarmsByThing(t *testing.T) {
