@@ -224,10 +224,11 @@ message GetDormantInviteByPlatformInviteReq {
 }
 
 message OrgInvite {
-    string id                         = 1;
-    string orgID                      = 3;
-    string inviteeRole                = 4;
-    repeated GroupInvite groupInvites = 5;
+    string id = 1;
+    string orgID = 3;
+    string orgName = 4;
+    string inviteeRole = 5;
+    repeated GroupInvite groupInvites = 6;
 }
 
 message ViewOrgReq {

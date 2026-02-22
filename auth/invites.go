@@ -545,7 +545,16 @@ func (svc service) acceptInvite(ctx context.Context, invite OrgInvite) error {
 }
 
 func (svc service) GetDormantInviteByPlatformInvite(ctx context.Context, platformInviteID string) (OrgInvite, error) {
-	return svc.invites.RetrieveOrgInviteByPlatformInviteID(ctx, platformInviteID)
+	invite, err := svc.invites.RetrieveOrgInviteByPlatformInviteID(ctx, platformInviteID)
+	if err != nil {
+		return OrgInvite{}, err
+	}
+
+	if err := svc.populateInviteInfo(ctx, &invite); err != nil {
+		return OrgInvite{}, err
+	}
+
+	return invite, nil
 }
 
 func (svc service) SendOrgInviteEmail(ctx context.Context, invite OrgInvite, email, orgName, invRedirectPath string) error {

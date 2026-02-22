@@ -349,20 +349,21 @@ func (client grpcClient) GetDormantInviteByPlatformInvite(ctx context.Context, r
 		return &protomfx.OrgInvite{}, err
 	}
 
-	oi := res.(orgInviteRes)
-	gis := make([]*protomfx.GroupInvite, 0, len(oi.invite.GroupInvites))
-	for _, gi := range oi.invite.GroupInvites {
-		gis = append(gis, &protomfx.GroupInvite{
-			GroupID:    gi.GroupID,
-			MemberRole: gi.MemberRole,
+	orgInvite := res.(orgInviteRes)
+	groupInvites := make([]*protomfx.GroupInvite, 0, len(orgInvite.invite.GroupInvites))
+	for _, groupInvite := range orgInvite.invite.GroupInvites {
+		groupInvites = append(groupInvites, &protomfx.GroupInvite{
+			GroupID:    groupInvite.GroupID,
+			MemberRole: groupInvite.MemberRole,
 		})
 	}
 
 	return &protomfx.OrgInvite{
-		Id:           oi.invite.ID,
-		OrgID:        oi.invite.OrgID,
-		InviteeRole:  oi.invite.InviteeRole,
-		GroupInvites: gis,
+		Id:           orgInvite.invite.ID,
+		OrgID:        orgInvite.invite.OrgID,
+		OrgName:      orgInvite.invite.OrgName,
+		InviteeRole:  orgInvite.invite.InviteeRole,
+		GroupInvites: groupInvites,
 	}, nil
 }
 
@@ -374,17 +375,21 @@ func encodeGetDormantInviteByPlatformInviteRequest(_ context.Context, grpcReq an
 func decodeOrgInviteResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.OrgInvite)
 
-	gis := make([]auth.GroupInvite, 0, len(res.GetGroupInvites()))
-	for _, gi := range res.GetGroupInvites() {
-		gis = append(gis, auth.GroupInvite{GroupID: gi.GroupID, MemberRole: gi.MemberRole})
+	groupInvites := make([]auth.GroupInvite, 0, len(res.GetGroupInvites()))
+	for _, groupInvite := range res.GetGroupInvites() {
+		groupInvites = append(groupInvites, auth.GroupInvite{
+			GroupID:    groupInvite.GroupID,
+			MemberRole: groupInvite.MemberRole,
+		})
 	}
 
 	return orgInviteRes{
 		invite: auth.OrgInvite{
 			ID:           res.GetId(),
 			OrgID:        res.GetOrgID(),
+			OrgName:      res.GetOrgName(),
 			InviteeRole:  res.GetInviteeRole(),
-			GroupInvites: gis,
+			GroupInvites: groupInvites,
 		},
 	}, nil
 }

@@ -162,6 +162,7 @@ func (s *grpcServer) GetDormantInviteByPlatformInvite(ctx context.Context, req *
 	if err != nil {
 		return nil, encodeError(err)
 	}
+
 	return res.(*protomfx.OrgInvite), nil
 }
 
@@ -251,18 +252,19 @@ func decodeGetDormantInviteByPlatformInviteRequest(_ context.Context, grpcReq an
 
 func encodeOrgInviteResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(orgInviteRes)
-	gis := make([]*protomfx.GroupInvite, 0, len(res.invite.GroupInvites))
-	for _, gi := range res.invite.GroupInvites {
-		gis = append(gis, &protomfx.GroupInvite{
-			GroupID:    gi.GroupID,
-			MemberRole: gi.MemberRole,
+	groupInvites := make([]*protomfx.GroupInvite, 0, len(res.invite.GroupInvites))
+	for _, groupInvite := range res.invite.GroupInvites {
+		groupInvites = append(groupInvites, &protomfx.GroupInvite{
+			GroupID:    groupInvite.GroupID,
+			MemberRole: groupInvite.MemberRole,
 		})
 	}
 	return &protomfx.OrgInvite{
 		Id:           res.invite.ID,
 		OrgID:        res.invite.OrgID,
+		OrgName:      res.invite.OrgName,
 		InviteeRole:  res.invite.InviteeRole,
-		GroupInvites: gis,
+		GroupInvites: groupInvites,
 	}, nil
 }
 

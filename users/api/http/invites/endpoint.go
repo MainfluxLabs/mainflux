@@ -126,6 +126,7 @@ func buildPlatformInviteResponse(invite users.PlatformInvite) platformInviteRes 
 		inviteRes.OrgInvite = &dormantOrgInvite{
 			ID:           invite.OrgInvite.ID,
 			OrgID:        invite.OrgInvite.OrgID,
+			OrgName:      invite.OrgInvite.OrgName,
 			InviteeRole:  invite.OrgInvite.InviteeRole,
 			GroupInvites: invite.OrgInvite.GroupInvites,
 		}

@@ -262,6 +262,7 @@ func (svc usersService) attachDormantOrgInvite(ctx context.Context, platformInvi
 	platformInvite.OrgInvite = &auth.OrgInvite{
 		ID:           dormantOrgInvite.Id,
 		OrgID:        dormantOrgInvite.OrgID,
+		OrgName:      dormantOrgInvite.OrgName,
 		InviteeRole:  dormantOrgInvite.InviteeRole,
 		GroupInvites: make([]auth.GroupInvite, 0, len(dormantOrgInvite.GroupInvites)),
 	}
