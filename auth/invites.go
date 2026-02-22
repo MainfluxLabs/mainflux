@@ -135,8 +135,8 @@ type OrgInvitesRepository interface {
 	// UpdateOrgInviteState updates the state of a specific Invite denoted by its ID.
 	UpdateOrgInviteState(ctx context.Context, inviteID, state string) error
 
-	// RetrieveOrgInviteByPlatformInviteID retrieves the dormant Org Invite associated with the specified Platform Invite.
-	RetrieveOrgInviteByPlatformInviteID(ctx context.Context, platformInviteID string) (OrgInvite, error)
+	// RetrieveOrgInviteByPlatformInvite retrieves the dormant Org Invite associated with the specified Platform Invite.
+	RetrieveOrgInviteByPlatformInvite(ctx context.Context, platformInviteID string) (OrgInvite, error)
 }
 
 func (svc service) CreateOrgInvite(ctx context.Context, token string, oi OrgInvite, invRedirectPath string) (OrgInvite, error) {
@@ -545,7 +545,7 @@ func (svc service) acceptInvite(ctx context.Context, invite OrgInvite) error {
 }
 
 func (svc service) GetDormantInviteByPlatformInvite(ctx context.Context, platformInviteID string) (OrgInvite, error) {
-	invite, err := svc.invites.RetrieveOrgInviteByPlatformInviteID(ctx, platformInviteID)
+	invite, err := svc.invites.RetrieveOrgInviteByPlatformInvite(ctx, platformInviteID)
 	if err != nil {
 		return OrgInvite{}, err
 	}

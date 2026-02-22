@@ -94,12 +94,12 @@ func (irm invitesRepositoryMiddleware) SaveDormantInviteRelation(ctx context.Con
 	return irm.repo.SaveDormantInviteRelation(ctx, orgInviteID, platformInviteID)
 }
 
-func (irm invitesRepositoryMiddleware) RetrieveOrgInviteByPlatformInviteID(ctx context.Context, platformInviteID string) (auth.OrgInvite, error) {
+func (irm invitesRepositoryMiddleware) RetrieveOrgInviteByPlatformInvite(ctx context.Context, platformInviteID string) (auth.OrgInvite, error) {
 	span := dbutil.CreateSpan(ctx, irm.tracer, retrieveOrgInviteByPlatformInviteID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return irm.repo.RetrieveOrgInviteByPlatformInviteID(ctx, platformInviteID)
+	return irm.repo.RetrieveOrgInviteByPlatformInvite(ctx, platformInviteID)
 }
 
 func (irm invitesRepositoryMiddleware) ActivateOrgInvite(ctx context.Context, platformInviteID, userID string, expiresAt time.Time) ([]auth.OrgInvite, error) {

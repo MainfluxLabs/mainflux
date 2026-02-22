@@ -152,7 +152,7 @@ func (irm *invitesRepositoryMock) RetrieveOrgInvitesByUser(ctx context.Context, 
 	}, nil
 }
 
-func (irm *invitesRepositoryMock) RetrieveOrgInviteByPlatformInviteID(ctx context.Context, platformInviteID string) (auth.OrgInvite, error) {
+func (irm *invitesRepositoryMock) RetrieveOrgInviteByPlatformInvite(ctx context.Context, platformInviteID string) (auth.OrgInvite, error) {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 

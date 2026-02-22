@@ -231,7 +231,7 @@ func (ir invitesRepository) RemoveOrgInvite(ctx context.Context, inviteID string
 	return nil
 }
 
-func (ir invitesRepository) RetrieveOrgInviteByPlatformInviteID(ctx context.Context, platformInviteID string) (auth.OrgInvite, error) {
+func (ir invitesRepository) RetrieveOrgInviteByPlatformInvite(ctx context.Context, platformInviteID string) (auth.OrgInvite, error) {
 	q := `
 		SELECT oi.id, oi.invitee_id, oi.inviter_id, oi.org_id, oi.invitee_role, oi.created_at, oi.expires_at, oi.state
 		FROM org_invites oi
