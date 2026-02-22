@@ -665,6 +665,37 @@ components:
           type: string
           description: Current state of invite.
           enum: [pending, expired, revoked, accepted]
+        org_invite:
+          type: object
+          description: Optional. If the Platform Invite is associated with an Org Invite, this object contains detailed information about it.
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Invite's unique identifier
+            org_id:
+              type: string
+              format: uuid
+              description: The destination Org's unique idenitifer
+            org_name:
+              type: string
+              description: The destination Org's name
+            invitee_role:
+              type: string
+              description: The invitee's role in the destination Org
+            group_invites:
+              type: array
+              description: Optional. Contains the Group assignments associated with the Org invite
+              items:
+                type: object
+                properties:
+                  group_id:
+                    type: string
+                    format: uuid
+                    description: The destination Group's unique identifier
+                  member_role:
+                    type: string
+                    description: The invitee's role in the destination Group
     PlatformInvitesPageSchema:
       type: object
       properties:
