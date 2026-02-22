@@ -350,8 +350,8 @@ func (client grpcClient) GetDormantInviteByPlatformInvite(ctx context.Context, r
 	}
 
 	orgInvite := res.(orgInviteRes)
-	groupInvites := make([]*protomfx.GroupInvite, 0, len(orgInvite.invite.GroupInvites))
-	for _, groupInvite := range orgInvite.invite.GroupInvites {
+	groupInvites := make([]*protomfx.GroupInvite, 0, len(orgInvite.GroupInvites))
+	for _, groupInvite := range orgInvite.GroupInvites {
 		groupInvites = append(groupInvites, &protomfx.GroupInvite{
 			GroupID:    groupInvite.GroupID,
 			MemberRole: groupInvite.MemberRole,
@@ -359,10 +359,10 @@ func (client grpcClient) GetDormantInviteByPlatformInvite(ctx context.Context, r
 	}
 
 	return &protomfx.OrgInvite{
-		Id:           orgInvite.invite.ID,
-		OrgID:        orgInvite.invite.OrgID,
-		OrgName:      orgInvite.invite.OrgName,
-		InviteeRole:  orgInvite.invite.InviteeRole,
+		Id:           orgInvite.ID,
+		OrgID:        orgInvite.OrgID,
+		OrgName:      orgInvite.OrgName,
+		InviteeRole:  orgInvite.InviteeRole,
 		GroupInvites: groupInvites,
 	}, nil
 }
@@ -384,7 +384,7 @@ func decodeOrgInviteResponse(_ context.Context, grpcRes any) (any, error) {
 	}
 
 	return orgInviteRes{
-		invite: auth.OrgInvite{
+		auth.OrgInvite{
 			ID:           res.GetId(),
 			OrgID:        res.GetOrgID(),
 			OrgName:      res.GetOrgName(),

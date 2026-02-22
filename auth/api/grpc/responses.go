@@ -33,5 +33,5 @@ type orgRes struct {
 }
 
 type orgInviteRes struct {
-	invite auth.OrgInvite
+	auth.OrgInvite
 }

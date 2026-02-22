@@ -181,7 +181,7 @@ func getDormantInviteByPlatformInviteEndpoint(svc auth.Service) endpoint.Endpoin
 			return orgInviteRes{}, err
 		}
 
-		return orgInviteRes{invite: invite}, nil
+		return orgInviteRes{invite}, nil
 	}
 }
 
