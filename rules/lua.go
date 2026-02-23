@@ -48,8 +48,10 @@ type ScriptRun struct {
 	StartedAt  time.Time
 	FinishedAt time.Time
 	Status     string
-	// May be an empty string in case of no error
+	// Human-readable string representing a runtime error during the execution of the lua script. May be an empty string in case of no error.
 	Error string
+	// Error value retruned by lua.DoString
+	err error
 }
 
 type ScriptRunsPage struct {
@@ -183,13 +185,14 @@ func (env *luaEnv) execute() (ScriptRun, error) {
 
 	run.FinishedAt = time.Now()
 	run.Logs = env.logs
+	run.err = err
 
-	if err != nil {
-		run.Error = err.Error()
+	if run.err != nil {
+		run.Error = run.err.Error()
 		run.Status = ScriptRunStatusFail
 	}
 
-	return run, err
+	return run, nil
 }
 
 // Create a table containing Mainflux Message data and push it to the Lua stack. The fields of the table are:
@@ -265,7 +268,7 @@ func (rs *rulesService) processLuaScripts(ctx context.Context, msg *protomfx.Mes
 
 			run, err := env.execute()
 			if err != nil {
-				rs.logger.Info(fmt.Sprintf("executing script with id %s failed with error %v", env.script.ID, err))
+				rs.logger.Info(fmt.Sprintf("attempting to execute script with id %s failed with error %v", env.script.ID, err))
 			}
 
 			if _, err := rs.rules.SaveScriptRuns(ctx, run); err != nil {
