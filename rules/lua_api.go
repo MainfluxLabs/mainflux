@@ -17,7 +17,7 @@ var luaAPISetStandard = []luaAPIFunc{luaSMTPNotify, luaAlarmCreate, luaLog}
 var luaSMTPNotify = luaAPIFunc{
 	fun: func(env *luaEnv) lua.Function {
 		return func(ls *lua.State) int {
-			notifier_id, ok := ls.ToString(1)
+			notifierID, ok := ls.ToString(1)
 			if !ok {
 				ls.PushBoolean(false)
 				return 1
@@ -33,7 +33,7 @@ var luaSMTPNotify = luaAPIFunc{
 
 			msg := env.message
 			msg.Payload = encodedPayload
-			msg.Subject = fmt.Sprintf("%s.%s", subjectSMTP, notifier_id)
+			msg.Subject = fmt.Sprintf("%s.%s", subjectSMTP, notifierID)
 
 			if err := env.service.pubsub.Publish(msg); err != nil {
 				ls.PushBoolean(false)
