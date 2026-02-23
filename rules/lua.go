@@ -21,7 +21,7 @@ const (
 )
 
 var (
-	ErrScriptSize = errors.New("script size exceedes limit")
+	ErrScriptSize = errors.New("script size exceeds limit")
 )
 
 // LuaScript represents a specific Lua script.

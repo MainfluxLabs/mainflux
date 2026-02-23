@@ -327,6 +327,10 @@ func (req updateScriptReq) validate() error {
 		return apiutil.ErrMalformedEntity
 	}
 
+	if len(req.Script) > maxScriptSize {
+		return rules.ErrScriptSize
+	}
+
 	return nil
 }
 
