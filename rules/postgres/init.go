@@ -97,7 +97,7 @@ func migrateDB(db *sqlx.DB) error {
 						PRIMARY KEY (id)
 					);`,
 					`CREATE TABLE IF NOT EXISTS lua_scripts_things (
-						thing_id    UUID NOT NULL,
+						thing_id      UUID NOT NULL,
 						lua_script_id UUID NOT NULL,
 						PRIMARY KEY (thing_id, lua_script_id),
 						FOREIGN KEY (lua_script_id) REFERENCES lua_scripts (id) ON DELETE CASCADE
