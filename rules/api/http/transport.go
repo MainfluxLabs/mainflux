@@ -418,6 +418,8 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response any) erro
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
+	case errors.Contains(err, rules.ErrScriptSize):
+		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, uuid.ErrGeneratingID):
 		w.WriteHeader(http.StatusInternalServerError)
 	default:

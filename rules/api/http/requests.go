@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	minLen       = 1
-	maxLimitSize = 200
-	maxNameSize  = 254
+	minLen        = 1
+	maxLimitSize  = 200
+	maxNameSize   = 254
+	maxScriptSize = 65_536
 )
 
 type rule struct {
@@ -249,7 +250,12 @@ func (req createScriptsReq) validate() error {
 		if s.Script == "" {
 			return apiutil.ErrMalformedEntity
 		}
+
+		if len(s.Script) > maxScriptSize {
+			return rules.ErrScriptSize
+		}
 	}
+
 	return nil
 }
 

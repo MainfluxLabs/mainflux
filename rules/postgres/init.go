@@ -91,7 +91,7 @@ func migrateDB(db *sqlx.DB) error {
 					`CREATE TABLE IF NOT EXISTS lua_scripts (
 						id          UUID NOT NULL,
 						group_id    UUID NOT NULL,
-						script      VARCHAR NOT NULL,
+						script      VARCHAR(65535) NOT NULL,
 						name        VARCHAR NOT NULL,
 						description VARCHAR NOT NULL,
 						PRIMARY KEY (id)

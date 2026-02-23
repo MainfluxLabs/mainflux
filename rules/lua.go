@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/Shopify/go-lua"
 	luautil "github.com/Shopify/goluago/util"
@@ -17,6 +18,10 @@ const (
 
 	maxLogLineLength = 2_048
 	maxLogLineCount  = 256
+)
+
+var (
+	ErrScriptSize = errors.New("script size exceedes limit")
 )
 
 // LuaScript represents a specific Lua script.
