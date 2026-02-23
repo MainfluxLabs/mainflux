@@ -15,7 +15,7 @@ var (
 	// ErrSaveMessages indicates failure occurred while saving messages to database.
 	ErrSaveMessages = New("failed to save messages to database")
 
-	// ErrDeleteMessages ErrDeleteMessage indicates failure occurred while deleting messages in the database.
+	// ErrDeleteMessages indicates failure occurred while deleting messages in the database.
 	ErrDeleteMessages = New("failed to delete messages")
 
 	// ErrInvalidMessage indicates that message format is invalid.
