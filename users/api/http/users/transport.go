@@ -451,8 +451,8 @@ func encodeOAuthLoginResponse(_ context.Context, w http.ResponseWriter, response
 }
 
 func encodeOAuthCallbackResponse(_ context.Context, w http.ResponseWriter, response any) error {
-	http.SetCookie(w, &http.Cookie{Name: stateKey, MaxAge: -1, HttpOnly: true, Secure: true})
-	http.SetCookie(w, &http.Cookie{Name: verifierKey, MaxAge: -1, HttpOnly: true, Secure: true})
+	http.SetCookie(w, &http.Cookie{Name: stateKey, MaxAge: -1, HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode})
+	http.SetCookie(w, &http.Cookie{Name: verifierKey, MaxAge: -1, HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode})
 
 	res := response.(redirectURLRes)
 	w.Header().Set("Location", res.RedirectURL)

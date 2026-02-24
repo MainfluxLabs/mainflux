@@ -292,7 +292,7 @@ func (lm *loggingMiddleware) DisableUser(ctx context.Context, token string, id s
 	return lm.svc.DisableUser(ctx, token, id)
 }
 
-func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (users.User, []users.User, error) {
+func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (users.User, []users.User, []users.Identity, error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method backup took %s to complete", time.Since(begin))
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
@@ -301,13 +301,13 @@ func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (users.Us
 	return lm.svc.Backup(ctx, token)
 }
 
-func (lm *loggingMiddleware) Restore(ctx context.Context, token string, admin users.User, users []users.User) error {
+func (lm *loggingMiddleware) Restore(ctx context.Context, token string, admin users.User, users []users.User, identities []users.Identity) error {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method restore took %s to complete", time.Since(begin))
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Restore(ctx, token, admin, users)
+	return lm.svc.Restore(ctx, token, admin, users, identities)
 }
 
 func (lm *loggingMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite auth.OrgInvite) (_ users.PlatformInvite, err error) {

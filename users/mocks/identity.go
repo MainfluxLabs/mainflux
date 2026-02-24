@@ -44,3 +44,13 @@ func (irm *identityRepositoryMock) Retrieve(ctx context.Context, provider, provi
 	}
 	return identity, nil
 }
+
+func (irm *identityRepositoryMock) BackupAll(ctx context.Context) ([]users.Identity, error) {
+	irm.mu.Lock()
+	defer irm.mu.Unlock()
+	var identities []users.Identity
+	for _, identity := range irm.identity {
+		identities = append(identities, identity)
+	}
+	return identities, nil
+}

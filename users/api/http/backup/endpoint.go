@@ -14,12 +14,12 @@ func backupEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		admin, users, err := svc.Backup(ctx, req.token)
+		admin, users, identities, err := svc.Backup(ctx, req.token)
 		if err != nil {
 			return nil, err
 		}
 
-		return buildBackupResponse(admin, users), nil
+		return buildBackupResponse(admin, users, identities), nil
 	}
 }
 
@@ -30,9 +30,9 @@ func restoreEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		admin, users := buildBackup(req)
+		admin, users, identities := buildBackup(req)
 
-		err := svc.Restore(ctx, req.token, admin, users)
+		err := svc.Restore(ctx, req.token, admin, users, identities)
 		if err != nil {
 			return nil, err
 		}
@@ -41,7 +41,7 @@ func restoreEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
-func buildBackupResponse(admin users.User, users []users.User) backupRes {
+func buildBackupResponse(admin users.User, users []users.User, identities []users.Identity) backupRes {
 	res := backupRes{
 		Admin: backupUserRes{
 			ID:       admin.ID,
@@ -64,10 +64,18 @@ func buildBackupResponse(admin users.User, users []users.User) backupRes {
 		res.Users = append(res.Users, view)
 	}
 
+	for _, id := range identities {
+		res.Identities = append(res.Identities, backupIdentityRes{
+			UserID:         id.UserID,
+			Provider:       id.Provider,
+			ProviderUserID: id.ProviderUserID,
+		})
+	}
+
 	return res
 }
 
-func buildBackup(req restoreReq) (users.User, []users.User) {
+func buildBackup(req restoreReq) (users.User, []users.User, []users.Identity) {
 	admin := users.User{
 		ID:       req.Admin.ID,
 		Email:    req.Admin.Email,
@@ -88,5 +96,14 @@ func buildBackup(req restoreReq) (users.User, []users.User) {
 		u = append(u, view)
 	}
 
-	return admin, u
+	var identities []users.Identity
+	for _, id := range req.Identities {
+		identities = append(identities, users.Identity{
+			UserID:         id.UserID,
+			Provider:       id.Provider,
+			ProviderUserID: id.ProviderUserID,
+		})
+	}
+
+	return admin, u, identities
 }

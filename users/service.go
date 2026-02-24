@@ -129,11 +129,11 @@ type Service interface {
 	// DisableUser logically disables the user identified with the provided ID
 	DisableUser(ctx context.Context, token, id string) error
 
-	// Backup returns admin and all users. Only accessible by admin.
-	Backup(ctx context.Context, token string) (User, []User, error)
+	// Backup returns admin, all users, and all OAuth identities. Only accessible by admin.
+	Backup(ctx context.Context, token string) (User, []User, []Identity, error)
 
-	// Restore restores users from backup. Only accessible by admin.
-	Restore(ctx context.Context, token string, admin User, users []User) error
+	// Restore restores users and OAuth identities from backup. Only accessible by admin.
+	Restore(ctx context.Context, token string, admin User, users []User, identities []Identity) error
 
 	PlatformInvites
 }
@@ -699,19 +699,19 @@ func (svc usersService) ListUsersByEmails(ctx context.Context, emails []string) 
 	return users, nil
 }
 
-func (svc usersService) Backup(ctx context.Context, token string) (User, []User, error) {
+func (svc usersService) Backup(ctx context.Context, token string) (User, []User, []Identity, error) {
 	user, err := svc.identify(ctx, token)
 	if err != nil {
-		return User{}, []User{}, err
+		return User{}, []User{}, []Identity{}, err
 	}
 
 	if err := svc.isAdmin(ctx, token); err != nil {
-		return User{}, []User{}, err
+		return User{}, []User{}, []Identity{}, err
 	}
 
 	users, err := svc.users.BackupAll(ctx)
 	if err != nil {
-		return User{}, []User{}, err
+		return User{}, []User{}, []Identity{}, err
 	}
 
 	var admin User
@@ -723,10 +723,15 @@ func (svc usersService) Backup(ctx context.Context, token string) (User, []User,
 		}
 	}
 
-	return admin, users, nil
+	identities, err := svc.identity.BackupAll(ctx)
+	if err != nil {
+		return User{}, []User{}, []Identity{}, err
+	}
+
+	return admin, users, identities, nil
 }
 
-func (svc usersService) Restore(ctx context.Context, token string, admin User, users []User) error {
+func (svc usersService) Restore(ctx context.Context, token string, admin User, users []User, identities []Identity) error {
 	if err := svc.isAdmin(ctx, token); err != nil {
 		return err
 	}
@@ -746,6 +751,12 @@ func (svc usersService) Restore(ctx context.Context, token string, admin User, u
 
 	for _, user := range users {
 		if _, err := svc.users.Save(ctx, user); err != nil {
+			return err
+		}
+	}
+
+	for _, identity := range identities {
+		if err := svc.identity.Save(ctx, identity); err != nil {
 			return err
 		}
 	}

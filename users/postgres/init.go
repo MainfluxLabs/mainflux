@@ -109,6 +109,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 				Down: []string{
 					`DROP TABLE IF EXISTS user_identities`,
+					`UPDATE users SET password = '' WHERE password IS NULL`,
 					`ALTER TABLE users ALTER COLUMN password SET NOT NULL`,
 				},
 			},

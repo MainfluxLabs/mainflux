@@ -60,6 +60,27 @@ func (ur identityRepository) Retrieve(ctx context.Context, provider, providerUse
 	return toIdentity(dbID), nil
 }
 
+func (ir identityRepository) BackupAll(ctx context.Context) ([]users.Identity, error) {
+	q := `SELECT user_id, provider, provider_user_id FROM user_identities`
+
+	rows, err := ir.db.NamedQueryContext(ctx, q, map[string]any{})
+	if err != nil {
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	var identities []users.Identity
+	for rows.Next() {
+		var dbID dbIdentity
+		if err := rows.StructScan(&dbID); err != nil {
+			return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		}
+		identities = append(identities, toIdentity(dbID))
+	}
+
+	return identities, nil
+}
+
 type dbIdentity struct {
 	UserID         string `db:"user_id"`
 	Provider       string `db:"provider"`

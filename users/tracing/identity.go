@@ -11,6 +11,7 @@ import (
 const (
 	saveIdentity     = "save_identity"
 	retrieveIdentity = "retrieve_identity"
+	backupAllIdentities = "backup_all_identities"
 )
 
 var _ users.IdentityRepository = (*identityRepositoryMiddleware)(nil)
@@ -41,4 +42,12 @@ func (irm identityRepositoryMiddleware) Retrieve(ctx context.Context, provider, 
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return irm.repo.Retrieve(ctx, provider, providerUserID)
+}
+
+func (irm identityRepositoryMiddleware) BackupAll(ctx context.Context) ([]users.Identity, error) {
+	span := dbutil.CreateSpan(ctx, irm.tracer, backupAllIdentities)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return irm.repo.BackupAll(ctx)
 }

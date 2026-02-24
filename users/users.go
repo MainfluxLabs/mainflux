@@ -101,4 +101,7 @@ type IdentityRepository interface {
 
 	// Retrieve fetches an Identity by provider and providerUserID.
 	Retrieve(ctx context.Context, provider, providerUserID string) (Identity, error)
+
+	// BackupAll retrieves all identities for backup purposes.
+	BackupAll(ctx context.Context) ([]Identity, error)
 }
