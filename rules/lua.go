@@ -99,7 +99,7 @@ func (env *luaEnv) bindLuaAPIFuncs(funcs ...luaAPIFunc) {
 func (env *luaEnv) debugHook(ls *lua.State, record lua.Debug) {
 	env.instructionCount += debugHookInstructionCount
 
-	if env.instructionCount > maxLuaInstructions {
+	if env.instructionCount >= maxLuaInstructions {
 		lua.Errorf(ls, "instruction count limit exceeded")
 	}
 }
