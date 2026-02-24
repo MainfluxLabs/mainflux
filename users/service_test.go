@@ -5,7 +5,10 @@ package users_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"regexp"
 	"testing"
 	"time"
@@ -69,17 +72,34 @@ var (
 	passRegex  = regexp.MustCompile(`^\S{8,}$`)
 )
 
-func newService() users.Service {
+func newService(srv ...*httptest.Server) users.Service {
 	hasher := usmocks.NewHasher()
+	allUsers := usersList
+	var oauthGoogleCfg, oauthGithubCfg oauth2.Config
+	var cfgURLs users.ConfigURLs
+
+	if len(srv) > 0 && srv[0] != nil {
+		oauthUsers := []users.User{
+			{Email: "new-google-user@example.com", ID: "oauth-google-id-001"},
+			{Email: "new-github-user@example.com", ID: "oauth-github-id-001"},
+		}
+		allUsers = append(usersList, oauthUsers...)
+		oauthGoogleCfg = oauth2.Config{Endpoint: oauth2.Endpoint{TokenURL: srv[0].URL + "/token"}}
+		oauthGithubCfg = oauth2.Config{Endpoint: oauth2.Endpoint{TokenURL: srv[0].URL + "/token"}}
+		cfgURLs = users.ConfigURLs{
+			GoogleUserInfoURL:   srv[0].URL + "/google/userinfo",
+			GitHubUserInfoURL:   srv[0].URL + "/github/user",
+			GitHubUserEmailsURL: srv[0].URL + "/github/emails",
+			RedirectLoginURL:    "https://example.com/login",
+		}
+	}
+
 	userRepo := usmocks.NewUserRepository(usersList)
 	verificationRepo := usmocks.NewEmailVerificationRepository(verificationsList)
 	invitesRepo := usmocks.NewPlatformInvitesRepository()
 	identityRepo := usmocks.NewIdentityRepository()
-	authSvc := mocks.NewAuthService(admin.ID, usersList, nil)
+	authSvc := mocks.NewAuthService(admin.ID, allUsers, nil)
 	e := usmocks.NewEmailer()
-	oauthGoogleCfg := oauth2.Config{}
-	oauthGithubCfg := oauth2.Config{}
-	cfgURLs := users.ConfigURLs{}
 	return users.New(userRepo, verificationRepo, invitesRepo, identityRepo, inviteDuration, true, true, hasher, authSvc, e, idProvider, oauthGoogleCfg, oauthGithubCfg, cfgURLs)
 }
 
@@ -633,4 +653,101 @@ func TestValidatePlatformInvite(t *testing.T) {
 		err := svc.ValidatePlatformInvite(context.Background(), tc.inviteID, tc.email)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
+}
+
+func TestOAuthLogin(t *testing.T) {
+	svc := newService()
+
+	cases := map[string]struct {
+		provider      string
+		stateNotEmpty bool
+		err           error
+	}{
+		"oauth login with google provider":  {users.GoogleProvider, true, nil},
+		"oauth login with github provider":  {users.GitHubProvider, true, nil},
+		"oauth login with unknown provider": {"unknown", true, nil},
+	}
+
+	for desc, tc := range cases {
+		state, verifier, _, err := svc.OAuthLogin(tc.provider)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected err %s got %s\n", desc, tc.err, err))
+		assert.Equal(t, tc.stateNotEmpty, state != "", fmt.Sprintf("%s: expected state non-empty=%v\n", desc, tc.stateNotEmpty))
+		assert.NotEmpty(t, verifier, fmt.Sprintf("%s: verifier should never be empty\n", desc))
+	}
+
+	state1, _, _, err := svc.OAuthLogin(users.GoogleProvider)
+	require.Nil(t, err)
+	state2, _, _, err := svc.OAuthLogin(users.GoogleProvider)
+	require.Nil(t, err)
+	assert.NotEqual(t, state1, state2, "each OAuthLogin call must generate a unique state")
+}
+
+func TestOAuthCallback(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{"access_token": "valid-access-token", "token_type": "Bearer", "expires_in": 3600})
+	})
+	mux.HandleFunc("/google/userinfo", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{"id": "new-google-provider-id", "email": "new-google-user@example.com"})
+	})
+	mux.HandleFunc("/github/user", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{"id": 99999})
+	})
+	mux.HandleFunc("/github/emails", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode([]map[string]any{{"email": "new-github-user@example.com", "primary": true, "verified": true}})
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+	svc := newService(srv)
+
+	verifier := oauth2.GenerateVerifier()
+
+	cases := map[string]struct {
+		provider            string
+		code                string
+		verifier            string
+		wantErr             error
+		redirectURLContains string
+	}{
+		"callback creates new google user and returns login redirect": {
+			provider:            users.GoogleProvider,
+			code:                "valid-code",
+			verifier:            verifier,
+			wantErr:             nil,
+			redirectURLContains: "token=",
+		},
+		"callback creates new github user and returns login redirect": {
+			provider:            users.GitHubProvider,
+			code:                "valid-code",
+			verifier:            verifier,
+			wantErr:             nil,
+			redirectURLContains: "token=",
+		},
+		"callback with invalid provider code returns error": {
+			provider: "unknown",
+			code:     "valid-code",
+			verifier: verifier,
+			wantErr:  errors.ErrAuthentication,
+		},
+	}
+
+	for desc, tc := range cases {
+		redirectURL, err := svc.OAuthCallback(context.Background(), tc.provider, tc.code, tc.verifier)
+		assert.True(t, errors.Contains(err, tc.wantErr), fmt.Sprintf("%s: expected err %s got %s\n", desc, tc.wantErr, err))
+		if tc.redirectURLContains != "" {
+			assert.Contains(t, redirectURL, tc.redirectURLContains, fmt.Sprintf("%s: redirect URL should contain %q\n", desc, tc.redirectURLContains))
+		}
+	}
+
+	redirectURL1, err := svc.OAuthCallback(context.Background(), users.GoogleProvider, "valid-code", verifier)
+	require.Nil(t, err, "first OAuth callback should succeed")
+	require.Contains(t, redirectURL1, "token=", "first callback should return a login redirect")
+
+	redirectURL2, err := svc.OAuthCallback(context.Background(), users.GoogleProvider, "valid-code", verifier)
+	assert.Nil(t, err, "second OAuth callback for already-linked user should succeed")
+	assert.Contains(t, redirectURL2, "token=", "second callback should return a login redirect")
 }

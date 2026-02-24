@@ -100,7 +100,7 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE users ALTER COLUMN password DROP NOT NULL`,
 
 					`CREATE TABLE user_identities (
-						user_id UUID NOT NULL REFERENCES users(id),
+						user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 						provider VARCHAR(32) NOT NULL,
 						provider_user_id VARCHAR(128) NOT NULL,
 						PRIMARY KEY (user_id, provider),

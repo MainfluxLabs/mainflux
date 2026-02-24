@@ -42,7 +42,7 @@ require (
 	go.mongodb.org/mongo-driver v1.10.1
 	golang.org/x/crypto v0.45.0
 	golang.org/x/net v0.47.0
-	golang.org/x/oauth2 v0.18.0
+	golang.org/x/oauth2 v0.35.0
 	golang.org/x/sync v0.18.0
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
 	gonum.org/v1/gonum v0.11.0
