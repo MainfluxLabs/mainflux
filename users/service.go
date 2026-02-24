@@ -87,7 +87,7 @@ type Service interface {
 	Login(ctx context.Context, user User) (string, error)
 
 	// OAuthLogin returns the URL to initiate OAuth login.
-	OAuthLogin(provider string) (state, verifier, redirectURL string)
+	OAuthLogin(provider string) (state, verifier, redirectURL string, err error)
 
 	// OAuthCallback exchanges the OAuth code for user info and logs in/creates the user.
 	OAuthCallback(ctx context.Context, provider, code, verifier string) (string, error)
@@ -451,7 +451,7 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 	return svc.issue(ctx, dbUser.ID, dbUser.Email, auth.LoginKey)
 }
 
-func (svc usersService) OAuthLogin(provider string) (state, verifier, redirectURL string) {
+func (svc usersService) OAuthLogin(provider string) (state, verifier, redirectURL string, err error) {
 	var oauthCfg oauth2.Config
 	switch provider {
 	case GoogleProvider:
@@ -461,9 +461,12 @@ func (svc usersService) OAuthLogin(provider string) (state, verifier, redirectUR
 	}
 
 	verifier = oauth2.GenerateVerifier()
-	state = generateRandomState()
+	state, err = generateRandomState()
+	if err != nil {
+		return "", "", "", err
+	}
 	redirectURL = oauthCfg.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.S256ChallengeOption(verifier))
-	return state, verifier, redirectURL
+	return state, verifier, redirectURL, nil
 }
 
 func (svc usersService) OAuthCallback(ctx context.Context, provider, code, verifier string) (string, error) {
@@ -912,8 +915,10 @@ func (svc usersService) isAdmin(ctx context.Context, token string) error {
 	return nil
 }
 
-func generateRandomState() string {
-	b := make([]byte, 16)
-	rand.Read(b)
-	return base64.URLEncoding.EncodeToString(b)
+func generateRandomState() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(b), nil
 }

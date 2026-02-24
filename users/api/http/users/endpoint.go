@@ -216,7 +216,10 @@ func oauthLoginEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		state, verifier, redirectURL := svc.OAuthLogin(req.provider)
+		state, verifier, redirectURL, err := svc.OAuthLogin(req.provider)
+		if err != nil {
+			return nil, err
+		}
 
 		return oauthLoginRes{
 			State:       state,

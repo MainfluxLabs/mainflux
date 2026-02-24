@@ -110,9 +110,13 @@ func (lm *loggingMiddleware) Login(ctx context.Context, user users.User) (token 
 	return lm.svc.Login(ctx, user)
 }
 
-func (lm *loggingMiddleware) OAuthLogin(provider string) (state, verifier, redirectURL string) {
+func (lm *loggingMiddleware) OAuthLogin(provider string) (state, verifier, redirectURL string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method oauth_login for provider %s took %s to complete", provider, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 

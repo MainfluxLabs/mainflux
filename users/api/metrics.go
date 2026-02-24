@@ -85,7 +85,7 @@ func (ms *metricsMiddleware) Login(ctx context.Context, user users.User) (string
 	return ms.svc.Login(ctx, user)
 }
 
-func (ms *metricsMiddleware) OAuthLogin(provider string) (state, verifier, redirectURL string) {
+func (ms *metricsMiddleware) OAuthLogin(provider string) (state, verifier, redirectURL string, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "oauth_login").Add(1)
 		ms.latency.With("method", "oauth_login").Observe(time.Since(begin).Seconds())
