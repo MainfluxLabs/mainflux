@@ -30,8 +30,8 @@ func NewRepository(db dbutil.Database) certs.Repository {
 }
 
 func (cr certsRepository) RetrieveAll(ctx context.Context, offset, limit uint64) (certs.Page, error) {
-	q := `SELECT thing_id, serial, expires_at, client_cert, client_key, issuing_ca, 
-	      ca_chain, private_key_type FROM certs ORDER BY expires_at LIMIT :limit OFFSET :offset;`
+	q := `SELECT thing_id, serial, expires_at, client_cert, client_key, issuing_ca,
+	      ca_chain, private_key_type, key_bits FROM certs ORDER BY expires_at LIMIT :limit OFFSET :offset;`
 
 	params := map[string]any{
 		"limit":  limit,
@@ -66,10 +66,10 @@ func (cr certsRepository) RetrieveAll(ctx context.Context, offset, limit uint64)
 }
 
 func (cr certsRepository) Save(ctx context.Context, cert certs.Cert) (string, error) {
-	q := `INSERT INTO certs (thing_id, serial, expires_at, client_cert, client_key, 
-	      issuing_ca, ca_chain, private_key_type) 
-	      VALUES (:thing_id, :serial, :expires_at, :client_cert, :client_key, 
-	      :issuing_ca, :ca_chain, :private_key_type)`
+	q := `INSERT INTO certs (thing_id, serial, expires_at, client_cert, client_key,
+	      issuing_ca, ca_chain, private_key_type, key_bits)
+	      VALUES (:thing_id, :serial, :expires_at, :client_cert, :client_key,
+	      :issuing_ca, :ca_chain, :private_key_type, :key_bits)`
 
 	tx, err := cr.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -153,8 +153,8 @@ func (cr certsRepository) RetrieveRevokedCerts(ctx context.Context) ([]certs.Rev
 }
 
 func (cr certsRepository) RetrieveByThing(ctx context.Context, thingID string, offset, limit uint64) (certs.Page, error) {
-	q := `SELECT thing_id, serial, expires_at, client_cert, client_key, issuing_ca, 
-	      ca_chain, private_key_type FROM certs 
+	q := `SELECT thing_id, serial, expires_at, client_cert, client_key, issuing_ca,
+	      ca_chain, private_key_type, key_bits FROM certs
 	      WHERE thing_id = :thing_id ORDER BY expires_at LIMIT :limit OFFSET :offset;`
 
 	params := map[string]any{
@@ -191,8 +191,8 @@ func (cr certsRepository) RetrieveByThing(ctx context.Context, thingID string, o
 }
 
 func (cr certsRepository) RetrieveBySerial(ctx context.Context, serial string) (certs.Cert, error) {
-	q := `SELECT thing_id, serial, expires_at, client_cert, client_key, issuing_ca, 
-	      ca_chain, private_key_type FROM certs WHERE serial = :serial`
+	q := `SELECT thing_id, serial, expires_at, client_cert, client_key, issuing_ca,
+	      ca_chain, private_key_type, key_bits FROM certs WHERE serial = :serial`
 
 	params := map[string]any{
 		"serial": serial,
@@ -242,6 +242,7 @@ type dbCert struct {
 	IssuingCA      string      `db:"issuing_ca"`
 	CAChain        StringArray `db:"ca_chain"`
 	PrivateKeyType string      `db:"private_key_type"`
+	KeyBits        int         `db:"key_bits"`
 }
 
 func toDBCert(c certs.Cert) dbCert {
@@ -254,6 +255,7 @@ func toDBCert(c certs.Cert) dbCert {
 		IssuingCA:      c.IssuingCA,
 		CAChain:        StringArray(c.CAChain),
 		PrivateKeyType: c.PrivateKeyType,
+		KeyBits:        c.KeyBits,
 	}
 }
 
@@ -267,6 +269,7 @@ func toCert(cdb dbCert) certs.Cert {
 		IssuingCA:      cdb.IssuingCA,
 		CAChain:        []string(cdb.CAChain),
 		PrivateKeyType: cdb.PrivateKeyType,
+		KeyBits:        cdb.KeyBits,
 	}
 }
 
