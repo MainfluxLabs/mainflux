@@ -33,3 +33,8 @@ type orgMembershipsReq struct {
 type removeMembershipsReq struct {
 	MemberIDs []string `json:"member_ids"`
 }
+
+// deleteWebhooksReq contains IDs of webhooks to be deleted
+type deleteWebhooksReq struct {
+	WebhookIDs []string `json:"webhook_ids"`
+}

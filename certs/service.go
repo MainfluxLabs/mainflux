@@ -70,10 +70,6 @@ type Config struct {
 	SignX509Cert   *x509.Certificate
 	SignRSABits    int
 	SignHoursValid string
-	PKIHost        string
-	PKIPath        string
-	PKIRole        string
-	PKIToken       string
 }
 
 type certsService struct {

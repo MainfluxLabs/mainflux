@@ -117,24 +117,29 @@ type JSONPageMetadata struct {
 	Dir         string   `json:"dir,omitempty"`
 }
 
-// ParseValueComparator convert comparison operator keys into mathematic anotation
-func ParseValueComparator(query map[string]any) string {
-	comparator := "="
-	val, ok := query["comparator"]
-	if ok {
-		switch val.(string) {
-		case EqualKey:
-			comparator = "="
-		case LowerThanKey:
-			comparator = "<"
-		case LowerThanEqualKey:
-			comparator = "<="
-		case GreaterThanKey:
-			comparator = ">"
-		case GreaterThanEqualKey:
-			comparator = ">="
-		}
+// ComparatorSymbol converts a comparison operator key into its SQL symbol.
+func ComparatorSymbol(key string) string {
+	switch key {
+	case EqualKey:
+		return "="
+	case LowerThanKey:
+		return "<"
+	case LowerThanEqualKey:
+		return "<="
+	case GreaterThanKey:
+		return ">"
+	case GreaterThanEqualKey:
+		return ">="
+	default:
+		return "="
 	}
+}
 
-	return comparator
+// ParseValueComparator converts comparison operator keys into mathematical notation.
+func ParseValueComparator(query map[string]any) string {
+	val, ok := query["comparator"]
+	if !ok {
+		return "="
+	}
+	return ComparatorSymbol(val.(string))
 }

@@ -167,6 +167,14 @@ type Invite struct {
 	ExpiresAt    time.Time `json:"expires_at"`
 }
 
+type Webhook struct {
+	ID      string            `json:"id"`
+	GroupID string            `json:"group_id"`
+	Name    string            `json:"name"`
+	Url     string            `json:"url"`
+	Headers map[string]string `json:"headers"`
+}
+
 type Metadata map[string]any
 
 // SDK contains Mainflux API.
@@ -369,6 +377,24 @@ type SDK interface {
 	// ListInvitesByUser retrieves a list of Invites either sent out by, or sent to the user identifed by
 	// the specific userID.
 	ListInvitesByUser(userID string, userType string, pm PageMetadata, token string) (InvitesPage, error)
+
+	// CreateWebhooks creates new webhooks.
+	CreateWebhooks(whs []Webhook, groupID, token string) ([]Webhook, error)
+
+	// ListWebhooksByGroup lists webhooks who belong to a specified group.
+	ListWebhooksByGroup(groupID, token string) (WebhooksPage, error)
+
+	// ListWebhooksByThing lists webhooks who belong to a specified thing.
+	ListWebhooksByThing(thingID, token string) (WebhooksPage, error)
+
+	// GetWebhook returns webhook data by id.
+	GetWebhook(webhookID, token string) (Webhook, error)
+
+	// UpdateWebhook updates existing webhook.
+	UpdateWebhook(wh Webhook, webhookID, token string) error
+
+	// DeleteWebhooks removes existing webhooks.
+	DeleteWebhooks(ids []string, token string) error
 }
 
 type mfSDK struct {
@@ -378,6 +404,7 @@ type mfSDK struct {
 	readerURL      string
 	thingsURL      string
 	usersURL       string
+	webhooksURL    string
 
 	msgContentType ContentType
 	client         *http.Client
@@ -391,6 +418,7 @@ type Config struct {
 	ReaderURL      string
 	ThingsURL      string
 	UsersURL       string
+	WebhooksURL    string
 
 	MsgContentType  ContentType
 	TLSVerification bool
@@ -405,6 +433,7 @@ func NewSDK(conf Config) SDK {
 		readerURL:      conf.ReaderURL,
 		thingsURL:      conf.ThingsURL,
 		usersURL:       conf.UsersURL,
+		webhooksURL:    conf.WebhooksURL,
 
 		msgContentType: conf.MsgContentType,
 		client: &http.Client{

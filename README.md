@@ -1,160 +1,108 @@
+<div align="center">
+
+<img src="https://github.com/MainfluxLabs.png" width="100" alt="MainfluxLabs logo" />
+
 # Mainflux
 
-[![go report card][grc-badge]][grc-url]
-[![license][license]](LICENSE)
+### Open-Source IoT Platform
 
-![banner][banner]
+[![Go Report Card](https://goreportcard.com/badge/github.com/MainfluxLabs/mainflux)](https://goreportcard.com/report/github.com/MainfluxLabs/mainflux)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
 
-Mainflux is modern, scalable, secure, open-source, and patent-free IoT cloud platform written in Go.
+[Documentation](https://mainfluxlabs.github.io/docs) | [Contributing](CONTRIBUTING.md) | [Releases](https://github.com/MainfluxLabs/mainflux/releases)
 
-It accepts user and thing (sensor, actuator, application) connections over various network protocols (i.e. HTTP,
-MQTT, WebSocket, CoAP), thus making a seamless bridge between them. It is used as the IoT middleware
-for building complex IoT solutions.
+</div>
 
-For more details, check out the [official documentation][docs].
+## Introduction
+
+Mainflux is an open-source IoT platform written in Go. It handles device connectivity over HTTP, MQTT, WebSocket, and CoAP, and provides a full pipeline from data ingestion to storage, rules evaluation, alarms, and notifications — without requiring external tooling for each step.
+
+Data normalization is built into the platform through Profiles, which define per-group transformation and routing rules at ingestion time. Security goes beyond standard mTLS: certificate lifecycle management includes TPM and secure element support for hardware-backed key storage. The platform runs entirely on your own infrastructure with no cloud dependency.
 
 ## Features
 
-- Multi-protocol connectivity and bridging (HTTP, MQTT, WebSocket and CoAP)
-- Device management and provisioning (Zero Touch provisioning)
-- Mutual TLS Authentication (mTLS) using X.509 Certificates
-- Fine-grained access control (policies, ABAC/RBAC)
-- Message persistence (PostgreSQL, TimescaleDB and MongoDB)
-- Platform logging and instrumentation support (Grafana, Prometheus and OpenTracing)
-- Event sourcing
-- Container-based deployment using [Docker][docker] and [Kubernetes][kubernetes]
-- Edge [Agent](agent) and [Export](export) services for remote IoT gateway management and edge computing
-- SDK
-- CLI
-- Small memory footprint and fast execution
-- Domain-driven design architecture, high-quality code and test coverage
+- **Multi-Protocol Support**: HTTP, MQTT, WebSocket, and CoAP protocol adapters.
+- **Device Management**: Thing and group management with flexible metadata.
+- **Profiles**: Per-profile data transformation and routing configuration, including content type, field mapping, and time normalization.
+- **User Management**: Organizations, groups, platform and org invites, and role-based access control (RBAC).
+- **Rules Engine**: Condition and threshold-based rules with configurable alarm, email, and SMS actions.
+- **Alarms**: Real-time alarm generation and lifecycle management triggered by sensor data.
+- **Scheduled Actions**: Cron-based task scheduler for automated platform operations.
+- **Certificates**: X.509 certificate issuance, renewal, and revocation with full mTLS support.
+- **Hardware Keys**: TPM and secure element support for external key management.
+- **Notifications**: Email (SMTP) and SMS (SMPP) notifier services.
+- **Data Storage**: Pluggable writers and readers for PostgreSQL, TimescaleDB, and MongoDB.
+- **Backup and Restore**: Full platform backup and restore capability.
+- **Observability**: Prometheus metrics, Jaeger distributed tracing, and structured logging.
+- **Event Sourcing**: Redis-based event streaming across services for real-time IoT event processing.
+- **CLI**: Command-line interface for platform management and development workflows.
+- **Container Deployment**: Docker and Docker Compose support out of the box.
 
 ## Prerequisites
 
 The following are needed to run Mainflux:
 
-- [Docker](https://docs.docker.com/install/) (version 20.10)
-- [Docker compose](https://docs.docker.com/compose/install/) (version 1.29)
+- [Docker](https://docs.docker.com/install/) (version 20.10+)
+- [Docker Compose](https://docs.docker.com/compose/install/) (version 2.0+)
 
 Developing Mainflux will also require:
 
-- [Go](https://golang.org/doc/install) (version 1.13.3)
-- [Protobuf](https://github.com/protocolbuffers/protobuf#protocol-compiler-installation) (version 3.6.1)
+- [Go](https://golang.org/dl/) (version 1.25.7)
+- [Protobuf](https://github.com/protocolbuffers/protobuf) (version 3.x)
 
-## Install
+## Installation
 
-Once the prerequisites are installed, execute the following commands from the project's root:
+Clone the repository:
 
 ```bash
-docker-compose -f docker/docker-compose.yml up
+git clone https://github.com/MainfluxLabs/mainflux.git
+cd mainflux
 ```
 
-This will bring up the Mainflux docker services and interconnect them. This command can also be executed using the project's included Makefile:
+Run with Docker Compose:
+
+```bash
+docker compose -f docker/docker-compose.yml up -d
+```
+
+Or build and run from source:
 
 ```bash
 make run
 ```
 
-If you want to run services from specific release checkout code from github and make sure that
-`MF_RELEASE_TAG` in [.env](.env) is being set to match the release version
-
-```bash
-git checkout tags/<release_number> -b <release_number>
-# e.g. `git checkout tags/0.13.0 -b 0.13.0`
-```
-
-Check that `.env` file contains:
-
-```bash
-MF_RELEASE_TAG=<release_number>
-```
-
->`docker-compose` should be used for development and testing deployments. For production we suggest using [Kubernetes](https://mainfluxlabs.github.io/docs/kubernetes).
-
 ## Usage
 
-The quickest way to start using Mainflux is via the CLI. The latest version can be downloaded from the [official releases page][rel].
-
-It can also be built and used from the project's root directory:
+**Build the CLI:**
 
 ```bash
 make cli
 ./build/mainfluxlabs-cli version
 ```
 
-Additional details on using the CLI can be found in the [CLI documentation](https://mainfluxlabs.github.io/docs/cli).
+**Check service health:**
+
+```bash
+curl -X GET http://localhost:8080/health
+```
+
+For full API documentation and usage examples, visit [mainfluxlabs.github.io/docs](https://mainfluxlabs.github.io/docs).
 
 ## Documentation
 
-Official documentation is hosted at [Mainflux official docs page][docs]. Documentation is auto-generated, checkout the instructions on [official docs repository](https://github.com/MainfluxLabs/docs):
+Complete documentation is available at [mainfluxlabs.github.io/docs](https://mainfluxlabs.github.io/docs).
 
-If you spot an error or a need for corrections, please let us know - or even better: send us a PR.
+## Community and Contributing
+
+Contributions are welcome and encouraged:
+
+- [Open Issues](https://github.com/MainfluxLabs/mainflux/issues)
+- [Contribution Guide](CONTRIBUTING.md)
 
 ## Authors
 
-Main architect and BDFL of Mainflux project is [@drasko][drasko].
-
-Additionally, [@nmarcetic][nikola] and [@janko-isidorovic][janko] assured
-overall architecture and design, while [@manuio][manu] and [@darkodraskovic][darko]
-helped with crafting initial implementation and continuously worked on the project evolutions.
-
-Besides them, Mainflux is constantly improved and actively
-developed by [@anovakovic01][alex], [@dusanb94][dusan], [@srados][sava],
-[@gsaleh][george], [@blokovi][iva], [@chombium][kole], [@mteodor][mirko] and a large set of contributors.
-
-Maintainers are listed in [MAINTAINERS](MAINTAINERS) file.
-
-The Mainflux team would like to give special thanks to [@mijicd][dejan] for his monumental work
-on designing and implementing a highly improved and optimized version of the platform,
-and [@malidukica][dusanm] for his effort on implementing the initial user interface.
-
-## Professional Support
-
-There are many companies offering professional support for the Mainflux system.
-
-If you need this kind of support, best is to reach out to [@drasko][drasko] directly, and he will point you out to the best-matching support team.
-
-## Contributing
-
-Thank you for your interest in Mainflux and the desire to contribute!
-
-1. Take a look at our [open issues](https://github.com/MainfluxLabs/mainflux/issues). The [good-first-issue](https://github.com/MainfluxLabs/mainflux/labels/good-first-issue) label is specifically for issues that are great for getting started.
-2. Checkout the [contribution guide](CONTRIBUTING.md) to learn more about our style and conventions.
-3. Make your changes compatible to our workflow.
+This project is a fork of [mainflux/mainflux](https://github.com/mainflux/mainflux), which has since been archived. It is maintained independently by [MainfluxLabs](https://github.com/MainfluxLabs), continuing the original work with new features and long-term support. See [MAINTAINERS](MAINTAINERS) for the current team.
 
 ## License
 
-[Apache-2.0](LICENSE)
-
-[banner]: https://github.com/MainfluxLabs/docs/blob/master/docs/img/gopherBanner.jpg
-[docs]: https://mainfluxlabs.github.io/docs
-[docker]: https://www.docker.com
-[gitter-badge]: https://badges.gitter.im/Join%20Chat.svg
-[grc-badge]: https://goreportcard.com/badge/github.com/MainfluxLabs/mainflux
-[grc-url]: https://goreportcard.com/report/github.com/MainfluxLabs/mainflux
-[cov-badge]: https://codecov.io/gh/MainfluxLabs/mainflux/branch/master/graph/badge.svg
-[cov-url]: https://codecov.io/gh/MainfluxLabs/mainflux
-[license]: https://img.shields.io/badge/license-Apache%20v2.0-blue.svg
-[agent]: https://github.com/MainfluxLabs/agent
-[export]: https://github.com/MainfluxLabs/export
-[kubernetes]: https://kubernetes.io/
-[rel]: https://github.com/MainfluxLabs/mainflux/releases
-[careers]: https://www.mainflux.com/careers.html
-[lf]: https://www.linuxfoundation.org/
-[edgex]: https://www.edgexfoundry.org/
-[company]: https://www.mainflux.com/
-[blog]: https://medium.com/mainfluxlabs-iot-platform
-[drasko]: https://github.com/drasko
-[nikola]: https://github.com/nmarcetic
-[dejan]: https://github.com/mijicd
-[manu]: https://github.com/manuIO
-[darko]: https://github.com/darkodraskovic
-[janko]: https://github.com/janko-isidorovic
-[alex]: https://github.com/anovakovic01
-[dusan]: https://github.com/dusanb94
-[sava]: https://github.com/srados
-[george]: https://github.com/gesaleh
-[iva]: https://github.com/blokovi
-[kole]: https://github.com/chombium
-[dusanm]: https://github.com/malidukica
-[mirko]: https://github.com/mteodor
+Mainflux is open-source software licensed under the [Apache-2.0](LICENSE) license. Contributions are welcome and encouraged!
