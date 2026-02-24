@@ -229,7 +229,7 @@ components:
         format:
           type: string
           description: Time format string for injected parameters.
-          example: "2006-01-02T15:04:05Z"
+          example: "iso8601"
         forecast:
           type: boolean
           description: If true, uses future time range instead of past.
@@ -254,7 +254,7 @@ components:
           example: "https://api.example.com/readings"
         method:
           type: string
-          enum: [GET, POST, PUT, PATCH, DELETE]
+          enum: [GET, POST, PUT, PATCH]
           example: "GET"
         payload:
           type: string
@@ -401,7 +401,7 @@ components:
               time_filter:
                 start_param: "from"
                 end_param: "to"
-                format: "2006-01-02T15:04:05Z"
+                format: "iso8601"
                 interval: "hour"
                 value: 1
     UpdateDownlinkReq:
@@ -480,7 +480,7 @@ components:
                 time_filter:
                   start_param: "from"
                   end_param: "to"
-                  format: "2006-01-02T15:04:05Z"
+                  format: "iso8601"
                   interval: "hour"
                   value: 1
     DownlinkRes:
@@ -503,7 +503,7 @@ components:
             time_filter:
               start_param: "from"
               end_param: "to"
-              format: "2006-01-02T15:04:05Z"
+              format: "iso8601"
               interval: "hour"
               value: 1
     ListDownlinksRes:
