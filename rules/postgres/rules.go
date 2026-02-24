@@ -16,14 +16,14 @@ import (
 	"github.com/jackc/pgerrcode"
 )
 
-var _ rules.RuleRepository = (*ruleRepository)(nil)
+var _ rules.Repository = (*ruleRepository)(nil)
 
 type ruleRepository struct {
 	db dbutil.Database
 }
 
 // NewRuleRepository instantiates a PostgreSQL implementation of rule repository.
-func NewRuleRepository(db dbutil.Database) rules.RuleRepository {
+func NewRuleRepository(db dbutil.Database) rules.Repository {
 	return &ruleRepository{
 		db: db,
 	}

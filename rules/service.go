@@ -23,39 +23,13 @@ import (
 // All methods that accept a token parameter use it to identify and authorize
 // the user performing the operation.
 type Service interface {
-	// CreateRules creates rules.
-	CreateRules(ctx context.Context, token, groupID string, rules ...Rule) ([]Rule, error)
+	ServiceScripts
+	ServiceRules
 
-	// ListRulesByThing retrieves a paginated list of rules by thing.
-	ListRulesByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (RulesPage, error)
+	consumers.Consumer
+}
 
-	// ListRulesByGroup retrieves a paginated list of rules by group.
-	ListRulesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (RulesPage, error)
-
-	// ListThingIDsByRule retrieves a list of thing IDs attached to the given rule ID.
-	ListThingIDsByRule(ctx context.Context, token, ruleID string) ([]string, error)
-
-	// ViewRule retrieves a specific rule by its ID.
-	ViewRule(ctx context.Context, token, id string) (Rule, error)
-
-	// UpdateRule updates the rule identified by the provided ID.
-	UpdateRule(ctx context.Context, token string, rule Rule) error
-
-	// RemoveRules removes the rules identified with the provided IDs.
-	RemoveRules(ctx context.Context, token string, ids ...string) error
-
-	// RemoveRulesByGroup removes the rules identified with the provided IDs.
-	RemoveRulesByGroup(ctx context.Context, groupID string) error
-
-	// AssignRules assigns rules to a specific thing.
-	AssignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error
-
-	// UnassignRules removes rule assignments from a specific thing.
-	UnassignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error
-
-	// UnassignRulesByThing removes all rule assignments from a specific thing.
-	UnassignRulesByThing(ctx context.Context, thingID string) error
-
+type ServiceScripts interface {
 	// CreateScripts persists multiple Lua scripts.
 	CreateScripts(ctx context.Context, token, groupID string, scripts ...LuaScript) ([]LuaScript, error)
 
@@ -88,8 +62,41 @@ type Service interface {
 
 	// RemoveScriptRuns removes the Runs identified by the provided IDs.
 	RemoveScriptRuns(ctx context.Context, token string, ids ...string) error
+}
 
-	consumers.Consumer
+type ServiceRules interface {
+	// CreateRules creates rules.
+	CreateRules(ctx context.Context, token, groupID string, rules ...Rule) ([]Rule, error)
+
+	// ListRulesByThing retrieves a paginated list of rules by thing.
+	ListRulesByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (RulesPage, error)
+
+	// ListRulesByGroup retrieves a paginated list of rules by group.
+	ListRulesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (RulesPage, error)
+
+	// ListThingIDsByRule retrieves a list of thing IDs attached to the given rule ID.
+	ListThingIDsByRule(ctx context.Context, token, ruleID string) ([]string, error)
+
+	// ViewRule retrieves a specific rule by its ID.
+	ViewRule(ctx context.Context, token, id string) (Rule, error)
+
+	// UpdateRule updates the rule identified by the provided ID.
+	UpdateRule(ctx context.Context, token string, rule Rule) error
+
+	// RemoveRules removes the rules identified with the provided IDs.
+	RemoveRules(ctx context.Context, token string, ids ...string) error
+
+	// RemoveRulesByGroup removes the rules identified with the provided IDs.
+	RemoveRulesByGroup(ctx context.Context, groupID string) error
+
+	// AssignRules assigns rules to a specific thing.
+	AssignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error
+
+	// UnassignRules removes rule assignments from a specific thing.
+	UnassignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error
+
+	// UnassignRulesByThing removes all rule assignments from a specific thing.
+	UnassignRulesByThing(ctx context.Context, thingID string) error
 }
 
 const (
@@ -102,7 +109,7 @@ const (
 )
 
 type rulesService struct {
-	rules          RuleRepository
+	rules          Repository
 	things         protomfx.ThingsServiceClient
 	pubsub         messaging.PubSub
 	idProvider     uuid.IDProvider
@@ -113,7 +120,7 @@ type rulesService struct {
 var _ Service = (*rulesService)(nil)
 
 // New instantiates the rules service implementation.
-func New(rules RuleRepository, things protomfx.ThingsServiceClient, pubsub messaging.PubSub, idp uuid.IDProvider, logger logger.Logger, scriptsEnabled bool) Service {
+func New(rules Repository, things protomfx.ThingsServiceClient, pubsub messaging.PubSub, idp uuid.IDProvider, logger logger.Logger, scriptsEnabled bool) Service {
 	return &rulesService{
 		rules:          rules,
 		things:         things,
@@ -485,7 +492,12 @@ func (rs *rulesService) Consume(message any) error {
 	return nil
 }
 
-type RuleRepository interface {
+type Repository interface {
+	RepositoryRules
+	RepositoryScripts
+}
+
+type RepositoryRules interface {
 	// Save persists multiple rules. Rules are saved using a transaction.
 	// If one rule fails then none will be saved.
 	// Successful operation is indicated by a non-nil error response.
@@ -525,7 +537,9 @@ type RuleRepository interface {
 	// UnassignByThing removes all rule assignments for a certain thing,
 	// identified by a given thing ID.
 	UnassignByThing(ctx context.Context, thingID string) error
+}
 
+type RepositoryScripts interface {
 	// SaveScripts persists multiple Lua scripts.
 	SaveScripts(ctx context.Context, scripts ...LuaScript) ([]LuaScript, error)
 

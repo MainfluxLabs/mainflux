@@ -37,16 +37,16 @@ const (
 )
 
 var (
-	_ rules.RuleRepository = (*ruleRepositoryMiddleware)(nil)
+	_ rules.Repository = (*ruleRepositoryMiddleware)(nil)
 )
 
 type ruleRepositoryMiddleware struct {
 	tracer opentracing.Tracer
-	repo   rules.RuleRepository
+	repo   rules.Repository
 }
 
 // RuleRepositoryMiddleware tracks request and their latency, and adds spans to context.
-func RuleRepositoryMiddleware(tracer opentracing.Tracer, repo rules.RuleRepository) rules.RuleRepository {
+func RuleRepositoryMiddleware(tracer opentracing.Tracer, repo rules.Repository) rules.Repository {
 	return ruleRepositoryMiddleware{
 		tracer: tracer,
 		repo:   repo,
