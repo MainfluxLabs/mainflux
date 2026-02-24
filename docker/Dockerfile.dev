@@ -1,4 +1,6 @@
-FROM scratch
+# scratch has no user concept; distroless/static provides a non-root user required by security policy.
+FROM gcr.io/distroless/static:nonroot
 ARG SVC
 COPY mainfluxlabs-$SVC /exe
+USER nonroot
 ENTRYPOINT ["/exe"]

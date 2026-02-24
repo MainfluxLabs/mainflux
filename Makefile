@@ -5,7 +5,8 @@ MF_DOCKER_IMAGE_NAME_PREFIX ?= mainfluxlabs
 BUILD_DIR = build
 SERVICES = users things http coap ws mongodb-writer \
 	mongodb-reader postgres-writer postgres-reader timescale-writer timescale-reader cli \
-	auth mqtt certs smtp-notifier smpp-notifier alarms rules
+	auth mqtt certs smtp-notifier smpp-notifier alarms rules filestore downlinks modbus \
+	uiconfigs converters webhooks
 DOCKERS = $(addprefix docker_,$(SERVICES))
 DOCKERS_DEV = $(addprefix docker_dev_,$(SERVICES))
 CGO_ENABLED ?= 0
@@ -109,6 +110,8 @@ release:
 	for svc in $(SERVICES); do \
 		docker buildx build --platform=linux/amd64,linux/arm64 \
 			--no-cache \
+			--sbom=true \
+			--provenance=mode=max \
 			--build-arg SVC=$$svc \
 			--build-arg VERSION=$(VERSION) \
 			--build-arg COMMIT=$(COMMIT) \
@@ -130,4 +133,4 @@ logs:
 	docker compose -f docker/docker-compose.yml logs -f
 
 logs_%:
-	docker compose -f docker/docker-compose.yml logs -f $* 
+	docker compose -f docker/docker-compose.yml logs -f $*

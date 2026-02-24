@@ -20,14 +20,26 @@ type certsPageRes struct {
 }
 
 type certsRes struct {
-	ThingID        string    `json:"thing_id"`
-	ClientCert     string    `json:"client_cert,omitempty"`
-	ClientKey      string    `json:"client_key,omitempty"`
-	CertSerial     string    `json:"cert_serial"`
-	PrivateKeyType string    `json:"private_key_type,omitempty"`
-	KeyBits        int       `json:"key_bits,omitempty"`
+	ThingID    string    `json:"thing_id"`
+	CertSerial string    `json:"cert_serial"`
+	ExpiresAt  time.Time `json:"expires_at"`
+}
+
+type issueCertRes struct {
+	Certificate    string    `json:"certificate"`
+	IssuingCA      string    `json:"issuing_ca"`
+	CAChain        []string  `json:"ca_chain"`
+	PrivateKey     string    `json:"private_key"`
+	PrivateKeyType string    `json:"private_key_type"`
+	Serial         string    `json:"serial"`
 	ExpiresAt      time.Time `json:"expires_at"`
-	created        bool
+}
+
+type viewCertRes struct {
+	Certificate string    `json:"certificate"`
+	Serial      string    `json:"serial"`
+	ExpiresAt   time.Time `json:"expires_at"`
+	ThingID     string    `json:"thing_id"`
 }
 
 func (res certsPageRes) Code() int {
@@ -43,10 +55,6 @@ func (res certsPageRes) Empty() bool {
 }
 
 func (res certsRes) Code() int {
-	if res.created {
-		return http.StatusCreated
-	}
-
 	return http.StatusOK
 }
 
@@ -55,5 +63,29 @@ func (res certsRes) Headers() map[string]string {
 }
 
 func (res certsRes) Empty() bool {
+	return false
+}
+
+func (res issueCertRes) Code() int {
+	return http.StatusCreated
+}
+
+func (res issueCertRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res issueCertRes) Empty() bool {
+	return false
+}
+
+func (res viewCertRes) Code() int {
+	return http.StatusOK
+}
+
+func (res viewCertRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res viewCertRes) Empty() bool {
 	return false
 }

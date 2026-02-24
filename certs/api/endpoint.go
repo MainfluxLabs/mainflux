@@ -18,18 +18,17 @@ func issueCertEndpoint(svc certs.Service) endpoint.Endpoint {
 		}
 		res, err := svc.IssueCert(ctx, req.token, req.ThingID, req.TTL, req.KeyBits, req.KeyType)
 		if err != nil {
-			return certsRes{}, err
+			return issueCertRes{}, err
 		}
 
-		return certsRes{
-			CertSerial:     res.Serial,
-			ThingID:        res.ThingID,
-			ClientCert:     res.ClientCert,
-			ClientKey:      res.ClientKey,
-			ExpiresAt:      res.ExpiresAt,
+		return issueCertRes{
+			Certificate:    res.ClientCert,
+			IssuingCA:      res.IssuingCA,
+			CAChain:        res.CAChain,
+			PrivateKey:     res.ClientKey,
 			PrivateKeyType: res.PrivateKeyType,
-			KeyBits:        res.KeyBits,
-			created:        true,
+			Serial:         res.Serial,
+			ExpiresAt:      res.ExpiresAt,
 		}, nil
 	}
 }
@@ -56,11 +55,9 @@ func listSerialsByThingEndpoint(svc certs.Service) endpoint.Endpoint {
 
 		for _, cert := range page.Certs {
 			cr := certsRes{
-				CertSerial:     cert.Serial,
-				ThingID:        cert.ThingID,
-				ExpiresAt:      cert.ExpiresAt,
-				PrivateKeyType: cert.PrivateKeyType,
-				KeyBits:        cert.KeyBits,
+				CertSerial: cert.Serial,
+				ThingID:    cert.ThingID,
+				ExpiresAt:  cert.ExpiresAt,
 			}
 			res.Certs = append(res.Certs, cr)
 		}
@@ -77,19 +74,15 @@ func viewCertEndpoint(svc certs.Service) endpoint.Endpoint {
 
 		cert, err := svc.ViewCert(ctx, req.token, req.serial)
 		if err != nil {
-			return certsPageRes{}, err
+			return viewCertRes{}, err
 		}
 
-		certRes := certsRes{
-			CertSerial:     cert.Serial,
-			ThingID:        cert.ThingID,
-			ClientCert:     cert.ClientCert,
-			ExpiresAt:      cert.ExpiresAt,
-			PrivateKeyType: cert.PrivateKeyType,
-			KeyBits:        cert.KeyBits,
-		}
-
-		return certRes, nil
+		return viewCertRes{
+			Certificate: cert.ClientCert,
+			Serial:      cert.Serial,
+			ExpiresAt:   cert.ExpiresAt,
+			ThingID:     cert.ThingID,
+		}, nil
 	}
 }
 
@@ -112,18 +105,17 @@ func renewCertEndpoint(svc certs.Service) endpoint.Endpoint {
 
 		cert, err := svc.RenewCert(ctx, req.token, req.serial)
 		if err != nil {
-			return certsRes{}, err
+			return issueCertRes{}, err
 		}
 
-		return certsRes{
-			CertSerial:     cert.Serial,
-			ThingID:        cert.ThingID,
-			ClientCert:     cert.ClientCert,
-			ClientKey:      cert.ClientKey,
-			ExpiresAt:      cert.ExpiresAt,
+		return issueCertRes{
+			Certificate:    cert.ClientCert,
+			IssuingCA:      cert.IssuingCA,
+			CAChain:        cert.CAChain,
+			PrivateKey:     cert.ClientKey,
 			PrivateKeyType: cert.PrivateKeyType,
-			KeyBits:        cert.KeyBits,
-			created:        true,
+			Serial:         cert.Serial,
+			ExpiresAt:      cert.ExpiresAt,
 		}, nil
 	}
 }
