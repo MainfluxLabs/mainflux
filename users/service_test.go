@@ -665,14 +665,13 @@ func TestOAuthLogin(t *testing.T) {
 	}{
 		"oauth login with google provider":  {users.GoogleProvider, true, nil},
 		"oauth login with github provider":  {users.GitHubProvider, true, nil},
-		"oauth login with unknown provider": {"unknown", true, nil},
+		"oauth login with unknown provider": {"unknown", false, errors.ErrAuthorization},
 	}
 
 	for desc, tc := range cases {
-		state, verifier, _, err := svc.OAuthLogin(tc.provider)
+		state, _, _, err := svc.OAuthLogin(tc.provider)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected err %s got %s\n", desc, tc.err, err))
 		assert.Equal(t, tc.stateNotEmpty, state != "", fmt.Sprintf("%s: expected state non-empty=%v\n", desc, tc.stateNotEmpty))
-		assert.NotEmpty(t, verifier, fmt.Sprintf("%s: verifier should never be empty\n", desc))
 	}
 
 	state1, _, _, err := svc.OAuthLogin(users.GoogleProvider)
@@ -706,48 +705,49 @@ func TestOAuthCallback(t *testing.T) {
 
 	verifier := oauth2.GenerateVerifier()
 
-	cases := map[string]struct {
+	cases := []struct {
+		desc                string
 		provider            string
 		code                string
 		verifier            string
 		wantErr             error
 		redirectURLContains string
 	}{
-		"callback creates new google user and returns login redirect": {
+		{
+			desc:                "callback creates new google user and returns login redirect",
 			provider:            users.GoogleProvider,
 			code:                "valid-code",
 			verifier:            verifier,
-			wantErr:             nil,
 			redirectURLContains: "token=",
 		},
-		"callback creates new github user and returns login redirect": {
+		{
+			desc:                "callback creates new github user and returns login redirect",
 			provider:            users.GitHubProvider,
 			code:                "valid-code",
 			verifier:            verifier,
-			wantErr:             nil,
 			redirectURLContains: "token=",
 		},
-		"callback with invalid provider code returns error": {
+		{
+			desc:                "callback authenticates already-linked google user",
+			provider:            users.GoogleProvider,
+			code:                "valid-code",
+			verifier:            verifier,
+			redirectURLContains: "token=",
+		},
+		{
+			desc:     "callback with unknown provider returns error",
 			provider: "unknown",
 			code:     "valid-code",
 			verifier: verifier,
-			wantErr:  errors.ErrAuthentication,
+			wantErr:  errors.ErrAuthorization,
 		},
 	}
 
-	for desc, tc := range cases {
+	for _, tc := range cases {
 		redirectURL, err := svc.OAuthCallback(context.Background(), tc.provider, tc.code, tc.verifier)
-		assert.True(t, errors.Contains(err, tc.wantErr), fmt.Sprintf("%s: expected err %s got %s\n", desc, tc.wantErr, err))
+		assert.True(t, errors.Contains(err, tc.wantErr), fmt.Sprintf("%s: expected err %s got %s\n", tc.desc, tc.wantErr, err))
 		if tc.redirectURLContains != "" {
-			assert.Contains(t, redirectURL, tc.redirectURLContains, fmt.Sprintf("%s: redirect URL should contain %q\n", desc, tc.redirectURLContains))
+			assert.Contains(t, redirectURL, tc.redirectURLContains, fmt.Sprintf("%s: redirect URL should contain %q\n", tc.desc, tc.redirectURLContains))
 		}
 	}
-
-	redirectURL1, err := svc.OAuthCallback(context.Background(), users.GoogleProvider, "valid-code", verifier)
-	require.Nil(t, err, "first OAuth callback should succeed")
-	require.Contains(t, redirectURL1, "token=", "first callback should return a login redirect")
-
-	redirectURL2, err := svc.OAuthCallback(context.Background(), users.GoogleProvider, "valid-code", verifier)
-	assert.Nil(t, err, "second OAuth callback for already-linked user should succeed")
-	assert.Contains(t, redirectURL2, "token=", "second callback should return a login redirect")
 }

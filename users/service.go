@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -445,6 +446,9 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(errors.ErrAuthentication, err)
 	}
+	if dbUser.Password == "" {
+		return "", errors.ErrAuthentication
+	}
 	if err := svc.hasher.Compare(user.Password, dbUser.Password); err != nil {
 		return "", errors.Wrap(errors.ErrAuthentication, err)
 	}
@@ -458,6 +462,8 @@ func (svc usersService) OAuthLogin(provider string) (state, verifier, redirectUR
 		oauthCfg = svc.googleOAuth
 	case GitHubProvider:
 		oauthCfg = svc.githubOAuth
+	default:
+		return "", "", "", errors.ErrAuthorization
 	}
 
 	verifier = oauth2.GenerateVerifier()
@@ -465,7 +471,7 @@ func (svc usersService) OAuthLogin(provider string) (state, verifier, redirectUR
 	if err != nil {
 		return "", "", "", err
 	}
-	redirectURL = oauthCfg.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.S256ChallengeOption(verifier))
+	redirectURL = oauthCfg.AuthCodeURL(state, oauth2.S256ChallengeOption(verifier))
 	return state, verifier, redirectURL, nil
 }
 
@@ -478,6 +484,8 @@ func (svc usersService) OAuthCallback(ctx context.Context, provider, code, verif
 		email, providerUserID, err = svc.fetchGoogleUser(ctx, code, verifier)
 	case GitHubProvider:
 		email, providerUserID, err = svc.fetchGitHubUser(ctx, code, verifier)
+	default:
+		return "", errors.ErrAuthorization
 	}
 
 	if err != nil {
@@ -517,6 +525,9 @@ func (svc usersService) fetchGoogleUser(ctx context.Context, code, verifier stri
 	if err := json.NewDecoder(resp.Body).Decode(&gUser); err != nil {
 		return "", "", err
 	}
+	if gUser.Email == "" || gUser.ID == "" {
+		return "", "", errors.ErrAuthentication
+	}
 
 	return gUser.Email, gUser.ID, nil
 }
@@ -546,6 +557,9 @@ func (svc usersService) fetchGitHubUser(ctx context.Context, code, verifier stri
 		return "", "", err
 	}
 	defer resp2.Body.Close()
+	if resp2.StatusCode != http.StatusOK {
+		return "", "", errors.ErrAuthentication
+	}
 
 	var emails []struct {
 		Email    string `json:"email"`
@@ -563,8 +577,8 @@ func (svc usersService) fetchGitHubUser(ctx context.Context, code, verifier stri
 			break
 		}
 	}
-	if email == "" && len(emails) > 0 {
-		email = emails[0].Email
+	if email == "" {
+		return "", "", errors.ErrAuthentication
 	}
 
 	return email, providerUserID, nil
@@ -594,7 +608,10 @@ func (svc usersService) handleIdentity(ctx context.Context, provider, email, pro
 		user, err = svc.users.RetrieveByEmail(ctx, email)
 		if err != nil {
 			if errors.Contains(err, dbutil.ErrNotFound) {
-				uid, _ := svc.idProvider.ID()
+				uid, err := svc.idProvider.ID()
+				if err != nil {
+					return User{}, err
+				}
 				user = User{
 					ID:     uid,
 					Email:  email,
