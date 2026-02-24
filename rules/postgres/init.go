@@ -114,11 +114,15 @@ func migrateDB(db *sqlx.DB) error {
 						PRIMARY KEY (id),
 						FOREIGN KEY (script_id) REFERENCES lua_scripts (id)
 					);`,
+					`CREATE INDEX IF NOT EXISTS idx_lua_script_runs_thing_id ON lua_script_runs(thing_id)`,
+					`CREATE INDEX IF NOT EXISTS idx_lua_script_runs_script_id ON lua_script_runs(script_id)`,
 				},
 				Down: []string{
 					`DROP TABLE IF EXISTS lua_scripts;`,
 					`DROP TABLE IF EXISTS lua_scripts_things;`,
 					`DROP TABLE IF EXISTS lua_script_runs;`,
+					`DROP INDEX IF EXISTS idx_lua_script_runs_thing_id ;`,
+					`DROP INDEX IF EXISTS idx_lua_script_runs_script_id ;`,
 				},
 			},
 		},
