@@ -81,10 +81,8 @@ func viewCertEndpoint(svc certs.Service) endpoint.Endpoint {
 			Certificate: cert.ClientCert,
 			Serial:      cert.Serial,
 			ExpiresAt:   cert.ExpiresAt,
-			IssuerID:    cert.ThingID,
+			ThingID:     cert.ThingID,
 		}, nil
-
-		return certRes, nil
 	}
 }
 

@@ -39,7 +39,7 @@ type viewCertRes struct {
 	Certificate string    `json:"certificate"`
 	Serial      string    `json:"serial"`
 	ExpiresAt   time.Time `json:"expires_at"`
-	IssuerID    string    `json:"issuer_id"`
+	ThingID     string    `json:"thing_id"`
 }
 
 func (res certsPageRes) Code() int {
