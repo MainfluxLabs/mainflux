@@ -86,6 +86,8 @@ paths:
       responses:
         '200':
           $ref: "#/components/responses/ClientRes"
+        '400':
+          description: Failed due to malformed request.
         '401':
           description: Missing or invalid access token provided.
         '404':
@@ -163,7 +165,7 @@ components:
           example: "minutely"
         date_time:
           type: string
-          description: ISO 8601 date-time string, required when frequency is "once".
+          description: ISO 8601 date-time string. Required when frequency is "once"; ignored otherwise.
           example: "2024-06-01T08:00:00"
         week:
           $ref: "#/components/schemas/Week"
@@ -270,9 +272,12 @@ components:
           example: "502"
         slave_id:
           type: integer
+          minimum: 0
+          maximum: 255
           example: 1
         function_code:
           type: string
+          enum: [ReadCoils, ReadDiscreteInputs, ReadInputRegisters, ReadHoldingRegisters]
           example: "ReadHoldingRegisters"
         scheduler:
           $ref: "#/components/schemas/Scheduler"
@@ -335,6 +340,7 @@ components:
       name: offset
       in: query
       required: false
+      description: Number of items to skip.
       schema:
         type: integer
         minimum: 0
@@ -342,6 +348,7 @@ components:
       name: limit
       in: query
       required: false
+      description: Maximum number of items to return.
       schema:
         type: integer
         minimum: 1
@@ -505,6 +512,7 @@ components:
                   - name: "temperature"
                     type: "float32"
                     unit: "°C"
+                    scale: 0.1
                     byte_order: "ABCD"
                     address: 0
     ServiceError:
