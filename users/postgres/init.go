@@ -99,7 +99,7 @@ func migrateDB(db *sqlx.DB) error {
 				Up: []string{
 					`ALTER TABLE users ALTER COLUMN password DROP NOT NULL`,
 
-					`CREATE TABLE user_identities (
+					`CREATE TABLE oauth_identities (
 						user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 						provider VARCHAR(32) NOT NULL,
 						provider_user_id VARCHAR(128) NOT NULL,
@@ -108,7 +108,7 @@ func migrateDB(db *sqlx.DB) error {
 					)`,
 				},
 				Down: []string{
-					`DROP TABLE IF EXISTS user_identities`,
+					`DROP TABLE IF EXISTS oauth_identities`,
 					`UPDATE users SET password = '' WHERE password IS NULL`,
 					`ALTER TABLE users ALTER COLUMN password SET NOT NULL`,
 				},

@@ -96,12 +96,12 @@ type UserRepository interface {
 }
 
 type IdentityRepository interface {
-	// Save persists the user Identity
+	// Save persists an OAuth identity.
 	Save(ctx context.Context, identity Identity) error
 
-	// Retrieve fetches an Identity by provider and providerUserID.
+	// Retrieve fetches an OAuth identity by provider and provider user ID.
 	Retrieve(ctx context.Context, provider, providerUserID string) (Identity, error)
 
-	// BackupAll retrieves all identities for backup purposes.
+	// BackupAll retrieves all OAuth identities.
 	BackupAll(ctx context.Context) ([]Identity, error)
 }

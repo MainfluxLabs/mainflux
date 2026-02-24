@@ -29,7 +29,7 @@ func NewIdentityRepo(db dbutil.Database) users.IdentityRepository {
 	}
 }
 func (ir identityRepository) Save(ctx context.Context, identity users.Identity) error {
-	q := `INSERT INTO user_identities (user_id, provider, provider_user_id) VALUES (:user_id, :provider, :provider_user_id)`
+	q := `INSERT INTO oauth_identities (user_id, provider, provider_user_id) VALUES (:user_id, :provider, :provider_user_id)`
 
 	dbi := toDBIdentity(identity)
 
@@ -45,12 +45,12 @@ func (ir identityRepository) Save(ctx context.Context, identity users.Identity) 
 	return nil
 }
 
-func (ur identityRepository) Retrieve(ctx context.Context, provider, providerUserID string) (users.Identity, error) {
-	q := `SELECT user_id, provider, provider_user_id FROM user_identities 
+func (ir identityRepository) Retrieve(ctx context.Context, provider, providerUserID string) (users.Identity, error) {
+	q := `SELECT user_id, provider, provider_user_id FROM oauth_identities 
 	      WHERE provider=$1 AND provider_user_id=$2`
 
 	var dbID dbIdentity
-	if err := ur.db.QueryRowxContext(ctx, q, provider, providerUserID).StructScan(&dbID); err != nil {
+	if err := ir.db.QueryRowxContext(ctx, q, provider, providerUserID).StructScan(&dbID); err != nil {
 		if err == sql.ErrNoRows {
 			return users.Identity{}, errors.Wrap(dbutil.ErrNotFound, err)
 		}
@@ -61,7 +61,7 @@ func (ur identityRepository) Retrieve(ctx context.Context, provider, providerUse
 }
 
 func (ir identityRepository) BackupAll(ctx context.Context) ([]users.Identity, error) {
-	q := `SELECT user_id, provider, provider_user_id FROM user_identities`
+	q := `SELECT user_id, provider, provider_user_id FROM oauth_identities`
 
 	rows, err := ir.db.NamedQueryContext(ctx, q, map[string]any{})
 	if err != nil {
