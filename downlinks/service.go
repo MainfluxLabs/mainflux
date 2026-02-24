@@ -5,16 +5,9 @@ package downlinks
 
 import (
 	"context"
-	"encoding/json"
-	"encoding/xml"
 	"fmt"
-	"io"
-	"net/http"
-	"net/url"
-	"strings"
-	"time"
-
 	"sync"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -89,19 +82,14 @@ type downlinksService struct {
 }
 
 const (
-	downlinkProtocol     = "http-downlink"
-	baseISO8601Format    = "2006-01-02T15:04:05"
-	compactISO8601Format = "200601021504"
-	contentType          = "Content-Type"
-	jsonFormat           = "json"
-	xmlFormat            = "xml"
+	downlinkProtocol = "http-downlink"
+	taskTimeout      = 30 * time.Second
 
 	MinuteInterval = "minute"
 	HourInterval   = "hour"
 	DayInterval    = "day"
 )
 
-var _ Service = (*downlinksService)(nil)
 var (
 	errRetrieveHTTPResponse = "failed to retrieve HTTP response"
 	errParsePayload         = "failed to parse payload"
@@ -110,6 +98,8 @@ var (
 	errExtractBaseURL       = "failed to extract base URL"
 	errRateLimiter          = "failed to wait for rate limiter"
 )
+
+var _ Service = (*downlinksService)(nil)
 
 func New(things protomfx.ThingsServiceClient, auth protomfx.AuthServiceClient, pub messaging.Publisher, downlinks DownlinkRepository, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &downlinksService{
@@ -214,11 +204,7 @@ func (ds *downlinksService) UpdateDownlink(ctx context.Context, token string, do
 	}
 
 	downlink.ThingID = dl.ThingID
-	if err := ds.scheduleTasks(ctx, downlink); err != nil {
-		return err
-	}
-
-	return nil
+	return ds.scheduleTasks(ctx, downlink)
 }
 
 func (ds *downlinksService) RemoveDownlinks(ctx context.Context, token string, ids ...string) error {
@@ -234,11 +220,7 @@ func (ds *downlinksService) RemoveDownlinks(ctx context.Context, token string, i
 		ds.unscheduleTask(downlink)
 	}
 
-	if err := ds.downlinks.Remove(ctx, ids...); err != nil {
-		return err
-	}
-
-	return nil
+	return ds.downlinks.Remove(ctx, ids...)
 }
 
 func (ds *downlinksService) RemoveDownlinksByThing(ctx context.Context, thingID string) error {
@@ -297,7 +279,6 @@ func (ds *downlinksService) RescheduleTasks(ctx context.Context, profileID strin
 
 	cfg := protoutil.MapToProtoConfig(config)
 
-	// stop existing tasks and start new tasks with updated config
 	for _, d := range downlinks {
 		ds.unscheduleTask(d)
 
@@ -305,6 +286,8 @@ func (ds *downlinksService) RescheduleTasks(ctx context.Context, profileID strin
 			return err
 		}
 	}
+
+	ds.logger.Info(fmt.Sprintf("rescheduled %d tasks for profile %s", len(downlinks), profileID))
 
 	return nil
 }
@@ -347,7 +330,7 @@ func (ds *downlinksService) unscheduleTask(d Downlink) {
 
 func (ds *downlinksService) createTask(d Downlink, config *protomfx.Config) func() {
 	return func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), taskTimeout)
 		defer cancel()
 
 		path := d.Url
@@ -385,8 +368,11 @@ func (ds *downlinksService) createTask(d Downlink, config *protomfx.Config) func
 		}
 
 		if err := ds.publish(config, d.ThingID, formattedPayload); err != nil {
-			ds.logger.Error(fmt.Sprintf("%s: %s", errPublishMessage, err))
+			ds.logger.Error(fmt.Sprintf("%s with publisher %s: %s", errPublishMessage, d.ThingID, err))
+			return
 		}
+
+		ds.logger.Info(fmt.Sprintf("task executed for downlink %s, thing %s", d.ID, d.ThingID))
 	}
 }
 
@@ -398,16 +384,19 @@ func (ds *downlinksService) LoadAndScheduleTasks(ctx context.Context) error {
 	}
 
 	for _, d := range downlinks {
-		if d.Scheduler.Frequency == cron.OnceFreq {
-			scheduledDateTime, err := cron.ParseTime(cron.DateTimeLayout, d.Scheduler.DateTime, d.Scheduler.TimeZone)
-			if err != nil {
-				return err
-			}
+		if d.Scheduler.Frequency != cron.OnceFreq {
+			dls = append(dls, d)
+			continue
+		}
 
-			now := time.Now().In(scheduledDateTime.Location())
-			if scheduledDateTime.After(now) {
-				dls = append(dls, d)
-			}
+		scheduledDateTime, err := cron.ParseTime(cron.DateTimeLayout, d.Scheduler.DateTime, d.Scheduler.TimeZone)
+		if err != nil {
+			return err
+		}
+
+		now := time.Now().In(scheduledDateTime.Location())
+		if !scheduledDateTime.After(now) {
+			ds.logger.Info(fmt.Sprintf("skipping past one-time downlink %s scheduled at %s", d.ID, scheduledDateTime))
 			continue
 		}
 		dls = append(dls, d)
@@ -438,244 +427,7 @@ func (ds *downlinksService) publish(config *protomfx.Config, thingID string, pay
 
 	msg.Subject = nats.GetMessagesSubject(msg.Publisher, msg.Subtopic)
 
-	if err := ds.publisher.Publish(msg); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func formatTime(t time.Time, format string) string {
-	switch format {
-	case "unix":
-		return fmt.Sprintf("%d", t.Unix())
-	case "unix_ms":
-		return fmt.Sprintf("%d", t.UnixNano()/1e6)
-	case "unix_us":
-		return fmt.Sprintf("%d", t.UnixNano()/1e3)
-	case "unix_ns":
-		return fmt.Sprintf("%d", t.UnixNano())
-	default:
-		layout := getLayout(format)
-		return t.Format(layout)
-	}
-}
-
-func getLayout(format string) string {
-	switch strings.ToLower(format) {
-	case "ansic":
-		return time.ANSIC
-	case "unixdate":
-		return time.UnixDate
-	case "rubydate":
-		return time.RubyDate
-	case "rfc822":
-		return time.RFC822
-	case "rfc822z":
-		return time.RFC822Z
-	case "rfc850":
-		return time.RFC850
-	case "rfc1123":
-		return time.RFC1123
-	case "rfc1123z":
-		return time.RFC1123Z
-	case "rfc3339":
-		return time.RFC3339
-	case "rfc3339nano":
-		return time.RFC3339Nano
-	case "stamp":
-		return time.Stamp
-	case "stampmilli":
-		return time.StampMilli
-	case "stampmicro":
-		return time.StampMicro
-	case "stampnano":
-		return time.StampNano
-	case "iso8601":
-		return baseISO8601Format
-	case "datetime":
-		return time.DateTime
-	case "compactiso8601":
-		return compactISO8601Format
-	}
-
-	return ""
-}
-
-func formatURL(d Downlink) (string, error) {
-	u, err := url.Parse(d.Url)
-	if err != nil {
-		return "", err
-	}
-
-	startTime, endTime, err := calculateTimeRange(d.Scheduler.TimeZone, d.TimeFilter)
-	if err != nil {
-		return "", err
-	}
-
-	q := u.Query()
-	q.Set(d.TimeFilter.StartParam, formatTime(startTime, d.TimeFilter.Format))
-	q.Set(d.TimeFilter.EndParam, formatTime(endTime, d.TimeFilter.Format))
-	u.RawQuery = q.Encode()
-
-	return u.String(), nil
-}
-
-func calculateTimeRange(timezone string, filter TimeFilter) (time.Time, time.Time, error) {
-	var duration time.Duration
-
-	switch filter.Interval {
-	case MinuteInterval:
-		duration = time.Duration(filter.Value) * time.Minute
-	case HourInterval:
-		duration = time.Duration(filter.Value) * time.Hour
-	case DayInterval:
-		duration = time.Duration(filter.Value*24) * time.Hour
-	}
-
-	loc, err := time.LoadLocation(timezone)
-	if err != nil {
-		return time.Time{}, time.Time{}, err
-	}
-	now := time.Now().In(loc)
-
-	if filter.Forecast {
-		return now, now.Add(duration), nil
-	}
-	return now.Add(-duration), now, nil
-}
- 
-func formatPayload(response *http.Response) ([]byte, error) {
-	var mappedData = payload{}
-	resPayload, err := io.ReadAll(response.Body)
-	if err != nil {
-		return nil, err
-	}
-	defer response.Body.Close()
-
-	format := getFormat(response.Header.Get(contentType))
-
-	switch format {
-	case xmlFormat:
-		err := xml.Unmarshal(resPayload, &mappedData)
-		if err != nil {
-			return nil, err
-		}
-
-		filteredData := removeUnderscoreKeys(mappedData.data)
-		jsonData, err := json.Marshal(filteredData)
-		if err != nil {
-			return nil, err
-		}
-
-		return jsonData, nil
-	case jsonFormat:
-		return resPayload, nil
-	default:
-		// Build comprehensive error information
-		errorInfo := map[string]any{
-			"error":            string(resPayload),
-			"http_status":      response.Status,
-			"status_code":      response.StatusCode,
-			"response_headers": response.Header,
-			"request_method":   response.Request.Method,
-			"request_url":      response.Request.URL.String(),
-		}
-
-		return json.Marshal(errorInfo)
-	}
-}
-
-func (p *payload) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error {
-	p.data = make(map[string]any)
-	stack := []map[string]any{p.data}
-	nameStack := []xml.Name{start.Name}
-
-	for {
-		token, err := decoder.Token()
-		if err != nil {
-			if err == io.EOF {
-				return nil
-			}
-			return err
-		}
-
-		switch elem := token.(type) {
-		case xml.StartElement:
-			// Create new node
-			node := map[string]any{}
-
-			// Add to parent
-			parent := stack[len(stack)-1]
-			currentName := elem.Name.Local
-
-			if existing, exists := parent[currentName]; exists {
-				switch v := existing.(type) {
-				case []any:
-					parent[currentName] = append(v, node)
-				case map[string]any:
-					parent[currentName] = []any{v, node}
-				}
-			} else {
-				parent[currentName] = node
-			}
-
-			stack = append(stack, node)
-			nameStack = append(nameStack, elem.Name)
-
-		case xml.EndElement:
-			stack = stack[:len(stack)-1]
-			nameStack = nameStack[:len(nameStack)-1]
-
-		case xml.CharData:
-			val := strings.TrimSpace(string(elem))
-			if val == "" {
-				continue
-			}
-
-			current := stack[len(stack)-1]
-			if len(current) == 0 {
-				// Simple text content
-				parent := stack[len(stack)-2]
-				name := nameStack[len(nameStack)-1].Local
-				parent[name] = val
-			} else {
-				// Mixed content
-				current["#text"] = val
-			}
-		}
-	}
-}
-
-func getFormat(ct string) string {
-	switch {
-	case strings.Contains(ct, jsonFormat):
-		return jsonFormat
-	case strings.Contains(ct, xmlFormat):
-		return xmlFormat
-	default:
-		return ""
-	}
-}
-
-func removeUnderscoreKeys(data map[string]any) map[string]any {
-	filteredData := make(map[string]any)
-
-	for key, value := range data {
-		if key == "_" {
-			continue
-		}
-
-		v, ok := value.(map[string]any)
-		if ok {
-			filteredData[key] = removeUnderscoreKeys(v)
-			continue
-		}
-
-		filteredData[key] = value
-	}
-
-	return filteredData
+	return ds.publisher.Publish(msg)
 }
 
 func (ds *downlinksService) getLimiter(baseURL string) *rate.Limiter {
@@ -689,15 +441,6 @@ func (ds *downlinksService) getLimiter(baseURL string) *rate.Limiter {
 	limiter := rate.NewLimiter(rate.Every(2500*time.Millisecond), 1)
 	ds.limiters[baseURL] = limiter
 	return limiter
-}
-
-func getBaseURL(path string) (string, error) {
-	u, err := url.Parse(path)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%s://%s%s", u.Scheme, u.Host, u.Path), nil
 }
 
 func (ds *downlinksService) Backup(ctx context.Context, token string) ([]Downlink, error) {
@@ -717,7 +460,7 @@ func (ds *downlinksService) Restore(ctx context.Context, token string, dls []Dow
 		return err
 	}
 
-	return nil
+	return ds.scheduleTasks(ctx, dls...)
 }
 
 func (ds *downlinksService) isAdmin(ctx context.Context, token string) error {

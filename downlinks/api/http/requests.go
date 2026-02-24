@@ -23,7 +23,7 @@ var (
 	ErrMissingID             = errors.New("missing downlink id")
 	ErrInvalidURL            = errors.New("missing or invalid url")
 	ErrInvalidScheduler      = errors.New("missing or invalid scheduler")
-	ErrMissingFilterFormat   = errors.New("missing time filter format")
+	ErrInvalidFilterFormat   = errors.New("invalid time filter format")
 	ErrInvalidFilterParam    = errors.New("invalid time filter param")
 	ErrInvalidFilterInterval = errors.New("invalid time filter interval")
 	ErrInvalidFilterValue    = errors.New("invalid time filter value")
@@ -96,8 +96,8 @@ func (req downlink) validate() error {
 			return ErrInvalidFilterParam
 		}
 
-		if req.TimeFilter.Format == "" {
-			return ErrMissingFilterFormat
+		if !downlinks.IsValidFormat(req.TimeFilter.Format) {
+			return ErrInvalidFilterFormat
 		}
 	}
 
