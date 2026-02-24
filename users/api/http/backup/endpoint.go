@@ -64,12 +64,13 @@ func buildBackupResponse(admin users.User, users []users.User, identities []user
 		res.Users = append(res.Users, view)
 	}
 
-	for _, id := range identities {
-		res.Identities = append(res.Identities, backupIdentityRes{
-			UserID:         id.UserID,
-			Provider:       id.Provider,
-			ProviderUserID: id.ProviderUserID,
-		})
+	for _, identity := range identities {
+		view := backupIdentityRes{
+			UserID:         identity.UserID,
+			Provider:       identity.Provider,
+			ProviderUserID: identity.ProviderUserID,
+		}
+		res.Identities = append(res.Identities, view)
 	}
 
 	return res
@@ -96,14 +97,15 @@ func buildBackup(req restoreReq) (users.User, []users.User, []users.Identity) {
 		u = append(u, view)
 	}
 
-	var identities []users.Identity
-	for _, id := range req.Identities {
-		identities = append(identities, users.Identity{
-			UserID:         id.UserID,
-			Provider:       id.Provider,
-			ProviderUserID: id.ProviderUserID,
-		})
+	i := []users.Identity{}
+	for _, identity := range req.Identities {
+		view := users.Identity{
+			UserID:         identity.UserID,
+			Provider:       identity.Provider,
+			ProviderUserID: identity.ProviderUserID,
+		}
+		i = append(i, view)
 	}
 
-	return admin, u, identities
+	return admin, u, i
 }
