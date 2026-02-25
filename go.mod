@@ -7,18 +7,19 @@ require (
 	github.com/MainfluxLabs/senml v1.0.5
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/docker/docker v28.3.3+incompatible
-	github.com/eclipse/paho.mqtt.golang v1.4.1
+	github.com/eclipse/paho.mqtt.golang v1.5.1
 	github.com/fatih/color v1.13.0
 	github.com/fiorix/go-smpp v0.0.0-20210403173735-2894b96e70ba
 	github.com/go-kit/kit v0.12.0
 	github.com/go-kit/log v0.2.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-zoo/bone v1.3.0
+	github.com/goburrow/modbus v0.1.0
 	github.com/gofrs/uuid v4.2.0+incompatible
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/golang/protobuf v1.5.4
-	github.com/gorilla/websocket v1.5.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
 	github.com/jackc/pgx/v5 v5.5.4
@@ -68,6 +69,7 @@ require (
 	github.com/go-gorp/gorp/v3 v3.0.2 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
+	github.com/goburrow/serial v0.1.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
