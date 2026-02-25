@@ -18,6 +18,7 @@ import (
 	httpapi "github.com/MainfluxLabs/mainflux/downlinks/api/http"
 	dlmocks "github.com/MainfluxLabs/mainflux/downlinks/mocks"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/cron"
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -29,8 +30,7 @@ import (
 )
 
 const (
-	adminEmail  = "admin@example.com"
-	token       = adminEmail
+	token       = "admin@example.com"
 	wrongToken  = "wrong-token"
 	emptyValue  = ""
 	contentType = "application/json"
@@ -44,7 +44,7 @@ const (
 var (
 	adminUser = users.User{
 		ID:    "874106f7-030e-4881-8ab0-151195c29f97",
-		Email: adminEmail,
+		Email: token,
 		Role:  auth.RootSub,
 	}
 	usersList = []users.User{adminUser}
@@ -83,7 +83,7 @@ func (tr testRequest) make() (*http.Response, error) {
 	}
 
 	if tr.token != "" {
-		req.Header.Set("Authorization", "Bearer "+tr.token)
+		req.Header.Set("Authorization", apiutil.BearerPrefix+tr.token)
 	}
 
 	if tr.contentType != "" {

@@ -146,10 +146,10 @@ func TestExtractFieldBytesCoils(t *testing.T) {
 	block := Block{Start: 0, Length: 8}
 
 	cases := []struct {
-		desc     string
-		field    DataField
-		want     []byte
-		wantErr  bool
+		desc    string
+		field   DataField
+		want    []byte
+		wantErr bool
 	}{
 		{
 			desc:    "coil at bit 0 is ON",
@@ -301,32 +301,32 @@ func TestCalcFieldLengths(t *testing.T) {
 		want   []DataField
 	}{
 		{
-			desc: "int16 gets length 1",
+			desc:   "int16 gets length 1",
 			fields: []DataField{{Type: Int16Type}},
 			want:   []DataField{{Type: Int16Type, Length: 1}},
 		},
 		{
-			desc: "uint16 gets length 1",
+			desc:   "uint16 gets length 1",
 			fields: []DataField{{Type: Uint16Type}},
 			want:   []DataField{{Type: Uint16Type, Length: 1}},
 		},
 		{
-			desc: "bool gets length 1",
+			desc:   "bool gets length 1",
 			fields: []DataField{{Type: BoolType}},
 			want:   []DataField{{Type: BoolType, Length: 1}},
 		},
 		{
-			desc: "int32 gets length 2",
+			desc:   "int32 gets length 2",
 			fields: []DataField{{Type: Int32Type}},
 			want:   []DataField{{Type: Int32Type, Length: 2}},
 		},
 		{
-			desc: "uint32 gets length 2",
+			desc:   "uint32 gets length 2",
 			fields: []DataField{{Type: Uint32Type}},
 			want:   []DataField{{Type: Uint32Type, Length: 2}},
 		},
 		{
-			desc: "float32 gets length 2",
+			desc:   "float32 gets length 2",
 			fields: []DataField{{Type: Float32Type}},
 			want:   []DataField{{Type: Float32Type, Length: 2}},
 		},
@@ -592,6 +592,22 @@ func TestFormatRegistersPayload(t *testing.T) {
 				_, exists := got["absent"]
 				assert.False(t, exists)
 			},
+		},
+		{
+			desc: "bool field with too few bytes returns error",
+			data: map[string][]byte{"flag": {0x01}},
+			fields: []DataField{
+				{Name: "flag", Type: BoolType, ByteOrder: ByteOrderABCD},
+			},
+			wantErr: true,
+		},
+		{
+			desc: "float32 field with too few bytes returns error",
+			data: map[string][]byte{"temp": {0x00, 0x01}},
+			fields: []DataField{
+				{Name: "temp", Type: Float32Type, ByteOrder: ByteOrderABCD},
+			},
+			wantErr: true,
 		},
 	}
 

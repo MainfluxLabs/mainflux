@@ -149,6 +149,22 @@ func TestListClientsByThing(t *testing.T) {
 			size:    0,
 			err:     errors.ErrAuthorization,
 		},
+		{
+			desc:    "list clients by thing with limit",
+			token:   token,
+			thingID: thingID,
+			pm:      apiutil.PageMetadata{Limit: 1, Offset: 0},
+			size:    1,
+			err:     nil,
+		},
+		{
+			desc:    "list clients by thing with offset beyond available",
+			token:   token,
+			thingID: thingID,
+			pm:      apiutil.PageMetadata{Limit: 1, Offset: 1},
+			size:    0,
+			err:     nil,
+		},
 	}
 
 	for _, tc := range cases {
@@ -197,6 +213,22 @@ func TestListClientsByGroup(t *testing.T) {
 			pm:      apiutil.PageMetadata{},
 			size:    0,
 			err:     errors.ErrAuthorization,
+		},
+		{
+			desc:    "list clients by group with limit",
+			token:   token,
+			groupID: groupID,
+			pm:      apiutil.PageMetadata{Limit: 1, Offset: 0},
+			size:    1,
+			err:     nil,
+		},
+		{
+			desc:    "list clients by group with offset beyond available",
+			token:   token,
+			groupID: groupID,
+			pm:      apiutil.PageMetadata{Limit: 1, Offset: 1},
+			size:    0,
+			err:     nil,
 		},
 	}
 

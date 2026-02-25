@@ -25,18 +25,18 @@ import (
 )
 
 const (
-	token       = "admin@example.com"
-	adminEmail  = "admin@example.com"
-	userEmail   = "user@example.com"
-	wrongToken  = "wrong-token"
-	thingID     = "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
-	groupID     = "574106f7-030e-4881-8ab0-151195c29f94"
-	wrongID     = "wrong-id"
+	token      = "admin@example.com"
+	userToken  = "user@example.com"
+	wrongToken = "wrong-token"
+	thingID    = "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
+	groupID    = "574106f7-030e-4881-8ab0-151195c29f94"
+	wrongID    = "wrong-id"
 )
 
 var (
-	adminUser = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f97", Email: adminEmail, Role: auth.RootSub}
-	usersList = []users.User{adminUser}
+	adminUser   = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f97", Email: token, Role: auth.RootSub}
+	regularUser = users.User{ID: "974106f7-030e-4881-8ab0-151195c29f98", Email: userToken}
+	usersList   = []users.User{adminUser, regularUser}
 
 	downlink = downlinks.Downlink{
 		Name:   "test-downlink",
@@ -149,6 +149,22 @@ func TestListDownlinksByThing(t *testing.T) {
 			size:    0,
 			err:     errors.ErrAuthorization,
 		},
+		{
+			desc:    "list downlinks by thing with limit",
+			token:   token,
+			thingID: thingID,
+			pm:      apiutil.PageMetadata{Limit: 1, Offset: 0},
+			size:    1,
+			err:     nil,
+		},
+		{
+			desc:    "list downlinks by thing with offset beyond available",
+			token:   token,
+			thingID: thingID,
+			pm:      apiutil.PageMetadata{Limit: 1, Offset: 1},
+			size:    0,
+			err:     nil,
+		},
 	}
 
 	for _, tc := range cases {
@@ -197,6 +213,22 @@ func TestListDownlinksByGroup(t *testing.T) {
 			pm:      apiutil.PageMetadata{},
 			size:    0,
 			err:     errors.ErrAuthorization,
+		},
+		{
+			desc:    "list downlinks by group with limit",
+			token:   token,
+			groupID: groupID,
+			pm:      apiutil.PageMetadata{Limit: 1, Offset: 0},
+			size:    1,
+			err:     nil,
+		},
+		{
+			desc:    "list downlinks by group with offset beyond available",
+			token:   token,
+			groupID: groupID,
+			pm:      apiutil.PageMetadata{Limit: 1, Offset: 1},
+			size:    0,
+			err:     nil,
 		},
 	}
 
@@ -416,13 +448,13 @@ func TestBackup(t *testing.T) {
 	}{
 		{
 			desc:  "backup with admin token",
-			token: adminEmail,
+			token: token,
 			size:  1,
 			err:   nil,
 		},
 		{
 			desc:  "backup with non-admin token",
-			token: userEmail,
+			token: userToken,
 			size:  0,
 			err:   errors.ErrAuthorization,
 		},
@@ -454,13 +486,13 @@ func TestRestore(t *testing.T) {
 	}{
 		{
 			desc:      "restore with admin token",
-			token:     adminEmail,
+			token:     token,
 			downlinks: []downlinks.Downlink{downlink},
 			err:       nil,
 		},
 		{
 			desc:      "restore with non-admin token",
-			token:     userEmail,
+			token:     userToken,
 			downlinks: []downlinks.Downlink{downlink},
 			err:       errors.ErrAuthorization,
 		},
