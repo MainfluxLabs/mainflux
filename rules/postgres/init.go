@@ -112,7 +112,7 @@ func migrateDB(db *sqlx.DB) error {
 						status      TEXT NOT NULL,
 						error       TEXT NULL,
 						PRIMARY KEY (id),
-						FOREIGN KEY (script_id) REFERENCES lua_scripts (id)
+						FOREIGN KEY (script_id) REFERENCES lua_scripts (id) ON DELETE CASCADE
 					);`,
 					`CREATE INDEX IF NOT EXISTS idx_lua_script_runs_thing_id ON lua_script_runs(thing_id)`,
 					`CREATE INDEX IF NOT EXISTS idx_lua_script_runs_script_id ON lua_script_runs(script_id)`,
