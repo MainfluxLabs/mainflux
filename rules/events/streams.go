@@ -40,6 +40,10 @@ func (es eventHandler) Handle(ctx context.Context, event events.Event) error {
 		if err := es.svc.RemoveRulesByGroup(ctx, re.id); err != nil {
 			return err
 		}
+
+		if err := es.svc.RemoveScriptsByGroup(ctx, re.id); err != nil {
+			return err
+		}
 	}
 
 	return nil

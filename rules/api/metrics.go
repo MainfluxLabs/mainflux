@@ -197,6 +197,15 @@ func (ms metricsMiddleware) RemoveScripts(ctx context.Context, token string, ids
 	return ms.svc.RemoveScripts(ctx, token, ids...)
 }
 
+func (ms metricsMiddleware) RemoveScriptsByGroup(ctx context.Context, groupID string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "remove_scripts_by_group").Add(1)
+		ms.latency.With("method", "remove_scripts_by_group").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RemoveScriptsByGroup(ctx, groupID)
+}
+
 func (ms metricsMiddleware) AssignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "assign_scripts").Add(1)

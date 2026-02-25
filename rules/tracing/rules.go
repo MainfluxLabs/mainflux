@@ -28,6 +28,7 @@ const (
 	retrieveThingIDsByScript  = "retrieve_thing_ids_by_script"
 	updateScript              = "update_script"
 	removeScripts             = "remove_scripts"
+	removeScriptsByGroup      = "remove_scripts_by_group"
 	assignScripts             = "assign_scripts"
 	unassignScripts           = "unassign_scripts"
 	unassignScriptsFromThing  = "unassign_scripts_from_thing"
@@ -196,6 +197,14 @@ func (rpm ruleRepositoryMiddleware) RemoveScripts(ctx context.Context, ids ...st
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return rpm.repo.RemoveScripts(ctx, ids...)
+}
+
+func (rpm ruleRepositoryMiddleware) RemoveScriptsByGroup(ctx context.Context, groupID string) error {
+	span := dbutil.CreateSpan(ctx, rpm.tracer, removeScriptsByGroup)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return rpm.repo.RemoveScriptsByGroup(ctx, groupID)
 }
 
 func (rpm ruleRepositoryMiddleware) AssignScripts(ctx context.Context, thingID string, scriptIDs ...string) error {

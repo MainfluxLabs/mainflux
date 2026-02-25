@@ -51,6 +51,9 @@ type ServiceScripts interface {
 	// RemoveScripts removes the Scripts identified by the provided IDs.
 	RemoveScripts(ctx context.Context, token string, ids ...string) error
 
+	// RemoveScriptsByGroup removes all Scripts belonging to a specific Group.
+	RemoveScriptsByGroup(ctx context.Context, groupID string) error
+
 	// AssignScripts assigns one or more Scripts to a specific Thing.
 	AssignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) error
 
@@ -392,6 +395,10 @@ func (rs *rulesService) RemoveScripts(ctx context.Context, token string, ids ...
 	return rs.rules.RemoveScripts(ctx, ids...)
 }
 
+func (rs *rulesService) RemoveScriptsByGroup(ctx context.Context, groupID string) error {
+	return rs.rules.RemoveScriptsByGroup(ctx, groupID)
+}
+
 func (rs *rulesService) AssignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) error {
 	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
 		return err
@@ -567,6 +574,9 @@ type RepositoryScripts interface {
 
 	// RemoveScripts removes Lua scripts with the provided ids.
 	RemoveScripts(ctx context.Context, ids ...string) error
+
+	// RemoveScriptsByGroup removes all Lua scripts belonging to a specific Group.
+	RemoveScriptsByGroup(ctx context.Context, groupID string) error
 
 	// AssignScripts assigns one or more Lua scripts to a specific Thing.
 	AssignScripts(ctx context.Context, thingID string, scriptIDs ...string) error

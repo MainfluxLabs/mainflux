@@ -265,6 +265,20 @@ func (rr ruleRepository) RemoveScripts(ctx context.Context, ids ...string) error
 	return nil
 }
 
+func (rr ruleRepository) RemoveScriptsByGroup(ctx context.Context, groupID string) error {
+	query := `
+		DELETE FROM lua_scripts
+		WHERE group_id = :group_id
+	`
+
+	params := map[string]any{"group_id": groupID}
+	if _, err := rr.db.NamedExecContext(ctx, query, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
 func (rr ruleRepository) AssignScripts(ctx context.Context, thingID string, scriptIDs ...string) error {
 	tx, err := rr.db.BeginTxx(ctx, nil)
 	if err != nil {
