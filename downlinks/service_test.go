@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	token      = "admin@example.com"
+	adminToken = "admin@example.com"
 	userToken  = "user@example.com"
 	wrongToken = "wrong-token"
 	thingID    = "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
@@ -34,7 +34,7 @@ const (
 )
 
 var (
-	adminUser   = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f97", Email: token, Role: auth.RootSub}
+	adminUser   = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f97", Email: adminToken, Role: auth.RootSub}
 	regularUser = users.User{ID: "974106f7-030e-4881-8ab0-151195c29f98", Email: userToken}
 	usersList   = []users.User{adminUser, regularUser}
 
@@ -55,10 +55,10 @@ func newService() downlinks.Service {
 	thingsSvc := pkgmocks.NewThingsServiceClient(
 		nil,
 		map[string]things.Thing{
-			token:   {ID: thingID, GroupID: groupID},
-			thingID: {ID: thingID, GroupID: groupID},
+			adminToken: {ID: thingID, GroupID: groupID},
+			thingID:    {ID: thingID, GroupID: groupID},
 		},
-		map[string]things.Group{token: {ID: groupID}},
+		map[string]things.Group{adminToken: {ID: groupID}},
 	)
 	repo := dlmocks.NewDownlinkRepository()
 	pub := pkgmocks.NewPublisher()
@@ -80,7 +80,7 @@ func TestCreateDownlinks(t *testing.T) {
 	}{
 		{
 			desc:      "create downlinks with valid token",
-			token:     token,
+			token:     adminToken,
 			thingID:   thingID,
 			downlinks: []downlinks.Downlink{downlink},
 			err:       nil,
@@ -94,7 +94,7 @@ func TestCreateDownlinks(t *testing.T) {
 		},
 		{
 			desc:      "create downlinks for wrong thing ID",
-			token:     token,
+			token:     adminToken,
 			thingID:   wrongID,
 			downlinks: []downlinks.Downlink{downlink},
 			err:       errors.ErrAuthorization,
@@ -113,7 +113,7 @@ func TestCreateDownlinks(t *testing.T) {
 func TestListDownlinksByThing(t *testing.T) {
 	svc := newService()
 
-	dls, err := svc.CreateDownlinks(context.Background(), token, thingID, downlink)
+	dls, err := svc.CreateDownlinks(context.Background(), adminToken, thingID, downlink)
 	require.Nil(t, err, fmt.Sprintf("unexpected error creating downlinks: %s", err))
 	require.Equal(t, 1, len(dls))
 
@@ -127,7 +127,7 @@ func TestListDownlinksByThing(t *testing.T) {
 	}{
 		{
 			desc:    "list downlinks by thing with valid token",
-			token:   token,
+			token:   adminToken,
 			thingID: thingID,
 			pm:      apiutil.PageMetadata{},
 			size:    1,
@@ -143,7 +143,7 @@ func TestListDownlinksByThing(t *testing.T) {
 		},
 		{
 			desc:    "list downlinks by thing for wrong thing ID",
-			token:   token,
+			token:   adminToken,
 			thingID: wrongID,
 			pm:      apiutil.PageMetadata{},
 			size:    0,
@@ -151,7 +151,7 @@ func TestListDownlinksByThing(t *testing.T) {
 		},
 		{
 			desc:    "list downlinks by thing with limit",
-			token:   token,
+			token:   adminToken,
 			thingID: thingID,
 			pm:      apiutil.PageMetadata{Limit: 1, Offset: 0},
 			size:    1,
@@ -159,7 +159,7 @@ func TestListDownlinksByThing(t *testing.T) {
 		},
 		{
 			desc:    "list downlinks by thing with offset beyond available",
-			token:   token,
+			token:   adminToken,
 			thingID: thingID,
 			pm:      apiutil.PageMetadata{Limit: 1, Offset: 1},
 			size:    0,
@@ -179,7 +179,7 @@ func TestListDownlinksByThing(t *testing.T) {
 func TestListDownlinksByGroup(t *testing.T) {
 	svc := newService()
 
-	_, err := svc.CreateDownlinks(context.Background(), token, thingID, downlink)
+	_, err := svc.CreateDownlinks(context.Background(), adminToken, thingID, downlink)
 	require.Nil(t, err, fmt.Sprintf("unexpected error creating downlinks: %s", err))
 
 	cases := []struct {
@@ -192,7 +192,7 @@ func TestListDownlinksByGroup(t *testing.T) {
 	}{
 		{
 			desc:    "list downlinks by group with valid token",
-			token:   token,
+			token:   adminToken,
 			groupID: groupID,
 			pm:      apiutil.PageMetadata{},
 			size:    1,
@@ -208,7 +208,7 @@ func TestListDownlinksByGroup(t *testing.T) {
 		},
 		{
 			desc:    "list downlinks by group for wrong group ID",
-			token:   token,
+			token:   adminToken,
 			groupID: wrongID,
 			pm:      apiutil.PageMetadata{},
 			size:    0,
@@ -216,7 +216,7 @@ func TestListDownlinksByGroup(t *testing.T) {
 		},
 		{
 			desc:    "list downlinks by group with limit",
-			token:   token,
+			token:   adminToken,
 			groupID: groupID,
 			pm:      apiutil.PageMetadata{Limit: 1, Offset: 0},
 			size:    1,
@@ -224,7 +224,7 @@ func TestListDownlinksByGroup(t *testing.T) {
 		},
 		{
 			desc:    "list downlinks by group with offset beyond available",
-			token:   token,
+			token:   adminToken,
 			groupID: groupID,
 			pm:      apiutil.PageMetadata{Limit: 1, Offset: 1},
 			size:    0,
@@ -244,7 +244,7 @@ func TestListDownlinksByGroup(t *testing.T) {
 func TestViewDownlink(t *testing.T) {
 	svc := newService()
 
-	dls, err := svc.CreateDownlinks(context.Background(), token, thingID, downlink)
+	dls, err := svc.CreateDownlinks(context.Background(), adminToken, thingID, downlink)
 	require.Nil(t, err, fmt.Sprintf("unexpected error creating downlinks: %s", err))
 	require.Equal(t, 1, len(dls))
 	dlID := dls[0].ID
@@ -257,13 +257,13 @@ func TestViewDownlink(t *testing.T) {
 	}{
 		{
 			desc:  "view downlink with valid token",
-			token: token,
+			token: adminToken,
 			id:    dlID,
 			err:   nil,
 		},
 		{
 			desc:  "view downlink with invalid ID",
-			token: token,
+			token: adminToken,
 			id:    wrongID,
 			err:   dbutil.ErrNotFound,
 		},
@@ -287,7 +287,7 @@ func TestViewDownlink(t *testing.T) {
 func TestUpdateDownlink(t *testing.T) {
 	svc := newService()
 
-	dls, err := svc.CreateDownlinks(context.Background(), token, thingID, downlink)
+	dls, err := svc.CreateDownlinks(context.Background(), adminToken, thingID, downlink)
 	require.Nil(t, err, fmt.Sprintf("unexpected error creating downlinks: %s", err))
 	require.Equal(t, 1, len(dls))
 	dlID := dls[0].ID
@@ -312,13 +312,13 @@ func TestUpdateDownlink(t *testing.T) {
 	}{
 		{
 			desc:     "update downlink with valid token",
-			token:    token,
+			token:    adminToken,
 			downlink: updated,
 			err:      nil,
 		},
 		{
 			desc:     "update downlink with invalid ID",
-			token:    token,
+			token:    adminToken,
 			downlink: downlinks.Downlink{ID: wrongID, Name: "x", Url: "https://x.com", Method: "GET"},
 			err:      dbutil.ErrNotFound,
 		},
@@ -339,7 +339,7 @@ func TestUpdateDownlink(t *testing.T) {
 func TestRemoveDownlinks(t *testing.T) {
 	svc := newService()
 
-	dls, err := svc.CreateDownlinks(context.Background(), token, thingID, downlink)
+	dls, err := svc.CreateDownlinks(context.Background(), adminToken, thingID, downlink)
 	require.Nil(t, err, fmt.Sprintf("unexpected error creating downlinks: %s", err))
 	require.Equal(t, 1, len(dls))
 	dlID := dls[0].ID
@@ -352,7 +352,7 @@ func TestRemoveDownlinks(t *testing.T) {
 	}{
 		{
 			desc:  "remove downlinks with invalid ID",
-			token: token,
+			token: adminToken,
 			ids:   []string{wrongID},
 			err:   dbutil.ErrNotFound,
 		},
@@ -364,7 +364,7 @@ func TestRemoveDownlinks(t *testing.T) {
 		},
 		{
 			desc:  "remove downlinks with valid token",
-			token: token,
+			token: adminToken,
 			ids:   []string{dlID},
 			err:   nil,
 		},
@@ -379,7 +379,7 @@ func TestRemoveDownlinks(t *testing.T) {
 func TestRemoveDownlinksByThing(t *testing.T) {
 	svc := newService()
 
-	_, err := svc.CreateDownlinks(context.Background(), token, thingID, downlink)
+	_, err := svc.CreateDownlinks(context.Background(), adminToken, thingID, downlink)
 	require.Nil(t, err, fmt.Sprintf("unexpected error creating downlinks: %s", err))
 
 	cases := []struct {
@@ -408,7 +408,7 @@ func TestRemoveDownlinksByThing(t *testing.T) {
 func TestRemoveDownlinksByGroup(t *testing.T) {
 	svc := newService()
 
-	_, err := svc.CreateDownlinks(context.Background(), token, thingID, downlink)
+	_, err := svc.CreateDownlinks(context.Background(), adminToken, thingID, downlink)
 	require.Nil(t, err, fmt.Sprintf("unexpected error creating downlinks: %s", err))
 
 	cases := []struct {
@@ -437,7 +437,7 @@ func TestRemoveDownlinksByGroup(t *testing.T) {
 func TestBackup(t *testing.T) {
 	svc := newService()
 
-	_, err := svc.CreateDownlinks(context.Background(), token, thingID, downlink)
+	_, err := svc.CreateDownlinks(context.Background(), adminToken, thingID, downlink)
 	require.Nil(t, err, fmt.Sprintf("unexpected error creating downlinks: %s", err))
 
 	cases := []struct {
@@ -448,7 +448,7 @@ func TestBackup(t *testing.T) {
 	}{
 		{
 			desc:  "backup with admin token",
-			token: token,
+			token: adminToken,
 			size:  1,
 			err:   nil,
 		},
@@ -486,7 +486,7 @@ func TestRestore(t *testing.T) {
 	}{
 		{
 			desc:      "restore with admin token",
-			token:     token,
+			token:     adminToken,
 			downlinks: []downlinks.Downlink{downlink},
 			err:       nil,
 		},
