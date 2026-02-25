@@ -517,6 +517,9 @@ func (svc usersService) fetchGoogleUser(ctx context.Context, code, verifier stri
 		return "", "", err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", "", errors.ErrAuthentication
+	}
 
 	var gUser struct {
 		ID    string `json:"id"`
@@ -547,6 +550,10 @@ func (svc usersService) fetchGitHubUser(ctx context.Context, code, verifier stri
 		return "", "", err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", "", errors.ErrAuthentication
+	}
+
 	if err := json.NewDecoder(resp.Body).Decode(&gUser); err != nil {
 		return "", "", err
 	}
@@ -557,9 +564,6 @@ func (svc usersService) fetchGitHubUser(ctx context.Context, code, verifier stri
 		return "", "", err
 	}
 	defer resp2.Body.Close()
-	if resp2.StatusCode != http.StatusOK {
-		return "", "", errors.ErrAuthentication
-	}
 
 	var emails []struct {
 		Email    string `json:"email"`

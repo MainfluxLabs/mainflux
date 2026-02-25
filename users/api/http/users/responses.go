@@ -94,7 +94,7 @@ type redirectURLRes struct {
 }
 
 func (res redirectURLRes) Code() int {
-	return http.StatusCreated
+	return http.StatusOK
 }
 
 func (res redirectURLRes) Headers() map[string]string {

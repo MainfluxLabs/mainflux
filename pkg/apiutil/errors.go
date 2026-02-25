@@ -183,7 +183,7 @@ var (
 	// ErrMissingProvider indicates an invalid or missing provider
 	ErrMissingProvider = errors.New("missing or invalid provider")
 
-	// ErrMissingProviderCode indicates an missing provider code
+	// ErrMissingProviderCode indicates a missing provider code
 	ErrMissingProviderCode = errors.New("missing provider code")
 
 	// ErrMissingState indicates an invalid or missing state

@@ -12,15 +12,13 @@ import (
 )
 
 const (
-	maxLimitSize   = 200
-	maxEmailSize   = 1024
-	maxNameSize    = 254
-	EmailOrder     = "email"
-	IDOrder        = "id"
-	AscDir         = "asc"
-	DescDir        = "desc"
-	GoogleProvider = "google"
-	GitHubProvider = "github"
+	maxLimitSize = 200
+	maxEmailSize = 1024
+	maxNameSize  = 254
+	EmailOrder   = "email"
+	IDOrder      = "id"
+	AscDir       = "asc"
+	DescDir      = "desc"
 )
 
 var userPasswordRegex *regexp.Regexp
@@ -51,7 +49,7 @@ type oauthLoginReq struct {
 }
 
 func (req oauthLoginReq) validate() error {
-	if req.provider != GoogleProvider && req.provider != GitHubProvider {
+	if req.provider != users.GoogleProvider && req.provider != users.GitHubProvider {
 		return apiutil.ErrMissingProvider
 	}
 	return nil
@@ -66,7 +64,7 @@ type oauthCallbackReq struct {
 }
 
 func (req oauthCallbackReq) validate() error {
-	if req.provider != GoogleProvider && req.provider != GitHubProvider {
+	if req.provider != users.GoogleProvider && req.provider != users.GitHubProvider {
 		return apiutil.ErrMissingProvider
 	}
 

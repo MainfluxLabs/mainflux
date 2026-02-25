@@ -329,12 +329,12 @@ func decodeOAuthLogin(_ context.Context, r *http.Request) (any, error) {
 func decodeOAuthCallback(_ context.Context, r *http.Request) (any, error) {
 	stateCookie, err := r.Cookie(stateKey)
 	if err != nil {
-		return nil, err
+		return nil, apiutil.ErrMissingState
 	}
 
 	verifierCookie, err := r.Cookie(verifierKey)
 	if err != nil {
-		return nil, err
+		return nil, apiutil.ErrMissingState
 	}
 
 	req := oauthCallbackReq{
