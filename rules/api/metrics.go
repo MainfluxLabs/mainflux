@@ -215,6 +215,15 @@ func (ms metricsMiddleware) UnassignScripts(ctx context.Context, token, thingID 
 	return ms.svc.UnassignScripts(ctx, token, thingID, scriptIDs...)
 }
 
+func (ms metricsMiddleware) UnassignScriptsFromThing(ctx context.Context, thingID string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "unassign_scripts_from_thing").Add(1)
+		ms.latency.With("method", "unassign_scripts_from_thing").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.UnassignScriptsFromThing(ctx, thingID)
+}
+
 func (ms metricsMiddleware) ListScriptRunsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (rules.ScriptRunsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_script_runs_by_thing").Add(1)

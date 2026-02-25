@@ -323,7 +323,7 @@ func (rr ruleRepository) UnassignScripts(ctx context.Context, thingID string, sc
 	return nil
 }
 
-func (rr ruleRepository) UnassignScriptsByThing(ctx context.Context, thingID string) error {
+func (rr ruleRepository) UnassignScriptsFromThing(ctx context.Context, thingID string) error {
 	query := `
 		DELETE FROM lua_scripts_things WHERE thing_id = :thing_id;
 	`

@@ -295,6 +295,19 @@ func (lm loggingMiddleware) UnassignScripts(ctx context.Context, token, thingID 
 	return lm.svc.UnassignScripts(ctx, token, thingID, scriptIDs...)
 }
 
+func (lm loggingMiddleware) UnassignScriptsFromThing(ctx context.Context, thingID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method unassign_scripts_from_thing for thing id %s took %s to complete", thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.UnassignScriptsFromThing(ctx, thingID)
+}
+
 func (lm loggingMiddleware) ListScriptRunsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (_ rules.ScriptRunsPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_script_runs_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))

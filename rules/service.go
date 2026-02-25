@@ -57,6 +57,9 @@ type ServiceScripts interface {
 	// UnassignScripts unassigns one or more scripts from a specific Thing.
 	UnassignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) error
 
+	// UnassignScriptsFromThing unassigns all scripts from a specific Thing.
+	UnassignScriptsFromThing(ctx context.Context, thingID string) error
+
 	// ListScriptRunsByThing retrieves a list of Script Runs associated with a specific Thing.
 	ListScriptRunsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (ScriptRunsPage, error)
 
@@ -429,6 +432,10 @@ func (rs *rulesService) UnassignScripts(ctx context.Context, token, thingID stri
 	return nil
 }
 
+func (rs *rulesService) UnassignScriptsFromThing(ctx context.Context, thingID string) error {
+	return rs.rules.UnassignScriptsFromThing(ctx, thingID)
+}
+
 func (rs *rulesService) ListScriptRunsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (ScriptRunsPage, error) {
 	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer}); err != nil {
 		return ScriptRunsPage{}, err
@@ -566,6 +573,9 @@ type RepositoryScripts interface {
 
 	// Unassign unassgins one or more Lua scripts from a specific Thing.
 	UnassignScripts(ctx context.Context, thingID string, scriptIDs ...string) error
+
+	// UnassignScriptsFromThing unassigns all scripts from a specific Thing.
+	UnassignScriptsFromThing(ctx context.Context, thingID string) error
 
 	// SaveScriptRuns preserves multiple ScriptRuns.
 	SaveScriptRuns(ctx context.Context, runs ...ScriptRun) ([]ScriptRun, error)
