@@ -50,7 +50,7 @@ type ScriptRun struct {
 	Status     string
 	// Human-readable string representing a runtime error during the execution of the lua script. May be an empty string in case of no error.
 	Error string
-	// Error value retruned by lua.DoString
+	// Error value returned by lua.DoString
 	err error
 }
 

@@ -441,10 +441,10 @@ func (rr ruleRepository) RetrieveScriptRunsByThing(ctx context.Context, thingID 
 		FROM lua_script_runs %s ORDER BY %s %s %s;
 	`
 
-	queryCount := `SELECT COUNT(*) FROM lua_script_runs WHERE %s;`
+	queryCount := `SELECT COUNT(*) FROM lua_script_runs %s;`
 
 	query = fmt.Sprintf(query, whereClause, oq, dq, olq)
-	queryCount = fmt.Sprintf(queryCount, thingQuery)
+	queryCount = fmt.Sprintf(queryCount, whereClause)
 
 	params := map[string]any{
 		"thing_id": thingID,
