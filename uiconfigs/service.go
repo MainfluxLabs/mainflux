@@ -15,6 +15,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
+var AllowedOrders = map[string]string{
+	"id":   "id",
+	"name": "LOWER(name)",
+}
+
 type Backup struct {
 	OrgsConfigs   []OrgConfig
 	ThingsConfigs []ThingConfig

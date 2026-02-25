@@ -5,6 +5,7 @@ package orgs
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/uiconfigs"
 )
 
 const (
@@ -39,7 +40,7 @@ func (req *listOrgsConfigsReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, uiconfigs.AllowedOrders)
 }
 
 type updateOrgConfigReq struct {

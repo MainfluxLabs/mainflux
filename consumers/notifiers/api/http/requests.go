@@ -4,6 +4,7 @@
 package http
 
 import (
+	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
@@ -51,9 +52,10 @@ func (req listNotifiersReq) validate() error {
 		return apiutil.ErrNameSize
 	}
 
-	if req.pageMetadata.Order != "" &&
-		req.pageMetadata.Order != apiutil.NameOrder && req.pageMetadata.Order != apiutil.IDOrder {
-		return apiutil.ErrInvalidOrder
+	if req.pageMetadata.Order != "" {
+		if _, ok := notifiers.AllowedOrders[req.pageMetadata.Order]; !ok {
+			return apiutil.ErrInvalidOrder
+		}
 	}
 
 	if req.pageMetadata.Dir != "" &&

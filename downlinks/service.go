@@ -30,6 +30,11 @@ import (
 	"golang.org/x/time/rate"
 )
 
+var AllowedOrders = map[string]string{
+	"id":   "id",
+	"name": "LOWER(name)",
+}
+
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 // All methods that accept a token parameter use it to identify and authorize

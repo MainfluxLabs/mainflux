@@ -144,7 +144,7 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 	}
 
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	oq := dbutil.GetOrderQuery(pm.Order)
+	oq := dbutil.GetOrderQuery(pm.Order, users.AllowedOrders)
 	dq := dbutil.GetDirQuery(pm.Dir)
 
 	mp, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
