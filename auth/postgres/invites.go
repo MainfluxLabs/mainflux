@@ -486,7 +486,6 @@ func (ir invitesRepository) syncOrgInviteStateByInvite(ctx context.Context, invi
 		UPDATE org_invites
 		SET state='expired'
 		WHERE invitee_id=:invitee_id AND org_id=:org_id AND inviter_id=:inviter_id AND state='pending' AND expires_at < NOW()
-		  AND invitee_id IS NOT NULL
 	`
 
 	dbInvite := toDBOrgInvite(invite)
