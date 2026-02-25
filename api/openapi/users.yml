@@ -676,7 +676,7 @@ components:
             org_id:
               type: string
               format: uuid
-              description: The destination Org's unique idenitifer
+              description: The destination Org's unique identifier
             org_name:
               type: string
               description: The destination Org's name
