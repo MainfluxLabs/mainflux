@@ -396,6 +396,7 @@ func proxyMQTT(ctx context.Context, cfg config, logger logger.Logger, handler se
 	}
 
 }
+
 func proxyWS(ctx context.Context, cfg config, logger logger.Logger, handler session.Handler) error {
 	target := fmt.Sprintf("%s:%s", cfg.httpTargetHost, cfg.httpTargetPort)
 	wp := ws.New(target, cfg.httpTargetPath, "ws", handler, logger)
