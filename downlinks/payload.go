@@ -22,6 +22,8 @@ type payload struct {
 	data map[string]any
 }
 
+// formatPayload reads the response body and returns JSON, converting XML to JSON
+// or marshalling error info for unknown content types.
 func formatPayload(response *http.Response) ([]byte, error) {
 	defer response.Body.Close()
 

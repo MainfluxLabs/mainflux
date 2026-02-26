@@ -14,9 +14,9 @@ const (
 	compactISO8601Format = "200601021504"
 )
 
-// Layout returns the Go time layout string for the given named format.
-// Returns an empty string for unrecognized format names.
-func Layout(format string) string {
+// TimeLayout returns the Go time layout string for the given named format
+// (e.g. "rfc3339", "iso8601", "unix"). Returns an empty string for unrecognized names.
+func TimeLayout(format string) string {
 	switch strings.ToLower(format) {
 	case "ansic":
 		return time.ANSIC
@@ -57,16 +57,18 @@ func Layout(format string) string {
 	return ""
 }
 
-// IsValidFormat reports whether the given format string is a recognised time format.
+// IsValidFormat reports whether the given format string is a recognised time format
+// (e.g. standard Go layouts or unix/unix_ms/unix_us/unix_ns).
 func IsValidFormat(format string) bool {
 	switch strings.ToLower(format) {
 	case "unix", "unix_ms", "unix_us", "unix_ns":
 		return true
 	default:
-		return Layout(format) != ""
+		return TimeLayout(format) != ""
 	}
 }
 
+// formatTime formats t as a string using the named format (Go layout or unix/unix_ms/unix_us/unix_ns).
 func formatTime(t time.Time, format string) string {
 	switch strings.ToLower(format) {
 	case "unix":
@@ -78,6 +80,6 @@ func formatTime(t time.Time, format string) string {
 	case "unix_ns":
 		return fmt.Sprintf("%d", t.UnixNano())
 	default:
-		return t.Format(Layout(format))
+		return t.Format(TimeLayout(format))
 	}
 }

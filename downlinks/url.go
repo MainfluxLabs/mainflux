@@ -13,6 +13,7 @@ import (
 
 var errUnknownInterval = errors.New("unknown time filter interval")
 
+// formatURL appends time-filter query params (start/end) to the downlink URL.
 func formatURL(d Downlink) (string, error) {
 	u, err := url.Parse(d.Url)
 	if err != nil {
@@ -58,6 +59,7 @@ func calculateTimeRange(timezone string, filter TimeFilter) (time.Time, time.Tim
 	return now.Add(-duration), now, nil
 }
 
+// getBaseURL returns scheme://host/path from a full URL (no query or fragment).
 func getBaseURL(path string) (string, error) {
 	u, err := url.Parse(path)
 	if err != nil {
