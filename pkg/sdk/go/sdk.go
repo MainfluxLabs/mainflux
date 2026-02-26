@@ -88,6 +88,45 @@ type PageMetadata struct {
 	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
+// JSONPageMetadata represents query parameters for JSON message endpoints.
+type JSONPageMetadata struct {
+	Offset      uint64   `json:"offset"`
+	Limit       uint64   `json:"limit"`
+	Subtopic    string   `json:"subtopic,omitempty"`
+	Publisher   string   `json:"publisher,omitempty"`
+	Protocol    string   `json:"protocol,omitempty"`
+	From        int64    `json:"from,omitempty"`
+	To          int64    `json:"to,omitempty"`
+	Filter      string   `json:"filter,omitempty"`
+	AggInterval string   `json:"agg_interval,omitempty"`
+	AggValue    uint64   `json:"agg_value,omitempty"`
+	AggType     string   `json:"agg_type,omitempty"`
+	AggFields   []string `json:"agg_fields,omitempty"`
+	Dir         string   `json:"dir,omitempty"`
+}
+
+// SenMLPageMetadata represents query parameters for SenML message endpoints.
+type SenMLPageMetadata struct {
+	Offset      uint64   `json:"offset"`
+	Limit       uint64   `json:"limit"`
+	Subtopic    string   `json:"subtopic,omitempty"`
+	Publisher   string   `json:"publisher,omitempty"`
+	Protocol    string   `json:"protocol,omitempty"`
+	Name        string   `json:"name,omitempty"`
+	Value       float64  `json:"v,omitempty"`
+	Comparator  string   `json:"comparator,omitempty"`
+	BoolValue   bool     `json:"vb,omitempty"`
+	StringValue string   `json:"vs,omitempty"`
+	DataValue   string   `json:"vd,omitempty"`
+	From        int64    `json:"from,omitempty"`
+	To          int64    `json:"to,omitempty"`
+	AggInterval string   `json:"agg_interval,omitempty"`
+	AggValue    uint64   `json:"agg_value,omitempty"`
+	AggType     string   `json:"agg_type,omitempty"`
+	AggFields   []string `json:"agg_fields,omitempty"`
+	Dir         string   `json:"dir,omitempty"`
+}
+
 // Group represents mainflux users group.
 type Group struct {
 	ID          string         `json:"id,omitempty"`
@@ -337,6 +376,36 @@ type SDK interface {
 
 	// ReadMessages read messages.
 	ReadMessages(isAdmin bool, pm PageMetadata, keyType, token string) (map[string]any, error)
+
+	// ListJSONMessages lists JSON messages with filtering.
+	ListJSONMessages(pm JSONPageMetadata, token string, key things.ThingKey) (map[string]any, error)
+
+	// ListSenMLMessages lists SenML messages with filtering.
+	ListSenMLMessages(pm SenMLPageMetadata, token string, key things.ThingKey) (map[string]any, error)
+
+	// DeleteJSONMessages deletes JSON messages by publisher.
+	DeleteJSONMessages(publisherID, token string, pm JSONPageMetadata) error
+
+	// DeleteSenMLMessages deletes SenML messages by publisher.
+	DeleteSenMLMessages(publisherID, token string, pm SenMLPageMetadata) error
+
+	// DeleteAllJSONMessages deletes all JSON messages (admin only).
+	DeleteAllJSONMessages(token string, pm JSONPageMetadata) error
+
+	// DeleteAllSenMLMessages deletes all SenML messages (admin only).
+	DeleteAllSenMLMessages(token string, pm SenMLPageMetadata) error
+
+	// ExportJSONMessages exports JSON messages.
+	ExportJSONMessages(token string, pm JSONPageMetadata, convert, timeFormat string) ([]byte, error)
+
+	// ExportSenMLMessages exports SenML messages.
+	ExportSenMLMessages(token string, pm SenMLPageMetadata, convert, timeFormat string) ([]byte, error)
+
+	// BackupMessages backs up all messages (admin only).
+	BackupMessages(token string) (map[string]any, error)
+
+	// RestoreMessages restores messages from backup data (admin only).
+	RestoreMessages(token string, data []byte) error
 
 	// ValidateContentType sets message content type.
 	ValidateContentType(ct ContentType) error
