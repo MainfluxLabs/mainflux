@@ -265,7 +265,7 @@ func (sdk mfSDK) ExportSenMLMessages(token string, pm SenMLPageMetadata, convert
 	return body, nil
 }
 
-func (sdk mfSDK) BackupMessages(token string) (map[string]any, error) {
+func (sdk mfSDK) BackupMessages(token string) ([]byte, error) {
 	u := fmt.Sprintf("%s/backup", sdk.readerURL)
 
 	req, err := http.NewRequest(http.MethodGet, u, nil)
@@ -278,7 +278,16 @@ func (sdk mfSDK) BackupMessages(token string) (map[string]any, error) {
 		return nil, err
 	}
 
-	return decodeMessages(resp)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Wrap(ErrFailedRead, errors.New(resp.Status))
+	}
+
+	return body, nil
 }
 
 func (sdk mfSDK) RestoreMessages(token string, data []byte) error {

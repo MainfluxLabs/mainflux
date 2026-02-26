@@ -402,7 +402,7 @@ type SDK interface {
 	ExportSenMLMessages(token string, pm SenMLPageMetadata, convert, timeFormat string) ([]byte, error)
 
 	// BackupMessages backs up all messages (admin only).
-	BackupMessages(token string) (map[string]any, error)
+	BackupMessages(token string) ([]byte, error)
 
 	// RestoreMessages restores messages from backup data (admin only).
 	RestoreMessages(token string, data []byte) error

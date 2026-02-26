@@ -112,8 +112,8 @@ func convertMetadata(m string) (map[string]any, error) {
 	if m == "" {
 		return nil, nil
 	}
-	if err := json.Unmarshal([]byte(Metadata), &metadata); err != nil {
+	if err := json.Unmarshal([]byte(m), &metadata); err != nil {
 		return nil, err
 	}
-	return nil, nil
+	return metadata, nil
 }

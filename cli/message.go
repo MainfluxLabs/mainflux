@@ -320,13 +320,13 @@ var cmdBackup = &cobra.Command{
 			return
 		}
 
-		m, err := sdk.BackupMessages(args[0])
+		data, err := sdk.BackupMessages(args[0])
 		if err != nil {
 			logError(err)
 			return
 		}
 
-		logJSON(m)
+		cmd.OutOrStdout().Write(data)
 	},
 }
 
