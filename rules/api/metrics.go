@@ -133,3 +133,120 @@ func (ms metricsMiddleware) Consume(message any) error {
 
 	return ms.svc.Consume(message)
 }
+
+func (ms metricsMiddleware) CreateScripts(ctx context.Context, token, groupID string, scripts ...rules.LuaScript) ([]rules.LuaScript, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "create_scripts").Add(1)
+		ms.latency.With("method", "create_scripts").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.CreateScripts(ctx, token, groupID, scripts...)
+}
+
+func (ms metricsMiddleware) ListScriptsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (rules.LuaScriptsPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_scripts_by_thing").Add(1)
+		ms.latency.With("method", "list_scripts_by_thing").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListScriptsByThing(ctx, token, thingID, pm)
+}
+
+func (ms metricsMiddleware) ListScriptsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (rules.LuaScriptsPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_scripts_by_group").Add(1)
+		ms.latency.With("method", "list_scripts_by_group").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListScriptsByGroup(ctx, token, groupID, pm)
+}
+
+func (ms metricsMiddleware) ListThingIDsByScript(ctx context.Context, token, scriptID string) ([]string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_thing_ids_by_script").Add(1)
+		ms.latency.With("method", "list_thing_ids_by_script").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListThingIDsByScript(ctx, token, scriptID)
+}
+
+func (ms metricsMiddleware) ViewScript(ctx context.Context, token, id string) (rules.LuaScript, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "view_script").Add(1)
+		ms.latency.With("method", "view_script").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ViewScript(ctx, token, id)
+}
+
+func (ms metricsMiddleware) UpdateScript(ctx context.Context, token string, script rules.LuaScript) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "update_script").Add(1)
+		ms.latency.With("method", "update_script").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.UpdateScript(ctx, token, script)
+}
+
+func (ms metricsMiddleware) RemoveScripts(ctx context.Context, token string, ids ...string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "remove_scripts").Add(1)
+		ms.latency.With("method", "remove_scripts").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RemoveScripts(ctx, token, ids...)
+}
+
+func (ms metricsMiddleware) RemoveScriptsByGroup(ctx context.Context, groupID string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "remove_scripts_by_group").Add(1)
+		ms.latency.With("method", "remove_scripts_by_group").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RemoveScriptsByGroup(ctx, groupID)
+}
+
+func (ms metricsMiddleware) AssignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "assign_scripts").Add(1)
+		ms.latency.With("method", "assign_scripts").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.AssignScripts(ctx, token, thingID, scriptIDs...)
+}
+
+func (ms metricsMiddleware) UnassignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "unassign_scripts").Add(1)
+		ms.latency.With("method", "unassign_scripts").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.UnassignScripts(ctx, token, thingID, scriptIDs...)
+}
+
+func (ms metricsMiddleware) UnassignScriptsFromThing(ctx context.Context, thingID string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "unassign_scripts_from_thing").Add(1)
+		ms.latency.With("method", "unassign_scripts_from_thing").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.UnassignScriptsFromThing(ctx, thingID)
+}
+
+func (ms metricsMiddleware) ListScriptRunsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (rules.ScriptRunsPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_script_runs_by_thing").Add(1)
+		ms.latency.With("method", "list_script_runs_by_thing").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListScriptRunsByThing(ctx, token, thingID, pm)
+}
+
+func (ms metricsMiddleware) RemoveScriptRuns(ctx context.Context, token string, ids ...string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "remove_script_runs").Add(1)
+		ms.latency.With("method", "remove_script_runs").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RemoveScriptRuns(ctx, token, ids...)
+}

@@ -177,3 +177,174 @@ func (lm loggingMiddleware) Consume(msg any) (err error) {
 
 	return lm.svc.Consume(msg)
 }
+
+func (lm loggingMiddleware) CreateScripts(ctx context.Context, token, groupID string, scripts ...rules.LuaScript) (_ []rules.LuaScript, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method create_scripts took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.CreateScripts(ctx, token, groupID, scripts...)
+}
+
+func (lm loggingMiddleware) ListScriptsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (_ rules.LuaScriptsPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_scripts_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListScriptsByThing(ctx, token, thingID, pm)
+}
+
+func (lm loggingMiddleware) ListScriptsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (_ rules.LuaScriptsPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_scripts_by_group for group id %s took %s to complete", groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListScriptsByGroup(ctx, token, groupID, pm)
+}
+
+func (lm loggingMiddleware) ListThingIDsByScript(ctx context.Context, token, scriptID string) (_ []string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_thing_ids_by_script for script id %s took %s to complete", scriptID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListThingIDsByScript(ctx, token, scriptID)
+}
+
+func (lm loggingMiddleware) ViewScript(ctx context.Context, token, id string) (_ rules.LuaScript, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method view_script for script id %s took %s to complete", id, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ViewScript(ctx, token, id)
+}
+
+func (lm loggingMiddleware) UpdateScript(ctx context.Context, token string, script rules.LuaScript) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method update_script for script id %s took %s to complete", script.ID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.UpdateScript(ctx, token, script)
+}
+
+func (lm loggingMiddleware) RemoveScripts(ctx context.Context, token string, ids ...string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_scripts for script ids %v took %s to complete", ids, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RemoveScripts(ctx, token, ids...)
+}
+
+func (lm loggingMiddleware) RemoveScriptsByGroup(ctx context.Context, groupID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_scripts_by_group for group id %s took %s to complete", groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RemoveScriptsByGroup(ctx, groupID)
+}
+
+func (lm loggingMiddleware) AssignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method assign_scripts for thing id %s and script ids %v took %s to complete", thingID, scriptIDs, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.AssignScripts(ctx, token, thingID, scriptIDs...)
+}
+
+func (lm loggingMiddleware) UnassignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method unassign_scripts for thing id %s and script ids %v took %s to complete", thingID, scriptIDs, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.UnassignScripts(ctx, token, thingID, scriptIDs...)
+}
+
+func (lm loggingMiddleware) UnassignScriptsFromThing(ctx context.Context, thingID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method unassign_scripts_from_thing for thing id %s took %s to complete", thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.UnassignScriptsFromThing(ctx, thingID)
+}
+
+func (lm loggingMiddleware) ListScriptRunsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (_ rules.ScriptRunsPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_script_runs_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListScriptRunsByThing(ctx, token, thingID, pm)
+}
+
+func (lm loggingMiddleware) RemoveScriptRuns(ctx context.Context, token string, ids ...string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_script_runs for run ids %v took %s to complete", ids, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RemoveScriptRuns(ctx, token, ids...)
+}

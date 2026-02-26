@@ -27,12 +27,21 @@ func (es eventHandler) Handle(ctx context.Context, event events.Event) error {
 	switch msg["operation"] {
 	case events.ThingRemove:
 		re := decodeRemoveEvent(msg)
+
 		if err := es.svc.UnassignRulesByThing(ctx, re.id); err != nil {
+			return err
+		}
+
+		if err := es.svc.UnassignScriptsFromThing(ctx, re.id); err != nil {
 			return err
 		}
 	case events.GroupRemove:
 		re := decodeRemoveEvent(msg)
 		if err := es.svc.RemoveRulesByGroup(ctx, re.id); err != nil {
+			return err
+		}
+
+		if err := es.svc.RemoveScriptsByGroup(ctx, re.id); err != nil {
 			return err
 		}
 	}

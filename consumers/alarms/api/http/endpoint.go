@@ -144,6 +144,7 @@ func buildAlarmResponse(alarm alarms.Alarm) alarmResponse {
 		ThingID:  alarm.ThingID,
 		GroupID:  alarm.GroupID,
 		RuleID:   alarm.RuleID,
+		ScriptID: alarm.ScriptID,
 		Subtopic: alarm.Subtopic,
 		Protocol: alarm.Protocol,
 		Payload:  alarm.Payload,
