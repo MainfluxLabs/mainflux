@@ -69,9 +69,7 @@ const (
 	defUsersCACerts    = ""
 	defUsersClientTLS  = "false"
 	defUsersGRPCURL    = "localhost:8184"
-	defESURL           = "localhost:6379"
-	defESPass          = ""
-	defESDB            = "0"
+	defESURL           = "redis://localhost:6379/0"
 
 	defEmailHost         = "localhost"
 	defEmailPort         = "25"
@@ -110,8 +108,6 @@ const (
 	envUsersCACerts    = "MF_USERS_CA_CERTS"
 	envUsersClientTLS  = "MF_USERS_CLIENT_TLS"
 	envESURL           = "MF_AUTH_ES_URL"
-	envESPass          = "MF_AUTH_ES_PASS"
-	envESDB            = "MF_AUTH_ES_DB"
 
 	envEmailHost         = "MF_EMAIL_HOST"
 	envEmailPort         = "MF_EMAIL_PORT"
@@ -140,8 +136,6 @@ type config struct {
 	adminEmail     string
 	host           string
 	esURL          string
-	esPass         string
-	esDB           string
 }
 
 func main() {
@@ -165,7 +159,7 @@ func main() {
 	dbTracer, dbCloser := jaeger.Init("auth_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	esClient := connectToRedis(cfg.esURL, cfg.esPass, cfg.esDB, logger)
+	esClient := connectToRedis(cfg.esURL, logger)
 
 	usrConn := clientsgrpc.Connect(cfg.usersConfig, logger)
 	defer usrConn.Close()
@@ -298,8 +292,6 @@ func loadConfig() config {
 		adminEmail:     mainflux.Env(envAdminEmail, defAdminEmail),
 		host:           mainflux.Env(envHost, defHost),
 		esURL:          mainflux.Env(envESURL, defESURL),
-		esPass:         mainflux.Env(envESPass, defESPass),
-		esDB:           mainflux.Env(envESDB, defESDB),
 	}
 
 }
@@ -314,18 +306,14 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func connectToRedis(redisURL, redisPass string, redisDB string, logger logger.Logger) *redis.Client {
-	db, err := strconv.Atoi(redisDB)
+func connectToRedis(redisURL string, logger logger.Logger) *redis.Client {
+	opts, err := redis.ParseURL(redisURL)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to cache: %s", err))
+		logger.Error(fmt.Sprintf("Failed to connect to redis: %s", err))
 		os.Exit(1)
 	}
 
-	return redis.NewClient(&redis.Options{
-		Addr:     redisURL,
-		Password: redisPass,
-		DB:       db,
-	})
+	return redis.NewClient(opts)
 }
 
 func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc protomfx.UsersServiceClient, tracer opentracing.Tracer, logger logger.Logger, cfg config, esClient *redis.Client) auth.Service {
