@@ -30,12 +30,8 @@ default values.
 | MF_THINGS_DB_SSL_ROOT_CERT | Path to the PEM encoded root certificate file                           |                |
 | MF_THINGS_CLIENT_TLS       | Flag that indicates if TLS should be turned on                          | false          |
 | MF_THINGS_CA_CERTS         | Path to trusted CAs in PEM format                                       |                |
-| MF_THINGS_CACHE_URL        | Cache database URL                                                      | localhost:6379 |
-| MF_THINGS_CACHE_PASS       | Cache database password                                                 |                |
-| MF_THINGS_CACHE_DB         | Cache instance name                                                     | 0              |
-| MF_THINGS_ES_URL           | Event store URL                                                         | localhost:6379 |
-| MF_THINGS_ES_PASS          | Event store password                                                    |                |
-| MF_THINGS_ES_DB            | Event store instance name                                               | 0              |
+| MF_THINGS_CACHE_URL        | Cache database URL                                                      | redis://localhost:6379/0 |
+| MF_THINGS_ES_URL           | Event store URL                                                         | redis://localhost:6379/0 |
 | MF_THINGS_HTTP_PORT        | Things service HTTP port                                                | 8182           |
 | MF_THINGS_AUTH_HTTP_PORT   | Things service Auth HTTP port                                           | 8989           |
 | MF_THINGS_AUTH_GRPC_PORT   | Things service Auth gRPC port                                           | 8181           |
@@ -88,11 +84,7 @@ MF_THINGS_DB_SSL_KEY=[Path to the PEM encoded key file] \
 MF_THINGS_DB_SSL_ROOT_CERT=[Path to the PEM encoded root certificate file] \
 MF_HTTP_ADAPTER_CA_CERTS=[Path to trusted CAs in PEM format] \
 MF_THINGS_CACHE_URL=[Cache database URL] \
-MF_THINGS_CACHE_PASS=[Cache database password] \
-MF_THINGS_CACHE_DB=[Cache instance name] \
 MF_THINGS_ES_URL=[Event store URL] \
-MF_THINGS_ES_PASS=[Event store password] \
-MF_THINGS_ES_DB=[Event store instance name] \
 MF_THINGS_HTTP_PORT=[Things service HTTP port] \
 MF_THINGS_AUTH_HTTP_PORT=[Things service Auth HTTP port] \
 MF_THINGS_AUTH_GRPC_PORT=[Things service Auth gRPC port] \

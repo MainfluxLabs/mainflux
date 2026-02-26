@@ -68,9 +68,7 @@ const (
 	defJaegerURL         = ""
 	defClientTLS         = "false"
 	defCACerts           = ""
-	defAuthCacheURL      = "localhost:6379"
-	defAuthCachePass     = ""
-	defAuthCacheDB       = "0"
+	defAuthCacheURL      = "redis://localhost:6379/0"
 	defESURL             = "redis://localhost:6379/0"
 	defESConsumerName    = svcName
 	defDBHost            = "localhost"
@@ -106,8 +104,6 @@ const (
 	envClientTLS         = "MF_MQTT_ADAPTER_CLIENT_TLS"
 	envCACerts           = "MF_MQTT_ADAPTER_CA_CERTS"
 	envAuthCacheURL      = "MF_AUTH_CACHE_URL"
-	envAuthCachePass     = "MF_AUTH_CACHE_PASS"
-	envAuthCacheDB       = "MF_AUTH_CACHE_DB"
 	envESURL             = "MF_MQTT_ADAPTER_ES_URL"
 	envESConsumerName    = "MF_MQTT_ADAPTER_EVENT_CONSUMER"
 	envServerCert        = "MF_MQTT_ADAPTER_SERVER_CERT"
@@ -144,8 +140,6 @@ type config struct {
 	thingsGRPCTimeout time.Duration
 	brokerURL         string
 	authCacheURL      string
-	authPass          string
-	authCacheDB       string
 	authGRPCTimeout   time.Duration
 	dbConfig          postgres.Config
 	esURL             string
@@ -212,7 +206,7 @@ func main() {
 	}
 	defer np.Close()
 
-	ac := connectToRedis(cfg.authCacheURL, cfg.authPass, cfg.authCacheDB, logger)
+	ac := connectToRedis(cfg.authCacheURL, logger)
 	defer ac.Close()
 
 	dbTracer, dbCloser := jaeger.Init("mqtt_db", cfg.jaegerURL, logger)
@@ -349,8 +343,6 @@ func loadConfig() config {
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		authCacheURL:      mainflux.Env(envAuthCacheURL, defAuthCacheURL),
-		authPass:          mainflux.Env(envAuthCachePass, defAuthCachePass),
-		authCacheDB:       mainflux.Env(envAuthCacheDB, defAuthCacheDB),
 		esURL:             mainflux.Env(envESURL, defESURL),
 		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 		authGRPCTimeout:   authGRPCTimeout,
@@ -358,18 +350,14 @@ func loadConfig() config {
 	}
 }
 
-func connectToRedis(redisURL, redisPass, redisDB string, logger logger.Logger) *redis.Client {
-	db, err := strconv.Atoi(redisDB)
+func connectToRedis(redisURL string, logger logger.Logger) *redis.Client {
+	opts, err := redis.ParseURL(redisURL)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to redis: %s", err))
 		os.Exit(1)
 	}
 
-	return redis.NewClient(&redis.Options{
-		Addr:     redisURL,
-		Password: redisPass,
-		DB:       db,
-	})
+	return redis.NewClient(opts)
 }
 
 func subscribeToThingsES(ctx context.Context, svc mqtt.Service, cfg config, logger logger.Logger) error {

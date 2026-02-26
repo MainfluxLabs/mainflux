@@ -29,12 +29,8 @@ default values.
 | MF_MQTT_ADAPTER_CLIENT_TLS               | gRPC client TLS                                                  | false                 |
 | MF_MQTT_ADAPTER_CA_CERTS                 | CA certs for gRPC client TLS                                     | ""                    |
 | MF_MQTT_ADAPTER_INSTANCE                 | Instance name for event sourcing                                 | ""                    |
-| MF_MQTT_ADAPTER_ES_URL                   | Event sourcing URL                                               | localhost:6379        |
-| MF_MQTT_ADAPTER_ES_PASS                  | Event sourcing password                                          | ""                    |
-| MF_MQTT_ADAPTER_ES_DB                    | Event sourcing database                                          | "0"                   |
-| MF_AUTH_CACHE_URL                        | Auth cache URL                                                   | localhost:6379        |
-| MF_AUTH_CACHE_PASS                       | Auth cache password                                              | ""                    |
-| MF_AUTH_CACHE_DB                         | Auth cache database                                              | "0"                   |
+| MF_MQTT_ADAPTER_ES_URL                   | Event sourcing URL                                               | redis://localhost:6379/0 |
+| MF_AUTH_CACHE_URL                        | Auth cache URL                                                   | redis://localhost:6379/0 |
 
 ## Deployment
 
@@ -74,11 +70,7 @@ MF_MQTT_ADAPTER_CLIENT_TLS=[gRPC client TLS] \
 MF_MQTT_ADAPTER_CA_CERTS=[CA certs for gRPC client] \
 MF_MQTT_ADAPTER_INSTANCE=[Instance for event sourcing] \
 MF_MQTT_ADAPTER_ES_URL=[Event sourcing URL] \
-MF_MQTT_ADAPTER_ES_PASS=[Event sourcing pass] \
-MF_MQTT_ADAPTER_ES_DB=[Event sourcing database] \
 MF_AUTH_CACHE_URL=[Auth cache URL] \
-MF_AUTH_CACHE_PASS=[Auth cache pass] \
-MF_AUTH_CACHE_DB=[Auth cache DB name] \
 $GOBIN/mainfluxlabs-mqtt
 ```
 

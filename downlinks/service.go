@@ -544,7 +544,7 @@ func calculateTimeRange(timezone string, filter TimeFilter) (time.Time, time.Tim
 	}
 	return now.Add(-duration), now, nil
 }
-
+ 
 func formatPayload(response *http.Response) ([]byte, error) {
 	var mappedData = payload{}
 	resPayload, err := io.ReadAll(response.Body)
