@@ -1,0 +1,101 @@
+openapi: 3.0.1
+info:
+  title: Mainflux converters service
+  description: HTTP API for converting CSV files into SenML or JSON messages and publishing them to the platform.
+  version: 1.0.0
+
+paths:
+  /csv/senml:
+    post:
+      summary: Convert CSV to SenML messages
+      description: |
+        Parses the uploaded CSV file and publishes its rows as SenML records.
+
+        **CSV format:**
+        - Row 1 (header): first column is ignored (timestamp column), remaining columns are measurement names.
+        - Row 2+ (data): first column is a Unix timestamp as a floating-point number, remaining columns are floating-point measurement values.
+
+        Large files are processed in batches of 50,000 records with a 30-second pause between batches.
+      tags:
+        - converters
+      requestBody:
+        $ref: "#/components/requestBodies/ConvertCSVReq"
+      responses:
+        '202':
+          description: CSV accepted and messages published.
+        '400':
+          description: Failed due to malformed CSV (fewer than 2 columns, or invalid timestamp value).
+        '401':
+          description: Missing or invalid Thing key provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '415':
+          description: Missing or invalid content type. Must be multipart/form-data.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /csv/json:
+    post:
+      summary: Convert CSV to JSON messages
+      description: |
+        Parses the uploaded CSV file and publishes its rows as JSON records.
+
+        **CSV format:**
+        - Row 1 (header): must include a `created` column; remaining columns are field names.
+        - Row 2+ (data): values are automatically parsed as floating-point numbers where possible, otherwise kept as strings.
+
+        Large files are processed in batches of 50,000 records with a 30-second pause between batches.
+      tags:
+        - converters
+      requestBody:
+        $ref: "#/components/requestBodies/ConvertCSVReq"
+      responses:
+        '202':
+          description: CSV accepted and messages published.
+        '400':
+          description: Failed due to malformed CSV (fewer than 2 columns, or missing "created" column).
+        '401':
+          description: Missing or invalid Thing key provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '415':
+          description: Missing or invalid content type. Must be multipart/form-data.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+components:
+  requestBodies:
+    ConvertCSVReq:
+      description: CSV file to convert and publish.
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              file:
+                type: string
+                format: binary
+                description: CSV file to be converted.
+            required:
+              - file
+
+  responses:
+    ServiceError:
+      description: Unexpected server-side error occurred.
+      content:
+        application/json:
+          schema:
+            type: string
+            format: byte
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: uuid
+      description: |
+        * Thing access: "Authorization: Thing <thing_key>"
+
+security:
+  - bearerAuth: []
