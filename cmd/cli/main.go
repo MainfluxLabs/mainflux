@@ -198,6 +198,132 @@ func main() {
 		"Subtopic query parameter",
 	)
 
+	rootCmd.PersistentFlags().StringVar(
+		&cli.Publisher,
+		"publisher",
+		"",
+		"Publisher ID query parameter",
+	)
+
+	rootCmd.PersistentFlags().StringVar(
+		&cli.Protocol,
+		"protocol",
+		"",
+		"Protocol query parameter",
+	)
+
+	rootCmd.PersistentFlags().Int64Var(
+		&cli.From,
+		"from",
+		0,
+		"From timestamp in milliseconds",
+	)
+
+	rootCmd.PersistentFlags().Int64Var(
+		&cli.To,
+		"to",
+		0,
+		"To timestamp in milliseconds",
+	)
+
+	rootCmd.PersistentFlags().StringVar(
+		&cli.Dir,
+		"dir",
+		"",
+		"Sort direction (asc/desc)",
+	)
+
+	rootCmd.PersistentFlags().StringVar(
+		&cli.Filter,
+		"filter",
+		"",
+		"Filter query parameter (JSON messages)",
+	)
+
+	rootCmd.PersistentFlags().StringVar(
+		&cli.AggInterval,
+		"agg-interval",
+		"",
+		"Aggregation interval (minute, hour, day, week, month, year)",
+	)
+
+	rootCmd.PersistentFlags().UintVar(
+		&cli.AggValue,
+		"agg-value",
+		1,
+		"Aggregation value",
+	)
+
+	rootCmd.PersistentFlags().StringVar(
+		&cli.AggType,
+		"agg-type",
+		"",
+		"Aggregation type (min, max, avg, count)",
+	)
+
+	rootCmd.PersistentFlags().StringVar(
+		&cli.AggField,
+		"agg-field",
+		"",
+		"Aggregation fields (comma-separated)",
+	)
+
+	rootCmd.PersistentFlags().StringVar(
+		&cli.SenMLName,
+		"senml-name",
+		"",
+		"SenML name filter",
+	)
+
+	rootCmd.PersistentFlags().Float64Var(
+		&cli.SenMLValue,
+		"senml-value",
+		0,
+		"SenML numeric value filter",
+	)
+
+	rootCmd.PersistentFlags().StringVar(
+		&cli.Comparator,
+		"comparator",
+		"",
+		"Comparison operator (eq, lt, le, gt, ge)",
+	)
+
+	rootCmd.PersistentFlags().BoolVar(
+		&cli.BoolValue,
+		"bool-value",
+		false,
+		"SenML boolean value filter",
+	)
+
+	rootCmd.PersistentFlags().StringVar(
+		&cli.StringValue,
+		"string-value",
+		"",
+		"SenML string value filter",
+	)
+
+	rootCmd.PersistentFlags().StringVar(
+		&cli.DataValue,
+		"data-value",
+		"",
+		"SenML data value filter",
+	)
+
+	rootCmd.PersistentFlags().StringVar(
+		&cli.ConvertFormat,
+		"convert",
+		"json",
+		"Export format (json/csv)",
+	)
+
+	rootCmd.PersistentFlags().StringVar(
+		&cli.TimeFormat,
+		"time-format",
+		"",
+		"Export time format",
+	)
+
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
