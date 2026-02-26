@@ -34,6 +34,18 @@ type EmailVerification struct {
 	ExpiresAt time.Time
 }
 
+type OAuthLoginData struct {
+	State       string
+	Verifier    string
+	RedirectURL string
+}
+
+type OAuthCallbackData struct {
+	Provider string
+	Code     string
+	Verifier string
+}
+
 type Identity struct {
 	UserID         string
 	Provider       string

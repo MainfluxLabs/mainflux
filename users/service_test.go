@@ -669,16 +669,16 @@ func TestOAuthLogin(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		state, _, _, err := svc.OAuthLogin(tc.provider)
+		data, err := svc.OAuthLogin(tc.provider)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected err %s got %s\n", desc, tc.err, err))
-		assert.Equal(t, tc.stateNotEmpty, state != "", fmt.Sprintf("%s: expected state non-empty=%v\n", desc, tc.stateNotEmpty))
+		assert.Equal(t, tc.stateNotEmpty, data.State != "", fmt.Sprintf("%s: expected state non-empty=%v\n", desc, tc.stateNotEmpty))
 	}
 
-	state1, _, _, err := svc.OAuthLogin(users.GoogleProvider)
+	data1, err := svc.OAuthLogin(users.GoogleProvider)
 	require.Nil(t, err)
-	state2, _, _, err := svc.OAuthLogin(users.GoogleProvider)
+	data2, err := svc.OAuthLogin(users.GoogleProvider)
 	require.Nil(t, err)
-	assert.NotEqual(t, state1, state2, "each OAuthLogin call must generate a unique state")
+	assert.NotEqual(t, data1.State, data2.State, "each OAuthLogin call must generate a unique state")
 }
 
 func TestOAuthCallback(t *testing.T) {
@@ -744,7 +744,11 @@ func TestOAuthCallback(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		redirectURL, err := svc.OAuthCallback(context.Background(), tc.provider, tc.code, tc.verifier)
+		redirectURL, err := svc.OAuthCallback(context.Background(), users.OAuthCallbackData{
+			Provider: tc.provider,
+			Code:     tc.code,
+			Verifier: tc.verifier,
+		})
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected err %s got %s\n", tc.desc, tc.err, err))
 		if tc.redirectURLContains != "" {
 			assert.Contains(t, redirectURL, tc.redirectURLContains, fmt.Sprintf("%s: redirect URL should contain %q\n", tc.desc, tc.redirectURLContains))

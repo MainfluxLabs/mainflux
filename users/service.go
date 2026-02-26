@@ -88,10 +88,10 @@ type Service interface {
 	Login(ctx context.Context, user User) (string, error)
 
 	// OAuthLogin returns the URL to initiate OAuth login.
-	OAuthLogin(provider string) (state, verifier, redirectURL string, err error)
+	OAuthLogin(provider string) (data OAuthLoginData, err error)
 
 	// OAuthCallback exchanges the OAuth code for user info and logs in/creates the user.
-	OAuthCallback(ctx context.Context, provider, code, verifier string) (string, error)
+	OAuthCallback(ctx context.Context, data OAuthCallbackData) (string, error)
 
 	// ViewUser retrieves user info for a given user ID and an authorized token.
 	ViewUser(ctx context.Context, token, id string) (User, error)
@@ -455,7 +455,7 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 	return svc.issue(ctx, dbUser.ID, dbUser.Email, auth.LoginKey)
 }
 
-func (svc usersService) OAuthLogin(provider string) (state, verifier, redirectURL string, err error) {
+func (svc usersService) OAuthLogin(provider string) (data OAuthLoginData, err error) {
 	var oauthCfg oauth2.Config
 	switch provider {
 	case GoogleProvider:
@@ -463,27 +463,27 @@ func (svc usersService) OAuthLogin(provider string) (state, verifier, redirectUR
 	case GitHubProvider:
 		oauthCfg = svc.githubOAuth
 	default:
-		return "", "", "", errors.ErrAuthorization
+		return OAuthLoginData{}, errors.ErrAuthorization
 	}
 
-	verifier = oauth2.GenerateVerifier()
-	state, err = generateRandomState()
+	data.Verifier = oauth2.GenerateVerifier()
+	data.State, err = generateRandomState()
 	if err != nil {
-		return "", "", "", err
+		return OAuthLoginData{}, err
 	}
-	redirectURL = oauthCfg.AuthCodeURL(state, oauth2.S256ChallengeOption(verifier))
-	return state, verifier, redirectURL, nil
+	data.RedirectURL = oauthCfg.AuthCodeURL(data.State, oauth2.S256ChallengeOption(data.Verifier))
+	return data, nil
 }
 
-func (svc usersService) OAuthCallback(ctx context.Context, provider, code, verifier string) (string, error) {
+func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackData) (string, error) {
 	var email, providerUserID string
 	var err error
 
-	switch provider {
+	switch data.Provider {
 	case GoogleProvider:
-		email, providerUserID, err = svc.fetchGoogleUser(ctx, code, verifier)
+		email, providerUserID, err = svc.fetchGoogleUser(ctx, data.Code, data.Verifier)
 	case GitHubProvider:
-		email, providerUserID, err = svc.fetchGitHubUser(ctx, code, verifier)
+		email, providerUserID, err = svc.fetchGitHubUser(ctx, data.Code, data.Verifier)
 	default:
 		return "", errors.ErrAuthorization
 	}
@@ -492,7 +492,7 @@ func (svc usersService) OAuthCallback(ctx context.Context, provider, code, verif
 		return "", err
 	}
 
-	user, err := svc.handleIdentity(ctx, provider, email, providerUserID)
+	user, err := svc.handleIdentity(ctx, data.Provider, email, providerUserID)
 	if err != nil {
 		return "", err
 	}
