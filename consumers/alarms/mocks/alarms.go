@@ -51,21 +51,22 @@ func (arm *alarmRepositoryMock) RetrieveByThing(_ context.Context, thingID strin
 	arm.mu.Lock()
 	defer arm.mu.Unlock()
 
-	var items []alarms.Alarm
+	var all, items []alarms.Alarm
 	first := uint64(pm.Offset) + 1
 	last := first + pm.Limit
 
 	for _, a := range arm.alarms {
 		if a.ThingID == thingID {
+			all = append(all, a)
 			id := uuid.ParseID(a.ID)
-			if id >= first && id < last || pm.Limit == 0 {
+			if pm.Limit == 0 || (id >= first && id < last) {
 				items = append(items, a)
 			}
 		}
 	}
 
 	return alarms.AlarmsPage{
-		Total:  uint64(len(items)),
+		Total:  uint64(len(all)),
 		Alarms: items,
 	}, nil
 }
@@ -74,21 +75,22 @@ func (arm *alarmRepositoryMock) RetrieveByGroup(_ context.Context, groupID strin
 	arm.mu.Lock()
 	defer arm.mu.Unlock()
 
-	var items []alarms.Alarm
+	var all, items []alarms.Alarm
 	first := uint64(pm.Offset) + 1
 	last := first + pm.Limit
 
 	for _, a := range arm.alarms {
 		if a.GroupID == groupID {
+			all = append(all, a)
 			id := uuid.ParseID(a.ID)
-			if id >= first && id < last || pm.Limit == 0 {
+			if pm.Limit == 0 || (id >= first && id < last) {
 				items = append(items, a)
 			}
 		}
 	}
 
 	return alarms.AlarmsPage{
-		Total:  uint64(len(items)),
+		Total:  uint64(len(all)),
 		Alarms: items,
 	}, nil
 }
@@ -102,21 +104,22 @@ func (arm *alarmRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs []s
 		groupSet[id] = struct{}{}
 	}
 
-	var items []alarms.Alarm
+	var all, items []alarms.Alarm
 	first := uint64(pm.Offset) + 1
 	last := first + pm.Limit
 
 	for _, a := range arm.alarms {
 		if _, ok := groupSet[a.GroupID]; ok {
+			all = append(all, a)
 			id := uuid.ParseID(a.ID)
-			if id >= first && id < last || pm.Limit == 0 {
+			if pm.Limit == 0 || (id >= first && id < last) {
 				items = append(items, a)
 			}
 		}
 	}
 
 	return alarms.AlarmsPage{
-		Total:  uint64(len(items)),
+		Total:  uint64(len(all)),
 		Alarms: items,
 	}, nil
 }
@@ -165,21 +168,22 @@ func (arm *alarmRepositoryMock) ExportByThing(_ context.Context, thingID string,
 	arm.mu.Lock()
 	defer arm.mu.Unlock()
 
-	var items []alarms.Alarm
+	var all, items []alarms.Alarm
 	first := uint64(pm.Offset) + 1
 	last := first + pm.Limit
 
 	for _, a := range arm.alarms {
 		if a.ThingID == thingID {
+			all = append(all, a)
 			id := uuid.ParseID(a.ID)
-			if id >= first && id < last || pm.Limit == 0 {
+			if pm.Limit == 0 || (id >= first && id < last) {
 				items = append(items, a)
 			}
 		}
 	}
 
 	return alarms.AlarmsPage{
-		Total:  uint64(len(items)),
+		Total:  uint64(len(all)),
 		Alarms: items,
 	}, nil
 }

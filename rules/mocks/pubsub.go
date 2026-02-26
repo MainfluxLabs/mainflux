@@ -24,7 +24,7 @@ func NewFailingPubSub() messaging.PubSub {
 	return &mockPubSub{fail: true}
 }
 
-func (ps *mockPubSub) Publish(protomfx.Message) error {
+func (ps *mockPubSub) Publish(msg protomfx.Message) error {
 	if ps.fail {
 		return messaging.ErrPublishMessage
 	}

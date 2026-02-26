@@ -57,7 +57,7 @@ func (rrm *ruleRepositoryMock) RetrieveByThing(_ context.Context, thingID string
 	defer rrm.mu.Unlock()
 
 	ruleIDs := rrm.assignments[thingID]
-	var items []rules.Rule
+	var all, items []rules.Rule
 
 	first := uint64(pm.Offset) + 1
 	last := first + pm.Limit
@@ -67,14 +67,15 @@ func (rrm *ruleRepositoryMock) RetrieveByThing(_ context.Context, thingID string
 		if !ok {
 			continue
 		}
+		all = append(all, r)
 		id := uuid.ParseID(r.ID)
-		if id >= first && id < last || pm.Limit == 0 {
+		if pm.Limit == 0 || (id >= first && id < last) {
 			items = append(items, r)
 		}
 	}
 
 	return rules.RulesPage{
-		Total: uint64(len(items)),
+		Total: uint64(len(all)),
 		Rules: items,
 	}, nil
 }
@@ -83,21 +84,22 @@ func (rrm *ruleRepositoryMock) RetrieveByGroup(_ context.Context, groupID string
 	rrm.mu.Lock()
 	defer rrm.mu.Unlock()
 
-	var items []rules.Rule
+	var all, items []rules.Rule
 	first := uint64(pm.Offset) + 1
 	last := first + pm.Limit
 
 	for _, r := range rrm.rules {
 		if r.GroupID == groupID {
+			all = append(all, r)
 			id := uuid.ParseID(r.ID)
-			if id >= first && id < last || pm.Limit == 0 {
+			if pm.Limit == 0 || (id >= first && id < last) {
 				items = append(items, r)
 			}
 		}
 	}
 
 	return rules.RulesPage{
-		Total: uint64(len(items)),
+		Total: uint64(len(all)),
 		Rules: items,
 	}, nil
 }

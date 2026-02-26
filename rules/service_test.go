@@ -13,6 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	authmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -33,6 +34,10 @@ const (
 func threshold(v float64) *float64 { return &v }
 
 func newService() rules.Service {
+	return newServiceWithPubSub(mocks.NewPubSub())
+}
+
+func newServiceWithPubSub(pubsub messaging.PubSub) rules.Service {
 	ths := authmock.NewThingsServiceClient(
 		nil,
 		map[string]things.Thing{
@@ -45,7 +50,6 @@ func newService() rules.Service {
 	)
 
 	rulesRepo := mocks.NewRuleRepository()
-	pubsub := mocks.NewPubSub()
 	idp := uuid.NewMock()
 	log := logger.NewMock()
 
@@ -295,6 +299,30 @@ func TestConsume(t *testing.T) {
 		err := svc.Consume(tc.msg)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
+}
+
+func TestConsumePublishError(t *testing.T) {
+	svc := newServiceWithPubSub(mocks.NewFailingPubSub())
+
+	saved, err := svc.CreateRules(context.Background(), token, groupID, rules.Rule{
+		Name: "test-rule",
+		Conditions: []rules.Condition{
+			{Field: "temperature", Comparator: ">", Threshold: threshold(25)},
+		},
+		Operator: rules.OperatorAND,
+		Actions:  []rules.Action{{Type: rules.ActionTypeAlarm}},
+	})
+	require.Nil(t, err)
+	assignRules(t, svc, thingID, saved[0].ID)
+
+	msg := protomfx.Message{
+		Publisher:   thingID,
+		Payload:     mustMarshal(t, map[string]any{"temperature": float64(30)}),
+		ContentType: "application/json",
+	}
+
+	err = svc.Consume(msg)
+	assert.True(t, errors.Contains(err, messaging.ErrPublishMessage), fmt.Sprintf("publish error: expected %s got %s", messaging.ErrPublishMessage, err))
 }
 
 func TestCreateRules(t *testing.T) {
@@ -731,9 +759,8 @@ func TestRemoveRulesByGroup(t *testing.T) {
 
 func TestAssignRules(t *testing.T) {
 	svc := newService()
-	saved := saveRules(t, svc, 2)
+	saved := saveRules(t, svc, 1)
 	ruleID := saved[0].ID
-
 
 	cases := []struct {
 		desc    string

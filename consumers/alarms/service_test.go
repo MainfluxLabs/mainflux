@@ -49,13 +49,12 @@ func newService() alarms.Service {
 	return alarms.New(ths, alarmRepo, idProvider)
 }
 
-func saveAlarms(t *testing.T, svc alarms.Service, n int) []alarms.Alarm {
+func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 	t.Helper()
 
 	pyd, err := json.Marshal(payload)
 	require.Nil(t, err)
 
-	var saved []alarms.Alarm
 	for i := 0; i < n; i++ {
 		msg := protomfx.Message{
 			Publisher: thingID,
@@ -67,20 +66,7 @@ func saveAlarms(t *testing.T, svc alarms.Service, n int) []alarms.Alarm {
 		}
 		err := svc.Consume(msg)
 		require.Nil(t, err, fmt.Sprintf("unexpected error saving alarm %d: %s", i+1, err))
-
-		// build expected alarm for later assertions
-		saved = append(saved, alarms.Alarm{
-			ThingID:  thingID,
-			GroupID:  groupID,
-			RuleID:   ruleID,
-			Subtopic: subtopic,
-			Protocol: protocol,
-			Payload:  payload,
-			Created:  int64(1000000 + i),
-		})
 	}
-
-	return saved
 }
 
 func TestConsume(t *testing.T) {
@@ -364,6 +350,19 @@ func TestListAlarmsByOrg(t *testing.T) {
 				Limit:  uint64(n),
 			},
 			size: 0,
+			err:  nil,
+		},
+		{
+			// GetGroupIDsByOrg in the mock does not validate the token, so no
+			// authentication error is returned; this case documents that behavior.
+			desc:  "list alarms by org with invalid auth token",
+			token: wrongValue,
+			orgID: orgID,
+			pageMetadata: apiutil.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(n),
+			},
+			size: uint64(n),
 			err:  nil,
 		},
 	}
