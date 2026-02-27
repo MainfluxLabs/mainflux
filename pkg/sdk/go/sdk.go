@@ -88,6 +88,45 @@ type PageMetadata struct {
 	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
+// JSONPageMetadata represents query parameters for JSON message endpoints.
+type JSONPageMetadata struct {
+	Offset      uint64   `json:"offset"`
+	Limit       uint64   `json:"limit"`
+	Subtopic    string   `json:"subtopic,omitempty"`
+	Publisher   string   `json:"publisher,omitempty"`
+	Protocol    string   `json:"protocol,omitempty"`
+	From        int64    `json:"from,omitempty"`
+	To          int64    `json:"to,omitempty"`
+	Filter      string   `json:"filter,omitempty"`
+	AggInterval string   `json:"agg_interval,omitempty"`
+	AggValue    uint64   `json:"agg_value,omitempty"`
+	AggType     string   `json:"agg_type,omitempty"`
+	AggFields   []string `json:"agg_fields,omitempty"`
+	Dir         string   `json:"dir,omitempty"`
+}
+
+// SenMLPageMetadata represents query parameters for SenML message endpoints.
+type SenMLPageMetadata struct {
+	Offset      uint64   `json:"offset"`
+	Limit       uint64   `json:"limit"`
+	Subtopic    string   `json:"subtopic,omitempty"`
+	Publisher   string   `json:"publisher,omitempty"`
+	Protocol    string   `json:"protocol,omitempty"`
+	Name        string   `json:"name,omitempty"`
+	Value       float64  `json:"v,omitempty"`
+	Comparator  string   `json:"comparator,omitempty"`
+	BoolValue   bool     `json:"vb,omitempty"`
+	StringValue string   `json:"vs,omitempty"`
+	DataValue   string   `json:"vd,omitempty"`
+	From        int64    `json:"from,omitempty"`
+	To          int64    `json:"to,omitempty"`
+	AggInterval string   `json:"agg_interval,omitempty"`
+	AggValue    uint64   `json:"agg_value,omitempty"`
+	AggType     string   `json:"agg_type,omitempty"`
+	AggFields   []string `json:"agg_fields,omitempty"`
+	Dir         string   `json:"dir,omitempty"`
+}
+
 // Group represents mainflux users group.
 type Group struct {
 	ID          string         `json:"id,omitempty"`
@@ -338,6 +377,36 @@ type SDK interface {
 	// ReadMessages read messages.
 	ReadMessages(isAdmin bool, pm PageMetadata, keyType, token string) (map[string]any, error)
 
+	// ListJSONMessages lists JSON messages with filtering.
+	ListJSONMessages(pm JSONPageMetadata, token string, key things.ThingKey) (map[string]any, error)
+
+	// ListSenMLMessages lists SenML messages with filtering.
+	ListSenMLMessages(pm SenMLPageMetadata, token string, key things.ThingKey) (map[string]any, error)
+
+	// DeleteJSONMessages deletes JSON messages by publisher.
+	DeleteJSONMessages(publisherID, token string, pm JSONPageMetadata) error
+
+	// DeleteSenMLMessages deletes SenML messages by publisher.
+	DeleteSenMLMessages(publisherID, token string, pm SenMLPageMetadata) error
+
+	// DeleteAllJSONMessages deletes all JSON messages (admin only).
+	DeleteAllJSONMessages(token string, pm JSONPageMetadata) error
+
+	// DeleteAllSenMLMessages deletes all SenML messages (admin only).
+	DeleteAllSenMLMessages(token string, pm SenMLPageMetadata) error
+
+	// ExportJSONMessages exports JSON messages.
+	ExportJSONMessages(token string, pm JSONPageMetadata, convert, timeFormat string) ([]byte, error)
+
+	// ExportSenMLMessages exports SenML messages.
+	ExportSenMLMessages(token string, pm SenMLPageMetadata, convert, timeFormat string) ([]byte, error)
+
+	// BackupMessages backs up all messages (admin only).
+	BackupMessages(token string) ([]byte, error)
+
+	// RestoreMessages restores messages from backup data (admin only).
+	RestoreMessages(token string, data []byte) error
+
 	// ValidateContentType sets message content type.
 	ValidateContentType(ct ContentType) error
 
@@ -347,11 +416,20 @@ type SDK interface {
 	// IssueCert issues a certificate for a thing required for mtls.
 	IssueCert(thingID string, keyBits int, keyType, valid, token string) (Cert, error)
 
-	// RemoveCert removes a certificate
-	RemoveCert(id, token string) error
+	// ViewCert retrieves a certificate by its serial number.
+	ViewCert(serial, token string) (Cert, error)
 
-	// RevokeCert revokes certificate with certID for thing with thingID
-	RevokeCert(thingID, certID, token string) error
+	// RevokeCert revokes a certificate by its serial number.
+	RevokeCert(serial, token string) error
+
+	// RenewCert renews a certificate by its serial number.
+	RenewCert(serial, token string) (Cert, error)
+
+	// ListSerials lists certificate serial numbers for a given thing.
+	ListSerials(thingID string, offset, limit uint64, token string) (CertsPage, error)
+
+	// RemoveCert removes a certificate.
+	RemoveCert(id, token string) error
 
 	// Issue issues a new key, returning its token value alongside.
 	Issue(duration time.Duration, token string) (KeyRes, error)
@@ -488,24 +566,31 @@ func (pm PageMetadata) query() (string, error) {
 	q.Add("total", strconv.FormatUint(pm.Total, 10))
 	q.Add("offset", strconv.FormatUint(pm.Offset, 10))
 	q.Add("limit", strconv.FormatUint(pm.Limit, 10))
+
 	if pm.Email != "" {
 		q.Add("email", pm.Email)
 	}
+
 	if pm.Name != "" {
 		q.Add("name", pm.Name)
 	}
+
 	if pm.Subtopic != "" {
 		q.Add("subtopic", pm.Subtopic)
 	}
+
 	if pm.Format != "" {
 		q.Add("format", pm.Format)
 	}
+
 	if pm.Order != "" {
 		q.Add("order", pm.Order)
 	}
+
 	if pm.Dir != "" {
 		q.Add("dir", pm.Dir)
 	}
+
 	if pm.Metadata != nil {
 		md, err := json.Marshal(pm.Metadata)
 		if err != nil {
@@ -513,5 +598,6 @@ func (pm PageMetadata) query() (string, error) {
 		}
 		q.Add("metadata", string(md))
 	}
+
 	return q.Encode(), nil
 }
