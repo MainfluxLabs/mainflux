@@ -1,12 +1,14 @@
 package http
 
 import (
+	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
 const (
 	minLen       = 1
 	maxLimitSize = 200
+	maxNameSize  = 254
 )
 
 type alarmReq struct {
@@ -41,11 +43,7 @@ func (req listAlarmsByGroupReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	if req.pageMetadata.Limit > maxLimitSize {
-		return apiutil.ErrLimitSize
-	}
-
-	return nil
+	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, alarms.AllowedOrders)
 }
 
 type listAlarmsByThingReq struct {
@@ -63,11 +61,7 @@ func (req listAlarmsByThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	if req.pageMetadata.Limit > maxLimitSize {
-		return apiutil.ErrLimitSize
-	}
-
-	return nil
+	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, alarms.AllowedOrders)
 }
 
 type listAlarmsByOrgReq struct {
@@ -85,11 +79,7 @@ func (req listAlarmsByOrgReq) validate() error {
 		return apiutil.ErrMissingOrgID
 	}
 
-	if req.pageMetadata.Limit > maxLimitSize {
-		return apiutil.ErrLimitSize
-	}
-
-	return nil
+	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, alarms.AllowedOrders)
 }
 
 type removeAlarmsReq struct {
@@ -136,9 +126,5 @@ func (req exportAlarmsByThingReq) validate() error {
 		return apiutil.ErrInvalidQueryParams
 	}
 
-	if req.pageMetadata.Limit > maxLimitSize {
-		return apiutil.ErrLimitSize
-	}
-
-	return nil
+	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, alarms.AllowedOrders)
 }
