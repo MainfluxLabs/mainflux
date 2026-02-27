@@ -416,11 +416,20 @@ type SDK interface {
 	// IssueCert issues a certificate for a thing required for mtls.
 	IssueCert(thingID string, keyBits int, keyType, valid, token string) (Cert, error)
 
-	// RemoveCert removes a certificate
-	RemoveCert(id, token string) error
+	// ViewCert retrieves a certificate by its serial number.
+	ViewCert(serial, token string) (Cert, error)
 
-	// RevokeCert revokes certificate with certID for thing with thingID
-	RevokeCert(thingID, certID, token string) error
+	// RevokeCert revokes a certificate by its serial number.
+	RevokeCert(serial, token string) error
+
+	// RenewCert renews a certificate by its serial number.
+	RenewCert(serial, token string) (Cert, error)
+
+	// ListSerials lists certificate serial numbers for a given thing.
+	ListSerials(thingID string, offset, limit uint64, token string) (CertsPage, error)
+
+	// RemoveCert removes a certificate.
+	RemoveCert(id, token string) error
 
 	// Issue issues a new key, returning its token value alongside.
 	Issue(duration time.Duration, token string) (KeyRes, error)
@@ -557,24 +566,31 @@ func (pm PageMetadata) query() (string, error) {
 	q.Add("total", strconv.FormatUint(pm.Total, 10))
 	q.Add("offset", strconv.FormatUint(pm.Offset, 10))
 	q.Add("limit", strconv.FormatUint(pm.Limit, 10))
+
 	if pm.Email != "" {
 		q.Add("email", pm.Email)
 	}
+
 	if pm.Name != "" {
 		q.Add("name", pm.Name)
 	}
+
 	if pm.Subtopic != "" {
 		q.Add("subtopic", pm.Subtopic)
 	}
+
 	if pm.Format != "" {
 		q.Add("format", pm.Format)
 	}
+
 	if pm.Order != "" {
 		q.Add("order", pm.Order)
 	}
+
 	if pm.Dir != "" {
 		q.Add("dir", pm.Dir)
 	}
+
 	if pm.Metadata != nil {
 		md, err := json.Marshal(pm.Metadata)
 		if err != nil {
@@ -582,5 +598,6 @@ func (pm PageMetadata) query() (string, error) {
 		}
 		q.Add("metadata", string(md))
 	}
+
 	return q.Encode(), nil
 }
