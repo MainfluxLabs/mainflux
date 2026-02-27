@@ -4,6 +4,7 @@
 package http
 
 import (
+	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
@@ -43,25 +44,7 @@ func (req listNotifiersReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	if req.pageMetadata.Limit > maxLimitSize {
-		return apiutil.ErrLimitSize
-	}
-
-	if len(req.pageMetadata.Name) > maxNameSize {
-		return apiutil.ErrNameSize
-	}
-
-	if req.pageMetadata.Order != "" &&
-		req.pageMetadata.Order != apiutil.NameOrder && req.pageMetadata.Order != apiutil.IDOrder {
-		return apiutil.ErrInvalidOrder
-	}
-
-	if req.pageMetadata.Dir != "" &&
-		req.pageMetadata.Dir != apiutil.AscDir && req.pageMetadata.Dir != apiutil.DescDir {
-		return apiutil.ErrInvalidDirection
-	}
-
-	return nil
+	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, notifiers.AllowedOrders)
 }
 
 type createNotifierReq struct {

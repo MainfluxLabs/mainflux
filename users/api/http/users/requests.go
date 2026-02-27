@@ -15,8 +15,6 @@ const (
 	maxLimitSize = 200
 	maxEmailSize = 1024
 	maxNameSize  = 254
-	EmailOrder   = "email"
-	IDOrder      = "id"
 	AscDir       = "asc"
 	DescDir      = "desc"
 )
@@ -104,8 +102,10 @@ func (req listUsersReq) validate() error {
 		return apiutil.ErrEmailSize
 	}
 
-	if req.order != "" && req.order != EmailOrder && req.order != IDOrder {
-		return apiutil.ErrInvalidOrder
+	if req.order != "" {
+		if _, ok := users.AllowedOrders[req.order]; !ok {
+			return apiutil.ErrInvalidOrder
+		}
 	}
 
 	if req.dir != "" && req.dir != AscDir && req.dir != DescDir {

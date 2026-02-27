@@ -25,6 +25,13 @@ var (
 	ErrProfileAssigned = errors.New("profile currently assigned to thing(s)")
 )
 
+var AllowedOrders = map[string]string{
+	"id":         "id",
+	"name":       "LOWER(name)",
+	"created_at": "created_at",
+	"updated_at": "updated_at",
+}
+
 // Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {

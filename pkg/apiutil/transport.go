@@ -41,7 +41,6 @@ const (
 	ComparatorKey          = "comparator"
 	FromKey                = "from"
 	ToKey                  = "to"
-	NameOrder              = "name"
 	IDOrder                = "id"
 	AscDir                 = "asc"
 	DescDir                = "desc"
@@ -517,7 +516,7 @@ func BuildPageMetadataFromBody(r *http.Request) (PageMetadata, error) {
 	return pm, nil
 }
 
-func ValidatePageMetadata(pm PageMetadata, maxLimitSize, maxNameSize int) error {
+func ValidatePageMetadata(pm PageMetadata, maxLimitSize, maxNameSize int, allowedOrders map[string]string) error {
 	if pm.Limit > uint64(maxLimitSize) {
 		return ErrLimitSize
 	}
@@ -526,9 +525,10 @@ func ValidatePageMetadata(pm PageMetadata, maxLimitSize, maxNameSize int) error 
 		return ErrNameSize
 	}
 
-	if pm.Order != "" &&
-		pm.Order != NameOrder && pm.Order != IDOrder {
-		return ErrInvalidOrder
+	if pm.Order != "" {
+		if _, ok := allowedOrders[pm.Order]; !ok {
+			return ErrInvalidOrder
+		}
 	}
 
 	if pm.Dir != "" &&

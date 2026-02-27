@@ -110,7 +110,7 @@ func (req listPlatformInvitesRequest) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if err := apiutil.ValidatePageMetadata(req.pm.PageMetadata, maxLimitSize, maxNameSize); err != nil {
+	if err := apiutil.ValidatePageMetadata(req.pm.PageMetadata, maxLimitSize, maxNameSize, users.AllowedOrders); err != nil {
 		return err
 	}
 

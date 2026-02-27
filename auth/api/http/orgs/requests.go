@@ -1,6 +1,7 @@
 package orgs
 
 import (
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
@@ -65,9 +66,10 @@ func (req listOrgsReq) validate() error {
 		return apiutil.ErrNameSize
 	}
 
-	if req.pageMetadata.Order != "" &&
-		req.pageMetadata.Order != apiutil.NameOrder && req.pageMetadata.Order != apiutil.IDOrder {
-		return apiutil.ErrInvalidOrder
+	if req.pageMetadata.Order != "" {
+		if _, ok := auth.AllowedOrders[req.pageMetadata.Order]; !ok {
+			return apiutil.ErrInvalidOrder
+		}
 	}
 
 	if req.pageMetadata.Dir != "" &&

@@ -51,19 +51,11 @@ func GetPayloadQuery(m map[string]any) (mb []byte, mq string, err error) {
 	return mb, mq, nil
 }
 
-func GetOrderQuery(order string) string {
-	switch order {
-	case "name":
-		return "LOWER(name)"
-	case "email":
-		return "LOWER(email)"
-	case "created", "created_at", "updated", "updated_at",
-		"invitee_email", "inviter_email", "invitee_id", "inviter_id",
-		"role", "org_id", "group_id", "state":
-		return order
-	default:
-		return "id"
+func GetOrderQuery(order string, allowedOrders map[string]string) string {
+	if col, ok := allowedOrders[order]; ok {
+		return col
 	}
+	return "id"
 }
 
 func GetDirQuery(dir string) string {

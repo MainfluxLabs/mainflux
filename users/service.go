@@ -42,6 +42,14 @@ var (
 	ErrSelfRegisterDisabled = errors.New("self register disabled")
 )
 
+var AllowedOrders = map[string]string{
+	"id":            "id",
+	"email":         "LOWER(email)",
+	"invitee_email": "invitee_email",
+	"state":         "state",
+	"created_at":    "created_at",
+}
+
 // Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {

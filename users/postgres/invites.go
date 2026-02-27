@@ -114,7 +114,7 @@ func (ir invitesRepository) RetrievePlatformInvites(ctx context.Context, pm user
 	}
 
 	whereClause := dbutil.BuildWhereClause(filterState)
-	oq := dbutil.GetOrderQuery(pm.Order)
+	oq := dbutil.GetOrderQuery(pm.Order, users.AllowedOrders)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 

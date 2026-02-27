@@ -38,6 +38,17 @@ var (
 	errUnknownSubject = errors.New("unknown subject")
 )
 
+var AllowedOrders = map[string]string{
+	"id":         "id",
+	"name":       "LOWER(name)",
+	"created_at": "created_at",
+	"updated_at": "updated_at",
+	"invitee_id": "invitee_id",
+	"inviter_id": "inviter_id",
+	"org_id":     "org_id",
+	"state":      "state",
+}
+
 // Authn specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 // Token is a string value of the actual Key and is used to authenticate

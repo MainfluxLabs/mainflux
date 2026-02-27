@@ -17,6 +17,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
+var AllowedOrders = map[string]string{
+	"id":   "id",
+	"name": "LOWER(name)",
+}
+
 // Service represents a notification service.
 // All methods that accept a token parameter use it to identify and authorize
 // the user performing the operation.

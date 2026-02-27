@@ -150,7 +150,7 @@ func (req listClientsByThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, modbus.AllowedOrders)
 }
 
 type listClientsByGroupReq struct {
@@ -168,7 +168,7 @@ func (req listClientsByGroupReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, modbus.AllowedOrders)
 }
 
 type viewClientReq struct {

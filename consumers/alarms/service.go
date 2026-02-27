@@ -13,6 +13,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
+var AllowedOrders = map[string]string{
+	"id":      "id",
+	"created": "created",
+}
+
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 // All methods that accept a token parameter use it to identify and authorize

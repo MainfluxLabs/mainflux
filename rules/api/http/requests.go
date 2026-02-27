@@ -126,7 +126,7 @@ func (req listRulesByThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, rules.AllowedOrders)
 }
 
 type listRulesByGroupReq struct {
@@ -144,7 +144,7 @@ func (req listRulesByGroupReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, rules.AllowedOrders)
 }
 
 type updateRuleReq struct {

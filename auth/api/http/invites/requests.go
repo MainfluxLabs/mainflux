@@ -103,7 +103,7 @@ func (req listOrgInvitesByUserReq) validate() error {
 		return apiutil.ErrMissingUserID
 	}
 
-	if err := apiutil.ValidatePageMetadata(req.pm.PageMetadata, maxLimitSize, maxNameSize); err != nil {
+	if err := apiutil.ValidatePageMetadata(req.pm.PageMetadata, maxLimitSize, maxNameSize, auth.AllowedOrders); err != nil {
 		return err
 	}
 
@@ -125,7 +125,7 @@ func (req listOrgInvitesByOrgReq) validate() error {
 		return apiutil.ErrMissingOrgID
 	}
 
-	if err := apiutil.ValidatePageMetadata(req.pm.PageMetadata, maxLimitSize, maxNameSize); err != nil {
+	if err := apiutil.ValidatePageMetadata(req.pm.PageMetadata, maxLimitSize, maxNameSize, auth.AllowedOrders); err != nil {
 		return err
 	}
 

@@ -5,6 +5,7 @@ package profiles
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const (
@@ -121,7 +122,7 @@ func (req *listReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, things.AllowedOrders)
 }
 
 type listByGroupReq struct {
@@ -139,7 +140,7 @@ func (req listByGroupReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, things.AllowedOrders)
 }
 
 type listByOrgReq struct {
@@ -157,7 +158,7 @@ func (req listByOrgReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, things.AllowedOrders)
 }
 
 type removeProfilesReq struct {
