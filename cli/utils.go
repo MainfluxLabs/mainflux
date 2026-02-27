@@ -28,6 +28,42 @@ var (
 	Subtopic string = ""
 	// RawOutput raw output mode
 	RawOutput bool = false
+	// Publisher query parameter
+	Publisher string = ""
+	// Protocol query parameter
+	Protocol string = ""
+	// From timestamp query parameter (milliseconds)
+	From int64 = 0
+	// To timestamp query parameter (milliseconds)
+	To int64 = 0
+	// Dir sort direction query parameter (asc/desc)
+	Dir string = ""
+	// Filter query parameter (JSON messages)
+	Filter string = ""
+	// AggInterval aggregation interval (minute, hour, day, week, month, year)
+	AggInterval string = ""
+	// AggValue aggregation value
+	AggValue uint = 1
+	// AggType aggregation type (min, max, avg, count)
+	AggType string = ""
+	// AggField aggregation fields (comma-separated)
+	AggField string = ""
+	// SenMLName SenML name filter
+	SenMLName string = ""
+	// SenMLValue SenML numeric value filter
+	SenMLValue float64 = 0
+	// Comparator comparison operator (eq, lt, le, gt, ge)
+	Comparator string = ""
+	// BoolValue SenML boolean value filter
+	BoolValue bool = false
+	// StringValue SenML string value filter
+	StringValue string = ""
+	// DataValue SenML data value filter
+	DataValue string = ""
+	// ConvertFormat export format (json/csv)
+	ConvertFormat string = "json"
+	// TimeFormat export time format
+	TimeFormat string = ""
 )
 
 func logJSON(iList ...any) {
@@ -76,8 +112,8 @@ func convertMetadata(m string) (map[string]any, error) {
 	if m == "" {
 		return nil, nil
 	}
-	if err := json.Unmarshal([]byte(Metadata), &metadata); err != nil {
+	if err := json.Unmarshal([]byte(m), &metadata); err != nil {
 		return nil, err
 	}
-	return nil, nil
+	return metadata, nil
 }
