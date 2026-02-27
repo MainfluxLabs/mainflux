@@ -12,6 +12,7 @@ import (
 
 var (
 	_ apiutil.Response = (*tokenRes)(nil)
+	_ apiutil.Response = (*redirectURLRes)(nil)
 	_ apiutil.Response = (*viewUserRes)(nil)
 	_ apiutil.Response = (*passwChangeRes)(nil)
 	_ apiutil.Response = (*createUserRes)(nil)
@@ -86,6 +87,22 @@ func (res tokenRes) Headers() map[string]string {
 
 func (res tokenRes) Empty() bool {
 	return res.Token == ""
+}
+
+type redirectURLRes struct {
+	RedirectURL string `json:"url,omitempty"`
+}
+
+func (res redirectURLRes) Code() int {
+	return http.StatusOK
+}
+
+func (res redirectURLRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res redirectURLRes) Empty() bool {
+	return res.RedirectURL == ""
 }
 
 type updateUserRes struct{}
@@ -181,4 +198,22 @@ func (res deleteRes) Headers() map[string]string {
 
 func (res deleteRes) Empty() bool {
 	return true
+}
+
+type oauthLoginRes struct {
+	State       string `json:"state"`
+	Verifier    string `json:"verifier"`
+	RedirectURL string `json:"url"`
+}
+
+func (res oauthLoginRes) Code() int {
+	return http.StatusOK
+}
+
+func (res oauthLoginRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res oauthLoginRes) Empty() bool {
+	return false
 }

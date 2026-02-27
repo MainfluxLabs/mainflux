@@ -209,6 +209,46 @@ func loginEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
+func oauthLoginEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(oauthLoginReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		data, err := svc.OAuthLogin(req.provider)
+		if err != nil {
+			return nil, err
+		}
+
+		return oauthLoginRes{
+			State:       data.State,
+			Verifier:    data.Verifier,
+			RedirectURL: data.RedirectURL,
+		}, nil
+	}
+}
+
+func oauthCallbackEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(oauthCallbackReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		redirectURL, err := svc.OAuthCallback(ctx, users.OAuthCallbackData{
+			Provider: req.provider,
+			Code:     req.code,
+			Verifier: req.verifier,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return redirectURLRes{redirectURL}, nil
+	}
+}
+
 func enableUserEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(changeUserStatusReq)

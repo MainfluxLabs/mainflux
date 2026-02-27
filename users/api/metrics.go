@@ -85,6 +85,24 @@ func (ms *metricsMiddleware) Login(ctx context.Context, user users.User) (string
 	return ms.svc.Login(ctx, user)
 }
 
+func (ms *metricsMiddleware) OAuthLogin(provider string) (data users.OAuthLoginData, err error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "oauth_login").Add(1)
+		ms.latency.With("method", "oauth_login").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.OAuthLogin(provider)
+}
+
+func (ms *metricsMiddleware) OAuthCallback(ctx context.Context, data users.OAuthCallbackData) (string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "oauth_callback").Add(1)
+		ms.latency.With("method", "oauth_callback").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.OAuthCallback(ctx, data)
+}
+
 func (ms *metricsMiddleware) ViewUser(ctx context.Context, token, id string) (users.User, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_user").Add(1)
@@ -193,7 +211,7 @@ func (ms *metricsMiddleware) DisableUser(ctx context.Context, token string, id s
 	return ms.svc.DisableUser(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (users.User, []users.User, error) {
+func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (users.User, []users.User, []users.Identity, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "backup").Add(1)
 		ms.latency.With("method", "backup").Observe(time.Since(begin).Seconds())
@@ -202,13 +220,13 @@ func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (users.Us
 	return ms.svc.Backup(ctx, token)
 }
 
-func (ms *metricsMiddleware) Restore(ctx context.Context, token string, admin users.User, users []users.User) error {
+func (ms *metricsMiddleware) Restore(ctx context.Context, token string, admin users.User, users []users.User, identities []users.Identity) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "restore").Add(1)
 		ms.latency.With("method", "restore").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Restore(ctx, token, admin, users)
+	return ms.svc.Restore(ctx, token, admin, users, identities)
 }
 
 func (ms *metricsMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite auth.OrgInvite) (users.PlatformInvite, error) {

@@ -23,6 +23,7 @@ import (
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -48,13 +49,16 @@ func newUserService() users.Service {
 	usersRepo := usmocks.NewUserRepository(usersList)
 	verificationsRepo := usmocks.NewEmailVerificationRepository(nil)
 	platformInvitesRepo := usmocks.NewPlatformInvitesRepository()
+	identityRepo := usmocks.NewIdentityRepository()
 	hasher := usmocks.NewHasher()
 	idProvider := uuid.New()
 	admin.ID, _ = idProvider.ID()
 	auth := mocks.NewAuthService(admin.ID, usersList, orgsList)
 	emailer := usmocks.NewEmailer()
-
-	return users.New(usersRepo, verificationsRepo, platformInvitesRepo, inviteDuration, true, true, hasher, auth, emailer, idProvider)
+	oauthGoogleCfg := oauth2.Config{}
+	oauthGithubCfg := oauth2.Config{}
+	cfgURLs := users.ConfigURLs{}
+	return users.New(usersRepo, verificationsRepo, platformInvitesRepo, identityRepo, inviteDuration, true, true, hasher, auth, emailer, idProvider, oauthGoogleCfg, oauthGithubCfg, cfgURLs)
 }
 
 func newUserServer(svc users.Service) *httptest.Server {

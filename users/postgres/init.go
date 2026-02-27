@@ -94,6 +94,25 @@ func migrateDB(db *sqlx.DB) error {
 					`DROP INDEX IF EXISTS unique_invitee_email_pending`,
 				},
 			},
+			{
+				Id: "users_4",
+				Up: []string{
+					`ALTER TABLE users ALTER COLUMN password DROP NOT NULL`,
+
+					`CREATE TABLE oauth_identities (
+						user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+						provider VARCHAR(32) NOT NULL,
+						provider_user_id VARCHAR(128) NOT NULL,
+						PRIMARY KEY (user_id, provider),
+						UNIQUE (provider, provider_user_id)
+					)`,
+				},
+				Down: []string{
+					`DROP TABLE IF EXISTS oauth_identities`,
+					`UPDATE users SET password = '' WHERE password IS NULL`,
+					`ALTER TABLE users ALTER COLUMN password SET NOT NULL`,
+				},
+			},
 		},
 	}
 

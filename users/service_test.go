@@ -5,7 +5,10 @@ package users_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"regexp"
 	"testing"
 	"time"
@@ -21,6 +24,7 @@ import (
 	usmocks "github.com/MainfluxLabs/mainflux/users/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -32,11 +36,11 @@ const (
 )
 
 var (
-	admin           = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: "root"}
-	unauthUser      = users.User{Email: "unauth-user@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef"}
+	admin           = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: "root", Password: "password"}
+	unauthUser      = users.User{Email: "unauth-user@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef", Password: "password"}
 	selfRegister    = users.User{Email: "self-register@example.com", Password: "password"}
 	registerUser    = users.User{Email: "register-user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: "password"}
-	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96"}
+	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96", Password: "password"}
 	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: "password"}
 	usersList       = []users.User{admin, registerUser, user, unauthUser}
 	host            = "example.com"
@@ -68,15 +72,35 @@ var (
 	passRegex  = regexp.MustCompile(`^\S{8,}$`)
 )
 
-func newService() users.Service {
+func newService(srv ...*httptest.Server) users.Service {
 	hasher := usmocks.NewHasher()
+	allUsers := usersList
+	var oauthGoogleCfg, oauthGithubCfg oauth2.Config
+	var cfgURLs users.ConfigURLs
+
+	if len(srv) > 0 && srv[0] != nil {
+		oauthUsers := []users.User{
+			{Email: "new-google-user@example.com", ID: "oauth-google-id-001"},
+			{Email: "new-github-user@example.com", ID: "oauth-github-id-001"},
+		}
+		allUsers = append(usersList, oauthUsers...)
+		oauthGoogleCfg = oauth2.Config{Endpoint: oauth2.Endpoint{TokenURL: srv[0].URL + "/token"}}
+		oauthGithubCfg = oauth2.Config{Endpoint: oauth2.Endpoint{TokenURL: srv[0].URL + "/token"}}
+		cfgURLs = users.ConfigURLs{
+			GoogleUserInfoURL:   srv[0].URL + "/google/userinfo",
+			GitHubUserInfoURL:   srv[0].URL + "/github/user",
+			GitHubUserEmailsURL: srv[0].URL + "/github/emails",
+			RedirectLoginURL:    "https://example.com/login",
+		}
+	}
+
 	userRepo := usmocks.NewUserRepository(usersList)
 	verificationRepo := usmocks.NewEmailVerificationRepository(verificationsList)
 	invitesRepo := usmocks.NewPlatformInvitesRepository()
-	authSvc := mocks.NewAuthService(admin.ID, usersList, nil)
+	identityRepo := usmocks.NewIdentityRepository()
+	authSvc := mocks.NewAuthService(admin.ID, allUsers, nil)
 	e := usmocks.NewEmailer()
-
-	return users.New(userRepo, verificationRepo, invitesRepo, inviteDuration, true, true, hasher, authSvc, e, idProvider)
+	return users.New(userRepo, verificationRepo, invitesRepo, identityRepo, inviteDuration, true, true, hasher, authSvc, e, idProvider, oauthGoogleCfg, oauthGithubCfg, cfgURLs)
 }
 
 func TestSelfRegister(t *testing.T) {
@@ -199,7 +223,7 @@ func TestViewUser(t *testing.T) {
 		err    error
 	}{
 		"view user with authorized token": {
-			user:   user,
+			user:   users.User{ID: user.ID, Email: user.Email, Metadata: user.Metadata, Status: user.Status, Role: user.Role},
 			token:  token,
 			userID: user.ID,
 			err:    nil,
@@ -240,12 +264,12 @@ func TestViewProfile(t *testing.T) {
 		err   error
 	}{
 		"valid token's user info": {
-			user:  user,
+			user:  users.User{ID: user.ID, Email: user.Email, Metadata: user.Metadata, Status: user.Status, Role: user.Role},
 			token: token,
 			err:   nil,
 		},
 		"valid token's admin info": {
-			user:  admin,
+			user:  users.User{ID: admin.ID, Email: admin.Email, Metadata: admin.Metadata, Status: admin.Status, Role: admin.Role},
 			token: adminToken,
 			err:   nil,
 		},
@@ -628,5 +652,106 @@ func TestValidatePlatformInvite(t *testing.T) {
 	for desc, tc := range cases {
 		err := svc.ValidatePlatformInvite(context.Background(), tc.inviteID, tc.email)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+	}
+}
+
+func TestOAuthLogin(t *testing.T) {
+	svc := newService()
+
+	cases := map[string]struct {
+		provider      string
+		stateNotEmpty bool
+		err           error
+	}{
+		"oauth login with google provider":  {users.GoogleProvider, true, nil},
+		"oauth login with github provider":  {users.GitHubProvider, true, nil},
+		"oauth login with unknown provider": {"unknown", false, errors.ErrAuthorization},
+	}
+
+	for desc, tc := range cases {
+		data, err := svc.OAuthLogin(tc.provider)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected err %s got %s\n", desc, tc.err, err))
+		assert.Equal(t, tc.stateNotEmpty, data.State != "", fmt.Sprintf("%s: expected state non-empty=%v\n", desc, tc.stateNotEmpty))
+	}
+
+	data1, err := svc.OAuthLogin(users.GoogleProvider)
+	require.Nil(t, err)
+	data2, err := svc.OAuthLogin(users.GoogleProvider)
+	require.Nil(t, err)
+	assert.NotEqual(t, data1.State, data2.State, "each OAuthLogin call must generate a unique state")
+}
+
+func TestOAuthCallback(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{"access_token": "valid-access-token", "token_type": "Bearer", "expires_in": 3600})
+	})
+	mux.HandleFunc("/google/userinfo", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{"id": "new-google-provider-id", "email": "new-google-user@example.com"})
+	})
+	mux.HandleFunc("/github/user", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{"id": 99999})
+	})
+	mux.HandleFunc("/github/emails", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode([]map[string]any{{"email": "new-github-user@example.com", "primary": true, "verified": true}})
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+	svc := newService(srv)
+
+	verifier := oauth2.GenerateVerifier()
+
+	cases := []struct {
+		desc                string
+		provider            string
+		code                string
+		verifier            string
+		err                 error
+		redirectURLContains string
+	}{
+		{
+			desc:                "callback creates new google user and returns login redirect",
+			provider:            users.GoogleProvider,
+			code:                "valid-code",
+			verifier:            verifier,
+			redirectURLContains: "token=",
+		},
+		{
+			desc:                "callback creates new github user and returns login redirect",
+			provider:            users.GitHubProvider,
+			code:                "valid-code",
+			verifier:            verifier,
+			redirectURLContains: "token=",
+		},
+		{
+			desc:                "callback authenticates already-linked google user",
+			provider:            users.GoogleProvider,
+			code:                "valid-code",
+			verifier:            verifier,
+			redirectURLContains: "token=",
+		},
+		{
+			desc:     "callback with unknown provider returns error",
+			provider: "unknown",
+			code:     "valid-code",
+			verifier: verifier,
+			err:      errors.ErrAuthorization,
+		},
+	}
+
+	for _, tc := range cases {
+		redirectURL, err := svc.OAuthCallback(context.Background(), users.OAuthCallbackData{
+			Provider: tc.provider,
+			Code:     tc.code,
+			Verifier: tc.verifier,
+		})
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected err %s got %s\n", tc.desc, tc.err, err))
+		if tc.redirectURLContains != "" {
+			assert.Contains(t, redirectURL, tc.redirectURLContains, fmt.Sprintf("%s: redirect URL should contain %q\n", tc.desc, tc.redirectURLContains))
+		}
 	}
 }

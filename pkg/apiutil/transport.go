@@ -213,7 +213,10 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrMissingConditionThreshold),
 		errors.Contains(err, ErrInvalidActionType),
 		errors.Contains(err, ErrMissingActionID),
-		errors.Contains(err, ErrInvalidOperator):
+		errors.Contains(err, ErrInvalidOperator),
+		errors.Contains(err, ErrMissingProvider),
+		errors.Contains(err, ErrMissingProviderCode),
+		errors.Contains(err, ErrMissingState):
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, errors.ErrAuthorization),
 		errors.Contains(err, ErrInviteExpired),

@@ -110,6 +110,32 @@ func (lm *loggingMiddleware) Login(ctx context.Context, user users.User) (token 
 	return lm.svc.Login(ctx, user)
 }
 
+func (lm *loggingMiddleware) OAuthLogin(provider string) (data users.OAuthLoginData, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method oauth_login for provider %s took %s to complete", provider, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.OAuthLogin(provider)
+}
+
+func (lm *loggingMiddleware) OAuthCallback(ctx context.Context, data users.OAuthCallbackData) (token string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method oauth_callback for provider %s took %s to complete", data.Provider, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.OAuthCallback(ctx, data)
+}
+
 func (lm *loggingMiddleware) ViewUser(ctx context.Context, token, id string) (u users.User, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view_user for user %s took %s to complete", u.Email, time.Since(begin))
@@ -266,7 +292,7 @@ func (lm *loggingMiddleware) DisableUser(ctx context.Context, token string, id s
 	return lm.svc.DisableUser(ctx, token, id)
 }
 
-func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (users.User, []users.User, error) {
+func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (users.User, []users.User, []users.Identity, error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method backup took %s to complete", time.Since(begin))
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
@@ -275,13 +301,13 @@ func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (users.Us
 	return lm.svc.Backup(ctx, token)
 }
 
-func (lm *loggingMiddleware) Restore(ctx context.Context, token string, admin users.User, users []users.User) error {
+func (lm *loggingMiddleware) Restore(ctx context.Context, token string, admin users.User, users []users.User, identities []users.Identity) error {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method restore took %s to complete", time.Since(begin))
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Restore(ctx, token, admin, users)
+	return lm.svc.Restore(ctx, token, admin, users, identities)
 }
 
 func (lm *loggingMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite auth.OrgInvite) (_ users.PlatformInvite, err error) {
