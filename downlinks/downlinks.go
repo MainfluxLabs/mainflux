@@ -40,11 +40,6 @@ type DownlinksPage struct {
 	Downlinks []Downlink
 }
 
-// payload struct is intended for data mapping within the implementation of the UnmarshalXML method
-type payload struct {
-	data map[string]any
-}
-
 type DownlinkRepository interface {
 	// Save persists multiple downlinks. Downlinks are saved using a transaction.
 	// If one downlink fails then none will be saved.

@@ -185,7 +185,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == ErrInvalidURL,
 		err == ErrInvalidScheduler,
 		err == ErrInvalidFilterParam,
-		err == ErrMissingFilterFormat,
+		err == ErrInvalidFilterFormat,
 		err == ErrInvalidFilterInterval,
 		err == ErrInvalidFilterValue:
 		w.WriteHeader(http.StatusBadRequest)
