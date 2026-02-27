@@ -44,26 +44,7 @@ func (req listNotifiersReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	if req.pageMetadata.Limit > maxLimitSize {
-		return apiutil.ErrLimitSize
-	}
-
-	if len(req.pageMetadata.Name) > maxNameSize {
-		return apiutil.ErrNameSize
-	}
-
-	if req.pageMetadata.Order != "" {
-		if _, ok := notifiers.AllowedOrders[req.pageMetadata.Order]; !ok {
-			return apiutil.ErrInvalidOrder
-		}
-	}
-
-	if req.pageMetadata.Dir != "" &&
-		req.pageMetadata.Dir != apiutil.AscDir && req.pageMetadata.Dir != apiutil.DescDir {
-		return apiutil.ErrInvalidDirection
-	}
-
-	return nil
+	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, notifiers.AllowedOrders)
 }
 
 type createNotifierReq struct {
