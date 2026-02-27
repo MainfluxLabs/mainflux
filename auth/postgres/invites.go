@@ -231,6 +231,41 @@ func (ir invitesRepository) RemoveOrgInvite(ctx context.Context, inviteID string
 	return nil
 }
 
+func (ir invitesRepository) RetrieveDormantOrgInviteByPlatformInvite(ctx context.Context, platformInviteID string) (auth.OrgInvite, error) {
+	q := `
+		SELECT oi.id, oi.invitee_id, oi.inviter_id, oi.org_id, oi.invitee_role, oi.created_at, oi.expires_at, oi.state
+		FROM org_invites oi
+		INNER JOIN dormant_org_invites doi ON oi.id = doi.org_invite_id
+		WHERE doi.platform_invite_id = $1
+		LIMIT 1
+	`
+
+	dbI := dbOrgInvite{}
+	if err := ir.db.QueryRowxContext(ctx, q, platformInviteID).StructScan(&dbI); err != nil {
+		if err == sql.ErrNoRows {
+			return auth.OrgInvite{}, errors.Wrap(dbutil.ErrNotFound, err)
+		}
+
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok && pgErr.Code == pgerrcode.InvalidTextRepresentation {
+			return auth.OrgInvite{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+		}
+
+		return auth.OrgInvite{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	invite := toOrgInvite(dbI)
+
+	groupInvites, err := ir.retrieveGroupInvitesByOrgInvite(ctx, dbI.ID)
+	if err != nil {
+		return auth.OrgInvite{}, err
+	}
+
+	invite.GroupInvites = groupInvites
+
+	return invite, nil
+}
+
 func (ir invitesRepository) UpdateOrgInviteState(ctx context.Context, inviteID, state string) error {
 	query := `
 		UPDATE org_invites
@@ -269,8 +304,9 @@ func (ir invitesRepository) RetrieveOrgInvitesByOrg(ctx context.Context, orgID s
 	if pm.State != "" {
 		filterState = "state = :state"
 	}
+	filterNonDormant := `invitee_id IS NOT NULL`
 
-	whereClause := dbutil.BuildWhereClause(filterOrgID, filterState)
+	whereClause := dbutil.BuildWhereClause(filterOrgID, filterState, filterNonDormant)
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
@@ -345,8 +381,9 @@ func (ir invitesRepository) RetrieveOrgInvitesByUser(ctx context.Context, userTy
 	if pm.State != "" {
 		filterState = "state = :state"
 	}
+	filterNonDormant := `invitee_id IS NOT NULL`
 
-	whereClause := dbutil.BuildWhereClause(filterUserType, filterState)
+	whereClause := dbutil.BuildWhereClause(filterUserType, filterState, filterNonDormant)
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
@@ -412,6 +449,7 @@ func (ir invitesRepository) syncOrgInviteStateByUserID(ctx context.Context, user
 		UPDATE org_invites
 		SET state='expired'
 		WHERE %s=:userID AND state='pending' AND expires_at < NOW()
+		  AND invitee_id IS NOT NULL
 	`
 
 	var col string
@@ -473,6 +511,7 @@ func (ir invitesRepository) syncOrgInviteStateByID(ctx context.Context, inviteID
 		UPDATE org_invites
 		SET state='expired'
 		WHERE id=:inviteID AND state='pending' AND expires_at < NOW()
+		  AND invitee_id IS NOT NULL
 	`
 
 	_, err := ir.db.NamedExecContext(ctx, query, map[string]any{"inviteID": inviteID})

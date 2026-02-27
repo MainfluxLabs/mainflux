@@ -24,16 +24,17 @@ const (
 var _ protomfx.AuthServiceClient = (*grpcClient)(nil)
 
 type grpcClient struct {
-	issue                  endpoint.Endpoint
-	identify               endpoint.Endpoint
-	authorize              endpoint.Endpoint
-	getOwnerIDByOrg        endpoint.Endpoint
-	retrieveRole           endpoint.Endpoint
-	assignRole             endpoint.Endpoint
-	createDormantOrgInvite endpoint.Endpoint
-	activateOrgInvite      endpoint.Endpoint
-	viewOrg                endpoint.Endpoint
-	timeout                time.Duration
+	issue                            endpoint.Endpoint
+	identify                         endpoint.Endpoint
+	authorize                        endpoint.Endpoint
+	getOwnerIDByOrg                  endpoint.Endpoint
+	retrieveRole                     endpoint.Endpoint
+	assignRole                       endpoint.Endpoint
+	createDormantOrgInvite           endpoint.Endpoint
+	activateOrgInvite                endpoint.Endpoint
+	getDormantInviteByPlatformInvite endpoint.Endpoint
+	viewOrg                          endpoint.Endpoint
+	timeout                          time.Duration
 }
 
 // NewClient returns new gRPC client instance.
@@ -102,6 +103,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			encodeActivateOrgInviteRequest,
 			decodeEmptyResponse,
 			emptypb.Empty{},
+		).Endpoint()),
+		getDormantInviteByPlatformInvite: kitot.TraceClient(tracer, "get_dormant_invite_by_platform_invite")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"GetDormantInviteByPlatformInvite",
+			encodeGetDormantInviteByPlatformInviteRequest,
+			decodeOrgInviteResponse,
+			protomfx.OrgInvite{},
 		).Endpoint()),
 		viewOrg: kitot.TraceClient(tracer, "view_org")(kitgrpc.NewClient(
 			conn,
@@ -326,6 +335,62 @@ func encodeActivateOrgInviteRequest(_ context.Context, grpcReq any) (any, error)
 		PlatformInviteID: req.platformInviteID,
 		UserID:           req.userID,
 		RedirectPath:     req.redirectPath,
+	}, nil
+}
+
+func (client grpcClient) GetDormantInviteByPlatformInvite(ctx context.Context, req *protomfx.GetDormantInviteByPlatformInviteReq, _ ...grpc.CallOption) (*protomfx.OrgInvite, error) {
+	ctx, close := context.WithTimeout(ctx, client.timeout)
+	defer close()
+
+	res, err := client.getDormantInviteByPlatformInvite(ctx, getDormantInviteByPlatformInviteReq{
+		platformInviteID: req.GetPlatformInviteID(),
+	})
+	if err != nil {
+		return &protomfx.OrgInvite{}, err
+	}
+
+	orgInvite := res.(orgInviteRes)
+	groupInvites := make([]*protomfx.GroupInvite, 0, len(orgInvite.GroupInvites))
+	for _, groupInvite := range orgInvite.GroupInvites {
+		groupInvites = append(groupInvites, &protomfx.GroupInvite{
+			GroupID:    groupInvite.GroupID,
+			MemberRole: groupInvite.MemberRole,
+		})
+	}
+
+	return &protomfx.OrgInvite{
+		Id:           orgInvite.ID,
+		OrgID:        orgInvite.OrgID,
+		OrgName:      orgInvite.OrgName,
+		InviteeRole:  orgInvite.InviteeRole,
+		GroupInvites: groupInvites,
+	}, nil
+}
+
+func encodeGetDormantInviteByPlatformInviteRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(getDormantInviteByPlatformInviteReq)
+	return &protomfx.GetDormantInviteByPlatformInviteReq{PlatformInviteID: req.platformInviteID}, nil
+}
+
+func decodeOrgInviteResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(*protomfx.OrgInvite)
+
+	groupInvites := make([]auth.GroupInvite, 0, len(res.GetGroupInvites()))
+	for _, groupInvite := range res.GetGroupInvites() {
+		groupInvites = append(groupInvites, auth.GroupInvite{
+			GroupID:    groupInvite.GroupID,
+			MemberRole: groupInvite.MemberRole,
+		})
+	}
+
+	return orgInviteRes{
+		auth.OrgInvite{
+			ID:           res.GetId(),
+			OrgID:        res.GetOrgID(),
+			OrgName:      res.GetOrgName(),
+			InviteeRole:  res.GetInviteeRole(),
+			GroupInvites: groupInvites,
+		},
 	}, nil
 }
 

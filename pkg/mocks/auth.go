@@ -12,6 +12,8 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/users"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -148,6 +150,10 @@ func (svc authServiceMock) CreateDormantOrgInvite(context.Context, *protomfx.Cre
 
 func (svc authServiceMock) ActivateOrgInvite(context.Context, *protomfx.ActivateOrgInviteReq, ...grpc.CallOption) (*emptypb.Empty, error) {
 	panic("not implemented")
+}
+
+func (svc authServiceMock) GetDormantInviteByPlatformInvite(context.Context, *protomfx.GetDormantInviteByPlatformInviteReq, ...grpc.CallOption) (*protomfx.OrgInvite, error) {
+	return nil, status.Error(codes.NotFound, dbutil.ErrNotFound.Error())
 }
 
 func (svc authServiceMock) ViewOrg(_ context.Context, req *protomfx.ViewOrgReq, _ ...grpc.CallOption) (r *protomfx.Org, err error) {

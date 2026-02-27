@@ -169,6 +169,22 @@ func activateOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func getDormantInviteByPlatformInviteEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(getDormantInviteByPlatformInviteReq)
+		if err := req.validate(); err != nil {
+			return orgInviteRes{}, err
+		}
+
+		invite, err := svc.GetDormantInviteByPlatformInvite(ctx, req.platformInviteID)
+		if err != nil {
+			return orgInviteRes{}, err
+		}
+
+		return orgInviteRes{invite}, nil
+	}
+}
+
 func viewOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(viewOrgReq)

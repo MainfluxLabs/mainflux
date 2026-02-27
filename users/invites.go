@@ -9,6 +9,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -28,6 +30,7 @@ type PlatformInvite struct {
 	CreatedAt    time.Time
 	ExpiresAt    time.Time
 	State        string
+	OrgInvite    *auth.OrgInvite
 }
 
 type PlatformInvitesPage struct {
@@ -174,6 +177,10 @@ func (svc usersService) ViewPlatformInvite(ctx context.Context, inviteID string)
 		return PlatformInvite{}, err
 	}
 
+	if err := svc.attachDormantOrgInvite(ctx, &invite); err != nil {
+		return PlatformInvite{}, err
+	}
+
 	return invite, nil
 }
 
@@ -185,6 +192,12 @@ func (svc usersService) ListPlatformInvites(ctx context.Context, token string, p
 	invitesPage, err := svc.invites.RetrievePlatformInvites(ctx, pm)
 	if err != nil {
 		return PlatformInvitesPage{}, err
+	}
+
+	for idx := range invitesPage.Invites {
+		if err := svc.attachDormantOrgInvite(ctx, &invitesPage.Invites[idx]); err != nil {
+			return PlatformInvitesPage{}, err
+		}
 	}
 
 	return invitesPage, nil
@@ -222,4 +235,41 @@ func (svc usersService) ValidatePlatformInvite(ctx context.Context, inviteID, em
 func (svc usersService) SendPlatformInviteEmail(ctx context.Context, invite PlatformInvite, redirectPath string) error {
 	to := []string{invite.InviteeEmail}
 	return svc.email.SendPlatformInvite(to, invite, redirectPath)
+}
+
+// If the passed Platform Invite is associated with a dormant Org Invite, fetch it and save it to platformInvite.OrgInvite.
+func (svc usersService) attachDormantOrgInvite(ctx context.Context, platformInvite *PlatformInvite) error {
+	dormantOrgInvite, err := svc.auth.GetDormantInviteByPlatformInvite(ctx, &protomfx.GetDormantInviteByPlatformInviteReq{
+		PlatformInviteID: platformInvite.ID,
+	})
+
+	if err != nil {
+		st, ok := status.FromError(err)
+		if !ok {
+			return err
+		}
+
+		if st.Code() == codes.NotFound {
+			return nil
+		}
+
+		return err
+	}
+
+	platformInvite.OrgInvite = &auth.OrgInvite{
+		ID:           dormantOrgInvite.Id,
+		OrgID:        dormantOrgInvite.OrgID,
+		OrgName:      dormantOrgInvite.OrgName,
+		InviteeRole:  dormantOrgInvite.InviteeRole,
+		GroupInvites: make([]auth.GroupInvite, 0, len(dormantOrgInvite.GroupInvites)),
+	}
+
+	for _, gi := range dormantOrgInvite.GetGroupInvites() {
+		platformInvite.OrgInvite.GroupInvites = append(platformInvite.OrgInvite.GroupInvites, auth.GroupInvite{
+			GroupID:    gi.GroupID,
+			MemberRole: gi.MemberRole,
+		})
+	}
+
+	return nil
 }
