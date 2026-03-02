@@ -6,7 +6,9 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
+	mfxsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/fatih/color"
 	prettyjson "github.com/hokaccha/go-prettyjson"
 )
@@ -147,7 +149,7 @@ func buildSenMLPageMetadata() mfxsdk.SenMLPageMetadata {
 		aggFields = strings.Split(AggField, ",")
 	}
 
-	return mfsdk.SenMLPageMetadata{
+	return mfxsdk.SenMLPageMetadata{
 		Offset:      uint64(Offset),
 		Limit:       uint64(Limit),
 		Subtopic:    Subtopic,
