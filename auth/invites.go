@@ -98,8 +98,8 @@ type Invites interface {
 	// by its ID
 	ListOrgInvitesByOrg(ctx context.Context, token, orgID string, pm PageMetadataInvites) (OrgInvitesPage, error)
 
-	// GetDormantInviteByPlatformInvite retrieves the dormant Org Invite associated with the specified Platform Invite.
-	GetDormantInviteByPlatformInvite(ctx context.Context, platformInviteID string) (OrgInvite, error)
+	// GetDormantOrgInviteByPlatformInvite retrieves the dormant Org Invite associated with the specified Platform Invite.
+	GetDormantOrgInviteByPlatformInvite(ctx context.Context, platformInviteID string) (OrgInvite, error)
 
 	// SendOrgInviteEmail sends an e-mail notifying the invitee of the corresponding Invite.
 	SendOrgInviteEmail(ctx context.Context, invite OrgInvite, email, orgName, invRedirectPath string) error
@@ -544,7 +544,7 @@ func (svc service) acceptInvite(ctx context.Context, invite OrgInvite) error {
 	return nil
 }
 
-func (svc service) GetDormantInviteByPlatformInvite(ctx context.Context, platformInviteID string) (OrgInvite, error) {
+func (svc service) GetDormantOrgInviteByPlatformInvite(ctx context.Context, platformInviteID string) (OrgInvite, error) {
 	invite, err := svc.invites.RetrieveDormantOrgInviteByPlatformInvite(ctx, platformInviteID)
 	if err != nil {
 		return OrgInvite{}, err

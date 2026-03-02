@@ -30,7 +30,7 @@ type grpcServer struct {
 	retrieveRole                     kitgrpc.Handler
 	createDormantOrgInvite           kitgrpc.Handler
 	activateOrgInvite                kitgrpc.Handler
-	getDormantInviteByPlatformInvite kitgrpc.Handler
+	getDormantOrgInviteByPlatformInvite kitgrpc.Handler
 	viewOrg                          kitgrpc.Handler
 }
 
@@ -77,9 +77,9 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			decodeActivateOrgInviteRequest,
 			encodeEmptyResponse,
 		),
-		getDormantInviteByPlatformInvite: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "get_dormant_invite_by_platform_invite")(getDormantInviteByPlatformInviteEndpoint(svc)),
-			decodeGetDormantInviteByPlatformInviteRequest,
+		getDormantOrgInviteByPlatformInvite: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "get_dormant_org_invite_by_platform_invite")(getDormantOrgInviteByPlatformInviteEndpoint(svc)),
+			decodeGetDormantOrgInviteByPlatformInviteRequest,
 			encodeOrgInviteResponse,
 		),
 		viewOrg: kitgrpc.NewServer(
@@ -157,8 +157,8 @@ func (s *grpcServer) ActivateOrgInvite(ctx context.Context, req *protomfx.Activa
 	return res.(*emptypb.Empty), nil
 }
 
-func (s *grpcServer) GetDormantInviteByPlatformInvite(ctx context.Context, req *protomfx.GetDormantInviteByPlatformInviteReq) (*protomfx.OrgInvite, error) {
-	_, res, err := s.getDormantInviteByPlatformInvite.ServeGRPC(ctx, req)
+func (s *grpcServer) GetDormantOrgInviteByPlatformInvite(ctx context.Context, req *protomfx.GetDormantOrgInviteByPlatformInviteReq) (*protomfx.OrgInvite, error) {
+	_, res, err := s.getDormantOrgInviteByPlatformInvite.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -245,9 +245,9 @@ func decodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, e
 	}, nil
 }
 
-func decodeGetDormantInviteByPlatformInviteRequest(_ context.Context, grpcReq any) (any, error) {
-	req := grpcReq.(*protomfx.GetDormantInviteByPlatformInviteReq)
-	return getDormantInviteByPlatformInviteReq{platformInviteID: req.GetPlatformInviteID()}, nil
+func decodeGetDormantOrgInviteByPlatformInviteRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.GetDormantOrgInviteByPlatformInviteReq)
+	return getDormantOrgInviteByPlatformInviteReq{platformInviteID: req.GetPlatformInviteID()}, nil
 }
 
 func encodeOrgInviteResponse(_ context.Context, grpcRes any) (any, error) {

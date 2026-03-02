@@ -152,7 +152,7 @@ func (svc authServiceMock) ActivateOrgInvite(context.Context, *protomfx.Activate
 	panic("not implemented")
 }
 
-func (svc authServiceMock) GetDormantInviteByPlatformInvite(context.Context, *protomfx.GetDormantInviteByPlatformInviteReq, ...grpc.CallOption) (*protomfx.OrgInvite, error) {
+func (svc authServiceMock) GetDormantOrgInviteByPlatformInvite(context.Context, *protomfx.GetDormantOrgInviteByPlatformInviteReq, ...grpc.CallOption) (*protomfx.OrgInvite, error) {
 	return nil, status.Error(codes.NotFound, dbutil.ErrNotFound.Error())
 }
 

@@ -242,7 +242,7 @@ func (svc usersService) SendPlatformInviteEmail(ctx context.Context, invite Plat
 
 // If the passed Platform Invite is associated with a dormant Org Invite, fetch it and save it to platformInvite.OrgInvite.
 func (svc usersService) attachDormantOrgInvite(ctx context.Context, platformInvite *PlatformInvite) error {
-	dormantOrgInvite, err := svc.auth.GetDormantInviteByPlatformInvite(ctx, &protomfx.GetDormantInviteByPlatformInviteReq{
+	dormantOrgInvite, err := svc.auth.GetDormantOrgInviteByPlatformInvite(ctx, &protomfx.GetDormantOrgInviteByPlatformInviteReq{
 		PlatformInviteID: platformInvite.ID,
 	})
 

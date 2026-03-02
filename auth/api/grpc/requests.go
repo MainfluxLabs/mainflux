@@ -156,11 +156,11 @@ func (req activateOrgInviteReq) validate() error {
 	return nil
 }
 
-type getDormantInviteByPlatformInviteReq struct {
+type getDormantOrgInviteByPlatformInviteReq struct {
 	platformInviteID string
 }
 
-func (req getDormantInviteByPlatformInviteReq) validate() error {
+func (req getDormantOrgInviteByPlatformInviteReq) validate() error {
 	if req.platformInviteID == "" {
 		return apiutil.ErrMissingInviteID
 	}
