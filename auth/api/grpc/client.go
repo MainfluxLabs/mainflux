@@ -24,17 +24,17 @@ const (
 var _ protomfx.AuthServiceClient = (*grpcClient)(nil)
 
 type grpcClient struct {
-	issue                            endpoint.Endpoint
-	identify                         endpoint.Endpoint
-	authorize                        endpoint.Endpoint
-	getOwnerIDByOrg                  endpoint.Endpoint
-	retrieveRole                     endpoint.Endpoint
-	assignRole                       endpoint.Endpoint
-	createDormantOrgInvite           endpoint.Endpoint
-	activateOrgInvite                endpoint.Endpoint
+	issue                               endpoint.Endpoint
+	identify                            endpoint.Endpoint
+	authorize                           endpoint.Endpoint
+	getOwnerIDByOrg                     endpoint.Endpoint
+	retrieveRole                        endpoint.Endpoint
+	assignRole                          endpoint.Endpoint
+	createDormantOrgInvite              endpoint.Endpoint
+	activateOrgInvite                   endpoint.Endpoint
 	getDormantOrgInviteByPlatformInvite endpoint.Endpoint
-	viewOrg                          endpoint.Endpoint
-	timeout                          time.Duration
+	viewOrg                             endpoint.Endpoint
+	timeout                             time.Duration
 }
 
 // NewClient returns new gRPC client instance.

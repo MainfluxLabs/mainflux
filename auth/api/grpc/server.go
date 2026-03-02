@@ -22,16 +22,16 @@ import (
 var _ protomfx.AuthServiceServer = (*grpcServer)(nil)
 
 type grpcServer struct {
-	issue                            kitgrpc.Handler
-	identify                         kitgrpc.Handler
-	authorize                        kitgrpc.Handler
-	getOwnerIDByOrg                  kitgrpc.Handler
-	assignRole                       kitgrpc.Handler
-	retrieveRole                     kitgrpc.Handler
-	createDormantOrgInvite           kitgrpc.Handler
-	activateOrgInvite                kitgrpc.Handler
+	issue                               kitgrpc.Handler
+	identify                            kitgrpc.Handler
+	authorize                           kitgrpc.Handler
+	getOwnerIDByOrg                     kitgrpc.Handler
+	assignRole                          kitgrpc.Handler
+	retrieveRole                        kitgrpc.Handler
+	createDormantOrgInvite              kitgrpc.Handler
+	activateOrgInvite                   kitgrpc.Handler
 	getDormantOrgInviteByPlatformInvite kitgrpc.Handler
-	viewOrg                          kitgrpc.Handler
+	viewOrg                             kitgrpc.Handler
 }
 
 // NewServer returns new AuthServiceServer instance.
