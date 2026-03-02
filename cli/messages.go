@@ -6,71 +6,34 @@ package cli
 import (
 	"os"
 
-	mfxsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/spf13/cobra"
 )
 
-var cmdMessages = []cobra.Command{
-	{
-		Use:   "send [subtopic] <JSON_string> <key_type> <thing_key>",
-		Short: "Send messages",
-		Long:  `Sends message via HTTP adapter`,
-		Run: func(cmd *cobra.Command, args []string) {
-			switch len(args) {
-			case 3:
-				key := things.ThingKey{Type: args[1], Value: args[2]}
-				if err := sdk.SendMessage("", args[0], key); err != nil {
-					logError(err)
-					return
-				}
-			case 4:
-				key := things.ThingKey{Type: args[2], Value: args[3]}
-				if err := sdk.SendMessage(args[0], args[1], key); err != nil {
-					logError(err)
-					return
-				}
-			default:
-				logUsage(cmd.Use)
+var cmdSend = &cobra.Command{
+	Use:   "send [subtopic] <JSON_string> <key_type> <thing_key>",
+	Short: "Send messages",
+	Long:  `Sends message via HTTP adapter`,
+	Run: func(cmd *cobra.Command, args []string) {
+		switch len(args) {
+		case 3:
+			key := things.ThingKey{Type: args[1], Value: args[2]}
+			if err := sdk.SendMessage("", args[0], key); err != nil {
+				logError(err)
 				return
 			}
-
-			logOK()
-		},
-	},
-	{
-		Use:   "read [by-admin] <key_type> <auth_token>",
-		Short: "Read messages",
-		Long:  `Reads all messages (legacy command, use 'read json' or 'read senml' for full filtering)`,
-		Run: func(cmd *cobra.Command, args []string) {
-			pm := mfxsdk.PageMetadata{
-				Offset:   uint64(Offset),
-				Limit:    uint64(Limit),
-				Format:   Format,
-				Subtopic: Subtopic,
-			}
-			switch len(args) {
-			case 2:
-				m, err := sdk.ReadMessages(true, pm, "", args[1])
-				if err != nil {
-					logError(err)
-					return
-				}
-
-				logJSON(m)
-			case 3:
-				m, err := sdk.ReadMessages(false, pm, args[0], args[1])
-				if err != nil {
-					logError(err)
-					return
-				}
-
-				logJSON(m)
-			default:
-				logUsage(cmd.Use)
+		case 4:
+			key := things.ThingKey{Type: args[2], Value: args[3]}
+			if err := sdk.SendMessage(args[0], args[1], key); err != nil {
+				logError(err)
 				return
 			}
-		},
+		default:
+			logUsage(cmd.Use)
+			return
+		}
+
+		logOK()
 	},
 }
 
@@ -311,11 +274,13 @@ func NewMessagesCmd() *cobra.Command {
 		Long:  `Send or read messages using the http-adapter and the configured database reader`,
 	}
 
-	for i := range cmdMessages {
-		cmd.AddCommand(&cmdMessages[i])
-	}
+	cmd.AddCommand(cmdSend)
 
-	readCmd := &cmdMessages[1]
+	readCmd := &cobra.Command{
+		Use:   "read [json | senml]",
+		Short: "Read messages",
+		Long:  `Read JSON or SenML messages with full filtering support`,
+	}
 	readCmd.AddCommand(cmdReadJSON)
 	readCmd.AddCommand(cmdReadSenML)
 
