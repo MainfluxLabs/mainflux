@@ -11,7 +11,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
-const certsEndpoint = "certs"
+const (
+	certsEndpoint = "certs"
+	contentType   = "application/json"
+	bearerPrefix  = "Bearer "
+)
 
 // Cert represents certs data.
 type Cert struct {
@@ -192,8 +196,8 @@ func request(method, jwt, url string, data []byte) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+jwt)
+	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("Authorization", bearerPrefix+jwt)
 	c := &http.Client{}
 	res, err := c.Do(req)
 	if err != nil {
