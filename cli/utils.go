@@ -117,3 +117,54 @@ func convertMetadata(m string) (map[string]any, error) {
 	}
 	return metadata, nil
 }
+
+func buildJSONPageMetadata() mfxsdk.JSONPageMetadata {
+	var aggFields []string
+	if AggField != "" {
+		aggFields = strings.Split(AggField, ",")
+	}
+
+	return mfxsdk.JSONPageMetadata{
+		Offset:      uint64(Offset),
+		Limit:       uint64(Limit),
+		Subtopic:    Subtopic,
+		Publisher:   Publisher,
+		Protocol:    Protocol,
+		From:        From,
+		To:          To,
+		Filter:      Filter,
+		AggInterval: AggInterval,
+		AggValue:    uint64(AggValue),
+		AggType:     AggType,
+		AggFields:   aggFields,
+		Dir:         Dir,
+	}
+}
+
+func buildSenMLPageMetadata() mfxsdk.SenMLPageMetadata {
+	var aggFields []string
+	if AggField != "" {
+		aggFields = strings.Split(AggField, ",")
+	}
+
+	return mfsdk.SenMLPageMetadata{
+		Offset:      uint64(Offset),
+		Limit:       uint64(Limit),
+		Subtopic:    Subtopic,
+		Publisher:   Publisher,
+		Protocol:    Protocol,
+		Name:        SenMLName,
+		Value:       SenMLValue,
+		Comparator:  Comparator,
+		BoolValue:   BoolValue,
+		StringValue: StringValue,
+		DataValue:   DataValue,
+		From:        From,
+		To:          To,
+		AggInterval: AggInterval,
+		AggValue:    uint64(AggValue),
+		AggType:     AggType,
+		AggFields:   aggFields,
+		Dir:         Dir,
+	}
+}
