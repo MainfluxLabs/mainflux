@@ -156,6 +156,18 @@ func (req activateOrgInviteReq) validate() error {
 	return nil
 }
 
+type getDormantOrgInviteByPlatformInviteReq struct {
+	platformInviteID string
+}
+
+func (req getDormantOrgInviteByPlatformInviteReq) validate() error {
+	if req.platformInviteID == "" {
+		return apiutil.ErrMissingInviteID
+	}
+
+	return nil
+}
+
 type viewOrgReq struct {
 	token string
 	id    string

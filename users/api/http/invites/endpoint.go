@@ -74,15 +74,8 @@ func listPlatformInvitesEndpoint(svc users.Service) endpoint.Endpoint {
 		}
 
 		for _, inv := range page.Invites {
-			resInv := platformInviteRes{
-				ID:           inv.ID,
-				InviteeEmail: inv.InviteeEmail,
-				CreatedAt:    inv.CreatedAt,
-				ExpiresAt:    inv.ExpiresAt,
-				State:        inv.State,
-			}
-
-			response.Invites = append(response.Invites, resInv)
+			invRes := buildPlatformInviteResponse(inv)
+			response.Invites = append(response.Invites, invRes)
 		}
 
 		return response, nil
@@ -101,13 +94,7 @@ func viewPlatformInviteEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return platformInviteRes{
-			ID:           invite.ID,
-			InviteeEmail: invite.InviteeEmail,
-			CreatedAt:    invite.CreatedAt,
-			ExpiresAt:    invite.ExpiresAt,
-			State:        invite.State,
-		}, nil
+		return buildPlatformInviteResponse(invite), nil
 	}
 }
 
@@ -124,4 +111,26 @@ func revokePlatformInviteEndpoint(svc users.Service) endpoint.Endpoint {
 
 		return revokePlatformInviteRes{}, nil
 	}
+}
+
+func buildPlatformInviteResponse(invite users.PlatformInvite) platformInviteRes {
+	inviteRes := platformInviteRes{
+		ID:           invite.ID,
+		InviteeEmail: invite.InviteeEmail,
+		CreatedAt:    invite.CreatedAt,
+		ExpiresAt:    invite.ExpiresAt,
+		State:        invite.State,
+	}
+
+	if invite.OrgInvite != nil {
+		inviteRes.OrgInvite = &dormantOrgInvite{
+			ID:           invite.OrgInvite.ID,
+			OrgID:        invite.OrgInvite.OrgID,
+			OrgName:      invite.OrgInvite.OrgName,
+			InviteeRole:  invite.OrgInvite.InviteeRole,
+			GroupInvites: invite.OrgInvite.GroupInvites,
+		}
+	}
+
+	return inviteRes
 }
