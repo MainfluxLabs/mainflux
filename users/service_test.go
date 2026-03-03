@@ -666,20 +666,36 @@ func TestValidatePlatformInvite(t *testing.T) {
 func TestOAuthLogin(t *testing.T) {
 	svc := newService()
 
-	cases := map[string]struct {
+	cases := []struct {
+		desc          string
 		provider      string
 		stateNotEmpty bool
 		err           error
 	}{
-		"oauth login with google provider":  {users.GoogleProvider, true, nil},
-		"oauth login with github provider":  {users.GitHubProvider, true, nil},
-		"oauth login with unknown provider": {"unknown", false, errors.ErrAuthorization},
+		{
+			desc:          "oauth login with google provider",
+			provider:      users.GoogleProvider,
+			stateNotEmpty: true,
+			err:           nil,
+		},
+		{
+			desc:          "oauth login with github provider",
+			provider:      users.GitHubProvider,
+			stateNotEmpty: true,
+			err:           nil,
+		},
+		{
+			desc:          "oauth login with unknown provider",
+			provider:      "unknown",
+			stateNotEmpty: false,
+			err:           apiutil.ErrInvalidProvider,
+		},
 	}
 
-	for desc, tc := range cases {
+	for _, tc := range cases {
 		data, err := svc.OAuthLogin(tc.provider)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected err %s got %s\n", desc, tc.err, err))
-		assert.Equal(t, tc.stateNotEmpty, data.State != "", fmt.Sprintf("%s: expected state non-empty=%v\n", desc, tc.stateNotEmpty))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected err %s got %s\n", tc.desc, tc.err, err))
+		assert.Equal(t, tc.stateNotEmpty, data.State != "", fmt.Sprintf("%s: expected state non-empty=%v\n", tc.desc, tc.stateNotEmpty))
 	}
 
 	data1, err := svc.OAuthLogin(users.GoogleProvider)
