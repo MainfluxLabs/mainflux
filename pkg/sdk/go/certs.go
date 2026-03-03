@@ -11,11 +11,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
-const (
-	certsEndpoint = "certs"
-	contentType   = "application/json"
-	bearerPrefix  = "Bearer "
-)
+const certsEndpoint = "certs"
 
 // Cert represents certs data.
 type Cert struct {
@@ -58,11 +54,17 @@ func (sdk mfSDK) IssueCert(thingID string, keyBits int, keyType, valid, token st
 	}
 
 	url := fmt.Sprintf("%s/%s", sdk.certsURL, certsEndpoint)
-	res, err := request(http.MethodPost, token, url, d)
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(d))
+	if err != nil {
+		return Cert{}, err
+	}
+
+	res, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
 		return Cert{}, err
 	}
 	defer res.Body.Close()
+
 	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusCreated {
 		return Cert{}, ErrCerts
 	}
@@ -79,7 +81,12 @@ func (sdk mfSDK) IssueCert(thingID string, keyBits int, keyType, valid, token st
 func (sdk mfSDK) ViewCert(serial, token string) (Cert, error) {
 	var c Cert
 	url := fmt.Sprintf("%s/%s/%s", sdk.certsURL, certsEndpoint, serial)
-	res, err := request(http.MethodGet, token, url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return Cert{}, err
+	}
+
+	res, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
 		return Cert{}, err
 	}
@@ -102,8 +109,12 @@ func (sdk mfSDK) ViewCert(serial, token string) (Cert, error) {
 
 func (sdk mfSDK) RevokeCert(serial, token string) error {
 	url := fmt.Sprintf("%s/%s/%s", sdk.certsURL, certsEndpoint, serial)
-	res, err := request(http.MethodDelete, token, url, nil)
+	req, err := http.NewRequest(http.MethodDelete, url, http.NoBody)
+	if err != nil {
+		return err
+	}
 
+	res, err := sdk.sendRequest(req, token, string(CTJSON))
 	if res != nil {
 		res.Body.Close()
 	}
@@ -125,8 +136,12 @@ func (sdk mfSDK) RevokeCert(serial, token string) error {
 func (sdk mfSDK) RenewCert(serial, token string) (Cert, error) {
 	var c Cert
 	url := fmt.Sprintf("%s/%s/%s", sdk.certsURL, certsEndpoint, serial)
-	res, err := request(http.MethodPut, token, url, nil)
+	req, err := http.NewRequest(http.MethodPut, url, http.NoBody)
+	if err != nil {
+		return Cert{}, err
+	}
 
+	res, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
 		return Cert{}, err
 	}
@@ -151,7 +166,13 @@ func (sdk mfSDK) RenewCert(serial, token string) (Cert, error) {
 func (sdk mfSDK) ListSerials(thingID string, offset, limit uint64, token string) (CertsPage, error) {
 	var cp CertsPage
 	url := fmt.Sprintf("%s/svccerts/things/%s/serials?offset=%d&limit=%d", sdk.certsURL, thingID, offset, limit)
-	res, err := request(http.MethodGet, token, url, nil)
+
+	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return CertsPage{}, err
+	}
+
+	res, err := sdk.sendRequest(req, token, string(CTJSON))
 	if err != nil {
 		return CertsPage{}, err
 	}
@@ -174,13 +195,20 @@ func (sdk mfSDK) ListSerials(thingID string, offset, limit uint64, token string)
 }
 
 func (sdk mfSDK) RemoveCert(id, token string) error {
-	res, err := request(http.MethodDelete, token, fmt.Sprintf("%s/%s", sdk.certsURL, id), nil)
-	if res != nil {
-		res.Body.Close()
-	}
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/%s", sdk.certsURL, id), http.NoBody)
 	if err != nil {
 		return err
 	}
+
+	res, err := sdk.sendRequest(req, token, string(CTJSON))
+	if res != nil {
+		res.Body.Close()
+	}
+
+	if err != nil {
+		return err
+	}
+
 	switch res.StatusCode {
 	case http.StatusNoContent:
 		return nil
@@ -189,22 +217,6 @@ func (sdk mfSDK) RemoveCert(id, token string) error {
 	default:
 		return ErrCertsRemove
 	}
-}
-
-func request(method, jwt, url string, data []byte) (*http.Response, error) {
-	req, err := http.NewRequest(method, url, bytes.NewReader(data))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("Authorization", bearerPrefix+jwt)
-	c := &http.Client{}
-	res, err := c.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	return res, nil
 }
 
 type certReq struct {
