@@ -3,8 +3,8 @@ package alarms
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
+	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -184,7 +184,7 @@ func (as *alarmService) Consume(message any) error {
 
 	var payload map[string]any
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
-		return err
+		return errors.Wrap(errors.ErrInvalidPayload, err)
 	}
 
 	alarm := Alarm{
@@ -197,7 +197,7 @@ func (as *alarmService) Consume(message any) error {
 
 	subject := strings.Split(msg.Subject, ".")
 	if len(subject) < 3 {
-		return fmt.Errorf("invalid subject: %s", msg.Subject)
+		return errors.ErrInvalidSubject
 	}
 
 	originType := subject[1]

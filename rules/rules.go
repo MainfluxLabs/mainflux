@@ -125,7 +125,7 @@ func processPayload(payload any, conditions []Condition, operator string, conten
 
 		return false, nil, nil
 	default:
-		return false, nil, errInvalidObject
+		return false, nil, errors.ErrInvalidPayload
 	}
 }
 

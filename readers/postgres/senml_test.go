@@ -419,6 +419,76 @@ func TestListSenMLMessages(t *testing.T) {
 	}
 }
 
+func TestSenMLAggregation(t *testing.T) {
+	reader := preader.NewSenMLRepository(db)
+	writer := pwriter.New(db)
+
+	pubID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	now := time.Now().Unix()
+	val := 10.0
+	for i := 0; i < 10; i++ {
+		msg := senml.Message{
+			Name:  "sensor",
+			Value: &val,
+			Time:  now + int64(i),
+		}
+		payload, err := json.Marshal(msg)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+		err = writer.Consume(protomfx.Message{
+			Publisher:   pubID,
+			Protocol:    mqttProt,
+			ContentType: senml.JSON,
+			Payload:     payload,
+		})
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	}
+
+	cases := map[string]readers.SenMLPageMetadata{
+		"max aggregation": {
+			Limit:       noLimit,
+			Publisher:   pubID,
+			AggType:     maxAgg,
+			AggInterval: "hour",
+			AggValue:    1,
+			AggFields:   []string{"value"},
+		},
+		"min aggregation": {
+			Limit:       noLimit,
+			Publisher:   pubID,
+			AggType:     minAgg,
+			AggInterval: "hour",
+			AggValue:    1,
+			AggFields:   []string{"value"},
+		},
+		"avg aggregation": {
+			Limit:       noLimit,
+			Publisher:   pubID,
+			AggType:     avgAgg,
+			AggInterval: "hour",
+			AggValue:    1,
+			AggFields:   []string{"value"},
+		},
+		"count aggregation": {
+			Limit:       noLimit,
+			Publisher:   pubID,
+			AggType:     countAgg,
+			AggInterval: "hour",
+			AggValue:    1,
+			AggFields:   []string{"value"},
+		},
+	}
+
+	for desc, pm := range cases {
+		result, err := reader.Retrieve(context.Background(), pm)
+		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
+		assert.NotEmpty(t, result.Messages, fmt.Sprintf("%s: expected non-empty messages", desc))
+		assert.GreaterOrEqual(t, result.Total, uint64(1), fmt.Sprintf("%s: expected total >= 1", desc))
+	}
+}
+
 func TestDeleteSenMLMessages(t *testing.T) {
 	reader := preader.NewSenMLRepository(db)
 	writer := pwriter.New(db)

@@ -54,8 +54,8 @@ func (svc thingsServiceMock) GetPubConfigByKey(_ context.Context, in *protomfx.T
 	return &protomfx.PubConfigByKeyRes{PublisherID: svc.things[key].ID}, nil
 }
 
-func (svc thingsServiceMock) GetConfigByThing(context.Context, *protomfx.ThingID, ...grpc.CallOption) (*protomfx.ConfigByThingRes, error) {
-	panic("not implemented")
+func (svc thingsServiceMock) GetConfigByThing(_ context.Context, _ *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ConfigByThingRes, error) {
+	return &protomfx.ConfigByThingRes{}, nil
 }
 
 func (svc thingsServiceMock) CanUserAccessThing(_ context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {

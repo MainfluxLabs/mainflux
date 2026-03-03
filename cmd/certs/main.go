@@ -65,11 +65,6 @@ const (
 	defSignHoursValid = "2048h"
 	defSignRSABits    = ""
 
-	defVaultHost       = ""
-	defVaultRole       = "mainflux"
-	defVaultToken      = ""
-	defVaultPKIIntPath = "pki_int"
-
 	envPort              = "MF_CERTS_HTTP_PORT"
 	envLogLevel          = "MF_CERTS_LOG_LEVEL"
 	envDBHost            = "MF_CERTS_DB_HOST"
@@ -95,11 +90,6 @@ const (
 	envSignCAKey         = "MF_CERTS_SIGN_CA_KEY_PATH"
 	envSignHoursValid    = "MF_CERTS_SIGN_HOURS_VALID"
 	envSignRSABits       = "MF_CERTS_SIGN_RSA_BITS"
-
-	envVaultHost       = "MF_CERTS_VAULT_HOST"
-	envVaultPKIIntPath = "MF_VAULT_PKI_INT_PATH"
-	envVaultRole       = "MF_VAULT_CA_ROLE_NAME"
-	envVaultToken      = "MF_VAULT_TOKEN"
 )
 
 var (
@@ -124,11 +114,6 @@ type config struct {
 	signCAKeyPath  string
 	signRSABits    int
 	signHoursValid string
-	// 3rd party PKI API access settings
-	pkiPath  string
-	pkiToken string
-	pkiHost  string
-	pkiRole  string
 }
 
 func main() {
@@ -264,11 +249,6 @@ func loadConfig() config {
 		signCAPath:     mainflux.Env(envSignCAPath, defSignCAPath),
 		signHoursValid: mainflux.Env(envSignHoursValid, defSignHoursValid),
 		signRSABits:    signRSABits,
-
-		pkiToken: mainflux.Env(envVaultToken, defVaultToken),
-		pkiPath:  mainflux.Env(envVaultPKIIntPath, defVaultPKIIntPath),
-		pkiRole:  mainflux.Env(envVaultRole, defVaultRole),
-		pkiHost:  mainflux.Env(envVaultHost, defVaultHost),
 	}
 
 }
@@ -301,10 +281,6 @@ func newService(ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, 
 		SignX509Cert:   x509Cert,
 		SignHoursValid: cfg.signHoursValid,
 		SignRSABits:    cfg.signRSABits,
-		PKIToken:       cfg.pkiToken,
-		PKIHost:        cfg.pkiHost,
-		PKIPath:        cfg.pkiPath,
-		PKIRole:        cfg.pkiRole,
 	}
 
 	svc := certs.New(ac, tc, certsRepo, certsConfig, pkiAgent)

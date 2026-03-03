@@ -1,0 +1,417 @@
+openapi: 3.0.1
+info:
+  title: Mainflux UI configs service
+  description: HTTP API for managing UI configuration settings scoped per organization and per thing.
+  version: 1.0.0
+
+paths:
+  /orgs/{orgId}/configs:
+    get:
+      summary: View org config
+      description: Retrieves the UI configuration for the organization identified by the provided ID.
+      tags:
+        - org configs
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      responses:
+        '200':
+          $ref: "#/components/responses/OrgConfigRes"
+        '400':
+          description: Failed due to malformed request.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Org config does not exist.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    put:
+      summary: Update org config
+      description: Updates the UI configuration for the organization identified by the provided ID.
+      tags:
+        - org configs
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateOrgConfigReq"
+      responses:
+        '200':
+          description: Org config updated.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /orgs/configs:
+    get:
+      summary: List org configs
+      description: Retrieves a list of UI configurations for all organizations accessible to the authenticated user.
+      tags:
+        - org configs
+      parameters:
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListOrgsConfigsRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /things/{thingId}/configs:
+    get:
+      summary: View thing config
+      description: Retrieves the UI configuration for the thing identified by the provided ID.
+      tags:
+        - thing configs
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      responses:
+        '200':
+          $ref: "#/components/responses/ThingConfigRes"
+        '400':
+          description: Failed due to malformed request.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Thing config does not exist.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    put:
+      summary: Update thing config
+      description: Updates the UI configuration for the thing identified by the provided ID.
+      tags:
+        - thing configs
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateThingConfigReq"
+      responses:
+        '200':
+          description: Thing config updated.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /things/configs:
+    get:
+      summary: List thing configs
+      description: Retrieves a list of UI configurations for all things accessible to the authenticated user.
+      tags:
+        - thing configs
+      parameters:
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListThingsConfigsRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /backup:
+    get:
+      summary: Backup all configs
+      description: Downloads a backup file containing all org and thing configs accessible to the authenticated user.
+      tags:
+        - backup
+      responses:
+        '200':
+          $ref: "#/components/responses/BackupRes"
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /restore:
+    post:
+      summary: Restore configs from backup
+      description: Restores org and thing configs from a previously exported backup file.
+      tags:
+        - backup
+      requestBody:
+        $ref: "#/components/requestBodies/RestoreReq"
+      responses:
+        '201':
+          description: Configs restored.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+components:
+  schemas:
+    OrgConfig:
+      type: object
+      properties:
+        org_id:
+          type: string
+          format: uuid
+          example: "aabbccdd-1122-3344-5566-778899aabbcc"
+        config:
+          type: object
+          additionalProperties: true
+          example:
+            theme: "dark"
+            language: "en"
+            dashboard_layout: "grid"
+      required: [org_id, config]
+
+    ThingConfig:
+      type: object
+      properties:
+        thing_id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        group_id:
+          type: string
+          format: uuid
+          example: "321e4567-e89b-12d3-a456-426614174def"
+        config:
+          type: object
+          additionalProperties: true
+          example:
+            chart_type: "line"
+            unit: "°C"
+            decimals: 2
+      required: [thing_id, group_id, config]
+
+    OrgsConfigsPageRes:
+      type: object
+      properties:
+        total:
+          type: integer
+        offset:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 200
+        orgs_configs:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrgConfig'
+      required: [total, offset, limit, orgs_configs]
+
+    ThingsConfigsPageRes:
+      type: object
+      properties:
+        total:
+          type: integer
+        offset:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 200
+        things_configs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ThingConfig'
+      required: [total, offset, limit, things_configs]
+
+  parameters:
+    OrgId:
+      name: orgId
+      in: path
+      required: true
+      description: Unique organization identifier.
+      schema:
+        type: string
+        format: uuid
+      example: "aabbccdd-1122-3344-5566-778899aabbcc"
+    ThingId:
+      name: thingId
+      in: path
+      required: true
+      description: Unique thing identifier.
+      schema:
+        type: string
+        format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174000"
+    Offset:
+      name: offset
+      in: query
+      required: false
+      description: Number of items to skip.
+      schema:
+        type: integer
+        minimum: 0
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: Maximum number of items to return.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+
+  requestBodies:
+    UpdateOrgConfigReq:
+      description: JSON-formatted document describing the org UI configuration to set.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              config:
+                type: object
+                additionalProperties: true
+            required:
+              - config
+          example:
+            config:
+              theme: "dark"
+              language: "en"
+              dashboard_layout: "grid"
+    UpdateThingConfigReq:
+      description: JSON-formatted document describing the thing UI configuration to set.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              config:
+                type: object
+                additionalProperties: true
+            required:
+              - config
+          example:
+            config:
+              chart_type: "line"
+              unit: "°C"
+              decimals: 2
+    RestoreReq:
+      description: Backup file previously exported via the backup endpoint.
+      required: true
+      content:
+        application/octet-stream:
+          schema:
+            type: string
+            format: binary
+
+  responses:
+    OrgConfigRes:
+      description: Org config retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/OrgConfig"
+          example:
+            org_id: "aabbccdd-1122-3344-5566-778899aabbcc"
+            config:
+              theme: "dark"
+              language: "en"
+    ListOrgsConfigsRes:
+      description: Org configs retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/OrgsConfigsPageRes"
+          example:
+            total: 2
+            offset: 0
+            limit: 10
+            orgs_configs:
+              - org_id: "aabbccdd-1122-3344-5566-778899aabbcc"
+                config:
+                  theme: "dark"
+                  language: "en"
+              - org_id: "bbccddee-2233-4455-6677-8899aabbccdd"
+                config:
+                  theme: "light"
+                  language: "de"
+    ThingConfigRes:
+      description: Thing config retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ThingConfig"
+          example:
+            thing_id: "123e4567-e89b-12d3-a456-426614174000"
+            group_id: "321e4567-e89b-12d3-a456-426614174def"
+            config:
+              chart_type: "line"
+              unit: "°C"
+              decimals: 2
+    ListThingsConfigsRes:
+      description: Thing configs retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ThingsConfigsPageRes"
+          example:
+            total: 1
+            offset: 0
+            limit: 10
+            things_configs:
+              - thing_id: "123e4567-e89b-12d3-a456-426614174000"
+                group_id: "321e4567-e89b-12d3-a456-426614174def"
+                config:
+                  chart_type: "line"
+                  unit: "°C"
+    BackupRes:
+      description: UI configs backup file.
+      content:
+        application/octet-stream:
+          schema:
+            type: string
+            format: binary
+    ServiceError:
+      description: Unexpected server-side error occurred.
+      content:
+        application/json:
+          schema:
+            type: string
+            format: byte
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        * Users access: "Authorization: Bearer <user_token>"
+
+security:
+  - bearerAuth: []

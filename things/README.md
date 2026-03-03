@@ -16,43 +16,39 @@ The service is configured using the environment variables presented in the
 following table. Note that any unset variables will be replaced with their
 default values.
 
-| Variable                   | Description                                                             | Default        |
-| -------------------------- | ----------------------------------------------------------------------- | -------------- |
-| MF_THINGS_LOG_LEVEL        | Log level for Things (debug, info, warn, error)                         | error          |
-| MF_THINGS_DB_HOST          | Database host address                                                   | localhost      |
-| MF_THINGS_DB_PORT          | Database host port                                                      | 5432           |
-| MF_THINGS_DB_USER          | Database user                                                           | mainflux       |
-| MF_THINGS_DB_PASS          | Database password                                                       | mainflux       |
-| MF_THINGS_DB               | Name of the database used by the service                                | things         |
-| MF_THINGS_DB_SSL_MODE      | Database connection SSL mode (disable, require, verify-ca, verify-full) | disable        |
-| MF_THINGS_DB_SSL_CERT      | Path to the PEM encoded certificate file                                |                |
-| MF_THINGS_DB_SSL_KEY       | Path to the PEM encoded key file                                        |                |
-| MF_THINGS_DB_SSL_ROOT_CERT | Path to the PEM encoded root certificate file                           |                |
-| MF_THINGS_CLIENT_TLS       | Flag that indicates if TLS should be turned on                          | false          |
-| MF_THINGS_CA_CERTS         | Path to trusted CAs in PEM format                                       |                |
-| MF_THINGS_CACHE_URL        | Cache database URL                                                      | localhost:6379 |
-| MF_THINGS_CACHE_PASS       | Cache database password                                                 |                |
-| MF_THINGS_CACHE_DB         | Cache instance name                                                     | 0              |
-| MF_THINGS_ES_URL           | Event store URL                                                         | localhost:6379 |
-| MF_THINGS_ES_PASS          | Event store password                                                    |                |
-| MF_THINGS_ES_DB            | Event store instance name                                               | 0              |
-| MF_THINGS_HTTP_PORT        | Things service HTTP port                                                | 8182           |
-| MF_THINGS_AUTH_HTTP_PORT   | Things service Auth HTTP port                                           | 8989           |
-| MF_THINGS_AUTH_GRPC_PORT   | Things service Auth gRPC port                                           | 8181           |
-| MF_THINGS_SERVER_CERT      | Path to server certificate in pem format                                |                |
-| MF_THINGS_SERVER_KEY       | Path to server key in pem format                                        |                |
-| MF_THINGS_STANDALONE_EMAIL | User email for standalone mode (no gRPC communication with users)       |                |
-| MF_THINGS_STANDALONE_TOKEN | User token for standalone mode that should be passed in auth header     |                |
-| MF_JAEGER_URL              | Jaeger server URL                                                       | localhost:6831 |
-| MF_AUTH_GRPC_URL           | Auth service gRPC URL                                                   | localhost:8181 |
-| MF_AUTH_GRPC_TIMEOUT       | Auth service gRPC request timeout in seconds                            | 1s             |
-| MF_EMAIL_HOST              | Mail server host                                                        | localhost      |
-| MF_EMAIL_PORT              | Mail server port                                                        | 25             |
-| MF_EMAIL_USERNAME          | Mail server username                                                    |                |
-| MF_EMAIL_PASSWORD          | Mail server password                                                    |                |
-| MF_EMAIL_FROM_ADDRESS      | Email "from" address                                                    |                |
-| MF_EMAIL_FROM_NAME         | Email "from" name                                                       |                |
-| MF_EMAIL_BASE_TEMPLATE     | Path to base template for e-mails sent from the service                 | base.tmpl      |
+| Variable                   | Description                                                             | Default                  |
+|----------------------------|-------------------------------------------------------------------------|--------------------------|
+| MF_THINGS_LOG_LEVEL        | Log level for Things (debug, info, warn, error)                         | error                    |
+| MF_THINGS_DB_HOST          | Database host address                                                   | localhost                |
+| MF_THINGS_DB_PORT          | Database host port                                                      | 5432                     |
+| MF_THINGS_DB_USER          | Database user                                                           | mainflux                 |
+| MF_THINGS_DB_PASS          | Database password                                                       | mainflux                 |
+| MF_THINGS_DB               | Name of the database used by the service                                | things                   |
+| MF_THINGS_DB_SSL_MODE      | Database connection SSL mode (disable, require, verify-ca, verify-full) | disable                  |
+| MF_THINGS_DB_SSL_CERT      | Path to the PEM encoded certificate file                                |                          |
+| MF_THINGS_DB_SSL_KEY       | Path to the PEM encoded key file                                        |                          |
+| MF_THINGS_DB_SSL_ROOT_CERT | Path to the PEM encoded root certificate file                           |                          |
+| MF_THINGS_CLIENT_TLS       | Flag that indicates if TLS should be turned on                          | false                    |
+| MF_THINGS_CA_CERTS         | Path to trusted CAs in PEM format                                       |                          |
+| MF_THINGS_CACHE_URL        | Cache database URL                                                      | redis://localhost:6379/0 |
+| MF_THINGS_ES_URL           | Event store URL                                                         | redis://localhost:6379/0 |
+| MF_THINGS_HTTP_PORT        | Things service HTTP port                                                | 8182                     |
+| MF_THINGS_AUTH_HTTP_PORT   | Things service Auth HTTP port                                           | 8989                     |
+| MF_THINGS_AUTH_GRPC_PORT   | Things service Auth gRPC port                                           | 8181                     |
+| MF_THINGS_SERVER_CERT      | Path to server certificate in pem format                                |                          |
+| MF_THINGS_SERVER_KEY       | Path to server key in pem format                                        |                          |
+| MF_THINGS_STANDALONE_EMAIL | User email for standalone mode (no gRPC communication with users)       |                          |
+| MF_THINGS_STANDALONE_TOKEN | User token for standalone mode that should be passed in auth header     |                          |
+| MF_JAEGER_URL              | Jaeger server URL                                                       | localhost:6831           |
+| MF_AUTH_GRPC_URL           | Auth service gRPC URL                                                   | localhost:8181           |
+| MF_AUTH_GRPC_TIMEOUT       | Auth service gRPC request timeout in seconds                            | 1s                       |
+| MF_EMAIL_HOST              | Mail server host                                                        | localhost                |
+| MF_EMAIL_PORT              | Mail server port                                                        | 25                       |
+| MF_EMAIL_USERNAME          | Mail server username                                                    |                          |
+| MF_EMAIL_PASSWORD          | Mail server password                                                    |                          |
+| MF_EMAIL_FROM_ADDRESS      | Email "from" address                                                    |                          |
+| MF_EMAIL_FROM_NAME         | Email "from" name                                                       |                          |
+| MF_EMAIL_BASE_TEMPLATE     | Path to base template for e-mails sent from the service                 | base.tmpl                |
 
 **Note** that if you want `things` service to have only one user locally, you should use `MF_THINGS_STANDALONE` env vars. By specifying these, you don't need `auth` service in your deployment for users' authorization.
 
@@ -88,11 +84,7 @@ MF_THINGS_DB_SSL_KEY=[Path to the PEM encoded key file] \
 MF_THINGS_DB_SSL_ROOT_CERT=[Path to the PEM encoded root certificate file] \
 MF_HTTP_ADAPTER_CA_CERTS=[Path to trusted CAs in PEM format] \
 MF_THINGS_CACHE_URL=[Cache database URL] \
-MF_THINGS_CACHE_PASS=[Cache database password] \
-MF_THINGS_CACHE_DB=[Cache instance name] \
 MF_THINGS_ES_URL=[Event store URL] \
-MF_THINGS_ES_PASS=[Event store password] \
-MF_THINGS_ES_DB=[Event store instance name] \
 MF_THINGS_HTTP_PORT=[Things service HTTP port] \
 MF_THINGS_AUTH_HTTP_PORT=[Things service Auth HTTP port] \
 MF_THINGS_AUTH_GRPC_PORT=[Things service Auth gRPC port] \

@@ -43,6 +43,7 @@ func (c *certsRepoMock) Save(ctx context.Context, cert certs.Cert) (string, erro
 		IssuingCA:      cert.IssuingCA,
 		CAChain:        cert.CAChain,
 		PrivateKeyType: cert.PrivateKeyType,
+		KeyBits:        cert.KeyBits,
 	}
 
 	if _, ok := c.certsByThing[cert.ThingID]; !ok {

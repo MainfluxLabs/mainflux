@@ -44,9 +44,6 @@ const (
 	loginDuration    = 30 * time.Minute
 	inviteDuration   = 7 * 24 * time.Hour
 	maxNameSize      = 1024
-	nameKey          = "name"
-	ascKey           = "asc"
-	descKey          = "desc"
 	emptyValue       = ""
 	emptyJson        = "{}"
 	validData        = `{"limit":5,"offset":0}`
@@ -65,8 +62,8 @@ var (
 		Description: description,
 		Metadata:    map[string]any{"key": "value"},
 	}
-	idProvider    = uuid.New()
-	usersByEmails = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, email: {ID: id, Email: email}}
+	idProvider      = uuid.New()
+	usersByEmails   = map[string]users.User{adminEmail: {ID: adminID, Email: adminEmail}, editorEmail: {ID: editorID, Email: editorEmail}, viewerEmail: {ID: viewerID, Email: viewerEmail}, email: {ID: id, Email: email}}
 	usersByIDs      = map[string]users.User{adminID: {ID: adminID, Email: adminEmail}, editorID: {ID: editorID, Email: editorEmail}, viewerID: {ID: viewerID, Email: viewerEmail}, id: {ID: id, Email: email}}
 	metadata        = map[string]any{"test": "data"}
 	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, strings.Repeat("m", maxNameSize+1))
@@ -487,7 +484,7 @@ func TestDeleteOrgs(t *testing.T) {
 	var orgIDs []string
 	for i := uint64(0); i < 10; i++ {
 		num := strconv.FormatUint(i, 10)
-		org := auth.Org{Name: fmt.Sprintf("org-" + num)}
+		org := auth.Org{Name: "org-" + num}
 		o, err := svc.CreateOrg(context.Background(), token, org)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 		orgIDs = append(orgIDs, o.ID)
