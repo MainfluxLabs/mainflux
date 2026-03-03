@@ -41,6 +41,7 @@ var (
 	selfRegister    = users.User{Email: "self-register@example.com", Password: "password"}
 	registerUser    = users.User{Email: "register-user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: "password"}
 	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96", Password: "password"}
+	noPasswordUser  = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96"}
 	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: "password"}
 	usersList       = []users.User{admin, registerUser, user, unauthUser}
 	host            = "example.com"
@@ -231,7 +232,7 @@ func TestViewUser(t *testing.T) {
 		err    error
 	}{
 		"view user with authorized token": {
-			user:   users.User{ID: user.ID, Email: user.Email, Metadata: user.Metadata, Status: user.Status, Role: user.Role},
+			user:   noPasswordUser,
 			token:  token,
 			userID: user.ID,
 			err:    nil,
@@ -272,7 +273,7 @@ func TestViewProfile(t *testing.T) {
 		err   error
 	}{
 		"valid token's user info": {
-			user:  users.User{ID: user.ID, Email: user.Email, Metadata: user.Metadata, Status: user.Status, Role: user.Role},
+			user:  noPasswordUser,
 			token: token,
 			err:   nil,
 		},
