@@ -432,6 +432,7 @@ func encodeOAuthLoginResponse(_ context.Context, w http.ResponseWriter, response
 	http.SetCookie(w, &http.Cookie{
 		Name:     stateKey,
 		Value:    res.State,
+		Path:     "/users/oauth/",
 		MaxAge:   300,
 		HttpOnly: true,
 		Secure:   true,
@@ -441,6 +442,7 @@ func encodeOAuthLoginResponse(_ context.Context, w http.ResponseWriter, response
 	http.SetCookie(w, &http.Cookie{
 		Name:     verifierKey,
 		Value:    res.Verifier,
+		Path:     "/users/oauth/",
 		MaxAge:   300,
 		HttpOnly: true,
 		Secure:   true,
