@@ -502,7 +502,7 @@ func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackDat
 		return "", err
 	}
 
-	redirectURL := fmt.Sprintf("%s?token=%s", svc.urls.RedirectLoginURL, token)
+	redirectURL := fmt.Sprintf("%s#token=%s", svc.urls.RedirectLoginURL, token)
 	return redirectURL, nil
 }
 
