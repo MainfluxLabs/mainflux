@@ -202,7 +202,7 @@ func (res deleteRes) Empty() bool {
 
 type oauthLoginRes struct {
 	State       string `json:"state"`
-	Verifier    string `json:"verifier"`
+	Verifier    string `json:"-"`
 	RedirectURL string `json:"url"`
 }
 
