@@ -33,10 +33,8 @@ func (ir identityRepository) Save(ctx context.Context, identity users.Identity) 
 
 	dbi := toDBIdentity(identity)
 
-	_, err := ir.db.NamedExecContext(ctx, q, dbi)
-	if err != nil {
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok && pgErr.Code == pgerrcode.UniqueViolation {
+	if _, err := ir.db.NamedExecContext(ctx, q, dbi); err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UniqueViolation {
 			return errors.Wrap(dbutil.ErrConflict, err)
 		}
 		return errors.Wrap(dbutil.ErrCreateEntity, err)
