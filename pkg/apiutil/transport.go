@@ -32,20 +32,10 @@ const (
 	SerialKey              = "serial"
 	EmailKey               = "email"
 	PayloadKey             = "payload"
-	SubtopicKey            = "subtopic"
-	ProtocolKey            = "protocol"
-	ValueKey               = "v"
-	StringValueKey         = "vs"
-	DataValueKey           = "vd"
-	BoolValueKey           = "vb"
-	ComparatorKey          = "comparator"
-	FromKey                = "from"
-	ToKey                  = "to"
 	IDOrder                = "id"
 	AscDir                 = "asc"
 	DescDir                = "desc"
 	ContentTypeJSON        = "application/json"
-	ContentTypeCSV         = "text/csv"
 	ContentTypeOctetStream = "application/octet-stream"
 	DefOffset              = 0
 	DefLimit               = 10
@@ -120,7 +110,7 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 	}
 }
 
-// Map a gRPC-error Status code to an HTTP status code and write it to w
+// EncodeGRPCError maps a gRPC-error Status code to an HTTP status code and write it to w
 func EncodeGRPCError(st *status.Status, w http.ResponseWriter) {
 	switch st.Code() {
 	case codes.OK:

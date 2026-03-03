@@ -1,0 +1,559 @@
+openapi: 3.0.1
+info:
+  title: Mainflux downlinks service
+  description: HTTP API for managing scheduled outbound HTTP requests (downlinks) for things and groups.
+  version: 1.0.0
+
+paths:
+  /things/{thingId}/downlinks:
+    post:
+      summary: Create downlinks for a thing
+      description: Creates one or more downlinks associated with the thing identified by the provided ID.
+      tags:
+        - downlinks
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateDownlinksReq"
+      responses:
+        '201':
+          $ref: "#/components/responses/CreateDownlinksRes"
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    get:
+      summary: List downlinks by thing
+      description: Retrieves a list of downlinks related to the thing identified by the provided ID.
+      tags:
+        - downlinks
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListDownlinksRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /groups/{groupId}/downlinks:
+    get:
+      summary: List downlinks by group
+      description: Retrieves a list of downlinks related to the group identified by the provided ID.
+      tags:
+        - downlinks
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListDownlinksRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /downlinks/{downlinkId}:
+    get:
+      summary: View a downlink
+      description: Retrieves downlink details by its identifier.
+      tags:
+        - downlinks
+      parameters:
+        - $ref: "#/components/parameters/DownlinkId"
+      responses:
+        '200':
+          $ref: "#/components/responses/DownlinkRes"
+        '400':
+          description: Failed due to malformed request.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Downlink does not exist.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    put:
+      summary: Update a downlink
+      description: Update is performed by replacing the current resource data with values provided in a request payload.
+      tags:
+        - downlinks
+      parameters:
+        - $ref: "#/components/parameters/DownlinkId"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateDownlinkReq"
+      responses:
+        '200':
+          description: Downlink updated.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Downlink does not exist.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /downlinks:
+    patch:
+      summary: Remove downlinks
+      description: Removes downlinks with provided identifiers.
+      tags:
+        - downlinks
+      requestBody:
+        $ref: "#/components/requestBodies/RemoveDownlinksReq"
+      responses:
+        '204':
+          description: Downlinks removed.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /backup:
+    get:
+      summary: Backup all downlinks
+      description: Downloads a backup file containing all downlinks accessible to the authenticated user.
+      tags:
+        - backup
+      responses:
+        '200':
+          $ref: "#/components/responses/BackupRes"
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /restore:
+    post:
+      summary: Restore downlinks from backup
+      description: Restores downlinks from a previously exported backup file.
+      tags:
+        - backup
+      requestBody:
+        $ref: "#/components/requestBodies/RestoreReq"
+      responses:
+        '201':
+          description: Downlinks restored.
+        '400':
+          description: Failed due to malformed or invalid backup file.
+        '401':
+          description: Missing or invalid access token provided.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+components:
+  schemas:
+    Week:
+      type: object
+      properties:
+        days:
+          type: array
+          items:
+            type: string
+            enum: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
+          example: ["Monday", "Wednesday", "Friday"]
+        time:
+          type: string
+          description: Time in HH:MM format.
+          example: "08:00"
+
+    Scheduler:
+      type: object
+      properties:
+        time_zone:
+          type: string
+          example: "Europe/Berlin"
+        frequency:
+          type: string
+          enum: [once, minutely, hourly, daily, weekly]
+          example: "daily"
+        date_time:
+          type: string
+          description: ISO 8601 date-time string. Required when frequency is "once"; ignored otherwise.
+          example: "2024-06-01T08:00:00"
+        week:
+          $ref: "#/components/schemas/Week"
+        day_time:
+          type: string
+          description: Time in HH:MM format, used with daily frequency.
+          example: "08:00"
+        hour:
+          type: integer
+          description: Hour interval, used with hourly frequency.
+          example: 2
+        minute:
+          type: integer
+          description: Minute interval, used with minutely frequency.
+          example: 30
+      required: [frequency]
+
+    TimeFilter:
+      type: object
+      properties:
+        start_param:
+          type: string
+          description: Query parameter name for the start time.
+          example: "from"
+        end_param:
+          type: string
+          description: Query parameter name for the end time.
+          example: "to"
+        format:
+          type: string
+          description: Time format string for injected parameters.
+          example: "iso8601"
+        forecast:
+          type: boolean
+          description: If true, uses future time range instead of past.
+          example: false
+        interval:
+          type: string
+          enum: [minute, hour, day]
+          example: "hour"
+        value:
+          type: integer
+          description: Number of interval units to include in the time range.
+          example: 1
+
+    DownlinkReqSchema:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Fetch sensor readings"
+        url:
+          type: string
+          example: "https://api.example.com/readings"
+        method:
+          type: string
+          enum: [GET, POST, PUT, PATCH]
+          example: "GET"
+        payload:
+          type: string
+          example: '{"unit": "celsius"}'
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            Authorization: "Bearer token"
+            Content-Type: "application/json"
+        scheduler:
+          $ref: "#/components/schemas/Scheduler"
+        time_filter:
+          $ref: "#/components/schemas/TimeFilter"
+        metadata:
+          type: object
+          additionalProperties: true
+      required: [name, url, method, scheduler]
+
+    DownlinkResSchema:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        group_id:
+          type: string
+          format: uuid
+          example: "321e4567-e89b-12d3-a456-426614174def"
+        thing_id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        name:
+          type: string
+          example: "Fetch sensor readings"
+        url:
+          type: string
+          example: "https://api.example.com/readings"
+        method:
+          type: string
+          enum: [GET, POST, PUT, PATCH]
+          example: "GET"
+        payload:
+          type: string
+          example: '{"unit": "celsius"}'
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        scheduler:
+          $ref: "#/components/schemas/Scheduler"
+        time_filter:
+          $ref: "#/components/schemas/TimeFilter"
+        metadata:
+          type: object
+          additionalProperties: true
+      required: [id, group_id, thing_id, name, url, method, scheduler]
+
+    DownlinksPageRes:
+      type: object
+      properties:
+        total:
+          type: integer
+        offset:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 200
+        downlinks:
+          type: array
+          items:
+            $ref: '#/components/schemas/DownlinkResSchema'
+      required: [total, offset, limit, downlinks]
+
+  parameters:
+    ThingId:
+      name: thingId
+      in: path
+      required: true
+      description: Unique thing identifier.
+      schema:
+        type: string
+        format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174000"
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      description: Unique group identifier.
+      schema:
+        type: string
+        format: uuid
+      example: "321e4567-e89b-12d3-a456-426614174def"
+    DownlinkId:
+      name: downlinkId
+      in: path
+      required: true
+      description: Unique downlink identifier.
+      schema:
+        type: string
+        format: uuid
+      example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    Offset:
+      name: offset
+      in: query
+      required: false
+      description: Number of items to skip.
+      schema:
+        type: integer
+        minimum: 0
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: Maximum number of items to return.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+
+  requestBodies:
+    CreateDownlinksReq:
+      description: JSON-formatted array of downlinks to create.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/DownlinkReqSchema"
+            minItems: 1
+          example:
+            - name: "Fetch sensor readings"
+              url: "https://api.example.com/readings"
+              method: "GET"
+              headers:
+                Authorization: "Bearer token"
+              scheduler:
+                frequency: "hourly"
+                hour: 1
+                time_zone: "UTC"
+              time_filter:
+                start_param: "from"
+                end_param: "to"
+                format: "iso8601"
+                interval: "hour"
+                value: 1
+    UpdateDownlinkReq:
+      description: JSON-formatted document describing the updated downlink.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/DownlinkReqSchema"
+          example:
+            name: "Fetch sensor readings"
+            url: "https://api.example.com/readings"
+            method: "GET"
+            scheduler:
+              frequency: "daily"
+              day_time: "08:00"
+              time_zone: "UTC"
+    RemoveDownlinksReq:
+      description: JSON-formatted document describing the identifiers of downlinks to delete.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              downlink_ids:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+            required:
+              - downlink_ids
+          example:
+            downlink_ids:
+              - "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+              - "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+    RestoreReq:
+      description: Backup file previously exported via the backup endpoint.
+      required: true
+      content:
+        application/octet-stream:
+          schema:
+            type: string
+            format: binary
+
+  responses:
+    CreateDownlinksRes:
+      description: Downlinks created.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              downlinks:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DownlinkResSchema"
+          example:
+            downlinks:
+              - id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                group_id: "321e4567-e89b-12d3-a456-426614174def"
+                thing_id: "123e4567-e89b-12d3-a456-426614174000"
+                name: "Fetch sensor readings"
+                url: "https://api.example.com/readings"
+                method: "GET"
+                scheduler:
+                  frequency: "hourly"
+                  hour: 1
+                  time_zone: "UTC"
+                time_filter:
+                  start_param: "from"
+                  end_param: "to"
+                  format: "iso8601"
+                  interval: "hour"
+                  value: 1
+    DownlinkRes:
+      description: Downlink details retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/DownlinkResSchema"
+          example:
+            id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+            group_id: "321e4567-e89b-12d3-a456-426614174def"
+            thing_id: "123e4567-e89b-12d3-a456-426614174000"
+            name: "Fetch sensor readings"
+            url: "https://api.example.com/readings"
+            method: "GET"
+            scheduler:
+              frequency: "hourly"
+              hour: 1
+              time_zone: "UTC"
+            time_filter:
+              start_param: "from"
+              end_param: "to"
+              format: "iso8601"
+              interval: "hour"
+              value: 1
+    ListDownlinksRes:
+      description: Downlinks retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/DownlinksPageRes"
+          example:
+            total: 1
+            offset: 0
+            limit: 10
+            downlinks:
+              - id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                group_id: "321e4567-e89b-12d3-a456-426614174def"
+                thing_id: "123e4567-e89b-12d3-a456-426614174000"
+                name: "Fetch sensor readings"
+                url: "https://api.example.com/readings"
+                method: "GET"
+                scheduler:
+                  frequency: "hourly"
+                  hour: 1
+                  time_zone: "UTC"
+                time_filter:
+                  start_param: "from"
+                  end_param: "to"
+                  format: "iso8601"
+                  interval: "hour"
+                  value: 1
+    BackupRes:
+      description: Downlinks backup file.
+      content:
+        application/octet-stream:
+          schema:
+            type: string
+            format: binary
+    ServiceError:
+      description: Unexpected server-side error occurred.
+      content:
+        application/json:
+          schema:
+            type: string
+            format: byte
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        * Users access: "Authorization: Bearer <user_token>"
+
+security:
+  - bearerAuth: []

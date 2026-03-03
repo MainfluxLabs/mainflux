@@ -61,13 +61,9 @@ const (
 	defDBSSLRootCert   = ""
 	defClientTLS       = "false"
 	defCACerts         = ""
-	defCacheURL        = "localhost:6379"
-	defCachePass       = ""
-	defCacheDB         = "0"
+	defCacheURL        = "redis://localhost:6379/0"
 	defESConsumerName  = svcName
-	defESURL           = "localhost:6379"
-	defESPass          = ""
-	defESDB            = "0"
+	defESURL           = "redis://localhost:6379/0"
 	defHTTPPort        = "8182"
 	defAuthHTTPPort    = "8989"
 	defAuthGRPCPort    = "8183"
@@ -106,12 +102,8 @@ const (
 	envClientTLS        = "MF_THINGS_CLIENT_TLS"
 	envCACerts          = "MF_THINGS_CA_CERTS"
 	envCacheURL         = "MF_THINGS_CACHE_URL"
-	envCachePass        = "MF_THINGS_CACHE_PASS"
-	envCacheDB          = "MF_THINGS_CACHE_DB"
 	envESConsumerName   = "MF_THINGS_EVENT_CONSUMER"
 	envESURL            = "MF_THINGS_ES_URL"
-	envESPass           = "MF_THINGS_ES_PASS"
-	envESDB             = "MF_THINGS_ES_DB"
 	envHTTPPort         = "MF_THINGS_HTTP_PORT"
 	envAuthHTTPPort     = "MF_THINGS_AUTH_HTTP_PORT"
 	envAuthGRPCPort     = "MF_THINGS_AUTH_GRPC_PORT"
@@ -148,12 +140,8 @@ type config struct {
 	usersConfig      clients.Config
 	emailConfig      email.Config
 	cacheURL         string
-	cachePass        string
-	cacheDB          string
 	esConsumerName   string
 	esURL            string
-	esPass           string
-	esDB             string
 	standaloneEmail  string
 	standaloneToken  string
 	jaegerURL        string
@@ -178,9 +166,9 @@ func main() {
 	thingsGrpcTracer, thingsGrpcCloser := jaeger.Init("things_grpc", cfg.jaegerURL, logger)
 	defer thingsGrpcCloser.Close()
 
-	cacheClient := connectToRedis(cfg.cacheURL, cfg.cachePass, cfg.cacheDB, logger)
+	cacheClient := connectToRedis(cfg.cacheURL, logger)
 
-	esClient := connectToRedis(cfg.esURL, cfg.esPass, cfg.esDB, logger)
+	esClient := connectToRedis(cfg.esURL, logger)
 
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
@@ -329,12 +317,8 @@ func loadConfig() config {
 		usersConfig:      usersConfig,
 		emailConfig:      emailConfig,
 		cacheURL:         mainflux.Env(envCacheURL, defCacheURL),
-		cachePass:        mainflux.Env(envCachePass, defCachePass),
-		cacheDB:          mainflux.Env(envCacheDB, defCacheDB),
 		esConsumerName:   mainflux.Env(envESConsumerName, defESConsumerName),
 		esURL:            mainflux.Env(envESURL, defESURL),
-		esPass:           mainflux.Env(envESPass, defESPass),
-		esDB:             mainflux.Env(envESDB, defESDB),
 		standaloneEmail:  mainflux.Env(envStandaloneEmail, defStandaloneEmail),
 		standaloneToken:  mainflux.Env(envStandaloneToken, defStandaloneToken),
 		jaegerURL:        mainflux.Env(envJaegerURL, defJaegerURL),
@@ -344,18 +328,14 @@ func loadConfig() config {
 	}
 }
 
-func connectToRedis(cacheURL, cachePass string, cacheDB string, logger logger.Logger) *redis.Client {
-	db, err := strconv.Atoi(cacheDB)
+func connectToRedis(redisURL string, logger logger.Logger) *redis.Client {
+	opts, err := redis.ParseURL(redisURL)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to cache: %s", err))
+		logger.Error(fmt.Sprintf("Failed to connect to redis: %s", err))
 		os.Exit(1)
 	}
 
-	return redis.NewClient(&redis.Options{
-		Addr:     cacheURL,
-		Password: cachePass,
-		DB:       db,
-	})
+	return redis.NewClient(opts)
 }
 
 func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
@@ -377,8 +357,7 @@ func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logge
 }
 
 func subscribeToAuthES(ctx context.Context, svc things.Service, cfg config, logger logger.Logger) error {
-	url := fmt.Sprintf("redis://%s/%s", cfg.esURL, cfg.esDB)
-	subscriber, err := mfevents.NewSubscriber(url, mfevents.AuthStream, esGroupName, cfg.esConsumerName, logger)
+	subscriber, err := mfevents.NewSubscriber(cfg.esURL, mfevents.AuthStream, esGroupName, cfg.esConsumerName, logger)
 	if err != nil {
 		return err
 	}

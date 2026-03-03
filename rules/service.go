@@ -83,8 +83,6 @@ const (
 	subjectSMPP = "smpp"
 )
 
-var errInvalidObject = errors.New("invalid JSON object")
-
 type rulesService struct {
 	rules      RuleRepository
 	things     protomfx.ThingsServiceClient
@@ -323,7 +321,7 @@ func (rs *rulesService) Consume(message any) error {
 func processPayload(payload []byte, conditions []Condition, operator string, contentType string) (bool, [][]byte, error) {
 	var parsedData any
 	if err := json.Unmarshal(payload, &parsedData); err != nil {
-		return false, nil, err
+		return false, nil, errors.Wrap(errors.ErrInvalidPayload, err)
 	}
 
 	switch data := parsedData.(type) {
@@ -366,7 +364,7 @@ func processPayload(payload []byte, conditions []Condition, operator string, con
 
 		return false, nil, nil
 	default:
-		return false, nil, errInvalidObject
+		return false, nil, errors.ErrInvalidPayload
 	}
 }
 
