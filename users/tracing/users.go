@@ -16,6 +16,7 @@ import (
 const (
 	saveUser            = "save_user"
 	updateUser          = "update_user"
+	updateUserMetadata  = "update_user_metadata"
 	retrieveUserByEmail = "retrieve_user_by_email"
 	retrieveUserByID    = "retrieve_user_by_id"
 	retrieveUsersByIDs  = "retrieve_users_by_ids"
@@ -57,7 +58,7 @@ func (urm userRepositoryMiddleware) Update(ctx context.Context, user users.User)
 }
 
 func (urm userRepositoryMiddleware) UpdateUser(ctx context.Context, user users.User) error {
-	span := dbutil.CreateSpan(ctx, urm.tracer, updateUser)
+	span := dbutil.CreateSpan(ctx, urm.tracer, updateUserMetadata)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
