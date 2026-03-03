@@ -12,7 +12,7 @@ const (
 	minLen        = 1
 	maxLimitSize  = 200
 	maxNameSize   = 254
-	maxScriptSize = 65_536
+	maxScriptSize = 65_535
 )
 
 type rule struct {
