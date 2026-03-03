@@ -44,15 +44,11 @@ const (
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
-	Total    uint64
-	Offset   uint64         `json:"offset,omitempty"`
-	Limit    uint64         `json:"limit,omitempty"`
-	Name     string         `json:"name,omitempty"`
-	Order    string         `json:"order,omitempty"`
-	Dir      string         `json:"dir,omitempty"`
-	Metadata map[string]any `json:"metadata,omitempty"`
-	Email    string         `json:"email,omitempty"`
-	Payload  map[string]any `json:"payload,omitempty"`
+	Total  uint64 `json:"total,omitempty"`
+	Offset uint64 `json:"offset,omitempty"`
+	Limit  uint64 `json:"limit,omitempty"`
+	Order  string `json:"order,omitempty"`
+	Dir    string `json:"dir,omitempty"`
 }
 
 // LoggingErrorEncoder is a go-kit error encoder logging decorator.
@@ -430,11 +426,6 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 		return PageMetadata{}, err
 	}
 
-	n, err := ReadStringQuery(r, NameKey, "")
-	if err != nil {
-		return PageMetadata{}, err
-	}
-
 	or, err := ReadStringQuery(r, OrderKey, IDOrder)
 	if err != nil {
 		return PageMetadata{}, err
@@ -445,30 +436,11 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 		return PageMetadata{}, err
 	}
 
-	m, err := ReadMetadataQuery(r, MetadataKey, nil)
-	if err != nil {
-		return PageMetadata{}, err
-	}
-
-	e, err := ReadStringQuery(r, EmailKey, "")
-	if err != nil {
-		return PageMetadata{}, err
-	}
-
-	p, err := ReadMetadataQuery(r, PayloadKey, nil)
-	if err != nil {
-		return PageMetadata{}, err
-	}
-
 	return PageMetadata{
-		Offset:   o,
-		Limit:    l,
-		Name:     n,
-		Order:    or,
-		Dir:      d,
-		Metadata: m,
-		Email:    e,
-		Payload:  p,
+		Offset: o,
+		Limit:  l,
+		Order:  or,
+		Dir:    d,
 	}, nil
 }
 
@@ -506,19 +478,9 @@ func BuildPageMetadataFromBody(r *http.Request) (PageMetadata, error) {
 	return pm, nil
 }
 
-func ValidatePageMetadata(pm PageMetadata, maxLimitSize, maxNameSize int, allowedOrders map[string]string) error {
+func ValidatePageMetadata(pm PageMetadata, maxLimitSize int) error {
 	if pm.Limit > uint64(maxLimitSize) {
 		return ErrLimitSize
-	}
-
-	if len(pm.Name) > maxNameSize {
-		return ErrNameSize
-	}
-
-	if pm.Order != "" {
-		if _, ok := allowedOrders[pm.Order]; !ok {
-			return ErrInvalidOrder
-		}
 	}
 
 	if pm.Dir != "" &&

@@ -101,7 +101,7 @@ func (req viewByProfileReq) validate() error {
 
 type listReq struct {
 	token        string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata things.PageMetadata
 }
 
 func (req *listReq) validate() error {
@@ -109,13 +109,13 @@ func (req *listReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, things.AllowedOrders)
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type listByOrgReq struct {
 	id           string
 	token        string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata things.PageMetadata
 }
 
 func (req listByOrgReq) validate() error {
@@ -127,7 +127,7 @@ func (req listByOrgReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, things.AllowedOrders)
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type updateGroupReq struct {

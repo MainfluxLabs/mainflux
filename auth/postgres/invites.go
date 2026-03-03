@@ -291,7 +291,7 @@ func (ir invitesRepository) UpdateOrgInviteState(ctx context.Context, inviteID, 
 	return nil
 }
 
-func (ir invitesRepository) RetrieveOrgInvitesByOrg(ctx context.Context, orgID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
+func (ir invitesRepository) RetrieveOrgInvitesByOrg(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgInvitesPage, error) {
 	query := `
 		SELECT id, invitee_id, inviter_id, org_id, invitee_role, created_at, expires_at, state
 		FROM org_invites %s ORDER BY %s %s %s
@@ -359,7 +359,7 @@ func (ir invitesRepository) RetrieveOrgInvitesByOrg(ctx context.Context, orgID s
 	return page, nil
 }
 
-func (ir invitesRepository) RetrieveOrgInvitesByUser(ctx context.Context, userType, userID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
+func (ir invitesRepository) RetrieveOrgInvitesByUser(ctx context.Context, userType, userID string, pm auth.PageMetadata) (auth.OrgInvitesPage, error) {
 	query := `
 		SELECT id, invitee_id, inviter_id, org_id, invitee_role, created_at, expires_at, state
 		FROM org_invites %s ORDER BY %s %s %s

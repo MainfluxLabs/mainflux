@@ -91,7 +91,7 @@ func (req respondOrgInviteReq) validate() error {
 type listOrgInvitesByUserReq struct {
 	token string
 	id    string
-	pm    auth.PageMetadataInvites
+	pm    auth.PageMetadata
 }
 
 func (req listOrgInvitesByUserReq) validate() error {
@@ -103,17 +103,13 @@ func (req listOrgInvitesByUserReq) validate() error {
 		return apiutil.ErrMissingUserID
 	}
 
-	if err := apiutil.ValidatePageMetadata(req.pm.PageMetadata, maxLimitSize, maxNameSize, auth.AllowedOrders); err != nil {
-		return err
-	}
-
-	return nil
+	return req.pm.Validate(maxLimitSize, maxNameSize)
 }
 
 type listOrgInvitesByOrgReq struct {
 	token string
 	id    string
-	pm    auth.PageMetadataInvites
+	pm    auth.PageMetadata
 }
 
 func (req listOrgInvitesByOrgReq) validate() error {
@@ -125,9 +121,5 @@ func (req listOrgInvitesByOrgReq) validate() error {
 		return apiutil.ErrMissingOrgID
 	}
 
-	if err := apiutil.ValidatePageMetadata(req.pm.PageMetadata, maxLimitSize, maxNameSize, auth.AllowedOrders); err != nil {
-		return err
-	}
-
-	return nil
+	return req.pm.Validate(maxLimitSize, maxNameSize)
 }

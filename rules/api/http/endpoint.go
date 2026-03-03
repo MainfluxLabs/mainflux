@@ -3,7 +3,6 @@ package http
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/rules"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -192,7 +191,7 @@ func buildRulesResponse(rules []rules.Rule, created bool) rulesRes {
 	return res
 }
 
-func buildRulesPageResponse(page rules.RulesPage, pm apiutil.PageMetadata) RulesPageRes {
+func buildRulesPageResponse(page rules.RulesPage, pm rules.PageMetadata) RulesPageRes {
 	res := RulesPageRes{
 		pageRes: pageRes{
 			Total:  page.Total,

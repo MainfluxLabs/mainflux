@@ -50,7 +50,7 @@ func (req updateOrgReq) validate() error {
 
 type listOrgsReq struct {
 	token        string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata auth.PageMetadata
 }
 
 func (req listOrgsReq) validate() error {
@@ -58,26 +58,7 @@ func (req listOrgsReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.pageMetadata.Limit > maxLimitSize {
-		return apiutil.ErrLimitSize
-	}
-
-	if len(req.pageMetadata.Name) > maxNameSize {
-		return apiutil.ErrNameSize
-	}
-
-	if req.pageMetadata.Order != "" {
-		if _, ok := auth.AllowedOrders[req.pageMetadata.Order]; !ok {
-			return apiutil.ErrInvalidOrder
-		}
-	}
-
-	if req.pageMetadata.Dir != "" &&
-		req.pageMetadata.Dir != apiutil.AscDir && req.pageMetadata.Dir != apiutil.DescDir {
-		return apiutil.ErrInvalidDirection
-	}
-
-	return nil
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type orgReq struct {

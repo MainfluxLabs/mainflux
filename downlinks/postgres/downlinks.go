@@ -71,7 +71,7 @@ func (dr downlinkRepository) Save(ctx context.Context, dls ...downlinks.Downlink
 	return dls, nil
 }
 
-func (dr downlinkRepository) RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (downlinks.DownlinksPage, error) {
+func (dr downlinkRepository) RetrieveByThing(ctx context.Context, thingID string, pm downlinks.PageMetadata) (downlinks.DownlinksPage, error) {
 	if _, err := uuid.FromString(thingID); err != nil {
 		return downlinks.DownlinksPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
@@ -103,7 +103,7 @@ func (dr downlinkRepository) RetrieveByThing(ctx context.Context, thingID string
 	return dr.retrieve(ctx, query, cquery, params)
 }
 
-func (dr downlinkRepository) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (downlinks.DownlinksPage, error) {
+func (dr downlinkRepository) RetrieveByGroup(ctx context.Context, groupID string, pm downlinks.PageMetadata) (downlinks.DownlinksPage, error) {
 	if _, err := uuid.FromString(groupID); err != nil {
 		return downlinks.DownlinksPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
@@ -163,10 +163,12 @@ func (dr downlinkRepository) retrieve(ctx context.Context, query, cquery string,
 
 	page := downlinks.DownlinksPage{
 		Downlinks: items,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  total,
-			Offset: params["offset"].(uint64),
-			Limit:  params["limit"].(uint64),
+		PageMetadata: downlinks.PageMetadata{
+			PageMetadata: apiutil.PageMetadata{
+				Total:  total,
+				Offset: params["offset"].(uint64),
+				Limit:  params["limit"].(uint64),
+			},
 		},
 	}
 

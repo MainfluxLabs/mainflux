@@ -196,17 +196,19 @@ func TestRetrieveByGroup(t *testing.T) {
 	cases := []struct {
 		desc     string
 		groupID  string
-		pageMeta apiutil.PageMetadata
+		pageMeta things.PageMetadata
 		size     uint64
 		err      error
 	}{
 		{
 			desc:    "retrieve group memberships",
 			groupID: gr.ID,
-			pageMeta: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  5,
-				Total:  n,
+			pageMeta: things.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  5,
+					Total:  n,
+				},
 			},
 			size: 5,
 			err:  nil,
@@ -214,10 +216,12 @@ func TestRetrieveByGroup(t *testing.T) {
 		{
 			desc:    "retrieve last group membership",
 			groupID: gr.ID,
-			pageMeta: apiutil.PageMetadata{
-				Offset: n - 1,
-				Limit:  1,
-				Total:  n,
+			pageMeta: things.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: n - 1,
+					Limit:  1,
+					Total:  n,
+				},
 			},
 			size: 1,
 			err:  nil,
@@ -225,20 +229,24 @@ func TestRetrieveByGroup(t *testing.T) {
 		{
 			desc:    "retrieve group memberships with invalid group id",
 			groupID: invalidID,
-			pageMeta: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Total:  0,
+			pageMeta: things.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  n,
+					Total:  0,
+				},
 			},
 			err: dbutil.ErrRetrieveEntity,
 		},
 		{
 			desc:    "retrieve group memberships without group id",
 			groupID: "",
-			pageMeta: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Total:  0,
+			pageMeta: things.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  n,
+					Total:  0,
+				},
 			},
 			size: 0,
 

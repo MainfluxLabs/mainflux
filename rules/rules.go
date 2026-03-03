@@ -2,8 +2,6 @@ package rules
 
 import (
 	"context"
-
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
 type Rule struct {
@@ -43,11 +41,11 @@ type RuleRepository interface {
 
 	// RetrieveByThing retrieves rules assigned to a certain thing,
 	// identified by a given thing ID.
-	RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (RulesPage, error)
+	RetrieveByThing(ctx context.Context, thingID string, pm PageMetadata) (RulesPage, error)
 
 	// RetrieveByGroup retrieves rules related to a certain group,
 	// identified by a given group ID.
-	RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (RulesPage, error)
+	RetrieveByGroup(ctx context.Context, groupID string, pm PageMetadata) (RulesPage, error)
 
 	// RetrieveThingIDsByRule retrieves all thing IDs that have the given rule assigned.
 	RetrieveThingIDsByRule(ctx context.Context, ruleID string) ([]string, error)

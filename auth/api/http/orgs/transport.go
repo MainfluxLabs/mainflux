@@ -74,8 +74,52 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	return mux
 }
 
+func buildOrgsPageMetadata(r *http.Request) (auth.PageMetadata, error) {
+	base, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return auth.PageMetadata{}, err
+	}
+	n, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	m, _ := apiutil.ReadMetadataQuery(r, apiutil.MetadataKey, nil)
+	return auth.PageMetadata{
+		PageMetadata: base,
+		Name:         n,
+		Metadata:     m,
+	}, nil
+}
+
+func buildOrgsPageMetadataFromBody(r *http.Request) (auth.PageMetadata, error) {
+	if r.Body == nil || r.ContentLength == 0 {
+		return auth.PageMetadata{
+			PageMetadata: apiutil.PageMetadata{
+				Offset: apiutil.DefOffset,
+				Limit:  apiutil.DefLimit,
+				Order:  apiutil.IDOrder,
+				Dir:    apiutil.DescDir,
+			},
+		}, nil
+	}
+	var pm auth.PageMetadata
+	if err := json.NewDecoder(r.Body).Decode(&pm); err != nil {
+		return auth.PageMetadata{}, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+	if pm.Limit == 0 {
+		pm.Limit = apiutil.DefLimit
+	}
+	if pm.Offset == 0 {
+		pm.Offset = apiutil.DefOffset
+	}
+	if pm.Order == "" {
+		pm.Order = apiutil.IDOrder
+	}
+	if pm.Dir == "" {
+		pm.Dir = apiutil.DescDir
+	}
+	return pm, nil
+}
+
 func decodeListOrgs(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	pm, err := buildOrgsPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +133,7 @@ func decodeListOrgs(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeSearchOrgs(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadataFromBody(r)
+	pm, err := buildOrgsPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
 	}

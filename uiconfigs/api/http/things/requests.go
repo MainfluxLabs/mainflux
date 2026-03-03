@@ -6,7 +6,6 @@ package things
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/uiconfigs"
 )
 
 const (
@@ -43,7 +42,7 @@ func (req *listThingsConfigsReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, uiconfigs.AllowedOrders)
+	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize)
 }
 
 type updateThingConfigReq struct {

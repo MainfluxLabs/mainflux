@@ -218,88 +218,106 @@ func TestRetrieveProfilesByGroupIDs(t *testing.T) {
 
 	cases := map[string]struct {
 		size         uint64
-		pageMetadata apiutil.PageMetadata
+		pageMetadata things.PageMetadata
 	}{
 		"retrieve all profiles by group IDs": {
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Dir:    descDir,
-				Order:  idOrder,
+			pageMetadata: things.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  n,
+					Dir:    descDir,
+					Order:  idOrder,
+				},
 			},
 			size: n,
 		},
 		"retrieve all profiles by group IDs without limit": {
-			pageMetadata: apiutil.PageMetadata{
-				Limit: 0,
-				Dir:   descDir,
-				Order: idOrder,
+			pageMetadata: things.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Limit: 0,
+					Dir:   descDir,
+					Order: idOrder,
+				},
 			},
 			size: n,
 		},
 		"retrieve subset of profiles by group IDs": {
-			pageMetadata: apiutil.PageMetadata{
-				Offset: offset,
-				Limit:  n,
-				Dir:    descDir,
-				Order:  idOrder,
+			pageMetadata: things.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: offset,
+					Limit:  n,
+					Dir:    descDir,
+					Order:  idOrder,
+				},
 			},
 			size: n - offset,
 		},
 		"retrieve profiles by group IDs with existing name": {
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Name:   "test-profile-101",
-				Dir:    descDir,
-				Order:  idOrder,
+			pageMetadata: things.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  n,
+					Dir:    descDir,
+					Order:  idOrder,
+				},
+				Name: "test-profile-101",
 			},
 			size: 1,
 		},
 		"retrieve all profiles by group IDs with non-existing name": {
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Name:   "wrong",
-				Dir:    descDir,
-				Order:  idOrder,
+			pageMetadata: things.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  n,
+					Dir:    descDir,
+					Order:  idOrder,
+				},
+				Name: "wrong",
 			},
 			size: 0,
 		},
 		"retrieve all profiles by group IDs with existing metadata": {
-			pageMetadata: apiutil.PageMetadata{
-				Offset:   0,
-				Limit:    n,
+			pageMetadata: things.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  n,
+					Dir:    descDir,
+					Order:  idOrder,
+				},
 				Metadata: metadata,
-				Dir:      descDir,
-				Order:    idOrder,
 			},
 			size: metaNum,
 		},
 		"retrieve all profiles by group IDs with non-existing metadata": {
-			pageMetadata: apiutil.PageMetadata{
-				Offset:   0,
-				Limit:    n,
+			pageMetadata: things.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  n,
+					Dir:    descDir,
+					Order:  idOrder,
+				},
 				Metadata: wrongMeta,
-				Dir:      descDir,
-				Order:    idOrder,
 			},
 		},
 		"retrieve profiles by group IDs sorted by name ascendant": {
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Order:  nameOrder,
-				Dir:    ascDir,
+			pageMetadata: things.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  n,
+					Order:  nameOrder,
+					Dir:    ascDir,
+				},
 			},
 			size: n,
 		},
 		"retrieve profiles by group IDs sorted by name descendent": {
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Order:  nameOrder,
-				Dir:    descDir,
+			pageMetadata: things.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  n,
+					Order:  nameOrder,
+					Dir:    descDir,
+				},
 			},
 			size: n,
 		},
@@ -492,7 +510,7 @@ func TestBackupAllProfiles(t *testing.T) {
 	}
 }
 
-func testSortProfiles(t *testing.T, pm apiutil.PageMetadata, prs []things.Profile) {
+func testSortProfiles(t *testing.T, pm things.PageMetadata, prs []things.Profile) {
 	switch pm.Order {
 	case "name":
 		current := prs[0]

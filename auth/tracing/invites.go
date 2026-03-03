@@ -62,7 +62,7 @@ func (irm invitesRepositoryMiddleware) RemoveOrgInvite(ctx context.Context, invi
 	return irm.repo.RemoveOrgInvite(ctx, inviteID)
 }
 
-func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByUser(ctx context.Context, userType string, userID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
+func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByUser(ctx context.Context, userType string, userID string, pm auth.PageMetadata) (auth.OrgInvitesPage, error) {
 	span := dbutil.CreateSpan(ctx, irm.tracer, retrieveOrgInvitesByUser)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -70,7 +70,7 @@ func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByUser(ctx context.Cont
 	return irm.repo.RetrieveOrgInvitesByUser(ctx, userType, userID, pm)
 }
 
-func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByOrg(ctx context.Context, orgID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
+func (irm invitesRepositoryMiddleware) RetrieveOrgInvitesByOrg(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgInvitesPage, error) {
 	span := dbutil.CreateSpan(ctx, irm.tracer, retrieveOrgInvitesByUser)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

@@ -19,6 +19,24 @@ var AllowedOrders = map[string]string{
 	"name": "LOWER(name)",
 }
 
+// PageMetadata contains page metadata that helps navigation.
+type PageMetadata struct {
+	apiutil.PageMetadata
+	Name     string         `json:"name,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
+}
+
+// Validate validates the page metadata.
+func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
+	if err := apiutil.ValidatePageMetadata(pm.PageMetadata, maxLimitSize); err != nil {
+		return err
+	}
+	if len(pm.Name) > maxNameSize {
+		return apiutil.ErrNameSize
+	}
+	return nil
+}
+
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 // All methods that accept a token parameter use it to identify and authorize
@@ -29,11 +47,11 @@ type Service interface {
 
 	// ListWebhooksByGroup retrieves data about a subset of webhooks
 	// related to a certain group identified by the provided ID.
-	ListWebhooksByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (WebhooksPage, error)
+	ListWebhooksByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (WebhooksPage, error)
 
 	// ListWebhooksByThing retrieves data about a subset of webhooks
 	// related to a certain thing identified by the provided ID.
-	ListWebhooksByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (WebhooksPage, error)
+	ListWebhooksByThing(ctx context.Context, token, thingID string, pm PageMetadata) (WebhooksPage, error)
 
 	// ViewWebhook retrieves data about the webhook identified with the provided ID.
 	ViewWebhook(ctx context.Context, token, id string) (Webhook, error)
@@ -105,7 +123,7 @@ func (ws *webhooksService) CreateWebhooks(ctx context.Context, token, thingID st
 	return whs, nil
 }
 
-func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (WebhooksPage, error) {
+func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (WebhooksPage, error) {
 	_, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer})
 	if err != nil {
 		return WebhooksPage{}, err
@@ -119,7 +137,7 @@ func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token, group
 	return webhooks, nil
 }
 
-func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (WebhooksPage, error) {
+func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token, thingID string, pm PageMetadata) (WebhooksPage, error) {
 	_, err := ws.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer})
 	if err != nil {
 		return WebhooksPage{}, err
@@ -193,7 +211,7 @@ func (ws *webhooksService) Consume(message any) error {
 		return errors.ErrMessage
 	}
 
-	whs, err := ws.webhooks.RetrieveByThing(ctx, msg.Publisher, apiutil.PageMetadata{})
+	whs, err := ws.webhooks.RetrieveByThing(ctx, msg.Publisher, PageMetadata{})
 	if err != nil {
 		return err
 	}

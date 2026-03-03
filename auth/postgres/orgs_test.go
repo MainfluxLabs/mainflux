@@ -378,18 +378,20 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 	cases := []struct {
 		desc         string
 		memberID     string
-		pageMetadata apiutil.PageMetadata
+		pageMetadata auth.PageMetadata
 		size         uint64
 		err          error
 	}{
 		{
 			desc:     "retrieve orgs by member",
 			memberID: memberID,
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Dir:    descDir,
-				Order:  idOrder,
+			pageMetadata: auth.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  n,
+					Dir:    descDir,
+					Order:  idOrder,
+				},
 			},
 			size: n,
 			err:  nil,
@@ -397,11 +399,13 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 		{
 			desc:     "retrieve orgs by member filtered by metadata",
 			memberID: memberID,
-			pageMetadata: apiutil.PageMetadata{
-				Offset:   0,
-				Limit:    n,
-				Dir:      descDir,
-				Order:    idOrder,
+			pageMetadata: auth.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  n,
+					Dir:    descDir,
+					Order:  idOrder,
+				},
 				Metadata: map[string]any{"key-1": "value-1"},
 			},
 			size: 1,
@@ -410,12 +414,14 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 		{
 			desc:     "retrieve orgs by member filter by name",
 			memberID: memberID,
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Dir:    descDir,
-				Order:  idOrder,
-				Name:   orgName + "-1",
+			pageMetadata: auth.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  n,
+					Dir:    descDir,
+					Order:  idOrder,
+				},
+				Name: orgName + "-1",
 			},
 			size: 1,
 			err:  nil,
@@ -423,12 +429,14 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 		{
 			desc:     "retrieve orgs by member filter by part of the name",
 			memberID: memberID,
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Dir:    descDir,
-				Order:  idOrder,
-				Name:   orgName,
+			pageMetadata: auth.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  n,
+					Dir:    descDir,
+					Order:  idOrder,
+				},
+				Name: orgName,
 			},
 			size: n,
 			err:  nil,
@@ -436,11 +444,13 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 		{
 			desc:     "retrieve orgs by member with unknown member id",
 			memberID: unknownID,
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Dir:    descDir,
-				Order:  idOrder,
+			pageMetadata: auth.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  n,
+					Dir:    descDir,
+					Order:  idOrder,
+				},
 			},
 			size: 0,
 			err:  nil,
@@ -448,11 +458,13 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 		{
 			desc:     "retrieve orgs by member with invalid member id",
 			memberID: invalidID,
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Dir:    descDir,
-				Order:  idOrder,
+			pageMetadata: auth.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  n,
+					Dir:    descDir,
+					Order:  idOrder,
+				},
 			},
 			size: 0,
 			err:  dbutil.ErrRetrieveEntity,
@@ -460,11 +472,13 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 		{
 			desc:     "retrieve orgs by member without member id",
 			memberID: "",
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Dir:    descDir,
-				Order:  idOrder,
+			pageMetadata: auth.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  n,
+					Dir:    descDir,
+					Order:  idOrder,
+				},
 			},
 			size: 0,
 			err:  dbutil.ErrRetrieveEntity,

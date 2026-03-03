@@ -114,7 +114,7 @@ func (req ruleReq) validate() error {
 type listRulesByThingReq struct {
 	token        string
 	thingID      string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata rules.PageMetadata
 }
 
 func (req listRulesByThingReq) validate() error {
@@ -126,13 +126,13 @@ func (req listRulesByThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, rules.AllowedOrders)
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type listRulesByGroupReq struct {
 	token        string
 	groupID      string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata rules.PageMetadata
 }
 
 func (req listRulesByGroupReq) validate() error {
@@ -144,7 +144,7 @@ func (req listRulesByGroupReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, rules.AllowedOrders)
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type updateRuleReq struct {

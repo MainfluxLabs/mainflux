@@ -41,9 +41,24 @@ type GroupInvite struct {
 	MemberRole string `json:"member_role"`
 }
 
-type PageMetadataInvites struct {
+// PageMetadata contains page metadata that helps navigation.
+type PageMetadata struct {
 	apiutil.PageMetadata
-	State string `json:"state,omitempty"`
+	State    string         `json:"state,omitempty"`
+	Name     string         `json:"name,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
+	Email    string         `json:"email,omitempty"`
+}
+
+// Validate validates the page metadata.
+func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
+	if err := apiutil.ValidatePageMetadata(pm.PageMetadata, maxLimitSize); err != nil {
+		return err
+	}
+	if len(pm.Name) > maxNameSize {
+		return apiutil.ErrNameSize
+	}
+	return nil
 }
 
 const (
@@ -92,11 +107,11 @@ type Invites interface {
 	// ListOrgInvitesByUser retrieves a list of invites either directed towards a specific Invitee,
 	// or sent out by a specific Inviter, depending on the value of the `userType` argument, which
 	// must be either 'invitee' or 'inviter'.
-	ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm PageMetadataInvites) (OrgInvitesPage, error)
+	ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm PageMetadata) (OrgInvitesPage, error)
 
 	// ListOrgInvitesByOrg retrieves a list of invites towards any user(s) to join the org identified
 	// by its ID
-	ListOrgInvitesByOrg(ctx context.Context, token, orgID string, pm PageMetadataInvites) (OrgInvitesPage, error)
+	ListOrgInvitesByOrg(ctx context.Context, token, orgID string, pm PageMetadata) (OrgInvitesPage, error)
 
 	// GetDormantOrgInviteByPlatformInvite retrieves the dormant Org Invite associated with the specified Platform Invite.
 	GetDormantOrgInviteByPlatformInvite(ctx context.Context, platformInviteID string) (OrgInvite, error)
@@ -126,11 +141,11 @@ type OrgInvitesRepository interface {
 
 	// RetrieveOrgInviteByUser retrieves a list of invites either directed towards a specific Invitee, or sent out by a
 	// specific Inviter, depending on the value of the `userType` argument, which must be either 'invitee' or 'inviter'.
-	RetrieveOrgInvitesByUser(ctx context.Context, userType, userID string, pm PageMetadataInvites) (OrgInvitesPage, error)
+	RetrieveOrgInvitesByUser(ctx context.Context, userType, userID string, pm PageMetadata) (OrgInvitesPage, error)
 
 	// RetrieveOrgInvitesByOrg retrieves a list of invites towards any user(s) to join the Org identified
 	// by its ID.
-	RetrieveOrgInvitesByOrg(ctx context.Context, orgID string, pm PageMetadataInvites) (OrgInvitesPage, error)
+	RetrieveOrgInvitesByOrg(ctx context.Context, orgID string, pm PageMetadata) (OrgInvitesPage, error)
 
 	// UpdateOrgInviteState updates the state of a specific Invite denoted by its ID.
 	UpdateOrgInviteState(ctx context.Context, inviteID, state string) error
@@ -404,7 +419,7 @@ func (svc service) RespondOrgInvite(ctx context.Context, token, inviteID string,
 	return svc.invites.UpdateOrgInviteState(ctx, inviteID, newState)
 }
 
-func (svc service) ListOrgInvitesByOrg(ctx context.Context, token, orgID string, pm PageMetadataInvites) (OrgInvitesPage, error) {
+func (svc service) ListOrgInvitesByOrg(ctx context.Context, token, orgID string, pm PageMetadata) (OrgInvitesPage, error) {
 	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
 		return OrgInvitesPage{}, err
 	}
@@ -423,7 +438,7 @@ func (svc service) ListOrgInvitesByOrg(ctx context.Context, token, orgID string,
 	return page, nil
 }
 
-func (svc service) ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm PageMetadataInvites) (OrgInvitesPage, error) {
+func (svc service) ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm PageMetadata) (OrgInvitesPage, error) {
 	if err := svc.isAdmin(ctx, token); err != nil {
 		if err != errors.ErrAuthorization {
 			return OrgInvitesPage{}, err

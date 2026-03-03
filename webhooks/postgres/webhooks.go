@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/webhooks"
@@ -67,7 +66,7 @@ func (wr webhookRepository) Save(ctx context.Context, whs ...webhooks.Webhook) (
 	return whs, nil
 }
 
-func (wr webhookRepository) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
+func (wr webhookRepository) RetrieveByGroup(ctx context.Context, groupID string, pm webhooks.PageMetadata) (webhooks.WebhooksPage, error) {
 	if _, err := uuid.FromString(groupID); err != nil {
 		return webhooks.WebhooksPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
@@ -97,7 +96,7 @@ func (wr webhookRepository) RetrieveByGroup(ctx context.Context, groupID string,
 	return wr.retrieve(ctx, q, qc, params)
 }
 
-func (wr webhookRepository) RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
+func (wr webhookRepository) RetrieveByThing(ctx context.Context, thingID string, pm webhooks.PageMetadata) (webhooks.WebhooksPage, error) {
 	if _, err := uuid.FromString(thingID); err != nil {
 		return webhooks.WebhooksPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}

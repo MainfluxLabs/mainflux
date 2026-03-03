@@ -245,8 +245,8 @@ func TestListThings(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 
 	essvc := events.NewEventStoreMiddleware(svc, redisClient)
-	esths, eserr := essvc.ListThings(context.Background(), token, apiutil.PageMetadata{Offset: 0, Limit: 10})
-	ths, err := svc.ListThings(context.Background(), token, apiutil.PageMetadata{Offset: 0, Limit: 10})
+	esths, eserr := essvc.ListThings(context.Background(), token, things.PageMetadata{PageMetadata: apiutil.PageMetadata{Offset: 0, Limit: 10}})
+	ths, err := svc.ListThings(context.Background(), token, things.PageMetadata{PageMetadata: apiutil.PageMetadata{Offset: 0, Limit: 10}})
 	assert.Equal(t, ths, esths, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", ths, esths))
 	assert.Equal(t, err, eserr, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", err, eserr))
 }
@@ -270,8 +270,8 @@ func TestListThingsByProfile(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 
 	essvc := events.NewEventStoreMiddleware(svc, redisClient)
-	esths, eserr := essvc.ListThingsByProfile(context.Background(), token, pr.ID, apiutil.PageMetadata{Offset: 0, Limit: 10})
-	thps, err := svc.ListThingsByProfile(context.Background(), token, pr.ID, apiutil.PageMetadata{Offset: 0, Limit: 10})
+	esths, eserr := essvc.ListThingsByProfile(context.Background(), token, pr.ID, things.PageMetadata{PageMetadata: apiutil.PageMetadata{Offset: 0, Limit: 10}})
+	thps, err := svc.ListThingsByProfile(context.Background(), token, pr.ID, things.PageMetadata{PageMetadata: apiutil.PageMetadata{Offset: 0, Limit: 10}})
 	assert.Equal(t, thps, esths, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", thps, esths))
 	assert.Equal(t, err, eserr, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", err, eserr))
 }
@@ -512,8 +512,8 @@ func TestListProfiles(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 
 	essvc := events.NewEventStoreMiddleware(svc, redisClient)
-	esprs, eserr := essvc.ListProfiles(context.Background(), token, apiutil.PageMetadata{Offset: 0, Limit: 10})
-	prs, err := svc.ListProfiles(context.Background(), token, apiutil.PageMetadata{Offset: 0, Limit: 10})
+	esprs, eserr := essvc.ListProfiles(context.Background(), token, things.PageMetadata{PageMetadata: apiutil.PageMetadata{Offset: 0, Limit: 10}})
+	prs, err := svc.ListProfiles(context.Background(), token, things.PageMetadata{PageMetadata: apiutil.PageMetadata{Offset: 0, Limit: 10}})
 	assert.Equal(t, prs, esprs, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", prs, esprs))
 	assert.Equal(t, err, eserr, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", err, eserr))
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/downlinks"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/opentracing/opentracing-go"
 )
@@ -46,7 +45,7 @@ func (drm downlinkRepositoryMiddleware) Save(ctx context.Context, dls ...downlin
 	return drm.repo.Save(ctx, dls...)
 }
 
-func (drm downlinkRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (downlinks.DownlinksPage, error) {
+func (drm downlinkRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingID string, pm downlinks.PageMetadata) (downlinks.DownlinksPage, error) {
 	span := dbutil.CreateSpan(ctx, drm.tracer, retrieveDownlinksByThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -54,7 +53,7 @@ func (drm downlinkRepositoryMiddleware) RetrieveByThing(ctx context.Context, thi
 	return drm.repo.RetrieveByThing(ctx, thingID, pm)
 }
 
-func (drm downlinkRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (downlinks.DownlinksPage, error) {
+func (drm downlinkRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm downlinks.PageMetadata) (downlinks.DownlinksPage, error) {
 	span := dbutil.CreateSpan(ctx, drm.tracer, retrieveDownlinksByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

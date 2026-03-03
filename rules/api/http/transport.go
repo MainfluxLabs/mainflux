@@ -104,8 +104,20 @@ func decodeCreateRules(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
+func buildRulesPageMetadata(r *http.Request) (rules.PageMetadata, error) {
+	base, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return rules.PageMetadata{}, err
+	}
+	n, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	return rules.PageMetadata{
+		PageMetadata: base,
+		Name:         n,
+	}, nil
+}
+
 func decodeListRulesByThing(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	pm, err := buildRulesPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +131,7 @@ func decodeListRulesByThing(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeListRulesByGroup(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	pm, err := buildRulesPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}

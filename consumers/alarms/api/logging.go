@@ -7,7 +7,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	log "github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
 var _ alarms.Service = (*loggingMiddleware)(nil)
@@ -22,7 +21,7 @@ func LoggingMiddleware(svc alarms.Service, logger log.Logger) alarms.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm loggingMiddleware) ListAlarmsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (_ alarms.AlarmsPage, err error) {
+func (lm loggingMiddleware) ListAlarmsByGroup(ctx context.Context, token, groupID string, pm alarms.PageMetadata) (_ alarms.AlarmsPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_alarms_by_group for group id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
@@ -35,7 +34,7 @@ func (lm loggingMiddleware) ListAlarmsByGroup(ctx context.Context, token, groupI
 	return lm.svc.ListAlarmsByGroup(ctx, token, groupID, pm)
 }
 
-func (lm loggingMiddleware) ListAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (_ alarms.AlarmsPage, err error) {
+func (lm loggingMiddleware) ListAlarmsByThing(ctx context.Context, token, thingID string, pm alarms.PageMetadata) (_ alarms.AlarmsPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_alarms_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
@@ -48,7 +47,7 @@ func (lm loggingMiddleware) ListAlarmsByThing(ctx context.Context, token, thingI
 	return lm.svc.ListAlarmsByThing(ctx, token, thingID, pm)
 }
 
-func (lm loggingMiddleware) ListAlarmsByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (_ alarms.AlarmsPage, err error) {
+func (lm loggingMiddleware) ListAlarmsByOrg(ctx context.Context, token, orgID string, pm alarms.PageMetadata) (_ alarms.AlarmsPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_alarms_by_org for org id %s took %s to complete", orgID, time.Since(begin))
 		if err != nil {
@@ -113,7 +112,7 @@ func (lm loggingMiddleware) RemoveAlarmsByGroup(ctx context.Context, groupID str
 	return lm.svc.RemoveAlarmsByGroup(ctx, groupID)
 }
 
-func (lm loggingMiddleware) ExportAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (_ alarms.AlarmsPage, err error) {
+func (lm loggingMiddleware) ExportAlarmsByThing(ctx context.Context, token, thingID string, pm alarms.PageMetadata) (_ alarms.AlarmsPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method export_alarms_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {

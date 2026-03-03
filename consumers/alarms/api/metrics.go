@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -26,7 +25,7 @@ func MetricsMiddleware(svc alarms.Service, counter metrics.Counter, latency metr
 	}
 }
 
-func (ms *metricsMiddleware) ListAlarmsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+func (ms *metricsMiddleware) ListAlarmsByGroup(ctx context.Context, token, groupID string, pm alarms.PageMetadata) (alarms.AlarmsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_alarms_by_group").Add(1)
 		ms.latency.With("method", "list_alarms_by_group").Observe(time.Since(begin).Seconds())
@@ -35,7 +34,7 @@ func (ms *metricsMiddleware) ListAlarmsByGroup(ctx context.Context, token, group
 	return ms.svc.ListAlarmsByGroup(ctx, token, groupID, pm)
 }
 
-func (ms *metricsMiddleware) ListAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+func (ms *metricsMiddleware) ListAlarmsByThing(ctx context.Context, token, thingID string, pm alarms.PageMetadata) (alarms.AlarmsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_alarms_by_thing").Add(1)
 		ms.latency.With("method", "list_alarms_by_thing").Observe(time.Since(begin).Seconds())
@@ -44,7 +43,7 @@ func (ms *metricsMiddleware) ListAlarmsByThing(ctx context.Context, token, thing
 	return ms.svc.ListAlarmsByThing(ctx, token, thingID, pm)
 }
 
-func (ms *metricsMiddleware) ListAlarmsByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+func (ms *metricsMiddleware) ListAlarmsByOrg(ctx context.Context, token, orgID string, pm alarms.PageMetadata) (alarms.AlarmsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_alarms_by_org").Add(1)
 		ms.latency.With("method", "list_alarms_by_org").Observe(time.Since(begin).Seconds())
@@ -89,7 +88,7 @@ func (ms *metricsMiddleware) RemoveAlarmsByGroup(ctx context.Context, groupID st
 	return ms.svc.RemoveAlarmsByGroup(ctx, groupID)
 }
 
-func (ms *metricsMiddleware) ExportAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+func (ms *metricsMiddleware) ExportAlarmsByThing(ctx context.Context, token, thingID string, pm alarms.PageMetadata) (alarms.AlarmsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "export_alarms_by_thing").Add(1)
 		ms.latency.With("method", "export_alarms_by_thing").Observe(time.Since(begin).Seconds())

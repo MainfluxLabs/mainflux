@@ -6,6 +6,7 @@ package users
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -146,13 +147,15 @@ func listUsersEndpoint(svc users.Service) endpoint.Endpoint {
 			return users.UserPage{}, err
 		}
 		pm := users.PageMetadata{
-			Offset:   req.offset,
-			Limit:    req.limit,
+			PageMetadata: apiutil.PageMetadata{
+				Offset: req.offset,
+				Limit:  req.limit,
+				Order:  req.order,
+				Dir:    req.dir,
+			},
 			Email:    req.email,
 			Status:   req.status,
 			Metadata: req.metadata,
-			Order:    req.order,
-			Dir:      req.dir,
 		}
 		up, err := svc.ListUsers(ctx, req.token, pm)
 		if err != nil {

@@ -32,7 +32,7 @@ func (req *notifierReq) validate() error {
 type listNotifiersReq struct {
 	token        string
 	id           string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata notifiers.PageMetadata
 }
 
 func (req listNotifiersReq) validate() error {
@@ -44,7 +44,7 @@ func (req listNotifiersReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, notifiers.AllowedOrders)
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type createNotifierReq struct {

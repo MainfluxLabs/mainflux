@@ -18,6 +18,17 @@ var AllowedOrders = map[string]string{
 	"created": "created",
 }
 
+// PageMetadata contains page metadata that helps navigation.
+type PageMetadata struct {
+	apiutil.PageMetadata
+	Payload map[string]any `json:"payload,omitempty"`
+}
+
+// Validate validates the page metadata.
+func (pm PageMetadata) Validate(maxLimitSize int) error {
+	return apiutil.ValidatePageMetadata(pm.PageMetadata, maxLimitSize)
+}
+
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 // All methods that accept a token parameter use it to identify and authorize
@@ -25,15 +36,15 @@ var AllowedOrders = map[string]string{
 type Service interface {
 	// ListAlarmsByGroup retrieves data about a subset of alarms
 	// related to a certain group, identified by the provided group ID.
-	ListAlarmsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (AlarmsPage, error)
+	ListAlarmsByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (AlarmsPage, error)
 
 	// ListAlarmsByThing retrieves data about a subset of alarms
 	// related to a certain thing, identified by the provided thing ID.
-	ListAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error)
+	ListAlarmsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (AlarmsPage, error)
 
 	// ListAlarmsByOrg retrieves data about a subset of alarms
 	// related to a certain organization, identified by the provided organization ID.
-	ListAlarmsByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (AlarmsPage, error)
+	ListAlarmsByOrg(ctx context.Context, token, orgID string, pm PageMetadata) (AlarmsPage, error)
 
 	// ViewAlarm retrieves data about the alarm identified by the provided ID.
 	ViewAlarm(ctx context.Context, token, id string) (Alarm, error)
@@ -51,7 +62,7 @@ type Service interface {
 
 	// ExportAlarmsByThing retrieves a subset of alarms related to the specified thing
 	// identified by the provided thing ID, intended for exporting.
-	ExportAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error)
+	ExportAlarmsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (AlarmsPage, error)
 
 	consumers.Consumer
 }
@@ -72,7 +83,7 @@ func New(things protomfx.ThingsServiceClient, alarms AlarmRepository, idp uuid.I
 	}
 }
 
-func (as *alarmService) ListAlarmsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
+func (as *alarmService) ListAlarmsByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (AlarmsPage, error) {
 	_, err := as.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer})
 	if err != nil {
 		return AlarmsPage{}, err
@@ -86,7 +97,7 @@ func (as *alarmService) ListAlarmsByGroup(ctx context.Context, token, groupID st
 	return alarms, nil
 }
 
-func (as *alarmService) ListAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
+func (as *alarmService) ListAlarmsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (AlarmsPage, error) {
 	_, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer})
 	if err != nil {
 		return AlarmsPage{}, err
@@ -100,7 +111,7 @@ func (as *alarmService) ListAlarmsByThing(ctx context.Context, token, thingID st
 	return alarms, nil
 }
 
-func (as *alarmService) ListAlarmsByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
+func (as *alarmService) ListAlarmsByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (AlarmsPage, error) {
 	res, err := as.things.GetGroupIDsByOrg(ctx, &protomfx.OrgAccessReq{
 		OrgId: orgID,
 		Token: token,
@@ -147,7 +158,7 @@ func (as *alarmService) RemoveAlarmsByGroup(ctx context.Context, groupID string)
 	return as.alarms.RemoveByGroup(ctx, groupID)
 }
 
-func (as *alarmService) ExportAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
+func (as *alarmService) ExportAlarmsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (AlarmsPage, error) {
 	_, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer})
 	if err != nil {
 		return AlarmsPage{}, err

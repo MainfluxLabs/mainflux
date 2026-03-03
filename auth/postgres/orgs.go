@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/jackc/pgerrcode"
@@ -154,7 +153,7 @@ func (or orgRepository) RetrieveByID(ctx context.Context, id string) (auth.Org, 
 	return toOrg(dbo)
 }
 
-func (or orgRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
+func (or orgRepository) RetrieveAll(ctx context.Context, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	oq := dbutil.GetOrderQuery(pm.Order, auth.AllowedOrders)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
@@ -200,7 +199,7 @@ func (or orgRepository) BackupAll(ctx context.Context) ([]auth.Org, error) {
 	return orgs, nil
 }
 
-func (or orgRepository) RetrieveByMember(ctx context.Context, memberID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
+func (or orgRepository) RetrieveByMember(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	oq := dbutil.GetOrderQuery(pm.Order, auth.AllowedOrders)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)

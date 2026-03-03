@@ -6,7 +6,6 @@ import (
 	"time"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/rules"
 )
 
@@ -35,7 +34,7 @@ func (lm loggingMiddleware) CreateRules(ctx context.Context, token, groupID stri
 	return lm.svc.CreateRules(ctx, token, groupID, rules...)
 }
 
-func (lm loggingMiddleware) ListRulesByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (_ rules.RulesPage, err error) {
+func (lm loggingMiddleware) ListRulesByThing(ctx context.Context, token, thingID string, pm rules.PageMetadata) (_ rules.RulesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_rules_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
@@ -48,7 +47,7 @@ func (lm loggingMiddleware) ListRulesByThing(ctx context.Context, token, thingID
 	return lm.svc.ListRulesByThing(ctx, token, thingID, pm)
 }
 
-func (lm loggingMiddleware) ListRulesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (_ rules.RulesPage, err error) {
+func (lm loggingMiddleware) ListRulesByGroup(ctx context.Context, token, groupID string, pm rules.PageMetadata) (_ rules.RulesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_rules_by_group for group id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {

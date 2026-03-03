@@ -350,8 +350,10 @@ func TestListUsers(t *testing.T) {
 
 	for desc, tc := range cases {
 		pm := users.PageMetadata{
-			Offset: tc.offset,
-			Limit:  tc.limit,
+			PageMetadata: apiutil.PageMetadata{
+				Offset: tc.offset,
+				Limit:  tc.limit,
+			},
 			Email:  tc.email,
 			Status: "all",
 		}

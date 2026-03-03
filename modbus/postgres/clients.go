@@ -106,7 +106,7 @@ func (cr clientRepository) RetrieveAll(ctx context.Context) ([]modbus.Client, er
 	return cls, nil
 }
 
-func (cr clientRepository) RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (modbus.ClientsPage, error) {
+func (cr clientRepository) RetrieveByThing(ctx context.Context, thingID string, pm modbus.PageMetadata) (modbus.ClientsPage, error) {
 	if _, err := uuid.FromString(thingID); err != nil {
 		return modbus.ClientsPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
@@ -140,7 +140,7 @@ func (cr clientRepository) RetrieveByThing(ctx context.Context, thingID string, 
 	return cr.retrieve(ctx, query, cquery, params)
 }
 
-func (cr clientRepository) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (modbus.ClientsPage, error) {
+func (cr clientRepository) RetrieveByGroup(ctx context.Context, groupID string, pm modbus.PageMetadata) (modbus.ClientsPage, error) {
 	if _, err := uuid.FromString(groupID); err != nil {
 		return modbus.ClientsPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
@@ -220,13 +220,15 @@ func (cr clientRepository) retrieve(ctx context.Context, query, cquery string, p
 
 	page := modbus.ClientsPage{
 		Clients: items,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  total,
-			Offset: params["offset"].(uint64),
-			Limit:  params["limit"].(uint64),
-			Order:  params["order"].(string),
-			Dir:    params["dir"].(string),
-			Name:   params["name"].(string),
+		PageMetadata: modbus.PageMetadata{
+			PageMetadata: apiutil.PageMetadata{
+				Total:  total,
+				Offset: params["offset"].(uint64),
+				Limit:  params["limit"].(uint64),
+				Order:  params["order"].(string),
+				Dir:    params["dir"].(string),
+			},
+			Name: params["name"].(string),
 		},
 	}
 

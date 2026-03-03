@@ -7,7 +7,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/rules"
@@ -52,7 +51,7 @@ func (rrm *ruleRepositoryMock) RetrieveByID(_ context.Context, id string) (rules
 	return r, nil
 }
 
-func (rrm *ruleRepositoryMock) RetrieveByThing(_ context.Context, thingID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
+func (rrm *ruleRepositoryMock) RetrieveByThing(_ context.Context, thingID string, pm rules.PageMetadata) (rules.RulesPage, error) {
 	rrm.mu.Lock()
 	defer rrm.mu.Unlock()
 
@@ -80,7 +79,7 @@ func (rrm *ruleRepositoryMock) RetrieveByThing(_ context.Context, thingID string
 	}, nil
 }
 
-func (rrm *ruleRepositoryMock) RetrieveByGroup(_ context.Context, groupID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
+func (rrm *ruleRepositoryMock) RetrieveByGroup(_ context.Context, groupID string, pm rules.PageMetadata) (rules.RulesPage, error) {
 	rrm.mu.Lock()
 	defer rrm.mu.Unlock()
 

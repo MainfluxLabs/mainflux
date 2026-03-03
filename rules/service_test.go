@@ -383,7 +383,7 @@ func TestListRulesByGroup(t *testing.T) {
 		desc         string
 		token        string
 		groupID      string
-		pageMetadata apiutil.PageMetadata
+		pageMetadata rules.PageMetadata
 		size         uint64
 		err          error
 	}{
@@ -391,9 +391,11 @@ func TestListRulesByGroup(t *testing.T) {
 			desc:    "list rules by group",
 			token:   token,
 			groupID: groupID,
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  uint64(n),
+			pageMetadata: rules.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  uint64(n),
+				},
 			},
 			size: uint64(n),
 			err:  nil,
@@ -402,8 +404,10 @@ func TestListRulesByGroup(t *testing.T) {
 			desc:    "list rules by group with no limit",
 			token:   token,
 			groupID: groupID,
-			pageMetadata: apiutil.PageMetadata{
-				Limit: 0,
+			pageMetadata: rules.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Limit: 0,
+				},
 			},
 			size: uint64(n),
 			err:  nil,
@@ -412,9 +416,11 @@ func TestListRulesByGroup(t *testing.T) {
 			desc:    "list last rule by group",
 			token:   token,
 			groupID: groupID,
-			pageMetadata: apiutil.PageMetadata{
-				Offset: uint64(n) - 1,
-				Limit:  uint64(n),
+			pageMetadata: rules.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: uint64(n) - 1,
+					Limit:  uint64(n),
+				},
 			},
 			size: 1,
 			err:  nil,
@@ -423,9 +429,11 @@ func TestListRulesByGroup(t *testing.T) {
 			desc:    "list empty set of rules by group",
 			token:   token,
 			groupID: groupID,
-			pageMetadata: apiutil.PageMetadata{
-				Offset: uint64(n) + 1,
-				Limit:  uint64(n),
+			pageMetadata: rules.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: uint64(n) + 1,
+					Limit:  uint64(n),
+				},
 			},
 			size: 0,
 			err:  nil,
@@ -434,9 +442,11 @@ func TestListRulesByGroup(t *testing.T) {
 			desc:    "list rules by group with invalid auth token",
 			token:   wrongValue,
 			groupID: groupID,
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  uint64(n),
+			pageMetadata: rules.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  uint64(n),
+				},
 			},
 			size: 0,
 			err:  errors.ErrAuthentication,
@@ -445,9 +455,11 @@ func TestListRulesByGroup(t *testing.T) {
 			desc:    "list rules by group with invalid group ID",
 			token:   token,
 			groupID: wrongValue,
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  uint64(n),
+			pageMetadata: rules.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  uint64(n),
+				},
 			},
 			size: 0,
 			err:  errors.ErrAuthorization,
@@ -477,7 +489,7 @@ func TestListRulesByThing(t *testing.T) {
 		desc         string
 		token        string
 		thingID      string
-		pageMetadata apiutil.PageMetadata
+		pageMetadata rules.PageMetadata
 		size         uint64
 		err          error
 	}{
@@ -485,9 +497,11 @@ func TestListRulesByThing(t *testing.T) {
 			desc:    "list rules by thing",
 			token:   token,
 			thingID: thingID,
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  uint64(n),
+			pageMetadata: rules.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  uint64(n),
+				},
 			},
 			size: uint64(n),
 			err:  nil,
@@ -496,8 +510,10 @@ func TestListRulesByThing(t *testing.T) {
 			desc:    "list rules by thing with no limit",
 			token:   token,
 			thingID: thingID,
-			pageMetadata: apiutil.PageMetadata{
-				Limit: 0,
+			pageMetadata: rules.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Limit: 0,
+				},
 			},
 			size: uint64(n),
 			err:  nil,
@@ -506,9 +522,11 @@ func TestListRulesByThing(t *testing.T) {
 			desc:    "list last rule by thing",
 			token:   token,
 			thingID: thingID,
-			pageMetadata: apiutil.PageMetadata{
-				Offset: uint64(n) - 1,
-				Limit:  uint64(n),
+			pageMetadata: rules.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: uint64(n) - 1,
+					Limit:  uint64(n),
+				},
 			},
 			size: 1,
 			err:  nil,
@@ -517,9 +535,11 @@ func TestListRulesByThing(t *testing.T) {
 			desc:    "list empty set of rules by thing",
 			token:   token,
 			thingID: thingID,
-			pageMetadata: apiutil.PageMetadata{
-				Offset: uint64(n) + 1,
-				Limit:  uint64(n),
+			pageMetadata: rules.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: uint64(n) + 1,
+					Limit:  uint64(n),
+				},
 			},
 			size: 0,
 			err:  nil,
@@ -528,9 +548,11 @@ func TestListRulesByThing(t *testing.T) {
 			desc:    "list rules by thing with invalid auth token",
 			token:   wrongValue,
 			thingID: thingID,
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  uint64(n),
+			pageMetadata: rules.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  uint64(n),
+				},
 			},
 			size: 0,
 			err:  errors.ErrAuthentication,
@@ -539,9 +561,11 @@ func TestListRulesByThing(t *testing.T) {
 			desc:    "list rules by thing with invalid thing ID",
 			token:   token,
 			thingID: wrongValue,
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  uint64(n),
+			pageMetadata: rules.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  uint64(n),
+				},
 			},
 			size: 0,
 			err:  errors.ErrAuthorization,
@@ -726,7 +750,7 @@ func TestRemoveRulesByGroup(t *testing.T) {
 	n := 3
 	saveRules(t, svc, n)
 
-	page, err := svc.ListRulesByGroup(context.Background(), token, groupID, apiutil.PageMetadata{Limit: 20})
+	page, err := svc.ListRulesByGroup(context.Background(), token, groupID, rules.PageMetadata{PageMetadata: apiutil.PageMetadata{Limit: 20}})
 	require.Nil(t, err)
 	require.Equal(t, n, len(page.Rules))
 
@@ -752,7 +776,7 @@ func TestRemoveRulesByGroup(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
 
-	page, err = svc.ListRulesByGroup(context.Background(), token, groupID, apiutil.PageMetadata{})
+	page, err = svc.ListRulesByGroup(context.Background(), token, groupID, rules.PageMetadata{PageMetadata: apiutil.PageMetadata{}})
 	require.Nil(t, err)
 	assert.Equal(t, 0, len(page.Rules), "expected no rules after removal by group")
 }
@@ -851,7 +875,7 @@ func TestUnassignRulesByThing(t *testing.T) {
 	}
 	assignRules(t, svc, thingID, ruleIDs...)
 
-	page, err := svc.ListRulesByThing(context.Background(), token, thingID, apiutil.PageMetadata{Limit: 20})
+	page, err := svc.ListRulesByThing(context.Background(), token, thingID, rules.PageMetadata{PageMetadata: apiutil.PageMetadata{Limit: 20}})
 	require.Nil(t, err)
 	require.Equal(t, n, len(page.Rules))
 
@@ -877,7 +901,7 @@ func TestUnassignRulesByThing(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
 
-	page, err = svc.ListRulesByThing(context.Background(), token, thingID, apiutil.PageMetadata{Limit: 20})
+	page, err = svc.ListRulesByThing(context.Background(), token, thingID, rules.PageMetadata{PageMetadata: apiutil.PageMetadata{Limit: 20}})
 	require.Nil(t, err)
 	assert.Equal(t, 0, len(page.Rules), "expected no rules after unassign by thing")
 }

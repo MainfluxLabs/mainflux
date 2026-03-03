@@ -460,17 +460,19 @@ func TestRetrieveOrgMemberships(t *testing.T) {
 	cases := []struct {
 		desc         string
 		orgID        string
-		pageMetadata apiutil.PageMetadata
+		pageMetadata auth.PageMetadata
 		size         uint64
 		err          error
 	}{
 		{
 			desc:  "retrieve memberships by org",
 			orgID: orgID,
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Total:  n,
+			pageMetadata: auth.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  n,
+					Total:  n,
+				},
 			},
 			size: n,
 			err:  nil,
@@ -478,10 +480,12 @@ func TestRetrieveOrgMemberships(t *testing.T) {
 		{
 			desc:  "retrieve memberships by org with unknown org id",
 			orgID: unknownID,
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Total:  0,
+			pageMetadata: auth.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  n,
+					Total:  0,
+				},
 			},
 			size: 0,
 			err:  nil,
@@ -489,10 +493,12 @@ func TestRetrieveOrgMemberships(t *testing.T) {
 		{
 			desc:  "retrieve memberships by org with invalid org id",
 			orgID: invalidID,
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Total:  0,
+			pageMetadata: auth.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  n,
+					Total:  0,
+				},
 			},
 			size: 0,
 			err:  auth.ErrRetrieveMembershipsByOrg,
@@ -500,10 +506,12 @@ func TestRetrieveOrgMemberships(t *testing.T) {
 		{
 			desc:  "retrieve memberships by org without org id",
 			orgID: "",
-			pageMetadata: apiutil.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-				Total:  0,
+			pageMetadata: auth.PageMetadata{
+				PageMetadata: apiutil.PageMetadata{
+					Offset: 0,
+					Limit:  n,
+					Total:  0,
+				},
 			},
 			size: 0,
 			err:  auth.ErrRetrieveMembershipsByOrg,

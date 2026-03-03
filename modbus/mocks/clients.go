@@ -38,7 +38,7 @@ func (crm *clientRepositoryMock) Save(_ context.Context, cls ...modbus.Client) (
 	return cls, nil
 }
 
-func (crm *clientRepositoryMock) RetrieveByThing(_ context.Context, thingID string, pm apiutil.PageMetadata) (modbus.ClientsPage, error) {
+func (crm *clientRepositoryMock) RetrieveByThing(_ context.Context, thingID string, pm modbus.PageMetadata) (modbus.ClientsPage, error) {
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
 
@@ -58,13 +58,13 @@ func (crm *clientRepositoryMock) RetrieveByThing(_ context.Context, thingID stri
 
 	return modbus.ClientsPage{
 		Clients: items,
-		PageMetadata: apiutil.PageMetadata{
-			Total: uint64(len(items)),
+		PageMetadata: modbus.PageMetadata{
+			PageMetadata: apiutil.PageMetadata{Total: uint64(len(items))},
 		},
 	}, nil
 }
 
-func (crm *clientRepositoryMock) RetrieveByGroup(_ context.Context, groupID string, pm apiutil.PageMetadata) (modbus.ClientsPage, error) {
+func (crm *clientRepositoryMock) RetrieveByGroup(_ context.Context, groupID string, pm modbus.PageMetadata) (modbus.ClientsPage, error) {
 	crm.mu.Lock()
 	defer crm.mu.Unlock()
 
@@ -84,8 +84,8 @@ func (crm *clientRepositoryMock) RetrieveByGroup(_ context.Context, groupID stri
 
 	return modbus.ClientsPage{
 		Clients: items,
-		PageMetadata: apiutil.PageMetadata{
-			Total: uint64(len(items)),
+		PageMetadata: modbus.PageMetadata{
+			PageMetadata: apiutil.PageMetadata{Total: uint64(len(items))},
 		},
 	}, nil
 }

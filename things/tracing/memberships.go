@@ -7,7 +7,6 @@ package tracing
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/opentracing/opentracing-go"
@@ -53,7 +52,7 @@ func (gmr groupMembershipsRepositoryMiddleware) RetrieveRole(ctx context.Context
 	return gmr.repo.RetrieveRole(ctx, gm)
 }
 
-func (gmr groupMembershipsRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (things.GroupMembershipsPage, error) {
+func (gmr groupMembershipsRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupMembershipsPage, error) {
 	span := dbutil.CreateSpan(ctx, gmr.tracer, retrieveMembershipsByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

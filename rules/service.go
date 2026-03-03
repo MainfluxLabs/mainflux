@@ -26,6 +26,23 @@ var AllowedOrders = map[string]string{
 	"rule_id": "rule_id",
 }
 
+// PageMetadata contains page metadata that helps navigation.
+type PageMetadata struct {
+	apiutil.PageMetadata
+	Name string `json:"name,omitempty"`
+}
+
+// Validate validates the page metadata.
+func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
+	if err := apiutil.ValidatePageMetadata(pm.PageMetadata, maxLimitSize); err != nil {
+		return err
+	}
+	if len(pm.Name) > maxNameSize {
+		return apiutil.ErrNameSize
+	}
+	return nil
+}
+
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 // All methods that accept a token parameter use it to identify and authorize
@@ -35,10 +52,10 @@ type Service interface {
 	CreateRules(ctx context.Context, token, groupID string, rules ...Rule) ([]Rule, error)
 
 	// ListRulesByThing retrieves a paginated list of rules by thing.
-	ListRulesByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (RulesPage, error)
+	ListRulesByThing(ctx context.Context, token, thingID string, pm PageMetadata) (RulesPage, error)
 
 	// ListRulesByGroup retrieves a paginated list of rules by group.
-	ListRulesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (RulesPage, error)
+	ListRulesByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (RulesPage, error)
 
 	// ListThingIDsByRule retrieves a list of thing IDs attached to the given rule ID.
 	ListThingIDsByRule(ctx context.Context, token, ruleID string) ([]string, error)
@@ -123,7 +140,7 @@ func (rs *rulesService) CreateRules(ctx context.Context, token, groupID string, 
 	return rs.rules.Save(ctx, rules...)
 }
 
-func (rs *rulesService) ListRulesByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (RulesPage, error) {
+func (rs *rulesService) ListRulesByThing(ctx context.Context, token, thingID string, pm PageMetadata) (RulesPage, error) {
 	_, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer})
 	if err != nil {
 		return RulesPage{}, err
@@ -137,7 +154,7 @@ func (rs *rulesService) ListRulesByThing(ctx context.Context, token, thingID str
 	return rules, nil
 }
 
-func (rs *rulesService) ListRulesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (RulesPage, error) {
+func (rs *rulesService) ListRulesByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (RulesPage, error) {
 	_, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer})
 	if err != nil {
 		return RulesPage{}, err
@@ -278,7 +295,7 @@ func (rs *rulesService) Consume(message any) error {
 		return errors.ErrMessage
 	}
 
-	rp, err := rs.rules.RetrieveByThing(ctx, msg.Publisher, apiutil.PageMetadata{})
+	rp, err := rs.rules.RetrieveByThing(ctx, msg.Publisher, PageMetadata{})
 	if err != nil {
 		return err
 	}

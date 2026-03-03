@@ -53,12 +53,14 @@ func listOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		pm := apiutil.PageMetadata{
-			Offset: req.offset,
-			Limit:  req.limit,
-			Email:  req.email,
-			Order:  req.order,
-			Dir:    req.dir,
+		pm := auth.PageMetadata{
+			PageMetadata: apiutil.PageMetadata{
+				Offset: req.offset,
+				Limit:  req.limit,
+				Order:  req.order,
+				Dir:    req.dir,
+			},
+			Email: req.email,
 		}
 
 		page, err := svc.ListOrgMemberships(ctx, req.token, req.orgID, pm)
@@ -100,7 +102,7 @@ func removeOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func buildOrgMembershipsResponse(omp auth.OrgMembershipsPage, pm apiutil.PageMetadata) orgMembershipPageRes {
+func buildOrgMembershipsResponse(omp auth.OrgMembershipsPage, pm auth.PageMetadata) orgMembershipPageRes {
 	res := orgMembershipPageRes{
 		pageRes: pageRes{
 			Total:  omp.Total,

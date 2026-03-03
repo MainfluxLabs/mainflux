@@ -134,14 +134,15 @@ type Service interface {
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
-	Total    uint64
-	Offset   uint64
-	Limit    uint64
-	Email    string
-	Status   string
-	Metadata Metadata
-	Order    string
-	Dir      string
+	apiutil.PageMetadata
+	Email    string   `json:"email,omitempty"`
+	Status   string   `json:"status,omitempty"`
+	Metadata Metadata `json:"metadata,omitempty"`
+}
+
+// Validate validates the page metadata.
+func (pm PageMetadata) Validate(maxLimitSize int) error {
+	return apiutil.ValidatePageMetadata(pm.PageMetadata, maxLimitSize)
 }
 
 // UserPage contains a page of users.

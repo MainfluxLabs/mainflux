@@ -2,8 +2,6 @@ package alarms
 
 import (
 	"context"
-
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
 type Alarm struct {
@@ -34,14 +32,14 @@ type AlarmRepository interface {
 
 	// RetrieveByThing retrieves alarms related to a certain thing,
 	// identified by a given thing ID.
-	RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error)
+	RetrieveByThing(ctx context.Context, thingID string, pm PageMetadata) (AlarmsPage, error)
 
 	// RetrieveByGroup retrieves alarms related to a certain group,
 	// identified by a given group ID.
-	RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (AlarmsPage, error)
+	RetrieveByGroup(ctx context.Context, groupID string, pm PageMetadata) (AlarmsPage, error)
 
 	// RetrieveByGroups retrieves the subset of alarms related to groups identified by the given group IDs.
-	RetrieveByGroups(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (AlarmsPage, error)
+	RetrieveByGroups(ctx context.Context, groupIDs []string, pm PageMetadata) (AlarmsPage, error)
 
 	// Remove removes alarms having the provided IDs.
 	Remove(ctx context.Context, ids ...string) error
@@ -56,5 +54,5 @@ type AlarmRepository interface {
 
 	// ExportByThing retrieves alarms related to a certain thing,
 	// identified by a given thing ID.
-	ExportByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error)
+	ExportByThing(ctx context.Context, thingID string, pm PageMetadata) (AlarmsPage, error)
 }

@@ -6,7 +6,6 @@ package things
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -328,7 +327,7 @@ func removeExternalKeyEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func buildThingsResponse(tp things.ThingsPage, pm apiutil.PageMetadata) ThingsPageRes {
+func buildThingsResponse(tp things.ThingsPage, pm things.PageMetadata) ThingsPageRes {
 	res := ThingsPageRes{
 		pageRes: pageRes{
 			Total:  tp.Total,

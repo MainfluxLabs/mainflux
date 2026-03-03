@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -40,7 +39,7 @@ func (ms *metricsMiddleware) CreateNotifiers(ctx context.Context, token, groupID
 	return ms.svc.CreateNotifiers(ctx, token, groupID, notifiers...)
 }
 
-func (ms *metricsMiddleware) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (res notifiers.NotifiersPage, err error) {
+func (ms *metricsMiddleware) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm notifiers.PageMetadata) (res notifiers.NotifiersPage, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_notifiers_by_group").Add(1)
 		ms.latency.With("method", "list_notifiers_by_group").Observe(time.Since(begin).Seconds())
