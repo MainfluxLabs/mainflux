@@ -641,7 +641,9 @@ func (svc usersService) handleIdentity(ctx context.Context, provider, email, pro
 			ProviderUserID: providerUserID,
 		}
 		if err := svc.identity.Save(ctx, newIdentity); err != nil {
-			return User{}, err
+			if !errors.Contains(err, dbutil.ErrConflict) {
+				return User{}, err
+			}
 		}
 	}
 
