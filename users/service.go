@@ -564,6 +564,9 @@ func (svc usersService) fetchGitHubUser(ctx context.Context, code, verifier stri
 		return "", "", err
 	}
 	defer resp2.Body.Close()
+	if resp2.StatusCode != http.StatusOK {
+		return "", "", errors.ErrAuthentication
+	}
 
 	var emails []struct {
 		Email    string `json:"email"`
