@@ -747,7 +747,7 @@ func TestOAuthCallback(t *testing.T) {
 			provider: "unknown",
 			code:     "valid-code",
 			verifier: verifier,
-			err:      errors.ErrAuthorization,
+			err:      apiutil.ErrInvalidProvider,
 		},
 	}
 
