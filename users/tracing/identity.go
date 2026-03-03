@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	saveIdentity     = "save_identity"
-	retrieveIdentity = "retrieve_identity"
+	saveIdentity        = "save_identity"
+	retrieveIdentity    = "retrieve_identity"
 	backupAllIdentities = "backup_all_identities"
 )
 
