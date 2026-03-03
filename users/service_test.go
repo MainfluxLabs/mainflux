@@ -36,15 +36,16 @@ const (
 )
 
 var (
-	admin           = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: "root", Password: "password"}
-	unauthUser      = users.User{Email: "unauth-user@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef", Password: "password"}
-	selfRegister    = users.User{Email: "self-register@example.com", Password: "password"}
-	registerUser    = users.User{Email: "register-user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: "password"}
-	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96", Password: "password"}
-	noPasswordUser  = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96"}
-	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: "password"}
-	usersList       = []users.User{admin, registerUser, user, unauthUser}
-	host            = "example.com"
+	admin            = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: "root", Password: "password"}
+	noaPasswordAdmin = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: "root"}
+	unauthUser       = users.User{Email: "unauth-user@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef", Password: "password"}
+	selfRegister     = users.User{Email: "self-register@example.com", Password: "password"}
+	registerUser     = users.User{Email: "register-user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: "password"}
+	user             = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96", Password: "password"}
+	noPasswordUser   = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96"}
+	nonExistingUser  = users.User{Email: "non-ex-user@example.com", Password: "password"}
+	usersList        = []users.User{admin, registerUser, user, unauthUser}
+	host             = "example.com"
 
 	verification = users.EmailVerification{
 		User:      users.User{Email: "example@verify.com", Password: "12345678"},
@@ -278,7 +279,7 @@ func TestViewProfile(t *testing.T) {
 			err:   nil,
 		},
 		"valid token's admin info": {
-			user:  users.User{ID: admin.ID, Email: admin.Email, Metadata: admin.Metadata, Status: admin.Status, Role: admin.Role},
+			user:  noaPasswordAdmin,
 			token: adminToken,
 			err:   nil,
 		},
