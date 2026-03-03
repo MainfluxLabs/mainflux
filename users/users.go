@@ -64,8 +64,8 @@ type UserRepository interface {
 	// operation failure.
 	Save(ctx context.Context, u User) (string, error)
 
-	// UpdateUser updates the user metadata.
-	UpdateUser(ctx context.Context, u User) error
+	// UpdateUserMetadata updates the user metadata for an enabled user.
+	UpdateUserMetadata(ctx context.Context, u User) error
 
 	// RetrieveByEmail retrieves user by its unique identifier (i.e. email).
 	RetrieveByEmail(ctx context.Context, email string) (User, error)

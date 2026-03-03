@@ -81,7 +81,7 @@ func (ur userRepository) Update(ctx context.Context, user users.User) error {
 	return nil
 }
 
-func (ur userRepository) UpdateUser(ctx context.Context, user users.User) error {
+func (ur userRepository) UpdateUserMetadata(ctx context.Context, user users.User) error {
 	var idq string
 	if user.ID != "" {
 		idq = "id = :id,"
