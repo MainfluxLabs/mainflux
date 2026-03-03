@@ -80,8 +80,8 @@ func newService(srv ...*httptest.Server) users.Service {
 
 	if len(srv) > 0 && srv[0] != nil {
 		oauthUsers := []users.User{
-			{Email: "new-google-user@example.com", ID: "oauth-google-id-001"},
-			{Email: "new-github-user@example.com", ID: "oauth-github-id-001"},
+			{Email: "new-google-user@example.com", ID: "oauth-google-id-001", Status: users.EnabledStatusKey},
+			{Email: "new-github-user@example.com", ID: "oauth-github-id-001", Status: users.EnabledStatusKey},
 		}
 		allUsers = append(usersList, oauthUsers...)
 		oauthGoogleCfg = oauth2.Config{Endpoint: oauth2.Endpoint{TokenURL: srv[0].URL + "/token"}}
@@ -94,13 +94,21 @@ func newService(srv ...*httptest.Server) users.Service {
 		}
 	}
 
-	userRepo := usmocks.NewUserRepository(usersList)
+	userRepo := usmocks.NewUserRepository(allUsers)
 	verificationRepo := usmocks.NewEmailVerificationRepository(verificationsList)
 	invitesRepo := usmocks.NewPlatformInvitesRepository()
 	identityRepo := usmocks.NewIdentityRepository()
 	authSvc := mocks.NewAuthService(admin.ID, allUsers, nil)
 	e := usmocks.NewEmailer()
-	return users.New(userRepo, verificationRepo, invitesRepo, identityRepo, inviteDuration, true, true, hasher, authSvc, e, idProvider, oauthGoogleCfg, oauthGithubCfg, cfgURLs)
+	c := users.Config{
+		InviteDuration:      inviteDuration,
+		EmailVerifyEnabled:  true,
+		SelfRegisterEnabled: true,
+		GoogleOAuth:         oauthGoogleCfg,
+		GitHubOAuth:         oauthGithubCfg,
+		URLs:                cfgURLs,
+	}
+	return users.New(userRepo, verificationRepo, invitesRepo, identityRepo, hasher, authSvc, e, idProvider, c)
 }
 
 func TestSelfRegister(t *testing.T) {

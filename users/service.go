@@ -183,23 +183,33 @@ type usersService struct {
 	urls                ConfigURLs
 }
 
+// Config holds configuration values for the users service.
+type Config struct {
+	InviteDuration      time.Duration
+	EmailVerifyEnabled  bool
+	SelfRegisterEnabled bool
+	GoogleOAuth         oauth2.Config
+	GitHubOAuth         oauth2.Config
+	URLs                ConfigURLs
+}
+
 // New instantiates the users service implementation
-func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, identity IdentityRepository, inviteDuration time.Duration, emailVerifyEnabled bool, selfRegisterEnabled bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider, googleOAuth, githubOAuth oauth2.Config, urls ConfigURLs) Service {
+func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, identity IdentityRepository, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider, c Config) Service {
 	return &usersService{
 		users:               users,
 		emailVerifications:  verifications,
 		invites:             invites,
 		identity:            identity,
-		inviteDuration:      inviteDuration,
-		emailVerifyEnabled:  emailVerifyEnabled,
-		selfRegisterEnabled: selfRegisterEnabled,
+		inviteDuration:      c.InviteDuration,
+		emailVerifyEnabled:  c.EmailVerifyEnabled,
+		selfRegisterEnabled: c.SelfRegisterEnabled,
 		hasher:              hasher,
 		auth:                auth,
 		email:               e,
 		idProvider:          idp,
-		googleOAuth:         googleOAuth,
-		githubOAuth:         githubOAuth,
-		urls:                urls,
+		googleOAuth:         c.GoogleOAuth,
+		githubOAuth:         c.GitHubOAuth,
+		urls:                c.URLs,
 	}
 }
 
@@ -606,6 +616,10 @@ func (svc usersService) handleIdentity(ctx context.Context, provider, email, pro
 		user, err = svc.users.RetrieveByID(ctx, identity.UserID)
 		if err != nil {
 			return User{}, err
+		}
+
+		if user.Status != EnabledStatusKey {
+			return User{}, errors.ErrAuthentication
 		}
 
 		if user.Email != email {

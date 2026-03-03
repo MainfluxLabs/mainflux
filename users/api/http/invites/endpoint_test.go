@@ -110,7 +110,15 @@ func newService() users.Service {
 	oauthGoogleCfg := oauth2.Config{}
 	oauthGithubCfg := oauth2.Config{}
 	cfgURLs := users.ConfigURLs{}
-	return users.New(usersRepo, verificationsRepo, invitesRepo, identityRepo, inviteDuration, true, true, hasher, auth, email, idProvider, oauthGoogleCfg, oauthGithubCfg, cfgURLs)
+	c := users.Config{
+		InviteDuration:      inviteDuration,
+		EmailVerifyEnabled:  true,
+		SelfRegisterEnabled: true,
+		GoogleOAuth:         oauthGoogleCfg,
+		GitHubOAuth:         oauthGithubCfg,
+		URLs:                cfgURLs,
+	}
+	return users.New(usersRepo, verificationsRepo, invitesRepo, identityRepo, hasher, auth, email, idProvider, c)
 }
 
 func newServer(svc users.Service) *httptest.Server {

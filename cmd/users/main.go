@@ -381,7 +381,16 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac protomfx.AuthServiceC
 
 	idProvider := uuid.New()
 
-	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, identityRepo, c.inviteDuration, c.emailVerifyEnabled, c.selfRegisterEnabled, hasher, ac, svcEmailer, idProvider, c.googleOauthConfig, c.githubOauthConfig, c.urls)
+	usersCfg := users.Config{
+		InviteDuration:      c.inviteDuration,
+		EmailVerifyEnabled:  c.emailVerifyEnabled,
+		SelfRegisterEnabled: c.selfRegisterEnabled,
+		GoogleOAuth:         c.googleOauthConfig,
+		GitHubOAuth:         c.githubOauthConfig,
+		URLs:                c.urls,
+	}
+
+	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, identityRepo, hasher, ac, svcEmailer, idProvider, usersCfg)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

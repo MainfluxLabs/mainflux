@@ -214,9 +214,9 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrInvalidActionType),
 		errors.Contains(err, ErrMissingActionID),
 		errors.Contains(err, ErrInvalidOperator),
-		errors.Contains(err, ErrMissingProvider),
+		errors.Contains(err, ErrInvalidProvider),
 		errors.Contains(err, ErrMissingProviderCode),
-		errors.Contains(err, ErrMissingState):
+		errors.Contains(err, ErrInvalidState):
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, errors.ErrAuthorization),
 		errors.Contains(err, ErrInviteExpired),

@@ -38,6 +38,8 @@ func MakeHandler(svc users.Service, mux *bone.Mux, tracer opentracing.Tracer, lo
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
+	callbackOpts := append([]kithttp.ServerOption{}, opts...)
+	callbackOpts = append(callbackOpts, kithttp.ServerErrorEncoder(encodeOAuthCallbackError))
 
 	mux.Post("/users", kithttp.NewServer(
 		kitot.TraceServer(tracer, "register")(registrationEndpoint(svc)),
@@ -134,7 +136,7 @@ func MakeHandler(svc users.Service, mux *bone.Mux, tracer opentracing.Tracer, lo
 		kitot.TraceServer(tracer, "oauth_callback")(oauthCallbackEndpoint(svc)),
 		decodeOAuthCallback,
 		encodeOAuthCallbackResponse,
-		opts...,
+		callbackOpts...,
 	))
 
 	mux.Post("/users/:id/enable", kithttp.NewServer(
@@ -329,12 +331,12 @@ func decodeOAuthLogin(_ context.Context, r *http.Request) (any, error) {
 func decodeOAuthCallback(_ context.Context, r *http.Request) (any, error) {
 	stateCookie, err := r.Cookie(stateKey)
 	if err != nil {
-		return nil, apiutil.ErrMissingState
+		return nil, apiutil.ErrInvalidState
 	}
 
 	verifierCookie, err := r.Cookie(verifierKey)
 	if err != nil {
-		return nil, apiutil.ErrMissingState
+		return nil, apiutil.ErrInvalidState
 	}
 
 	req := oauthCallbackReq{
@@ -474,6 +476,27 @@ func encodeOAuthCallbackResponse(_ context.Context, w http.ResponseWriter, respo
 	w.Header().Set("Location", res.RedirectURL)
 	w.WriteHeader(http.StatusFound)
 	return nil
+}
+
+func encodeOAuthCallbackError(ctx context.Context, err error, w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     stateKey,
+		Path:     "/users/oauth/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     verifierKey,
+		Path:     "/users/oauth/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	encodeError(ctx, err, w)
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {

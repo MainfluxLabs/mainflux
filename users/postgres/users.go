@@ -120,7 +120,7 @@ func (ur userRepository) RetrieveByEmail(ctx context.Context, email string) (use
 }
 
 func (ur userRepository) RetrieveByID(ctx context.Context, id string) (users.User, error) {
-	q := `SELECT email, password, metadata FROM users WHERE id = $1`
+	q := `SELECT id, email, password, metadata, status FROM users WHERE id = $1`
 
 	dbu := dbUser{
 		ID: id,

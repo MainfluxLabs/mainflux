@@ -32,8 +32,7 @@ func restoreEndpoint(svc users.Service) endpoint.Endpoint {
 
 		admin, users, identities := buildBackup(req)
 
-		err := svc.Restore(ctx, req.token, admin, users, identities)
-		if err != nil {
+		if err := svc.Restore(ctx, req.token, admin, users, identities); err != nil {
 			return nil, err
 		}
 
