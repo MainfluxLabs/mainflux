@@ -473,7 +473,7 @@ func (svc usersService) OAuthLogin(provider string) (data OAuthLoginData, err er
 	case GitHubProvider:
 		oauthCfg = svc.githubOAuth
 	default:
-		return OAuthLoginData{}, errors.ErrAuthorization
+		return OAuthLoginData{}, apiutil.ErrInvalidProvider
 	}
 
 	data.Verifier = oauth2.GenerateVerifier()
@@ -495,7 +495,7 @@ func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackDat
 	case GitHubProvider:
 		email, providerUserID, err = svc.fetchGitHubUser(ctx, data.Code, data.Verifier)
 	default:
-		return "", errors.ErrAuthorization
+		return "", apiutil.ErrInvalidProvider
 	}
 
 	if err != nil {
