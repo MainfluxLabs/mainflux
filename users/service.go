@@ -557,6 +557,9 @@ func (svc usersService) fetchGitHubUser(ctx context.Context, code, verifier stri
 	if err := json.NewDecoder(resp.Body).Decode(&gUser); err != nil {
 		return "", "", err
 	}
+	if gUser.ID == 0 {
+		return "", "", errors.ErrAuthentication
+	}
 	providerUserID := strconv.FormatInt(gUser.ID, 10)
 
 	resp2, err := client.Get(svc.urls.GitHubUserEmailsURL)
