@@ -8,7 +8,6 @@ import (
 const (
 	minLen       = 1
 	maxLimitSize = 200
-	maxNameSize  = 254
 )
 
 type alarmReq struct {
