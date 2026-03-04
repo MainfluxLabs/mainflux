@@ -264,7 +264,7 @@ func (rs *rulesService) UnassignRulesByThing(ctx context.Context, thingID string
 	return rs.rules.UnassignByThing(ctx, thingID)
 }
 
-func (rs *rulesService) Consume(message any) error {
+func (rs *rulesService) Consume(_ string, message any) error {
 	ctx := context.Background()
 
 	msg, ok := message.(protomfx.Message)
@@ -291,18 +291,19 @@ func (rs *rulesService) Consume(message any) error {
 				newMsg := msg
 				newMsg.Payload = payload
 
+				var subject string
 				switch action.Type {
 				case ActionTypeSMTP:
-					newMsg.Subject = fmt.Sprintf("%s.%s", subjectSMTP, action.ID)
+					subject = fmt.Sprintf("%s.%s", subjectSMTP, action.ID)
 				case ActionTypeSMPP:
-					newMsg.Subject = fmt.Sprintf("%s.%s", subjectSMPP, action.ID)
+					subject = fmt.Sprintf("%s.%s", subjectSMPP, action.ID)
 				case ActionTypeAlarm:
-					newMsg.Subject = fmt.Sprintf("%s.%s", subjectAlarms, rule.ID)
+					subject = fmt.Sprintf("%s.%s", subjectAlarms, rule.ID)
 				default:
 					continue
 				}
 
-				if err := rs.pubsub.Publish(newMsg); err != nil {
+				if err := rs.pubsub.Publish(subject, newMsg); err != nil {
 					return err
 				}
 			}

@@ -425,9 +425,11 @@ func (ds *downlinksService) publish(config *protomfx.Config, thingID string, pay
 		return err
 	}
 
-	msg.Subject = nats.GetMessagesSubject(msg.Publisher, msg.Subtopic)
+	if err := ds.publisher.Publish(nats.GetMessagesSubject(msg.Publisher, msg.Subtopic), msg); err != nil {
+		return err
+	}
 
-	return ds.publisher.Publish(msg)
+	return nil
 }
 
 func (ds *downlinksService) getLimiter(baseURL string) *rate.Limiter {

@@ -151,8 +151,7 @@ func (as *adapterService) publish(ctx context.Context, key string, msg protomfx.
 		return protomfx.Message{}, err
 	}
 
-	msg.Subject = nats.GetMessagesSubject(msg.Publisher, msg.Subtopic)
-	if err := as.publisher.Publish(msg); err != nil {
+	if err := as.publisher.Publish(nats.GetMessagesSubject(msg.Publisher, msg.Subtopic), msg); err != nil {
 		return protomfx.Message{}, err
 	}
 

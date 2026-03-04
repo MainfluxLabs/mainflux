@@ -173,7 +173,7 @@ func (as *alarmService) createAlarm(ctx context.Context, alarm *Alarm) error {
 
 }
 
-func (as *alarmService) Consume(message any) error {
+func (as *alarmService) Consume(subject string, message any) error {
 	ctx := context.Background()
 
 	msg, ok := message.(protomfx.Message)
@@ -181,11 +181,11 @@ func (as *alarmService) Consume(message any) error {
 		return errors.ErrMessage
 	}
 
-	subject := strings.Split(msg.Subject, ".")
-	if len(subject) < 2 {
+	parts := strings.Split(subject, ".")
+	if len(parts) < 2 {
 		return errors.ErrInvalidSubject
 	}
-	ruleID := subject[1]
+	ruleID := parts[1]
 
 	var payload map[string]any
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {

@@ -63,7 +63,7 @@ func New(idp uuid.IDProvider, sender Sender, notifierRepo NotifierRepository, th
 	}
 }
 
-func (ns *notifierService) Consume(message any) error {
+func (ns *notifierService) Consume(subject string, message any) error {
 	ctx := context.Background()
 
 	msg, ok := message.(protomfx.Message)
@@ -71,11 +71,11 @@ func (ns *notifierService) Consume(message any) error {
 		return errors.ErrMessage
 	}
 
-	subject := strings.Split(msg.Subject, ".")
-	if len(subject) < 2 {
-		return errors.Wrap(ErrNotify, fmt.Errorf("invalid subject: %s", msg.Subject))
+	parts := strings.Split(subject, ".")
+	if len(parts) < 2 {
+		return errors.Wrap(ErrNotify, fmt.Errorf("invalid subject: %s", subject))
 	}
-	notifierID := subject[1]
+	notifierID := parts[1]
 
 	notifier, err := ns.notifierRepo.RetrieveByID(ctx, notifierID)
 	if err != nil {

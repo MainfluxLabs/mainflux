@@ -177,7 +177,7 @@ func (ps *pubsub) mqttHandler(h messaging.MessageHandler) mqtt.MessageHandler {
 			return
 		}
 
-		if err := h.Handle(msg.ToProtoMessage()); err != nil {
+		if err := h.Handle(m.Topic(), msg.ToProtoMessage()); err != nil {
 			ps.logger.Warn(fmt.Sprintf("Failed to handle Mainflux message: %s", err))
 		}
 	}

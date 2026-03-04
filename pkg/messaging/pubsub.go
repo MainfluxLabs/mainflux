@@ -58,7 +58,7 @@ var (
 // Publisher specifies message publishing API.
 type Publisher interface {
 	// Publish publishes message to the message broker.
-	Publish(msg protomfx.Message) error
+	Publish(subject string, msg protomfx.Message) error
 
 	// Close gracefully closes message publisher's connection.
 	Close() error
@@ -67,7 +67,7 @@ type Publisher interface {
 // MessageHandler represents protomfx.Message handler for Subscriber.
 type MessageHandler interface {
 	// Handle handles messages passed by underlying implementation.
-	Handle(msg protomfx.Message) error
+	Handle(subject string, msg protomfx.Message) error
 
 	// Cancel is used for cleanup during unsubscribing and it's optional.
 	Cancel() error
