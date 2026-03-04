@@ -52,7 +52,7 @@ type PageMetadata struct {
 
 // Validate validates the page metadata.
 func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
-	if err := apiutil.ValidatePageMetadata(pm.PageMetadata, maxLimitSize); err != nil {
+	if err := apiutil.ValidatePageMetadata(pm.PageMetadata, maxLimitSize, AllowedOrders); err != nil {
 		return err
 	}
 	if len(pm.Name) > maxNameSize {

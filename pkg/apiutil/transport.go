@@ -478,7 +478,7 @@ func BuildPageMetadataFromBody(r *http.Request) (PageMetadata, error) {
 	return pm, nil
 }
 
-func ValidatePageMetadata(pm PageMetadata, maxLimitSize int) error {
+func ValidatePageMetadata(pm PageMetadata, maxLimitSize int, allowedOrders map[string]string) error {
 	if pm.Limit > uint64(maxLimitSize) {
 		return ErrLimitSize
 	}
@@ -486,6 +486,12 @@ func ValidatePageMetadata(pm PageMetadata, maxLimitSize int) error {
 	if pm.Dir != "" &&
 		pm.Dir != AscDir && pm.Dir != DescDir {
 		return ErrInvalidDirection
+	}
+
+	if pm.Order != "" {
+		if _, orderValid := allowedOrders[pm.Order]; !orderValid {
+			return ErrInvalidOrder
+		}
 	}
 
 	return nil

@@ -142,7 +142,7 @@ type PageMetadata struct {
 
 // Validate validates the page metadata.
 func (pm PageMetadata) Validate(maxLimitSize int) error {
-	return apiutil.ValidatePageMetadata(pm.PageMetadata, maxLimitSize)
+	return apiutil.ValidatePageMetadata(pm.PageMetadata, maxLimitSize, AllowedOrders)
 }
 
 // UserPage contains a page of users.

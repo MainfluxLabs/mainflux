@@ -26,7 +26,7 @@ type PageMetadata struct {
 
 // Validate validates the page metadata.
 func (pm PageMetadata) Validate(maxLimitSize int) error {
-	return apiutil.ValidatePageMetadata(pm.PageMetadata, maxLimitSize)
+	return apiutil.ValidatePageMetadata(pm.PageMetadata, maxLimitSize, AllowedOrders)
 }
 
 // Service specifies an API that must be fullfiled by the domain service
