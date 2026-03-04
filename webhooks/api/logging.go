@@ -132,15 +132,15 @@ func (lm *loggingMiddleware) RemoveWebhooksByGroup(ctx context.Context, groupID 
 	return lm.svc.RemoveWebhooksByGroup(ctx, groupID)
 }
 
-func (lm *loggingMiddleware) Consume(message any) (err error) {
+func (lm *loggingMiddleware) Consume(subject string, message any) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method consume took %s to complete", time.Since(begin))
+		msg := fmt.Sprintf("Method consume took %s to complete", time.Since(begin))
 		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", msg, err))
 			return
 		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+		lm.logger.Info(fmt.Sprintf("%s without errors.", msg))
 	}(time.Now())
 
-	return lm.svc.Consume(message)
+	return lm.svc.Consume(subject, message)
 }

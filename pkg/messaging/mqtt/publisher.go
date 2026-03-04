@@ -34,8 +34,8 @@ func NewPublisher(address string, timeout time.Duration) (messaging.Publisher, e
 	return ret, nil
 }
 
-func (pub publisher) Publish(msg protomfx.Message) error {
-	topic := strings.ReplaceAll(msg.Subject, ".", "/")
+func (pub publisher) Publish(subject string, msg protomfx.Message) error {
+	topic := strings.ReplaceAll(subject, ".", "/")
 	payload, err := json.Marshal(messaging.ToJSONMessage(msg))
 	if err != nil {
 		return err

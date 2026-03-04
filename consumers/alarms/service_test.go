@@ -55,16 +55,16 @@ func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 	pyd, err := json.Marshal(payload)
 	require.Nil(t, err)
 
+	subject := fmt.Sprintf("alarms.%s", ruleID)
 	for i := 0; i < n; i++ {
 		msg := protomfx.Message{
 			Publisher: thingID,
-			Subject:   fmt.Sprintf("alarms.%s", ruleID),
 			Subtopic:  subtopic,
 			Protocol:  protocol,
 			Payload:   pyd,
 			Created:   int64(1000000 + i),
 		}
-		err := svc.Consume(msg)
+		err := svc.Consume(subject, msg)
 		require.Nil(t, err, fmt.Sprintf("unexpected error saving alarm %d: %s", i+1, err))
 	}
 }
@@ -75,9 +75,9 @@ func TestConsume(t *testing.T) {
 	pyd, err := json.Marshal(payload)
 	require.Nil(t, err)
 
+	validSubject := fmt.Sprintf("alarms.%s", ruleID)
 	validMsg := protomfx.Message{
 		Publisher: thingID,
-		Subject:   fmt.Sprintf("alarms.%s", ruleID),
 		Subtopic:  subtopic,
 		Protocol:  protocol,
 		Payload:   pyd,
@@ -87,46 +87,49 @@ func TestConsume(t *testing.T) {
 	invalidPayloadMsg := validMsg
 	invalidPayloadMsg.Payload = []byte("invalid")
 
-	invalidSubjectMsg := validMsg
-	invalidSubjectMsg.Subject = "invalid"
-
 	unknownThingMsg := validMsg
 	unknownThingMsg.Publisher = wrongValue
 
 	cases := []struct {
-		desc string
-		msg  any
-		err  error
+		desc    string
+		subject string
+		msg     any
+		err     error
 	}{
 		{
-			desc: "consume valid message",
-			msg:  validMsg,
-			err:  nil,
+			desc:    "consume valid message",
+			subject: validSubject,
+			msg:     validMsg,
+			err:     nil,
 		},
 		{
-			desc: "consume message with invalid payload",
-			msg:  invalidPayloadMsg,
-			err:  errors.ErrInvalidPayload,
+			desc:    "consume message with invalid payload",
+			subject: validSubject,
+			msg:     invalidPayloadMsg,
+			err:     errors.ErrInvalidPayload,
 		},
 		{
-			desc: "consume message with invalid subject",
-			msg:  invalidSubjectMsg,
-			err:  errors.ErrInvalidSubject,
+			desc:    "consume message with invalid subject",
+			subject: "invalid",
+			msg:     validMsg,
+			err:     errors.ErrInvalidSubject,
 		},
 		{
-			desc: "consume message with unknown thing",
-			msg:  unknownThingMsg,
-			err:  dbutil.ErrNotFound,
+			desc:    "consume message with unknown thing",
+			subject: validSubject,
+			msg:     unknownThingMsg,
+			err:     dbutil.ErrNotFound,
 		},
 		{
-			desc: "consume non-message type",
-			msg:  "not-a-message",
-			err:  errors.ErrMessage,
+			desc:    "consume non-message type",
+			subject: validSubject,
+			msg:     "not-a-message",
+			err:     errors.ErrMessage,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.Consume(tc.msg)
+		err := svc.Consume(tc.subject, tc.msg)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

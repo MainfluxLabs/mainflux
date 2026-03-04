@@ -30,14 +30,13 @@ const (
 	coapProt    = "coap"
 	udpProt     = "udp"
 	msgName     = "temperature"
-	jsonFormat  = "json"
 	jsonCT      = "application/json"
 	jsonTable   = "json"
-	senmlFormat = "messages"
 	minAgg      = "min"
 	maxAgg      = "max"
 	countAgg    = "count"
 	avgAgg      = "avg"
+	subject     = "things.fa9b4ead-4b5a-4d34-a6a0-b33dd2e5f5f3.messages"
 )
 
 var (
@@ -126,7 +125,7 @@ func TestListSenMLMessages(t *testing.T) {
 			Payload:     payload,
 		}
 
-		err = writer.Consume(pm)
+		err = writer.Consume(subject, pm)
 		assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 	}
 
@@ -437,7 +436,7 @@ func TestSenMLAggregation(t *testing.T) {
 		payload, err := json.Marshal(msg)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		err = writer.Consume(protomfx.Message{
+		err = writer.Consume(subject, protomfx.Message{
 			Publisher:   pubID,
 			Protocol:    mqttProt,
 			ContentType: senml.JSON,
@@ -556,7 +555,7 @@ func TestDeleteSenMLMessages(t *testing.T) {
 			Payload:     payload,
 		}
 
-		err = writer.Consume(pm)
+		err = writer.Consume(subject, pm)
 		assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 	}
 
@@ -658,7 +657,7 @@ func TestDeleteSenMLMessages(t *testing.T) {
 				Payload:     payload,
 			}
 
-			err = writer.Consume(pm)
+			err = writer.Consume(subject, pm)
 			require.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 		}
 

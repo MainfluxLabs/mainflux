@@ -87,11 +87,10 @@ func TestPublisher(t *testing.T) {
 	for _, tc := range cases {
 		msg := protomfx.Message{
 			Publisher: pubID,
-			Subject:   tc.subject,
 			Payload:   tc.payload,
 		}
 
-		err := pubsub.Publish(msg)
+		err := pubsub.Publish(tc.subject, msg)
 		assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
 
 		expectedMsg, err := json.Marshal(messaging.ToJSONMessage(msg))
@@ -254,11 +253,10 @@ func TestPubSub(t *testing.T) {
 			msg := protomfx.Message{
 				Publisher: pubID,
 				Subtopic:  subtopic,
-				Subject:   topic,
 				Payload:   data,
 			}
 
-			err := pubsub.Publish(msg)
+			err := pubsub.Publish(topic, msg)
 			assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
 			expectedJSON := messaging.ToJSONMessage(msg)
 
@@ -423,7 +421,7 @@ type handler struct {
 	msgChan   chan protomfx.Message
 }
 
-func (h handler) Handle(msg protomfx.Message) error {
+func (h handler) Handle(_ string, msg protomfx.Message) error {
 	if msg.Publisher != h.publisher {
 		h.msgChan <- msg
 	}

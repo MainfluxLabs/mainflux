@@ -24,6 +24,7 @@ const (
 	valueFields = 5
 	subtopic    = "topic"
 	mqttProt    = "mqtt"
+	subject     = "things.fa9b4ead-4b5a-4d34-a6a0-b33dd2e5f5f3.messages"
 )
 
 var (
@@ -70,7 +71,7 @@ func TestSaveSenML(t *testing.T) {
 			Created:     now + int64(i),
 		}
 
-		err = repo.Consume(pm)
+		err = repo.Consume(subject, pm)
 		assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 	}
 }
@@ -103,6 +104,6 @@ func TestSaveJSON(t *testing.T) {
 		ContentType: messaging.JSONContentType,
 	}
 
-	err = repo.Consume(pm)
+	err = repo.Consume(subject, pm)
 	assert.Nil(t, err, fmt.Sprintf("expected no error got %s", err))
 }

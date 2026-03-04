@@ -29,6 +29,7 @@ const (
 	wrongValue = "wrong-value"
 	thingID    = "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
 	groupID    = "574106f7-030e-4881-8ab0-151195c29f94"
+	subject    = "things." + thingID + ".messages"
 )
 
 func threshold(v float64) *float64 { return &v }
@@ -296,7 +297,7 @@ func TestConsume(t *testing.T) {
 			assignRules(t, svc, thingID, saved[0].ID)
 		}
 
-		err := svc.Consume(tc.msg)
+		err := svc.Consume(subject, tc.msg)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -321,7 +322,7 @@ func TestConsumePublishError(t *testing.T) {
 		ContentType: "application/json",
 	}
 
-	err = svc.Consume(msg)
+	err = svc.Consume(subject, msg)
 	assert.True(t, errors.Contains(err, messaging.ErrPublishMessage), fmt.Sprintf("publish error: expected %s got %s", messaging.ErrPublishMessage, err))
 }
 

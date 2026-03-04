@@ -77,7 +77,7 @@ func TestPublisher(t *testing.T) {
 			Payload:   tc.payload,
 		}
 
-		err = pubsub.Publish(expectedMsg)
+		err = pubsub.Publish(sub, expectedMsg)
 		assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s", tc.desc, err))
 
 		receivedMsg := <-msgChan
@@ -396,7 +396,7 @@ func TestPubSub(t *testing.T) {
 				Payload:  data,
 			}
 
-			err = pubsub.Publish(expectedMsg)
+			err = pubsub.Publish(sub, expectedMsg)
 			assert.Nil(t, err, fmt.Sprintf("%s got unexpected error: %s", tc.desc, err))
 
 			receivedMsg := <-msgChan
@@ -415,7 +415,7 @@ type handler struct {
 	publisher string
 }
 
-func (h handler) Handle(msg protomfx.Message) error {
+func (h handler) Handle(_ string, msg protomfx.Message) error {
 	if msg.Publisher != h.publisher {
 		msgChan <- msg
 	}
