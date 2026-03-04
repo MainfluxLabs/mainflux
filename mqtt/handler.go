@@ -112,7 +112,9 @@ func (h *handler) AuthPublish(c *session.Client, topic *string, _ *[]byte) error
 }
 
 // AuthSubscribe is called on device subscribe,
-// prior creating a subscription on the MQTT broker
+// prior to creating the subscription on the MQTT broker.
+// It rejects subscribes to custom topics (commands/messages)
+// when the topic ID does not match the client's thing or group.
 func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 	if c == nil {
 		return ErrClientNotInitialized
@@ -122,8 +124,20 @@ func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 		return ErrMissingTopicSub
 	}
 
-	if _, err := h.identify(c); err != nil {
+	thingID, err := h.identify(c)
+	if err != nil {
 		return err
+	}
+
+	groupID, err := h.things.GetGroupIDByThing(context.Background(), &protomfx.ThingID{Value: thingID})
+	if err != nil {
+		return err
+	}
+
+	for _, t := range *topics {
+		if err := checkCustomTopic(t, thingID, groupID.GetValue()); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -273,10 +287,6 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 
 	var subs []Subscription
 	for _, t := range *topics {
-		if err := checkCustomTopic(t, thingID, groupID.GetValue()); err != nil {
-			return nil, err
-		}
-
 		subtopic, err := messaging.NormalizeSubtopic(t)
 		if err != nil {
 			return nil, err
@@ -308,34 +318,31 @@ func checkCustomTopic(topic, thingID, groupID string) error {
 
 	parts := strings.Split(trimmed, "/")
 	if len(parts) < 3 {
+		if len(parts) == 2 && (parts[1] == "+" || parts[1] == "#") {
+			return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s (wildcard not allowed)", topic))
+		}
 		return nil
 	}
 
 	scope, id, kind := parts[0], parts[1], parts[2]
-	if id == "" || id == "+" || id == "#" {
+	if id == "" {
 		return nil
+	}
+	if id == "+" || id == "#" {
+		return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s (wildcard not allowed)", topic))
 	}
 
 	switch kind {
 	case topicKindCommands:
 		if scope == topicScopeThings && id != thingID {
-			return errors.Wrap(
-				errors.New(fmt.Sprintf("%s: %q for thingID %q", ErrUnauthorizedSubscriptionTopic, topic, thingID)),
-				ErrUnauthorizedSubscriptionTopic,
-			)
+			return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s for thingID %s", topic, thingID))
 		}
 		if scope == topicScopeGroups && id != groupID {
-			return errors.Wrap(
-				errors.New(fmt.Sprintf("%s: %q for groupID %q", ErrUnauthorizedSubscriptionTopic, topic, groupID)),
-				ErrUnauthorizedSubscriptionTopic,
-			)
+			return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s for groupID %s", topic, groupID))
 		}
 	case topicKindMessages:
 		if scope == topicScopeThings && id != thingID {
-			return errors.Wrap(
-				errors.New(fmt.Sprintf("%s: %q for thingID %q", ErrUnauthorizedSubscriptionTopic, topic, thingID)),
-				ErrUnauthorizedSubscriptionTopic,
-			)
+			return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s for thingID %s", topic, thingID))
 		}
 	}
 

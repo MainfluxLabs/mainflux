@@ -124,6 +124,11 @@ func TestAuthPublish(t *testing.T) {
 func TestAuthSubscribe(t *testing.T) {
 	handler := newHandler()
 
+	unauthorizedThingTopic := []string{"things/other-id/commands/led/room"}
+	unauthorizedGroupTopic := []string{"groups/other-group/commands/fw/update"}
+	thingWildcardTopic := []string{"things/+/messages"}
+	multiLevelWildcardTopic := []string{"things/#"}
+
 	cases := []struct {
 		desc   string
 		client *session.Client
@@ -147,6 +152,30 @@ func TestAuthSubscribe(t *testing.T) {
 			client: &sessionClient,
 			err:    nil,
 			topic:  &topics,
+		},
+		{
+			desc:   "subscribe to another thing's commands topic",
+			client: &sessionClient,
+			err:    mqtt.ErrUnauthorizedSubscriptionTopic,
+			topic:  &unauthorizedThingTopic,
+		},
+		{
+			desc:   "subscribe to another group's commands topic",
+			client: &sessionClient,
+			err:    mqtt.ErrUnauthorizedSubscriptionTopic,
+			topic:  &unauthorizedGroupTopic,
+		},
+		{
+			desc:   "subscribe to thing messages with single-level wildcard",
+			client: &sessionClient,
+			err:    mqtt.ErrUnauthorizedSubscriptionTopic,
+			topic:  &thingWildcardTopic,
+		},
+		{
+			desc:   "subscribe to things with multi-level wildcard",
+			client: &sessionClient,
+			err:    mqtt.ErrUnauthorizedSubscriptionTopic,
+			topic:  &multiLevelWildcardTopic,
 		},
 	}
 
@@ -306,54 +335,6 @@ func TestUnsubscribe(t *testing.T) {
 		handler.Unsubscribe(tc.client, &tc.topic)
 		assert.Contains(t, logBuffer.String(), tc.logMsg)
 	}
-}
-
-func TestSubscribeThingCommandsTopicValidation(t *testing.T) {
-	handler := newHandler()
-	logBuffer.Reset()
-
-	validTopic := fmt.Sprintf("things/%s/commands/led/room", thingID)
-	invalidTopic := "things/other-id/commands/led/room"
-
-	handler.Subscribe(&sessionClient, &[]string{validTopic})
-	assert.Contains(t, logBuffer.String(), fmt.Sprintf(mqtt.LogInfoSubscribed, clientID, validTopic))
-
-	logBuffer.Reset()
-
-	handler.Subscribe(&sessionClient, &[]string{invalidTopic})
-	assert.Contains(t, logBuffer.String(), mqtt.LogErrFailedSubscribe+mqtt.ErrUnauthorizedSubscriptionTopic.Error())
-}
-
-func TestSubscribeGroupCommandsTopicValidation(t *testing.T) {
-	handler := newHandler()
-	logBuffer.Reset()
-
-	validTopic := fmt.Sprintf("groups/%s/commands/fw/update", groupID)
-	invalidTopic := fmt.Sprintf("groups/%s/commands/fw/update", "other-group")
-
-	handler.Subscribe(&sessionClient, &[]string{validTopic})
-	assert.Contains(t, logBuffer.String(), fmt.Sprintf(mqtt.LogInfoSubscribed, clientID, validTopic))
-
-	logBuffer.Reset()
-
-	handler.Subscribe(&sessionClient, &[]string{invalidTopic})
-	assert.Contains(t, logBuffer.String(), mqtt.LogErrFailedSubscribe+mqtt.ErrUnauthorizedSubscriptionTopic.Error())
-}
-
-func TestSubscribeThingMessagesTopicValidation(t *testing.T) {
-	handler := newHandler()
-	logBuffer.Reset()
-
-	validTopic := fmt.Sprintf("things/%s/messages/engine", thingID)
-	invalidTopic := fmt.Sprintf("things/%s/messages/engine", "other-id")
-
-	handler.Subscribe(&sessionClient, &[]string{validTopic})
-	assert.Contains(t, logBuffer.String(), fmt.Sprintf(mqtt.LogInfoSubscribed, clientID, validTopic))
-
-	logBuffer.Reset()
-
-	handler.Subscribe(&sessionClient, &[]string{invalidTopic})
-	assert.Contains(t, logBuffer.String(), mqtt.LogErrFailedSubscribe+mqtt.ErrUnauthorizedSubscriptionTopic.Error())
 }
 
 func TestDisconnect(t *testing.T) {
