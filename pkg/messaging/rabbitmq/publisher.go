@@ -41,7 +41,7 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 	return ret, nil
 }
 
-func (pub *publisher) Publish(msg protomfx.Message) error {
+func (pub *publisher) Publish(_ string, msg protomfx.Message) error {
 	data, err := proto.Marshal(&msg)
 	if err != nil {
 		return err

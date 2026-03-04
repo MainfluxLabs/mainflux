@@ -15,7 +15,7 @@ func NewPublisher() messaging.Publisher {
 	return mockPublisher{}
 }
 
-func (pub mockPublisher) Publish(msg protomfx.Message) error {
+func (pub mockPublisher) Publish(_ string, msg protomfx.Message) error {
 	return nil
 }
 

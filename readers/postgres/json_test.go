@@ -83,7 +83,7 @@ func TestListJSONMessages(t *testing.T) {
 
 	var msgs, httpMsgs []map[string]any
 	for _, m := range messages {
-		err := writer.Consume(m)
+		err := writer.Consume(subject, m)
 		assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 
 		mapped, err := toMap(m)
@@ -159,7 +159,7 @@ func TestJSONAggregation(t *testing.T) {
 			ContentType: jsonCT,
 			Created:     now + int64(i),
 		}
-		err := writer.Consume(msg)
+		err := writer.Consume(subject, msg)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 
@@ -281,7 +281,7 @@ func TestDeleteJSONMessages(t *testing.T) {
 	}
 
 	for _, m := range messages {
-		err := writer.Consume(m)
+		err := writer.Consume(subject, m)
 		assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 	}
 
@@ -353,7 +353,7 @@ func TestDeleteJSONMessages(t *testing.T) {
 		})
 
 		for _, m := range messages {
-			err := writer.Consume(m)
+			err := writer.Consume(subject, m)
 			require.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 		}
 

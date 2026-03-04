@@ -30,7 +30,7 @@ func New(db *mongo.Database) consumers.Consumer {
 	return &mongoRepo{db}
 }
 
-func (repo *mongoRepo) Consume(message any) error {
+func (repo *mongoRepo) Consume(_ string, message any) error {
 	if msg, ok := message.(protomfx.Message); ok {
 		msgs, err := messaging.SplitMessage(msg)
 		if err != nil {
