@@ -38,12 +38,20 @@ const (
 	logErrFailedCacheDisconnection = "failed to remove connection from cache: "
 )
 
+const (
+	topicScopeThings  = "things"
+	topicScopeGroups  = "groups"
+	topicKindCommands = "commands"
+	topicKindMessages = "messages"
+)
+
 var (
-	ErrMalformedSubtopic    = errors.New("malformed subtopic")
-	ErrClientNotInitialized = errors.New("client is not initialized")
-	ErrMissingClientID      = errors.New("missing client id")
-	ErrMissingTopicPub      = errors.New("failed to publish due to missing topic")
-	ErrMissingTopicSub      = errors.New("failed to subscribe due to missing topic")
+	ErrMalformedSubtopic             = errors.New("malformed subtopic")
+	ErrClientNotInitialized          = errors.New("client is not initialized")
+	ErrMissingClientID               = errors.New("missing client id")
+	ErrMissingTopicPub               = errors.New("failed to publish due to missing topic")
+	ErrMissingTopicSub               = errors.New("failed to subscribe due to missing topic")
+	ErrUnauthorizedSubscriptionTopic = errors.New("unauthorized subscription topic")
 )
 
 // Event implements events.Event interface
@@ -259,7 +267,6 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 	if err != nil {
 		return nil, err
 	}
-
 	groupID, err := h.things.GetGroupIDByThing(context.Background(), &protomfx.ThingID{Value: thingID})
 	if err != nil {
 		return nil, err
@@ -267,6 +274,10 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 
 	var subs []Subscription
 	for _, t := range *topics {
+		if err := checkCustomTopic(t, thingID, groupID.GetValue()); err != nil {
+			return nil, err
+		}
+
 		subtopic, err := messaging.NormalizeSubtopic(t)
 		if err != nil {
 			return nil, err
@@ -282,4 +293,52 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 	}
 
 	return subs, nil
+}
+
+// checkCustomTopic enforces authorization only for topics that match
+// custom patterns (things/.../commands, groups/.../commands, things/.../messages).
+func checkCustomTopic(topic, thingID, groupID string) error {
+	trimmed := strings.Trim(topic, "/")
+	if trimmed == "" {
+		return nil
+	}
+
+	if !strings.HasPrefix(trimmed, topicScopeThings+"/") && !strings.HasPrefix(trimmed, topicScopeGroups+"/") {
+		return nil
+	}
+
+	parts := strings.Split(trimmed, "/")
+	if len(parts) < 3 {
+		return nil
+	}
+
+	scope, id, kind := parts[0], parts[1], parts[2]
+	if id == "" || id == "+" || id == "#" {
+		return nil
+	}
+
+	switch kind {
+	case topicKindCommands:
+		if scope == topicScopeThings && id != thingID {
+			return errors.Wrap(
+				errors.New(fmt.Sprintf("%s: %q for thingID %q", ErrUnauthorizedSubscriptionTopic, topic, thingID)),
+				ErrUnauthorizedSubscriptionTopic,
+			)
+		}
+		if scope == topicScopeGroups && id != groupID {
+			return errors.Wrap(
+				errors.New(fmt.Sprintf("%s: %q for groupID %q", ErrUnauthorizedSubscriptionTopic, topic, groupID)),
+				ErrUnauthorizedSubscriptionTopic,
+			)
+		}
+	case topicKindMessages:
+		if scope == topicScopeThings && id != thingID {
+			return errors.Wrap(
+				errors.New(fmt.Sprintf("%s: %q for thingID %q", ErrUnauthorizedSubscriptionTopic, topic, thingID)),
+				ErrUnauthorizedSubscriptionTopic,
+			)
+		}
+	}
+
+	return nil
 }

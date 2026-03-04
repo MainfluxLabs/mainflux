@@ -308,6 +308,54 @@ func TestUnsubscribe(t *testing.T) {
 	}
 }
 
+func TestSubscribeThingCommandsTopicValidation(t *testing.T) {
+	handler := newHandler()
+	logBuffer.Reset()
+
+	validTopic := fmt.Sprintf("things/%s/commands/led/room", thingID)
+	invalidTopic := "things/other-id/commands/led/room"
+
+	handler.Subscribe(&sessionClient, &[]string{validTopic})
+	assert.Contains(t, logBuffer.String(), fmt.Sprintf(mqtt.LogInfoSubscribed, clientID, validTopic))
+
+	logBuffer.Reset()
+
+	handler.Subscribe(&sessionClient, &[]string{invalidTopic})
+	assert.Contains(t, logBuffer.String(), mqtt.LogErrFailedSubscribe+mqtt.ErrUnauthorizedSubscriptionTopic.Error())
+}
+
+func TestSubscribeGroupCommandsTopicValidation(t *testing.T) {
+	handler := newHandler()
+	logBuffer.Reset()
+
+	validTopic := fmt.Sprintf("groups/%s/commands/fw/update", groupID)
+	invalidTopic := fmt.Sprintf("groups/%s/commands/fw/update", "other-group")
+
+	handler.Subscribe(&sessionClient, &[]string{validTopic})
+	assert.Contains(t, logBuffer.String(), fmt.Sprintf(mqtt.LogInfoSubscribed, clientID, validTopic))
+
+	logBuffer.Reset()
+
+	handler.Subscribe(&sessionClient, &[]string{invalidTopic})
+	assert.Contains(t, logBuffer.String(), mqtt.LogErrFailedSubscribe+mqtt.ErrUnauthorizedSubscriptionTopic.Error())
+}
+
+func TestSubscribeThingMessagesTopicValidation(t *testing.T) {
+	handler := newHandler()
+	logBuffer.Reset()
+
+	validTopic := fmt.Sprintf("things/%s/messages/engine", thingID)
+	invalidTopic := fmt.Sprintf("things/%s/messages/engine", "other-id")
+
+	handler.Subscribe(&sessionClient, &[]string{validTopic})
+	assert.Contains(t, logBuffer.String(), fmt.Sprintf(mqtt.LogInfoSubscribed, clientID, validTopic))
+
+	logBuffer.Reset()
+
+	handler.Subscribe(&sessionClient, &[]string{invalidTopic})
+	assert.Contains(t, logBuffer.String(), mqtt.LogErrFailedSubscribe+mqtt.ErrUnauthorizedSubscriptionTopic.Error())
+}
+
 func TestDisconnect(t *testing.T) {
 	handler := newHandler()
 	logBuffer.Reset()
@@ -344,7 +392,16 @@ func newHandler() session.Handler {
 		log.Fatalf("failed to create logger: %s", err)
 	}
 
-	thingsClient := pkgmocks.NewThingsServiceClient(nil, map[string]things.Thing{password: {ID: thingID}, thingID: {ID: thingID}}, nil)
+	thingsClient := pkgmocks.NewThingsServiceClient(
+		nil,
+		map[string]things.Thing{
+			password: {ID: thingID, GroupID: groupID},
+			thingID:  {ID: thingID, GroupID: groupID},
+		},
+		map[string]things.Group{
+			password: {ID: groupID},
+		},
+	)
 
 	return mqtt.NewHandler(pkgmocks.NewPublisher(), thingsClient, newService(), mocks.NewCache(), logger)
 }
