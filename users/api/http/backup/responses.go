@@ -10,9 +10,16 @@ type backupUserRes struct {
 	Status   string         `json:"status"`
 }
 
+type backupIdentityRes struct {
+	UserID         string `json:"user_id"`
+	Provider       string `json:"provider"`
+	ProviderUserID string `json:"provider_user_id"`
+}
+
 type backupRes struct {
-	Users []backupUserRes `json:"users"`
-	Admin backupUserRes   `json:"admin"`
+	Users      []backupUserRes      `json:"users"`
+	Admin      backupUserRes        `json:"admin"`
+	Identities []backupIdentityRes  `json:"identities"`
 }
 
 func (res backupRes) Code() int {

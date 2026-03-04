@@ -34,6 +34,24 @@ type EmailVerification struct {
 	ExpiresAt time.Time
 }
 
+type OAuthLoginData struct {
+	State       string
+	Verifier    string
+	RedirectURL string
+}
+
+type OAuthCallbackData struct {
+	Provider string
+	Code     string
+	Verifier string
+}
+
+type Identity struct {
+	UserID         string
+	Provider       string
+	ProviderUserID string
+}
+
 // Validate returns an error if user representation is invalid.
 func (u User) Validate(passRegex *regexp.Regexp) error {
 	if !email.IsEmail(u.Email) {
@@ -64,7 +82,10 @@ type UserRepository interface {
 	// operation failure.
 	Save(ctx context.Context, u User) (string, error)
 
-	// UpdateUserMetadata updates the user metadata for an enabled user.
+	// Update updates the user.
+	Update(ctx context.Context, u User) error
+
+	// UpdateUserMetadata updates the user metadata.
 	UpdateUserMetadata(ctx context.Context, u User) error
 
 	// RetrieveByEmail retrieves user by its unique identifier (i.e. email).
@@ -84,4 +105,15 @@ type UserRepository interface {
 
 	// BackupAll retrieves all users.
 	BackupAll(ctx context.Context) ([]User, error)
+}
+
+type IdentityRepository interface {
+	// Save persists an OAuth identity.
+	Save(ctx context.Context, identity Identity) error
+
+	// Retrieve fetches an OAuth identity by provider and provider user ID.
+	Retrieve(ctx context.Context, provider, providerUserID string) (Identity, error)
+
+	// BackupAll retrieves all OAuth identities.
+	BackupAll(ctx context.Context) ([]Identity, error)
 }

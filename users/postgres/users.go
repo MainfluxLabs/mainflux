@@ -67,7 +67,7 @@ func (ur userRepository) Save(ctx context.Context, user users.User) (string, err
 }
 
 func (ur userRepository) Update(ctx context.Context, user users.User) error {
-	q := `UPDATE users SET(email, password, metadata, status) VALUES (:email, :password, :metadata, :status) WHERE email = :email;`
+	q := `UPDATE users SET email = :email, password = :password, metadata = :metadata WHERE id = :id;`
 
 	dbu, err := toDBUser(user)
 	if err != nil {
@@ -120,7 +120,7 @@ func (ur userRepository) RetrieveByEmail(ctx context.Context, email string) (use
 }
 
 func (ur userRepository) RetrieveByID(ctx context.Context, id string) (users.User, error) {
-	q := `SELECT email, password, metadata FROM users WHERE id = $1`
+	q := `SELECT id, email, password, metadata, status FROM users WHERE id = $1`
 
 	dbu := dbUser{
 		ID: id,
@@ -251,8 +251,11 @@ func (ur userRepository) UpdatePassword(ctx context.Context, email, password str
 	q := `UPDATE users SET password = :password WHERE status = 'enabled' AND email = :email`
 
 	db := dbUser{
-		Email:    email,
-		Password: password,
+		Email: email,
+		Password: sql.NullString{
+			String: password,
+			Valid:  password != "",
+		},
 	}
 
 	if _, err := ur.db.NamedExecContext(ctx, q, db); err != nil {
@@ -277,11 +280,11 @@ func (ur userRepository) ChangeStatus(ctx context.Context, id, status string) er
 }
 
 type dbUser struct {
-	ID       string `db:"id"`
-	Email    string `db:"email"`
-	Password string `db:"password"`
-	Metadata []byte `db:"metadata"`
-	Status   string `db:"status"`
+	ID       string         `db:"id"`
+	Email    string         `db:"email"`
+	Password sql.NullString `db:"password"`
+	Metadata []byte         `db:"metadata"`
+	Status   string         `db:"status"`
 }
 
 func toDBUser(u users.User) (dbUser, error) {
@@ -297,7 +300,7 @@ func toDBUser(u users.User) (dbUser, error) {
 	return dbUser{
 		ID:       u.ID,
 		Email:    u.Email,
-		Password: u.Password,
+		Password: sql.NullString{String: u.Password, Valid: u.Password != ""},
 		Metadata: data,
 		Status:   u.Status,
 	}, nil
@@ -314,7 +317,7 @@ func toUser(dbu dbUser) (users.User, error) {
 	return users.User{
 		ID:       dbu.ID,
 		Email:    dbu.Email,
-		Password: dbu.Password,
+		Password: dbu.Password.String,
 		Metadata: metadata,
 		Status:   dbu.Status,
 	}, nil
