@@ -26,6 +26,9 @@ const (
 	statusKey     = "status"
 	emailTokenKey = "token"
 	stateKey      = "state"
+	providerKey   = "provider"
+	codeKey       = "code"
+	verifierKey   = "verifier"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -35,6 +38,8 @@ func MakeHandler(svc users.Service, mux *bone.Mux, tracer opentracing.Tracer, lo
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
+	callbackOpts := append([]kithttp.ServerOption{}, opts...)
+	callbackOpts = append(callbackOpts, kithttp.ServerErrorEncoder(encodeOAuthCallbackError))
 
 	mux.Post("/users", kithttp.NewServer(
 		kitot.TraceServer(tracer, "register")(registrationEndpoint(svc)),
@@ -118,6 +123,20 @@ func MakeHandler(svc users.Service, mux *bone.Mux, tracer opentracing.Tracer, lo
 		decodeCredentials,
 		encodeResponse,
 		opts...,
+	))
+
+	mux.Get("/users/oauth/:provider", kithttp.NewServer(
+		kitot.TraceServer(tracer, "oauth_login")(oauthLoginEndpoint(svc)),
+		decodeOAuthLogin,
+		encodeOAuthLoginResponse,
+		opts...,
+	))
+
+	mux.Get("/users/oauth/:provider/callback", kithttp.NewServer(
+		kitot.TraceServer(tracer, "oauth_callback")(oauthCallbackEndpoint(svc)),
+		decodeOAuthCallback,
+		encodeOAuthCallbackResponse,
+		callbackOpts...,
 	))
 
 	mux.Post("/users/:id/enable", kithttp.NewServer(
@@ -301,6 +320,36 @@ func decodeSelfRegisterUser(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
+func decodeOAuthLogin(_ context.Context, r *http.Request) (any, error) {
+	req := oauthLoginReq{
+		provider: bone.GetValue(r, providerKey),
+	}
+
+	return req, nil
+}
+
+func decodeOAuthCallback(_ context.Context, r *http.Request) (any, error) {
+	stateCookie, err := r.Cookie(stateKey)
+	if err != nil {
+		return nil, apiutil.ErrInvalidState
+	}
+
+	verifierCookie, err := r.Cookie(verifierKey)
+	if err != nil {
+		return nil, apiutil.ErrInvalidState
+	}
+
+	req := oauthCallbackReq{
+		provider:      bone.GetValue(r, providerKey),
+		code:          r.URL.Query().Get(codeKey),
+		state:         r.URL.Query().Get(stateKey),
+		originalState: stateCookie.Value,
+		verifier:      verifierCookie.Value,
+	}
+
+	return req, nil
+}
+
 func decodeVerifyEmail(_ context.Context, r *http.Request) (any, error) {
 	token, err := apiutil.ReadStringQuery(r, emailTokenKey, "")
 	if err != nil {
@@ -377,6 +426,77 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response any) erro
 	}
 
 	return json.NewEncoder(w).Encode(response)
+}
+
+func encodeOAuthLoginResponse(_ context.Context, w http.ResponseWriter, response any) error {
+	res := response.(oauthLoginRes)
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     stateKey,
+		Value:    res.State,
+		Path:     "/users/oauth/",
+		MaxAge:   300,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     verifierKey,
+		Value:    res.Verifier,
+		Path:     "/users/oauth/",
+		MaxAge:   300,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	return json.NewEncoder(w).Encode(redirectURLRes{RedirectURL: res.RedirectURL})
+}
+
+func encodeOAuthCallbackResponse(_ context.Context, w http.ResponseWriter, response any) error {
+	http.SetCookie(w, &http.Cookie{
+		Name:     stateKey,
+		Path:     "/users/oauth/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     verifierKey,
+		Path:     "/users/oauth/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	res := response.(redirectURLRes)
+	w.Header().Set("Location", res.RedirectURL)
+	w.WriteHeader(http.StatusFound)
+	return nil
+}
+
+func encodeOAuthCallbackError(ctx context.Context, err error, w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     stateKey,
+		Path:     "/users/oauth/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     verifierKey,
+		Path:     "/users/oauth/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	encodeError(ctx, err, w)
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
