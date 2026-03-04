@@ -68,7 +68,7 @@ const (
 	defEmailPassword     = ""
 	defEmailFromAddress  = ""
 	defEmailFromName     = ""
-	defEmailBaseTemplate = "base.tmpl"
+	defEmailTemplatesDir = "."
 	defAdminEmail        = ""
 	defAdminPassword     = ""
 	defPassRegex         = `^\S{8,}$`
@@ -117,7 +117,7 @@ const (
 	envEmailPassword     = "MF_EMAIL_PASSWORD"
 	envEmailFromAddress  = "MF_EMAIL_FROM_ADDRESS"
 	envEmailFromName     = "MF_EMAIL_FROM_NAME"
-	envEmailBaseTemplate = "MF_EMAIL_BASE_TEMPLATE"
+	envEmailTemplatesDir = "MF_EMAIL_TEMPLATES_DIR"
 
 	envHost = "MF_HOST"
 
@@ -280,7 +280,7 @@ func loadConfig() config {
 		Port:             mainflux.Env(envEmailPort, defEmailPort),
 		Username:         mainflux.Env(envEmailUsername, defEmailUsername),
 		Password:         mainflux.Env(envEmailPassword, defEmailPassword),
-		BaseTemplatePath: mainflux.Env(envEmailBaseTemplate, defEmailBaseTemplate),
+		TemplatesDir: mainflux.Env(envEmailTemplatesDir, defEmailTemplatesDir),
 	}
 
 	authConfig := clients.Config{

@@ -77,7 +77,7 @@ const (
 	defEmailPassword     = ""
 	defEmailFromAddress  = ""
 	defEmailFromName     = ""
-	defEmailBaseTemplate = "base.tmpl"
+	defEmailTemplatesDir = "."
 
 	defHost = "http://localhost"
 
@@ -115,7 +115,7 @@ const (
 	envEmailPassword     = "MF_EMAIL_PASSWORD"
 	envEmailFromAddress  = "MF_EMAIL_FROM_ADDRESS"
 	envEmailFromName     = "MF_EMAIL_FROM_NAME"
-	envEmailBaseTemplate = "MF_EMAIL_BASE_TEMPLATE"
+	envEmailTemplatesDir = "MF_EMAIL_TEMPLATES_DIR"
 
 	envHost = "MF_HOST"
 )
@@ -252,13 +252,13 @@ func loadConfig() config {
 	}
 
 	emailConfig := email.Config{
-		FromAddress:      mainflux.Env(envEmailFromAddress, defEmailFromAddress),
-		FromName:         mainflux.Env(envEmailFromName, defEmailFromName),
-		Host:             mainflux.Env(envEmailHost, defEmailHost),
-		Port:             mainflux.Env(envEmailPort, defEmailPort),
-		Username:         mainflux.Env(envEmailUsername, defEmailUsername),
-		Password:         mainflux.Env(envEmailPassword, defEmailPassword),
-		BaseTemplatePath: mainflux.Env(envEmailBaseTemplate, defEmailBaseTemplate),
+		FromAddress:  mainflux.Env(envEmailFromAddress, defEmailFromAddress),
+		FromName:     mainflux.Env(envEmailFromName, defEmailFromName),
+		Host:         mainflux.Env(envEmailHost, defEmailHost),
+		Port:         mainflux.Env(envEmailPort, defEmailPort),
+		Username:     mainflux.Env(envEmailUsername, defEmailUsername),
+		Password:     mainflux.Env(envEmailPassword, defEmailPassword),
+		TemplatesDir: mainflux.Env(envEmailTemplatesDir, defEmailTemplatesDir),
 	}
 
 	loginDuration, err := time.ParseDuration(mainflux.Env(envLoginDuration, defLoginDuration))
