@@ -39,10 +39,10 @@ const (
 )
 
 const (
-	topicScopeThings  = "things"
-	topicScopeGroups  = "groups"
-	topicKindCommands = "commands"
-	topicKindMessages = "messages"
+	topicPrefixThings   = "things"
+	topicPrefixGroups   = "groups"
+	topicSuffixCommands = "commands"
+	topicSuffixMessages = "messages"
 )
 
 var (
@@ -312,7 +312,7 @@ func validateCustomTopic(topic, thingID, groupID string) error {
 		return nil
 	}
 
-	if !strings.HasPrefix(trimmed, topicScopeThings+"/") && !strings.HasPrefix(trimmed, topicScopeGroups+"/") {
+	if !strings.HasPrefix(trimmed, topicPrefixThings+"/") && !strings.HasPrefix(trimmed, topicPrefixGroups+"/") {
 		return nil
 	}
 
@@ -325,7 +325,7 @@ func validateCustomTopic(topic, thingID, groupID string) error {
 		return nil
 	}
 
-	scope, id, kind := parts[0], parts[1], parts[2]
+	prefix, id, suffix := parts[0], parts[1], parts[2]
 	switch id {
 	case "":
 		return nil
@@ -334,16 +334,16 @@ func validateCustomTopic(topic, thingID, groupID string) error {
 		return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s (wildcard not allowed)", topic))
 	}
 
-	switch kind {
-	case topicKindCommands:
-		if scope == topicScopeThings && id != thingID {
+	switch suffix {
+	case topicSuffixCommands:
+		if prefix == topicPrefixThings && id != thingID {
 			return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s for thing %s", topic, thingID))
 		}
-		if scope == topicScopeGroups && id != groupID {
+		if prefix == topicPrefixGroups && id != groupID {
 			return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s for group %s", topic, groupID))
 		}
-	case topicKindMessages:
-		if scope == topicScopeThings && id != thingID {
+	case topicSuffixMessages:
+		if prefix == topicPrefixThings && id != thingID {
 			return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s for thing %s", topic, thingID))
 		}
 	}
