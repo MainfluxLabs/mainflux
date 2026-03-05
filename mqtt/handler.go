@@ -335,14 +335,14 @@ func checkCustomTopic(topic, thingID, groupID string) error {
 	switch kind {
 	case topicKindCommands:
 		if scope == topicScopeThings && id != thingID {
-			return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s for thingID %s", topic, thingID))
+			return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s for thing %s", topic, thingID))
 		}
 		if scope == topicScopeGroups && id != groupID {
-			return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s for groupID %s", topic, groupID))
+			return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s for group %s", topic, groupID))
 		}
 	case topicKindMessages:
 		if scope == topicScopeThings && id != thingID {
-			return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s for thingID %s", topic, thingID))
+			return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s for thing %s", topic, thingID))
 		}
 	}
 
