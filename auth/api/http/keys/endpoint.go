@@ -122,11 +122,12 @@ func buildKeysResponse(kp auth.KeysPage, pm apiutil.PageMetadata) keysPageRes {
 
 	for _, k := range kp.Keys {
 		view := retrieveKeyRes{
-			ID:       k.ID,
-			IssuerID: k.IssuerID,
-			Subject:  k.Subject,
-			Type:     k.Type,
-			IssuedAt: k.IssuedAt,
+			ID:        k.ID,
+			IssuerID:  k.IssuerID,
+			Subject:   k.Subject,
+			Type:      k.Type,
+			IssuedAt:  k.IssuedAt,
+			ExpiresAt: &k.ExpiresAt,
 		}
 		res.Keys = append(res.Keys, view)
 	}
