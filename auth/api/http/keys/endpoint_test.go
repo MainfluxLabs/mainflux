@@ -295,8 +295,6 @@ func TestRevoke(t *testing.T) {
 
 func TestListAPIKeys(t *testing.T) {
 	svc := newService()
-
-	// Issue a login key to authenticate list requests.
 	_, loginSecret, err := svc.Issue(context.Background(), "", auth.Key{
 		Type:     auth.LoginKey,
 		IssuedAt: time.Now(),
@@ -305,7 +303,6 @@ func TestListAPIKeys(t *testing.T) {
 	})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	// Issue a couple of API keys for the same issuer.
 	apiKey := auth.Key{Type: auth.APIKey, IssuedAt: time.Now(), IssuerID: id, Subject: email}
 	_, _, err = svc.Issue(context.Background(), loginSecret, apiKey)
 	assert.Nil(t, err, "expected issuing first API key to succeed")
