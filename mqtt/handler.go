@@ -305,7 +305,7 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 }
 
 // checkCustomTopic enforces authorization only for topics that match
-// custom patterns (things/.../commands, groups/.../commands, things/.../messages).
+// custom patterns (things/thingID/commands, groups/groupID/commands, things/thingID/messages).
 func checkCustomTopic(topic, thingID, groupID string) error {
 	trimmed := strings.Trim(topic, "/")
 	if trimmed == "" {
