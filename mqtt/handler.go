@@ -318,17 +318,19 @@ func checkCustomTopic(topic, thingID, groupID string) error {
 
 	parts := strings.Split(trimmed, "/")
 	if len(parts) < 3 {
-		if len(parts) == 2 && (parts[1] == "+" || parts[1] == "#") {
+		// Forbid multi-level wildcard at ID position, e.g. "things/#", "groups/#".
+		if len(parts) == 2 && parts[1] == "#" {
 			return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s (wildcard not allowed)", topic))
 		}
 		return nil
 	}
 
 	scope, id, kind := parts[0], parts[1], parts[2]
-	if id == "" {
+	switch id {
+	case "":
 		return nil
-	}
-	if id == "+" || id == "#" {
+	case "+", "#":
+		// This catches "things/+/commands", "things/#/messages", etc.
 		return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s (wildcard not allowed)", topic))
 	}
 
