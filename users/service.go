@@ -779,7 +779,7 @@ func (svc usersService) Restore(ctx context.Context, token string, admin User, u
 		return err
 	}
 
-	if err := svc.users.UpdateUser(ctx, admin); err != nil {
+	if err := svc.users.UpdateUserMetadata(ctx, admin); err != nil {
 		return err
 	}
 
@@ -816,7 +816,7 @@ func (svc usersService) UpdateUser(ctx context.Context, token string, u User) er
 		Email:    idn.email,
 		Metadata: u.Metadata,
 	}
-	return svc.users.UpdateUser(ctx, user)
+	return svc.users.UpdateUserMetadata(ctx, user)
 }
 
 func (svc usersService) GenerateResetToken(ctx context.Context, email, redirectPath string) error {

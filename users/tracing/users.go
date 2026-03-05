@@ -57,12 +57,12 @@ func (urm userRepositoryMiddleware) Update(ctx context.Context, user users.User)
 	return urm.repo.Update(ctx, user)
 }
 
-func (urm userRepositoryMiddleware) UpdateUser(ctx context.Context, user users.User) error {
+func (urm userRepositoryMiddleware) UpdateUserMetadata(ctx context.Context, user users.User) error {
 	span := dbutil.CreateSpan(ctx, urm.tracer, updateUserMetadata)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return urm.repo.UpdateUser(ctx, user)
+	return urm.repo.UpdateUserMetadata(ctx, user)
 }
 
 func (urm userRepositoryMiddleware) RetrieveByEmail(ctx context.Context, email string) (users.User, error) {
