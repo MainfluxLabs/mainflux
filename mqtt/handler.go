@@ -38,12 +38,20 @@ const (
 	logErrFailedCacheDisconnection = "failed to remove connection from cache: "
 )
 
+const (
+	topicPrefixThings   = "things"
+	topicPrefixGroups   = "groups"
+	topicSuffixCommands = "commands"
+	topicSuffixMessages = "messages"
+)
+
 var (
-	ErrMalformedSubtopic    = errors.New("malformed subtopic")
-	ErrClientNotInitialized = errors.New("client is not initialized")
-	ErrMissingClientID      = errors.New("missing client id")
-	ErrMissingTopicPub      = errors.New("failed to publish due to missing topic")
-	ErrMissingTopicSub      = errors.New("failed to subscribe due to missing topic")
+	ErrMalformedSubtopic             = errors.New("malformed subtopic")
+	ErrClientNotInitialized          = errors.New("client is not initialized")
+	ErrMissingClientID               = errors.New("missing client id")
+	ErrMissingTopicPub               = errors.New("failed to publish due to missing topic")
+	ErrMissingTopicSub               = errors.New("failed to subscribe due to missing topic")
+	ErrUnauthorizedSubscriptionTopic = errors.New("unauthorized subscription topic")
 )
 
 // Event implements events.Event interface
@@ -104,7 +112,9 @@ func (h *handler) AuthPublish(c *session.Client, topic *string, _ *[]byte) error
 }
 
 // AuthSubscribe is called on device subscribe,
-// prior creating a subscription on the MQTT broker
+// prior to creating the subscription on the MQTT broker.
+// It rejects subscribes to custom topics (commands/messages)
+// when the topic ID does not match the client's thing or group.
 func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 	if c == nil {
 		return ErrClientNotInitialized
@@ -114,8 +124,20 @@ func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 		return ErrMissingTopicSub
 	}
 
-	if _, err := h.identify(c); err != nil {
+	thingID, err := h.identify(c)
+	if err != nil {
 		return err
+	}
+
+	groupID, err := h.things.GetGroupIDByThing(context.Background(), &protomfx.ThingID{Value: thingID})
+	if err != nil {
+		return err
+	}
+
+	for _, t := range *topics {
+		if err := validateCustomTopic(t, thingID, groupID.GetValue()); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -258,7 +280,6 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 	if err != nil {
 		return nil, err
 	}
-
 	groupID, err := h.things.GetGroupIDByThing(context.Background(), &protomfx.ThingID{Value: thingID})
 	if err != nil {
 		return nil, err
@@ -281,4 +302,51 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 	}
 
 	return subs, nil
+}
+
+// validateCustomTopic enforces authorization only for topics that match
+// custom patterns (things/thingID/commands, groups/groupID/commands, things/thingID/messages).
+func validateCustomTopic(topic, thingID, groupID string) error {
+	trimmed := strings.Trim(topic, "/")
+	if trimmed == "" {
+		return nil
+	}
+
+	if !strings.HasPrefix(trimmed, topicPrefixThings+"/") && !strings.HasPrefix(trimmed, topicPrefixGroups+"/") {
+		return nil
+	}
+
+	parts := strings.Split(trimmed, "/")
+	if len(parts) < 3 {
+		// Forbid multi-level wildcard at ID position, e.g. "things/#", "groups/#".
+		if len(parts) == 2 && parts[1] == "#" {
+			return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s (wildcard not allowed)", topic))
+		}
+		return nil
+	}
+
+	prefix, id, suffix := parts[0], parts[1], parts[2]
+	switch id {
+	case "":
+		return nil
+	case "+", "#":
+		// This catches "things/+/commands", "things/#/messages", etc.
+		return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s (wildcard not allowed)", topic))
+	}
+
+	switch suffix {
+	case topicSuffixCommands:
+		if prefix == topicPrefixThings && id != thingID {
+			return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s for thing %s", topic, thingID))
+		}
+		if prefix == topicPrefixGroups && id != groupID {
+			return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s for group %s", topic, groupID))
+		}
+	case topicSuffixMessages:
+		if prefix == topicPrefixThings && id != thingID {
+			return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s for thing %s", topic, thingID))
+		}
+	}
+
+	return nil
 }
