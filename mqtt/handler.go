@@ -135,7 +135,7 @@ func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 	}
 
 	for _, t := range *topics {
-		if err := checkCustomTopic(t, thingID, groupID.GetValue()); err != nil {
+		if err := validateCustomTopic(t, thingID, groupID.GetValue()); err != nil {
 			return err
 		}
 	}
@@ -304,9 +304,9 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 	return subs, nil
 }
 
-// checkCustomTopic enforces authorization only for topics that match
+// validateCustomTopic enforces authorization only for topics that match
 // custom patterns (things/thingID/commands, groups/groupID/commands, things/thingID/messages).
-func checkCustomTopic(topic, thingID, groupID string) error {
+func validateCustomTopic(topic, thingID, groupID string) error {
 	trimmed := strings.Trim(topic, "/")
 	if trimmed == "" {
 		return nil
