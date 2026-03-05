@@ -10,6 +10,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
+const (
+	maxLimitSize = 200
+)
+
 type issueKeyReq struct {
 	token    string
 	Type     uint32        `json:"type,omitempty"`
@@ -44,5 +48,27 @@ func (req keyReq) validate() error {
 	if req.id == "" {
 		return apiutil.ErrMissingKeyID
 	}
+	return nil
+}
+
+type listKeysReq struct {
+	token        string
+	pageMetadata apiutil.PageMetadata
+}
+
+func (req listKeysReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.pageMetadata.Limit > maxLimitSize {
+		return apiutil.ErrLimitSize
+	}
+
+	if req.pageMetadata.Dir != "" &&
+		req.pageMetadata.Dir != apiutil.AscDir && req.pageMetadata.Dir != apiutil.DescDir {
+		return apiutil.ErrInvalidDirection
+	}
+
 	return nil
 }

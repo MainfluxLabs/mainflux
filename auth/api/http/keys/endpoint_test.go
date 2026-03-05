@@ -292,3 +292,92 @@ func TestRevoke(t *testing.T) {
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 	}
 }
+
+func TestListAPIKeys(t *testing.T) {
+	svc := newService()
+
+	// Issue a login key to authenticate list requests.
+	_, loginSecret, err := svc.Issue(context.Background(), "", auth.Key{
+		Type:     auth.LoginKey,
+		IssuedAt: time.Now(),
+		IssuerID: id,
+		Subject:  email,
+	})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	// Issue a couple of API keys for the same issuer.
+	apiKey := auth.Key{Type: auth.APIKey, IssuedAt: time.Now(), IssuerID: id, Subject: email}
+	_, _, err = svc.Issue(context.Background(), loginSecret, apiKey)
+	assert.Nil(t, err, "expected issuing first API key to succeed")
+	_, _, err = svc.Issue(context.Background(), loginSecret, apiKey)
+	assert.Nil(t, err, "expected issuing second API key to succeed")
+
+	ts := newServer(svc)
+	defer ts.Close()
+	client := ts.Client()
+
+	type listKeysResponse struct {
+		Total uint64 `json:"total"`
+		Limit uint64 `json:"limit"`
+		Keys  []struct {
+			ID string `json:"id"`
+		} `json:"keys"`
+	}
+
+	cases := []struct {
+		desc       string
+		url        string
+		token      string
+		status     int
+		checkBody  bool
+		minTotal   uint64
+		expectKeys int
+	}{
+		{
+			desc:       "list API keys with valid token",
+			url:        fmt.Sprintf("%s/keys", ts.URL),
+			token:      loginSecret,
+			status:     http.StatusOK,
+			checkBody:  true,
+			minTotal:   2,
+			expectKeys: 2,
+		},
+		{
+			desc:   "list API keys with empty token",
+			url:    fmt.Sprintf("%s/keys", ts.URL),
+			token:  "",
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "list API keys with invalid token",
+			url:    fmt.Sprintf("%s/keys", ts.URL),
+			token:  "wrong",
+			status: http.StatusUnauthorized,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: client,
+			method: http.MethodGet,
+			url:    tc.url,
+			token:  tc.token,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+
+		if tc.checkBody {
+			defer res.Body.Close()
+			body, err := io.ReadAll(res.Body)
+			assert.Nil(t, err, fmt.Sprintf("%s: unexpected error reading body %s", tc.desc, err))
+
+			var lr listKeysResponse
+			err = json.Unmarshal(body, &lr)
+			assert.Nil(t, err, fmt.Sprintf("%s: unexpected error unmarshaling body %s", tc.desc, err))
+
+			assert.GreaterOrEqual(t, lr.Total, tc.minTotal, fmt.Sprintf("%s: expected total >= %d, got %d", tc.desc, tc.minTotal, lr.Total))
+			assert.Equal(t, tc.expectKeys, len(lr.Keys), fmt.Sprintf("%s: expected %d keys, got %d", tc.desc, tc.expectKeys, len(lr.Keys)))
+		}
+	}
+}
