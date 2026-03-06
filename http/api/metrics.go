@@ -11,7 +11,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/http"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/things"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -32,7 +32,7 @@ func MetricsMiddleware(svc http.Service, counter metrics.Counter, latency metric
 	}
 }
 
-func (mm *metricsMiddleware) Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) (err error) {
+func (mm *metricsMiddleware) Publish(ctx context.Context, key domainthings.ThingKey, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "publish").Add(1)
 		mm.latency.With("method", "publish").Observe(time.Since(begin).Seconds())

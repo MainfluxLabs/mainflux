@@ -11,7 +11,7 @@ import (
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/things"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 )
 
 const (
@@ -176,7 +176,7 @@ func (sdk mfSDK) GetThing(id, token string) (Thing, error) {
 	return t, nil
 }
 
-func (sdk mfSDK) GetThingMetadataByKey(key things.ThingKey) (Metadata, error) {
+func (sdk mfSDK) GetThingMetadataByKey(key domainthings.ThingKey) (Metadata, error) {
 	url := fmt.Sprintf("%s/metadata", sdk.thingsURL)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -278,7 +278,7 @@ func (sdk mfSDK) DeleteThings(ids []string, token string) error {
 	return nil
 }
 
-func (sdk mfSDK) IdentifyThing(key things.ThingKey) (string, error) {
+func (sdk mfSDK) IdentifyThing(key domainthings.ThingKey) (string, error) {
 	idReq := identifyThingReq{Key: key.Value, Type: key.Type}
 	data, err := json.Marshal(idReq)
 	if err != nil {

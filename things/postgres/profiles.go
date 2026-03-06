@@ -329,7 +329,7 @@ func toDBProfile(pr things.Profile) dbProfile {
 		GroupID:  pr.GroupID,
 		Name:     pr.Name,
 		Config:   pr.Config,
-		Metadata: pr.Metadata,
+		Metadata: dbJSONB(pr.Metadata),
 	}
 }
 
@@ -339,7 +339,7 @@ func toProfile(pr dbProfile) things.Profile {
 		GroupID:  pr.GroupID,
 		Name:     pr.Name,
 		Config:   pr.Config,
-		Metadata: pr.Metadata,
+		Metadata: things.Metadata(pr.Metadata),
 	}
 }
 

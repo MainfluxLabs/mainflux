@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -16,30 +17,14 @@ import (
 var ErrInvalidInviteResponse = errors.New("invalid invite response action")
 var ErrGroupsDifferingOrgs = errors.New("groups belong to differing organizations")
 
-type OrgInvite struct {
-	ID           string
-	InviteeID    string
-	InviteeEmail string
-	InviterID    string
-	InviterEmail string
-	OrgID        string
-	OrgName      string
-	InviteeRole  string
-	GroupInvites []GroupInvite
-	CreatedAt    time.Time
-	ExpiresAt    time.Time
-	State        string
-}
+// OrgInvite is an alias for the shared domain type.
+type OrgInvite = domainauth.OrgInvite
 
-type OrgInvitesPage struct {
-	Invites []OrgInvite
-	Total   uint64
-}
+// OrgInvitesPage is an alias for the shared domain type.
+type OrgInvitesPage = domainauth.OrgInvitesPage
 
-type GroupInvite struct {
-	GroupID    string `json:"group_id"`
-	MemberRole string `json:"member_role"`
-}
+// GroupInvite is an alias for the shared domain type.
+type GroupInvite = domainauth.GroupInvite
 
 type PageMetadataInvites struct {
 	apiutil.PageMetadata
@@ -203,12 +188,12 @@ func (svc service) CreateOrgInvite(ctx context.Context, token string, oi OrgInvi
 
 	oi = OrgInvite{
 		ID:           inviteID,
+		OrgID:        oi.OrgID,
+		InviteeRole:  oi.InviteeRole,
+		GroupInvites: oi.GroupInvites,
 		InviteeID:    inviteeID,
 		InviteeEmail: oi.InviteeEmail,
 		InviterID:    inviter.ID,
-		OrgID:        oi.OrgID,
-		GroupInvites: oi.GroupInvites,
-		InviteeRole:  oi.InviteeRole,
 		CreatedAt:    createdAt,
 		ExpiresAt:    createdAt.Add(svc.inviteDuration),
 		State:        InviteStatePending,
@@ -256,11 +241,11 @@ func (svc service) CreateDormantOrgInvite(ctx context.Context, token string, oi 
 
 	oi = OrgInvite{
 		ID:           inviteID,
-		InviteeID:    "",
-		InviterID:    inviter.ID,
 		OrgID:        oi.OrgID,
 		InviteeRole:  oi.InviteeRole,
 		GroupInvites: oi.GroupInvites,
+		InviteeID:    "",
+		InviterID:    inviter.ID,
 		CreatedAt:    createdAt,
 		ExpiresAt:    createdAt.Add(svc.inviteDuration),
 		State:        InviteStatePending,

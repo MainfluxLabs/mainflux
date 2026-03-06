@@ -2,6 +2,7 @@ package invites
 
 import (
 	"github.com/MainfluxLabs/mainflux/auth"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
@@ -36,7 +37,7 @@ func (req createOrgInviteReq) validate() error {
 		return apiutil.ErrMissingEmail
 	}
 
-	if err := auth.ValidateInviteeRole(req.Role); err != nil {
+	if err := domainauth.ValidateInviteeRole(req.Role); err != nil {
 		return err
 	}
 
@@ -45,7 +46,7 @@ func (req createOrgInviteReq) validate() error {
 	}
 
 	for _, gi := range req.GroupInvites {
-		if err := auth.ValidateInviteeRole(gi.MemberRole); err != nil {
+		if err := domainauth.ValidateInviteeRole(gi.MemberRole); err != nil {
 			return err
 		}
 	}

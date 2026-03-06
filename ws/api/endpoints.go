@@ -10,9 +10,10 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/httputil"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/ws"
 	"github.com/go-zoo/bone"
 	"github.com/gorilla/websocket"
@@ -48,7 +49,7 @@ func handshake(svc ws.Service) http.HandlerFunc {
 }
 
 func decodeRequest(r *http.Request) (getConnByKey, error) {
-	authKey := things.ExtractThingKey(r)
+	authKey := httputil.ExtractThingKey(r)
 	if authKey.Value == "" || authKey.Type == "" {
 		queryKey := bone.GetQuery(r, "key")
 		if len(queryKey) == 0 {
@@ -60,7 +61,7 @@ func decodeRequest(r *http.Request) (getConnByKey, error) {
 			return getConnByKey{}, errUnauthorizedAccess
 		}
 
-		authKey = things.ThingKey{
+		authKey = domainthings.ThingKey{
 			Value: queryKey[0],
 			Type:  queryKeyType[0],
 		}

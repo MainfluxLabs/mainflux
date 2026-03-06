@@ -15,10 +15,11 @@ import (
 	adapter "github.com/MainfluxLabs/mainflux/http"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/httputil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/things"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -102,13 +103,13 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	var thingKey things.ThingKey
+	var thingKey domainthings.ThingKey
 	_, pass, ok := r.BasicAuth()
 	switch {
 	case ok:
-		thingKey = things.ThingKey{Type: things.KeyTypeInternal, Value: pass}
+		thingKey = domainthings.ThingKey{Type: domainthings.KeyTypeInternal, Value: pass}
 	case !ok:
-		thingKey = things.ExtractThingKey(r)
+		thingKey = httputil.ExtractThingKey(r)
 	}
 
 	payload, err := readPayload(r)

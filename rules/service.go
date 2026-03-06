@@ -17,7 +17,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	"github.com/MainfluxLabs/mainflux/things"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -99,7 +99,7 @@ func New(rules RuleRepository, things protomfx.ThingsServiceClient, pubsub messa
 }
 
 func (rs *rulesService) CreateRules(ctx context.Context, token, groupID string, rules ...Rule) ([]Rule, error) {
-	_, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Editor})
+	_, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domainthings.Editor})
 	if err != nil {
 		return []Rule{}, err
 	}
@@ -118,7 +118,7 @@ func (rs *rulesService) CreateRules(ctx context.Context, token, groupID string, 
 }
 
 func (rs *rulesService) ListRulesByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (RulesPage, error) {
-	_, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer})
+	_, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domainthings.Viewer})
 	if err != nil {
 		return RulesPage{}, err
 	}
@@ -132,7 +132,7 @@ func (rs *rulesService) ListRulesByThing(ctx context.Context, token, thingID str
 }
 
 func (rs *rulesService) ListRulesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (RulesPage, error) {
-	_, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer})
+	_, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domainthings.Viewer})
 	if err != nil {
 		return RulesPage{}, err
 	}
@@ -151,7 +151,7 @@ func (rs *rulesService) ListThingIDsByRule(ctx context.Context, token, ruleID st
 		return []string{}, err
 	}
 
-	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Viewer}); err != nil {
+	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: domainthings.Viewer}); err != nil {
 		return []string{}, err
 	}
 
@@ -164,7 +164,7 @@ func (rs *rulesService) ViewRule(ctx context.Context, token, id string) (Rule, e
 		return Rule{}, err
 	}
 
-	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Viewer}); err != nil {
+	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: domainthings.Viewer}); err != nil {
 		return Rule{}, err
 	}
 
@@ -177,7 +177,7 @@ func (rs *rulesService) UpdateRule(ctx context.Context, token string, rule Rule)
 		return err
 	}
 
-	req := &protomfx.UserAccessReq{Token: token, Id: r.GroupID, Action: things.Editor}
+	req := &protomfx.UserAccessReq{Token: token, Id: r.GroupID, Action: domainthings.Editor}
 	if _, err := rs.things.CanUserAccessGroup(ctx, req); err != nil {
 		return err
 	}
@@ -192,7 +192,7 @@ func (rs *rulesService) RemoveRules(ctx context.Context, token string, ids ...st
 			return err
 		}
 
-		if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Editor}); err != nil {
+		if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: domainthings.Editor}); err != nil {
 			return err
 		}
 	}
@@ -205,7 +205,7 @@ func (rs *rulesService) RemoveRulesByGroup(ctx context.Context, groupID string) 
 }
 
 func (rs *rulesService) AssignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error {
-	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
+	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domainthings.Editor}); err != nil {
 		return err
 	}
 
@@ -233,7 +233,7 @@ func (rs *rulesService) AssignRules(ctx context.Context, token, thingID string, 
 }
 
 func (rs *rulesService) UnassignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error {
-	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
+	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domainthings.Editor}); err != nil {
 		return err
 	}
 

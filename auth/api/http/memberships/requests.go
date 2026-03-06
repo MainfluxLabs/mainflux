@@ -2,6 +2,7 @@ package memberships
 
 import (
 	"github.com/MainfluxLabs/mainflux/auth"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
@@ -75,7 +76,7 @@ func (req orgMembershipsReq) validate() error {
 	}
 
 	for _, m := range req.OrgMemberships {
-		if err := auth.ValidateInviteeRole(m.Role); err != nil {
+		if err := domainauth.ValidateInviteeRole(m.Role); err != nil {
 			return err
 		}
 	}

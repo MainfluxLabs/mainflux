@@ -7,7 +7,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -15,12 +15,14 @@ import (
 
 const (
 	recoveryDuration = 5 * time.Minute
-	Admin            = "admin"
-	Owner            = "owner"
-	Editor           = "editor"
-	Viewer           = "viewer"
-	RootSub          = "root"
-	OrgSub           = "org"
+
+	// Re-export role constants from domain for backward compatibility.
+	Admin  = domainauth.Admin
+	Owner  = domainauth.Owner
+	Editor = domainauth.Editor
+	Viewer = domainauth.Viewer
+	RootSub = domainauth.RootSub
+	OrgSub  = domainauth.OrgSub
 )
 
 var (
@@ -49,13 +51,8 @@ type Authn interface {
 	Identify(ctx context.Context, token string) (Identity, error)
 }
 
-// AuthzReq represents an argument struct for making an authz related function calls.
-type AuthzReq struct {
-	Token   string
-	Object  string
-	Subject string
-	Action  string
-}
+// AuthzReq is an alias for the shared domain type.
+type AuthzReq = domainauth.AuthzReq
 
 // Authz represents a authorization service. It exposes
 // functionalities through `auth` to perform authorization.
@@ -115,9 +112,9 @@ func New(orgs OrgRepository, tc protomfx.ThingsServiceClient, uc protomfx.UsersS
 
 func (svc service) Authorize(ctx context.Context, ar AuthzReq) error {
 	switch ar.Subject {
-	case RootSub:
+	case domainauth.RootSub:
 		return svc.isAdmin(ctx, ar.Token)
-	case OrgSub:
+	case domainauth.OrgSub:
 		return svc.canAccessOrg(ctx, ar.Token, ar.Object, ar.Action)
 	default:
 		return errUnknownSubject
@@ -231,14 +228,6 @@ func (svc service) isAdmin(ctx context.Context, token string) error {
 
 	if role != RoleAdmin && role != RoleRootAdmin {
 		return errors.ErrAuthorization
-	}
-
-	return nil
-}
-
-func ValidateInviteeRole(role string) error {
-	if role != Admin && role != Editor && role != Viewer {
-		return apiutil.ErrInvalidRole
 	}
 
 	return nil

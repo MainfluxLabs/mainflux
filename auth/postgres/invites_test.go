@@ -54,14 +54,14 @@ func TestSaveInvite(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 		invites = append(invites, auth.OrgInvite{
-			ID:          invID,
-			InviteeID:   inviteeID,
-			InviterID:   inviterID,
-			OrgID:       org.ID,
+			ID:        invID,
+			OrgID:     org.ID,
 			InviteeRole: auth.Viewer,
-			CreatedAt:   time.Now(),
-			ExpiresAt:   time.Now().Add(inviteExpiryTime),
-			State:       auth.InviteStatePending,
+			InviteeID: inviteeID,
+			InviterID: inviterID,
+			CreatedAt: time.Now(),
+			ExpiresAt: time.Now().Add(inviteExpiryTime),
+			State:     auth.InviteStatePending,
 		})
 	}
 
@@ -72,14 +72,14 @@ func TestSaveInvite(t *testing.T) {
 	inviterID, err := idProvider.ID()
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	expiredInvite := auth.OrgInvite{
-		ID:          invID,
-		InviteeID:   inviteeID,
-		InviterID:   inviterID,
-		OrgID:       org.ID,
+		ID:        invID,
+		OrgID:     org.ID,
 		InviteeRole: auth.Editor,
-		CreatedAt:   time.Now().Add(-2 * inviteExpiryTime),
-		ExpiresAt:   time.Now().Add(-1 * inviteExpiryTime),
-		State:       auth.InviteStatePending,
+		InviteeID: inviteeID,
+		InviterID: inviterID,
+		CreatedAt: time.Now().Add(-2 * inviteExpiryTime),
+		ExpiresAt: time.Now().Add(-1 * inviteExpiryTime),
+		State:     auth.InviteStatePending,
 	}
 	invites = append(invites, expiredInvite)
 
@@ -103,14 +103,14 @@ func TestSaveInvite(t *testing.T) {
 	invID, err = idProvider.ID()
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	reinviteExpiredInvite := auth.OrgInvite{
-		ID:          invID,
-		InviteeID:   expiredInvite.InviteeID,
-		InviterID:   expiredInvite.InviterID,
-		OrgID:       expiredInvite.OrgID,
+		ID:        invID,
+		OrgID:     expiredInvite.OrgID,
 		InviteeRole: expiredInvite.InviteeRole,
-		CreatedAt:   time.Now(),
-		ExpiresAt:   time.Now().Add(inviteExpiryTime),
-		State:       auth.InviteStatePending,
+		InviteeID: expiredInvite.InviteeID,
+		InviterID: expiredInvite.InviterID,
+		CreatedAt: time.Now(),
+		ExpiresAt: time.Now().Add(inviteExpiryTime),
+		State:     auth.InviteStatePending,
 	}
 
 	cases := []struct {
@@ -191,14 +191,14 @@ func TestRetrieveInviteByID(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 		invites = append(invites, auth.OrgInvite{
-			ID:          invID,
-			InviteeID:   inviteeID,
-			InviterID:   inviterID,
-			OrgID:       org.ID,
+			ID:        invID,
+			OrgID:     org.ID,
 			InviteeRole: auth.Viewer,
-			CreatedAt:   time.Now(),
-			ExpiresAt:   time.Now(),
-			State:       auth.InviteStatePending,
+			InviteeID: inviteeID,
+			InviterID: inviterID,
+			CreatedAt: time.Now(),
+			ExpiresAt: time.Now(),
+			State:     auth.InviteStatePending,
 		})
 	}
 
@@ -276,14 +276,14 @@ func TestRemoveInvite(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 		invites = append(invites, auth.OrgInvite{
-			ID:          invID,
-			InviteeID:   inviteeID,
-			InviterID:   inviterID,
-			OrgID:       org.ID,
+			ID:        invID,
+			OrgID:     org.ID,
 			InviteeRole: auth.Viewer,
-			CreatedAt:   time.Now(),
-			ExpiresAt:   time.Now(),
-			State:       auth.InviteStatePending,
+			InviteeID: inviteeID,
+			InviterID: inviterID,
+			CreatedAt: time.Now(),
+			ExpiresAt: time.Now(),
+			State:     auth.InviteStatePending,
 		})
 	}
 
@@ -362,14 +362,14 @@ func TestRetrieveByUserID(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 		invites = append(invites, auth.OrgInvite{
-			ID:          invID,
-			InviteeID:   inviteeID,
-			InviterID:   inviterID,
-			OrgID:       org.ID,
+			ID:        invID,
+			OrgID:     org.ID,
 			InviteeRole: auth.Viewer,
-			CreatedAt:   time.Now(),
-			ExpiresAt:   time.Now().Add(inviteExpiryTime),
-			State:       auth.InviteStatePending,
+			InviteeID: inviteeID,
+			InviterID: inviterID,
+			CreatedAt: time.Now(),
+			ExpiresAt: time.Now().Add(inviteExpiryTime),
+			State:     auth.InviteStatePending,
 		})
 	}
 

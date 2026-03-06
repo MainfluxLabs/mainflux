@@ -224,9 +224,9 @@ func TestViewInvite(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 
 	invite, err := svc.CreateOrgInvite(context.Background(), ownerToken, auth.OrgInvite{
-		InviteeEmail: viewer.Email,
 		InviteeRole:  viewer.Role,
-		OrgID:        org.ID,
+		OrgID:       org.ID,
+		InviteeEmail: viewer.Email,
 	}, redirectPathInvite)
 	assert.Nil(t, err, fmt.Sprintf("Inviting member expected to succeed: %s", err))
 
@@ -294,9 +294,9 @@ func TestRevokeInvite(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 
 	invite, err := svc.CreateOrgInvite(context.Background(), ownerToken, auth.OrgInvite{
-		InviteeEmail: viewer.Email,
 		InviteeRole:  viewer.Role,
-		OrgID:        org.ID,
+		OrgID:       org.ID,
+		InviteeEmail: viewer.Email,
 	}, redirectPathInvite)
 	assert.Nil(t, err, fmt.Sprintf("Inviting member expected to succeed: %s", err))
 
@@ -376,9 +376,9 @@ func TestRespondInvite(t *testing.T) {
 	invites := []auth.OrgInvite{}
 	for _, membership := range memberships {
 		inv, err := svc.CreateOrgInvite(context.Background(), ownerToken, auth.OrgInvite{
-			InviteeEmail: membership.Email,
 			InviteeRole:  membership.Role,
-			OrgID:        org.ID,
+			OrgID:       org.ID,
+			InviteeEmail: membership.Email,
 		}, redirectPathInvite)
 		assert.Nil(t, err, fmt.Sprintf("Inviting members expected to succeed: %s", err))
 
@@ -480,9 +480,9 @@ func TestListInvitesByInvitee(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("Creating Org expected to succeed: %s", err))
 
 		inv, err := svc.CreateOrgInvite(context.Background(), ownerToken, auth.OrgInvite{
-			InviteeEmail: viewer.Email,
 			InviteeRole:  auth.Viewer,
-			OrgID:        org.ID,
+			OrgID:       org.ID,
+			InviteeEmail: viewer.Email,
 		}, redirectPathInvite)
 
 		assert.Nil(t, err, fmt.Sprintf("Inviting member expected to succeed: %s", err))

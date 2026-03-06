@@ -6,12 +6,12 @@ package api
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/things"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 )
 
 type publishReq struct {
 	msg protomfx.Message
-	things.ThingKey
+	domainthings.ThingKey
 }
 
 func (req publishReq) validate() error {

@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 
 	mfxsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
-	"github.com/MainfluxLabs/mainflux/things"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/spf13/cobra"
 )
 
@@ -105,7 +105,7 @@ var cmdThings = []cobra.Command{
 				return
 			}
 
-			meta, err := sdk.GetThingMetadataByKey(things.ThingKey{Value: args[1], Type: args[0]})
+			meta, err := sdk.GetThingMetadataByKey(domainthings.ThingKey{Value: args[1], Type: args[0]})
 			if err != nil {
 				logError(err)
 				return
@@ -142,7 +142,7 @@ var cmdThings = []cobra.Command{
 				return
 			}
 
-			i, err := sdk.IdentifyThing(things.ThingKey{Type: args[0], Value: args[1]})
+			i, err := sdk.IdentifyThing(domainthings.ThingKey{Type: args[0], Value: args[1]})
 			if err != nil {
 				logError(err)
 				return

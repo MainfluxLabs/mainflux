@@ -5,7 +5,7 @@ package cli
 
 import (
 	mfxsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
-	"github.com/MainfluxLabs/mainflux/things"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/spf13/cobra"
 )
 
@@ -17,13 +17,13 @@ var cmdMessages = []cobra.Command{
 		Run: func(cmd *cobra.Command, args []string) {
 			switch len(args) {
 			case 3:
-				key := things.ThingKey{Type: args[1], Value: args[2]}
+				key := domainthings.ThingKey{Type: args[1], Value: args[2]}
 				if err := sdk.SendMessage("", args[0], key); err != nil {
 					logError(err)
 					return
 				}
 			case 4:
-				key := things.ThingKey{Type: args[2], Value: args[3]}
+				key := domainthings.ThingKey{Type: args[2], Value: args[3]}
 				if err := sdk.SendMessage(args[0], args[1], key); err != nil {
 					logError(err)
 					return
