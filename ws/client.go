@@ -31,7 +31,7 @@ func (c *Client) Cancel() error {
 }
 
 // Handle handles the sending and receiving of messages via the broker
-func (c *Client) Handle(msg protomfx.Message) error {
+func (c *Client) Handle(_ string, msg protomfx.Message) error {
 	// To prevent publisher from receiving its own published message
 	if msg.GetPublisher() == c.id {
 		return nil

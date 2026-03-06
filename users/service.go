@@ -5,6 +5,12 @@ package users
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
@@ -13,6 +19,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -20,6 +27,8 @@ const (
 	DisabledStatusKey = "disabled"
 	AllStatusKey      = "all"
 	rootAdminRole     = "root"
+	GoogleProvider    = "google"
+	GitHubProvider    = "github"
 )
 
 var (
@@ -78,6 +87,12 @@ type Service interface {
 	// identified by the non-nil error values in the response.
 	Login(ctx context.Context, user User) (string, error)
 
+	// OAuthLogin returns the URL to initiate OAuth login.
+	OAuthLogin(provider string) (data OAuthLoginData, err error)
+
+	// OAuthCallback exchanges the OAuth code for user info and logs in/creates the user.
+	OAuthCallback(ctx context.Context, data OAuthCallbackData) (string, error)
+
 	// ViewUser retrieves user info for a given user ID and an authorized token.
 	ViewUser(ctx context.Context, token, id string) (User, error)
 
@@ -115,11 +130,11 @@ type Service interface {
 	// DisableUser logically disables the user identified with the provided ID
 	DisableUser(ctx context.Context, token, id string) error
 
-	// Backup returns admin and all users. Only accessible by admin.
-	Backup(ctx context.Context, token string) (User, []User, error)
+	// Backup returns admin, all users, and all OAuth identities. Only accessible by admin.
+	Backup(ctx context.Context, token string) (User, []User, []Identity, error)
 
-	// Restore restores users from backup. Only accessible by admin.
-	Restore(ctx context.Context, token string, admin User, users []User) error
+	// Restore restores users and OAuth identities from backup. Only accessible by admin.
+	Restore(ctx context.Context, token string, admin User, users []User, identities []Identity) error
 
 	PlatformInvites
 }
@@ -142,12 +157,20 @@ type UserPage struct {
 	Users []User
 }
 
+type ConfigURLs struct {
+	GoogleUserInfoURL   string
+	GitHubUserInfoURL   string
+	GitHubUserEmailsURL string
+	RedirectLoginURL    string
+}
+
 var _ Service = (*usersService)(nil)
 
 type usersService struct {
 	users               UserRepository
 	emailVerifications  EmailVerificationRepository
 	invites             PlatformInvitesRepository
+	identity            IdentityRepository
 	inviteDuration      time.Duration
 	emailVerifyEnabled  bool
 	selfRegisterEnabled bool
@@ -155,21 +178,38 @@ type usersService struct {
 	email               Emailer
 	auth                protomfx.AuthServiceClient
 	idProvider          uuid.IDProvider
+	googleOAuth         oauth2.Config
+	githubOAuth         oauth2.Config
+	urls                ConfigURLs
+}
+
+// Config holds configuration values for the users service.
+type Config struct {
+	InviteDuration      time.Duration
+	EmailVerifyEnabled  bool
+	SelfRegisterEnabled bool
+	GoogleOAuth         oauth2.Config
+	GitHubOAuth         oauth2.Config
+	URLs                ConfigURLs
 }
 
 // New instantiates the users service implementation
-func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, inviteDuration time.Duration, emailVerifyEnabled bool, selfRegisterEnabled bool, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider) Service {
+func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, identity IdentityRepository, hasher Hasher, auth protomfx.AuthServiceClient, e Emailer, idp uuid.IDProvider, c Config) Service {
 	return &usersService{
 		users:               users,
 		emailVerifications:  verifications,
 		invites:             invites,
-		inviteDuration:      inviteDuration,
-		emailVerifyEnabled:  emailVerifyEnabled,
-		selfRegisterEnabled: selfRegisterEnabled,
+		identity:            identity,
+		inviteDuration:      c.InviteDuration,
+		emailVerifyEnabled:  c.EmailVerifyEnabled,
+		selfRegisterEnabled: c.SelfRegisterEnabled,
 		hasher:              hasher,
 		auth:                auth,
 		email:               e,
 		idProvider:          idp,
+		googleOAuth:         c.GoogleOAuth,
+		githubOAuth:         c.GitHubOAuth,
+		urls:                c.URLs,
 	}
 }
 
@@ -416,10 +456,212 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(errors.ErrAuthentication, err)
 	}
+	if dbUser.Password == "" {
+		return "", errors.ErrAuthentication
+	}
 	if err := svc.hasher.Compare(user.Password, dbUser.Password); err != nil {
 		return "", errors.Wrap(errors.ErrAuthentication, err)
 	}
 	return svc.issue(ctx, dbUser.ID, dbUser.Email, auth.LoginKey)
+}
+
+func (svc usersService) OAuthLogin(provider string) (data OAuthLoginData, err error) {
+	var oauthCfg oauth2.Config
+	switch provider {
+	case GoogleProvider:
+		oauthCfg = svc.googleOAuth
+	case GitHubProvider:
+		oauthCfg = svc.githubOAuth
+	default:
+		return OAuthLoginData{}, apiutil.ErrInvalidProvider
+	}
+
+	data.Verifier = oauth2.GenerateVerifier()
+	data.State, err = generateRandomState()
+	if err != nil {
+		return OAuthLoginData{}, err
+	}
+	data.RedirectURL = oauthCfg.AuthCodeURL(data.State, oauth2.S256ChallengeOption(data.Verifier))
+	return data, nil
+}
+
+func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackData) (string, error) {
+	var email, providerUserID string
+	var err error
+
+	switch data.Provider {
+	case GoogleProvider:
+		email, providerUserID, err = svc.fetchGoogleUser(ctx, data.Code, data.Verifier)
+	case GitHubProvider:
+		email, providerUserID, err = svc.fetchGitHubUser(ctx, data.Code, data.Verifier)
+	default:
+		return "", apiutil.ErrInvalidProvider
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	user, err := svc.handleIdentity(ctx, data.Provider, email, providerUserID)
+	if err != nil {
+		return "", err
+	}
+
+	token, err := svc.issue(ctx, user.ID, user.Email, auth.LoginKey)
+	if err != nil {
+		return "", err
+	}
+
+	redirectURL := fmt.Sprintf("%s#token=%s", svc.urls.RedirectLoginURL, token)
+	return redirectURL, nil
+}
+
+func (svc usersService) fetchGoogleUser(ctx context.Context, code, verifier string) (string, string, error) {
+	oauthToken, err := svc.googleOAuth.Exchange(ctx, code, oauth2.VerifierOption(verifier))
+	if err != nil {
+		return "", "", err
+	}
+	client := svc.googleOAuth.Client(ctx, oauthToken)
+	resp, err := client.Get(svc.urls.GoogleUserInfoURL)
+	if err != nil {
+		return "", "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", "", errors.ErrAuthentication
+	}
+
+	var gUser struct {
+		ID    string `json:"id"`
+		Email string `json:"email"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&gUser); err != nil {
+		return "", "", err
+	}
+	if gUser.Email == "" || gUser.ID == "" {
+		return "", "", errors.ErrAuthentication
+	}
+
+	return gUser.Email, gUser.ID, nil
+}
+
+func (svc usersService) fetchGitHubUser(ctx context.Context, code, verifier string) (string, string, error) {
+	oauthToken, err := svc.githubOAuth.Exchange(ctx, code, oauth2.VerifierOption(verifier))
+	if err != nil {
+		return "", "", err
+	}
+	client := svc.githubOAuth.Client(ctx, oauthToken)
+
+	var gUser struct {
+		ID int64 `json:"id"`
+	}
+	resp, err := client.Get(svc.urls.GitHubUserInfoURL)
+	if err != nil {
+		return "", "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", "", errors.ErrAuthentication
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&gUser); err != nil {
+		return "", "", err
+	}
+	if gUser.ID == 0 {
+		return "", "", errors.ErrAuthentication
+	}
+	providerUserID := strconv.FormatInt(gUser.ID, 10)
+
+	resp2, err := client.Get(svc.urls.GitHubUserEmailsURL)
+	if err != nil {
+		return "", "", err
+	}
+	defer resp2.Body.Close()
+	if resp2.StatusCode != http.StatusOK {
+		return "", "", errors.ErrAuthentication
+	}
+
+	var emails []struct {
+		Email    string `json:"email"`
+		Primary  bool   `json:"primary"`
+		Verified bool   `json:"verified"`
+	}
+	if err := json.NewDecoder(resp2.Body).Decode(&emails); err != nil {
+		return "", "", err
+	}
+
+	email := ""
+	for _, e := range emails {
+		if e.Primary && e.Verified {
+			email = e.Email
+			break
+		}
+	}
+	if email == "" {
+		return "", "", errors.ErrAuthentication
+	}
+
+	return email, providerUserID, nil
+}
+
+func (svc usersService) handleIdentity(ctx context.Context, provider, email, providerUserID string) (User, error) {
+	identity, err := svc.identity.Retrieve(ctx, provider, providerUserID)
+	if err != nil && !errors.Contains(err, dbutil.ErrNotFound) {
+		return User{}, err
+	}
+
+	var user User
+
+	if identity.UserID != "" {
+		user, err = svc.users.RetrieveByID(ctx, identity.UserID)
+		if err != nil {
+			return User{}, err
+		}
+
+		if user.Status != EnabledStatusKey {
+			return User{}, errors.ErrAuthentication
+		}
+
+		if user.Email != email {
+			user.Email = email
+			if err := svc.users.Update(ctx, user); err != nil {
+				return User{}, err
+			}
+		}
+	} else {
+		user, err = svc.users.RetrieveByEmail(ctx, email)
+		if err != nil {
+			if errors.Contains(err, dbutil.ErrNotFound) {
+				uid, err := svc.idProvider.ID()
+				if err != nil {
+					return User{}, err
+				}
+				user = User{
+					ID:     uid,
+					Email:  email,
+					Status: EnabledStatusKey,
+				}
+				if _, err := svc.users.Save(ctx, user); err != nil {
+					return User{}, err
+				}
+			} else {
+				return User{}, err
+			}
+		}
+
+		newIdentity := Identity{
+			UserID:         user.ID,
+			Provider:       provider,
+			ProviderUserID: providerUserID,
+		}
+		if err := svc.identity.Save(ctx, newIdentity); err != nil {
+			if !errors.Contains(err, dbutil.ErrConflict) {
+				return User{}, err
+			}
+		}
+	}
+
+	return user, nil
 }
 
 func (svc usersService) ViewUser(ctx context.Context, token, id string) (User, error) {
@@ -500,19 +742,19 @@ func (svc usersService) ListUsersByEmails(ctx context.Context, emails []string) 
 	return users, nil
 }
 
-func (svc usersService) Backup(ctx context.Context, token string) (User, []User, error) {
+func (svc usersService) Backup(ctx context.Context, token string) (User, []User, []Identity, error) {
 	user, err := svc.identify(ctx, token)
 	if err != nil {
-		return User{}, []User{}, err
+		return User{}, []User{}, []Identity{}, err
 	}
 
 	if err := svc.isAdmin(ctx, token); err != nil {
-		return User{}, []User{}, err
+		return User{}, []User{}, []Identity{}, err
 	}
 
 	users, err := svc.users.BackupAll(ctx)
 	if err != nil {
-		return User{}, []User{}, err
+		return User{}, []User{}, []Identity{}, err
 	}
 
 	var admin User
@@ -524,15 +766,20 @@ func (svc usersService) Backup(ctx context.Context, token string) (User, []User,
 		}
 	}
 
-	return admin, users, nil
+	identities, err := svc.identity.BackupAll(ctx)
+	if err != nil {
+		return User{}, []User{}, []Identity{}, err
+	}
+
+	return admin, users, identities, nil
 }
 
-func (svc usersService) Restore(ctx context.Context, token string, admin User, users []User) error {
+func (svc usersService) Restore(ctx context.Context, token string, admin User, users []User, identities []Identity) error {
 	if err := svc.isAdmin(ctx, token); err != nil {
 		return err
 	}
 
-	if err := svc.users.UpdateUser(ctx, admin); err != nil {
+	if err := svc.users.UpdateUserMetadata(ctx, admin); err != nil {
 		return err
 	}
 
@@ -551,6 +798,12 @@ func (svc usersService) Restore(ctx context.Context, token string, admin User, u
 		}
 	}
 
+	for _, identity := range identities {
+		if err := svc.identity.Save(ctx, identity); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -563,7 +816,7 @@ func (svc usersService) UpdateUser(ctx context.Context, token string, u User) er
 		Email:    idn.email,
 		Metadata: u.Metadata,
 	}
-	return svc.users.UpdateUser(ctx, user)
+	return svc.users.UpdateUserMetadata(ctx, user)
 }
 
 func (svc usersService) GenerateResetToken(ctx context.Context, email, redirectPath string) error {
@@ -714,4 +967,12 @@ func (svc usersService) isAdmin(ctx context.Context, token string) error {
 	}
 
 	return nil
+}
+
+func generateRandomState() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(b), nil
 }

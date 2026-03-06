@@ -32,21 +32,11 @@ const (
 	SerialKey              = "serial"
 	EmailKey               = "email"
 	PayloadKey             = "payload"
-	SubtopicKey            = "subtopic"
-	ProtocolKey            = "protocol"
-	ValueKey               = "v"
-	StringValueKey         = "vs"
-	DataValueKey           = "vd"
-	BoolValueKey           = "vb"
-	ComparatorKey          = "comparator"
-	FromKey                = "from"
-	ToKey                  = "to"
 	NameOrder              = "name"
 	IDOrder                = "id"
 	AscDir                 = "asc"
 	DescDir                = "desc"
 	ContentTypeJSON        = "application/json"
-	ContentTypeCSV         = "text/csv"
 	ContentTypeOctetStream = "application/octet-stream"
 	DefOffset              = 0
 	DefLimit               = 10
@@ -121,7 +111,7 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 	}
 }
 
-// Map a gRPC-error Status code to an HTTP status code and write it to w
+// EncodeGRPCError maps a gRPC-error Status code to an HTTP status code and write it to w
 func EncodeGRPCError(st *status.Status, w http.ResponseWriter) {
 	switch st.Code() {
 	case codes.OK:
@@ -213,7 +203,10 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrMissingConditionThreshold),
 		errors.Contains(err, ErrInvalidActionType),
 		errors.Contains(err, ErrMissingActionID),
-		errors.Contains(err, ErrInvalidOperator):
+		errors.Contains(err, ErrInvalidOperator),
+		errors.Contains(err, ErrInvalidProvider),
+		errors.Contains(err, ErrMissingProviderCode),
+		errors.Contains(err, ErrInvalidState):
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, errors.ErrAuthorization),
 		errors.Contains(err, ErrInviteExpired),

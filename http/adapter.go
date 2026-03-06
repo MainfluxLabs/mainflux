@@ -53,8 +53,7 @@ func (as *adapterService) Publish(ctx context.Context, key things.ThingKey, msg 
 		return err
 	}
 
-	msg.Subject = nats.GetMessagesSubject(msg.Publisher, msg.Subtopic)
-	if err := as.publisher.Publish(msg); err != nil {
+	if err := as.publisher.Publish(nats.GetMessagesSubject(msg.Publisher, msg.Subtopic), msg); err != nil {
 		return err
 	}
 
@@ -66,8 +65,7 @@ func (as *adapterService) SendCommandToThing(ctx context.Context, token, thingID
 		return err
 	}
 
-	message.Subject = nats.GetThingCommandsSubject(thingID, message.Subtopic)
-	if err := as.publisher.Publish(message); err != nil {
+	if err := as.publisher.Publish(nats.GetThingCommandsSubject(thingID, message.Subtopic), message); err != nil {
 		return err
 	}
 
@@ -79,8 +77,7 @@ func (as *adapterService) SendCommandToGroup(ctx context.Context, token, groupID
 		return err
 	}
 
-	message.Subject = nats.GetGroupCommandsSubject(groupID, message.Subtopic)
-	if err := as.publisher.Publish(message); err != nil {
+	if err := as.publisher.Publish(nats.GetGroupCommandsSubject(groupID, message.Subtopic), message); err != nil {
 		return err
 	}
 

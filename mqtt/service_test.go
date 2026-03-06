@@ -24,7 +24,11 @@ const (
 	invalidUser  = "invalid@example.com"
 )
 
-var idProvider = uuid.NewMock()
+var (
+	messagesTopic = "things.%s.messages"
+
+	idProvider = uuid.NewMock()
+)
 
 func newService() mqtt.Service {
 	repo := mocks.NewRepo(make(map[string][]mqtt.Subscription))
@@ -47,9 +51,9 @@ func TestCreateSubscription(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	sub := mqtt.Subscription{
-		Subtopic: subtopic,
-		GroupID:  gID,
-		ThingID:  thID,
+		Topic:   fmt.Sprintf(messagesTopic, thID),
+		GroupID: gID,
+		ThingID: thID,
 	}
 
 	cases := []struct {
@@ -85,9 +89,9 @@ func TestRemoveSubscription(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	sub := mqtt.Subscription{
-		Subtopic: subtopic,
-		GroupID:  gID,
-		ThingID:  thID,
+		Topic:   fmt.Sprintf(messagesTopic, thID),
+		GroupID: gID,
+		ThingID: thID,
 	}
 
 	err = svc.CreateSubscription(context.Background(), sub)
@@ -125,9 +129,9 @@ func TestRetrieveByGroup(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		sub := mqtt.Subscription{
-			Subtopic: subtopic,
-			ThingID:  thID,
-			GroupID:  groupID,
+			Topic:   fmt.Sprintf(messagesTopic, thID),
+			ThingID: thID,
+			GroupID: groupID,
 		}
 
 		err = svc.CreateSubscription(context.Background(), sub)

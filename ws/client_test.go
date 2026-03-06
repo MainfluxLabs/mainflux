@@ -17,7 +17,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const expectedCount = uint64(1)
+const (
+	expectedCount = uint64(1)
+	subject       = "things.fa9b4ead-4b5a-4d34-a6a0-b33dd2e5f5f3.messages"
+)
 
 var (
 	msgChan = make(chan []byte)
@@ -84,7 +87,7 @@ func TestHandle(t *testing.T) {
 
 	for _, tc := range cases {
 		msg.Publisher = tc.publisher
-		err = c.Handle(msg)
+		err = c.Handle(subject, msg)
 		assert.Nil(t, err, fmt.Sprintf("expected nil error from handle, got: %s", err))
 		receivedMsg := []byte{}
 		switch tc.expectMsg {

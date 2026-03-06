@@ -15,7 +15,7 @@ var (
 	// ErrSaveMessages indicates failure occurred while saving messages to database.
 	ErrSaveMessages = New("failed to save messages to database")
 
-	// ErrDeleteMessage indicates failure occurred while deleting messages in the database.
+	// ErrDeleteMessages indicates failure occurred while deleting messages in the database.
 	ErrDeleteMessages = New("failed to delete messages")
 
 	// ErrInvalidMessage indicates that message format is invalid.
@@ -35,4 +35,10 @@ var (
 
 	// ErrInvalidPassword indicates that current password is invalid.
 	ErrInvalidPassword = New("invalid current password")
+
+	// ErrInvalidPayload indicates that a message payload could not be parsed.
+	ErrInvalidPayload = New("invalid payload")
+
+	// ErrInvalidSubject indicates that a message subject is malformed.
+	ErrInvalidSubject = New("invalid subject")
 )

@@ -30,10 +30,10 @@ func MetricsMiddleware(consumer consumers.Consumer, counter metrics.Counter, lat
 	}
 }
 
-func (mm *metricsMiddleware) Consume(msgs any) error {
+func (mm *metricsMiddleware) Consume(subject string, msgs any) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "consume").Add(1)
 		mm.latency.With("method", "consume").Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return mm.consumer.Consume(msgs)
+	return mm.consumer.Consume(subject, msgs)
 }

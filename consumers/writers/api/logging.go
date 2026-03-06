@@ -28,7 +28,7 @@ func LoggingMiddleware(consumer consumers.Consumer, logger log.Logger) consumers
 	}
 }
 
-func (lm *loggingMiddleware) Consume(msgs any) (err error) {
+func (lm *loggingMiddleware) Consume(subject string, msgs any) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method consume took %s to complete", time.Since(begin))
 		if err != nil {
@@ -38,5 +38,5 @@ func (lm *loggingMiddleware) Consume(msgs any) (err error) {
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.consumer.Consume(msgs)
+	return lm.consumer.Consume(subject, msgs)
 }

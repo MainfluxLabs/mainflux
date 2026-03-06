@@ -58,12 +58,11 @@ func TestPublisher(t *testing.T) {
 	for _, tc := range cases {
 		expectedMsg := protomfx.Message{
 			Subtopic:    tc.subtopic,
-			Subject:     fmt.Sprintf("%s.%s", format, subtopic),
 			Payload:     tc.payload,
 			ContentType: senmlContentType,
 		}
 
-		err = pubsub.Publish(expectedMsg)
+		err = pubsub.Publish(fmt.Sprintf("%s.%s", format, subtopic), expectedMsg)
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		receivedMsg := <-msgChan
@@ -266,7 +265,7 @@ type handler struct {
 	fail bool
 }
 
-func (h handler) Handle(msg protomfx.Message) error {
+func (h handler) Handle(_ string, msg protomfx.Message) error {
 	msgChan <- msg
 	return nil
 }

@@ -180,7 +180,7 @@ func (ws *webhooksService) RemoveWebhooksByGroup(ctx context.Context, groupID st
 	return ws.webhooks.RemoveByGroup(ctx, groupID)
 }
 
-func (ws *webhooksService) Consume(message any) error {
+func (ws *webhooksService) Consume(_ string, message any) error {
 	ctx := context.Background()
 
 	msg, ok := message.(protomfx.Message)

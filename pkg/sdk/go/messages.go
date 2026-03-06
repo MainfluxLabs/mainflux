@@ -197,17 +197,20 @@ func (sdk mfSDK) DeleteAllSenMLMessages(token string, pm SenMLPageMetadata) erro
 }
 
 func (sdk mfSDK) ExportJSONMessages(token string, pm JSONPageMetadata, convert, timeFormat string) ([]byte, error) {
-	q := pm.query()
-	if convert != "" {
-		q += "&convert=" + url.QueryEscape(convert)
+	params, err := url.ParseQuery(pm.query())
+	if err != nil {
+		return nil, err
+	}
 
+	if convert != "" {
+		params.Set("convert", convert)
 	}
 
 	if timeFormat != "" {
-		q += "&time_format=" + url.QueryEscape(timeFormat)
+		params.Set("time_format", timeFormat)
 	}
 
-	u := fmt.Sprintf("%s/json/export?%s", sdk.readerURL, q)
+	u := fmt.Sprintf("%s/json/export?%s", sdk.readerURL, params.Encode())
 
 	req, err := http.NewRequest(http.MethodGet, u, nil)
 	if err != nil {
@@ -232,16 +235,20 @@ func (sdk mfSDK) ExportJSONMessages(token string, pm JSONPageMetadata, convert, 
 }
 
 func (sdk mfSDK) ExportSenMLMessages(token string, pm SenMLPageMetadata, convert, timeFormat string) ([]byte, error) {
-	q := pm.query()
+	params, err := url.ParseQuery(pm.query())
+	if err != nil {
+		return nil, err
+	}
+
 	if convert != "" {
-		q += "&convert=" + url.QueryEscape(convert)
+		params.Set("convert", convert)
 	}
 
 	if timeFormat != "" {
-		q += "&time_format=" + url.QueryEscape(timeFormat)
+		params.Set("time_format", timeFormat)
 	}
 
-	u := fmt.Sprintf("%s/senml/export?%s", sdk.readerURL, q)
+	u := fmt.Sprintf("%s/senml/export?%s", sdk.readerURL, params.Encode())
 
 	req, err := http.NewRequest(http.MethodGet, u, nil)
 	if err != nil {

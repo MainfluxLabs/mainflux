@@ -124,6 +124,11 @@ func TestAuthPublish(t *testing.T) {
 func TestAuthSubscribe(t *testing.T) {
 	handler := newHandler()
 
+	unauthorizedThingTopic := []string{"things/other-id/commands/led/room"}
+	unauthorizedGroupTopic := []string{"groups/other-group/commands/fw/update"}
+	thingWildcardTopic := []string{"things/+/messages"}
+	multiLevelWildcardTopic := []string{"things/#"}
+
 	cases := []struct {
 		desc   string
 		client *session.Client
@@ -147,6 +152,30 @@ func TestAuthSubscribe(t *testing.T) {
 			client: &sessionClient,
 			err:    nil,
 			topic:  &topics,
+		},
+		{
+			desc:   "subscribe to another thing's commands topic",
+			client: &sessionClient,
+			err:    mqtt.ErrUnauthorizedSubscriptionTopic,
+			topic:  &unauthorizedThingTopic,
+		},
+		{
+			desc:   "subscribe to another group's commands topic",
+			client: &sessionClient,
+			err:    mqtt.ErrUnauthorizedSubscriptionTopic,
+			topic:  &unauthorizedGroupTopic,
+		},
+		{
+			desc:   "subscribe to thing messages with single-level wildcard",
+			client: &sessionClient,
+			err:    mqtt.ErrUnauthorizedSubscriptionTopic,
+			topic:  &thingWildcardTopic,
+		},
+		{
+			desc:   "subscribe to things with multi-level wildcard",
+			client: &sessionClient,
+			err:    mqtt.ErrUnauthorizedSubscriptionTopic,
+			topic:  &multiLevelWildcardTopic,
 		},
 	}
 
@@ -344,7 +373,16 @@ func newHandler() session.Handler {
 		log.Fatalf("failed to create logger: %s", err)
 	}
 
-	thingsClient := pkgmocks.NewThingsServiceClient(nil, map[string]things.Thing{password: {ID: thingID}, thingID: {ID: thingID}}, nil)
+	thingsClient := pkgmocks.NewThingsServiceClient(
+		nil,
+		map[string]things.Thing{
+			password: {ID: thingID, GroupID: groupID},
+			thingID:  {ID: thingID, GroupID: groupID},
+		},
+		map[string]things.Group{
+			password: {ID: groupID},
+		},
+	)
 
 	return mqtt.NewHandler(pkgmocks.NewPublisher(), thingsClient, newService(), mocks.NewCache(), logger)
 }
