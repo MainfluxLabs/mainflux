@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"google.golang.org/grpc/codes"

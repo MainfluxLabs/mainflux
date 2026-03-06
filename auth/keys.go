@@ -24,9 +24,9 @@ var (
 
 // Key type constants (aliases for domain).
 const (
-	LoginKey   = domainauth.LoginKey
+	LoginKey    = domainauth.LoginKey
 	RecoveryKey = domainauth.RecoveryKey
-	APIKey     = domainauth.APIKey
+	APIKey      = domainauth.APIKey
 )
 
 // Key is an alias for the shared domain type.

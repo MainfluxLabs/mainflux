@@ -8,10 +8,10 @@ package http
 import (
 	"context"
 
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 )
 
 // Service specifies coap service API.

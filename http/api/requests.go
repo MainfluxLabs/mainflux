@@ -5,8 +5,8 @@ package api
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 type publishReq struct {

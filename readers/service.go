@@ -6,10 +6,10 @@ package readers
 import (
 	"context"
 
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 const rootSubject = "root"

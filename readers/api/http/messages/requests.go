@@ -5,8 +5,8 @@ package messages
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/readers"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/readers"
 )
 
 const maxLimitSize = 1000

@@ -17,10 +17,10 @@ const (
 	recoveryDuration = 5 * time.Minute
 
 	// Re-export role constants from domain for backward compatibility.
-	Admin  = domainauth.Admin
-	Owner  = domainauth.Owner
-	Editor = domainauth.Editor
-	Viewer = domainauth.Viewer
+	Admin   = domainauth.Admin
+	Owner   = domainauth.Owner
+	Editor  = domainauth.Editor
+	Viewer  = domainauth.Viewer
 	RootSub = domainauth.RootSub
 	OrgSub  = domainauth.OrgSub
 )

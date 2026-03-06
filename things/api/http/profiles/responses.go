@@ -84,4 +84,3 @@ type pageRes struct {
 	Dir    string `json:"direction,omitempty"`
 	Name   string `json:"name,omitempty"`
 }
-

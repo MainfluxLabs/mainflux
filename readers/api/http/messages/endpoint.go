@@ -8,9 +8,9 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/readers"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/go-kit/kit/endpoint"
 )
 

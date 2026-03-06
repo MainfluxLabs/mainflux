@@ -6,8 +6,8 @@ package things
 import (
 	"context"
 
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 )
 
 // Profile is an alias for the shared domain type.

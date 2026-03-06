@@ -12,8 +12,8 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/http"
 	log "github.com/MainfluxLabs/mainflux/logger"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 var _ http.Service = (*loggingMiddleware)(nil)

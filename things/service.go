@@ -7,9 +7,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -160,9 +160,9 @@ type Backup struct {
 
 // UserAccessReq, ThingAccessReq, and PubConfigInfo are aliases for the shared domain types.
 type (
-	UserAccessReq   = domainthings.UserAccessReq
-	ThingAccessReq  = domainthings.ThingAccessReq
-	PubConfigInfo   = domainthings.PubConfigInfo
+	UserAccessReq  = domainthings.UserAccessReq
+	ThingAccessReq = domainthings.ThingAccessReq
+	PubConfigInfo  = domainthings.PubConfigInfo
 )
 
 var _ Service = (*thingsService)(nil)

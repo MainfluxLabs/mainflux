@@ -4,8 +4,8 @@
 package cli
 
 import (
-	mfxsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	mfxsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/spf13/cobra"
 )
 

@@ -16,7 +16,7 @@ func createOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 
 		orgInvite := auth.OrgInvite{
 			InviteeRole:  req.Role,
-			OrgID:       req.orgID,
+			OrgID:        req.orgID,
 			GroupInvites: req.GroupInvites,
 			InviteeEmail: req.Email,
 		}

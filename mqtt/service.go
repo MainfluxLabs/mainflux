@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/mqtt/redis/cache"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 )
 
 // Service specifies an API that must be fullfiled by the domain service

@@ -9,8 +9,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/readers"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/go-kit/kit/metrics"
 )
 

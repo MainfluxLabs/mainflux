@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 const messagesEndpoint = "messages"

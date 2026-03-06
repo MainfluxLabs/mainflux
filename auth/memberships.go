@@ -3,8 +3,8 @@ package auth
 import (
 	"context"
 
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )

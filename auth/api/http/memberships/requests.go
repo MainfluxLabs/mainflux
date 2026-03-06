@@ -2,8 +2,8 @@ package memberships
 
 import (
 	"github.com/MainfluxLabs/mainflux/auth"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 )
 
 const maxLimitSize = 200

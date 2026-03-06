@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/readers"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/readers"
 )
 
 var _ readers.Service = (*loggingMiddleware)(nil)

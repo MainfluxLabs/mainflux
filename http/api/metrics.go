@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/http"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/go-kit/kit/metrics"
 )
 

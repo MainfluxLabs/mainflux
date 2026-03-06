@@ -3,8 +3,8 @@ package things
 import (
 	"context"
 
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
@@ -14,7 +14,7 @@ var ErrGroupMembershipExists = errors.New("group membership already exists")
 
 // GroupMembership and GroupMembershipsPage are aliases for the shared domain types.
 type (
-	GroupMembership     = domainthings.GroupMembership
+	GroupMembership      = domainthings.GroupMembership
 	GroupMembershipsPage = domainthings.GroupMembershipsPage
 )
 

@@ -1318,7 +1318,7 @@ func TestCreateOrgInvite(t *testing.T) {
 	for _, tc := range cases {
 		_, err := svc.CreateOrgInvite(context.Background(), tc.token, auth.OrgInvite{
 			InviteeRole:  tc.membership.Role,
-			OrgID:       tc.orgID,
+			OrgID:        tc.orgID,
 			InviteeEmail: tc.membership.Email,
 		}, redirectPathInvite)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
@@ -1341,7 +1341,7 @@ func TestRevokeInvite(t *testing.T) {
 
 	testInvite, err := svc.CreateOrgInvite(context.Background(), ownerToken, auth.OrgInvite{
 		InviteeRole:  auth.Viewer,
-		OrgID:       testOrg.ID,
+		OrgID:        testOrg.ID,
 		InviteeEmail: invitee.Email,
 	}, redirectPathInvite)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
@@ -1393,7 +1393,7 @@ func TestRespondInvite(t *testing.T) {
 	for i := range 3 {
 		inv, err := svc.CreateOrgInvite(context.Background(), ownerToken, auth.OrgInvite{
 			InviteeRole:  auth.Viewer,
-			OrgID:       testOrg.ID,
+			OrgID:        testOrg.ID,
 			InviteeEmail: fmt.Sprintf("example%d@test.com", i+1),
 		}, redirectPathInvite)
 
@@ -1474,7 +1474,7 @@ func TestViewInvite(t *testing.T) {
 
 	invite, err := svc.CreateOrgInvite(context.Background(), inviterToken, auth.OrgInvite{
 		InviteeRole:  auth.Viewer,
-		OrgID:       testOrg.ID,
+		OrgID:        testOrg.ID,
 		InviteeEmail: invitee.Email,
 	}, redirectPathInvite)
 
@@ -1545,7 +1545,7 @@ func TestListInvitesByUser(t *testing.T) {
 
 		_, err = svc.CreateOrgInvite(context.Background(), ownerToken, auth.OrgInvite{
 			InviteeRole:  auth.Viewer,
-			OrgID:       org.ID,
+			OrgID:        org.ID,
 			InviteeEmail: invitee.Email,
 		}, redirectPathInvite)
 
