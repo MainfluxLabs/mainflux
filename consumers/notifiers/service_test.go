@@ -10,7 +10,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	ntmocks "github.com/MainfluxLabs/mainflux/consumers/notifiers/mocks"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
@@ -228,10 +227,8 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			token: token,
 			grID:  groupID,
 			pageMetadata: notifiers.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(len(nfs)),
-				},
+				Offset: 0,
+				Limit:  uint64(len(nfs)),
 			},
 			size: uint64(len(nfs)),
 			err:  nil,
@@ -241,7 +238,7 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			token: token,
 			grID:  groupID,
 			pageMetadata: notifiers.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{Limit: 0},
+				Limit: 0,
 			},
 			size: uint64(len(nfs)),
 			err:  nil,
@@ -251,10 +248,8 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			token: token,
 			grID:  groupID,
 			pageMetadata: notifiers.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: uint64(len(nfs)) - 1,
-					Limit:  uint64(len(nfs)),
-				},
+				Offset: uint64(len(nfs)) - 1,
+				Limit:  uint64(len(nfs)),
 			},
 			size: 1,
 			err:  nil,
@@ -264,10 +259,8 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			token: token,
 			grID:  groupID,
 			pageMetadata: notifiers.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: uint64(len(nfs)) + 1,
-					Limit:  uint64(len(nfs)),
-				},
+				Offset: uint64(len(nfs)) + 1,
+				Limit:  uint64(len(nfs)),
 			},
 			size: 0,
 			err:  nil,
@@ -277,7 +270,8 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			token: wrongValue,
 			grID:  groupID,
 			pageMetadata: notifiers.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{Offset: 0, Limit: 0},
+				Offset: 0,
+				Limit:  0,
 			},
 			size: 0,
 			err:  errors.ErrAuthentication,
@@ -287,7 +281,8 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			token: token,
 			grID:  emptyValue,
 			pageMetadata: notifiers.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{Offset: 0, Limit: 0},
+				Offset: 0,
+				Limit:  0,
 			},
 			size: 0,
 			err:  errors.ErrAuthorization,
@@ -297,12 +292,10 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			token: token,
 			grID:  groupID,
 			pageMetadata: notifiers.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(len(nfs)),
-					Order:  nameKey,
-					Dir:    ascKey,
-				},
+				Offset: 0,
+				Limit:  uint64(len(nfs)),
+				Order:  nameKey,
+				Dir:    ascKey,
 			},
 			size: uint64(len(nfs)),
 			err:  nil,
@@ -312,12 +305,10 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			token: token,
 			grID:  groupID,
 			pageMetadata: notifiers.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(len(nfs)),
-					Order:  nameKey,
-					Dir:    descKey,
-				},
+				Offset: 0,
+				Limit:  uint64(len(nfs)),
+				Order:  nameKey,
+				Dir:    descKey,
 			},
 			size: uint64(len(nfs)),
 			err:  nil,

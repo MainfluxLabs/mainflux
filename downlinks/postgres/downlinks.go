@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/downlinks"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/cron"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -164,11 +163,9 @@ func (dr downlinkRepository) retrieve(ctx context.Context, query, cquery string,
 	page := downlinks.DownlinksPage{
 		Downlinks: items,
 		PageMetadata: downlinks.PageMetadata{
-			PageMetadata: apiutil.PageMetadata{
-				Total:  total,
-				Offset: params["offset"].(uint64),
-				Limit:  params["limit"].(uint64),
-			},
+			Total:  total,
+			Offset: params["offset"].(uint64),
+			Limit:  params["limit"].(uint64),
 		},
 	}
 

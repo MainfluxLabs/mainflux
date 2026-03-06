@@ -35,7 +35,11 @@ var AllowedOrders = map[string]string{
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
-	apiutil.PageMetadata
+	Total    uint64         `json:"total,omitempty"`
+	Offset   uint64         `json:"offset,omitempty"`
+	Limit    uint64         `json:"limit,omitempty"`
+	Order    string         `json:"order,omitempty"`
+	Dir      string         `json:"dir,omitempty"`
 	Name     string         `json:"name,omitempty"`
 	Metadata map[string]any `json:"metadata,omitempty"`
 	Email    string         `json:"email,omitempty"`
@@ -43,7 +47,8 @@ type PageMetadata struct {
 
 // Validate validates the page metadata.
 func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
-	if err := apiutil.ValidatePageMetadata(pm.PageMetadata, maxLimitSize, AllowedOrders); err != nil {
+	base := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
+	if err := apiutil.ValidatePageMetadata(base, maxLimitSize, AllowedOrders); err != nil {
 		return err
 	}
 	if len(pm.Name) > maxNameSize {

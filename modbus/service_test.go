@@ -11,7 +11,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/modbus"
 	mbmocks "github.com/MainfluxLabs/mainflux/modbus/mocks"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/cron"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -153,7 +152,7 @@ func TestListClientsByThing(t *testing.T) {
 			desc:    "list clients by thing with limit",
 			token:   token,
 			thingID: thingID,
-			pm:      modbus.PageMetadata{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: 0}},
+			pm:      modbus.PageMetadata{Limit: 1, Offset: 0},
 			size:    1,
 			err:     nil,
 		},
@@ -161,7 +160,7 @@ func TestListClientsByThing(t *testing.T) {
 			desc:    "list clients by thing with offset beyond available",
 			token:   token,
 			thingID: thingID,
-			pm:      modbus.PageMetadata{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: 1}},
+			pm:      modbus.PageMetadata{Limit: 1, Offset: 1},
 			size:    0,
 			err:     nil,
 		},
@@ -218,7 +217,7 @@ func TestListClientsByGroup(t *testing.T) {
 			desc:    "list clients by group with limit",
 			token:   token,
 			groupID: groupID,
-			pm:      modbus.PageMetadata{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: 0}},
+			pm:      modbus.PageMetadata{Limit: 1, Offset: 0},
 			size:    1,
 			err:     nil,
 		},
@@ -226,7 +225,7 @@ func TestListClientsByGroup(t *testing.T) {
 			desc:    "list clients by group with offset beyond available",
 			token:   token,
 			groupID: groupID,
-			pm:      modbus.PageMetadata{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: 1}},
+			pm:      modbus.PageMetadata{Limit: 1, Offset: 1},
 			size:    0,
 			err:     nil,
 		},

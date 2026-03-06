@@ -188,21 +188,22 @@ func buildProfilesPageMetadata(r *http.Request) (things.PageMetadata, error) {
 	n, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
 	m, _ := apiutil.ReadMetadataQuery(r, apiutil.MetadataKey, nil)
 	return things.PageMetadata{
-		PageMetadata: base,
-		Name:         n,
-		Metadata:     m,
+		Offset:   base.Offset,
+		Limit:    base.Limit,
+		Order:    base.Order,
+		Dir:      base.Dir,
+		Name:     n,
+		Metadata: m,
 	}, nil
 }
 
 func buildProfilesPageMetadataFromBody(r *http.Request) (things.PageMetadata, error) {
 	if r.Body == nil || r.ContentLength == 0 {
 		return things.PageMetadata{
-			PageMetadata: apiutil.PageMetadata{
-				Offset: apiutil.DefOffset,
-				Limit:  apiutil.DefLimit,
-				Order:  apiutil.IDOrder,
-				Dir:    apiutil.DescDir,
-			},
+			Offset: apiutil.DefOffset,
+			Limit:  apiutil.DefLimit,
+			Order:  apiutil.IDOrder,
+			Dir:    apiutil.DescDir,
 		}, nil
 	}
 	var pm things.PageMetadata

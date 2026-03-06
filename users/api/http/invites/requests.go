@@ -102,7 +102,7 @@ func (req createPlatformInviteRequest) validate() error {
 
 type listPlatformInvitesRequest struct {
 	token string
-	pm    users.PageMetadataInvites
+	pm    users.PageMetadata
 }
 
 func (req listPlatformInvitesRequest) validate() error {
@@ -110,9 +110,5 @@ func (req listPlatformInvitesRequest) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if err := apiutil.ValidatePageMetadata(req.pm.PageMetadata, maxLimitSize, users.AllowedOrders); err != nil {
-		return err
-	}
-
-	return nil
+	return req.pm.Validate(maxLimitSize)
 }

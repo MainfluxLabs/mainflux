@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
@@ -142,10 +141,8 @@ func TestListWebhooksByGroup(t *testing.T) {
 			token: token,
 			grID:  groupID,
 			pageMetadata: webhooks.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(len(whs)),
-				},
+				Offset: 0,
+				Limit:  uint64(len(whs)),
 			},
 			size: uint64(len(whs)),
 			err:  nil,
@@ -155,7 +152,7 @@ func TestListWebhooksByGroup(t *testing.T) {
 			token: token,
 			grID:  groupID,
 			pageMetadata: webhooks.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{Limit: 0},
+				Limit: 0,
 			},
 			size: uint64(len(whs)),
 			err:  nil,
@@ -165,10 +162,8 @@ func TestListWebhooksByGroup(t *testing.T) {
 			token: token,
 			grID:  groupID,
 			pageMetadata: webhooks.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: uint64(len(whs)) - 1,
-					Limit:  uint64(len(whs)),
-				},
+				Offset: uint64(len(whs)) - 1,
+				Limit:  uint64(len(whs)),
 			},
 			size: 1,
 			err:  nil,
@@ -178,10 +173,8 @@ func TestListWebhooksByGroup(t *testing.T) {
 			token: token,
 			grID:  groupID,
 			pageMetadata: webhooks.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: uint64(len(whs)) + 1,
-					Limit:  uint64(len(whs)),
-				},
+				Offset: uint64(len(whs)) + 1,
+				Limit:  uint64(len(whs)),
 			},
 			size: 0,
 			err:  nil,
@@ -191,7 +184,8 @@ func TestListWebhooksByGroup(t *testing.T) {
 			token: wrongValue,
 			grID:  groupID,
 			pageMetadata: webhooks.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{Offset: 0, Limit: 0},
+				Offset: 0,
+				Limit:  0,
 			},
 			size: 0,
 			err:  errors.ErrAuthentication,
@@ -201,7 +195,8 @@ func TestListWebhooksByGroup(t *testing.T) {
 			token: token,
 			grID:  emptyValue,
 			pageMetadata: webhooks.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{Offset: 0, Limit: 0},
+				Offset: 0,
+				Limit:  0,
 			},
 			size: 0,
 			err:  errors.ErrAuthorization,
@@ -211,12 +206,10 @@ func TestListWebhooksByGroup(t *testing.T) {
 			token: token,
 			grID:  groupID,
 			pageMetadata: webhooks.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(len(whs)),
-					Order:  nameKey,
-					Dir:    ascKey,
-				},
+				Offset: 0,
+				Limit:  uint64(len(whs)),
+				Order:  nameKey,
+				Dir:    ascKey,
 			},
 			size: uint64(len(whs)),
 			err:  nil,
@@ -226,12 +219,10 @@ func TestListWebhooksByGroup(t *testing.T) {
 			token: token,
 			grID:  groupID,
 			pageMetadata: webhooks.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(len(whs)),
-					Order:  nameKey,
-					Dir:    descKey,
-				},
+				Offset: 0,
+				Limit:  uint64(len(whs)),
+				Order:  nameKey,
+				Dir:    descKey,
 			},
 			size: uint64(len(whs)),
 			err:  nil,
@@ -272,10 +263,8 @@ func TestListWebhooksByThing(t *testing.T) {
 			token:   token,
 			thingID: thingID,
 			pageMetadata: webhooks.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(len(whs)),
-				},
+				Offset: 0,
+				Limit:  uint64(len(whs)),
 			},
 			size: uint64(len(whs)),
 			err:  nil,
@@ -285,7 +274,7 @@ func TestListWebhooksByThing(t *testing.T) {
 			token:   token,
 			thingID: thingID,
 			pageMetadata: webhooks.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{Limit: 0},
+				Limit: 0,
 			},
 			size: uint64(len(whs)),
 			err:  nil,
@@ -295,10 +284,8 @@ func TestListWebhooksByThing(t *testing.T) {
 			token:   token,
 			thingID: thingID,
 			pageMetadata: webhooks.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: uint64(len(whs)) - 1,
-					Limit:  uint64(len(whs)),
-				},
+				Offset: uint64(len(whs)) - 1,
+				Limit:  uint64(len(whs)),
 			},
 			size: 1,
 			err:  nil,
@@ -308,10 +295,8 @@ func TestListWebhooksByThing(t *testing.T) {
 			token:   token,
 			thingID: thingID,
 			pageMetadata: webhooks.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: uint64(len(whs)) + 1,
-					Limit:  uint64(len(whs)),
-				},
+				Offset: uint64(len(whs)) + 1,
+				Limit:  uint64(len(whs)),
 			},
 			size: 0,
 			err:  nil,
@@ -321,7 +306,8 @@ func TestListWebhooksByThing(t *testing.T) {
 			token:   wrongValue,
 			thingID: thingID,
 			pageMetadata: webhooks.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{Offset: 0, Limit: 0},
+				Offset: 0,
+				Limit:  0,
 			},
 			size: 0,
 			err:  errors.ErrAuthentication,
@@ -331,7 +317,8 @@ func TestListWebhooksByThing(t *testing.T) {
 			token:   token,
 			thingID: emptyValue,
 			pageMetadata: webhooks.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{Offset: 0, Limit: 0},
+				Offset: 0,
+				Limit:  0,
 			},
 			size: 0,
 			err:  errors.ErrAuthorization,
@@ -341,12 +328,10 @@ func TestListWebhooksByThing(t *testing.T) {
 			token:   token,
 			thingID: thingID,
 			pageMetadata: webhooks.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(len(whs)),
-					Order:  nameKey,
-					Dir:    ascKey,
-				},
+				Offset: 0,
+				Limit:  uint64(len(whs)),
+				Order:  nameKey,
+				Dir:    ascKey,
 			},
 			size: uint64(len(whs)),
 			err:  nil,
@@ -356,12 +341,10 @@ func TestListWebhooksByThing(t *testing.T) {
 			token:   token,
 			thingID: thingID,
 			pageMetadata: webhooks.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(len(whs)),
-					Order:  nameKey,
-					Dir:    descKey,
-				},
+				Offset: 0,
+				Limit:  uint64(len(whs)),
+				Order:  nameKey,
+				Dir:    descKey,
 			},
 			size: uint64(len(whs)),
 			err:  nil,

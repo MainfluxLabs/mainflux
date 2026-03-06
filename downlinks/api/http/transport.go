@@ -100,8 +100,11 @@ func buildDownlinksPageMetadata(r *http.Request) (downlinks.PageMetadata, error)
 	}
 	n, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
 	return downlinks.PageMetadata{
-		PageMetadata: base,
-		Name:         n,
+		Offset: base.Offset,
+		Limit:  base.Limit,
+		Order:  base.Order,
+		Dir:    base.Dir,
+		Name:   n,
 	}, nil
 }
 

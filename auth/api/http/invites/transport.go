@@ -167,8 +167,11 @@ func buildPageMetadataInvites(r *http.Request) (auth.PageMetadata, error) {
 	}
 
 	return auth.PageMetadata{
-		PageMetadata: base,
-		State:        state,
+		Offset: base.Offset,
+		Limit:  base.Limit,
+		Order:  base.Order,
+		Dir:    base.Dir,
+		State:  state,
 	}, nil
 }
 

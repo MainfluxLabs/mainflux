@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/modbus"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/cron"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -221,14 +220,12 @@ func (cr clientRepository) retrieve(ctx context.Context, query, cquery string, p
 	page := modbus.ClientsPage{
 		Clients: items,
 		PageMetadata: modbus.PageMetadata{
-			PageMetadata: apiutil.PageMetadata{
-				Total:  total,
-				Offset: params["offset"].(uint64),
-				Limit:  params["limit"].(uint64),
-				Order:  params["order"].(string),
-				Dir:    params["dir"].(string),
-			},
-			Name: params["name"].(string),
+			Total:  total,
+			Offset: params["offset"].(uint64),
+			Limit:  params["limit"].(uint64),
+			Order:  params["order"].(string),
+			Dir:    params["dir"].(string),
+			Name:   params["name"].(string),
 		},
 	}
 

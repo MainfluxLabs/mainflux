@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -222,102 +221,84 @@ func TestRetrieveProfilesByGroupIDs(t *testing.T) {
 	}{
 		"retrieve all profiles by group IDs": {
 			pageMetadata: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  n,
-					Dir:    descDir,
-					Order:  idOrder,
-				},
+				Offset: 0,
+				Limit:  n,
+				Dir:    descDir,
+				Order:  idOrder,
 			},
 			size: n,
 		},
 		"retrieve all profiles by group IDs without limit": {
 			pageMetadata: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Limit: 0,
-					Dir:   descDir,
-					Order: idOrder,
-				},
+				Limit: 0,
+				Dir:   descDir,
+				Order: idOrder,
 			},
 			size: n,
 		},
 		"retrieve subset of profiles by group IDs": {
 			pageMetadata: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: offset,
-					Limit:  n,
-					Dir:    descDir,
-					Order:  idOrder,
-				},
+				Offset: offset,
+				Limit:  n,
+				Dir:    descDir,
+				Order:  idOrder,
 			},
 			size: n - offset,
 		},
 		"retrieve profiles by group IDs with existing name": {
 			pageMetadata: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  n,
-					Dir:    descDir,
-					Order:  idOrder,
-				},
-				Name: "test-profile-101",
+				Offset: 0,
+				Limit:  n,
+				Dir:    descDir,
+				Order:  idOrder,
+				Name:   "test-profile-101",
 			},
 			size: 1,
 		},
 		"retrieve all profiles by group IDs with non-existing name": {
 			pageMetadata: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  n,
-					Dir:    descDir,
-					Order:  idOrder,
-				},
-				Name: "wrong",
+				Offset: 0,
+				Limit:  n,
+				Dir:    descDir,
+				Order:  idOrder,
+				Name:   "wrong",
 			},
 			size: 0,
 		},
 		"retrieve all profiles by group IDs with existing metadata": {
 			pageMetadata: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  n,
-					Dir:    descDir,
-					Order:  idOrder,
-				},
+				Offset:   0,
+				Limit:    n,
+				Dir:      descDir,
+				Order:    idOrder,
 				Metadata: metadata,
 			},
 			size: metaNum,
 		},
 		"retrieve all profiles by group IDs with non-existing metadata": {
 			pageMetadata: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  n,
-					Dir:    descDir,
-					Order:  idOrder,
-				},
+				Offset:   0,
+				Limit:    n,
+				Dir:      descDir,
+				Order:    idOrder,
 				Metadata: wrongMeta,
 			},
 		},
 		"retrieve profiles by group IDs sorted by name ascendant": {
 			pageMetadata: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  n,
-					Order:  nameOrder,
-					Dir:    ascDir,
-				},
+				Offset: 0,
+				Limit:  n,
+				Order:  nameOrder,
+				Dir:    ascDir,
 			},
 			size: n,
 		},
 		"retrieve profiles by group IDs sorted by name descendent": {
 			pageMetadata: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  n,
-					Order:  nameOrder,
-					Dir:    descDir,
-				},
+				Offset: 0,
+				Limit:  n,
+				Order:  nameOrder,
+				Dir:    descDir,
 			},
 			size: n,
 		},

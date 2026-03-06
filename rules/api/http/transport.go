@@ -111,8 +111,11 @@ func buildRulesPageMetadata(r *http.Request) (rules.PageMetadata, error) {
 	}
 	n, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
 	return rules.PageMetadata{
-		PageMetadata: base,
-		Name:         n,
+		Offset: base.Offset,
+		Limit:  base.Limit,
+		Order:  base.Order,
+		Dir:    base.Dir,
+		Name:   n,
 	}, nil
 }
 

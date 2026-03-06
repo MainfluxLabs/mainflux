@@ -82,21 +82,22 @@ func buildOrgsPageMetadata(r *http.Request) (auth.PageMetadata, error) {
 	n, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
 	m, _ := apiutil.ReadMetadataQuery(r, apiutil.MetadataKey, nil)
 	return auth.PageMetadata{
-		PageMetadata: base,
-		Name:         n,
-		Metadata:     m,
+		Offset:   base.Offset,
+		Limit:    base.Limit,
+		Order:    base.Order,
+		Dir:      base.Dir,
+		Name:     n,
+		Metadata: m,
 	}, nil
 }
 
 func buildOrgsPageMetadataFromBody(r *http.Request) (auth.PageMetadata, error) {
 	if r.Body == nil || r.ContentLength == 0 {
 		return auth.PageMetadata{
-			PageMetadata: apiutil.PageMetadata{
-				Offset: apiutil.DefOffset,
-				Limit:  apiutil.DefLimit,
-				Order:  apiutil.IDOrder,
-				Dir:    apiutil.DescDir,
-			},
+			Offset: apiutil.DefOffset,
+			Limit:  apiutil.DefLimit,
+			Order:  apiutil.IDOrder,
+			Dir:    apiutil.DescDir,
 		}, nil
 	}
 	var pm auth.PageMetadata

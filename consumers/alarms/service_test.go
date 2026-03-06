@@ -8,7 +8,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/consumers/alarms/mocks"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	authmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
@@ -149,10 +148,8 @@ func TestListAlarmsByGroup(t *testing.T) {
 			token:   token,
 			groupID: groupID,
 			pageMetadata: alarms.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(n),
-				},
+				Offset: 0,
+				Limit:  uint64(n),
 			},
 			size: uint64(n),
 			err:  nil,
@@ -162,7 +159,7 @@ func TestListAlarmsByGroup(t *testing.T) {
 			token:   token,
 			groupID: groupID,
 			pageMetadata: alarms.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{Limit: 0},
+				Limit: 0,
 			},
 			size: uint64(n),
 			err:  nil,
@@ -172,10 +169,8 @@ func TestListAlarmsByGroup(t *testing.T) {
 			token:   token,
 			groupID: groupID,
 			pageMetadata: alarms.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: uint64(n) - 1,
-					Limit:  uint64(n),
-				},
+				Offset: uint64(n) - 1,
+				Limit:  uint64(n),
 			},
 			size: 1,
 			err:  nil,
@@ -185,10 +180,8 @@ func TestListAlarmsByGroup(t *testing.T) {
 			token:   token,
 			groupID: groupID,
 			pageMetadata: alarms.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: uint64(n) + 1,
-					Limit:  uint64(n),
-				},
+				Offset: uint64(n) + 1,
+				Limit:  uint64(n),
 			},
 			size: 0,
 			err:  nil,
@@ -198,10 +191,8 @@ func TestListAlarmsByGroup(t *testing.T) {
 			token:   wrongValue,
 			groupID: groupID,
 			pageMetadata: alarms.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(n),
-				},
+				Offset: 0,
+				Limit:  uint64(n),
 			},
 			size: 0,
 			err:  errors.ErrAuthentication,
@@ -211,10 +202,8 @@ func TestListAlarmsByGroup(t *testing.T) {
 			token:   token,
 			groupID: wrongValue,
 			pageMetadata: alarms.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(n),
-				},
+				Offset: 0,
+				Limit:  uint64(n),
 			},
 			size: 0,
 			err:  errors.ErrAuthorization,
@@ -247,10 +236,8 @@ func TestListAlarmsByThing(t *testing.T) {
 			token:   token,
 			thingID: thingID,
 			pageMetadata: alarms.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(n),
-				},
+				Offset: 0,
+				Limit:  uint64(n),
 			},
 			size: uint64(n),
 			err:  nil,
@@ -260,7 +247,7 @@ func TestListAlarmsByThing(t *testing.T) {
 			token:   token,
 			thingID: thingID,
 			pageMetadata: alarms.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{Limit: 0},
+				Limit: 0,
 			},
 			size: uint64(n),
 			err:  nil,
@@ -270,10 +257,8 @@ func TestListAlarmsByThing(t *testing.T) {
 			token:   token,
 			thingID: thingID,
 			pageMetadata: alarms.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: uint64(n) - 1,
-					Limit:  uint64(n),
-				},
+				Offset: uint64(n) - 1,
+				Limit:  uint64(n),
 			},
 			size: 1,
 			err:  nil,
@@ -283,10 +268,8 @@ func TestListAlarmsByThing(t *testing.T) {
 			token:   token,
 			thingID: thingID,
 			pageMetadata: alarms.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: uint64(n) + 1,
-					Limit:  uint64(n),
-				},
+				Offset: uint64(n) + 1,
+				Limit:  uint64(n),
 			},
 			size: 0,
 			err:  nil,
@@ -296,10 +279,8 @@ func TestListAlarmsByThing(t *testing.T) {
 			token:   wrongValue,
 			thingID: thingID,
 			pageMetadata: alarms.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(n),
-				},
+				Offset: 0,
+				Limit:  uint64(n),
 			},
 			size: 0,
 			err:  errors.ErrAuthentication,
@@ -309,10 +290,8 @@ func TestListAlarmsByThing(t *testing.T) {
 			token:   token,
 			thingID: wrongValue,
 			pageMetadata: alarms.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(n),
-				},
+				Offset: 0,
+				Limit:  uint64(n),
 			},
 			size: 0,
 			err:  errors.ErrAuthorization,
@@ -345,10 +324,8 @@ func TestListAlarmsByOrg(t *testing.T) {
 			token: token,
 			orgID: orgID,
 			pageMetadata: alarms.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(n),
-				},
+				Offset: 0,
+				Limit:  uint64(n),
 			},
 			size: uint64(n),
 			err:  nil,
@@ -358,7 +335,7 @@ func TestListAlarmsByOrg(t *testing.T) {
 			token: token,
 			orgID: orgID,
 			pageMetadata: alarms.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{Limit: 0},
+				Limit: 0,
 			},
 			size: uint64(n),
 			err:  nil,
@@ -368,10 +345,8 @@ func TestListAlarmsByOrg(t *testing.T) {
 			token: token,
 			orgID: wrongValue,
 			pageMetadata: alarms.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(n),
-				},
+				Offset: 0,
+				Limit:  uint64(n),
 			},
 			size: 0,
 			err:  nil,
@@ -383,10 +358,8 @@ func TestListAlarmsByOrg(t *testing.T) {
 			token: wrongValue,
 			orgID: orgID,
 			pageMetadata: alarms.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(n),
-				},
+				Offset: 0,
+				Limit:  uint64(n),
 			},
 			size: uint64(n),
 			err:  nil,
@@ -405,7 +378,7 @@ func TestViewAlarm(t *testing.T) {
 	svc := newService()
 	saveAlarms(t, svc, 1)
 
-	page, err := svc.ListAlarmsByThing(context.Background(), token, thingID, alarms.PageMetadata{PageMetadata: apiutil.PageMetadata{Limit: 10}})
+	page, err := svc.ListAlarmsByThing(context.Background(), token, thingID, alarms.PageMetadata{Limit: 10})
 	require.Nil(t, err)
 	require.Equal(t, 1, len(page.Alarms))
 	alarmID := page.Alarms[0].ID
@@ -446,7 +419,7 @@ func TestRemoveAlarms(t *testing.T) {
 	svc := newService()
 	saveAlarms(t, svc, 1)
 
-	page, err := svc.ListAlarmsByThing(context.Background(), token, thingID, alarms.PageMetadata{PageMetadata: apiutil.PageMetadata{Limit: 10}})
+	page, err := svc.ListAlarmsByThing(context.Background(), token, thingID, alarms.PageMetadata{Limit: 10})
 	require.Nil(t, err)
 	require.Equal(t, 1, len(page.Alarms))
 	alarmID := page.Alarms[0].ID
@@ -488,7 +461,7 @@ func TestRemoveAlarmsByThing(t *testing.T) {
 	n := 3
 	saveAlarms(t, svc, n)
 
-	page, err := svc.ListAlarmsByThing(context.Background(), token, thingID, alarms.PageMetadata{PageMetadata: apiutil.PageMetadata{Limit: 20}})
+	page, err := svc.ListAlarmsByThing(context.Background(), token, thingID, alarms.PageMetadata{Limit: 20})
 	require.Nil(t, err)
 	require.Equal(t, n, len(page.Alarms))
 
@@ -514,7 +487,7 @@ func TestRemoveAlarmsByThing(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
 
-	page, err = svc.ListAlarmsByThing(context.Background(), token, thingID, alarms.PageMetadata{PageMetadata: apiutil.PageMetadata{}})
+	page, err = svc.ListAlarmsByThing(context.Background(), token, thingID, alarms.PageMetadata{})
 	require.Nil(t, err)
 	assert.Equal(t, 0, len(page.Alarms), "expected no alarms after removal by thing")
 }
@@ -524,7 +497,7 @@ func TestRemoveAlarmsByGroup(t *testing.T) {
 	n := 3
 	saveAlarms(t, svc, n)
 
-	page, err := svc.ListAlarmsByGroup(context.Background(), token, groupID, alarms.PageMetadata{PageMetadata: apiutil.PageMetadata{Limit: 20}})
+	page, err := svc.ListAlarmsByGroup(context.Background(), token, groupID, alarms.PageMetadata{Limit: 20})
 	require.Nil(t, err)
 	require.Equal(t, n, len(page.Alarms))
 
@@ -550,7 +523,7 @@ func TestRemoveAlarmsByGroup(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
 
-	page, err = svc.ListAlarmsByGroup(context.Background(), token, groupID, alarms.PageMetadata{PageMetadata: apiutil.PageMetadata{}})
+	page, err = svc.ListAlarmsByGroup(context.Background(), token, groupID, alarms.PageMetadata{})
 	require.Nil(t, err)
 	assert.Equal(t, 0, len(page.Alarms), "expected no alarms after removal by group")
 }
@@ -573,10 +546,8 @@ func TestExportAlarmsByThing(t *testing.T) {
 			token:   token,
 			thingID: thingID,
 			pageMetadata: alarms.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(n),
-				},
+				Offset: 0,
+				Limit:  uint64(n),
 			},
 			size: uint64(n),
 			err:  nil,
@@ -586,7 +557,7 @@ func TestExportAlarmsByThing(t *testing.T) {
 			token:   token,
 			thingID: thingID,
 			pageMetadata: alarms.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{Limit: 0},
+				Limit: 0,
 			},
 			size: uint64(n),
 			err:  nil,
@@ -596,10 +567,8 @@ func TestExportAlarmsByThing(t *testing.T) {
 			token:   wrongValue,
 			thingID: thingID,
 			pageMetadata: alarms.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(n),
-				},
+				Offset: 0,
+				Limit:  uint64(n),
 			},
 			size: 0,
 			err:  errors.ErrAuthentication,
@@ -609,10 +578,8 @@ func TestExportAlarmsByThing(t *testing.T) {
 			token:   token,
 			thingID: wrongValue,
 			pageMetadata: alarms.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  uint64(n),
-				},
+				Offset: 0,
+				Limit:  uint64(n),
 			},
 			size: 0,
 			err:  errors.ErrAuthorization,

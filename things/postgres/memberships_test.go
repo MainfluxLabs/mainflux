@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -204,11 +203,9 @@ func TestRetrieveByGroup(t *testing.T) {
 			desc:    "retrieve group memberships",
 			groupID: gr.ID,
 			pageMeta: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  5,
-					Total:  n,
-				},
+				Offset: 0,
+				Limit:  5,
+				Total:  n,
 			},
 			size: 5,
 			err:  nil,
@@ -217,11 +214,9 @@ func TestRetrieveByGroup(t *testing.T) {
 			desc:    "retrieve last group membership",
 			groupID: gr.ID,
 			pageMeta: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: n - 1,
-					Limit:  1,
-					Total:  n,
-				},
+				Offset: n - 1,
+				Limit:  1,
+				Total:  n,
 			},
 			size: 1,
 			err:  nil,
@@ -230,11 +225,9 @@ func TestRetrieveByGroup(t *testing.T) {
 			desc:    "retrieve group memberships with invalid group id",
 			groupID: invalidID,
 			pageMeta: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  n,
-					Total:  0,
-				},
+				Offset: 0,
+				Limit:  n,
+				Total:  0,
 			},
 			err: dbutil.ErrRetrieveEntity,
 		},
@@ -242,11 +235,9 @@ func TestRetrieveByGroup(t *testing.T) {
 			desc:    "retrieve group memberships without group id",
 			groupID: "",
 			pageMeta: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  n,
-					Total:  0,
-				},
+				Offset: 0,
+				Limit:  n,
+				Total:  0,
 			},
 			size: 0,
 

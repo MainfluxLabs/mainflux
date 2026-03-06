@@ -7,7 +7,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-kit/kit/endpoint"
@@ -103,14 +102,12 @@ func toPageMetadata(pm *protomfx.PageMetadata) users.PageMetadata {
 		return users.PageMetadata{}
 	}
 	return users.PageMetadata{
-		PageMetadata: apiutil.PageMetadata{
-			Total:  pm.GetTotal(),
-			Offset: pm.GetOffset(),
-			Limit:  pm.GetLimit(),
-			Order:  pm.GetOrder(),
-			Dir:    pm.GetDir(),
-		},
-		Email: pm.GetEmail(),
+		Total:  pm.GetTotal(),
+		Offset: pm.GetOffset(),
+		Limit:  pm.GetLimit(),
+		Order:  pm.GetOrder(),
+		Dir:    pm.GetDir(),
+		Email:  pm.GetEmail(),
 	}
 }
 

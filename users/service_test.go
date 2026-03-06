@@ -350,10 +350,8 @@ func TestListUsers(t *testing.T) {
 
 	for desc, tc := range cases {
 		pm := users.PageMetadata{
-			PageMetadata: apiutil.PageMetadata{
-				Offset: tc.offset,
-				Limit:  tc.limit,
-			},
+			Offset: tc.offset,
+			Limit:  tc.limit,
 			Email:  tc.email,
 			Status: "all",
 		}
@@ -578,14 +576,14 @@ func TestListPlatformInvites(t *testing.T) {
 
 	cases := map[string]struct {
 		token string
-		pm    users.PageMetadataInvites
+		pm    users.PageMetadata
 		size  uint64
 		err   error
 	}{
-		"list platform invites":                        {tokenAdmin, users.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n}}, n, nil},
-		"list half platform invites":                   {tokenAdmin, users.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n / 2}}, n / 2, nil},
-		"list last platform invite":                    {tokenAdmin, users.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: n - 1}}, 1, nil},
-		"list platform invites as non-root-admin user": {tokenUser, users.PageMetadataInvites{}, 0, errors.ErrAuthorization},
+		"list platform invites":                        {tokenAdmin, users.PageMetadata{Limit: n}, n, nil},
+		"list half platform invites":                   {tokenAdmin, users.PageMetadata{Limit: n / 2}, n / 2, nil},
+		"list last platform invite":                    {tokenAdmin, users.PageMetadata{Limit: 1, Offset: n - 1}, 1, nil},
+		"list platform invites as non-root-admin user": {tokenUser, users.PageMetadata{}, 0, errors.ErrAuthorization},
 	}
 
 	for desc, tc := range cases {

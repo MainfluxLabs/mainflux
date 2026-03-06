@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -315,36 +314,30 @@ func TestRetrieveByIDs(t *testing.T) {
 	}{
 		"retrieve all groups": {
 			pageMetadata: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  n,
-					Order:  idOrder,
-					Dir:    descDir,
-				},
+				Offset: 0,
+				Limit:  n,
+				Order:  idOrder,
+				Dir:    descDir,
 			},
 			size: n,
 			ids:  ids,
 		},
 		"retrieve groups without ids": {
 			pageMetadata: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  n,
-					Dir:    descDir,
-					Order:  idOrder,
-				},
+				Offset: 0,
+				Limit:  n,
+				Dir:    descDir,
+				Order:  idOrder,
 			},
 			size: 0,
 			ids:  []string{},
 		},
 		"retrieve groups with malformed ids": {
 			pageMetadata: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  n,
-					Dir:    descDir,
-					Order:  idOrder,
-				},
+				Offset: 0,
+				Limit:  n,
+				Dir:    descDir,
+				Order:  idOrder,
 			},
 			size: 0,
 			ids:  malformedIDs,
@@ -352,61 +345,51 @@ func TestRetrieveByIDs(t *testing.T) {
 
 		"retrieve all groups by IDs without limit": {
 			pageMetadata: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Limit: 0,
-					Dir:   descDir,
-					Order: idOrder,
-				},
+				Limit: 0,
+				Dir:   descDir,
+				Order: idOrder,
 			},
 			size: n,
 			ids:  ids,
 		},
 		"retrieve subset of groups by IDs": {
 			pageMetadata: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: offset,
-					Limit:  n,
-					Dir:    descDir,
-					Order:  idOrder,
-				},
+				Offset: offset,
+				Limit:  n,
+				Dir:    descDir,
+				Order:  idOrder,
 			},
 			size: n - offset,
 			ids:  ids,
 		},
 		"retrieve groups by IDs with existing name": {
 			pageMetadata: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  n,
-					Dir:    descDir,
-					Order:  idOrder,
-				},
-				Name: "test-group-5",
+				Offset: 0,
+				Limit:  n,
+				Dir:    descDir,
+				Order:  idOrder,
+				Name:   "test-group-5",
 			},
 			size: 1,
 			ids:  ids,
 		},
 		"retrieve groups by IDs with non-existing name": {
 			pageMetadata: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  n,
-					Dir:    descDir,
-					Order:  idOrder,
-				},
-				Name: "wrong",
+				Offset: 0,
+				Limit:  n,
+				Dir:    descDir,
+				Order:  idOrder,
+				Name:   "wrong",
 			},
 			size: 0,
 			ids:  ids,
 		},
 		"retrieve groups by IDs with existing metadata": {
 			pageMetadata: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  n,
-					Dir:    descDir,
-					Order:  idOrder,
-				},
+				Offset:   0,
+				Limit:    n,
+				Dir:      descDir,
+				Order:    idOrder,
 				Metadata: metadata,
 			},
 			size: metaNum,
@@ -414,36 +397,30 @@ func TestRetrieveByIDs(t *testing.T) {
 		},
 		"retrieve groups by IDs with non-existing metadata": {
 			pageMetadata: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  n,
-					Dir:    descDir,
-					Order:  idOrder,
-				},
+				Offset:   0,
+				Limit:    n,
+				Dir:      descDir,
+				Order:    idOrder,
 				Metadata: wrongMeta,
 			},
 			ids: ids,
 		},
 		"retrieve groups by IDs sorted by name ascendant": {
 			pageMetadata: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  n,
-					Order:  nameOrder,
-					Dir:    ascDir,
-				},
+				Offset: 0,
+				Limit:  n,
+				Order:  nameOrder,
+				Dir:    ascDir,
 			},
 			size: n,
 			ids:  ids,
 		},
 		"retrieve groups by IDs sorted by name descendent": {
 			pageMetadata: things.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  n,
-					Order:  nameOrder,
-					Dir:    descDir,
-				},
+				Offset: 0,
+				Limit:  n,
+				Order:  nameOrder,
+				Dir:    descDir,
 			},
 			size: n,
 			ids:  ids,

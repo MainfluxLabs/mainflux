@@ -90,8 +90,11 @@ func buildAlarmsPageMetadata(r *http.Request) (alarms.PageMetadata, error) {
 	}
 	pl, _ := apiutil.ReadMetadataQuery(r, apiutil.PayloadKey, nil)
 	return alarms.PageMetadata{
-		PageMetadata: base,
-		Payload:      pl,
+		Offset:  base.Offset,
+		Limit:   base.Limit,
+		Order:   base.Order,
+		Dir:     base.Dir,
+		Payload: pl,
 	}, nil
 }
 

@@ -73,8 +73,11 @@ func decodeListGroupMemberships(_ context.Context, r *http.Request) (any, error)
 	}
 
 	pm := things.PageMetadata{
-		PageMetadata: base,
-		Email:        e,
+		Offset: base.Offset,
+		Limit:  base.Limit,
+		Order:  base.Order,
+		Dir:    base.Dir,
+		Email:  e,
 	}
 
 	req := listGroupMembershipsReq{

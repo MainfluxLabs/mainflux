@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/modbus"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
@@ -59,7 +58,7 @@ func (crm *clientRepositoryMock) RetrieveByThing(_ context.Context, thingID stri
 	return modbus.ClientsPage{
 		Clients: items,
 		PageMetadata: modbus.PageMetadata{
-			PageMetadata: apiutil.PageMetadata{Total: uint64(len(items))},
+			Total: uint64(len(items)),
 		},
 	}, nil
 }
@@ -85,7 +84,7 @@ func (crm *clientRepositoryMock) RetrieveByGroup(_ context.Context, groupID stri
 	return modbus.ClientsPage{
 		Clients: items,
 		PageMetadata: modbus.PageMetadata{
-			PageMetadata: apiutil.PageMetadata{Total: uint64(len(items))},
+			Total: uint64(len(items)),
 		},
 	}, nil
 }

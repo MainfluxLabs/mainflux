@@ -20,13 +20,18 @@ var AllowedOrders = map[string]string{
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
-	apiutil.PageMetadata
+	Total   uint64         `json:"total,omitempty"`
+	Offset  uint64         `json:"offset,omitempty"`
+	Limit   uint64         `json:"limit,omitempty"`
+	Order   string         `json:"order,omitempty"`
+	Dir     string         `json:"dir,omitempty"`
 	Payload map[string]any `json:"payload,omitempty"`
 }
 
 // Validate validates the page metadata.
 func (pm PageMetadata) Validate(maxLimitSize int) error {
-	return apiutil.ValidatePageMetadata(pm.PageMetadata, maxLimitSize, AllowedOrders)
+	base := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
+	return apiutil.ValidatePageMetadata(base, maxLimitSize, AllowedOrders)
 }
 
 // Service specifies an API that must be fullfiled by the domain service

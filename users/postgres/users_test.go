@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -152,11 +151,9 @@ func TestRetrieveByIDs(t *testing.T) {
 	}{
 		"retrieve all users filtered by email": {
 			pm: users.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  nUsers,
-					Total:  nUsers,
-				},
+				Offset: 0,
+				Limit:  nUsers,
+				Total:  nUsers,
 				Email:  "All",
 				Status: users.EnabledStatusKey,
 			},
@@ -165,11 +162,9 @@ func TestRetrieveByIDs(t *testing.T) {
 		},
 		"retrieve all users by email with limit and offset": {
 			pm: users.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 2,
-					Limit:  5,
-					Total:  nUsers,
-				},
+				Offset: 2,
+				Limit:  5,
+				Total:  nUsers,
 				Email:  "All",
 				Status: users.EnabledStatusKey,
 			},
@@ -178,10 +173,8 @@ func TestRetrieveByIDs(t *testing.T) {
 		},
 		"retrieve all users by email without limit": {
 			pm: users.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Limit: 0,
-					Total: nUsers,
-				},
+				Limit:  0,
+				Total:  nUsers,
 				Email:  "All",
 				Status: users.EnabledStatusKey,
 			},
@@ -190,11 +183,9 @@ func TestRetrieveByIDs(t *testing.T) {
 		},
 		"retrieve all users by metadata": {
 			pm: users.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  nUsers,
-					Total:  nUsers,
-				},
+				Offset:   0,
+				Limit:    nUsers,
+				Total:    nUsers,
 				Email:    "All",
 				Status:   users.EnabledStatusKey,
 				Metadata: meta,
@@ -204,11 +195,9 @@ func TestRetrieveByIDs(t *testing.T) {
 		},
 		"retrieve users by metadata and ids": {
 			pm: users.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  nUsers,
-					Total:  nUsers,
-				},
+				Offset:   0,
+				Limit:    nUsers,
+				Total:    nUsers,
 				Email:    "All",
 				Status:   users.EnabledStatusKey,
 				Metadata: meta,
@@ -218,11 +207,9 @@ func TestRetrieveByIDs(t *testing.T) {
 		},
 		"retrieve users by wrong metadata": {
 			pm: users.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  nUsers,
-					Total:  nUsers,
-				},
+				Offset:   0,
+				Limit:    nUsers,
+				Total:    nUsers,
 				Email:    "All",
 				Status:   users.EnabledStatusKey,
 				Metadata: wrongMeta,
@@ -232,11 +219,9 @@ func TestRetrieveByIDs(t *testing.T) {
 		},
 		"retrieve users by wrong metadata and ids": {
 			pm: users.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  nUsers,
-					Total:  nUsers,
-				},
+				Offset:   0,
+				Limit:    nUsers,
+				Total:    nUsers,
 				Email:    "All",
 				Status:   users.EnabledStatusKey,
 				Metadata: wrongMeta,
@@ -246,11 +231,9 @@ func TestRetrieveByIDs(t *testing.T) {
 		},
 		"retrieve all users by list of ids with limit and offset": {
 			pm: users.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 2,
-					Limit:  5,
-					Total:  nUsers,
-				},
+				Offset: 2,
+				Limit:  5,
+				Total:  nUsers,
 				Email:  "All",
 				Status: users.EnabledStatusKey,
 			},
@@ -259,11 +242,9 @@ func TestRetrieveByIDs(t *testing.T) {
 		},
 		"retrieve all users by list of ids with limit and offset and metadata": {
 			pm: users.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 1,
-					Limit:  5,
-					Total:  nUsers,
-				},
+				Offset:   1,
+				Limit:    5,
+				Total:    nUsers,
 				Email:    "All",
 				Status:   users.EnabledStatusKey,
 				Metadata: meta,
@@ -273,11 +254,9 @@ func TestRetrieveByIDs(t *testing.T) {
 		},
 		"retrieve all users from empty ids": {
 			pm: users.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 0,
-					Limit:  nUsers,
-					Total:  nUsers,
-				},
+				Offset: 0,
+				Limit:  nUsers,
+				Total:  nUsers,
 				Email:  "All",
 				Status: users.EnabledStatusKey,
 			},
@@ -286,11 +265,9 @@ func TestRetrieveByIDs(t *testing.T) {
 		},
 		"retrieve all users from empty ids with offset": {
 			pm: users.PageMetadata{
-				PageMetadata: apiutil.PageMetadata{
-					Offset: 1,
-					Limit:  5,
-					Total:  nUsers,
-				},
+				Offset: 1,
+				Limit:  5,
+				Total:  nUsers,
 				Email:  "All",
 				Status: users.EnabledStatusKey,
 			},

@@ -41,26 +41,6 @@ type GroupInvite struct {
 	MemberRole string `json:"member_role"`
 }
 
-// PageMetadata contains page metadata that helps navigation.
-type PageMetadata struct {
-	apiutil.PageMetadata
-	State    string         `json:"state,omitempty"`
-	Name     string         `json:"name,omitempty"`
-	Metadata map[string]any `json:"metadata,omitempty"`
-	Email    string         `json:"email,omitempty"`
-}
-
-// Validate validates the page metadata.
-func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
-	if err := apiutil.ValidatePageMetadata(pm.PageMetadata, maxLimitSize, AllowedOrders); err != nil {
-		return err
-	}
-	if len(pm.Name) > maxNameSize {
-		return apiutil.ErrNameSize
-	}
-	return nil
-}
-
 const (
 	UserTypeInvitee = "invitee"
 	UserTypeInviter = "inviter"

@@ -12,7 +12,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/downlinks"
 	dlmocks "github.com/MainfluxLabs/mainflux/downlinks/mocks"
 	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/cron"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -153,7 +152,7 @@ func TestListDownlinksByThing(t *testing.T) {
 			desc:    "list downlinks by thing with limit",
 			token:   adminToken,
 			thingID: thingID,
-			pm:      downlinks.PageMetadata{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: 0}},
+			pm:      downlinks.PageMetadata{Limit: 1, Offset: 0},
 			size:    1,
 			err:     nil,
 		},
@@ -161,7 +160,7 @@ func TestListDownlinksByThing(t *testing.T) {
 			desc:    "list downlinks by thing with offset beyond available",
 			token:   adminToken,
 			thingID: thingID,
-			pm:      downlinks.PageMetadata{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: 1}},
+			pm:      downlinks.PageMetadata{Limit: 1, Offset: 1},
 			size:    0,
 			err:     nil,
 		},
@@ -218,7 +217,7 @@ func TestListDownlinksByGroup(t *testing.T) {
 			desc:    "list downlinks by group with limit",
 			token:   adminToken,
 			groupID: groupID,
-			pm:      downlinks.PageMetadata{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: 0}},
+			pm:      downlinks.PageMetadata{Limit: 1, Offset: 0},
 			size:    1,
 			err:     nil,
 		},
@@ -226,7 +225,7 @@ func TestListDownlinksByGroup(t *testing.T) {
 			desc:    "list downlinks by group with offset beyond available",
 			token:   adminToken,
 			groupID: groupID,
-			pm:      downlinks.PageMetadata{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: 1}},
+			pm:      downlinks.PageMetadata{Limit: 1, Offset: 1},
 			size:    0,
 			err:     nil,
 		},

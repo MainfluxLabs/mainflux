@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/downlinks"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
@@ -59,7 +58,7 @@ func (drm *downlinkRepositoryMock) RetrieveByThing(_ context.Context, thingID st
 	return downlinks.DownlinksPage{
 		Downlinks: items,
 		PageMetadata: downlinks.PageMetadata{
-			PageMetadata: apiutil.PageMetadata{Total: uint64(len(items))},
+			Total: uint64(len(items)),
 		},
 	}, nil
 }
@@ -85,7 +84,7 @@ func (drm *downlinkRepositoryMock) RetrieveByGroup(_ context.Context, groupID st
 	return downlinks.DownlinksPage{
 		Downlinks: items,
 		PageMetadata: downlinks.PageMetadata{
-			PageMetadata: apiutil.PageMetadata{Total: uint64(len(items))},
+			Total: uint64(len(items)),
 		},
 	}, nil
 }
