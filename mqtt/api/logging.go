@@ -42,8 +42,8 @@ func (lm *loggingMiddleware) ListSubscriptions(ctx context.Context, groupID, tok
 
 func (lm *loggingMiddleware) CreateSubscription(ctx context.Context, sub mqtt.Subscription) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_subscription for thing id %s, group id %s, and subtopic %s took %s to complete",
-			sub.ThingID, sub.GroupID, sub.Subtopic, time.Since(begin))
+		message := fmt.Sprintf("Method create_subscription for thing id %s, group id %s, and topic %s took %s to complete",
+			sub.ThingID, sub.GroupID, sub.Topic, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -56,8 +56,8 @@ func (lm *loggingMiddleware) CreateSubscription(ctx context.Context, sub mqtt.Su
 
 func (lm *loggingMiddleware) RemoveSubscription(ctx context.Context, sub mqtt.Subscription) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_subscription for thing id %s, group id %s, and subtopic %s took %s to complete",
-			sub.ThingID, sub.GroupID, sub.Subtopic, time.Since(begin))
+		message := fmt.Sprintf("Method remove_subscription for thing id %s, group id %s, and topic %s took %s to complete",
+			sub.ThingID, sub.GroupID, sub.Topic, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

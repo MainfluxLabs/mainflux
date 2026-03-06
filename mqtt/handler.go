@@ -287,13 +287,8 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 
 	var subs []Subscription
 	for _, t := range *topics {
-		subtopic, err := messaging.NormalizeSubtopic(t)
-		if err != nil {
-			return nil, err
-		}
-
 		sub := Subscription{
-			Subtopic:  subtopic,
+			Topic:     t,
 			GroupID:   groupID.GetValue(),
 			ThingID:   thingID,
 			CreatedAt: float64(time.Now().UnixNano()) / 1e9,

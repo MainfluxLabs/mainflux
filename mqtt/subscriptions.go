@@ -4,7 +4,7 @@ import "context"
 
 // Subscription represents a user Subscription.
 type Subscription struct {
-	Subtopic  string
+	Topic     string
 	ThingID   string
 	GroupID   string
 	CreatedAt float64
