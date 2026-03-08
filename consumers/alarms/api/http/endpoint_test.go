@@ -51,10 +51,10 @@ type alarmRes struct {
 }
 
 type alarmsPageRes struct {
-	Total  uint64      `json:"total"`
-	Offset uint64      `json:"offset"`
-	Limit  uint64      `json:"limit"`
-	Alarms []alarmRes  `json:"alarms"`
+	Total  uint64     `json:"total"`
+	Offset uint64     `json:"offset"`
+	Limit  uint64     `json:"limit"`
+	Alarms []alarmRes `json:"alarms"`
 }
 
 func newService() alarms.Service {
@@ -117,7 +117,7 @@ func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 	for i := 0; i < n; i++ {
 		msg := protomfx.Message{
 			Publisher: thingID,
-			Subject:   fmt.Sprintf("alarms.%s", ruleID),
+			Subject:   fmt.Sprintf("alarms.rule.%s", ruleID),
 			Subtopic:  subtopic,
 			Protocol:  protocol,
 			Payload:   pyd,

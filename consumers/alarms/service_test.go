@@ -58,7 +58,7 @@ func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 	for i := 0; i < n; i++ {
 		msg := protomfx.Message{
 			Publisher: thingID,
-			Subject:   fmt.Sprintf("alarms.%s", ruleID),
+			Subject:   fmt.Sprintf("alarms.rule.%s", ruleID),
 			Subtopic:  subtopic,
 			Protocol:  protocol,
 			Payload:   pyd,
@@ -77,7 +77,7 @@ func TestConsume(t *testing.T) {
 
 	validMsg := protomfx.Message{
 		Publisher: thingID,
-		Subject:   fmt.Sprintf("alarms.%s", ruleID),
+		Subject:   fmt.Sprintf("alarms.rule.%s", ruleID),
 		Subtopic:  subtopic,
 		Protocol:  protocol,
 		Payload:   pyd,
