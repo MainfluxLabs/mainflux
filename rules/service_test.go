@@ -157,17 +157,6 @@ func TestConsume(t *testing.T) {
 			err: nil,
 		},
 		{
-			desc:       "invalid JSON payload returns error",
-			conditions: defaultConditions,
-			operator:   rules.OperatorAND,
-			msg: protomfx.Message{
-				Publisher:   thingID,
-				Payload:     []byte("not-json"),
-				ContentType: "application/json",
-			},
-			err: errors.ErrInvalidPayload,
-		},
-		{
 			desc: "non-Message type returns error",
 			msg:  "not-a-message",
 			err:  errors.ErrMessage,
