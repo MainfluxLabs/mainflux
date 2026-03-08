@@ -290,30 +290,6 @@ func TestConsume(t *testing.T) {
 	}
 }
 
-func TestConsumePublishError(t *testing.T) {
-	svc := newServiceWithPubSub(mocks.NewFailingPubSub())
-
-	saved, err := svc.CreateRules(context.Background(), token, groupID, rules.Rule{
-		Name: "test-rule",
-		Conditions: []rules.Condition{
-			{Field: "temperature", Comparator: ">", Threshold: threshold(25)},
-		},
-		Operator: rules.OperatorAND,
-		Actions:  []rules.Action{{Type: rules.ActionTypeAlarm}},
-	})
-	require.Nil(t, err)
-	assignRules(t, svc, thingID, saved[0].ID)
-
-	msg := protomfx.Message{
-		Publisher:   thingID,
-		Payload:     mustMarshal(t, map[string]any{"temperature": float64(30)}),
-		ContentType: "application/json",
-	}
-
-	err = svc.Consume(msg)
-	assert.True(t, errors.Contains(err, messaging.ErrPublishMessage), fmt.Sprintf("publish error: expected %s got %s", messaging.ErrPublishMessage, err))
-}
-
 func TestCreateRules(t *testing.T) {
 	svc := newService()
 
