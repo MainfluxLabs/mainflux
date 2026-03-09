@@ -524,13 +524,7 @@ components:
           type: string
           example: "Creates alarm and executes SMTP notifier on low temperature reading"
         script:
-          type: string
-          example: |
-              temp = mfx.message.payload["temperature"]
-              if temp < 3.5 then
-                  mfx.create_alarm()
-                  mfx.smtp_notify("654e4567-e89b-12d3-a456-426614174999")
-              end
+          $ref: "#/components/schemas/ExampleScript" 
       required: [name, script]
     ScriptResSchema:
       type: object
@@ -550,15 +544,10 @@ components:
           type: string
           example: "Creates alarm and executes SMTP notifier on low temperature reading"
         script:
-          type: string
-          example: |
-            temp = mfx.message.payload["temperature"]
-            if temp < 3.5 then
-                mfx.create_alarm()
-                mfx.smtp_notify("654e4567-e89b-12d3-a456-426614174999")
-            end
+          $ref: "#/components/schemas/ExampleScript" 
       required: [id, group_id, name, script]
     ScriptRunResSchema:
+
       type: object
       properties:
         id:
@@ -594,6 +583,17 @@ components:
           type: string
           example: ""
       required: [id, script_id, thing_id, logs, started_at, finished_at, status]
+    ExampleScript:
+      type: string
+      example: | 
+          blacklistedUserID = "jane-doe-1"
+
+          userAccesses = mfx.message.payload["user_accesses"]
+
+          if userAccesses[blacklistedUserID] ~= nil then
+            mfx.create_alarm()
+            mfx.smtp_notify("654e4567-e89b-12d3-a456-426614174999")
+          end
 
   parameters:
     RuleId:
@@ -736,12 +736,8 @@ components:
             scripts:
               - name: "Low temperature notifier"
                 description: "Create alarm and send SMTP notification on low temperature."
-                script: |
-                  temp = mfx.message.payload["temperature"]
-                  if temp < 3.5 then
-                      mfx.create_alarm()
-                      mfx.smtp_notify("654e4567-e89b-12d3-a456-426614174999")
-                  end
+                script:
+                  $ref: "#/components/schemas/ExampleScript" 
     UpdateScriptReq:
       description: JSON-formatted document describing the updated Lua script.
       required: true
@@ -752,12 +748,8 @@ components:
           example:
             name: "Enhanced Temperature Transformation"
             description: "Low temperature notifier"
-            script: |
-                temp = mfx.message.payload["temperature"]
-                if temp < 3.5 then
-                    mfx.create_alarm()
-                    mfx.smtp_notify("654e4567-e89b-12d3-a456-426614174999")
-                end
+            script:
+              $ref: "#/components/schemas/ExampleScript" 
     RemoveScriptsReq:
       description: JSON-formatted document describing the IDs of scripts for deleting.
       required: true
@@ -915,12 +907,8 @@ components:
                 group_id: "321e4567-e89b-12d3-a456-426614174def"
                 name: "Temperature Data Transformation"
                 description: "Low temperature notifier"
-                script: |
-                  temp = mfx.message.payload["temperature"]
-                  if temp < 3.5 then
-                      mfx.create_alarm()
-                      mfx.smtp_notify("654e4567-e89b-12d3-a456-426614174999")
-                  end
+                script:
+                  $ref: "#/components/schemas/ExampleScript" 
     ScriptRes:
       description: Script data retrieved.
       content:
@@ -932,12 +920,8 @@ components:
             group_id: "321e4567-e89b-12d3-a456-426614174def"
             name: "Low temperature notifier"
             description: "Low temperature notifier"
-            script: |
-                temp = mfx.message.payload["temperature"]
-                if temp < 3.5 then
-                    mfx.create_alarm()
-                    mfx.smtp_notify("654e4567-e89b-12d3-a456-426614174999")
-                end
+            script:
+              $ref: "#/components/schemas/ExampleScript" 
     ListScriptsRes:
       description: Scripts retrieved.
       content:
@@ -969,12 +953,8 @@ components:
                 group_id: "321e4567-e89b-12d3-a456-426614174def"
                 name: "Low temperature notifier"
                 description: "Create alarm and send SMTP notifier on low temperature value"
-                script: |
-                  temp = mfx.message.payload["temperature"]
-                  if temp < 3.5 then
-                      mfx.create_alarm()
-                      mfx.smtp_notify("654e4567-e89b-12d3-a456-426614174999")
-                  end
+                script:
+                  $ref: "#/components/schemas/ExampleScript" 
     ListScriptRunsRes:
       description: Script runs retrieved.
       content:
