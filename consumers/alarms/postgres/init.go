@@ -64,10 +64,12 @@ func migrateDB(db *sqlx.DB) error {
 				Up: []string{
 					`ALTER TABLE alarms ALTER COLUMN rule_id DROP NOT NULL;`,
 					`ALTER TABLE alarms ADD COLUMN script_id UUID;`,
+					`ALTER TABLE alarms ADD CONSTRAINT alarm_single_origin CHECK (num_nonnulls(rule_id, script_id) = 1)`,
 				},
 				Down: []string{
 					`ALTER TABLE alarms ALTER COLUMN rule_id SET NOT NULL;`,
 					`ALTER TABLE alarms DROP COLUMN IF EXISTS script_id;`,
+					`ALTER TABLE alarms DROP CONSTRAINT IF EXISTS alarm_single_origin;`,
 				},
 			},
 		},
