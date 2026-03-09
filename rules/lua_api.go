@@ -33,9 +33,9 @@ var luaSMTPNotify = luaAPIFunc{
 
 			msg := env.message
 			msg.Payload = encodedPayload
-			msg.Subject = fmt.Sprintf("%s.%s", subjectSMTP, notifierID)
+			subject := fmt.Sprintf("%s.%s", subjectSMTP, notifierID)
 
-			if err := env.service.pubsub.Publish(msg); err != nil {
+			if err := env.service.pubsub.Publish(subject, msg); err != nil {
 				ls.PushBoolean(false)
 				ls.PushString(err.Error())
 				return 2
@@ -65,9 +65,9 @@ var luaAlarmCreate = luaAPIFunc{
 
 			msg := env.message
 			msg.Payload = encodedPayload
-			msg.Subject = fmt.Sprintf("%s.%s.%s", subjectAlarms, alarms.AlarmOriginScript, env.script.ID)
+			subject := fmt.Sprintf("%s.%s.%s", subjectAlarms, alarms.AlarmOriginScript, env.script.ID)
 
-			if err := env.service.pubsub.Publish(msg); err != nil {
+			if err := env.service.pubsub.Publish(subject, msg); err != nil {
 				ls.PushBoolean(false)
 				ls.PushString(err.Error())
 				return 2

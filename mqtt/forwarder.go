@@ -42,13 +42,13 @@ func (f forwarder) Forward(id string, sub messaging.Subscriber, pub messaging.Pu
 }
 
 func handle(pub messaging.Publisher, logger log.Logger) handleFunc {
-	return func(msg protomfx.Message) error {
+	return func(subject string, msg protomfx.Message) error {
 		if msg.Protocol == protocol {
 			return nil
 		}
 
 		go func() {
-			if err := pub.Publish(msg); err != nil {
+			if err := pub.Publish(subject, msg); err != nil {
 				logger.Warn(fmt.Sprintf("Failed to forward message: %s", err))
 			}
 		}()
@@ -57,11 +57,10 @@ func handle(pub messaging.Publisher, logger log.Logger) handleFunc {
 	}
 }
 
-type handleFunc func(msg protomfx.Message) error
+type handleFunc func(subject string, msg protomfx.Message) error
 
-func (h handleFunc) Handle(msg protomfx.Message) error {
-	return h(msg)
-
+func (h handleFunc) Handle(subject string, msg protomfx.Message) error {
+	return h(subject, msg)
 }
 
 func (h handleFunc) Cancel() error {

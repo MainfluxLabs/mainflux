@@ -15,10 +15,11 @@ import (
 
 const (
 	numSubs   = 100
-	subtopic  = "subtopic"
 	invalidID = "invalid"
 	noLimit   = 0
 )
+
+var messagesTopic = "things.%s.messages"
 
 func TestSave(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
@@ -31,13 +32,13 @@ func TestSave(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	sub := mqtt.Subscription{
-		Subtopic: subtopic,
-		ThingID:  thingID,
-		GroupID:  grID,
+		Topic:   fmt.Sprintf(messagesTopic, thingID),
+		ThingID: thingID,
+		GroupID: grID,
 	}
 
 	sub2 := sub
-	sub2.Subtopic = "subtopic_2"
+	sub2.Topic = fmt.Sprintf(messagesTopic, thingID) + ".temp"
 
 	invalidSub := sub
 	invalidSub.ThingID = invalidID
@@ -49,17 +50,17 @@ func TestSave(t *testing.T) {
 	}{
 
 		{
-			desc: "save subscription successfully",
+			desc: "save subscription",
 			sub:  sub,
 			err:  nil,
 		},
 		{
-			desc: "subscribe thing to several subtopics successfully",
+			desc: "save subscription with different topic",
 			sub:  sub2,
 			err:  nil,
 		},
 		{
-			desc: "save invalid subscription",
+			desc: "save subscription with invalid thing ID",
 			sub:  invalidSub,
 			err:  dbutil.ErrCreateEntity,
 		},
@@ -85,9 +86,9 @@ func TestRemove(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	sub := mqtt.Subscription{
-		Subtopic: subtopic,
-		ThingID:  thingID,
-		GroupID:  grID,
+		Topic:   fmt.Sprintf(messagesTopic, thingID),
+		ThingID: thingID,
+		GroupID: grID,
 	}
 
 	nonExistingSub := sub
@@ -139,9 +140,9 @@ func TestRetrieveByGroup(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 		sub := mqtt.Subscription{
-			Subtopic: subtopic,
-			ThingID:  thID,
-			GroupID:  grID,
+			Topic:   fmt.Sprintf(messagesTopic, thID),
+			ThingID: thID,
+			GroupID: grID,
 		}
 
 		err = repo.Save(context.Background(), sub)

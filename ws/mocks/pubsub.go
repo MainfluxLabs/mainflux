@@ -16,7 +16,7 @@ import (
 var _ messaging.PubSub = (*mockPubSub)(nil)
 
 type MockPubSub interface {
-	Publish(protomfx.Message) error
+	Publish(string, protomfx.Message) error
 	Subscribe(string, string, messaging.MessageHandler) error
 	Unsubscribe(string, string) error
 	SetFail(bool)
@@ -33,7 +33,7 @@ type mockPubSub struct {
 func NewPubSub() MockPubSub {
 	return &mockPubSub{false, nil}
 }
-func (pubsub *mockPubSub) Publish(msg protomfx.Message) error {
+func (pubsub *mockPubSub) Publish(_ string, msg protomfx.Message) error {
 	if pubsub.conn != nil {
 		data, err := json.Marshal(msg)
 		if err != nil {

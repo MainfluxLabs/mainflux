@@ -76,7 +76,7 @@ const (
 	defEmailPassword     = ""
 	defEmailFromAddress  = ""
 	defEmailFromName     = ""
-	defEmailBaseTemplate = "base.tmpl"
+	defEmailTemplatesDir = "."
 
 	envLogLevel          = "MF_SMTP_NOTIFIER_LOG_LEVEL"
 	envFrom              = "MF_SMTP_NOTIFIER_FROM_ADDR"
@@ -107,7 +107,7 @@ const (
 	envEmailPassword     = "MF_EMAIL_PASSWORD"
 	envEmailFromAddress  = "MF_EMAIL_FROM_ADDRESS"
 	envEmailFromName     = "MF_EMAIL_FROM_NAME"
-	envEmailBaseTemplate = "MF_EMAIL_BASE_TEMPLATE"
+	envEmailTemplatesDir = "MF_EMAIL_TEMPLATES_DIR"
 )
 
 type config struct {
@@ -198,13 +198,13 @@ func loadConfig() config {
 	}
 
 	emailConf := email.Config{
-		FromAddress:      mainflux.Env(envEmailFromAddress, defEmailFromAddress),
-		FromName:         mainflux.Env(envEmailFromName, defEmailFromName),
-		Host:             mainflux.Env(envEmailHost, defEmailHost),
-		Port:             mainflux.Env(envEmailPort, defEmailPort),
-		Username:         mainflux.Env(envEmailUsername, defEmailUsername),
-		Password:         mainflux.Env(envEmailPassword, defEmailPassword),
-		BaseTemplatePath: mainflux.Env(envEmailBaseTemplate, defEmailBaseTemplate),
+		FromAddress:  mainflux.Env(envEmailFromAddress, defEmailFromAddress),
+		FromName:     mainflux.Env(envEmailFromName, defEmailFromName),
+		Host:         mainflux.Env(envEmailHost, defEmailHost),
+		Port:         mainflux.Env(envEmailPort, defEmailPort),
+		Username:     mainflux.Env(envEmailUsername, defEmailUsername),
+		Password:     mainflux.Env(envEmailPassword, defEmailPassword),
+		TemplatesDir: mainflux.Env(envEmailTemplatesDir, defEmailTemplatesDir),
 	}
 
 	dbConfig := postgres.Config{

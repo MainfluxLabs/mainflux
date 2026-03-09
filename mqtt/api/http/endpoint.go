@@ -33,7 +33,7 @@ func listSubscriptionsEndpoint(svc mqtt.Service) endpoint.Endpoint {
 
 		for _, sub := range subs.Subscriptions {
 			view := viewSubRes{
-				Subtopic:  sub.Subtopic,
+				Topic:     sub.Topic,
 				ThingID:   sub.ThingID,
 				GroupID:   sub.GroupID,
 				CreatedAt: sub.CreatedAt,

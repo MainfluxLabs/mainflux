@@ -3,8 +3,8 @@ package alarms
 import (
 	"context"
 	"encoding/json"
-	"strings"
 	"fmt"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -174,7 +174,7 @@ func (as *alarmService) createAlarm(ctx context.Context, alarm *Alarm) error {
 
 }
 
-func (as *alarmService) Consume(message any) error {
+func (as *alarmService) Consume(subject string, message any) error {
 	ctx := context.Background()
 
 	msg, ok := message.(protomfx.Message)
@@ -195,13 +195,13 @@ func (as *alarmService) Consume(message any) error {
 		Created:  msg.Created,
 	}
 
-	subject := strings.Split(msg.Subject, ".")
-	if len(subject) < 3 {
+	subParts := strings.Split(subject, ".")
+	if len(subParts) < 3 {
 		return errors.ErrInvalidSubject
 	}
 
-	originType := subject[1]
-	originID := subject[2]
+	originType := subParts[1]
+	originID := subParts[2]
 
 	switch originType {
 	case AlarmOriginRule:

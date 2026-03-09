@@ -466,7 +466,7 @@ func (rs *rulesService) RemoveScriptRuns(ctx context.Context, token string, ids 
 	return rs.rules.RemoveScriptRuns(ctx, ids...)
 }
 
-func (rs *rulesService) Consume(message any) error {
+func (rs *rulesService) Consume(_ string, message any) error {
 	ctx := context.Background()
 
 	msg, ok := message.(protomfx.Message)

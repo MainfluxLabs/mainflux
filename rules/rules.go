@@ -64,18 +64,20 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 			newMsg := msg
 			newMsg.Payload = payload
 
+			var subject string
+
 			switch action.Type {
 			case ActionTypeSMTP:
-				newMsg.Subject = fmt.Sprintf("%s.%s", subjectSMTP, action.ID)
+				subject = fmt.Sprintf("%s.%s", subjectSMTP, action.ID)
 			case ActionTypeSMPP:
-				newMsg.Subject = fmt.Sprintf("%s.%s", subjectSMPP, action.ID)
+				subject = fmt.Sprintf("%s.%s", subjectSMPP, action.ID)
 			case ActionTypeAlarm:
-				newMsg.Subject = fmt.Sprintf("%s.%s.%s", subjectAlarms, alarms.AlarmOriginRule, rule.ID)
+				subject = fmt.Sprintf("%s.%s.%s", subjectAlarms, alarms.AlarmOriginRule, rule.ID)
 			default:
 				continue
 			}
 
-			if err := rs.pubsub.Publish(*newMsg); err != nil {
+			if err := rs.pubsub.Publish(subject, *newMsg); err != nil {
 				return err
 			}
 		}

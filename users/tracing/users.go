@@ -16,6 +16,7 @@ import (
 const (
 	saveUser            = "save_user"
 	updateUser          = "update_user"
+	updateUserMetadata  = "update_user_metadata"
 	retrieveUserByEmail = "retrieve_user_by_email"
 	retrieveUserByID    = "retrieve_user_by_id"
 	retrieveUsersByIDs  = "retrieve_users_by_ids"
@@ -48,12 +49,20 @@ func (urm userRepositoryMiddleware) Save(ctx context.Context, user users.User) (
 	return urm.repo.Save(ctx, user)
 }
 
-func (urm userRepositoryMiddleware) UpdateUser(ctx context.Context, user users.User) error {
+func (urm userRepositoryMiddleware) Update(ctx context.Context, user users.User) error {
 	span := dbutil.CreateSpan(ctx, urm.tracer, updateUser)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return urm.repo.UpdateUser(ctx, user)
+	return urm.repo.Update(ctx, user)
+}
+
+func (urm userRepositoryMiddleware) UpdateUserMetadata(ctx context.Context, user users.User) error {
+	span := dbutil.CreateSpan(ctx, urm.tracer, updateUserMetadata)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return urm.repo.UpdateUserMetadata(ctx, user)
 }
 
 func (urm userRepositoryMiddleware) RetrieveByEmail(ctx context.Context, email string) (users.User, error) {

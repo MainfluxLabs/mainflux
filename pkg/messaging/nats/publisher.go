@@ -45,13 +45,13 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 	return ret, nil
 }
 
-func (pub *publisher) Publish(msg protomfx.Message) (err error) {
+func (pub *publisher) Publish(subject string, msg protomfx.Message) (err error) {
 	data, err := proto.Marshal(&msg)
 	if err != nil {
 		return err
 	}
 
-	return pub.conn.Publish(msg.Subject, data)
+	return pub.conn.Publish(subject, data)
 }
 
 func (pub *publisher) Close() error {

@@ -98,11 +98,11 @@ func (ms *metricsMiddleware) ExportAlarmsByThing(ctx context.Context, token, thi
 	return ms.svc.ExportAlarmsByThing(ctx, token, thingID, pm)
 }
 
-func (ms *metricsMiddleware) Consume(message any) error {
+func (ms *metricsMiddleware) Consume(subject string, message any) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "consume").Add(1)
 		ms.latency.With("method", "consume").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Consume(message)
+	return ms.svc.Consume(subject, message)
 }
