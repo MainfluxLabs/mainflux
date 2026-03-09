@@ -106,7 +106,8 @@ func (env *luaEnv) debugHook(ls *lua.State, record lua.Debug) {
 
 // luaAPIFunc represents a Golang function exposed to the Lua scripting API.
 type luaAPIFunc struct {
-	// fun is called to obtain the actual Lua function
+	// fun is called to obtain the actual Lua function. The return value of this lua.Function
+	// represents the number of return values returned by it.
 	fun func(env *luaEnv) lua.Function
 
 	// The maximum number of invocations allowed per Lua script.
