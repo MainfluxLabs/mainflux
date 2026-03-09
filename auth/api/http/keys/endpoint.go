@@ -114,7 +114,7 @@ func buildKeysResponse(kp auth.KeysPage, pm apiutil.PageMetadata) keysPageRes {
 			Total:  kp.Total,
 			Limit:  pm.Limit,
 			Offset: pm.Offset,
-			Ord:    pm.Order,
+			Order:  pm.Order,
 			Dir:    pm.Dir,
 		},
 		Keys: []retrieveKeyRes{},
