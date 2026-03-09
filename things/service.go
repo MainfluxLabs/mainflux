@@ -402,7 +402,7 @@ func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...
 		ar := UserAccessReq{
 			Token:  token,
 			ID:     id,
-			Action: Editor,
+			Action: Admin,
 		}
 		if err := ts.CanUserAccessThing(ctx, ar); err != nil {
 			return err
@@ -534,7 +534,7 @@ func (ts *thingsService) RemoveProfiles(ctx context.Context, token string, ids .
 		ar := UserAccessReq{
 			Token:  token,
 			ID:     id,
-			Action: Editor,
+			Action: Admin,
 		}
 
 		if err := ts.CanUserAccessProfile(ctx, ar); err != nil {
@@ -676,7 +676,7 @@ func (ts *thingsService) RemoveExternalKey(ctx context.Context, token, thingID s
 	accessReq := UserAccessReq{
 		Token:  token,
 		ID:     thingID,
-		Action: Editor,
+		Action: Admin,
 	}
 
 	if err := ts.CanUserAccessThing(ctx, accessReq); err != nil {
