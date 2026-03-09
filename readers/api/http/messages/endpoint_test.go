@@ -99,6 +99,7 @@ func newAuthService() protomfx.AuthServiceClient {
 	return mocks.NewAuthService(admin.ID, usersList, nil)
 }
 
+
 func TestListSenMLMessages(t *testing.T) {
 	pubID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -150,10 +151,9 @@ func TestListSenMLMessages(t *testing.T) {
 
 	authSvc := newAuthService()
 
-	adminTok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
-	require.Nil(t, err, fmt.Sprintf("issue token for admin got unexpected error: %s", err))
-
-	adminToken := adminTok.GetValue()
+	token, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
+	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
+	adminToken := token.GetValue()
 
 	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
 		adminToken: {ID: pubID},
@@ -518,10 +518,9 @@ func TestListJSONMessages(t *testing.T) {
 
 	authSvc := newAuthService()
 
-	adminTok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
-	require.Nil(t, err, fmt.Sprintf("issue token for admin got unexpected error: %s", err))
-
-	adminToken := adminTok.GetValue()
+	token, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
+	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
+	adminToken := token.GetValue()
 
 	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
 		adminToken: {ID: pubID},
@@ -735,10 +734,9 @@ func TestDeleteSenMLMessages(t *testing.T) {
 
 	authSvc := newAuthService()
 
-	adminTok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
-	require.Nil(t, err, fmt.Sprintf("issue token for admin got unexpected error: %s", err))
-
-	adminToken := adminTok.GetValue()
+	token, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
+	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
+	adminToken := token.GetValue()
 
 	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
 		adminToken: {ID: pubID},
@@ -799,10 +797,9 @@ func TestDeleteJSONMessages(t *testing.T) {
 
 	authSvc := newAuthService()
 
-	adminTok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
-	require.Nil(t, err, fmt.Sprintf("issue token for admin got unexpected error: %s", err))
-
-	adminToken := adminTok.GetValue()
+	token, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
+	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
+	adminToken := token.GetValue()
 
 	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
 		adminToken: {ID: pubID},
