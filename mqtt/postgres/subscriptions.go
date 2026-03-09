@@ -66,7 +66,7 @@ func (mr *mqttRepository) RetrieveByGroup(ctx context.Context, pm mqtt.PageMetad
 	}
 	defer rows.Close()
 
-	var items []mqtt.Subscription
+	items := []mqtt.Subscription{}
 	for rows.Next() {
 		item := dbSubscription{}
 		if err := rows.StructScan(&item); err != nil {
