@@ -225,21 +225,17 @@ func findParam(payload map[string]any, param string) any {
 	parts := strings.Split(param, ".")
 	current := payload
 
-	for i, key := range parts {
-		val, ok := current[key]
+	for _, key := range parts[:len(parts)-1] {
+		nested, ok := current[key].(map[string]any)
 		if !ok {
 			return nil
 		}
-
-		if i < len(parts)-1 {
-			nested, ok := val.(map[string]any)
-			if !ok {
-				return nil
-			}
-			current = nested
-		} else {
-			return val
-		}
+		current = nested
 	}
-	return nil
+
+	val, ok := current[parts[len(parts)-1]]
+	if !ok {
+		return nil
+	}
+	return val
 }
