@@ -114,7 +114,7 @@ func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 	pyd, err := json.Marshal(map[string]any{"temperature": float64(30)})
 	require.Nil(t, err)
 
-	subject := fmt.Sprintf("alarms.%s", ruleID)
+	subject := fmt.Sprintf("alarms.rule.%s", ruleID)
 	for i := 0; i < n; i++ {
 		msg := protomfx.Message{
 			Publisher: thingID,

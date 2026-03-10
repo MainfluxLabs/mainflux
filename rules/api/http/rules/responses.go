@@ -1,4 +1,7 @@
-package http
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
+package rules
 
 import (
 	"net/http"
@@ -12,6 +15,7 @@ var (
 	_ apiutil.Response = (*ruleResponse)(nil)
 	_ apiutil.Response = (*rulesRes)(nil)
 	_ apiutil.Response = (*thingIDsRes)(nil)
+	_ apiutil.Response = (*thingRulesRes)(nil)
 )
 
 type pageRes struct {
