@@ -20,9 +20,7 @@ const (
 	maxLogLineCount  = 256
 )
 
-var (
-	ErrScriptSize = errors.New("script size exceeds limit")
-)
+var ErrScriptSize = errors.New("script size exceeds limit")
 
 // LuaScript represents a specific Lua script.
 type LuaScript struct {
