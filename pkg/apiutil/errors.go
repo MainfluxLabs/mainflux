@@ -15,6 +15,9 @@ var (
 	// ErrBearerKey indicates missing or invalid bearer entity key.
 	ErrBearerKey = errors.New("missing or invalid bearer entity key")
 
+	// ErrMissingThingKey indicates missing thing key.
+	ErrMissingThingKey = errors.New("missing thing key")
+
 	// ErrMissingGroupID indicates missing group ID.
 	ErrMissingGroupID = errors.New("missing group id")
 
