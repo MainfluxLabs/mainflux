@@ -14,7 +14,7 @@ import (
 	adapter "github.com/MainfluxLabs/mainflux/converters"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/httputil"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
@@ -87,7 +87,7 @@ func decodeConvertCSVFile(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	req := convertCSVReq{
-		key:      httputil.ExtractThingKey(r),
+		key:      domainthings.ExtractThingKeyFromHTTPHeader(r),
 		csvLines: csvLines,
 	}
 

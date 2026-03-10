@@ -12,9 +12,9 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/httputil"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
@@ -221,7 +221,7 @@ func decodeUpdateThingGroupAndProfile(_ context.Context, r *http.Request) (any, 
 
 func decodeViewMetadata(_ context.Context, r *http.Request) (any, error) {
 	req := viewMetadataReq{
-		ThingKey: httputil.ExtractThingKey(r),
+		ThingKey: domainthings.ExtractThingKeyFromHTTPHeader(r),
 	}
 
 	return req, nil

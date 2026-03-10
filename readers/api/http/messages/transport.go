@@ -10,9 +10,9 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/httputil"
 	"github.com/MainfluxLabs/mainflux/readers"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
@@ -155,7 +155,7 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (any, error) {
 
 	return listJSONMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
-		thingKey: httputil.ExtractThingKey(r),
+		thingKey: domainthings.ExtractThingKeyFromHTTPHeader(r),
 		pageMeta: pageMeta,
 	}, nil
 }
@@ -187,7 +187,7 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (any, error) {
 
 	return listSenMLMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
-		thingKey: httputil.ExtractThingKey(r),
+		thingKey: domainthings.ExtractThingKeyFromHTTPHeader(r),
 		pageMeta: pageMeta,
 	}, nil
 }

@@ -17,7 +17,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/httputil"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
@@ -109,7 +108,7 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 	case ok:
 		thingKey = domainthings.ThingKey{Type: domainthings.KeyTypeInternal, Value: pass}
 	case !ok:
-		thingKey = httputil.ExtractThingKey(r)
+		thingKey = domainthings.ExtractThingKeyFromHTTPHeader(r)
 	}
 
 	payload, err := readPayload(r)

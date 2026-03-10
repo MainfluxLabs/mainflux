@@ -11,7 +11,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
-	"github.com/MainfluxLabs/mainflux/pkg/httputil"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/ws"
@@ -49,7 +48,7 @@ func handshake(svc ws.Service) http.HandlerFunc {
 }
 
 func decodeRequest(r *http.Request) (getConnByKey, error) {
-	authKey := httputil.ExtractThingKey(r)
+	authKey := domainthings.ExtractThingKeyFromHTTPHeader(r)
 	if authKey.Value == "" || authKey.Type == "" {
 		queryKey := bone.GetQuery(r, "key")
 		if len(queryKey) == 0 {
