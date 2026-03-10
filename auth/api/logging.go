@@ -70,6 +70,19 @@ func (lm *loggingMiddleware) RetrieveKey(ctx context.Context, token, id string) 
 	return lm.svc.RetrieveKey(ctx, token, id)
 }
 
+func (lm *loggingMiddleware) ListAPIKeys(ctx context.Context, token string, pm apiutil.PageMetadata) (_ auth.KeysPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method list_api_keys took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListAPIKeys(ctx, token, pm)
+}
+
 func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (_ auth.Identity, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method identify took %s to complete", time.Since(begin))

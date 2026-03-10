@@ -99,6 +99,7 @@ func newAuthService() protomfx.AuthServiceClient {
 	return mocks.NewAuthService(admin.ID, usersList, nil)
 }
 
+
 func TestListSenMLMessages(t *testing.T) {
 	pubID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -150,10 +151,9 @@ func TestListSenMLMessages(t *testing.T) {
 
 	authSvc := newAuthService()
 
-	adminTok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
-	require.Nil(t, err, fmt.Sprintf("issue token for admin got unexpected error: %s", err))
-
-	adminToken := adminTok.GetValue()
+	token, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
+	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
+	adminToken := token.GetValue()
 
 	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
 		adminToken: {ID: pubID},
@@ -518,10 +518,9 @@ func TestListJSONMessages(t *testing.T) {
 
 	authSvc := newAuthService()
 
-	adminTok, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
-	require.Nil(t, err, fmt.Sprintf("issue token for admin got unexpected error: %s", err))
-
-	adminToken := adminTok.GetValue()
+	token, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
+	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
+	adminToken := token.GetValue()
 
 	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
 		adminToken: {ID: pubID},
@@ -727,6 +726,132 @@ type senmlPageRes struct {
 	readers.SenMLMessagesPage
 	Total    uint64          `json:"total"`
 	Messages []senml.Message `json:"messages,omitempty"`
+}
+
+func TestDeleteSenMLMessages(t *testing.T) {
+	pubID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	authSvc := newAuthService()
+
+	token, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
+	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
+	adminToken := token.GetValue()
+
+	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
+		adminToken: {ID: pubID},
+	}, nil)
+
+	ts := newServer(nil, nil, thSvc, authSvc)
+	defer ts.Close()
+
+	cases := []struct {
+		desc        string
+		url         string
+		token       string
+		status      int
+	}{
+		{
+			desc:   "delete senml messages as admin",
+			url:    fmt.Sprintf("%s/senml/%s", ts.URL, pubID),
+			token:  adminToken,
+			status: http.StatusNoContent,
+		},
+		{
+			desc:   "delete senml messages with invalid token",
+			url:    fmt.Sprintf("%s/senml/%s", ts.URL, pubID),
+			token:  invalid,
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "delete senml messages with empty token",
+			url:    fmt.Sprintf("%s/senml/%s", ts.URL, pubID),
+			token:  "",
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "delete senml messages with wrong publisher",
+			url:    fmt.Sprintf("%s/senml/%s", ts.URL, invalid),
+			token:  adminToken,
+			status: http.StatusForbidden,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodDelete,
+			url:    tc.url,
+			token:  tc.token,
+		}
+
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestDeleteJSONMessages(t *testing.T) {
+	pubID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	authSvc := newAuthService()
+
+	token, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
+	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
+	adminToken := token.GetValue()
+
+	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
+		adminToken: {ID: pubID},
+	}, nil)
+
+	ts := newServer(nil, nil, thSvc, authSvc)
+	defer ts.Close()
+
+	cases := []struct {
+		desc   string
+		url    string
+		token  string
+		status int
+	}{
+		{
+			desc:   "delete json messages as admin",
+			url:    fmt.Sprintf("%s/json/%s", ts.URL, pubID),
+			token:  adminToken,
+			status: http.StatusNoContent,
+		},
+		{
+			desc:   "delete json messages with invalid token",
+			url:    fmt.Sprintf("%s/json/%s", ts.URL, pubID),
+			token:  invalid,
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "delete json messages with empty token",
+			url:    fmt.Sprintf("%s/json/%s", ts.URL, pubID),
+			token:  "",
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "delete json messages with wrong publisher",
+			url:    fmt.Sprintf("%s/json/%s", ts.URL, invalid),
+			token:  adminToken,
+			status: http.StatusForbidden,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodDelete,
+			url:    tc.url,
+			token:  tc.token,
+		}
+
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
 }
 
 func fromSenml(in []senml.Message) []readers.Message {
