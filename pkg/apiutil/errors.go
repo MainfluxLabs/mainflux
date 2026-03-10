@@ -186,6 +186,9 @@ var (
 	// ErrInvalidThingKeyType indicates an invalid or missing type of thing authentication key
 	ErrInvalidThingKeyType = errors.New("invalid thing key type")
 
+	// ErrInvalidThingType indicates an invalid or missing thing type
+	ErrInvalidThingType = errors.New("missing or invalid thing type")
+
 	// ErrInvalidProvider indicates an invalid or missing provider
 	ErrInvalidProvider = errors.New("missing or invalid provider")
 

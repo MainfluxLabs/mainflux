@@ -24,6 +24,7 @@ func createThingsEndpoint(svc things.Service) endpoint.Endpoint {
 			th := things.Thing{
 				ID:          t.ID,
 				Name:        t.Name,
+				Type:        t.Type,
 				Key:         t.Key,
 				ExternalKey: t.ExternalKey,
 				Metadata:    t.Metadata,
@@ -47,6 +48,7 @@ func createThingsEndpoint(svc things.Service) endpoint.Endpoint {
 				GroupID:     t.GroupID,
 				ProfileID:   t.ProfileID,
 				Name:        t.Name,
+				Type:        t.Type,
 				Key:         t.Key,
 				ExternalKey: t.ExternalKey,
 				Metadata:    t.Metadata,
@@ -76,6 +78,7 @@ func viewThingEndpoint(svc things.Service) endpoint.Endpoint {
 			GroupID:     thing.GroupID,
 			ProfileID:   thing.ProfileID,
 			Name:        thing.Name,
+			Type:        thing.Type,
 			Key:         thing.Key,
 			ExternalKey: thing.ExternalKey,
 			Metadata:    thing.Metadata,
@@ -183,6 +186,7 @@ func updateThingEndpoint(svc things.Service) endpoint.Endpoint {
 			ID:       req.id,
 			Name:     req.Name,
 			Key:      req.Key,
+			Type:     req.Type,
 			Metadata: req.Metadata,
 		}
 
@@ -347,6 +351,7 @@ func buildThingsResponse(tp things.ThingsPage, pm apiutil.PageMetadata) ThingsPa
 			GroupID:   t.GroupID,
 			ProfileID: t.ProfileID,
 			Name:      t.Name,
+			Type:      t.Type,
 			Key:       t.Key,
 			Metadata:  t.Metadata,
 		}

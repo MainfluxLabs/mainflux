@@ -40,8 +40,8 @@ func (tr thingRepository) Save(ctx context.Context, ths ...things.Thing) ([]thin
 	}
 	defer tx.Rollback()
 
-	q := `INSERT INTO things (id, group_id, profile_id, name, key, external_key, metadata)
-		  VALUES (:id, :group_id, :profile_id, :name, :key, :external_key, :metadata);`
+	q := `INSERT INTO things (id, group_id, profile_id, name, type, key, external_key, metadata)
+		  VALUES (:id, :group_id, :profile_id, :name, :type, :key, :external_key, :metadata);`
 
 	for _, thing := range ths {
 		dbth, err := toDBThing(thing)
@@ -82,7 +82,7 @@ func (tr thingRepository) UpdateGroupAndProfile(ctx context.Context, t things.Th
 }
 
 func (tr thingRepository) RetrieveByID(ctx context.Context, id string) (things.Thing, error) {
-	q := `SELECT group_id, profile_id, name, key, external_key, metadata FROM things WHERE id = $1;`
+	q := `SELECT group_id, profile_id, name, type, key, external_key, metadata FROM things WHERE id = $1;`
 
 	dbth := dbThing{ID: id}
 
@@ -139,7 +139,7 @@ func (tr thingRepository) RetrieveByGroups(ctx context.Context, groupIDs []strin
 	}
 
 	whereClause := dbutil.BuildWhereClause(giq, nq, mq)
-	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, external_key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
+	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, type, key, external_key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
 
 	params := map[string]any{
@@ -153,7 +153,7 @@ func (tr thingRepository) RetrieveByGroups(ctx context.Context, groupIDs []strin
 }
 
 func (tr thingRepository) BackupAll(ctx context.Context) ([]things.Thing, error) {
-	query := "SELECT id, group_id, profile_id, name, key, external_key, metadata FROM things"
+	query := "SELECT id, group_id, profile_id, name, type, key, external_key, metadata FROM things"
 
 	var items []dbThing
 	err := tr.db.SelectContext(ctx, &items, query)
@@ -185,7 +185,7 @@ func (tr thingRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetada
 	}
 
 	whereClause := dbutil.BuildWhereClause(nq, mq)
-	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, key, external_key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
+	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, type, key, external_key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
 
 	params := map[string]any{
@@ -215,7 +215,7 @@ func (tr thingRepository) RetrieveByProfile(ctx context.Context, prID string, pm
 	}
 
 	whereClause := dbutil.BuildWhereClause(baseCondition, mq)
-	query := fmt.Sprintf(`SELECT id, group_id, name, key, external_key, metadata FROM things %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	query := fmt.Sprintf(`SELECT id, group_id, name, type, key, external_key, metadata FROM things %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
 
 	params := map[string]any{
@@ -351,6 +351,10 @@ func (tr thingRepository) update(ctx context.Context, t things.Thing) error {
 		fields = append(fields, "name = :name")
 	}
 
+	if t.Type != "" {
+		fields = append(fields, "type = :type")
+	}
+
 	if t.Metadata != nil {
 		fields = append(fields, "metadata = :metadata")
 	}
@@ -407,6 +411,7 @@ type dbThing struct {
 	GroupID     string         `db:"group_id"`
 	ProfileID   string         `db:"profile_id"`
 	Name        string         `db:"name"`
+	Type        string         `db:"type"`
 	Key         string         `db:"key"`
 	ExternalKey sql.NullString `db:"external_key"`
 	Metadata    []byte         `db:"metadata"`
@@ -427,6 +432,7 @@ func toDBThing(th things.Thing) (dbThing, error) {
 		GroupID:     th.GroupID,
 		ProfileID:   th.ProfileID,
 		Name:        th.Name,
+		Type:        th.Type,
 		Key:         th.Key,
 		ExternalKey: sql.NullString{String: th.ExternalKey, Valid: len(th.ExternalKey) > 0},
 		Metadata:    data,
@@ -444,6 +450,7 @@ func toThing(dbth dbThing) (things.Thing, error) {
 		GroupID:     dbth.GroupID,
 		ProfileID:   dbth.ProfileID,
 		Name:        dbth.Name,
+		Type:        dbth.Type,
 		Key:         dbth.Key,
 		ExternalKey: dbth.ExternalKey.String,
 		Metadata:    metadata,

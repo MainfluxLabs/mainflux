@@ -148,8 +148,8 @@ func TestCreateThings(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
 
-	data := fmt.Sprintf(`[{"name": "1", "key": "1","profile_id":"%s"}, {"name": "2", "key": "2","profile_id":"%s"}]`, prID, prID)
-	invalidNameData := fmt.Sprintf(`[{"name": "%s", "key": "10","profile_id":"%s"}]`, invalidName, prID)
+	data := fmt.Sprintf(`[{"name": "1", "key": "1","profile_id":"%s","type":"device"}, {"name": "2", "key": "2","profile_id":"%s","type":"sensor"}]`, prID, prID)
+	invalidNameData := fmt.Sprintf(`[{"name": "%s", "key": "10","profile_id":"%s","type":"device"}]`, invalidName, prID)
 
 	cases := []struct {
 		desc        string
