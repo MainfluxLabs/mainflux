@@ -63,7 +63,7 @@ paths:
         - $ref: "#/components/parameters/Offset"
         - $ref: "#/components/parameters/Name"
         - $ref: "#/components/parameters/Order"
-        - $ref: "#/components/parameters/Direction"
+        - $ref: "#/components/parameters/Dir"
         - $ref: "#/components/parameters/Metadata"
       responses:
         '200':
@@ -442,7 +442,7 @@ paths:
         - $ref: "#/components/parameters/Offset"
         - $ref: "#/components/parameters/Name"
         - $ref: "#/components/parameters/Order"
-        - $ref: "#/components/parameters/Direction"
+        - $ref: "#/components/parameters/Dir"
         - $ref: "#/components/parameters/Metadata"
       responses:
         '200':
@@ -716,7 +716,7 @@ paths:
         - $ref: "#/components/parameters/Offset"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Order"
-        - $ref: "#/components/parameters/Direction"
+        - $ref: "#/components/parameters/Dir"
         - $ref: "#/components/parameters/Metadata"
       responses:
         '200':
@@ -738,7 +738,7 @@ paths:
         - $ref: "#/components/parameters/Offset"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Order"
-        - $ref: "#/components/parameters/Direction"
+        - $ref: "#/components/parameters/Dir"
         - $ref: "#/components/parameters/Metadata"
       responses:
         '200':
@@ -1278,7 +1278,7 @@ components:
         order:
           type: string
           description: Order type.
-        direction:
+        dir:
           type: string
           description: Order direction.
       required:
@@ -1296,7 +1296,7 @@ components:
         order:
           type: string
           description: Order type.
-        direction:
+        dir:
           type: string
           description: Order direction.
         name:
@@ -1605,7 +1605,7 @@ components:
           - name
           - id
       required: false
-    Direction:
+    Dir:
       name: dir
       description: Order direction.
       in: query
