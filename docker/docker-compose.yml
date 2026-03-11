@@ -16,6 +16,7 @@ volumes:
   mainfluxlabs-mqtt-broker-volume:
   mainfluxlabs-mqtt-db-volume:
   mainfluxlabs-postgres-volume:
+  mainfluxlabs-timescale-volume:
   mainfluxlabs-filestore-db-volume:
   mainfluxlabs-filestore-volume:
   mainfluxlabs-webhooks-db-volume:
@@ -479,6 +480,72 @@ services:
       MF_AUTH_GRPC_TIMEOUT : ${MF_AUTH_GRPC_TIMEOUT}
     ports:
       - ${MF_POSTGRES_READER_PORT}:${MF_POSTGRES_READER_PORT}
+    networks:
+      - mainfluxlabs-base-net
+
+  ## TIMESCALE DB
+  timescale:
+    image: timescale/timescaledb:2.15.3-pg16
+    container_name: mainfluxlabs-timescale
+    restart: on-failure
+    environment:
+      POSTGRES_USER: ${MF_TIMESCALE_WRITER_DB_USER}
+      POSTGRES_PASSWORD: ${MF_TIMESCALE_WRITER_DB_PASS}
+      POSTGRES_DB: ${MF_TIMESCALE_WRITER_DB}
+    networks:
+      - mainfluxlabs-base-net
+    volumes:
+      - mainfluxlabs-timescale-volume:/var/lib/postgresql/data
+
+  timescale-writer:
+    image: ${MF_RELEASE_PREFIX}/timescale-writer:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-timescale-writer
+    depends_on:
+      - timescale
+    restart: on-failure
+    environment:
+      MF_BROKER_URL: ${MF_BROKER_URL}
+      MF_TIMESCALE_WRITER_LOG_LEVEL: ${MF_TIMESCALE_WRITER_LOG_LEVEL}
+      MF_TIMESCALE_WRITER_PORT: ${MF_TIMESCALE_WRITER_PORT}
+      MF_TIMESCALE_WRITER_DB_HOST: timescale
+      MF_TIMESCALE_WRITER_DB_PORT: ${MF_TIMESCALE_WRITER_DB_PORT}
+      MF_TIMESCALE_WRITER_DB_USER: ${MF_TIMESCALE_WRITER_DB_USER}
+      MF_TIMESCALE_WRITER_DB_PASS: ${MF_TIMESCALE_WRITER_DB_PASS}
+      MF_TIMESCALE_WRITER_DB: ${MF_TIMESCALE_WRITER_DB}
+      MF_TIMESCALE_WRITER_DB_SSL_MODE: ${MF_TIMESCALE_WRITER_DB_SSL_MODE}
+      MF_TIMESCALE_WRITER_DB_SSL_CERT: ${MF_TIMESCALE_WRITER_DB_SSL_CERT}
+      MF_TIMESCALE_WRITER_DB_SSL_KEY: ${MF_TIMESCALE_WRITER_DB_SSL_KEY}
+      MF_TIMESCALE_WRITER_DB_SSL_ROOT_CERT: ${MF_TIMESCALE_WRITER_DB_SSL_ROOT_CERT}
+    ports:
+      - ${MF_TIMESCALE_WRITER_PORT}:${MF_TIMESCALE_WRITER_PORT}
+    networks:
+      - mainfluxlabs-base-net
+
+  timescale-reader:
+    image: ${MF_RELEASE_PREFIX}/timescale-reader:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-timescale-reader
+    restart: on-failure
+    environment:
+      MF_TIMESCALE_READER_LOG_LEVEL: ${MF_TIMESCALE_READER_LOG_LEVEL}
+      MF_TIMESCALE_READER_PORT: ${MF_TIMESCALE_READER_PORT}
+      MF_TIMESCALE_READER_CLIENT_TLS: ${MF_TIMESCALE_READER_CLIENT_TLS}
+      MF_TIMESCALE_READER_CA_CERTS: ${MF_TIMESCALE_READER_CA_CERTS}
+      MF_TIMESCALE_READER_DB_HOST: timescale
+      MF_TIMESCALE_READER_DB_PORT: ${MF_TIMESCALE_READER_DB_PORT}
+      MF_TIMESCALE_READER_DB_USER: ${MF_TIMESCALE_READER_DB_USER}
+      MF_TIMESCALE_READER_DB_PASS: ${MF_TIMESCALE_READER_DB_PASS}
+      MF_TIMESCALE_READER_DB: ${MF_TIMESCALE_READER_DB}
+      MF_TIMESCALE_READER_DB_SSL_MODE: ${MF_TIMESCALE_READER_DB_SSL_MODE}
+      MF_TIMESCALE_READER_DB_SSL_CERT: ${MF_TIMESCALE_READER_DB_SSL_CERT}
+      MF_TIMESCALE_READER_DB_SSL_KEY: ${MF_TIMESCALE_READER_DB_SSL_KEY}
+      MF_TIMESCALE_READER_DB_SSL_ROOT_CERT: ${MF_TIMESCALE_READER_DB_SSL_ROOT_CERT}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+      MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
+      MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
+    ports:
+      - ${MF_TIMESCALE_READER_PORT}:${MF_TIMESCALE_READER_PORT}
     networks:
       - mainfluxlabs-base-net
 
