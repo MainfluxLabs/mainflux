@@ -186,7 +186,7 @@ func TestCreateThings(t *testing.T) {
 		},
 		{
 			desc:        "create thing with invalid name",
-			data:        invalidNameData,
+			data:        dataInvalidName,
 			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
