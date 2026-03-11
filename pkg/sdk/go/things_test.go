@@ -23,17 +23,17 @@ import (
 )
 
 const (
-	contentType = "application/senml+json"
-	email       = "user@example.com"
-	adminEmail  = "admin@example.com"
-	otherEmail  = "other_user@example.com"
-	token       = email
-	wrongValue  = "wrong_value"
-	orgID       = "374106f7-030e-4881-8ab0-151195c29f92"
-	thingKey    = "1d7c83ea-f47c-4326-820b-55d5d4930b62"
-	wrongID     = "999"
-	badKey      = "999"
-	emptyValue  = ""
+	contentType     = "application/senml+json"
+	email           = "user@example.com"
+	adminEmail      = "admin@example.com"
+	otherEmail      = "other_user@example.com"
+	token           = email
+	wrongValue      = "wrong_value"
+	orgID           = "374106f7-030e-4881-8ab0-151195c29f92"
+	thingKey        = "1d7c83ea-f47c-4326-820b-55d5d4930b62"
+	wrongID         = "999"
+	badKey          = "999"
+	emptyValue      = ""
 	thingTypeDevice = "device"
 	thingTypeSensor = "sensor"
 )
@@ -157,7 +157,7 @@ func TestCreateThings(t *testing.T) {
 
 	th1.ProfileID = prID
 	th2.ProfileID = prID
-	sdkThings := []sdk.Thing{
+	ths := []sdk.Thing{
 		th1,
 		th2,
 	}
@@ -179,10 +179,10 @@ func TestCreateThings(t *testing.T) {
 	}{
 		{
 			desc:   "create new things",
-			things: sdkThings,
+			things: ths,
 			token:  token,
 			err:    nil,
-			res:    sdkThings,
+			res:    ths,
 		},
 		{
 			desc:   "create new things with empty things",
@@ -193,14 +193,14 @@ func TestCreateThings(t *testing.T) {
 		},
 		{
 			desc:   "create new thing with empty token",
-			things: sdkThings,
+			things: ths,
 			token:  emptyValue,
 			err:    createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
 			res:    []sdk.Thing{},
 		},
 		{
 			desc:   "create new thing with invalid token",
-			things: sdkThings,
+			things: ths,
 			token:  wrongValue,
 			err:    createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
 			res:    []sdk.Thing{},
@@ -210,7 +210,7 @@ func TestCreateThings(t *testing.T) {
 			things: thsExtID,
 			token:  token,
 			err:    nil,
-			res:    sdkThings,
+			res:    ths,
 		},
 		{
 			desc:   "create new things with wrong external UUID",
@@ -364,7 +364,6 @@ func TestThings(t *testing.T) {
 		MsgContentType:  contentType,
 		TLSVerification: false,
 	}
-	var sdkThingsList []sdk.Thing
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
@@ -373,15 +372,17 @@ func TestThings(t *testing.T) {
 	prID, err := mainfluxSDK.CreateProfile(profile, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	var ths []sdk.Thing
 	for i := 1; i < 101; i++ {
 		id := fmt.Sprintf("%s%012d", prPrefix, i)
 		name := fmt.Sprintf("test-%d", i)
 		key := fmt.Sprintf("%s%012d", uuid.Prefix, i)
+
 		th := sdk.Thing{GroupID: grID, ID: id, ProfileID: prID, Name: name, Type: things.ThingTypeDevice, Key: key, Metadata: metadata}
 		_, err := mainfluxSDK.CreateThing(th, prID, token)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		sdkThingsList = append(sdkThingsList, th)
+		ths = append(ths, th)
 	}
 
 	cases := []struct {
@@ -402,7 +403,7 @@ func TestThings(t *testing.T) {
 			limit:    limit,
 			dir:      ascDir,
 			err:      nil,
-			response: sdkThingsList[0:limit],
+			response: ths[0:limit],
 			metadata: make(map[string]any),
 		},
 		{

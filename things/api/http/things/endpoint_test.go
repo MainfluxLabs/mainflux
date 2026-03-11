@@ -150,7 +150,7 @@ func TestCreateThings(t *testing.T) {
 
 	data := fmt.Sprintf(`[{"name": "1", "key": "1","profile_id":"%s","type":"device"}, {"name": "2", "key": "2","profile_id":"%s","type":"sensor"}]`, prID, prID)
 	dataMissingType := fmt.Sprintf(`[{"name": "th", "key": "123","profile_id":"%s"}]`, prID)
-	invalidNameData := fmt.Sprintf(`[{"name": "%s", "key": "10","profile_id":"%s","type":"device"}]`, invalidName, prID)
+	dataInvalidName := fmt.Sprintf(`[{"name": "%s", "key": "10","profile_id":"%s","type":"device"}]`, invalidName, prID)
 
 	cases := []struct {
 		desc        string
@@ -281,7 +281,7 @@ func TestUpdateThing(t *testing.T) {
 	dataMissingKey := `{"name":"test", "type":"device"}`
 	dataMissingName := `{"key":"tk1", "type":"device"}`
 	dataMissingType := `{"name":"test", "key": "tk1"}`
-	invalidNameData := fmt.Sprintf(`{"name": "%s", "key": "tk1", "type":"device"}`, invalidName)
+	dataInvalidName := fmt.Sprintf(`{"name": "%s", "key": "tk1", "type":"device"}`, invalidName)
 
 	cases := []struct {
 		desc        string
@@ -365,7 +365,7 @@ func TestUpdateThing(t *testing.T) {
 		},
 		{
 			desc:        "update thing with invalid name",
-			req:         invalidNameData,
+			req:         dataInvalidName,
 			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
