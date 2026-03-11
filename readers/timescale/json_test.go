@@ -13,7 +13,7 @@ import (
 	twriter "github.com/MainfluxLabs/mainflux/consumers/writers/timescale"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/readers"
-	treader "github.com/MainfluxLabs/mainflux/readers/postgres"
+	treader "github.com/MainfluxLabs/mainflux/readers/timescale"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
