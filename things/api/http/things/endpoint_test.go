@@ -149,6 +149,7 @@ func TestCreateThings(t *testing.T) {
 	prID := prs[0].ID
 
 	data := fmt.Sprintf(`[{"name": "1", "key": "1","profile_id":"%s","type":"device"}, {"name": "2", "key": "2","profile_id":"%s","type":"sensor"}]`, prID, prID)
+	dataMissingType := fmt.Sprintf(`[{"name": "th", "key": "123","profile_id":"%s"}]`, prID)
 	invalidNameData := fmt.Sprintf(`[{"name": "%s", "key": "10","profile_id":"%s","type":"device"}]`, invalidName, prID)
 
 	cases := []struct {
@@ -194,6 +195,14 @@ func TestCreateThings(t *testing.T) {
 		{
 			desc:        "create things with empty JSON array",
 			data:        "[]",
+			contentType: contentTypeJSON,
+			auth:        token,
+			status:      http.StatusBadRequest,
+			response:    emptyValue,
+		},
+		{
+			desc:        "create thing without type",
+			data:        dataMissingType,
 			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -268,10 +277,11 @@ func TestUpdateThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
 
-	data := `{"name":"test", "key": "tk1"}`
-	dataMissingKey := `{"name":"test"}`
-	dataMissingName := `{"key":"tk1"}`
-	invalidNameData := fmt.Sprintf(`{"name": "%s", "key": "tk1"}`, invalidName)
+	data := `{"name":"test", "key": "tk1", "type":"device"}`
+	dataMissingKey := `{"name":"test", "type":"device"}`
+	dataMissingName := `{"key":"tk1", "type":"device"}`
+	dataMissingType := `{"name":"test", "key": "tk1"}`
+	invalidNameData := fmt.Sprintf(`{"name": "%s", "key": "tk1", "type":"device"}`, invalidName)
 
 	cases := []struct {
 		desc        string
@@ -370,6 +380,14 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc:        "update thing with missing key",
 			req:         dataMissingKey,
+			contentType: contentTypeJSON,
+			auth:        token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update thing without type",
+			req:         dataMissingType,
+			id:          th.ID,
 			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,

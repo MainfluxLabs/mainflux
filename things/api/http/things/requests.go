@@ -42,7 +42,7 @@ func (req createThingsReq) validate() error {
 	}
 
 	for _, thing := range req.Things {
-		if err := validateType(thing.Type, true); err != nil {
+		if err := validateType(thing.Type); err != nil {
 			return err
 		}
 
@@ -60,14 +60,7 @@ func (req createThingsReq) validate() error {
 	return nil
 }
 
-func validateType(t string, required bool) error {
-	if t == "" {
-		if required {
-			return apiutil.ErrInvalidThingType
-		}
-		return nil
-	}
-
+func validateType(t string) error {
 	switch t {
 	case things.ThingTypeDevice,
 		things.ThingTypeSensor,
@@ -106,7 +99,7 @@ func (req updateThingReq) validate() error {
 		return apiutil.ErrNameSize
 	}
 
-	return validateType(req.Type, false)
+	return validateType(req.Type)
 }
 
 type updateThingGroupAndProfileReq struct {
