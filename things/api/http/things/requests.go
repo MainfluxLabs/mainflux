@@ -73,7 +73,7 @@ func (req updateThingReq) validate() error {
 	}
 
 	if req.Key == "" {
-		return apiutil.ErrBearerKey
+		return apiutil.ErrMissingThingKey
 	}
 
 	if req.Name == "" || len(req.Name) > maxNameSize {
