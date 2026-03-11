@@ -35,6 +35,7 @@ type thingRes struct {
 	GroupID     string         `json:"group_id,omitempty"`
 	ProfileID   string         `json:"profile_id"`
 	Name        string         `json:"name,omitempty"`
+	Type        string         `json:"type,omitempty"`
 	Key         string         `json:"key"`
 	ExternalKey string         `json:"external_key,omitempty"`
 	Metadata    map[string]any `json:"metadata,omitempty"`
@@ -67,6 +68,7 @@ type viewThingRes struct {
 	GroupID     string         `json:"group_id,omitempty"`
 	ProfileID   string         `json:"profile_id"`
 	Name        string         `json:"name,omitempty"`
+	Type        string         `json:"type,omitempty"`
 	Key         string         `json:"key"`
 	ExternalKey string         `json:"external_key,omitempty"`
 	Metadata    map[string]any `json:"metadata,omitempty"`

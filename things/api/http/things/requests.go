@@ -14,7 +14,8 @@ const (
 )
 
 type createThingReq struct {
-	Name        string         `json:"name,omitempty"`
+	Name        string         `json:"name"`
+	Type        string         `json:"type"`
 	Key         string         `json:"key,omitempty"`
 	ExternalKey string         `json:"external_key,omitempty"`
 	ID          string         `json:"id,omitempty"`
@@ -41,6 +42,10 @@ func (req createThingsReq) validate() error {
 	}
 
 	for _, thing := range req.Things {
+		if err := validateType(thing.Type); err != nil {
+			return err
+		}
+
 		if thing.ID != "" {
 			if err := apiutil.ValidateUUID(thing.ID); err != nil {
 				return err
@@ -55,11 +60,25 @@ func (req createThingsReq) validate() error {
 	return nil
 }
 
+func validateType(t string) error {
+	switch t {
+	case things.ThingTypeDevice,
+		things.ThingTypeSensor,
+		things.ThingTypeActuator,
+		things.ThingTypeController,
+		things.ThingTypeGateway:
+		return nil
+	default:
+		return apiutil.ErrInvalidThingType
+	}
+}
+
 type updateThingReq struct {
 	token    string
 	id       string
 	Key      string         `json:"key,omitempty"`
 	Name     string         `json:"name,omitempty"`
+	Type     string         `json:"type,omitempty"`
 	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
@@ -80,7 +99,7 @@ func (req updateThingReq) validate() error {
 		return apiutil.ErrNameSize
 	}
 
-	return nil
+	return validateType(req.Type)
 }
 
 type updateThingGroupAndProfileReq struct {

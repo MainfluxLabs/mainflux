@@ -194,6 +194,12 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE things ADD COLUMN external_key VARCHAR(1024) UNIQUE NULL CHECK (LENGTH(external_key) >= 5);`,
 				},
 			},
+			{
+				Id: "things_10",
+				Up: []string{
+					`ALTER TABLE things ADD COLUMN IF NOT EXISTS type VARCHAR(32) NOT NULL DEFAULT 'device';`,
+				},
+			},
 		},
 	}
 
