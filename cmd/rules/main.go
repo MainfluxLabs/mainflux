@@ -64,6 +64,7 @@ const (
 	defThingsGRPCTimeout = "1s"
 	defESURL             = "redis://localhost:6379/0"
 	defESConsumerName    = svcName
+	defScriptsEnabled    = "false"
 
 	envBrokerURL         = "MF_BROKER_URL"
 	envLogLevel          = "MF_RULES_LOG_LEVEL"
@@ -86,6 +87,7 @@ const (
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_RULES_ES_URL"
 	envESConsumerName    = "MF_RULES_EVENT_CONSUMER"
+	envScriptsEnabled    = "MF_RULES_SCRIPTS_ENABLED"
 )
 
 type config struct {
@@ -98,6 +100,7 @@ type config struct {
 	thingsGRPCTimeout time.Duration
 	esURL             string
 	esConsumerName    string
+	scriptsEnabled    bool
 }
 
 func main() {
@@ -133,7 +136,7 @@ func main() {
 
 	tc := thingsapi.NewClient(thConn, thingsTracer, cfg.thingsGRPCTimeout)
 
-	svc := newService(dbTracer, db, tc, ps, logger)
+	svc := newService(dbTracer, db, tc, ps, logger, cfg.scriptsEnabled)
 
 	subjects := []string{nats.SubjectMessages, nats.SubjectMessagesWithSubtopic}
 	if err = consumers.Start(svcName, ps, svc, subjects...); err != nil {
@@ -164,6 +167,11 @@ func loadConfig() config {
 	tls, err := strconv.ParseBool(mainflux.Env(envClientTLS, defClientTLS))
 	if err != nil {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
+	}
+
+	scriptsEnabled, err := strconv.ParseBool(mainflux.Env(envScriptsEnabled, defScriptsEnabled))
+	if err != nil {
+		log.Fatalf("Invalid value passed for %s\n", envScriptsEnabled)
 	}
 
 	thingsGRPCTimeout, err := time.ParseDuration(mainflux.Env(envThingsGRPCTimeout, defThingsGRPCTimeout))
@@ -208,6 +216,7 @@ func loadConfig() config {
 		thingsGRPCTimeout: thingsGRPCTimeout,
 		esURL:             mainflux.Env(envESURL, defESURL),
 		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
+		scriptsEnabled:    scriptsEnabled,
 	}
 }
 
@@ -237,14 +246,14 @@ func subscribeToThingsES(ctx context.Context, svc rules.Service, cfg config, log
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(dbTracer opentracing.Tracer, db *sqlx.DB, tc protomfx.ThingsServiceClient, nps messaging.PubSub, logger logger.Logger) rules.Service {
+func newService(dbTracer opentracing.Tracer, db *sqlx.DB, tc protomfx.ThingsServiceClient, nps messaging.PubSub, logger logger.Logger, scriptsEnabled bool) rules.Service {
 	database := dbutil.NewDatabase(db)
 
 	rulesRepo := postgres.NewRuleRepository(database)
 	rulesRepo = tracing.RuleRepositoryMiddleware(dbTracer, rulesRepo)
 
 	idProvider := uuid.New()
-	svc := rules.New(rulesRepo, tc, nps, idProvider, logger)
+	svc := rules.New(rulesRepo, tc, nps, idProvider, logger, scriptsEnabled)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

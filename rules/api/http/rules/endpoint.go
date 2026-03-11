@@ -1,4 +1,7 @@
-package http
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
+package rules
 
 import (
 	"context"
@@ -7,9 +10,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/rules"
 	"github.com/go-kit/kit/endpoint"
 )
-
-// Copyright (c) Mainflux
-// SPDX-License-Identifier: Apache-2.0
 
 func createRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
@@ -198,7 +198,7 @@ func buildRulesPageResponse(page rules.RulesPage, pm apiutil.PageMetadata) Rules
 			Total:  page.Total,
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
-			Ord:    pm.Order,
+			Order:  pm.Order,
 			Dir:    pm.Dir,
 			Name:   pm.Name,
 		},

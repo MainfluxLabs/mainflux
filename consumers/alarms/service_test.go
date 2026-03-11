@@ -55,7 +55,7 @@ func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 	pyd, err := json.Marshal(payload)
 	require.Nil(t, err)
 
-	subject := fmt.Sprintf("alarms.%s", ruleID)
+	subject := fmt.Sprintf("alarms.rule.%s", ruleID)
 	for i := 0; i < n; i++ {
 		msg := protomfx.Message{
 			Publisher: thingID,
@@ -75,7 +75,7 @@ func TestConsume(t *testing.T) {
 	pyd, err := json.Marshal(payload)
 	require.Nil(t, err)
 
-	validSubject := fmt.Sprintf("alarms.%s", ruleID)
+	validSubject := fmt.Sprintf("alarms.rule.%s", ruleID)
 	validMsg := protomfx.Message{
 		Publisher: thingID,
 		Subtopic:  subtopic,

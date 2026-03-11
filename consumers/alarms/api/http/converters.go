@@ -20,12 +20,13 @@ func ConvertToJSONFile(page alarms.AlarmsPage, timeFormat string) ([]byte, error
 
 	for _, a := range page.Alarms {
 		item := map[string]any{
-			"thing_id": a.ThingID,
-			"group_id": a.GroupID,
-			"rule_id":  a.RuleID,
-			"subtopic": a.Subtopic,
-			"protocol": a.Protocol,
-			"payload":  a.Payload,
+			"thing_id":  a.ThingID,
+			"group_id":  a.GroupID,
+			"rule_id":   a.RuleID,
+			"script_id": a.ScriptID,
+			"subtopic":  a.Subtopic,
+			"protocol":  a.Protocol,
+			"payload":   a.Payload,
 		}
 
 		item["created"] = formatTimeNs(a.Created, timeFormat)
@@ -70,6 +71,7 @@ func ConvertToCSVFile(page alarms.AlarmsPage, timeFormat string) ([]byte, error)
 		"thing_id",
 		"group_id",
 		"rule_id",
+		"script_id",
 		"subtopic",
 		"protocol",
 	}
