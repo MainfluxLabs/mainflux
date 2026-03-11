@@ -19,7 +19,7 @@ git push origin v<version>
 
 #### 1. Lint and Test
 
-Runs on `ubuntu-latest` with Go 1.22:
+Runs on `ubuntu-latest` with Go 1.25.8:
 
 - Code formatting check (`go fmt`)
 - Static analysis (`go vet`)
