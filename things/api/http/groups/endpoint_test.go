@@ -105,8 +105,9 @@ func newService() things.Service {
 	groupCache := thmocks.NewGroupCache()
 	idProvider := uuid.NewMock()
 	emailerMock := thmocks.NewEmailer()
+	policyProvider := things.NewPolicyProvider()
 
-	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider, emailerMock)
+	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider, emailerMock, policyProvider)
 }
 
 func newServer(svc things.Service) *httptest.Server {

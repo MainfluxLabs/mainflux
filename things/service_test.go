@@ -85,8 +85,9 @@ func newService() things.Service {
 	groupCache := mocks.NewGroupCache()
 	idProvider := uuid.NewMock()
 	emailerMock := mocks.NewEmailer()
+	policyProvider := things.NewPolicyProvider()
 
-	return things.New(auth, uc, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider, emailerMock)
+	return things.New(auth, uc, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider, emailerMock, policyProvider)
 }
 
 func TestInit(t *testing.T) {

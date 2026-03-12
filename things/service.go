@@ -203,7 +203,7 @@ type thingsService struct {
 func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, things ThingRepository, profiles ProfileRepository,
 	groups GroupRepository, groupMemberships GroupMembershipsRepository,
 	pcache ProfileCache, tcache ThingCache, gcache GroupCache, idp uuid.IDProvider,
-	emailer Emailer) Service {
+	emailer Emailer, policy PolicyProvider) Service {
 	return &thingsService{
 		auth:             auth,
 		users:            users,
@@ -216,7 +216,7 @@ func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, thi
 		groupCache:       gcache,
 		idProvider:       idp,
 		email:            emailer,
-		policy:           NewPolicyProvider(),
+		policy:           policy,
 	}
 }
 
