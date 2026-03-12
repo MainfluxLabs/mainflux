@@ -1,4 +1,7 @@
-package http
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
+package rules
 
 import (
 	"net/http"
@@ -12,14 +15,15 @@ var (
 	_ apiutil.Response = (*ruleResponse)(nil)
 	_ apiutil.Response = (*rulesRes)(nil)
 	_ apiutil.Response = (*thingIDsRes)(nil)
+	_ apiutil.Response = (*thingRulesRes)(nil)
 )
 
 type pageRes struct {
 	Total  uint64 `json:"total"`
 	Offset uint64 `json:"offset"`
 	Limit  uint64 `json:"limit"`
-	Ord    string `json:"order,omitempty"`
-	Dir    string `json:"direction,omitempty"`
+	Order  string `json:"order,omitempty"`
+	Dir    string `json:"dir,omitempty"`
 	Name   string `json:"name,omitempty"`
 }
 

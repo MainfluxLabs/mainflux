@@ -85,6 +85,46 @@ func migrateDB(db *sqlx.DB) error {
 					);`,
 				},
 			},
+			{
+				Id: "rules_5",
+				Up: []string{
+					`CREATE TABLE IF NOT EXISTS lua_scripts (
+						id          UUID NOT NULL,
+						group_id    UUID NOT NULL,
+						script      VARCHAR(65535) NOT NULL,
+						name        VARCHAR NOT NULL,
+						description VARCHAR NOT NULL,
+						PRIMARY KEY (id)
+					);`,
+					`CREATE TABLE IF NOT EXISTS lua_scripts_things (
+						thing_id      UUID NOT NULL,
+						lua_script_id UUID NOT NULL,
+						PRIMARY KEY (thing_id, lua_script_id),
+						FOREIGN KEY (lua_script_id) REFERENCES lua_scripts (id) ON DELETE CASCADE
+					);`,
+					`CREATE TABLE IF NOT EXISTS lua_script_runs (
+						id          UUID NOT NULL,
+						script_id   UUID NOT NULL,
+						thing_id    UUID NOT NULL,
+						logs        JSONB NOT NULL,
+						started_at  TIMESTAMPTZ NOT NULL,
+						finished_at TIMESTAMPTZ NOT NULL,
+						status      TEXT NOT NULL,
+						error       TEXT NULL,
+						PRIMARY KEY (id),
+						FOREIGN KEY (script_id) REFERENCES lua_scripts (id) ON DELETE CASCADE
+					);`,
+					`CREATE INDEX IF NOT EXISTS idx_lua_script_runs_thing_id ON lua_script_runs(thing_id)`,
+					`CREATE INDEX IF NOT EXISTS idx_lua_script_runs_script_id ON lua_script_runs(script_id)`,
+				},
+				Down: []string{
+					`DROP TABLE IF EXISTS lua_scripts;`,
+					`DROP TABLE IF EXISTS lua_scripts_things;`,
+					`DROP TABLE IF EXISTS lua_script_runs;`,
+					`DROP INDEX IF EXISTS idx_lua_script_runs_thing_id;`,
+					`DROP INDEX IF EXISTS idx_lua_script_runs_script_id;`,
+				},
+			},
 		},
 	}
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)

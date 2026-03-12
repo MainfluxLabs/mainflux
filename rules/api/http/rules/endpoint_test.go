@@ -1,7 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package http_test
+package rules_test
 
 import (
 	"context"
@@ -81,7 +81,7 @@ func newService() rules.Service {
 	idp := uuid.NewMock()
 	log := logger.NewMock()
 
-	return rules.New(rulesRepo, ths, pubsub, idp, log)
+	return rules.New(rulesRepo, ths, pubsub, idp, log, true)
 }
 
 func newHTTPServer(svc rules.Service) *httptest.Server {
