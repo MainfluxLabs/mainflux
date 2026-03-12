@@ -113,6 +113,10 @@ type Service interface {
 	// CanThingAccessGroup determines whether a given thing has access to a group with a key.
 	CanThingAccessGroup(ctx context.Context, req ThingAccessReq) error
 
+	// CanThingPerform determines whether a given thing is allowed to perform
+	// a specified action directed at another thing.
+	CanThingPerform(ctx context.Context, req ThingCapabilityReq) error
+
 	// Identify returns thing ID for given thing key.
 	Identify(ctx context.Context, key ThingKey) (string, error)
 
@@ -167,6 +171,12 @@ type ThingAccessReq struct {
 	ID string
 }
 
+type ThingCapabilityReq struct {
+	PublisherID string
+	RecipientID string
+	Action      string
+}
+
 type PubConfigInfo struct {
 	PublisherID   string
 	ProfileConfig map[string]any
@@ -186,6 +196,7 @@ type thingsService struct {
 	groupCache       GroupCache
 	idProvider       uuid.IDProvider
 	email            Emailer
+	policy           PolicyProvider
 }
 
 // New instantiates the things service implementation.
@@ -205,6 +216,7 @@ func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, thi
 		groupCache:       gcache,
 		idProvider:       idp,
 		email:            emailer,
+		policy:           NewPolicyProvider(),
 	}
 }
 
@@ -634,6 +646,40 @@ func (ts *thingsService) CanThingAccessGroup(ctx context.Context, req ThingAcces
 	}
 
 	return nil
+}
+
+func (ts *thingsService) CanThingPerform(ctx context.Context, req ThingCapabilityReq) error {
+	if req.PublisherID == "" || req.RecipientID == "" || req.Action == "" {
+		return errors.ErrAuthorization
+	}
+
+	publisher, err := ts.things.RetrieveByID(ctx, req.PublisherID)
+	if err != nil {
+		return err
+	}
+
+	recipient, err := ts.things.RetrieveByID(ctx, req.RecipientID)
+	if err != nil {
+		return err
+	}
+
+	// Publisher and recipient must belong to the same group.
+	if publisher.GroupID != recipient.GroupID {
+		return errors.ErrAuthorization
+	}
+
+	return ts.checkActionRights(ctx, req.Action, publisher.Type, recipient.Type)
+}
+
+func (ts *thingsService) checkActionRights(ctx context.Context, action, publisherType, recipientType string) error {
+	switch action {
+	case ActionCommand:
+		return ts.policy.CanCommand(ctx, publisherType, recipientType)
+	case ActionMessage:
+		return ts.policy.CanMessage(ctx, publisherType, recipientType)
+	default:
+		return errors.ErrAuthorization
+	}
 }
 
 func (ts *thingsService) Identify(ctx context.Context, key ThingKey) (string, error) {

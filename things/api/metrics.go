@@ -237,6 +237,15 @@ func (ms *metricsMiddleware) CanThingAccessGroup(ctx context.Context, req things
 	return ms.svc.CanThingAccessGroup(ctx, req)
 }
 
+func (ms *metricsMiddleware) CanThingPerform(ctx context.Context, req things.ThingCapabilityReq) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "can_thing_perform").Add(1)
+		ms.latency.With("method", "can_thing_perform").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.CanThingPerform(ctx, req)
+}
+
 func (ms *metricsMiddleware) Identify(ctx context.Context, key things.ThingKey) (string, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "identify").Add(1)

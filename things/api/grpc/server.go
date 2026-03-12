@@ -28,6 +28,7 @@ type grpcServer struct {
 	canUserAccessProfile   kitgrpc.Handler
 	canUserAccessGroup     kitgrpc.Handler
 	canThingAccessGroup    kitgrpc.Handler
+	canThingPerform        kitgrpc.Handler
 	identify               kitgrpc.Handler
 	getGroupIDByThing      kitgrpc.Handler
 	getGroupIDByProfile    kitgrpc.Handler
@@ -69,6 +70,11 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 		canThingAccessGroup: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "can_thing_access_group")(canThingAccessGroupEndpoint(svc)),
 			decodeThingAccessGroupRequest,
+			encodeEmptyResponse,
+		),
+		canThingPerform: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "can_thing_perform")(canThingPerformEndpoint(svc)),
+			decodeThingCapabilityRequest,
 			encodeEmptyResponse,
 		),
 		identify: kitgrpc.NewServer(
@@ -160,6 +166,15 @@ func (gs *grpcServer) CanUserAccessGroup(ctx context.Context, req *protomfx.User
 
 func (gs *grpcServer) CanThingAccessGroup(ctx context.Context, req *protomfx.ThingAccessReq) (*emptypb.Empty, error) {
 	_, res, err := gs.canThingAccessGroup.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*emptypb.Empty), nil
+}
+
+func (gs *grpcServer) CanThingPerform(ctx context.Context, req *protomfx.ThingCapabilityReq) (*emptypb.Empty, error) {
+	_, res, err := gs.canThingPerform.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -265,6 +280,15 @@ func decodeUserAccessGroupRequest(_ context.Context, grpcReq any) (any, error) {
 func decodeThingAccessGroupRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.ThingAccessReq)
 	return thingAccessGroupReq{thingKey: thingKey{value: req.GetKey()}, id: req.GetId()}, nil
+}
+
+func decodeThingCapabilityRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.ThingCapabilityReq)
+	return thingCapabilityReq{
+		publisherID: req.GetPublisherID(),
+		recipientID: req.GetRecipientID(),
+		action:      req.GetAction(),
+	}, nil
 }
 
 func decodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {

@@ -145,6 +145,27 @@ func canThingAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func canThingPerformEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(thingCapabilityReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		r := things.ThingCapabilityReq{
+			PublisherID: req.publisherID,
+			RecipientID: req.recipientID,
+			Action:      req.action,
+		}
+
+		if err := svc.CanThingPerform(ctx, r); err != nil {
+			return emptyRes{}, err
+		}
+
+		return emptyRes{}, nil
+	}
+}
+
 func identifyEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(thingKey)

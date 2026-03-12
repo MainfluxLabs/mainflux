@@ -104,6 +104,32 @@ In constrained environments, sometimes it makes sense to run Things service as a
 operates only using a single user and is able to authorize it without gRPC communication with Auth service.
 To run service in a standalone mode, set `MF_THINGS_STANDALONE_EMAIL` and `MF_THINGS_STANDALONE_TOKEN`.
 
+## Device-to-Device (D2D) Policies
+
+Things are assigned a **type** that determines what they are allowed to do within their group. The supported types are:
+
+| Type         | Description                                     |
+|--------------|-------------------------------------------------|
+| `controller` | Orchestrates other devices; issues commands     |
+| `gateway`    | Bridges networks; forwards data                 |
+| `sensor`     | Reads and reports measurements                  |
+| `actuator`   | Receives and executes commands                  |
+| `device`     | General-purpose device                          |
+
+### Capability matrix
+
+Authorization is enforced per action. A thing may only target recipient types listed for its own type:
+
+| Publisher type | `command` targets        | `message` targets                                    |
+|----------------|--------------------------|------------------------------------------------------|
+| `controller`   | sensor, actuator, device | sensor, actuator, device, controller, gateway        |
+| `gateway`      | sensor, actuator, device | sensor, actuator, device, controller, gateway        |
+| `sensor`       | *(none)*                 | controller, gateway, sensor                          |
+| `actuator`     | *(none)*                 | controller, gateway, actuator                        |
+| `device`       | device                   | device, controller, gateway                          |
+
+Both publisher and recipient must belong to the **same group**. A thing with an unknown or missing type is denied all actions.
+
 ## Usage
 
 For more information about service capabilities and its usage, please check out
