@@ -43,6 +43,9 @@ const (
 	topicPrefixGroups   = "groups"
 	topicSuffixCommands = "commands"
 	topicSuffixMessages = "messages"
+
+	actionMessage = "message"
+	actionCommand = "command"
 )
 
 var (
@@ -52,6 +55,7 @@ var (
 	ErrMissingTopicPub               = errors.New("failed to publish due to missing topic")
 	ErrMissingTopicSub               = errors.New("failed to subscribe due to missing topic")
 	ErrUnauthorizedSubscriptionTopic = errors.New("unauthorized subscription topic")
+	ErrUnauthorizedPublishTopic      = errors.New("unauthorized publish topic")
 )
 
 // Event implements events.Event interface
@@ -104,10 +108,57 @@ func (h *handler) AuthPublish(c *session.Client, topic *string, _ *[]byte) error
 		return ErrMissingTopicPub
 	}
 
-	if _, err := h.identify(c); err != nil {
+	publisherID, err := h.identify(c)
+	if err != nil {
 		return err
 	}
 
+	return h.authorizePublish(publisherID, *topic)
+}
+
+func (h *handler) authorizePublish(publisherID, topic string) error {
+	trimmed := strings.Trim(topic, "/")
+	parts := strings.Split(trimmed, "/")
+	if len(parts) < 3 {
+		return nil
+	}
+
+	prefix, id, suffix := parts[0], parts[1], parts[2]
+	if id == "" {
+		return nil
+	}
+
+	switch {
+	case prefix == topicPrefixThings && suffix == topicSuffixMessages:
+		return h.checkThingCapability(publisherID, id, actionMessage)
+	case prefix == topicPrefixThings && suffix == topicSuffixCommands:
+		return h.checkThingCapability(publisherID, id, actionCommand)
+	case prefix == topicPrefixGroups && suffix == topicSuffixCommands:
+		return h.checkGroupMembership(publisherID, id)
+	}
+
+	return nil
+}
+
+func (h *handler) checkThingCapability(publisherID, recipientID, action string) error {
+	if _, err := h.things.CanThingPerform(context.Background(), &protomfx.ThingCapabilityReq{
+		PublisherID: publisherID,
+		RecipientID: recipientID,
+		Action:      action,
+	}); err != nil {
+		return errors.Wrap(ErrUnauthorizedPublishTopic, err)
+	}
+	return nil
+}
+
+func (h *handler) checkGroupMembership(publisherID, groupID string) error {
+	grp, err := h.things.GetGroupIDByThing(context.Background(), &protomfx.ThingID{Value: publisherID})
+	if err != nil {
+		return err
+	}
+	if grp.GetValue() != groupID {
+		return errors.Wrap(ErrUnauthorizedPublishTopic, fmt.Errorf("%s for group %s", groupID, publisherID))
+	}
 	return nil
 }
 
