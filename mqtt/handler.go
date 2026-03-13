@@ -152,12 +152,12 @@ func (h *handler) checkThingCapability(publisherID, recipientID, action string) 
 }
 
 func (h *handler) checkGroupMembership(publisherID, groupID string) error {
-	grp, err := h.things.GetGroupIDByThing(context.Background(), &protomfx.ThingID{Value: publisherID})
+	grID, err := h.things.GetGroupIDByThing(context.Background(), &protomfx.ThingID{Value: publisherID})
 	if err != nil {
 		return err
 	}
-	if grp.GetValue() != groupID {
-		return errors.Wrap(ErrUnauthorizedPublishTopic, fmt.Errorf("%s for group %s", groupID, publisherID))
+	if grID.GetValue() != groupID {
+		return errors.Wrap(ErrUnauthorizedPublishTopic, fmt.Errorf("for group %s and publisher %s", groupID, publisherID))
 	}
 	return nil
 }
