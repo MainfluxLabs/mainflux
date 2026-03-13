@@ -466,6 +466,10 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 }
 
 func (svc usersService) OAuthLogin(provider string) (data OAuthLoginData, err error) {
+	if !svc.selfRegisterEnabled {
+		return OAuthLoginData{}, ErrSelfRegisterDisabled
+	}
+
 	var oauthCfg oauth2.Config
 	switch provider {
 	case GoogleProvider:
@@ -486,6 +490,10 @@ func (svc usersService) OAuthLogin(provider string) (data OAuthLoginData, err er
 }
 
 func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackData) (string, error) {
+	if !svc.selfRegisterEnabled {
+		return "", ErrSelfRegisterDisabled
+	}
+
 	var email, providerUserID string
 	var err error
 
