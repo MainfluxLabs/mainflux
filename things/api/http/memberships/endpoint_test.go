@@ -47,7 +47,7 @@ const (
 	idKey                  = "id"
 	ascKey                 = "asc"
 	descKey                = "desc"
-	groupRedirect          = "/pages/groups"
+	redirectPathGroup      = "/view-group"
 )
 
 var (
@@ -139,8 +139,8 @@ func TestCreateGroupMemberships(t *testing.T) {
 	invalidMembership := gm
 	invalidMembership.Role = wrongValue
 
-	data := toJSON(membershipsReq{GroupMemberships: []groupMembership{gm}, RedirectPath: groupRedirect})
-	invalidData := toJSON(membershipsReq{GroupMemberships: []groupMembership{invalidMembership}, RedirectPath: groupRedirect})
+	data := toJSON(membershipsReq{GroupMemberships: []groupMembership{gm}, RedirectPath: redirectPathGroup})
+	invalidData := toJSON(membershipsReq{GroupMemberships: []groupMembership{invalidMembership}, RedirectPath: redirectPathGroup})
 
 	cases := []struct {
 		desc   string
@@ -231,7 +231,7 @@ func TestRemoveGroupMemberships(t *testing.T) {
 		memberships[i].GroupID = gr.ID
 	}
 
-	err = svc.CreateGroupMemberships(context.Background(), token, groupRedirect, memberships...)
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	data := toJSON(removeMembershipsReq{MemberIDs: []string{memberships[1].MemberID, memberships[2].MemberID}})
@@ -325,7 +325,7 @@ func TestUpdateMemberships(t *testing.T) {
 		memberships[i].GroupID = gr.ID
 	}
 
-	err = svc.CreateGroupMemberships(context.Background(), token, groupRedirect, memberships...)
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	gm := groupMembership{MemberID: viewer.ID, Email: viewer.Email, Role: things.Viewer}
@@ -435,7 +435,7 @@ func TestListGroupMemberships(t *testing.T) {
 		memberships[i].GroupID = gr.ID
 	}
 
-	err = svc.CreateGroupMemberships(context.Background(), token, groupRedirect, memberships...)
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	var data []groupMembership
@@ -651,7 +651,7 @@ type groupMembership struct {
 
 type membershipsReq struct {
 	GroupMemberships []groupMembership `json:"group_memberships"`
-	RedirectPath     string           `json:"redirect_path,omitempty"`
+	RedirectPath     string            `json:"redirect_path,omitempty"`
 }
 
 type removeMembershipsReq struct {

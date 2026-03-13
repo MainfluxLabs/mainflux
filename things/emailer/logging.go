@@ -19,7 +19,7 @@ func LoggingMiddleware(e things.Emailer, logger log.Logger) things.Emailer {
 	return &loggingMiddleware{e, logger}
 }
 
-func (lm *loggingMiddleware) SendGroupMembershipNotification(to []string, orgName, groupName, groupRole, groupLink string) (err error) {
+func (lm *loggingMiddleware) SendGroupMembershipNotification(to []string, orgName, groupName, groupRole, redirectPath string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Emailer method send_group_membership_notification took %s to complete", time.Since(begin))
 		if err != nil {
@@ -30,5 +30,5 @@ func (lm *loggingMiddleware) SendGroupMembershipNotification(to []string, orgNam
 
 	}(time.Now())
 
-	return lm.emailer.SendGroupMembershipNotification(to, orgName, groupName, groupRole, groupLink)
+	return lm.emailer.SendGroupMembershipNotification(to, orgName, groupName, groupRole, redirectPath)
 }
