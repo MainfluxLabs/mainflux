@@ -666,15 +666,11 @@ func (ts *thingsService) CanThingPerform(ctx context.Context, req ThingCapabilit
 		return errors.ErrAuthorization
 	}
 
-	return ts.checkActionRights(ctx, req.Action, publisher.Type, recipient.Type)
-}
-
-func (ts *thingsService) checkActionRights(ctx context.Context, action, publisherType, recipientType string) error {
-	switch action {
+	switch req.Action {
 	case ActionCommand:
-		return canCommand(ctx, publisherType, recipientType)
+		return canCommand(ctx, publisher.Type, recipient.Type)
 	case ActionMessage:
-		return canMessage(ctx, publisherType, recipientType)
+		return canMessage(ctx, publisher.Type, recipient.Type)
 	default:
 		return errors.ErrAuthorization
 	}
