@@ -152,4 +152,13 @@ type ThingCache interface {
 
 	// RemoveGroup removes group ID by given thing ID.
 	RemoveGroup(context.Context, string) error
+
+	// SaveType stores thing type by given thing ID.
+	SaveType(context.Context, string, string) error
+
+	// ViewType returns thing type by given thing ID.
+	ViewType(context.Context, string) (string, error)
+
+	// RemoveType removes thing type by given thing ID.
+	RemoveType(context.Context, string) error
 }

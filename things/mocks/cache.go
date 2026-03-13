@@ -19,6 +19,7 @@ type thingCacheMock struct {
 	thingsByKey         map[string]string
 	thingsByExternalKey map[string]string
 	groups              map[string]string
+	types               map[string]string
 }
 
 // NewThingCache returns mock cache instance.
@@ -27,6 +28,7 @@ func NewThingCache() things.ThingCache {
 		thingsByKey:         make(map[string]string),
 		thingsByExternalKey: make(map[string]string),
 		groups:              make(map[string]string),
+		types:               make(map[string]string),
 	}
 }
 
@@ -124,6 +126,35 @@ func (tcm *thingCacheMock) RemoveGroup(_ context.Context, thingID string) error 
 	defer tcm.mu.Unlock()
 
 	delete(tcm.groups, thingID)
+
+	return nil
+}
+
+func (tcm *thingCacheMock) SaveType(_ context.Context, thingID string, thingType string) error {
+	tcm.mu.Lock()
+	defer tcm.mu.Unlock()
+
+	tcm.types[thingID] = thingType
+	return nil
+}
+
+func (tcm *thingCacheMock) ViewType(_ context.Context, thingID string) (string, error) {
+	tcm.mu.Lock()
+	defer tcm.mu.Unlock()
+
+	thingType, ok := tcm.types[thingID]
+	if !ok {
+		return "", dbutil.ErrNotFound
+	}
+
+	return thingType, nil
+}
+
+func (tcm *thingCacheMock) RemoveType(_ context.Context, thingID string) error {
+	tcm.mu.Lock()
+	defer tcm.mu.Unlock()
+
+	delete(tcm.types, thingID)
 
 	return nil
 }

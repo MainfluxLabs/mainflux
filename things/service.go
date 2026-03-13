@@ -261,6 +261,12 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		return err
 	}
 
+	if thing.Type != "" {
+		if err := ts.thingCache.RemoveType(ctx, thing.ID); err != nil {
+			return err
+		}
+	}
+
 	return ts.things.Update(ctx, thing)
 }
 
@@ -413,6 +419,10 @@ func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...
 		}
 
 		if err := ts.thingCache.RemoveGroup(ctx, id); err != nil {
+			return err
+		}
+
+		if err := ts.thingCache.RemoveType(ctx, id); err != nil {
 			return err
 		}
 	}
@@ -859,6 +869,23 @@ func (ts *thingsService) getGroupIDByThing(ctx context.Context, thID string) (st
 	}
 
 	return grID, nil
+}
+
+func (ts *thingsService) getTypeByThing(ctx context.Context, thID string) (string, error) {
+	thType, err := ts.thingCache.ViewType(ctx, thID)
+	if err != nil {
+		th, err := ts.things.RetrieveByID(ctx, thID)
+		if err != nil {
+			return "", err
+		}
+		thType = th.Type
+
+		if err := ts.thingCache.SaveType(ctx, th.ID, th.Type); err != nil {
+			return "", err
+		}
+	}
+
+	return thType, nil
 }
 
 func (ts *thingsService) getGroupIDByProfile(ctx context.Context, prID string) (string, error) {

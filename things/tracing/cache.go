@@ -18,6 +18,9 @@ const (
 	saveThingGroup           = "save_thing_group"
 	retrieveGroupIDByThingID = "retrieve_group_id_by_thing_id"
 	removeThingGroup         = "remove_thing_group"
+	saveThingType            = "save_thing_type"
+	retrieveThingType        = "retrieve_thing_type"
+	removeThingType          = "remove_thing_type"
 )
 
 var _ things.ThingCache = (*thingCacheMiddleware)(nil)
@@ -90,4 +93,28 @@ func (tcm thingCacheMiddleware) RemoveGroup(ctx context.Context, thingID string)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return tcm.cache.RemoveGroup(ctx, thingID)
+}
+
+func (tcm thingCacheMiddleware) SaveType(ctx context.Context, thingID string, thingType string) error {
+	span := dbutil.CreateSpan(ctx, tcm.tracer, saveThingType)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return tcm.cache.SaveType(ctx, thingID, thingType)
+}
+
+func (tcm thingCacheMiddleware) ViewType(ctx context.Context, thingID string) (string, error) {
+	span := dbutil.CreateSpan(ctx, tcm.tracer, retrieveThingType)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return tcm.cache.ViewType(ctx, thingID)
+}
+
+func (tcm thingCacheMiddleware) RemoveType(ctx context.Context, thingID string) error {
+	span := dbutil.CreateSpan(ctx, tcm.tracer, removeThingType)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return tcm.cache.RemoveType(ctx, thingID)
 }
