@@ -882,7 +882,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/GroupId"
       requestBody:
-        $ref: "#/components/requestBodies/GroupMembershipsReq"
+        $ref: "#/components/requestBodies/CreateGroupMembershipsReq"
       responses:
         '201':
           description: Group memberships created.
@@ -922,7 +922,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/GroupId"
       requestBody:
-        $ref: "#/components/requestBodies/GroupMembershipsReq"
+        $ref: "#/components/requestBodies/UpdateGroupMembershipsReq"
       responses:
         '200':
           description: Group memberships updated.
@@ -1503,7 +1503,7 @@ components:
       required:
         - id
         - role
-    GroupMembershipsSchema:
+    CreateGroupMembershipsSchema:
       type: object
       properties:
         group_memberships:
@@ -1512,6 +1512,23 @@ components:
           uniqueItems: true
           items:
             $ref: "#/components/schemas/GroupMembershipResSchema"
+        redirect_path:
+          type: string
+          description: Redirect path to the group page for invited member.
+      required:
+        - group_memberships
+        - redirect_path
+    UpdateGroupMembershipsSchema:
+      type: object
+      properties:
+        group_memberships:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/GroupMembershipResSchema"
+      required:
+        - group_memberships
     GroupMembershipsPageSchema:
       type: object
       properties:
@@ -1830,13 +1847,20 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/GroupProfilesReqSchema"
-    GroupMembershipsReq:
-      description: JSON-formatted document describing group memberships request.
+    CreateGroupMembershipsReq:
+      description: JSON-formatted document describing group memberships creation request.
       required: true
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/GroupMembershipsSchema"
+            $ref: "#/components/schemas/CreateGroupMembershipsSchema"
+    UpdateGroupMembershipsReq:
+      description: JSON-formatted document describing group memberships update request.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/UpdateGroupMembershipsSchema"
     RemoveGroupMembershipsReq:
       description: JSON-formatted document describing a request to remove group memberships.
       required: true
