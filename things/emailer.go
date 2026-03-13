@@ -1,5 +1,5 @@
 package things
 
 type Emailer interface {
-	SendGroupMembershipNotification(to []string, orgName, groupName, groupRole string) error
+	SendGroupMembershipNotification(to []string, orgName, groupName, groupRole, groupLink string) error
 }
