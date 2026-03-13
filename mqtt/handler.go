@@ -128,15 +128,19 @@ func (h *handler) authorizePublish(publisherID, topic string) error {
 		return nil
 	}
 
+	var err error
 	switch {
 	case prefix == topicPrefixThings && suffix == topicSuffixMessages:
-		return h.checkThingCapability(publisherID, id, actionMessage)
+		err = h.checkThingCapability(publisherID, id, actionMessage)
 	case prefix == topicPrefixThings && suffix == topicSuffixCommands:
-		return h.checkThingCapability(publisherID, id, actionCommand)
+		err = h.checkThingCapability(publisherID, id, actionCommand)
 	case prefix == topicPrefixGroups && suffix == topicSuffixCommands:
-		return h.checkGroupMembership(publisherID, id)
+		err = h.checkGroupMembership(publisherID, id)
 	}
 
+	if err != nil {
+		return errors.Wrap(ErrUnauthorizedPublishTopic, fmt.Errorf("%s for publisher %s", topic, publisherID))
+	}
 	return nil
 }
 
@@ -146,18 +150,15 @@ func (h *handler) checkThingCapability(publisherID, recipientID, action string) 
 		RecipientID: recipientID,
 		Action:      action,
 	}); err != nil {
-		return errors.Wrap(ErrUnauthorizedPublishTopic, err)
+		return errors.ErrAuthorization
 	}
 	return nil
 }
 
 func (h *handler) checkGroupMembership(publisherID, groupID string) error {
 	grID, err := h.things.GetGroupIDByThing(context.Background(), &protomfx.ThingID{Value: publisherID})
-	if err != nil {
-		return err
-	}
-	if grID.GetValue() != groupID {
-		return errors.Wrap(ErrUnauthorizedPublishTopic, fmt.Errorf("for group %s and publisher %s", groupID, publisherID))
+	if err != nil || grID.GetValue() != groupID {
+		return errors.ErrAuthorization
 	}
 	return nil
 }
