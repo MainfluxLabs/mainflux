@@ -48,7 +48,7 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				Id: "messages_1",
 				Up: []string{
-					`CREATE TABLE IF NOT EXISTS messages (
+					`CREATE TABLE IF NOT EXISTS senml (
 						time          BIGINT NOT NULL,
 						subtopic      VARCHAR(254),
 						publisher     UUID,
@@ -63,38 +63,23 @@ func migrateDB(db *sqlx.DB) error {
 						update_time   FLOAT,
 						PRIMARY KEY   (time, publisher, subtopic, name)
 					);
-					SELECT create_hypertable('messages', 'time', create_default_indexes => FALSE, chunk_time_interval => 86400000, if_not_exists => TRUE);`,
+					SELECT create_hypertable('senml', 'time', create_default_indexes => FALSE, chunk_time_interval => 86400000, if_not_exists => TRUE);`,
 					`CREATE TABLE IF NOT EXISTS json (
-						created       BIGINT,
+						created       BIGINT NOT NULL,
 						subtopic      VARCHAR(254),
 						publisher     VARCHAR(254),
 						protocol      TEXT,
 						payload       JSONB,
-						PRIMARY KEY   (publisher, subtopic, created)
-					)`,
-				},
-				Down: []string{
-					"DROP TABLE messages",
-					"DROP TABLE json",
-				},
-			},
-			{
-				Id: "messages_2",
-				Up: []string{
-					`ALTER TABLE messages RENAME TO senml;`,
-				},
-			},
-			{
-				Id: "messages_3",
-				Up: []string{
+						PRIMARY KEY   (created, publisher, subtopic)
+					);
+					SELECT create_hypertable('json', 'created', create_default_indexes => FALSE, chunk_time_interval => 86400000, if_not_exists => TRUE);`,
 					`CREATE INDEX IF NOT EXISTS idx_json_created ON json(created DESC)`,
 					`CREATE INDEX IF NOT EXISTS idx_json_publisher_created ON json(publisher, created DESC)`,
 					`CREATE INDEX IF NOT EXISTS idx_senml_publisher_time ON senml(publisher, time DESC)`,
 				},
 				Down: []string{
-					"DROP INDEX IF EXISTS idx_json_created",
-					"DROP INDEX IF EXISTS idx_json_publisher_created",
-					"DROP INDEX IF EXISTS idx_senml_publisher_time",
+					"DROP TABLE senml",
+					"DROP TABLE json",
 				},
 			},
 		},
