@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -421,13 +422,22 @@ func ReadFloatQuery(r *http.Request, key string, def float64) (float64, error) {
 }
 
 func ReadStringArrayQuery(r *http.Request, key string) ([]string, error) {
-	vals := bone.GetQuery(r, key)
+	vals := r.URL.Query()[key]
 
 	if len(vals) > 10 {
 		return nil, ErrInvalidQueryParams
 	}
 
-	return vals, nil
+	decoded := make([]string, len(vals))
+	for i, v := range vals {
+		d, err := url.QueryUnescape(v)
+		if err != nil {
+			return nil, ErrInvalidQueryParams
+		}
+		decoded[i] = d
+	}
+
+	return decoded, nil
 }
 
 func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
