@@ -62,7 +62,5 @@ func newService() things.Service {
 	groupCache := thmocks.NewGroupCache()
 	idProvider := uuid.NewMock()
 	emailerMock := thmocks.NewEmailer()
-	policyProvider := things.NewPolicyProvider()
-
-	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider, emailerMock, policyProvider)
+	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider, emailerMock)
 }

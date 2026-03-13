@@ -196,14 +196,13 @@ type thingsService struct {
 	groupCache       GroupCache
 	idProvider       uuid.IDProvider
 	email            Emailer
-	policy           PolicyProvider
 }
 
 // New instantiates the things service implementation.
 func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, things ThingRepository, profiles ProfileRepository,
 	groups GroupRepository, groupMemberships GroupMembershipsRepository,
 	pcache ProfileCache, tcache ThingCache, gcache GroupCache, idp uuid.IDProvider,
-	emailer Emailer, policy PolicyProvider) Service {
+	emailer Emailer) Service {
 	return &thingsService{
 		auth:             auth,
 		users:            users,
@@ -216,7 +215,6 @@ func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, thi
 		groupCache:       gcache,
 		idProvider:       idp,
 		email:            emailer,
-		policy:           policy,
 	}
 }
 
@@ -674,9 +672,9 @@ func (ts *thingsService) CanThingPerform(ctx context.Context, req ThingCapabilit
 func (ts *thingsService) checkActionRights(ctx context.Context, action, publisherType, recipientType string) error {
 	switch action {
 	case ActionCommand:
-		return ts.policy.CanCommand(ctx, publisherType, recipientType)
+		return canCommand(ctx, publisherType, recipientType)
 	case ActionMessage:
-		return ts.policy.CanMessage(ctx, publisherType, recipientType)
+		return canMessage(ctx, publisherType, recipientType)
 	default:
 		return errors.ErrAuthorization
 	}

@@ -12,20 +12,6 @@ const (
 	ActionMessage = "message"
 )
 
-type policyProvider struct{}
-
-// PolicyProvider defines how Thing capability policies are resolved.
-type PolicyProvider interface {
-	CanCommand(ctx context.Context, publisherType, recipientType string) error
-	CanMessage(ctx context.Context, publisherType, recipientType string) error
-}
-
-// NewPolicyProvider returns a PolicyProvider backed by the static
-// thingPolicies matrix.
-func NewPolicyProvider() PolicyProvider {
-	return &policyProvider{}
-}
-
 // typePolicy defines what a Thing type is allowed to do within its group.
 type typePolicy struct {
 	canCommandTo []string
@@ -57,7 +43,7 @@ var thingPolicies = map[string]typePolicy{
 	},
 }
 
-func (p *policyProvider) CanCommand(_ context.Context, publisherType, recipientType string) error {
+func canCommand(_ context.Context, publisherType, recipientType string) error {
 	policy, ok := thingPolicies[publisherType]
 	if !ok || !slices.Contains(policy.canCommandTo, recipientType) {
 		return errors.ErrAuthorization
@@ -65,7 +51,7 @@ func (p *policyProvider) CanCommand(_ context.Context, publisherType, recipientT
 	return nil
 }
 
-func (p *policyProvider) CanMessage(_ context.Context, publisherType, recipientType string) error {
+func canMessage(_ context.Context, publisherType, recipientType string) error {
 	policy, ok := thingPolicies[publisherType]
 	if !ok || !slices.Contains(policy.canMessageTo, recipientType) {
 		return errors.ErrAuthorization
