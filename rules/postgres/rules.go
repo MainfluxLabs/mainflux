@@ -72,7 +72,7 @@ func (rr ruleRepository) RetrieveByGroup(ctx context.Context, groupID string, pm
 	}
 
 	gq := "group_id = :group_id"
-	oq := dbutil.GetOrderQuery(pm.Order, rules.AllowedOrders)
+	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
@@ -96,7 +96,7 @@ func (rr ruleRepository) RetrieveByThing(ctx context.Context, thingID string, pm
 		return rules.RulesPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
-	oq := dbutil.GetOrderQuery(pm.Order, rules.AllowedOrders)
+	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	tq := "rt.thing_id = :thing_id"

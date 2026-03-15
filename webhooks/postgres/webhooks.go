@@ -72,7 +72,7 @@ func (wr webhookRepository) RetrieveByGroup(ctx context.Context, groupID string,
 	}
 
 	gq := "group_id = :group_id"
-	oq := dbutil.GetOrderQuery(pm.Order, webhooks.AllowedOrders)
+	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
@@ -102,7 +102,7 @@ func (wr webhookRepository) RetrieveByThing(ctx context.Context, thingID string,
 	}
 
 	tq := "thing_id = :thing_id"
-	oq := dbutil.GetOrderQuery(pm.Order, webhooks.AllowedOrders)
+	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)

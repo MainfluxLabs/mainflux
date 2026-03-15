@@ -110,7 +110,7 @@ func (cr clientRepository) RetrieveByThing(ctx context.Context, thingID string, 
 		return modbus.ClientsPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
-	oq := dbutil.GetOrderQuery(pm.Order, modbus.AllowedOrders)
+	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
@@ -144,7 +144,7 @@ func (cr clientRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 		return modbus.ClientsPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
-	oq := dbutil.GetOrderQuery(pm.Order, modbus.AllowedOrders)
+	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)

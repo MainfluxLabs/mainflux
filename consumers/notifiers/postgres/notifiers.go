@@ -71,7 +71,7 @@ func (nr notifierRepository) RetrieveByGroup(ctx context.Context, groupID string
 		return notifiers.NotifiersPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
-	oq := dbutil.GetOrderQuery(pm.Order, notifiers.AllowedOrders)
+	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)

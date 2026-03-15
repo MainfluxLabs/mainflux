@@ -22,7 +22,7 @@ import (
 
 var AllowedOrders = map[string]string{
 	"id":      "id",
-	"name":    "LOWER(name)",
+	"name":    "name",
 	"rule_id": "rule_id",
 }
 

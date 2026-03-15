@@ -17,7 +17,7 @@ import (
 
 var AllowedOrders = map[string]string{
 	"id":   "id",
-	"name": "LOWER(name)",
+	"name": "name",
 }
 
 type Backup struct {

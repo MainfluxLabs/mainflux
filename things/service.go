@@ -27,7 +27,7 @@ var (
 
 var AllowedOrders = map[string]string{
 	"id":         "id",
-	"name":       "LOWER(name)",
+	"name":       "name",
 	"email":      "email",
 	"created_at": "created_at",
 	"updated_at": "updated_at",

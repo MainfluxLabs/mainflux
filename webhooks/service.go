@@ -16,7 +16,7 @@ import (
 
 var AllowedOrders = map[string]string{
 	"id":   "id",
-	"name": "LOWER(name)",
+	"name": "name",
 }
 
 // PageMetadata contains page metadata that helps navigation.
