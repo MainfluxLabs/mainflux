@@ -31,7 +31,7 @@ type PageMetadata struct {
 // Validate validates the page metadata.
 func (pm PageMetadata) Validate(maxLimitSize int) error {
 	base := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
-	return apiutil.ValidatePageMetadata(base, maxLimitSize, AllowedOrders)
+	return base.Validate(maxLimitSize, AllowedOrders)
 }
 
 // Service specifies an API that must be fullfiled by the domain service

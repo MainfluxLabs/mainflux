@@ -478,7 +478,7 @@ func BuildPageMetadataFromBody(r *http.Request) (PageMetadata, error) {
 	return pm, nil
 }
 
-func ValidatePageMetadata(pm PageMetadata, maxLimitSize int, allowedOrders map[string]string) error {
+func (pm PageMetadata) Validate(maxLimitSize int, allowedOrders map[string]string) error {
 	if pm.Limit > uint64(maxLimitSize) {
 		return ErrLimitSize
 	}

@@ -40,7 +40,7 @@ func (req *listOrgsConfigsReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, uiconfigs.AllowedOrders)
+	return req.pageMetadata.Validate(maxLimitSize, uiconfigs.AllowedOrders)
 }
 
 type updateOrgConfigReq struct {
