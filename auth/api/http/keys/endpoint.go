@@ -90,3 +90,48 @@ func revokeEndpoint(svc auth.Service) endpoint.Endpoint {
 		return revokeKeyRes{}, nil
 	}
 }
+
+func listAPIKeysEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(listKeysReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		page, err := svc.ListAPIKeys(ctx, req.token, req.pageMetadata)
+		if err != nil {
+			return nil, err
+		}
+
+		return buildKeysResponse(page, req.pageMetadata), nil
+	}
+}
+
+func buildKeysResponse(kp auth.KeysPage, pm auth.PageMetadata) keysPageRes {
+	res := keysPageRes{
+		pageRes: pageRes{
+			Total:  kp.Total,
+			Limit:  pm.Limit,
+			Offset: pm.Offset,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
+		},
+		Keys: []retrieveKeyRes{},
+	}
+
+	for _, k := range kp.Keys {
+		view := retrieveKeyRes{
+			ID:       k.ID,
+			IssuerID: k.IssuerID,
+			Subject:  k.Subject,
+			Type:     k.Type,
+			IssuedAt: k.IssuedAt,
+		}
+		if !k.ExpiresAt.IsZero() {
+			view.ExpiresAt = &k.ExpiresAt
+		}
+		res.Keys = append(res.Keys, view)
+	}
+
+	return res
+}

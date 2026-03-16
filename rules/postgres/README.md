@@ -16,4 +16,33 @@ CREATE TABLE IF NOT EXISTS rules_things (
     thing_id  UUID NOT NULL,
     PRIMARY KEY (rule_id, thing_id)
 );
+
+CREATE TABLE IF NOT EXISTS lua_scripts (
+    id          UUID NOT NULL,
+    group_id    UUID NOT NULL,
+    script      VARCHAR(65535) NOT NULL,
+    name        VARCHAR NOT NULL,
+    description VARCHAR NOT NULL,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS lua_scripts_things (
+    thing_id      UUID NOT NULL,
+    lua_script_id UUID NOT NULL,
+    PRIMARY KEY (thing_id, lua_script_id),
+    FOREIGN KEY (lua_script_id) REFERENCES lua_scripts (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS lua_script_runs (
+    id          UUID NOT NULL,
+    script_id   UUID NOT NULL,
+    thing_id    UUID NOT NULL,
+    logs        JSONB NOT NULL,
+    started_at  TIMESTAMPTZ NOT NULL,
+    finished_at TIMESTAMPTZ NOT NULL,
+    status      TEXT NOT NULL,
+    error       TEXT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (script_id) REFERENCES lua_scripts (id)
+);
 ```

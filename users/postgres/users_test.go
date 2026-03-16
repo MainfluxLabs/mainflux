@@ -380,7 +380,7 @@ func TestUpdateUser(t *testing.T) {
 		},
 	}
 	for desc, tc := range cases {
-		err := userRepo.UpdateUser(context.Background(), tc.user)
+		err := userRepo.UpdateUserMetadata(context.Background(), tc.user)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
 	}
 }

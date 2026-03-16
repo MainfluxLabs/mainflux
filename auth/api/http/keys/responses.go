@@ -55,6 +55,31 @@ func (res retrieveKeyRes) Empty() bool {
 	return false
 }
 
+type keysPageRes struct {
+	pageRes
+	Keys []retrieveKeyRes `json:"keys"`
+}
+
+type pageRes struct {
+	Limit  uint64 `json:"limit"`
+	Offset uint64 `json:"offset"`
+	Total  uint64 `json:"total"`
+	Order  string `json:"order,omitempty"`
+	Dir    string `json:"dir,omitempty"`
+}
+
+func (res keysPageRes) Code() int {
+	return http.StatusOK
+}
+
+func (res keysPageRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res keysPageRes) Empty() bool {
+	return false
+}
+
 type revokeKeyRes struct {
 }
 

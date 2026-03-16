@@ -878,6 +878,12 @@ func TestRemoveThings(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grID := grs[0].ID
 
+	for i := range memberships {
+		memberships[i].GroupID = grID
+	}
+	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
 	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
@@ -899,9 +905,21 @@ func TestRemoveThings(t *testing.T) {
 			err:   errors.ErrAuthentication,
 		},
 		{
-			desc:  "remove existing thing",
+			desc:  "remove thing as viewer",
 			id:    th.ID,
-			token: token,
+			token: viewerToken,
+			err:   errors.ErrAuthorization,
+		},
+		{
+			desc:  "remove thing as editor",
+			id:    th.ID,
+			token: editorToken,
+			err:   errors.ErrAuthorization,
+		},
+		{
+			desc:  "remove thing as admin",
+			id:    th.ID,
+			token: otherToken,
 			err:   nil,
 		},
 		{
@@ -1477,6 +1495,12 @@ func TestRemoveProfile(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grID := grs[0].ID
 
+	for i := range memberships {
+		memberships[i].GroupID = grID
+	}
+	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
 	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	prID, prID1 := prs[0].ID, prs[1].ID
@@ -1497,9 +1521,21 @@ func TestRemoveProfile(t *testing.T) {
 			err:   errors.ErrAuthentication,
 		},
 		{
-			desc:  "remove existing profile",
+			desc:  "remove profile as viewer",
 			id:    prID,
-			token: token,
+			token: viewerToken,
+			err:   errors.ErrAuthorization,
+		},
+		{
+			desc:  "remove profile as editor",
+			id:    prID,
+			token: editorToken,
+			err:   errors.ErrAuthorization,
+		},
+		{
+			desc:  "remove profile as admin",
+			id:    prID,
+			token: otherToken,
 			err:   nil,
 		},
 		{
@@ -2780,7 +2816,7 @@ func TestRemoveExternalKey(t *testing.T) {
 			desc:    "remove external key as editor",
 			token:   editorToken,
 			thingID: createdThing.ID,
-			err:     nil,
+			err:     errors.ErrAuthorization,
 		},
 		{
 			desc:    "remove external key as viewer",

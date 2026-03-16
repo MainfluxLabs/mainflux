@@ -104,11 +104,11 @@ func (ms *metricsMiddleware) RemoveWebhooksByGroup(ctx context.Context, groupID 
 	return ms.svc.RemoveWebhooksByGroup(ctx, groupID)
 }
 
-func (ms *metricsMiddleware) Consume(message any) error {
+func (ms *metricsMiddleware) Consume(subject string, message any) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "consume").Add(1)
 		ms.latency.With("method", "consume").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Consume(message)
+	return ms.svc.Consume(subject, message)
 }

@@ -125,7 +125,7 @@ func (lm loggingMiddleware) ExportAlarmsByThing(ctx context.Context, token, thin
 	return lm.svc.ExportAlarmsByThing(ctx, token, thingID, pm)
 }
 
-func (lm loggingMiddleware) Consume(alarm any) (err error) {
+func (lm loggingMiddleware) Consume(subject string, alarm any) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method consume took %s to complete", time.Since(begin))
 		if err != nil {
@@ -135,5 +135,5 @@ func (lm loggingMiddleware) Consume(alarm any) (err error) {
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Consume(alarm)
+	return lm.svc.Consume(subject, alarm)
 }

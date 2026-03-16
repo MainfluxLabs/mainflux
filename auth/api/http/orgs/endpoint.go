@@ -130,7 +130,7 @@ func buildOrgsResponse(op auth.OrgsPage, pm auth.PageMetadata) orgsPageRes {
 			Total:  op.Total,
 			Limit:  pm.Limit,
 			Offset: pm.Offset,
-			Ord:    pm.Order,
+			Order:  pm.Order,
 			Dir:    pm.Dir,
 			Name:   pm.Name,
 		},

@@ -123,7 +123,7 @@ func buildOrgInvitesPageRes(page auth.OrgInvitesPage, pm auth.PageMetadata) orgI
 			Limit:  pm.Limit,
 			Offset: pm.Offset,
 			Total:  page.Total,
-			Ord:    pm.Order,
+			Order:  pm.Order,
 			Dir:    pm.Dir,
 			State:  pm.State,
 		},

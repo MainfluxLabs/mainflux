@@ -27,6 +27,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+const (
+	subject = "things.fa9b4ead-4b5a-4d34-a6a0-b33dd2e5f5f3.messages"
+)
+
 var (
 	port        string
 	addr        string
@@ -89,7 +93,7 @@ func TestSaveSenML(t *testing.T) {
 			Created:     now + int64(i),
 		}
 
-		err = repo.Consume(pm)
+		err = repo.Consume(subject, pm)
 		assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 	}
 
@@ -130,6 +134,6 @@ func TestSaveJSON(t *testing.T) {
 		ContentType: messaging.JSONContentType,
 	}
 
-	err = repo.Consume(pm)
+	err = repo.Consume(subject, pm)
 	assert.Nil(t, err, fmt.Sprintf("expected no error got %s", err))
 }

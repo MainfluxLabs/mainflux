@@ -47,6 +47,8 @@ var AllowedOrders = map[string]string{
 	"inviter_id": "inviter_id",
 	"org_id":     "org_id",
 	"state":      "state",
+	"issued_at":  "issued_at",
+	"type":       "type",
 }
 
 type PageMetadata struct {

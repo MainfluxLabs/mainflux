@@ -56,23 +56,19 @@ func TestConsume(t *testing.T) {
 	runConsumeTest(t, svcSmpp, validPhones)
 }
 
-func createTestMessages(notifier notifiers.Notifier, actionType string, invalidContacts []string, invalidID string) (validMsg, invalidMsg protomfx.Message) {
+func createTestMessages(notifier notifiers.Notifier, actionType string, invalidContacts []string, invalidID string) (validSubject string, validMsg protomfx.Message, invalidSubject string, invalidMsg protomfx.Message) {
 	invalidNotifier := notifier
 	invalidNotifier.ID = invalidID
 	invalidNotifier.Contacts = invalidContacts
 
-	createMessage := func(n notifiers.Notifier) protomfx.Message {
-		return protomfx.Message{
-			Subject: fmt.Sprintf("%s.%s", actionType, n.ID),
-		}
-	}
-
-	return createMessage(notifier), createMessage(invalidNotifier)
+	return fmt.Sprintf("%s.%s", actionType, notifier.ID), protomfx.Message{},
+		fmt.Sprintf("%s.%s", actionType, invalidNotifier.ID), protomfx.Message{}
 }
 
 func runConsumeTest(t *testing.T, svcName string, validContacts []string) {
 	t.Helper()
 	svc := newService()
+	var subject, invalidSubject string
 	var msg, invalidMsg protomfx.Message
 
 	validNotifier := notifiers.Notifier{
@@ -86,29 +82,32 @@ func runConsumeTest(t *testing.T, svcName string, validContacts []string) {
 
 	switch svcName {
 	case svcSmtp:
-		msg, invalidMsg = createTestMessages(nf, "smtp", invalidEmails, "a63a8bb7-725b-4f34-89a4-857827934b1f")
+		subject, msg, invalidSubject, invalidMsg = createTestMessages(nf, "smtp", invalidEmails, "a63a8bb7-725b-4f34-89a4-857827934b1f")
 	case svcSmpp:
-		msg, invalidMsg = createTestMessages(nf, "smpp", invalidPhones, "a63a8bb7-725b-4f34-89a4-857827934b1f")
+		subject, msg, invalidSubject, invalidMsg = createTestMessages(nf, "smpp", invalidPhones, "a63a8bb7-725b-4f34-89a4-857827934b1f")
 	}
 
 	cases := []struct {
-		desc string
-		msg  protomfx.Message
-		err  error
+		desc    string
+		subject string
+		msg     protomfx.Message
+		err     error
 	}{
 		{
-			desc: "notify",
-			msg:  msg,
+			desc:    "notify",
+			subject: subject,
+			msg:     msg,
 		},
 		{
-			desc: "notify with invalid contacts",
-			msg:  invalidMsg,
-			err:  notifiers.ErrNotify,
+			desc:    "notify with invalid contacts",
+			subject: invalidSubject,
+			msg:     invalidMsg,
+			err:     notifiers.ErrNotify,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.Consume(tc.msg)
+		err := svc.Consume(tc.subject, tc.msg)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

@@ -33,9 +33,8 @@ const (
 	coapProt    = "coap"
 	udpProt     = "udp"
 	msgName     = "temperature"
-	senmlFormat = "messages"
-	jsonFormat  = "json"
 	jsonCT      = "application/json"
+	subject     = "things.fa9b4ead-4b5a-4d34-a6a0-b33dd2e5f5f3.messages"
 )
 
 var (
@@ -129,10 +128,9 @@ func TestListSenMLMessages(t *testing.T) {
 			Protocol:    m.Protocol,
 			ContentType: senml.JSON,
 			Payload:     payload,
-			Subject:     "",
 		}
 
-		err = writer.Consume(pm)
+		err = writer.Consume(subject, pm)
 		assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 	}
 

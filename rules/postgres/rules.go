@@ -15,14 +15,14 @@ import (
 	"github.com/jackc/pgerrcode"
 )
 
-var _ rules.RuleRepository = (*ruleRepository)(nil)
+var _ rules.Repository = (*ruleRepository)(nil)
 
 type ruleRepository struct {
 	db dbutil.Database
 }
 
 // NewRuleRepository instantiates a PostgreSQL implementation of rule repository.
-func NewRuleRepository(db dbutil.Database) rules.RuleRepository {
+func NewRuleRepository(db dbutil.Database) rules.Repository {
 	return &ruleRepository{
 		db: db,
 	}
@@ -88,7 +88,7 @@ func (rr ruleRepository) RetrieveByGroup(ctx context.Context, groupID string, pm
 		"offset":   pm.Offset,
 	}
 
-	return rr.retrieve(ctx, q, qc, params)
+	return rr.retrieveRules(ctx, q, qc, params)
 }
 
 func (rr ruleRepository) RetrieveByThing(ctx context.Context, thingID string, pm rules.PageMetadata) (rules.RulesPage, error) {
@@ -125,7 +125,7 @@ func (rr ruleRepository) RetrieveByThing(ctx context.Context, thingID string, pm
 		"offset":   pm.Offset,
 	}
 
-	return rr.retrieve(ctx, q, qc, params)
+	return rr.retrieveRules(ctx, q, qc, params)
 }
 
 func (rr ruleRepository) RetrieveByID(ctx context.Context, id string) (rules.Rule, error) {
@@ -280,7 +280,7 @@ func (rr ruleRepository) UnassignByThing(ctx context.Context, thingID string) er
 	return nil
 }
 
-func (rr ruleRepository) retrieve(ctx context.Context, query, cquery string, params map[string]any) (rules.RulesPage, error) {
+func (rr ruleRepository) retrieveRules(ctx context.Context, query, cquery string, params map[string]any) (rules.RulesPage, error) {
 	rows, err := rr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return rules.RulesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)

@@ -84,11 +84,11 @@ func (ms *metricsMiddleware) RemoveNotifiersByGroup(ctx context.Context, groupID
 	return ms.svc.RemoveNotifiersByGroup(ctx, groupID)
 }
 
-func (ms *metricsMiddleware) Consume(msg any) error {
+func (ms *metricsMiddleware) Consume(subject string, msg any) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "consume").Add(1)
 		ms.latency.With("method", "consume").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Consume(msg)
+	return ms.svc.Consume(subject, msg)
 }

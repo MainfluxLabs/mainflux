@@ -96,7 +96,7 @@ func rabbitHandler(deliveries <-chan amqp.Delivery, h messaging.MessageHandler) 
 			logger.Warn(fmt.Sprintf("Failed to unmarshal received message: %s", err))
 			return
 		}
-		if err := h.Handle(msg); err != nil {
+		if err := h.Handle(d.RoutingKey, msg); err != nil {
 			logger.Warn(fmt.Sprintf("Failed to handle Mainflux message: %s", err))
 			return
 		}

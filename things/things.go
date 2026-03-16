@@ -22,6 +22,7 @@ type Thing struct {
 	GroupID     string
 	ProfileID   string
 	Name        string
+	Type        string
 	Key         string
 	ExternalKey string
 	Metadata    Metadata
@@ -37,6 +38,12 @@ type ThingsPage struct {
 const (
 	KeyTypeInternal = "internal"
 	KeyTypeExternal = "external"
+
+	ThingTypeDevice     = "device"
+	ThingTypeSensor     = "sensor"
+	ThingTypeActuator   = "actuator"
+	ThingTypeController = "controller"
+	ThingTypeGateway    = "gateway"
 )
 
 // ThingKey represents a Thing authentication key and its type

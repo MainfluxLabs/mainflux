@@ -735,8 +735,7 @@ func (cs *clientsService) publish(config *protomfx.Config, thingID string, paylo
 		return err
 	}
 
-	msg.Subject = nats.GetMessagesSubject(msg.Publisher, msg.Subtopic)
-	if err := cs.publisher.Publish(msg); err != nil {
+	if err := cs.publisher.Publish(nats.GetMessagesSubject(msg.Publisher, msg.Subtopic), msg); err != nil {
 		return err
 	}
 

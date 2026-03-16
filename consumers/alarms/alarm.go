@@ -4,11 +4,17 @@ import (
 	"context"
 )
 
+const (
+	AlarmOriginRule   = "rule"
+	AlarmOriginScript = "script"
+)
+
 type Alarm struct {
 	ID       string
 	ThingID  string
 	GroupID  string
 	RuleID   string
+	ScriptID string
 	Subtopic string
 	Protocol string
 	Payload  map[string]any

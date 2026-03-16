@@ -63,7 +63,7 @@ paths:
         - $ref: "#/components/parameters/Offset"
         - $ref: "#/components/parameters/Name"
         - $ref: "#/components/parameters/Order"
-        - $ref: "#/components/parameters/Direction"
+        - $ref: "#/components/parameters/Dir"
         - $ref: "#/components/parameters/Metadata"
       responses:
         '200':
@@ -214,7 +214,7 @@ paths:
       summary: Updates thing info
       description: |
         Update is performed by replacing the current resource data with values
-        provided in a request payload. Note that the thing's type and ID
+        provided in a request payload. Note that the thing's ID
         cannot be changed.
       tags:
         - things
@@ -442,7 +442,7 @@ paths:
         - $ref: "#/components/parameters/Offset"
         - $ref: "#/components/parameters/Name"
         - $ref: "#/components/parameters/Order"
-        - $ref: "#/components/parameters/Direction"
+        - $ref: "#/components/parameters/Dir"
         - $ref: "#/components/parameters/Metadata"
       responses:
         '200':
@@ -716,7 +716,7 @@ paths:
         - $ref: "#/components/parameters/Offset"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Order"
-        - $ref: "#/components/parameters/Direction"
+        - $ref: "#/components/parameters/Dir"
         - $ref: "#/components/parameters/Metadata"
       responses:
         '200':
@@ -738,7 +738,7 @@ paths:
         - $ref: "#/components/parameters/Offset"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Order"
-        - $ref: "#/components/parameters/Direction"
+        - $ref: "#/components/parameters/Dir"
         - $ref: "#/components/parameters/Metadata"
       responses:
         '200':
@@ -1050,9 +1050,22 @@ components:
         name:
           type: string
           description: Free-form thing name.
+        type:
+          type: string
+          description: Thing type used to classify devices by their role and capabilities.
+          enum:
+            - device
+            - sensor
+            - actuator
+            - controller
+            - gateway
         metadata:
           type: object
           description: Arbitrary, object-encoded thing's data.
+      required:
+        - profile_id
+        - name
+        - type
     SearchThingsReqSchema:
       type: object
       properties:
@@ -1098,6 +1111,15 @@ components:
           type: string
           example: "Test"
           description: Free-form thing name.
+        type:
+          type: string
+          description: Thing type used to classify devices by their role and capabilities.
+          enum:
+            - device
+            - sensor
+            - actuator
+            - controller
+            - gateway
         key:
           type: string
           format: uuid
@@ -1122,6 +1144,7 @@ components:
         - id
         - key
         - group_id
+        - type
     BackupAndRestoreThingsSchema:
       type: array
       minItems: 0
@@ -1278,7 +1301,7 @@ components:
         order:
           type: string
           description: Order type.
-        direction:
+        dir:
           type: string
           description: Order direction.
       required:
@@ -1296,7 +1319,7 @@ components:
         order:
           type: string
           description: Order type.
-        direction:
+        dir:
           type: string
           description: Order direction.
         name:
@@ -1605,7 +1628,7 @@ components:
           - name
           - id
       required: false
-    Direction:
+    Dir:
       name: dir
       description: Order direction.
       in: query
@@ -1649,6 +1672,15 @@ components:
               name:
                 type: string
                 description: Free-form thing name.
+              type:
+                type: string
+                description: Thing type used to classify devices by their role and capabilities.
+                enum:
+                  - device
+                  - sensor
+                  - actuator
+                  - controller
+                  - gateway
               metadata:
                 type: object
               key:

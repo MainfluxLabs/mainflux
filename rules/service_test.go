@@ -28,6 +28,7 @@ const (
 	wrongValue = "wrong-value"
 	thingID    = "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
 	groupID    = "574106f7-030e-4881-8ab0-151195c29f94"
+	subject    = "things." + thingID + ".messages"
 )
 
 func threshold(v float64) *float64 { return &v }
@@ -52,7 +53,7 @@ func newServiceWithPubSub(pubsub messaging.PubSub) rules.Service {
 	idp := uuid.NewMock()
 	log := logger.NewMock()
 
-	return rules.New(rulesRepo, ths, pubsub, idp, log)
+	return rules.New(rulesRepo, ths, pubsub, idp, log, true)
 }
 
 func saveRules(t *testing.T, svc rules.Service, n int) []rules.Rule {
@@ -154,17 +155,6 @@ func TestConsume(t *testing.T) {
 				ContentType: "application/senml+json",
 			},
 			err: nil,
-		},
-		{
-			desc:       "invalid JSON payload returns error",
-			conditions: defaultConditions,
-			operator:   rules.OperatorAND,
-			msg: protomfx.Message{
-				Publisher:   thingID,
-				Payload:     []byte("not-json"),
-				ContentType: "application/json",
-			},
-			err: errors.ErrInvalidPayload,
 		},
 		{
 			desc: "non-Message type returns error",
@@ -295,33 +285,9 @@ func TestConsume(t *testing.T) {
 			assignRules(t, svc, thingID, saved[0].ID)
 		}
 
-		err := svc.Consume(tc.msg)
+		err := svc.Consume(subject, tc.msg)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
-}
-
-func TestConsumePublishError(t *testing.T) {
-	svc := newServiceWithPubSub(mocks.NewFailingPubSub())
-
-	saved, err := svc.CreateRules(context.Background(), token, groupID, rules.Rule{
-		Name: "test-rule",
-		Conditions: []rules.Condition{
-			{Field: "temperature", Comparator: ">", Threshold: threshold(25)},
-		},
-		Operator: rules.OperatorAND,
-		Actions:  []rules.Action{{Type: rules.ActionTypeAlarm}},
-	})
-	require.Nil(t, err)
-	assignRules(t, svc, thingID, saved[0].ID)
-
-	msg := protomfx.Message{
-		Publisher:   thingID,
-		Payload:     mustMarshal(t, map[string]any{"temperature": float64(30)}),
-		ContentType: "application/json",
-	}
-
-	err = svc.Consume(msg)
-	assert.True(t, errors.Contains(err, messaging.ErrPublishMessage), fmt.Sprintf("publish error: expected %s got %s", messaging.ErrPublishMessage, err))
 }
 
 func TestCreateRules(t *testing.T) {

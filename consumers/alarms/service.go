@@ -3,6 +3,7 @@ package alarms
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
@@ -194,19 +195,13 @@ func (as *alarmService) createAlarm(ctx context.Context, alarm *Alarm) error {
 
 }
 
-func (as *alarmService) Consume(message any) error {
+func (as *alarmService) Consume(subject string, message any) error {
 	ctx := context.Background()
 
 	msg, ok := message.(protomfx.Message)
 	if !ok {
 		return errors.ErrMessage
 	}
-
-	subject := strings.Split(msg.Subject, ".")
-	if len(subject) < 2 {
-		return errors.ErrInvalidSubject
-	}
-	ruleID := subject[1]
 
 	var payload map[string]any
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
@@ -215,11 +210,27 @@ func (as *alarmService) Consume(message any) error {
 
 	alarm := Alarm{
 		ThingID:  msg.Publisher,
-		RuleID:   ruleID,
 		Subtopic: msg.Subtopic,
 		Protocol: msg.Protocol,
 		Payload:  payload,
 		Created:  msg.Created,
+	}
+
+	subParts := strings.Split(subject, ".")
+	if len(subParts) < 3 {
+		return errors.ErrInvalidSubject
+	}
+
+	originType := subParts[1]
+	originID := subParts[2]
+
+	switch originType {
+	case AlarmOriginRule:
+		alarm.RuleID = originID
+	case AlarmOriginScript:
+		alarm.ScriptID = originID
+	default:
+		return fmt.Errorf("invalid subject origin type: %s", originType)
 	}
 
 	if err := as.createAlarm(ctx, &alarm); err != nil {

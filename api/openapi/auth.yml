@@ -5,6 +5,24 @@ info:
   version: "1.0.0"
 paths:
   /keys:
+    get:
+      summary: List API keys
+      description: |
+        Retrieves a paginated list of API keys issued by the authenticated user.
+      tags:
+        - auth
+      parameters:
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        '200':
+          $ref: "#/components/responses/KeysPageRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
     post:
       summary: Issue API key
       description: |
@@ -546,6 +564,22 @@ components:
           example: "2019-11-26 13:31:52"
           description: Time when the Key expires. If this field is missing,
             that means that Key is valid indefinitely.
+    KeysPageSchema:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of API keys.
+        offset:
+          type: integer
+          description: Offset of the page.
+        limit:
+          type: integer
+          description: Limit of the page.
+        keys:
+          type: array
+          items:
+            $ref: "#/components/schemas/Key"
     SearchOrgsReqSchema:
       type: object
       properties:
@@ -1067,6 +1101,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Key"
+    KeysPageRes:
+      description: Data retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/KeysPageSchema"
     OrgsPageRes:
       description: Data retrieved.
       content:

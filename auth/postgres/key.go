@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
@@ -68,6 +69,54 @@ func (kr repo) Remove(ctx context.Context, issuerID, id string) error {
 	}
 
 	return nil
+}
+
+func (kr repo) RetrieveAPIKeys(ctx context.Context, issuerID string, pm auth.PageMetadata) (auth.KeysPage, error) {
+	oq := dbutil.GetOrderQuery(pm.Order)
+	dq := dbutil.GetDirQuery(pm.Dir)
+	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+
+	iq, tq := "issuer_id = :issuer_id", "type = :type"
+	whereClause := dbutil.BuildWhereClause(iq, tq, "", "")
+
+	query := fmt.Sprintf(`SELECT id, type, issuer_id, subject, issued_at, expires_at
+				FROM keys %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+
+	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM keys %s`, whereClause)
+
+	params := map[string]any{
+		"issuer_id": issuerID,
+		"type":      auth.APIKey,
+		"limit":     pm.Limit,
+		"offset":    pm.Offset,
+	}
+
+	rows, err := kr.db.NamedQueryContext(ctx, query, params)
+	if err != nil {
+		return auth.KeysPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	var items []auth.Key
+	for rows.Next() {
+		dbk := dbKey{}
+		if err := rows.StructScan(&dbk); err != nil {
+			return auth.KeysPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		}
+		items = append(items, toKey(dbk))
+	}
+
+	total, err := dbutil.Total(ctx, kr.db, cquery, params)
+	if err != nil {
+		return auth.KeysPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	page := auth.KeysPage{
+		Keys:  items,
+		Total: total,
+	}
+
+	return page, nil
 }
 
 type dbKey struct {

@@ -71,8 +71,8 @@ type pageRes struct {
 	Limit  uint64 `json:"limit"`
 	Offset uint64 `json:"offset"`
 	Total  uint64 `json:"total"`
-	Ord    string `json:"order,omitempty"`
-	Dir    string `json:"direction,omitempty"`
+	Order  string `json:"order,omitempty"`
+	Dir    string `json:"dir,omitempty"`
 	Name   string `json:"name,omitempty"`
 }
 

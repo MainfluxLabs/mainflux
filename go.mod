@@ -1,10 +1,12 @@
 module github.com/MainfluxLabs/mainflux
 
-go 1.25.7
+go 1.25.8
 
 require (
 	github.com/MainfluxLabs/mproxy v0.2.3
 	github.com/MainfluxLabs/senml v1.0.5
+	github.com/Shopify/go-lua v0.0.0-20250718183320-1e37f32ad7d0
+	github.com/Shopify/goluago v0.0.0-20240527182001-ec4ec6c26eab
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/docker/docker v28.3.3+incompatible
 	github.com/eclipse/paho.mqtt.golang v1.5.1
@@ -42,6 +44,7 @@ require (
 	go.mongodb.org/mongo-driver v1.10.1
 	golang.org/x/crypto v0.45.0
 	golang.org/x/net v0.47.0
+	golang.org/x/oauth2 v0.35.0
 	golang.org/x/sync v0.18.0
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
 	gonum.org/v1/gonum v0.11.0
@@ -51,6 +54,7 @@ require (
 )
 
 require (
+	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect

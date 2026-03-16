@@ -136,7 +136,7 @@ func (svc *configService) UpdateOrgConfig(ctx context.Context, token string, org
 		return OrgConfig{}, err
 	}
 
-	if err := svc.canAccessOrg(ctx, token, orgConfig.OrgID, auth.OrgSub, auth.Viewer); err != nil {
+	if err := svc.canAccessOrg(ctx, token, orgConfig.OrgID, auth.OrgSub, auth.Editor); err != nil {
 		return OrgConfig{}, err
 	}
 

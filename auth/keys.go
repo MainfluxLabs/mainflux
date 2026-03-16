@@ -47,6 +47,11 @@ type Identity struct {
 	Email string
 }
 
+type KeysPage struct {
+	Total uint64
+	Keys  []Key
+}
+
 // Expired verifies if the key is expired.
 func (k Key) Expired() bool {
 	if k.Type == APIKey && k.ExpiresAt.IsZero() {
@@ -68,6 +73,9 @@ type Keys interface {
 	// RetrieveKey retrieves data for the Key identified by the provided
 	// ID, that is issued by the user identified by the provided key.
 	RetrieveKey(ctx context.Context, token, id string) (Key, error)
+
+	// ListAPIKeys retrieves API keys.
+	ListAPIKeys(ctx context.Context, token string, pm PageMetadata) (KeysPage, error)
 }
 
 // KeyRepository specifies Key persistence API.
@@ -81,6 +89,9 @@ type KeyRepository interface {
 
 	// Remove removes Key with provided ID.
 	Remove(context.Context, string, string) error
+
+	// RetrieveAPIKeys retrieves all API Keys with pagination.
+	RetrieveAPIKeys(ctx context.Context, issuerID string, pm PageMetadata) (KeysPage, error)
 }
 
 func (svc service) Issue(ctx context.Context, token string, key Key) (Key, string, error) {
@@ -115,6 +126,15 @@ func (svc service) RetrieveKey(ctx context.Context, token, id string) (Key, erro
 	}
 
 	return svc.keys.Retrieve(ctx, issuerID, id)
+}
+
+func (svc service) ListAPIKeys(ctx context.Context, token string, pm PageMetadata) (KeysPage, error) {
+	issuerID, _, err := svc.login(token)
+	if err != nil {
+		return KeysPage{}, errors.Wrap(errRetrieve, err)
+	}
+
+	return svc.keys.RetrieveAPIKeys(ctx, issuerID, pm)
 }
 
 func (svc service) userKey(ctx context.Context, token string, key Key) (Key, string, error) {

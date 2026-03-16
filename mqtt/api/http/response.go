@@ -13,7 +13,7 @@ var _ apiutil.Response = (*listSubscriptionsRes)(nil)
 
 type listSubscriptionsRes struct {
 	pageRes
-	Subscriptions []viewSubRes `json:"subscriptions,omitempty"`
+	Subscriptions []viewSubRes `json:"subscriptions"`
 }
 
 func (res listSubscriptionsRes) Code() int {
@@ -29,7 +29,7 @@ func (res listSubscriptionsRes) Empty() bool {
 }
 
 type viewSubRes struct {
-	Subtopic  string  `json:"subtopic"`
+	Topic     string  `json:"topic"`
 	ThingID   string  `json:"thing_id"`
 	GroupID   string  `json:"group_id"`
 	CreatedAt float64 `json:"created_at"`
