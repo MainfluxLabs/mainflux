@@ -28,7 +28,7 @@ type grpcServer struct {
 	canUserAccessProfile   kitgrpc.Handler
 	canUserAccessGroup     kitgrpc.Handler
 	canThingAccessGroup    kitgrpc.Handler
-	canThingPerform        kitgrpc.Handler
+	canThingCommand        kitgrpc.Handler
 	identify               kitgrpc.Handler
 	getGroupIDByThing      kitgrpc.Handler
 	getGroupIDByProfile    kitgrpc.Handler
@@ -72,9 +72,9 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 			decodeThingAccessGroupRequest,
 			encodeEmptyResponse,
 		),
-		canThingPerform: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "can_thing_perform")(canThingPerformEndpoint(svc)),
-			decodeThingCapabilityRequest,
+		canThingCommand: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "can_thing_command")(canThingCommandEndpoint(svc)),
+			decodeThingCommandRequest,
 			encodeEmptyResponse,
 		),
 		identify: kitgrpc.NewServer(
@@ -173,8 +173,8 @@ func (gs *grpcServer) CanThingAccessGroup(ctx context.Context, req *protomfx.Thi
 	return res.(*emptypb.Empty), nil
 }
 
-func (gs *grpcServer) CanThingPerform(ctx context.Context, req *protomfx.ThingCapabilityReq) (*emptypb.Empty, error) {
-	_, res, err := gs.canThingPerform.ServeGRPC(ctx, req)
+func (gs *grpcServer) CanThingCommand(ctx context.Context, req *protomfx.ThingCommandReq) (*emptypb.Empty, error) {
+	_, res, err := gs.canThingCommand.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -282,12 +282,11 @@ func decodeThingAccessGroupRequest(_ context.Context, grpcReq any) (any, error) 
 	return thingAccessGroupReq{thingKey: thingKey{value: req.GetKey()}, id: req.GetId()}, nil
 }
 
-func decodeThingCapabilityRequest(_ context.Context, grpcReq any) (any, error) {
-	req := grpcReq.(*protomfx.ThingCapabilityReq)
-	return thingCapabilityReq{
+func decodeThingCommandRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.ThingCommandReq)
+	return thingCommandReq{
 		publisherID: req.GetPublisherID(),
 		recipientID: req.GetRecipientID(),
-		action:      req.GetAction(),
 	}, nil
 }
 

@@ -113,9 +113,8 @@ type Service interface {
 	// CanThingAccessGroup determines whether a given thing has access to a group with a key.
 	CanThingAccessGroup(ctx context.Context, req ThingAccessReq) error
 
-	// CanThingPerform determines whether a given thing is allowed to perform
-	// a specified action directed at another thing.
-	CanThingPerform(ctx context.Context, req ThingCapabilityReq) error
+	// CanThingCommand determines whether a given thing is allowed to send a command to another thing.
+	CanThingCommand(ctx context.Context, req ThingCommandReq) error
 
 	// Identify returns thing ID for given thing key.
 	Identify(ctx context.Context, key ThingKey) (string, error)
@@ -171,10 +170,9 @@ type ThingAccessReq struct {
 	ID string
 }
 
-type ThingCapabilityReq struct {
+type ThingCommandReq struct {
 	PublisherID string
 	RecipientID string
-	Action      string
 }
 
 type PubConfigInfo struct {
@@ -646,8 +644,8 @@ func (ts *thingsService) CanThingAccessGroup(ctx context.Context, req ThingAcces
 	return nil
 }
 
-func (ts *thingsService) CanThingPerform(ctx context.Context, req ThingCapabilityReq) error {
-	if req.PublisherID == "" || req.RecipientID == "" || req.Action == "" {
+func (ts *thingsService) CanThingCommand(ctx context.Context, req ThingCommandReq) error {
+	if req.PublisherID == "" || req.RecipientID == "" {
 		return errors.ErrAuthorization
 	}
 
@@ -665,14 +663,7 @@ func (ts *thingsService) CanThingPerform(ctx context.Context, req ThingCapabilit
 		return errors.ErrAuthorization
 	}
 
-	switch req.Action {
-	case ActionMessage:
-		return nil
-	case ActionCommand:
-		return canCommand(pubType, recType)
-	default:
-		return errors.ErrAuthorization
-	}
+	return canCommand(pubType, recType)
 }
 
 func (ts *thingsService) Identify(ctx context.Context, key ThingKey) (string, error) {

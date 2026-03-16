@@ -183,7 +183,7 @@ func (svc *mainfluxThings) CanThingAccessGroup(context.Context, things.ThingAcce
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CanThingPerform(context.Context, things.ThingCapabilityReq) error {
+func (svc *mainfluxThings) CanThingCommand(context.Context, things.ThingCommandReq) error {
 	panic("not implemented")
 }
 

@@ -145,20 +145,19 @@ func canThingAccessGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func canThingPerformEndpoint(svc things.Service) endpoint.Endpoint {
+func canThingCommandEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(thingCapabilityReq)
+		req := request.(thingCommandReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		r := things.ThingCapabilityReq{
+		r := things.ThingCommandReq{
 			PublisherID: req.publisherID,
 			RecipientID: req.recipientID,
-			Action:      req.action,
 		}
 
-		if err := svc.CanThingPerform(ctx, r); err != nil {
+		if err := svc.CanThingCommand(ctx, r); err != nil {
 			return emptyRes{}, err
 		}
 

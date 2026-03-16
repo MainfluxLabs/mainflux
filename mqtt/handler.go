@@ -44,8 +44,6 @@ const (
 	topicSuffixCommands = "commands"
 	topicSuffixMessages = "messages"
 
-	actionMessage = "message"
-	actionCommand = "command"
 )
 
 var (
@@ -130,10 +128,8 @@ func (h *handler) authorizePublish(publisherID, topic string) error {
 
 	var err error
 	switch {
-	case prefix == topicPrefixThings && suffix == topicSuffixMessages:
-		err = h.checkThingCapability(publisherID, id, actionMessage)
 	case prefix == topicPrefixThings && suffix == topicSuffixCommands:
-		err = h.checkThingCapability(publisherID, id, actionCommand)
+		err = h.checkThingCapability(publisherID, id)
 	case prefix == topicPrefixGroups && suffix == topicSuffixCommands:
 		err = h.checkGroupMembership(publisherID, id)
 	}
@@ -144,11 +140,10 @@ func (h *handler) authorizePublish(publisherID, topic string) error {
 	return nil
 }
 
-func (h *handler) checkThingCapability(publisherID, recipientID, action string) error {
-	if _, err := h.things.CanThingPerform(context.Background(), &protomfx.ThingCapabilityReq{
+func (h *handler) checkThingCapability(publisherID, recipientID string) error {
+	if _, err := h.things.CanThingCommand(context.Background(), &protomfx.ThingCommandReq{
 		PublisherID: publisherID,
 		RecipientID: recipientID,
-		Action:      action,
 	}); err != nil {
 		return errors.ErrAuthorization
 	}

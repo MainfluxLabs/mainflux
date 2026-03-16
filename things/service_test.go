@@ -3692,7 +3692,7 @@ func TestGetGroupIDsByOrg(t *testing.T) {
 	}
 }
 
-func TestCanThingPerform(t *testing.T) {
+func TestCanThingCommand(t *testing.T) {
 	svc := newService()
 
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
@@ -3722,67 +3722,53 @@ func TestCanThingPerform(t *testing.T) {
 
 	cases := []struct {
 		desc string
-		req  things.ThingCapabilityReq
+		req  things.ThingCommandReq
 		err  error
 	}{
 		{
 			desc: "controller sends command to actuator in same group",
-			req: things.ThingCapabilityReq{
+			req: things.ThingCommandReq{
 				PublisherID: ctrl.ID,
 				RecipientID: act.ID,
-				Action:      things.ActionCommand,
 			},
 			err: nil,
 		},
 		{
 			desc: "controller sends command to sensor in same group",
-			req: things.ThingCapabilityReq{
+			req: things.ThingCommandReq{
 				PublisherID: ctrl.ID,
 				RecipientID: sen.ID,
-				Action:      things.ActionCommand,
 			},
 			err: nil,
 		},
 		{
 			desc: "actuator tries to send command to controller",
-			req: things.ThingCapabilityReq{
+			req: things.ThingCommandReq{
 				PublisherID: act.ID,
 				RecipientID: ctrl.ID,
-				Action:      things.ActionCommand,
 			},
 			err: errors.ErrAuthorization,
 		},
 		{
 			desc: "sensor tries to send command to actuator",
-			req: things.ThingCapabilityReq{
+			req: things.ThingCommandReq{
 				PublisherID: sen.ID,
 				RecipientID: act.ID,
-				Action:      things.ActionCommand,
 			},
 			err: errors.ErrAuthorization,
 		},
 		{
 			desc: "publisher sends command to itself",
-			req: things.ThingCapabilityReq{
+			req: things.ThingCommandReq{
 				PublisherID: ctrl.ID,
 				RecipientID: ctrl.ID,
-				Action:      things.ActionCommand,
-			},
-			err: errors.ErrAuthorization,
-		},
-		{
-			desc: "controller tries to perform unknown action on actuator",
-			req: things.ThingCapabilityReq{
-				PublisherID: ctrl.ID,
-				RecipientID: act.ID,
-				Action:      "unknown_action",
 			},
 			err: errors.ErrAuthorization,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.CanThingPerform(context.Background(), tc.req)
+		err := svc.CanThingCommand(context.Background(), tc.req)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

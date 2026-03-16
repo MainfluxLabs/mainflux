@@ -109,7 +109,7 @@ func (svc thingsServiceMock) CanThingAccessGroup(_ context.Context, req *protomf
 	return &emptypb.Empty{}, errors.ErrAuthorization
 }
 
-func (svc thingsServiceMock) CanThingPerform(_ context.Context, req *protomfx.ThingCapabilityReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+func (svc thingsServiceMock) CanThingCommand(_ context.Context, req *protomfx.ThingCommandReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
 	publisher, ok := svc.things[req.GetPublisherID()]
 	if !ok {
 		return &emptypb.Empty{}, errors.ErrAuthentication

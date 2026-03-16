@@ -110,23 +110,18 @@ func (req thingAccessGroupReq) validate() error {
 	return nil
 }
 
-type thingCapabilityReq struct {
+type thingCommandReq struct {
 	publisherID string
 	recipientID string
-	action      string
 }
 
-func (req thingCapabilityReq) validate() error {
+func (req thingCommandReq) validate() error {
 	if req.publisherID == "" {
 		return apiutil.ErrMissingPublisherID
 	}
 
 	if req.recipientID == "" {
 		return apiutil.ErrMissingRecipientID
-	}
-
-	if req.action == "" {
-		return apiutil.ErrInvalidAction
 	}
 
 	return nil

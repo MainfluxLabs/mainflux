@@ -6,11 +6,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
-const (
-	ActionCommand = "command"
-	ActionMessage = "message"
-)
-
 // thingPolicies is the command capability matrix per Thing type (same-group only).
 // Any type can send messages to any other type within the same group.
 var thingPolicies = map[string][]string{
