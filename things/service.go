@@ -31,6 +31,7 @@ var AllowedOrders = map[string]string{
 	"email":      "email",
 	"created_at": "created_at",
 	"updated_at": "updated_at",
+	"type":       "type",
 }
 
 // PageMetadata contains page metadata that helps navigation.
