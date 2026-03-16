@@ -12,6 +12,6 @@ func NewEmailer() things.Emailer {
 	return &emailerMock{}
 }
 
-func (e *emailerMock) SendGroupMembershipNotification(to []string, orgName, groupName, groupRole string) error {
+func (e *emailerMock) SendGroupMembershipNotification(to []string, orgName, groupName, groupRole, redirectPath string) error {
 	return nil
 }

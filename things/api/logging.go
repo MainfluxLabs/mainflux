@@ -576,7 +576,7 @@ func (lm *loggingMiddleware) ListProfilesByGroup(ctx context.Context, token, gro
 	return lm.svc.ListProfilesByGroup(ctx, token, groupID, pm)
 }
 
-func (lm *loggingMiddleware) CreateGroupMemberships(ctx context.Context, token string, gms ...things.GroupMembership) (err error) {
+func (lm *loggingMiddleware) CreateGroupMemberships(ctx context.Context, token, redirectPath string, gms ...things.GroupMembership) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_group_memberships for memberships %v took %s to complete", gms, time.Since(begin))
 		if err != nil {
@@ -586,7 +586,7 @@ func (lm *loggingMiddleware) CreateGroupMemberships(ctx context.Context, token s
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.CreateGroupMemberships(ctx, token, gms...)
+	return lm.svc.CreateGroupMemberships(ctx, token, redirectPath, gms...)
 }
 
 func (lm *loggingMiddleware) CreateGroupMembershipsInternal(ctx context.Context, gms ...things.GroupMembership) (err error) {

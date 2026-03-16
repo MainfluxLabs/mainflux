@@ -53,7 +53,7 @@ type GroupMembershipsRepository interface {
 // GroupMemberships defines a service for managing group memberships.
 type GroupMemberships interface {
 	// CreateGroupMemberships adds memberships to a group identified by the provided ID.
-	CreateGroupMemberships(ctx context.Context, token string, gms ...GroupMembership) error
+	CreateGroupMemberships(ctx context.Context, token, redirectPath string, gms ...GroupMembership) error
 
 	// CreateGroupMembershipsInternal saves group memberships without requiring authentication.
 	CreateGroupMembershipsInternal(ctx context.Context, gms ...GroupMembership) error
@@ -68,7 +68,7 @@ type GroupMemberships interface {
 	RemoveGroupMemberships(ctx context.Context, token, groupID string, memberIDs ...string) error
 }
 
-func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token string, gms ...GroupMembership) error {
+func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token, redirectPath string, gms ...GroupMembership) error {
 	for _, gm := range gms {
 		ar := UserAccessReq{
 			Token:  token,
@@ -113,7 +113,7 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token strin
 
 		// Send e-mail notification
 		go func() {
-			ts.email.SendGroupMembershipNotification([]string{recipientEmail}, org.Name, group.Name, gm.Role)
+			ts.email.SendGroupMembershipNotification([]string{recipientEmail}, org.Name, group.Name, gm.Role, redirectPath)
 		}()
 	}
 
