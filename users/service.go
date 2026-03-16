@@ -53,7 +53,7 @@ var (
 
 var AllowedOrders = map[string]string{
 	"id":            "id",
-	"email":         "LOWER(email)",
+	"email":         "email",
 	"invitee_email": "invitee_email",
 	"state":         "state",
 	"created_at":    "created_at",
