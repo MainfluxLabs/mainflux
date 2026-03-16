@@ -43,7 +43,6 @@ const (
 	topicPrefixGroups   = "groups"
 	topicSuffixCommands = "commands"
 	topicSuffixMessages = "messages"
-
 )
 
 var (
