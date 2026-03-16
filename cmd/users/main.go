@@ -274,12 +274,12 @@ func loadConfig() config {
 	}
 
 	emailConf := email.Config{
-		FromAddress:      mainflux.Env(envEmailFromAddress, defEmailFromAddress),
-		FromName:         mainflux.Env(envEmailFromName, defEmailFromName),
-		Host:             mainflux.Env(envEmailHost, defEmailHost),
-		Port:             mainflux.Env(envEmailPort, defEmailPort),
-		Username:         mainflux.Env(envEmailUsername, defEmailUsername),
-		Password:         mainflux.Env(envEmailPassword, defEmailPassword),
+		FromAddress:  mainflux.Env(envEmailFromAddress, defEmailFromAddress),
+		FromName:     mainflux.Env(envEmailFromName, defEmailFromName),
+		Host:         mainflux.Env(envEmailHost, defEmailHost),
+		Port:         mainflux.Env(envEmailPort, defEmailPort),
+		Username:     mainflux.Env(envEmailUsername, defEmailUsername),
+		Password:     mainflux.Env(envEmailPassword, defEmailPassword),
 		TemplatesDir: mainflux.Env(envEmailTemplatesDir, defEmailTemplatesDir),
 	}
 

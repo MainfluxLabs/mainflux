@@ -108,8 +108,8 @@ func decodeListRulesByThing(_ context.Context, r *http.Request) (any, error) {
 	name, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
 
 	req := listRulesByThingReq{
-		token:        apiutil.ExtractBearerToken(r),
-		thingID:      bone.GetValue(r, apiutil.IDKey),
+		token:   apiutil.ExtractBearerToken(r),
+		thingID: bone.GetValue(r, apiutil.IDKey),
 		pageMetadata: rules.PageMetadata{
 			Offset: base.Offset,
 			Limit:  base.Limit,
@@ -129,8 +129,8 @@ func decodeListRulesByGroup(_ context.Context, r *http.Request) (any, error) {
 	name, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
 
 	req := listRulesByGroupReq{
-		token:        apiutil.ExtractBearerToken(r),
-		groupID:      bone.GetValue(r, apiutil.IDKey),
+		token:   apiutil.ExtractBearerToken(r),
+		groupID: bone.GetValue(r, apiutil.IDKey),
 		pageMetadata: rules.PageMetadata{
 			Offset: base.Offset,
 			Limit:  base.Limit,

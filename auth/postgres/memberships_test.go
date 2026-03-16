@@ -467,7 +467,7 @@ func TestRetrieveOrgMemberships(t *testing.T) {
 			desc:  "retrieve memberships by org",
 			orgID: orgID,
 			pageMetadata: auth.PageMetadata{
-				
+
 				Offset: 0,
 				Limit:  n,
 				Total:  n,
@@ -479,7 +479,7 @@ func TestRetrieveOrgMemberships(t *testing.T) {
 			desc:  "retrieve memberships by org with unknown org id",
 			orgID: unknownID,
 			pageMetadata: auth.PageMetadata{
-				
+
 				Offset: 0,
 				Limit:  n,
 				Total:  0,
@@ -491,7 +491,7 @@ func TestRetrieveOrgMemberships(t *testing.T) {
 			desc:  "retrieve memberships by org with invalid org id",
 			orgID: invalidID,
 			pageMetadata: auth.PageMetadata{
-				
+
 				Offset: 0,
 				Limit:  n,
 				Total:  0,
@@ -503,7 +503,7 @@ func TestRetrieveOrgMemberships(t *testing.T) {
 			desc:  "retrieve memberships by org without org id",
 			orgID: "",
 			pageMetadata: auth.PageMetadata{
-				
+
 				Offset: 0,
 				Limit:  n,
 				Total:  0,

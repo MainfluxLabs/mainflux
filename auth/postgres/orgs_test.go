@@ -385,7 +385,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 			desc:     "retrieve orgs by member",
 			memberID: memberID,
 			pageMetadata: auth.PageMetadata{
-				
+
 				Offset: 0,
 				Limit:  n,
 				Dir:    descDir,
@@ -398,11 +398,11 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 			desc:     "retrieve orgs by member filtered by metadata",
 			memberID: memberID,
 			pageMetadata: auth.PageMetadata{
-				
-				Offset: 0,
-				Limit:  n,
-				Dir:    descDir,
-				Order:  idOrder,
+
+				Offset:   0,
+				Limit:    n,
+				Dir:      descDir,
+				Order:    idOrder,
 				Metadata: map[string]any{"key-1": "value-1"},
 			},
 			size: 1,
@@ -412,12 +412,12 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 			desc:     "retrieve orgs by member filter by name",
 			memberID: memberID,
 			pageMetadata: auth.PageMetadata{
-				
+
 				Offset: 0,
 				Limit:  n,
 				Dir:    descDir,
 				Order:  idOrder,
-				Name: orgName + "-1",
+				Name:   orgName + "-1",
 			},
 			size: 1,
 			err:  nil,
@@ -426,12 +426,12 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 			desc:     "retrieve orgs by member filter by part of the name",
 			memberID: memberID,
 			pageMetadata: auth.PageMetadata{
-				
+
 				Offset: 0,
 				Limit:  n,
 				Dir:    descDir,
 				Order:  idOrder,
-				Name: orgName,
+				Name:   orgName,
 			},
 			size: n,
 			err:  nil,
@@ -440,7 +440,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 			desc:     "retrieve orgs by member with unknown member id",
 			memberID: unknownID,
 			pageMetadata: auth.PageMetadata{
-				
+
 				Offset: 0,
 				Limit:  n,
 				Dir:    descDir,
@@ -453,7 +453,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 			desc:     "retrieve orgs by member with invalid member id",
 			memberID: invalidID,
 			pageMetadata: auth.PageMetadata{
-				
+
 				Offset: 0,
 				Limit:  n,
 				Dir:    descDir,
@@ -466,7 +466,7 @@ func TestRetrieveOrgsByMember(t *testing.T) {
 			desc:     "retrieve orgs by member without member id",
 			memberID: "",
 			pageMetadata: auth.PageMetadata{
-				
+
 				Offset: 0,
 				Limit:  n,
 				Dir:    descDir,

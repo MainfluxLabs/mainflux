@@ -30,7 +30,7 @@ func (lm *loggingMiddleware) Issue(ctx context.Context, token string, newKey aut
 	defer func(begin time.Time) {
 		d := "infinite duration"
 		if !key.ExpiresAt.IsZero() {
-			d = fmt.Sprintf("the key with auth date %v", key.ExpiresAt)
+			d = fmt.Sprintf("the key with expiration date %v", key.ExpiresAt)
 		}
 		message := fmt.Sprintf("Method issue for %s took %s to complete", d, time.Since(begin))
 		if err != nil {
