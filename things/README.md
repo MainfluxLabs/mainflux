@@ -104,7 +104,7 @@ In constrained environments, sometimes it makes sense to run Things service as a
 operates only using a single user and is able to authorize it without gRPC communication with Auth service.
 To run service in a standalone mode, set `MF_THINGS_STANDALONE_EMAIL` and `MF_THINGS_STANDALONE_TOKEN`.
 
-## Device-to-Device (D2D) Policies
+## Machine-to-Machine (M2M) Policies
 
 Things are assigned a **type** that determines what they are allowed to do within their group. The supported types are:
 
