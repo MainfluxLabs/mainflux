@@ -651,26 +651,25 @@ func (ts *thingsService) CanThingPerform(ctx context.Context, req ThingCapabilit
 		return errors.ErrAuthorization
 	}
 
-	publisher, err := ts.things.RetrieveByID(ctx, req.PublisherID)
+	pubGroupID, pubType, err := ts.getThingGroupAndType(ctx, req.PublisherID)
 	if err != nil {
 		return err
 	}
 
-	recipient, err := ts.things.RetrieveByID(ctx, req.RecipientID)
+	recGroupID, recType, err := ts.getThingGroupAndType(ctx, req.RecipientID)
 	if err != nil {
 		return err
 	}
 
-	// Publisher and recipient must belong to the same group.
-	if publisher.GroupID != recipient.GroupID {
+	if pubGroupID != recGroupID {
 		return errors.ErrAuthorization
 	}
 
 	switch req.Action {
-	case ActionCommand:
-		return canCommand(ctx, publisher.Type, recipient.Type)
 	case ActionMessage:
-		return canMessage(ctx, publisher.Type, recipient.Type)
+		return nil
+	case ActionCommand:
+		return canCommand(pubType, recType)
 	default:
 		return errors.ErrAuthorization
 	}
@@ -892,6 +891,33 @@ func (ts *thingsService) canAccessOrg(ctx context.Context, token, orgID, subject
 	return nil
 }
 
+func (ts *thingsService) getThingGroupAndType(ctx context.Context, thID string) (groupID, thingType string, err error) {
+	groupID, groupErr := ts.thingCache.ViewGroup(ctx, thID)
+	thingType, typeErr := ts.thingCache.ViewType(ctx, thID)
+	if groupErr == nil && typeErr == nil {
+		return groupID, thingType, nil
+	}
+
+	th, err := ts.things.RetrieveByID(ctx, thID)
+	if err != nil {
+		return "", "", err
+	}
+
+	if groupErr != nil {
+		if err := ts.thingCache.SaveGroup(ctx, th.ID, th.GroupID); err != nil {
+			return "", "", err
+		}
+	}
+
+	if typeErr != nil {
+		if err := ts.thingCache.SaveType(ctx, th.ID, th.Type); err != nil {
+			return "", "", err
+		}
+	}
+
+	return th.GroupID, th.Type, nil
+}
+
 func (ts *thingsService) getGroupIDByThing(ctx context.Context, thID string) (string, error) {
 	grID, err := ts.thingCache.ViewGroup(ctx, thID)
 	if err != nil {
@@ -907,23 +933,6 @@ func (ts *thingsService) getGroupIDByThing(ctx context.Context, thID string) (st
 	}
 
 	return grID, nil
-}
-
-func (ts *thingsService) getTypeByThing(ctx context.Context, thID string) (string, error) {
-	thType, err := ts.thingCache.ViewType(ctx, thID)
-	if err != nil {
-		th, err := ts.things.RetrieveByID(ctx, thID)
-		if err != nil {
-			return "", err
-		}
-		thType = th.Type
-
-		if err := ts.thingCache.SaveType(ctx, th.ID, th.Type); err != nil {
-			return "", err
-		}
-	}
-
-	return thType, nil
 }
 
 func (ts *thingsService) getGroupIDByProfile(ctx context.Context, prID string) (string, error) {
