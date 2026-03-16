@@ -125,6 +125,12 @@ func (h *handler) authorizePublish(publisherID, topic string) error {
 		return nil
 	}
 
+	// things/{id}/messages is intentionally not checked here.
+	// Messages are unrestricted by publisher type — any authenticated thing may
+	// publish to another thing's messages topic. The subscribe-side check in
+	// AuthSubscribe already ensures only the owner of that topic can receive them,
+	// so adding a publish check would be a redundant gRPC round-trip with no
+	// real security gain. Commands carry authority and are therefore restricted.
 	var err error
 	switch {
 	case prefix == topicPrefixThings && suffix == topicSuffixCommands:
