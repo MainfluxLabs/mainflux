@@ -13,7 +13,7 @@ import (
 
 const (
 	maxLimitSize = 200
-	maxNameSize  = 254
+	maxEmailSize = 254
 )
 
 var userPasswordRegex *regexp.Regexp
@@ -110,5 +110,5 @@ func (req listPlatformInvitesRequest) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return req.pm.Validate(maxLimitSize)
+	return req.pm.Validate(maxLimitSize, maxEmailSize)
 }

@@ -161,7 +161,19 @@ type PageMetadata struct {
 }
 
 // Validate validates the page metadata.
-func (pm PageMetadata) Validate(maxLimitSize int) error {
+func (pm PageMetadata) Validate(maxLimitSize, maxEmailSize int) error {
+	if len(pm.Email) > maxEmailSize {
+		return apiutil.ErrEmailSize
+	}
+
+	if pm.Status != "" {
+		if pm.Status != AllStatusKey &&
+			pm.Status != EnabledStatusKey &&
+			pm.Status != DisabledStatusKey {
+			return apiutil.ErrInvalidStatus
+		}
+	}
+
 	base := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
 	return base.Validate(maxLimitSize, AllowedOrders)
 }
