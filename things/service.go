@@ -261,10 +261,8 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		return err
 	}
 
-	if thing.Type != "" {
-		if err := ts.thingCache.RemoveType(ctx, thing.ID); err != nil {
-			return err
-		}
+	if err := ts.thingCache.SaveType(ctx, thing.ID, thing.Type); err != nil {
+		return err
 	}
 
 	return ts.things.Update(ctx, thing)
