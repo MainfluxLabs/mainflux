@@ -70,7 +70,7 @@ func migrateDB(db *sqlx.DB) error {
 						publisher     VARCHAR(254),
 						protocol      TEXT,
 						payload       JSONB,
-						PRIMARY KEY   (publisher, subtopic, created)
+						PRIMARY KEY   (created, publisher, subtopic)
 					);
 					SELECT create_hypertable('json', 'created', create_default_indexes => FALSE, chunk_time_interval => 86400000, if_not_exists => TRUE);`,
 					`CREATE INDEX IF NOT EXISTS idx_json_created ON json(created DESC)`,
