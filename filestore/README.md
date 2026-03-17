@@ -1,6 +1,27 @@
-# Filestore
+# Filestore Service
 
-Filestore service provides file storage for things and groups, allowing files to be saved, retrieved, updated, and removed on the filesystem with metadata persisted to a database.
+The Filestore service provides file storage for things and groups. File contents are written to the local filesystem, while file metadata is persisted to a database. Files can be scoped to an individual thing (authenticated with a thing key) or to a group (authenticated with a user bearer token at editor level or above).
+
+## Files
+
+Each stored file is described by the following metadata fields:
+
+| Field      | Description                                                                       |
+|------------|-----------------------------------------------------------------------------------|
+| `name`     | File name; used as the unique identifier within the thing or group scope          |
+| `class`    | Logical file class (e.g. `image`, `document`, `bim`, `pointcloud`, `binary`)     |
+| `format`   | File format / MIME subtype (e.g. `csv`, `pdf`, `png`, `ifc`)                     |
+| `time`     | Unix timestamp (floating-point seconds) associated with the file                  |
+| `metadata` | Arbitrary key-value pairs for custom attributes                                   |
+
+## Scopes
+
+| Scope        | Auth header                        | Description                                               |
+|--------------|------------------------------------|-----------------------------------------------------------|
+| Thing files  | `Authorization: Thing <thing_key>` | Files private to a specific thing                         |
+| Group files  | `Authorization: Bearer <token>`    | Files shared across a group; require editor-level access  |
+
+A thing can also retrieve its own group's files directly using its thing key via `GET /groupfiles/{name}`.
 
 ## Configuration
 
@@ -12,7 +33,7 @@ default values.
 |---------------------------------|-------------------------------------------------------------------------|-----------------------|
 | MF_FILESTORE_LOG_LEVEL          | Log level for the Filestore service (debug, info, warn, error)          | error                 |
 | MF_FILESTORE_HTTP_PORT          | Filestore service HTTP port                                             | 9024                  |
-| MF_JAEGER_URL                   | Jaeger server URL                                                       |                       |
+| MF_JAEGER_URL                   | Jaeger server URL for distributed tracing. Leave empty to disable tracing. Docker value: `jaeger:6831` |                       |
 | MF_FILESTORE_DB_HOST            | Database host address                                                   | localhost             |
 | MF_FILESTORE_DB_PORT            | Database host port                                                      | 5432                  |
 | MF_FILESTORE_DB_USER            | Database user                                                           | mainflux              |
@@ -63,6 +84,4 @@ $GOBIN/mainfluxlabs-filestore
 
 ## Usage
 
-Files are stored on the local filesystem organized by thing or group ID, with metadata (name, class, format) persisted to the database. A thing authenticates using its key to upload or retrieve files scoped to itself, while group files are managed using a user token with the appropriate group access level.
-
-[doc]: https://mainfluxlabs.github.io/docs
+For the full HTTP API reference, see the [OpenAPI specification](https://mainfluxlabs.github.io/docs/swagger/).

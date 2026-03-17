@@ -64,6 +64,8 @@ paths:
         (e.g. reboot, configuration update).
       tags:
         - commands
+      security:
+        - commandAuth: []
       parameters:
         - $ref: "#/components/parameters/ThingId"
       requestBody:
@@ -75,6 +77,8 @@ paths:
           description: Invalid command payload.
         "401":
           description: Missing or invalid access token provided.
+        "403":
+          description: Token does not grant access to this thing.
         "500":
           $ref: "#/components/responses/ServiceError"
 
@@ -91,6 +95,8 @@ paths:
           - "actuators/relay1"
       tags:
         - commands
+      security:
+        - commandAuth: []
       parameters:
         - $ref: "#/components/parameters/ThingId"
         - name: subtopic
@@ -108,6 +114,8 @@ paths:
           description: Invalid command payload.
         "401":
           description: Missing or invalid access token provided.
+        "403":
+          description: Token does not grant access to this thing.
         "500":
           $ref: "#/components/responses/ServiceError"
 
@@ -121,6 +129,8 @@ paths:
         Each thing in the group will receive the same command.
       tags:
         - commands
+      security:
+        - commandAuth: []
       parameters:
         - $ref: "#/components/parameters/GroupId"
       requestBody:
@@ -132,6 +142,8 @@ paths:
           description: Invalid command payload.
         "401":
           description: Missing or invalid access token provided.
+        "403":
+          description: Token does not grant access to this group.
         "500":
           $ref: "#/components/responses/ServiceError"
 
@@ -149,6 +161,8 @@ paths:
           - "actuators/relay1"
       tags:
         - commands
+      security:
+        - commandAuth: []
       parameters:
         - $ref: "#/components/parameters/GroupId"
         - name: subtopic
@@ -166,6 +180,8 @@ paths:
           description: Invalid command payload.
         "401":
           description: Missing or invalid access token provided.
+        "403":
+          description: Token does not grant access to this group.
         "500":
           $ref: "#/components/responses/ServiceError"
 
@@ -321,24 +337,34 @@ components:
 
   securitySchemes:
     bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: uuid
+      type: apiKey
+      in: header
+      name: Authorization
       description: |
-        * Thing access: "Authorization: Thing <thing_key>"
+        Thing key authentication using the internal key format.
+        Header value: "Thing <thing_key>"
 
     basicAuth:
       type: http
       scheme: basic
       description: |
         * Things access: "Authorization: Basic <base64-encoded_credentials>"
-    
+
     externalAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        Thing key authentication using the external key format.
+        Header value: "External <external_thing_key>"
+
+    commandAuth:
       type: http
       scheme: bearer
-      bearerFormat: string
+      bearerFormat: JWT
       description: |
-        * Thing access: "Authorization: External <external_thing_key>"
+        User bearer token authentication for command endpoints.
+        Header value: "Bearer <user_token>"
 
 security:
   - bearerAuth: []

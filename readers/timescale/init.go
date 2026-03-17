@@ -53,7 +53,7 @@ func migrateDB(db *sqlx.DB) error {
 						subtopic      VARCHAR(254),
 						publisher     UUID,
 						protocol      TEXT,
-						name          VARCHAR(254),
+						name          TEXT,
 						unit          TEXT,
 						value         FLOAT,
 						string_value  TEXT,
@@ -69,8 +69,7 @@ func migrateDB(db *sqlx.DB) error {
 						subtopic      VARCHAR(254),
 						publisher     VARCHAR(254),
 						protocol      TEXT,
-						payload       JSONB,
-						PRIMARY KEY   (publisher, subtopic, created)
+						payload       JSONB
 					)`,
 				},
 				Down: []string{
@@ -82,6 +81,25 @@ func migrateDB(db *sqlx.DB) error {
 				Id: "messages_2",
 				Up: []string{
 					`ALTER TABLE messages RENAME TO senml;`,
+				},
+			},
+			{
+				Id: "messages_3",
+				Up: []string{
+					`ALTER TABLE senml DROP CONSTRAINT IF EXISTS messages_pkey`,
+				},
+			},
+			{
+				Id: "messages_4",
+				Up: []string{
+					`CREATE INDEX IF NOT EXISTS idx_json_created ON json(created DESC)`,
+					`CREATE INDEX IF NOT EXISTS idx_json_publisher_created ON json(publisher, created DESC)`,
+					`CREATE INDEX IF NOT EXISTS idx_senml_publisher_time ON senml(publisher, time DESC)`,
+				},
+				Down: []string{
+					"DROP INDEX IF EXISTS idx_json_created",
+					"DROP INDEX IF EXISTS idx_json_publisher_created",
+					"DROP INDEX IF EXISTS idx_senml_publisher_time",
 				},
 			},
 		},

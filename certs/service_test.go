@@ -467,8 +467,13 @@ func TestRenewCert(t *testing.T) {
 	svc, _, err := newService()
 	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
 
-	issuedCert, err := svc.IssueCert(context.Background(), token, thingID, "1h", keyBits, keyType)
+	// Short-lived cert (1h): time.Until(ExpiresAt) << 30 days → eligible for renewal immediately.
+	shortCert, err := svc.IssueCert(context.Background(), token, thingID, "1h", keyBits, keyType)
 	require.Nil(t, err, fmt.Sprintf("unexpected cert creation error: %s\n", err))
+
+	// Long-lived cert (1 year): time.Until(ExpiresAt) >> 30 days → not eligible for renewal yet.
+	longCert, err := svc.IssueCert(context.Background(), token, thingID, "8760h", keyBits, keyType)
+	require.Nil(t, err, fmt.Sprintf("unexpected long-lived cert creation error: %s\n", err))
 
 	cases := []struct {
 		token    string
@@ -477,15 +482,21 @@ func TestRenewCert(t *testing.T) {
 		err      error
 	}{
 		{
-			desc:     "renew cert with valid token and serial",
+			desc:     "renew cert within 30-day renewal window",
 			token:    token,
-			serialID: issuedCert.Serial,
+			serialID: shortCert.Serial,
 			err:      nil,
+		},
+		{
+			desc:     "renew cert not yet eligible - expires more than 30 days from now",
+			token:    token,
+			serialID: longCert.Serial,
+			err:      certs.ErrNotEligibleForRenewal,
 		},
 		{
 			desc:     "renew cert with invalid token",
 			token:    wrongValue,
-			serialID: issuedCert.Serial,
+			serialID: shortCert.Serial,
 			err:      errors.ErrAuthentication,
 		},
 		{
@@ -500,11 +511,11 @@ func TestRenewCert(t *testing.T) {
 		renewedCert, err := svc.RenewCert(context.Background(), tc.token, tc.serialID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		if err == nil {
-			assert.NotEqual(t, issuedCert.Serial, renewedCert.Serial, fmt.Sprintf("%s: renewed cert should have different serial", tc.desc))
-			assert.Equal(t, issuedCert.ThingID, renewedCert.ThingID, fmt.Sprintf("%s: thing should match", tc.desc))
+			assert.NotEqual(t, shortCert.Serial, renewedCert.Serial, fmt.Sprintf("%s: renewed cert should have different serial", tc.desc))
+			assert.Equal(t, shortCert.ThingID, renewedCert.ThingID, fmt.Sprintf("%s: thing should match", tc.desc))
 			assert.NotEmpty(t, renewedCert.ClientCert, fmt.Sprintf("%s: client cert should not be empty", tc.desc))
 			assert.NotEmpty(t, renewedCert.ClientKey, fmt.Sprintf("%s: client key should not be empty", tc.desc))
-			assert.True(t, renewedCert.ExpiresAt.After(issuedCert.ExpiresAt), fmt.Sprintf("%s: renewed cert should expire later", tc.desc))
+			assert.True(t, renewedCert.ExpiresAt.After(shortCert.ExpiresAt), fmt.Sprintf("%s: renewed cert should expire later", tc.desc))
 		}
 	}
 }

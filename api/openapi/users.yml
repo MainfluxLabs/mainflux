@@ -176,6 +176,55 @@ paths:
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /users/oauth/{provider}:
+    get:
+      summary: Initiate OAuth login
+      description: |
+        Redirects the user to the OAuth provider's authorization page to begin
+        the OAuth login flow. Supported providers: google, github.
+      tags:
+        - users
+      parameters:
+        - $ref: "#/components/parameters/OAuthProvider"
+      responses:
+        '302':
+          description: Redirect to OAuth provider authorization page.
+        '400':
+          description: Unsupported or missing OAuth provider.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /users/oauth/{provider}/callback:
+    get:
+      summary: OAuth login callback
+      description: |
+        Handles the OAuth provider callback after the user has authorized the
+        application. Exchanges the authorization code for a Mainflux access token
+        and redirects to the configured login URL.
+      tags:
+        - users
+      parameters:
+        - $ref: "#/components/parameters/OAuthProvider"
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Authorization code returned by the OAuth provider.
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+          description: State parameter for CSRF protection.
+      responses:
+        '302':
+          description: Redirect to frontend login URL with access token.
+        '400':
+          description: Missing or invalid authorization code.
+        '401':
+          description: OAuth authentication failed.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /users/{userId}:
     get:
       summary: Retrieves user
@@ -533,10 +582,14 @@ components:
         metadata:
           type: object
           description: Arbitrary, object-encoded user's data.
+        role:
+          type: string
+          description: Platform-level role. Set to `root` for the root administrator; omitted for regular users.
+          example: "root"
         status:
           type: string
           enum: [enabled, disabled]
-          description: User status.
+          description: User account status.
     CreatePlatformInviteSchema:
       type: object
       properties:
@@ -796,6 +849,14 @@ components:
       schema:
         type: string
         format: uuid
+      required: true
+    OAuthProvider:
+      name: provider
+      description: OAuth provider name (e.g. google, github).
+      in: path
+      schema:
+        type: string
+        enum: [google, github]
       required: true
   requestBodies:
     UserCreateReq:

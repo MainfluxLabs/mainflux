@@ -1,41 +1,92 @@
 # MQTT adapter
 
-MQTT adapter provides an MQTT API for sending messages through the platform.
-MQTT adapter uses [mProxy](https://github.com/MainfluxLabs/mproxy) for proxying
-traffic between client and MQTT broker.
+MQTT adapter provides an MQTT API for sending and receiving messages through the platform. It uses [mProxy](https://github.com/MainfluxLabs/mproxy) to proxy traffic between MQTT clients and the underlying MQTT broker, intercepting connections to authenticate things and forward messages to the internal message broker.
+
+## MQTT Topics
+
+Messages are published and subscribed to using the following topic format:
+
+```
+messages/<subtopic>
+```
+
+`<subtopic>` is optional and can be any path-like string (e.g. `messages/sensors/temperature`).
+
+## Authentication
+
+Things authenticate over MQTT using:
+
+- **Username**: Thing key type — `internal` or `external`
+- **Password**: Thing key value
+
+## Ports
+
+| Port | Protocol | Description                      |
+|------|----------|----------------------------------|
+| 1883 | MQTT     | Plain MQTT                       |
+| 8883 | MQTTS    | MQTT over TLS (requires `MF_MQTT_ADAPTER_SERVER_CERT` and `MF_MQTT_ADAPTER_SERVER_KEY`) |
+| 8285 | WS       | MQTT over WebSocket              |
+
+## Subscriptions
+
+The adapter persists active MQTT subscriptions to PostgreSQL (database `subscriptions` by default). The schema:
+
+```sql
+CREATE TABLE IF NOT EXISTS subscriptions (
+    topic       VARCHAR(1024),
+    group_id    UUID,
+    thing_id    UUID,
+    client_id   VARCHAR(256),
+    status      VARCHAR(128),
+    created_at  FLOAT,
+    PRIMARY KEY (client_id, topic, group_id, thing_id)
+);
+```
 
 ## Configuration
 
-The service is configured using the environment variables presented in the
-following table. Note that any unset variables will be replaced with their
-default values.
+The service is configured using the environment variables presented in the following table. Note that any unset variables will be replaced with their default values.
 
-| Variable                                 | Description                                            | Default                  |
-|------------------------------------------|--------------------------------------------------------|--------------------------|
-| MF_MQTT_ADAPTER_LOG_LEVEL                | mProxy Log level                                       | error                    |
-| MF_MQTT_ADAPTER_MQTT_PORT                | mProxy port                                            | 1883                     |
-| MF_MQTT_ADAPTER_MQTT_TARGET_HOST         | MQTT broker host                                       | 0.0.0.0                  |
-| MF_MQTT_ADAPTER_MQTT_TARGET_PORT         | MQTT broker port                                       | 1883                     |
-| MF_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK | URL of broker health check                             | ""                       |
-| MF_MQTT_ADAPTER_WS_PORT                  | mProxy MQTT over WS port                               | 8080                     |
-| MF_MQTT_ADAPTER_WS_TARGET_HOST           | MQTT broker host for MQTT over WS                      | localhost                |
-| MF_MQTT_ADAPTER_WS_TARGET_PORT           | MQTT broker port for MQTT over WS                      | 8080                     |
-| MF_MQTT_ADAPTER_WS_TARGET_PATH           | MQTT broker MQTT over WS path                          | /mqtt                    |
-| MF_MQTT_ADAPTER_FORWARDER_TIMEOUT        | MQTT forwarder for multiprotocol communication timeout | 30s                      |
-| MF_BROKER_URL                            | Message broker broker URL                              | nats://127.0.0.1:4222    |
-| MF_THINGS_AUTH_GRPC_URL                  | Things gRPC endpoint URL                               | localhost:8181           |
-| MF_THINGS_AUTH_GRPC_TIMEOUT              | Timeout in seconds for Things service gRPC calls       | 1s                       |
-| MF_JAEGER_URL                            | URL of Jaeger tracing service                          | ""                       |
-| MF_MQTT_ADAPTER_CLIENT_TLS               | gRPC client TLS                                        | false                    |
-| MF_MQTT_ADAPTER_CA_CERTS                 | CA certs for gRPC client TLS                           | ""                       |
-| MF_MQTT_ADAPTER_INSTANCE                 | Instance name for event sourcing                       | ""                       |
-| MF_MQTT_ADAPTER_ES_URL                   | Event sourcing URL                                     | redis://localhost:6379/0 |
-| MF_AUTH_CACHE_URL                        | Auth cache URL                                         | redis://localhost:6379/0 |
+| Variable                                 | Description                                                             | Default                  |
+|------------------------------------------|-------------------------------------------------------------------------|--------------------------|
+| MF_MQTT_ADAPTER_LOG_LEVEL                | Log level (debug, info, warn, error)                                    | error                    |
+| MF_MQTT_ADAPTER_MQTT_PORT                | Listening MQTT port                                                     | 1883                     |
+| MF_MQTT_ADAPTER_MQTT_TARGET_HOST         | Upstream MQTT broker host                                               | 0.0.0.0                  |
+| MF_MQTT_ADAPTER_MQTT_TARGET_PORT         | Upstream MQTT broker port                                               | 1883                     |
+| MF_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK | URL of upstream broker health check endpoint                            |                          |
+| MF_MQTT_ADAPTER_FORWARDER                | Enable multiprotocol message forwarder                                  | false                    |
+| MF_MQTT_ADAPTER_FORWARDER_TIMEOUT        | Multiprotocol forwarder timeout                                         | 30s                      |
+| MF_MQTT_ADAPTER_HTTP_PORT                | mProxy HTTP/WS listening port                                           | 8080                     |
+| MF_MQTT_ADAPTER_WS_PORT                  | mProxy WebSocket listening port                                         | 8285                     |
+| MF_MQTT_ADAPTER_WS_TARGET_HOST           | Upstream MQTT broker host for MQTT over WebSocket                       | localhost                |
+| MF_MQTT_ADAPTER_WS_TARGET_PORT           | Upstream MQTT broker port for MQTT over WebSocket                       | 8080                     |
+| MF_MQTT_ADAPTER_WS_TARGET_PATH           | Upstream MQTT broker WebSocket path                                     | /mqtt                    |
+| MF_MQTT_ADAPTER_SERVER_CERT              | Path to server TLS certificate (PEM) — enables MQTTS on port 8883      |                          |
+| MF_MQTT_ADAPTER_SERVER_KEY               | Path to server TLS key (PEM)                                            |                          |
+| MF_MQTT_ADAPTER_CLIENT_TLS               | Enable TLS for outbound gRPC connections                                | false                    |
+| MF_MQTT_ADAPTER_CA_CERTS                 | Path to CA certificates for gRPC TLS (PEM)                             |                          |
+| MF_MQTT_ADAPTER_DB_HOST                  | Subscriptions database host address                                     | localhost                |
+| MF_MQTT_ADAPTER_DB_PORT                  | Subscriptions database host port                                        | 5432                     |
+| MF_MQTT_ADAPTER_DB_USER                  | Subscriptions database user                                             | mainflux                 |
+| MF_MQTT_ADAPTER_DB_PASS                  | Subscriptions database password                                         | mainflux                 |
+| MF_MQTT_ADAPTER_DB                       | Subscriptions database name                                             | subscriptions            |
+| MF_MQTT_ADAPTER_DB_SSL_MODE              | Database connection SSL mode (disable, require, verify-ca, verify-full) | disable                  |
+| MF_MQTT_ADAPTER_DB_SSL_CERT              | Path to the PEM encoded certificate file                                |                          |
+| MF_MQTT_ADAPTER_DB_SSL_KEY               | Path to the PEM encoded key file                                        |                          |
+| MF_MQTT_ADAPTER_DB_SSL_ROOT_CERT         | Path to the PEM encoded root certificate file                           |                          |
+| MF_MQTT_ADAPTER_ES_URL                   | Event store URL                                                         | redis://localhost:6379/0 |
+| MF_MQTT_ADAPTER_EVENT_CONSUMER           | Event store consumer name                                               | mqtt-adapter             |
+| MF_AUTH_CACHE_URL                        | Auth cache URL                                                          | redis://localhost:6379/0 |
+| MF_THINGS_AUTH_GRPC_URL                  | Things service Auth gRPC URL                                            | localhost:8183           |
+| MF_THINGS_AUTH_GRPC_TIMEOUT              | Things service Auth gRPC request timeout                                | 1s                       |
+| MF_AUTH_GRPC_URL                         | Auth service gRPC URL                                                   | localhost:8181           |
+| MF_AUTH_GRPC_TIMEOUT                     | Auth service gRPC request timeout                                       | 1s                       |
+| MF_BROKER_URL                            | Internal message broker URL                                             | nats://localhost:4222     |
+| MF_JAEGER_URL                            | Jaeger server URL for distributed tracing. Leave empty to disable tracing. Docker value: `jaeger:6831` |                          |
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`mqtt-adapter`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/docker-compose.yml#L219-L243) service section in
-docker-compose to see how service is deployed.
+The service itself is distributed as Docker container. Check the [`mqtt-adapter`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/docker-compose.yml) service section in docker-compose to see how the service is deployed.
 
 To start the service outside of the container, execute the following shell script:
 
@@ -45,33 +96,40 @@ git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 
-# compile the mqtt
+# compile the mqtt adapter
 make mqtt
 
 # copy binary to bin
 make install
 
-# set the environment variables and run the service
-MF_MQTT_ADAPTER_LOG_LEVEL=[MQTT Adapter Log Level] \
-MF_MQTT_ADAPTER_MQTT_PORT=[MQTT adapter MQTT port]
-MF_MQTT_ADAPTER_MQTT_TARGET_HOST=[MQTT broker host] \
-MF_MQTT_ADAPTER_MQTT_TARGET_PORT=[MQTT broker MQTT port]] \
-MF_MQTT_ADAPTER_MQTT_TARGET_HEALTH_CHECK=[MQTT health check URL] \
-MF_MQTT_ADAPTER_WS_PORT=[MQTT adapter WS port] \
-MF_MQTT_ADAPTER_WS_TARGET_HOST=[MQTT broker for MQTT over WS host] \
-MF_MQTT_ADAPTER_WS_TARGET_PORT=[MQTT broker for MQTT over WS port]] \
-MF_MQTT_ADAPTER_WS_TARGET_PATH=[MQTT adapter WS path] \
-MF_MQTT_ADAPTER_FORWARDER_TIMEOUT=[MQTT forwarder for multiprotocol support timeout] \
-MF_BROKER_URL=[Message broker instance URL] \
+# Set the environment variables and run the service
+MF_MQTT_ADAPTER_LOG_LEVEL=[Log level] \
+MF_MQTT_ADAPTER_MQTT_PORT=[MQTT listening port] \
+MF_MQTT_ADAPTER_MQTT_TARGET_HOST=[Upstream MQTT broker host] \
+MF_MQTT_ADAPTER_MQTT_TARGET_PORT=[Upstream MQTT broker port] \
+MF_MQTT_ADAPTER_WS_PORT=[WebSocket listening port] \
+MF_MQTT_ADAPTER_WS_TARGET_HOST=[Upstream WS broker host] \
+MF_MQTT_ADAPTER_WS_TARGET_PORT=[Upstream WS broker port] \
+MF_MQTT_ADAPTER_WS_TARGET_PATH=[Upstream WS path] \
+MF_MQTT_ADAPTER_DB_HOST=[Subscriptions database host] \
+MF_MQTT_ADAPTER_DB_PORT=[Subscriptions database port] \
+MF_MQTT_ADAPTER_DB_USER=[Subscriptions database user] \
+MF_MQTT_ADAPTER_DB_PASS=[Subscriptions database password] \
+MF_MQTT_ADAPTER_DB=[Subscriptions database name] \
+MF_BROKER_URL=[Internal message broker URL] \
 MF_THINGS_AUTH_GRPC_URL=[Things service Auth gRPC URL] \
-MF_THINGS_AUTH_GRPC_TIMEOUT=[Things service Auth gRPC request timeout in seconds] \
+MF_THINGS_AUTH_GRPC_TIMEOUT=[Things service Auth gRPC timeout] \
+MF_AUTH_GRPC_URL=[Auth service gRPC URL] \
 MF_JAEGER_URL=[Jaeger service URL] \
-MF_MQTT_ADAPTER_CLIENT_TLS=[gRPC client TLS] \
-MF_MQTT_ADAPTER_CA_CERTS=[CA certs for gRPC client] \
-MF_MQTT_ADAPTER_INSTANCE=[Instance for event sourcing] \
-MF_MQTT_ADAPTER_ES_URL=[Event sourcing URL] \
 MF_AUTH_CACHE_URL=[Auth cache URL] \
+MF_MQTT_ADAPTER_ES_URL=[Event store URL] \
 $GOBIN/mainfluxlabs-mqtt
 ```
 
-For more information about service capabilities and its usage, please check out the API documentation [API](https://github.com/MainfluxLabs/mainflux/blob/master/api/mqtt.yml).
+## Usage
+
+Connect any MQTT client to port `1883` (plain) or `8883` (TLS) using a Thing key as the password. Publish messages to `messages/<subtopic>` to send them through the platform.
+
+For the full API reference, see the [AsyncAPI documentation](https://github.com/MainfluxLabs/mainflux/blob/master/api/asyncapi/mqtt.yml).
+
+[doc]: https://mainfluxlabs.github.io/docs

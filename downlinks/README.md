@@ -1,6 +1,53 @@
-# Downlinks
+# Downlinks Service
 
-Downlinks service manages scheduled outbound HTTP requests (downlinks) for things and groups, supporting cron-based and one-time scheduling with optional time-range parameter injection.
+The Downlinks service manages scheduled outbound HTTP requests for things and groups. Each downlink defines a target URL, HTTP method, optional payload and headers, a schedule, and an optional time filter for automatic time-range parameter injection. On startup, all persisted downlinks are loaded and scheduled; new downlinks are scheduled immediately upon creation.
+
+## Downlinks
+
+A downlink represents a single scheduled outbound HTTP request.
+
+| Field         | Description                                                                           |
+|---------------|---------------------------------------------------------------------------------------|
+| `id`          | Unique downlink identifier (UUID)                                                     |
+| `group_id`    | ID of the group the downlink belongs to                                               |
+| `thing_id`    | ID of the thing the downlink is associated with                                       |
+| `name`        | Human-readable downlink name                                                          |
+| `url`         | Destination URL                                                                       |
+| `method`      | HTTP method: `GET`, `POST`, `PUT`, or `PATCH`                                         |
+| `payload`     | Optional request body (string)                                                        |
+| `headers`     | Optional HTTP headers sent with each request                                          |
+| `scheduler`   | Schedule configuration (see below)                                                    |
+| `time_filter` | Optional time-range parameter injection configuration (see below)                     |
+| `metadata`    | Arbitrary key-value pairs for custom attributes                                       |
+
+### Scheduler
+
+The `scheduler` object controls when a downlink executes.
+
+| Field       | Description                                                                              |
+|-------------|------------------------------------------------------------------------------------------|
+| `frequency` | Execution frequency: `once`, `minutely`, `hourly`, `daily`, or `weekly`                  |
+| `time_zone` | IANA timezone name (e.g. `Europe/Berlin`, `UTC`)                                         |
+| `date_time` | ISO 8601 date-time. Required when `frequency` is `once`; ignored otherwise               |
+| `minute`    | Minute interval. Used with `minutely` frequency                                          |
+| `hour`      | Hour interval. Used with `hourly` frequency                                              |
+| `day_time`  | Time of day in `HH:MM` format. Used with `daily` frequency                               |
+| `week`      | Weekly schedule: `{ days: [...], time: "HH:MM" }`. Used with `weekly` frequency         |
+
+### Time Filter
+
+The `time_filter` object injects computed time-range parameters into the request URL at execution time.
+
+| Field         | Description                                                                                    |
+|---------------|------------------------------------------------------------------------------------------------|
+| `start_param` | Query parameter name for the start time (e.g. `from`)                                         |
+| `end_param`   | Query parameter name for the end time (e.g. `to`)                                             |
+| `format`      | Time format for injected values. Supported: `iso8601`, `rfc3339`, `unix`, `unix_ms`, `unix_us`, `unix_ns`, and other standard Go time layouts |
+| `interval`    | Time range unit: `minute`, `hour`, or `day`                                                   |
+| `value`       | Number of interval units to include in the time range                                          |
+| `forecast`    | If `true`, uses a future time range instead of a past one                                      |
+
+**Example:** a downlink with `interval: hour`, `value: 1`, `forecast: false` will append `?from=<1 hour ago>&to=<now>` to the URL on each execution (formatted according to `format`).
 
 ## Configuration
 
@@ -70,6 +117,4 @@ $GOBIN/mainfluxlabs-downlinks
 
 ## Usage
 
-Starting the service will load all persisted downlinks and schedule them according to their configured frequency (repeating cron or one-time). Each scheduled execution sends an HTTP request to the configured URL with the specified method, headers, and payload. Time filter parameters can be injected automatically into the request based on the schedule interval.
-
-[doc]: https://mainfluxlabs.github.io/docs
+For the full HTTP API reference, see the [OpenAPI specification](https://mainfluxlabs.github.io/docs/swagger/).
