@@ -103,8 +103,10 @@ func buildNotifiersPageMetadata(r *http.Request) (notifiers.PageMetadata, error)
 	if err != nil {
 		return notifiers.PageMetadata{}, err
 	}
+
 	n, _ := apiutil.ReadStringQuery(r, nameKey, "")
 	m, _ := apiutil.ReadMetadataQuery(r, apiutil.MetadataKey, nil)
+
 	return notifiers.PageMetadata{
 		Offset:   base.Offset,
 		Limit:    base.Limit,
@@ -124,22 +126,28 @@ func buildNotifiersPageMetadataFromBody(r *http.Request) (notifiers.PageMetadata
 			Dir:    apiutil.DescDir,
 		}, nil
 	}
+
 	var pm notifiers.PageMetadata
 	if err := json.NewDecoder(r.Body).Decode(&pm); err != nil {
 		return notifiers.PageMetadata{}, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
+
 	if pm.Limit == 0 {
 		pm.Limit = apiutil.DefLimit
 	}
+
 	if pm.Offset == 0 {
 		pm.Offset = apiutil.DefOffset
 	}
+
 	if pm.Order == "" {
 		pm.Order = apiutil.IDOrder
 	}
+
 	if pm.Dir == "" {
 		pm.Dir = apiutil.DescDir
 	}
+
 	return pm, nil
 }
 

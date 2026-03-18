@@ -42,13 +42,15 @@ type PageMetadata struct {
 
 // Validate validates the page metadata.
 func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
-	base := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
-	if err := base.Validate(maxLimitSize, AllowedOrders); err != nil {
+	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
+	if err := common.Validate(maxLimitSize, AllowedOrders); err != nil {
 		return err
 	}
+
 	if len(pm.Name) > maxNameSize {
 		return apiutil.ErrNameSize
 	}
+
 	return nil
 }
 

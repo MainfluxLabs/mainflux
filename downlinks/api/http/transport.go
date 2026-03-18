@@ -98,7 +98,9 @@ func buildDownlinksPageMetadata(r *http.Request) (downlinks.PageMetadata, error)
 	if err != nil {
 		return downlinks.PageMetadata{}, err
 	}
+
 	n, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+
 	return downlinks.PageMetadata{
 		Offset: base.Offset,
 		Limit:  base.Limit,

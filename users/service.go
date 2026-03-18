@@ -174,8 +174,8 @@ func (pm PageMetadata) Validate(maxLimitSize, maxEmailSize int) error {
 		}
 	}
 
-	base := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
-	return base.Validate(maxLimitSize, AllowedOrders)
+	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
+	return common.Validate(maxLimitSize, AllowedOrders)
 }
 
 // UserPage contains a page of users.

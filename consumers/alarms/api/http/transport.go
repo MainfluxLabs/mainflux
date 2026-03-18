@@ -88,7 +88,9 @@ func buildAlarmsPageMetadata(r *http.Request) (alarms.PageMetadata, error) {
 	if err != nil {
 		return alarms.PageMetadata{}, err
 	}
+
 	pl, _ := apiutil.ReadMetadataQuery(r, apiutil.PayloadKey, nil)
+
 	return alarms.PageMetadata{
 		Offset:  base.Offset,
 		Limit:   base.Limit,

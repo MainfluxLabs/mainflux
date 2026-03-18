@@ -155,8 +155,10 @@ func buildGroupsPageMetadata(r *http.Request) (things.PageMetadata, error) {
 	if err != nil {
 		return things.PageMetadata{}, err
 	}
+
 	n, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
 	m, _ := apiutil.ReadMetadataQuery(r, apiutil.MetadataKey, nil)
+
 	return things.PageMetadata{
 		Offset:   base.Offset,
 		Limit:    base.Limit,
@@ -176,22 +178,28 @@ func buildGroupsPageMetadataFromBody(r *http.Request) (things.PageMetadata, erro
 			Dir:    apiutil.DescDir,
 		}, nil
 	}
+
 	var pm things.PageMetadata
 	if err := json.NewDecoder(r.Body).Decode(&pm); err != nil {
 		return things.PageMetadata{}, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
+
 	if pm.Limit == 0 {
 		pm.Limit = apiutil.DefLimit
 	}
+
 	if pm.Offset == 0 {
 		pm.Offset = apiutil.DefOffset
 	}
+
 	if pm.Order == "" {
 		pm.Order = apiutil.IDOrder
 	}
+
 	if pm.Dir == "" {
 		pm.Dir = apiutil.DescDir
 	}
+
 	return pm, nil
 }
 

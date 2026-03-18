@@ -96,7 +96,9 @@ func buildModbusPageMetadata(r *http.Request) (modbus.PageMetadata, error) {
 	if err != nil {
 		return modbus.PageMetadata{}, err
 	}
+
 	n, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+
 	return modbus.PageMetadata{
 		Offset: base.Offset,
 		Limit:  base.Limit,

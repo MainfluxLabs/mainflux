@@ -227,37 +227,37 @@ func decodeSearchUsers(_ context.Context, r *http.Request) (any, error) {
 		return req, nil
 	}
 
-	var bodyPM users.PageMetadata
-	if err := json.NewDecoder(r.Body).Decode(&bodyPM); err != nil {
+	var upm users.PageMetadata
+	if err := json.NewDecoder(r.Body).Decode(&upm); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	if bodyPM.Offset > 0 {
-		req.pm.Offset = bodyPM.Offset
+	if upm.Offset > 0 {
+		req.pm.Offset = upm.Offset
 	}
 
-	if bodyPM.Limit > 0 {
-		req.pm.Limit = bodyPM.Limit
+	if upm.Limit > 0 {
+		req.pm.Limit = upm.Limit
 	}
 
-	if bodyPM.Order != "" {
-		req.pm.Order = bodyPM.Order
+	if upm.Order != "" {
+		req.pm.Order = upm.Order
 	}
 
-	if bodyPM.Dir != "" {
-		req.pm.Dir = bodyPM.Dir
+	if upm.Dir != "" {
+		req.pm.Dir = upm.Dir
 	}
 
-	if bodyPM.Status != "" {
-		req.pm.Status = bodyPM.Status
+	if upm.Status != "" {
+		req.pm.Status = upm.Status
 	}
 
-	if bodyPM.Email != "" {
-		req.pm.Email = bodyPM.Email
+	if upm.Email != "" {
+		req.pm.Email = upm.Email
 	}
 
-	if bodyPM.Metadata != nil {
-		req.pm.Metadata = bodyPM.Metadata
+	if upm.Metadata != nil {
+		req.pm.Metadata = upm.Metadata
 	}
 
 	return req, nil

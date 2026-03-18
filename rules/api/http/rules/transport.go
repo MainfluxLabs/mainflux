@@ -105,6 +105,7 @@ func decodeListRulesByThing(_ context.Context, r *http.Request) (any, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	name, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
 
 	req := listRulesByThingReq{
@@ -118,6 +119,7 @@ func decodeListRulesByThing(_ context.Context, r *http.Request) (any, error) {
 			Name:   name,
 		},
 	}
+
 	return req, nil
 }
 
