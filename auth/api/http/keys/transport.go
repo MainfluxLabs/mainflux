@@ -31,6 +31,13 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 		opts...,
 	))
 
+	mux.Get("/keys", kithttp.NewServer(
+		kitot.TraceServer(tracer, "list_api_keys")(listAPIKeysEndpoint(svc)),
+		decodeListAPIKeys,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Get("/keys/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "retrieve")(retrieveEndpoint(svc)),
 		decodeKeyReq,
@@ -46,6 +53,20 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	))
 
 	return mux
+}
+
+func decodeListAPIKeys(_ context.Context, r *http.Request) (any, error) {
+	pm, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listKeysReq{
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm,
+	}
+
+	return req, nil
 }
 
 func decodeIssue(_ context.Context, r *http.Request) (any, error) {

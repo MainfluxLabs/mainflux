@@ -29,36 +29,34 @@ import (
 )
 
 const (
-	contentTypeJSON        = "application/json"
-	contentTypeOctetStream = "application/octet-stream"
-	email                  = "user@example.com"
-	adminEmail             = "admin@example.com"
-	otherUserEmail         = "other_user@example.com"
-	token                  = email
-	otherToken             = otherUserEmail
-	adminToken             = adminEmail
-	wrongValue             = "wrong_value"
-	emptyValue             = ""
-	emptyJson              = "{}"
-	wrongID                = 0
-	password               = "password"
-	maxNameSize            = 1024
-	nameKey                = "name"
-	ascKey                 = "asc"
-	descKey                = "desc"
-	orgID                  = "374106f7-030e-4881-8ab0-151195c29f92"
-	orgID2                 = "374106f7-030e-4881-8ab0-151195c29f93"
-	prefix                 = "fe6b4e92-cc98-425e-b0aa-"
-	n                      = 101
-	noLimit                = -1
-	validData              = `{"limit":5,"offset":0}`
-	descData               = `{"limit":5,"offset":0,"dir":"desc","order":"name"}`
-	ascData                = `{"limit":5,"offset":0,"dir":"asc","order":"name"}`
-	invalidOrderData       = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
-	zeroLimitData          = `{"limit":0,"offset":0}`
-	invalidDirData         = `{"limit":5,"offset":0,"dir":"wrong"}`
-	invalidLimitData       = `{"limit":210,"offset":0}`
-	invalidData            = `{"limit": "invalid"}`
+	contentTypeJSON  = "application/json"
+	email            = "user@example.com"
+	adminEmail       = "admin@example.com"
+	otherUserEmail   = "other_user@example.com"
+	token            = email
+	otherToken       = otherUserEmail
+	adminToken       = adminEmail
+	wrongValue       = "wrong_value"
+	emptyValue       = ""
+	emptyJson        = "{}"
+	wrongID          = 0
+	password         = "password"
+	maxNameSize      = 1024
+	nameKey          = "name"
+	ascKey           = "asc"
+	descKey          = "desc"
+	orgID            = "374106f7-030e-4881-8ab0-151195c29f92"
+	orgID2           = "374106f7-030e-4881-8ab0-151195c29f93"
+	prefix           = "fe6b4e92-cc98-425e-b0aa-"
+	n                = 101
+	validData        = `{"limit":5,"offset":0}`
+	descData         = `{"limit":5,"offset":0,"dir":"desc","order":"name"}`
+	ascData          = `{"limit":5,"offset":0,"dir":"asc","order":"name"}`
+	invalidOrderData = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
+	zeroLimitData    = `{"limit":0,"offset":0}`
+	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
+	invalidLimitData = `{"limit":210,"offset":0}`
+	invalidData      = `{"limit": "invalid"}`
 )
 
 var (
@@ -148,8 +146,9 @@ func TestCreateThings(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
 
-	data := fmt.Sprintf(`[{"name": "1", "key": "1","profile_id":"%s"}, {"name": "2", "key": "2","profile_id":"%s"}]`, prID, prID)
-	invalidNameData := fmt.Sprintf(`[{"name": "%s", "key": "10","profile_id":"%s"}]`, invalidName, prID)
+	data := fmt.Sprintf(`[{"name": "1", "key": "1","profile_id":"%s","type":"device"}, {"name": "2", "key": "2","profile_id":"%s","type":"sensor"}]`, prID, prID)
+	dataMissingType := fmt.Sprintf(`[{"name": "th", "key": "123","profile_id":"%s"}]`, prID)
+	dataInvalidName := fmt.Sprintf(`[{"name": "%s", "key": "10","profile_id":"%s","type":"device"}]`, invalidName, prID)
 
 	cases := []struct {
 		desc        string
@@ -185,7 +184,7 @@ func TestCreateThings(t *testing.T) {
 		},
 		{
 			desc:        "create thing with invalid name",
-			data:        invalidNameData,
+			data:        dataInvalidName,
 			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -194,6 +193,14 @@ func TestCreateThings(t *testing.T) {
 		{
 			desc:        "create things with empty JSON array",
 			data:        "[]",
+			contentType: contentTypeJSON,
+			auth:        token,
+			status:      http.StatusBadRequest,
+			response:    emptyValue,
+		},
+		{
+			desc:        "create thing without type",
+			data:        dataMissingType,
 			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -268,10 +275,11 @@ func TestUpdateThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
 
-	data := `{"name":"test", "key": "tk1"}`
-	dataMissingKey := `{"name":"test"}`
-	dataMissingName := `{"key":"tk1"}`
-	invalidNameData := fmt.Sprintf(`{"name": "%s", "key": "tk1"}`, invalidName)
+	data := `{"name":"test", "key": "tk1", "type":"device"}`
+	dataMissingKey := `{"name":"test", "type":"device"}`
+	dataMissingName := `{"key":"tk1", "type":"device"}`
+	dataMissingType := `{"name":"test", "key": "tk1"}`
+	dataInvalidName := fmt.Sprintf(`{"name": "%s", "key": "tk1", "type":"device"}`, invalidName)
 
 	cases := []struct {
 		desc        string
@@ -295,7 +303,7 @@ func TestUpdateThing(t *testing.T) {
 			id:          th.ID,
 			contentType: contentTypeJSON,
 			auth:        token,
-			status:      http.StatusUnauthorized,
+			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "update non-existent thing",
@@ -355,7 +363,7 @@ func TestUpdateThing(t *testing.T) {
 		},
 		{
 			desc:        "update thing with invalid name",
-			req:         invalidNameData,
+			req:         dataInvalidName,
 			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,
@@ -370,6 +378,14 @@ func TestUpdateThing(t *testing.T) {
 		{
 			desc:        "update thing with missing key",
 			req:         dataMissingKey,
+			contentType: contentTypeJSON,
+			auth:        token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update thing without type",
+			req:         dataMissingType,
+			id:          th.ID,
 			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,

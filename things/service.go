@@ -254,6 +254,10 @@ func (ts *thingsService) UpdateThing(ctx context.Context, token string, thing Th
 		return err
 	}
 
+	if err := ts.thingCache.SaveType(ctx, thing.ID, thing.Type); err != nil {
+		return err
+	}
+
 	return ts.things.Update(ctx, thing)
 }
 
@@ -395,7 +399,7 @@ func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...
 		ar := UserAccessReq{
 			Token:  token,
 			ID:     id,
-			Action: Editor,
+			Action: Admin,
 		}
 		if err := ts.CanUserAccessThing(ctx, ar); err != nil {
 			return err
@@ -406,6 +410,10 @@ func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...
 		}
 
 		if err := ts.thingCache.RemoveGroup(ctx, id); err != nil {
+			return err
+		}
+
+		if err := ts.thingCache.RemoveType(ctx, id); err != nil {
 			return err
 		}
 	}
@@ -527,7 +535,7 @@ func (ts *thingsService) RemoveProfiles(ctx context.Context, token string, ids .
 		ar := UserAccessReq{
 			Token:  token,
 			ID:     id,
-			Action: Editor,
+			Action: Admin,
 		}
 
 		if err := ts.CanUserAccessProfile(ctx, ar); err != nil {
@@ -669,7 +677,7 @@ func (ts *thingsService) RemoveExternalKey(ctx context.Context, token, thingID s
 	accessReq := UserAccessReq{
 		Token:  token,
 		ID:     thingID,
-		Action: Editor,
+		Action: Admin,
 	}
 
 	if err := ts.CanUserAccessThing(ctx, accessReq); err != nil {
@@ -852,6 +860,23 @@ func (ts *thingsService) getGroupIDByThing(ctx context.Context, thID string) (st
 	}
 
 	return grID, nil
+}
+
+func (ts *thingsService) getTypeByThing(ctx context.Context, thID string) (string, error) {
+	thType, err := ts.thingCache.ViewType(ctx, thID)
+	if err != nil {
+		th, err := ts.things.RetrieveByID(ctx, thID)
+		if err != nil {
+			return "", err
+		}
+		thType = th.Type
+
+		if err := ts.thingCache.SaveType(ctx, th.ID, th.Type); err != nil {
+			return "", err
+		}
+	}
+
+	return thType, nil
 }
 
 func (ts *thingsService) getGroupIDByProfile(ctx context.Context, prID string) (string, error) {

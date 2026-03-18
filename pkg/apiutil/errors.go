@@ -15,6 +15,9 @@ var (
 	// ErrBearerKey indicates missing or invalid bearer entity key.
 	ErrBearerKey = errors.New("missing or invalid bearer entity key")
 
+	// ErrMissingThingKey indicates missing thing key.
+	ErrMissingThingKey = errors.New("missing thing key")
+
 	// ErrMissingGroupID indicates missing group ID.
 	ErrMissingGroupID = errors.New("missing group id")
 
@@ -38,6 +41,12 @@ var (
 
 	// ErrMissingRuleID indicates missing rule ID.
 	ErrMissingRuleID = errors.New("missing rule id")
+
+	// ErrMissingScriptID indicates missing script ID.
+	ErrMissingScriptID = errors.New("missing script id")
+
+	// ErrMissingScriptRunID indicates missing script run ID.
+	ErrMissingScriptRunID = errors.New("missing script run id")
 
 	// ErrMissingUserID indicates missing user ID.
 	ErrMissingUserID = errors.New("missing user id")
@@ -179,6 +188,9 @@ var (
 
 	// ErrInvalidThingKeyType indicates an invalid or missing type of thing authentication key
 	ErrInvalidThingKeyType = errors.New("invalid thing key type")
+
+	// ErrInvalidThingType indicates an invalid or missing thing type
+	ErrInvalidThingType = errors.New("missing or invalid thing type")
 
 	// ErrInvalidProvider indicates an invalid or missing provider
 	ErrInvalidProvider = errors.New("missing or invalid provider")

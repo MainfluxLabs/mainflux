@@ -251,7 +251,7 @@ func (svc *mainfluxThings) ListProfilesByGroup(context.Context, string, string, 
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CreateGroupMemberships(context.Context, string, ...things.GroupMembership) error {
+func (svc *mainfluxThings) CreateGroupMemberships(context.Context, string, string, ...things.GroupMembership) error {
 	panic("not implemented")
 }
 

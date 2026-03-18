@@ -19,6 +19,7 @@ type Thing struct {
 	GroupID     string          `json:"group_id,omitempty"`
 	ProfileID   string          `json:"profile_id,omitempty"`
 	Name        string          `json:"name,omitempty"`
+	Type        string          `json:"type,omitempty"`
 	Key         string          `json:"key,omitempty"`
 	ExternalKey string          `json:"external_key,omitempty"`
 	Metadata    domain.Metadata `json:"metadata,omitempty"`

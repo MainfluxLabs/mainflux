@@ -1,6 +1,8 @@
 package emailer
 
 import (
+	"fmt"
+
 	"github.com/MainfluxLabs/mainflux/pkg/email"
 	"github.com/MainfluxLabs/mainflux/things"
 )
@@ -26,11 +28,13 @@ func New(host string, config *email.Config) (things.Emailer, error) {
 	}, nil
 }
 
-func (e *emailer) SendGroupMembershipNotification(to []string, orgName, groupName, groupRole string) error {
+func (e *emailer) SendGroupMembershipNotification(to []string, orgName, groupName, groupRole, redirectPath string) error {
+	redirectURL := fmt.Sprintf("%s%s", e.host, redirectPath)
 	templateData := map[string]any{
 		"GroupName": groupName,
 		"OrgName":   orgName,
 		"Role":      groupRole,
+		"GroupLink": redirectURL,
 	}
 
 	return e.agent.Send(to, "", subjectGroupMembership, "group_membership", templateData)

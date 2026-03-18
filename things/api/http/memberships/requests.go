@@ -32,13 +32,50 @@ func (req listGroupMembershipsReq) validate() error {
 	return nil
 }
 
-type groupMembershipsReq struct {
+type createGroupMembershipsReq struct {
+	token            string
+	groupID          string
+	GroupMemberships []groupMembership `json:"group_memberships"`
+	RedirectPath     string            `json:"redirect_path,omitempty"`
+}
+
+func (req createGroupMembershipsReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.groupID == "" {
+		return apiutil.ErrMissingGroupID
+	}
+
+	if len(req.GroupMemberships) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, gm := range req.GroupMemberships {
+		if gm.Role != things.Admin && gm.Role != things.Viewer && gm.Role != things.Editor {
+			return apiutil.ErrInvalidRole
+		}
+
+		if gm.MemberID == "" {
+			return apiutil.ErrMissingMemberID
+		}
+	}
+
+	if req.RedirectPath == "" {
+		return apiutil.ErrMissingRedirectPath
+	}
+
+	return nil
+}
+
+type updateGroupMembershipsReq struct {
 	token            string
 	groupID          string
 	GroupMemberships []groupMembership `json:"group_memberships"`
 }
 
-func (req groupMembershipsReq) validate() error {
+func (req updateGroupMembershipsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

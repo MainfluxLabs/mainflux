@@ -23,26 +23,27 @@ import (
 )
 
 const (
-	emptyValue      = ""
-	wrongValue      = "wrong-value"
-	adminEmail      = "admin@example.com"
-	userEmail       = "user@example.com"
-	otherUserEmail  = "other.user@example.com"
-	unauthUserEmail = "unauth@example.com"
-	viewerEmail     = "viewer@gmail.com"
-	editorEmail     = "editor@gmail.com"
-	adminToken      = adminEmail
-	viewerToken     = viewerEmail
-	editorToken     = editorEmail
-	token           = userEmail
-	otherToken      = otherUserEmail
-	unauthToken     = unauthUserEmail
-	password        = "password"
-	n               = uint64(102)
-	n2              = uint64(204)
-	orgID           = "374106f7-030e-4881-8ab0-151195c29f92"
-	prefixID        = "fe6b4e92-cc98-425e-b0aa-"
-	prefixName      = "test-"
+	emptyValue        = ""
+	wrongValue        = "wrong-value"
+	adminEmail        = "admin@example.com"
+	userEmail         = "user@example.com"
+	otherUserEmail    = "other.user@example.com"
+	unauthUserEmail   = "unauth@example.com"
+	viewerEmail       = "viewer@gmail.com"
+	editorEmail       = "editor@gmail.com"
+	adminToken        = adminEmail
+	viewerToken       = viewerEmail
+	editorToken       = editorEmail
+	token             = userEmail
+	otherToken        = otherUserEmail
+	unauthToken       = unauthUserEmail
+	password          = "password"
+	n                 = uint64(102)
+	n2                = uint64(204)
+	orgID             = "374106f7-030e-4881-8ab0-151195c29f92"
+	prefixID          = "fe6b4e92-cc98-425e-b0aa-"
+	prefixName        = "test-"
+	redirectPathGroup = "/view-group"
 )
 
 var (
@@ -879,6 +880,12 @@ func TestRemoveThings(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grID := grs[0].ID
 
+	for i := range memberships {
+		memberships[i].GroupID = grID
+	}
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, memberships...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
 	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
@@ -900,9 +907,21 @@ func TestRemoveThings(t *testing.T) {
 			err:   errors.ErrAuthentication,
 		},
 		{
-			desc:  "remove existing thing",
+			desc:  "remove thing as viewer",
 			id:    th.ID,
-			token: token,
+			token: viewerToken,
+			err:   errors.ErrAuthorization,
+		},
+		{
+			desc:  "remove thing as editor",
+			id:    th.ID,
+			token: editorToken,
+			err:   errors.ErrAuthorization,
+		},
+		{
+			desc:  "remove thing as admin",
+			id:    th.ID,
+			token: otherToken,
 			err:   nil,
 		},
 		{
@@ -1478,6 +1497,12 @@ func TestRemoveProfile(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grID := grs[0].ID
 
+	for i := range memberships {
+		memberships[i].GroupID = grID
+	}
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, memberships...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
 	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	prID, prID1 := prs[0].ID, prs[1].ID
@@ -1498,9 +1523,21 @@ func TestRemoveProfile(t *testing.T) {
 			err:   errors.ErrAuthentication,
 		},
 		{
-			desc:  "remove existing profile",
+			desc:  "remove profile as viewer",
 			id:    prID,
-			token: token,
+			token: viewerToken,
+			err:   errors.ErrAuthorization,
+		},
+		{
+			desc:  "remove profile as editor",
+			id:    prID,
+			token: editorToken,
+			err:   errors.ErrAuthorization,
+		},
+		{
+			desc:  "remove profile as admin",
+			id:    prID,
+			token: otherToken,
 			err:   nil,
 		},
 		{
@@ -1878,7 +1915,7 @@ func TestRemoveGroup(t *testing.T) {
 	for i := range memberships {
 		memberships[i].GroupID = grID
 	}
-	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := []struct {
@@ -1959,7 +1996,7 @@ func TestUpdateGroup(t *testing.T) {
 	for i := range memberships {
 		memberships[i].GroupID = grID
 	}
-	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	ug := things.Group{
@@ -2035,7 +2072,7 @@ func TestViewGroup(t *testing.T) {
 	for i := range memberships {
 		memberships[i].GroupID = gr.ID
 	}
-	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	grRes := things.Group{
@@ -2368,7 +2405,7 @@ func TestCreateGroupMemberships(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.CreateGroupMemberships(context.Background(), tc.token, tc.memberships...)
+		err := svc.CreateGroupMemberships(context.Background(), tc.token, redirectPathGroup, tc.memberships...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -2383,7 +2420,7 @@ func TestListGroupMemberships(t *testing.T) {
 	for i := range memberships {
 		memberships[i].GroupID = gr.ID
 	}
-	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	var n uint64 = 4
 
@@ -2516,7 +2553,7 @@ func TestUpdateMemberships(t *testing.T) {
 	for i := range memberships {
 		memberships[i].GroupID = gr.ID
 	}
-	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	gm := things.GroupMembership{GroupID: gr.ID, MemberID: user.ID, Email: user.Email, Role: things.Owner}
@@ -2599,7 +2636,7 @@ func TestRemoveGroupMemberships(t *testing.T) {
 	for i := range memberships {
 		memberships[i].GroupID = gr.ID
 	}
-	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := []struct {
@@ -2683,7 +2720,7 @@ func TestUpdateThingKey(t *testing.T) {
 	for i := range memberships {
 		memberships[i].GroupID = createdGroup.ID
 	}
-	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	createdProfiles, err := svc.CreateProfiles(context.Background(), token, createdGroup.ID, profile)
@@ -2749,7 +2786,7 @@ func TestRemoveExternalKey(t *testing.T) {
 	for i := range memberships {
 		memberships[i].GroupID = createdGroup.ID
 	}
-	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	createdProfiles, err := svc.CreateProfiles(context.Background(), token, createdGroup.ID, profile)
@@ -2781,7 +2818,7 @@ func TestRemoveExternalKey(t *testing.T) {
 			desc:    "remove external key as editor",
 			token:   editorToken,
 			thingID: createdThing.ID,
-			err:     nil,
+			err:     errors.ErrAuthorization,
 		},
 		{
 			desc:    "remove external key as viewer",
@@ -3248,7 +3285,7 @@ func TestCanUserAccessThing(t *testing.T) {
 	for i := range memberships {
 		memberships[i].GroupID = grID
 	}
-	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := []struct {
@@ -3313,7 +3350,7 @@ func TestCanUserAccessProfile(t *testing.T) {
 	for i := range memberships {
 		memberships[i].GroupID = grID
 	}
-	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := []struct {
@@ -3374,7 +3411,7 @@ func TestCanUserAccessGroup(t *testing.T) {
 	for i := range memberships {
 		memberships[i].GroupID = gr.ID
 	}
-	err = svc.CreateGroupMemberships(context.Background(), token, memberships...)
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := []struct {

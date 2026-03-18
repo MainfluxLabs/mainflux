@@ -13,19 +13,25 @@ import (
 	"github.com/MainfluxLabs/mainflux/rules"
 )
 
-var _ rules.RuleRepository = (*ruleRepositoryMock)(nil)
+var _ rules.Repository = (*ruleRepositoryMock)(nil)
 
 type ruleRepositoryMock struct {
-	mu          sync.Mutex
-	rules       map[string]rules.Rule
-	assignments map[string][]string // thingID -> []ruleID
+	mu                sync.Mutex
+	rules             map[string]rules.Rule
+	assignments       map[string][]string // thingID -> []ruleID
+	scripts           map[string]rules.LuaScript
+	scriptAssignments map[string][]string // thingID -> []scriptID
+	scriptRuns        map[string]rules.ScriptRun
 }
 
 // NewRuleRepository creates in-memory rule repository used for testing.
-func NewRuleRepository() rules.RuleRepository {
+func NewRuleRepository() rules.Repository {
 	return &ruleRepositoryMock{
-		rules:       make(map[string]rules.Rule),
-		assignments: make(map[string][]string),
+		rules:             make(map[string]rules.Rule),
+		assignments:       make(map[string][]string),
+		scripts:           make(map[string]rules.LuaScript),
+		scriptAssignments: make(map[string][]string),
+		scriptRuns:        make(map[string]rules.ScriptRun),
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -74,8 +75,10 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrMissingObject),
 			errors.Contains(err, ErrMissingKeyID),
 			errors.Contains(err, ErrMissingInviteID),
+			errors.Contains(err, ErrMissingScriptRunID),
 			errors.Contains(err, ErrInvalidAction),
 			errors.Contains(err, ErrBearerKey),
+			errors.Contains(err, ErrMissingThingKey),
 			errors.Contains(err, ErrInvalidAuthKey),
 			errors.Contains(err, ErrInvalidIDFormat),
 			errors.Contains(err, ErrNameSize),
@@ -103,7 +106,8 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrMissingConditionThreshold),
 			errors.Contains(err, ErrInvalidActionType),
 			errors.Contains(err, ErrMissingActionID),
-			errors.Contains(err, ErrInvalidOperator):
+			errors.Contains(err, ErrInvalidOperator),
+			errors.Contains(err, ErrInvalidThingType):
 			logger.Error(err.Error())
 		}
 
@@ -164,11 +168,14 @@ func EncodeError(err error, w http.ResponseWriter) {
 	case errors.Contains(err, ErrMissingGroupID),
 		errors.Contains(err, ErrMissingOrgID),
 		errors.Contains(err, ErrMissingThingID),
+		errors.Contains(err, ErrMissingThingKey),
 		errors.Contains(err, ErrMissingProfileID),
 		errors.Contains(err, ErrMissingMemberID),
 		errors.Contains(err, ErrMissingNotifierID),
 		errors.Contains(err, ErrMissingAlarmID),
 		errors.Contains(err, ErrMissingRuleID),
+		errors.Contains(err, ErrMissingScriptID),
+		errors.Contains(err, ErrMissingScriptRunID),
 		errors.Contains(err, ErrMissingUserID),
 		errors.Contains(err, ErrMissingRole),
 		errors.Contains(err, ErrMissingObject),
@@ -206,7 +213,8 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrInvalidOperator),
 		errors.Contains(err, ErrInvalidProvider),
 		errors.Contains(err, ErrMissingProviderCode),
-		errors.Contains(err, ErrInvalidState):
+		errors.Contains(err, ErrInvalidState),
+		errors.Contains(err, ErrInvalidThingType):
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, errors.ErrAuthorization),
 		errors.Contains(err, ErrInviteExpired),
@@ -414,13 +422,22 @@ func ReadFloatQuery(r *http.Request, key string, def float64) (float64, error) {
 }
 
 func ReadStringArrayQuery(r *http.Request, key string) ([]string, error) {
-	vals := bone.GetQuery(r, key)
+	vals := r.URL.Query()[key]
 
 	if len(vals) > 10 {
 		return nil, ErrInvalidQueryParams
 	}
 
-	return vals, nil
+	decoded := make([]string, len(vals))
+	for i, v := range vals {
+		d, err := url.QueryUnescape(v)
+		if err != nil {
+			return nil, ErrInvalidQueryParams
+		}
+		decoded[i] = d
+	}
+
+	return decoded, nil
 }
 
 func BuildPageMetadata(r *http.Request) (PageMetadata, error) {

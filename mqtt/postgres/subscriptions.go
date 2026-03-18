@@ -21,19 +21,19 @@ func NewRepository(db dbutil.Database) mqtt.Repository {
 }
 
 func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error {
-	// Subscriptions are defined per (thing, group, subtopic), not per MQTT client.
+	// Subscriptions are defined per (thing, group, topic), not per MQTT client.
 	// A single thing may connect multiple times or from multiple clients and
 	// subscribe to the same topic repeatedly.
 	// Attempting to create an already existing subscription is therefore
 	// an expected and valid scenario and should be treated as a no-op,
 	// not as an error. The primary key still guarantees uniqueness.
-	q := `INSERT INTO subscriptions (subtopic, thing_id, group_id, created_at)
-		  VALUES (:subtopic, :thing_id, :group_id, :created_at)
-		  ON CONFLICT (subtopic, group_id, thing_id)
+	q := `INSERT INTO subscriptions (topic, thing_id, group_id, created_at)
+		  VALUES (:topic, :thing_id, :group_id, :created_at)
+		  ON CONFLICT (topic, group_id, thing_id)
 		  DO NOTHING;`
 
 	dbSub := dbSubscription{
-		Subtopic:  sub.Subtopic,
+		Topic:     sub.Topic,
 		ThingID:   sub.ThingID,
 		GroupID:   sub.GroupID,
 		CreatedAt: sub.CreatedAt,
@@ -49,7 +49,7 @@ func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error
 func (mr *mqttRepository) RetrieveByGroup(ctx context.Context, pm mqtt.PageMetadata, groupID string) (mqtt.Page, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
-	q := fmt.Sprintf(`SELECT subtopic, group_id, thing_id, created_at 
+	q := fmt.Sprintf(`SELECT topic, group_id, thing_id, created_at 
 					  FROM subscriptions 
 					  WHERE group_id = :group_id 
 					  ORDER BY created_at 
@@ -66,7 +66,7 @@ func (mr *mqttRepository) RetrieveByGroup(ctx context.Context, pm mqtt.PageMetad
 	}
 	defer rows.Close()
 
-	var items []mqtt.Subscription
+	items := []mqtt.Subscription{}
 	for rows.Next() {
 		item := dbSubscription{}
 		if err := rows.StructScan(&item); err != nil {
@@ -90,11 +90,11 @@ func (mr *mqttRepository) RetrieveByGroup(ctx context.Context, pm mqtt.PageMetad
 
 func (mr *mqttRepository) Remove(ctx context.Context, sub mqtt.Subscription) error {
 	q := `DELETE FROM subscriptions 
-          WHERE subtopic = :subtopic AND thing_id = :thing_id AND group_id = :group_id;`
+          WHERE topic = :topic AND thing_id = :thing_id AND group_id = :group_id;`
 	dbSub := dbSubscription{
-		Subtopic: sub.Subtopic,
-		ThingID:  sub.ThingID,
-		GroupID:  sub.GroupID,
+		Topic:   sub.Topic,
+		ThingID: sub.ThingID,
+		GroupID: sub.GroupID,
 	}
 	return mr.executeDelete(ctx, q, dbSub)
 }
@@ -117,7 +117,7 @@ func (mr *mqttRepository) executeDelete(ctx context.Context, query string, dbSub
 }
 
 type dbSubscription struct {
-	Subtopic  string  `db:"subtopic"`
+	Topic     string  `db:"topic"`
 	ThingID   string  `db:"thing_id"`
 	GroupID   string  `db:"group_id"`
 	CreatedAt float64 `db:"created_at"`
@@ -125,7 +125,7 @@ type dbSubscription struct {
 
 func fromDBSub(sub dbSubscription) mqtt.Subscription {
 	return mqtt.Subscription{
-		Subtopic:  sub.Subtopic,
+		Topic:     sub.Topic,
 		ThingID:   sub.ThingID,
 		GroupID:   sub.GroupID,
 		CreatedAt: sub.CreatedAt,

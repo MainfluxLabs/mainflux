@@ -6,6 +6,7 @@ package auth
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
@@ -32,8 +33,12 @@ const (
 // Key is an alias for the shared domain type.
 type Key = domainauth.Key
 
-// Identity is an alias for the shared domain type.
 type Identity = domainauth.Identity
+
+type KeysPage struct {
+	Total uint64
+	Keys  []Key
+}
 
 // Keys specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
@@ -48,6 +53,9 @@ type Keys interface {
 	// RetrieveKey retrieves data for the Key identified by the provided
 	// ID, that is issued by the user identified by the provided key.
 	RetrieveKey(ctx context.Context, token, id string) (Key, error)
+
+	// ListAPIKeys retrieves API keys.
+	ListAPIKeys(ctx context.Context, token string, pm apiutil.PageMetadata) (KeysPage, error)
 }
 
 // KeyRepository specifies Key persistence API.
@@ -61,6 +69,9 @@ type KeyRepository interface {
 
 	// Remove removes Key with provided ID.
 	Remove(context.Context, string, string) error
+
+	// RetrieveAPIKeys retrieves all API Keys with pagination.
+	RetrieveAPIKeys(ctx context.Context, issuerID string, pm apiutil.PageMetadata) (KeysPage, error)
 }
 
 func (svc service) Issue(ctx context.Context, token string, key Key) (Key, string, error) {
@@ -95,6 +106,15 @@ func (svc service) RetrieveKey(ctx context.Context, token, id string) (Key, erro
 	}
 
 	return svc.keys.Retrieve(ctx, issuerID, id)
+}
+
+func (svc service) ListAPIKeys(ctx context.Context, token string, pm apiutil.PageMetadata) (KeysPage, error) {
+	issuerID, _, err := svc.login(token)
+	if err != nil {
+		return KeysPage{}, errors.Wrap(errRetrieve, err)
+	}
+
+	return svc.keys.RetrieveAPIKeys(ctx, issuerID, pm)
 }
 
 func (svc service) userKey(ctx context.Context, token string, key Key) (Key, string, error) {

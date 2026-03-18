@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/mail"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -40,13 +41,13 @@ var (
 
 // Config email agent configuration.
 type Config struct {
-	Host             string
-	Port             string
-	Username         string
-	Password         string
-	FromAddress      string
-	FromName         string
-	BaseTemplatePath string
+	Host         string
+	Port         string
+	Username     string
+	Password     string
+	FromAddress  string
+	FromName     string
+	TemplatesDir string
 }
 
 // Agent for mailing
@@ -67,7 +68,7 @@ func New(c *Config) (*Agent, error) {
 	d := gomail.NewDialer(c.Host, port, c.Username, c.Password)
 	a.dial = d
 
-	tmpl, err := template.ParseFiles(c.BaseTemplatePath)
+	tmpl, err := template.ParseFiles(filepath.Join(c.TemplatesDir, "base.tmpl"))
 	if err != nil {
 		return a, errors.Wrap(errParseTemplate, err)
 	}
@@ -91,7 +92,7 @@ func (a *Agent) Send(To []string, From, Subject, TemplateName string, TemplateDa
 	TemplateData["from"] = From
 	TemplateData["subject"] = Subject
 
-	subtemplatePath := fmt.Sprintf("%s.tmpl", TemplateName)
+	subtemplatePath := filepath.Join(a.conf.TemplatesDir, fmt.Sprintf("%s.tmpl", TemplateName))
 	tmpl, err := a.baseTmpl.Clone()
 	if err != nil {
 		return err

@@ -408,13 +408,13 @@ func (ms *metricsMiddleware) ViewGroupByProfile(ctx context.Context, token, prof
 	return ms.svc.ViewGroupByProfile(ctx, token, profileID)
 }
 
-func (ms *metricsMiddleware) CreateGroupMemberships(ctx context.Context, token string, gms ...things.GroupMembership) error {
+func (ms *metricsMiddleware) CreateGroupMemberships(ctx context.Context, token, redirectPath string, gms ...things.GroupMembership) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_group_memberships").Add(1)
 		ms.latency.With("method", "create_group_memberships").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.CreateGroupMemberships(ctx, token, gms...)
+	return ms.svc.CreateGroupMemberships(ctx, token, redirectPath, gms...)
 }
 
 func (ms *metricsMiddleware) CreateGroupMembershipsInternal(ctx context.Context, gms ...things.GroupMembership) error {

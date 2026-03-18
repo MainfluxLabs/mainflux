@@ -80,6 +80,12 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE subscriptions DROP COLUMN IF EXISTS client_id`,
 				},
 			},
+			{
+				Id: "mqtt_4",
+				Up: []string{
+					`ALTER TABLE subscriptions RENAME COLUMN subtopic TO topic`,
+				},
+			},
 		},
 	}
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)
