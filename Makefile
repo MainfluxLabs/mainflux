@@ -55,7 +55,7 @@ endef
 
 all: $(SERVICES)
 
-.PHONY: all $(SERVICES) dockers dockers_dev latest release logs_%
+.PHONY: all $(SERVICES) dockers dockers_dev $(DOCKERS_PUSH) latest release logs_%
 
 clean:
 	rm -rf ${BUILD_DIR}
@@ -104,6 +104,25 @@ latest: dockers
 		docker tag $(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc:$(VERSION) $(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc:latest; \
 	done
 	$(call docker_push,$(VERSION))
+
+define make_docker_push
+	$(eval svc=$(subst docker_,,$(subst _push,,$(1))))
+	docker buildx build --platform="linux/amd64,linux/arm64" \
+		--no-cache \
+		--sbom=true \
+		--provenance=mode=max \
+		--build-arg SVC=$(svc) \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg COMMIT=$(COMMIT) \
+		--build-arg TIME=$(TIME) \
+		--tag=$(MF_DOCKER_IMAGE_NAME_PREFIX)/$(svc):$(VERSION) \
+		-f docker/Dockerfile . --push
+endef
+
+DOCKERS_PUSH = $(addsuffix _push,$(DOCKERS))
+
+$(DOCKERS_PUSH):
+	$(call make_docker_push,$(@))
 
 release:
 	for svc in $(SERVICES); do \
