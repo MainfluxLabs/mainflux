@@ -39,10 +39,7 @@ services:
       - mainfluxlabs-base-net
     environment:
       MF_UI_PORT: ${MF_UI_PORT}
-      MF_UI_MQTT_WS_URL: ${MF_UI_MQTT_WS_URL}
-      MF_PROXY_AUTH: ${MF_PROXY_AUTH}
-      MF_PROXY_LOGOUT_URL: ${MF_PROXY_LOGOUT_URL}
-      MF_UI_APP_PREFIX: ${MF_UI_APP_PREFIX}
+      MF_USERS_SELF_REGISTER_ENABLED: ${MF_USERS_SELF_REGISTER_ENABLED}
 
   nginx:
     image: nginx:1.20.0-alpine
