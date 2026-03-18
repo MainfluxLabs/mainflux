@@ -22,12 +22,12 @@ import (
 )
 
 const (
-	emailKey      = "email"
-	statusKey     = "status"
-	emailTokenKey = "token"
-	stateKey      = "state"
-	providerKey   = "provider"
-	codeKey       = "code"
+	emailKey        = "email"
+	statusKey       = "status"
+	emailTokenKey   = "token"
+	stateKey        = "state"
+	providerKey     = "provider"
+	codeKey         = "code"
 	verifierKey     = "verifier"
 	inviteIDKey     = "invite_id"
 	redirectPathKey = "redirect_path"
