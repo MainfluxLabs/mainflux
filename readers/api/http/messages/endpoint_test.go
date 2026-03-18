@@ -99,7 +99,6 @@ func newAuthService() protomfx.AuthServiceClient {
 	return mocks.NewAuthService(admin.ID, usersList, nil)
 }
 
-
 func TestListSenMLMessages(t *testing.T) {
 	pubID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -746,10 +745,10 @@ func TestDeleteSenMLMessages(t *testing.T) {
 	defer ts.Close()
 
 	cases := []struct {
-		desc        string
-		url         string
-		token       string
-		status      int
+		desc   string
+		url    string
+		token  string
+		status int
 	}{
 		{
 			desc:   "delete senml messages as admin",
