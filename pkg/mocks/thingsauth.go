@@ -124,6 +124,10 @@ func (svc thingsServiceMock) CanThingCommand(_ context.Context, req *protomfx.Th
 		return &emptypb.Empty{}, errors.ErrAuthorization
 	}
 
+	if err := things.CanCommand(publisher.Type, recipient.Type); err != nil {
+		return &emptypb.Empty{}, err
+	}
+
 	return &emptypb.Empty{}, nil
 }
 

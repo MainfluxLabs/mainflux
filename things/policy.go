@@ -16,7 +16,7 @@ var thingPolicies = map[string][]string{
 	ThingTypeActuator:   {},
 }
 
-func canCommand(publisherType, recipientType string) error {
+func CanCommand(publisherType, recipientType string) error {
 	allowed, ok := thingPolicies[publisherType]
 	if !ok || !slices.Contains(allowed, recipientType) {
 		return errors.ErrAuthorization

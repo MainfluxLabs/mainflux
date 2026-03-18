@@ -663,7 +663,7 @@ func (ts *thingsService) CanThingCommand(ctx context.Context, req ThingCommandRe
 		return errors.ErrAuthorization
 	}
 
-	return canCommand(pubType, recType)
+	return CanCommand(pubType, recType)
 }
 
 func (ts *thingsService) Identify(ctx context.Context, key ThingKey) (string, error) {

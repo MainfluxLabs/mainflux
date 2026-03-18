@@ -423,10 +423,10 @@ func newHandler() session.Handler {
 	thingsClient := pkgmocks.NewThingsServiceClient(
 		nil,
 		map[string]things.Thing{
-			password:     {ID: thingID, GroupID: groupID},
-			thingID:      {ID: thingID, GroupID: groupID},
-			recipientID:  {ID: recipientID, GroupID: groupID},
-			otherThingID: {ID: otherThingID, GroupID: otherGroupID},
+			password:     {ID: thingID, GroupID: groupID, Type: things.ThingTypeController},
+			thingID:      {ID: thingID, GroupID: groupID, Type: things.ThingTypeController},
+			recipientID:  {ID: recipientID, GroupID: groupID, Type: things.ThingTypeSensor},
+			otherThingID: {ID: otherThingID, GroupID: otherGroupID, Type: things.ThingTypeSensor},
 		},
 		map[string]things.Group{
 			password: {ID: groupID},
