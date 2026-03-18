@@ -114,7 +114,7 @@ func (tc *thingCache) RemoveKey(ctx context.Context, key things.ThingKey) error 
 
 	// Remove thing key from set associating thing ID with all of its keys
 	keysSetKey := keysByThingIDKey(thingID)
-	thingKeyVal := fmt.Sprintf("%s:%s", key.Type, key.Type)
+	thingKeyVal := fmt.Sprintf("%s:%s", key.Type, key.Value)
 	if err := tc.client.SRem(ctx, keysSetKey, thingKeyVal).Err(); err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}

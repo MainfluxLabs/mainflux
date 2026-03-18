@@ -74,7 +74,7 @@ func (es eventStore) UpdateThing(ctx context.Context, token string, thing things
 }
 
 func (es eventStore) UpdateThingGroupAndProfile(ctx context.Context, token string, thing things.Thing) error {
-	if err := es.Service.UpdateThing(ctx, token, thing); err != nil {
+	if err := es.Service.UpdateThingGroupAndProfile(ctx, token, thing); err != nil {
 		return err
 	}
 
