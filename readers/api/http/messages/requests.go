@@ -18,7 +18,7 @@ type listSenMLMessagesReq struct {
 }
 
 func (req listSenMLMessagesReq) validate() error {
-	err := req.thingKey.Validate()
+	err := apiutil.ValidateThingKey(req.thingKey)
 	if req.token == "" && err != nil {
 		return apiutil.ErrBearerToken
 	}
@@ -54,7 +54,7 @@ type listJSONMessagesReq struct {
 }
 
 func (req listJSONMessagesReq) validate() error {
-	err := req.thingKey.Validate()
+	err := apiutil.ValidateThingKey(req.thingKey)
 	if req.token == "" && err != nil {
 		return apiutil.ErrBearerToken
 	}
@@ -135,7 +135,7 @@ type deleteAllSenMLMessagesReq struct {
 }
 
 func (req deleteAllSenMLMessagesReq) validate() error {
-	err := req.thingKey.Validate()
+	err := apiutil.ValidateThingKey(req.thingKey)
 	if req.token == "" && err != nil {
 		return apiutil.ErrBearerToken
 	}
@@ -150,7 +150,7 @@ type deleteAllJSONMessagesReq struct {
 }
 
 func (req deleteAllJSONMessagesReq) validate() error {
-	err := req.thingKey.Validate()
+	err := apiutil.ValidateThingKey(req.thingKey)
 	if req.token == "" && err != nil {
 		return apiutil.ErrBearerToken
 	}

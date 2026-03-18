@@ -4,11 +4,8 @@
 package things
 
 import (
-	"net/http"
-	"strings"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
@@ -42,38 +39,6 @@ const (
 type ThingKey struct {
 	Value string `json:"key"`
 	Type  string `json:"type"`
-}
-
-// Validate returns an error if the thing key is invalid.
-func (tk ThingKey) Validate() error {
-	if tk.Type != KeyTypeExternal && tk.Type != KeyTypeInternal {
-		return apiutil.ErrInvalidThingKeyType
-	}
-	if tk.Value == "" {
-		return apiutil.ErrBearerKey
-	}
-	return nil
-}
-
-// ExtractThingKeyFromHTTPHeader returns the thing key and its type from the request's HTTP 'Authorization' header.
-// If the provided key type is invalid, an empty ThingKey is returned.
-func ExtractThingKeyFromHTTPHeader(r *http.Request) ThingKey {
-	header := r.Header.Get("Authorization")
-
-	switch {
-	case strings.HasPrefix(header, apiutil.ThingKeyPrefixInternal):
-		return ThingKey{
-			Type:  KeyTypeInternal,
-			Value: strings.TrimPrefix(header, apiutil.ThingKeyPrefixInternal),
-		}
-	case strings.HasPrefix(header, apiutil.ThingKeyPrefixExternal):
-		return ThingKey{
-			Type:  KeyTypeExternal,
-			Value: strings.TrimPrefix(header, apiutil.ThingKeyPrefixExternal),
-		}
-	}
-
-	return ThingKey{}
 }
 
 // Profile represents a communication group (things that can exchange messages).

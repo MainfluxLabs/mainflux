@@ -14,6 +14,7 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/coap"
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -181,7 +182,7 @@ func parseKey(msg *mux.Message) (domainthings.ThingKey, error) {
 		}
 	}
 
-	if err := thingKey.Validate(); err != nil {
+	if err := apiutil.ValidateThingKey(thingKey); err != nil {
 		return domainthings.ThingKey{}, err
 	}
 

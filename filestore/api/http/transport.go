@@ -15,7 +15,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/filestore"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
@@ -165,7 +164,7 @@ func decodeSaveFile(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	req := saveFileReq{
-		key:      domainthings.ExtractThingKeyFromHTTPHeader(r),
+		key:      apiutil.ExtractThingKeyFromHTTPHeader(r),
 		fileInfo: fip.fileInfo,
 		file:     fip.file,
 	}
@@ -186,7 +185,7 @@ func decodeUpdateFile(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	req := updateFileReq{
-		key: domainthings.ExtractThingKeyFromHTTPHeader(r),
+		key: apiutil.ExtractThingKeyFromHTTPHeader(r),
 		fileInfo: filestore.FileInfo{
 			Name:   name,
 			Format: format,
@@ -208,7 +207,7 @@ func decodeListFiles(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	req := listFilesReq{
-		key: domainthings.ExtractThingKeyFromHTTPHeader(r),
+		key: apiutil.ExtractThingKeyFromHTTPHeader(r),
 		info: info{
 			name:   lfp.name,
 			format: lfp.format,
@@ -229,7 +228,7 @@ func decodeFile(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	req := fileReq{
-		key: domainthings.ExtractThingKeyFromHTTPHeader(r),
+		key: apiutil.ExtractThingKeyFromHTTPHeader(r),
 		info: info{
 			name:   name,
 			format: format,
@@ -339,7 +338,7 @@ func decodeGroupFileByKey(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	req := groupFileByKeyReq{
-		key: domainthings.ExtractThingKeyFromHTTPHeader(r),
+		key: apiutil.ExtractThingKeyFromHTTPHeader(r),
 		info: info{
 			name:   name,
 			format: format,

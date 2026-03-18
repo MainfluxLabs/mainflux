@@ -15,7 +15,7 @@ type publishReq struct {
 }
 
 func (req publishReq) validate() error {
-	if err := req.ThingKey.Validate(); err != nil {
+	if err := apiutil.ValidateThingKey(req.ThingKey); err != nil {
 		return err
 	}
 

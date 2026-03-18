@@ -108,7 +108,7 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 	case ok:
 		thingKey = domainthings.ThingKey{Type: domainthings.KeyTypeInternal, Value: pass}
 	case !ok:
-		thingKey = domainthings.ExtractThingKeyFromHTTPHeader(r)
+		thingKey = apiutil.ExtractThingKeyFromHTTPHeader(r)
 	}
 
 	payload, err := readPayload(r)

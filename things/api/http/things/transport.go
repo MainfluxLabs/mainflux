@@ -12,7 +12,6 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -221,7 +220,7 @@ func decodeUpdateThingGroupAndProfile(_ context.Context, r *http.Request) (any, 
 
 func decodeViewMetadata(_ context.Context, r *http.Request) (any, error) {
 	req := viewMetadataReq{
-		ThingKey: domainthings.ExtractThingKeyFromHTTPHeader(r),
+		ThingKey: apiutil.ExtractThingKeyFromHTTPHeader(r),
 	}
 
 	return req, nil
