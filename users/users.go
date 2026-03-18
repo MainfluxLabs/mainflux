@@ -41,10 +41,11 @@ type OAuthLoginData struct {
 }
 
 type OAuthCallbackData struct {
-	Provider string
-	Code     string
-	Verifier string
-	InviteID string
+	Provider     string
+	Code         string
+	Verifier     string
+	InviteID     string
+	RedirectPath string
 }
 
 type Identity struct {

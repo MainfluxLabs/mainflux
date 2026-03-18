@@ -222,10 +222,11 @@ func oauthLoginEndpoint(svc users.Service) endpoint.Endpoint {
 		}
 
 		return oauthLoginRes{
-			State:       data.State,
-			Verifier:    data.Verifier,
-			InviteID:    req.inviteID,
-			RedirectURL: data.RedirectURL,
+			State:        data.State,
+			Verifier:     data.Verifier,
+			InviteID:     req.inviteID,
+			RedirectPath: req.redirectPath,
+			RedirectURL:  data.RedirectURL,
 		}, nil
 	}
 }
@@ -238,10 +239,11 @@ func oauthCallbackEndpoint(svc users.Service) endpoint.Endpoint {
 		}
 
 		redirectURL, err := svc.OAuthCallback(ctx, users.OAuthCallbackData{
-			Provider: req.provider,
-			Code:     req.code,
-			Verifier: req.verifier,
-			InviteID: req.inviteID,
+			Provider:     req.provider,
+			Code:         req.code,
+			Verifier:     req.verifier,
+			InviteID:     req.inviteID,
+			RedirectPath: req.redirectPath,
 		})
 		if err != nil {
 			return nil, err

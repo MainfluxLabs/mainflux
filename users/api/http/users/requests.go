@@ -45,8 +45,9 @@ func (req selfRegisterUserReq) validate() error {
 }
 
 type oauthLoginReq struct {
-	provider string
-	inviteID string
+	provider     string
+	inviteID     string
+	redirectPath string
 }
 
 func (req oauthLoginReq) validate() error {
@@ -63,6 +64,7 @@ type oauthCallbackReq struct {
 	originalState string
 	verifier      string
 	inviteID      string
+	redirectPath  string
 }
 
 func (req oauthCallbackReq) validate() error {

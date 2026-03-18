@@ -502,7 +502,7 @@ func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackDat
 		return "", err
 	}
 
-	user, err := svc.handleIdentity(ctx, data.Provider, email, providerUserID, data.InviteID)
+	user, err := svc.handleIdentity(ctx, data.Provider, email, providerUserID, data.InviteID, data.RedirectPath)
 	if err != nil {
 		return "", err
 	}
@@ -604,7 +604,7 @@ func (svc usersService) fetchGitHubUser(ctx context.Context, code, verifier stri
 	return email, providerUserID, nil
 }
 
-func (svc usersService) handleIdentity(ctx context.Context, provider, email, providerUserID, inviteID string) (User, error) {
+func (svc usersService) handleIdentity(ctx context.Context, provider, email, providerUserID, inviteID, redirectPath string) (User, error) {
 	identity, err := svc.identity.Retrieve(ctx, provider, providerUserID)
 	if err != nil && !errors.Contains(err, dbutil.ErrNotFound) {
 		return User{}, err
@@ -659,6 +659,7 @@ func (svc usersService) handleIdentity(ctx context.Context, provider, email, pro
 					req := &protomfx.ActivateOrgInviteReq{
 						PlatformInviteID: inviteID,
 						UserID:           user.ID,
+						RedirectPath:     redirectPath,
 					}
 					if _, err := svc.auth.ActivateOrgInvite(ctx, req); err != nil {
 						return User{}, err
