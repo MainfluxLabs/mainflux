@@ -29,6 +29,7 @@ const (
 	providerKey   = "provider"
 	codeKey       = "code"
 	verifierKey   = "verifier"
+	inviteIDKey   = "invite_id"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -323,6 +324,7 @@ func decodeSelfRegisterUser(_ context.Context, r *http.Request) (any, error) {
 func decodeOAuthLogin(_ context.Context, r *http.Request) (any, error) {
 	req := oauthLoginReq{
 		provider: bone.GetValue(r, providerKey),
+		inviteID: r.URL.Query().Get(inviteIDKey),
 	}
 
 	return req, nil
@@ -339,12 +341,18 @@ func decodeOAuthCallback(_ context.Context, r *http.Request) (any, error) {
 		return nil, apiutil.ErrInvalidState
 	}
 
+	var inviteID string
+	if inviteCookie, err := r.Cookie(inviteIDKey); err == nil {
+		inviteID = inviteCookie.Value
+	}
+
 	req := oauthCallbackReq{
 		provider:      bone.GetValue(r, providerKey),
 		code:          r.URL.Query().Get(codeKey),
 		state:         r.URL.Query().Get(stateKey),
 		originalState: stateCookie.Value,
 		verifier:      verifierCookie.Value,
+		inviteID:      inviteID,
 	}
 
 	return req, nil
@@ -451,26 +459,32 @@ func encodeOAuthLoginResponse(_ context.Context, w http.ResponseWriter, response
 		SameSite: http.SameSiteLaxMode,
 	})
 
+	if res.InviteID != "" {
+		http.SetCookie(w, &http.Cookie{
+			Name:     inviteIDKey,
+			Value:    res.InviteID,
+			Path:     "/users/oauth/",
+			MaxAge:   300,
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
+
 	return json.NewEncoder(w).Encode(redirectURLRes{RedirectURL: res.RedirectURL})
 }
 
 func encodeOAuthCallbackResponse(_ context.Context, w http.ResponseWriter, response any) error {
-	http.SetCookie(w, &http.Cookie{
-		Name:     stateKey,
-		Path:     "/users/oauth/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	})
-	http.SetCookie(w, &http.Cookie{
-		Name:     verifierKey,
-		Path:     "/users/oauth/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	})
+	for _, name := range []string{stateKey, verifierKey, inviteIDKey} {
+		http.SetCookie(w, &http.Cookie{
+			Name:     name,
+			Path:     "/users/oauth/",
+			MaxAge:   -1,
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
 
 	res := response.(redirectURLRes)
 	w.Header().Set("Location", res.RedirectURL)
@@ -479,23 +493,16 @@ func encodeOAuthCallbackResponse(_ context.Context, w http.ResponseWriter, respo
 }
 
 func encodeOAuthCallbackError(ctx context.Context, err error, w http.ResponseWriter) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     stateKey,
-		Path:     "/users/oauth/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	})
-	http.SetCookie(w, &http.Cookie{
-		Name:     verifierKey,
-		Path:     "/users/oauth/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	})
-
+	for _, name := range []string{stateKey, verifierKey, inviteIDKey} {
+		http.SetCookie(w, &http.Cookie{
+			Name:     name,
+			Path:     "/users/oauth/",
+			MaxAge:   -1,
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
 	encodeError(ctx, err, w)
 }
 

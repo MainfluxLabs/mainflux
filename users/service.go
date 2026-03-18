@@ -466,10 +466,6 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 }
 
 func (svc usersService) OAuthLogin(provider string) (data OAuthLoginData, err error) {
-	if !svc.selfRegisterEnabled {
-		return OAuthLoginData{}, ErrSelfRegisterDisabled
-	}
-
 	var oauthCfg oauth2.Config
 	switch provider {
 	case GoogleProvider:
@@ -490,10 +486,6 @@ func (svc usersService) OAuthLogin(provider string) (data OAuthLoginData, err er
 }
 
 func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackData) (string, error) {
-	if !svc.selfRegisterEnabled {
-		return "", ErrSelfRegisterDisabled
-	}
-
 	var email, providerUserID string
 	var err error
 
@@ -510,7 +502,7 @@ func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackDat
 		return "", err
 	}
 
-	user, err := svc.handleIdentity(ctx, data.Provider, email, providerUserID)
+	user, err := svc.handleIdentity(ctx, data.Provider, email, providerUserID, data.InviteID)
 	if err != nil {
 		return "", err
 	}
@@ -612,7 +604,7 @@ func (svc usersService) fetchGitHubUser(ctx context.Context, code, verifier stri
 	return email, providerUserID, nil
 }
 
-func (svc usersService) handleIdentity(ctx context.Context, provider, email, providerUserID string) (User, error) {
+func (svc usersService) handleIdentity(ctx context.Context, provider, email, providerUserID, inviteID string) (User, error) {
 	identity, err := svc.identity.Retrieve(ctx, provider, providerUserID)
 	if err != nil && !errors.Contains(err, dbutil.ErrNotFound) {
 		return User{}, err
@@ -640,6 +632,16 @@ func (svc usersService) handleIdentity(ctx context.Context, provider, email, pro
 		user, err = svc.users.RetrieveByEmail(ctx, email)
 		if err != nil {
 			if errors.Contains(err, dbutil.ErrNotFound) {
+				if !svc.selfRegisterEnabled && inviteID == "" {
+					return User{}, ErrSelfRegisterDisabled
+				}
+
+				if inviteID != "" {
+					if err := svc.ValidatePlatformInvite(ctx, inviteID, email); err != nil {
+						return User{}, err
+					}
+				}
+
 				uid, err := svc.idProvider.ID()
 				if err != nil {
 					return User{}, err
@@ -651,6 +653,16 @@ func (svc usersService) handleIdentity(ctx context.Context, provider, email, pro
 				}
 				if _, err := svc.users.Save(ctx, user); err != nil {
 					return User{}, err
+				}
+
+				if inviteID != "" {
+					req := &protomfx.ActivateOrgInviteReq{
+						PlatformInviteID: inviteID,
+						UserID:           user.ID,
+					}
+					if _, err := svc.auth.ActivateOrgInvite(ctx, req); err != nil {
+						return User{}, err
+					}
 				}
 			} else {
 				return User{}, err

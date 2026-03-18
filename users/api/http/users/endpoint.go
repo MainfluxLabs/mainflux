@@ -224,6 +224,7 @@ func oauthLoginEndpoint(svc users.Service) endpoint.Endpoint {
 		return oauthLoginRes{
 			State:       data.State,
 			Verifier:    data.Verifier,
+			InviteID:    req.inviteID,
 			RedirectURL: data.RedirectURL,
 		}, nil
 	}
@@ -240,6 +241,7 @@ func oauthCallbackEndpoint(svc users.Service) endpoint.Endpoint {
 			Provider: req.provider,
 			Code:     req.code,
 			Verifier: req.verifier,
+			InviteID: req.inviteID,
 		})
 		if err != nil {
 			return nil, err

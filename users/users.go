@@ -44,6 +44,7 @@ type OAuthCallbackData struct {
 	Provider string
 	Code     string
 	Verifier string
+	InviteID string
 }
 
 type Identity struct {
