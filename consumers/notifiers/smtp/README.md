@@ -39,7 +39,6 @@ default values.
 | MF_SMTP_NOTIFIER_EVENT_CONSUMER   | Event store consumer name                                                                          | smtp-notifier            |
 | MF_THINGS_AUTH_GRPC_URL           | Things auth service gRPC URL                                                                       | localhost:8183           |
 | MF_THINGS_AUTH_GRPC_TIMEOUT       | Things auth service gRPC request timeout in seconds                                                | 1s                       |
-
 ## Usage
 
 Starting the service will begin consuming messages from the broker. When a message arrives for a group that has notifiers with email contacts, the service sends an email to each contact via the configured SMTP server.
