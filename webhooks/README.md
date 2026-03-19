@@ -1,6 +1,6 @@
 # Webhooks Service
 
-The Webhooks service forwards incoming device messages to external HTTP endpoints. When a thing publishes a message and the `webhook` flag in its profile config is set to `true`, the service POSTs the message payload to every webhook registered for that thing.
+The Webhooks service forwards incoming device messages to external HTTP endpoints. When a thing publishes a message, the service POSTs the message payload to every webhook registered for that thing.
 
 ## Webhooks
 

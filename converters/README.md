@@ -74,12 +74,12 @@ Requests must be authenticated with the thing's internal key using the `Authoriz
 
 ```bash
 # Convert and publish a CSV file as SenML messages
-curl -X POST http://localhost:8180/csv/senml \
+curl -X POST http://localhost/converters/csv/senml \
   -H "Authorization: Thing <thing_key>" \
   -F "file=@/path/to/data.csv"
 
 # Convert and publish a CSV file as JSON messages
-curl -X POST http://localhost:8180/csv/json \
+curl -X POST http://localhost/converters/csv/json \
   -H "Authorization: Thing <thing_key>" \
   -F "file=@/path/to/data.csv"
 ```
