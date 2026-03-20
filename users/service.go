@@ -18,7 +18,6 @@ import (
 	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"golang.org/x/oauth2"
 )
@@ -174,7 +173,7 @@ type usersService struct {
 	selfRegisterEnabled bool
 	hasher              Hasher
 	email               Emailer
-	auth                auth.Client
+	auth                domainauth.Client
 	idProvider          uuid.IDProvider
 	googleOAuth         oauth2.Config
 	githubOAuth         oauth2.Config
@@ -192,7 +191,7 @@ type Config struct {
 }
 
 // New instantiates the users service implementation
-func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, identity IdentityRepository, hasher Hasher, auth auth.Client, e Emailer, idp uuid.IDProvider, c Config) Service {
+func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, identity IdentityRepository, hasher Hasher, auth domainauth.Client, e Emailer, idp uuid.IDProvider, c Config) Service {
 	return &usersService{
 		users:               users,
 		emailVerifications:  verifications,

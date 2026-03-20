@@ -11,9 +11,9 @@ import (
 	"os"
 	"path/filepath"
 
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 )
 
 const (

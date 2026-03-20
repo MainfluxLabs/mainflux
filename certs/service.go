@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/certs/pki"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/auth"
 )
 
 var (
@@ -74,7 +74,7 @@ type Config struct {
 }
 
 type certsService struct {
-	auth      auth.Client
+	auth      domainauth.Client
 	things    protomfx.ThingsServiceClient
 	certsRepo Repository
 	conf      Config
@@ -82,7 +82,7 @@ type certsService struct {
 }
 
 // New returns new Certs service.
-func New(auth auth.Client, things protomfx.ThingsServiceClient, certs Repository, config Config, pkiAgent pki.Agent) Service {
+func New(auth domainauth.Client, things protomfx.ThingsServiceClient, certs Repository, config Config, pkiAgent pki.Agent) Service {
 	return &certsService{
 		certsRepo: certs,
 		things:    things,

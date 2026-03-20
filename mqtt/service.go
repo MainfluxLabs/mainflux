@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/mqtt/redis/cache"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
-	"github.com/MainfluxLabs/mainflux/auth"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
@@ -30,7 +30,7 @@ type Service interface {
 }
 
 type mqttService struct {
-	auth          auth.Client
+	auth          domainauth.Client
 	things        protomfx.ThingsServiceClient
 	subscriptions Repository
 	cache         cache.ConnectionCache
@@ -38,7 +38,7 @@ type mqttService struct {
 }
 
 // NewMqttService instantiates the MQTT service implementation.
-func NewMqttService(auth auth.Client, things protomfx.ThingsServiceClient, subscriptions Repository, cache cache.ConnectionCache, idp uuid.IDProvider) Service {
+func NewMqttService(auth domainauth.Client, things protomfx.ThingsServiceClient, subscriptions Repository, cache cache.ConnectionCache, idp uuid.IDProvider) Service {
 	return &mqttService{
 		auth:          auth,
 		things:        things,

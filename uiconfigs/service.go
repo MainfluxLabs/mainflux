@@ -6,14 +6,13 @@ package uiconfigs
 import (
 	"context"
 
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
-	"github.com/MainfluxLabs/mainflux/auth"
 )
 
 type Backup struct {
@@ -68,14 +67,14 @@ type configService struct {
 	orgConfigs   OrgConfigRepository
 	thingConfigs ThingConfigRepository
 	things       protomfx.ThingsServiceClient
-	auth         auth.Client
+	auth         domainauth.Client
 	idProvider   uuid.IDProvider
 	logger       logger.Logger
 }
 
 var _ Service = (*configService)(nil)
 
-func New(orgConfigs OrgConfigRepository, thingConfigs ThingConfigRepository, things protomfx.ThingsServiceClient, auth auth.Client, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(orgConfigs OrgConfigRepository, thingConfigs ThingConfigRepository, things protomfx.ThingsServiceClient, auth domainauth.Client, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &configService{
 		orgConfigs:   orgConfigs,
 		thingConfigs: thingConfigs,

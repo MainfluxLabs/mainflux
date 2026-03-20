@@ -6,14 +6,13 @@ package mocks
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/auth"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
 )
 
-var _ auth.Client = (*authServiceMock)(nil)
+var _ domainauth.Client = (*authServiceMock)(nil)
 
 type authServiceMock struct {
 	roles        map[string][]string
@@ -22,7 +21,7 @@ type authServiceMock struct {
 }
 
 // NewAuthService creates mock of users service.
-func NewAuthService(adminID string, userList []users.User, orgList []domainauth.Org) auth.Client {
+func NewAuthService(adminID string, userList []users.User, orgList []domainauth.Org) domainauth.Client {
 	usersByEmail := make(map[string]users.User)
 	roles := map[string][]string{domainauth.RootSub: {adminID}}
 	orgs := make(map[string]domainauth.Org)

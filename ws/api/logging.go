@@ -11,8 +11,8 @@ import (
 	"time"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/ws"
 )
 

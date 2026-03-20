@@ -10,7 +10,6 @@ import (
 	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/auth"
 )
 
 const rootSubject = "root"
@@ -55,13 +54,13 @@ type Service interface {
 }
 
 type readersService struct {
-	authc  auth.Client
+	authc  domainauth.Client
 	thingc protomfx.ThingsServiceClient
 	json   JSONMessageRepository
 	senml  SenMLMessageRepository
 }
 
-func New(auth auth.Client, things protomfx.ThingsServiceClient, json JSONMessageRepository, senml SenMLMessageRepository) Service {
+func New(auth domainauth.Client, things protomfx.ThingsServiceClient, json JSONMessageRepository, senml SenMLMessageRepository) Service {
 	return &readersService{
 		authc:  auth,
 		thingc: things,

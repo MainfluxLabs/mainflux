@@ -13,15 +13,14 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	clientshttp "github.com/MainfluxLabs/mainflux/pkg/clients/http"
 	"github.com/MainfluxLabs/mainflux/pkg/cron"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
-	"github.com/MainfluxLabs/mainflux/auth"
 	"golang.org/x/time/rate"
 )
 
@@ -73,7 +72,7 @@ type Service interface {
 
 type downlinksService struct {
 	things     protomfx.ThingsServiceClient
-	auth       auth.Client
+	auth       domainauth.Client
 	downlinks  DownlinkRepository
 	idProvider uuid.IDProvider
 	publisher  messaging.Publisher
@@ -103,7 +102,7 @@ var (
 
 var _ Service = (*downlinksService)(nil)
 
-func New(things protomfx.ThingsServiceClient, auth auth.Client, pub messaging.Publisher, downlinks DownlinkRepository, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(things protomfx.ThingsServiceClient, auth domainauth.Client, pub messaging.Publisher, downlinks DownlinkRepository, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &downlinksService{
 		things:     things,
 		auth:       auth,

@@ -3,12 +3,11 @@ package mocks
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
-var _ auth.Client = (*authServiceMock)(nil)
+var _ domainauth.Client = (*authServiceMock)(nil)
 
 type SubjectSet struct {
 	Object   string
@@ -21,7 +20,7 @@ type authServiceMock struct {
 }
 
 // NewAuth creates mock of auth service.
-func NewAuth(users map[string]string, authz map[string][]SubjectSet) auth.Client {
+func NewAuth(users map[string]string, authz map[string][]SubjectSet) domainauth.Client {
 	return &authServiceMock{users, authz}
 }
 

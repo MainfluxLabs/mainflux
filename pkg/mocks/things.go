@@ -10,8 +10,8 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/things"
-	"github.com/MainfluxLabs/mainflux/auth"
 )
 
 var _ things.Service = (*mainfluxThings)(nil)
@@ -21,12 +21,12 @@ type mainfluxThings struct {
 	counter  uint64
 	things   map[string]things.Thing
 	profiles map[string]things.Profile
-	auth     auth.Client
+	auth     domainauth.Client
 }
 
 // NewThingsService returns Mainflux Things service mock.
 // Only methods used by SDK are mocked.
-func NewThingsService(things map[string]things.Thing, profiles map[string]things.Profile, auth auth.Client) things.Service {
+func NewThingsService(things map[string]things.Thing, profiles map[string]things.Profile, auth domainauth.Client) things.Service {
 	return &mainfluxThings{
 		things:   things,
 		profiles: profiles,

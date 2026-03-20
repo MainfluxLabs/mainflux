@@ -6,10 +6,9 @@ package standalone
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/auth"
 	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
-	
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 var errUnsupported = errors.New("not supported in standalone mode")

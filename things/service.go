@@ -13,7 +13,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	"github.com/MainfluxLabs/mainflux/auth"
 )
 
 // Role constants are aliases for the shared domain types.
@@ -169,7 +168,7 @@ type (
 var _ Service = (*thingsService)(nil)
 
 type thingsService struct {
-	auth             auth.Client
+	auth             domainauth.Client
 	users            protomfx.UsersServiceClient
 	things           ThingRepository
 	profiles         ProfileRepository
@@ -183,7 +182,7 @@ type thingsService struct {
 }
 
 // New instantiates the things service implementation.
-func New(auth auth.Client, users protomfx.UsersServiceClient, things ThingRepository, profiles ProfileRepository,
+func New(auth domainauth.Client, users protomfx.UsersServiceClient, things ThingRepository, profiles ProfileRepository,
 	groups GroupRepository, groupMemberships GroupMembershipsRepository,
 	pcache ProfileCache, tcache ThingCache, gcache GroupCache, idp uuid.IDProvider,
 	emailer Emailer) Service {

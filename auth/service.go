@@ -54,6 +54,10 @@ type Authn interface {
 // AuthzReq is an alias for the shared domain type.
 type AuthzReq = domainauth.AuthzReq
 
+// Client is a compatibility alias for the domain auth Client interface.
+// Prefer importing the interface from "github.com/MainfluxLabs/mainflux/pkg/domain/auth".
+type Client = domainauth.Client
+
 // Authz represents a authorization service. It exposes
 // functionalities through `auth` to perform authorization.
 type Authz interface {
