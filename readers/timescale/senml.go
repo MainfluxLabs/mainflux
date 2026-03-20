@@ -22,13 +22,15 @@ const senmlTable = "senml"
 var _ readers.SenMLMessageRepository = (*senmlRepository)(nil)
 
 type senmlRepository struct {
-	db *sqlx.DB
+	db         dbutil.Database
+	aggregator *aggregationService
 }
 
 // NewSenMLRepository returns new TimescaleDB SenML repository.
-func NewSenMLRepository(db *sqlx.DB) readers.SenMLMessageRepository {
+func NewSenMLRepository(db dbutil.Database) readers.SenMLMessageRepository {
 	return &senmlRepository{
-		db: db,
+		db:         db,
+		aggregator: newAggregationService(db),
 	}
 }
 
@@ -60,7 +62,7 @@ func (sr *senmlRepository) Remove(ctx context.Context, rpm readers.SenMLPageMeta
 	}
 
 	if _, err := sr.db.NamedExecContext(ctx, q, params); err != nil {
-		return sr.handlePgError(err, errors.ErrDeleteMessages)
+		return handlePgError(err, errors.ErrDeleteMessages)
 	}
 
 	return nil
@@ -90,7 +92,7 @@ func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Mess
 			if rbErr := tx.Rollback(); rbErr != nil {
 				return errors.Wrap(errors.ErrSaveMessages, err)
 			}
-			return sr.handlePgError(err, errors.ErrSaveMessages)
+			return handlePgError(err, errors.ErrSaveMessages)
 		}
 	}
 
@@ -111,6 +113,17 @@ func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLPageMet
 	}
 
 	params := sr.buildQueryParams(rpm)
+
+	if rpm.AggType != "" && rpm.AggInterval != "" {
+		messages, total, err := sr.aggregator.readAggregatedSenMLMessages(ctx, rpm)
+		if err != nil {
+			return page, err
+		}
+		page.Messages = messages
+		page.Total = total
+
+		return page, nil
+	}
 
 	messages, err := sr.readMessages(ctx, rpm, params)
 	if err != nil {
@@ -134,7 +147,7 @@ func (sr *senmlRepository) readMessages(ctx context.Context, rpm readers.SenMLPa
 	dq := dbutil.GetDirQuery(rpm.Dir)
 	condition := sr.fmtCondition(rpm)
 
-	q := fmt.Sprintf(`SELECT * FROM %s %s ORDER BY time %s %s;`, senmlTable, condition, dq, olq)
+	q := fmt.Sprintf(`SELECT subtopic, publisher, protocol, name, unit, value, string_value, bool_value, data_value, sum, time, update_time FROM %s %s ORDER BY time %s %s;`, senmlTable, condition, dq, olq)
 	rows, err := sr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
@@ -155,11 +168,11 @@ func (sr *senmlRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, err
 	var messages []readers.Message
 
 	for rows.Next() {
-		msg := senmlMessage{Message: senml.Message{}}
+		msg := senml.Message{}
 		if err := rows.StructScan(&msg); err != nil {
 			return nil, errors.Wrap(readers.ErrReadMessages, err)
 		}
-		messages = append(messages, msg.Message)
+		messages = append(messages, msg)
 	}
 
 	return messages, nil
@@ -225,7 +238,7 @@ func (sr *senmlRepository) buildQueryParams(rpm readers.SenMLPageMetadata) map[s
 	}
 }
 
-func (sr *senmlRepository) handlePgError(err error, wrapErr error) error {
+func handlePgError(err error, wrapErr error) error {
 	pgErr, ok := err.(*pgconn.PgError)
 	if ok {
 		switch pgErr.Code {
@@ -238,9 +251,4 @@ func (sr *senmlRepository) handlePgError(err error, wrapErr error) error {
 		}
 	}
 	return errors.Wrap(wrapErr, err)
-}
-
-type senmlMessage struct {
-	ID string `db:"id"`
-	senml.Message
 }
