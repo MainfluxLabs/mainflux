@@ -37,6 +37,9 @@ type Repository interface {
 	// RetrieveBySerial retrieves a certificate for a given serial
 	RetrieveBySerial(ctx context.Context, serial string) (Cert, error)
 
+	// RetrieveExpiring retrieves certificates that expire within the given duration.
+	RetrieveExpiring(ctx context.Context, expiresWithin time.Duration) ([]Cert, error)
+
 	// RetrieveRevokedCerts retrieves all revoked certificates
 	RetrieveRevokedCerts(ctx context.Context) ([]RevokedCert, error)
 }
