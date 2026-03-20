@@ -35,6 +35,13 @@ func MakeHandler(svc certs.Service, tracer opentracing.Tracer, pkiAgent pki.Agen
 		opts...,
 	))
 
+	r.Post("/certs/rotate/:serial", kithttp.NewServer(
+		kitot.TraceServer(tracer, "rotate_cert")(rotateCertEndpoint(svc)),
+		decodeRotateCert,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Get("/certs/:serial", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_cert")(viewCertEndpoint(svc)),
 		decodeViewCert,
@@ -123,6 +130,23 @@ func decodeCerts(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	req := addCertsReq{token: apiutil.ExtractBearerToken(r)}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+func decodeRotateCert(_ context.Context, r *http.Request) (any, error) {
+	if r.Header.Get("Content-Type") != apiutil.ContentTypeJSON {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := rotateCertsReq{
+		token:  apiutil.ExtractBearerToken(r),
+		serial: bone.GetValue(r, apiutil.SerialKey),
+	}
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, err
 	}
