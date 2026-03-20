@@ -329,6 +329,19 @@ func (lm *loggingMiddleware) CanThingAccessGroup(ctx context.Context, req things
 	return lm.svc.CanThingAccessGroup(ctx, req)
 }
 
+func (lm *loggingMiddleware) CanThingCommand(ctx context.Context, req things.ThingCommandReq) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method can_thing_command for thing id %s took %s to complete", req.PublisherID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.CanThingCommand(ctx, req)
+}
+
 func (lm *loggingMiddleware) Identify(ctx context.Context, key things.ThingKey) (id string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method identify for thing id %s took %s to complete", id, time.Since(begin))

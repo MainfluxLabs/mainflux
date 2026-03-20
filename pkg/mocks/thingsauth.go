@@ -109,6 +109,28 @@ func (svc thingsServiceMock) CanThingAccessGroup(_ context.Context, req *protomf
 	return &emptypb.Empty{}, errors.ErrAuthorization
 }
 
+func (svc thingsServiceMock) CanThingCommand(_ context.Context, req *protomfx.ThingCommandReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	publisher, ok := svc.things[req.GetPublisherID()]
+	if !ok {
+		return &emptypb.Empty{}, errors.ErrAuthentication
+	}
+
+	recipient, ok := svc.things[req.GetRecipientID()]
+	if !ok {
+		return &emptypb.Empty{}, errors.ErrAuthentication
+	}
+
+	if publisher.GroupID != recipient.GroupID {
+		return &emptypb.Empty{}, errors.ErrAuthorization
+	}
+
+	if err := things.CanCommand(publisher.Type, recipient.Type); err != nil {
+		return &emptypb.Empty{}, err
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
 func (svc thingsServiceMock) Identify(_ context.Context, key *protomfx.ThingKey, _ ...grpc.CallOption) (*protomfx.ThingID, error) {
 	if th, ok := svc.things[key.GetValue()]; ok {
 		return &protomfx.ThingID{Value: th.ID}, nil

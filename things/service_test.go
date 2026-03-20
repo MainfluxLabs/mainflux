@@ -3693,6 +3693,87 @@ func TestGetGroupIDsByOrg(t *testing.T) {
 	}
 }
 
+func TestCanThingCommand(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	prID := prs[0].ID
+
+	controller := thing
+	controller.Type = things.ThingTypeController
+	actuator := thing
+	actuator.Type = things.ThingTypeActuator
+	actuator.Name = "actuator-1"
+
+	sensor := thing
+	sensor.Type = things.ThingTypeSensor
+	sensor.Name = "sensor-1"
+
+	ths, err := svc.CreateThings(context.Background(), token, prID, controller, actuator, sensor)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	ctrl := ths[0]
+	act := ths[1]
+	sen := ths[2]
+
+	cases := []struct {
+		desc string
+		req  things.ThingCommandReq
+		err  error
+	}{
+		{
+			desc: "controller sends command to actuator in same group",
+			req: things.ThingCommandReq{
+				PublisherID: ctrl.ID,
+				RecipientID: act.ID,
+			},
+			err: nil,
+		},
+		{
+			desc: "controller sends command to sensor in same group",
+			req: things.ThingCommandReq{
+				PublisherID: ctrl.ID,
+				RecipientID: sen.ID,
+			},
+			err: nil,
+		},
+		{
+			desc: "actuator tries to send command to controller",
+			req: things.ThingCommandReq{
+				PublisherID: act.ID,
+				RecipientID: ctrl.ID,
+			},
+			err: errors.ErrAuthorization,
+		},
+		{
+			desc: "sensor tries to send command to actuator",
+			req: things.ThingCommandReq{
+				PublisherID: sen.ID,
+				RecipientID: act.ID,
+			},
+			err: errors.ErrAuthorization,
+		},
+		{
+			desc: "publisher sends command to itself",
+			req: things.ThingCommandReq{
+				PublisherID: ctrl.ID,
+				RecipientID: ctrl.ID,
+			},
+			err: errors.ErrAuthorization,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.CanThingCommand(context.Background(), tc.req)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
 func TestGetThingIDsByProfile(t *testing.T) {
 	svc := newService()
 

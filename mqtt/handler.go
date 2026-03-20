@@ -52,6 +52,7 @@ var (
 	ErrMissingTopicPub               = errors.New("failed to publish due to missing topic")
 	ErrMissingTopicSub               = errors.New("failed to subscribe due to missing topic")
 	ErrUnauthorizedSubscriptionTopic = errors.New("unauthorized subscription topic")
+	ErrUnauthorizedPublishTopic      = errors.New("unauthorized publish topic")
 )
 
 // Event implements events.Event interface
@@ -104,10 +105,72 @@ func (h *handler) AuthPublish(c *session.Client, topic *string, _ *[]byte) error
 		return ErrMissingTopicPub
 	}
 
-	if _, err := h.identify(c); err != nil {
+	publisherID, err := h.identify(c)
+	if err != nil {
 		return err
 	}
 
+	return h.authorizePublish(publisherID, *topic)
+}
+
+func (h *handler) authorizePublish(publisherID, topic string) error {
+	// Reject leading-slash variants of the custom topic patterns. MQTT treats
+	// "/things/x/commands" and "things/x/commands" as distinct topics; the
+	// platform only publishes to the slash-free form. Allowing them would be a
+	// security bypass: after splitting, prefix parses as "" and no switch case
+	// fires, silently skipping the capability check.
+	if strings.HasPrefix(topic, "/"+topicPrefixThings+"/") || strings.HasPrefix(topic, "/"+topicPrefixGroups+"/") {
+		return errors.Wrap(ErrUnauthorizedPublishTopic, fmt.Errorf("%s (leading slash not allowed)", topic))
+	}
+
+	parts := strings.Split(topic, "/")
+
+	// Topics shorter than "prefix/id/suffix" have no restricted pattern to check.
+	if len(parts) < 3 {
+		return nil
+	}
+
+	prefix, id, suffix := parts[0], parts[1], parts[2]
+	if id == "" {
+		return nil
+	}
+
+	// Messages are unrestricted by publisher type — any authenticated thing may
+	// publish to another thing's messages topic. The subscribe-side check in
+	// AuthSubscribe already ensures only the owner of that topic can receive them,
+	// so adding a publish check would be a redundant gRPC round-trip with no
+	// real security gain. Commands carry authority and are therefore restricted:
+	//   things/{recipientID}/commands  → publisher must have command capability on recipient
+	//   groups/{groupID}/commands      → publisher must belong to the target group
+	var err error
+	switch {
+	case prefix == topicPrefixThings && suffix == topicSuffixCommands:
+		err = h.checkThingCapability(publisherID, id)
+	case prefix == topicPrefixGroups && suffix == topicSuffixCommands:
+		err = h.checkGroupMembership(publisherID, id)
+	}
+
+	if err != nil {
+		return errors.Wrap(ErrUnauthorizedPublishTopic, fmt.Errorf("%s for publisher %s", topic, publisherID))
+	}
+	return nil
+}
+
+func (h *handler) checkThingCapability(publisherID, recipientID string) error {
+	if _, err := h.things.CanThingCommand(context.Background(), &protomfx.ThingCommandReq{
+		PublisherID: publisherID,
+		RecipientID: recipientID,
+	}); err != nil {
+		return errors.ErrAuthorization
+	}
+	return nil
+}
+
+func (h *handler) checkGroupMembership(publisherID, groupID string) error {
+	grID, err := h.things.GetGroupIDByThing(context.Background(), &protomfx.ThingID{Value: publisherID})
+	if err != nil || grID.GetValue() != groupID {
+		return errors.ErrAuthorization
+	}
 	return nil
 }
 
@@ -302,16 +365,18 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 // validateCustomTopic enforces authorization only for topics that match
 // custom patterns (things/thingID/commands, groups/groupID/commands, things/thingID/messages).
 func validateCustomTopic(topic, thingID, groupID string) error {
-	trimmed := strings.Trim(topic, "/")
-	if trimmed == "" {
+	// Reject leading-slash variants of the custom topic patterns. The platform
+	// never publishes to "/things/…" or "/groups/…" forms, so a subscription to
+	// them would silently pass auth but land on a dead topic.
+	if strings.HasPrefix(topic, "/"+topicPrefixThings+"/") || strings.HasPrefix(topic, "/"+topicPrefixGroups+"/") {
+		return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s (leading slash not allowed)", topic))
+	}
+
+	if !strings.HasPrefix(topic, topicPrefixThings+"/") && !strings.HasPrefix(topic, topicPrefixGroups+"/") {
 		return nil
 	}
 
-	if !strings.HasPrefix(trimmed, topicPrefixThings+"/") && !strings.HasPrefix(trimmed, topicPrefixGroups+"/") {
-		return nil
-	}
-
-	parts := strings.Split(trimmed, "/")
+	parts := strings.Split(topic, "/")
 	if len(parts) < 3 {
 		// Forbid multi-level wildcard at ID position, e.g. "things/#", "groups/#".
 		if len(parts) == 2 && parts[1] == "#" {

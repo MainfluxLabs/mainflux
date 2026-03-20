@@ -113,6 +113,9 @@ type Service interface {
 	// CanThingAccessGroup determines whether a given thing has access to a group with a key.
 	CanThingAccessGroup(ctx context.Context, req ThingAccessReq) error
 
+	// CanThingCommand determines whether a given thing is allowed to send a command to another thing.
+	CanThingCommand(ctx context.Context, req ThingCommandReq) error
+
 	// Identify returns thing ID for given thing key.
 	Identify(ctx context.Context, key ThingKey) (string, error)
 
@@ -165,6 +168,11 @@ type UserAccessReq struct {
 type ThingAccessReq struct {
 	ThingKey
 	ID string
+}
+
+type ThingCommandReq struct {
+	PublisherID string
+	RecipientID string
 }
 
 type PubConfigInfo struct {
@@ -636,6 +644,28 @@ func (ts *thingsService) CanThingAccessGroup(ctx context.Context, req ThingAcces
 	return nil
 }
 
+func (ts *thingsService) CanThingCommand(ctx context.Context, req ThingCommandReq) error {
+	if req.PublisherID == "" || req.RecipientID == "" {
+		return errors.ErrAuthorization
+	}
+
+	pubGroupID, pubType, err := ts.getThingGroupAndType(ctx, req.PublisherID)
+	if err != nil {
+		return err
+	}
+
+	recGroupID, recType, err := ts.getThingGroupAndType(ctx, req.RecipientID)
+	if err != nil {
+		return err
+	}
+
+	if pubGroupID != recGroupID {
+		return errors.ErrAuthorization
+	}
+
+	return CanCommand(pubType, recType)
+}
+
 func (ts *thingsService) Identify(ctx context.Context, key ThingKey) (string, error) {
 	id, err := ts.thingCache.ID(ctx, key)
 	if err == nil {
@@ -852,6 +882,33 @@ func (ts *thingsService) canAccessOrg(ctx context.Context, token, orgID, subject
 	return nil
 }
 
+func (ts *thingsService) getThingGroupAndType(ctx context.Context, thID string) (groupID, thingType string, err error) {
+	groupID, groupErr := ts.thingCache.ViewGroup(ctx, thID)
+	thingType, typeErr := ts.thingCache.ViewType(ctx, thID)
+	if groupErr == nil && typeErr == nil {
+		return groupID, thingType, nil
+	}
+
+	th, err := ts.things.RetrieveByID(ctx, thID)
+	if err != nil {
+		return "", "", err
+	}
+
+	if groupErr != nil {
+		if err := ts.thingCache.SaveGroup(ctx, th.ID, th.GroupID); err != nil {
+			return "", "", err
+		}
+	}
+
+	if typeErr != nil {
+		if err := ts.thingCache.SaveType(ctx, th.ID, th.Type); err != nil {
+			return "", "", err
+		}
+	}
+
+	return th.GroupID, th.Type, nil
+}
+
 func (ts *thingsService) getGroupIDByThing(ctx context.Context, thID string) (string, error) {
 	grID, err := ts.thingCache.ViewGroup(ctx, thID)
 	if err != nil {
@@ -867,23 +924,6 @@ func (ts *thingsService) getGroupIDByThing(ctx context.Context, thID string) (st
 	}
 
 	return grID, nil
-}
-
-func (ts *thingsService) getTypeByThing(ctx context.Context, thID string) (string, error) {
-	thType, err := ts.thingCache.ViewType(ctx, thID)
-	if err != nil {
-		th, err := ts.things.RetrieveByID(ctx, thID)
-		if err != nil {
-			return "", err
-		}
-		thType = th.Type
-
-		if err := ts.thingCache.SaveType(ctx, th.ID, th.Type); err != nil {
-			return "", err
-		}
-	}
-
-	return thType, nil
 }
 
 func (ts *thingsService) getGroupIDByProfile(ctx context.Context, prID string) (string, error) {

@@ -105,6 +105,9 @@ var (
 	// ErrMissingPublisherID indicates missing publisher ID.
 	ErrMissingPublisherID = errors.New("missing publisher ID")
 
+	// ErrMissingRecipientID indicates missing recipient ID.
+	ErrMissingRecipientID = errors.New("missing recipient ID")
+
 	// ErrMissingSerial indicates missing serial.
 	ErrMissingSerial = errors.New("missing serial")
 

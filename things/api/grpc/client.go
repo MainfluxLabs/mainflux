@@ -26,6 +26,7 @@ type grpcClient struct {
 	canUserAccessProfile   endpoint.Endpoint
 	canUserAccessGroup     endpoint.Endpoint
 	canThingAccessGroup    endpoint.Endpoint
+	canThingCommand        endpoint.Endpoint
 	identify               endpoint.Endpoint
 	getGroupIDByThing      endpoint.Endpoint
 	getGroupIDByProfile    endpoint.Endpoint
@@ -87,6 +88,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			svcName,
 			"CanThingAccessGroup",
 			encodeThingAccessGroupRequest,
+			decodeEmptyResponse,
+			emptypb.Empty{},
+		).Endpoint()),
+		canThingCommand: kitot.TraceClient(tracer, "can_thing_command")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"CanThingCommand",
+			encodeThingCommandRequest,
 			decodeEmptyResponse,
 			emptypb.Empty{},
 		).Endpoint()),
@@ -222,6 +231,17 @@ func (client grpcClient) CanUserAccessGroup(ctx context.Context, req *protomfx.U
 func (client grpcClient) CanThingAccessGroup(ctx context.Context, req *protomfx.ThingAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
 	r := thingAccessGroupReq{thingKey: thingKey{value: req.GetKey()}, id: req.GetId()}
 	res, err := client.canThingAccessGroup(ctx, r)
+	if err != nil {
+		return nil, err
+	}
+
+	er := res.(emptyRes)
+	return &emptypb.Empty{}, er.err
+}
+
+func (client grpcClient) CanThingCommand(ctx context.Context, req *protomfx.ThingCommandReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	r := thingCommandReq{publisherID: req.GetPublisherID(), recipientID: req.GetRecipientID()}
+	res, err := client.canThingCommand(ctx, r)
 	if err != nil {
 		return nil, err
 	}
@@ -378,6 +398,11 @@ func encodeUserAccessGroupRequest(_ context.Context, grpcReq any) (any, error) {
 func encodeThingAccessGroupRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(thingAccessGroupReq)
 	return &protomfx.ThingAccessReq{Key: req.thingKey.value, Id: req.id}, nil
+}
+
+func encodeThingCommandRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(thingCommandReq)
+	return &protomfx.ThingCommandReq{PublisherID: req.publisherID, RecipientID: req.recipientID}, nil
 }
 
 func encodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {
