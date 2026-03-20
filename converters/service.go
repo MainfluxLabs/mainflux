@@ -62,28 +62,30 @@ func (as *adapterService) PublishSenMLMessages(ctx context.Context, key string, 
 			if err != nil {
 				return err
 			}
-			record := map[string]any{
-				"n": n,
-				"v": v,
-				"t": t,
-			}
-			msgs = append(msgs, record)
+			msgs = append(msgs, map[string]any{"n": n, "v": v, "t": t})
 			counter++
-			if counter >= 50000 || i == len(csvLines)-1 {
+			if counter >= 50000 {
 				data, err := json.Marshal(msgs)
 				if err != nil {
 					return err
 				}
 				msg.Payload = data
-				_, err = as.publish(ctx, key, msg)
-				if err != nil {
+				if _, err = as.publish(ctx, key, msg); err != nil {
 					return err
 				}
 				counter = 0
 				msgs = []map[string]any{}
-				if i != len(csvLines)-1 {
-					time.Sleep(30 * time.Second)
-				}
+				time.Sleep(30 * time.Second)
+			}
+		}
+		if i == len(csvLines)-1 && len(msgs) > 0 {
+			data, err := json.Marshal(msgs)
+			if err != nil {
+				return err
+			}
+			msg.Payload = data
+			if _, err = as.publish(ctx, key, msg); err != nil {
+				return err
 			}
 		}
 	}
@@ -99,13 +101,13 @@ func (as *adapterService) PublishJSONMessages(ctx context.Context, key string, c
 	keys := csvLines[0][1:]
 	msgs := []map[string]any{}
 	createdIdx := slices.Index(csvLines[0], "created")
-	if createdIdx == -1 {
-		return ErrInvalidTimeField
-	}
-
 	for i := 1; i < len(csvLines); i++ {
+		created := csvLines[i][0]
+		if createdIdx != -1 {
+			created = csvLines[i][createdIdx]
+		}
 		record := map[string]any{
-			"created": csvLines[i][createdIdx],
+			"created": created,
 		}
 		for j, columnName := range keys {
 			if f, err := strconv.ParseFloat(csvLines[i][j+1], 64); err == nil {
