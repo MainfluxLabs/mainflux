@@ -130,3 +130,8 @@ func (k Key) Expired() bool {
 	}
 	return k.ExpiresAt.UTC().Before(time.Now().UTC())
 }
+
+type KeysPage struct {
+	Total uint64
+	Keys  []Key
+}

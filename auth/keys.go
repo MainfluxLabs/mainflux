@@ -32,13 +32,8 @@ const (
 
 // Key is an alias for the shared domain type.
 type Key = domainauth.Key
-
 type Identity = domainauth.Identity
-
-type KeysPage struct {
-	Total uint64
-	Keys  []Key
-}
+type KeysPage = domainauth.KeysPage
 
 // Keys specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
