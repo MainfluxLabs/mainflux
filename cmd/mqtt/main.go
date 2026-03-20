@@ -12,6 +12,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	mqttapi "github.com/MainfluxLabs/mainflux/mqtt/api"
 	mqttapihttp "github.com/MainfluxLabs/mainflux/mqtt/api/http"
@@ -444,7 +445,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, db *sqlx.DB, cache mqttredis.ConnectionCache, dbTracer opentracing.Tracer, logger logger.Logger) mqtt.Service {
+func newService(ac auth.Client, tc protomfx.ThingsServiceClient, db *sqlx.DB, cache mqttredis.ConnectionCache, dbTracer opentracing.Tracer, logger logger.Logger) mqtt.Service {
 	idp := ulid.New()
 	subscriptions := postgres.NewRepository(db)
 	subscriptions = tracing.SubscriptionRepositoryMiddleware(dbTracer, subscriptions)

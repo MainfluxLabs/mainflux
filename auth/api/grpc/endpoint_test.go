@@ -106,7 +106,7 @@ func TestIssue(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_, err := client.Issue(context.Background(), &protomfx.IssueReq{Id: tc.id, Email: tc.email, Type: tc.kind})
+		_, err := client.Issue(context.Background(), tc.id, tc.email, tc.kind)
 		e, ok := status.FromError(err)
 		assert.True(t, ok, "gRPC status can't be extracted from the error")
 		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code()))
@@ -172,9 +172,11 @@ func TestIdentify(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		idt, err := client.Identify(context.Background(), &protomfx.Token{Value: tc.token})
-		if idt != nil {
-			assert.Equal(t, tc.idt, *idt, fmt.Sprintf("%s: expected %v got %v", tc.desc, tc.idt, *idt))
+		ident, err := client.Identify(context.Background(), tc.token)
+		// compare when expected identity is non-empty
+		if tc.idt.Id != "" || tc.idt.Email != "" {
+			assert.Equal(t, tc.idt.Id, ident.ID, fmt.Sprintf("%s: expected %v got %v", tc.desc, tc.idt.Id, ident.ID))
+			assert.Equal(t, tc.idt.Email, ident.Email, fmt.Sprintf("%s: expected %v got %v", tc.desc, tc.idt.Email, ident.Email))
 		}
 		e, ok := status.FromError(err)
 		assert.True(t, ok, "gRPC status can't be extracted from the error")

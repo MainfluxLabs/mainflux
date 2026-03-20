@@ -13,6 +13,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
@@ -210,7 +211,7 @@ func connectToDB(dbConfig timescale.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, dbTracer opentracing.Tracer, ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, logger logger.Logger) readers.Service {
+func newService(db *sqlx.DB, dbTracer opentracing.Tracer, ac auth.Client, tc protomfx.ThingsServiceClient, logger logger.Logger) readers.Service {
 	jsonRepo := timescale.NewJSONRepository(db)
 	jsonRepo = tracing.JSONRepositoryMiddleware(dbTracer, jsonRepo)
 

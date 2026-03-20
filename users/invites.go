@@ -9,9 +9,7 @@ import (
 	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	
 )
 
 // PlatformInvite is an alias for the shared domain type.
@@ -111,23 +109,16 @@ func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirec
 	}
 
 	if orgInvite.OrgID != "" {
-		var reqGroupInvites []*protomfx.GroupInvite
+		// Call auth service with domain types
+		gis := make([]domainauth.GroupInvite, 0, len(orgInvite.GroupInvites))
 		for _, gi := range orgInvite.GroupInvites {
-			reqGroupInvites = append(reqGroupInvites, &protomfx.GroupInvite{
+			gis = append(gis, domainauth.GroupInvite{
 				GroupID:    gi.GroupID,
 				MemberRole: gi.MemberRole,
 			})
 		}
 
-		dormantInviteReq := &protomfx.CreateDormantOrgInviteReq{
-			Token:            token,
-			OrgID:            orgInvite.OrgID,
-			InviteeRole:      orgInvite.InviteeRole,
-			GroupInvites:     reqGroupInvites,
-			PlatformInviteID: inviteID,
-		}
-
-		if _, err := svc.auth.CreateDormantOrgInvite(ctx, dormantInviteReq); err != nil {
+		if err := svc.auth.CreateDormantOrgInvite(ctx, token, orgInvite.OrgID, orgInvite.InviteeRole, gis, inviteID); err != nil {
 			return PlatformInvite{}, err
 		}
 	}
@@ -232,32 +223,24 @@ func (svc usersService) SendPlatformInviteEmail(ctx context.Context, invite Plat
 
 // If the passed Platform Invite is associated with a dormant Org Invite, fetch it and save it to platformInvite.OrgInvite.
 func (svc usersService) attachDormantOrgInvite(ctx context.Context, platformInvite *PlatformInvite) error {
-	dormantOrgInvite, err := svc.auth.GetDormantOrgInviteByPlatformInvite(ctx, &protomfx.GetDormantOrgInviteByPlatformInviteReq{
-		PlatformInviteID: platformInvite.ID,
-	})
-
+	dormantOrgInvite, err := svc.auth.GetDormantOrgInviteByPlatformInvite(ctx, platformInvite.ID)
 	if err != nil {
-		st, ok := status.FromError(err)
-		if !ok {
-			return err
-		}
-
-		if st.Code() == codes.NotFound {
+		// If not found, that's fine; no dormant invite attached.
+		if errors.Contains(err, dbutil.ErrNotFound) {
 			return nil
 		}
-
 		return err
 	}
 
 	platformInvite.OrgInvite = &domainauth.OrgInvite{
-		ID:           dormantOrgInvite.Id,
+		ID:           dormantOrgInvite.ID,
 		OrgID:        dormantOrgInvite.OrgID,
 		OrgName:      dormantOrgInvite.OrgName,
 		InviteeRole:  dormantOrgInvite.InviteeRole,
 		GroupInvites: make([]domainauth.GroupInvite, 0, len(dormantOrgInvite.GroupInvites)),
 	}
 
-	for _, gi := range dormantOrgInvite.GetGroupInvites() {
+	for _, gi := range dormantOrgInvite.GroupInvites {
 		platformInvite.OrgInvite.GroupInvites = append(platformInvite.OrgInvite.GroupInvites, domainauth.GroupInvite{
 			GroupID:    gi.GroupID,
 			MemberRole: gi.MemberRole,

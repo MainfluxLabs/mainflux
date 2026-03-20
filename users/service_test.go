@@ -14,11 +14,11 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
 	usmocks "github.com/MainfluxLabs/mainflux/users/mocks"
@@ -476,14 +476,14 @@ func TestResetPassword(t *testing.T) {
 	svc := newService()
 	authSvc := mocks.NewAuthService("", []users.User{registerUser}, nil)
 
-	resetToken, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: registerUser.ID, Email: registerUser.Email, Type: 2})
+	resetToken, err := authSvc.Issue(context.Background(), registerUser.ID, registerUser.Email, domainauth.RecoveryKey)
 	assert.Nil(t, err, fmt.Sprintf("Generating reset token expected to succeed: %s", err))
 	cases := map[string]struct {
 		token    string
 		password string
 		err      error
 	}{
-		"valid user reset password ":   {resetToken.GetValue(), registerUser.Email, nil},
+		"valid user reset password ":   {resetToken, registerUser.Email, nil},
 		"invalid user reset password ": {"", "newpassword", errors.ErrAuthentication},
 	}
 

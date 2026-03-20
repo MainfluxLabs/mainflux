@@ -12,6 +12,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/auth"
 )
 
 var (
@@ -73,7 +74,7 @@ type Config struct {
 }
 
 type certsService struct {
-	auth      protomfx.AuthServiceClient
+	auth      auth.Client
 	things    protomfx.ThingsServiceClient
 	certsRepo Repository
 	conf      Config
@@ -81,7 +82,7 @@ type certsService struct {
 }
 
 // New returns new Certs service.
-func New(auth protomfx.AuthServiceClient, things protomfx.ThingsServiceClient, certs Repository, config Config, pkiAgent pki.Agent) Service {
+func New(auth auth.Client, things protomfx.ThingsServiceClient, certs Repository, config Config, pkiAgent pki.Agent) Service {
 	return &certsService{
 		certsRepo: certs,
 		things:    things,
@@ -110,7 +111,7 @@ type Cert struct {
 }
 
 func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, ttl string, keyBits int, keyType string) (Cert, error) {
-	_, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
+	_, err := cs.auth.Identify(ctx, token)
 	if err != nil {
 		return Cert{}, err
 	}
@@ -148,7 +149,7 @@ func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, tt
 func (cs *certsService) RevokeCert(ctx context.Context, token, serial string) (Revoke, error) {
 	var revoke Revoke
 
-	_, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
+	_, err := cs.auth.Identify(ctx, token)
 	if err != nil {
 		return revoke, err
 	}
@@ -167,7 +168,7 @@ func (cs *certsService) RevokeCert(ctx context.Context, token, serial string) (R
 }
 
 func (cs *certsService) ListCerts(ctx context.Context, token, thingID string, offset, limit uint64) (Page, error) {
-	_, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
+	_, err := cs.auth.Identify(ctx, token)
 	if err != nil {
 		return Page{}, err
 	}
@@ -181,7 +182,7 @@ func (cs *certsService) ListCerts(ctx context.Context, token, thingID string, of
 }
 
 func (cs *certsService) ListSerials(ctx context.Context, token, thingID string, offset, limit uint64) (Page, error) {
-	_, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
+	_, err := cs.auth.Identify(ctx, token)
 	if err != nil {
 		return Page{}, err
 	}
@@ -190,7 +191,7 @@ func (cs *certsService) ListSerials(ctx context.Context, token, thingID string, 
 }
 
 func (cs *certsService) ViewCert(ctx context.Context, token, serial string) (Cert, error) {
-	_, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
+	_, err := cs.auth.Identify(ctx, token)
 	if err != nil {
 		return Cert{}, err
 	}
@@ -204,7 +205,7 @@ func (cs *certsService) ViewCert(ctx context.Context, token, serial string) (Cer
 }
 
 func (cs *certsService) RenewCert(ctx context.Context, token, serial string) (Cert, error) {
-	_, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
+	_, err := cs.auth.Identify(ctx, token)
 	if err != nil {
 		return Cert{}, err
 	}

@@ -19,6 +19,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/downlinks"
 	"github.com/MainfluxLabs/mainflux/downlinks/api"
 	httpapi "github.com/MainfluxLabs/mainflux/downlinks/api/http"
@@ -274,7 +275,7 @@ func subscribeToThingsES(ctx context.Context, svc downlinks.Service, cfg config,
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(ts protomfx.ThingsServiceClient, ac protomfx.AuthServiceClient, pub messaging.Publisher, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) downlinks.Service {
+func newService(ts protomfx.ThingsServiceClient, ac auth.Client, pub messaging.Publisher, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) downlinks.Service {
 	database := dbutil.NewDatabase(db)
 	downlinksRepo := postgres.NewDownlinkRepository(database)
 	downlinksRepo = tracing.DownlinkRepositoryMiddleware(dbTracer, downlinksRepo)

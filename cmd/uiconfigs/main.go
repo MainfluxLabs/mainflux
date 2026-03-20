@@ -17,6 +17,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
@@ -259,7 +260,7 @@ func subscribeToES(ctx context.Context, svc uiconfigs.Service, stream string, cf
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(ts protomfx.ThingsServiceClient, ac protomfx.AuthServiceClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) uiconfigs.Service {
+func newService(ts protomfx.ThingsServiceClient, ac auth.Client, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) uiconfigs.Service {
 	database := dbutil.NewDatabase(db)
 	orgConfigsRepo := postgres.NewOrgConfigRepository(database)
 	orgConfigsRepo = tracing.OrgConfigRepositoryMiddleware(dbTracer, orgConfigsRepo)

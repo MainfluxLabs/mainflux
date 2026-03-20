@@ -13,6 +13,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
@@ -347,7 +348,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logger) (protomfx.AuthServiceClient, func() error) {
+func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logger) (auth.Client, func() error) {
 	if cfg.standaloneEmail != "" && cfg.standaloneToken != "" {
 		return localusers.NewAuthService(cfg.standaloneEmail, cfg.standaloneToken), nil
 	}
@@ -373,7 +374,7 @@ func subscribeToAuthES(ctx context.Context, svc things.Service, cfg config, logg
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(ac protomfx.AuthServiceClient, uc protomfx.UsersServiceClient, dbTracer opentracing.Tracer,
+func newService(ac auth.Client, uc protomfx.UsersServiceClient, dbTracer opentracing.Tracer,
 	cacheTracer opentracing.Tracer, db *sqlx.DB, cacheClient *redis.Client, esClient *redis.Client,
 	logger logger.Logger, cfg config) things.Service {
 

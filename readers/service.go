@@ -10,6 +10,7 @@ import (
 	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/auth"
 )
 
 const rootSubject = "root"
@@ -54,13 +55,13 @@ type Service interface {
 }
 
 type readersService struct {
-	authc  protomfx.AuthServiceClient
+	authc  auth.Client
 	thingc protomfx.ThingsServiceClient
 	json   JSONMessageRepository
 	senml  SenMLMessageRepository
 }
 
-func New(auth protomfx.AuthServiceClient, things protomfx.ThingsServiceClient, json JSONMessageRepository, senml SenMLMessageRepository) Service {
+func New(auth auth.Client, things protomfx.ThingsServiceClient, json JSONMessageRepository, senml SenMLMessageRepository) Service {
 	return &readersService{
 		authc:  auth,
 		thingc: things,
@@ -225,12 +226,12 @@ func (rs *readersService) DeleteAllSenMLMessages(ctx context.Context, token stri
 }
 
 func (rs *readersService) isAdmin(ctx context.Context, token string) error {
-	req := &protomfx.AuthorizeReq{
+	req := domainauth.AuthzReq{
 		Token:   token,
 		Subject: rootSubject,
 	}
 
-	if _, err := rs.authc.Authorize(ctx, req); err != nil {
+	if err := rs.authc.Authorize(ctx, req); err != nil {
 		return err
 	}
 
