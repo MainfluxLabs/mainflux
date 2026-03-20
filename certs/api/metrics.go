@@ -39,6 +39,15 @@ func (ms *metricsMiddleware) IssueCert(ctx context.Context, token, thingID strin
 	return ms.svc.IssueCert(ctx, token, thingID, ttl, keyBits, keyType)
 }
 
+func (ms *metricsMiddleware) RotateCert(ctx context.Context, token, serial, thingID, ttl string, keyBits int, keyType string) (certs.Cert, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "rotate_cert").Add(1)
+		ms.latency.With("method", "rotate_cert").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RotateCert(ctx, token, serial, thingID, ttl, keyBits, keyType)
+}
+
 func (ms *metricsMiddleware) ListCerts(ctx context.Context, token, thingID string, offset, limit uint64) (certs.Page, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_certs").Add(1)
