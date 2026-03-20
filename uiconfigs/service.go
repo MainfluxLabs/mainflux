@@ -6,13 +6,13 @@ package uiconfigs
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	"github.com/MainfluxLabs/mainflux/things"
 )
 
 type Backup struct {
@@ -67,14 +67,14 @@ type configService struct {
 	orgConfigs   OrgConfigRepository
 	thingConfigs ThingConfigRepository
 	things       protomfx.ThingsServiceClient
-	auth         protomfx.AuthServiceClient
+	auth         domainauth.Client
 	idProvider   uuid.IDProvider
 	logger       logger.Logger
 }
 
 var _ Service = (*configService)(nil)
 
-func New(orgConfigs OrgConfigRepository, thingConfigs ThingConfigRepository, things protomfx.ThingsServiceClient, auth protomfx.AuthServiceClient, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(orgConfigs OrgConfigRepository, thingConfigs ThingConfigRepository, things protomfx.ThingsServiceClient, auth domainauth.Client, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &configService{
 		orgConfigs:   orgConfigs,
 		thingConfigs: thingConfigs,
@@ -86,12 +86,12 @@ func New(orgConfigs OrgConfigRepository, thingConfigs ThingConfigRepository, thi
 }
 
 func (svc *configService) ViewOrgConfig(ctx context.Context, token, orgID string) (OrgConfig, error) {
-	_, err := svc.auth.Identify(ctx, &protomfx.Token{Value: token})
+	_, err := svc.auth.Identify(ctx, token)
 	if err != nil {
 		return OrgConfig{}, err
 	}
 
-	if err := svc.canAccessOrg(ctx, token, orgID, auth.OrgSub, auth.Viewer); err != nil {
+	if err := svc.canAccessOrg(ctx, token, orgID, domainauth.OrgSub, domainauth.Viewer); err != nil {
 		return OrgConfig{}, err
 	}
 
@@ -103,7 +103,7 @@ func (svc *configService) ListOrgsConfigs(ctx context.Context, token string, pm 
 		return svc.orgConfigs.RetrieveAll(ctx, pm)
 	}
 
-	if _, err := svc.auth.Identify(ctx, &protomfx.Token{Value: token}); err != nil {
+	if _, err := svc.auth.Identify(ctx, token); err != nil {
 		return OrgConfigPage{}, err
 	}
 
@@ -114,7 +114,7 @@ func (svc *configService) ListOrgsConfigs(ctx context.Context, token string, pm 
 
 	orgsConfigs := make([]OrgConfig, 0, len(all.OrgsConfigs))
 	for _, oc := range all.OrgsConfigs {
-		if err := svc.canAccessOrg(ctx, token, oc.OrgID, auth.OrgSub, auth.Viewer); err == nil {
+		if err := svc.canAccessOrg(ctx, token, oc.OrgID, domainauth.OrgSub, domainauth.Viewer); err == nil {
 			orgsConfigs = append(orgsConfigs, oc)
 		}
 	}
@@ -126,12 +126,12 @@ func (svc *configService) ListOrgsConfigs(ctx context.Context, token string, pm 
 }
 
 func (svc *configService) UpdateOrgConfig(ctx context.Context, token string, orgConfig OrgConfig) (OrgConfig, error) {
-	_, err := svc.auth.Identify(ctx, &protomfx.Token{Value: token})
+	_, err := svc.auth.Identify(ctx, token)
 	if err != nil {
 		return OrgConfig{}, err
 	}
 
-	if err := svc.canAccessOrg(ctx, token, orgConfig.OrgID, auth.OrgSub, auth.Editor); err != nil {
+	if err := svc.canAccessOrg(ctx, token, orgConfig.OrgID, domainauth.OrgSub, domainauth.Editor); err != nil {
 		return OrgConfig{}, err
 	}
 
@@ -152,7 +152,7 @@ func (svc *configService) BackupOrgsConfigs(ctx context.Context, token string) (
 		return svc.orgConfigs.BackupAll(ctx)
 	}
 
-	if _, err := svc.auth.Identify(ctx, &protomfx.Token{Value: token}); err != nil {
+	if _, err := svc.auth.Identify(ctx, token); err != nil {
 		return OrgConfigBackup{}, err
 	}
 
@@ -163,7 +163,7 @@ func (svc *configService) BackupOrgsConfigs(ctx context.Context, token string) (
 
 	orgsConfigs := make([]OrgConfig, 0, len(all.OrgsConfigs))
 	for _, t := range all.OrgsConfigs {
-		if err := svc.canAccessOrg(ctx, token, t.OrgID, auth.OrgSub, auth.Viewer); err == nil {
+		if err := svc.canAccessOrg(ctx, token, t.OrgID, domainauth.OrgSub, domainauth.Viewer); err == nil {
 			orgsConfigs = append(orgsConfigs, t)
 		}
 	}
@@ -173,12 +173,12 @@ func (svc *configService) BackupOrgsConfigs(ctx context.Context, token string) (
 }
 
 func (svc *configService) ViewThingConfig(ctx context.Context, token, thingID string) (ThingConfig, error) {
-	_, err := svc.auth.Identify(ctx, &protomfx.Token{Value: token})
+	_, err := svc.auth.Identify(ctx, token)
 	if err != nil {
 		return ThingConfig{}, err
 	}
 
-	if _, err := svc.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer}); err != nil {
+	if _, err := svc.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domainthings.Viewer}); err != nil {
 		return ThingConfig{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -190,7 +190,7 @@ func (svc *configService) ListThingsConfigs(ctx context.Context, token string, p
 		return svc.thingConfigs.RetrieveAll(ctx, pm)
 	}
 
-	if _, err := svc.auth.Identify(ctx, &protomfx.Token{Value: token}); err != nil {
+	if _, err := svc.auth.Identify(ctx, token); err != nil {
 		return ThingConfigPage{}, err
 	}
 
@@ -201,7 +201,7 @@ func (svc *configService) ListThingsConfigs(ctx context.Context, token string, p
 
 	thingsConfigs := make([]ThingConfig, 0, len(all.ThingsConfigs))
 	for _, t := range all.ThingsConfigs {
-		if _, err := svc.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: t.ThingID, Action: things.Viewer}); err == nil {
+		if _, err := svc.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: t.ThingID, Action: domainthings.Viewer}); err == nil {
 			thingsConfigs = append(thingsConfigs, t)
 		}
 	}
@@ -213,12 +213,12 @@ func (svc *configService) ListThingsConfigs(ctx context.Context, token string, p
 }
 
 func (svc *configService) UpdateThingConfig(ctx context.Context, token string, thingConfig ThingConfig) (ThingConfig, error) {
-	_, err := svc.auth.Identify(ctx, &protomfx.Token{Value: token})
+	_, err := svc.auth.Identify(ctx, token)
 	if err != nil {
 		return ThingConfig{}, err
 	}
 
-	if _, err := svc.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingConfig.ThingID, Action: things.Viewer}); err != nil {
+	if _, err := svc.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingConfig.ThingID, Action: domainthings.Viewer}); err != nil {
 		return ThingConfig{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -250,7 +250,7 @@ func (svc *configService) BackupThingsConfigs(ctx context.Context, token string)
 		return svc.thingConfigs.BackupAll(ctx)
 	}
 
-	if _, err := svc.auth.Identify(ctx, &protomfx.Token{Value: token}); err != nil {
+	if _, err := svc.auth.Identify(ctx, token); err != nil {
 		return ThingConfigBackup{}, err
 	}
 
@@ -261,7 +261,7 @@ func (svc *configService) BackupThingsConfigs(ctx context.Context, token string)
 
 	thingsConfigs := make([]ThingConfig, 0, len(all.ThingsConfigs))
 	for _, t := range all.ThingsConfigs {
-		if _, err := svc.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: t.ThingID, Action: things.Viewer}); err == nil {
+		if _, err := svc.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: t.ThingID, Action: domainthings.Viewer}); err == nil {
 			thingsConfigs = append(thingsConfigs, t)
 		}
 	}
@@ -305,14 +305,14 @@ func (svc *configService) Restore(ctx context.Context, token string, backup Back
 }
 
 func (svc *configService) canAccessOrg(ctx context.Context, token, orgID, subject, action string) error {
-	req := &protomfx.AuthorizeReq{
+	req := domainauth.AuthzReq{
 		Token:   token,
 		Object:  orgID,
 		Subject: subject,
 		Action:  action,
 	}
 
-	if _, err := svc.auth.Authorize(ctx, req); err != nil {
+	if err := svc.auth.Authorize(ctx, req); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -320,12 +320,12 @@ func (svc *configService) canAccessOrg(ctx context.Context, token, orgID, subjec
 }
 
 func (svc *configService) isAdmin(ctx context.Context, token string) error {
-	req := &protomfx.AuthorizeReq{
+	req := domainauth.AuthzReq{
 		Token:   token,
-		Subject: auth.RootSub,
+		Subject: domainauth.RootSub,
 	}
 
-	if _, err := svc.auth.Authorize(ctx, req); err != nil {
+	if err := svc.auth.Authorize(ctx, req); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 

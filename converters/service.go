@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"time"
 
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const (
@@ -138,7 +138,7 @@ func (as *adapterService) PublishJSONMessages(ctx context.Context, key string, c
 
 func (as *adapterService) publish(ctx context.Context, key string, msg protomfx.Message) (m protomfx.Message, err error) {
 	pcr := &protomfx.ThingKey{
-		Type:  things.KeyTypeInternal,
+		Type:  domainthings.KeyTypeInternal,
 		Value: key,
 	}
 

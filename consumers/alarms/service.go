@@ -8,10 +8,10 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	"github.com/MainfluxLabs/mainflux/things"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -69,7 +69,7 @@ func New(things protomfx.ThingsServiceClient, alarms AlarmRepository, idp uuid.I
 }
 
 func (as *alarmService) ListAlarmsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
-	_, err := as.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer})
+	_, err := as.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domainthings.Viewer})
 	if err != nil {
 		return AlarmsPage{}, err
 	}
@@ -83,7 +83,7 @@ func (as *alarmService) ListAlarmsByGroup(ctx context.Context, token, groupID st
 }
 
 func (as *alarmService) ListAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
-	_, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer})
+	_, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domainthings.Viewer})
 	if err != nil {
 		return AlarmsPage{}, err
 	}
@@ -114,7 +114,7 @@ func (as *alarmService) ViewAlarm(ctx context.Context, token, id string) (Alarm,
 		return Alarm{}, err
 	}
 
-	if _, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: alarm.ThingID, Action: things.Viewer}); err != nil {
+	if _, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: alarm.ThingID, Action: domainthings.Viewer}); err != nil {
 		return Alarm{}, err
 	}
 
@@ -127,7 +127,7 @@ func (as *alarmService) RemoveAlarms(ctx context.Context, token string, ids ...s
 		if err != nil {
 			return err
 		}
-		if _, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: alarm.ThingID, Action: things.Editor}); err != nil {
+		if _, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: alarm.ThingID, Action: domainthings.Editor}); err != nil {
 			return errors.Wrap(errors.ErrAuthorization, err)
 		}
 	}
@@ -144,7 +144,7 @@ func (as *alarmService) RemoveAlarmsByGroup(ctx context.Context, groupID string)
 }
 
 func (as *alarmService) ExportAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
-	_, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer})
+	_, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domainthings.Viewer})
 	if err != nil {
 		return AlarmsPage{}, err
 	}

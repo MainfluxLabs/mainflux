@@ -13,12 +13,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
 	usmocks "github.com/MainfluxLabs/mainflux/users/mocks"
@@ -476,14 +475,14 @@ func TestResetPassword(t *testing.T) {
 	svc := newService()
 	authSvc := mocks.NewAuthService("", []users.User{registerUser}, nil)
 
-	resetToken, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: registerUser.ID, Email: registerUser.Email, Type: 2})
+	resetToken, err := authSvc.Issue(context.Background(), registerUser.ID, registerUser.Email, domainauth.RecoveryKey)
 	assert.Nil(t, err, fmt.Sprintf("Generating reset token expected to succeed: %s", err))
 	cases := map[string]struct {
 		token    string
 		password string
 		err      error
 	}{
-		"valid user reset password ":   {resetToken.GetValue(), registerUser.Email, nil},
+		"valid user reset password ":   {resetToken, registerUser.Email, nil},
 		"invalid user reset password ": {"", "newpassword", errors.ErrAuthentication},
 	}
 
@@ -520,7 +519,7 @@ func TestCreatePlatformInvite(t *testing.T) {
 	tokenUser, err := svc.Login(context.Background(), user)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	existingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "existingUser@example.com", auth.OrgInvite{})
+	existingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "existingUser@example.com", domainauth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Creating platform invite expected to succeed: %s", err))
 
 	cases := map[string]struct {
@@ -534,7 +533,7 @@ func TestCreatePlatformInvite(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, err := svc.CreatePlatformInvite(context.Background(), tc.token, inviteRedirectPath, tc.email, auth.OrgInvite{})
+		_, err := svc.CreatePlatformInvite(context.Background(), tc.token, inviteRedirectPath, tc.email, domainauth.OrgInvite{})
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }
@@ -547,10 +546,10 @@ func TestRevokePlatformInvite(t *testing.T) {
 	tokenUser, err := svc.Login(context.Background(), user)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	pendingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test1@example.com", auth.OrgInvite{})
+	pendingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test1@example.com", domainauth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Creating platform invite expected to succeed: %s", err))
 
-	acceptedInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test2@example.com", auth.OrgInvite{})
+	acceptedInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test2@example.com", domainauth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Creating platform invite expected to succeed: %s", err))
 	err = svc.ValidatePlatformInvite(context.Background(), acceptedInvite.ID, acceptedInvite.InviteeEmail)
 	assert.Nil(t, err, fmt.Sprintf("Validating platform invite expected to succeed: %s", err))
@@ -576,7 +575,7 @@ func TestViewPlatformInvite(t *testing.T) {
 	tokenAdmin, err := svc.Login(context.Background(), admin)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	pendingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test1@example.com", auth.OrgInvite{})
+	pendingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test1@example.com", domainauth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Creating platform invite expected to succeed: %s", err))
 
 	cases := map[string]struct {
@@ -604,7 +603,7 @@ func TestListPlatformInvites(t *testing.T) {
 	n := uint64(10)
 
 	for i := uint64(0); i < n; i++ {
-		_, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, fmt.Sprintf("test%d@example.com", i), auth.OrgInvite{})
+		_, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, fmt.Sprintf("test%d@example.com", i), domainauth.OrgInvite{})
 		assert.Nil(t, err, fmt.Sprintf("Creating platform invite expected to succeed: %s", err))
 	}
 
@@ -632,18 +631,18 @@ func TestValidatePlatformInvite(t *testing.T) {
 	tokenAdmin, err := svc.Login(context.Background(), admin)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	pendingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test1@example.com", auth.OrgInvite{})
+	pendingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test1@example.com", domainauth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Creating platform invite expected to succeed: %s", err))
 
-	pendingInvite2, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test11@example.com", auth.OrgInvite{})
+	pendingInvite2, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test11@example.com", domainauth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Creating platform invite expected to succeed: %s", err))
 
-	revokedInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test2@example.com", auth.OrgInvite{})
+	revokedInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test2@example.com", domainauth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Creating platform invite expected to succeed: %s", err))
 	err = svc.RevokePlatformInvite(context.Background(), tokenAdmin, revokedInvite.ID)
 	assert.Nil(t, err, fmt.Sprintf("Revoking platform invite expected to succeed: %s", err))
 
-	acceptedInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test3@example.com", auth.OrgInvite{})
+	acceptedInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test3@example.com", domainauth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Creating platform invite expected to succeed: %s", err))
 	err = svc.ValidatePlatformInvite(context.Background(), acceptedInvite.ID, acceptedInvite.InviteeEmail)
 	assert.Nil(t, err, fmt.Sprintf("Validating platform invite expected to succeed: %s", err))

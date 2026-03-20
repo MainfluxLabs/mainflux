@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	authmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -53,12 +53,12 @@ var (
 	profile       = things.Profile{Name: "test"}
 	thsExtID      = []things.Thing{{ID: prefixID + "000000000001", Name: "a"}, {ID: prefixID + "000000000002", Name: "b"}}
 	prsExtID      = []things.Profile{{ID: prefixID + "000000000001", Name: "a"}, {ID: prefixID + "000000000002", Name: "b"}}
-	user          = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: userEmail, Password: password, Role: auth.Owner}
-	otherUser     = users.User{ID: "674106f7-030e-4881-8ab0-151195c29f95", Email: otherUserEmail, Password: password, Role: auth.Editor}
-	unauthUser    = users.User{ID: "674106f7-030e-4881-8ab0-151195c29f93", Email: unauthUserEmail, Password: password, Role: auth.Viewer}
-	admin         = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f97", Email: adminEmail, Password: password, Role: auth.RootSub}
-	viewer        = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f99", Email: viewerEmail, Password: password, Role: auth.Viewer}
-	editor        = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f91", Email: editorEmail, Password: password, Role: auth.Editor}
+	user          = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: userEmail, Password: password, Role: domainauth.Owner}
+	otherUser     = users.User{ID: "674106f7-030e-4881-8ab0-151195c29f95", Email: otherUserEmail, Password: password, Role: domainauth.Editor}
+	unauthUser    = users.User{ID: "674106f7-030e-4881-8ab0-151195c29f93", Email: unauthUserEmail, Password: password, Role: domainauth.Viewer}
+	admin         = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f97", Email: adminEmail, Password: password, Role: domainauth.RootSub}
+	viewer        = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f99", Email: viewerEmail, Password: password, Role: domainauth.Viewer}
+	editor        = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f91", Email: editorEmail, Password: password, Role: domainauth.Editor}
 	usersList     = []users.User{admin, user, otherUser, viewer, editor, unauthUser}
 	usersByEmails = map[string]users.User{userEmail: {ID: user.ID, Email: userEmail}, otherUserEmail: {ID: otherUser.ID, Email: otherToken}, viewerEmail: {ID: viewer.ID, Email: viewer.Email},
 		editorEmail: {ID: editor.ID, Email: editor.Email}, unauthUserEmail: unauthUser}
@@ -70,7 +70,7 @@ var (
 		{MemberID: editor.ID, Email: editor.Email, Role: things.Editor},
 	}
 	createdGroup = things.Group{OrgID: orgID, Name: "test-group", Description: "test-group-desc"}
-	orgsList     = []auth.Org{{ID: orgID, OwnerID: user.ID}}
+	orgsList     = []domainauth.Org{{ID: orgID, OwnerID: user.ID}}
 	metadata     = map[string]any{"test": "data"}
 )
 

@@ -21,7 +21,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
 	httpapi "github.com/MainfluxLabs/mainflux/users/api/http"
@@ -333,9 +332,9 @@ func TestLogin(t *testing.T) {
 		Password: validPass,
 	})
 
-	mfxTok, err := auth.Issue(context.Background(), &protomfx.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
+	mfxTok, err := auth.Issue(context.Background(), user.ID, user.Email, 0)
 	require.Nil(t, err, fmt.Sprintf("issue token for user got unexpected error: %s", err))
-	token := mfxTok.GetValue()
+	token := mfxTok
 	tokenData := toJSON(map[string]string{"token": token})
 
 	cases := []struct {
@@ -382,9 +381,9 @@ func TestUser(t *testing.T) {
 
 	auth := mocks.NewAuthService("", usersList, nil)
 
-	tkn, err := auth.Issue(context.Background(), &protomfx.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
+	tkn, err := auth.Issue(context.Background(), user.ID, user.Email, 0)
 	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
-	token := tkn.GetValue()
+	token := tkn
 
 	cases := []struct {
 		desc   string
@@ -894,10 +893,10 @@ func TestPasswordReset(t *testing.T) {
 
 	auth := mocks.NewAuthService("", usersList, nil)
 
-	tkn, err := auth.Issue(context.Background(), &protomfx.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
+	tkn, err := auth.Issue(context.Background(), user.ID, user.Email, 0)
 	require.Nil(t, err, fmt.Sprintf("issue user token error: %s", err))
 
-	token := tkn.GetValue()
+	token := tkn
 
 	reqData.Password = user.Password
 	reqData.ConfPass = user.Password
@@ -968,9 +967,9 @@ func TestPasswordChange(t *testing.T) {
 		OldPassw string `json:"old_password,omitempty"`
 	}{}
 
-	tkn, err := auth.Issue(context.Background(), &protomfx.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
+	tkn, err := auth.Issue(context.Background(), user.ID, user.Email, 0)
 	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
-	token := tkn.GetValue()
+	token := tkn
 
 	reqData.Password = user.Password
 	reqData.OldPassw = user.Password

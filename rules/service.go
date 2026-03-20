@@ -11,11 +11,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	"github.com/MainfluxLabs/mainflux/things"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -138,7 +138,7 @@ func New(rules Repository, things protomfx.ThingsServiceClient, pubsub messaging
 }
 
 func (rs *rulesService) CreateRules(ctx context.Context, token, groupID string, rules ...Rule) ([]Rule, error) {
-	_, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Editor})
+	_, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domainthings.Editor})
 	if err != nil {
 		return []Rule{}, err
 	}
@@ -157,7 +157,7 @@ func (rs *rulesService) CreateRules(ctx context.Context, token, groupID string, 
 }
 
 func (rs *rulesService) ListRulesByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (RulesPage, error) {
-	_, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer})
+	_, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domainthings.Viewer})
 	if err != nil {
 		return RulesPage{}, err
 	}
@@ -171,7 +171,7 @@ func (rs *rulesService) ListRulesByThing(ctx context.Context, token, thingID str
 }
 
 func (rs *rulesService) ListRulesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (RulesPage, error) {
-	_, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer})
+	_, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domainthings.Viewer})
 	if err != nil {
 		return RulesPage{}, err
 	}
@@ -190,7 +190,7 @@ func (rs *rulesService) ListThingIDsByRule(ctx context.Context, token, ruleID st
 		return []string{}, err
 	}
 
-	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Viewer}); err != nil {
+	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: domainthings.Viewer}); err != nil {
 		return []string{}, err
 	}
 
@@ -203,7 +203,7 @@ func (rs *rulesService) ViewRule(ctx context.Context, token, id string) (Rule, e
 		return Rule{}, err
 	}
 
-	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Viewer}); err != nil {
+	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: domainthings.Viewer}); err != nil {
 		return Rule{}, err
 	}
 
@@ -216,7 +216,7 @@ func (rs *rulesService) UpdateRule(ctx context.Context, token string, rule Rule)
 		return err
 	}
 
-	req := &protomfx.UserAccessReq{Token: token, Id: r.GroupID, Action: things.Editor}
+	req := &protomfx.UserAccessReq{Token: token, Id: r.GroupID, Action: domainthings.Editor}
 	if _, err := rs.things.CanUserAccessGroup(ctx, req); err != nil {
 		return err
 	}
@@ -231,7 +231,7 @@ func (rs *rulesService) RemoveRules(ctx context.Context, token string, ids ...st
 			return err
 		}
 
-		if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: things.Editor}); err != nil {
+		if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: rule.GroupID, Action: domainthings.Editor}); err != nil {
 			return err
 		}
 	}
@@ -244,7 +244,7 @@ func (rs *rulesService) RemoveRulesByGroup(ctx context.Context, groupID string) 
 }
 
 func (rs *rulesService) AssignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error {
-	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
+	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domainthings.Editor}); err != nil {
 		return err
 	}
 
@@ -272,7 +272,7 @@ func (rs *rulesService) AssignRules(ctx context.Context, token, thingID string, 
 }
 
 func (rs *rulesService) UnassignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error {
-	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
+	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domainthings.Editor}); err != nil {
 		return err
 	}
 
@@ -304,7 +304,7 @@ func (rs *rulesService) UnassignRulesByThing(ctx context.Context, thingID string
 }
 
 func (rs *rulesService) CreateScripts(ctx context.Context, token, groupID string, scripts ...LuaScript) ([]LuaScript, error) {
-	_, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Editor})
+	_, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domainthings.Editor})
 	if err != nil {
 		return []LuaScript{}, err
 	}
@@ -323,7 +323,7 @@ func (rs *rulesService) CreateScripts(ctx context.Context, token, groupID string
 }
 
 func (rs *rulesService) ListScriptsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (LuaScriptsPage, error) {
-	_, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer})
+	_, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domainthings.Viewer})
 	if err != nil {
 		return LuaScriptsPage{}, err
 	}
@@ -332,7 +332,7 @@ func (rs *rulesService) ListScriptsByThing(ctx context.Context, token, thingID s
 }
 
 func (rs *rulesService) ListScriptsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (LuaScriptsPage, error) {
-	_, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer})
+	_, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domainthings.Viewer})
 	if err != nil {
 		return LuaScriptsPage{}, err
 	}
@@ -346,7 +346,7 @@ func (rs *rulesService) ListThingIDsByScript(ctx context.Context, token, scriptI
 		return []string{}, err
 	}
 
-	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: script.GroupID, Action: things.Viewer}); err != nil {
+	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: script.GroupID, Action: domainthings.Viewer}); err != nil {
 		return []string{}, err
 	}
 
@@ -359,7 +359,7 @@ func (rs *rulesService) ViewScript(ctx context.Context, token, id string) (LuaSc
 		return LuaScript{}, err
 	}
 
-	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: script.GroupID, Action: things.Viewer}); err != nil {
+	if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: script.GroupID, Action: domainthings.Viewer}); err != nil {
 		return LuaScript{}, err
 	}
 
@@ -372,7 +372,7 @@ func (rs *rulesService) UpdateScript(ctx context.Context, token string, script L
 		return err
 	}
 
-	req := &protomfx.UserAccessReq{Token: token, Id: existingScript.GroupID, Action: things.Editor}
+	req := &protomfx.UserAccessReq{Token: token, Id: existingScript.GroupID, Action: domainthings.Editor}
 	if _, err := rs.things.CanUserAccessGroup(ctx, req); err != nil {
 		return err
 	}
@@ -387,7 +387,7 @@ func (rs *rulesService) RemoveScripts(ctx context.Context, token string, ids ...
 			return err
 		}
 
-		if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: script.GroupID, Action: things.Editor}); err != nil {
+		if _, err := rs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: script.GroupID, Action: domainthings.Editor}); err != nil {
 			return err
 		}
 	}
@@ -400,7 +400,7 @@ func (rs *rulesService) RemoveScriptsByGroup(ctx context.Context, groupID string
 }
 
 func (rs *rulesService) AssignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) error {
-	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
+	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domainthings.Editor}); err != nil {
 		return err
 	}
 
@@ -428,7 +428,7 @@ func (rs *rulesService) AssignScripts(ctx context.Context, token, thingID string
 }
 
 func (rs *rulesService) UnassignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) error {
-	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
+	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domainthings.Editor}); err != nil {
 		return err
 	}
 
@@ -444,7 +444,7 @@ func (rs *rulesService) UnassignScriptsFromThing(ctx context.Context, thingID st
 }
 
 func (rs *rulesService) ListScriptRunsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (ScriptRunsPage, error) {
-	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer}); err != nil {
+	if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domainthings.Viewer}); err != nil {
 		return ScriptRunsPage{}, err
 	}
 
@@ -458,7 +458,7 @@ func (rs *rulesService) RemoveScriptRuns(ctx context.Context, token string, ids 
 			return err
 		}
 
-		if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: run.ThingID, Action: things.Editor}); err != nil {
+		if _, err := rs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: run.ThingID, Action: domainthings.Editor}); err != nil {
 			return err
 		}
 	}

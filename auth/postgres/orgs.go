@@ -14,6 +14,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -295,7 +296,7 @@ func toOrg(dbo dbOrg) (auth.Org, error) {
 		Name:        dbo.Name,
 		OwnerID:     dbo.OwnerID,
 		Description: dbo.Description,
-		Metadata:    auth.OrgMetadata(dbo.Metadata),
+		Metadata:    domain.Metadata(dbo.Metadata),
 		UpdatedAt:   dbo.UpdatedAt,
 		CreatedAt:   dbo.CreatedAt,
 	}, nil

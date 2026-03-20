@@ -3,13 +3,11 @@ package mocks
 import (
 	"context"
 
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-var _ protomfx.AuthServiceClient = (*authServiceMock)(nil)
+var _ domainauth.Client = (*authServiceMock)(nil)
 
 type SubjectSet struct {
 	Object   string
@@ -22,59 +20,55 @@ type authServiceMock struct {
 }
 
 // NewAuth creates mock of auth service.
-func NewAuth(users map[string]string, authz map[string][]SubjectSet) protomfx.AuthServiceClient {
+func NewAuth(users map[string]string, authz map[string][]SubjectSet) domainauth.Client {
 	return &authServiceMock{users, authz}
 }
 
-func (svc authServiceMock) Identify(_ context.Context, in *protomfx.Token, _ ...grpc.CallOption) (*protomfx.UserIdentity, error) {
-	if id, ok := svc.users[in.Value]; ok {
-		return &protomfx.UserIdentity{Id: id, Email: id}, nil
+func (svc authServiceMock) Identify(_ context.Context, token string) (domainauth.Identity, error) {
+	if id, ok := svc.users[token]; ok {
+		return domainauth.Identity{ID: id, Email: id}, nil
 	}
-	return nil, errors.ErrAuthentication
+	return domainauth.Identity{}, errors.ErrAuthentication
 }
 
-func (svc authServiceMock) Issue(_ context.Context, in *protomfx.IssueReq, _ ...grpc.CallOption) (*protomfx.Token, error) {
-	if id, ok := svc.users[in.GetEmail()]; ok {
-		switch in.Type {
-		default:
-			return &protomfx.Token{Value: id}, nil
-		}
+func (svc authServiceMock) Issue(_ context.Context, _id, email string, _ uint32) (string, error) {
+	if id, ok := svc.users[email]; ok {
+		return id, nil
 	}
-	return nil, errors.ErrAuthentication
+	return "", errors.ErrAuthentication
 }
 
-func (svc authServiceMock) Authorize(_ context.Context, req *protomfx.AuthorizeReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
-	if req.GetToken() != "token" {
-		return &emptypb.Empty{}, errors.ErrAuthorization
+func (svc authServiceMock) Authorize(_ context.Context, req domainauth.AuthzReq) error {
+	if req.Token != "token" {
+		return errors.ErrAuthorization
 	}
-
-	return &emptypb.Empty{}, nil
+	return nil
 }
 
-func (svc authServiceMock) GetOwnerIDByOrg(context.Context, *protomfx.OrgID, ...grpc.CallOption) (*protomfx.OwnerID, error) {
+func (svc authServiceMock) GetOwnerIDByOrg(context.Context, string) (string, error) {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) AssignRole(context.Context, *protomfx.AssignRoleReq, ...grpc.CallOption) (*emptypb.Empty, error) {
+func (svc authServiceMock) AssignRole(context.Context, string, string) error {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) RetrieveRole(context.Context, *protomfx.RetrieveRoleReq, ...grpc.CallOption) (*protomfx.RetrieveRoleRes, error) {
+func (svc authServiceMock) RetrieveRole(context.Context, string) (string, error) {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) CreateDormantOrgInvite(context.Context, *protomfx.CreateDormantOrgInviteReq, ...grpc.CallOption) (*emptypb.Empty, error) {
+func (svc authServiceMock) CreateDormantOrgInvite(context.Context, string, string, string, []domainauth.GroupInvite, string) error {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) ActivateOrgInvite(context.Context, *protomfx.ActivateOrgInviteReq, ...grpc.CallOption) (*emptypb.Empty, error) {
+func (svc authServiceMock) ActivateOrgInvite(context.Context, string, string, string) error {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) ViewOrg(context.Context, *protomfx.ViewOrgReq, ...grpc.CallOption) (*protomfx.Org, error) {
+func (svc authServiceMock) ViewOrg(context.Context, string, string) (domainauth.Org, error) {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) GetDormantOrgInviteByPlatformInvite(context.Context, *protomfx.GetDormantOrgInviteByPlatformInviteReq, ...grpc.CallOption) (*protomfx.OrgInvite, error) {
+func (svc authServiceMock) GetDormantOrgInviteByPlatformInvite(context.Context, string) (domainauth.OrgInvite, error) {
 	panic("not implemented")
 }

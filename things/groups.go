@@ -2,37 +2,18 @@ package things
 
 import (
 	"context"
-	"time"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
-// Identity contains ID and Email.
-type Identity struct {
-	ID    string
-	Email string
-}
+// Group is an alias for the shared domain type.
+type Group = domainthings.Group
 
-// Group represents the group information.
-type Group struct {
-	ID          string
-	OrgID       string
-	Name        string
-	Description string
-	Metadata    Metadata
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
-// GroupPage contains page related metadata as well as list of groups that
-// belong to this page.
-type GroupPage struct {
-	Total  uint64
-	Groups []Group
-}
+// GroupPage is an alias for the shared domain type.
+type GroupPage = domainthings.GroupPage
 
 // GroupRepository specifies a group persistence API.
 type GroupRepository interface {
@@ -124,21 +105,20 @@ type GroupCache interface {
 }
 
 func (ts *thingsService) CreateGroups(ctx context.Context, token, orgID string, groups ...Group) ([]Group, error) {
-	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
+	ident, err := ts.auth.Identify(ctx, token)
 	if err != nil {
 		return []Group{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
-	userID := user.GetId()
+	userID := ident.ID
 
-	oid, err := ts.auth.GetOwnerIDByOrg(ctx, &protomfx.OrgID{Value: orgID})
+	ownerID, err := ts.auth.GetOwnerIDByOrg(ctx, orgID)
 	if err != nil {
 		return []Group{}, err
 	}
-	ownerID := oid.GetValue()
 
 	memberships := []GroupMembership{{MemberID: ownerID, Role: Owner}}
 	if ownerID != userID {
-		if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Editor); err != nil {
+		if err := ts.canAccessOrg(ctx, token, orgID, domainauth.OrgSub, Editor); err != nil {
 			return nil, err
 		}
 		memberships = append(memberships, GroupMembership{MemberID: userID, Role: Admin})
@@ -187,12 +167,12 @@ func (ts *thingsService) ListGroups(ctx context.Context, token string, pm apiuti
 		return ts.groups.RetrieveAll(ctx, pm)
 	}
 
-	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
+	user, err := ts.auth.Identify(ctx, token)
 	if err != nil {
 		return GroupPage{}, err
 	}
 
-	grIDs, err := ts.getGroupIDsByMember(ctx, user.GetId())
+	grIDs, err := ts.getGroupIDsByMember(ctx, user.ID)
 	if err != nil {
 		return GroupPage{}, err
 	}
@@ -338,13 +318,13 @@ func (ts *thingsService) ViewGroupByThing(ctx context.Context, token string, thi
 }
 
 func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, action string) error {
-	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
+	user, err := ts.auth.Identify(ctx, token)
 	if err != nil {
 		return err
 	}
 
 	gm := GroupMembership{
-		MemberID: user.Id,
+		MemberID: user.ID,
 		GroupID:  groupID,
 	}
 

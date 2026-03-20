@@ -31,15 +31,15 @@ import (
 )
 
 const (
-	wrongValue = "wrong-value"
-	email      = "user@example.com"
-	token      = email
-	password   = "password"
-	thingsNum  = 1
-	thingKey   = "thingKey"
-	thingID    = "1"
-	ttl        = "1h"
-	keyBits    = 2048
+	wrongValue   = "wrong-value"
+	email        = "user@example.com"
+	token        = email
+	password     = "password"
+	thingsNum    = 1
+	thingKey     = "thingKey"
+	thingID      = "1"
+	ttl          = "1h"
+	keyBits      = 2048
 	keyType      = "rsa"
 	ecdsaKeyType = "ecdsa"
 	ecKeyType    = "ec"

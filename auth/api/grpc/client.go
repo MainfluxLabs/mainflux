@@ -7,7 +7,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/auth"
+	authpkg "github.com/MainfluxLabs/mainflux/auth"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
@@ -21,7 +22,7 @@ const (
 	svcName = "protomfx.AuthService"
 )
 
-var _ protomfx.AuthServiceClient = (*grpcClient)(nil)
+var _ authpkg.Client = (*grpcClient)(nil)
 
 type grpcClient struct {
 	issue                               endpoint.Endpoint
@@ -38,7 +39,7 @@ type grpcClient struct {
 }
 
 // NewClient returns new gRPC client instance.
-func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Duration) protomfx.AuthServiceClient {
+func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Duration) authpkg.Client {
 	return &grpcClient{
 		issue: kitot.TraceClient(tracer, "issue")(kitgrpc.NewClient(
 			conn,
@@ -125,17 +126,17 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 	}
 }
 
-func (client grpcClient) Issue(ctx context.Context, req *protomfx.IssueReq, _ ...grpc.CallOption) (*protomfx.Token, error) {
+func (client grpcClient) Issue(ctx context.Context, id, email string, keyType uint32) (string, error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := client.issue(ctx, issueReq{id: req.GetId(), email: req.GetEmail(), keyType: req.Type})
+	res, err := client.issue(ctx, issueReq{id: id, email: email, keyType: keyType})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	ir := res.(identityRes)
-	return &protomfx.Token{Value: ir.id}, nil
+	return ir.id, nil
 }
 
 func encodeIssueRequest(_ context.Context, grpcReq any) (any, error) {
@@ -148,17 +149,17 @@ func decodeIssueResponse(_ context.Context, grpcRes any) (any, error) {
 	return identityRes{id: res.GetId(), email: res.GetEmail()}, nil
 }
 
-func (client grpcClient) Identify(ctx context.Context, token *protomfx.Token, _ ...grpc.CallOption) (*protomfx.UserIdentity, error) {
+func (client grpcClient) Identify(ctx context.Context, token string) (domainauth.Identity, error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := client.identify(ctx, identityReq{token: token.GetValue()})
+	res, err := client.identify(ctx, identityReq{token: token})
 	if err != nil {
-		return nil, err
+		return domainauth.Identity{}, err
 	}
 
 	ir := res.(identityRes)
-	return &protomfx.UserIdentity{Id: ir.id, Email: ir.email}, nil
+	return domainauth.Identity{ID: ir.id, Email: ir.email}, nil
 }
 
 func encodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {
@@ -171,17 +172,17 @@ func decodeIdentifyResponse(_ context.Context, grpcRes any) (any, error) {
 	return identityRes{id: res.GetId(), email: res.GetEmail()}, nil
 }
 
-func (client grpcClient) Authorize(ctx context.Context, req *protomfx.AuthorizeReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
+func (client grpcClient) Authorize(ctx context.Context, req domainauth.AuthzReq) error {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := client.authorize(ctx, authReq{Token: req.GetToken(), Object: req.GetObject(), Subject: req.GetSubject(), Action: req.GetAction()})
+	_, err := client.authorize(ctx, authReq{Token: req.Token, Object: req.Object, Subject: req.Subject, Action: req.Action})
 	if err != nil {
-		return &emptypb.Empty{}, err
+		return err
 	}
 
-	er := res.(emptyRes)
-	return &emptypb.Empty{}, er.err
+	er := emptyRes{}
+	return er.err
 }
 
 func encodeAuthorizeRequest(_ context.Context, grpcReq any) (any, error) {
@@ -194,17 +195,17 @@ func encodeAuthorizeRequest(_ context.Context, grpcReq any) (any, error) {
 	}, nil
 }
 
-func (client grpcClient) GetOwnerIDByOrg(ctx context.Context, req *protomfx.OrgID, _ ...grpc.CallOption) (*protomfx.OwnerID, error) {
+func (client grpcClient) GetOwnerIDByOrg(ctx context.Context, orgID string) (string, error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := client.getOwnerIDByOrg(ctx, ownerIDByOrgReq{orgID: req.GetValue()})
+	res, err := client.getOwnerIDByOrg(ctx, ownerIDByOrgReq{orgID: orgID})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	oid := res.(ownerIDByOrgRes)
-	return &protomfx.OwnerID{Value: oid.ownerID}, nil
+	return oid.ownerID, nil
 }
 
 func encodeGetOwnerIDByOrgRequest(_ context.Context, grpcReq any) (any, error) {
@@ -217,17 +218,16 @@ func decodeGetOwnerIDByOrgResponse(_ context.Context, grpcRes any) (any, error) 
 	return ownerIDByOrgRes{ownerID: res.GetValue()}, nil
 }
 
-func (client grpcClient) AssignRole(ctx context.Context, req *protomfx.AssignRoleReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
+func (client grpcClient) AssignRole(ctx context.Context, id, role string) error {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := client.assignRole(ctx, assignRoleReq{ID: req.GetId(), Role: req.GetRole()})
+	_, err := client.assignRole(ctx, assignRoleReq{ID: id, Role: role})
 	if err != nil {
-		return &emptypb.Empty{}, err
+		return err
 	}
-
-	er := res.(emptyRes)
-	return &emptypb.Empty{}, er.err
+	er := emptyRes{}
+	return er.err
 }
 
 func encodeAssignRoleRequest(_ context.Context, grpcReq any) (any, error) {
@@ -238,17 +238,17 @@ func encodeAssignRoleRequest(_ context.Context, grpcReq any) (any, error) {
 	}, nil
 }
 
-func (client grpcClient) RetrieveRole(ctx context.Context, req *protomfx.RetrieveRoleReq, _ ...grpc.CallOption) (r *protomfx.RetrieveRoleRes, err error) {
+func (client grpcClient) RetrieveRole(ctx context.Context, id string) (string, error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := client.retrieveRole(ctx, retrieveRoleReq{id: req.GetId()})
+	res, err := client.retrieveRole(ctx, retrieveRoleReq{id: id})
 	if err != nil {
-		return &protomfx.RetrieveRoleRes{}, err
+		return "", err
 	}
 
 	rr := res.(retrieveRoleRes)
-	return &protomfx.RetrieveRoleRes{Role: rr.role}, err
+	return rr.role, nil
 }
 
 func encodeRetrieveRoleRequest(_ context.Context, grpcReq any) (any, error) {
@@ -263,32 +263,30 @@ func decodeRetrieveRoleResponse(_ context.Context, grpcRes any) (any, error) {
 	return retrieveRoleRes{role: res.GetRole()}, nil
 }
 
-func (client grpcClient) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
+func (client grpcClient) CreateDormantOrgInvite(ctx context.Context, token, orgID, inviteeRole string, groupInvites []domainauth.GroupInvite, platformInviteID string) error {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	gis := []auth.GroupInvite{}
-	for _, gi := range req.GetGroupInvites() {
-		gis = append(gis, auth.GroupInvite{
+	gis := []domainauth.GroupInvite{}
+	for _, gi := range groupInvites {
+		gis = append(gis, domainauth.GroupInvite{
 			GroupID:    gi.GroupID,
 			MemberRole: gi.MemberRole,
 		})
 	}
 
-	res, err := client.createDormantOrgInvite(ctx, createDormantOrgInviteReq{
-		token:            req.GetToken(),
-		orgID:            req.GetOrgID(),
-		inviteeRole:      req.GetInviteeRole(),
+	_, err := client.createDormantOrgInvite(ctx, createDormantOrgInviteReq{
+		token:            token,
+		orgID:            orgID,
+		inviteeRole:      inviteeRole,
 		groupInvites:     gis,
-		platformInviteID: req.GetPlatformInviteID(),
+		platformInviteID: platformInviteID,
 	})
-
 	if err != nil {
-		return &emptypb.Empty{}, err
+		return err
 	}
-
-	er := res.(emptyRes)
-	return &emptypb.Empty{}, er.err
+	er := emptyRes{}
+	return er.err
 }
 
 func encodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, error) {
@@ -311,22 +309,20 @@ func encodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, e
 	}, nil
 }
 
-func (client grpcClient) ActivateOrgInvite(ctx context.Context, req *protomfx.ActivateOrgInviteReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
+func (client grpcClient) ActivateOrgInvite(ctx context.Context, platformInviteID, userID, redirectPath string) error {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := client.activateOrgInvite(ctx, activateOrgInviteReq{
-		platformInviteID: req.GetPlatformInviteID(),
-		userID:           req.GetUserID(),
-		redirectPath:     req.GetRedirectPath(),
+	_, err := client.activateOrgInvite(ctx, activateOrgInviteReq{
+		platformInviteID: platformInviteID,
+		userID:           userID,
+		redirectPath:     redirectPath,
 	})
-
 	if err != nil {
-		return &emptypb.Empty{}, err
+		return err
 	}
-
-	er := res.(emptyRes)
-	return &emptypb.Empty{}, er.err
+	er := emptyRes{}
+	return er.err
 }
 
 func encodeActivateOrgInviteRequest(_ context.Context, grpcReq any) (any, error) {
@@ -338,33 +334,19 @@ func encodeActivateOrgInviteRequest(_ context.Context, grpcReq any) (any, error)
 	}, nil
 }
 
-func (client grpcClient) GetDormantOrgInviteByPlatformInvite(ctx context.Context, req *protomfx.GetDormantOrgInviteByPlatformInviteReq, _ ...grpc.CallOption) (*protomfx.OrgInvite, error) {
+func (client grpcClient) GetDormantOrgInviteByPlatformInvite(ctx context.Context, platformInviteID string) (domainauth.OrgInvite, error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
 	res, err := client.getDormantOrgInviteByPlatformInvite(ctx, getDormantOrgInviteByPlatformInviteReq{
-		platformInviteID: req.GetPlatformInviteID(),
+		platformInviteID: platformInviteID,
 	})
 	if err != nil {
-		return &protomfx.OrgInvite{}, err
+		return domainauth.OrgInvite{}, err
 	}
 
 	orgInvite := res.(orgInviteRes)
-	groupInvites := make([]*protomfx.GroupInvite, 0, len(orgInvite.GroupInvites))
-	for _, groupInvite := range orgInvite.GroupInvites {
-		groupInvites = append(groupInvites, &protomfx.GroupInvite{
-			GroupID:    groupInvite.GroupID,
-			MemberRole: groupInvite.MemberRole,
-		})
-	}
-
-	return &protomfx.OrgInvite{
-		Id:           orgInvite.ID,
-		OrgID:        orgInvite.OrgID,
-		OrgName:      orgInvite.OrgName,
-		InviteeRole:  orgInvite.InviteeRole,
-		GroupInvites: groupInvites,
-	}, nil
+	return orgInvite.OrgInvite, nil
 }
 
 func encodeGetDormantOrgInviteByPlatformInviteRequest(_ context.Context, grpcReq any) (any, error) {
@@ -375,16 +357,16 @@ func encodeGetDormantOrgInviteByPlatformInviteRequest(_ context.Context, grpcReq
 func decodeOrgInviteResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.OrgInvite)
 
-	groupInvites := make([]auth.GroupInvite, 0, len(res.GetGroupInvites()))
+	groupInvites := make([]domainauth.GroupInvite, 0, len(res.GetGroupInvites()))
 	for _, groupInvite := range res.GetGroupInvites() {
-		groupInvites = append(groupInvites, auth.GroupInvite{
+		groupInvites = append(groupInvites, domainauth.GroupInvite{
 			GroupID:    groupInvite.GroupID,
 			MemberRole: groupInvite.MemberRole,
 		})
 	}
 
 	return orgInviteRes{
-		auth.OrgInvite{
+		OrgInvite: domainauth.OrgInvite{
 			ID:           res.GetId(),
 			OrgID:        res.GetOrgID(),
 			OrgName:      res.GetOrgName(),
@@ -394,18 +376,18 @@ func decodeOrgInviteResponse(_ context.Context, grpcRes any) (any, error) {
 	}, nil
 }
 
-func (client grpcClient) ViewOrg(ctx context.Context, req *protomfx.ViewOrgReq, _ ...grpc.CallOption) (*protomfx.Org, error) {
+func (client grpcClient) ViewOrg(ctx context.Context, token, orgID string) (domainauth.Org, error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := client.viewOrg(ctx, viewOrgReq{id: req.GetOrgID(), token: req.GetToken()})
+	res, err := client.viewOrg(ctx, viewOrgReq{id: orgID, token: token})
 	if err != nil {
-		return &protomfx.Org{}, err
+		return domainauth.Org{}, err
 	}
 
 	or := res.(orgRes)
-	return &protomfx.Org{
-		Id:      or.id,
+	return domainauth.Org{
+		ID:      or.id,
 		OwnerID: or.ownerID,
 		Name:    or.name,
 	}, nil

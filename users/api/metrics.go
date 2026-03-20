@@ -9,7 +9,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/auth"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-kit/kit/metrics"
 )
@@ -121,7 +121,7 @@ func (ms *metricsMiddleware) ViewProfile(ctx context.Context, token string) (use
 	return ms.svc.ViewProfile(ctx, token)
 }
 
-func (ms *metricsMiddleware) ListUsers(ctx context.Context, token string, pm users.PageMetadata) (users.UserPage, error) {
+func (ms *metricsMiddleware) ListUsers(ctx context.Context, token string, pm users.PageMetadata) (users.UsersPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_users").Add(1)
 		ms.latency.With("method", "list_users").Observe(time.Since(begin).Seconds())
@@ -130,7 +130,7 @@ func (ms *metricsMiddleware) ListUsers(ctx context.Context, token string, pm use
 	return ms.svc.ListUsers(ctx, token, pm)
 }
 
-func (ms *metricsMiddleware) ListUsersByIDs(ctx context.Context, ids []string, pm users.PageMetadata) (users.UserPage, error) {
+func (ms *metricsMiddleware) ListUsersByIDs(ctx context.Context, ids []string, pm users.PageMetadata) (users.UsersPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_users_by_ids").Add(1)
 		ms.latency.With("method", "list_users_by_ids").Observe(time.Since(begin).Seconds())
@@ -229,7 +229,7 @@ func (ms *metricsMiddleware) Restore(ctx context.Context, token string, admin us
 	return ms.svc.Restore(ctx, token, admin, users, identities)
 }
 
-func (ms *metricsMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite auth.OrgInvite) (users.PlatformInvite, error) {
+func (ms *metricsMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite domainauth.OrgInvite) (users.PlatformInvite, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_platform_invite").Add(1)
 		ms.latency.With("method", "create_platform_invite").Observe(time.Since(begin).Seconds())
