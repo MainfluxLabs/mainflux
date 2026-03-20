@@ -61,6 +61,30 @@ paths:
             Failed to revoke corresponding certificate.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /certs/rotate/{certID}:
+    post:
+      summary: Rotates a certificate
+      description: |
+        Revokes the certificate with the given serial and issues a new one
+        for the specified thing.
+      tags:
+        - certs
+      parameters:
+        - $ref: "#/components/parameters/CertID"
+      requestBody:
+        $ref: "#/components/requestBodies/RotateCertReq"
+      responses:
+        '201':
+          $ref: "#/components/responses/CertRes"
+        '400':
+          description: Failed due to malformed JSON.
+        "401":
+          description: Missing or invalid access token provided.
+        '404':
+          description: |
+            Certificate with the given serial was not found.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /serials/{thingID}:
     get:
       summary: Retrieves certificates' serial IDs
@@ -191,6 +215,29 @@ components:
           Issues a certificate that is required for mTLS. To create a certificate for a thing
           provide a thing id, data identifying particular thing will be embedded into the Certificate.
           x509 and ECC certificates are supported when using when Vault is used as PKI.
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - thing_id
+              - ttl
+              - key_bits
+              - key_type
+            properties:
+               thing_id:
+                 type: string
+                 format: uuid
+               ttl:
+                 type: string
+               key_type:
+                 type: string
+               key_bits:
+                 type: integer
+    RotateCertReq:
+      description: |
+        Rotates a certificate by revoking the existing one and issuing a new one.
+        Provide the thing ID and new certificate parameters.
       content:
         application/json:
           schema:
