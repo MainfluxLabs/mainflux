@@ -13,7 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/things"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 )
 
 var (
@@ -33,13 +33,13 @@ var (
 // Service specifies web socket service API.
 type Service interface {
 	// Publish Message
-	Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error
+	Publish(ctx context.Context, key domainthings.ThingKey, msg protomfx.Message) error
 
 	// Subscribe  subscribes to a profile with specified id.
-	Subscribe(ctx context.Context, key things.ThingKey, subtopic string, client *Client) error
+	Subscribe(ctx context.Context, key domainthings.ThingKey, subtopic string, client *Client) error
 
 	// Unsubscribe method is used to stop observing resource.
-	Unsubscribe(ctx context.Context, key things.ThingKey, subtopic string) error
+	Unsubscribe(ctx context.Context, key domainthings.ThingKey, subtopic string) error
 }
 
 var _ Service = (*adapterService)(nil)
@@ -57,7 +57,7 @@ func New(things protomfx.ThingsServiceClient, pubsub messaging.PubSub) Service {
 	}
 }
 
-func (svc *adapterService) Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error {
+func (svc *adapterService) Publish(ctx context.Context, key domainthings.ThingKey, msg protomfx.Message) error {
 	pc, err := svc.authorize(ctx, key)
 	if err != nil {
 		return ErrUnauthorizedAccess
@@ -78,7 +78,7 @@ func (svc *adapterService) Publish(ctx context.Context, key things.ThingKey, msg
 	return nil
 }
 
-func (svc *adapterService) Subscribe(ctx context.Context, key things.ThingKey, subtopic string, c *Client) error {
+func (svc *adapterService) Subscribe(ctx context.Context, key domainthings.ThingKey, subtopic string, c *Client) error {
 	if key.Value == "" {
 		return ErrUnauthorizedAccess
 	}
@@ -93,7 +93,7 @@ func (svc *adapterService) Subscribe(ctx context.Context, key things.ThingKey, s
 	return svc.pubsub.Subscribe(c.id, subtopic, c)
 }
 
-func (svc *adapterService) Unsubscribe(ctx context.Context, key things.ThingKey, subtopic string) error {
+func (svc *adapterService) Unsubscribe(ctx context.Context, key domainthings.ThingKey, subtopic string) error {
 	if key.Value == "" {
 		return ErrUnauthorizedAccess
 	}
@@ -106,7 +106,7 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, key things.ThingKey,
 	return svc.pubsub.Unsubscribe(pc.PublisherID, subtopic)
 }
 
-func (svc *adapterService) authorize(ctx context.Context, key things.ThingKey) (*protomfx.PubConfigByKeyRes, error) {
+func (svc *adapterService) authorize(ctx context.Context, key domainthings.ThingKey) (*protomfx.PubConfigByKeyRes, error) {
 	tk := &protomfx.ThingKey{
 		Value: key.Value,
 		Type:  key.Type,

@@ -13,9 +13,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -100,10 +101,10 @@ type Service interface {
 	ViewProfile(ctx context.Context, token string) (User, error)
 
 	// ListUsers retrieves users list for a valid admin token.
-	ListUsers(ctx context.Context, token string, pm PageMetadata) (UserPage, error)
+	ListUsers(ctx context.Context, token string, pm PageMetadata) (UsersPage, error)
 
 	// ListUsersByIDs retrieves users list for the given IDs.
-	ListUsersByIDs(ctx context.Context, ids []string, pm PageMetadata) (UserPage, error)
+	ListUsersByIDs(ctx context.Context, ids []string, pm PageMetadata) (UsersPage, error)
 
 	// ListUsersByEmails retrieves users list for the given emails.
 	ListUsersByEmails(ctx context.Context, emails []string) ([]User, error)
@@ -151,11 +152,8 @@ type PageMetadata struct {
 	Dir      string
 }
 
-// UserPage contains a page of users.
-type UserPage struct {
-	Total uint64
-	Users []User
-}
+// UsersPage is an alias for the shared domain type.
+type UsersPage = domainusers.UsersPage
 
 type ConfigURLs struct {
 	GoogleUserInfoURL   string
@@ -372,11 +370,11 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 
 		req := protomfx.AssignRoleReq{
 			Id:   u.ID,
-			Role: auth.RoleRootAdmin,
+			Role: domainauth.RoleRootAdmin,
 		}
 
 		switch role.Role {
-		case auth.RoleRootAdmin:
+		case domainauth.RoleRootAdmin:
 			return nil
 		default:
 			if _, err := svc.auth.AssignRole(ctx, &req); err != nil {
@@ -407,7 +405,7 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 
 	req := protomfx.AssignRoleReq{
 		Id:   user.ID,
-		Role: auth.RoleRootAdmin,
+		Role: domainauth.RoleRootAdmin,
 	}
 
 	if _, err := svc.auth.AssignRole(ctx, &req); err != nil {
@@ -462,7 +460,7 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 	if err := svc.hasher.Compare(user.Password, dbUser.Password); err != nil {
 		return "", errors.Wrap(errors.ErrAuthentication, err)
 	}
-	return svc.issue(ctx, dbUser.ID, dbUser.Email, auth.LoginKey)
+	return svc.issue(ctx, dbUser.ID, dbUser.Email, domainauth.LoginKey)
 }
 
 func (svc usersService) OAuthLogin(provider string) (data OAuthLoginData, err error) {
@@ -515,7 +513,7 @@ func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackDat
 		return "", err
 	}
 
-	token, err := svc.issue(ctx, user.ID, user.Email, auth.LoginKey)
+	token, err := svc.issue(ctx, user.ID, user.Email, domainauth.LoginKey)
 	if err != nil {
 		return "", err
 	}
@@ -724,15 +722,15 @@ func (svc usersService) ViewProfile(ctx context.Context, token string) (User, er
 	return u, nil
 }
 
-func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMetadata) (UserPage, error) {
+func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMetadata) (UsersPage, error) {
 	if err := svc.isAdmin(ctx, token); err != nil {
-		return UserPage{}, err
+		return UsersPage{}, err
 	}
 
 	return svc.users.RetrieveByIDs(ctx, nil, pm)
 }
 
-func (svc usersService) ListUsersByIDs(ctx context.Context, ids []string, pm PageMetadata) (UserPage, error) {
+func (svc usersService) ListUsersByIDs(ctx context.Context, ids []string, pm PageMetadata) (UsersPage, error) {
 	pm.Status = EnabledStatusKey
 	return svc.users.RetrieveByIDs(ctx, ids, pm)
 }
@@ -793,7 +791,7 @@ func (svc usersService) Restore(ctx context.Context, token string, admin User, u
 
 	req := protomfx.AssignRoleReq{
 		Id:   admin.ID,
-		Role: auth.RoleRootAdmin,
+		Role: domainauth.RoleRootAdmin,
 	}
 
 	if _, err := svc.auth.AssignRole(ctx, &req); err != nil {
@@ -832,7 +830,7 @@ func (svc usersService) GenerateResetToken(ctx context.Context, email, redirectP
 	if err != nil || user.Email == "" {
 		return dbutil.ErrNotFound
 	}
-	t, err := svc.issue(ctx, user.ID, user.Email, auth.RecoveryKey)
+	t, err := svc.issue(ctx, user.ID, user.Email, domainauth.RecoveryKey)
 	if err != nil {
 		return errors.Wrap(ErrRecoveryToken, err)
 	}
@@ -967,7 +965,7 @@ func (svc usersService) identify(ctx context.Context, token string) (userIdentit
 func (svc usersService) isAdmin(ctx context.Context, token string) error {
 	req := &protomfx.AuthorizeReq{
 		Token:   token,
-		Subject: auth.RootSub,
+		Subject: domainauth.RootSub,
 	}
 
 	if _, err := svc.auth.Authorize(ctx, req); err != nil {

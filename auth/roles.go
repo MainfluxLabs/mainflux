@@ -1,12 +1,15 @@
 package auth
 
-import "context"
+import (
+	"context"
 
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+)
+
+// RoleRootAdmin and RoleAdmin are aliases for the shared domain types.
 const (
-	// RoleRootAdmin is the super admin role.
-	RoleRootAdmin = "root"
-	// RoleAdmin is the admin role.
-	RoleAdmin = "admin"
+	RoleRootAdmin = domainauth.RoleRootAdmin
+	RoleAdmin     = domainauth.RoleAdmin
 )
 
 type Roles interface {

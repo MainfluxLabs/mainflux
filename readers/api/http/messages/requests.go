@@ -5,20 +5,20 @@ package messages
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/readers"
-	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const maxLimitSize = 1000
 
 type listSenMLMessagesReq struct {
 	token    string
-	thingKey things.ThingKey
+	thingKey domainthings.ThingKey
 	pageMeta readers.SenMLPageMetadata
 }
 
 func (req listSenMLMessagesReq) validate() error {
-	err := req.thingKey.Validate()
+	err := apiutil.ValidateThingKey(req.thingKey)
 	if req.token == "" && err != nil {
 		return apiutil.ErrBearerToken
 	}
@@ -49,12 +49,12 @@ func (req listSenMLMessagesReq) validate() error {
 
 type listJSONMessagesReq struct {
 	token    string
-	thingKey things.ThingKey
+	thingKey domainthings.ThingKey
 	pageMeta readers.JSONPageMetadata
 }
 
 func (req listJSONMessagesReq) validate() error {
-	err := req.thingKey.Validate()
+	err := apiutil.ValidateThingKey(req.thingKey)
 	if req.token == "" && err != nil {
 		return apiutil.ErrBearerToken
 	}
@@ -130,12 +130,12 @@ func (req exportJSONMessagesReq) validate() error {
 
 type deleteAllSenMLMessagesReq struct {
 	token    string
-	thingKey things.ThingKey
+	thingKey domainthings.ThingKey
 	pageMeta readers.SenMLPageMetadata
 }
 
 func (req deleteAllSenMLMessagesReq) validate() error {
-	err := req.thingKey.Validate()
+	err := apiutil.ValidateThingKey(req.thingKey)
 	if req.token == "" && err != nil {
 		return apiutil.ErrBearerToken
 	}
@@ -145,12 +145,12 @@ func (req deleteAllSenMLMessagesReq) validate() error {
 
 type deleteAllJSONMessagesReq struct {
 	token    string
-	thingKey things.ThingKey
+	thingKey domainthings.ThingKey
 	pageMeta readers.JSONPageMetadata
 }
 
 func (req deleteAllJSONMessagesReq) validate() error {
-	err := req.thingKey.Validate()
+	err := apiutil.ValidateThingKey(req.thingKey)
 	if req.token == "" && err != nil {
 		return apiutil.ErrBearerToken
 	}

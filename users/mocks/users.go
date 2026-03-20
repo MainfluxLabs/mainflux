@@ -99,17 +99,17 @@ func (urm *userRepositoryMock) RetrieveByID(ctx context.Context, id string) (use
 	return val, nil
 }
 
-func (urm *userRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string, pm users.PageMetadata) (users.UserPage, error) {
+func (urm *userRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string, pm users.PageMetadata) (users.UsersPage, error) {
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
-	up := users.UserPage{}
+	up := users.UsersPage{}
 	i := uint64(0)
 
 	if pm.Email != "" {
 		val, ok := urm.usersByEmail[pm.Email]
 		if !ok {
-			return users.UserPage{}, dbutil.ErrNotFound
+			return users.UsersPage{}, dbutil.ErrNotFound
 		}
 		up.Total = uint64(i)
 		up.Users = []users.User{val}

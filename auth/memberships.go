@@ -2,12 +2,15 @@ package auth
 
 import (
 	"context"
-	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
+
+// OrgMembership is an alias for the shared domain type.
+type OrgMembership = domainauth.OrgMembership
 
 var (
 	// ErrCreateOrgMembership indicates failure to create org membership.
@@ -20,21 +23,8 @@ var (
 	ErrOrgMembershipExists = errors.New("org membership already exists")
 )
 
-type OrgMembership struct {
-	MemberID  string
-	OrgID     string
-	Role      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Email     string
-}
-
-// OrgMembershipsPage contains page related metadata as well as list of memberships that
-// belong to this page.
-type OrgMembershipsPage struct {
-	Total          uint64
-	OrgMemberships []OrgMembership
-}
+// OrgMembershipsPage is an alias for the shared domain type.
+type OrgMembershipsPage = domainauth.OrgMembershipsPage
 
 type OrgMembershipsRepository interface {
 	// Save saves memberships.
