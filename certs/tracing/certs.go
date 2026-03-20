@@ -5,6 +5,7 @@ package tracing
 
 import (
 	"context"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/certs"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -12,12 +13,13 @@ import (
 )
 
 const (
-	retrieveAllCerts     = "retrieve_all_certs"
-	saveCert             = "save_cert"
-	removeCert           = "remove_cert"
-	retrieveRevokedCerts = "retrieve_revoked_certs"
-	retrieveCertByThing  = "retrieve_cert_by_thing"
-	retrieveCertBySerial = "retrieve_cert_by_serial"
+	retrieveAllCerts      = "retrieve_all_certs"
+	saveCert              = "save_cert"
+	removeCert            = "remove_cert"
+	retrieveExpiringCerts = "retrieve_expiring_certs"
+	retrieveRevokedCerts  = "retrieve_revoked_certs"
+	retrieveCertByThing   = "retrieve_cert_by_thing"
+	retrieveCertBySerial  = "retrieve_cert_by_serial"
 )
 
 var _ certs.Repository = (*certsRepositoryMiddleware)(nil)
@@ -56,6 +58,14 @@ func (crm certsRepositoryMiddleware) Remove(ctx context.Context, serialID string
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return crm.repo.Remove(ctx, serialID)
+}
+
+func (crm certsRepositoryMiddleware) RetrieveExpiring(ctx context.Context, expiresWithin time.Duration) ([]certs.Cert, error) {
+	span := dbutil.CreateSpan(ctx, crm.tracer, retrieveExpiringCerts)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return crm.repo.RetrieveExpiring(ctx, expiresWithin)
 }
 
 func (crm certsRepositoryMiddleware) RetrieveRevokedCerts(ctx context.Context) ([]certs.RevokedCert, error) {

@@ -127,6 +127,33 @@ func (cr certsRepository) Remove(ctx context.Context, serial string) error {
 	return nil
 }
 
+func (cr certsRepository) RetrieveExpiring(ctx context.Context, expiresWithin time.Duration) ([]certs.Cert, error) {
+	q := `SELECT thing_id, serial, expires_at, client_cert, client_key, issuing_ca,
+	      ca_chain, private_key_type, key_bits FROM certs
+	      WHERE expires_at <= :deadline ORDER BY expires_at`
+
+	params := map[string]any{
+		"deadline": time.Now().Add(expiresWithin),
+	}
+
+	rows, err := cr.db.NamedQueryContext(ctx, q, params)
+	if err != nil {
+		return nil, cr.handlePgError(err, dbutil.ErrRetrieveEntity)
+	}
+	defer rows.Close()
+
+	var certificates []certs.Cert
+	for rows.Next() {
+		var dbcrt dbCert
+		if err := rows.StructScan(&dbcrt); err != nil {
+			return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		}
+		certificates = append(certificates, toCert(dbcrt))
+	}
+
+	return certificates, nil
+}
+
 func (cr certsRepository) RetrieveRevokedCerts(ctx context.Context) ([]certs.RevokedCert, error) {
 	q := `SELECT serial, revoked_at, thing_id FROM revoked_certs ORDER BY revoked_at DESC`
 

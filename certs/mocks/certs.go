@@ -165,6 +165,21 @@ func (c *certsRepoMock) RetrieveBySerial(ctx context.Context, serial string) (ce
 	return crt, nil
 }
 
+func (c *certsRepoMock) RetrieveExpiring(ctx context.Context, expiresWithin time.Duration) ([]certs.Cert, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	deadline := time.Now().Add(expiresWithin)
+	var expiring []certs.Cert
+	for _, cert := range c.certsBySerial {
+		if cert.ExpiresAt.Before(deadline) {
+			expiring = append(expiring, cert)
+		}
+	}
+
+	return expiring, nil
+}
+
 func (c *certsRepoMock) RetrieveRevokedCerts(ctx context.Context) ([]certs.RevokedCert, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()

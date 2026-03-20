@@ -33,6 +33,30 @@ func issueCertEndpoint(svc certs.Service) endpoint.Endpoint {
 	}
 }
 
+func rotateCertEndpoint(svc certs.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(rotateCertsReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		res, err := svc.RotateCert(ctx, req.token, req.serial, req.ThingID, req.TTL, req.KeyBits, req.KeyType)
+		if err != nil {
+			return issueCertRes{}, err
+		}
+
+		return issueCertRes{
+			Certificate:    res.ClientCert,
+			IssuingCA:      res.IssuingCA,
+			CAChain:        res.CAChain,
+			PrivateKey:     res.ClientKey,
+			PrivateKeyType: res.PrivateKeyType,
+			Serial:         res.Serial,
+			ExpiresAt:      res.ExpiresAt,
+		}, nil
+	}
+}
+
 func listSerialsByThingEndpoint(svc certs.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listReq)
