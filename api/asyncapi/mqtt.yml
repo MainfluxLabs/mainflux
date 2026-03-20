@@ -1,10 +1,10 @@
-asyncapi: '2.2.0'
+asyncapi: "2.2.0"
 info:
   title: MQTT Adapter
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0
-  version: '1.0.0'
+  version: "1.0.0"
   description: |
     MQTT adapter provides an MQTT API for sending messages through the platform. MQTT adapter uses [mProxy](https://github.com/MainfluxLabs/mproxy) for proxying traffic between client and MQTT broker.
     Additionally, the MQTT adapter and the message broker are replicating the traffic between brokers.
@@ -19,14 +19,14 @@ servers:
     variables:
       port:
         description: Secure connection (TLS) is available through port 8883.
-        default: '1883'
+        default: "1883"
         enum:
-          - '1883'
-          - '8883'
+          - "1883"
+          - "8883"
       username:
         enum:
-          - 'internal'
-          - 'external'
+          - "internal"
+          - "external"
         description: Thing key type.
       password:
         description: Thing key.

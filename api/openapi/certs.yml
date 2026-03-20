@@ -1,85 +1,108 @@
 openapi: 3.0.1
 info:
   title: Mainflux Certs service
-  description: HTTP API for Certs service
+  description: HTTP API for managing X.509 certificates for IoT things.
   version: "1.0.0"
 
 paths:
   /certs:
     post:
-      summary: Creates a certificate for thing
-      description: Creates a certificate for thing
+      summary: Issues a certificate for a thing
+      description: |
+        Issues an X.509 certificate for a thing using the configured PKI. The
+        certificate and private key are returned in PEM format. The serial number
+        can be used to retrieve, renew, or revoke the certificate later.
       tags:
         - certs
       requestBody:
         $ref: "#/components/requestBodies/CertReq"
       responses:
         '201':
-          description: Created
+          $ref: "#/components/responses/IssueCertRes"
         '400':
           description: Failed due to malformed JSON.
-        "401":
+        '401':
           description: Missing or invalid access token provided.
         '500':
-          description: Unexpected server-side error ocurred.
-  /certs/{certID}:
+          $ref: "#/components/responses/ServiceError"
+  /certs/{serial}:
     get:
       summary: Retrieves a certificate
-      description: |
-        Retrieves a certificate for a given cert ID.
+      description: Retrieves a certificate by its serial number.
       tags:
         - certs
       parameters:
-        - $ref: "#/components/parameters/CertID"
+        - $ref: "#/components/parameters/Serial"
       responses:
         '200':
-          $ref: "#/components/responses/CertRes"
+          $ref: "#/components/responses/ViewCertRes"
         '400':
           description: Failed due to malformed query parameters.
-        "401":
+        '401':
           description: Missing or invalid access token provided.
         '404':
-          description: |
-            Failed to retrieve corresponding certificate.
+          description: Certificate not found.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    put:
+      summary: Renews a certificate
+      description: |
+        Renews a certificate identified by its serial number. Renewal is only
+        permitted when the certificate is within 30 days of its expiration date.
+        A new certificate with an extended validity period is issued and returned.
+      tags:
+        - certs
+      parameters:
+        - $ref: "#/components/parameters/Serial"
+      responses:
+        '200':
+          $ref: "#/components/responses/IssueCertRes"
+        '400':
+          description: Certificate is not within the renewal window.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Certificate not found.
         '500':
           $ref: "#/components/responses/ServiceError"
     delete:
       summary: Revokes a certificate
-      description: |
-        Revokes a certificate for a given cert ID.
+      description: Revokes a certificate identified by its serial number.
       tags:
         - certs
       parameters:
-        - $ref: "#/components/parameters/CertID"
+        - $ref: "#/components/parameters/Serial"
       responses:
         '200':
           $ref: "#/components/responses/RevokeRes"
-        "401":
+        '401':
           description: Missing or invalid access token provided.
         '404':
-          description: |
-            Failed to revoke corresponding certificate.
+          description: Certificate not found.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /serials/{thingID}:
+  /things/{thingId}/serials:
     get:
-      summary: Retrieves certificates' serial IDs
+      summary: Lists certificate serials for a thing
       description: |
-        Retrieves a list of certificates' serial IDs for a given thing ID.
+        Retrieves a paginated list of certificate serial numbers issued for the
+        specified thing. Use the serial numbers to retrieve or revoke individual
+        certificates.
       tags:
         - certs
       parameters:
-        - $ref: "#/components/parameters/ThingID"
+        - $ref: "#/components/parameters/ThingId"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
       responses:
         '200':
           $ref: "#/components/responses/SerialsPageRes"
         '400':
           description: Failed due to malformed query parameters.
-        "401":
+        '401':
           description: Missing or invalid access token provided.
         '404':
-          description: |
-            Failed to retrieve corresponding certificates.
+          description: Thing not found.
         '500':
           $ref: "#/components/responses/ServiceError"
   /health:
@@ -95,76 +118,104 @@ paths:
 
 components:
   parameters:
-    ThingID:
-      name: thingID
-      description: Thing ID
+    ThingId:
+      name: thingId
+      description: Unique thing identifier.
       in: path
       schema:
         type: string
         format: uuid
       required: true
-    CertID:
-      name: certID
-      description: Serial of certificate
+    Serial:
+      name: serial
+      description: Certificate serial number (hex string).
       in: path
       schema:
         type: string
-        format: uuid
       required: true
+    Limit:
+      name: limit
+      description: Maximum number of items to return.
+      in: query
+      schema:
+        type: integer
+        default: 10
+        minimum: 1
+        maximum: 200
+      required: false
+    Offset:
+      name: offset
+      description: Number of items to skip during retrieval.
+      in: query
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+      required: false
 
   schemas:
-    Cert:
+    IssueCert:
       type: object
+      description: Issued certificate data returned after a successful issuance or renewal.
+      properties:
+        certificate:
+          type: string
+          description: PEM-encoded client certificate.
+        issuing_ca:
+          type: string
+          description: PEM-encoded certificate of the issuing CA.
+        ca_chain:
+          type: array
+          description: Full CA certificate chain in PEM format.
+          items:
+            type: string
+        private_key:
+          type: string
+          description: PEM-encoded private key corresponding to the certificate.
+        private_key_type:
+          type: string
+          description: Private key algorithm. Either `rsa` or `ec`.
+          example: rsa
+        serial:
+          type: string
+          description: Certificate serial number (hex string).
+        expires_at:
+          type: string
+          format: date-time
+          description: Certificate expiration timestamp (RFC 3339).
+      required:
+        - certificate
+        - serial
+        - expires_at
+    ViewCert:
+      type: object
+      description: Certificate details returned when retrieving by serial number.
       properties:
         thing_id:
           type: string
           format: uuid
-          description: Corresponding Mainflux Thing ID.
-        client_cert:
+          description: Unique identifier of the thing the certificate was issued for.
+        certificate:
           type: string
-          description: Client Certificate.
-        client_key:
-          type: string
-          description: Key for the client_cert.
-        issuing_ca:
-          type: string
-          description: CA Certificate that is used to issue client certs, usually intermediate.
+          description: PEM-encoded certificate.
         serial:
           type: string
-          description: Certificate serial
-        expire:
+          description: Certificate serial number (hex string).
+        expires_at:
           type: string
-          description: Certificate expiry date
-    Serial:
-      type: object
-      properties:
-        serial:
-          type: string
-          description: Certificate serial
-    CertsPage:
-      type: object
-      properties:
-        certs:
-          type: array
-          minItems: 0
-          uniqueItems: true
-          items:
-            $ref: "#/components/schemas/Cert"
-        total:
-          type: integer
-          description: Total number of items.
-        offset:
-          type: integer
-          description: Number of items to skip during retrieval.
-        limit:
-          type: integer
-          description: Maximum number of items to return in one page.
+          format: date-time
+          description: Certificate expiration timestamp (RFC 3339).
+      required:
+        - thing_id
+        - certificate
+        - serial
+        - expires_at
     SerialsPage:
       type: object
       properties:
         serials:
           type: array
-          description: Certificate serials IDs.
+          description: Certificate serial numbers.
           minItems: 0
           uniqueItems: true
           items:
@@ -183,14 +234,16 @@ components:
       properties:
         revocation_time:
           type: string
-          description: Certificate revocation time
+          format: date-time
+          description: Timestamp at which the certificate was revoked.
 
   requestBodies:
     CertReq:
       description: |
-          Issues a certificate that is required for mTLS. To create a certificate for a thing
-          provide a thing id, data identifying particular thing will be embedded into the Certificate.
-          x509 and ECC certificates are supported when using when Vault is used as PKI.
+        Certificate issuance request. Provide the thing ID to embed in the
+        certificate subject, the desired validity period (TTL), and the key type
+        and size. The TTL is a duration string such as `8760h` (one year).
+      required: true
       content:
         application/json:
           schema:
@@ -201,33 +254,39 @@ components:
               - key_bits
               - key_type
             properties:
-               thing_id:
-                 type: string
-                 format: uuid
-               ttl:
-                 type: string
-               key_type:
-                 type: string
-               key_bits:
-                 type: integer
+              thing_id:
+                type: string
+                format: uuid
+                description: ID of the thing to issue the certificate for.
+              ttl:
+                type: string
+                description: Certificate validity period as a Go duration string (e.g. `8760h`).
+                example: "8760h"
+              key_type:
+                type: string
+                description: Key algorithm. Supported values are `rsa` and `ec`.
+                enum: [rsa, ec]
+                example: rsa
+              key_bits:
+                type: integer
+                description: Key size in bits. For RSA use 2048 or 4096; for EC use 256 or 384.
+                example: 2048
 
   responses:
-    ServiceError:
-      description: Unexpected server-side error occurred.
-    CertRes:
+    IssueCertRes:
+      description: Certificate issued.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/IssueCert"
+    ViewCertRes:
       description: Certificate data.
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Cert"
-    CertsPageRes:
-      description: Certificates page.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/CertsPage"
+            $ref: "#/components/schemas/ViewCert"
     SerialsPageRes:
-      description: Serials page.
+      description: Certificate serials page.
       content:
         application/json:
           schema:
@@ -238,6 +297,8 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Revoke"
+    ServiceError:
+      description: Unexpected server-side error occurred.
     HealthRes:
       description: Service Health Check.
       content:

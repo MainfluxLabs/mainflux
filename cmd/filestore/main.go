@@ -79,7 +79,7 @@ const (
 	envServerCert        = "MF_FILESTORE_SERVER_CERT"
 	envServerKey         = "MF_FILESTORE_SERVER_KEY"
 	envJaegerURL         = "MF_JAEGER_URL"
-	envFileStoreCert     = "MF_FILESTORE_SERVER_CERT"
+	envFileStoreCert     = "MF_FILESTORE_CA_CERTS"
 	envClientTLS         = "MF_FILESTORE_TLS"
 	envThingsAuthURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"

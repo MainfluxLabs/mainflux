@@ -863,9 +863,21 @@ components:
                 type: array
                 items:
                   $ref: "#/components/schemas/RuleResSchema"
+              total:
+                type: integer
+                example: 1
+              offset:
+                type: integer
+                example: 0
+              limit:
+                type: integer
+                example: 10
             required:
               - rules
           example:
+            total: 1
+            offset: 0
+            limit: 10
             rules:
               - id: "789e4567-e89b-12d3-a456-426614174abc"
                 group_id: "321e4567-e89b-12d3-a456-426614174def"

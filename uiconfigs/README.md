@@ -1,6 +1,25 @@
-# UI Configs
+# UI Configs Service
 
-UI Configs service persists and manages UI configuration settings scoped per organization and per thing, with support for full backup and restore.
+The UI Configs service persists and manages UI configuration settings scoped per organization and per thing. Configuration payloads are arbitrary JSON objects — the service imposes no schema on the values stored, giving the frontend full flexibility over what it persists. The service also supports full **backup and restore** of all configs.
+
+## Org Config
+
+An org config stores frontend settings at the organization level (e.g. theme, language, dashboard layout).
+
+| Field    | Description                                                    |
+|----------|----------------------------------------------------------------|
+| `org_id` | ID of the organization the config belongs to                   |
+| `config` | Arbitrary JSON object containing the UI configuration settings |
+
+## Thing Config
+
+A thing config stores frontend settings for a specific thing (e.g. chart type, display unit, decimal precision).
+
+| Field      | Description                                                    |
+|------------|----------------------------------------------------------------|
+| `thing_id` | ID of the thing the config belongs to                          |
+| `group_id` | ID of the group the thing belongs to                           |
+| `config`   | Arbitrary JSON object containing the UI configuration settings |
 
 ## Configuration
 
@@ -12,7 +31,7 @@ default values.
 |----------------------------------|-------------------------------------------------------------------------|-----------------------|
 | MF_UI_CONFIGS_LOG_LEVEL          | Log level for the UI Configs service (debug, info, warn, error)         | error                 |
 | MF_UI_CONFIGS_HTTP_PORT          | UI Configs service HTTP port                                            | 9029                  |
-| MF_JAEGER_URL                    | Jaeger server URL                                                       |                       |
+| MF_JAEGER_URL                    | Jaeger server URL for distributed tracing. Leave empty to disable tracing. Docker value: `jaeger:6831` |                       |
 | MF_UI_CONFIGS_DB_HOST            | Database host address                                                   | localhost             |
 | MF_UI_CONFIGS_DB_PORT            | Database host port                                                      | 5432                  |
 | MF_UI_CONFIGS_DB_USER            | Database user                                                           | mainflux              |
@@ -68,6 +87,4 @@ $GOBIN/mainfluxlabs-uiconfigs
 
 ## Usage
 
-The service stores UI configuration per organization (org config) and per thing (thing config). Users can view or update their own org and thing configs. Administrators can list all configs. The service also exposes backup and restore endpoints to export and re-import the full configuration state.
-
-[doc]: https://mainfluxlabs.github.io/docs
+For the full HTTP API reference, see the [OpenAPI specification](https://mainfluxlabs.github.io/docs/swagger/).
