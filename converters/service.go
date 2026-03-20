@@ -111,11 +111,11 @@ func (as *adapterService) PublishJSONMessages(ctx context.Context, key string, c
 	counter := 0
 	keys := csvLines[0][1:]
 	msgs := []map[string]any{}
-	createdIdx := slices.Index(csvLines[0], timeField)
+	timeFieldIdx := slices.Index(csvLines[0], timeField)
 	for i := 1; i < len(csvLines); i++ {
 		record := map[string]any{}
-		if timeField != "" && createdIdx != -1 {
-			t, err := strconv.ParseFloat(csvLines[i][createdIdx], 64)
+		if timeField != "" && timeFieldIdx != -1 {
+			t, err := strconv.ParseFloat(csvLines[i][timeFieldIdx], 64)
 			if err != nil {
 				return ErrInvalidTimeField
 			}
