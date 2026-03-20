@@ -151,43 +151,43 @@ func TestRetrieveByIDs(t *testing.T) {
 	}{
 		"retrieve all users filtered by email": {
 			pm: users.PageMetadata{
-				Email:  "All",
-				Status: users.EnabledStatusKey,
 				Offset: 0,
 				Limit:  nUsers,
 				Total:  nUsers,
+				Email:  "All",
+				Status: users.EnabledStatusKey,
 			},
 			size: nUsers,
 			ids:  ids,
 		},
 		"retrieve all users by email with limit and offset": {
 			pm: users.PageMetadata{
-				Email:  "All",
-				Status: users.EnabledStatusKey,
 				Offset: 2,
 				Limit:  5,
 				Total:  nUsers,
+				Email:  "All",
+				Status: users.EnabledStatusKey,
 			},
 			size: 5,
 			ids:  ids,
 		},
 		"retrieve all users by email without limit": {
 			pm: users.PageMetadata{
-				Email:  "All",
-				Status: users.EnabledStatusKey,
 				Limit:  0,
 				Total:  nUsers,
+				Email:  "All",
+				Status: users.EnabledStatusKey,
 			},
 			size: nUsers,
 			ids:  ids,
 		},
 		"retrieve all users by metadata": {
 			pm: users.PageMetadata{
-				Email:    "All",
-				Status:   users.EnabledStatusKey,
 				Offset:   0,
 				Limit:    nUsers,
 				Total:    nUsers,
+				Email:    "All",
+				Status:   users.EnabledStatusKey,
 				Metadata: meta,
 			},
 			size: metaNum,
@@ -195,11 +195,11 @@ func TestRetrieveByIDs(t *testing.T) {
 		},
 		"retrieve users by metadata and ids": {
 			pm: users.PageMetadata{
-				Email:    "All",
-				Status:   users.EnabledStatusKey,
 				Offset:   0,
 				Limit:    nUsers,
 				Total:    nUsers,
+				Email:    "All",
+				Status:   users.EnabledStatusKey,
 				Metadata: meta,
 			},
 			size: 1,
@@ -207,11 +207,11 @@ func TestRetrieveByIDs(t *testing.T) {
 		},
 		"retrieve users by wrong metadata": {
 			pm: users.PageMetadata{
-				Email:    "All",
-				Status:   users.EnabledStatusKey,
 				Offset:   0,
 				Limit:    nUsers,
 				Total:    nUsers,
+				Email:    "All",
+				Status:   users.EnabledStatusKey,
 				Metadata: wrongMeta,
 			},
 			size: 0,
@@ -219,11 +219,11 @@ func TestRetrieveByIDs(t *testing.T) {
 		},
 		"retrieve users by wrong metadata and ids": {
 			pm: users.PageMetadata{
-				Email:    "All",
-				Status:   users.EnabledStatusKey,
 				Offset:   0,
 				Limit:    nUsers,
 				Total:    nUsers,
+				Email:    "All",
+				Status:   users.EnabledStatusKey,
 				Metadata: wrongMeta,
 			},
 			size: 0,
@@ -231,22 +231,22 @@ func TestRetrieveByIDs(t *testing.T) {
 		},
 		"retrieve all users by list of ids with limit and offset": {
 			pm: users.PageMetadata{
-				Email:  "All",
-				Status: users.EnabledStatusKey,
 				Offset: 2,
 				Limit:  5,
 				Total:  nUsers,
+				Email:  "All",
+				Status: users.EnabledStatusKey,
 			},
 			size: 5,
 			ids:  ids,
 		},
 		"retrieve all users by list of ids with limit and offset and metadata": {
 			pm: users.PageMetadata{
-				Email:    "All",
-				Status:   users.EnabledStatusKey,
 				Offset:   1,
 				Limit:    5,
 				Total:    nUsers,
+				Email:    "All",
+				Status:   users.EnabledStatusKey,
 				Metadata: meta,
 			},
 			size: 1,
@@ -254,22 +254,22 @@ func TestRetrieveByIDs(t *testing.T) {
 		},
 		"retrieve all users from empty ids": {
 			pm: users.PageMetadata{
-				Email:  "All",
-				Status: users.EnabledStatusKey,
 				Offset: 0,
 				Limit:  nUsers,
 				Total:  nUsers,
+				Email:  "All",
+				Status: users.EnabledStatusKey,
 			},
 			size: nUsers,
 			ids:  []string{},
 		},
 		"retrieve all users from empty ids with offset": {
 			pm: users.PageMetadata{
-				Email:  "All",
-				Status: users.EnabledStatusKey,
 				Offset: 1,
 				Limit:  5,
 				Total:  nUsers,
+				Email:  "All",
+				Status: users.EnabledStatusKey,
 			},
 			size: 5,
 			ids:  []string{},

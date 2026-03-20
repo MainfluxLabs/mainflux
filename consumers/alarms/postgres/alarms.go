@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/gofrs/uuid"
@@ -80,7 +79,7 @@ func (ar *alarmRepository) RetrieveByID(ctx context.Context, id string) (alarms.
 	return toAlarm(dba)
 }
 
-func (ar *alarmRepository) RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+func (ar *alarmRepository) RetrieveByThing(ctx context.Context, thingID string, pm alarms.PageMetadata) (alarms.AlarmsPage, error) {
 	if _, err := uuid.FromString(thingID); err != nil {
 		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
@@ -110,7 +109,7 @@ func (ar *alarmRepository) RetrieveByThing(ctx context.Context, thingID string, 
 	return ar.retrieve(ctx, q, qc, params)
 }
 
-func (ar *alarmRepository) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+func (ar *alarmRepository) RetrieveByGroup(ctx context.Context, groupID string, pm alarms.PageMetadata) (alarms.AlarmsPage, error) {
 	if _, err := uuid.FromString(groupID); err != nil {
 		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
@@ -141,7 +140,7 @@ func (ar *alarmRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 	return ar.retrieve(ctx, q, qc, params)
 }
 
-func (ar *alarmRepository) RetrieveByGroups(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+func (ar *alarmRepository) RetrieveByGroups(ctx context.Context, groupIDs []string, pm alarms.PageMetadata) (alarms.AlarmsPage, error) {
 	if len(groupIDs) == 0 {
 		return alarms.AlarmsPage{}, nil
 	}
@@ -204,7 +203,7 @@ func (ar *alarmRepository) RemoveByGroup(ctx context.Context, groupID string) er
 	return nil
 }
 
-func (ar *alarmRepository) ExportByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+func (ar *alarmRepository) ExportByThing(ctx context.Context, thingID string, pm alarms.PageMetadata) (alarms.AlarmsPage, error) {
 	if _, err := uuid.FromString(thingID); err != nil {
 		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}

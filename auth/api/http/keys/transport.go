@@ -62,8 +62,13 @@ func decodeListAPIKeys(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	req := listKeysReq{
-		token:        apiutil.ExtractBearerToken(r),
-		pageMetadata: pm,
+		token: apiutil.ExtractBearerToken(r),
+		pageMetadata: auth.PageMetadata{
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
+		},
 	}
 
 	return req, nil

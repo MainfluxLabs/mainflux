@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -125,7 +124,7 @@ func listOrgsEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func buildOrgsResponse(op auth.OrgsPage, pm apiutil.PageMetadata) orgsPageRes {
+func buildOrgsResponse(op auth.OrgsPage, pm auth.PageMetadata) orgsPageRes {
 	res := orgsPageRes{
 		pageRes: pageRes{
 			Total:  op.Total,

@@ -83,8 +83,25 @@ func MakeHandler(tracer opentracing.Tracer, svc alarms.Service, logger log.Logge
 	return r
 }
 
+func buildAlarmsPageMetadata(r *http.Request) (alarms.PageMetadata, error) {
+	base, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return alarms.PageMetadata{}, err
+	}
+
+	pl, _ := apiutil.ReadMetadataQuery(r, apiutil.PayloadKey, nil)
+
+	return alarms.PageMetadata{
+		Offset:  base.Offset,
+		Limit:   base.Limit,
+		Order:   base.Order,
+		Dir:     base.Dir,
+		Payload: pl,
+	}, nil
+}
+
 func decodeListAlarmsByThing(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	pm, err := buildAlarmsPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +114,7 @@ func decodeListAlarmsByThing(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeListGroupAlarms(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	pm, err := buildAlarmsPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +127,7 @@ func decodeListGroupAlarms(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeListAlarmsByOrg(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	pm, err := buildAlarmsPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +173,7 @@ func decodeExportAlarmsByThing(_ context.Context, r *http.Request) (any, error) 
 		return nil, err
 	}
 
-	pm, err := apiutil.BuildPageMetadata(r)
+	pm, err := buildAlarmsPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}

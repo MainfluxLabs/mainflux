@@ -104,8 +104,61 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
+func buildWebhooksPageMetadata(r *http.Request) (webhooks.PageMetadata, error) {
+	base, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return webhooks.PageMetadata{}, err
+	}
+
+	n, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	m, _ := apiutil.ReadMetadataQuery(r, apiutil.MetadataKey, nil)
+
+	return webhooks.PageMetadata{
+		Offset:   base.Offset,
+		Limit:    base.Limit,
+		Order:    base.Order,
+		Dir:      base.Dir,
+		Name:     n,
+		Metadata: m,
+	}, nil
+}
+
+func buildWebhooksPageMetadataFromBody(r *http.Request) (webhooks.PageMetadata, error) {
+	if r.Body == nil || r.ContentLength == 0 {
+		return webhooks.PageMetadata{
+			Offset: apiutil.DefOffset,
+			Limit:  apiutil.DefLimit,
+			Order:  apiutil.IDOrder,
+			Dir:    apiutil.DescDir,
+		}, nil
+	}
+
+	var pm webhooks.PageMetadata
+	if err := json.NewDecoder(r.Body).Decode(&pm); err != nil {
+		return webhooks.PageMetadata{}, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	if pm.Limit == 0 {
+		pm.Limit = apiutil.DefLimit
+	}
+
+	if pm.Offset == 0 {
+		pm.Offset = apiutil.DefOffset
+	}
+
+	if pm.Order == "" {
+		pm.Order = apiutil.IDOrder
+	}
+
+	if pm.Dir == "" {
+		pm.Dir = apiutil.DescDir
+	}
+
+	return pm, nil
+}
+
 func decodeListGroupWebhooks(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	pm, err := buildWebhooksPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +173,7 @@ func decodeListGroupWebhooks(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeListThingWebhooks(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	pm, err := buildWebhooksPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +188,7 @@ func decodeListThingWebhooks(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeSearchGroupWebhooks(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadataFromBody(r)
+	pm, err := buildWebhooksPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +203,7 @@ func decodeSearchGroupWebhooks(_ context.Context, r *http.Request) (any, error) 
 }
 
 func decodeSearchThingWebhooks(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadataFromBody(r)
+	pm, err := buildWebhooksPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
 	}
@@ -173,6 +226,7 @@ func decodeUpdateWebhook(_ context.Context, r *http.Request) (any, error) {
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}

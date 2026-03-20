@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
@@ -50,7 +49,7 @@ type OrgMembershipsRepository interface {
 	RetrieveRole(ctx context.Context, memberID, orgID string) (string, error)
 
 	// RetrieveByOrg retrieves org memberships identified by orgID.
-	RetrieveByOrg(ctx context.Context, orgID string, pm apiutil.PageMetadata) (OrgMembershipsPage, error)
+	RetrieveByOrg(ctx context.Context, orgID string, pm PageMetadata) (OrgMembershipsPage, error)
 
 	// BackupAll retrieves all memberships.
 	BackupAll(ctx context.Context) ([]OrgMembership, error)
@@ -72,7 +71,7 @@ type OrgMemberships interface {
 	UpdateOrgMemberships(ctx context.Context, token, orgID string, oms ...OrgMembership) error
 
 	// ListOrgMemberships retrieves memberships created for an org identified by orgID.
-	ListOrgMemberships(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (OrgMembershipsPage, error)
+	ListOrgMemberships(ctx context.Context, token, orgID string, pm PageMetadata) (OrgMembershipsPage, error)
 
 	// ViewOrgMembership retrieves membership identified by memberID and orgID.
 	ViewOrgMembership(ctx context.Context, token, orgID, memberID string) (OrgMembership, error)
@@ -142,7 +141,7 @@ func (svc service) ViewOrgMembership(ctx context.Context, token, orgID, memberID
 	return membership, nil
 }
 
-func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (OrgMembershipsPage, error) {
+func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID string, pm PageMetadata) (OrgMembershipsPage, error) {
 	if err := svc.canAccessOrg(ctx, token, orgID, Viewer); err != nil {
 		return OrgMembershipsPage{}, err
 	}

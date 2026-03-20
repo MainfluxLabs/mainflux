@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/gofrs/uuid"
@@ -67,7 +66,7 @@ func (nr notifierRepository) Save(ctx context.Context, nfs ...notifiers.Notifier
 	return nfs, nil
 }
 
-func (nr notifierRepository) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (notifiers.NotifiersPage, error) {
+func (nr notifierRepository) RetrieveByGroup(ctx context.Context, groupID string, pm notifiers.PageMetadata) (notifiers.NotifiersPage, error) {
 	if _, err := uuid.FromString(groupID); err != nil {
 		return notifiers.NotifiersPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}

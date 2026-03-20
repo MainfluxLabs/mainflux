@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -108,7 +107,7 @@ func listAPIKeysEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func buildKeysResponse(kp auth.KeysPage, pm apiutil.PageMetadata) keysPageRes {
+func buildKeysResponse(kp auth.KeysPage, pm auth.PageMetadata) keysPageRes {
 	res := keysPageRes{
 		pageRes: pageRes{
 			Total:  kp.Total,

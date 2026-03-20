@@ -6,7 +6,6 @@ package downlinks
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/cron"
 )
 
@@ -36,7 +35,7 @@ type TimeFilter struct {
 }
 
 type DownlinksPage struct {
-	apiutil.PageMetadata
+	PageMetadata
 	Downlinks []Downlink
 }
 
@@ -48,11 +47,11 @@ type DownlinkRepository interface {
 
 	// RetrieveByThing retrieves downlinks related to a certain thing,
 	// identified by a given thing ID.
-	RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (DownlinksPage, error)
+	RetrieveByThing(ctx context.Context, thingID string, pm PageMetadata) (DownlinksPage, error)
 
 	// RetrieveByGroup retrieves downlinks related to a certain group,
 	// identified by a given group ID.
-	RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (DownlinksPage, error)
+	RetrieveByGroup(ctx context.Context, groupID string, pm PageMetadata) (DownlinksPage, error)
 
 	// RetrieveByID retrieves the downlink having the provided ID.
 	RetrieveByID(ctx context.Context, id string) (Downlink, error)

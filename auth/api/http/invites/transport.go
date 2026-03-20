@@ -155,24 +155,24 @@ func decodeListOrgInvitesByOrgRequest(_ context.Context, r *http.Request) (any, 
 	return req, nil
 }
 
-func buildPageMetadataInvites(r *http.Request) (auth.PageMetadataInvites, error) {
-	pm := auth.PageMetadataInvites{}
-
-	apm, err := apiutil.BuildPageMetadata(r)
+func buildPageMetadataInvites(r *http.Request) (auth.PageMetadata, error) {
+	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
-		return auth.PageMetadataInvites{}, err
+		return auth.PageMetadata{}, err
 	}
-
-	pm.PageMetadata = apm
 
 	state, err := apiutil.ReadStringQuery(r, stateKey, "")
 	if err != nil {
-		return auth.PageMetadataInvites{}, err
+		return auth.PageMetadata{}, err
 	}
 
-	pm.State = state
-
-	return pm, nil
+	return auth.PageMetadata{
+		Offset: base.Offset,
+		Limit:  base.Limit,
+		Order:  base.Order,
+		Dir:    base.Dir,
+		State:  state,
+	}, nil
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {

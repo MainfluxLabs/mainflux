@@ -91,8 +91,25 @@ func decodeCreateClients(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
+func buildModbusPageMetadata(r *http.Request) (modbus.PageMetadata, error) {
+	base, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return modbus.PageMetadata{}, err
+	}
+
+	n, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+
+	return modbus.PageMetadata{
+		Offset: base.Offset,
+		Limit:  base.Limit,
+		Order:  base.Order,
+		Dir:    base.Dir,
+		Name:   n,
+	}, nil
+}
+
 func decodeListClientsByGroup(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	pm, err := buildModbusPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +124,7 @@ func decodeListClientsByGroup(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeListClientsByThing(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	pm, err := buildModbusPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}

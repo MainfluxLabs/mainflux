@@ -25,6 +25,41 @@ var (
 	ErrProfileAssigned = errors.New("profile currently assigned to thing(s)")
 )
 
+var AllowedOrders = map[string]string{
+	"id":         "id",
+	"name":       "name",
+	"email":      "email",
+	"created_at": "created_at",
+	"updated_at": "updated_at",
+	"type":       "type",
+}
+
+// PageMetadata contains page metadata that helps navigation.
+type PageMetadata struct {
+	Total    uint64         `json:"total,omitempty"`
+	Offset   uint64         `json:"offset,omitempty"`
+	Limit    uint64         `json:"limit,omitempty"`
+	Order    string         `json:"order,omitempty"`
+	Dir      string         `json:"dir,omitempty"`
+	Name     string         `json:"name,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
+	Email    string         `json:"email,omitempty"`
+}
+
+// Validate validates the page metadata.
+func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
+	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
+	if err := common.Validate(maxLimitSize, AllowedOrders); err != nil {
+		return err
+	}
+
+	if len(pm.Name) > maxNameSize {
+		return apiutil.ErrNameSize
+	}
+
+	return nil
+}
+
 // Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
@@ -49,15 +84,15 @@ type Service interface {
 
 	// ListThings retrieves data about subset of things that belongs to the
 	// user identified by the provided key.
-	ListThings(ctx context.Context, token string, pm apiutil.PageMetadata) (ThingsPage, error)
+	ListThings(ctx context.Context, token string, pm PageMetadata) (ThingsPage, error)
 
 	// ListThingsByOrg retrieves page of things that belong to an org identified by ID.
-	ListThingsByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (ThingsPage, error)
+	ListThingsByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (ThingsPage, error)
 
 	// ListThingsByProfile retrieves data about subset of things that are
 	// connected or not connected to specified profile and belong to the user identified by
 	// the provided key.
-	ListThingsByProfile(ctx context.Context, token, prID string, pm apiutil.PageMetadata) (ThingsPage, error)
+	ListThingsByProfile(ctx context.Context, token, prID string, pm PageMetadata) (ThingsPage, error)
 
 	// RemoveThings removes the things identified with the provided IDs, that
 	// belongs to the user identified by the provided key.
@@ -77,10 +112,10 @@ type Service interface {
 
 	// ListProfiles retrieves data about subset of profiles that belongs to the
 	// user identified by the provided key.
-	ListProfiles(ctx context.Context, token string, pm apiutil.PageMetadata) (ProfilesPage, error)
+	ListProfiles(ctx context.Context, token string, pm PageMetadata) (ProfilesPage, error)
 
 	// ListProfilesByOrg retrieves page of profiles that belong to an org identified by ID.
-	ListProfilesByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (ProfilesPage, error)
+	ListProfilesByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (ProfilesPage, error)
 
 	// ViewProfileByThing retrieves data about profile that have
 	// specified thing connected or not connected to it and belong to the user identified by
@@ -356,7 +391,7 @@ func (ts *thingsService) ViewMetadataByKey(ctx context.Context, key ThingKey) (M
 	return thing.Metadata, nil
 }
 
-func (ts *thingsService) ListThings(ctx context.Context, token string, pm apiutil.PageMetadata) (ThingsPage, error) {
+func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMetadata) (ThingsPage, error) {
 	if err := ts.isAdmin(ctx, token); err == nil {
 		return ts.things.RetrieveAll(ctx, pm)
 	}
@@ -374,7 +409,7 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm apiuti
 	return ts.things.RetrieveByGroups(ctx, grIDs, pm)
 }
 
-func (ts *thingsService) ListThingsByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (ThingsPage, error) {
+func (ts *thingsService) ListThingsByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (ThingsPage, error) {
 	grIDs, err := ts.GetGroupIDsByOrg(ctx, orgID, token)
 	if err != nil {
 		return ThingsPage{}, err
@@ -383,7 +418,7 @@ func (ts *thingsService) ListThingsByOrg(ctx context.Context, token string, orgI
 	return ts.things.RetrieveByGroups(ctx, grIDs, pm)
 }
 
-func (ts *thingsService) ListThingsByProfile(ctx context.Context, token, prID string, pm apiutil.PageMetadata) (ThingsPage, error) {
+func (ts *thingsService) ListThingsByProfile(ctx context.Context, token, prID string, pm PageMetadata) (ThingsPage, error) {
 	ar := UserAccessReq{
 		Token:  token,
 		ID:     prID,
@@ -492,7 +527,7 @@ func (ts *thingsService) ViewProfile(ctx context.Context, token, id string) (Pro
 	return profile, nil
 }
 
-func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm apiutil.PageMetadata) (ProfilesPage, error) {
+func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm PageMetadata) (ProfilesPage, error) {
 	if err := ts.isAdmin(ctx, token); err == nil {
 		return ts.profiles.RetrieveAll(ctx, pm)
 	}
@@ -510,7 +545,7 @@ func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm apiu
 	return ts.profiles.RetrieveByGroups(ctx, grIDs, pm)
 }
 
-func (ts *thingsService) ListProfilesByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (ProfilesPage, error) {
+func (ts *thingsService) ListProfilesByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (ProfilesPage, error) {
 	grIDs, err := ts.GetGroupIDsByOrg(ctx, orgID, token)
 	if err != nil {
 		return ProfilesPage{}, err
@@ -798,7 +833,7 @@ func getTimestamp() time.Time {
 	return time.Now().UTC().Round(time.Millisecond)
 }
 
-func (ts *thingsService) ListThingsByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (ThingsPage, error) {
+func (ts *thingsService) ListThingsByGroup(ctx context.Context, token string, groupID string, pm PageMetadata) (ThingsPage, error) {
 	ar := UserAccessReq{
 		Token:  token,
 		ID:     groupID,
@@ -811,7 +846,7 @@ func (ts *thingsService) ListThingsByGroup(ctx context.Context, token string, gr
 	return ts.things.RetrieveByGroups(ctx, []string{groupID}, pm)
 }
 
-func (ts *thingsService) ListProfilesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (ProfilesPage, error) {
+func (ts *thingsService) ListProfilesByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (ProfilesPage, error) {
 	ar := UserAccessReq{
 		Token:  token,
 		ID:     groupID,
@@ -936,7 +971,7 @@ func (ts *thingsService) GetThingIDsByProfile(ctx context.Context, profileID str
 		return []string{}, err
 	}
 
-	page, err := ts.things.RetrieveByProfile(ctx, profileID, apiutil.PageMetadata{})
+	page, err := ts.things.RetrieveByProfile(ctx, profileID, PageMetadata{})
 	if err != nil {
 		return []string{}, err
 	}

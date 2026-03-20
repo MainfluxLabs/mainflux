@@ -150,8 +150,61 @@ func decodeViewByProfile(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
+func buildGroupsPageMetadata(r *http.Request) (things.PageMetadata, error) {
+	base, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return things.PageMetadata{}, err
+	}
+
+	n, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	m, _ := apiutil.ReadMetadataQuery(r, apiutil.MetadataKey, nil)
+
+	return things.PageMetadata{
+		Offset:   base.Offset,
+		Limit:    base.Limit,
+		Order:    base.Order,
+		Dir:      base.Dir,
+		Name:     n,
+		Metadata: m,
+	}, nil
+}
+
+func buildGroupsPageMetadataFromBody(r *http.Request) (things.PageMetadata, error) {
+	if r.Body == nil || r.ContentLength == 0 {
+		return things.PageMetadata{
+			Offset: apiutil.DefOffset,
+			Limit:  apiutil.DefLimit,
+			Order:  apiutil.IDOrder,
+			Dir:    apiutil.DescDir,
+		}, nil
+	}
+
+	var pm things.PageMetadata
+	if err := json.NewDecoder(r.Body).Decode(&pm); err != nil {
+		return things.PageMetadata{}, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	}
+
+	if pm.Limit == 0 {
+		pm.Limit = apiutil.DefLimit
+	}
+
+	if pm.Offset == 0 {
+		pm.Offset = apiutil.DefOffset
+	}
+
+	if pm.Order == "" {
+		pm.Order = apiutil.IDOrder
+	}
+
+	if pm.Dir == "" {
+		pm.Dir = apiutil.DescDir
+	}
+
+	return pm, nil
+}
+
 func decodeList(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	pm, err := buildGroupsPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +218,7 @@ func decodeList(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeListByOrg(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	pm, err := buildGroupsPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +233,7 @@ func decodeListByOrg(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeSearch(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadataFromBody(r)
+	pm, err := buildGroupsPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +247,7 @@ func decodeSearch(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeSearchByOrg(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadataFromBody(r)
+	pm, err := buildGroupsPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
 	}

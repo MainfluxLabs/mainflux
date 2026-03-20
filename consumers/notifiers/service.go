@@ -17,6 +17,36 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
+var AllowedOrders = map[string]string{
+	"id":   "id",
+	"name": "name",
+}
+
+// PageMetadata contains page metadata that helps navigation.
+type PageMetadata struct {
+	Total    uint64         `json:"total,omitempty"`
+	Offset   uint64         `json:"offset,omitempty"`
+	Limit    uint64         `json:"limit,omitempty"`
+	Order    string         `json:"order,omitempty"`
+	Dir      string         `json:"dir,omitempty"`
+	Name     string         `json:"name,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
+}
+
+// Validate validates the page metadata.
+func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
+	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
+	if err := common.Validate(maxLimitSize, AllowedOrders); err != nil {
+		return err
+	}
+
+	if len(pm.Name) > maxNameSize {
+		return apiutil.ErrNameSize
+	}
+
+	return nil
+}
+
 // Service represents a notification service.
 // All methods that accept a token parameter use it to identify and authorize
 // the user performing the operation.
@@ -26,7 +56,7 @@ type Service interface {
 
 	// ListNotifiersByGroup retrieves data about a subset of notifiers
 	// related to a certain group, identified by the provided group ID.
-	ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (NotifiersPage, error)
+	ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm PageMetadata) (NotifiersPage, error)
 
 	// ViewNotifier retrieves data about the notifier identified with the provided ID.
 	ViewNotifier(ctx context.Context, token, id string) (Notifier, error)
@@ -118,7 +148,7 @@ func (ns *notifierService) CreateNotifiers(ctx context.Context, token, groupID s
 	return nfs, nil
 }
 
-func (ns *notifierService) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (NotifiersPage, error) {
+func (ns *notifierService) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm PageMetadata) (NotifiersPage, error) {
 	_, err := ns.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer})
 	if err != nil {
 		return NotifiersPage{}, err

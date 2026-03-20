@@ -9,7 +9,6 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	opentracing "github.com/opentracing/opentracing-go"
 )
@@ -63,7 +62,7 @@ func (krm keyRepositoryMiddleware) Remove(ctx context.Context, owner, id string)
 	return krm.repo.Remove(ctx, owner, id)
 }
 
-func (krm keyRepositoryMiddleware) RetrieveAPIKeys(ctx context.Context, issuerID string, pm apiutil.PageMetadata) (auth.KeysPage, error) {
+func (krm keyRepositoryMiddleware) RetrieveAPIKeys(ctx context.Context, issuerID string, pm auth.PageMetadata) (auth.KeysPage, error) {
 	span := dbutil.CreateSpan(ctx, krm.tracer, retrieveAPIKeys)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

@@ -9,12 +9,15 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
-const maxLimitSize = 200
+const (
+	maxLimitSize = 200
+	maxNameSize  = 254
+)
 
 type listGroupMembershipsReq struct {
 	token        string
 	groupID      string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata things.PageMetadata
 }
 
 func (req listGroupMembershipsReq) validate() error {
@@ -26,11 +29,7 @@ func (req listGroupMembershipsReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	if req.pageMetadata.Limit > maxLimitSize {
-		return apiutil.ErrLimitSize
-	}
-
-	return nil
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type createGroupMembershipsReq struct {

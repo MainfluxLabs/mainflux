@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -73,7 +72,7 @@ func (prm *profileRepositoryMock) RetrieveByID(_ context.Context, id string) (th
 	return things.Profile{}, dbutil.ErrNotFound
 }
 
-func (prm *profileRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+func (prm *profileRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs []string, pm things.PageMetadata) (things.ProfilesPage, error) {
 	prm.mu.Lock()
 	defer prm.mu.Unlock()
 
@@ -119,7 +118,7 @@ func (prm *profileRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs [
 	return page, nil
 }
 
-func (prm *profileRepositoryMock) RetrieveAll(_ context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+func (prm *profileRepositoryMock) RetrieveAll(_ context.Context, pm things.PageMetadata) (things.ProfilesPage, error) {
 	prm.mu.Lock()
 	defer prm.mu.Unlock()
 
