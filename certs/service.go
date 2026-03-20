@@ -38,6 +38,9 @@ type Service interface {
 	// IssueCert issues certificate for given thing id if access is granted with token.
 	IssueCert(ctx context.Context, token, thingID, ttl string, keyBits int, keyType string) (Cert, error)
 
+	// RotateCert rotates the certificate by revoking the cert with given serial and issuing a new one.
+	RotateCert(ctx context.Context, token, serial, thingID, ttl string, keyBits int, keyType string) (Cert, error)
+
 	// ListCerts lists certificates issued for a given thing ID.
 	ListCerts(ctx context.Context, token, thingID string, offset, limit uint64) (Page, error)
 
@@ -143,6 +146,15 @@ func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, tt
 	}
 
 	return c, nil
+}
+
+func (cs *certsService) RotateCert(ctx context.Context, token, serial, thingID, ttl string, keyBits int, keyType string) (Cert, error) {
+	_, err := cs.RevokeCert(ctx, token, serial)
+	if err != nil {
+		return Cert{}, err
+	}
+
+	return cs.IssueCert(ctx, token, thingID, ttl, keyBits, keyType)
 }
 
 func (cs *certsService) RevokeCert(ctx context.Context, token, serial string) (Revoke, error) {
