@@ -31,6 +31,35 @@ func (req addCertsReq) validate() error {
 	return nil
 }
 
+type rotateCertsReq struct {
+	serial  string
+	token   string
+	ThingID string `json:"thing_id"`
+	KeyBits int    `json:"key_bits"`
+	KeyType string `json:"key_type"`
+	TTL     string `json:"ttl"`
+}
+
+func (req rotateCertsReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.serial == "" {
+		return apiutil.ErrMissingSerial
+	}
+
+	if req.ThingID == "" {
+		return apiutil.ErrMissingThingID
+	}
+
+	if req.TTL == "" {
+		return apiutil.ErrMissingCertData
+	}
+
+	return nil
+}
+
 type listReq struct {
 	thingID string
 	token   string
