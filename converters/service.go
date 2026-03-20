@@ -93,6 +93,17 @@ func (as *adapterService) PublishSenMLMessages(ctx context.Context, key string, 
 }
 
 func (as *adapterService) PublishJSONMessages(ctx context.Context, key string, csvLines [][]string) error {
+	pcr := &protomfx.ThingKey{
+		Type:  things.KeyTypeInternal,
+		Value: key,
+	}
+	pc, err := as.things.GetPubConfigByKey(ctx, pcr)
+	if err != nil {
+		return err
+	}
+
+	timeField := pc.GetProfileConfig().GetTransformer().GetTimeField()
+
 	msg := protomfx.Message{
 		Protocol: protocol,
 		Created:  time.Now().UnixNano(),
@@ -100,14 +111,15 @@ func (as *adapterService) PublishJSONMessages(ctx context.Context, key string, c
 	counter := 0
 	keys := csvLines[0][1:]
 	msgs := []map[string]any{}
-	createdIdx := slices.Index(csvLines[0], "created")
+	createdIdx := slices.Index(csvLines[0], timeField)
 	for i := 1; i < len(csvLines); i++ {
-		created := csvLines[i][0]
-		if createdIdx != -1 {
-			created = csvLines[i][createdIdx]
-		}
-		record := map[string]any{
-			"created": created,
+		record := map[string]any{}
+		if timeField != "" && createdIdx != -1 {
+			t, err := strconv.ParseFloat(csvLines[i][createdIdx], 64)
+			if err != nil {
+				return ErrInvalidTimeField
+			}
+			record["Created"] = t
 		}
 		for j, columnName := range keys {
 			if f, err := strconv.ParseFloat(csvLines[i][j+1], 64); err == nil {
