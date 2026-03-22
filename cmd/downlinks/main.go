@@ -34,6 +34,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
@@ -274,7 +275,7 @@ func subscribeToThingsES(ctx context.Context, svc downlinks.Service, cfg config,
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(ts protomfx.ThingsServiceClient, ac protomfx.AuthServiceClient, pub messaging.Publisher, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) downlinks.Service {
+func newService(ts protomfx.ThingsServiceClient, ac domainauth.Client, pub messaging.Publisher, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) downlinks.Service {
 	database := dbutil.NewDatabase(db)
 	downlinksRepo := postgres.NewDownlinkRepository(database)
 	downlinksRepo = tracing.DownlinkRepositoryMiddleware(dbTracer, downlinksRepo)

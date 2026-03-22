@@ -54,13 +54,13 @@ type Service interface {
 }
 
 type readersService struct {
-	authc  protomfx.AuthServiceClient
+	authc  domainauth.Client
 	thingc protomfx.ThingsServiceClient
 	json   JSONMessageRepository
 	senml  SenMLMessageRepository
 }
 
-func New(auth protomfx.AuthServiceClient, things protomfx.ThingsServiceClient, json JSONMessageRepository, senml SenMLMessageRepository) Service {
+func New(auth domainauth.Client, things protomfx.ThingsServiceClient, json JSONMessageRepository, senml SenMLMessageRepository) Service {
 	return &readersService{
 		authc:  auth,
 		thingc: things,
@@ -225,12 +225,7 @@ func (rs *readersService) DeleteAllSenMLMessages(ctx context.Context, token stri
 }
 
 func (rs *readersService) isAdmin(ctx context.Context, token string) error {
-	req := &protomfx.AuthorizeReq{
-		Token:   token,
-		Subject: rootSubject,
-	}
-
-	if _, err := rs.authc.Authorize(ctx, req); err != nil {
+	if err := rs.authc.Authorize(ctx, domainauth.AuthzReq{Token: token, Subject: rootSubject}); err != nil {
 		return err
 	}
 

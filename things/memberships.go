@@ -87,10 +87,7 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token, redi
 			return err
 		}
 
-		org, err := ts.auth.ViewOrg(ctx, &protomfx.ViewOrgReq{
-			Token: token,
-			OrgID: group.OrgID,
-		})
+		org, err := ts.auth.ViewOrg(ctx, token, group.OrgID)
 
 		if err != nil {
 			continue

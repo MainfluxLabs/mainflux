@@ -168,7 +168,7 @@ type (
 var _ Service = (*thingsService)(nil)
 
 type thingsService struct {
-	auth             protomfx.AuthServiceClient
+	auth             domainauth.Client
 	users            protomfx.UsersServiceClient
 	things           ThingRepository
 	profiles         ProfileRepository
@@ -182,7 +182,7 @@ type thingsService struct {
 }
 
 // New instantiates the things service implementation.
-func New(auth protomfx.AuthServiceClient, users protomfx.UsersServiceClient, things ThingRepository, profiles ProfileRepository,
+func New(auth domainauth.Client, users protomfx.UsersServiceClient, things ThingRepository, profiles ProfileRepository,
 	groups GroupRepository, groupMemberships GroupMembershipsRepository,
 	pcache ProfileCache, tcache ThingCache, gcache GroupCache, idp uuid.IDProvider,
 	emailer Emailer) Service {
@@ -354,12 +354,12 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm apiuti
 		return ts.things.RetrieveAll(ctx, pm)
 	}
 
-	res, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
+	res, err := ts.auth.Identify(ctx, token)
 	if err != nil {
 		return ThingsPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	grIDs, err := ts.getGroupIDsByMember(ctx, res.GetId())
+	grIDs, err := ts.getGroupIDsByMember(ctx, res.ID)
 	if err != nil {
 		return ThingsPage{}, err
 	}
@@ -490,12 +490,12 @@ func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm apiu
 		return ts.profiles.RetrieveAll(ctx, pm)
 	}
 
-	res, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
+	res, err := ts.auth.Identify(ctx, token)
 	if err != nil {
 		return ProfilesPage{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	grIDs, err := ts.getGroupIDsByMember(ctx, res.GetId())
+	grIDs, err := ts.getGroupIDsByMember(ctx, res.ID)
 	if err != nil {
 		return ProfilesPage{}, err
 	}
@@ -818,12 +818,7 @@ func (ts *thingsService) ListProfilesByGroup(ctx context.Context, token, groupID
 }
 
 func (ts *thingsService) isAdmin(ctx context.Context, token string) error {
-	req := &protomfx.AuthorizeReq{
-		Token:   token,
-		Subject: domainauth.RootSub,
-	}
-
-	if _, err := ts.auth.Authorize(ctx, req); err != nil {
+	if err := ts.auth.Authorize(ctx, domainauth.AuthzReq{Token: token, Subject: domainauth.RootSub}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -831,14 +826,7 @@ func (ts *thingsService) isAdmin(ctx context.Context, token string) error {
 }
 
 func (ts *thingsService) canAccessOrg(ctx context.Context, token, orgID, subject, action string) error {
-	req := &protomfx.AuthorizeReq{
-		Token:   token,
-		Object:  orgID,
-		Subject: subject,
-		Action:  action,
-	}
-
-	if _, err := ts.auth.Authorize(ctx, req); err != nil {
+	if err := ts.auth.Authorize(ctx, domainauth.AuthzReq{Token: token, Object: orgID, Subject: subject, Action: action}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -916,12 +904,12 @@ func (ts *thingsService) GetGroupIDsByOrg(ctx context.Context, orgID string, tok
 		return []string{}, err
 	}
 
-	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
+	user, err := ts.auth.Identify(ctx, token)
 	if err != nil {
 		return nil, err
 	}
 
-	return ts.groups.RetrieveIDsByOrgMembership(ctx, orgID, user.GetId())
+	return ts.groups.RetrieveIDsByOrgMembership(ctx, orgID, user.ID)
 }
 
 func (ts *thingsService) GetThingIDsByProfile(ctx context.Context, profileID string) ([]string, error) {

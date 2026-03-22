@@ -16,6 +16,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -71,7 +72,7 @@ type Service interface {
 
 type downlinksService struct {
 	things     protomfx.ThingsServiceClient
-	auth       protomfx.AuthServiceClient
+	auth       domainauth.Client
 	downlinks  DownlinkRepository
 	idProvider uuid.IDProvider
 	publisher  messaging.Publisher
@@ -101,7 +102,7 @@ var (
 
 var _ Service = (*downlinksService)(nil)
 
-func New(things protomfx.ThingsServiceClient, auth protomfx.AuthServiceClient, pub messaging.Publisher, downlinks DownlinkRepository, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(things protomfx.ThingsServiceClient, auth domainauth.Client, pub messaging.Publisher, downlinks DownlinkRepository, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &downlinksService{
 		things:     things,
 		auth:       auth,
@@ -466,12 +467,7 @@ func (ds *downlinksService) Restore(ctx context.Context, token string, dls []Dow
 }
 
 func (ds *downlinksService) isAdmin(ctx context.Context, token string) error {
-	req := &protomfx.AuthorizeReq{
-		Token:   token,
-		Subject: "root",
-	}
-
-	if _, err := ds.auth.Authorize(ctx, req); err != nil {
+	if err := ds.auth.Authorize(ctx, domainauth.AuthzReq{Token: token, Subject: domainauth.RootSub}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 

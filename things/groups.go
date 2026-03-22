@@ -7,7 +7,6 @@ import (
 	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 // Group is an alias for the shared domain type.
@@ -106,17 +105,16 @@ type GroupCache interface {
 }
 
 func (ts *thingsService) CreateGroups(ctx context.Context, token, orgID string, groups ...Group) ([]Group, error) {
-	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
+	user, err := ts.auth.Identify(ctx, token)
 	if err != nil {
 		return []Group{}, errors.Wrap(errors.ErrAuthentication, err)
 	}
-	userID := user.GetId()
+	userID := user.ID
 
-	oid, err := ts.auth.GetOwnerIDByOrg(ctx, &protomfx.OrgID{Value: orgID})
+	ownerID, err := ts.auth.GetOwnerIDByOrg(ctx, orgID)
 	if err != nil {
 		return []Group{}, err
 	}
-	ownerID := oid.GetValue()
 
 	memberships := []GroupMembership{{MemberID: ownerID, Role: Owner}}
 	if ownerID != userID {
@@ -169,12 +167,12 @@ func (ts *thingsService) ListGroups(ctx context.Context, token string, pm apiuti
 		return ts.groups.RetrieveAll(ctx, pm)
 	}
 
-	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
+	user, err := ts.auth.Identify(ctx, token)
 	if err != nil {
 		return GroupPage{}, err
 	}
 
-	grIDs, err := ts.getGroupIDsByMember(ctx, user.GetId())
+	grIDs, err := ts.getGroupIDsByMember(ctx, user.ID)
 	if err != nil {
 		return GroupPage{}, err
 	}
@@ -320,13 +318,13 @@ func (ts *thingsService) ViewGroupByThing(ctx context.Context, token string, thi
 }
 
 func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, action string) error {
-	user, err := ts.auth.Identify(ctx, &protomfx.Token{Value: token})
+	user, err := ts.auth.Identify(ctx, token)
 	if err != nil {
 		return err
 	}
 
 	gm := GroupMembership{
-		MemberID: user.Id,
+		MemberID: user.ID,
 		GroupID:  groupID,
 	}
 

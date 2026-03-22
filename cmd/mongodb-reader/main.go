@@ -16,6 +16,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -198,7 +199,7 @@ func connectToMongoDB(host, port, name string, logger logger.Logger) *mongo.Data
 	return client.Database(name)
 }
 
-func newService(db *mongo.Database, dbTracer opentracing.Tracer, ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, logger logger.Logger) readers.Service {
+func newService(db *mongo.Database, dbTracer opentracing.Tracer, ac domainauth.Client, tc protomfx.ThingsServiceClient, logger logger.Logger) readers.Service {
 	jsonRepo := mongodb.NewJSONRepository(db)
 	jsonRepo = tracing.JSONRepositoryMiddleware(dbTracer, jsonRepo)
 
