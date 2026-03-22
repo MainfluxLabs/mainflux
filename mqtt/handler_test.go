@@ -158,6 +158,18 @@ func TestAuthPublish(t *testing.T) {
 			topic:   strPtr("groups/" + otherGroupID + "/commands"),
 			payload: payload,
 		},
+		{
+			// Sensors are in the group but have no command capability.
+			desc: "sensor publishes to own group commands topic",
+			client: &session.Client{
+				ID:       recipientID,
+				Username: things.KeyTypeInternal,
+				Password: []byte(recipientID),
+			},
+			err:     mqtt.ErrUnauthorizedPublishTopic,
+			topic:   strPtr("groups/" + groupID + "/commands"),
+			payload: payload,
+		},
 	}
 
 	for _, tc := range cases {

@@ -29,6 +29,7 @@ type grpcServer struct {
 	canUserAccessGroup     kitgrpc.Handler
 	canThingAccessGroup    kitgrpc.Handler
 	canThingCommand        kitgrpc.Handler
+	canThingGroupCommand   kitgrpc.Handler
 	identify               kitgrpc.Handler
 	getGroupIDByThing      kitgrpc.Handler
 	getGroupIDByProfile    kitgrpc.Handler
@@ -75,6 +76,11 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 		canThingCommand: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "can_thing_command")(canThingCommandEndpoint(svc)),
 			decodeThingCommandRequest,
+			encodeEmptyResponse,
+		),
+		canThingGroupCommand: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "can_thing_group_command")(canThingGroupCommandEndpoint(svc)),
+			decodeThingGroupCommandRequest,
 			encodeEmptyResponse,
 		),
 		identify: kitgrpc.NewServer(
@@ -175,6 +181,15 @@ func (gs *grpcServer) CanThingAccessGroup(ctx context.Context, req *protomfx.Thi
 
 func (gs *grpcServer) CanThingCommand(ctx context.Context, req *protomfx.ThingCommandReq) (*emptypb.Empty, error) {
 	_, res, err := gs.canThingCommand.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*emptypb.Empty), nil
+}
+
+func (gs *grpcServer) CanThingGroupCommand(ctx context.Context, req *protomfx.ThingGroupCommandReq) (*emptypb.Empty, error) {
+	_, res, err := gs.canThingGroupCommand.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -287,6 +302,14 @@ func decodeThingCommandRequest(_ context.Context, grpcReq any) (any, error) {
 	return thingCommandReq{
 		publisherID: req.GetPublisherID(),
 		recipientID: req.GetRecipientID(),
+	}, nil
+}
+
+func decodeThingGroupCommandRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.ThingGroupCommandReq)
+	return thingGroupCommandReq{
+		publisherID: req.GetPublisherID(),
+		groupID:     req.GetGroupID(),
 	}, nil
 }
 

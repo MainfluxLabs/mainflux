@@ -141,13 +141,13 @@ func (h *handler) authorizePublish(publisherID, topic string) error {
 	// so adding a publish check would be a redundant gRPC round-trip with no
 	// real security gain. Commands carry authority and are therefore restricted:
 	//   things/{recipientID}/commands  → publisher must have command capability on recipient
-	//   groups/{groupID}/commands      → publisher must belong to the target group
+	//   groups/{groupID}/commands      → publisher must belong to the target group and have command capability
 	var err error
 	switch {
 	case prefix == topicPrefixThings && suffix == topicSuffixCommands:
-		err = h.checkThingCapability(publisherID, id)
+		err = h.authorizeThingCommand(publisherID, id)
 	case prefix == topicPrefixGroups && suffix == topicSuffixCommands:
-		err = h.checkGroupMembership(publisherID, id)
+		err = h.authorizeGroupCommand(publisherID, id)
 	}
 
 	if err != nil {
@@ -156,7 +156,7 @@ func (h *handler) authorizePublish(publisherID, topic string) error {
 	return nil
 }
 
-func (h *handler) checkThingCapability(publisherID, recipientID string) error {
+func (h *handler) authorizeThingCommand(publisherID, recipientID string) error {
 	if _, err := h.things.CanThingCommand(context.Background(), &protomfx.ThingCommandReq{
 		PublisherID: publisherID,
 		RecipientID: recipientID,
@@ -166,9 +166,11 @@ func (h *handler) checkThingCapability(publisherID, recipientID string) error {
 	return nil
 }
 
-func (h *handler) checkGroupMembership(publisherID, groupID string) error {
-	grID, err := h.things.GetGroupIDByThing(context.Background(), &protomfx.ThingID{Value: publisherID})
-	if err != nil || grID.GetValue() != groupID {
+func (h *handler) authorizeGroupCommand(publisherID, groupID string) error {
+	if _, err := h.things.CanThingGroupCommand(context.Background(), &protomfx.ThingGroupCommandReq{
+		PublisherID: publisherID,
+		GroupID:     groupID,
+	}); err != nil {
 		return errors.ErrAuthorization
 	}
 	return nil

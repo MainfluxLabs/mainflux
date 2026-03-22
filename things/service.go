@@ -116,6 +116,9 @@ type Service interface {
 	// CanThingCommand determines whether a given thing is allowed to send a command to another thing.
 	CanThingCommand(ctx context.Context, req ThingCommandReq) error
 
+	// CanThingGroupCommand determines whether a given thing may issue commands to an entire group.
+	CanThingGroupCommand(ctx context.Context, req ThingGroupCommandReq) error
+
 	// Identify returns thing ID for given thing key.
 	Identify(ctx context.Context, key ThingKey) (string, error)
 
@@ -173,6 +176,11 @@ type ThingAccessReq struct {
 type ThingCommandReq struct {
 	PublisherID string
 	RecipientID string
+}
+
+type ThingGroupCommandReq struct {
+	PublisherID string
+	GroupID     string
 }
 
 type PubConfigInfo struct {
@@ -664,6 +672,23 @@ func (ts *thingsService) CanThingCommand(ctx context.Context, req ThingCommandRe
 	}
 
 	return CanCommand(pubType, recType)
+}
+
+func (ts *thingsService) CanThingGroupCommand(ctx context.Context, req ThingGroupCommandReq) error {
+	if req.PublisherID == "" || req.GroupID == "" {
+		return errors.ErrAuthorization
+	}
+
+	pubGroupID, pubType, err := ts.getThingGroupAndType(ctx, req.PublisherID)
+	if err != nil {
+		return err
+	}
+
+	if pubGroupID != req.GroupID {
+		return errors.ErrAuthorization
+	}
+
+	return CanGroupCommand(pubType)
 }
 
 func (ts *thingsService) Identify(ctx context.Context, key ThingKey) (string, error) {

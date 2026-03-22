@@ -187,6 +187,10 @@ func (svc *mainfluxThings) CanThingCommand(context.Context, things.ThingCommandR
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) CanThingGroupCommand(context.Context, things.ThingGroupCommandReq) error {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) Identify(context.Context, things.ThingKey) (string, error) {
 	panic("not implemented")
 }

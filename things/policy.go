@@ -23,3 +23,12 @@ func CanCommand(publisherType, recipientType string) error {
 	}
 	return nil
 }
+
+// CanGroupCommand reports whether a thing of publisherType may issue commands
+// to an entire group.
+func CanGroupCommand(publisherType string) error {
+	if allowed := thingPolicies[publisherType]; len(allowed) == 0 {
+		return errors.ErrAuthorization
+	}
+	return nil
+}

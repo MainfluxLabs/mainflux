@@ -131,6 +131,19 @@ func (svc thingsServiceMock) CanThingCommand(_ context.Context, req *protomfx.Th
 	return &emptypb.Empty{}, nil
 }
 
+func (svc thingsServiceMock) CanThingGroupCommand(_ context.Context, req *protomfx.ThingGroupCommandReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	publisher, ok := svc.things[req.GetPublisherID()]
+	if !ok {
+		return &emptypb.Empty{}, errors.ErrAuthentication
+	}
+
+	if publisher.GroupID != req.GetGroupID() {
+		return &emptypb.Empty{}, errors.ErrAuthorization
+	}
+
+	return &emptypb.Empty{}, things.CanGroupCommand(publisher.Type)
+}
+
 func (svc thingsServiceMock) Identify(_ context.Context, key *protomfx.ThingKey, _ ...grpc.CallOption) (*protomfx.ThingID, error) {
 	if th, ok := svc.things[key.GetValue()]; ok {
 		return &protomfx.ThingID{Value: th.ID}, nil
