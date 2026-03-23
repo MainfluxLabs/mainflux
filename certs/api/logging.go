@@ -104,9 +104,9 @@ func (lm *loggingMiddleware) RevokeCert(ctx context.Context, token, serial strin
 	return lm.svc.RevokeCert(ctx, token, serial)
 }
 
-func (lm *loggingMiddleware) DownloadCert(ctx context.Context, token, serial string) (_ certs.Cert, err error) {
+func (lm *loggingMiddleware) DownloadCert(ctx context.Context, token, serial string) (c certs.Cert, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method download_cert for serial %s took %s to complete", serial, time.Since(begin))
+		message := fmt.Sprintf("Method download_cert for serial %s thing id %s took %s to complete", serial, c.ThingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
