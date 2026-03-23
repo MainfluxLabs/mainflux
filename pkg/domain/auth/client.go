@@ -6,7 +6,6 @@ package auth
 import "context"
 
 // Client specifies the interface that auth gRPC client implementations must fulfill.
-// All methods use domain types rather than protobuf-generated types.
 type Client interface {
 	// Issue issues a token for the given id, email and key type.
 	Issue(ctx context.Context, id, email string, keyType uint32) (string, error)

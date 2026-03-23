@@ -5,8 +5,8 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 // OrgMembership is an alias for the shared domain type.
@@ -80,18 +80,17 @@ func (svc service) CreateOrgMemberships(ctx context.Context, token, orgID string
 		memberEmails = append(memberEmails, om.Email)
 	}
 
-	muReq := protomfx.UsersByEmailsReq{Emails: memberEmails}
-	usr, err := svc.users.GetUsersByEmails(ctx, &muReq)
+	usr, err := svc.users.GetUsersByEmails(ctx, memberEmails)
 	if err != nil {
 		return err
 	}
 
 	timestamp := getTimestamp()
 	var memberships []OrgMembership
-	for _, user := range usr.Users {
+	for _, user := range usr {
 		membership := OrgMembership{
 			OrgID:     orgID,
-			MemberID:  user.Id,
+			MemberID:  user.ID,
 			Role:      roleByEmail[user.Email],
 			UpdatedAt: timestamp,
 			CreatedAt: timestamp,
@@ -112,8 +111,7 @@ func (svc service) ViewOrgMembership(ctx context.Context, token, orgID, memberID
 		return OrgMembership{}, err
 	}
 
-	usrReq := protomfx.UsersByIDsReq{Ids: []string{memberID}}
-	page, err := svc.users.GetUsersByIDs(ctx, &usrReq)
+	page, err := svc.users.GetUsersByIDs(ctx, []string{memberID}, domainusers.PageMetadata{})
 	if err != nil {
 		return OrgMembership{}, err
 	}
@@ -124,7 +122,7 @@ func (svc service) ViewOrgMembership(ctx context.Context, token, orgID, memberID
 	}
 
 	membership := OrgMembership{
-		MemberID: page.Users[0].Id,
+		MemberID: page.Users[0].ID,
 		Email:    page.Users[0].Email,
 		Role:     role,
 	}
@@ -156,25 +154,22 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 		membershipByMemberID[m.MemberID] = m
 	}
 
-	userReq := &protomfx.UsersByIDsReq{
-		Ids: memberIDs,
-		PageMetadata: &protomfx.PageMetadata{
-			Email:  pm.Email,
-			Order:  pm.Order,
-			Dir:    pm.Dir,
-			Limit:  pm.Limit,
-			Offset: pm.Offset,
-		},
+	userPM := domainusers.PageMetadata{
+		Email:  pm.Email,
+		Order:  pm.Order,
+		Dir:    pm.Dir,
+		Limit:  pm.Limit,
+		Offset: pm.Offset,
 	}
 
-	res, err := svc.users.GetUsersByIDs(ctx, userReq)
+	page, err := svc.users.GetUsersByIDs(ctx, memberIDs, userPM)
 	if err != nil {
 		return OrgMembershipsPage{}, err
 	}
 
 	var oms []OrgMembership
-	for _, u := range res.Users {
-		if m, ok := membershipByMemberID[u.Id]; ok {
+	for _, u := range page.Users {
+		if m, ok := membershipByMemberID[u.ID]; ok {
 			m.Email = u.Email
 			oms = append(oms, m)
 		}
@@ -182,7 +177,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 
 	return OrgMembershipsPage{
 		OrgMemberships: oms,
-		Total:          res.PageMetadata.Total,
+		Total:          page.Total,
 	}, nil
 }
 
@@ -203,21 +198,20 @@ func (svc service) UpdateOrgMemberships(ctx context.Context, token, orgID string
 		memberEmails = append(memberEmails, m.Email)
 	}
 
-	muReq := protomfx.UsersByEmailsReq{Emails: memberEmails}
-	usr, err := svc.users.GetUsersByEmails(ctx, &muReq)
+	usr, err := svc.users.GetUsersByEmails(ctx, memberEmails)
 	if err != nil {
 		return err
 	}
 
 	var oms []OrgMembership
-	for _, user := range usr.Users {
-		if user.Id == org.OwnerID {
+	for _, user := range usr {
+		if user.ID == org.OwnerID {
 			return errors.ErrAuthorization
 		}
 
 		om := OrgMembership{
 			OrgID:     orgID,
-			MemberID:  user.Id,
+			MemberID:  user.ID,
 			Role:      roleByEmail[user.Email],
 			UpdatedAt: getTimestamp(),
 		}

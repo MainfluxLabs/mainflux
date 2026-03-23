@@ -22,7 +22,7 @@ import (
 	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	serversgrpc "github.com/MainfluxLabs/mainflux/pkg/servers/grpc"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
@@ -374,7 +374,7 @@ func subscribeToAuthES(ctx context.Context, svc things.Service, cfg config, logg
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(ac domainauth.Client, uc protomfx.UsersServiceClient, dbTracer opentracing.Tracer,
+func newService(ac domainauth.Client, uc domainusers.Client, dbTracer opentracing.Tracer,
 	cacheTracer opentracing.Tracer, db *sqlx.DB, cacheClient *redis.Client, esClient *redis.Client,
 	logger logger.Logger, cfg config) things.Service {
 

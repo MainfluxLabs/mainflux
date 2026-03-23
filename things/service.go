@@ -10,8 +10,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
 
@@ -169,7 +169,7 @@ var _ Service = (*thingsService)(nil)
 
 type thingsService struct {
 	auth             domainauth.Client
-	users            protomfx.UsersServiceClient
+	users            domainusers.Client
 	things           ThingRepository
 	profiles         ProfileRepository
 	groups           GroupRepository
@@ -182,7 +182,7 @@ type thingsService struct {
 }
 
 // New instantiates the things service implementation.
-func New(auth domainauth.Client, users protomfx.UsersServiceClient, things ThingRepository, profiles ProfileRepository,
+func New(auth domainauth.Client, users domainusers.Client, things ThingRepository, profiles ProfileRepository,
 	groups GroupRepository, groupMemberships GroupMembershipsRepository,
 	pcache ProfileCache, tcache ThingCache, gcache GroupCache, idp uuid.IDProvider,
 	emailer Emailer) Service {

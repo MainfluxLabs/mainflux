@@ -5,8 +5,8 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 // ErrGroupMembershipExists indicates that membership already exists.
@@ -93,15 +93,12 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token, redi
 			continue
 		}
 
-		users, err := ts.users.GetUsersByIDs(ctx, &protomfx.UsersByIDsReq{
-			Ids: []string{gm.MemberID},
-		})
-
+		page, err := ts.users.GetUsersByIDs(ctx, []string{gm.MemberID}, domainusers.PageMetadata{})
 		if err != nil {
 			continue
 		}
 
-		recipientEmail := users.GetUsers()[0].Email
+		recipientEmail := page.Users[0].Email
 
 		// Send e-mail notification
 		go func() {
@@ -156,25 +153,22 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 		membershipByMemberID[m.MemberID] = m
 	}
 
-	userReq := &protomfx.UsersByIDsReq{
-		Ids: memberIDs,
-		PageMetadata: &protomfx.PageMetadata{
-			Email:  pm.Email,
-			Order:  pm.Order,
-			Dir:    pm.Dir,
-			Limit:  pm.Limit,
-			Offset: pm.Offset,
-		},
+	userPM := domainusers.PageMetadata{
+		Email:  pm.Email,
+		Order:  pm.Order,
+		Dir:    pm.Dir,
+		Limit:  pm.Limit,
+		Offset: pm.Offset,
 	}
 
-	res, err := ts.users.GetUsersByIDs(ctx, userReq)
+	page, err := ts.users.GetUsersByIDs(ctx, memberIDs, userPM)
 	if err != nil {
 		return GroupMembershipsPage{}, err
 	}
 
 	var gms []GroupMembership
-	for _, u := range res.Users {
-		if m, ok := membershipByMemberID[u.Id]; ok {
+	for _, u := range page.Users {
+		if m, ok := membershipByMemberID[u.ID]; ok {
 			m.Email = u.Email
 			gms = append(gms, m)
 		}
@@ -182,7 +176,7 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 
 	return GroupMembershipsPage{
 		GroupMemberships: gms,
-		Total:            res.PageMetadata.Total,
+		Total:            page.Total,
 	}, nil
 }
 

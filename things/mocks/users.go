@@ -4,68 +4,56 @@ import (
 	"context"
 	"strings"
 
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
 	"github.com/MainfluxLabs/mainflux/users"
-	"google.golang.org/grpc"
 )
 
-var _ protomfx.UsersServiceClient = (*usersServiceClientMock)(nil)
+var _ domainusers.Client = (*usersServiceClientMock)(nil)
 
 type usersServiceClientMock struct {
 	usersByID     map[string]users.User
 	usersByEmails map[string]users.User
 }
 
-func NewUsersService(usersByID map[string]users.User, usersByEmails map[string]users.User) protomfx.UsersServiceClient {
+func NewUsersService(usersByID map[string]users.User, usersByEmails map[string]users.User) domainusers.Client {
 	return &usersServiceClientMock{usersByID: usersByID, usersByEmails: usersByEmails}
 }
 
-func (svc *usersServiceClientMock) GetUsersByIDs(_ context.Context, req *protomfx.UsersByIDsReq, _ ...grpc.CallOption) (*protomfx.UsersRes, error) {
-	if req.PageMetadata == nil {
-		req.PageMetadata = &protomfx.PageMetadata{}
+func (svc *usersServiceClientMock) GetUsersByIDs(_ context.Context, ids []string, pm domainusers.PageMetadata) (domainusers.UsersPage, error) {
+	if pm.Limit == 0 {
+		pm.Limit = uint64(len(ids))
 	}
 
-	if req.PageMetadata.Limit == 0 {
-		req.PageMetadata.Limit = uint64(len(req.Ids))
-	}
-
-	res := &protomfx.UsersRes{
-		PageMetadata: &protomfx.PageMetadata{
-			Limit:  req.PageMetadata.Limit,
-			Offset: req.PageMetadata.Offset,
-			Total:  req.PageMetadata.Total,
-			Email:  req.PageMetadata.Email,
-			Order:  req.PageMetadata.Order,
-			Dir:    req.PageMetadata.Dir,
-		},
+	page := domainusers.UsersPage{
+		Total: 0,
+		Users: []domainusers.User{},
 	}
 
 	i := uint64(0)
-	for _, id := range req.Ids {
+	for _, id := range ids {
 		if user, ok := svc.usersByID[id]; ok {
-			if req.PageMetadata.Email != "" && !strings.Contains(user.Email, req.PageMetadata.Email) {
+			if pm.Email != "" && !strings.Contains(user.Email, pm.Email) {
 				continue
 			}
-			if i >= req.PageMetadata.Offset && i < req.PageMetadata.Offset+req.PageMetadata.Limit {
-				res.Users = append(res.Users, &protomfx.User{
-					Id:    user.ID,
-					Email: user.Email,
-				})
+
+			if i >= pm.Offset && i < pm.Offset+pm.Limit {
+				page.Users = append(page.Users, domainusers.User{ID: user.ID, Email: user.Email, Status: user.Status})
 			}
 			i++
 		}
 	}
+	page.Total = i
 
-	return res, nil
+	return page, nil
 }
 
-func (svc *usersServiceClientMock) GetUsersByEmails(_ context.Context, req *protomfx.UsersByEmailsReq, _ ...grpc.CallOption) (*protomfx.UsersRes, error) {
-	var users []*protomfx.User
-	for _, email := range req.Emails {
+func (svc *usersServiceClientMock) GetUsersByEmails(_ context.Context, emails []string) ([]domainusers.User, error) {
+	var result []domainusers.User
+	for _, email := range emails {
 		if user, ok := svc.usersByEmails[email]; ok {
-			users = append(users, &protomfx.User{Id: user.ID, Email: user.Email})
+			result = append(result, domainusers.User{ID: user.ID, Email: user.Email, Status: user.Status})
 		}
 	}
 
-	return &protomfx.UsersRes{Users: users}, nil
+	return result, nil
 }

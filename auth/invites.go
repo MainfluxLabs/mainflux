@@ -7,6 +7,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"google.golang.org/grpc/codes"
@@ -140,9 +141,7 @@ func (svc service) CreateOrgInvite(ctx context.Context, token string, oi OrgInvi
 		return OrgInvite{}, err
 	}
 
-	muReq := protomfx.UsersByEmailsReq{Emails: []string{oi.InviteeEmail}}
-	users, err := svc.users.GetUsersByEmails(ctx, &muReq)
-
+	usr, err := svc.users.GetUsersByEmails(ctx, []string{oi.InviteeEmail})
 	if err != nil {
 		st, ok := status.FromError(err)
 		if ok {
@@ -157,7 +156,7 @@ func (svc service) CreateOrgInvite(ctx context.Context, token string, oi OrgInvi
 		return OrgInvite{}, err
 	}
 
-	inviteeID := users.Users[0].Id
+	inviteeID := usr[0].ID
 
 	_, err = svc.memberships.RetrieveRole(ctx, inviteeID, oi.OrgID)
 	if err != nil && !errors.Contains(err, dbutil.ErrNotFound) {
@@ -453,17 +452,17 @@ func (svc service) populateInviteInfo(ctx context.Context, invite *OrgInvite) er
 		userIDs = append(userIDs, invite.InviteeID)
 	}
 
-	usersRes, err := svc.users.GetUsersByIDs(ctx, &protomfx.UsersByIDsReq{Ids: userIDs})
+	page, err := svc.users.GetUsersByIDs(ctx, userIDs, domainusers.PageMetadata{})
 	if err != nil {
 		return err
 	}
 
-	for _, user := range usersRes.GetUsers() {
-		switch user.GetId() {
+	for _, user := range page.Users {
+		switch user.ID {
 		case invite.InviterID:
-			invite.InviterEmail = user.GetEmail()
+			invite.InviterEmail = user.Email
 		case invite.InviteeID:
-			invite.InviteeEmail = user.GetEmail()
+			invite.InviteeEmail = user.Email
 		}
 	}
 
