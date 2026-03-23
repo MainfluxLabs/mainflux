@@ -180,7 +180,7 @@ func decodeViewByThing(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func buildPageMetadat(r *http.Request) (things.PageMetadata, error) {
+func buildPageMetadata(r *http.Request) (things.PageMetadata, error) {
 	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return things.PageMetadata{}, err
@@ -234,7 +234,7 @@ func buildPageMetadataFromBody(r *http.Request) (things.PageMetadata, error) {
 }
 
 func decodeList(_ context.Context, r *http.Request) (any, error) {
-	pm, err := buildPageMetadat(r)
+	pm, err := buildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +248,7 @@ func decodeList(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeListByGroup(_ context.Context, r *http.Request) (any, error) {
-	pm, err := buildPageMetadat(r)
+	pm, err := buildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +263,7 @@ func decodeListByGroup(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeListByOrg(_ context.Context, r *http.Request) (any, error) {
-	pm, err := buildPageMetadat(r)
+	pm, err := buildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
