@@ -138,7 +138,7 @@ function setKey(r) {
         return '';
     }
 
-    return clientKey;
+    return 'Thing ' + clientKey;
 }
 
 function calcLen(msb, lsb) {
