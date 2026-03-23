@@ -96,6 +96,15 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE certs DROP COLUMN IF EXISTS key_bits;`,
 				},
 			},
+			{
+				Id: "certs_3",
+				Up: []string{
+					`ALTER TABLE certs ADD COLUMN IF NOT EXISTS downloaded BOOLEAN NOT NULL DEFAULT false;`,
+				},
+				Down: []string{
+					`ALTER TABLE certs DROP COLUMN IF EXISTS downloaded;`,
+				},
+			},
 		},
 	}
 
