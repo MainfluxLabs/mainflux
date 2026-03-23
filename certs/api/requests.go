@@ -3,7 +3,10 @@
 
 package api
 
-import "github.com/MainfluxLabs/mainflux/pkg/apiutil"
+import (
+	"github.com/MainfluxLabs/mainflux/certs/pki"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+)
 
 const maxLimitSize = 200
 
@@ -26,6 +29,10 @@ func (req addCertsReq) validate() error {
 
 	if req.TTL == "" {
 		return apiutil.ErrMissingCertData
+	}
+
+	if err := validateKeyParams(req.KeyType, req.KeyBits); err != nil {
+		return err
 	}
 
 	return nil
@@ -55,6 +62,10 @@ func (req rotateCertsReq) validate() error {
 
 	if req.TTL == "" {
 		return apiutil.ErrMissingCertData
+	}
+
+	if err := validateKeyParams(req.KeyType, req.KeyBits); err != nil {
+		return err
 	}
 
 	return nil
@@ -113,5 +124,23 @@ func (req *revokeReq) validate() error {
 		return apiutil.ErrMissingSerial
 	}
 
+	return nil
+}
+
+func validateKeyParams(keyType string, keyBits int) error {
+	switch keyType {
+	case pki.RSAKeyType:
+		if keyBits != pki.RSAKeyBits2048 && keyBits != pki.RSAKeyBits4096 {
+			return apiutil.ErrMissingCertData
+		}
+	case pki.ECDSAKeyType:
+		if keyBits != pki.ECDSAKeyBits224 && keyBits != pki.ECDSAKeyBits256 && keyBits != pki.ECDSAKeyBits384 && keyBits != pki.ECDSAKeyBits521 {
+			return apiutil.ErrMissingCertData
+		}
+	case "":
+		return apiutil.ErrMissingCertData
+	default:
+		return apiutil.ErrMissingCertData
+	}
 	return nil
 }
