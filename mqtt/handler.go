@@ -114,18 +114,13 @@ func (h *handler) AuthPublish(c *session.Client, topic *string, _ *[]byte) error
 }
 
 func (h *handler) authorizePublish(publisherID, topic string) error {
-	// Reject leading-slash variants of the custom topic patterns. MQTT treats
-	// "/things/x/commands" and "things/x/commands" as distinct topics; the
-	// platform only publishes to the slash-free form. Allowing them would be a
-	// security bypass: after splitting, prefix parses as "" and no switch case
-	// fires, silently skipping the capability check.
+	// Reject leading-slash variants of the custom topic patterns.
 	if strings.HasPrefix(topic, "/"+topicPrefixThings+"/") || strings.HasPrefix(topic, "/"+topicPrefixGroups+"/") {
 		return errors.Wrap(ErrUnauthorizedPublishTopic, fmt.Errorf("%s (leading slash not allowed)", topic))
 	}
 
 	parts := strings.Split(topic, "/")
 
-	// Topics shorter than "prefix/id/suffix" have no restricted pattern to check.
 	if len(parts) < 3 {
 		return nil
 	}
@@ -135,13 +130,8 @@ func (h *handler) authorizePublish(publisherID, topic string) error {
 		return nil
 	}
 
-	// Messages are unrestricted by publisher type — any authenticated thing may
-	// publish to another thing's messages topic. The subscribe-side check in
-	// AuthSubscribe already ensures only the owner of that topic can receive them,
-	// so adding a publish check would be a redundant gRPC round-trip with no
-	// real security gain. Commands carry authority and are therefore restricted:
-	//   things/{recipientID}/commands  → publisher must have command capability on recipient
-	//   groups/{groupID}/commands      → publisher must belong to the target group and have command capability
+	// Messages are unrestricted — any authenticated thing may publish to any messages topic.
+	// Commands carry authority and require explicit authorization.
 	var err error
 	switch {
 	case prefix == topicPrefixThings && suffix == topicSuffixCommands:
@@ -367,9 +357,7 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 // validateCustomTopic enforces authorization only for topics that match
 // custom patterns (things/thingID/commands, groups/groupID/commands, things/thingID/messages).
 func validateCustomTopic(topic, thingID, groupID string) error {
-	// Reject leading-slash variants of the custom topic patterns. The platform
-	// never publishes to "/things/…" or "/groups/…" forms, so a subscription to
-	// them would silently pass auth but land on a dead topic.
+	// Reject leading-slash variants of the custom topic patterns.
 	if strings.HasPrefix(topic, "/"+topicPrefixThings+"/") || strings.HasPrefix(topic, "/"+topicPrefixGroups+"/") {
 		return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s (leading slash not allowed)", topic))
 	}
@@ -392,7 +380,6 @@ func validateCustomTopic(topic, thingID, groupID string) error {
 	case "":
 		return nil
 	case "+", "#":
-		// This catches "things/+/commands", "things/#/messages", etc.
 		return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s (wildcard not allowed)", topic))
 	}
 
