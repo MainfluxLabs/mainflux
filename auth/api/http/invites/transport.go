@@ -120,7 +120,7 @@ func decodeListOrgInvitesByUserRequest(_ context.Context, r *http.Request) (any,
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
-	pm, err := buildPageMetadataInvites(r)
+	pm, err := buildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func decodeListOrgInvitesByOrgRequest(_ context.Context, r *http.Request) (any, 
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
-	pm, err := buildPageMetadataInvites(r)
+	pm, err := buildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func decodeListOrgInvitesByOrgRequest(_ context.Context, r *http.Request) (any, 
 	return req, nil
 }
 
-func buildPageMetadataInvites(r *http.Request) (auth.PageMetadata, error) {
+func buildPageMetadata(r *http.Request) (auth.PageMetadata, error) {
 	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return auth.PageMetadata{}, err

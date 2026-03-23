@@ -180,7 +180,7 @@ func decodeViewByThing(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func buildProfilesPageMetadata(r *http.Request) (things.PageMetadata, error) {
+func buildPageMetadat(r *http.Request) (things.PageMetadata, error) {
 	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return things.PageMetadata{}, err
@@ -199,7 +199,7 @@ func buildProfilesPageMetadata(r *http.Request) (things.PageMetadata, error) {
 	}, nil
 }
 
-func buildProfilesPageMetadataFromBody(r *http.Request) (things.PageMetadata, error) {
+func buildPageMetadataFromBody(r *http.Request) (things.PageMetadata, error) {
 	if r.Body == nil || r.ContentLength == 0 {
 		return things.PageMetadata{
 			Offset: apiutil.DefOffset,
@@ -234,7 +234,7 @@ func buildProfilesPageMetadataFromBody(r *http.Request) (things.PageMetadata, er
 }
 
 func decodeList(_ context.Context, r *http.Request) (any, error) {
-	pm, err := buildProfilesPageMetadata(r)
+	pm, err := buildPageMetadat(r)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +248,7 @@ func decodeList(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeListByGroup(_ context.Context, r *http.Request) (any, error) {
-	pm, err := buildProfilesPageMetadata(r)
+	pm, err := buildPageMetadat(r)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +263,7 @@ func decodeListByGroup(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeListByOrg(_ context.Context, r *http.Request) (any, error) {
-	pm, err := buildProfilesPageMetadata(r)
+	pm, err := buildPageMetadat(r)
 	if err != nil {
 		return nil, err
 	}
@@ -278,7 +278,7 @@ func decodeListByOrg(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeSearch(_ context.Context, r *http.Request) (any, error) {
-	pm, err := buildProfilesPageMetadataFromBody(r)
+	pm, err := buildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +292,7 @@ func decodeSearch(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeSearchByGroup(_ context.Context, r *http.Request) (any, error) {
-	pm, err := buildProfilesPageMetadataFromBody(r)
+	pm, err := buildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
 	}
@@ -307,7 +307,7 @@ func decodeSearchByGroup(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeSearchByOrg(_ context.Context, r *http.Request) (any, error) {
-	pm, err := buildProfilesPageMetadataFromBody(r)
+	pm, err := buildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
 	}

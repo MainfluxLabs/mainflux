@@ -74,7 +74,7 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	return mux
 }
 
-func buildOrgsPageMetadata(r *http.Request) (auth.PageMetadata, error) {
+func buildPageMetadata(r *http.Request) (auth.PageMetadata, error) {
 	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return auth.PageMetadata{}, err
@@ -93,7 +93,7 @@ func buildOrgsPageMetadata(r *http.Request) (auth.PageMetadata, error) {
 	}, nil
 }
 
-func buildOrgsPageMetadataFromBody(r *http.Request) (auth.PageMetadata, error) {
+func buildPageMetadataFromBody(r *http.Request) (auth.PageMetadata, error) {
 	if r.Body == nil || r.ContentLength == 0 {
 		return auth.PageMetadata{
 			Offset: apiutil.DefOffset,
@@ -128,7 +128,7 @@ func buildOrgsPageMetadataFromBody(r *http.Request) (auth.PageMetadata, error) {
 }
 
 func decodeListOrgs(_ context.Context, r *http.Request) (any, error) {
-	pm, err := buildOrgsPageMetadata(r)
+	pm, err := buildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func decodeListOrgs(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeSearchOrgs(_ context.Context, r *http.Request) (any, error) {
-	pm, err := buildOrgsPageMetadataFromBody(r)
+	pm, err := buildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
 	}

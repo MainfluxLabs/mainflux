@@ -98,7 +98,7 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func buildNotifiersPageMetadata(r *http.Request) (notifiers.PageMetadata, error) {
+func buildPageMetadata(r *http.Request) (notifiers.PageMetadata, error) {
 	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return notifiers.PageMetadata{}, err
@@ -117,7 +117,7 @@ func buildNotifiersPageMetadata(r *http.Request) (notifiers.PageMetadata, error)
 	}, nil
 }
 
-func buildNotifiersPageMetadataFromBody(r *http.Request) (notifiers.PageMetadata, error) {
+func buildPageMetadataFromBody(r *http.Request) (notifiers.PageMetadata, error) {
 	if r.Body == nil || r.ContentLength == 0 {
 		return notifiers.PageMetadata{
 			Offset: apiutil.DefOffset,
@@ -152,7 +152,7 @@ func buildNotifiersPageMetadataFromBody(r *http.Request) (notifiers.PageMetadata
 }
 
 func decodeListNotifiers(_ context.Context, r *http.Request) (any, error) {
-	pm, err := buildNotifiersPageMetadata(r)
+	pm, err := buildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func decodeListNotifiers(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeSearchNotifiers(_ context.Context, r *http.Request) (any, error) {
-	pm, err := buildNotifiersPageMetadataFromBody(r)
+	pm, err := buildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
 	}

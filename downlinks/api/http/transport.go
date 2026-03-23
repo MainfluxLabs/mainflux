@@ -93,7 +93,7 @@ func decodeCreateDownlinks(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func buildDownlinksPageMetadata(r *http.Request) (downlinks.PageMetadata, error) {
+func buildPageMetadata(r *http.Request) (downlinks.PageMetadata, error) {
 	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return downlinks.PageMetadata{}, err
@@ -111,7 +111,7 @@ func buildDownlinksPageMetadata(r *http.Request) (downlinks.PageMetadata, error)
 }
 
 func decodeListDownlinks(_ context.Context, r *http.Request) (any, error) {
-	pm, err := buildDownlinksPageMetadata(r)
+	pm, err := buildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func decodeListDownlinks(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeListThingDownlinks(_ context.Context, r *http.Request) (any, error) {
-	pm, err := buildDownlinksPageMetadata(r)
+	pm, err := buildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}

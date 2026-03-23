@@ -104,7 +104,7 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func buildWebhooksPageMetadata(r *http.Request) (webhooks.PageMetadata, error) {
+func buildPageMetadata(r *http.Request) (webhooks.PageMetadata, error) {
 	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return webhooks.PageMetadata{}, err
@@ -123,7 +123,7 @@ func buildWebhooksPageMetadata(r *http.Request) (webhooks.PageMetadata, error) {
 	}, nil
 }
 
-func buildWebhooksPageMetadataFromBody(r *http.Request) (webhooks.PageMetadata, error) {
+func buildPageMetadataFromBody(r *http.Request) (webhooks.PageMetadata, error) {
 	if r.Body == nil || r.ContentLength == 0 {
 		return webhooks.PageMetadata{
 			Offset: apiutil.DefOffset,
@@ -158,7 +158,7 @@ func buildWebhooksPageMetadataFromBody(r *http.Request) (webhooks.PageMetadata, 
 }
 
 func decodeListGroupWebhooks(_ context.Context, r *http.Request) (any, error) {
-	pm, err := buildWebhooksPageMetadata(r)
+	pm, err := buildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func decodeListGroupWebhooks(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeListThingWebhooks(_ context.Context, r *http.Request) (any, error) {
-	pm, err := buildWebhooksPageMetadata(r)
+	pm, err := buildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +188,7 @@ func decodeListThingWebhooks(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeSearchGroupWebhooks(_ context.Context, r *http.Request) (any, error) {
-	pm, err := buildWebhooksPageMetadataFromBody(r)
+	pm, err := buildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +203,7 @@ func decodeSearchGroupWebhooks(_ context.Context, r *http.Request) (any, error) 
 }
 
 func decodeSearchThingWebhooks(_ context.Context, r *http.Request) (any, error) {
-	pm, err := buildWebhooksPageMetadataFromBody(r)
+	pm, err := buildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
 	}

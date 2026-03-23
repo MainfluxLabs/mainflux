@@ -114,7 +114,7 @@ func decodeListPlatformInvitesRequest(_ context.Context, r *http.Request) (any, 
 		token: apiutil.ExtractBearerToken(r),
 	}
 
-	pm, err := buildPageMetadataInvites(r)
+	pm, err := buildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func decodeListPlatformInvitesRequest(_ context.Context, r *http.Request) (any, 
 	return req, nil
 }
 
-func buildPageMetadataInvites(r *http.Request) (users.PageMetadata, error) {
+func buildPageMetadata(r *http.Request) (users.PageMetadata, error) {
 	apm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return users.PageMetadata{}, err
