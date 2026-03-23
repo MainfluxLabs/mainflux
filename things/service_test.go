@@ -3810,22 +3810,22 @@ func TestCanThingGroupCommand(t *testing.T) {
 		err  error
 	}{
 		{
-			desc: "controller issues group command to own group",
+			desc: "controller sends group command to own group",
 			req:  things.ThingGroupCommandReq{PublisherID: ctrl.ID, GroupID: grID},
 			err:  nil,
 		},
 		{
-			desc: "sensor tries to issue group command to own group",
+			desc: "sensor tries to send group command to own group",
 			req:  things.ThingGroupCommandReq{PublisherID: sen.ID, GroupID: grID},
 			err:  errors.ErrAuthorization,
 		},
 		{
-			desc: "actuator tries to issue group command to own group",
+			desc: "actuator tries to send group command to own group",
 			req:  things.ThingGroupCommandReq{PublisherID: act.ID, GroupID: grID},
 			err:  errors.ErrAuthorization,
 		},
 		{
-			desc: "controller issues group command to a different group",
+			desc: "controller sends group command to a different group",
 			req:  things.ThingGroupCommandReq{PublisherID: ctrl.ID, GroupID: otherGrID},
 			err:  errors.ErrAuthorization,
 		},

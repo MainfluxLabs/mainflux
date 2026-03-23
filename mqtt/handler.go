@@ -120,7 +120,6 @@ func (h *handler) authorizePublish(publisherID, topic string) error {
 	}
 
 	parts := strings.Split(topic, "/")
-
 	if len(parts) < 3 {
 		return nil
 	}
