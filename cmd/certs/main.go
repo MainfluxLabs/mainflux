@@ -62,8 +62,8 @@ const (
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
 
-	defBrokerURL         = "nats://localhost:4222"
-	defCertCheckTime     = "02:00"
+	defBrokerURL     = "nats://localhost:4222"
+	defCertCheckTime = "02:00"
 
 	defSignCAPath     = "ca.crt"
 	defSignCAKeyPath  = "ca.key"
@@ -91,13 +91,13 @@ const (
 	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envThingsGRPCURL     = "MF_THINGS_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_GRPC_TIMEOUT"
-	envBrokerURL     = "MF_BROKER_URL"
-	envCertCheckTime = "MF_CERTS_CHECK_TIME"
+	envBrokerURL         = "MF_BROKER_URL"
+	envCertCheckTime     = "MF_CERTS_CHECK_TIME"
 
-	envSignCAPath        = "MF_CERTS_SIGN_CA_PATH"
-	envSignCAKey         = "MF_CERTS_SIGN_CA_KEY_PATH"
-	envSignHoursValid    = "MF_CERTS_SIGN_HOURS_VALID"
-	envSignRSABits       = "MF_CERTS_SIGN_RSA_BITS"
+	envSignCAPath     = "MF_CERTS_SIGN_CA_PATH"
+	envSignCAKey      = "MF_CERTS_SIGN_CA_KEY_PATH"
+	envSignHoursValid = "MF_CERTS_SIGN_HOURS_VALID"
+	envSignRSABits    = "MF_CERTS_SIGN_RSA_BITS"
 )
 
 var (
@@ -117,8 +117,8 @@ type config struct {
 	jaegerURL         string
 	authGRPCTimeout   time.Duration
 	thingsGRPCTimeout time.Duration
-	brokerURL     string
-	certCheckTime string
+	brokerURL         string
+	certCheckTime     string
 	// Sign and issue certificates without 3rd party PKI
 	signCAPath     string
 	signCAKeyPath  string
