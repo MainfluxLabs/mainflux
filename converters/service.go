@@ -13,6 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 )
 
@@ -33,11 +34,11 @@ var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
 	publisher messaging.Publisher
-	things    protomfx.ThingsServiceClient
+	things    domainthings.Client
 }
 
 // New instantiates the HTTP adapter implementation.
-func New(pub messaging.Publisher, things protomfx.ThingsServiceClient) Service {
+func New(pub messaging.Publisher, things domainthings.Client) Service {
 	return &adapterService{
 		publisher: pub,
 		things:    things,
@@ -137,17 +138,14 @@ func (as *adapterService) PublishJSONMessages(ctx context.Context, key string, c
 }
 
 func (as *adapterService) publish(ctx context.Context, key string, msg protomfx.Message) (m protomfx.Message, err error) {
-	pcr := &protomfx.ThingKey{
-		Type:  domainthings.KeyTypeInternal,
-		Value: key,
-	}
+	pcr := domainthings.ThingKey{Type: domainthings.KeyTypeInternal, Value: key}
 
 	pc, err := as.things.GetPubConfigByKey(ctx, pcr)
 	if err != nil {
 		return protomfx.Message{}, err
 	}
 
-	if err := messaging.FormatMessage(pc, &msg); err != nil {
+	if err := messaging.FormatMessage(protoutil.PubConfigInfoToProto(pc), &msg); err != nil {
 		return protomfx.Message{}, err
 	}
 

@@ -9,7 +9,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 const rootSubject = "root"
@@ -55,12 +54,12 @@ type Service interface {
 
 type readersService struct {
 	authc  domainauth.Client
-	thingc protomfx.ThingsServiceClient
+	thingc domainthings.Client
 	json   JSONMessageRepository
 	senml  SenMLMessageRepository
 }
 
-func New(auth domainauth.Client, things protomfx.ThingsServiceClient, json JSONMessageRepository, senml SenMLMessageRepository) Service {
+func New(auth domainauth.Client, things domainthings.Client, json JSONMessageRepository, senml SenMLMessageRepository) Service {
 	return &readersService{
 		authc:  auth,
 		thingc: things,
@@ -72,7 +71,7 @@ func New(auth domainauth.Client, things protomfx.ThingsServiceClient, json JSONM
 func (rs *readersService) ListJSONMessages(ctx context.Context, token string, key domainthings.ThingKey, rpm JSONPageMetadata) (JSONMessagesPage, error) {
 	switch {
 	case rpm.Publisher != "":
-		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: domainauth.Viewer})
+		err := rs.thingc.CanUserAccessThing(ctx, domainthings.UserAccessReq{Token: token, ID: rpm.Publisher, Action: domainauth.Viewer})
 		if err != nil {
 			return JSONMessagesPage{}, err
 		}
@@ -94,7 +93,7 @@ func (rs *readersService) ListJSONMessages(ctx context.Context, token string, ke
 func (rs *readersService) ListSenMLMessages(ctx context.Context, token string, key domainthings.ThingKey, rpm SenMLPageMetadata) (SenMLMessagesPage, error) {
 	switch {
 	case rpm.Publisher != "":
-		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: domainauth.Viewer})
+		err := rs.thingc.CanUserAccessThing(ctx, domainthings.UserAccessReq{Token: token, ID: rpm.Publisher, Action: domainauth.Viewer})
 		if err != nil {
 			return SenMLMessagesPage{}, err
 		}
@@ -116,7 +115,7 @@ func (rs *readersService) ListSenMLMessages(ctx context.Context, token string, k
 func (rs *readersService) ExportJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) (JSONMessagesPage, error) {
 	switch {
 	case rpm.Publisher != "":
-		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: domainauth.Viewer})
+		err := rs.thingc.CanUserAccessThing(ctx, domainthings.UserAccessReq{Token: token, ID: rpm.Publisher, Action: domainauth.Viewer})
 		if err != nil {
 			return JSONMessagesPage{}, err
 		}
@@ -132,7 +131,7 @@ func (rs *readersService) ExportJSONMessages(ctx context.Context, token string, 
 func (rs *readersService) ExportSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) (SenMLMessagesPage, error) {
 	switch {
 	case rpm.Publisher != "":
-		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: domainauth.Viewer})
+		err := rs.thingc.CanUserAccessThing(ctx, domainthings.UserAccessReq{Token: token, ID: rpm.Publisher, Action: domainauth.Viewer})
 		if err != nil {
 			return SenMLMessagesPage{}, err
 		}
@@ -191,7 +190,7 @@ func (rs *readersService) Restore(ctx context.Context, token string, backup Back
 }
 
 func (rs *readersService) DeleteJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) error {
-	_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: domainauth.Admin})
+	err := rs.thingc.CanUserAccessThing(ctx, domainthings.UserAccessReq{Token: token, ID: rpm.Publisher, Action: domainauth.Admin})
 	if err != nil {
 		return err
 	}
@@ -200,7 +199,7 @@ func (rs *readersService) DeleteJSONMessages(ctx context.Context, token string, 
 }
 
 func (rs *readersService) DeleteSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) error {
-	_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: domainauth.Admin})
+	err := rs.thingc.CanUserAccessThing(ctx, domainthings.UserAccessReq{Token: token, ID: rpm.Publisher, Action: domainauth.Admin})
 	if err != nil {
 		return err
 	}
@@ -232,11 +231,6 @@ func (rs *readersService) isAdmin(ctx context.Context, token string) error {
 	return nil
 }
 
-func (rs *readersService) getPubConfigByKey(ctx context.Context, key domainthings.ThingKey) (*protomfx.PubConfigByKeyRes, error) {
-	pc, err := rs.thingc.GetPubConfigByKey(ctx, &protomfx.ThingKey{Value: key.Value, Type: key.Type})
-	if err != nil {
-		return nil, err
-	}
-
-	return pc, nil
+func (rs *readersService) getPubConfigByKey(ctx context.Context, key domainthings.ThingKey) (domainthings.PubConfigInfo, error) {
+	return rs.thingc.GetPubConfigByKey(ctx, key)
 }

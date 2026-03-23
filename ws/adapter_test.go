@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	pkgmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -32,7 +33,7 @@ var msg = protomfx.Message{
 	Payload:   []byte(`[{"n":"current","t":-5,"v":1.2}]`),
 }
 
-func newService(tc protomfx.ThingsServiceClient) (ws.Service, mocks.MockPubSub) {
+func newService(tc domainthings.Client) (ws.Service, mocks.MockPubSub) {
 	pubsub := mocks.NewPubSub()
 	return ws.New(tc, pubsub), pubsub
 }

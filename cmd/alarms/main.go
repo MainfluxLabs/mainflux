@@ -32,7 +32,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -245,7 +245,7 @@ func subscribeToThingsES(ctx context.Context, svc alarms.Service, cfg config, lo
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(ts protomfx.ThingsServiceClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) alarms.Service {
+func newService(ts domainthings.Client, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) alarms.Service {
 	database := dbutil.NewDatabase(db)
 	alarmsRepo := postgres.NewAlarmRepository(database)
 	alarmsRepo = tracing.AlarmRepositoryMiddleware(dbTracer, alarmsRepo)

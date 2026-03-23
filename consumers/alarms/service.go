@@ -53,14 +53,14 @@ type Service interface {
 }
 
 type alarmService struct {
-	things     protomfx.ThingsServiceClient
+	things     domainthings.Client
 	alarms     AlarmRepository
 	idProvider uuid.IDProvider
 }
 
 var _ Service = (*alarmService)(nil)
 
-func New(things protomfx.ThingsServiceClient, alarms AlarmRepository, idp uuid.IDProvider) Service {
+func New(things domainthings.Client, alarms AlarmRepository, idp uuid.IDProvider) Service {
 	return &alarmService{
 		things:     things,
 		alarms:     alarms,
@@ -69,7 +69,7 @@ func New(things protomfx.ThingsServiceClient, alarms AlarmRepository, idp uuid.I
 }
 
 func (as *alarmService) ListAlarmsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
-	_, err := as.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domainthings.Viewer})
+	err := as.things.CanUserAccessGroup(ctx, domainthings.UserAccessReq{Token: token, ID: groupID, Action: domainthings.Viewer})
 	if err != nil {
 		return AlarmsPage{}, err
 	}
@@ -83,7 +83,7 @@ func (as *alarmService) ListAlarmsByGroup(ctx context.Context, token, groupID st
 }
 
 func (as *alarmService) ListAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
-	_, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domainthings.Viewer})
+	err := as.things.CanUserAccessThing(ctx, domainthings.UserAccessReq{Token: token, ID: thingID, Action: domainthings.Viewer})
 	if err != nil {
 		return AlarmsPage{}, err
 	}
@@ -97,15 +97,12 @@ func (as *alarmService) ListAlarmsByThing(ctx context.Context, token, thingID st
 }
 
 func (as *alarmService) ListAlarmsByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
-	res, err := as.things.GetGroupIDsByOrg(ctx, &protomfx.OrgAccessReq{
-		OrgId: orgID,
-		Token: token,
-	})
+	groupIDs, err := as.things.GetGroupIDsByOrg(ctx, domainthings.OrgAccessReq{OrgID: orgID, Token: token})
 	if err != nil {
 		return AlarmsPage{}, err
 	}
 
-	return as.alarms.RetrieveByGroups(ctx, res.GetIds(), pm)
+	return as.alarms.RetrieveByGroups(ctx, groupIDs, pm)
 }
 
 func (as *alarmService) ViewAlarm(ctx context.Context, token, id string) (Alarm, error) {
@@ -114,7 +111,7 @@ func (as *alarmService) ViewAlarm(ctx context.Context, token, id string) (Alarm,
 		return Alarm{}, err
 	}
 
-	if _, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: alarm.ThingID, Action: domainthings.Viewer}); err != nil {
+	if err := as.things.CanUserAccessThing(ctx, domainthings.UserAccessReq{Token: token, ID: alarm.ThingID, Action: domainthings.Viewer}); err != nil {
 		return Alarm{}, err
 	}
 
@@ -127,7 +124,7 @@ func (as *alarmService) RemoveAlarms(ctx context.Context, token string, ids ...s
 		if err != nil {
 			return err
 		}
-		if _, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: alarm.ThingID, Action: domainthings.Editor}); err != nil {
+		if err := as.things.CanUserAccessThing(ctx, domainthings.UserAccessReq{Token: token, ID: alarm.ThingID, Action: domainthings.Editor}); err != nil {
 			return errors.Wrap(errors.ErrAuthorization, err)
 		}
 	}
@@ -144,7 +141,7 @@ func (as *alarmService) RemoveAlarmsByGroup(ctx context.Context, groupID string)
 }
 
 func (as *alarmService) ExportAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
-	_, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domainthings.Viewer})
+	err := as.things.CanUserAccessThing(ctx, domainthings.UserAccessReq{Token: token, ID: thingID, Action: domainthings.Viewer})
 	if err != nil {
 		return AlarmsPage{}, err
 	}
@@ -158,11 +155,11 @@ func (as *alarmService) ExportAlarmsByThing(ctx context.Context, token, thingID 
 }
 
 func (as *alarmService) createAlarm(ctx context.Context, alarm *Alarm) error {
-	grID, err := as.things.GetGroupIDByThing(ctx, &protomfx.ThingID{Value: alarm.ThingID})
+	grID, err := as.things.GetGroupIDByThing(ctx, alarm.ThingID)
 	if err != nil {
 		return err
 	}
-	alarm.GroupID = grID.GetValue()
+	alarm.GroupID = grID
 
 	id, err := as.idProvider.ID()
 	if err != nil {

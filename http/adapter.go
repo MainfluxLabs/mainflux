@@ -12,6 +12,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 )
 
 // Service specifies coap service API.
@@ -28,11 +29,11 @@ var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
 	publisher messaging.Publisher
-	things    protomfx.ThingsServiceClient
+	things    domainthings.Client
 }
 
 // New instantiates the HTTP adapter implementation.
-func New(publisher messaging.Publisher, things protomfx.ThingsServiceClient) Service {
+func New(publisher messaging.Publisher, things domainthings.Client) Service {
 	return &adapterService{
 		publisher: publisher,
 		things:    things,
@@ -40,16 +41,12 @@ func New(publisher messaging.Publisher, things protomfx.ThingsServiceClient) Ser
 }
 
 func (as *adapterService) Publish(ctx context.Context, key domainthings.ThingKey, msg protomfx.Message) error {
-	tk := &protomfx.ThingKey{
-		Value: key.Value,
-		Type:  key.Type,
-	}
-	pc, err := as.things.GetPubConfigByKey(ctx, tk)
+	pc, err := as.things.GetPubConfigByKey(ctx, key)
 	if err != nil {
 		return err
 	}
 
-	if err := messaging.FormatMessage(pc, &msg); err != nil {
+	if err := messaging.FormatMessage(protoutil.PubConfigInfoToProto(pc), &msg); err != nil {
 		return err
 	}
 
@@ -61,7 +58,7 @@ func (as *adapterService) Publish(ctx context.Context, key domainthings.ThingKey
 }
 
 func (as *adapterService) SendCommandToThing(ctx context.Context, token, thingID string, message protomfx.Message) error {
-	if _, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domainthings.Editor}); err != nil {
+	if err := as.things.CanUserAccessThing(ctx, domainthings.UserAccessReq{Token: token, ID: thingID, Action: domainthings.Editor}); err != nil {
 		return err
 	}
 
@@ -73,7 +70,7 @@ func (as *adapterService) SendCommandToThing(ctx context.Context, token, thingID
 }
 
 func (as *adapterService) SendCommandToGroup(ctx context.Context, token, groupID string, message protomfx.Message) error {
-	if _, err := as.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domainthings.Editor}); err != nil {
+	if err := as.things.CanUserAccessGroup(ctx, domainthings.UserAccessReq{Token: token, ID: groupID, Action: domainthings.Editor}); err != nil {
 		return err
 	}
 

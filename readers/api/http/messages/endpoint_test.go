@@ -15,8 +15,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -59,7 +59,7 @@ var (
 	usersList = []users.User{user, admin}
 )
 
-func newServer(jsonMessages []mfjson.Message, senmlMessaages []senml.Message, tc protomfx.ThingsServiceClient, ac domainauth.Client) *httptest.Server {
+func newServer(jsonMessages []mfjson.Message, senmlMessaages []senml.Message, tc domainthings.Client, ac domainauth.Client) *httptest.Server {
 	logger := logger.NewMock()
 
 	jsonRepo := rmocks.NewJSONRepository("", fromJSON(jsonMessages))

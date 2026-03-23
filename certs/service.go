@@ -11,8 +11,8 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/certs/pki"
 	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 var (
@@ -75,14 +75,14 @@ type Config struct {
 
 type certsService struct {
 	auth      domainauth.Client
-	things    protomfx.ThingsServiceClient
+	things    domainthings.Client
 	certsRepo Repository
 	conf      Config
 	pki       pki.Agent
 }
 
 // New returns new Certs service.
-func New(auth domainauth.Client, things protomfx.ThingsServiceClient, certs Repository, config Config, pkiAgent pki.Agent) Service {
+func New(auth domainauth.Client, things domainthings.Client, certs Repository, config Config, pkiAgent pki.Agent) Service {
 	return &certsService{
 		certsRepo: certs,
 		things:    things,
@@ -116,12 +116,12 @@ func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, tt
 		return Cert{}, err
 	}
 
-	thingKeyRes, err := cs.things.GetKeyByThingID(ctx, &protomfx.ThingID{Value: thingID})
+	thingKey, err := cs.things.GetKeyByThingID(ctx, thingID)
 	if err != nil {
 		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
 
-	pkiCert, err := cs.pki.IssueCert(thingKeyRes.GetValue(), ttl, keyType, keyBits)
+	pkiCert, err := cs.pki.IssueCert(thingKey.Value, ttl, keyType, keyBits)
 	if err != nil {
 		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}

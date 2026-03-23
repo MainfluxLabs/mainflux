@@ -12,15 +12,15 @@ import (
 	adapter "github.com/MainfluxLabs/mainflux/http"
 	"github.com/MainfluxLabs/mainflux/http/api"
 	"github.com/MainfluxLabs/mainflux/logger"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 )
 
-func newMessageService(tc protomfx.ThingsServiceClient) adapter.Service {
+func newMessageService(tc domainthings.Client) adapter.Service {
 	pub := mocks.NewPublisher()
 	return adapter.New(pub, tc)
 }

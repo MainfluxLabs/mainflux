@@ -11,9 +11,11 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt/redis/cache"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
+	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mproxy/pkg/session"
 )
@@ -57,14 +59,14 @@ var (
 // Event implements events.Event interface
 type handler struct {
 	publisher messaging.Publisher
-	things    protomfx.ThingsServiceClient
+	things    domainthings.Client
 	service   Service
 	cache     cache.ConnectionCache
 	logger    logger.Logger
 }
 
 // NewHandler creates new Handler entity
-func NewHandler(publisher messaging.Publisher, things protomfx.ThingsServiceClient,
+func NewHandler(publisher messaging.Publisher, things domainthings.Client,
 	svc Service, cache cache.ConnectionCache, logger logger.Logger) session.Handler {
 	return &handler{
 		publisher: publisher,
@@ -129,13 +131,13 @@ func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 		return err
 	}
 
-	groupID, err := h.things.GetGroupIDByThing(context.Background(), &protomfx.ThingID{Value: thingID})
+	groupID, err := h.things.GetGroupIDByThing(context.Background(), thingID)
 	if err != nil {
 		return err
 	}
 
 	for _, t := range *topics {
-		if err := validateCustomTopic(t, thingID, groupID.GetValue()); err != nil {
+		if err := validateCustomTopic(t, thingID, groupID); err != nil {
 			return err
 		}
 	}
@@ -167,7 +169,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		return
 	}
 
-	tk := &protomfx.ThingKey{
+	tk := domainthings.ThingKey{
 		Value: string(c.Password),
 		Type:  c.Username,
 	}
@@ -183,7 +185,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		Payload:  *payload,
 	}
 
-	if err := messaging.FormatMessage(pc, &msg); err != nil {
+	if err := messaging.FormatMessage(protoutil.PubConfigInfoToProto(pc), &msg); err != nil {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 	}
 
@@ -257,16 +259,15 @@ func (h *handler) identify(c *session.Client) (string, error) {
 		return thingID, nil
 	}
 
-	thingKeyReq := &protomfx.ThingKey{
+	thingKeyReq := domainthings.ThingKey{
 		Value: string(c.Password),
 		Type:  c.Username,
 	}
 
-	keyRes, err := h.things.Identify(context.Background(), thingKeyReq)
+	thingID, err := h.things.Identify(context.Background(), thingKeyReq)
 	if err != nil {
 		return "", err
 	}
-	thingID := keyRes.GetValue()
 
 	if err := h.cache.Connect(context.Background(), c.ID, thingID); err != nil {
 		h.logger.Error(logErrFailedCacheConnection + err.Error())
@@ -280,7 +281,7 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 	if err != nil {
 		return nil, err
 	}
-	groupID, err := h.things.GetGroupIDByThing(context.Background(), &protomfx.ThingID{Value: thingID})
+	groupID, err := h.things.GetGroupIDByThing(context.Background(), thingID)
 	if err != nil {
 		return nil, err
 	}
@@ -289,7 +290,7 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 	for _, t := range *topics {
 		sub := Subscription{
 			Topic:     t,
-			GroupID:   groupID.GetValue(),
+			GroupID:   groupID,
 			ThingID:   thingID,
 			CreatedAt: float64(time.Now().UnixNano()) / 1e9,
 		}

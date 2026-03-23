@@ -25,7 +25,7 @@ import (
 	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	serversgrpc "github.com/MainfluxLabs/mainflux/pkg/servers/grpc"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
@@ -317,7 +317,7 @@ func connectToRedis(redisURL string, logger logger.Logger) *redis.Client {
 	return redis.NewClient(opts)
 }
 
-func newService(db *sqlx.DB, tc protomfx.ThingsServiceClient, uc domainusers.Client, tracer opentracing.Tracer, logger logger.Logger, cfg config, esClient *redis.Client) auth.Service {
+func newService(db *sqlx.DB, tc domainthings.Client, uc domainusers.Client, tracer opentracing.Tracer, logger logger.Logger, cfg config, esClient *redis.Client) auth.Service {
 	orgsRepo := postgres.NewOrgRepo(db)
 	orgsRepo = tracing.OrgRepositoryMiddleware(tracer, orgsRepo)
 

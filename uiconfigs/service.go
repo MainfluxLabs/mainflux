@@ -10,7 +10,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 )
@@ -66,7 +65,7 @@ type Service interface {
 type configService struct {
 	orgConfigs   OrgConfigRepository
 	thingConfigs ThingConfigRepository
-	things       protomfx.ThingsServiceClient
+	things       domainthings.Client
 	auth         domainauth.Client
 	idProvider   uuid.IDProvider
 	logger       logger.Logger
@@ -74,7 +73,7 @@ type configService struct {
 
 var _ Service = (*configService)(nil)
 
-func New(orgConfigs OrgConfigRepository, thingConfigs ThingConfigRepository, things protomfx.ThingsServiceClient, auth domainauth.Client, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(orgConfigs OrgConfigRepository, thingConfigs ThingConfigRepository, things domainthings.Client, auth domainauth.Client, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &configService{
 		orgConfigs:   orgConfigs,
 		thingConfigs: thingConfigs,
@@ -178,7 +177,7 @@ func (svc *configService) ViewThingConfig(ctx context.Context, token, thingID st
 		return ThingConfig{}, err
 	}
 
-	if _, err := svc.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domainthings.Viewer}); err != nil {
+	if err := svc.things.CanUserAccessThing(ctx, domainthings.UserAccessReq{Token: token, ID: thingID, Action: domainthings.Viewer}); err != nil {
 		return ThingConfig{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -201,7 +200,7 @@ func (svc *configService) ListThingsConfigs(ctx context.Context, token string, p
 
 	thingsConfigs := make([]ThingConfig, 0, len(all.ThingsConfigs))
 	for _, t := range all.ThingsConfigs {
-		if _, err := svc.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: t.ThingID, Action: domainthings.Viewer}); err == nil {
+		if err := svc.things.CanUserAccessThing(ctx, domainthings.UserAccessReq{Token: token, ID: t.ThingID, Action: domainthings.Viewer}); err == nil {
 			thingsConfigs = append(thingsConfigs, t)
 		}
 	}
@@ -218,16 +217,16 @@ func (svc *configService) UpdateThingConfig(ctx context.Context, token string, t
 		return ThingConfig{}, err
 	}
 
-	if _, err := svc.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingConfig.ThingID, Action: domainthings.Viewer}); err != nil {
+	if err := svc.things.CanUserAccessThing(ctx, domainthings.UserAccessReq{Token: token, ID: thingConfig.ThingID, Action: domainthings.Viewer}); err != nil {
 		return ThingConfig{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	grID, err := svc.things.GetGroupIDByThing(ctx, &protomfx.ThingID{Value: thingConfig.ThingID})
+	groupID, err := svc.things.GetGroupIDByThing(ctx, thingConfig.ThingID)
 	if err != nil {
 		return ThingConfig{}, err
 	}
 
-	thingConfig.GroupID = grID.GetValue()
+	thingConfig.GroupID = groupID
 
 	updated, err := svc.thingConfigs.Update(ctx, thingConfig)
 	if err != nil {
@@ -261,7 +260,7 @@ func (svc *configService) BackupThingsConfigs(ctx context.Context, token string)
 
 	thingsConfigs := make([]ThingConfig, 0, len(all.ThingsConfigs))
 	for _, t := range all.ThingsConfigs {
-		if _, err := svc.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: t.ThingID, Action: domainthings.Viewer}); err == nil {
+		if err := svc.things.CanUserAccessThing(ctx, domainthings.UserAccessReq{Token: token, ID: t.ThingID, Action: domainthings.Viewer}); err == nil {
 			thingsConfigs = append(thingsConfigs, t)
 		}
 	}

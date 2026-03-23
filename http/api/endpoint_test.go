@@ -15,8 +15,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/http/api"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
@@ -24,7 +24,7 @@ import (
 
 const ServiceErrToken = "unavailable"
 
-func newService(tc protomfx.ThingsServiceClient) adapter.Service {
+func newService(tc domainthings.Client) adapter.Service {
 	pub := mocks.NewPublisher()
 	return adapter.New(pub, tc)
 }
