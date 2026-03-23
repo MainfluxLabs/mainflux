@@ -106,6 +106,7 @@ func viewCertEndpoint(svc certs.Service) endpoint.Endpoint {
 			Serial:      cert.Serial,
 			ExpiresAt:   cert.ExpiresAt,
 			ThingID:     cert.ThingID,
+			Downloaded:  cert.Downloaded,
 		}, nil
 	}
 }
@@ -117,6 +118,30 @@ func revokeCertEndpoint(svc certs.Service) endpoint.Endpoint {
 			return nil, err
 		}
 		return svc.RevokeCert(ctx, req.token, req.serial)
+	}
+}
+
+func downloadCertEndpoint(svc certs.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(viewReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		cert, err := svc.DownloadCert(ctx, req.token, req.serial)
+		if err != nil {
+			return downloadCertRes{}, err
+		}
+
+		return downloadCertRes{
+			Certificate:    cert.ClientCert,
+			IssuingCA:      cert.IssuingCA,
+			CAChain:        cert.CAChain,
+			PrivateKey:     cert.ClientKey,
+			PrivateKeyType: cert.PrivateKeyType,
+			Serial:         cert.Serial,
+			ThingID:        cert.ThingID,
+		}, nil
 	}
 }
 

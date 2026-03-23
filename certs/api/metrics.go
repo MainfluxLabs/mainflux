@@ -84,6 +84,15 @@ func (ms *metricsMiddleware) RevokeCert(ctx context.Context, token, serial strin
 	return ms.svc.RevokeCert(ctx, token, serial)
 }
 
+func (ms *metricsMiddleware) DownloadCert(ctx context.Context, token, serial string) (certs.Cert, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "download_cert").Add(1)
+		ms.latency.With("method", "download_cert").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.DownloadCert(ctx, token, serial)
+}
+
 func (ms *metricsMiddleware) RenewCert(ctx context.Context, token, serial string) (certs.Cert, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "renew_cert").Add(1)
