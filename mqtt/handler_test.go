@@ -22,9 +22,9 @@ const (
 	recipientID  = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 	otherThingID = "11111111-2222-3333-4444-555555555555"
 	otherGroupID = "66666666-7777-8888-9999-000000000000"
-	clientID     = "clientID"
-	password     = "password"
-	subtopic     = "testSubtopic"
+	clientID     = "ffffffff-eeee-dddd-cccc-bbbbbbbbbbbb"
+	password     = "cccccccc-dddd-eeee-ffff-aaaaaaaaaaaa"
+	subtopic     = "test-subtopic"
 )
 
 var (
