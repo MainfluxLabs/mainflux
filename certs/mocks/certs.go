@@ -191,3 +191,27 @@ func (c *certsRepoMock) RetrieveRevokedCerts(ctx context.Context) ([]certs.Revok
 
 	return revokedCerts, nil
 }
+
+func (c *certsRepoMock) MarkDownloaded(ctx context.Context, serial string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	cert, ok := c.certsBySerial[serial]
+	if !ok {
+		return dbutil.ErrNotFound
+	}
+
+	cert.Downloaded = true
+	c.certsBySerial[serial] = cert
+
+	if thingCerts, ok := c.certsByThing[cert.ThingID]; ok {
+		for i, tc := range thingCerts {
+			if tc.Serial == serial {
+				thingCerts[i].Downloaded = true
+				break
+			}
+		}
+	}
+
+	return nil
+}

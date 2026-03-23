@@ -20,6 +20,7 @@ const (
 	retrieveRevokedCerts  = "retrieve_revoked_certs"
 	retrieveCertByThing   = "retrieve_cert_by_thing"
 	retrieveCertBySerial  = "retrieve_cert_by_serial"
+	markDownloaded        = "mark_downloaded"
 )
 
 var _ certs.Repository = (*certsRepositoryMiddleware)(nil)
@@ -90,4 +91,12 @@ func (crm certsRepositoryMiddleware) RetrieveBySerial(ctx context.Context, seria
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return crm.repo.RetrieveBySerial(ctx, serialID)
+}
+
+func (crm certsRepositoryMiddleware) MarkDownloaded(ctx context.Context, serial string) error {
+	span := dbutil.CreateSpan(ctx, crm.tracer, markDownloaded)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return crm.repo.MarkDownloaded(ctx, serial)
 }

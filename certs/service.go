@@ -22,6 +22,9 @@ var (
 	ErrFailedCertRevocation = errors.New("failed to revoke certificate")
 
 	errFailedToRemoveCertFromDB = errors.New("failed to remove cert serial from db")
+
+	// ErrCertAlreadyDownloaded indicates the certificate has already been downloaded.
+	ErrCertAlreadyDownloaded = errors.New("certificate already downloaded")
 )
 
 const (
@@ -55,6 +58,9 @@ type Service interface {
 
 	// RenewCert extends the expiration date of a certificate.
 	RenewCert(ctx context.Context, token, serial string) (Cert, error)
+
+	// DownloadCert retrieves the full certificate data (key, cert, CA) and marks it as downloaded.
+	DownloadCert(ctx context.Context, token, serial string) (Cert, error)
 }
 
 // Config defines the service parameters
@@ -110,6 +116,7 @@ type Cert struct {
 	KeyBits        int       `json:"key_bits" mapstructure:"key_bits"`
 	Serial         string    `json:"serial" mapstructure:"serial_number"`
 	ExpiresAt      time.Time `json:"expires_at" mapstructure:"-"`
+	Downloaded     bool      `json:"downloaded" mapstructure:"downloaded"`
 }
 
 func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, ttl string, keyBits int, keyType string) (Cert, error) {
@@ -243,4 +250,27 @@ func (cs *certsService) RenewCert(ctx context.Context, token, serial string) (Ce
 	}
 
 	return cs.IssueCert(ctx, token, oldCert.ThingID, defaultRenewalTTL, keyBits, keyType)
+}
+
+func (cs *certsService) DownloadCert(ctx context.Context, token, serial string) (Cert, error) {
+	_, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
+	if err != nil {
+		return Cert{}, err
+	}
+
+	cert, err := cs.certsRepo.RetrieveBySerial(ctx, serial)
+	if err != nil {
+		return Cert{}, err
+	}
+
+	if cert.Downloaded {
+		return Cert{}, ErrCertAlreadyDownloaded
+	}
+
+	if err := cs.certsRepo.MarkDownloaded(ctx, serial); err != nil {
+		return Cert{}, err
+	}
+	cert.Downloaded = true
+
+	return cert, nil
 }
