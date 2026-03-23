@@ -42,4 +42,7 @@ type Repository interface {
 
 	// RetrieveRevokedCerts retrieves all revoked certificates
 	RetrieveRevokedCerts(ctx context.Context) ([]RevokedCert, error)
+
+	// MarkDownloaded marks a certificate as downloaded
+	MarkDownloaded(ctx context.Context, serial string) error
 }
