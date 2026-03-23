@@ -25,8 +25,9 @@ func CanCommand(publisherType, recipientType string) error {
 	return nil
 }
 
-// CanGroupCommand checks if the publisher has any command authority,
-// with no recipient type since the command broadcasts to all things in a group.
+// CanGroupCommand checks if the publisher has any command authority.
+// Group commands are intentionally coarse — filtering by recipient type
+// is the responsibility of the receiving things, not the publisher.
 func CanGroupCommand(publisherType string) error {
 	if allowed := thingPolicies[publisherType]; len(allowed) == 0 {
 		return errors.ErrAuthorization
