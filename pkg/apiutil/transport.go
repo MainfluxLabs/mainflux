@@ -158,6 +158,7 @@ func EncodeGRPCError(st *status.Status, w http.ResponseWriter) {
 }
 
 func EncodeError(err error, w http.ResponseWriter) {
+	w.Header().Set("Content-Type", ContentTypeJSON)
 	switch {
 	case errors.Contains(err, errors.ErrAuthentication),
 		errors.Contains(err, ErrBearerToken),
@@ -256,10 +257,7 @@ func WriteErrorResponse(err error, w http.ResponseWriter) {
 	}
 
 	if errorMessage != "" {
-		w.Header().Set("Content-Type", ContentTypeJSON)
-		if err := json.NewEncoder(w).Encode(ErrorRes{Err: errorMessage}); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
+		json.NewEncoder(w).Encode(ErrorRes{Err: errorMessage})
 	}
 }
 
