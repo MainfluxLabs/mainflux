@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/modbus"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/opentracing/opentracing-go"
 )
@@ -44,7 +43,7 @@ func (crm clientRepositoryMiddleware) Save(ctx context.Context, cls ...modbus.Cl
 	return crm.repo.Save(ctx, cls...)
 }
 
-func (crm clientRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (modbus.ClientsPage, error) {
+func (crm clientRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingID string, pm modbus.PageMetadata) (modbus.ClientsPage, error) {
 	span := dbutil.CreateSpan(ctx, crm.tracer, retrieveClientsByThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -52,7 +51,7 @@ func (crm clientRepositoryMiddleware) RetrieveByThing(ctx context.Context, thing
 	return crm.repo.RetrieveByThing(ctx, thingID, pm)
 }
 
-func (crm clientRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (modbus.ClientsPage, error) {
+func (crm clientRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm modbus.PageMetadata) (modbus.ClientsPage, error) {
 	span := dbutil.CreateSpan(ctx, crm.tracer, retrieveClientsByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

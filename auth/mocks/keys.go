@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 )
 
@@ -58,7 +57,7 @@ func (krm *keyRepositoryMock) Remove(ctx context.Context, issuerID, id string) e
 	return nil
 }
 
-func (krm *keyRepositoryMock) RetrieveAPIKeys(ctx context.Context, issuerID string, pm apiutil.PageMetadata) (auth.KeysPage, error) {
+func (krm *keyRepositoryMock) RetrieveAPIKeys(ctx context.Context, issuerID string, pm auth.PageMetadata) (auth.KeysPage, error) {
 	krm.mu.Lock()
 	defer krm.mu.Unlock()
 

@@ -23,6 +23,35 @@ import (
 	"golang.org/x/time/rate"
 )
 
+var AllowedOrders = map[string]string{
+	"id":   "id",
+	"name": "name",
+}
+
+// PageMetadata contains page metadata that helps navigation.
+type PageMetadata struct {
+	Total  uint64 `json:"total,omitempty"`
+	Offset uint64 `json:"offset,omitempty"`
+	Limit  uint64 `json:"limit,omitempty"`
+	Order  string `json:"order,omitempty"`
+	Dir    string `json:"dir,omitempty"`
+	Name   string `json:"name,omitempty"`
+}
+
+// Validate validates the page metadata.
+func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
+	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
+	if err := common.Validate(maxLimitSize, AllowedOrders); err != nil {
+		return err
+	}
+
+	if len(pm.Name) > maxNameSize {
+		return apiutil.ErrNameSize
+	}
+
+	return nil
+}
+
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 // All methods that accept a token parameter use it to identify and authorize
@@ -33,11 +62,11 @@ type Service interface {
 
 	// ListDownlinksByThing retrieves data about a subset of downlinks
 	// related to a certain thing.
-	ListDownlinksByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (DownlinksPage, error)
+	ListDownlinksByThing(ctx context.Context, token, thingID string, pm PageMetadata) (DownlinksPage, error)
 
 	// ListDownlinksByGroup retrieves data about a subset of downlinks
 	// related to a certain group.
-	ListDownlinksByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (DownlinksPage, error)
+	ListDownlinksByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (DownlinksPage, error)
 
 	// ViewDownlink retrieves data about the downlink identified with the provided ID.
 	ViewDownlink(ctx context.Context, token, id string) (Downlink, error)
@@ -148,7 +177,7 @@ func (ds *downlinksService) CreateDownlinks(ctx context.Context, token, thingID 
 	return dls, nil
 }
 
-func (ds *downlinksService) ListDownlinksByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (DownlinksPage, error) {
+func (ds *downlinksService) ListDownlinksByThing(ctx context.Context, token, thingID string, pm PageMetadata) (DownlinksPage, error) {
 	if _, err := ds.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer}); err != nil {
 		return DownlinksPage{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
@@ -161,7 +190,7 @@ func (ds *downlinksService) ListDownlinksByThing(ctx context.Context, token, thi
 	return downlinks, nil
 }
 
-func (ds *downlinksService) ListDownlinksByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (DownlinksPage, error) {
+func (ds *downlinksService) ListDownlinksByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (DownlinksPage, error) {
 	if _, err := ds.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer}); err != nil {
 		return DownlinksPage{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
@@ -224,7 +253,7 @@ func (ds *downlinksService) RemoveDownlinks(ctx context.Context, token string, i
 }
 
 func (ds *downlinksService) RemoveDownlinksByThing(ctx context.Context, thingID string) error {
-	page, err := ds.downlinks.RetrieveByThing(ctx, thingID, apiutil.PageMetadata{})
+	page, err := ds.downlinks.RetrieveByThing(ctx, thingID, PageMetadata{})
 	if err != nil {
 		return err
 	}
@@ -241,7 +270,7 @@ func (ds *downlinksService) RemoveDownlinksByThing(ctx context.Context, thingID 
 }
 
 func (ds *downlinksService) RemoveDownlinksByGroup(ctx context.Context, groupID string) error {
-	page, err := ds.downlinks.RetrieveByGroup(ctx, groupID, apiutil.PageMetadata{})
+	page, err := ds.downlinks.RetrieveByGroup(ctx, groupID, PageMetadata{})
 	if err != nil {
 		return err
 	}
@@ -266,7 +295,7 @@ func (ds *downlinksService) RescheduleTasks(ctx context.Context, profileID strin
 	}
 
 	for _, thingID := range thingIDs.GetIds() {
-		page, err := ds.downlinks.RetrieveByThing(ctx, thingID, apiutil.PageMetadata{})
+		page, err := ds.downlinks.RetrieveByThing(ctx, thingID, PageMetadata{})
 		if err != nil {
 			return err
 		}

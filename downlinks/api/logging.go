@@ -13,7 +13,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/downlinks"
 	log "github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
 var _ downlinks.Service = (*loggingMiddleware)(nil)
@@ -41,7 +40,7 @@ func (lm *loggingMiddleware) CreateDownlinks(ctx context.Context, token, thingID
 	return lm.svc.CreateDownlinks(ctx, token, thingID, downlinks...)
 }
 
-func (lm *loggingMiddleware) ListDownlinksByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (response downlinks.DownlinksPage, err error) {
+func (lm *loggingMiddleware) ListDownlinksByThing(ctx context.Context, token, thingID string, pm downlinks.PageMetadata) (response downlinks.DownlinksPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_downlinks_by_thing for id %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
@@ -54,7 +53,7 @@ func (lm *loggingMiddleware) ListDownlinksByThing(ctx context.Context, token, th
 	return lm.svc.ListDownlinksByThing(ctx, token, thingID, pm)
 }
 
-func (lm *loggingMiddleware) ListDownlinksByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (response downlinks.DownlinksPage, err error) {
+func (lm *loggingMiddleware) ListDownlinksByGroup(ctx context.Context, token, groupID string, pm downlinks.PageMetadata) (response downlinks.DownlinksPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_downlinks_by_group for id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {

@@ -45,7 +45,7 @@ func (irm invitesRepositoryMiddleware) RetrievePlatformInviteByID(ctx context.Co
 	return irm.repo.RetrievePlatformInviteByID(ctx, inviteID)
 }
 
-func (irm invitesRepositoryMiddleware) RetrievePlatformInvites(ctx context.Context, pm users.PageMetadataInvites) (users.PlatformInvitesPage, error) {
+func (irm invitesRepositoryMiddleware) RetrievePlatformInvites(ctx context.Context, pm users.PageMetadata) (users.PlatformInvitesPage, error) {
 	span := dbutil.CreateSpan(ctx, irm.tracer, retrievePlatformInvites)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

@@ -10,7 +10,6 @@ import (
 
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/modbus"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
 var _ modbus.Service = (*loggingMiddleware)(nil)
@@ -38,7 +37,7 @@ func (lm *loggingMiddleware) CreateClients(ctx context.Context, token, thingID s
 	return lm.svc.CreateClients(ctx, token, thingID, clients...)
 }
 
-func (lm *loggingMiddleware) ListClientsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (response modbus.ClientsPage, err error) {
+func (lm *loggingMiddleware) ListClientsByThing(ctx context.Context, token, thingID string, pm modbus.PageMetadata) (response modbus.ClientsPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_clients_by_thing for id %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
@@ -51,7 +50,7 @@ func (lm *loggingMiddleware) ListClientsByThing(ctx context.Context, token, thin
 	return lm.svc.ListClientsByThing(ctx, token, thingID, pm)
 }
 
-func (lm *loggingMiddleware) ListClientsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (response modbus.ClientsPage, err error) {
+func (lm *loggingMiddleware) ListClientsByGroup(ctx context.Context, token, groupID string, pm modbus.PageMetadata) (response modbus.ClientsPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_clients_by_group for id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {

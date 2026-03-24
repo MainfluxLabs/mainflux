@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/rules"
@@ -67,7 +66,7 @@ func (rr ruleRepository) Save(ctx context.Context, rls ...rules.Rule) ([]rules.R
 	return rls, nil
 }
 
-func (rr ruleRepository) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
+func (rr ruleRepository) RetrieveByGroup(ctx context.Context, groupID string, pm rules.PageMetadata) (rules.RulesPage, error) {
 	if _, err := uuid.FromString(groupID); err != nil {
 		return rules.RulesPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
@@ -92,7 +91,7 @@ func (rr ruleRepository) RetrieveByGroup(ctx context.Context, groupID string, pm
 	return rr.retrieveRules(ctx, q, qc, params)
 }
 
-func (rr ruleRepository) RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
+func (rr ruleRepository) RetrieveByThing(ctx context.Context, thingID string, pm rules.PageMetadata) (rules.RulesPage, error) {
 	if _, err := uuid.FromString(thingID); err != nil {
 		return rules.RulesPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}

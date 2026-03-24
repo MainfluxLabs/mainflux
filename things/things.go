@@ -108,10 +108,10 @@ type ThingRepository interface {
 	RetrieveByKey(ctx context.Context, key ThingKey) (string, error)
 
 	// RetrieveByGroups retrieves the subset of things specified by given group ids.
-	RetrieveByGroups(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (ThingsPage, error)
+	RetrieveByGroups(ctx context.Context, groupIDs []string, pm PageMetadata) (ThingsPage, error)
 
 	// RetrieveByProfile retrieves the subset of things assigned to the specified profile.
-	RetrieveByProfile(ctx context.Context, prID string, pm apiutil.PageMetadata) (ThingsPage, error)
+	RetrieveByProfile(ctx context.Context, prID string, pm PageMetadata) (ThingsPage, error)
 
 	// Remove removes the things having the provided identifiers, that is owned
 	// by the specified user.
@@ -121,7 +121,7 @@ type ThingRepository interface {
 	BackupAll(ctx context.Context) ([]Thing, error)
 
 	// RetrieveAll retrieves all things for all users with pagination.
-	RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (ThingsPage, error)
+	RetrieveAll(ctx context.Context, pm PageMetadata) (ThingsPage, error)
 
 	// UpdateExternalKey sets/updates the external key of the Thing identified by `thingID`.
 	UpdateExternalKey(ctx context.Context, key, thingID string) error

@@ -101,29 +101,45 @@ func decodeCreateRules(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeListRulesByThing(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
 
+	name, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+
 	req := listRulesByThingReq{
-		token:        apiutil.ExtractBearerToken(r),
-		thingID:      bone.GetValue(r, apiutil.IDKey),
-		pageMetadata: pm,
+		token:   apiutil.ExtractBearerToken(r),
+		thingID: bone.GetValue(r, apiutil.IDKey),
+		pageMetadata: rules.PageMetadata{
+			Offset: base.Offset,
+			Limit:  base.Limit,
+			Order:  base.Order,
+			Dir:    base.Dir,
+			Name:   name,
+		},
 	}
+
 	return req, nil
 }
 
 func decodeListRulesByGroup(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
+	name, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
 
 	req := listRulesByGroupReq{
-		token:        apiutil.ExtractBearerToken(r),
-		groupID:      bone.GetValue(r, apiutil.IDKey),
-		pageMetadata: pm,
+		token:   apiutil.ExtractBearerToken(r),
+		groupID: bone.GetValue(r, apiutil.IDKey),
+		pageMetadata: rules.PageMetadata{
+			Offset: base.Offset,
+			Limit:  base.Limit,
+			Order:  base.Order,
+			Dir:    base.Dir,
+			Name:   name,
+		},
 	}
 
 	return req, nil

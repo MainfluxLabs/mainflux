@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
@@ -47,7 +46,7 @@ type NotifierRepository interface {
 
 	// RetrieveByGroup retrieves notifiers related to a certain group,
 	// identified by a given ID.
-	RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (NotifiersPage, error)
+	RetrieveByGroup(ctx context.Context, groupID string, pm PageMetadata) (NotifiersPage, error)
 
 	// RetrieveByID retrieves the notifier having the provided ID.
 	RetrieveByID(ctx context.Context, id string) (Notifier, error)

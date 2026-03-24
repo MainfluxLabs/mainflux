@@ -6,7 +6,6 @@ package memberships
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -92,7 +91,7 @@ func removeGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func buildGroupMembershipsResponse(gpp things.GroupMembershipsPage, pm apiutil.PageMetadata) listGroupMembershipsRes {
+func buildGroupMembershipsResponse(gpp things.GroupMembershipsPage, pm things.PageMetadata) listGroupMembershipsRes {
 	res := listGroupMembershipsRes{
 		pageRes: pageRes{
 			Total:  gpp.Total,

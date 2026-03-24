@@ -51,6 +51,14 @@ var (
 	ErrSelfRegisterDisabled = errors.New("self register disabled")
 )
 
+var AllowedOrders = map[string]string{
+	"id":            "id",
+	"email":         "email",
+	"invitee_email": "invitee_email",
+	"state":         "state",
+	"created_at":    "created_at",
+}
+
 // Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
@@ -141,14 +149,33 @@ type Service interface {
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
-	Total    uint64
-	Offset   uint64
-	Limit    uint64
-	Email    string
-	Status   string
-	Metadata Metadata
-	Order    string
-	Dir      string
+	Total    uint64   `json:"total,omitempty"`
+	Offset   uint64   `json:"offset,omitempty"`
+	Limit    uint64   `json:"limit,omitempty"`
+	Order    string   `json:"order,omitempty"`
+	Dir      string   `json:"dir,omitempty"`
+	Email    string   `json:"email,omitempty"`
+	Status   string   `json:"status,omitempty"`
+	State    string   `json:"state,omitempty"`
+	Metadata Metadata `json:"metadata,omitempty"`
+}
+
+// Validate validates the page metadata.
+func (pm PageMetadata) Validate(maxLimitSize, maxEmailSize int) error {
+	if len(pm.Email) > maxEmailSize {
+		return apiutil.ErrEmailSize
+	}
+
+	if pm.Status != "" {
+		if pm.Status != AllStatusKey &&
+			pm.Status != EnabledStatusKey &&
+			pm.Status != DisabledStatusKey {
+			return apiutil.ErrInvalidStatus
+		}
+	}
+
+	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
+	return common.Validate(maxLimitSize, AllowedOrders)
 }
 
 // UserPage contains a page of users.

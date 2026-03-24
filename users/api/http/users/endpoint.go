@@ -145,21 +145,12 @@ func listUsersEndpoint(svc users.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return users.UserPage{}, err
 		}
-		pm := users.PageMetadata{
-			Offset:   req.offset,
-			Limit:    req.limit,
-			Email:    req.email,
-			Status:   req.status,
-			Metadata: req.metadata,
-			Order:    req.order,
-			Dir:      req.dir,
-		}
-		up, err := svc.ListUsers(ctx, req.token, pm)
+		up, err := svc.ListUsers(ctx, req.token, req.pm)
 		if err != nil {
 			return users.UserPage{}, err
 		}
 
-		return buildUsersResponse(up, pm), nil
+		return buildUsersResponse(up, req.pm), nil
 	}
 }
 

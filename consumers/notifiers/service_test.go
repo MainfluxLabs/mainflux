@@ -10,7 +10,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	ntmocks "github.com/MainfluxLabs/mainflux/consumers/notifiers/mocks"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
@@ -218,7 +217,7 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 		desc         string
 		token        string
 		grID         string
-		pageMetadata apiutil.PageMetadata
+		pageMetadata notifiers.PageMetadata
 		size         uint64
 		err          error
 	}{
@@ -226,7 +225,7 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			desc:  "list the notifiers by group",
 			token: token,
 			grID:  groupID,
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: notifiers.PageMetadata{
 				Offset: 0,
 				Limit:  uint64(len(nfs)),
 			},
@@ -237,7 +236,7 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			desc:  "list the notifiers by group with no limit",
 			token: token,
 			grID:  groupID,
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: notifiers.PageMetadata{
 				Limit: 0,
 			},
 			size: uint64(len(nfs)),
@@ -247,7 +246,7 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			desc:  "list last notifier by group",
 			token: token,
 			grID:  groupID,
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: notifiers.PageMetadata{
 				Offset: uint64(len(nfs)) - 1,
 				Limit:  uint64(len(nfs)),
 			},
@@ -258,7 +257,7 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			desc:  "list empty set of notifiers by group",
 			token: token,
 			grID:  groupID,
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: notifiers.PageMetadata{
 				Offset: uint64(len(nfs)) + 1,
 				Limit:  uint64(len(nfs)),
 			},
@@ -269,7 +268,7 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			desc:  "list notifiers with invalid auth token",
 			token: wrongValue,
 			grID:  groupID,
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: notifiers.PageMetadata{
 				Offset: 0,
 				Limit:  0,
 			},
@@ -280,7 +279,7 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			desc:  "list notifiers with invalid group id",
 			token: token,
 			grID:  emptyValue,
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: notifiers.PageMetadata{
 				Offset: 0,
 				Limit:  0,
 			},
@@ -291,7 +290,7 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			desc:  "list notifiers by group sorted by name ascendant",
 			token: token,
 			grID:  groupID,
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: notifiers.PageMetadata{
 				Offset: 0,
 				Limit:  uint64(len(nfs)),
 				Order:  nameKey,
@@ -304,7 +303,7 @@ func runListNotifiersByGroupTest(t *testing.T, validContacts []string) {
 			desc:  "list notifiers by group sorted by name descendent",
 			token: token,
 			grID:  groupID,
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: notifiers.PageMetadata{
 				Offset: 0,
 				Limit:  uint64(len(nfs)),
 				Order:  nameKey,

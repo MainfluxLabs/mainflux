@@ -172,12 +172,7 @@ func decodeViewProfile(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeListUsers(_ context.Context, r *http.Request) (any, error) {
-	o, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := apiutil.ReadLimitQuery(r, apiutil.LimitKey, apiutil.DefLimit)
+	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -197,70 +192,73 @@ func decodeListUsers(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	or, err := apiutil.ReadStringQuery(r, apiutil.OrderKey, apiutil.IDOrder)
-	if err != nil {
-		return nil, err
-	}
-
-	d, err := apiutil.ReadStringQuery(r, apiutil.DirKey, apiutil.DescDir)
-	if err != nil {
-		return nil, err
+	pm := users.PageMetadata{
+		Offset:   base.Offset,
+		Limit:    base.Limit,
+		Order:    base.Order,
+		Dir:      base.Dir,
+		Email:    e,
+		Status:   s,
+		Metadata: m,
 	}
 
 	req := listUsersReq{
-		token:    apiutil.ExtractBearerToken(r),
-		status:   s,
-		offset:   o,
-		limit:    l,
-		email:    e,
-		metadata: m,
-		order:    or,
-		dir:      d,
+		token: apiutil.ExtractBearerToken(r),
+		pm:    pm,
 	}
 	return req, nil
 }
 
 func decodeSearchUsers(_ context.Context, r *http.Request) (any, error) {
+	pm := users.PageMetadata{
+		Offset: apiutil.DefOffset,
+		Limit:  apiutil.DefLimit,
+		Order:  apiutil.IDOrder,
+		Dir:    apiutil.DescDir,
+		Status: users.EnabledStatusKey,
+	}
+
 	req := listUsersReq{
-		token:  apiutil.ExtractBearerToken(r),
-		status: users.EnabledStatusKey,
-		offset: apiutil.DefOffset,
-		limit:  apiutil.DefLimit,
-		order:  apiutil.IDOrder,
-		dir:    apiutil.DescDir,
+		token: apiutil.ExtractBearerToken(r),
+		pm:    pm,
 	}
 
 	if r.Body == nil || r.ContentLength == 0 {
 		return req, nil
 	}
 
-	var pm users.PageMetadata
-	if err := json.NewDecoder(r.Body).Decode(&pm); err != nil {
+	var upm users.PageMetadata
+	if err := json.NewDecoder(r.Body).Decode(&upm); err != nil {
 		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
 	}
 
-	if pm.Offset > 0 {
-		req.offset = pm.Offset
+	if upm.Offset > 0 {
+		req.pm.Offset = upm.Offset
 	}
 
-	if pm.Limit > 0 {
-		req.limit = pm.Limit
+	if upm.Limit > 0 {
+		req.pm.Limit = upm.Limit
 	}
 
-	if pm.Order != "" {
-		req.order = pm.Order
+	if upm.Order != "" {
+		req.pm.Order = upm.Order
 	}
 
-	if pm.Dir != "" {
-		req.dir = pm.Dir
+	if upm.Dir != "" {
+		req.pm.Dir = upm.Dir
 	}
 
-	if pm.Status != "" {
-		req.status = pm.Status
+	if upm.Status != "" {
+		req.pm.Status = upm.Status
 	}
 
-	req.email = pm.Email
-	req.metadata = pm.Metadata
+	if upm.Email != "" {
+		req.pm.Email = upm.Email
+	}
+
+	if upm.Metadata != nil {
+		req.pm.Metadata = upm.Metadata
+	}
 
 	return req, nil
 }

@@ -6,7 +6,6 @@ package scripts
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/rules"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -219,7 +218,7 @@ func buildScriptsResponse(scripts []rules.LuaScript, created bool) scriptsRes {
 	return res
 }
 
-func buildScriptsPageResponse(page rules.LuaScriptsPage, pm apiutil.PageMetadata) scriptsPageRes {
+func buildScriptsPageResponse(page rules.LuaScriptsPage, pm rules.PageMetadata) scriptsPageRes {
 	res := scriptsPageRes{
 		pageRes: pageRes{
 			Total:  page.Total,
@@ -257,7 +256,7 @@ func buildScriptResponse(s rules.LuaScript, updated bool) scriptRes {
 	}
 }
 
-func buildScriptRunsPageResponse(page rules.ScriptRunsPage, pm apiutil.PageMetadata) scriptRunsPageRes {
+func buildScriptRunsPageResponse(page rules.ScriptRunsPage, pm rules.PageMetadata) scriptRunsPageRes {
 	res := scriptRunsPageRes{
 		pageRes: pageRes{
 			Total:  page.Total,
