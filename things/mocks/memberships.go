@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -48,7 +47,7 @@ func (gmr *groupMembershipsRepositoryMock) RetrieveRole(_ context.Context, gm th
 	return "", dbutil.ErrNotFound
 }
 
-func (gmr *groupMembershipsRepositoryMock) RetrieveByGroup(_ context.Context, groupID string, pm apiutil.PageMetadata) (things.GroupMembershipsPage, error) {
+func (gmr *groupMembershipsRepositoryMock) RetrieveByGroup(_ context.Context, groupID string, pm things.PageMetadata) (things.GroupMembershipsPage, error) {
 	gmr.mu.Lock()
 	defer gmr.mu.Unlock()
 

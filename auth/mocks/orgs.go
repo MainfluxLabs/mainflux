@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -83,7 +82,7 @@ func (orm *orgRepositoryMock) RetrieveByID(_ context.Context, id string) (auth.O
 	return org, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveByOwner(_ context.Context, ownerID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
+func (orm *orgRepositoryMock) RetrieveByOwner(_ context.Context, ownerID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 	keys := sortOrgsByID(orm.orgs)
@@ -105,7 +104,7 @@ func (orm *orgRepositoryMock) RetrieveByOwner(_ context.Context, ownerID string,
 	}, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveByMember(ctx context.Context, memberID string, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
+func (orm *orgRepositoryMock) RetrieveByMember(ctx context.Context, memberID string, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 
@@ -157,7 +156,7 @@ func (orm *orgRepositoryMock) BackupAll(_ context.Context) ([]auth.Org, error) {
 	return orgs, nil
 }
 
-func (orm *orgRepositoryMock) RetrieveAll(_ context.Context, pm apiutil.PageMetadata) (auth.OrgsPage, error) {
+func (orm *orgRepositoryMock) RetrieveAll(_ context.Context, pm auth.PageMetadata) (auth.OrgsPage, error) {
 	orm.mu.Lock()
 	defer orm.mu.Unlock()
 

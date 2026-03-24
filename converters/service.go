@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"time"
 
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 )
 
 const (
@@ -62,28 +62,30 @@ func (as *adapterService) PublishSenMLMessages(ctx context.Context, key string, 
 			if err != nil {
 				return err
 			}
-			record := map[string]any{
-				"n": n,
-				"v": v,
-				"t": t,
-			}
-			msgs = append(msgs, record)
+			msgs = append(msgs, map[string]any{"n": n, "v": v, "t": t})
 			counter++
-			if counter >= 50000 || i == len(csvLines)-1 {
+			if counter >= 50000 {
 				data, err := json.Marshal(msgs)
 				if err != nil {
 					return err
 				}
 				msg.Payload = data
-				_, err = as.publish(ctx, key, msg)
-				if err != nil {
+				if _, err = as.publish(ctx, key, msg); err != nil {
 					return err
 				}
 				counter = 0
 				msgs = []map[string]any{}
-				if i != len(csvLines)-1 {
-					time.Sleep(30 * time.Second)
-				}
+				time.Sleep(30 * time.Second)
+			}
+		}
+		if i == len(csvLines)-1 && len(msgs) > 0 {
+			data, err := json.Marshal(msgs)
+			if err != nil {
+				return err
+			}
+			msg.Payload = data
+			if _, err = as.publish(ctx, key, msg); err != nil {
+				return err
 			}
 		}
 	}
@@ -91,6 +93,17 @@ func (as *adapterService) PublishSenMLMessages(ctx context.Context, key string, 
 }
 
 func (as *adapterService) PublishJSONMessages(ctx context.Context, key string, csvLines [][]string) error {
+	pcr := &protomfx.ThingKey{
+		Type:  domainthings.KeyTypeInternal,
+		Value: key,
+	}
+	pc, err := as.things.GetPubConfigByKey(ctx, pcr)
+	if err != nil {
+		return err
+	}
+
+	timeField := pc.GetProfileConfig().GetTransformer().GetTimeField()
+
 	msg := protomfx.Message{
 		Protocol: protocol,
 		Created:  time.Now().UnixNano(),
@@ -98,14 +111,15 @@ func (as *adapterService) PublishJSONMessages(ctx context.Context, key string, c
 	counter := 0
 	keys := csvLines[0][1:]
 	msgs := []map[string]any{}
-	createdIdx := slices.Index(csvLines[0], "created")
-	if createdIdx == -1 {
-		return ErrInvalidTimeField
-	}
-
+	timeFieldIdx := slices.Index(csvLines[0], timeField)
 	for i := 1; i < len(csvLines); i++ {
-		record := map[string]any{
-			"created": csvLines[i][createdIdx],
+		record := map[string]any{}
+		if timeField != "" && timeFieldIdx != -1 {
+			t, err := strconv.ParseFloat(csvLines[i][timeFieldIdx], 64)
+			if err != nil {
+				return ErrInvalidTimeField
+			}
+			record["Created"] = t
 		}
 		for j, columnName := range keys {
 			if f, err := strconv.ParseFloat(csvLines[i][j+1], 64); err == nil {

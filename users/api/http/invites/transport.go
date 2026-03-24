@@ -114,7 +114,7 @@ func decodeListPlatformInvitesRequest(_ context.Context, r *http.Request) (any, 
 		token: apiutil.ExtractBearerToken(r),
 	}
 
-	pm, err := buildPageMetadataInvites(r)
+	pm, err := buildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -124,24 +124,24 @@ func decodeListPlatformInvitesRequest(_ context.Context, r *http.Request) (any, 
 	return req, nil
 }
 
-func buildPageMetadataInvites(r *http.Request) (users.PageMetadataInvites, error) {
-	pm := users.PageMetadataInvites{}
-
+func buildPageMetadata(r *http.Request) (users.PageMetadata, error) {
 	apm, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
-		return users.PageMetadataInvites{}, err
+		return users.PageMetadata{}, err
 	}
-
-	pm.PageMetadata = apm
 
 	state, err := apiutil.ReadStringQuery(r, stateKey, "")
 	if err != nil {
-		return users.PageMetadataInvites{}, err
+		return users.PageMetadata{}, err
 	}
 
-	pm.State = state
-
-	return pm, nil
+	return users.PageMetadata{
+		Offset: apm.Offset,
+		Limit:  apm.Limit,
+		Order:  apm.Order,
+		Dir:    apm.Dir,
+		State:  state,
+	}, nil
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {

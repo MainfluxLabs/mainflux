@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -162,7 +161,7 @@ func (grm *groupRepositoryMock) RetrieveByID(_ context.Context, id string) (thin
 	return val, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveByIDs(_ context.Context, ids []string, pm apiutil.PageMetadata) (things.GroupPage, error) {
+func (grm *groupRepositoryMock) RetrieveByIDs(_ context.Context, ids []string, pm things.PageMetadata) (things.GroupPage, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 
@@ -208,7 +207,7 @@ func (grm *groupRepositoryMock) RetrieveByIDs(_ context.Context, ids []string, p
 	return page, nil
 }
 
-func (grm *groupRepositoryMock) RetrieveAll(_ context.Context, pm apiutil.PageMetadata) (things.GroupPage, error) {
+func (grm *groupRepositoryMock) RetrieveAll(_ context.Context, pm things.PageMetadata) (things.GroupPage, error) {
 	grm.mu.Lock()
 	defer grm.mu.Unlock()
 

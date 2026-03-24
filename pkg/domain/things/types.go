@@ -98,6 +98,18 @@ type PubConfigInfo struct {
 	ProfileConfig map[string]any
 }
 
+// ThingCommandReq represents a request to authorize an inter-thing command.
+type ThingCommandReq struct {
+	PublisherID string
+	RecipientID string
+}
+
+// ThingGroupCommandReq represents a request to authorize a thing group command.
+type ThingGroupCommandReq struct {
+	PublisherID string
+	GroupID     string
+}
+
 // Config represents profile configuration.
 type Config struct {
 	ContentType string      `json:"content_type"`

@@ -105,9 +105,9 @@ func toPageMetadata(pm *protomfx.PageMetadata) users.PageMetadata {
 		Total:  pm.GetTotal(),
 		Offset: pm.GetOffset(),
 		Limit:  pm.GetLimit(),
-		Email:  pm.GetEmail(),
 		Order:  pm.GetOrder(),
 		Dir:    pm.GetDir(),
+		Email:  pm.GetEmail(),
 	}
 }
 

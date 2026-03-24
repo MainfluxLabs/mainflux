@@ -1,6 +1,7 @@
 package http
 
 import (
+	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
@@ -29,7 +30,7 @@ func (req *alarmReq) validate() error {
 type listAlarmsByGroupReq struct {
 	token        string
 	groupID      string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata alarms.PageMetadata
 }
 
 func (req listAlarmsByGroupReq) validate() error {
@@ -41,17 +42,13 @@ func (req listAlarmsByGroupReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	if req.pageMetadata.Limit > maxLimitSize {
-		return apiutil.ErrLimitSize
-	}
-
-	return nil
+	return req.pageMetadata.Validate(maxLimitSize)
 }
 
 type listAlarmsByThingReq struct {
 	token        string
 	thingID      string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata alarms.PageMetadata
 }
 
 func (req listAlarmsByThingReq) validate() error {
@@ -63,17 +60,13 @@ func (req listAlarmsByThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	if req.pageMetadata.Limit > maxLimitSize {
-		return apiutil.ErrLimitSize
-	}
-
-	return nil
+	return req.pageMetadata.Validate(maxLimitSize)
 }
 
 type listAlarmsByOrgReq struct {
 	token        string
 	orgID        string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata alarms.PageMetadata
 }
 
 func (req listAlarmsByOrgReq) validate() error {
@@ -85,11 +78,7 @@ func (req listAlarmsByOrgReq) validate() error {
 		return apiutil.ErrMissingOrgID
 	}
 
-	if req.pageMetadata.Limit > maxLimitSize {
-		return apiutil.ErrLimitSize
-	}
-
-	return nil
+	return req.pageMetadata.Validate(maxLimitSize)
 }
 
 type removeAlarmsReq struct {
@@ -120,7 +109,7 @@ type exportAlarmsByThingReq struct {
 	thingID       string
 	convertFormat string
 	timeFormat    string
-	pageMetadata  apiutil.PageMetadata
+	pageMetadata  alarms.PageMetadata
 }
 
 func (req exportAlarmsByThingReq) validate() error {
@@ -136,9 +125,5 @@ func (req exportAlarmsByThingReq) validate() error {
 		return apiutil.ErrInvalidQueryParams
 	}
 
-	if req.pageMetadata.Limit > maxLimitSize {
-		return apiutil.ErrLimitSize
-	}
-
-	return nil
+	return req.pageMetadata.Validate(maxLimitSize)
 }

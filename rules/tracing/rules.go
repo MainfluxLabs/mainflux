@@ -3,7 +3,6 @@ package tracing
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/rules"
 	"github.com/opentracing/opentracing-go"
@@ -56,7 +55,7 @@ func (rpm ruleRepositoryMiddleware) RetrieveByID(ctx context.Context, id string)
 	return rpm.repo.RetrieveByID(ctx, id)
 }
 
-func (rpm ruleRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
+func (rpm ruleRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingID string, pm rules.PageMetadata) (rules.RulesPage, error) {
 	span := dbutil.CreateSpan(ctx, rpm.tracer, retrieveRulesByThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -64,7 +63,7 @@ func (rpm ruleRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingID
 	return rpm.repo.RetrieveByThing(ctx, thingID, pm)
 }
 
-func (rpm ruleRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
+func (rpm ruleRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm rules.PageMetadata) (rules.RulesPage, error) {
 	span := dbutil.CreateSpan(ctx, rpm.tracer, retrieveRulesByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

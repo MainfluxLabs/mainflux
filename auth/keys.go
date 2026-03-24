@@ -6,7 +6,6 @@ package auth
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
@@ -50,7 +49,7 @@ type Keys interface {
 	RetrieveKey(ctx context.Context, token, id string) (Key, error)
 
 	// ListAPIKeys retrieves API keys.
-	ListAPIKeys(ctx context.Context, token string, pm apiutil.PageMetadata) (KeysPage, error)
+	ListAPIKeys(ctx context.Context, token string, pm PageMetadata) (KeysPage, error)
 }
 
 // KeyRepository specifies Key persistence API.
@@ -66,7 +65,7 @@ type KeyRepository interface {
 	Remove(context.Context, string, string) error
 
 	// RetrieveAPIKeys retrieves all API Keys with pagination.
-	RetrieveAPIKeys(ctx context.Context, issuerID string, pm apiutil.PageMetadata) (KeysPage, error)
+	RetrieveAPIKeys(ctx context.Context, issuerID string, pm PageMetadata) (KeysPage, error)
 }
 
 func (svc service) Issue(ctx context.Context, token string, key Key) (Key, string, error) {
@@ -103,7 +102,7 @@ func (svc service) RetrieveKey(ctx context.Context, token, id string) (Key, erro
 	return svc.keys.Retrieve(ctx, issuerID, id)
 }
 
-func (svc service) ListAPIKeys(ctx context.Context, token string, pm apiutil.PageMetadata) (KeysPage, error) {
+func (svc service) ListAPIKeys(ctx context.Context, token string, pm PageMetadata) (KeysPage, error) {
 	issuerID, _, err := svc.login(token)
 	if err != nil {
 		return KeysPage{}, errors.Wrap(errRetrieve, err)

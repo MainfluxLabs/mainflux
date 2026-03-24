@@ -62,7 +62,7 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 }
 
 func decodeListGroupMemberships(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,13 @@ func decodeListGroupMemberships(_ context.Context, r *http.Request) (any, error)
 		return nil, err
 	}
 
-	pm.Email = e
+	pm := things.PageMetadata{
+		Offset: base.Offset,
+		Limit:  base.Limit,
+		Order:  base.Order,
+		Dir:    base.Dir,
+		Email:  e,
+	}
 
 	req := listGroupMembershipsReq{
 		token:        apiutil.ExtractBearerToken(r),

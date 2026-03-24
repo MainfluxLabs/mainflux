@@ -33,7 +33,6 @@ const (
 	SerialKey              = "serial"
 	EmailKey               = "email"
 	PayloadKey             = "payload"
-	NameOrder              = "name"
 	IDOrder                = "id"
 	AscDir                 = "asc"
 	DescDir                = "desc"
@@ -46,15 +45,11 @@ const (
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
-	Total    uint64
-	Offset   uint64         `json:"offset,omitempty"`
-	Limit    uint64         `json:"limit,omitempty"`
-	Name     string         `json:"name,omitempty"`
-	Order    string         `json:"order,omitempty"`
-	Dir      string         `json:"dir,omitempty"`
-	Metadata map[string]any `json:"metadata,omitempty"`
-	Email    string         `json:"email,omitempty"`
-	Payload  map[string]any `json:"payload,omitempty"`
+	Total  uint64 `json:"total,omitempty"`
+	Offset uint64 `json:"offset,omitempty"`
+	Limit  uint64 `json:"limit,omitempty"`
+	Order  string `json:"order,omitempty"`
+	Dir    string `json:"dir,omitempty"`
 }
 
 // LoggingErrorEncoder is a go-kit error encoder logging decorator.
@@ -158,6 +153,7 @@ func EncodeGRPCError(st *status.Status, w http.ResponseWriter) {
 }
 
 func EncodeError(err error, w http.ResponseWriter) {
+	w.Header().Set("Content-Type", ContentTypeJSON)
 	switch {
 	case errors.Contains(err, errors.ErrAuthentication),
 		errors.Contains(err, ErrBearerToken),
@@ -256,10 +252,7 @@ func WriteErrorResponse(err error, w http.ResponseWriter) {
 	}
 
 	if errorMessage != "" {
-		w.Header().Set("Content-Type", ContentTypeJSON)
-		if err := json.NewEncoder(w).Encode(ErrorRes{Err: errorMessage}); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
+		json.NewEncoder(w).Encode(ErrorRes{Err: errorMessage})
 	}
 }
 
@@ -451,11 +444,6 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 		return PageMetadata{}, err
 	}
 
-	n, err := ReadStringQuery(r, NameKey, "")
-	if err != nil {
-		return PageMetadata{}, err
-	}
-
 	or, err := ReadStringQuery(r, OrderKey, IDOrder)
 	if err != nil {
 		return PageMetadata{}, err
@@ -466,30 +454,11 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 		return PageMetadata{}, err
 	}
 
-	m, err := ReadMetadataQuery(r, MetadataKey, nil)
-	if err != nil {
-		return PageMetadata{}, err
-	}
-
-	e, err := ReadStringQuery(r, EmailKey, "")
-	if err != nil {
-		return PageMetadata{}, err
-	}
-
-	p, err := ReadMetadataQuery(r, PayloadKey, nil)
-	if err != nil {
-		return PageMetadata{}, err
-	}
-
 	return PageMetadata{
-		Offset:   o,
-		Limit:    l,
-		Name:     n,
-		Order:    or,
-		Dir:      d,
-		Metadata: m,
-		Email:    e,
-		Payload:  p,
+		Offset: o,
+		Limit:  l,
+		Order:  or,
+		Dir:    d,
 	}, nil
 }
 
@@ -527,23 +496,20 @@ func BuildPageMetadataFromBody(r *http.Request) (PageMetadata, error) {
 	return pm, nil
 }
 
-func ValidatePageMetadata(pm PageMetadata, maxLimitSize, maxNameSize int) error {
+func (pm PageMetadata) Validate(maxLimitSize int, allowedOrders map[string]string) error {
 	if pm.Limit > uint64(maxLimitSize) {
 		return ErrLimitSize
-	}
-
-	if len(pm.Name) > maxNameSize {
-		return ErrNameSize
-	}
-
-	if pm.Order != "" &&
-		pm.Order != NameOrder && pm.Order != IDOrder {
-		return ErrInvalidOrder
 	}
 
 	if pm.Dir != "" &&
 		pm.Dir != AscDir && pm.Dir != DescDir {
 		return ErrInvalidDirection
+	}
+
+	if pm.Order != "" {
+		if _, orderValid := allowedOrders[pm.Order]; !orderValid {
+			return ErrInvalidOrder
+		}
 	}
 
 	return nil

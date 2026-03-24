@@ -87,7 +87,7 @@ func (irm *invitesRepositoryMock) RemoveOrgInvite(ctx context.Context, inviteID 
 	return nil
 }
 
-func (irm *invitesRepositoryMock) RetrieveOrgInvitesByOrg(ctx context.Context, orgID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
+func (irm *invitesRepositoryMock) RetrieveOrgInvitesByOrg(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgInvitesPage, error) {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 
@@ -116,7 +116,7 @@ func (irm *invitesRepositoryMock) RetrieveOrgInvitesByOrg(ctx context.Context, o
 	}, nil
 }
 
-func (irm *invitesRepositoryMock) RetrieveOrgInvitesByUser(ctx context.Context, userType, userID string, pm auth.PageMetadataInvites) (auth.OrgInvitesPage, error) {
+func (irm *invitesRepositoryMock) RetrieveOrgInvitesByUser(ctx context.Context, userType, userID string, pm auth.PageMetadata) (auth.OrgInvitesPage, error) {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 

@@ -6,7 +6,6 @@ package groups
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -218,7 +217,7 @@ func removeGroupsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func buildGroupsResponse(gp things.GroupPage, pm apiutil.PageMetadata) groupPageRes {
+func buildGroupsResponse(gp things.GroupPage, pm things.PageMetadata) groupPageRes {
 	res := groupPageRes{
 		pageRes: pageRes{
 			Total:  gp.Total,
