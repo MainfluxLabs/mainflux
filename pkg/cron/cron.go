@@ -105,13 +105,14 @@ func (sm *ScheduleManager) ScheduleRepeatingTask(task func(), scheduler Schedule
 		return errors.Wrap(errFormatCronExpr, err)
 	}
 
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
 	entryID, err := c.AddFunc(cronExpr, task)
 	if err != nil {
 		return errors.Wrap(errAddFunc, err)
 	}
 
-	sm.mu.Lock()
-	defer sm.mu.Unlock()
 	sm.EntryByID[entityID] = entryID
 
 	return nil
