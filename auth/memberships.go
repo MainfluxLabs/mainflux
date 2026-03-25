@@ -11,6 +11,9 @@ import (
 // OrgMembership is an alias for the shared domain type.
 type OrgMembership = domainauth.OrgMembership
 
+// OrgMembershipsPage is an alias for the shared domain type.
+type OrgMembershipsPage = domainauth.OrgMembershipsPage
+
 var (
 	// ErrCreateOrgMembership indicates failure to create org membership.
 	ErrCreateOrgMembership = errors.New("failed to create org membership")
@@ -21,9 +24,6 @@ var (
 	// ErrOrgMembershipExists indicates that membership already exists.
 	ErrOrgMembershipExists = errors.New("org membership already exists")
 )
-
-// OrgMembershipsPage is an alias for the shared domain type.
-type OrgMembershipsPage = domainauth.OrgMembershipsPage
 
 type OrgMembershipsRepository interface {
 	// Save saves memberships.

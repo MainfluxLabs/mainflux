@@ -17,6 +17,9 @@ import (
 // PlatformInvite is an alias for the shared domain type.
 type PlatformInvite = domainusers.PlatformInvite
 
+// PlatformInvitesPage is an alias for the shared domain type.
+type PlatformInvitesPage = domainusers.PlatformInvitesPage
+
 const (
 	UserTypeInvitee = "invitee"
 	UserTypeInviter = "inviter"
@@ -27,9 +30,6 @@ const (
 	InviteStateAccepted = "accepted"
 	InviteStateDeclined = "declined"
 )
-
-// PlatformInvitesPage is an alias for the shared domain type.
-type PlatformInvitesPage = domainusers.PlatformInvitesPage
 
 type PlatformInvites interface {
 	// CreatePlatformInvite creates a pending platform Invite for the appropriate email address.

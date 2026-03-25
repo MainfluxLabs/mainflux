@@ -26,6 +26,9 @@ const (
 	OrgSub  = domainauth.OrgSub
 )
 
+// AuthzReq is an alias for the shared domain type.
+type AuthzReq = domainauth.AuthzReq
+
 var (
 	// ErrRetrieveMembershipsByOrg indicates that retrieving memberships by org failed.
 	ErrRetrieveMembershipsByOrg = errors.New("failed to retrieve memberships by org")
@@ -89,9 +92,6 @@ type Authn interface {
 	// other reason, non-nil error value is returned in response.
 	Identify(ctx context.Context, token string) (Identity, error)
 }
-
-// AuthzReq is an alias for the shared domain type.
-type AuthzReq = domainauth.AuthzReq
 
 // Authz represents a authorization service. It exposes
 // functionalities through `auth` to perform authorization.

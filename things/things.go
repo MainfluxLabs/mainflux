@@ -17,6 +17,9 @@ type Metadata = domain.Metadata
 type Thing = domainthings.Thing
 type ThingsPage = domainthings.ThingsPage
 
+// ThingKey is an alias for the shared domain type
+type ThingKey = domainthings.ThingKey
+
 // ThingKey and key type constants are aliases for the shared domain types.
 const (
 	KeyTypeInternal = domainthings.KeyTypeInternal
@@ -28,8 +31,6 @@ const (
 	ThingTypeController = "controller"
 	ThingTypeGateway    = "gateway"
 )
-
-type ThingKey = domainthings.ThingKey
 
 // ThingRepository specifies a thing persistence API.
 type ThingRepository interface {
