@@ -3,7 +3,6 @@ package tracing
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/opentracing/opentracing-go"
@@ -81,7 +80,7 @@ func (grm groupRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.Gr
 	return grm.repo.BackupAll(ctx)
 }
 
-func (grm groupRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.GroupPage, error) {
+func (grm groupRepositoryMiddleware) RetrieveAll(ctx context.Context, pm things.PageMetadata) (things.GroupPage, error) {
 	span := dbutil.CreateSpan(ctx, grm.tracer, retrieveAllGroups)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -96,7 +95,7 @@ func (grm groupRepositoryMiddleware) RetrieveByID(ctx context.Context, id string
 
 	return grm.repo.RetrieveByID(ctx, id)
 }
-func (grm groupRepositoryMiddleware) RetrieveByIDs(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.GroupPage, error) {
+func (grm groupRepositoryMiddleware) RetrieveByIDs(ctx context.Context, groupIDs []string, pm things.PageMetadata) (things.GroupPage, error) {
 	span := dbutil.CreateSpan(ctx, grm.tracer, retrieveGroupByIDs)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

@@ -6,7 +6,6 @@ package http
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -124,7 +123,7 @@ func removeWebhooksEndpoint(svc webhooks.Service) endpoint.Endpoint {
 	}
 }
 
-func buildWebhooksPageResponse(wp webhooks.WebhooksPage, pm apiutil.PageMetadata) WebhooksPageRes {
+func buildWebhooksPageResponse(wp webhooks.WebhooksPage, pm webhooks.PageMetadata) WebhooksPageRes {
 	res := WebhooksPageRes{
 		pageRes: pageRes{
 			Total:  wp.Total,

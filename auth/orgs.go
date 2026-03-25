@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
@@ -36,7 +35,7 @@ type Orgs interface {
 	ViewOrg(ctx context.Context, token, id string) (Org, error)
 
 	// ListOrgs retrieves orgs.
-	ListOrgs(ctx context.Context, token string, pm apiutil.PageMetadata) (OrgsPage, error)
+	ListOrgs(ctx context.Context, token string, pm PageMetadata) (OrgsPage, error)
 
 	// RemoveOrgs removes the orgs identified with the provided IDs.
 	RemoveOrgs(ctx context.Context, token string, ids ...string) error
@@ -69,10 +68,10 @@ type OrgRepository interface {
 	BackupAll(ctx context.Context) ([]Org, error)
 
 	// RetrieveAll retrieves all orgs with pagination.
-	RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (OrgsPage, error)
+	RetrieveAll(ctx context.Context, pm PageMetadata) (OrgsPage, error)
 
 	// RetrieveByMember list of orgs that member belongs to
-	RetrieveByMember(ctx context.Context, memberID string, pm apiutil.PageMetadata) (OrgsPage, error)
+	RetrieveByMember(ctx context.Context, memberID string, pm PageMetadata) (OrgsPage, error)
 }
 
 func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, error) {
@@ -117,7 +116,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, err
 	return org, nil
 }
 
-func (svc service) ListOrgs(ctx context.Context, token string, pm apiutil.PageMetadata) (OrgsPage, error) {
+func (svc service) ListOrgs(ctx context.Context, token string, pm PageMetadata) (OrgsPage, error) {
 	if err := svc.isAdmin(ctx, token); err == nil {
 		return svc.orgs.RetrieveAll(ctx, pm)
 	}

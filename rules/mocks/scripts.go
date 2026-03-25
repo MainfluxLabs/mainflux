@@ -6,7 +6,6 @@ package mocks
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/rules"
@@ -35,7 +34,7 @@ func (rrm *ruleRepositoryMock) RetrieveScriptByID(_ context.Context, id string) 
 	return s, nil
 }
 
-func (rrm *ruleRepositoryMock) RetrieveScriptsByThing(_ context.Context, thingID string, pm apiutil.PageMetadata) (rules.LuaScriptsPage, error) {
+func (rrm *ruleRepositoryMock) RetrieveScriptsByThing(_ context.Context, thingID string, pm rules.PageMetadata) (rules.LuaScriptsPage, error) {
 	rrm.mu.Lock()
 	defer rrm.mu.Unlock()
 
@@ -63,7 +62,7 @@ func (rrm *ruleRepositoryMock) RetrieveScriptsByThing(_ context.Context, thingID
 	}, nil
 }
 
-func (rrm *ruleRepositoryMock) RetrieveScriptsByGroup(_ context.Context, groupID string, pm apiutil.PageMetadata) (rules.LuaScriptsPage, error) {
+func (rrm *ruleRepositoryMock) RetrieveScriptsByGroup(_ context.Context, groupID string, pm rules.PageMetadata) (rules.LuaScriptsPage, error) {
 	rrm.mu.Lock()
 	defer rrm.mu.Unlock()
 
@@ -211,7 +210,7 @@ func (rrm *ruleRepositoryMock) RetrieveScriptRunByID(_ context.Context, id strin
 	return run, nil
 }
 
-func (rrm *ruleRepositoryMock) RetrieveScriptRunsByThing(_ context.Context, thingID string, pm apiutil.PageMetadata) (rules.ScriptRunsPage, error) {
+func (rrm *ruleRepositoryMock) RetrieveScriptRunsByThing(_ context.Context, thingID string, pm rules.PageMetadata) (rules.ScriptRunsPage, error) {
 	rrm.mu.Lock()
 	defer rrm.mu.Unlock()
 

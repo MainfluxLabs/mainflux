@@ -12,7 +12,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/auth/jwt"
 	"github.com/MainfluxLabs/mainflux/auth/mocks"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
@@ -438,14 +437,14 @@ func TestListOrgs(t *testing.T) {
 	cases := []struct {
 		desc  string
 		token string
-		meta  apiutil.PageMetadata
+		meta  auth.PageMetadata
 		size  uint64
 		err   error
 	}{
 		{
 			desc:  "list orgs",
 			token: ownerToken,
-			meta: apiutil.PageMetadata{
+			meta: auth.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 			},
@@ -454,7 +453,7 @@ func TestListOrgs(t *testing.T) {
 		}, {
 			desc:  "list orgs as system admin",
 			token: superAdminToken,
-			meta: apiutil.PageMetadata{
+			meta: auth.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 			},
@@ -463,19 +462,19 @@ func TestListOrgs(t *testing.T) {
 		}, {
 			desc:  "list orgs with wrong credentials",
 			token: invalid,
-			meta:  apiutil.PageMetadata{},
+			meta:  auth.PageMetadata{},
 			size:  0,
 			err:   errors.ErrAuthentication,
 		}, {
 			desc:  "list orgs without credentials",
 			token: "",
-			meta:  apiutil.PageMetadata{},
+			meta:  auth.PageMetadata{},
 			size:  0,
 			err:   errors.ErrAuthentication,
 		}, {
 			desc:  "list half of total orgs",
 			token: ownerToken,
-			meta: apiutil.PageMetadata{
+			meta: auth.PageMetadata{
 				Offset: n / 2,
 				Limit:  n,
 			},
@@ -484,7 +483,7 @@ func TestListOrgs(t *testing.T) {
 		}, {
 			desc:  "list last org",
 			token: ownerToken,
-			meta: apiutil.PageMetadata{
+			meta: auth.PageMetadata{
 				Offset: n - 1,
 				Limit:  n,
 			},
@@ -1088,7 +1087,7 @@ func TestListOrgMemberships(t *testing.T) {
 		desc  string
 		token string
 		orgID string
-		meta  apiutil.PageMetadata
+		meta  auth.PageMetadata
 		size  uint64
 		err   error
 	}{
@@ -1096,7 +1095,7 @@ func TestListOrgMemberships(t *testing.T) {
 			desc:  "list org memberships as owner",
 			token: ownerToken,
 			orgID: or.ID,
-			meta: apiutil.PageMetadata{
+			meta: auth.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 			},
@@ -1107,7 +1106,7 @@ func TestListOrgMemberships(t *testing.T) {
 			desc:  "list org memberships as admin",
 			token: adminToken,
 			orgID: or.ID,
-			meta: apiutil.PageMetadata{
+			meta: auth.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 			},
@@ -1118,7 +1117,7 @@ func TestListOrgMemberships(t *testing.T) {
 			desc:  "list org memberships as editor",
 			token: editorToken,
 			orgID: or.ID,
-			meta: apiutil.PageMetadata{
+			meta: auth.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 			},
@@ -1129,7 +1128,7 @@ func TestListOrgMemberships(t *testing.T) {
 			desc:  "list org memberships as viewer",
 			token: viewerToken,
 			orgID: or.ID,
-			meta: apiutil.PageMetadata{
+			meta: auth.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 			},
@@ -1140,7 +1139,7 @@ func TestListOrgMemberships(t *testing.T) {
 			desc:  "list org memberships as system admin",
 			token: superAdminToken,
 			orgID: or.ID,
-			meta: apiutil.PageMetadata{
+			meta: auth.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 			},
@@ -1151,7 +1150,7 @@ func TestListOrgMemberships(t *testing.T) {
 			desc:  "list half org memberships",
 			token: viewerToken,
 			orgID: or.ID,
-			meta: apiutil.PageMetadata{
+			meta: auth.PageMetadata{
 				Offset: 0,
 				Limit:  n / 2,
 			},
@@ -1162,7 +1161,7 @@ func TestListOrgMemberships(t *testing.T) {
 			desc:  "list last org membership",
 			token: viewerToken,
 			orgID: or.ID,
-			meta: apiutil.PageMetadata{
+			meta: auth.PageMetadata{
 				Offset: n - 1,
 				Limit:  1,
 			},
@@ -1173,7 +1172,7 @@ func TestListOrgMemberships(t *testing.T) {
 			desc:  "list org memberships with wrong credentials",
 			token: invalid,
 			orgID: or.ID,
-			meta:  apiutil.PageMetadata{},
+			meta:  auth.PageMetadata{},
 			size:  0,
 			err:   errors.ErrAuthentication,
 		},
@@ -1181,7 +1180,7 @@ func TestListOrgMemberships(t *testing.T) {
 			desc:  "list org memberships without credentials",
 			token: "",
 			orgID: or.ID,
-			meta:  apiutil.PageMetadata{},
+			meta:  auth.PageMetadata{},
 			size:  0,
 			err:   errors.ErrAuthentication,
 		},
@@ -1189,7 +1188,7 @@ func TestListOrgMemberships(t *testing.T) {
 			desc:  "list memberships from non-existing org",
 			token: ownerToken,
 			orgID: invalid,
-			meta:  apiutil.PageMetadata{},
+			meta:  auth.PageMetadata{},
 			size:  0,
 			err:   dbutil.ErrNotFound,
 		},
@@ -1555,7 +1554,7 @@ func TestListInvitesByUser(t *testing.T) {
 	cases := []struct {
 		desc     string
 		token    string
-		pm       auth.PageMetadataInvites
+		pm       auth.PageMetadata
 		userID   string
 		userType string
 		size     uint64
@@ -1564,7 +1563,7 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list all pending invites as invitee",
 			token:    inviteeToken,
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
+			pm:       auth.PageMetadata{Limit: n, Offset: 0},
 			userID:   invitee.ID,
 			userType: auth.UserTypeInvitee,
 			size:     n,
@@ -1573,7 +1572,7 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list all pending invites as root admin",
 			token:    rootAdminToken,
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
+			pm:       auth.PageMetadata{Limit: n, Offset: 0},
 			userID:   invitee.ID,
 			userType: auth.UserTypeInvitee,
 			size:     n,
@@ -1582,7 +1581,7 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list all pending invites as unauthorized user",
 			token:    unauthToken,
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
+			pm:       auth.PageMetadata{Limit: n, Offset: 0},
 			userID:   invitee.ID,
 			userType: auth.UserTypeInvitee,
 			size:     0,
@@ -1591,7 +1590,7 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list half of pending invites as invitee",
 			token:    inviteeToken,
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n / 2, Offset: 0}},
+			pm:       auth.PageMetadata{Limit: n / 2, Offset: 0},
 			userID:   invitee.ID,
 			userType: auth.UserTypeInvitee,
 			size:     n / 2,
@@ -1600,7 +1599,7 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list last pending invite as invitee",
 			token:    inviteeToken,
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: n - 1}},
+			pm:       auth.PageMetadata{Limit: 1, Offset: n - 1},
 			userID:   invitee.ID,
 			userType: auth.UserTypeInvitee,
 			size:     1,
@@ -1609,7 +1608,7 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list all sent invites as inviter",
 			token:    ownerToken,
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
+			pm:       auth.PageMetadata{Limit: n, Offset: 0},
 			userID:   ownerID,
 			userType: auth.UserTypeInviter,
 			size:     n,
@@ -1618,7 +1617,7 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list all sent invites as root admin",
 			token:    rootAdminToken,
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
+			pm:       auth.PageMetadata{Limit: n, Offset: 0},
 			userID:   ownerID,
 			userType: auth.UserTypeInviter,
 			size:     n,
@@ -1627,7 +1626,7 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list all sent invites as unauthorized user",
 			token:    unauthToken,
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n, Offset: 0}},
+			pm:       auth.PageMetadata{Limit: n, Offset: 0},
 			userID:   ownerID,
 			userType: auth.UserTypeInviter,
 			size:     0,
@@ -1636,7 +1635,7 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list half of sent invites as inviter",
 			token:    ownerToken,
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n / 2, Offset: 0}},
+			pm:       auth.PageMetadata{Limit: n / 2, Offset: 0},
 			userID:   ownerID,
 			userType: auth.UserTypeInviter,
 			size:     n / 2,
@@ -1645,7 +1644,7 @@ func TestListInvitesByUser(t *testing.T) {
 		{
 			desc:     "list last sent invite as inviter",
 			token:    ownerToken,
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: n - 1}},
+			pm:       auth.PageMetadata{Limit: 1, Offset: n - 1},
 			userID:   ownerID,
 			userType: auth.UserTypeInviter,
 			size:     1,

@@ -3,7 +3,6 @@ package things
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -27,7 +26,7 @@ type GroupMembershipsRepository interface {
 	RetrieveRole(ctx context.Context, gm GroupMembership) (string, error)
 
 	// RetrieveByGroup retrieves a paginated list of group memberships by group ID.
-	RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (GroupMembershipsPage, error)
+	RetrieveByGroup(ctx context.Context, groupID string, pm PageMetadata) (GroupMembershipsPage, error)
 
 	// BackupAll retrieves all group memberships. Used for backup.
 	BackupAll(ctx context.Context) ([]GroupMembership, error)
@@ -54,7 +53,7 @@ type GroupMemberships interface {
 	CreateGroupMembershipsInternal(ctx context.Context, gms ...GroupMembership) error
 
 	// ListGroupMemberships retrieves a paginated list of group memberships for the given group.
-	ListGroupMemberships(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (GroupMembershipsPage, error)
+	ListGroupMemberships(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembershipsPage, error)
 
 	// UpdateGroupMemberships updates roles of a specific group membership.
 	UpdateGroupMemberships(ctx context.Context, token string, gms ...GroupMembership) error
@@ -123,7 +122,7 @@ func (ts *thingsService) CreateGroupMembershipsInternal(ctx context.Context, gms
 	return nil
 }
 
-func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (GroupMembershipsPage, error) {
+func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembershipsPage, error) {
 	ar := UserAccessReq{
 		Token:  token,
 		ID:     groupID,

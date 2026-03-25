@@ -6,9 +6,10 @@ package mocks
 import (
 	"context"
 
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/things"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -106,6 +107,37 @@ func (svc thingsServiceMock) CanThingAccessGroup(_ context.Context, req domainth
 	}
 
 	return errors.ErrAuthorization
+}
+
+func (svc thingsServiceMock) CanThingCommand(_ context.Context, req domainthings.ThingCommandReq) error {
+	publisher, ok := svc.things[req.PublisherID]
+	if !ok {
+		return errors.ErrAuthentication
+	}
+
+	recipient, ok := svc.things[req.RecipientID]
+	if !ok {
+		return errors.ErrAuthentication
+	}
+
+	if publisher.GroupID != recipient.GroupID {
+		return errors.ErrAuthorization
+	}
+
+	return things.CanCommand(publisher.Type, recipient.Type)
+}
+
+func (svc thingsServiceMock) CanThingGroupCommand(_ context.Context, req domainthings.ThingGroupCommandReq) error {
+	publisher, ok := svc.things[req.PublisherID]
+	if !ok {
+		return errors.ErrAuthentication
+	}
+
+	if publisher.GroupID != req.GroupID {
+		return errors.ErrAuthorization
+	}
+
+	return things.CanGroupCommand(publisher.Type)
 }
 
 func (svc thingsServiceMock) Identify(_ context.Context, key domainthings.ThingKey) (string, error) {

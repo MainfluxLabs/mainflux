@@ -14,6 +14,11 @@ import (
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 )
 
+var AllowedOrders = map[string]string{
+	"id":   "id",
+	"name": "name",
+}
+
 type Backup struct {
 	OrgsConfigs   []OrgConfig
 	ThingsConfigs []ThingConfig

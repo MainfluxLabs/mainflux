@@ -110,6 +110,40 @@ func (req thingAccessGroupReq) validate() error {
 	return nil
 }
 
+type thingCommandReq struct {
+	publisherID string
+	recipientID string
+}
+
+func (req thingCommandReq) validate() error {
+	if req.publisherID == "" {
+		return apiutil.ErrMissingPublisherID
+	}
+
+	if req.recipientID == "" {
+		return apiutil.ErrMissingRecipientID
+	}
+
+	return nil
+}
+
+type thingGroupCommandReq struct {
+	publisherID string
+	groupID     string
+}
+
+func (req thingGroupCommandReq) validate() error {
+	if req.publisherID == "" {
+		return apiutil.ErrMissingPublisherID
+	}
+
+	if req.groupID == "" {
+		return apiutil.ErrMissingGroupID
+	}
+
+	return nil
+}
+
 type profileIDReq struct {
 	profileID string
 }

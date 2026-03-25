@@ -54,6 +54,7 @@ var (
 	ErrMissingTopicPub               = errors.New("failed to publish due to missing topic")
 	ErrMissingTopicSub               = errors.New("failed to subscribe due to missing topic")
 	ErrUnauthorizedSubscriptionTopic = errors.New("unauthorized subscription topic")
+	ErrUnauthorizedPublishTopic      = errors.New("unauthorized publish topic")
 )
 
 // Event implements events.Event interface
@@ -106,10 +107,63 @@ func (h *handler) AuthPublish(c *session.Client, topic *string, _ *[]byte) error
 		return ErrMissingTopicPub
 	}
 
-	if _, err := h.identify(c); err != nil {
+	publisherID, err := h.identify(c)
+	if err != nil {
 		return err
 	}
 
+	return h.authorizePublish(publisherID, *topic)
+}
+
+func (h *handler) authorizePublish(publisherID, topic string) error {
+	// Reject leading-slash variants of the custom topic patterns.
+	if strings.HasPrefix(topic, "/"+topicPrefixThings+"/") || strings.HasPrefix(topic, "/"+topicPrefixGroups+"/") {
+		return errors.Wrap(ErrUnauthorizedPublishTopic, fmt.Errorf("%s (leading slash not allowed)", topic))
+	}
+
+	parts := strings.Split(topic, "/")
+	if len(parts) < 3 {
+		return nil
+	}
+
+	prefix, id, suffix := parts[0], parts[1], parts[2]
+	if id == "" {
+		return nil
+	}
+
+	// Messages are unrestricted — any authenticated thing may publish to any messages topic.
+	// Commands carry authority and require explicit authorization.
+	var err error
+	switch {
+	case prefix == topicPrefixThings && suffix == topicSuffixCommands:
+		err = h.authorizeThingCommand(publisherID, id)
+	case prefix == topicPrefixGroups && suffix == topicSuffixCommands:
+		err = h.authorizeGroupCommand(publisherID, id)
+	}
+
+	if err != nil {
+		return errors.Wrap(ErrUnauthorizedPublishTopic, fmt.Errorf("%s for publisher %s", topic, publisherID))
+	}
+	return nil
+}
+
+func (h *handler) authorizeThingCommand(publisherID, recipientID string) error {
+	if err := h.things.CanThingCommand(context.Background(), domainthings.ThingCommandReq{
+		PublisherID: publisherID,
+		RecipientID: recipientID,
+	}); err != nil {
+		return errors.ErrAuthorization
+	}
+	return nil
+}
+
+func (h *handler) authorizeGroupCommand(publisherID, groupID string) error {
+	if err := h.things.CanThingGroupCommand(context.Background(), domainthings.ThingGroupCommandReq{
+		PublisherID: publisherID,
+		GroupID:     groupID,
+	}); err != nil {
+		return errors.ErrAuthorization
+	}
 	return nil
 }
 
@@ -303,16 +357,16 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 // validateCustomTopic enforces authorization only for topics that match
 // custom patterns (things/thingID/commands, groups/groupID/commands, things/thingID/messages).
 func validateCustomTopic(topic, thingID, groupID string) error {
-	trimmed := strings.Trim(topic, "/")
-	if trimmed == "" {
+	// Reject leading-slash variants of the custom topic patterns.
+	if strings.HasPrefix(topic, "/"+topicPrefixThings+"/") || strings.HasPrefix(topic, "/"+topicPrefixGroups+"/") {
+		return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s (leading slash not allowed)", topic))
+	}
+
+	if !strings.HasPrefix(topic, topicPrefixThings+"/") && !strings.HasPrefix(topic, topicPrefixGroups+"/") {
 		return nil
 	}
 
-	if !strings.HasPrefix(trimmed, topicPrefixThings+"/") && !strings.HasPrefix(trimmed, topicPrefixGroups+"/") {
-		return nil
-	}
-
-	parts := strings.Split(trimmed, "/")
+	parts := strings.Split(topic, "/")
 	if len(parts) < 3 {
 		// Forbid multi-level wildcard at ID position, e.g. "things/#", "groups/#".
 		if len(parts) == 2 && parts[1] == "#" {
@@ -326,7 +380,6 @@ func validateCustomTopic(topic, thingID, groupID string) error {
 	case "":
 		return nil
 	case "+", "#":
-		// This catches "things/+/commands", "things/#/messages", etc.
 		return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s (wildcard not allowed)", topic))
 	}
 

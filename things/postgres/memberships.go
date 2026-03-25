@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -76,7 +75,7 @@ func (mr groupMembershipsRepository) RetrieveRole(ctx context.Context, gm things
 	return role, nil
 }
 
-func (mr groupMembershipsRepository) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (things.GroupMembershipsPage, error) {
+func (mr groupMembershipsRepository) RetrieveByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupMembershipsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	q := fmt.Sprintf(`SELECT member_id, role FROM group_memberships WHERE group_id = :group_id %s;`, olq)
 

@@ -28,6 +28,8 @@ type grpcServer struct {
 	canUserAccessProfile   kitgrpc.Handler
 	canUserAccessGroup     kitgrpc.Handler
 	canThingAccessGroup    kitgrpc.Handler
+	canThingCommand        kitgrpc.Handler
+	canThingGroupCommand   kitgrpc.Handler
 	identify               kitgrpc.Handler
 	getGroupIDByThing      kitgrpc.Handler
 	getGroupIDByProfile    kitgrpc.Handler
@@ -69,6 +71,16 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 		canThingAccessGroup: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "can_thing_access_group")(canThingAccessGroupEndpoint(svc)),
 			decodeThingAccessGroupRequest,
+			encodeEmptyResponse,
+		),
+		canThingCommand: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "can_thing_command")(canThingCommandEndpoint(svc)),
+			decodeThingCommandRequest,
+			encodeEmptyResponse,
+		),
+		canThingGroupCommand: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "can_thing_group_command")(canThingGroupCommandEndpoint(svc)),
+			decodeThingGroupCommandRequest,
 			encodeEmptyResponse,
 		),
 		identify: kitgrpc.NewServer(
@@ -160,6 +172,24 @@ func (gs *grpcServer) CanUserAccessGroup(ctx context.Context, req *protomfx.User
 
 func (gs *grpcServer) CanThingAccessGroup(ctx context.Context, req *protomfx.ThingAccessReq) (*emptypb.Empty, error) {
 	_, res, err := gs.canThingAccessGroup.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*emptypb.Empty), nil
+}
+
+func (gs *grpcServer) CanThingCommand(ctx context.Context, req *protomfx.ThingCommandReq) (*emptypb.Empty, error) {
+	_, res, err := gs.canThingCommand.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*emptypb.Empty), nil
+}
+
+func (gs *grpcServer) CanThingGroupCommand(ctx context.Context, req *protomfx.ThingGroupCommandReq) (*emptypb.Empty, error) {
+	_, res, err := gs.canThingGroupCommand.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -265,6 +295,22 @@ func decodeUserAccessGroupRequest(_ context.Context, grpcReq any) (any, error) {
 func decodeThingAccessGroupRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.ThingAccessReq)
 	return thingAccessGroupReq{thingKey: thingKey{value: req.GetKey()}, id: req.GetId()}, nil
+}
+
+func decodeThingCommandRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.ThingCommandReq)
+	return thingCommandReq{
+		publisherID: req.GetPublisherID(),
+		recipientID: req.GetRecipientID(),
+	}, nil
+}
+
+func decodeThingGroupCommandRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.ThingGroupCommandReq)
+	return thingGroupCommandReq{
+		publisherID: req.GetPublisherID(),
+		groupID:     req.GetGroupID(),
+	}, nil
 }
 
 func decodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {

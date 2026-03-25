@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/opentracing/opentracing-go"
 )
@@ -47,7 +46,7 @@ func (arm alarmRepositoryMiddleware) Save(ctx context.Context, ams ...alarms.Ala
 	return arm.repo.Save(ctx, ams...)
 }
 
-func (arm alarmRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+func (arm alarmRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm alarms.PageMetadata) (alarms.AlarmsPage, error) {
 	span := dbutil.CreateSpan(ctx, arm.tracer, retrieveAlarmsByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -55,7 +54,7 @@ func (arm alarmRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupI
 	return arm.repo.RetrieveByGroup(ctx, groupID, pm)
 }
 
-func (arm alarmRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+func (arm alarmRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingID string, pm alarms.PageMetadata) (alarms.AlarmsPage, error) {
 	span := dbutil.CreateSpan(ctx, arm.tracer, retrieveAlarmsByThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -63,7 +62,7 @@ func (arm alarmRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingI
 	return arm.repo.RetrieveByThing(ctx, thingID, pm)
 }
 
-func (arm alarmRepositoryMiddleware) RetrieveByGroups(ctx context.Context, ids []string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+func (arm alarmRepositoryMiddleware) RetrieveByGroups(ctx context.Context, ids []string, pm alarms.PageMetadata) (alarms.AlarmsPage, error) {
 	span := dbutil.CreateSpan(ctx, arm.tracer, retrieveAlarmsByGroups)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -103,7 +102,7 @@ func (arm alarmRepositoryMiddleware) RemoveByGroup(ctx context.Context, groupID 
 	return arm.repo.RemoveByGroup(ctx, groupID)
 }
 
-func (arm alarmRepositoryMiddleware) ExportByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+func (arm alarmRepositoryMiddleware) ExportByThing(ctx context.Context, thingID string, pm alarms.PageMetadata) (alarms.AlarmsPage, error) {
 	span := dbutil.CreateSpan(ctx, arm.tracer, exportAlarmsByThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

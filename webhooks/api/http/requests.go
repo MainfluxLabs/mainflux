@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/webhooks"
 )
 
 const (
@@ -88,7 +89,7 @@ func (req *webhookReq) validate() error {
 type listWebhooksByGroupReq struct {
 	token        string
 	groupID      string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata webhooks.PageMetadata
 }
 
 func (req listWebhooksByGroupReq) validate() error {
@@ -100,13 +101,13 @@ func (req listWebhooksByGroupReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type listWebhooksByThingReq struct {
 	token        string
 	thingID      string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata webhooks.PageMetadata
 }
 
 func (req listWebhooksByThingReq) validate() error {
@@ -118,7 +119,7 @@ func (req listWebhooksByThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type updateWebhookReq struct {

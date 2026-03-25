@@ -6,7 +6,6 @@ package things
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 )
 
@@ -46,10 +45,10 @@ type ProfileRepository interface {
 	BackupAll(ctx context.Context) ([]Profile, error)
 
 	// RetrieveAll retrieves all profiles for all users with pagination.
-	RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (ProfilesPage, error)
+	RetrieveAll(ctx context.Context, pm PageMetadata) (ProfilesPage, error)
 
 	// RetrieveByGroups retrieves the subset of profiles specified by given group ids.
-	RetrieveByGroups(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (ProfilesPage, error)
+	RetrieveByGroups(ctx context.Context, groupIDs []string, pm PageMetadata) (ProfilesPage, error)
 }
 
 // ProfileCache contains profile caching interface.

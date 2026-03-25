@@ -3,7 +3,6 @@ package things
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -33,7 +32,7 @@ type GroupRepository interface {
 	RetrieveByID(ctx context.Context, id string) (Group, error)
 
 	// RetrieveByIDs retrieves groups by their IDs.
-	RetrieveByIDs(ctx context.Context, ids []string, pm apiutil.PageMetadata) (GroupPage, error)
+	RetrieveByIDs(ctx context.Context, ids []string, pm PageMetadata) (GroupPage, error)
 
 	// BackupAll retrieves all groups.
 	BackupAll(ctx context.Context) ([]Group, error)
@@ -45,7 +44,7 @@ type GroupRepository interface {
 	RetrieveIDsByOrg(ctx context.Context, orgID string) ([]string, error)
 
 	// RetrieveAll retrieves all groups with pagination.
-	RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (GroupPage, error)
+	RetrieveAll(ctx context.Context, pm PageMetadata) (GroupPage, error)
 }
 
 type Groups interface {
@@ -62,16 +61,16 @@ type Groups interface {
 	ViewGroupInternal(ctx context.Context, id string) (Group, error)
 
 	// ListGroups retrieves page of all groups.
-	ListGroups(ctx context.Context, token string, pm apiutil.PageMetadata) (GroupPage, error)
+	ListGroups(ctx context.Context, token string, pm PageMetadata) (GroupPage, error)
 
 	// ListGroupsByOrg retrieves page of groups that are assigned to an org identified by ID.
-	ListGroupsByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (GroupPage, error)
+	ListGroupsByOrg(ctx context.Context, token, orgID string, pm PageMetadata) (GroupPage, error)
 
 	// ListThingsByGroup retrieves page of things that are assigned to a group identified by ID.
-	ListThingsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (ThingsPage, error)
+	ListThingsByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (ThingsPage, error)
 
 	// ListProfilesByGroup retrieves page of profiles that are assigned to a group identified by ID.
-	ListProfilesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (ProfilesPage, error)
+	ListProfilesByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (ProfilesPage, error)
 
 	// ViewGroupByThing retrieves group that thing belongs to.
 	ViewGroupByThing(ctx context.Context, token, thingID string) (Group, error)
@@ -162,7 +161,7 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token, orgID string, 
 	return grs, nil
 }
 
-func (ts *thingsService) ListGroups(ctx context.Context, token string, pm apiutil.PageMetadata) (GroupPage, error) {
+func (ts *thingsService) ListGroups(ctx context.Context, token string, pm PageMetadata) (GroupPage, error) {
 	if err := ts.isAdmin(ctx, token); err == nil {
 		return ts.groups.RetrieveAll(ctx, pm)
 	}
@@ -180,7 +179,7 @@ func (ts *thingsService) ListGroups(ctx context.Context, token string, pm apiuti
 	return ts.groups.RetrieveByIDs(ctx, grIDs, pm)
 }
 
-func (ts *thingsService) ListGroupsByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (GroupPage, error) {
+func (ts *thingsService) ListGroupsByOrg(ctx context.Context, token, orgID string, pm PageMetadata) (GroupPage, error) {
 	grIDs, err := ts.GetGroupIDsByOrg(ctx, orgID, token)
 	if err != nil {
 		return GroupPage{}, err

@@ -7,7 +7,6 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -121,7 +120,7 @@ func exportAlarmsByThingEndpoint(svc alarms.Service) endpoint.Endpoint {
 	}
 }
 
-func buildAlarmsPageResponse(ap alarms.AlarmsPage, pm apiutil.PageMetadata) AlarmsPageRes {
+func buildAlarmsPageResponse(ap alarms.AlarmsPage, pm alarms.PageMetadata) AlarmsPageRes {
 	res := AlarmsPageRes{
 		Total:  ap.Total,
 		Offset: pm.Offset,

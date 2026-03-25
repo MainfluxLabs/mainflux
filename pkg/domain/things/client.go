@@ -13,6 +13,8 @@ type Client interface {
 	CanUserAccessProfile(ctx context.Context, ar UserAccessReq) error
 	CanUserAccessGroup(ctx context.Context, ar UserAccessReq) error
 	CanThingAccessGroup(ctx context.Context, ar ThingAccessReq) error
+	CanThingCommand(ctx context.Context, req ThingCommandReq) error
+	CanThingGroupCommand(ctx context.Context, req ThingGroupCommandReq) error
 	Identify(ctx context.Context, key ThingKey) (string, error)
 	GetGroupIDByThing(ctx context.Context, thingID string) (string, error)
 	GetGroupIDByProfile(ctx context.Context, profileID string) (string, error)

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/modbus"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -39,7 +38,7 @@ func (ms *metricsMiddleware) CreateClients(ctx context.Context, token, thingID s
 	return ms.svc.CreateClients(ctx, token, thingID, clients...)
 }
 
-func (ms *metricsMiddleware) ListClientsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (modbus.ClientsPage, error) {
+func (ms *metricsMiddleware) ListClientsByThing(ctx context.Context, token, thingID string, pm modbus.PageMetadata) (modbus.ClientsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_clients_by_thing").Add(1)
 		ms.latency.With("method", "list_clients_by_thing").Observe(time.Since(begin).Seconds())
@@ -48,7 +47,7 @@ func (ms *metricsMiddleware) ListClientsByThing(ctx context.Context, token, thin
 	return ms.svc.ListClientsByThing(ctx, token, thingID, pm)
 }
 
-func (ms *metricsMiddleware) ListClientsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (modbus.ClientsPage, error) {
+func (ms *metricsMiddleware) ListClientsByGroup(ctx context.Context, token, groupID string, pm modbus.PageMetadata) (modbus.ClientsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_clients_by_group").Add(1)
 		ms.latency.With("method", "list_clients_by_group").Observe(time.Since(begin).Seconds())

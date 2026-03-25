@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -196,14 +195,14 @@ func TestRetrieveByGroup(t *testing.T) {
 	cases := []struct {
 		desc     string
 		groupID  string
-		pageMeta apiutil.PageMetadata
+		pageMeta things.PageMetadata
 		size     uint64
 		err      error
 	}{
 		{
 			desc:    "retrieve group memberships",
 			groupID: gr.ID,
-			pageMeta: apiutil.PageMetadata{
+			pageMeta: things.PageMetadata{
 				Offset: 0,
 				Limit:  5,
 				Total:  n,
@@ -214,7 +213,7 @@ func TestRetrieveByGroup(t *testing.T) {
 		{
 			desc:    "retrieve last group membership",
 			groupID: gr.ID,
-			pageMeta: apiutil.PageMetadata{
+			pageMeta: things.PageMetadata{
 				Offset: n - 1,
 				Limit:  1,
 				Total:  n,
@@ -225,7 +224,7 @@ func TestRetrieveByGroup(t *testing.T) {
 		{
 			desc:    "retrieve group memberships with invalid group id",
 			groupID: invalidID,
-			pageMeta: apiutil.PageMetadata{
+			pageMeta: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Total:  0,
@@ -235,7 +234,7 @@ func TestRetrieveByGroup(t *testing.T) {
 		{
 			desc:    "retrieve group memberships without group id",
 			groupID: "",
-			pageMeta: apiutil.PageMetadata{
+			pageMeta: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Total:  0,

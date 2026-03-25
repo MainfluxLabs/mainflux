@@ -30,11 +30,6 @@ const (
 // PlatformInvitesPage is an alias for the shared domain type.
 type PlatformInvitesPage = domainusers.PlatformInvitesPage
 
-type PageMetadataInvites struct {
-	apiutil.PageMetadata
-	State string `json:"state,omitempty"`
-}
-
 type PlatformInvites interface {
 	// CreatePlatformInvite creates a pending platform Invite for the appropriate email address.
 	// The user can optionally also be invited to an Organization with a certain role by supplying the `orgInvite` argument - the invite
@@ -50,7 +45,7 @@ type PlatformInvites interface {
 	ViewPlatformInvite(ctx context.Context, inviteID string) (PlatformInvite, error)
 
 	// ListPlatformInvites retrieves a list of platform invites. Only usable by the platform Root Admin.
-	ListPlatformInvites(ctx context.Context, token string, pm PageMetadataInvites) (PlatformInvitesPage, error)
+	ListPlatformInvites(ctx context.Context, token string, pm PageMetadata) (PlatformInvitesPage, error)
 
 	// ValidatePlatformInvite checks if there exists a valid, pending, non-expired platform invite in the database that matches
 	// the passed ID and user e-mail. If so, it marks that invite's state as 'accepted', and returns nil.
@@ -69,7 +64,7 @@ type PlatformInvitesRepository interface {
 	RetrievePlatformInviteByID(ctx context.Context, inviteID string) (PlatformInvite, error)
 
 	// RetrievePlatformInvites retrieves a list of platform invites.
-	RetrievePlatformInvites(ctx context.Context, pm PageMetadataInvites) (PlatformInvitesPage, error)
+	RetrievePlatformInvites(ctx context.Context, pm PageMetadata) (PlatformInvitesPage, error)
 
 	// UpdatePlatformInviteState updates the state of a specific platform invite denoted by its ID.
 	UpdatePlatformInviteState(ctx context.Context, inviteID, state string) error
@@ -160,7 +155,7 @@ func (svc usersService) ViewPlatformInvite(ctx context.Context, inviteID string)
 	return invite, nil
 }
 
-func (svc usersService) ListPlatformInvites(ctx context.Context, token string, pm PageMetadataInvites) (PlatformInvitesPage, error) {
+func (svc usersService) ListPlatformInvites(ctx context.Context, token string, pm PageMetadata) (PlatformInvitesPage, error) {
 	if err := svc.isAdmin(ctx, token); err != nil {
 		return PlatformInvitesPage{}, err
 	}

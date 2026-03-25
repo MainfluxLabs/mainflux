@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/downlinks"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -42,7 +41,7 @@ func (ms *metricsMiddleware) CreateDownlinks(ctx context.Context, token, thingID
 	return ms.svc.CreateDownlinks(ctx, token, thingID, downlinks...)
 }
 
-func (ms *metricsMiddleware) ListDownlinksByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (downlinks.DownlinksPage, error) {
+func (ms *metricsMiddleware) ListDownlinksByThing(ctx context.Context, token, thingID string, pm downlinks.PageMetadata) (downlinks.DownlinksPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_downlinks_by_thing").Add(1)
 		ms.latency.With("method", "list_downlinks_by_thing").Observe(time.Since(begin).Seconds())
@@ -51,7 +50,7 @@ func (ms *metricsMiddleware) ListDownlinksByThing(ctx context.Context, token, th
 	return ms.svc.ListDownlinksByThing(ctx, token, thingID, pm)
 }
 
-func (ms *metricsMiddleware) ListDownlinksByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (downlinks.DownlinksPage, error) {
+func (ms *metricsMiddleware) ListDownlinksByGroup(ctx context.Context, token, groupID string, pm downlinks.PageMetadata) (downlinks.DownlinksPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_downlinks_by_group").Add(1)
 		ms.latency.With("method", "list_downlinks_by_group").Observe(time.Since(begin).Seconds())

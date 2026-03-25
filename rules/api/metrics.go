@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/rules"
 	"github.com/go-kit/kit/metrics"
 )
@@ -35,7 +34,7 @@ func (ms metricsMiddleware) CreateRules(ctx context.Context, token, groupID stri
 	return ms.svc.CreateRules(ctx, token, groupID, rules...)
 }
 
-func (ms metricsMiddleware) ListRulesByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
+func (ms metricsMiddleware) ListRulesByThing(ctx context.Context, token, thingID string, pm rules.PageMetadata) (rules.RulesPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_rules_by_thing").Add(1)
 		ms.latency.With("method", "list_rules_by_thing").Observe(time.Since(begin).Seconds())
@@ -44,7 +43,7 @@ func (ms metricsMiddleware) ListRulesByThing(ctx context.Context, token, thingID
 	return ms.svc.ListRulesByThing(ctx, token, thingID, pm)
 }
 
-func (ms metricsMiddleware) ListRulesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (rules.RulesPage, error) {
+func (ms metricsMiddleware) ListRulesByGroup(ctx context.Context, token, groupID string, pm rules.PageMetadata) (rules.RulesPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_rules_by_group").Add(1)
 		ms.latency.With("method", "list_rules_by_group").Observe(time.Since(begin).Seconds())
@@ -143,7 +142,7 @@ func (ms metricsMiddleware) CreateScripts(ctx context.Context, token, groupID st
 	return ms.svc.CreateScripts(ctx, token, groupID, scripts...)
 }
 
-func (ms metricsMiddleware) ListScriptsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (rules.LuaScriptsPage, error) {
+func (ms metricsMiddleware) ListScriptsByThing(ctx context.Context, token, thingID string, pm rules.PageMetadata) (rules.LuaScriptsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_scripts_by_thing").Add(1)
 		ms.latency.With("method", "list_scripts_by_thing").Observe(time.Since(begin).Seconds())
@@ -152,7 +151,7 @@ func (ms metricsMiddleware) ListScriptsByThing(ctx context.Context, token, thing
 	return ms.svc.ListScriptsByThing(ctx, token, thingID, pm)
 }
 
-func (ms metricsMiddleware) ListScriptsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (rules.LuaScriptsPage, error) {
+func (ms metricsMiddleware) ListScriptsByGroup(ctx context.Context, token, groupID string, pm rules.PageMetadata) (rules.LuaScriptsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_scripts_by_group").Add(1)
 		ms.latency.With("method", "list_scripts_by_group").Observe(time.Since(begin).Seconds())
@@ -233,7 +232,7 @@ func (ms metricsMiddleware) UnassignScriptsFromThing(ctx context.Context, thingI
 	return ms.svc.UnassignScriptsFromThing(ctx, thingID)
 }
 
-func (ms metricsMiddleware) ListScriptRunsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (rules.ScriptRunsPage, error) {
+func (ms metricsMiddleware) ListScriptRunsByThing(ctx context.Context, token, thingID string, pm rules.PageMetadata) (rules.ScriptRunsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_script_runs_by_thing").Add(1)
 		ms.latency.With("method", "list_script_runs_by_thing").Observe(time.Since(begin).Seconds())
