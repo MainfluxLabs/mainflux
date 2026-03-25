@@ -265,6 +265,7 @@ func parseTopic(topic, publisherID string) (subject, subtopic string, err error)
 			return nats.GetThingCommandsSubject(id, rest), rest, nil
 		case suffix == topicSuffixCommands && prefix == topicPrefixGroups:
 			return nats.GetGroupCommandsSubject(id, rest), rest, nil
+		// Route to the topic's target thing subject, not the publisher's.
 		case suffix == topicSuffixMessages && prefix == topicPrefixThings:
 			return nats.GetMessagesSubject(id, rest), rest, nil
 		}
