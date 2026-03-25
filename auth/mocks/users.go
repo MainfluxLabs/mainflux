@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
-	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
+	domain "github.com/MainfluxLabs/mainflux/pkg/domain/users"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -15,11 +15,11 @@ import (
 var _ protomfx.UsersServiceClient = (*usersServiceClientMock)(nil)
 
 type usersServiceClientMock struct {
-	usersByID     map[string]domainusers.User
-	usersByEmails map[string]domainusers.User
+	usersByID     map[string]domain.User
+	usersByEmails map[string]domain.User
 }
 
-func NewUsersService(usersByID map[string]domainusers.User, usersByEmails map[string]domainusers.User) protomfx.UsersServiceClient {
+func NewUsersService(usersByID map[string]domain.User, usersByEmails map[string]domain.User) protomfx.UsersServiceClient {
 	return &usersServiceClientMock{usersByID: usersByID, usersByEmails: usersByEmails}
 }
 
