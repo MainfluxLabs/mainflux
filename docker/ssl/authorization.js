@@ -133,12 +133,22 @@ function setKey(r) {
     }
 
     var auth = r.headersIn['Authorization'];
-    if (auth && auth.length && auth != clientKey) {
-        r.error('Authorization header does not match certificate');
-        return '';
+
+    // If client cert found, use it
+    if (clientKey && clientKey.length) {
+        if (auth && auth.length && auth != ('Thing ' + clientKey)) {
+            r.error('Authorization header does not match certificate');
+            return '';
+        }
+        return 'Thing ' + clientKey;
     }
 
-    return 'Thing ' + clientKey;
+    // Fall back to Authorization header when no cert
+    if (auth && auth.length) {
+        return auth;
+    }
+
+    return '';
 }
 
 function calcLen(msb, lsb) {
