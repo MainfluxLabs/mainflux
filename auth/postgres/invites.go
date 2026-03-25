@@ -621,10 +621,10 @@ func toDBOrgInvite(invite auth.OrgInvite) dbOrgInvite {
 func toOrgInvite(dbI dbOrgInvite) auth.OrgInvite {
 	return auth.OrgInvite{
 		ID:          dbI.ID,
-		OrgID:       dbI.OrgID,
-		InviteeRole: dbI.InviteeRole,
 		InviteeID:   dbI.InviteeID.String,
 		InviterID:   dbI.InviterID,
+		OrgID:       dbI.OrgID,
+		InviteeRole: dbI.InviteeRole,
 		CreatedAt:   dbI.CreatedAt,
 		ExpiresAt:   dbI.ExpiresAt,
 		State:       dbI.State,

@@ -183,12 +183,12 @@ func (svc service) CreateOrgInvite(ctx context.Context, token string, oi OrgInvi
 
 	oi = OrgInvite{
 		ID:           inviteID,
-		OrgID:        oi.OrgID,
-		InviteeRole:  oi.InviteeRole,
-		GroupInvites: oi.GroupInvites,
 		InviteeID:    inviteeID,
 		InviteeEmail: oi.InviteeEmail,
 		InviterID:    inviter.ID,
+		OrgID:        oi.OrgID,
+		GroupInvites: oi.GroupInvites,
+		InviteeRole:  oi.InviteeRole,
 		CreatedAt:    createdAt,
 		ExpiresAt:    createdAt.Add(svc.inviteDuration),
 		State:        InviteStatePending,
@@ -236,11 +236,11 @@ func (svc service) CreateDormantOrgInvite(ctx context.Context, token string, oi 
 
 	oi = OrgInvite{
 		ID:           inviteID,
+		InviteeID:    "",
+		InviterID:    inviter.ID,
 		OrgID:        oi.OrgID,
 		InviteeRole:  oi.InviteeRole,
 		GroupInvites: oi.GroupInvites,
-		InviteeID:    "",
-		InviterID:    inviter.ID,
 		CreatedAt:    createdAt,
 		ExpiresAt:    createdAt.Add(svc.inviteDuration),
 		State:        InviteStatePending,
