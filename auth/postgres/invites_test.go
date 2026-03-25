@@ -54,10 +54,10 @@ func TestSaveInvite(t *testing.T) {
 
 		invites = append(invites, auth.OrgInvite{
 			ID:          invID,
-			InviteeID:   inviteeID,
-			InviterID:   inviterID,
 			OrgID:       org.ID,
 			InviteeRole: auth.Viewer,
+			InviteeID:   inviteeID,
+			InviterID:   inviterID,
 			CreatedAt:   time.Now(),
 			ExpiresAt:   time.Now().Add(inviteExpiryTime),
 			State:       auth.InviteStatePending,
@@ -72,10 +72,10 @@ func TestSaveInvite(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	expiredInvite := auth.OrgInvite{
 		ID:          invID,
-		InviteeID:   inviteeID,
-		InviterID:   inviterID,
 		OrgID:       org.ID,
 		InviteeRole: auth.Editor,
+		InviteeID:   inviteeID,
+		InviterID:   inviterID,
 		CreatedAt:   time.Now().Add(-2 * inviteExpiryTime),
 		ExpiresAt:   time.Now().Add(-1 * inviteExpiryTime),
 		State:       auth.InviteStatePending,
@@ -103,10 +103,10 @@ func TestSaveInvite(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	reinviteExpiredInvite := auth.OrgInvite{
 		ID:          invID,
-		InviteeID:   expiredInvite.InviteeID,
-		InviterID:   expiredInvite.InviterID,
 		OrgID:       expiredInvite.OrgID,
 		InviteeRole: expiredInvite.InviteeRole,
+		InviteeID:   expiredInvite.InviteeID,
+		InviterID:   expiredInvite.InviterID,
 		CreatedAt:   time.Now(),
 		ExpiresAt:   time.Now().Add(inviteExpiryTime),
 		State:       auth.InviteStatePending,
@@ -191,10 +191,10 @@ func TestRetrieveInviteByID(t *testing.T) {
 
 		invites = append(invites, auth.OrgInvite{
 			ID:          invID,
-			InviteeID:   inviteeID,
-			InviterID:   inviterID,
 			OrgID:       org.ID,
 			InviteeRole: auth.Viewer,
+			InviteeID:   inviteeID,
+			InviterID:   inviterID,
 			CreatedAt:   time.Now(),
 			ExpiresAt:   time.Now(),
 			State:       auth.InviteStatePending,
@@ -276,10 +276,10 @@ func TestRemoveInvite(t *testing.T) {
 
 		invites = append(invites, auth.OrgInvite{
 			ID:          invID,
-			InviteeID:   inviteeID,
-			InviterID:   inviterID,
 			OrgID:       org.ID,
 			InviteeRole: auth.Viewer,
+			InviteeID:   inviteeID,
+			InviterID:   inviterID,
 			CreatedAt:   time.Now(),
 			ExpiresAt:   time.Now(),
 			State:       auth.InviteStatePending,
@@ -362,10 +362,10 @@ func TestRetrieveByUserID(t *testing.T) {
 
 		invites = append(invites, auth.OrgInvite{
 			ID:          invID,
-			InviteeID:   inviteeID,
-			InviterID:   inviterID,
 			OrgID:       org.ID,
 			InviteeRole: auth.Viewer,
+			InviteeID:   inviteeID,
+			InviterID:   inviterID,
 			CreatedAt:   time.Now(),
 			ExpiresAt:   time.Now().Add(inviteExpiryTime),
 			State:       auth.InviteStatePending,

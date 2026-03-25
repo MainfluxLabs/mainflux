@@ -7,17 +7,15 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/users"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-var _ protomfx.AuthServiceClient = (*authServiceMock)(nil)
+var _ domainauth.Client = (*authServiceMock)(nil)
 
 type authServiceMock struct {
 	roles        map[string][]string
@@ -25,8 +23,8 @@ type authServiceMock struct {
 	orgs         map[string]auth.Org
 }
 
-// NewAuthService creates mock of users service.
-func NewAuthService(adminID string, userList []users.User, orgList []auth.Org) protomfx.AuthServiceClient {
+// NewAuthService creates mock of auth service client.
+func NewAuthService(adminID string, userList []users.User, orgList []auth.Org) domainauth.Client {
 	usersByEmail := make(map[string]users.User)
 	roles := map[string][]string{auth.RootSub: {adminID}}
 	orgs := make(map[string]auth.Org)
@@ -47,43 +45,43 @@ func NewAuthService(adminID string, userList []users.User, orgList []auth.Org) p
 	}
 }
 
-func (svc authServiceMock) Identify(_ context.Context, in *protomfx.Token, _ ...grpc.CallOption) (*protomfx.UserIdentity, error) {
-	if u, ok := svc.usersByEmail[in.Value]; ok {
-		return &protomfx.UserIdentity{Id: u.ID, Email: u.Email}, nil
+func (svc authServiceMock) Identify(_ context.Context, token string) (domainauth.Identity, error) {
+	if u, ok := svc.usersByEmail[token]; ok {
+		return domainauth.Identity{ID: u.ID, Email: u.Email}, nil
 	}
-	return nil, errors.ErrAuthentication
+	return domainauth.Identity{}, errors.ErrAuthentication
 }
 
-func (svc authServiceMock) Issue(_ context.Context, in *protomfx.IssueReq, _ ...grpc.CallOption) (*protomfx.Token, error) {
-	if u, ok := svc.usersByEmail[in.GetEmail()]; ok {
-		switch in.Type {
+func (svc authServiceMock) Issue(_ context.Context, id, email string, keyType uint32) (string, error) {
+	if u, ok := svc.usersByEmail[email]; ok {
+		switch keyType {
 		default:
-			return &protomfx.Token{Value: u.Email}, nil
+			return u.Email, nil
 		}
 	}
-	return nil, errors.ErrAuthentication
+	return "", errors.ErrAuthentication
 }
 
-func (svc authServiceMock) Authorize(_ context.Context, req *protomfx.AuthorizeReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
-	u, ok := svc.usersByEmail[req.Token]
+func (svc authServiceMock) Authorize(_ context.Context, ar domainauth.AuthzReq) error {
+	u, ok := svc.usersByEmail[ar.Token]
 	if !ok {
-		return &emptypb.Empty{}, errors.ErrAuthentication
+		return errors.ErrAuthentication
 	}
 
-	switch req.Subject {
+	switch ar.Subject {
 	case auth.RootSub:
 		if !contains(svc.roles[auth.RootSub], u.ID) {
-			return &emptypb.Empty{}, errors.ErrAuthorization
+			return errors.ErrAuthorization
 		}
 	case auth.OrgSub:
-		if err := svc.canAccessOrg(u.ID, req.Action); err != nil {
-			return &emptypb.Empty{}, err
+		if err := svc.canAccessOrg(u.ID, ar.Action); err != nil {
+			return err
 		}
 	default:
-		return &emptypb.Empty{}, errors.ErrAuthorization
+		return errors.ErrAuthorization
 	}
 
-	return &emptypb.Empty{}, nil
+	return nil
 }
 
 func contains(ids []string, id string) bool {
@@ -127,43 +125,43 @@ func (svc authServiceMock) canAccessOrg(userID, action string) error {
 	}
 }
 
-func (svc authServiceMock) GetOwnerIDByOrg(_ context.Context, req *protomfx.OrgID, _ ...grpc.CallOption) (*protomfx.OwnerID, error) {
+func (svc authServiceMock) GetOwnerIDByOrg(_ context.Context, orgID string) (string, error) {
 	for id, org := range svc.orgs {
-		if id == req.Value {
-			return &protomfx.OwnerID{Value: org.OwnerID}, nil
+		if id == orgID {
+			return org.OwnerID, nil
 		}
 	}
-	return nil, dbutil.ErrNotFound
+	return "", dbutil.ErrNotFound
 }
 
-func (svc authServiceMock) AssignRole(context.Context, *protomfx.AssignRoleReq, ...grpc.CallOption) (*emptypb.Empty, error) {
+func (svc authServiceMock) AssignRole(_ context.Context, _, _ string) error {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) RetrieveRole(context.Context, *protomfx.RetrieveRoleReq, ...grpc.CallOption) (*protomfx.RetrieveRoleRes, error) {
+func (svc authServiceMock) RetrieveRole(_ context.Context, _ string) (string, error) {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) CreateDormantOrgInvite(context.Context, *protomfx.CreateDormantOrgInviteReq, ...grpc.CallOption) (*emptypb.Empty, error) {
+func (svc authServiceMock) CreateDormantOrgInvite(_ context.Context, _, _, _, _ string, _ []domainauth.GroupInvite) error {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) ActivateOrgInvite(context.Context, *protomfx.ActivateOrgInviteReq, ...grpc.CallOption) (*emptypb.Empty, error) {
+func (svc authServiceMock) ActivateOrgInvite(_ context.Context, _, _, _ string) error {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) GetDormantOrgInviteByPlatformInvite(context.Context, *protomfx.GetDormantOrgInviteByPlatformInviteReq, ...grpc.CallOption) (*protomfx.OrgInvite, error) {
-	return nil, status.Error(codes.NotFound, dbutil.ErrNotFound.Error())
+func (svc authServiceMock) GetDormantOrgInviteByPlatformInvite(_ context.Context, _ string) (domainauth.OrgInvite, error) {
+	return domainauth.OrgInvite{}, status.Error(codes.NotFound, dbutil.ErrNotFound.Error())
 }
 
-func (svc authServiceMock) ViewOrg(_ context.Context, req *protomfx.ViewOrgReq, _ ...grpc.CallOption) (r *protomfx.Org, err error) {
-	org, ok := svc.orgs[req.GetOrgID()]
+func (svc authServiceMock) ViewOrg(_ context.Context, token, orgID string) (domainauth.Org, error) {
+	org, ok := svc.orgs[orgID]
 	if !ok {
-		return nil, dbutil.ErrNotFound
+		return domainauth.Org{}, dbutil.ErrNotFound
 	}
 
-	return &protomfx.Org{
-		Id:      org.ID,
+	return domainauth.Org{
+		ID:      org.ID,
 		OwnerID: org.OwnerID,
 		Name:    org.Name,
 	}, nil

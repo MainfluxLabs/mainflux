@@ -5,12 +5,12 @@ package api
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/things"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 )
 
 type convertCSVReq struct {
 	csvLines [][]string
-	key      things.ThingKey
+	key      domainthings.ThingKey
 }
 
 func (req convertCSVReq) validate() error {

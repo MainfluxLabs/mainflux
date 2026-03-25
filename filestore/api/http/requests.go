@@ -9,7 +9,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/filestore"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/things"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 )
 
 const (
@@ -35,7 +35,7 @@ type listFilesParams struct {
 }
 
 type saveFileReq struct {
-	key      things.ThingKey
+	key      domainthings.ThingKey
 	fileInfo filestore.FileInfo
 	file     multipart.File
 }
@@ -49,7 +49,7 @@ func (req saveFileReq) validate() error {
 }
 
 type updateFileReq struct {
-	key      things.ThingKey
+	key      domainthings.ThingKey
 	fileInfo filestore.FileInfo
 }
 
@@ -66,7 +66,7 @@ func (req updateFileReq) validate() error {
 }
 
 type listFilesReq struct {
-	key things.ThingKey
+	key domainthings.ThingKey
 	info
 	pageMetadata filestore.PageMetadata
 }
@@ -84,7 +84,7 @@ func (req listFilesReq) validate() error {
 }
 
 type fileReq struct {
-	key things.ThingKey
+	key domainthings.ThingKey
 	info
 }
 
@@ -187,7 +187,7 @@ func (req groupFileReq) validate() error {
 }
 
 type groupFileByKeyReq struct {
-	key things.ThingKey
+	key domainthings.ThingKey
 	info
 }
 

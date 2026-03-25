@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/users"
@@ -62,9 +63,24 @@ func (s *grpcServer) GetUsersByEmails(ctx context.Context, req *protomfx.UsersBy
 
 func decodeGetUsersByIDsRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.UsersByIDsReq)
-	pm := toPageMetadata(req.PageMetadata)
+	pm := protoPageMetadataToDomain(req.PageMetadata)
 
 	return getUsersByIDsReq{ids: req.GetIds(), pageMetadata: pm}, nil
+}
+
+func protoPageMetadataToDomain(pm *protomfx.PageMetadata) domainusers.PageMetadata {
+	if pm == nil {
+		return domainusers.PageMetadata{}
+	}
+
+	return domainusers.PageMetadata{
+		Total:  pm.GetTotal(),
+		Offset: pm.GetOffset(),
+		Limit:  pm.GetLimit(),
+		Email:  pm.GetEmail(),
+		Order:  pm.GetOrder(),
+		Dir:    pm.GetDir(),
+	}
 }
 
 func decodeGetUsersByEmailsRequest(_ context.Context, grpcReq any) (any, error) {

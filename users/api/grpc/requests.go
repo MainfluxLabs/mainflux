@@ -5,12 +5,12 @@ package grpc
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/users"
+	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
 )
 
 type getUsersByIDsReq struct {
 	ids          []string
-	pageMetadata users.PageMetadata
+	pageMetadata domainusers.PageMetadata
 }
 
 func (req getUsersByIDsReq) validate() error {

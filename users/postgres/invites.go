@@ -156,12 +156,8 @@ func (ir invitesRepository) RetrievePlatformInvites(ctx context.Context, pm user
 	}
 
 	page := users.PlatformInvitesPage{
+		Total:   total,
 		Invites: invites,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
 	}
 
 	return page, nil

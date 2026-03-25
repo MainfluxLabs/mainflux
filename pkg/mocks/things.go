@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
@@ -20,12 +20,12 @@ type mainfluxThings struct {
 	counter  uint64
 	things   map[string]things.Thing
 	profiles map[string]things.Profile
-	auth     protomfx.AuthServiceClient
+	auth     domainauth.Client
 }
 
 // NewThingsService returns Mainflux Things service mock.
 // Only methods used by SDK are mocked.
-func NewThingsService(things map[string]things.Thing, profiles map[string]things.Profile, auth protomfx.AuthServiceClient) things.Service {
+func NewThingsService(things map[string]things.Thing, profiles map[string]things.Profile, auth domainauth.Client) things.Service {
 	return &mainfluxThings{
 		things:   things,
 		profiles: profiles,

@@ -7,6 +7,7 @@ import (
 	"context"
 	"time"
 
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
@@ -16,7 +17,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-var _ protomfx.ThingsServiceClient = (*grpcClient)(nil)
+var _ domainthings.Client = (*grpcClient)(nil)
 
 type grpcClient struct {
 	timeout                time.Duration
@@ -38,8 +39,8 @@ type grpcClient struct {
 	getKeyByThingID        endpoint.Endpoint
 }
 
-// NewClient returns new gRPC client instance.
-func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Duration) protomfx.ThingsServiceClient {
+// NewClient returns new gRPC client instance implementing domainthings.Client.
+func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Duration) domainthings.Client {
 	svcName := "protomfx.ThingsService"
 
 	return &grpcClient{
@@ -175,219 +176,234 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 	}
 }
 
-func (client grpcClient) GetPubConfigByKey(ctx context.Context, req *protomfx.ThingKey, _ ...grpc.CallOption) (*protomfx.PubConfigByKeyRes, error) {
+func (client grpcClient) GetPubConfigByKey(ctx context.Context, key domainthings.ThingKey) (domainthings.PubConfigInfo, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	tk := thingKey{
-		value:   req.GetValue(),
-		keyType: req.GetType(),
-	}
+	tk := thingKey{value: key.Value, keyType: key.Type}
 
 	res, err := client.getPubConfigByKey(ctx, tk)
 	if err != nil {
-		return nil, err
+		return domainthings.PubConfigInfo{}, err
 	}
 
 	pc := res.(pubConfigByKeyRes)
-	return &protomfx.PubConfigByKeyRes{PublisherID: pc.publisherID, ProfileConfig: pc.profileConfig}, nil
+
+	return domainthings.PubConfigInfo{
+		PublisherID:   pc.publisherID,
+		ProfileConfig: protoConfigToMap(pc.profileConfig),
+	}, nil
 }
 
-func (client grpcClient) GetConfigByThing(ctx context.Context, req *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ConfigByThingRes, error) {
+func (client grpcClient) GetConfigByThing(ctx context.Context, thingID string) (domainthings.Config, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
-	res, err := client.getConfigByThing(ctx, thingIDReq{thingID: req.GetValue()})
+
+	res, err := client.getConfigByThing(ctx, thingIDReq{thingID: thingID})
 	if err != nil {
-		return nil, err
+		return domainthings.Config{}, err
 	}
+
 	c := res.(configByThingRes)
-	return &protomfx.ConfigByThingRes{Config: c.config}, nil
+	return protoConfigToDomain(c.config), nil
 }
 
-func (client grpcClient) CanUserAccessThing(ctx context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
-	r := userAccessThingReq{accessReq: accessReq{token: req.GetToken(), action: req.GetAction()}, id: req.GetId()}
-	res, err := client.canUserAccessThing(ctx, r)
-	if err != nil {
-		return nil, err
-	}
+func (client grpcClient) CanUserAccessThing(ctx context.Context, ar domainthings.UserAccessReq) error {
+	r := userAccessThingReq{accessReq: accessReq{token: ar.Token, action: ar.Action}, id: ar.ID}
+	_, err := client.canUserAccessThing(ctx, r)
 
-	er := res.(emptyRes)
-	return &emptypb.Empty{}, er.err
+	return err
 }
 
-func (client grpcClient) CanUserAccessProfile(ctx context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
-	r := userAccessProfileReq{accessReq: accessReq{token: req.GetToken(), action: req.GetAction()}, id: req.GetId()}
-	res, err := client.canUserAccessProfile(ctx, r)
-	if err != nil {
-		return nil, err
-	}
+func (client grpcClient) CanUserAccessProfile(ctx context.Context, ar domainthings.UserAccessReq) error {
+	r := userAccessProfileReq{accessReq: accessReq{token: ar.Token, action: ar.Action}, id: ar.ID}
+	_, err := client.canUserAccessProfile(ctx, r)
 
-	er := res.(emptyRes)
-	return &emptypb.Empty{}, er.err
+	return err
 }
 
-func (client grpcClient) CanUserAccessGroup(ctx context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
-	r := userAccessGroupReq{accessReq: accessReq{token: req.GetToken(), action: req.GetAction()}, id: req.GetId()}
-	res, err := client.canUserAccessGroup(ctx, r)
-	if err != nil {
-		return nil, err
-	}
+func (client grpcClient) CanUserAccessGroup(ctx context.Context, ar domainthings.UserAccessReq) error {
+	r := userAccessGroupReq{accessReq: accessReq{token: ar.Token, action: ar.Action}, id: ar.ID}
+	_, err := client.canUserAccessGroup(ctx, r)
 
-	er := res.(emptyRes)
-	return &emptypb.Empty{}, er.err
+	return err
 }
 
-func (client grpcClient) CanThingAccessGroup(ctx context.Context, req *protomfx.ThingAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
-	r := thingAccessGroupReq{thingKey: thingKey{value: req.GetKey()}, id: req.GetId()}
-	res, err := client.canThingAccessGroup(ctx, r)
-	if err != nil {
-		return nil, err
-	}
+func (client grpcClient) CanThingAccessGroup(ctx context.Context, ar domainthings.ThingAccessReq) error {
+	r := thingAccessGroupReq{thingKey: thingKey{value: ar.Value, keyType: ar.Type}, id: ar.ID}
+	_, err := client.canThingAccessGroup(ctx, r)
 
-	er := res.(emptyRes)
-	return &emptypb.Empty{}, er.err
+	return err
 }
 
-func (client grpcClient) CanThingCommand(ctx context.Context, req *protomfx.ThingCommandReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
-	r := thingCommandReq{publisherID: req.GetPublisherID(), recipientID: req.GetRecipientID()}
-	res, err := client.canThingCommand(ctx, r)
-	if err != nil {
-		return nil, err
-	}
-
-	er := res.(emptyRes)
-	return &emptypb.Empty{}, er.err
+func (client grpcClient) CanThingCommand(ctx context.Context, req domainthings.ThingCommandReq) error {
+	r := thingCommandReq{publisherID: req.PublisherID, recipientID: req.RecipientID}
+	_, err := client.canThingCommand(ctx, r)
+	return err
 }
 
-func (client grpcClient) CanThingGroupCommand(ctx context.Context, req *protomfx.ThingGroupCommandReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
-	r := thingGroupCommandReq{publisherID: req.GetPublisherID(), groupID: req.GetGroupID()}
-	res, err := client.canThingGroupCommand(ctx, r)
-	if err != nil {
-		return nil, err
-	}
-
-	er := res.(emptyRes)
-	return &emptypb.Empty{}, er.err
+func (client grpcClient) CanThingGroupCommand(ctx context.Context, req domainthings.ThingGroupCommandReq) error {
+	r := thingGroupCommandReq{publisherID: req.PublisherID, groupID: req.GroupID}
+	_, err := client.canThingGroupCommand(ctx, r)
+	return err
 }
 
-func (client grpcClient) Identify(ctx context.Context, req *protomfx.ThingKey, _ ...grpc.CallOption) (*protomfx.ThingID, error) {
+func (client grpcClient) Identify(ctx context.Context, key domainthings.ThingKey) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.identify(ctx, thingKey{value: req.GetValue(), keyType: req.GetType()})
+	res, err := client.identify(ctx, thingKey{value: key.Value, keyType: key.Type})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	ir := res.(identityRes)
-	return &protomfx.ThingID{Value: ir.id}, nil
+
+	return ir.id, nil
 }
 
-func (client grpcClient) GetGroupIDByThing(ctx context.Context, req *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.GroupID, error) {
+func (client grpcClient) GetGroupIDByThing(ctx context.Context, thingID string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.getGroupIDByThing(ctx, thingIDReq{thingID: req.GetValue()})
+	res, err := client.getGroupIDByThing(ctx, thingIDReq{thingID: thingID})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	tg := res.(groupIDRes)
-	return &protomfx.GroupID{Value: tg.groupID}, nil
+
+	return tg.groupID, nil
 }
 
-func (client grpcClient) GetGroupIDByProfile(ctx context.Context, req *protomfx.ProfileID, _ ...grpc.CallOption) (*protomfx.GroupID, error) {
+func (client grpcClient) GetGroupIDByProfile(ctx context.Context, profileID string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
-
-	res, err := client.getGroupIDByProfile(ctx, profileIDReq{profileID: req.GetValue()})
+	res, err := client.getGroupIDByProfile(ctx, profileIDReq{profileID: profileID})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-
 	pg := res.(groupIDRes)
-	return &protomfx.GroupID{Value: pg.groupID}, nil
+	return pg.groupID, nil
 }
 
-func (client grpcClient) GetGroupIDsByOrg(ctx context.Context, req *protomfx.OrgAccessReq, _ ...grpc.CallOption) (*protomfx.GroupIDs, error) {
+func (client grpcClient) GetGroupIDsByOrg(ctx context.Context, ar domainthings.OrgAccessReq) ([]string, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.getGroupIDsByOrg(ctx, orgAccessReq{orgID: req.GetOrgId(), token: req.GetToken()})
+	res, err := client.getGroupIDsByOrg(ctx, orgAccessReq{orgID: ar.OrgID, token: ar.Token})
 	if err != nil {
 		return nil, err
 	}
 
 	ids := res.(groupIDsRes)
-	return &protomfx.GroupIDs{Ids: ids.groupIDs}, nil
+
+	return ids.groupIDs, nil
 }
 
-func (client grpcClient) GetThingIDsByProfile(ctx context.Context, req *protomfx.ProfileID, _ ...grpc.CallOption) (*protomfx.ThingIDs, error) {
+func (client grpcClient) GetThingIDsByProfile(ctx context.Context, profileID string) ([]string, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.getThingIDsByProfile(ctx, profileIDReq{profileID: req.GetValue()})
+	res, err := client.getThingIDsByProfile(ctx, profileIDReq{profileID: profileID})
 	if err != nil {
 		return nil, err
 	}
 
 	ids := res.(thingIDsRes)
-	return &protomfx.ThingIDs{Ids: ids.thingIDs}, nil
+
+	return ids.thingIDs, nil
 }
 
-func (client grpcClient) CreateGroupMemberships(ctx context.Context, req *protomfx.CreateGroupMembershipsReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+func (client grpcClient) CreateGroupMemberships(ctx context.Context, memberships ...domainthings.GroupMembership) error {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	memberships := req.GetMemberships()
-
-	clientReq := createGroupMembershipsReq{
-		memberships: make([]groupMembership, 0, len(memberships)),
-	}
-
-	for _, memb := range memberships {
+	clientReq := createGroupMembershipsReq{memberships: make([]groupMembership, 0, len(memberships))}
+	for _, m := range memberships {
 		clientReq.memberships = append(clientReq.memberships, groupMembership{
-			userID:  memb.GetUserID(),
-			groupID: memb.GetGroupID(),
-			role:    memb.GetRole(),
+			userID:  m.MemberID,
+			groupID: m.GroupID,
+			role:    m.Role,
 		})
 	}
 
-	if _, err := client.createGroupMemberships(ctx, clientReq); err != nil {
-		return nil, err
-	}
+	_, err := client.createGroupMemberships(ctx, clientReq)
 
-	return &emptypb.Empty{}, nil
+	return err
 }
 
-func (client grpcClient) GetKeyByThingID(ctx context.Context, req *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ThingKey, error) {
+func (client grpcClient) GetKeyByThingID(ctx context.Context, thingID string) (domainthings.ThingKey, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.getKeyByThingID(ctx, thingIDReq{thingID: req.GetValue()})
+	res, err := client.getKeyByThingID(ctx, thingIDReq{thingID: thingID})
 	if err != nil {
-		return nil, err
+		return domainthings.ThingKey{}, err
 	}
 
 	tk := res.(thingKeyRes)
-	return &protomfx.ThingKey{Value: tk.value, Type: tk.keyType}, nil
+
+	return domainthings.ThingKey{Value: tk.value, Type: tk.keyType}, nil
 }
 
-func (client grpcClient) GetGroup(ctx context.Context, req *protomfx.GetGroupReq, _ ...grpc.CallOption) (*protomfx.Group, error) {
+func (client grpcClient) GetGroup(ctx context.Context, groupID string) (domainthings.Group, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.getGroup(ctx, getGroupReq{groupID: req.GetGroupID()})
+	res, err := client.getGroup(ctx, getGroupReq{groupID: groupID})
 	if err != nil {
-		return nil, err
+		return domainthings.Group{}, err
 	}
 
 	gr := res.(groupRes)
-	return &protomfx.Group{
-		Id:    gr.id,
-		OrgID: gr.orgID,
-		Name:  gr.name,
-	}, nil
+
+	return domainthings.Group{ID: gr.id, OrgID: gr.orgID, Name: gr.name}, nil
+}
+
+func protoConfigToDomain(c *protomfx.Config) domainthings.Config {
+	if c == nil {
+		return domainthings.Config{}
+	}
+
+	return domainthings.Config{
+		ContentType: c.GetContentType(),
+		Transformer: protoTransformerToDomain(c.GetTransformer()),
+	}
+}
+
+func protoTransformerToDomain(t *protomfx.Transformer) domainthings.Transformer {
+	if t == nil {
+		return domainthings.Transformer{}
+	}
+
+	return domainthings.Transformer{
+		DataFilters:  t.GetDataFilters(),
+		DataField:    t.GetDataField(),
+		TimeField:    t.GetTimeField(),
+		TimeFormat:   t.GetTimeFormat(),
+		TimeLocation: t.GetTimeLocation(),
+	}
+}
+
+func protoConfigToMap(c *protomfx.Config) map[string]any {
+	if c == nil {
+		return nil
+	}
+
+	m := map[string]any{"content_type": c.GetContentType()}
+
+	if t := c.GetTransformer(); t != nil {
+		m["transformer"] = map[string]any{
+			"data_filters":  t.GetDataFilters(),
+			"data_field":    t.GetDataField(),
+			"time_field":    t.GetTimeField(),
+			"time_format":   t.GetTimeFormat(),
+			"time_location": t.GetTimeLocation(),
+		}
+	}
+
+	return m
 }
 
 func encodeGetPubConfigByKeyRequest(_ context.Context, grpcReq any) (any, error) {

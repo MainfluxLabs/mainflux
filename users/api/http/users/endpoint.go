@@ -143,11 +143,11 @@ func listUsersEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listUsersReq)
 		if err := req.validate(); err != nil {
-			return users.UserPage{}, err
+			return users.UsersPage{}, err
 		}
 		up, err := svc.ListUsers(ctx, req.token, req.pm)
 		if err != nil {
-			return users.UserPage{}, err
+			return users.UsersPage{}, err
 		}
 
 		return buildUsersResponse(up, req.pm), nil
@@ -266,7 +266,7 @@ func disableUserEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
-func buildUsersResponse(up users.UserPage, pm users.PageMetadata) userPageRes {
+func buildUsersResponse(up users.UsersPage, pm users.PageMetadata) userPageRes {
 	res := userPageRes{
 		pageRes: pageRes{
 			Total:  up.Total,

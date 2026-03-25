@@ -6,15 +6,13 @@ package standalone
 import (
 	"context"
 
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 var errUnsupported = errors.New("not supported in standalone mode")
 
-var _ protomfx.AuthServiceClient = (*singleUserRepo)(nil)
+var _ domainauth.Client = (*singleUserRepo)(nil)
 
 type singleUserRepo struct {
 	email string
@@ -22,57 +20,57 @@ type singleUserRepo struct {
 }
 
 // NewAuthService creates single user repository for constrained environments.
-func NewAuthService(email, token string) protomfx.AuthServiceClient {
+func NewAuthService(email, token string) domainauth.Client {
 	return singleUserRepo{
 		email: email,
 		token: token,
 	}
 }
 
-func (repo singleUserRepo) Issue(ctx context.Context, req *protomfx.IssueReq, opts ...grpc.CallOption) (*protomfx.Token, error) {
-	if repo.token != req.GetEmail() {
-		return nil, errors.ErrAuthentication
+func (repo singleUserRepo) Issue(ctx context.Context, id, email string, keyType uint32) (string, error) {
+	if repo.token != email {
+		return "", errors.ErrAuthentication
 	}
 
-	return &protomfx.Token{Value: repo.token}, nil
+	return repo.token, nil
 }
 
-func (repo singleUserRepo) Identify(ctx context.Context, token *protomfx.Token, opts ...grpc.CallOption) (*protomfx.UserIdentity, error) {
-	if repo.token != token.GetValue() {
-		return nil, errors.ErrAuthentication
+func (repo singleUserRepo) Identify(ctx context.Context, token string) (domainauth.Identity, error) {
+	if repo.token != token {
+		return domainauth.Identity{}, errors.ErrAuthentication
 	}
 
-	return &protomfx.UserIdentity{Id: repo.email, Email: repo.email}, nil
+	return domainauth.Identity{ID: repo.email, Email: repo.email}, nil
 }
 
-func (repo singleUserRepo) Authorize(ctx context.Context, req *protomfx.AuthorizeReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
-	return &emptypb.Empty{}, errUnsupported
+func (repo singleUserRepo) Authorize(ctx context.Context, ar domainauth.AuthzReq) error {
+	return errUnsupported
 }
 
-func (repo singleUserRepo) GetOwnerIDByOrg(ctx context.Context, in *protomfx.OrgID, opts ...grpc.CallOption) (*protomfx.OwnerID, error) {
-	return &protomfx.OwnerID{}, errUnsupported
+func (repo singleUserRepo) GetOwnerIDByOrg(ctx context.Context, orgID string) (string, error) {
+	return "", errUnsupported
 }
 
-func (repo singleUserRepo) AssignRole(ctx context.Context, req *protomfx.AssignRoleReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
-	return &emptypb.Empty{}, errUnsupported
+func (repo singleUserRepo) AssignRole(ctx context.Context, id, role string) error {
+	return errUnsupported
 }
 
-func (repo singleUserRepo) RetrieveRole(ctx context.Context, req *protomfx.RetrieveRoleReq, _ ...grpc.CallOption) (r *protomfx.RetrieveRoleRes, err error) {
-	return &protomfx.RetrieveRoleRes{}, errUnsupported
+func (repo singleUserRepo) RetrieveRole(ctx context.Context, id string) (string, error) {
+	return "", errUnsupported
 }
 
-func (repo singleUserRepo) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
+func (repo singleUserRepo) CreateDormantOrgInvite(ctx context.Context, token, orgID, inviteeRole, platformInviteID string, groupInvites []domainauth.GroupInvite) error {
 	panic("not implemented")
 }
 
-func (repo singleUserRepo) ActivateOrgInvite(ctx context.Context, req *protomfx.ActivateOrgInviteReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
+func (repo singleUserRepo) ActivateOrgInvite(ctx context.Context, platformInviteID, userID, redirectPath string) error {
 	panic("not implemented")
 }
 
-func (repo singleUserRepo) GetDormantOrgInviteByPlatformInvite(ctx context.Context, req *protomfx.GetDormantOrgInviteByPlatformInviteReq, _ ...grpc.CallOption) (r *protomfx.OrgInvite, err error) {
+func (repo singleUserRepo) GetDormantOrgInviteByPlatformInvite(ctx context.Context, platformInviteID string) (domainauth.OrgInvite, error) {
 	panic("not implemented")
 }
 
-func (repo singleUserRepo) ViewOrg(ctx context.Context, req *protomfx.ViewOrgReq, _ ...grpc.CallOption) (r *protomfx.Org, err error) {
+func (repo singleUserRepo) ViewOrg(ctx context.Context, token, orgID string) (domainauth.Org, error) {
 	panic("not implemented")
 }

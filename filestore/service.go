@@ -12,8 +12,7 @@ import (
 	"path/filepath"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/things"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 )
 
 const (
@@ -79,7 +78,7 @@ type FileInfo struct {
 }
 
 type filestoreService struct {
-	things     protomfx.ThingsServiceClient
+	things     domainthings.Client
 	thingsRepo ThingsRepository
 	groupsRepo GroupsRepository
 }
@@ -87,7 +86,7 @@ type filestoreService struct {
 var _ Service = (*filestoreService)(nil)
 
 // New instantiates the filestore service implementation.
-func New(tc protomfx.ThingsServiceClient, thingsRepo ThingsRepository, groupsRepo GroupsRepository) Service {
+func New(tc domainthings.Client, thingsRepo ThingsRepository, groupsRepo GroupsRepository) Service {
 	return &filestoreService{
 		things:     tc,
 		thingsRepo: thingsRepo,
@@ -101,7 +100,7 @@ func (fs *filestoreService) SaveFile(ctx context.Context, file io.Reader, key st
 		return err
 	}
 
-	grID, err := fs.things.GetGroupIDByThing(ctx, &protomfx.ThingID{Value: thID})
+	grID, err := fs.things.GetGroupIDByThing(ctx, thID)
 	if err != nil {
 		return err
 	}
@@ -111,7 +110,7 @@ func (fs *filestoreService) SaveFile(ctx context.Context, file io.Reader, key st
 		return err
 	}
 
-	if err = fs.thingsRepo.Save(ctx, thID, grID.GetValue(), fi); err != nil {
+	if err = fs.thingsRepo.Save(ctx, thID, grID, fi); err != nil {
 		return err
 	}
 
@@ -208,7 +207,7 @@ func (fs *filestoreService) ViewFile(ctx context.Context, key string, fi FileInf
 }
 
 func (fs *filestoreService) SaveGroupFile(ctx context.Context, file io.Reader, token, groupID string, fi FileInfo) error {
-	if _, err := fs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Editor}); err != nil {
+	if err := fs.things.CanUserAccessGroup(ctx, domainthings.UserAccessReq{Token: token, ID: groupID, Action: domainthings.Editor}); err != nil {
 		return err
 	}
 
@@ -225,7 +224,7 @@ func (fs *filestoreService) SaveGroupFile(ctx context.Context, file io.Reader, t
 }
 
 func (fs *filestoreService) UpdateGroupFile(ctx context.Context, token, groupID string, fi FileInfo) error {
-	if _, err := fs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Editor}); err != nil {
+	if err := fs.things.CanUserAccessGroup(ctx, domainthings.UserAccessReq{Token: token, ID: groupID, Action: domainthings.Editor}); err != nil {
 		return err
 	}
 
@@ -233,7 +232,7 @@ func (fs *filestoreService) UpdateGroupFile(ctx context.Context, token, groupID 
 }
 
 func (fs *filestoreService) ListGroupFiles(ctx context.Context, token, groupID string, fi FileInfo, pm PageMetadata) (FileGroupsPage, error) {
-	if _, err := fs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer}); err != nil {
+	if err := fs.things.CanUserAccessGroup(ctx, domainthings.UserAccessReq{Token: token, ID: groupID, Action: domainthings.Viewer}); err != nil {
 		return FileGroupsPage{}, err
 	}
 
@@ -246,7 +245,7 @@ func (fs *filestoreService) ListGroupFiles(ctx context.Context, token, groupID s
 }
 
 func (fs *filestoreService) RemoveGroupFile(ctx context.Context, token, groupID string, fi FileInfo) error {
-	if _, err := fs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Editor}); err != nil {
+	if err := fs.things.CanUserAccessGroup(ctx, domainthings.UserAccessReq{Token: token, ID: groupID, Action: domainthings.Editor}); err != nil {
 		return err
 	}
 
@@ -306,7 +305,7 @@ func (fs *filestoreService) RemoveAllFilesByGroup(ctx context.Context, groupID s
 }
 
 func (fs *filestoreService) ViewGroupFile(ctx context.Context, token, groupID string, fi FileInfo) ([]byte, error) {
-	if _, err := fs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer}); err != nil {
+	if err := fs.things.CanUserAccessGroup(ctx, domainthings.UserAccessReq{Token: token, ID: groupID, Action: domainthings.Viewer}); err != nil {
 		return nil, err
 	}
 
@@ -329,17 +328,17 @@ func (fs *filestoreService) ViewGroupFileByKey(ctx context.Context, thingKey str
 	if err != nil {
 		return nil, err
 	}
-	grID, err := fs.things.GetGroupIDByThing(ctx, &protomfx.ThingID{Value: thID})
+	grID, err := fs.things.GetGroupIDByThing(ctx, thID)
 	if err != nil {
 		return nil, err
 	}
 
-	f, err := fs.groupsRepo.Retrieve(ctx, grID.GetValue(), fi)
+	f, err := fs.groupsRepo.Retrieve(ctx, grID, fi)
 	if err != nil {
 		return nil, err
 	}
 
-	filePath := filepath.Join(filesPath, groupsPath, grID.GetValue(), f.Name)
+	filePath := filepath.Join(filesPath, groupsPath, grID, f.Name)
 	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
@@ -371,12 +370,12 @@ func createFile(path, name string, file io.Reader) error {
 }
 
 func (fs *filestoreService) identify(ctx context.Context, thingKey string) (string, error) {
-	thingID, err := fs.things.Identify(ctx, &protomfx.ThingKey{Type: things.KeyTypeInternal, Value: thingKey})
+	thingID, err := fs.things.Identify(ctx, domainthings.ThingKey{Type: domainthings.KeyTypeInternal, Value: thingKey})
 	if err != nil {
 		return "", errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	return thingID.GetValue(), nil
+	return thingID, nil
 }
 
 // isDirEmpty checks if directory is empty

@@ -13,7 +13,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/readers"
-	"github.com/MainfluxLabs/mainflux/things"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -155,7 +154,7 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (any, error) {
 
 	return listJSONMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
-		thingKey: things.ExtractThingKey(r),
+		thingKey: apiutil.ExtractThingKeyFromHTTPHeader(r),
 		pageMeta: pageMeta,
 	}, nil
 }
@@ -187,7 +186,7 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (any, error) {
 
 	return listSenMLMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
-		thingKey: things.ExtractThingKey(r),
+		thingKey: apiutil.ExtractThingKeyFromHTTPHeader(r),
 		pageMeta: pageMeta,
 	}, nil
 }

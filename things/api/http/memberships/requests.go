@@ -4,7 +4,6 @@
 package memberships
 
 import (
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 )
@@ -53,7 +52,7 @@ func (req createGroupMembershipsReq) validate() error {
 	}
 
 	for _, gm := range req.GroupMemberships {
-		if gm.Role != auth.Admin && gm.Role != things.Viewer && gm.Role != things.Editor {
+		if gm.Role != things.Admin && gm.Role != things.Viewer && gm.Role != things.Editor {
 			return apiutil.ErrInvalidRole
 		}
 
@@ -89,7 +88,7 @@ func (req updateGroupMembershipsReq) validate() error {
 	}
 
 	for _, gm := range req.GroupMemberships {
-		if gm.Role != auth.Admin && gm.Role != things.Viewer && gm.Role != things.Editor {
+		if gm.Role != things.Admin && gm.Role != things.Viewer && gm.Role != things.Editor {
 			return apiutil.ErrInvalidRole
 		}
 

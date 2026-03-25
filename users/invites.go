@@ -4,14 +4,17 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+// PlatformInvite is an alias for the shared domain type.
+type PlatformInvite = domainusers.PlatformInvite
 
 const (
 	UserTypeInvitee = "invitee"
@@ -24,26 +27,15 @@ const (
 	InviteStateDeclined = "declined"
 )
 
-type PlatformInvite struct {
-	ID           string
-	InviteeEmail string
-	CreatedAt    time.Time
-	ExpiresAt    time.Time
-	State        string
-	OrgInvite    *auth.OrgInvite
-}
-
-type PlatformInvitesPage struct {
-	Invites []PlatformInvite
-	apiutil.PageMetadata
-}
+// PlatformInvitesPage is an alias for the shared domain type.
+type PlatformInvitesPage = domainusers.PlatformInvitesPage
 
 type PlatformInvites interface {
 	// CreatePlatformInvite creates a pending platform Invite for the appropriate email address.
 	// The user can optionally also be invited to an Organization with a certain role by supplying the `orgInvite` argument - the invite
 	// becomes visible once the user completes registration via the platform invite.
 	// temp:orgid, role, gis
-	CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite auth.OrgInvite) (PlatformInvite, error)
+	CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite domainauth.OrgInvite) (PlatformInvite, error)
 
 	// RevokePlatformInvite revokes a specific pending PlatformInvite. Only usable by the platform Root Admin.
 	RevokePlatformInvite(ctx context.Context, token, inviteID string) error
@@ -78,7 +70,7 @@ type PlatformInvitesRepository interface {
 	UpdatePlatformInviteState(ctx context.Context, inviteID, state string) error
 }
 
-func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite auth.OrgInvite) (PlatformInvite, error) {
+func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite domainauth.OrgInvite) (PlatformInvite, error) {
 	if err := svc.isAdmin(ctx, token); err != nil {
 		return PlatformInvite{}, err
 	}
@@ -113,23 +105,7 @@ func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirec
 	}
 
 	if orgInvite.OrgID != "" {
-		var reqGroupInvites []*protomfx.GroupInvite
-		for _, gi := range orgInvite.GroupInvites {
-			reqGroupInvites = append(reqGroupInvites, &protomfx.GroupInvite{
-				GroupID:    gi.GroupID,
-				MemberRole: gi.MemberRole,
-			})
-		}
-
-		dormantInviteReq := &protomfx.CreateDormantOrgInviteReq{
-			Token:            token,
-			OrgID:            orgInvite.OrgID,
-			InviteeRole:      orgInvite.InviteeRole,
-			GroupInvites:     reqGroupInvites,
-			PlatformInviteID: inviteID,
-		}
-
-		if _, err := svc.auth.CreateDormantOrgInvite(ctx, dormantInviteReq); err != nil {
+		if err := svc.auth.CreateDormantOrgInvite(ctx, token, orgInvite.OrgID, orgInvite.InviteeRole, inviteID, orgInvite.GroupInvites); err != nil {
 			return PlatformInvite{}, err
 		}
 	}
@@ -234,10 +210,7 @@ func (svc usersService) SendPlatformInviteEmail(ctx context.Context, invite Plat
 
 // If the passed Platform Invite is associated with a dormant Org Invite, fetch it and save it to platformInvite.OrgInvite.
 func (svc usersService) attachDormantOrgInvite(ctx context.Context, platformInvite *PlatformInvite) error {
-	dormantOrgInvite, err := svc.auth.GetDormantOrgInviteByPlatformInvite(ctx, &protomfx.GetDormantOrgInviteByPlatformInviteReq{
-		PlatformInviteID: platformInvite.ID,
-	})
-
+	dormantOrgInvite, err := svc.auth.GetDormantOrgInviteByPlatformInvite(ctx, platformInvite.ID)
 	if err != nil {
 		st, ok := status.FromError(err)
 		if !ok {
@@ -251,20 +224,6 @@ func (svc usersService) attachDormantOrgInvite(ctx context.Context, platformInvi
 		return err
 	}
 
-	platformInvite.OrgInvite = &auth.OrgInvite{
-		ID:           dormantOrgInvite.Id,
-		OrgID:        dormantOrgInvite.OrgID,
-		OrgName:      dormantOrgInvite.OrgName,
-		InviteeRole:  dormantOrgInvite.InviteeRole,
-		GroupInvites: make([]auth.GroupInvite, 0, len(dormantOrgInvite.GroupInvites)),
-	}
-
-	for _, gi := range dormantOrgInvite.GetGroupInvites() {
-		platformInvite.OrgInvite.GroupInvites = append(platformInvite.OrgInvite.GroupInvites, auth.GroupInvite{
-			GroupID:    gi.GroupID,
-			MemberRole: gi.MemberRole,
-		})
-	}
-
+	platformInvite.OrgInvite = &dormantOrgInvite
 	return nil
 }

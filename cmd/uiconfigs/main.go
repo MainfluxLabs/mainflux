@@ -24,7 +24,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -259,7 +260,7 @@ func subscribeToES(ctx context.Context, svc uiconfigs.Service, stream string, cf
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(ts protomfx.ThingsServiceClient, ac protomfx.AuthServiceClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) uiconfigs.Service {
+func newService(ts domainthings.Client, ac domainauth.Client, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) uiconfigs.Service {
 	database := dbutil.NewDatabase(db)
 	orgConfigsRepo := postgres.NewOrgConfigRepository(database)
 	orgConfigsRepo = tracing.OrgConfigRepositoryMiddleware(dbTracer, orgConfigsRepo)

@@ -6,8 +6,8 @@ package invites
 import (
 	"regexp"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/users"
 )
 
@@ -29,7 +29,7 @@ func (req registerByInviteReq) validate() error {
 		return apiutil.ErrMissingInviteID
 	}
 
-	if err := req.User.Validate(userPasswordRegex); err != nil {
+	if err := users.ValidateUser(req.User, userPasswordRegex); err != nil {
 		return err
 	}
 
@@ -71,11 +71,11 @@ func (req viewInviteReq) validate() error {
 
 type createPlatformInviteRequest struct {
 	token        string
-	Email        string             `json:"email,omitempty"`
-	OrgID        string             `json:"org_id"`
-	Role         string             `json:"role"`
-	GroupInvites []auth.GroupInvite `json:"group_invites"`
-	RedirectPath string             `json:"redirect_path,omitempty"`
+	Email        string                   `json:"email,omitempty"`
+	OrgID        string                   `json:"org_id"`
+	Role         string                   `json:"role"`
+	GroupInvites []domainauth.GroupInvite `json:"group_invites"`
+	RedirectPath string                   `json:"redirect_path,omitempty"`
 }
 
 func (req createPlatformInviteRequest) validate() error {
@@ -92,7 +92,7 @@ func (req createPlatformInviteRequest) validate() error {
 	}
 
 	if req.OrgID != "" {
-		if err := auth.ValidateInviteeRole(req.Role); err != nil {
+		if err := domainauth.ValidateInviteeRole(req.Role); err != nil {
 			return err
 		}
 	}
