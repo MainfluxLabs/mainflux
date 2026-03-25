@@ -36,6 +36,8 @@ envsubst '
 # CRL support: if the CRL directory is mounted, wait for the initial CRL file
 # from the certs service, then watch for changes and reload nginx.
 CRL_FILE="/etc/ssl/certs/crl/crl.pem"
+# Work on a copy so we never modify the mounted original.
+cp /etc/nginx/snippets/ssl-client.conf /etc/nginx/snippets/ssl-client-active.conf
 if [ -d "$(dirname "$CRL_FILE")" ]; then
     # Wait up to 60s for the certs service to generate the initial CRL file.
     echo "Waiting for CRL file at $CRL_FILE..."
@@ -47,8 +49,7 @@ if [ -d "$(dirname "$CRL_FILE")" ]; then
 
     if [ ! -f "$CRL_FILE" ]; then
         echo "WARNING: CRL file not found after 60s. Starting without CRL."
-        # Remove ssl_crl directive so nginx can start without the file.
-        sed -i '/ssl_crl/d' /etc/nginx/snippets/ssl-client.conf
+        sed -i '/ssl_crl/d' /etc/nginx/snippets/ssl-client-active.conf
     else
         echo "CRL file found."
     fi
