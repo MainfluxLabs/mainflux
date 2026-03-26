@@ -41,4 +41,7 @@ var (
 
 	// ErrInvalidSubject indicates that a message subject is malformed.
 	ErrInvalidSubject = New("invalid subject")
+
+	// ErrMalformedEntity indicates a malformed entity specification.
+	ErrMalformedEntity = New("malformed entity specification")
 )

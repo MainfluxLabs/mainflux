@@ -93,7 +93,7 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrInvalidComparator),
 			errors.Contains(err, ErrInvalidAPIKey),
 			errors.Contains(err, ErrUnsupportedContentType),
-			errors.Contains(err, ErrMalformedEntity),
+			errors.Contains(err, errors.ErrMalformedEntity),
 			errors.Contains(err, ErrInvalidRole),
 			errors.Contains(err, ErrInvalidQueryParams),
 			errors.Contains(err, ErrMissingConditionField),
@@ -200,7 +200,7 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrInvalidQueryParams),
 		errors.Contains(err, ErrInvalidAggType),
 		errors.Contains(err, ErrNotFoundParam),
-		errors.Contains(err, ErrMalformedEntity),
+		errors.Contains(err, errors.ErrMalformedEntity),
 		errors.Contains(err, ErrInvalidRole),
 		errors.Contains(err, ErrMissingConditionField),
 		errors.Contains(err, ErrMissingConditionThreshold),
@@ -474,7 +474,7 @@ func BuildPageMetadataFromBody(r *http.Request) (PageMetadata, error) {
 
 	var pm PageMetadata
 	if err := json.NewDecoder(r.Body).Decode(&pm); err != nil {
-		return PageMetadata{}, errors.Wrap(ErrMalformedEntity, err)
+		return PageMetadata{}, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	if pm.Limit == 0 {

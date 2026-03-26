@@ -74,7 +74,7 @@ func decodePlatformInviteRegister(_ context.Context, r *http.Request) (any, erro
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -103,7 +103,7 @@ func decodeCreatePlatformInviteRequest(_ context.Context, r *http.Request) (any,
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil

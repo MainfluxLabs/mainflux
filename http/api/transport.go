@@ -206,7 +206,7 @@ func decodeSendCommandByGroup(_ context.Context, r *http.Request) (any, error) {
 func readPayload(r *http.Request) ([]byte, error) {
 	payload, err := io.ReadAll(r.Body)
 	if err != nil {
-		return nil, apiutil.ErrMalformedEntity
+		return nil, errors.ErrMalformedEntity
 	}
 	defer r.Body.Close()
 

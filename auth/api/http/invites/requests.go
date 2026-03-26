@@ -3,6 +3,7 @@ package invites
 import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 const (
@@ -41,7 +42,7 @@ func (req createOrgInviteReq) validate() error {
 	}
 
 	if req.Role == auth.Owner {
-		return apiutil.ErrMalformedEntity
+		return errors.ErrMalformedEntity
 	}
 
 	for _, gi := range req.GroupInvites {

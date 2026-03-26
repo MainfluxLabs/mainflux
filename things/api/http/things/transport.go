@@ -179,7 +179,7 @@ func decodeCreateThings(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req.Things); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -195,7 +195,7 @@ func decodeUpdateThing(_ context.Context, r *http.Request) (any, error) {
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -212,7 +212,7 @@ func decodeUpdateThingGroupAndProfile(_ context.Context, r *http.Request) (any, 
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -266,7 +266,7 @@ func buildPageMetadataFromBody(r *http.Request) (things.PageMetadata, error) {
 
 	var pm things.PageMetadata
 	if err := json.NewDecoder(r.Body).Decode(&pm); err != nil {
-		return things.PageMetadata{}, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return things.PageMetadata{}, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	if pm.Limit == 0 {
@@ -416,7 +416,7 @@ func decodeRemoveThings(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -432,7 +432,7 @@ func decodeUpdateThingsMetadata(_ context.Context, r *http.Request) (any, error)
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req.Things); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -445,7 +445,7 @@ func decodeIdentify(_ context.Context, r *http.Request) (any, error) {
 
 	req := identifyReq{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -461,7 +461,7 @@ func decodeUpdateExternalKey(_ context.Context, r *http.Request) (any, error) {
 		thingID: bone.GetValue(r, apiutil.IDKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil

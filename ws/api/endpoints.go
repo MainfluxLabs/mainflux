@@ -11,6 +11,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/ws"
@@ -131,7 +132,7 @@ func encodeError(w http.ResponseWriter, err error) {
 		statusCode = http.StatusBadRequest
 	case errUnauthorizedAccess:
 		statusCode = http.StatusForbidden
-	case messaging.ErrMalformedSubtopic, apiutil.ErrMalformedEntity:
+	case messaging.ErrMalformedSubtopic, errors.ErrMalformedEntity:
 		statusCode = http.StatusBadRequest
 	default:
 		statusCode = http.StatusNotFound

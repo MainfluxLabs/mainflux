@@ -8,9 +8,9 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/email"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 // Metadata is an alias for the shared domain type.
@@ -47,7 +47,7 @@ type Identity struct {
 // ValidateUser returns an error if user representation is invalid.
 func ValidateUser(u User, passRegex *regexp.Regexp) error {
 	if !email.IsEmail(u.Email) {
-		return apiutil.ErrMalformedEntity
+		return errors.ErrMalformedEntity
 	}
 
 	if !passRegex.MatchString(u.Password) {

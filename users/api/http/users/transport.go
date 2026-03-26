@@ -229,7 +229,7 @@ func decodeSearchUsers(_ context.Context, r *http.Request) (any, error) {
 
 	var upm users.PageMetadata
 	if err := json.NewDecoder(r.Body).Decode(&upm); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	if upm.Offset > 0 {
@@ -266,7 +266,7 @@ func decodeSearchUsers(_ context.Context, r *http.Request) (any, error) {
 func decodeUpdateUser(_ context.Context, r *http.Request) (any, error) {
 	req := updateUserReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -279,7 +279,7 @@ func decodeCredentials(_ context.Context, r *http.Request) (any, error) {
 
 	var user users.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 	user.Email = strings.TrimSpace(user.Email)
 	return userReq{user}, nil
@@ -292,7 +292,7 @@ func decodeRegisterUser(_ context.Context, r *http.Request) (any, error) {
 
 	var user users.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	user.Email = strings.TrimSpace(user.Email)
@@ -312,7 +312,7 @@ func decodeSelfRegisterUser(_ context.Context, r *http.Request) (any, error) {
 	req := selfRegisterUserReq{}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -369,7 +369,7 @@ func decodePasswordResetRequest(_ context.Context, r *http.Request) (any, error)
 	var req passwResetReq
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -382,7 +382,7 @@ func decodePasswordReset(_ context.Context, r *http.Request) (any, error) {
 
 	var req resetTokenReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -395,7 +395,7 @@ func decodePasswordChange(_ context.Context, r *http.Request) (any, error) {
 
 	req := passwChangeReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil

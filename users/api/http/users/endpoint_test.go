@@ -73,7 +73,7 @@ var (
 	notFoundRes           = toJSON(apiutil.ErrorRes{Err: dbutil.ErrNotFound.Error()})
 	unauthRes             = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
 	weakPassword          = toJSON(apiutil.ErrorRes{Err: users.ErrPasswordFormat.Error()})
-	malformedRes          = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMalformedEntity.Error()})
+	malformedRes          = toJSON(apiutil.ErrorRes{Err: errors.ErrMalformedEntity.Error()})
 	unsupportedRes        = toJSON(apiutil.ErrorRes{Err: apiutil.ErrUnsupportedContentType.Error()})
 	missingTokRes         = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
 	missingEmailRes       = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingEmail.Error()})
