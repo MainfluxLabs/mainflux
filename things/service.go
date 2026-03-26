@@ -8,8 +8,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -17,10 +16,10 @@ import (
 
 // Role constants are aliases for the shared domain types.
 const (
-	Viewer = domainthings.Viewer
-	Editor = domainthings.Editor
-	Admin  = domainthings.Admin
-	Owner  = domainthings.Owner
+	Viewer = domain.GroupViewer
+	Editor = domain.GroupEditor
+	Admin  = domain.GroupAdmin
+	Owner  = domain.GroupOwner
 )
 
 var (
@@ -201,11 +200,11 @@ type Backup struct {
 
 // UserAccessReq, ThingAccessReq, PubConfigInfo, ThingCommandReq, and ThingGroupCommandReq are aliases for the shared domain types.
 type (
-	UserAccessReq        = domainthings.UserAccessReq
-	ThingAccessReq       = domainthings.ThingAccessReq
-	PubConfigInfo        = domainthings.PubConfigInfo
-	ThingCommandReq      = domainthings.ThingCommandReq
-	ThingGroupCommandReq = domainthings.ThingGroupCommandReq
+	UserAccessReq        = domain.UserAccessReq
+	ThingAccessReq       = domain.ThingAccessReq
+	PubConfigInfo        = domain.PubConfigInfo
+	ThingCommandReq      = domain.ThingCommandReq
+	ThingGroupCommandReq = domain.ThingGroupCommandReq
 )
 
 var _ Service = (*thingsService)(nil)
@@ -894,7 +893,7 @@ func (ts *thingsService) ListProfilesByGroup(ctx context.Context, token, groupID
 func (ts *thingsService) isAdmin(ctx context.Context, token string) error {
 	req := &protomfx.AuthorizeReq{
 		Token:   token,
-		Subject: domainauth.RootSub,
+		Subject: domain.RootSub,
 	}
 
 	if _, err := ts.auth.Authorize(ctx, req); err != nil {
@@ -996,7 +995,7 @@ func (ts *thingsService) GetGroupIDsByOrg(ctx context.Context, orgID string, tok
 		return ts.groups.RetrieveIDsByOrg(ctx, orgID)
 	}
 
-	if err := ts.canAccessOrg(ctx, token, orgID, domainauth.OrgSub, Viewer); err != nil {
+	if err := ts.canAccessOrg(ctx, token, orgID, domain.OrgSub, Viewer); err != nil {
 		return []string{}, err
 	}
 

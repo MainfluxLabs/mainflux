@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -18,16 +18,16 @@ const (
 	recoveryDuration = 5 * time.Minute
 
 	// Re-export role constants from domain for backward compatibility.
-	Admin   = domainauth.Admin
-	Owner   = domainauth.Owner
-	Editor  = domainauth.Editor
-	Viewer  = domainauth.Viewer
-	RootSub = domainauth.RootSub
-	OrgSub  = domainauth.OrgSub
+	Admin   = domain.OrgAdmin
+	Owner   = domain.OrgOwner
+	Editor  = domain.OrgEditor
+	Viewer  = domain.OrgViewer
+	RootSub = domain.RootSub
+	OrgSub  = domain.OrgSub
 )
 
 // AuthzReq is an alias for the shared domain type.
-type AuthzReq = domainauth.AuthzReq
+type AuthzReq = domain.AuthzReq
 
 var (
 	// ErrRetrieveMembershipsByOrg indicates that retrieving memberships by org failed.
@@ -151,9 +151,9 @@ func New(orgs OrgRepository, tc protomfx.ThingsServiceClient, uc protomfx.UsersS
 
 func (svc service) Authorize(ctx context.Context, ar AuthzReq) error {
 	switch ar.Subject {
-	case domainauth.RootSub:
+	case domain.RootSub:
 		return svc.isAdmin(ctx, ar.Token)
-	case domainauth.OrgSub:
+	case domain.OrgSub:
 		return svc.canAccessOrg(ctx, ar.Token, ar.Object, ar.Action)
 	default:
 		return errUnknownSubject

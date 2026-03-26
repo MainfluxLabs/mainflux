@@ -11,7 +11,7 @@ import (
 	"time"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/users"
 )
 
@@ -310,7 +310,7 @@ func (lm *loggingMiddleware) Restore(ctx context.Context, token string, admin us
 	return lm.svc.Restore(ctx, token, admin, users, identities)
 }
 
-func (lm *loggingMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite domainauth.OrgInvite) (_ users.PlatformInvite, err error) {
+func (lm *loggingMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite domain.OrgInvite) (_ users.PlatformInvite, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_platform_invite for email %s took %s to complete", email, time.Since(begin))
 		if err != nil {

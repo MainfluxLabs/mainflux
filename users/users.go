@@ -10,7 +10,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
-	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
 	"github.com/MainfluxLabs/mainflux/pkg/email"
 )
 
@@ -18,7 +17,7 @@ import (
 type Metadata = domain.Metadata
 
 // User is an alias for the shared domain type.
-type User = domainusers.User
+type User = domain.User
 
 type EmailVerification struct {
 	User      User

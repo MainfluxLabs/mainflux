@@ -3,17 +3,16 @@ package things
 import (
 	"context"
 
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 // Group is an alias for the shared domain type.
-type Group = domainthings.Group
+type Group = domain.Group
 
 // GroupPage is an alias for the shared domain type.
-type GroupPage = domainthings.GroupPage
+type GroupPage = domain.GroupPage
 
 // GroupRepository specifies a group persistence API.
 type GroupRepository interface {
@@ -119,7 +118,7 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token, orgID string, 
 
 	memberships := []GroupMembership{{MemberID: ownerID, Role: Owner}}
 	if ownerID != userID {
-		if err := ts.canAccessOrg(ctx, token, orgID, domainauth.OrgSub, Editor); err != nil {
+		if err := ts.canAccessOrg(ctx, token, orgID, domain.OrgSub, Editor); err != nil {
 			return nil, err
 		}
 		memberships = append(memberships, GroupMembership{MemberID: userID, Role: Admin})

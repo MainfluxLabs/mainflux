@@ -6,7 +6,7 @@ package auth
 import (
 	"context"
 
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
@@ -24,15 +24,15 @@ var (
 
 // Key type constants (aliases for domain).
 const (
-	LoginKey    = domainauth.LoginKey
-	RecoveryKey = domainauth.RecoveryKey
-	APIKey      = domainauth.APIKey
+	LoginKey    = domain.LoginKey
+	RecoveryKey = domain.RecoveryKey
+	APIKey      = domain.APIKey
 )
 
 // Key is an alias for the shared domain type.
-type Key = domainauth.Key
-type Identity = domainauth.Identity
-type KeysPage = domainauth.KeysPage
+type Key = domain.Key
+type Identity = domain.Identity
+type KeysPage = domain.KeysPage
 
 // Keys specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).

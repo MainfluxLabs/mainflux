@@ -9,7 +9,7 @@ import (
 	"context"
 	"time"
 
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-kit/kit/metrics"
 )
@@ -229,7 +229,7 @@ func (ms *metricsMiddleware) Restore(ctx context.Context, token string, admin us
 	return ms.svc.Restore(ctx, token, admin, users, identities)
 }
 
-func (ms *metricsMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite domainauth.OrgInvite) (users.PlatformInvite, error) {
+func (ms *metricsMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite domain.OrgInvite) (users.PlatformInvite, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_platform_invite").Add(1)
 		ms.latency.With("method", "create_platform_invite").Observe(time.Since(begin).Seconds())

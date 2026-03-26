@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/ws"
@@ -60,7 +60,7 @@ func decodeRequest(r *http.Request) (getConnByKey, error) {
 			return getConnByKey{}, errUnauthorizedAccess
 		}
 
-		authKey = domainthings.ThingKey{
+		authKey = domain.ThingKey{
 			Value: queryKey[0],
 			Type:  queryKeyType[0],
 		}

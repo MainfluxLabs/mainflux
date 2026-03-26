@@ -3,13 +3,13 @@ package auth
 import (
 	"context"
 
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 // RoleRootAdmin and RoleAdmin are aliases for the shared domain types.
 const (
-	RoleRootAdmin = domainauth.RoleRootAdmin
-	RoleAdmin     = domainauth.RoleAdmin
+	RoleRootAdmin = domain.RoleRootAdmin
+	RoleAdmin     = domain.RoleAdmin
 )
 
 type Roles interface {

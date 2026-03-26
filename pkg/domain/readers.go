@@ -1,7 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package readers
+package domain
 
 // Message represents any message format.
 type Message any

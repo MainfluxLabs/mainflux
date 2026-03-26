@@ -16,7 +16,7 @@ import (
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -110,7 +110,7 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 	}
 }
 
-func handleGet(m *mux.Message, c mux.Client, msg protomfx.Message, key domainthings.ThingKey) error {
+func handleGet(m *mux.Message, c mux.Client, msg protomfx.Message, key domain.ThingKey) error {
 	var obs uint32
 	obs, err := m.Options.Observe()
 	if err != nil {
@@ -156,22 +156,22 @@ func decodeMessage(msg *mux.Message) (protomfx.Message, error) {
 	return ret, nil
 }
 
-func parseKey(msg *mux.Message) (domainthings.ThingKey, error) {
+func parseKey(msg *mux.Message) (domain.ThingKey, error) {
 	if obs, _ := msg.Options.Observe(); obs != 0 && msg.Code == codes.GET {
-		return domainthings.ThingKey{}, nil
+		return domain.ThingKey{}, nil
 	}
 
 	queries, err := msg.Options.Queries()
 	if err != nil {
-		return domainthings.ThingKey{}, err
+		return domain.ThingKey{}, err
 	}
 
-	var thingKey domainthings.ThingKey
+	var thingKey domain.ThingKey
 
 	for _, query := range queries {
 		parts := strings.Split(query, "=")
 		if len(parts) != 2 {
-			return domainthings.ThingKey{}, errors.ErrAuthentication
+			return domain.ThingKey{}, errors.ErrAuthentication
 		}
 
 		switch parts[0] {
@@ -183,7 +183,7 @@ func parseKey(msg *mux.Message) (domainthings.ThingKey, error) {
 	}
 
 	if err := apiutil.ValidateThingKey(thingKey); err != nil {
-		return domainthings.ThingKey{}, err
+		return domain.ThingKey{}, err
 	}
 
 	return thingKey, nil

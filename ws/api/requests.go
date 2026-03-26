@@ -4,12 +4,12 @@
 package api
 
 import (
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/gorilla/websocket"
 )
 
 type getConnByKey struct {
-	domainthings.ThingKey
+	domain.ThingKey
 	subtopic string
 	conn     *websocket.Conn
 }

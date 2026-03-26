@@ -15,8 +15,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
-	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -53,7 +52,7 @@ var (
 )
 
 // UsersPage is an alias for the shared domain type.
-type UsersPage = domainusers.UsersPage
+type UsersPage = domain.UsersPage
 
 var AllowedOrders = map[string]string{
 	"id":            "id",
@@ -397,11 +396,11 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 
 		req := protomfx.AssignRoleReq{
 			Id:   u.ID,
-			Role: domainauth.RoleRootAdmin,
+			Role: domain.RoleRootAdmin,
 		}
 
 		switch role.Role {
-		case domainauth.RoleRootAdmin:
+		case domain.RoleRootAdmin:
 			return nil
 		default:
 			if _, err := svc.auth.AssignRole(ctx, &req); err != nil {
@@ -432,7 +431,7 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 
 	req := protomfx.AssignRoleReq{
 		Id:   user.ID,
-		Role: domainauth.RoleRootAdmin,
+		Role: domain.RoleRootAdmin,
 	}
 
 	if _, err := svc.auth.AssignRole(ctx, &req); err != nil {
@@ -487,7 +486,7 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 	if err := svc.hasher.Compare(user.Password, dbUser.Password); err != nil {
 		return "", errors.Wrap(errors.ErrAuthentication, err)
 	}
-	return svc.issue(ctx, dbUser.ID, dbUser.Email, domainauth.LoginKey)
+	return svc.issue(ctx, dbUser.ID, dbUser.Email, domain.LoginKey)
 }
 
 func (svc usersService) OAuthLogin(provider string) (data OAuthLoginData, err error) {
@@ -540,7 +539,7 @@ func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackDat
 		return "", err
 	}
 
-	token, err := svc.issue(ctx, user.ID, user.Email, domainauth.LoginKey)
+	token, err := svc.issue(ctx, user.ID, user.Email, domain.LoginKey)
 	if err != nil {
 		return "", err
 	}
@@ -818,7 +817,7 @@ func (svc usersService) Restore(ctx context.Context, token string, admin User, u
 
 	req := protomfx.AssignRoleReq{
 		Id:   admin.ID,
-		Role: domainauth.RoleRootAdmin,
+		Role: domain.RoleRootAdmin,
 	}
 
 	if _, err := svc.auth.AssignRole(ctx, &req); err != nil {
@@ -857,7 +856,7 @@ func (svc usersService) GenerateResetToken(ctx context.Context, email, redirectP
 	if err != nil || user.Email == "" {
 		return dbutil.ErrNotFound
 	}
-	t, err := svc.issue(ctx, user.ID, user.Email, domainauth.RecoveryKey)
+	t, err := svc.issue(ctx, user.ID, user.Email, domain.RecoveryKey)
 	if err != nil {
 		return errors.Wrap(ErrRecoveryToken, err)
 	}
@@ -992,7 +991,7 @@ func (svc usersService) identify(ctx context.Context, token string) (userIdentit
 func (svc usersService) isAdmin(ctx context.Context, token string) error {
 	req := &protomfx.AuthorizeReq{
 		Token:   token,
-		Subject: domainauth.RootSub,
+		Subject: domain.RootSub,
 	}
 
 	if _, err := svc.auth.Authorize(ctx, req); err != nil {

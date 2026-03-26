@@ -15,7 +15,7 @@ import (
 	adapter "github.com/MainfluxLabs/mainflux/http"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -102,11 +102,11 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	var thingKey domainthings.ThingKey
+	var thingKey domain.ThingKey
 	_, pass, ok := r.BasicAuth()
 	switch {
 	case ok:
-		thingKey = domainthings.ThingKey{Type: domainthings.KeyTypeInternal, Value: pass}
+		thingKey = domain.ThingKey{Type: domain.KeyTypeInternal, Value: pass}
 	case !ok:
 		thingKey = apiutil.ExtractThingKeyFromHTTPHeader(r)
 	}

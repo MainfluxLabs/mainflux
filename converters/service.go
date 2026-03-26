@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -94,7 +94,7 @@ func (as *adapterService) PublishSenMLMessages(ctx context.Context, key string, 
 
 func (as *adapterService) PublishJSONMessages(ctx context.Context, key string, csvLines [][]string) error {
 	pcr := &protomfx.ThingKey{
-		Type:  domainthings.KeyTypeInternal,
+		Type:  domain.KeyTypeInternal,
 		Value: key,
 	}
 	pc, err := as.things.GetPubConfigByKey(ctx, pcr)
@@ -152,7 +152,7 @@ func (as *adapterService) PublishJSONMessages(ctx context.Context, key string, c
 
 func (as *adapterService) publish(ctx context.Context, key string, msg protomfx.Message) (m protomfx.Message, err error) {
 	pcr := &protomfx.ThingKey{
-		Type:  domainthings.KeyTypeInternal,
+		Type:  domain.KeyTypeInternal,
 		Value: key,
 	}
 

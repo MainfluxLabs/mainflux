@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 const (
@@ -32,28 +32,37 @@ func ExtractBearerToken(r *http.Request) string {
 
 // ExtractThingKeyFromHTTPHeader returns the thing key and its type from the request's HTTP 'Authorization' header.
 // If the provided key type is invalid, an empty ThingKey is returned.
-func ExtractThingKeyFromHTTPHeader(r *http.Request) domainthings.ThingKey {
+func ExtractThingKeyFromHTTPHeader(r *http.Request) domain.ThingKey {
 	header := r.Header.Get("Authorization")
 
 	switch {
 	case strings.HasPrefix(header, ThingKeyPrefixInternal):
-		return domainthings.ThingKey{
-			Type:  domainthings.KeyTypeInternal,
+		return domain.ThingKey{
+			Type:  domain.KeyTypeInternal,
 			Value: strings.TrimPrefix(header, ThingKeyPrefixInternal),
 		}
 	case strings.HasPrefix(header, ThingKeyPrefixExternal):
-		return domainthings.ThingKey{
-			Type:  domainthings.KeyTypeExternal,
+		return domain.ThingKey{
+			Type:  domain.KeyTypeExternal,
 			Value: strings.TrimPrefix(header, ThingKeyPrefixExternal),
 		}
 	}
 
-	return domainthings.ThingKey{}
+	return domain.ThingKey{}
+}
+
+// ValidateInviteeRole returns an error if the role is not a valid invitee role
+// (OrgAdmin, OrgEditor, or OrgViewer). OrgOwner cannot be assigned via invite.
+func ValidateInviteeRole(role string) error {
+	if role != domain.OrgAdmin && role != domain.OrgEditor && role != domain.OrgViewer {
+		return ErrInvalidRole
+	}
+	return nil
 }
 
 // ValidateThingKey returns an API validation error if the thing key is invalid.
-func ValidateThingKey(key domainthings.ThingKey) error {
-	if key.Type != domainthings.KeyTypeExternal && key.Type != domainthings.KeyTypeInternal {
+func ValidateThingKey(key domain.ThingKey) error {
+	if key.Type != domain.KeyTypeExternal && key.Type != domain.KeyTypeInternal {
 		return ErrInvalidThingKeyType
 	}
 	if key.Value == "" {

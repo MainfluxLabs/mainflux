@@ -1,25 +1,23 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package things
+package domain
 
 import (
 	"time"
-
-	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 // Thing represents a Mainflux thing. Each thing is owned by one user, and
 // it is assigned with the unique identifier and (temporary) access key.
 type Thing struct {
-	ID          string          `json:"id,omitempty"`
-	GroupID     string          `json:"group_id,omitempty"`
-	ProfileID   string          `json:"profile_id,omitempty"`
-	Name        string          `json:"name,omitempty"`
-	Type        string          `json:"type,omitempty"`
-	Key         string          `json:"key,omitempty"`
-	ExternalKey string          `json:"external_key,omitempty"`
-	Metadata    domain.Metadata `json:"metadata,omitempty"`
+	ID          string   `json:"id,omitempty"`
+	GroupID     string   `json:"group_id,omitempty"`
+	ProfileID   string   `json:"profile_id,omitempty"`
+	Name        string   `json:"name,omitempty"`
+	Type        string   `json:"type,omitempty"`
+	Key         string   `json:"key,omitempty"`
+	ExternalKey string   `json:"external_key,omitempty"`
+	Metadata    Metadata `json:"metadata,omitempty"`
 }
 
 // ThingsPage contains page related metadata as well as list of things that
@@ -43,22 +41,22 @@ type ThingKey struct {
 
 // Profile represents a communication group (things that can exchange messages).
 type Profile struct {
-	ID       string          `json:"id,omitempty"`
-	GroupID  string          `json:"group_id,omitempty"`
-	Name     string          `json:"name,omitempty"`
-	Config   map[string]any  `json:"config,omitempty"`
-	Metadata domain.Metadata `json:"metadata,omitempty"`
+	ID       string         `json:"id,omitempty"`
+	GroupID  string         `json:"group_id,omitempty"`
+	Name     string         `json:"name,omitempty"`
+	Config   map[string]any `json:"config,omitempty"`
+	Metadata Metadata       `json:"metadata,omitempty"`
 }
 
 // Group represents group information.
 type Group struct {
-	ID          string          `json:"id,omitempty"`
-	OrgID       string          `json:"org_id,omitempty"`
-	Name        string          `json:"name,omitempty"`
-	Description string          `json:"description,omitempty"`
-	Metadata    domain.Metadata `json:"metadata,omitempty"`
-	CreatedAt   time.Time       `json:"created_at"`
-	UpdatedAt   time.Time       `json:"updated_at"`
+	ID          string    `json:"id,omitempty"`
+	OrgID       string    `json:"org_id,omitempty"`
+	Name        string    `json:"name,omitempty"`
+	Description string    `json:"description,omitempty"`
+	Metadata    Metadata  `json:"metadata,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 // GroupPage contains page metadata and list of groups.
@@ -139,10 +137,10 @@ type GroupMembershipsPage struct {
 	GroupMemberships []GroupMembership `json:"group_memberships"`
 }
 
-// Role constants for group membership.
+// Group role constants.
 const (
-	Viewer = "viewer"
-	Editor = "editor"
-	Admin  = "admin"
-	Owner  = "owner"
+	GroupViewer = "viewer"
+	GroupEditor = "editor"
+	GroupAdmin  = "admin"
+	GroupOwner  = "owner"
 )

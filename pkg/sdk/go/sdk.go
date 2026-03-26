@@ -15,7 +15,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 const (
@@ -256,7 +256,7 @@ type SDK interface {
 	GetThing(id, token string) (Thing, error)
 
 	// GetThingMetadataByKey retrieves metadata about the thing identified by the given key.
-	GetThingMetadataByKey(key domainthings.ThingKey) (Metadata, error)
+	GetThingMetadataByKey(key domain.ThingKey) (Metadata, error)
 
 	// UpdateThing updates existing thing.
 	UpdateThing(thing Thing, thingID, token string) error
@@ -268,7 +268,7 @@ type SDK interface {
 	DeleteThings(ids []string, token string) error
 
 	// IdentifyThing validates thing's key and returns its ID
-	IdentifyThing(key domainthings.ThingKey) (string, error)
+	IdentifyThing(key domain.ThingKey) (string, error)
 
 	// UpdateExternalThingKey sets the external key of the Thing identified by `thingID`.`
 	UpdateExternalThingKey(key, thingID, token string) error
@@ -373,16 +373,16 @@ type SDK interface {
 	RemoveOrgMemberships(memberIDs []string, orgID, token string) error
 
 	// SendMessage send message.
-	SendMessage(subtopic, msg string, key domainthings.ThingKey) error
+	SendMessage(subtopic, msg string, key domain.ThingKey) error
 
 	// ReadMessages read messages.
 	ReadMessages(isAdmin bool, pm PageMetadata, keyType, token string) (map[string]any, error)
 
 	// ListJSONMessages lists JSON messages with filtering.
-	ListJSONMessages(pm JSONPageMetadata, token string, key domainthings.ThingKey) (map[string]any, error)
+	ListJSONMessages(pm JSONPageMetadata, token string, key domain.ThingKey) (map[string]any, error)
 
 	// ListSenMLMessages lists SenML messages with filtering.
-	ListSenMLMessages(pm SenMLPageMetadata, token string, key domainthings.ThingKey) (map[string]any, error)
+	ListSenMLMessages(pm SenMLPageMetadata, token string, key domain.ThingKey) (map[string]any, error)
 
 	// DeleteJSONMessages deletes JSON messages by publisher.
 	DeleteJSONMessages(publisherID, token string, pm JSONPageMetadata) error
@@ -537,12 +537,12 @@ func (sdk mfSDK) sendRequest(req *http.Request, token, contentType string) (*htt
 	return sdk.client.Do(req)
 }
 
-func (sdk mfSDK) sendThingRequest(req *http.Request, key domainthings.ThingKey, contentType string) (*http.Response, error) {
+func (sdk mfSDK) sendThingRequest(req *http.Request, key domain.ThingKey, contentType string) (*http.Response, error) {
 	if key.Value != "" {
 		switch key.Type {
-		case domainthings.KeyTypeInternal:
+		case domain.KeyTypeInternal:
 			req.Header.Set("Authorization", apiutil.ThingKeyPrefixInternal+key.Value)
-		case domainthings.KeyTypeExternal:
+		case domain.KeyTypeExternal:
 			req.Header.Set("Authorization", apiutil.ThingKeyPrefixExternal+key.Value)
 		}
 	}

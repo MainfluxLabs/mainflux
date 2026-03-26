@@ -8,7 +8,7 @@ package http
 import (
 	"context"
 
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -17,7 +17,7 @@ import (
 // Service specifies coap service API.
 type Service interface {
 	// Publish Message
-	Publish(ctx context.Context, key domainthings.ThingKey, msg protomfx.Message) error
+	Publish(ctx context.Context, key domain.ThingKey, msg protomfx.Message) error
 	// SendCommandToThing publishes a command message to the specified thing.
 	SendCommandToThing(ctx context.Context, token, thingID string, msg protomfx.Message) error
 	// SendCommandToGroup publishes a command message to things that belong to a specified group.
@@ -39,7 +39,7 @@ func New(publisher messaging.Publisher, things protomfx.ThingsServiceClient) Ser
 	}
 }
 
-func (as *adapterService) Publish(ctx context.Context, key domainthings.ThingKey, msg protomfx.Message) error {
+func (as *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg protomfx.Message) error {
 	tk := &protomfx.ThingKey{
 		Value: key.Value,
 		Type:  key.Type,
@@ -61,7 +61,7 @@ func (as *adapterService) Publish(ctx context.Context, key domainthings.ThingKey
 }
 
 func (as *adapterService) SendCommandToThing(ctx context.Context, token, thingID string, message protomfx.Message) error {
-	if _, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domainthings.Editor}); err != nil {
+	if _, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupEditor}); err != nil {
 		return err
 	}
 
@@ -73,7 +73,7 @@ func (as *adapterService) SendCommandToThing(ctx context.Context, token, thingID
 }
 
 func (as *adapterService) SendCommandToGroup(ctx context.Context, token, groupID string, message protomfx.Message) error {
-	if _, err := as.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domainthings.Editor}); err != nil {
+	if _, err := as.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domain.GroupEditor}); err != nil {
 		return err
 	}
 

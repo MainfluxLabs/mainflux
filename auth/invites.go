@@ -6,7 +6,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"google.golang.org/grpc/codes"
@@ -18,13 +18,13 @@ var ErrInvalidInviteResponse = errors.New("invalid invite response action")
 var ErrGroupsDifferingOrgs = errors.New("groups belong to differing organizations")
 
 // OrgInvite is an alias for the shared domain type.
-type OrgInvite = domainauth.OrgInvite
+type OrgInvite = domain.OrgInvite
 
 // OrgInvitesPage is an alias for the shared domain type.
-type OrgInvitesPage = domainauth.OrgInvitesPage
+type OrgInvitesPage = domain.OrgInvitesPage
 
 // GroupInvite is an alias for the shared domain type.
-type GroupInvite = domainauth.GroupInvite
+type GroupInvite = domain.GroupInvite
 
 const (
 	UserTypeInvitee = "invitee"

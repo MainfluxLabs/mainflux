@@ -3,7 +3,6 @@ package memberships
 import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 )
 
 const maxLimitSize = 200
@@ -76,7 +75,7 @@ func (req orgMembershipsReq) validate() error {
 	}
 
 	for _, m := range req.OrgMemberships {
-		if err := domainauth.ValidateInviteeRole(m.Role); err != nil {
+		if err := apiutil.ValidateInviteeRole(m.Role); err != nil {
 			return err
 		}
 	}

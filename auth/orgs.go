@@ -3,7 +3,7 @@ package auth
 import (
 	"context"
 
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
@@ -13,9 +13,9 @@ var (
 )
 
 // Org is an alias for the shared domain type.
-type Org = domainauth.Org
+type Org = domain.Org
 
-type OrgsPage = domainauth.OrgsPage
+type OrgsPage = domain.OrgsPage
 
 type Backup struct {
 	Orgs           []Org

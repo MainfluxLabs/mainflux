@@ -6,7 +6,7 @@ package invites
 import (
 	"context"
 
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -34,7 +34,7 @@ func createPlatformInviteEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		orgInvite := domainauth.OrgInvite{
+		orgInvite := domain.OrgInvite{
 			OrgID:        req.OrgID,
 			InviteeRole:  req.Role,
 			GroupInvites: req.GroupInvites,

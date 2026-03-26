@@ -3,16 +3,16 @@ package auth
 import (
 	"context"
 
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 // OrgMembership is an alias for the shared domain type.
-type OrgMembership = domainauth.OrgMembership
+type OrgMembership = domain.OrgMembership
 
 // OrgMembershipsPage is an alias for the shared domain type.
-type OrgMembershipsPage = domainauth.OrgMembershipsPage
+type OrgMembershipsPage = domain.OrgMembershipsPage
 
 var (
 	// ErrCreateOrgMembership indicates failure to create org membership.

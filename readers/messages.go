@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 
-	domain "github.com/MainfluxLabs/mainflux/pkg/domain/readers"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 const (
@@ -31,7 +31,7 @@ const (
 	AggregationCount = "count"
 )
 
-// Type aliases referencing the canonical definitions in pkg/domain/readers.
+// Type aliases referencing the canonical definitions in pkg/domain.
 type (
 	Message           = domain.Message
 	MessagesPage      = domain.MessagesPage
