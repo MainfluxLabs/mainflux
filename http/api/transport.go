@@ -102,8 +102,6 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	thingKey := extractThingKey(r)
-
 	payload, err := readPayload(r)
 	if err != nil {
 		return nil, err
@@ -122,7 +120,7 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 			Payload:  payload,
 			Created:  time.Now().UnixNano(),
 		},
-		ThingKey: thingKey,
+		ThingKey: things.ExtractThingKey(r),
 	}
 
 	return req, nil
@@ -156,7 +154,7 @@ func decodeSendCommandToThing(_ context.Context, r *http.Request) (any, error) {
 		},
 	}
 
-	if tk := extractThingKey(r); tk.Value != "" {
+	if tk := things.ExtractThingKey(r); tk.Value != "" {
 		req.thingKey = tk
 	} else {
 		req.token = apiutil.ExtractBearerToken(r)
@@ -193,20 +191,13 @@ func decodeSendCommandByGroup(_ context.Context, r *http.Request) (any, error) {
 		},
 	}
 
-	if tk := extractThingKey(r); tk.Value != "" {
+	if tk := things.ExtractThingKey(r); tk.Value != "" {
 		req.thingKey = tk
 	} else {
 		req.token = apiutil.ExtractBearerToken(r)
 	}
 
 	return groupCommandReq{req}, nil
-}
-
-func extractThingKey(r *http.Request) things.ThingKey {
-	if u, pass, ok := r.BasicAuth(); ok {
-		return things.ThingKey{Type: u, Value: pass}
-	}
-	return things.ExtractThingKey(r)
 }
 
 func readPayload(r *http.Request) ([]byte, error) {
