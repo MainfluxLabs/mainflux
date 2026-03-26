@@ -105,7 +105,7 @@ func TestAuthPublish(t *testing.T) {
 		{
 			desc:    "publish without topic",
 			client:  &sessionClient,
-			err:     mqtt.ErrMissingTopicPub,
+			err:     mqtt.ErrMissingTopic,
 			topic:   nil,
 			payload: payload,
 		},
@@ -203,7 +203,7 @@ func TestAuthSubscribe(t *testing.T) {
 		{
 			desc:   "subscribe without topics",
 			client: &sessionClient,
-			err:    mqtt.ErrMissingTopicSub,
+			err:    mqtt.ErrMissingTopic,
 			topic:  nil,
 		},
 		{
@@ -256,12 +256,12 @@ func TestConnect(t *testing.T) {
 		{
 			desc:   "connect without active session",
 			client: nil,
-			logMsg: mqtt.LogErrFailedConnect + mqtt.ErrClientNotInitialized.Error(),
+			logMsg: "failed to connect: client is not initialized",
 		},
 		{
 			desc:   "connect with active session",
 			client: &sessionClient,
-			logMsg: fmt.Sprintf(mqtt.LogInfoConnected, clientID),
+			logMsg: fmt.Sprintf("client_id %s connected", clientID),
 		},
 	}
 
@@ -298,21 +298,21 @@ func TestPublish(t *testing.T) {
 			client:  &sessionClient,
 			topic:   invalidTopic,
 			payload: payload,
-			logMsg:  fmt.Sprintf(mqtt.LogInfoPublished, clientID, invalidTopic),
+			logMsg:  fmt.Sprintf("client_id %s published to topic %s", clientID, invalidTopic),
 		},
 		{
 			desc:    "publish with malformed subtopic",
 			client:  &sessionClient,
 			topic:   malformedSubtopics,
 			payload: payload,
-			logMsg:  mqtt.ErrMalformedSubtopic.Error(),
+			logMsg:  "malformed subtopic",
 		},
 		{
 			desc:    "publish with subtopic containing wrong character",
 			client:  &sessionClient,
 			topic:   wrongCharSubtopics,
 			payload: payload,
-			logMsg:  mqtt.ErrMalformedSubtopic.Error(),
+			logMsg:  "malformed subtopic",
 		},
 		{
 			desc:    "publish with subtopic",
@@ -350,13 +350,13 @@ func TestSubscribe(t *testing.T) {
 			desc:   "subscribe without active session",
 			client: nil,
 			topic:  topics,
-			logMsg: mqtt.LogErrFailedSubscribe + mqtt.ErrClientNotInitialized.Error(),
+			logMsg: "failed to subscribe: client is not initialized",
 		},
 		{
 			desc:   "subscribe with valid session and topics",
 			client: &sessionClient,
 			topic:  topics,
-			logMsg: fmt.Sprintf(mqtt.LogInfoSubscribed, clientID, topics[0]),
+			logMsg: fmt.Sprintf("client_id %s subscribed to topics %s", clientID, topics[0]),
 		},
 	}
 
@@ -380,13 +380,13 @@ func TestUnsubscribe(t *testing.T) {
 			desc:   "unsubscribe without active session",
 			client: nil,
 			topic:  topics,
-			logMsg: mqtt.LogErrFailedUnsubscribe + mqtt.ErrClientNotInitialized.Error(),
+			logMsg: "failed to unsubscribe: client is not initialized",
 		},
 		{
 			desc:   "unsubscribe with valid session and topics",
 			client: &sessionClient,
 			topic:  topics,
-			logMsg: fmt.Sprintf(mqtt.LogInfoUnsubscribed, clientID, topics[0]),
+			logMsg: fmt.Sprintf("client_id %s unsubscribed from topics %s", clientID, topics[0]),
 		},
 	}
 
@@ -410,13 +410,13 @@ func TestDisconnect(t *testing.T) {
 			desc:   "disconnect without active session",
 			client: nil,
 			topic:  topics,
-			logMsg: mqtt.LogErrFailedDisconnect + mqtt.ErrClientNotInitialized.Error(),
+			logMsg: "failed to disconnect: client is not initialized",
 		},
 		{
 			desc:   "disconnect with valid session",
 			client: &sessionClient,
 			topic:  topics,
-			logMsg: fmt.Sprintf(mqtt.LogInfoDisconnected, clientID),
+			logMsg: fmt.Sprintf("client_id %s disconnected", clientID),
 		},
 	}
 
