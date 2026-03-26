@@ -604,81 +604,79 @@ func (svc usersService) fetchGitHubUser(ctx context.Context, code, verifier stri
 	return email, providerUserID, nil
 }
 
+// handleIdentity resolves or creates a User for an OAuth login flow.
+// It first checks for an existing provider identity. If found, it returns the
+// linked user (syncing their e-mail if it changed). Otherwise, it looks up or
+// creates a user by e-mail, handling invite validation if needed, and saves a
+// new identity record linking the provider to that user.
 func (svc usersService) handleIdentity(ctx context.Context, provider, email, providerUserID, inviteID, redirectPath string) (User, error) {
 	identity, err := svc.identity.Retrieve(ctx, provider, providerUserID)
 	if err != nil && !errors.Contains(err, dbutil.ErrNotFound) {
 		return User{}, err
 	}
 
-	var user User
-
 	if identity.UserID != "" {
-		user, err = svc.users.RetrieveByID(ctx, identity.UserID)
+		user, err := svc.users.RetrieveByID(ctx, identity.UserID)
 		if err != nil {
 			return User{}, err
 		}
-
 		if user.Status != EnabledStatusKey {
 			return User{}, errors.ErrAuthentication
 		}
-
 		if user.Email != email {
 			user.Email = email
 			if err := svc.users.Update(ctx, user); err != nil {
 				return User{}, err
 			}
 		}
-	} else {
-		user, err = svc.users.RetrieveByEmail(ctx, email)
+		return user, nil
+	}
+
+	user, err := svc.users.RetrieveByEmail(ctx, email)
+	if err != nil {
+		if !errors.Contains(err, dbutil.ErrNotFound) {
+			return User{}, err
+		}
+		if !svc.selfRegisterEnabled && inviteID == "" {
+			return User{}, ErrSelfRegisterDisabled
+		}
+		if inviteID != "" {
+			if err := svc.ValidatePlatformInvite(ctx, inviteID, email); err != nil {
+				return User{}, err
+			}
+		}
+		uid, err := svc.idProvider.ID()
 		if err != nil {
-			if errors.Contains(err, dbutil.ErrNotFound) {
-				if !svc.selfRegisterEnabled && inviteID == "" {
-					return User{}, ErrSelfRegisterDisabled
-				}
-
-				if inviteID != "" {
-					if err := svc.ValidatePlatformInvite(ctx, inviteID, email); err != nil {
-						return User{}, err
-					}
-				}
-
-				uid, err := svc.idProvider.ID()
-				if err != nil {
-					return User{}, err
-				}
-				user = User{
-					ID:     uid,
-					Email:  email,
-					Status: EnabledStatusKey,
-				}
-				if _, err := svc.users.Save(ctx, user); err != nil {
-					return User{}, err
-				}
-
-				if inviteID != "" {
-					req := &protomfx.ActivateOrgInviteReq{
-						PlatformInviteID: inviteID,
-						UserID:           user.ID,
-						RedirectPath:     redirectPath,
-					}
-					if _, err := svc.auth.ActivateOrgInvite(ctx, req); err != nil {
-						return User{}, err
-					}
-				}
-			} else {
+			return User{}, err
+		}
+		user = User{
+			ID:     uid,
+			Email:  email,
+			Status: EnabledStatusKey,
+		}
+		if _, err := svc.users.Save(ctx, user); err != nil {
+			return User{}, err
+		}
+		if inviteID != "" {
+			req := &protomfx.ActivateOrgInviteReq{
+				PlatformInviteID: inviteID,
+				UserID:           user.ID,
+				RedirectPath:     redirectPath,
+			}
+			if _, err := svc.auth.ActivateOrgInvite(ctx, req); err != nil {
 				return User{}, err
 			}
 		}
+	}
 
-		newIdentity := Identity{
-			UserID:         user.ID,
-			Provider:       provider,
-			ProviderUserID: providerUserID,
-		}
-		if err := svc.identity.Save(ctx, newIdentity); err != nil {
-			if !errors.Contains(err, dbutil.ErrConflict) {
-				return User{}, err
-			}
+	newIdentity := Identity{
+		UserID:         user.ID,
+		Provider:       provider,
+		ProviderUserID: providerUserID,
+	}
+	if err := svc.identity.Save(ctx, newIdentity); err != nil {
+		if !errors.Contains(err, dbutil.ErrConflict) {
+			return User{}, err
 		}
 	}
 
