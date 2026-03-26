@@ -30,19 +30,6 @@ const (
 	AllStatusKey      = "all"
 )
 
-// UserPageMetadata contains page metadata for list operations.
-type UserPageMetadata struct {
-	Total    uint64   `json:"total,omitempty"`
-	Offset   uint64   `json:"offset,omitempty"`
-	Limit    uint64   `json:"limit,omitempty"`
-	Email    string   `json:"email,omitempty"`
-	Order    string   `json:"order,omitempty"`
-	Dir      string   `json:"dir,omitempty"`
-	Status   string   `json:"status,omitempty"`
-	State    string   `json:"state,omitempty"`
-	Metadata Metadata `json:"metadata,omitempty"`
-}
-
 // PlatformInvite represents platform invite information.
 type PlatformInvite struct {
 	ID           string     `json:"id,omitempty"`
