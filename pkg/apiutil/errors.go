@@ -195,6 +195,9 @@ var (
 	// ErrInvalidThingType indicates an invalid or missing thing type
 	ErrInvalidThingType = errors.New("missing or invalid thing type")
 
+	// ErrMissingAuthHeader indicates that neither a thing key nor a user token was provided.
+	ErrMissingAuthHeader = errors.New("missing thing key or bearer token")
+
 	// ErrInvalidProvider indicates an invalid or missing provider
 	ErrInvalidProvider = errors.New("missing or invalid provider")
 

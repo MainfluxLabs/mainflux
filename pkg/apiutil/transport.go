@@ -102,7 +102,8 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrInvalidActionType),
 			errors.Contains(err, ErrMissingActionID),
 			errors.Contains(err, ErrInvalidOperator),
-			errors.Contains(err, ErrInvalidThingType):
+			errors.Contains(err, ErrInvalidThingType),
+			errors.Contains(err, ErrMissingAuthHeader):
 			logger.Error(err.Error())
 		}
 
@@ -159,7 +160,8 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrBearerToken),
 		errors.Contains(err, ErrBearerKey),
 		errors.Contains(err, ErrInvalidThingKeyType),
-		errors.Contains(err, ErrMissingExternalThingKey):
+		errors.Contains(err, ErrMissingExternalThingKey),
+		errors.Contains(err, ErrMissingAuthHeader):
 		w.WriteHeader(http.StatusUnauthorized)
 	case errors.Contains(err, ErrMissingGroupID),
 		errors.Contains(err, ErrMissingOrgID),
