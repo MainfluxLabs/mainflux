@@ -6,6 +6,8 @@ package readers
 import (
 	"context"
 	"errors"
+
+	domain "github.com/MainfluxLabs/mainflux/pkg/domain/readers"
 )
 
 const (
@@ -27,6 +29,16 @@ const (
 	AggregationAvg = "avg"
 	// AggregationCount represents the count aggregation key.
 	AggregationCount = "count"
+)
+
+// Type aliases referencing the canonical definitions in pkg/domain/readers.
+type (
+	Message           = domain.Message
+	MessagesPage      = domain.MessagesPage
+	JSONMessagesPage  = domain.JSONMessagesPage
+	SenMLMessagesPage = domain.SenMLMessagesPage
+	JSONPageMetadata  = domain.JSONPageMetadata
+	SenMLPageMetadata = domain.SenMLPageMetadata
 )
 
 // ErrReadMessages indicates failure occurred while reading messages from database.
@@ -58,63 +70,6 @@ type SenMLMessageRepository interface {
 
 	// Remove deletes the senml messages within a time range.
 	Remove(ctx context.Context, rpm SenMLPageMetadata) error
-}
-
-// Message represents any message format.
-type Message any
-
-type MessagesPage struct {
-	Total    uint64
-	Messages []Message
-}
-
-type JSONMessagesPage struct {
-	JSONPageMetadata
-	MessagesPage
-}
-
-type SenMLMessagesPage struct {
-	SenMLPageMetadata
-	MessagesPage
-}
-
-// SenMLPageMetadata represents the parameters used to create database queries
-type SenMLPageMetadata struct {
-	Offset      uint64   `json:"offset"`
-	Limit       uint64   `json:"limit"`
-	Subtopic    string   `json:"subtopic,omitempty"`
-	Publisher   string   `json:"publisher,omitempty"`
-	Protocol    string   `json:"protocol,omitempty"`
-	Name        string   `json:"name,omitempty"`
-	Value       float64  `json:"v,omitempty"`
-	Comparator  string   `json:"comparator,omitempty"`
-	BoolValue   bool     `json:"vb,omitempty"`
-	StringValue string   `json:"vs,omitempty"`
-	DataValue   string   `json:"vd,omitempty"`
-	From        int64    `json:"from,omitempty"`
-	To          int64    `json:"to,omitempty"`
-	AggInterval string   `json:"agg_interval,omitempty"`
-	AggValue    uint64   `json:"agg_value,omitempty"`
-	AggType     string   `json:"agg_type,omitempty"`
-	AggFields   []string `json:"agg_fields,omitempty"`
-	Dir         string   `json:"dir,omitempty"`
-}
-
-// JSONPageMetadata represents the parameters used to create database queries
-type JSONPageMetadata struct {
-	Offset      uint64   `json:"offset"`
-	Limit       uint64   `json:"limit"`
-	Subtopic    string   `json:"subtopic,omitempty"`
-	Publisher   string   `json:"publisher,omitempty"`
-	Protocol    string   `json:"protocol,omitempty"`
-	From        int64    `json:"from,omitempty"`
-	To          int64    `json:"to,omitempty"`
-	Filter      string   `json:"filter,omitempty"`
-	AggInterval string   `json:"agg_interval,omitempty"`
-	AggValue    uint64   `json:"agg_value,omitempty"`
-	AggType     string   `json:"agg_type,omitempty"`
-	AggFields   []string `json:"agg_fields,omitempty"`
-	Dir         string   `json:"dir,omitempty"`
 }
 
 // ComparatorSymbol converts a comparison operator key into its SQL symbol.
