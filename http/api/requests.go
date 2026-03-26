@@ -38,6 +38,12 @@ func (req thingCommandReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
+	if req.thingKey.Value != "" {
+		if err := req.thingKey.Validate(); err != nil {
+			return err
+		}
+	}
+
 	if req.id == "" {
 		return apiutil.ErrMissingThingID
 	}
@@ -52,6 +58,12 @@ type groupCommandReq struct {
 func (req groupCommandReq) validate() error {
 	if req.token == "" && req.thingKey.Value == "" {
 		return apiutil.ErrBearerToken
+	}
+
+	if req.thingKey.Value != "" {
+		if err := req.thingKey.Validate(); err != nil {
+			return err
+		}
 	}
 
 	if req.id == "" {

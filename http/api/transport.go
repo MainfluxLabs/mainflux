@@ -203,8 +203,8 @@ func decodeSendCommandByGroup(_ context.Context, r *http.Request) (any, error) {
 }
 
 func extractThingKey(r *http.Request) things.ThingKey {
-	if _, pass, ok := r.BasicAuth(); ok {
-		return things.ThingKey{Type: things.KeyTypeInternal, Value: pass}
+	if u, pass, ok := r.BasicAuth(); ok {
+		return things.ThingKey{Type: u, Value: pass}
 	}
 	return things.ExtractThingKey(r)
 }

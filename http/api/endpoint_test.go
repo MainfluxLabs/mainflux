@@ -55,7 +55,7 @@ func (tr testRequest) make() (*http.Response, error) {
 		req.Header.Set("Authorization", apiutil.ThingKeyPrefixInternal+tr.token)
 	}
 	if tr.basicAuth && tr.token != "" {
-		req.SetBasicAuth("", tr.token)
+		req.SetBasicAuth(things.KeyTypeInternal, tr.token)
 	}
 	if tr.contentType != "" {
 		req.Header.Set("Content-Type", tr.contentType)
