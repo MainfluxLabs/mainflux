@@ -44,4 +44,7 @@ var (
 
 	// ErrMalformedEntity indicates a malformed entity specification.
 	ErrMalformedEntity = New("malformed entity specification")
+
+	// ErrPasswordFormat indicates weak password.
+	ErrPasswordFormat = New("password does not meet the requirements")
 )

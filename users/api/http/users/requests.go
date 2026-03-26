@@ -24,7 +24,7 @@ type userReq struct {
 }
 
 func (req userReq) validate() error {
-	return users.ValidateUser(req.user, userPasswordRegex)
+	return req.user.Validate(userPasswordRegex)
 }
 
 type selfRegisterUserReq struct {
@@ -37,7 +37,7 @@ func (req selfRegisterUserReq) validate() error {
 		return apiutil.ErrMissingRedirectPath
 	}
 
-	return users.ValidateUser(req.User, userPasswordRegex)
+	return req.User.Validate(userPasswordRegex)
 }
 
 type oauthLoginReq struct {
@@ -96,7 +96,7 @@ func (req registerUserReq) validate() error {
 	if req.token == "" {
 		return errors.ErrAuthorization
 	}
-	return users.ValidateUser(req.user, userPasswordRegex)
+	return req.user.Validate(userPasswordRegex)
 }
 
 type viewUserReq struct {
@@ -169,7 +169,7 @@ func (req resetTokenReq) validate() error {
 	}
 
 	if !userPasswordRegex.MatchString(req.Password) {
-		return users.ErrPasswordFormat
+		return errors.ErrPasswordFormat
 	}
 
 	if req.ConfPass == "" {
@@ -203,7 +203,7 @@ func (req passwChangeReq) validate() error {
 	}
 
 	if !userPasswordRegex.MatchString(req.Password) {
-		return users.ErrPasswordFormat
+		return errors.ErrPasswordFormat
 	}
 
 	return nil

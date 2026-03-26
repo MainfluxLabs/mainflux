@@ -35,9 +35,6 @@ var (
 	// ErrRecoveryToken indicates error in generating password recovery token.
 	ErrRecoveryToken = errors.New("failed to generate password recovery token")
 
-	// ErrPasswordFormat indicates weak password.
-	ErrPasswordFormat = errors.New("password does not meet the requirements")
-
 	// ErrAlreadyEnabledUser indicates the user is already enabled.
 	ErrAlreadyEnabledUser = errors.New("the user is already enabled")
 

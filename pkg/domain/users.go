@@ -4,7 +4,11 @@
 package domain
 
 import (
+	"regexp"
 	"time"
+
+	"github.com/MainfluxLabs/mainflux/pkg/email"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 // User represents user account information.
@@ -15,6 +19,19 @@ type User struct {
 	Metadata Metadata `json:"metadata,omitempty"`
 	Status   string   `json:"status,omitempty"`
 	Role     string   `json:"role,omitempty"`
+}
+
+// ValidateUser returns an error if user representation is invalid.
+func (u User) Validate(passRegex *regexp.Regexp) error {
+	if !email.IsEmail(u.Email) {
+		return errors.ErrMalformedEntity
+	}
+
+	if !passRegex.MatchString(u.Password) {
+		return errors.ErrPasswordFormat
+	}
+
+	return nil
 }
 
 // UsersPage contains page metadata and list of users.

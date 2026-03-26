@@ -72,7 +72,7 @@ var (
 	metadata              = map[string]any{"key": "value"}
 	notFoundRes           = toJSON(apiutil.ErrorRes{Err: dbutil.ErrNotFound.Error()})
 	unauthRes             = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
-	weakPassword          = toJSON(apiutil.ErrorRes{Err: users.ErrPasswordFormat.Error()})
+	weakPassword          = toJSON(apiutil.ErrorRes{Err: errors.ErrPasswordFormat.Error()})
 	malformedRes          = toJSON(apiutil.ErrorRes{Err: errors.ErrMalformedEntity.Error()})
 	unsupportedRes        = toJSON(apiutil.ErrorRes{Err: apiutil.ErrUnsupportedContentType.Error()})
 	missingTokRes         = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})

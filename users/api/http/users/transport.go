@@ -499,7 +499,7 @@ func encodeOAuthCallbackError(ctx context.Context, err error, w http.ResponseWri
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
-	case errors.Contains(err, users.ErrPasswordFormat),
+	case errors.Contains(err, errors.ErrPasswordFormat),
 		errors.Contains(err, errors.ErrInvalidPassword),
 		errors.Contains(err, users.ErrEmailVerificationExpired):
 		w.WriteHeader(http.StatusBadRequest)

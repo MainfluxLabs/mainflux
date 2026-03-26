@@ -29,7 +29,7 @@ func (req registerByInviteReq) validate() error {
 		return apiutil.ErrMissingInviteID
 	}
 
-	if err := users.ValidateUser(req.User, userPasswordRegex); err != nil {
+	if err := req.User.Validate(userPasswordRegex); err != nil {
 		return err
 	}
 
