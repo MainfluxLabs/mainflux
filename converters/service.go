@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -34,11 +34,11 @@ var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
 	publisher messaging.Publisher
-	things    domainthings.Client
+	things    domain.ThingsClient
 }
 
 // New instantiates the HTTP adapter implementation.
-func New(pub messaging.Publisher, things domainthings.Client) Service {
+func New(pub messaging.Publisher, things domain.ThingsClient) Service {
 	return &adapterService{
 		publisher: pub,
 		things:    things,
@@ -94,9 +94,9 @@ func (as *adapterService) PublishSenMLMessages(ctx context.Context, key string, 
 }
 
 func (as *adapterService) PublishJSONMessages(ctx context.Context, key string, csvLines [][]string) error {
-	thKey := domainthings.ThingKey{
+	thKey := domain.ThingKey{
 		Value: key,
-		Type:  domainthings.KeyTypeInternal,
+		Type:  domain.KeyTypeInternal,
 	}
 
 	pc, err := as.things.GetPubConfigByKey(ctx, thKey)
@@ -153,7 +153,7 @@ func (as *adapterService) PublishJSONMessages(ctx context.Context, key string, c
 }
 
 func (as *adapterService) publish(ctx context.Context, key string, msg protomfx.Message) (m protomfx.Message, err error) {
-	pcr := domainthings.ThingKey{Type: domainthings.KeyTypeInternal, Value: key}
+	pcr := domain.ThingKey{Type: domain.KeyTypeInternal, Value: key}
 
 	pc, err := as.things.GetPubConfigByKey(ctx, pcr)
 	if err != nil {

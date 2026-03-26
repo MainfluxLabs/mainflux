@@ -63,11 +63,11 @@ func decodeRestoreConfigs(ctx context.Context, r *http.Request) (any, error) {
 
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	if err := json.Unmarshal(data, &req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil

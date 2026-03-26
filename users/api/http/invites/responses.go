@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 var (
@@ -54,11 +54,11 @@ func (res createUserRes) Empty() bool {
 }
 
 type dormantOrgInvite struct {
-	ID           string                   `json:"id"`
-	OrgID        string                   `json:"org_id"`
-	OrgName      string                   `json:"org_name"`
-	InviteeRole  string                   `json:"invitee_role"`
-	GroupInvites []domainauth.GroupInvite `json:"group_invites,omitempty"`
+	ID           string               `json:"id"`
+	OrgID        string               `json:"org_id"`
+	OrgName      string               `json:"org_name"`
+	InviteeRole  string               `json:"invitee_role"`
+	GroupInvites []domain.GroupInvite `json:"group_invites,omitempty"`
 }
 
 type platformInviteRes struct {

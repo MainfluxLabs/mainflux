@@ -7,20 +7,22 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 )
 
 // Metadata is an alias for the shared domain type.
 type Metadata = domain.Metadata
 
 // Thing and ThingsPage are aliases for the shared domain types.
-type Thing = domainthings.Thing
-type ThingsPage = domainthings.ThingsPage
+type Thing = domain.Thing
+type ThingsPage = domain.ThingsPage
+
+// ThingKey is an alias for the shared domain type
+type ThingKey = domain.ThingKey
 
 // ThingKey and key type constants are aliases for the shared domain types.
 const (
-	KeyTypeInternal = domainthings.KeyTypeInternal
-	KeyTypeExternal = domainthings.KeyTypeExternal
+	KeyTypeInternal = domain.KeyTypeInternal
+	KeyTypeExternal = domain.KeyTypeExternal
 
 	ThingTypeDevice     = "device"
 	ThingTypeSensor     = "sensor"
@@ -28,8 +30,6 @@ const (
 	ThingTypeController = "controller"
 	ThingTypeGateway    = "gateway"
 )
-
-type ThingKey = domainthings.ThingKey
 
 // ThingRepository specifies a thing persistence API.
 type ThingRepository interface {

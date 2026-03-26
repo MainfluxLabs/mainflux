@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	domain "github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
@@ -20,12 +20,12 @@ type mainfluxThings struct {
 	counter  uint64
 	things   map[string]things.Thing
 	profiles map[string]things.Profile
-	auth     domainauth.Client
+	auth     domain.AuthClient
 }
 
 // NewThingsService returns Mainflux Things service mock.
 // Only methods used by SDK are mocked.
-func NewThingsService(things map[string]things.Thing, profiles map[string]things.Profile, auth domainauth.Client) things.Service {
+func NewThingsService(things map[string]things.Thing, profiles map[string]things.Profile, auth domain.AuthClient) things.Service {
 	return &mainfluxThings{
 		things:   things,
 		profiles: profiles,

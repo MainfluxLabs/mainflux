@@ -10,7 +10,7 @@ import (
 	"context"
 	"sync"
 
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
@@ -21,26 +21,26 @@ import (
 // Service specifies CoAP service API.
 type Service interface {
 	// Publish Message
-	Publish(ctx context.Context, key domainthings.ThingKey, msg protomfx.Message) error
+	Publish(ctx context.Context, key domain.ThingKey, msg protomfx.Message) error
 
 	// Subscribe subscribes to profile with specified id, subtopic and adds subscription to
 	// service map of subscriptions under given ID.
-	Subscribe(ctx context.Context, key domainthings.ThingKey, subtopic string, c Client) error
+	Subscribe(ctx context.Context, key domain.ThingKey, subtopic string, c Client) error
 
 	// Unsubscribe method is used to stop observing resource.
-	Unsubscribe(ctx context.Context, key domainthings.ThingKey, subtopic, token string) error
+	Unsubscribe(ctx context.Context, key domain.ThingKey, subtopic, token string) error
 }
 
 var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
-	things  domainthings.Client
+	things  domain.ThingsClient
 	pubsub  messaging.PubSub
 	obsLock sync.Mutex
 }
 
 // New instantiates the CoAP adapter implementation.
-func New(things domainthings.Client, pubsub messaging.PubSub) Service {
+func New(things domain.ThingsClient, pubsub messaging.PubSub) Service {
 	as := &adapterService{
 		things:  things,
 		pubsub:  pubsub,
@@ -50,7 +50,7 @@ func New(things domainthings.Client, pubsub messaging.PubSub) Service {
 	return as
 }
 
-func (svc *adapterService) Publish(ctx context.Context, key domainthings.ThingKey, msg protomfx.Message) error {
+func (svc *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg protomfx.Message) error {
 	pc, err := svc.things.GetPubConfigByKey(ctx, key)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
@@ -67,7 +67,7 @@ func (svc *adapterService) Publish(ctx context.Context, key domainthings.ThingKe
 	return nil
 }
 
-func (svc *adapterService) Subscribe(ctx context.Context, key domainthings.ThingKey, subtopic string, c Client) error {
+func (svc *adapterService) Subscribe(ctx context.Context, key domain.ThingKey, subtopic string, c Client) error {
 	if _, err := svc.things.GetPubConfigByKey(ctx, key); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
@@ -75,7 +75,7 @@ func (svc *adapterService) Subscribe(ctx context.Context, key domainthings.Thing
 	return svc.pubsub.Subscribe(c.Token(), subtopic, c)
 }
 
-func (svc *adapterService) Unsubscribe(ctx context.Context, key domainthings.ThingKey, subtopic, token string) error {
+func (svc *adapterService) Unsubscribe(ctx context.Context, key domain.ThingKey, subtopic, token string) error {
 	if _, err := svc.things.GetPubConfigByKey(ctx, key); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}

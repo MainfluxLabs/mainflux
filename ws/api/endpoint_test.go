@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/logger"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/ws"
@@ -28,7 +28,7 @@ const (
 
 var msg = []byte(`[{"n":"current","t":-1,"v":1.6}]`)
 
-func newService(tc domainthings.Client) (ws.Service, mocks.MockPubSub) {
+func newService(tc domain.ThingsClient) (ws.Service, mocks.MockPubSub) {
 	pubsub := mocks.NewPubSub()
 	return ws.New(tc, pubsub), pubsub
 }

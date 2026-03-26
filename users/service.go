@@ -15,17 +15,16 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
-	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"golang.org/x/oauth2"
 )
 
 const (
-	EnabledStatusKey  = domainusers.EnabledStatusKey
-	DisabledStatusKey = domainusers.DisabledStatusKey
-	AllStatusKey      = domainusers.AllStatusKey
+	EnabledStatusKey  = domain.EnabledStatusKey
+	DisabledStatusKey = domain.DisabledStatusKey
+	AllStatusKey      = domain.AllStatusKey
 	rootAdminRole     = "root"
 	GoogleProvider    = "google"
 	GitHubProvider    = "github"
@@ -34,9 +33,6 @@ const (
 var (
 	// ErrRecoveryToken indicates error in generating password recovery token.
 	ErrRecoveryToken = errors.New("failed to generate password recovery token")
-
-	// ErrPasswordFormat indicates weak password.
-	ErrPasswordFormat = errors.New("password does not meet the requirements")
 
 	// ErrAlreadyEnabledUser indicates the user is already enabled.
 	ErrAlreadyEnabledUser = errors.New("the user is already enabled")
@@ -50,6 +46,10 @@ var (
 	// ErrSelfRegisterDisabled indicates that self-registration is disabled in the service config.
 	ErrSelfRegisterDisabled = errors.New("self register disabled")
 )
+
+// UsersPage is an alias for the shared domain type.
+type UsersPage = domain.UsersPage
+type PageMetadata = domain.UsersPageMetadata
 
 // Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
@@ -139,12 +139,6 @@ type Service interface {
 	PlatformInvites
 }
 
-// PageMetadata is an alias for the shared domain type.
-type PageMetadata = domainusers.PageMetadata
-
-// UsersPage is an alias for the shared domain type.
-type UsersPage = domainusers.UsersPage
-
 type ConfigURLs struct {
 	GoogleUserInfoURL   string
 	GitHubUserInfoURL   string
@@ -164,7 +158,7 @@ type usersService struct {
 	selfRegisterEnabled bool
 	hasher              Hasher
 	email               Emailer
-	auth                domainauth.Client
+	auth                domain.AuthClient
 	idProvider          uuid.IDProvider
 	googleOAuth         oauth2.Config
 	githubOAuth         oauth2.Config
@@ -182,7 +176,7 @@ type Config struct {
 }
 
 // New instantiates the users service implementation
-func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, identity IdentityRepository, hasher Hasher, auth domainauth.Client, e Emailer, idp uuid.IDProvider, c Config) Service {
+func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, identity IdentityRepository, hasher Hasher, auth domain.AuthClient, e Emailer, idp uuid.IDProvider, c Config) Service {
 	return &usersService{
 		users:               users,
 		emailVerifications:  verifications,
@@ -353,10 +347,10 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 		}
 
 		switch role {
-		case domainauth.RoleRootAdmin:
+		case domain.RoleRootAdmin:
 			return nil
 		default:
-			if err := svc.auth.AssignRole(ctx, u.ID, domainauth.RoleRootAdmin); err != nil {
+			if err := svc.auth.AssignRole(ctx, u.ID, domain.RoleRootAdmin); err != nil {
 				return err
 			}
 		}
@@ -382,7 +376,7 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 		return err
 	}
 
-	if err := svc.auth.AssignRole(ctx, user.ID, domainauth.RoleRootAdmin); err != nil {
+	if err := svc.auth.AssignRole(ctx, user.ID, domain.RoleRootAdmin); err != nil {
 		return err
 	}
 
@@ -434,7 +428,7 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 	if err := svc.hasher.Compare(user.Password, dbUser.Password); err != nil {
 		return "", errors.Wrap(errors.ErrAuthentication, err)
 	}
-	return svc.issue(ctx, dbUser.ID, dbUser.Email, domainauth.LoginKey)
+	return svc.issue(ctx, dbUser.ID, dbUser.Email, domain.LoginKey)
 }
 
 func (svc usersService) OAuthLogin(provider string) (data OAuthLoginData, err error) {
@@ -487,7 +481,7 @@ func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackDat
 		return "", err
 	}
 
-	token, err := svc.issue(ctx, user.ID, user.Email, domainauth.LoginKey)
+	token, err := svc.issue(ctx, user.ID, user.Email, domain.LoginKey)
 	if err != nil {
 		return "", err
 	}
@@ -763,7 +757,7 @@ func (svc usersService) Restore(ctx context.Context, token string, admin User, u
 		return err
 	}
 
-	if err := svc.auth.AssignRole(ctx, admin.ID, domainauth.RoleRootAdmin); err != nil {
+	if err := svc.auth.AssignRole(ctx, admin.ID, domain.RoleRootAdmin); err != nil {
 		return err
 	}
 
@@ -799,7 +793,7 @@ func (svc usersService) GenerateResetToken(ctx context.Context, email, redirectP
 	if err != nil || user.Email == "" {
 		return dbutil.ErrNotFound
 	}
-	t, err := svc.issue(ctx, user.ID, user.Email, domainauth.RecoveryKey)
+	t, err := svc.issue(ctx, user.ID, user.Email, domain.RecoveryKey)
 	if err != nil {
 		return errors.Wrap(ErrRecoveryToken, err)
 	}
@@ -932,7 +926,7 @@ func (svc usersService) identify(ctx context.Context, token string) (userIdentit
 }
 
 func (svc usersService) isAdmin(ctx context.Context, token string) error {
-	if err := svc.auth.Authorize(ctx, domainauth.AuthzReq{Token: token, Subject: domainauth.RootSub}); err != nil {
+	if err := svc.auth.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.RootSub}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 

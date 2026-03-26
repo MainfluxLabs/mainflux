@@ -6,15 +6,17 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
-	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 // PlatformInvite is an alias for the shared domain type.
-type PlatformInvite = domainusers.PlatformInvite
+type PlatformInvite = domain.PlatformInvite
+
+// PlatformInvitesPage is an alias for the shared domain type.
+type PlatformInvitesPage = domain.PlatformInvitesPage
 
 const (
 	UserTypeInvitee = "invitee"
@@ -27,15 +29,12 @@ const (
 	InviteStateDeclined = "declined"
 )
 
-// PlatformInvitesPage is an alias for the shared domain type.
-type PlatformInvitesPage = domainusers.PlatformInvitesPage
-
 type PlatformInvites interface {
 	// CreatePlatformInvite creates a pending platform Invite for the appropriate email address.
 	// The user can optionally also be invited to an Organization with a certain role by supplying the `orgInvite` argument - the invite
 	// becomes visible once the user completes registration via the platform invite.
 	// temp:orgid, role, gis
-	CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite domainauth.OrgInvite) (PlatformInvite, error)
+	CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite domain.OrgInvite) (PlatformInvite, error)
 
 	// RevokePlatformInvite revokes a specific pending PlatformInvite. Only usable by the platform Root Admin.
 	RevokePlatformInvite(ctx context.Context, token, inviteID string) error
@@ -70,7 +69,7 @@ type PlatformInvitesRepository interface {
 	UpdatePlatformInviteState(ctx context.Context, inviteID, state string) error
 }
 
-func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite domainauth.OrgInvite) (PlatformInvite, error) {
+func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite domain.OrgInvite) (PlatformInvite, error) {
 	if err := svc.isAdmin(ctx, token); err != nil {
 		return PlatformInvite{}, err
 	}

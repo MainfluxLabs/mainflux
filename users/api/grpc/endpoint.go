@@ -6,13 +6,13 @@ package grpc
 import (
 	"context"
 
-	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-kit/kit/endpoint"
 )
 
-func domainPageMetadataToUsers(pm domainusers.PageMetadata) users.PageMetadata {
+func domainPageMetadataToUsers(pm domain.UsersPageMetadata) users.PageMetadata {
 	return users.PageMetadata{
 		Total:  pm.Total,
 		Offset: pm.Offset,

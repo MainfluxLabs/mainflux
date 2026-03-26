@@ -11,12 +11,12 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt/redis/cache"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
-	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 	"github.com/MainfluxLabs/mproxy/pkg/session"
 )
 
@@ -60,14 +60,14 @@ var (
 // Event implements events.Event interface
 type handler struct {
 	publisher messaging.Publisher
-	things    domainthings.Client
+	things    domain.ThingsClient
 	service   Service
 	cache     cache.ConnectionCache
 	logger    logger.Logger
 }
 
 // NewHandler creates new Handler entity
-func NewHandler(publisher messaging.Publisher, things domainthings.Client,
+func NewHandler(publisher messaging.Publisher, things domain.ThingsClient,
 	svc Service, cache cache.ConnectionCache, logger logger.Logger) session.Handler {
 	return &handler{
 		publisher: publisher,
@@ -148,7 +148,7 @@ func (h *handler) authorizePublish(publisherID, topic string) error {
 }
 
 func (h *handler) authorizeThingCommand(publisherID, recipientID string) error {
-	if err := h.things.CanThingCommand(context.Background(), domainthings.ThingCommandReq{
+	if err := h.things.CanThingCommand(context.Background(), domain.ThingCommandReq{
 		PublisherID: publisherID,
 		RecipientID: recipientID,
 	}); err != nil {
@@ -158,7 +158,7 @@ func (h *handler) authorizeThingCommand(publisherID, recipientID string) error {
 }
 
 func (h *handler) authorizeGroupCommand(publisherID, groupID string) error {
-	if err := h.things.CanThingGroupCommand(context.Background(), domainthings.ThingGroupCommandReq{
+	if err := h.things.CanThingGroupCommand(context.Background(), domain.ThingGroupCommandReq{
 		PublisherID: publisherID,
 		GroupID:     groupID,
 	}); err != nil {
@@ -223,7 +223,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		return
 	}
 
-	tk := domainthings.ThingKey{
+	tk := domain.ThingKey{
 		Value: string(c.Password),
 		Type:  c.Username,
 	}
@@ -313,7 +313,7 @@ func (h *handler) identify(c *session.Client) (string, error) {
 		return thingID, nil
 	}
 
-	thingKeyReq := domainthings.ThingKey{
+	thingKeyReq := domain.ThingKey{
 		Value: string(c.Password),
 		Type:  c.Username,
 	}

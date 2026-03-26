@@ -3,11 +3,11 @@ package mocks
 import (
 	"context"
 
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
-var _ domainauth.Client = (*authServiceMock)(nil)
+var _ domain.AuthClient = (*authServiceMock)(nil)
 
 type SubjectSet struct {
 	Object   string
@@ -20,15 +20,15 @@ type authServiceMock struct {
 }
 
 // NewAuth creates mock of auth service client.
-func NewAuth(users map[string]string, authz map[string][]SubjectSet) domainauth.Client {
+func NewAuth(users map[string]string, authz map[string][]SubjectSet) domain.AuthClient {
 	return &authServiceMock{users, authz}
 }
 
-func (svc authServiceMock) Identify(_ context.Context, token string) (domainauth.Identity, error) {
+func (svc authServiceMock) Identify(_ context.Context, token string) (domain.Identity, error) {
 	if id, ok := svc.users[token]; ok {
-		return domainauth.Identity{ID: id, Email: id}, nil
+		return domain.Identity{ID: id, Email: id}, nil
 	}
-	return domainauth.Identity{}, errors.ErrAuthentication
+	return domain.Identity{}, errors.ErrAuthentication
 }
 
 func (svc authServiceMock) Issue(_ context.Context, id, email string, keyType uint32) (string, error) {
@@ -41,7 +41,7 @@ func (svc authServiceMock) Issue(_ context.Context, id, email string, keyType ui
 	return "", errors.ErrAuthentication
 }
 
-func (svc authServiceMock) Authorize(_ context.Context, ar domainauth.AuthzReq) error {
+func (svc authServiceMock) Authorize(_ context.Context, ar domain.AuthzReq) error {
 	if ar.Token != "token" {
 		return errors.ErrAuthorization
 	}
@@ -61,7 +61,7 @@ func (svc authServiceMock) RetrieveRole(context.Context, string) (string, error)
 	panic("not implemented")
 }
 
-func (svc authServiceMock) CreateDormantOrgInvite(context.Context, string, string, string, string, []domainauth.GroupInvite) error {
+func (svc authServiceMock) CreateDormantOrgInvite(context.Context, string, string, string, string, []domain.GroupInvite) error {
 	panic("not implemented")
 }
 
@@ -69,10 +69,10 @@ func (svc authServiceMock) ActivateOrgInvite(context.Context, string, string, st
 	panic("not implemented")
 }
 
-func (svc authServiceMock) GetDormantOrgInviteByPlatformInvite(context.Context, string) (domainauth.OrgInvite, error) {
+func (svc authServiceMock) GetDormantOrgInviteByPlatformInvite(context.Context, string) (domain.OrgInvite, error) {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) ViewOrg(context.Context, string, string) (domainauth.Org, error) {
+func (svc authServiceMock) ViewOrg(context.Context, string, string) (domain.Org, error) {
 	panic("not implemented")
 }

@@ -5,13 +5,13 @@ package api
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 type publishReq struct {
 	msg protomfx.Message
-	domainthings.ThingKey
+	domain.ThingKey
 }
 
 func (req publishReq) validate() error {

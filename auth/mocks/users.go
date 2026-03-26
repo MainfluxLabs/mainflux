@@ -5,28 +5,28 @@ import (
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
-	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
-var _ domainusers.Client = (*usersServiceClientMock)(nil)
+var _ domain.UsersClient = (*usersServiceClientMock)(nil)
 
 type usersServiceClientMock struct {
-	usersByID     map[string]domainusers.User
-	usersByEmails map[string]domainusers.User
+	usersByID     map[string]domain.User
+	usersByEmails map[string]domain.User
 }
 
-func NewUsersService(usersByID map[string]domainusers.User, usersByEmails map[string]domainusers.User) domainusers.Client {
+func NewUsersService(usersByID map[string]domain.User, usersByEmails map[string]domain.User) domain.UsersClient {
 	return &usersServiceClientMock{usersByID: usersByID, usersByEmails: usersByEmails}
 }
 
-func (svc *usersServiceClientMock) GetUsersByIDs(_ context.Context, ids []string, pm domainusers.PageMetadata) (domainusers.UsersPage, error) {
+func (svc *usersServiceClientMock) GetUsersByIDs(_ context.Context, ids []string, pm domain.UsersPageMetadata) (domain.UsersPage, error) {
 	if pm.Limit == 0 {
 		pm.Limit = uint64(len(ids))
 	}
 
-	page := domainusers.UsersPage{
+	page := domain.UsersPage{
 		Total: 0,
-		Users: []domainusers.User{},
+		Users: []domain.User{},
 	}
 
 	i := uint64(0)
@@ -47,8 +47,8 @@ func (svc *usersServiceClientMock) GetUsersByIDs(_ context.Context, ids []string
 	return page, nil
 }
 
-func (svc *usersServiceClientMock) GetUsersByEmails(_ context.Context, emails []string) ([]domainusers.User, error) {
-	var result []domainusers.User
+func (svc *usersServiceClientMock) GetUsersByEmails(_ context.Context, emails []string) ([]domain.User, error) {
+	var result []domain.User
 	for _, email := range emails {
 		if _, ok := svc.usersByEmails[email]; !ok {
 			return nil, dbutil.ErrNotFound

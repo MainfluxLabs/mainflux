@@ -16,7 +16,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -476,7 +476,7 @@ func TestResetPassword(t *testing.T) {
 	svc := newService()
 	authSvc := mocks.NewAuthService("", []users.User{registerUser}, nil)
 
-	resetToken, err := authSvc.Issue(context.Background(), registerUser.ID, registerUser.Email, domainauth.RecoveryKey)
+	resetToken, err := authSvc.Issue(context.Background(), registerUser.ID, registerUser.Email, domain.RecoveryKey)
 	assert.Nil(t, err, fmt.Sprintf("Generating reset token expected to succeed: %s", err))
 	cases := map[string]struct {
 		token    string

@@ -193,12 +193,12 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (any, error) {
 
 func decodeSearchJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	if r.Body == nil {
-		return nil, apiutil.ErrMalformedEntity
+		return nil, errors.ErrMalformedEntity
 	}
 
 	var jpms []readers.JSONPageMetadata
 	if err := json.NewDecoder(r.Body).Decode(&jpms); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return searchJSONMessagesReq{
@@ -209,12 +209,12 @@ func decodeSearchJSONMessages(_ context.Context, r *http.Request) (any, error) {
 
 func decodeSearchSenMLMessages(_ context.Context, r *http.Request) (any, error) {
 	if r.Body == nil {
-		return nil, apiutil.ErrMalformedEntity
+		return nil, errors.ErrMalformedEntity
 	}
 
 	var spms []readers.SenMLPageMetadata
 	if err := json.NewDecoder(r.Body).Decode(&spms); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return searchSenMLMessagesReq{

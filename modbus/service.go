@@ -14,7 +14,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/cron"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
@@ -95,7 +95,7 @@ type Service interface {
 }
 
 type clientsService struct {
-	things     domainthings.Client
+	things     domain.ThingsClient
 	clients    ClientRepository
 	idProvider uuid.IDProvider
 	publisher  messaging.Publisher
@@ -133,7 +133,7 @@ type Block struct {
 	Length uint16
 }
 
-func New(things domainthings.Client, pub messaging.Publisher, clients ClientRepository, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(things domain.ThingsClient, pub messaging.Publisher, clients ClientRepository, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &clientsService{
 		things:     things,
 		publisher:  pub,
@@ -147,7 +147,7 @@ func New(things domainthings.Client, pub messaging.Publisher, clients ClientRepo
 }
 
 func (cs *clientsService) CreateClients(ctx context.Context, token, thingID string, clients ...Client) ([]Client, error) {
-	if err := cs.things.CanUserAccessThing(ctx, domainthings.UserAccessReq{Token: token, ID: thingID, Action: domainthings.Editor}); err != nil {
+	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupEditor}); err != nil {
 		return nil, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -183,7 +183,7 @@ func (cs *clientsService) CreateClients(ctx context.Context, token, thingID stri
 }
 
 func (cs *clientsService) ListClientsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (ClientsPage, error) {
-	if err := cs.things.CanUserAccessThing(ctx, domainthings.UserAccessReq{Token: token, ID: thingID, Action: domainthings.Viewer}); err != nil {
+	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupViewer}); err != nil {
 		return ClientsPage{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -196,7 +196,7 @@ func (cs *clientsService) ListClientsByThing(ctx context.Context, token, thingID
 }
 
 func (cs *clientsService) ListClientsByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (ClientsPage, error) {
-	if err := cs.things.CanUserAccessGroup(ctx, domainthings.UserAccessReq{Token: token, ID: groupID, Action: domainthings.Viewer}); err != nil {
+	if err := cs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupViewer}); err != nil {
 		return ClientsPage{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -214,7 +214,7 @@ func (cs *clientsService) ViewClient(ctx context.Context, token, id string) (Cli
 		return Client{}, err
 	}
 
-	if err := cs.things.CanUserAccessThing(ctx, domainthings.UserAccessReq{Token: token, ID: client.ThingID, Action: domainthings.Viewer}); err != nil {
+	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: client.ThingID, Action: domain.GroupViewer}); err != nil {
 		return Client{}, err
 	}
 
@@ -227,7 +227,7 @@ func (cs *clientsService) UpdateClient(ctx context.Context, token string, client
 		return err
 	}
 
-	if err := cs.things.CanUserAccessThing(ctx, domainthings.UserAccessReq{Token: token, ID: c.ThingID, Action: domainthings.Editor}); err != nil {
+	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: c.ThingID, Action: domain.GroupEditor}); err != nil {
 		return err
 	}
 
@@ -249,7 +249,7 @@ func (cs *clientsService) RemoveClients(ctx context.Context, token string, ids .
 		if err != nil {
 			return err
 		}
-		if err := cs.things.CanUserAccessThing(ctx, domainthings.UserAccessReq{Token: token, ID: client.ThingID, Action: domainthings.Editor}); err != nil {
+		if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: client.ThingID, Action: domain.GroupEditor}); err != nil {
 			return err
 		}
 

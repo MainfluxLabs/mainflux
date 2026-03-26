@@ -25,10 +25,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
+	domain "github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
@@ -230,7 +230,7 @@ func subscribeToThingsES(ctx context.Context, svc filestore.Service, cfg config,
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(thingsAuth domainthings.Client, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) filestore.Service {
+func newService(thingsAuth domain.ThingsClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) filestore.Service {
 	thRepo := postgres.NewThingsRepository(db)
 	thRepo = tracing.ThingsRepositoryMiddleware(dbTracer, thRepo)
 	grRepo := postgres.NewGroupsRepository(db)

@@ -11,8 +11,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 )
 
 const (
@@ -78,7 +78,7 @@ type FileInfo struct {
 }
 
 type filestoreService struct {
-	things     domainthings.Client
+	things     domain.ThingsClient
 	thingsRepo ThingsRepository
 	groupsRepo GroupsRepository
 }
@@ -86,7 +86,7 @@ type filestoreService struct {
 var _ Service = (*filestoreService)(nil)
 
 // New instantiates the filestore service implementation.
-func New(tc domainthings.Client, thingsRepo ThingsRepository, groupsRepo GroupsRepository) Service {
+func New(tc domain.ThingsClient, thingsRepo ThingsRepository, groupsRepo GroupsRepository) Service {
 	return &filestoreService{
 		things:     tc,
 		thingsRepo: thingsRepo,
@@ -207,7 +207,7 @@ func (fs *filestoreService) ViewFile(ctx context.Context, key string, fi FileInf
 }
 
 func (fs *filestoreService) SaveGroupFile(ctx context.Context, file io.Reader, token, groupID string, fi FileInfo) error {
-	if err := fs.things.CanUserAccessGroup(ctx, domainthings.UserAccessReq{Token: token, ID: groupID, Action: domainthings.Editor}); err != nil {
+	if err := fs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupEditor}); err != nil {
 		return err
 	}
 
@@ -224,7 +224,7 @@ func (fs *filestoreService) SaveGroupFile(ctx context.Context, file io.Reader, t
 }
 
 func (fs *filestoreService) UpdateGroupFile(ctx context.Context, token, groupID string, fi FileInfo) error {
-	if err := fs.things.CanUserAccessGroup(ctx, domainthings.UserAccessReq{Token: token, ID: groupID, Action: domainthings.Editor}); err != nil {
+	if err := fs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupEditor}); err != nil {
 		return err
 	}
 
@@ -232,7 +232,7 @@ func (fs *filestoreService) UpdateGroupFile(ctx context.Context, token, groupID 
 }
 
 func (fs *filestoreService) ListGroupFiles(ctx context.Context, token, groupID string, fi FileInfo, pm PageMetadata) (FileGroupsPage, error) {
-	if err := fs.things.CanUserAccessGroup(ctx, domainthings.UserAccessReq{Token: token, ID: groupID, Action: domainthings.Viewer}); err != nil {
+	if err := fs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupViewer}); err != nil {
 		return FileGroupsPage{}, err
 	}
 
@@ -245,7 +245,7 @@ func (fs *filestoreService) ListGroupFiles(ctx context.Context, token, groupID s
 }
 
 func (fs *filestoreService) RemoveGroupFile(ctx context.Context, token, groupID string, fi FileInfo) error {
-	if err := fs.things.CanUserAccessGroup(ctx, domainthings.UserAccessReq{Token: token, ID: groupID, Action: domainthings.Editor}); err != nil {
+	if err := fs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupEditor}); err != nil {
 		return err
 	}
 
@@ -305,7 +305,7 @@ func (fs *filestoreService) RemoveAllFilesByGroup(ctx context.Context, groupID s
 }
 
 func (fs *filestoreService) ViewGroupFile(ctx context.Context, token, groupID string, fi FileInfo) ([]byte, error) {
-	if err := fs.things.CanUserAccessGroup(ctx, domainthings.UserAccessReq{Token: token, ID: groupID, Action: domainthings.Viewer}); err != nil {
+	if err := fs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupViewer}); err != nil {
 		return nil, err
 	}
 
@@ -370,7 +370,7 @@ func createFile(path, name string, file io.Reader) error {
 }
 
 func (fs *filestoreService) identify(ctx context.Context, thingKey string) (string, error) {
-	thingID, err := fs.things.Identify(ctx, domainthings.ThingKey{Type: domainthings.KeyTypeInternal, Value: thingKey})
+	thingID, err := fs.things.Identify(ctx, domain.ThingKey{Type: domain.KeyTypeInternal, Value: thingKey})
 	if err != nil {
 		return "", errors.Wrap(errors.ErrAuthorization, err)
 	}

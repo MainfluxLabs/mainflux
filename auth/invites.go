@@ -6,9 +6,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
-	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -19,13 +17,13 @@ var ErrInvalidInviteResponse = errors.New("invalid invite response action")
 var ErrGroupsDifferingOrgs = errors.New("groups belong to differing organizations")
 
 // OrgInvite is an alias for the shared domain type.
-type OrgInvite = domainauth.OrgInvite
+type OrgInvite = domain.OrgInvite
 
 // OrgInvitesPage is an alias for the shared domain type.
-type OrgInvitesPage = domainauth.OrgInvitesPage
+type OrgInvitesPage = domain.OrgInvitesPage
 
 // GroupInvite is an alias for the shared domain type.
-type GroupInvite = domainauth.GroupInvite
+type GroupInvite = domain.GroupInvite
 
 const (
 	UserTypeInvitee = "invitee"
@@ -182,12 +180,12 @@ func (svc service) CreateOrgInvite(ctx context.Context, token string, oi OrgInvi
 
 	oi = OrgInvite{
 		ID:           inviteID,
-		OrgID:        oi.OrgID,
-		InviteeRole:  oi.InviteeRole,
-		GroupInvites: oi.GroupInvites,
 		InviteeID:    inviteeID,
 		InviteeEmail: oi.InviteeEmail,
 		InviterID:    inviter.ID,
+		OrgID:        oi.OrgID,
+		GroupInvites: oi.GroupInvites,
+		InviteeRole:  oi.InviteeRole,
 		CreatedAt:    createdAt,
 		ExpiresAt:    createdAt.Add(svc.inviteDuration),
 		State:        InviteStatePending,
@@ -235,11 +233,11 @@ func (svc service) CreateDormantOrgInvite(ctx context.Context, token string, oi 
 
 	oi = OrgInvite{
 		ID:           inviteID,
+		InviteeID:    "",
+		InviterID:    inviter.ID,
 		OrgID:        oi.OrgID,
 		InviteeRole:  oi.InviteeRole,
 		GroupInvites: oi.GroupInvites,
-		InviteeID:    "",
-		InviterID:    inviter.ID,
 		CreatedAt:    createdAt,
 		ExpiresAt:    createdAt.Add(svc.inviteDuration),
 		State:        InviteStatePending,
@@ -447,7 +445,7 @@ func (svc service) populateInviteInfo(ctx context.Context, invite *OrgInvite) er
 		userIDs = append(userIDs, invite.InviteeID)
 	}
 
-	page, err := svc.users.GetUsersByIDs(ctx, userIDs, domainusers.PageMetadata{})
+	page, err := svc.users.GetUsersByIDs(ctx, userIDs, domain.UsersPageMetadata{})
 	if err != nil {
 		return err
 	}
@@ -500,9 +498,9 @@ func (svc service) acceptInvite(ctx context.Context, invite OrgInvite) error {
 
 	// Create one group membership in the things service for each group the invite was associated with
 	if len(invite.GroupInvites) > 0 {
-		memberships := make([]domainthings.GroupMembership, 0, len(invite.GroupInvites))
+		memberships := make([]domain.GroupMembership, 0, len(invite.GroupInvites))
 		for _, gi := range invite.GroupInvites {
-			memberships = append(memberships, domainthings.GroupMembership{
+			memberships = append(memberships, domain.GroupMembership{
 				MemberID: invite.InviteeID,
 				GroupID:  gi.GroupID,
 				Role:     gi.MemberRole,

@@ -6,18 +6,18 @@ package things
 import (
 	"context"
 
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 // Profile is an alias for the shared domain type.
-type Profile = domainthings.Profile
+type Profile = domain.Profile
 
 // ProfilesPage is an alias for the shared domain type.
-type ProfilesPage = domainthings.ProfilesPage
+type ProfilesPage = domain.ProfilesPage
 
 // Config and Transformer are aliases for the shared domain types.
-type Config = domainthings.Config
-type Transformer = domainthings.Transformer
+type Config = domain.Config
+type Transformer = domain.Transformer
 
 // ProfileRepository specifies a profile persistence API.
 type ProfileRepository interface {

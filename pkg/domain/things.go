@@ -1,25 +1,24 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package things
+package domain
 
 import (
+	"context"
 	"time"
-
-	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 // Thing represents a Mainflux thing. Each thing is owned by one user, and
 // it is assigned with the unique identifier and (temporary) access key.
 type Thing struct {
-	ID          string          `json:"id,omitempty"`
-	GroupID     string          `json:"group_id,omitempty"`
-	ProfileID   string          `json:"profile_id,omitempty"`
-	Name        string          `json:"name,omitempty"`
-	Type        string          `json:"type,omitempty"`
-	Key         string          `json:"key,omitempty"`
-	ExternalKey string          `json:"external_key,omitempty"`
-	Metadata    domain.Metadata `json:"metadata,omitempty"`
+	ID          string   `json:"id,omitempty"`
+	GroupID     string   `json:"group_id,omitempty"`
+	ProfileID   string   `json:"profile_id,omitempty"`
+	Name        string   `json:"name,omitempty"`
+	Type        string   `json:"type,omitempty"`
+	Key         string   `json:"key,omitempty"`
+	ExternalKey string   `json:"external_key,omitempty"`
+	Metadata    Metadata `json:"metadata,omitempty"`
 }
 
 // ThingsPage contains page related metadata as well as list of things that
@@ -43,22 +42,22 @@ type ThingKey struct {
 
 // Profile represents a communication group (things that can exchange messages).
 type Profile struct {
-	ID       string          `json:"id,omitempty"`
-	GroupID  string          `json:"group_id,omitempty"`
-	Name     string          `json:"name,omitempty"`
-	Config   map[string]any  `json:"config,omitempty"`
-	Metadata domain.Metadata `json:"metadata,omitempty"`
+	ID       string         `json:"id,omitempty"`
+	GroupID  string         `json:"group_id,omitempty"`
+	Name     string         `json:"name,omitempty"`
+	Config   map[string]any `json:"config,omitempty"`
+	Metadata Metadata       `json:"metadata,omitempty"`
 }
 
 // Group represents group information.
 type Group struct {
-	ID          string          `json:"id,omitempty"`
-	OrgID       string          `json:"org_id,omitempty"`
-	Name        string          `json:"name,omitempty"`
-	Description string          `json:"description,omitempty"`
-	Metadata    domain.Metadata `json:"metadata,omitempty"`
-	CreatedAt   time.Time       `json:"created_at"`
-	UpdatedAt   time.Time       `json:"updated_at"`
+	ID          string    `json:"id,omitempty"`
+	OrgID       string    `json:"org_id,omitempty"`
+	Name        string    `json:"name,omitempty"`
+	Description string    `json:"description,omitempty"`
+	Metadata    Metadata  `json:"metadata,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 // GroupPage contains page metadata and list of groups.
@@ -139,10 +138,29 @@ type GroupMembershipsPage struct {
 	GroupMemberships []GroupMembership `json:"group_memberships"`
 }
 
-// Role constants for group membership.
+// Group role constants.
 const (
-	Viewer = "viewer"
-	Editor = "editor"
-	Admin  = "admin"
-	Owner  = "owner"
+	GroupViewer = "viewer"
+	GroupEditor = "editor"
+	GroupAdmin  = "admin"
+	GroupOwner  = "owner"
 )
+
+type ThingsClient interface {
+	GetPubConfigByKey(ctx context.Context, key ThingKey) (PubConfigInfo, error)
+	GetConfigByThing(ctx context.Context, thingID string) (Config, error)
+	CanUserAccessThing(ctx context.Context, ar UserAccessReq) error
+	CanUserAccessProfile(ctx context.Context, ar UserAccessReq) error
+	CanUserAccessGroup(ctx context.Context, ar UserAccessReq) error
+	CanThingAccessGroup(ctx context.Context, ar ThingAccessReq) error
+	CanThingCommand(ctx context.Context, req ThingCommandReq) error
+	CanThingGroupCommand(ctx context.Context, req ThingGroupCommandReq) error
+	Identify(ctx context.Context, key ThingKey) (string, error)
+	GetGroupIDByThing(ctx context.Context, thingID string) (string, error)
+	GetGroupIDByProfile(ctx context.Context, profileID string) (string, error)
+	GetGroupIDsByOrg(ctx context.Context, ar OrgAccessReq) ([]string, error)
+	GetThingIDsByProfile(ctx context.Context, profileID string) ([]string, error)
+	CreateGroupMemberships(ctx context.Context, memberships ...GroupMembership) error
+	GetGroup(ctx context.Context, groupID string) (Group, error)
+	GetKeyByThingID(ctx context.Context, thingID string) (ThingKey, error)
+}

@@ -3,13 +3,15 @@ package auth
 import (
 	"context"
 
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
-	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 // OrgMembership is an alias for the shared domain type.
-type OrgMembership = domainauth.OrgMembership
+type OrgMembership = domain.OrgMembership
+
+// OrgMembershipsPage is an alias for the shared domain type.
+type OrgMembershipsPage = domain.OrgMembershipsPage
 
 var (
 	// ErrCreateOrgMembership indicates failure to create org membership.
@@ -21,9 +23,6 @@ var (
 	// ErrOrgMembershipExists indicates that membership already exists.
 	ErrOrgMembershipExists = errors.New("org membership already exists")
 )
-
-// OrgMembershipsPage is an alias for the shared domain type.
-type OrgMembershipsPage = domainauth.OrgMembershipsPage
 
 type OrgMembershipsRepository interface {
 	// Save saves memberships.
@@ -110,7 +109,7 @@ func (svc service) ViewOrgMembership(ctx context.Context, token, orgID, memberID
 		return OrgMembership{}, err
 	}
 
-	page, err := svc.users.GetUsersByIDs(ctx, []string{memberID}, domainusers.PageMetadata{})
+	page, err := svc.users.GetUsersByIDs(ctx, []string{memberID}, domain.UsersPageMetadata{})
 	if err != nil {
 		return OrgMembership{}, err
 	}
@@ -153,7 +152,7 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 		membershipByMemberID[m.MemberID] = m
 	}
 
-	userPM := domainusers.PageMetadata{
+	userPM := domain.UsersPageMetadata{
 		Email:  pm.Email,
 		Order:  pm.Order,
 		Dir:    pm.Dir,

@@ -21,12 +21,12 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -244,7 +244,7 @@ func subscribeToThingsES(ctx context.Context, svc webhooks.Service, cfg config, 
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(ts domainthings.Client, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) webhooks.Service {
+func newService(ts domain.ThingsClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) webhooks.Service {
 	database := dbutil.NewDatabase(db)
 	webhooksRepo := postgres.NewWebhookRepository(database)
 	webhooksRepo = tracing.WebhookRepositoryMiddleware(dbTracer, webhooksRepo)

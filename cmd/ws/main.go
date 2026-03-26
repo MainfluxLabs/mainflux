@@ -15,8 +15,8 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"golang.org/x/sync/errgroup"
 
@@ -135,7 +135,7 @@ func loadConfig() config {
 	}
 }
 
-func newService(tc domainthings.Client, nps messaging.PubSub, logger logger.Logger) adapter.Service {
+func newService(tc domain.ThingsClient, nps messaging.PubSub, logger logger.Logger) adapter.Service {
 	svc := adapter.New(tc, nps)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(

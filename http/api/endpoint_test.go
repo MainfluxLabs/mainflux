@@ -15,7 +15,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/http/api"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/opentracing/opentracing-go/mocktracer"
@@ -24,7 +24,7 @@ import (
 
 const ServiceErrToken = "unavailable"
 
-func newService(tc domainthings.Client) adapter.Service {
+func newService(tc domain.ThingsClient) adapter.Service {
 	pub := mocks.NewPublisher()
 	return adapter.New(pub, tc)
 }

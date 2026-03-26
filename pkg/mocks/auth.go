@@ -7,15 +7,15 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	domain "github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-var _ domainauth.Client = (*authServiceMock)(nil)
+var _ domain.AuthClient = (*authServiceMock)(nil)
 
 type authServiceMock struct {
 	roles        map[string][]string
@@ -24,7 +24,7 @@ type authServiceMock struct {
 }
 
 // NewAuthService creates mock of auth service client.
-func NewAuthService(adminID string, userList []users.User, orgList []auth.Org) domainauth.Client {
+func NewAuthService(adminID string, userList []users.User, orgList []auth.Org) domain.AuthClient {
 	usersByEmail := make(map[string]users.User)
 	roles := map[string][]string{auth.RootSub: {adminID}}
 	orgs := make(map[string]auth.Org)
@@ -45,11 +45,11 @@ func NewAuthService(adminID string, userList []users.User, orgList []auth.Org) d
 	}
 }
 
-func (svc authServiceMock) Identify(_ context.Context, token string) (domainauth.Identity, error) {
+func (svc authServiceMock) Identify(_ context.Context, token string) (domain.Identity, error) {
 	if u, ok := svc.usersByEmail[token]; ok {
-		return domainauth.Identity{ID: u.ID, Email: u.Email}, nil
+		return domain.Identity{ID: u.ID, Email: u.Email}, nil
 	}
-	return domainauth.Identity{}, errors.ErrAuthentication
+	return domain.Identity{}, errors.ErrAuthentication
 }
 
 func (svc authServiceMock) Issue(_ context.Context, id, email string, keyType uint32) (string, error) {
@@ -62,7 +62,7 @@ func (svc authServiceMock) Issue(_ context.Context, id, email string, keyType ui
 	return "", errors.ErrAuthentication
 }
 
-func (svc authServiceMock) Authorize(_ context.Context, ar domainauth.AuthzReq) error {
+func (svc authServiceMock) Authorize(_ context.Context, ar domain.AuthzReq) error {
 	u, ok := svc.usersByEmail[ar.Token]
 	if !ok {
 		return errors.ErrAuthentication
@@ -142,7 +142,7 @@ func (svc authServiceMock) RetrieveRole(_ context.Context, _ string) (string, er
 	panic("not implemented")
 }
 
-func (svc authServiceMock) CreateDormantOrgInvite(_ context.Context, _, _, _, _ string, _ []domainauth.GroupInvite) error {
+func (svc authServiceMock) CreateDormantOrgInvite(_ context.Context, _, _, _, _ string, _ []domain.GroupInvite) error {
 	panic("not implemented")
 }
 
@@ -150,17 +150,17 @@ func (svc authServiceMock) ActivateOrgInvite(_ context.Context, _, _, _ string) 
 	panic("not implemented")
 }
 
-func (svc authServiceMock) GetDormantOrgInviteByPlatformInvite(_ context.Context, _ string) (domainauth.OrgInvite, error) {
-	return domainauth.OrgInvite{}, status.Error(codes.NotFound, dbutil.ErrNotFound.Error())
+func (svc authServiceMock) GetDormantOrgInviteByPlatformInvite(_ context.Context, _ string) (domain.OrgInvite, error) {
+	return domain.OrgInvite{}, status.Error(codes.NotFound, dbutil.ErrNotFound.Error())
 }
 
-func (svc authServiceMock) ViewOrg(_ context.Context, token, orgID string) (domainauth.Org, error) {
+func (svc authServiceMock) ViewOrg(_ context.Context, token, orgID string) (domain.Org, error) {
 	org, ok := svc.orgs[orgID]
 	if !ok {
-		return domainauth.Org{}, dbutil.ErrNotFound
+		return domain.Org{}, dbutil.ErrNotFound
 	}
 
-	return domainauth.Org{
+	return domain.Org{
 		ID:      org.ID,
 		OwnerID: org.OwnerID,
 		Name:    org.Name,

@@ -5,20 +5,16 @@ package users
 
 import (
 	"context"
-	"regexp"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
-	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
-	"github.com/MainfluxLabs/mainflux/pkg/email"
 )
 
 // Metadata is an alias for the shared domain type.
 type Metadata = domain.Metadata
 
 // User is an alias for the shared domain type.
-type User = domainusers.User
+type User = domain.User
 
 type EmailVerification struct {
 	User      User
@@ -43,19 +39,6 @@ type Identity struct {
 	UserID         string
 	Provider       string
 	ProviderUserID string
-}
-
-// ValidateUser returns an error if user representation is invalid.
-func ValidateUser(u User, passRegex *regexp.Regexp) error {
-	if !email.IsEmail(u.Email) {
-		return apiutil.ErrMalformedEntity
-	}
-
-	if !passRegex.MatchString(u.Password) {
-		return ErrPasswordFormat
-	}
-
-	return nil
 }
 
 type EmailVerificationRepository interface {

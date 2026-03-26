@@ -1,4 +1,4 @@
-// Copyright (c) Mainflux
+// copyright (c) mainflux
 // SPDX-License-Identifier: Apache-2.0
 
 package certs
@@ -10,8 +10,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/certs/pki"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
@@ -74,15 +73,15 @@ type Config struct {
 }
 
 type certsService struct {
-	auth      domainauth.Client
-	things    domainthings.Client
+	auth      domain.AuthClient
+	things    domain.ThingsClient
 	certsRepo Repository
 	conf      Config
 	pki       pki.Agent
 }
 
 // New returns new Certs service.
-func New(auth domainauth.Client, things domainthings.Client, certs Repository, config Config, pkiAgent pki.Agent) Service {
+func New(auth domain.AuthClient, things domain.ThingsClient, certs Repository, config Config, pkiAgent pki.Agent) Service {
 	return &certsService{
 		certsRepo: certs,
 		things:    things,

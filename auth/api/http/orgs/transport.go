@@ -105,7 +105,7 @@ func buildPageMetadataFromBody(r *http.Request) (auth.PageMetadata, error) {
 
 	var pm auth.PageMetadata
 	if err := json.NewDecoder(r.Body).Decode(&pm); err != nil {
-		return auth.PageMetadata{}, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return auth.PageMetadata{}, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	if pm.Limit == 0 {
@@ -162,7 +162,7 @@ func decodeCreateOrgs(_ context.Context, r *http.Request) (any, error) {
 
 	req := createOrgsReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -178,7 +178,7 @@ func decodeUpdateOrg(_ context.Context, r *http.Request) (any, error) {
 		token: apiutil.ExtractBearerToken(r),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -203,7 +203,7 @@ func decodeDeleteOrgs(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil

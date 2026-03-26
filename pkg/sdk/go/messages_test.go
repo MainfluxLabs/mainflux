@@ -12,7 +12,7 @@ import (
 	adapter "github.com/MainfluxLabs/mainflux/http"
 	"github.com/MainfluxLabs/mainflux/http/api"
 	"github.com/MainfluxLabs/mainflux/logger"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func newMessageService(tc domainthings.Client) adapter.Service {
+func newMessageService(tc domain.ThingsClient) adapter.Service {
 	pub := mocks.NewPublisher()
 	return adapter.New(pub, tc)
 }

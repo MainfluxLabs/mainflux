@@ -6,13 +6,13 @@ package standalone
 import (
 	"context"
 
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 var errUnsupported = errors.New("not supported in standalone mode")
 
-var _ domainauth.Client = (*singleUserRepo)(nil)
+var _ domain.AuthClient = (*singleUserRepo)(nil)
 
 type singleUserRepo struct {
 	email string
@@ -20,7 +20,7 @@ type singleUserRepo struct {
 }
 
 // NewAuthService creates single user repository for constrained environments.
-func NewAuthService(email, token string) domainauth.Client {
+func NewAuthService(email, token string) domain.AuthClient {
 	return singleUserRepo{
 		email: email,
 		token: token,
@@ -35,15 +35,15 @@ func (repo singleUserRepo) Issue(ctx context.Context, id, email string, keyType 
 	return repo.token, nil
 }
 
-func (repo singleUserRepo) Identify(ctx context.Context, token string) (domainauth.Identity, error) {
+func (repo singleUserRepo) Identify(ctx context.Context, token string) (domain.Identity, error) {
 	if repo.token != token {
-		return domainauth.Identity{}, errors.ErrAuthentication
+		return domain.Identity{}, errors.ErrAuthentication
 	}
 
-	return domainauth.Identity{ID: repo.email, Email: repo.email}, nil
+	return domain.Identity{ID: repo.email, Email: repo.email}, nil
 }
 
-func (repo singleUserRepo) Authorize(ctx context.Context, ar domainauth.AuthzReq) error {
+func (repo singleUserRepo) Authorize(ctx context.Context, ar domain.AuthzReq) error {
 	return errUnsupported
 }
 
@@ -59,7 +59,7 @@ func (repo singleUserRepo) RetrieveRole(ctx context.Context, id string) (string,
 	return "", errUnsupported
 }
 
-func (repo singleUserRepo) CreateDormantOrgInvite(ctx context.Context, token, orgID, inviteeRole, platformInviteID string, groupInvites []domainauth.GroupInvite) error {
+func (repo singleUserRepo) CreateDormantOrgInvite(ctx context.Context, token, orgID, inviteeRole, platformInviteID string, groupInvites []domain.GroupInvite) error {
 	panic("not implemented")
 }
 
@@ -67,10 +67,10 @@ func (repo singleUserRepo) ActivateOrgInvite(ctx context.Context, platformInvite
 	panic("not implemented")
 }
 
-func (repo singleUserRepo) GetDormantOrgInviteByPlatformInvite(ctx context.Context, platformInviteID string) (domainauth.OrgInvite, error) {
+func (repo singleUserRepo) GetDormantOrgInviteByPlatformInvite(ctx context.Context, platformInviteID string) (domain.OrgInvite, error) {
 	panic("not implemented")
 }
 
-func (repo singleUserRepo) ViewOrg(ctx context.Context, token, orgID string) (domainauth.Org, error) {
+func (repo singleUserRepo) ViewOrg(ctx context.Context, token, orgID string) (domain.Org, error) {
 	panic("not implemented")
 }

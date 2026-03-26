@@ -3,8 +3,7 @@ package things
 import (
 	"context"
 
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
-	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
@@ -13,8 +12,8 @@ var ErrGroupMembershipExists = errors.New("group membership already exists")
 
 // GroupMembership and GroupMembershipsPage are aliases for the shared domain types.
 type (
-	GroupMembership      = domainthings.GroupMembership
-	GroupMembershipsPage = domainthings.GroupMembershipsPage
+	GroupMembership      = domain.GroupMembership
+	GroupMembershipsPage = domain.GroupMembershipsPage
 )
 
 // GroupMembershipsRepository specifies an interface for managing group memberships in persistence.
@@ -92,7 +91,7 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token, redi
 			continue
 		}
 
-		page, err := ts.users.GetUsersByIDs(ctx, []string{gm.MemberID}, domainusers.PageMetadata{})
+		page, err := ts.users.GetUsersByIDs(ctx, []string{gm.MemberID}, domain.UsersPageMetadata{})
 		if err != nil {
 			continue
 		}
@@ -152,7 +151,7 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 		membershipByMemberID[m.MemberID] = m
 	}
 
-	userPM := domainusers.PageMetadata{
+	userPM := domain.UsersPageMetadata{
 		Email:  pm.Email,
 		Order:  pm.Order,
 		Dir:    pm.Dir,

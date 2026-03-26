@@ -8,9 +8,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
-	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
@@ -19,13 +17,16 @@ const (
 	recoveryDuration = 5 * time.Minute
 
 	// Re-export role constants from domain for backward compatibility.
-	Admin   = domainauth.Admin
-	Owner   = domainauth.Owner
-	Editor  = domainauth.Editor
-	Viewer  = domainauth.Viewer
-	RootSub = domainauth.RootSub
-	OrgSub  = domainauth.OrgSub
+	Admin   = domain.OrgAdmin
+	Owner   = domain.OrgOwner
+	Editor  = domain.OrgEditor
+	Viewer  = domain.OrgViewer
+	RootSub = domain.RootSub
+	OrgSub  = domain.OrgSub
 )
+
+// AuthzReq is an alias for the shared domain type.
+type AuthzReq = domain.AuthzReq
 
 var (
 	// ErrRetrieveMembershipsByOrg indicates that retrieving memberships by org failed.
@@ -91,9 +92,6 @@ type Authn interface {
 	Identify(ctx context.Context, token string) (Identity, error)
 }
 
-// AuthzReq is an alias for the shared domain type.
-type AuthzReq = domainauth.AuthzReq
-
 // Authz represents a authorization service. It exposes
 // functionalities through `auth` to perform authorization.
 type Authz interface {
@@ -118,8 +116,8 @@ var _ Service = (*service)(nil)
 
 type service struct {
 	orgs           OrgRepository
-	users          domainusers.Client
-	things         domainthings.Client
+	users          domain.UsersClient
+	things         domain.ThingsClient
 	keys           KeyRepository
 	roles          RolesRepository
 	memberships    OrgMembershipsRepository
@@ -132,7 +130,7 @@ type service struct {
 }
 
 // New instantiates the auth service implementation.
-func New(orgs OrgRepository, tc domainthings.Client, uc domainusers.Client, keys KeyRepository, roles RolesRepository,
+func New(orgs OrgRepository, tc domain.ThingsClient, uc domain.UsersClient, keys KeyRepository, roles RolesRepository,
 	memberships OrgMembershipsRepository, invites OrgInvitesRepository, emailer Emailer, idp uuid.IDProvider, tokenizer Tokenizer, loginDuration time.Duration, inviteDuration time.Duration) Service {
 	return &service{
 		tokenizer:      tokenizer,
@@ -152,9 +150,9 @@ func New(orgs OrgRepository, tc domainthings.Client, uc domainusers.Client, keys
 
 func (svc service) Authorize(ctx context.Context, ar AuthzReq) error {
 	switch ar.Subject {
-	case domainauth.RootSub:
+	case domain.RootSub:
 		return svc.isAdmin(ctx, ar.Token)
-	case domainauth.OrgSub:
+	case domain.OrgSub:
 		return svc.canAccessOrg(ctx, ar.Token, ar.Object, ar.Action)
 	default:
 		return errUnknownSubject

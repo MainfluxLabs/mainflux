@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
@@ -22,7 +22,7 @@ const (
 	svcName = "protomfx.AuthService"
 )
 
-var _ domainauth.Client = (*grpcClient)(nil)
+var _ domain.AuthClient = (*grpcClient)(nil)
 
 type grpcClient struct {
 	issue                               endpoint.Endpoint
@@ -39,7 +39,7 @@ type grpcClient struct {
 }
 
 // NewClient returns new gRPC client instance.
-func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Duration) domainauth.Client {
+func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Duration) domain.AuthClient {
 	return &grpcClient{
 		issue: kitot.TraceClient(tracer, "issue")(kitgrpc.NewClient(
 			conn,
@@ -149,17 +149,17 @@ func decodeIssueResponse(_ context.Context, grpcRes any) (any, error) {
 	return identityRes{id: res.GetId(), email: res.GetEmail()}, nil
 }
 
-func (client grpcClient) Identify(ctx context.Context, token string) (domainauth.Identity, error) {
+func (client grpcClient) Identify(ctx context.Context, token string) (domain.Identity, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
 	res, err := client.identify(ctx, identityReq{token: token})
 	if err != nil {
-		return domainauth.Identity{}, err
+		return domain.Identity{}, err
 	}
 
 	ir := res.(identityRes)
-	return domainauth.Identity{ID: ir.id, Email: ir.email}, nil
+	return domain.Identity{ID: ir.id, Email: ir.email}, nil
 }
 
 func encodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {
@@ -172,7 +172,7 @@ func decodeIdentifyResponse(_ context.Context, grpcRes any) (any, error) {
 	return identityRes{id: res.GetId(), email: res.GetEmail()}, nil
 }
 
-func (client grpcClient) Authorize(ctx context.Context, ar domainauth.AuthzReq) error {
+func (client grpcClient) Authorize(ctx context.Context, ar domain.AuthzReq) error {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
@@ -265,7 +265,7 @@ func decodeRetrieveRoleResponse(_ context.Context, grpcRes any) (any, error) {
 	return retrieveRoleRes{role: res.GetRole()}, nil
 }
 
-func (client grpcClient) CreateDormantOrgInvite(ctx context.Context, token, orgID, inviteeRole, platformInviteID string, groupInvites []domainauth.GroupInvite) error {
+func (client grpcClient) CreateDormantOrgInvite(ctx context.Context, token, orgID, inviteeRole, platformInviteID string, groupInvites []domain.GroupInvite) error {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
@@ -333,7 +333,7 @@ func encodeActivateOrgInviteRequest(_ context.Context, grpcReq any) (any, error)
 	}, nil
 }
 
-func (client grpcClient) GetDormantOrgInviteByPlatformInvite(ctx context.Context, platformInviteID string) (domainauth.OrgInvite, error) {
+func (client grpcClient) GetDormantOrgInviteByPlatformInvite(ctx context.Context, platformInviteID string) (domain.OrgInvite, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
@@ -342,7 +342,7 @@ func (client grpcClient) GetDormantOrgInviteByPlatformInvite(ctx context.Context
 	})
 
 	if err != nil {
-		return domainauth.OrgInvite{}, err
+		return domain.OrgInvite{}, err
 	}
 
 	orgInvite := res.(orgInviteRes)
@@ -377,17 +377,17 @@ func decodeOrgInviteResponse(_ context.Context, grpcRes any) (any, error) {
 	}, nil
 }
 
-func (client grpcClient) ViewOrg(ctx context.Context, token, orgID string) (domainauth.Org, error) {
+func (client grpcClient) ViewOrg(ctx context.Context, token, orgID string) (domain.Org, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
 	res, err := client.viewOrg(ctx, viewOrgReq{id: orgID, token: token})
 	if err != nil {
-		return domainauth.Org{}, err
+		return domain.Org{}, err
 	}
 
 	or := res.(orgRes)
-	return domainauth.Org{
+	return domain.Org{
 		ID:      or.id,
 		OwnerID: or.ownerID,
 		Name:    or.name,

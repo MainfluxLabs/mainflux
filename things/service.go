@@ -8,19 +8,17 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
-	domainthings "github.com/MainfluxLabs/mainflux/pkg/domain/things"
-	domainusers "github.com/MainfluxLabs/mainflux/pkg/domain/users"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
 
 // Role constants are aliases for the shared domain types.
 const (
-	Viewer = domainthings.Viewer
-	Editor = domainthings.Editor
-	Admin  = domainthings.Admin
-	Owner  = domainthings.Owner
+	Viewer = domain.GroupViewer
+	Editor = domain.GroupEditor
+	Admin  = domain.GroupAdmin
+	Owner  = domain.GroupOwner
 )
 
 var (
@@ -201,18 +199,18 @@ type Backup struct {
 
 // UserAccessReq, ThingAccessReq, PubConfigInfo, ThingCommandReq, and ThingGroupCommandReq are aliases for the shared domain types.
 type (
-	UserAccessReq        = domainthings.UserAccessReq
-	ThingAccessReq       = domainthings.ThingAccessReq
-	PubConfigInfo        = domainthings.PubConfigInfo
-	ThingCommandReq      = domainthings.ThingCommandReq
-	ThingGroupCommandReq = domainthings.ThingGroupCommandReq
+	UserAccessReq        = domain.UserAccessReq
+	ThingAccessReq       = domain.ThingAccessReq
+	PubConfigInfo        = domain.PubConfigInfo
+	ThingCommandReq      = domain.ThingCommandReq
+	ThingGroupCommandReq = domain.ThingGroupCommandReq
 )
 
 var _ Service = (*thingsService)(nil)
 
 type thingsService struct {
-	auth             domainauth.Client
-	users            domainusers.Client
+	auth             domain.AuthClient
+	users            domain.UsersClient
 	things           ThingRepository
 	profiles         ProfileRepository
 	groups           GroupRepository
@@ -225,7 +223,7 @@ type thingsService struct {
 }
 
 // New instantiates the things service implementation.
-func New(auth domainauth.Client, users domainusers.Client, things ThingRepository, profiles ProfileRepository,
+func New(auth domain.AuthClient, users domain.UsersClient, things ThingRepository, profiles ProfileRepository,
 	groups GroupRepository, groupMemberships GroupMembershipsRepository,
 	pcache ProfileCache, tcache ThingCache, gcache GroupCache, idp uuid.IDProvider,
 	emailer Emailer) Service {
@@ -892,7 +890,7 @@ func (ts *thingsService) ListProfilesByGroup(ctx context.Context, token, groupID
 }
 
 func (ts *thingsService) isAdmin(ctx context.Context, token string) error {
-	if err := ts.auth.Authorize(ctx, domainauth.AuthzReq{Token: token, Subject: domainauth.RootSub}); err != nil {
+	if err := ts.auth.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.RootSub}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -900,7 +898,7 @@ func (ts *thingsService) isAdmin(ctx context.Context, token string) error {
 }
 
 func (ts *thingsService) canAccessOrg(ctx context.Context, token, orgID, subject, action string) error {
-	if err := ts.auth.Authorize(ctx, domainauth.AuthzReq{Token: token, Object: orgID, Subject: subject, Action: action}); err != nil {
+	if err := ts.auth.Authorize(ctx, domain.AuthzReq{Token: token, Object: orgID, Subject: subject, Action: action}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -984,7 +982,7 @@ func (ts *thingsService) GetGroupIDsByOrg(ctx context.Context, orgID string, tok
 		return ts.groups.RetrieveIDsByOrg(ctx, orgID)
 	}
 
-	if err := ts.canAccessOrg(ctx, token, orgID, domainauth.OrgSub, Viewer); err != nil {
+	if err := ts.canAccessOrg(ctx, token, orgID, domain.OrgSub, Viewer); err != nil {
 		return []string{}, err
 	}
 

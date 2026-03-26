@@ -14,7 +14,7 @@ import (
 	grpcapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/auth/jwt"
 	"github.com/MainfluxLabs/mainflux/auth/mocks"
-	domainauth "github.com/MainfluxLabs/mainflux/pkg/domain/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/opentracing/opentracing-go/mocktracer"
@@ -131,42 +131,42 @@ func TestIdentify(t *testing.T) {
 	cases := []struct {
 		desc  string
 		token string
-		idt   domainauth.Identity
+		idt   domain.Identity
 		err   error
 		code  codes.Code
 	}{
 		{
 			desc:  "identify user with user token",
 			token: loginSecret,
-			idt:   domainauth.Identity{Email: email, ID: id},
+			idt:   domain.Identity{Email: email, ID: id},
 			err:   nil,
 			code:  codes.OK,
 		},
 		{
 			desc:  "identify user with recovery token",
 			token: recoverySecret,
-			idt:   domainauth.Identity{Email: email, ID: id},
+			idt:   domain.Identity{Email: email, ID: id},
 			err:   nil,
 			code:  codes.OK,
 		},
 		{
 			desc:  "identify user with API token",
 			token: apiSecret,
-			idt:   domainauth.Identity{Email: email, ID: id},
+			idt:   domain.Identity{Email: email, ID: id},
 			err:   nil,
 			code:  codes.OK,
 		},
 		{
 			desc:  "identify user with invalid user token",
 			token: "invalid",
-			idt:   domainauth.Identity{},
+			idt:   domain.Identity{},
 			err:   status.Error(codes.Unauthenticated, "unauthenticated access"),
 			code:  codes.Unauthenticated,
 		},
 		{
 			desc:  "identify user with empty token",
 			token: "",
-			idt:   domainauth.Identity{},
+			idt:   domain.Identity{},
 			err:   status.Error(codes.InvalidArgument, "received invalid token request"),
 			code:  codes.Unauthenticated,
 		},
