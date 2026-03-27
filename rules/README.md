@@ -99,11 +99,27 @@ Available Lua standard libraries: `base`, `math`, `string`, `table`. The `print`
 #### Example Script
 
 ```lua
-blacklistedUserID = "jane-doe-1"
+local payload = mfx.message.payload
 
-userAccesses = mfx.message.payload["user_accesses"]
+local temp = tonumber(payload["temperature"])
+local hum  = tonumber(payload["humidity"])
 
-if userAccesses[blacklistedUserID] ~= nil then
+if not temp or not hum or hum <= 0 then
+  mfx.log("Invalid or missing fields")
+  return
+end
+
+-- Magnus formula: dew point from temperature and relative humidity
+local gamma = math.log(hum / 100.0) + (17.625 * temp) / (243.04 + temp)
+local dew_point = 243.04 * gamma / (17.625 - gamma)
+local spread = temp - dew_point  -- smaller spread → closer to condensation
+
+mfx.log(string.format("temp=%.1f  hum=%.1f%%  dew_point=%.1f  spread=%.1f",
+  temp, hum, dew_point, spread))
+
+-- Condensation risk: surface is near or below dew point
+if spread <= 2.0 then
+  mfx.log("Condensation risk: spread=" .. string.format("%.1f", spread) .. "°C")
   mfx.create_alarm()
   mfx.smtp_notify("654e4567-e89b-12d3-a456-426614174999")
 end
