@@ -11,6 +11,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/mqtt/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mproxy/pkg/session"
 	"github.com/stretchr/testify/assert"
@@ -256,7 +257,7 @@ func TestConnect(t *testing.T) {
 		{
 			desc:   "connect without active session",
 			client: nil,
-			logMsg: "failed to connect: client is not initialized",
+			logMsg: errors.Wrap(mqtt.ErrFailedConnect, mqtt.ErrClientNotInitialized).Error(),
 		},
 		{
 			desc:   "connect with active session",
@@ -305,14 +306,14 @@ func TestPublish(t *testing.T) {
 			client:  &sessionClient,
 			topic:   malformedSubtopics,
 			payload: payload,
-			logMsg:  "malformed subtopic",
+			logMsg:  messaging.ErrMalformedSubtopic.Error(),
 		},
 		{
 			desc:    "publish with subtopic containing wrong character",
 			client:  &sessionClient,
 			topic:   wrongCharSubtopics,
 			payload: payload,
-			logMsg:  "malformed subtopic",
+			logMsg:  messaging.ErrMalformedSubtopic.Error(),
 		},
 		{
 			desc:    "publish with subtopic",
@@ -350,7 +351,7 @@ func TestSubscribe(t *testing.T) {
 			desc:   "subscribe without active session",
 			client: nil,
 			topic:  topics,
-			logMsg: "failed to subscribe: client is not initialized",
+			logMsg: errors.Wrap(mqtt.ErrFailedSubscribe, mqtt.ErrClientNotInitialized).Error(),
 		},
 		{
 			desc:   "subscribe with valid session and topics",
@@ -380,7 +381,7 @@ func TestUnsubscribe(t *testing.T) {
 			desc:   "unsubscribe without active session",
 			client: nil,
 			topic:  topics,
-			logMsg: "failed to unsubscribe: client is not initialized",
+			logMsg: errors.Wrap(mqtt.ErrFailedUnsubscribe, mqtt.ErrClientNotInitialized).Error(),
 		},
 		{
 			desc:   "unsubscribe with valid session and topics",
@@ -410,7 +411,7 @@ func TestDisconnect(t *testing.T) {
 			desc:   "disconnect without active session",
 			client: nil,
 			topic:  topics,
-			logMsg: "failed to disconnect: client is not initialized",
+			logMsg: errors.Wrap(mqtt.ErrFailedDisconnect, mqtt.ErrClientNotInitialized).Error(),
 		},
 		{
 			desc:   "disconnect with valid session",

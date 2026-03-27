@@ -36,16 +36,17 @@ var (
 	ErrUnauthorizedSubscriptionTopic = errors.New("unauthorized subscription topic")
 	ErrUnauthorizedPublishTopic      = errors.New("unauthorized publish topic")
 
-	errFailedConnect            = errors.New("failed to connect")
-	errFailedDisconnect         = errors.New("failed to disconnect")
-	errFailedSubscribe          = errors.New("failed to subscribe")
-	errFailedUnsubscribe        = errors.New("failed to unsubscribe")
+	ErrFailedConnect    = errors.New("failed to connect")
+	ErrFailedDisconnect = errors.New("failed to disconnect")
+	ErrFailedSubscribe  = errors.New("failed to subscribe")
+	ErrFailedUnsubscribe = errors.New("failed to unsubscribe")
+
 	errFailedParseSubtopic      = errors.New("failed to parse subtopic")
 	errFailedCacheConnection    = errors.New("failed to cache connection")
 	errFailedCacheDisconnection = errors.New("failed to remove connection from cache")
 )
 
-// Event implements events.Event interface
+// handler implements session.Handler interface
 type handler struct {
 	publisher messaging.Publisher
 	things    protomfx.ThingsServiceClient
@@ -85,7 +86,7 @@ func (h *handler) AuthConnect(c *session.Client) error {
 }
 
 // AuthPublish is called on device publish,
-// prior forwarding to the MQTT broker
+// prior to forwarding to the MQTT broker
 func (h *handler) AuthPublish(c *session.Client, topic *string, _ *[]byte) error {
 	if c == nil {
 		return ErrClientNotInitialized
@@ -190,7 +191,7 @@ func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 // Connect - after client successfully connected
 func (h *handler) Connect(c *session.Client) {
 	if c == nil {
-		h.logger.Error(errors.Wrap(errFailedConnect, ErrClientNotInitialized).Error())
+		h.logger.Error(errors.Wrap(ErrFailedConnect, ErrClientNotInitialized).Error())
 		return
 	}
 
@@ -203,8 +204,6 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, ErrClientNotInitialized).Error())
 		return
 	}
-	h.logger.Info(fmt.Sprintf("client_id %s published to topic %s", c.ID, *topic))
-
 	tk := &protomfx.ThingKey{
 		Value: string(c.Password),
 		Type:  c.Username,
@@ -235,7 +234,10 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 
 	if err := h.publisher.Publish(subject, msg); err != nil {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
+		return
 	}
+
+	h.logger.Info(fmt.Sprintf("client_id %s published to topic %s", c.ID, *topic))
 }
 
 // parseTopic parses an MQTT topic and returns the NATS subject and
@@ -274,19 +276,24 @@ func parseTopic(topic, publisherID string) (subject, subtopic string, err error)
 // Subscribe - after client successfully subscribed
 func (h *handler) Subscribe(c *session.Client, topics *[]string) {
 	if c == nil {
-		h.logger.Error(errors.Wrap(errFailedSubscribe, ErrClientNotInitialized).Error())
+		h.logger.Error(errors.Wrap(ErrFailedSubscribe, ErrClientNotInitialized).Error())
+		return
+	}
+
+	if topics == nil || *topics == nil {
+		h.logger.Error(errors.Wrap(ErrFailedSubscribe, ErrMissingTopic).Error())
 		return
 	}
 
 	subs, err := h.getSubscriptions(c, topics)
 	if err != nil {
-		h.logger.Error(errors.Wrap(errFailedSubscribe, err).Error())
+		h.logger.Error(errors.Wrap(ErrFailedSubscribe, err).Error())
 		return
 	}
 
 	for _, s := range subs {
 		if err = h.service.CreateSubscription(context.Background(), s); err != nil {
-			h.logger.Error(errors.Wrap(errFailedSubscribe, err).Error())
+			h.logger.Error(errors.Wrap(ErrFailedSubscribe, err).Error())
 			return
 		}
 	}
@@ -297,19 +304,24 @@ func (h *handler) Subscribe(c *session.Client, topics *[]string) {
 // Unsubscribe - after client unsubscribed
 func (h *handler) Unsubscribe(c *session.Client, topics *[]string) {
 	if c == nil {
-		h.logger.Error(errors.Wrap(errFailedUnsubscribe, ErrClientNotInitialized).Error())
+		h.logger.Error(errors.Wrap(ErrFailedUnsubscribe, ErrClientNotInitialized).Error())
+		return
+	}
+
+	if topics == nil || *topics == nil {
+		h.logger.Error(errors.Wrap(ErrFailedUnsubscribe, ErrMissingTopic).Error())
 		return
 	}
 
 	subs, err := h.getSubscriptions(c, topics)
 	if err != nil {
-		h.logger.Error(errors.Wrap(errFailedUnsubscribe, err).Error())
+		h.logger.Error(errors.Wrap(ErrFailedUnsubscribe, err).Error())
 		return
 	}
 
 	for _, s := range subs {
 		if err = h.service.RemoveSubscription(context.Background(), s); err != nil {
-			h.logger.Error(errors.Wrap(errFailedUnsubscribe, err).Error())
+			h.logger.Error(errors.Wrap(ErrFailedUnsubscribe, err).Error())
 			return
 		}
 	}
@@ -320,7 +332,7 @@ func (h *handler) Unsubscribe(c *session.Client, topics *[]string) {
 // Disconnect - connection with broker or client lost
 func (h *handler) Disconnect(c *session.Client) {
 	if c == nil {
-		h.logger.Error(errors.Wrap(errFailedDisconnect, ErrClientNotInitialized).Error())
+		h.logger.Error(errors.Wrap(ErrFailedDisconnect, ErrClientNotInitialized).Error())
 		return
 	}
 
