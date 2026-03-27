@@ -154,9 +154,10 @@ func decodeSendCommandToThing(_ context.Context, r *http.Request) (any, error) {
 		},
 	}
 
-	if tk := things.ExtractThingKey(r); tk.Value != "" {
+	switch tk := things.ExtractThingKey(r); {
+	case tk.Value != "":
 		req.thingKey = tk
-	} else {
+	default:
 		req.token = apiutil.ExtractBearerToken(r)
 	}
 
@@ -191,9 +192,10 @@ func decodeSendCommandByGroup(_ context.Context, r *http.Request) (any, error) {
 		},
 	}
 
-	if tk := things.ExtractThingKey(r); tk.Value != "" {
+	switch tk := things.ExtractThingKey(r); {
+	case tk.Value != "":
 		req.thingKey = tk
-	} else {
+	default:
 		req.token = apiutil.ExtractBearerToken(r)
 	}
 
