@@ -1,24 +1,41 @@
-# Notifiers service
+# Notifiers
 
-Notifiers service provides a service for sending notifications using Notifiers.
-Notifiers service can be configured to use different types of Notifiers to send
-different types of notifications such as SMS messages, emails, or push notifications.
-Service is extensible so that new implementations of Notifiers can be easily added.
-Notifiers **are not standalone services** but rather dependencies used by Notifiers service
-for sending notifications over specific protocols.
+Notifiers is a shared library — not a standalone service. It provides the core logic for managing notifier records and delivering notifications, and is consumed by the [SMTP Notifier](smtp/README.md) and [SMPP Notifier](smpp/README.md) services. It is composed of two layers:
 
-## Configuration
+1. **Notifier manager** — an HTTP API for creating, updating, listing, and removing notifier records. Notifiers are group-scoped: each notifier belongs to a group and carries a list of contact addresses (emails, phone numbers, etc.).
+2. **Sender backends** — pluggable delivery implementations that consume broker messages and send notifications to the contacts defined on the relevant notifiers. Two backends are provided: [SMTP](smtp/README.md) (email) and [SMPP](smpp/README.md) (SMS).
 
-The profile config should include a list of contact emails. These emails are the recipients of the messages sent by the service.
-Configuration of the service is achieved through environment variables.
-The environment variables needed for service configuration depend on the underlying Notifier.
-An example of the service configuration for SMTP Notifier can be found [in SMTP Notifier documentation](smtp/README.md).
-Note that any unset variables will be replaced with their
-default values.
+## Data Model
 
+| Field      | Type        | Description                                      |
+|------------|-------------|--------------------------------------------------|
+| `id`       | UUID        | Unique notifier identifier                       |
+| `group_id` | UUID        | Group this notifier belongs to                   |
+| `name`     | string      | Human-readable notifier name                     |
+| `contacts` | []string    | Delivery addresses (emails, phone numbers, etc.) |
+| `metadata` | JSON object | Arbitrary metadata                               |
+
+## Sender Backends
+
+Each backend is a separate binary that subscribes to the broker and dispatches notifications:
+
+| Backend | Binary                       | Protocol | Contacts format    |
+|---------|------------------------------|----------|--------------------|
+| SMTP    | `mainfluxlabs-smtp-notifier` | Email    | `user@example.com` |
+| SMPP    | `mainfluxlabs-smpp-notifier` | SMS      | `+1234567890`      |
+
+See the individual backend READMEs for configuration details:
+- [SMTP Notifier](smtp/README.md)
+- [SMPP Notifier](smpp/README.md)
+
+## Deployment
+
+This package is a shared library and does not have its own binary. Deploy the individual sender backends:
+
+- [SMTP Notifier](smtp/README.md) — see deployment instructions
+- [SMPP Notifier](smpp/README.md) — see deployment instructions
 
 ## Usage
 
-Subscriptions service will start consuming messages and sending notifications when a message is received.
+Start a sender backend to begin consuming messages from the broker and dispatching notifications to the contacts listed on the relevant notifiers. The notifier manager HTTP API can be used independently to manage notifier records.
 
-[doc]: https://mainfluxlabs.github.io/docs

@@ -283,6 +283,7 @@ func NewMessagesCmd() *cobra.Command {
 	}
 	readCmd.AddCommand(cmdReadJSON)
 	readCmd.AddCommand(cmdReadSenML)
+	cmd.AddCommand(readCmd)
 
 	deleteCmd := &cobra.Command{
 		Use:   "delete [json | senml | all-json | all-senml]",
