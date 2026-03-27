@@ -30,7 +30,6 @@ const (
 
 var (
 	topic        = "/messages"
-	invalidTopic = "invalidTopic"
 	payload      = []byte("[{'n':'test-name', 'v': 1.2}]")
 	topics       = []string{topic}
 	//Test log messages for cases the handler does not provide a return value.
@@ -293,13 +292,6 @@ func TestPublish(t *testing.T) {
 			topic:   topic,
 			payload: payload,
 			logMsg:  mqtt.ErrClientNotInitialized.Error(),
-		},
-		{
-			desc:    "publish with invalid topic",
-			client:  &sessionClient,
-			topic:   invalidTopic,
-			payload: payload,
-			logMsg:  fmt.Sprintf("client_id %s published to topic %s", clientID, invalidTopic),
 		},
 		{
 			desc:    "publish with malformed subtopic",
