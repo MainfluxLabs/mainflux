@@ -17,8 +17,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-const senmlTable = "senml"
-
 var _ readers.SenMLMessageRepository = (*senmlRepository)(nil)
 
 type senmlRepository struct {

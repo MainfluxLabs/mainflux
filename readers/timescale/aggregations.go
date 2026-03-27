@@ -21,6 +21,7 @@ import (
 const (
 	jsonTable  = "json"
 	jsonOrder  = "created"
+	senmlTable = "senml"
 	senmlOrder = "time"
 )
 
