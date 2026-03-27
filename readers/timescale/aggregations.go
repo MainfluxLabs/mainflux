@@ -10,7 +10,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/jackc/pgerrcode"
@@ -165,7 +165,7 @@ func scanAggregatedMessages(rows *sqlx.Rows, table string) ([]readers.Message, e
 		}
 	default:
 		for rows.Next() {
-			msg := mfjson.Message{}
+			msg := json.Message{}
 			if err := rows.StructScan(&msg); err != nil {
 				return nil, errors.Wrap(readers.ErrReadMessages, err)
 			}
