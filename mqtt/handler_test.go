@@ -369,6 +369,7 @@ func TestSubscribe(t *testing.T) {
 
 func TestUnsubscribe(t *testing.T) {
 	handler := newHandler()
+	handler.Subscribe(&sessionClient, &topics)
 	logBuffer.Reset()
 
 	cases := []struct {
