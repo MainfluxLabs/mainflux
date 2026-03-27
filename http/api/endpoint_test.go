@@ -42,7 +42,6 @@ type testRequest struct {
 	contentType string
 	token       string
 	body        io.Reader
-	basicAuth   bool
 }
 
 func (tr testRequest) make() (*http.Response, error) {
@@ -53,9 +52,6 @@ func (tr testRequest) make() (*http.Response, error) {
 
 	if tr.token != "" {
 		req.Header.Set("Authorization", apiutil.ThingKeyPrefixInternal+tr.token)
-	}
-	if tr.basicAuth && tr.token != "" {
-		req.SetBasicAuth("", tr.token)
 	}
 	if tr.contentType != "" {
 		req.Header.Set("Content-Type", tr.contentType)
@@ -83,7 +79,6 @@ func TestPublish(t *testing.T) {
 		contentType string
 		key         string
 		status      int
-		basicAuth   bool
 	}{
 		"publish message": {
 			msg:         msg,
@@ -109,24 +104,10 @@ func TestPublish(t *testing.T) {
 			key:         "",
 			status:      http.StatusUnauthorized,
 		},
-		"publish message with basic auth": {
-			msg:         msg,
-			contentType: ctSenmlJSON,
-			key:         thingKey,
-			basicAuth:   true,
-			status:      http.StatusAccepted,
-		},
 		"publish message with invalid key": {
 			msg:         msg,
 			contentType: ctSenmlJSON,
 			key:         invalidKey,
-			status:      http.StatusUnauthorized,
-		},
-		"publish message with invalid basic auth": {
-			msg:         msg,
-			contentType: ctSenmlJSON,
-			key:         invalidKey,
-			basicAuth:   true,
 			status:      http.StatusUnauthorized,
 		},
 		"publish message without content type": {
@@ -151,7 +132,6 @@ func TestPublish(t *testing.T) {
 			contentType: tc.contentType,
 			token:       tc.key,
 			body:        strings.NewReader(tc.msg),
-			basicAuth:   tc.basicAuth,
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", desc, err))

@@ -15,7 +15,6 @@ import (
 	adapter "github.com/MainfluxLabs/mainflux/http"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -102,15 +101,6 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	var thingKey domain.ThingKey
-	_, pass, ok := r.BasicAuth()
-	switch {
-	case ok:
-		thingKey = domain.ThingKey{Type: domain.KeyTypeInternal, Value: pass}
-	case !ok:
-		thingKey = apiutil.ExtractThingKey(r)
-	}
-
 	payload, err := readPayload(r)
 	if err != nil {
 		return nil, err
@@ -129,7 +119,7 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 			Payload:  payload,
 			Created:  time.Now().UnixNano(),
 		},
-		ThingKey: thingKey,
+		ThingKey: apiutil.ExtractThingKey(r),
 	}
 
 	return req, nil
@@ -153,20 +143,24 @@ func decodeSendCommandToThing(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	req := thingCommandReq{
-		cmdReq{
-			token: apiutil.ExtractBearerToken(r),
-			id:    id,
-			msg: protomfx.Message{
-				Subtopic: subtopic,
-				Protocol: protocol,
-				Payload:  payload,
-				Created:  time.Now().UnixNano(),
-			},
+	req := cmdReq{
+		id: id,
+		msg: protomfx.Message{
+			Subtopic: subtopic,
+			Protocol: protocol,
+			Payload:  payload,
+			Created:  time.Now().UnixNano(),
 		},
 	}
 
-	return req, nil
+	switch tk := apiutil.ExtractThingKey(r); {
+	case tk.Value != "":
+		req.thingKey = tk
+	default:
+		req.token = apiutil.ExtractBearerToken(r)
+	}
+
+	return thingCommandReq{req}, nil
 }
 
 func decodeSendCommandByGroup(_ context.Context, r *http.Request) (any, error) {
@@ -187,20 +181,24 @@ func decodeSendCommandByGroup(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	req := groupCommandReq{
-		cmdReq{
-			token: apiutil.ExtractBearerToken(r),
-			id:    id,
-			msg: protomfx.Message{
-				Subtopic: subtopic,
-				Protocol: protocol,
-				Payload:  payload,
-				Created:  time.Now().UnixNano(),
-			},
+	req := cmdReq{
+		id: id,
+		msg: protomfx.Message{
+			Subtopic: subtopic,
+			Protocol: protocol,
+			Payload:  payload,
+			Created:  time.Now().UnixNano(),
 		},
 	}
 
-	return req, nil
+	switch tk := apiutil.ExtractThingKey(r); {
+	case tk.Value != "":
+		req.thingKey = tk
+	default:
+		req.token = apiutil.ExtractBearerToken(r)
+	}
+
+	return groupCommandReq{req}, nil
 }
 
 func readPayload(r *http.Request) ([]byte, error) {
@@ -214,14 +212,9 @@ func readPayload(r *http.Request) ([]byte, error) {
 }
 
 func extractSubtopicFromPath(fullPath string, basePath string) string {
-	if fullPath == basePath {
-		return ""
+	if sub, ok := strings.CutPrefix(fullPath, basePath+"/"); ok {
+		return sub
 	}
-
-	if strings.HasPrefix(fullPath, basePath+"/") {
-		return strings.TrimPrefix(fullPath, basePath+"/")
-	}
-
 	return ""
 }
 

@@ -215,12 +215,6 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	}
 	h.logger.Info(fmt.Sprintf(LogInfoPublished, c.ID, *topic))
 
-	subtopic, err := messaging.NormalizeSubtopic(*topic)
-	if err != nil {
-		h.logger.Error(logErrFailedParseSubtopic + err.Error())
-		return
-	}
-
 	tk := &protomfx.ThingKey{
 		Value: string(c.Password),
 		Type:  c.Username,
@@ -229,6 +223,12 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	pc, err := h.things.GetPubConfigByKey(context.Background(), tk)
 	if err != nil {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, errors.ErrAuthentication).Error())
+	}
+
+	subject, subtopic, err := parseTopic(*topic, pc.GetPublisherID())
+	if err != nil {
+		h.logger.Error(logErrFailedParseSubtopic + err.Error())
+		return
 	}
 
 	msg := protomfx.Message{
@@ -241,9 +241,42 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 	}
 
-	if err := h.publisher.Publish(nats.GetMessagesSubject(msg.Publisher, msg.Subtopic), msg); err != nil {
+	if err := h.publisher.Publish(subject, msg); err != nil {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 	}
+}
+
+// parseTopic parses an MQTT topic and returns the NATS subject and
+// the message subtopic (the trailing path after prefix/id/suffix).
+// Commands topics are routed to their own NATS subjects; everything else is
+// routed to the publisher's messages subject.
+func parseTopic(topic, publisherID string) (subject, subtopic string, err error) {
+	parts := strings.Split(topic, "/")
+	if len(parts) >= 3 && parts[1] != "" {
+		prefix, id, suffix := parts[0], parts[1], parts[2]
+		rest := ""
+		if len(parts) > 3 {
+			if rest, err = messaging.NormalizeSubtopic(strings.Join(parts[3:], "/")); err != nil {
+				return "", "", err
+			}
+		}
+		switch {
+		case prefix == topicPrefixThings && suffix == topicSuffixCommands:
+			return nats.GetThingCommandsSubject(id, rest), rest, nil
+		case prefix == topicPrefixGroups && suffix == topicSuffixCommands:
+			return nats.GetGroupCommandsSubject(id, rest), rest, nil
+		// Route to the topic's target thing subject, not the publisher's.
+		case prefix == topicPrefixThings && suffix == topicSuffixMessages:
+			return nats.GetMessagesSubject(id, rest), rest, nil
+		}
+	}
+
+	// Default: full normalized topic as subtopic, routed to publisher's messages subject.
+	normalizedTopic, err := messaging.NormalizeSubtopic(topic)
+	if err != nil {
+		return "", "", err
+	}
+	return nats.GetMessagesSubject(publisherID, normalizedTopic), normalizedTopic, nil
 }
 
 // Subscribe - after client successfully subscribed
