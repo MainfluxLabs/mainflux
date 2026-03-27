@@ -212,7 +212,8 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 
 	pc, err := h.things.GetPubConfigByKey(context.Background(), tk)
 	if err != nil {
-		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, errors.ErrAuthentication).Error())
+		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
+		return
 	}
 
 	subject, subtopic, err := parseTopic(*topic, pc.GetPublisherID())
@@ -229,6 +230,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 
 	if err := messaging.FormatMessage(pc, &msg); err != nil {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
+		return
 	}
 
 	if err := h.publisher.Publish(subject, msg); err != nil {
