@@ -35,7 +35,7 @@ type thingCommandReq struct {
 
 func (req thingCommandReq) validate() error {
 	if req.token == "" && req.thingKey.Value == "" {
-		return apiutil.ErrBearerToken
+		return apiutil.ErrMissingAuth
 	}
 
 	if req.thingKey.Value != "" {
@@ -57,7 +57,7 @@ type groupCommandReq struct {
 
 func (req groupCommandReq) validate() error {
 	if req.token == "" && req.thingKey.Value == "" {
-		return apiutil.ErrBearerToken
+		return apiutil.ErrMissingAuth
 	}
 
 	if req.thingKey.Value != "" {
