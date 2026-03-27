@@ -151,9 +151,9 @@ func New(orgs OrgRepository, tc protomfx.ThingsServiceClient, uc protomfx.UsersS
 
 func (svc service) Authorize(ctx context.Context, ar AuthzReq) error {
 	switch ar.Subject {
-	case domain.RootSub:
+	case RootSub:
 		return svc.isAdmin(ctx, ar.Token)
-	case domain.OrgSub:
+	case OrgSub:
 		return svc.canAccessOrg(ctx, ar.Token, ar.Object, ar.Action)
 	default:
 		return errUnknownSubject
