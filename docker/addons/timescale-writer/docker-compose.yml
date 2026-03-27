@@ -19,7 +19,7 @@ volumes:
 
 services:
   timescale:
-    image: timescale/timescaledb:2.15.3-pg16
+    image: timescale/timescaledb:2.14.2-pg13
     container_name: mainfluxlabs-timescale
     restart: on-failure
     environment:
@@ -29,7 +29,7 @@ services:
     networks:
       - docker_mainfluxlabs-base-net
     volumes:
-      - mainfluxlabs-timescale-writer-volume:/var/lib/timescalesql/data
+      - mainfluxlabs-timescale-writer-volume:/var/lib/postgresql/data
 
   timescale-writer:
     image: mainfluxlabs/timescale-writer:${MF_RELEASE_TAG}

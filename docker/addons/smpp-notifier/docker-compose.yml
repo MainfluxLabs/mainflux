@@ -9,7 +9,7 @@
 version: "3.7"
 
 networks:
-  mainfluxlabs-base-net:
+  docker_mainfluxlabs-base-net:
     external: true
 
 volumes:
@@ -25,7 +25,7 @@ services:
       POSTGRES_PASSWORD: ${MF_SMPP_NOTIFIER_DB_PASS}
       POSTGRES_DB: ${MF_SMPP_NOTIFIER_DB}
     networks:
-      - mainfluxlabs-base-net
+      - docker_mainfluxlabs-base-net
     volumes:
       - mainfluxlabs-smpp-notifier-db-volume:/var/lib/postgresql/data
 
@@ -63,4 +63,4 @@ services:
     ports:
       - ${MF_SMPP_NOTIFIER_PORT}:${MF_SMPP_NOTIFIER_PORT}
     networks:
-      - mainfluxlabs-base-net
+      - docker_mainfluxlabs-base-net

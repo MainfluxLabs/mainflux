@@ -249,28 +249,36 @@ components:
         group_id:
           type: string
           format: uuid
-          description: The group identifier refers to the group for which the webhook was created.
+          description: The group the webhook belongs to.
+        thing_id:
+          type: string
+          format: uuid
+          description: The thing the webhook is associated with.
         name:
           type: string
           description: Name of webhook.
           example: "Test Webhook"
         url:
           type: string
-          description: The url to which the message will be forwarded.
+          description: The URL to which the message will be forwarded.
           example: "https://test.webhook.com"
         headers:
           type: object
-          description: HTTP Headers specified for the webhook.
+          description: HTTP headers sent with each forwarded request.
           additionalProperties:
             type: string
           example:
             Content-Type: "application/json"
+        metadata:
+          type: object
+          description: Arbitrary key-value pairs for custom attributes.
+          additionalProperties: true
       required:
         - id
         - group_id
+        - thing_id
         - name
         - url
-        - headers
     WebhooksPage:
       type: object
       properties:

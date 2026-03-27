@@ -836,16 +836,9 @@ components:
           uniqueItems: true
           items:
             $ref: "#/components/schemas/OrgMembershipsResSchema"
-        org_groups:
-          type: array
-          minItems: 1
-          uniqueItems: true
-          items:
-            $ref: "#/components/schemas/GroupRelationSchema"
       required:
         - orgs
         - org_memberships
-        - org_groups
 
     InviteSchema:
       type: object
@@ -1059,11 +1052,11 @@ components:
           schema:
             type: object
             properties:
-              thing_ids:
+              org_ids:
                 type: array
                 items:
                   type: string
-                  format: uuid          
+                  format: uuid
     OrgMembershipsReq:
       description: JSON-formatted document describing a request to create and update memberships.
       required: true
