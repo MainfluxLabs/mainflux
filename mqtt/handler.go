@@ -36,9 +36,9 @@ var (
 	ErrUnauthorizedSubscriptionTopic = errors.New("unauthorized subscription topic")
 	ErrUnauthorizedPublishTopic      = errors.New("unauthorized publish topic")
 
-	ErrFailedConnect    = errors.New("failed to connect")
-	ErrFailedDisconnect = errors.New("failed to disconnect")
-	ErrFailedSubscribe  = errors.New("failed to subscribe")
+	ErrFailedConnect     = errors.New("failed to connect")
+	ErrFailedDisconnect  = errors.New("failed to disconnect")
+	ErrFailedSubscribe   = errors.New("failed to subscribe")
 	ErrFailedUnsubscribe = errors.New("failed to unsubscribe")
 
 	errFailedParseSubtopic      = errors.New("failed to parse subtopic")
@@ -204,6 +204,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, ErrClientNotInitialized).Error())
 		return
 	}
+
 	tk := &protomfx.ThingKey{
 		Value: string(c.Password),
 		Type:  c.Username,
@@ -280,11 +281,6 @@ func (h *handler) Subscribe(c *session.Client, topics *[]string) {
 		return
 	}
 
-	if topics == nil || *topics == nil {
-		h.logger.Error(errors.Wrap(ErrFailedSubscribe, ErrMissingTopic).Error())
-		return
-	}
-
 	subs, err := h.getSubscriptions(c, topics)
 	if err != nil {
 		h.logger.Error(errors.Wrap(ErrFailedSubscribe, err).Error())
@@ -305,11 +301,6 @@ func (h *handler) Subscribe(c *session.Client, topics *[]string) {
 func (h *handler) Unsubscribe(c *session.Client, topics *[]string) {
 	if c == nil {
 		h.logger.Error(errors.Wrap(ErrFailedUnsubscribe, ErrClientNotInitialized).Error())
-		return
-	}
-
-	if topics == nil || *topics == nil {
-		h.logger.Error(errors.Wrap(ErrFailedUnsubscribe, ErrMissingTopic).Error())
 		return
 	}
 
