@@ -10,7 +10,7 @@ default values.
 
 | Variable                               | Description                                                                | Default        |
 |----------------------------------------|----------------------------------------------------------------------------|----------------|
-| `MF_TIMESCALE_READER_LOG_LEVEL`        | Service log level                                                          | debug          |
+| `MF_TIMESCALE_READER_LOG_LEVEL`        | Service log level                                                          | error          |
 | `MF_TIMESCALE_READER_PORT`             | Service HTTP port                                                          | 8180           |
 | `MF_TIMESCALE_READER_CLIENT_TLS`       | TLS mode flag                                                              | false          |
 | `MF_TIMESCALE_READER_CA_CERTS`         | Path to trusted CAs in PEM format                                          |                |
@@ -39,8 +39,8 @@ git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 
-# compile the timescale writer
-make timescale-writer
+# compile the timescale reader
+make timescale-reader
 
 # Copy binary to bin
 make install
@@ -48,7 +48,7 @@ make install
 # Set the environment variables and run the service
 MF_TIMESCALE_READER_LOG_LEVEL=[Service log level] \
 MF_TIMESCALE_READER_PORT=[Service HTTP port] \
-MF_TIMESCALE_READER_CLIENT_TLS =[TLS mode flag] \
+MF_TIMESCALE_READER_CLIENT_TLS=[TLS mode flag] \
 MF_TIMESCALE_READER_CA_CERTS=[Path to trusted CAs in PEM format] \
 MF_TIMESCALE_READER_DB_HOST=[Timescale host] \
 MF_TIMESCALE_READER_DB_PORT=[Timescale port] \

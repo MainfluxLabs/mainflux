@@ -37,7 +37,7 @@ default values.
 
 | Variable                              | Description                                                                | Default        |
 |---------------------------------------|----------------------------------------------------------------------------|----------------|
-| `MF_POSTGRES_READER_LOG_LEVEL`        | Service log level                                                          | debug          |
+| `MF_POSTGRES_READER_LOG_LEVEL`        | Service log level                                                          | error          |
 | `MF_POSTGRES_READER_PORT`             | Service HTTP port                                                          | 8180           |
 | `MF_POSTGRES_READER_CLIENT_TLS`       | TLS mode flag                                                              | false          |
 | `MF_POSTGRES_READER_CA_CERTS`         | Path to trusted CAs in PEM format                                          |                |
@@ -69,8 +69,8 @@ git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
 
-# compile the postgres writer
-make postgres-writer
+# compile the postgres reader
+make postgres-reader
 
 # Copy binary to bin
 make install
@@ -78,7 +78,7 @@ make install
 # Set the environment variables and run the service
 MF_POSTGRES_READER_LOG_LEVEL=[Service log level] \
 MF_POSTGRES_READER_PORT=[Service HTTP port] \
-MF_POSTGRES_READER_CLIENT_TLS =[TLS mode flag] \
+MF_POSTGRES_READER_CLIENT_TLS=[TLS mode flag] \
 MF_POSTGRES_READER_CA_CERTS=[Path to trusted CAs in PEM format] \
 MF_POSTGRES_READER_DB_HOST=[Postgres host] \
 MF_POSTGRES_READER_DB_PORT=[Postgres port] \
