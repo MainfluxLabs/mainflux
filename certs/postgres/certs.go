@@ -31,7 +31,7 @@ func NewRepository(db dbutil.Database) certs.Repository {
 
 func (cr certsRepository) RetrieveAll(ctx context.Context, offset, limit uint64) (certs.Page, error) {
 	q := `SELECT thing_id, serial, expires_at, client_cert, client_key, issuing_ca,
-	      ca_chain, private_key_type, key_bits FROM certs ORDER BY expires_at LIMIT :limit OFFSET :offset;`
+	      ca_chain, private_key_type, key_bits, downloaded FROM certs ORDER BY expires_at LIMIT :limit OFFSET :offset;`
 
 	params := map[string]any{
 		"limit":  limit,
@@ -67,9 +67,9 @@ func (cr certsRepository) RetrieveAll(ctx context.Context, offset, limit uint64)
 
 func (cr certsRepository) Save(ctx context.Context, cert certs.Cert) (string, error) {
 	q := `INSERT INTO certs (thing_id, serial, expires_at, client_cert, client_key,
-	      issuing_ca, ca_chain, private_key_type, key_bits)
+	      issuing_ca, ca_chain, private_key_type, key_bits, downloaded)
 	      VALUES (:thing_id, :serial, :expires_at, :client_cert, :client_key,
-	      :issuing_ca, :ca_chain, :private_key_type, :key_bits)`
+	      :issuing_ca, :ca_chain, :private_key_type, :key_bits, :downloaded)`
 
 	tx, err := cr.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -127,6 +127,33 @@ func (cr certsRepository) Remove(ctx context.Context, serial string) error {
 	return nil
 }
 
+func (cr certsRepository) RetrieveExpiring(ctx context.Context, expiresWithin time.Duration) ([]certs.Cert, error) {
+	q := `SELECT thing_id, serial, expires_at, client_cert, client_key, issuing_ca,
+	      ca_chain, private_key_type, key_bits, downloaded FROM certs
+	      WHERE expires_at <= :deadline ORDER BY expires_at`
+
+	params := map[string]any{
+		"deadline": time.Now().Add(expiresWithin),
+	}
+
+	rows, err := cr.db.NamedQueryContext(ctx, q, params)
+	if err != nil {
+		return nil, cr.handlePgError(err, dbutil.ErrRetrieveEntity)
+	}
+	defer rows.Close()
+
+	var certificates []certs.Cert
+	for rows.Next() {
+		var dbcrt dbCert
+		if err := rows.StructScan(&dbcrt); err != nil {
+			return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		}
+		certificates = append(certificates, toCert(dbcrt))
+	}
+
+	return certificates, nil
+}
+
 func (cr certsRepository) RetrieveRevokedCerts(ctx context.Context) ([]certs.RevokedCert, error) {
 	q := `SELECT serial, revoked_at, thing_id FROM revoked_certs ORDER BY revoked_at DESC`
 
@@ -154,7 +181,7 @@ func (cr certsRepository) RetrieveRevokedCerts(ctx context.Context) ([]certs.Rev
 
 func (cr certsRepository) RetrieveByThing(ctx context.Context, thingID string, offset, limit uint64) (certs.Page, error) {
 	q := `SELECT thing_id, serial, expires_at, client_cert, client_key, issuing_ca,
-	      ca_chain, private_key_type, key_bits FROM certs
+	      ca_chain, private_key_type, key_bits, downloaded FROM certs
 	      WHERE thing_id = :thing_id ORDER BY expires_at LIMIT :limit OFFSET :offset;`
 
 	params := map[string]any{
@@ -192,7 +219,7 @@ func (cr certsRepository) RetrieveByThing(ctx context.Context, thingID string, o
 
 func (cr certsRepository) RetrieveBySerial(ctx context.Context, serial string) (certs.Cert, error) {
 	q := `SELECT thing_id, serial, expires_at, client_cert, client_key, issuing_ca,
-	      ca_chain, private_key_type, key_bits FROM certs WHERE serial = :serial`
+	      ca_chain, private_key_type, key_bits, downloaded FROM certs WHERE serial = :serial`
 
 	params := map[string]any{
 		"serial": serial,
@@ -243,6 +270,7 @@ type dbCert struct {
 	CAChain        StringArray `db:"ca_chain"`
 	PrivateKeyType string      `db:"private_key_type"`
 	KeyBits        int         `db:"key_bits"`
+	Downloaded     bool        `db:"downloaded"`
 }
 
 func toDBCert(c certs.Cert) dbCert {
@@ -256,6 +284,7 @@ func toDBCert(c certs.Cert) dbCert {
 		CAChain:        StringArray(c.CAChain),
 		PrivateKeyType: c.PrivateKeyType,
 		KeyBits:        c.KeyBits,
+		Downloaded:     c.Downloaded,
 	}
 }
 
@@ -270,7 +299,32 @@ func toCert(cdb dbCert) certs.Cert {
 		CAChain:        []string(cdb.CAChain),
 		PrivateKeyType: cdb.PrivateKeyType,
 		KeyBits:        cdb.KeyBits,
+		Downloaded:     cdb.Downloaded,
 	}
+}
+
+func (cr certsRepository) MarkDownloaded(ctx context.Context, serial string) error {
+	q := `UPDATE certs SET downloaded = true WHERE serial = :serial`
+
+	params := map[string]any{
+		"serial": serial,
+	}
+
+	res, err := cr.db.NamedExecContext(ctx, q, params)
+	if err != nil {
+		return cr.handlePgError(err, dbutil.ErrUpdateEntity)
+	}
+
+	cnt, err := res.RowsAffected()
+	if err != nil {
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
+	}
+
+	if cnt < 1 {
+		return dbutil.ErrNotFound
+	}
+
+	return nil
 }
 
 type StringArray []string

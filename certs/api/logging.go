@@ -39,6 +39,19 @@ func (lm *loggingMiddleware) IssueCert(ctx context.Context, token, thingID, ttl 
 	return lm.svc.IssueCert(ctx, token, thingID, ttl, keyBits, keyType)
 }
 
+func (lm *loggingMiddleware) RotateCert(ctx context.Context, token, serial, thingID, ttl string, keyBits int, keyType string) (_ certs.Cert, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method rotate_cert for serial %s took %s to complete", serial, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RotateCert(ctx, token, serial, thingID, ttl, keyBits, keyType)
+}
+
 func (lm *loggingMiddleware) ListCerts(ctx context.Context, token, thingID string, offset, limit uint64) (_ certs.Page, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_certs for thing id %s took %s to complete", thingID, time.Since(begin))
@@ -89,6 +102,19 @@ func (lm *loggingMiddleware) RevokeCert(ctx context.Context, token, serial strin
 	}(time.Now())
 
 	return lm.svc.RevokeCert(ctx, token, serial)
+}
+
+func (lm *loggingMiddleware) DownloadCert(ctx context.Context, token, serial string) (c certs.Cert, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method download_cert for serial %s thing id %s took %s to complete", serial, c.ThingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.DownloadCert(ctx, token, serial)
 }
 
 func (lm *loggingMiddleware) RenewCert(ctx context.Context, token, serial string) (_ certs.Cert, err error) {

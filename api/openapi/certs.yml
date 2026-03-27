@@ -33,7 +33,7 @@ paths:
         - $ref: "#/components/parameters/CertID"
       responses:
         '200':
-          $ref: "#/components/responses/CertRes"
+          $ref: "#/components/responses/ViewCertRes"
         '400':
           description: Failed due to malformed query parameters.
         "401":
@@ -41,6 +41,25 @@ paths:
         '404':
           description: |
             Failed to retrieve corresponding certificate.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    put:
+      summary: Renews a certificate
+      description: |
+        Extends the expiration date of a certificate. Only eligible
+        if the certificate expires within 30 days.
+      tags:
+        - certs
+      parameters:
+        - $ref: "#/components/parameters/CertID"
+      responses:
+        '201':
+          $ref: "#/components/responses/CertRes"
+        "401":
+          description: Missing or invalid access token provided.
+        '404':
+          description: |
+            Certificate with the given serial was not found.
         '500':
           $ref: "#/components/responses/ServiceError"
     delete:
@@ -59,6 +78,53 @@ paths:
         '404':
           description: |
             Failed to revoke corresponding certificate.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /certs/{certID}/rotate:
+    post:
+      summary: Rotates a certificate
+      description: |
+        Revokes the certificate with the given serial and issues a new one
+        for the specified thing.
+      tags:
+        - certs
+      parameters:
+        - $ref: "#/components/parameters/CertID"
+      requestBody:
+        $ref: "#/components/requestBodies/RotateCertReq"
+      responses:
+        '201':
+          $ref: "#/components/responses/CertRes"
+        '400':
+          description: Failed due to malformed JSON.
+        "401":
+          description: Missing or invalid access token provided.
+        '404':
+          description: |
+            Certificate with the given serial was not found.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /certs/{certID}/download:
+    get:
+      summary: Downloads a certificate
+      description: |
+        Retrieves the full certificate data (certificate, private key, issuing CA,
+        CA chain) for a given cert ID and marks it as downloaded. A certificate can
+        only be downloaded once. Subsequent attempts return 403.
+      tags:
+        - certs
+      parameters:
+        - $ref: "#/components/parameters/CertID"
+      responses:
+        '200':
+          $ref: "#/components/responses/DownloadCertRes"
+        "401":
+          description: Missing or invalid access token provided.
+        '403':
+          description: Certificate has already been downloaded.
+        '404':
+          description: |
+            Certificate with the given serial was not found.
         '500':
           $ref: "#/components/responses/ServiceError"
   /serials/{thingID}:
@@ -109,7 +175,6 @@ components:
       in: path
       schema:
         type: string
-        format: uuid
       required: true
 
   schemas:
@@ -129,12 +194,76 @@ components:
         issuing_ca:
           type: string
           description: CA Certificate that is used to issue client certs, usually intermediate.
+        ca_chain:
+          type: array
+          items:
+            type: string
+          description: CA certificate chain.
         serial:
           type: string
           description: Certificate serial
-        expire:
+        private_key_type:
           type: string
-          description: Certificate expiry date
+          enum: [rsa, ecdsa]
+          description: Type of private key.
+        key_bits:
+          type: integer
+          description: Key size in bits.
+        expires_at:
+          type: string
+          format: date-time
+          description: Certificate expiry date.
+        downloaded:
+          type: boolean
+          description: Whether the certificate has been downloaded.
+    ViewCert:
+      type: object
+      properties:
+        certificate:
+          type: string
+          description: PEM-encoded client certificate.
+        serial:
+          type: string
+          description: Certificate serial.
+        expires_at:
+          type: string
+          format: date-time
+          description: Certificate expiry date.
+        thing_id:
+          type: string
+          format: uuid
+          description: Corresponding Mainflux Thing ID.
+        downloaded:
+          type: boolean
+          description: Whether the certificate has been downloaded.
+    DownloadCert:
+      type: object
+      properties:
+        certificate:
+          type: string
+          description: PEM-encoded client certificate.
+        issuing_ca:
+          type: string
+          description: PEM-encoded issuing CA certificate.
+        ca_chain:
+          type: array
+          items:
+            type: string
+          description: PEM-encoded CA certificate chain.
+        private_key:
+          type: string
+          description: PEM-encoded private key.
+        private_key_type:
+          type: string
+          enum: [rsa, ecdsa]
+          description: Type of private key.
+        serial:
+          type: string
+          description: Certificate serial.
+        thing_id:
+          type: string
+          format: uuid
+          description: Corresponding Mainflux Thing ID.
     Serial:
       type: object
       properties:
@@ -208,8 +337,41 @@ components:
                  type: string
                key_type:
                  type: string
+                 enum: [rsa, ecdsa]
+                 description: Type of private key.
                key_bits:
                  type: integer
+                 description: |
+                   Key size in bits. RSA supports 2048 or 4096.
+                   ECDSA supports 224, 256, 384, or 521.
+    RotateCertReq:
+      description: |
+        Rotates a certificate by revoking the existing one and issuing a new one.
+        Provide the thing ID and new certificate parameters.
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - thing_id
+              - ttl
+              - key_bits
+              - key_type
+            properties:
+               thing_id:
+                 type: string
+                 format: uuid
+               ttl:
+                 type: string
+               key_type:
+                 type: string
+                 enum: [rsa, ecdsa]
+                 description: Type of private key.
+               key_bits:
+                 type: integer
+                 description: |
+                   Key size in bits. RSA supports 2048 or 4096.
+                   ECDSA supports 224, 256, 384, or 521.
 
   responses:
     ServiceError:
@@ -220,6 +382,18 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Cert"
+    ViewCertRes:
+      description: Certificate view data.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ViewCert"
+    DownloadCertRes:
+      description: Full certificate data for download. Can only be retrieved once.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/DownloadCert"
     CertsPageRes:
       description: Certificates page.
       content:
