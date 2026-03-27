@@ -75,7 +75,7 @@ func (req orgMembershipsReq) validate() error {
 	}
 
 	for _, m := range req.OrgMemberships {
-		if err := apiutil.ValidateInviteeRole(m.Role); err != nil {
+		if err := apiutil.ValidateOrgInviteeRole(m.Role); err != nil {
 			return err
 		}
 	}

@@ -164,7 +164,7 @@ func decodeSaveFile(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	req := saveFileReq{
-		key:      apiutil.ExtractThingKeyFromHTTPHeader(r),
+		key:      apiutil.ExtractThingKey(r),
 		fileInfo: fip.fileInfo,
 		file:     fip.file,
 	}
@@ -185,7 +185,7 @@ func decodeUpdateFile(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	req := updateFileReq{
-		key: apiutil.ExtractThingKeyFromHTTPHeader(r),
+		key: apiutil.ExtractThingKey(r),
 		fileInfo: filestore.FileInfo{
 			Name:   name,
 			Format: format,
@@ -207,7 +207,7 @@ func decodeListFiles(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	req := listFilesReq{
-		key: apiutil.ExtractThingKeyFromHTTPHeader(r),
+		key: apiutil.ExtractThingKey(r),
 		info: info{
 			name:   lfp.name,
 			format: lfp.format,
@@ -228,7 +228,7 @@ func decodeFile(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	req := fileReq{
-		key: apiutil.ExtractThingKeyFromHTTPHeader(r),
+		key: apiutil.ExtractThingKey(r),
 		info: info{
 			name:   name,
 			format: format,
@@ -338,7 +338,7 @@ func decodeGroupFileByKey(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	req := groupFileByKeyReq{
-		key: apiutil.ExtractThingKeyFromHTTPHeader(r),
+		key: apiutil.ExtractThingKey(r),
 		info: info{
 			name:   name,
 			format: format,

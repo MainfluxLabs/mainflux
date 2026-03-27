@@ -154,7 +154,7 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (any, error) {
 
 	return listJSONMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
-		thingKey: apiutil.ExtractThingKeyFromHTTPHeader(r),
+		thingKey: apiutil.ExtractThingKey(r),
 		pageMeta: pageMeta,
 	}, nil
 }
@@ -186,7 +186,7 @@ func decodeListSenMLMessages(_ context.Context, r *http.Request) (any, error) {
 
 	return listSenMLMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),
-		thingKey: apiutil.ExtractThingKeyFromHTTPHeader(r),
+		thingKey: apiutil.ExtractThingKey(r),
 		pageMeta: pageMeta,
 	}, nil
 }

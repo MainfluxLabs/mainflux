@@ -49,7 +49,7 @@ func handshake(svc ws.Service) http.HandlerFunc {
 }
 
 func decodeRequest(r *http.Request) (getConnByKey, error) {
-	authKey := apiutil.ExtractThingKeyFromHTTPHeader(r)
+	authKey := apiutil.ExtractThingKey(r)
 	if authKey.Value == "" || authKey.Type == "" {
 		queryKey := bone.GetQuery(r, "key")
 		if len(queryKey) == 0 {

@@ -220,7 +220,7 @@ func decodeUpdateThingGroupAndProfile(_ context.Context, r *http.Request) (any, 
 
 func decodeViewMetadata(_ context.Context, r *http.Request) (any, error) {
 	req := viewMetadataReq{
-		ThingKey: apiutil.ExtractThingKeyFromHTTPHeader(r),
+		ThingKey: apiutil.ExtractThingKey(r),
 	}
 
 	return req, nil
