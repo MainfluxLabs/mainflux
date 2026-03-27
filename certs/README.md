@@ -104,7 +104,7 @@ Supported key types: `rsa` (default), `ec`.
 ### List certificates for a thing
 
 ```bash
-curl -s "http://localhost:8204/things/<thing_id>/serials" \
+curl -s "http://localhost/svccerts/things/<thing_id>/serials" \
   -H "Authorization: Bearer $TOK"
 ```
 
