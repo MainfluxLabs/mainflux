@@ -1,11 +1,10 @@
-// Copyright (c) Mainflux
-// SPDX-License-Identifier: Apache-2.0
-
 package apiutil
 
 import (
 	"net/http"
 	"strings"
+
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 const (
@@ -26,4 +25,25 @@ func ExtractBearerToken(r *http.Request) string {
 	}
 
 	return strings.TrimPrefix(token, BearerPrefix)
+}
+
+// ExtractThingKey returns the thing key and its type from the request's HTTP 'Authorization' header.
+// If the provided key type is invalid, an empty ThingKey is returned.
+func ExtractThingKey(r *http.Request) domain.ThingKey {
+	header := r.Header.Get("Authorization")
+
+	switch {
+	case strings.HasPrefix(header, ThingKeyPrefixInternal):
+		return domain.ThingKey{
+			Type:  domain.KeyTypeInternal,
+			Value: strings.TrimPrefix(header, ThingKeyPrefixInternal),
+		}
+	case strings.HasPrefix(header, ThingKeyPrefixExternal):
+		return domain.ThingKey{
+			Type:  domain.KeyTypeExternal,
+			Value: strings.TrimPrefix(header, ThingKeyPrefixExternal),
+		}
+	}
+
+	return domain.ThingKey{}
 }

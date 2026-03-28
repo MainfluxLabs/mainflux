@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/users"
 )
 
@@ -162,7 +162,7 @@ func (lm *loggingMiddleware) ViewProfile(ctx context.Context, token string) (u u
 	return lm.svc.ViewProfile(ctx, token)
 }
 
-func (lm *loggingMiddleware) ListUsers(ctx context.Context, token string, pm users.PageMetadata) (_ users.UserPage, err error) {
+func (lm *loggingMiddleware) ListUsers(ctx context.Context, token string, pm users.PageMetadata) (_ users.UsersPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_users took %s to complete", time.Since(begin))
 		if err != nil {
@@ -175,7 +175,7 @@ func (lm *loggingMiddleware) ListUsers(ctx context.Context, token string, pm use
 	return lm.svc.ListUsers(ctx, token, pm)
 }
 
-func (lm *loggingMiddleware) ListUsersByIDs(ctx context.Context, ids []string, pm users.PageMetadata) (_ users.UserPage, err error) {
+func (lm *loggingMiddleware) ListUsersByIDs(ctx context.Context, ids []string, pm users.PageMetadata) (_ users.UsersPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_users_by_ids for ids %s and email %s took %s to complete", ids, pm.Email, time.Since(begin))
 		if err != nil {
@@ -310,7 +310,7 @@ func (lm *loggingMiddleware) Restore(ctx context.Context, token string, admin us
 	return lm.svc.Restore(ctx, token, admin, users, identities)
 }
 
-func (lm *loggingMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite auth.OrgInvite) (_ users.PlatformInvite, err error) {
+func (lm *loggingMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite domain.OrgInvite) (_ users.PlatformInvite, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method create_platform_invite for email %s took %s to complete", email, time.Since(begin))
 		if err != nil {

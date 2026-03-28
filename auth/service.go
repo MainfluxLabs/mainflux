@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -15,13 +16,18 @@ import (
 
 const (
 	recoveryDuration = 5 * time.Minute
-	Admin            = "admin"
-	Owner            = "owner"
-	Editor           = "editor"
-	Viewer           = "viewer"
-	RootSub          = "root"
-	OrgSub           = "org"
+
+	// Re-export role constants from domain for backward compatibility.
+	Admin   = domain.OrgAdmin
+	Owner   = domain.OrgOwner
+	Editor  = domain.OrgEditor
+	Viewer  = domain.OrgViewer
+	RootSub = domain.RootSub
+	OrgSub  = domain.OrgSub
 )
+
+// AuthzReq is an alias for the shared domain type.
+type AuthzReq = domain.AuthzReq
 
 var (
 	// ErrRetrieveMembershipsByOrg indicates that retrieving memberships by org failed.
@@ -85,14 +91,6 @@ type Authn interface {
 	// is returned. If token is invalid, or invocation failed for some
 	// other reason, non-nil error value is returned in response.
 	Identify(ctx context.Context, token string) (Identity, error)
-}
-
-// AuthzReq represents an argument struct for making an authz related function calls.
-type AuthzReq struct {
-	Token   string
-	Object  string
-	Subject string
-	Action  string
 }
 
 // Authz represents a authorization service. It exposes
@@ -269,14 +267,6 @@ func (svc service) isAdmin(ctx context.Context, token string) error {
 
 	if role != RoleAdmin && role != RoleRootAdmin {
 		return errors.ErrAuthorization
-	}
-
-	return nil
-}
-
-func ValidateInviteeRole(role string) error {
-	if role != Admin && role != Editor && role != Viewer {
-		return apiutil.ErrInvalidRole
 	}
 
 	return nil

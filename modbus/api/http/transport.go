@@ -85,7 +85,7 @@ func decodeCreateClients(_ context.Context, r *http.Request) (any, error) {
 
 	req := createClientsReq{token: apiutil.ExtractBearerToken(r), thingID: bone.GetValue(r, idKey)}
 	if err := json.NewDecoder(r.Body).Decode(&req.Clients); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -154,7 +154,7 @@ func decodeUpdateClient(_ context.Context, r *http.Request) (any, error) {
 		id:    bone.GetValue(r, idKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -170,7 +170,7 @@ func decodeRemoveClients(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil

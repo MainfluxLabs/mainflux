@@ -56,7 +56,7 @@ func decodeRestore(_ context.Context, r *http.Request) (any, error) {
 
 	req := restoreReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -80,7 +80,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response any) erro
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
-	case errors.Contains(err, users.ErrPasswordFormat),
+	case errors.Contains(err, errors.ErrPasswordFormat),
 		errors.Contains(err, errors.ErrInvalidPassword),
 		errors.Contains(err, users.ErrEmailVerificationExpired):
 		w.WriteHeader(http.StatusBadRequest)

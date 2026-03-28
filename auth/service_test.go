@@ -317,19 +317,19 @@ func TestIdentify(t *testing.T) {
 		{
 			desc: "identify login key",
 			key:  loginSecret,
-			idt:  auth.Identity{id, email},
+			idt:  auth.Identity{ID: id, Email: email},
 			err:  nil,
 		},
 		{
 			desc: "identify recovery key",
 			key:  recoverySecret,
-			idt:  auth.Identity{id, email},
+			idt:  auth.Identity{ID: id, Email: email},
 			err:  nil,
 		},
 		{
 			desc: "identify API key",
 			key:  apiSecret,
-			idt:  auth.Identity{id, email},
+			idt:  auth.Identity{ID: id, Email: email},
 			err:  nil,
 		},
 		{

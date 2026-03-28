@@ -89,7 +89,7 @@ func (urm userRepositoryMiddleware) UpdatePassword(ctx context.Context, email, p
 	return urm.repo.UpdatePassword(ctx, email, password)
 }
 
-func (urm userRepositoryMiddleware) RetrieveByIDs(ctx context.Context, ids []string, pm users.PageMetadata) (users.UserPage, error) {
+func (urm userRepositoryMiddleware) RetrieveByIDs(ctx context.Context, ids []string, pm users.PageMetadata) (users.UsersPage, error) {
 	span := dbutil.CreateSpan(ctx, urm.tracer, retrieveUsersByIDs)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

@@ -5,17 +5,17 @@ package api
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/things"
 )
 
 type publishReq struct {
 	msg protomfx.Message
-	things.ThingKey
+	domain.ThingKey
 }
 
 func (req publishReq) validate() error {
-	if err := req.ThingKey.Validate(); err != nil {
+	if err := apiutil.ValidateThingKey(req.ThingKey); err != nil {
 		return err
 	}
 
@@ -24,7 +24,7 @@ func (req publishReq) validate() error {
 
 type cmdReq struct {
 	token    string
-	thingKey things.ThingKey
+	thingKey domain.ThingKey
 	id       string
 	msg      protomfx.Message
 }
@@ -39,7 +39,7 @@ func (req thingCommandReq) validate() error {
 	}
 
 	if req.thingKey.Value != "" {
-		if err := req.thingKey.Validate(); err != nil {
+		if err := apiutil.ValidateThingKey(req.thingKey); err != nil {
 			return err
 		}
 	}
@@ -61,7 +61,7 @@ func (req groupCommandReq) validate() error {
 	}
 
 	if req.thingKey.Value != "" {
-		if err := req.thingKey.Validate(); err != nil {
+		if err := apiutil.ValidateThingKey(req.thingKey); err != nil {
 			return err
 		}
 	}

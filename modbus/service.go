@@ -14,13 +14,13 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/cron"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	"github.com/MainfluxLabs/mainflux/things"
 	gbmodbus "github.com/goburrow/modbus"
 	"golang.org/x/time/rate"
 )
@@ -147,7 +147,7 @@ func New(things protomfx.ThingsServiceClient, pub messaging.Publisher, clients C
 }
 
 func (cs *clientsService) CreateClients(ctx context.Context, token, thingID string, clients ...Client) ([]Client, error) {
-	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
+	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupEditor}); err != nil {
 		return nil, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -183,7 +183,7 @@ func (cs *clientsService) CreateClients(ctx context.Context, token, thingID stri
 }
 
 func (cs *clientsService) ListClientsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (ClientsPage, error) {
-	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer}); err != nil {
+	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupViewer}); err != nil {
 		return ClientsPage{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -196,7 +196,7 @@ func (cs *clientsService) ListClientsByThing(ctx context.Context, token, thingID
 }
 
 func (cs *clientsService) ListClientsByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (ClientsPage, error) {
-	if _, err := cs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer}); err != nil {
+	if _, err := cs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domain.GroupViewer}); err != nil {
 		return ClientsPage{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -214,7 +214,7 @@ func (cs *clientsService) ViewClient(ctx context.Context, token, id string) (Cli
 		return Client{}, err
 	}
 
-	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: client.ThingID, Action: things.Viewer}); err != nil {
+	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: client.ThingID, Action: domain.GroupViewer}); err != nil {
 		return Client{}, err
 	}
 
@@ -227,7 +227,7 @@ func (cs *clientsService) UpdateClient(ctx context.Context, token string, client
 		return err
 	}
 
-	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: c.ThingID, Action: things.Editor}); err != nil {
+	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: c.ThingID, Action: domain.GroupEditor}); err != nil {
 		return err
 	}
 
@@ -249,7 +249,7 @@ func (cs *clientsService) RemoveClients(ctx context.Context, token string, ids .
 		if err != nil {
 			return err
 		}
-		if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: client.ThingID, Action: things.Editor}); err != nil {
+		if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: client.ThingID, Action: domain.GroupEditor}); err != nil {
 			return err
 		}
 

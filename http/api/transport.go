@@ -18,7 +18,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/things"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -120,7 +119,7 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 			Payload:  payload,
 			Created:  time.Now().UnixNano(),
 		},
-		ThingKey: things.ExtractThingKey(r),
+		ThingKey: apiutil.ExtractThingKey(r),
 	}
 
 	return req, nil
@@ -154,7 +153,7 @@ func decodeSendCommandToThing(_ context.Context, r *http.Request) (any, error) {
 		},
 	}
 
-	switch tk := things.ExtractThingKey(r); {
+	switch tk := apiutil.ExtractThingKey(r); {
 	case tk.Value != "":
 		req.thingKey = tk
 	default:
@@ -192,7 +191,7 @@ func decodeSendCommandByGroup(_ context.Context, r *http.Request) (any, error) {
 		},
 	}
 
-	switch tk := things.ExtractThingKey(r); {
+	switch tk := apiutil.ExtractThingKey(r); {
 	case tk.Value != "":
 		req.thingKey = tk
 	default:
@@ -205,7 +204,7 @@ func decodeSendCommandByGroup(_ context.Context, r *http.Request) (any, error) {
 func readPayload(r *http.Request) ([]byte, error) {
 	payload, err := io.ReadAll(r.Body)
 	if err != nil {
-		return nil, apiutil.ErrMalformedEntity
+		return nil, errors.ErrMalformedEntity
 	}
 	defer r.Body.Close()
 

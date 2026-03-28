@@ -2,36 +2,17 @@ package things
 
 import (
 	"context"
-	"time"
 
-	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
-// Identity contains ID and Email.
-type Identity struct {
-	ID    string
-	Email string
-}
+// Group is an alias for the shared domain type.
+type Group = domain.Group
 
-// Group represents the group information.
-type Group struct {
-	ID          string
-	OrgID       string
-	Name        string
-	Description string
-	Metadata    Metadata
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
-// GroupPage contains page related metadata as well as list of groups that
-// belong to this page.
-type GroupPage struct {
-	Total  uint64
-	Groups []Group
-}
+// GroupPage is an alias for the shared domain type.
+type GroupPage = domain.GroupPage
 
 // GroupRepository specifies a group persistence API.
 type GroupRepository interface {
@@ -137,7 +118,7 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token, orgID string, 
 
 	memberships := []GroupMembership{{MemberID: ownerID, Role: Owner}}
 	if ownerID != userID {
-		if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Editor); err != nil {
+		if err := ts.canAccessOrg(ctx, token, orgID, domain.OrgSub, Editor); err != nil {
 			return nil, err
 		}
 		memberships = append(memberships, GroupMembership{MemberID: userID, Role: Admin})

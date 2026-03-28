@@ -6,10 +6,9 @@ package readers
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const rootSubject = "root"
@@ -23,10 +22,10 @@ type Backup struct {
 // implementation, and all of its decorators (e.g. logging & metrics).
 type Service interface {
 	// ListJSONMessages retrieves the json messages with given filters.
-	ListJSONMessages(ctx context.Context, token string, key things.ThingKey, rpm JSONPageMetadata) (JSONMessagesPage, error)
+	ListJSONMessages(ctx context.Context, token string, key domain.ThingKey, rpm JSONPageMetadata) (JSONMessagesPage, error)
 
 	// ListSenMLMessages retrieves the senml messages with given filters.
-	ListSenMLMessages(ctx context.Context, token string, key things.ThingKey, rpm SenMLPageMetadata) (SenMLMessagesPage, error)
+	ListSenMLMessages(ctx context.Context, token string, key domain.ThingKey, rpm SenMLPageMetadata) (SenMLMessagesPage, error)
 
 	// ExportJSONMessages retrieves the json messages with given filters, intended for exporting.
 	ExportJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) (JSONMessagesPage, error)
@@ -69,10 +68,10 @@ func New(auth protomfx.AuthServiceClient, things protomfx.ThingsServiceClient, j
 	}
 }
 
-func (rs *readersService) ListJSONMessages(ctx context.Context, token string, key things.ThingKey, rpm JSONPageMetadata) (JSONMessagesPage, error) {
+func (rs *readersService) ListJSONMessages(ctx context.Context, token string, key domain.ThingKey, rpm JSONPageMetadata) (JSONMessagesPage, error) {
 	switch {
 	case rpm.Publisher != "":
-		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: auth.Viewer})
+		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: domain.OrgViewer})
 		if err != nil {
 			return JSONMessagesPage{}, err
 		}
@@ -91,10 +90,10 @@ func (rs *readersService) ListJSONMessages(ctx context.Context, token string, ke
 	return rs.json.Retrieve(ctx, rpm)
 }
 
-func (rs *readersService) ListSenMLMessages(ctx context.Context, token string, key things.ThingKey, rpm SenMLPageMetadata) (SenMLMessagesPage, error) {
+func (rs *readersService) ListSenMLMessages(ctx context.Context, token string, key domain.ThingKey, rpm SenMLPageMetadata) (SenMLMessagesPage, error) {
 	switch {
 	case rpm.Publisher != "":
-		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: auth.Viewer})
+		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: domain.OrgViewer})
 		if err != nil {
 			return SenMLMessagesPage{}, err
 		}
@@ -116,7 +115,7 @@ func (rs *readersService) ListSenMLMessages(ctx context.Context, token string, k
 func (rs *readersService) ExportJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) (JSONMessagesPage, error) {
 	switch {
 	case rpm.Publisher != "":
-		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: auth.Viewer})
+		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: domain.OrgViewer})
 		if err != nil {
 			return JSONMessagesPage{}, err
 		}
@@ -132,7 +131,7 @@ func (rs *readersService) ExportJSONMessages(ctx context.Context, token string, 
 func (rs *readersService) ExportSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) (SenMLMessagesPage, error) {
 	switch {
 	case rpm.Publisher != "":
-		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: auth.Viewer})
+		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: domain.OrgViewer})
 		if err != nil {
 			return SenMLMessagesPage{}, err
 		}
@@ -191,7 +190,7 @@ func (rs *readersService) Restore(ctx context.Context, token string, backup Back
 }
 
 func (rs *readersService) DeleteJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) error {
-	_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: auth.Admin})
+	_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: domain.OrgAdmin})
 	if err != nil {
 		return err
 	}
@@ -200,7 +199,7 @@ func (rs *readersService) DeleteJSONMessages(ctx context.Context, token string, 
 }
 
 func (rs *readersService) DeleteSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) error {
-	_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: auth.Admin})
+	_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: domain.OrgAdmin})
 	if err != nil {
 		return err
 	}
@@ -237,7 +236,7 @@ func (rs *readersService) isAdmin(ctx context.Context, token string) error {
 	return nil
 }
 
-func (rs *readersService) getPubConfigByKey(ctx context.Context, key things.ThingKey) (*protomfx.PubConfigByKeyRes, error) {
+func (rs *readersService) getPubConfigByKey(ctx context.Context, key domain.ThingKey) (*protomfx.PubConfigByKeyRes, error) {
 	pc, err := rs.thingc.GetPubConfigByKey(ctx, &protomfx.ThingKey{Value: key.Value, Type: key.Type})
 	if err != nil {
 		return nil, err

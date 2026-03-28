@@ -4,14 +4,20 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+// PlatformInvite is an alias for the shared domain type.
+type PlatformInvite = domain.PlatformInvite
+
+// PlatformInvitesPage is an alias for the shared domain type.
+type PlatformInvitesPage = domain.PlatformInvitesPage
 
 const (
 	UserTypeInvitee = "invitee"
@@ -24,26 +30,12 @@ const (
 	InviteStateDeclined = "declined"
 )
 
-type PlatformInvite struct {
-	ID           string
-	InviteeEmail string
-	CreatedAt    time.Time
-	ExpiresAt    time.Time
-	State        string
-	OrgInvite    *auth.OrgInvite
-}
-
-type PlatformInvitesPage struct {
-	Invites []PlatformInvite
-	apiutil.PageMetadata
-}
-
 type PlatformInvites interface {
 	// CreatePlatformInvite creates a pending platform Invite for the appropriate email address.
 	// The user can optionally also be invited to an Organization with a certain role by supplying the `orgInvite` argument - the invite
 	// becomes visible once the user completes registration via the platform invite.
 	// temp:orgid, role, gis
-	CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite auth.OrgInvite) (PlatformInvite, error)
+	CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite domain.OrgInvite) (PlatformInvite, error)
 
 	// RevokePlatformInvite revokes a specific pending PlatformInvite. Only usable by the platform Root Admin.
 	RevokePlatformInvite(ctx context.Context, token, inviteID string) error
@@ -78,7 +70,7 @@ type PlatformInvitesRepository interface {
 	UpdatePlatformInviteState(ctx context.Context, inviteID, state string) error
 }
 
-func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite auth.OrgInvite) (PlatformInvite, error) {
+func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite domain.OrgInvite) (PlatformInvite, error) {
 	if err := svc.isAdmin(ctx, token); err != nil {
 		return PlatformInvite{}, err
 	}
@@ -251,16 +243,16 @@ func (svc usersService) attachDormantOrgInvite(ctx context.Context, platformInvi
 		return err
 	}
 
-	platformInvite.OrgInvite = &auth.OrgInvite{
+	platformInvite.OrgInvite = &domain.OrgInvite{
 		ID:           dormantOrgInvite.Id,
 		OrgID:        dormantOrgInvite.OrgID,
 		OrgName:      dormantOrgInvite.OrgName,
 		InviteeRole:  dormantOrgInvite.InviteeRole,
-		GroupInvites: make([]auth.GroupInvite, 0, len(dormantOrgInvite.GroupInvites)),
+		GroupInvites: make([]domain.GroupInvite, 0, len(dormantOrgInvite.GroupInvites)),
 	}
 
 	for _, gi := range dormantOrgInvite.GetGroupInvites() {
-		platformInvite.OrgInvite.GroupInvites = append(platformInvite.OrgInvite.GroupInvites, auth.GroupInvite{
+		platformInvite.OrgInvite.GroupInvites = append(platformInvite.OrgInvite.GroupInvites, domain.GroupInvite{
 			GroupID:    gi.GroupID,
 			MemberRole: gi.MemberRole,
 		})

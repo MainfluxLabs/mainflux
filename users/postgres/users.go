@@ -137,10 +137,10 @@ func (ur userRepository) RetrieveByID(ctx context.Context, id string) (users.Use
 	return toUser(dbu)
 }
 
-func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm users.PageMetadata) (users.UserPage, error) {
+func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm users.PageMetadata) (users.UsersPage, error) {
 	eq, ep, err := createEmailQuery("", pm.Email)
 	if err != nil {
-		return users.UserPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		return users.UsersPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
@@ -149,7 +149,7 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 
 	mp, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
-		return users.UserPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		return users.UsersPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	aq := fmt.Sprintf("status = '%s'", pm.Status)
 	if pm.Status == users.AllStatusKey {
@@ -186,7 +186,7 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 
 	rows, err := ur.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
-		return users.UserPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		return users.UsersPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 	defer rows.Close()
 
@@ -194,12 +194,12 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 	for rows.Next() {
 		dbusr := dbUser{}
 		if err := rows.StructScan(&dbusr); err != nil {
-			return users.UserPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+			return users.UsersPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
 		user, err := toUser(dbusr)
 		if err != nil {
-			return users.UserPage{}, err
+			return users.UsersPage{}, err
 		}
 
 		items = append(items, user)
@@ -209,10 +209,10 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 
 	total, err := dbutil.Total(ctx, ur.db, cq, params)
 	if err != nil {
-		return users.UserPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		return users.UsersPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
-	page := users.UserPage{
+	page := users.UsersPage{
 		Users: items,
 		Total: total,
 	}

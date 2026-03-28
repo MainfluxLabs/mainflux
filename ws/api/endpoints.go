@@ -10,9 +10,10 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/ws"
 	"github.com/go-zoo/bone"
 	"github.com/gorilla/websocket"
@@ -48,8 +49,8 @@ func handshake(svc ws.Service) http.HandlerFunc {
 }
 
 func decodeRequest(r *http.Request) (getConnByKey, error) {
-	authKey := things.ExtractThingKey(r)
-	if authKey.Value == "" || authKey.Type == "" {
+	thingKey := apiutil.ExtractThingKey(r)
+	if thingKey.Value == "" || thingKey.Type == "" {
 		queryKey := bone.GetQuery(r, "key")
 		if len(queryKey) == 0 {
 			return getConnByKey{}, errUnauthorizedAccess
@@ -60,18 +61,18 @@ func decodeRequest(r *http.Request) (getConnByKey, error) {
 			return getConnByKey{}, errUnauthorizedAccess
 		}
 
-		authKey = things.ThingKey{
+		thingKey = domain.ThingKey{
 			Value: queryKey[0],
 			Type:  queryKeyType[0],
 		}
 	}
 
-	if err := authKey.Validate(); err != nil {
+	if err := apiutil.ValidateThingKey(thingKey); err != nil {
 		return getConnByKey{}, err
 	}
 
 	req := getConnByKey{
-		ThingKey: authKey,
+		ThingKey: thingKey,
 	}
 
 	subtopic, err := messaging.NormalizeSubtopic(r.RequestURI)
@@ -131,7 +132,7 @@ func encodeError(w http.ResponseWriter, err error) {
 		statusCode = http.StatusBadRequest
 	case errUnauthorizedAccess:
 		statusCode = http.StatusForbidden
-	case messaging.ErrMalformedSubtopic, apiutil.ErrMalformedEntity:
+	case messaging.ErrMalformedSubtopic, errors.ErrMalformedEntity:
 		statusCode = http.StatusBadRequest
 	default:
 		statusCode = http.StatusNotFound

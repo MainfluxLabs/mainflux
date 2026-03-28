@@ -5,8 +5,8 @@ package auth
 
 import (
 	"context"
-	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
@@ -22,43 +22,17 @@ var (
 	ErrAPIKeyExpired = errors.New("use of expired API key")
 )
 
+// Key type constants (aliases for domain).
 const (
-	// LoginKey is temporary User key received on successful login.
-	LoginKey uint32 = iota
-	// RecoveryKey represents a key for resseting password.
-	RecoveryKey
-	// APIKey enables the one to act on behalf of the user.
-	APIKey
+	LoginKey    = domain.LoginKey
+	RecoveryKey = domain.RecoveryKey
+	APIKey      = domain.APIKey
 )
 
-// Key represents API key.
-type Key struct {
-	ID        string
-	Type      uint32
-	IssuerID  string
-	Subject   string
-	IssuedAt  time.Time
-	ExpiresAt time.Time
-}
-
-// Identity contains ID and Email.
-type Identity struct {
-	ID    string
-	Email string
-}
-
-type KeysPage struct {
-	Total uint64
-	Keys  []Key
-}
-
-// Expired verifies if the key is expired.
-func (k Key) Expired() bool {
-	if k.Type == APIKey && k.ExpiresAt.IsZero() {
-		return false
-	}
-	return k.ExpiresAt.UTC().Before(time.Now().UTC())
-}
+// Key is an alias for the shared domain type.
+type Key = domain.Key
+type Identity = domain.Identity
+type KeysPage = domain.KeysPage
 
 // Keys specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
