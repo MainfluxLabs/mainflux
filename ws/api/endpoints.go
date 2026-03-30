@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/domain" 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -49,36 +49,20 @@ func messagesHandshake(svc ws.Service) http.HandlerFunc {
 	}
 }
 
-<<<<<<< HEAD
-func decodeRequest(r *http.Request) (getConnByKey, error) {
-	thingKey := apiutil.ExtractThingKey(r)
-	if thingKey.Value == "" || thingKey.Type == "" {
-		queryKey := bone.GetQuery(r, "key")
-		if len(queryKey) == 0 {
-			return getConnByKey{}, errUnauthorizedAccess
-		}
-=======
 func thingCommandsHandshake(svc ws.Service) http.HandlerFunc {
 	return commandsHandshake(svc, processThingCommands)
 }
->>>>>>> 88e64c30 (MF-991 - Send commands via ws adapter)
 
 func groupCommandsHandshake(svc ws.Service) http.HandlerFunc {
 	return commandsHandshake(svc, processGroupCommands)
 }
 
-<<<<<<< HEAD
-		thingKey = domain.ThingKey{
-			Value: queryKey[0],
-			Type:  queryKeyType[0],
-=======
 func commandsHandshake(svc ws.Service, processFn func(ws.Service, cmdConnReq, <-chan []byte)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req, err := decodeCommandRequest(r)
 		if err != nil {
 			encodeError(w, err)
 			return
->>>>>>> 88e64c30 (MF-991 - Send commands via ws adapter)
 		}
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -92,14 +76,6 @@ func commandsHandshake(svc ws.Service, processFn func(ws.Service, cmdConnReq, <-
 	}
 }
 
-<<<<<<< HEAD
-	if err := apiutil.ValidateThingKey(thingKey); err != nil {
-		return getConnByKey{}, err
-	}
-
-	req := getConnByKey{
-		ThingKey: thingKey,
-=======
 func decodeMessagesRequest(r *http.Request) (getConnByKey, error) {
 	tk, err := extractThingKey(r)
 	if err != nil {
@@ -107,7 +83,6 @@ func decodeMessagesRequest(r *http.Request) (getConnByKey, error) {
 	}
 	if tk.Value == "" {
 		return getConnByKey{}, apiutil.ErrMissingAuth
->>>>>>> 88e64c30 (MF-991 - Send commands via ws adapter)
 	}
 
 	subtopic, err := messaging.NormalizeSubtopic(r.RequestURI)
@@ -121,7 +96,7 @@ func decodeMessagesRequest(r *http.Request) (getConnByKey, error) {
 func decodeCommandRequest(r *http.Request) (cmdConnReq, error) {
 	id := bone.GetValue(r, apiutil.IDKey)
 	if id == "" {
-		return cmdConnReq{}, apiutil.ErrMalformedEntity
+		return cmdConnReq{}, errors.ErrMalformedEntity
 	}
 
 	var subtopicPath string
@@ -154,19 +129,19 @@ func decodeCommandRequest(r *http.Request) (cmdConnReq, error) {
 
 // extractThingKey retrieves a ThingKey from the Authorization header,
 // falling back to the key and keyType query parameters.
-func extractThingKey(r *http.Request) (things.ThingKey, error) {
-	if tk := things.ExtractThingKey(r); tk.Value != "" {
+func extractThingKey(r *http.Request) (domain.ThingKey, error) {
+	if tk := apiutil.ExtractThingKey(r); tk.Value != "" {
 		return tk, nil
 	}
 
 	queryKey := bone.GetQuery(r, "key")
 	queryKeyType := bone.GetQuery(r, "keyType")
 	if len(queryKey) > 0 && len(queryKeyType) > 0 {
-		tk := things.ThingKey{Value: queryKey[0], Type: queryKeyType[0]}
-		return tk, tk.Validate()
+		tk := domain.ThingKey{Value: queryKey[0], Type: queryKeyType[0]}
+		return tk, apiutil.ValidateThingKey(tk)
 	}
 
-	return things.ThingKey{}, nil
+	return domain.ThingKey{}, nil
 }
 
 // extractBearerToken retrieves a bearer token from the Authorization header,
@@ -185,7 +160,6 @@ func extractBearerToken(r *http.Request) string {
 
 func listen(conn *websocket.Conn, msgs chan<- []byte) {
 	for {
-		// Listen for message from the client, and push them to the msgs profile
 		_, payload, err := conn.ReadMessage()
 
 		if websocket.IsUnexpectedCloseError(err) {
@@ -213,23 +187,6 @@ func processMessages(svc ws.Service, req getConnByKey, msgs <-chan []byte) {
 	}
 }
 
-<<<<<<< HEAD
-func encodeError(w http.ResponseWriter, err error) {
-	var statusCode int
-
-	switch err {
-	case apiutil.ErrBearerKey,
-		apiutil.ErrInvalidThingKeyType:
-		statusCode = http.StatusUnauthorized
-	case ws.ErrEmptyTopic:
-		statusCode = http.StatusBadRequest
-	case errUnauthorizedAccess:
-		statusCode = http.StatusForbidden
-	case messaging.ErrMalformedSubtopic, errors.ErrMalformedEntity:
-		statusCode = http.StatusBadRequest
-	default:
-		statusCode = http.StatusNotFound
-=======
 func processThingCommands(svc ws.Service, req cmdConnReq, msgs <-chan []byte) {
 	for payload := range msgs {
 		m := buildMessage(req.subtopic, payload)
@@ -239,7 +196,6 @@ func processThingCommands(svc ws.Service, req cmdConnReq, msgs <-chan []byte) {
 		default:
 			svc.SendCommandToThingByKey(context.Background(), req.thingKey, req.id, m)
 		}
->>>>>>> 88e64c30 (MF-991 - Send commands via ws adapter)
 	}
 	req.conn.Close()
 }

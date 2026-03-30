@@ -19,7 +19,6 @@ const (
 	readwriteBufferSize = 1024
 )
 
-
 var (
 	upgrader = websocket.Upgrader{
 		ReadBufferSize:  readwriteBufferSize,

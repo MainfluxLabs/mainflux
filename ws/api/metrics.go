@@ -68,7 +68,7 @@ func (mm *metricsMiddleware) SendCommandToThing(ctx context.Context, token, thin
 	return mm.svc.SendCommandToThing(ctx, token, thingID, msg)
 }
 
-func (mm *metricsMiddleware) SendCommandToThingByKey(ctx context.Context, key things.ThingKey, thingID string, msg protomfx.Message) error {
+func (mm *metricsMiddleware) SendCommandToThingByKey(ctx context.Context, key domain.ThingKey, thingID string, msg protomfx.Message) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "send_command_to_thing_by_key").Add(1)
 		mm.latency.With("method", "send_command_to_thing_by_key").Observe(time.Since(begin).Seconds())
@@ -86,7 +86,7 @@ func (mm *metricsMiddleware) SendCommandToGroup(ctx context.Context, token, grou
 	return mm.svc.SendCommandToGroup(ctx, token, groupID, msg)
 }
 
-func (mm *metricsMiddleware) SendCommandToGroupByKey(ctx context.Context, key things.ThingKey, groupID string, msg protomfx.Message) error {
+func (mm *metricsMiddleware) SendCommandToGroupByKey(ctx context.Context, key domain.ThingKey, groupID string, msg protomfx.Message) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "send_command_to_group_by_key").Add(1)
 		mm.latency.With("method", "send_command_to_group_by_key").Observe(time.Since(begin).Seconds())

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	pkgmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -48,40 +49,40 @@ func TestPublish(t *testing.T) {
 		err      error
 	}{
 		{
-			desc:     "publish a valid message with valid thingKey",
+			desc:     "publish a valid message with valid thing key",
 			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey},
 			msg:      msg,
 			err:      nil,
 		},
 		{
-			desc:     "publish a valid message with empty thingKey",
+			desc:     "publish a valid message with empty thing key",
 			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: ""},
 			msg:      msg,
-			err:      ws.ErrUnauthorizedAccess,
+			err:      errors.ErrAuthentication,
 		},
 		{
-			desc:     "publish a valid message with invalid thingKey",
+			desc:     "publish a valid message with invalid thing key",
 			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: "invalid"},
 			msg:      msg,
-			err:      ws.ErrUnauthorizedAccess,
+			err:      errors.ErrAuthentication,
 		},
 		{
-			desc:     "publish an empty message with valid thingKey",
+			desc:     "publish an empty message with valid thing key",
 			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey},
 			msg:      protomfx.Message{},
 			err:      messaging.ErrPublishMessage,
 		},
 		{
-			desc:     "publish an empty message with empty thingKey",
+			desc:     "publish an empty message with empty thing key",
 			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: ""},
 			msg:      protomfx.Message{},
-			err:      ws.ErrUnauthorizedAccess,
+			err:      errors.ErrAuthentication,
 		},
 		{
-			desc:     "publish an empty message with invalid thingKey",
+			desc:     "publish an empty message with invalid thing key",
 			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: "invalid"},
 			msg:      protomfx.Message{},
-			err:      ws.ErrUnauthorizedAccess,
+			err:      errors.ErrAuthentication,
 		},
 	}
 
@@ -92,7 +93,7 @@ func TestPublish(t *testing.T) {
 }
 
 func TestSubscribe(t *testing.T) {
-	tc := pkgmock.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
+	tc := pkgmock.NewThingsServiceClient(nil, map[string]things.Thing{thingKey: {ID: id}}, nil)
 	svc, pubsub := newService(tc)
 
 	c := ws.NewClient(nil)
@@ -105,14 +106,14 @@ func TestSubscribe(t *testing.T) {
 		err      error
 	}{
 		{
-			desc:     "subscribe with valid thingKey and subtopic",
+			desc:     "subscribe with valid thing key and subtopic",
 			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey},
 			subtopic: subTopic,
 			fail:     false,
 			err:      nil,
 		},
 		{
-			desc:     "subscribe again with valid thingKey and subtopic",
+			desc:     "subscribe again with valid thing key and subtopic",
 			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey},
 			subtopic: subTopic,
 			fail:     false,
@@ -123,21 +124,21 @@ func TestSubscribe(t *testing.T) {
 			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey},
 			subtopic: subTopic,
 			fail:     true,
-			err:      ws.ErrFailedSubscription,
+			err:      messaging.ErrFailedSubscribe,
 		},
 		{
-			desc:     "subscribe with invalid thingKey",
+			desc:     "subscribe with invalid thing key",
 			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: "invalid"},
 			subtopic: subTopic,
 			fail:     false,
-			err:      ws.ErrUnauthorizedAccess,
+			err:      errors.ErrAuthentication,
 		},
 		{
-			desc:     "subscribe with empty thingKey",
+			desc:     "subscribe with empty thing key",
 			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: ""},
 			subtopic: subTopic,
 			fail:     false,
-			err:      ws.ErrUnauthorizedAccess,
+			err:      errors.ErrAuthentication,
 		},
 	}
 
@@ -149,7 +150,7 @@ func TestSubscribe(t *testing.T) {
 }
 
 func TestUnsubscribe(t *testing.T) {
-	tc := pkgmock.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
+	tc := pkgmock.NewThingsServiceClient(nil, map[string]things.Thing{thingKey: {ID: id}}, nil)
 	svc, pubsub := newService(tc)
 
 	cases := []struct {
@@ -160,14 +161,14 @@ func TestUnsubscribe(t *testing.T) {
 		err      error
 	}{
 		{
-			desc:     "unsubscribe with valid thingKey and subtopic",
+			desc:     "unsubscribe with valid thing key and subtopic",
 			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey},
 			subtopic: subTopic,
 			fail:     false,
 			err:      nil,
 		},
 		{
-			desc:     "unsubscribe with valid thingKey and empty subtopic",
+			desc:     "unsubscribe with valid thing key and empty subtopic",
 			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey},
 			subtopic: "",
 			fail:     false,
@@ -178,14 +179,14 @@ func TestUnsubscribe(t *testing.T) {
 			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey},
 			subtopic: subTopic,
 			fail:     true,
-			err:      ws.ErrFailedUnsubscribe,
+			err:      messaging.ErrFailedUnsubscribe,
 		},
 		{
-			desc:     "unsubscribe with empty thingKey",
+			desc:     "unsubscribe with empty thing key",
 			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: ""},
 			subtopic: subTopic,
 			fail:     false,
-			err:      ws.ErrUnauthorizedAccess,
+			err:      errors.ErrAuthentication,
 		},
 	}
 
