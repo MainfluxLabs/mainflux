@@ -7,6 +7,20 @@ import (
 	"time"
 )
 
+// Thing key type constants.
+const (
+	KeyTypeInternal = "internal"
+	KeyTypeExternal = "external"
+)
+
+// Group role constants.
+const (
+	GroupViewer = "viewer"
+	GroupEditor = "editor"
+	GroupAdmin  = "admin"
+	GroupOwner  = "owner"
+)
+
 // Thing represents a Mainflux thing. Each thing is owned by one user, and
 // it is assigned with the unique identifier and (temporary) access key.
 type Thing struct {
@@ -26,12 +40,6 @@ type ThingsPage struct {
 	Total  uint64  `json:"total"`
 	Things []Thing `json:"things"`
 }
-
-// Thing key type constants.
-const (
-	KeyTypeInternal = "internal"
-	KeyTypeExternal = "external"
-)
 
 // ThingKey represents a Thing authentication key and its type.
 type ThingKey struct {
@@ -136,11 +144,3 @@ type GroupMembershipsPage struct {
 	Total            uint64            `json:"total"`
 	GroupMemberships []GroupMembership `json:"group_memberships"`
 }
-
-// Group role constants.
-const (
-	GroupViewer = "viewer"
-	GroupEditor = "editor"
-	GroupAdmin  = "admin"
-	GroupOwner  = "owner"
-)

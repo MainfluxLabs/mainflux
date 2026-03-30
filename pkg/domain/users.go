@@ -11,6 +11,13 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
+// Status key constants for user filtering.
+const (
+	EnabledStatusKey  = "enabled"
+	DisabledStatusKey = "disabled"
+	AllStatusKey      = "all"
+)
+
 // User represents user account information.
 type User struct {
 	ID       string   `json:"id,omitempty"`
@@ -39,13 +46,6 @@ type UsersPage struct {
 	Total uint64 `json:"total"`
 	Users []User `json:"users"`
 }
-
-// Status key constants for user filtering.
-const (
-	EnabledStatusKey  = "enabled"
-	DisabledStatusKey = "disabled"
-	AllStatusKey      = "all"
-)
 
 // PlatformInvite represents platform invite information.
 type PlatformInvite struct {
