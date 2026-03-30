@@ -4,7 +4,6 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux"
@@ -20,9 +19,6 @@ const (
 	readwriteBufferSize = 1024
 )
 
-var (
-	errUnauthorizedAccess = errors.New("missing or invalid credentials provided")
-)
 
 var (
 	upgrader = websocket.Upgrader{
@@ -33,13 +29,17 @@ var (
 	logger log.Logger
 )
 
-// MakeHandler returns http handler with handshake endpoint.
+// MakeHandler returns http handler with websocket endpoints.
 func MakeHandler(svc ws.Service, l log.Logger) http.Handler {
 	logger = l
 
 	mux := bone.New()
-	mux.GetFunc("/messages", handshake(svc))
-	mux.GetFunc("/messages/*", handshake(svc))
+	mux.GetFunc("/messages", messagesHandshake(svc))
+	mux.GetFunc("/messages/*", messagesHandshake(svc))
+	mux.GetFunc("/things/:id/commands", thingCommandsHandshake(svc))
+	mux.GetFunc("/things/:id/commands/*", thingCommandsHandshake(svc))
+	mux.GetFunc("/groups/:id/commands", groupCommandsHandshake(svc))
+	mux.GetFunc("/groups/:id/commands/*", groupCommandsHandshake(svc))
 	mux.GetFunc("/version", mainflux.Health(protocol))
 	mux.Handle("/metrics", promhttp.Handler())
 

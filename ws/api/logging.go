@@ -70,3 +70,55 @@ func (lm *loggingMiddleware) Unsubscribe(ctx context.Context, key domain.ThingKe
 
 	return lm.svc.Unsubscribe(ctx, key, subtopic)
 }
+
+func (lm *loggingMiddleware) SendCommandToThing(ctx context.Context, token, thingID string, msg protomfx.Message) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method send_command_to_thing for thing id %s took %s to complete", thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.SendCommandToThing(ctx, token, thingID, msg)
+}
+
+func (lm *loggingMiddleware) SendCommandToThingByKey(ctx context.Context, key things.ThingKey, thingID string, msg protomfx.Message) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method send_command_to_thing_by_key for thing id %s took %s to complete", thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.SendCommandToThingByKey(ctx, key, thingID, msg)
+}
+
+func (lm *loggingMiddleware) SendCommandToGroup(ctx context.Context, token, groupID string, msg protomfx.Message) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method send_command_to_group for group id %s took %s to complete", groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.SendCommandToGroup(ctx, token, groupID, msg)
+}
+
+func (lm *loggingMiddleware) SendCommandToGroupByKey(ctx context.Context, key things.ThingKey, groupID string, msg protomfx.Message) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method send_command_to_group_by_key for group id %s took %s to complete", groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.SendCommandToGroupByKey(ctx, key, groupID, msg)
+}
