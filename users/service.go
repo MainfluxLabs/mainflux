@@ -47,9 +47,9 @@ var (
 	ErrSelfRegisterDisabled = errors.New("self register disabled")
 )
 
-// UsersPage is an alias for the shared domain type.
-type UsersPage = domain.UsersPage
-type PageMetadata = domain.UsersPageMetadata
+type (
+	PageMetadata = domain.UsersPageMetadata
+)
 
 // Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).

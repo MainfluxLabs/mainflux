@@ -10,8 +10,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
-const rootSubject = "root"
-
 type Backup struct {
 	JSONMessages  JSONMessagesPage
 	SenMLMessages SenMLMessagesPage
@@ -223,7 +221,7 @@ func (rs *readersService) DeleteAllSenMLMessages(ctx context.Context, token stri
 }
 
 func (rs *readersService) isAdmin(ctx context.Context, token string) error {
-	if err := rs.authc.Authorize(ctx, domain.AuthzReq{Token: token, Subject: rootSubject}); err != nil {
+	if err := rs.authc.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.RootSub}); err != nil {
 		return err
 	}
 

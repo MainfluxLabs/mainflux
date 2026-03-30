@@ -10,7 +10,7 @@ import (
 // ErrGroupMembershipExists indicates that membership already exists.
 var ErrGroupMembershipExists = errors.New("group membership already exists")
 
-// GroupMembership and GroupMembershipsPage are aliases for the shared domain types.
+// Domain type aliases
 type (
 	GroupMembership      = domain.GroupMembership
 	GroupMembershipsPage = domain.GroupMembershipsPage

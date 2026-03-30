@@ -22,17 +22,19 @@ var (
 	ErrAPIKeyExpired = errors.New("use of expired API key")
 )
 
+// Domain type aliases
+type (
+	Key      = domain.Key
+	Identity = domain.Identity
+	KeysPage = domain.KeysPage
+)
+
 // Key type constants (aliases for domain).
 const (
 	LoginKey    = domain.LoginKey
 	RecoveryKey = domain.RecoveryKey
 	APIKey      = domain.APIKey
 )
-
-// Key is an alias for the shared domain type.
-type Key = domain.Key
-type Identity = domain.Identity
-type KeysPage = domain.KeysPage
 
 // Keys specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
