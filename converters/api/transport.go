@@ -85,7 +85,7 @@ func decodeConvertCSVFile(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	req := convertCSVReq{
-		key:      apiutil.ExtractThingKeyFromHTTPHeader(r),
+		key:      apiutil.ExtractThingKey(r),
 		csvLines: csvLines,
 	}
 

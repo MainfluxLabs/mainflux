@@ -23,9 +23,10 @@ func (req publishReq) validate() error {
 }
 
 type cmdReq struct {
-	token string
-	id    string
-	msg   protomfx.Message
+	token    string
+	thingKey domain.ThingKey
+	id       string
+	msg      protomfx.Message
 }
 
 type thingCommandReq struct {
@@ -33,8 +34,14 @@ type thingCommandReq struct {
 }
 
 func (req thingCommandReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
+	if req.token == "" && req.thingKey.Value == "" {
+		return apiutil.ErrMissingAuth
+	}
+
+	if req.thingKey.Value != "" {
+		if err := apiutil.ValidateThingKey(req.thingKey); err != nil {
+			return err
+		}
 	}
 
 	if req.id == "" {
@@ -49,8 +56,14 @@ type groupCommandReq struct {
 }
 
 func (req groupCommandReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
+	if req.token == "" && req.thingKey.Value == "" {
+		return apiutil.ErrMissingAuth
+	}
+
+	if req.thingKey.Value != "" {
+		if err := apiutil.ValidateThingKey(req.thingKey); err != nil {
+			return err
+		}
 	}
 
 	if req.id == "" {

@@ -49,8 +49,8 @@ func handshake(svc ws.Service) http.HandlerFunc {
 }
 
 func decodeRequest(r *http.Request) (getConnByKey, error) {
-	authKey := apiutil.ExtractThingKeyFromHTTPHeader(r)
-	if authKey.Value == "" || authKey.Type == "" {
+	thingKey := apiutil.ExtractThingKey(r)
+	if thingKey.Value == "" || thingKey.Type == "" {
 		queryKey := bone.GetQuery(r, "key")
 		if len(queryKey) == 0 {
 			return getConnByKey{}, errUnauthorizedAccess
@@ -61,18 +61,18 @@ func decodeRequest(r *http.Request) (getConnByKey, error) {
 			return getConnByKey{}, errUnauthorizedAccess
 		}
 
-		authKey = domain.ThingKey{
+		thingKey = domain.ThingKey{
 			Value: queryKey[0],
 			Type:  queryKeyType[0],
 		}
 	}
 
-	if err := apiutil.ValidateThingKey(authKey); err != nil {
+	if err := apiutil.ValidateThingKey(thingKey); err != nil {
 		return getConnByKey{}, err
 	}
 
 	req := getConnByKey{
-		ThingKey: authKey,
+		ThingKey: thingKey,
 	}
 
 	subtopic, err := messaging.NormalizeSubtopic(r.RequestURI)

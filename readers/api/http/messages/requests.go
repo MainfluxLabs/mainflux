@@ -20,7 +20,7 @@ type listSenMLMessagesReq struct {
 func (req listSenMLMessagesReq) validate() error {
 	err := apiutil.ValidateThingKey(req.thingKey)
 	if req.token == "" && err != nil {
-		return apiutil.ErrBearerToken
+		return apiutil.ErrMissingAuth
 	}
 
 	if req.pageMeta.Limit > maxLimitSize {
@@ -56,7 +56,7 @@ type listJSONMessagesReq struct {
 func (req listJSONMessagesReq) validate() error {
 	err := apiutil.ValidateThingKey(req.thingKey)
 	if req.token == "" && err != nil {
-		return apiutil.ErrBearerToken
+		return apiutil.ErrMissingAuth
 	}
 
 	if req.pageMeta.Limit > maxLimitSize {
@@ -137,7 +137,7 @@ type deleteAllSenMLMessagesReq struct {
 func (req deleteAllSenMLMessagesReq) validate() error {
 	err := apiutil.ValidateThingKey(req.thingKey)
 	if req.token == "" && err != nil {
-		return apiutil.ErrBearerToken
+		return apiutil.ErrMissingAuth
 	}
 
 	return nil
@@ -152,7 +152,7 @@ type deleteAllJSONMessagesReq struct {
 func (req deleteAllJSONMessagesReq) validate() error {
 	err := apiutil.ValidateThingKey(req.thingKey)
 	if req.token == "" && err != nil {
-		return apiutil.ErrBearerToken
+		return apiutil.ErrMissingAuth
 	}
 	return nil
 }

@@ -93,7 +93,7 @@ func (req createPlatformInviteRequest) validate() error {
 	}
 
 	if req.OrgID != "" {
-		if err := apiutil.ValidateInviteeRole(req.Role); err != nil {
+		if err := apiutil.ValidateOrgInviteeRole(req.Role); err != nil {
 			return err
 		}
 	}
