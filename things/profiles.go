@@ -16,7 +16,7 @@ type Profile = domain.Profile
 type ProfilesPage = domain.ProfilesPage
 
 // Config and Transformer are aliases for the shared domain types.
-type Config = domain.Config
+type Config = domain.ProfileConfig
 type Transformer = domain.Transformer
 
 // ProfileRepository specifies a profile persistence API.

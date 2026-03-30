@@ -195,13 +195,13 @@ func (client grpcClient) GetPubConfigByKey(ctx context.Context, key domain.Thing
 	}, nil
 }
 
-func (client grpcClient) GetConfigByThing(ctx context.Context, thingID string) (domain.Config, error) {
+func (client grpcClient) GetConfigByThing(ctx context.Context, thingID string) (domain.ProfileConfig, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
 	res, err := client.getConfigByThing(ctx, thingIDReq{thingID: thingID})
 	if err != nil {
-		return domain.Config{}, err
+		return domain.ProfileConfig{}, err
 	}
 
 	c := res.(configByThingRes)
@@ -361,12 +361,12 @@ func (client grpcClient) GetGroup(ctx context.Context, groupID string) (domain.G
 	return domain.Group{ID: gr.id, OrgID: gr.orgID, Name: gr.name}, nil
 }
 
-func protoConfigToDomain(c *protomfx.Config) domain.Config {
+func protoConfigToDomain(c *protomfx.Config) domain.ProfileConfig {
 	if c == nil {
-		return domain.Config{}
+		return domain.ProfileConfig{}
 	}
 
-	return domain.Config{
+	return domain.ProfileConfig{
 		ContentType: c.GetContentType(),
 		Transformer: protoTransformerToDomain(c.GetTransformer()),
 	}

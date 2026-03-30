@@ -6,9 +6,9 @@ import (
 )
 
 // ProtoConfigToDomain converts proto Config to domain Config.
-func ProtoConfigToDomain(c *protomfx.Config) domain.Config {
+func ProtoConfigToDomain(c *protomfx.Config) domain.ProfileConfig {
 	if c == nil {
-		return domain.Config{}
+		return domain.ProfileConfig{}
 	}
 	tr := domain.Transformer{}
 	if c.Transformer != nil {
@@ -20,7 +20,7 @@ func ProtoConfigToDomain(c *protomfx.Config) domain.Config {
 			TimeLocation: c.Transformer.TimeLocation,
 		}
 	}
-	return domain.Config{
+	return domain.ProfileConfig{
 		ContentType: c.ContentType,
 		Transformer: tr,
 	}
@@ -35,7 +35,7 @@ func PubConfigInfoToProto(pi domain.PubConfigInfo) *protomfx.PubConfigByKeyRes {
 }
 
 // DomainConfigToProto converts domain Config to proto Config for use with messaging.
-func DomainConfigToProto(c domain.Config) *protomfx.Config {
+func DomainConfigToProto(c domain.ProfileConfig) *protomfx.Config {
 	tr := &protomfx.Transformer{
 		DataFilters:  c.Transformer.DataFilters,
 		DataField:    c.Transformer.DataField,

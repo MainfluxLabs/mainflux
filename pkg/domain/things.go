@@ -109,8 +109,8 @@ type ThingGroupCommandReq struct {
 	GroupID     string
 }
 
-// Config represents profile configuration.
-type Config struct {
+// ProfileConfig represents profile configuration.
+type ProfileConfig struct {
 	ContentType string      `json:"content_type"`
 	Transformer Transformer `json:"transformer"`
 }
@@ -148,7 +148,7 @@ const (
 
 type ThingsClient interface {
 	GetPubConfigByKey(ctx context.Context, key ThingKey) (PubConfigInfo, error)
-	GetConfigByThing(ctx context.Context, thingID string) (Config, error)
+	GetConfigByThing(ctx context.Context, thingID string) (ProfileConfig, error)
 	CanUserAccessThing(ctx context.Context, ar UserAccessReq) error
 	CanUserAccessProfile(ctx context.Context, ar UserAccessReq) error
 	CanUserAccessGroup(ctx context.Context, ar UserAccessReq) error

@@ -54,8 +54,8 @@ func (svc thingsServiceMock) GetPubConfigByKey(_ context.Context, key domain.Thi
 	return domain.PubConfigInfo{}, errors.ErrAuthentication
 }
 
-func (svc thingsServiceMock) GetConfigByThing(_ context.Context, _ string) (domain.Config, error) {
-	return domain.Config{}, nil
+func (svc thingsServiceMock) GetConfigByThing(_ context.Context, _ string) (domain.ProfileConfig, error) {
+	return domain.ProfileConfig{}, nil
 }
 
 func (svc thingsServiceMock) CanUserAccessThing(_ context.Context, req domain.UserAccessReq) error {
