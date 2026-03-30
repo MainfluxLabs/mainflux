@@ -193,7 +193,7 @@ func (ms *metricsMiddleware) GetPubConfigByKey(ctx context.Context, key things.T
 	return ms.svc.GetPubConfigByKey(ctx, key)
 }
 
-func (ms *metricsMiddleware) GetConfigByThing(ctx context.Context, thingID string) (domain.ProfileConfig, error) {
+func (ms *metricsMiddleware) GetConfigByThing(ctx context.Context, thingID string) (*domain.ProfileConfig, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "get_config_by_thing").Add(1)
 		ms.latency.With("method", "get_config_by_thing").Observe(time.Since(begin).Seconds())

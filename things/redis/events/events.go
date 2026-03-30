@@ -146,7 +146,7 @@ func (cpe createProfileEvent) Encode() map[string]any {
 type updateProfileEvent struct {
 	id       string
 	name     string
-	config   domain.ProfileConfig
+	config   *domain.ProfileConfig
 	metadata map[string]any
 }
 
@@ -160,7 +160,7 @@ func (upe updateProfileEvent) Encode() map[string]any {
 		val["name"] = upe.name
 	}
 
-	if !upe.config.IsZero() {
+	if upe.config != nil {
 		config, err := json.Marshal(upe.config)
 		if err != nil {
 			return val

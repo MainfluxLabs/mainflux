@@ -50,11 +50,11 @@ type ThingKey struct {
 
 // Profile represents a communication group (things that can exchange messages).
 type Profile struct {
-	ID       string        `json:"id,omitempty"`
-	GroupID  string        `json:"group_id,omitempty"`
-	Name     string        `json:"name,omitempty"`
-	Config   ProfileConfig `json:"config,omitempty"`
-	Metadata Metadata      `json:"metadata,omitempty"`
+	ID       string         `json:"id,omitempty"`
+	GroupID  string         `json:"group_id,omitempty"`
+	Name     string         `json:"name,omitempty"`
+	Config   *ProfileConfig `json:"config,omitempty"`
+	Metadata Metadata       `json:"metadata,omitempty"`
 }
 
 // Group represents group information.
@@ -102,7 +102,7 @@ type OrgAccessReq struct {
 // PubConfigInfo represents publisher config from GetPubConfigByKey.
 type PubConfigInfo struct {
 	PublisherID   string
-	ProfileConfig ProfileConfig
+	ProfileConfig *ProfileConfig
 }
 
 // ThingCommandReq represents a request to authorize an inter-thing command.
@@ -132,19 +132,6 @@ type Transformer struct {
 	TimeLocation string   `json:"time_location"`
 }
 
-// IsZero reports whether c has no meaningful config (no content type set).
-func (c ProfileConfig) IsZero() bool {
-	return c.ContentType == ""
-}
-
-// Ptr returns a pointer to c, or nil if c is the zero value.
-func (c ProfileConfig) Ptr() *ProfileConfig {
-	if c.IsZero() {
-		return nil
-	}
-	return &c
-}
-
 // GroupMembership represents a group membership.
 type GroupMembership struct {
 	GroupID  string `json:"group_id,omitempty"`
@@ -161,7 +148,7 @@ type GroupMembershipsPage struct {
 
 type ThingsClient interface {
 	GetPubConfigByKey(ctx context.Context, key ThingKey) (PubConfigInfo, error)
-	GetConfigByThing(ctx context.Context, thingID string) (ProfileConfig, error)
+	GetConfigByThing(ctx context.Context, thingID string) (*ProfileConfig, error)
 	CanUserAccessThing(ctx context.Context, ar UserAccessReq) error
 	CanUserAccessProfile(ctx context.Context, ar UserAccessReq) error
 	CanUserAccessGroup(ctx context.Context, ar UserAccessReq) error

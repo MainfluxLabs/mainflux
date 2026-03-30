@@ -44,7 +44,7 @@ func createProfilesEndpoint(svc things.Service) endpoint.Endpoint {
 				ID:       c.ID,
 				Name:     c.Name,
 				GroupID:  c.GroupID,
-				Config:   c.Config.Ptr(),
+				Config:   c.Config,
 				Metadata: c.Metadata,
 			}
 			res.Profiles = append(res.Profiles, pr)
@@ -72,7 +72,7 @@ func viewProfileEndpoint(svc things.Service) endpoint.Endpoint {
 			GroupID:  pr.GroupID,
 			Name:     pr.Name,
 			Metadata: pr.Metadata,
-			Config:   pr.Config.Ptr(),
+			Config:   pr.Config,
 		}
 
 		return res, nil
@@ -96,7 +96,7 @@ func viewProfileByThingEndpoint(svc things.Service) endpoint.Endpoint {
 			ID:       pr.ID,
 			GroupID:  pr.GroupID,
 			Name:     pr.Name,
-			Config:   pr.Config.Ptr(),
+			Config:   pr.Config,
 			Metadata: pr.Metadata,
 		}
 
@@ -229,7 +229,7 @@ func buildProfilesResponse(pp things.ProfilesPage, pm things.PageMetadata) profi
 			ID:       pr.ID,
 			GroupID:  pr.GroupID,
 			Name:     pr.Name,
-			Config:   pr.Config.Ptr(),
+			Config:   pr.Config,
 			Metadata: pr.Metadata,
 		}
 		res.Profiles = append(res.Profiles, c)

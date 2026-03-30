@@ -134,7 +134,7 @@ type Service interface {
 	GetPubConfigByKey(ctx context.Context, key ThingKey) (PubConfigInfo, error)
 
 	// GetConfigByThing returns profile config for given thing ID.
-	GetConfigByThing(ctx context.Context, thingID string) (domain.ProfileConfig, error)
+	GetConfigByThing(ctx context.Context, thingID string) (*domain.ProfileConfig, error)
 
 	// CanUserAccessThing determines whether a user has access to a thing.
 	CanUserAccessThing(ctx context.Context, req UserAccessReq) error
@@ -618,10 +618,10 @@ func (ts *thingsService) GetPubConfigByKey(ctx context.Context, key ThingKey) (P
 	return res, nil
 }
 
-func (ts *thingsService) GetConfigByThing(ctx context.Context, thingID string) (domain.ProfileConfig, error) {
+func (ts *thingsService) GetConfigByThing(ctx context.Context, thingID string) (*domain.ProfileConfig, error) {
 	profile, err := ts.profiles.RetrieveByThing(ctx, thingID)
 	if err != nil {
-		return domain.ProfileConfig{}, err
+		return nil, err
 	}
 
 	return profile.Config, nil

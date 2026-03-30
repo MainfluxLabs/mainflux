@@ -3517,7 +3517,7 @@ func TestGetConfigByThing(t *testing.T) {
 
 	profileWithConfig := things.Profile{
 		Name:   "test",
-		Config: domain.ProfileConfig{},
+		Config: &domain.ProfileConfig{},
 	}
 	prs, err := svc.CreateProfiles(context.Background(), token, grID, profileWithConfig)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))

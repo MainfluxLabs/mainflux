@@ -191,18 +191,18 @@ func (client grpcClient) GetPubConfigByKey(ctx context.Context, key domain.Thing
 	pc := res.(pubConfigByKeyRes)
 
 	return domain.PubConfigInfo{
-		PublisherID:   pc.publisherID,
-		ProfileConfig: pc.profileConfig,
+		PublisherID:   pc.PublisherID,
+		ProfileConfig: pc.ProfileConfig,
 	}, nil
 }
 
-func (client grpcClient) GetConfigByThing(ctx context.Context, thingID string) (domain.ProfileConfig, error) {
+func (client grpcClient) GetConfigByThing(ctx context.Context, thingID string) (*domain.ProfileConfig, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
 	res, err := client.getConfigByThing(ctx, thingIDReq{thingID: thingID})
 	if err != nil {
-		return domain.ProfileConfig{}, err
+		return nil, err
 	}
 
 	c := res.(configByThingRes)
@@ -509,8 +509,10 @@ func decodeGetPubConfigByKeyResponse(_ context.Context, grpcRes any) (any, error
 	res := grpcRes.(*protomfx.PubConfigByKeyRes)
 
 	return pubConfigByKeyRes{
-		publisherID:   res.PublisherID,
-		profileConfig: protoutil.ProtoConfigToDomain(res.GetProfileConfig()),
+		PubConfigInfo: domain.PubConfigInfo{
+			PublisherID:   res.GetPublisherID(),
+			ProfileConfig: protoutil.ProtoConfigToDomain(res.GetProfileConfig()),
+		},
 	}, nil
 }
 

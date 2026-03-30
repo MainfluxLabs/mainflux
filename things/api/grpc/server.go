@@ -372,8 +372,8 @@ func encodeGetPubConfigByKeyResponse(_ context.Context, grpcRes any) (any, error
 	res := grpcRes.(pubConfigByKeyRes)
 
 	return &protomfx.PubConfigByKeyRes{
-		PublisherID:   res.publisherID,
-		ProfileConfig: protoutil.DomainConfigToProto(res.profileConfig),
+		PublisherID:   res.PubConfigInfo.PublisherID,
+		ProfileConfig: protoutil.DomainConfigToProto(res.ProfileConfig),
 	}, nil
 }
 

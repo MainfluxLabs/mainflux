@@ -335,8 +335,8 @@ func TestRetrieveProfileByThing(t *testing.T) {
 		ID:       prID,
 		GroupID:  group.ID,
 		Name:     profileName,
-		Config:   domain.ProfileConfig{},
-		Metadata: things.Metadata{},
+		Config:   &domain.ProfileConfig{},
+		Metadata: nil,
 	}
 	prs, err := profileRepo.Save(context.Background(), c)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))

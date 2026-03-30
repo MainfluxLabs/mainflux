@@ -1551,11 +1551,11 @@ func TestRemoveProfiles(t *testing.T) {
 }
 
 type profileRes struct {
-	ID       string               `json:"id"`
-	Name     string               `json:"name,omitempty"`
-	GroupID  string               `json:"group_id,omitempty"`
-	Metadata map[string]any       `json:"metadata,omitempty"`
-	Config   domain.ProfileConfig `json:"config,omitempty"`
+	ID       string                `json:"id"`
+	Name     string                `json:"name,omitempty"`
+	GroupID  string                `json:"group_id,omitempty"`
+	Metadata map[string]any        `json:"metadata,omitempty"`
+	Config   *domain.ProfileConfig `json:"config,omitempty"`
 }
 
 type profilesPageRes struct {

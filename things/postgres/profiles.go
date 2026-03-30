@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
-	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/gofrs/uuid"
@@ -296,13 +295,13 @@ type dbJSONB map[string]any
 // If error occurs on casting data then m points to empty metadata.
 func (m *dbJSONB) Scan(value any) error {
 	if value == nil {
-		m = nil
+		*m = nil
 		return nil
 	}
 
 	b, ok := value.([]byte)
 	if !ok {
-		m = &dbJSONB{}
+		*m = nil
 		return dbutil.ErrScanMetadata
 	}
 
@@ -335,60 +334,72 @@ type dbProfile struct {
 }
 
 func toDBProfile(pr things.Profile) dbProfile {
-	configMap := map[string]any{
-		"content_type": pr.Config.ContentType,
-		"transformer": map[string]any{
-			"data_filters":  pr.Config.Transformer.DataFilters,
-			"data_field":    pr.Config.Transformer.DataField,
-			"time_field":    pr.Config.Transformer.TimeField,
-			"time_format":   pr.Config.Transformer.TimeFormat,
-			"time_location": pr.Config.Transformer.TimeLocation,
-		},
+	var config dbJSONB
+
+	if pr.Config != nil {
+		config = map[string]any{
+			"content_type": pr.Config.ContentType,
+			"transformer": map[string]any{
+				"data_filters":  pr.Config.Transformer.DataFilters,
+				"data_field":    pr.Config.Transformer.DataField,
+				"time_field":    pr.Config.Transformer.TimeField,
+				"time_format":   pr.Config.Transformer.TimeFormat,
+				"time_location": pr.Config.Transformer.TimeLocation,
+			},
+		}
 	}
 
 	return dbProfile{
 		ID:       pr.ID,
 		GroupID:  pr.GroupID,
 		Name:     pr.Name,
-		Config:   configMap,
+		Config:   config,
 		Metadata: dbJSONB(pr.Metadata),
 	}
 }
 
-func toProfile(pr dbProfile) (things.Profile, error) {
-	cfg := domain.ProfileConfig{}
+func toProfile(dbpr dbProfile) (things.Profile, error) {
+	var cfg *things.Config
 
-	if ct, ok := pr.Config["content_type"].(string); ok {
-		cfg.ContentType = ct
-	}
+	if dbpr.Config != nil {
+		cfg = &things.Config{}
 
-	t, ok := pr.Config["transformer"].(map[string]any)
-	if !ok {
-		return things.Profile{}, dbutil.ErrMalformedEntity
-	}
+		if ct, ok := dbpr.Config["content_type"].(string); ok {
+			cfg.ContentType = ct
+		}
 
-	if df, ok := t["data_filters"].([]string); ok {
-		cfg.Transformer.DataFilters = df
-	}
-	if df, ok := t["data_field"].(string); ok {
-		cfg.Transformer.DataField = df
-	}
-	if tf, ok := t["time_field"].(string); ok {
-		cfg.Transformer.TimeField = tf
-	}
-	if tf, ok := t["time_format"].(string); ok {
-		cfg.Transformer.TimeFormat = tf
-	}
-	if tl, ok := t["time_location"].(string); ok {
-		cfg.Transformer.TimeLocation = tl
+		t, ok := dbpr.Config["transformer"].(map[string]any)
+		if !ok {
+			return things.Profile{}, dbutil.ErrMalformedEntity
+		}
+
+		if df, ok := t["data_filters"].([]string); ok {
+			cfg.Transformer.DataFilters = df
+		}
+
+		if df, ok := t["data_field"].(string); ok {
+			cfg.Transformer.DataField = df
+		}
+
+		if tf, ok := t["time_field"].(string); ok {
+			cfg.Transformer.TimeField = tf
+		}
+
+		if tf, ok := t["time_format"].(string); ok {
+			cfg.Transformer.TimeFormat = tf
+		}
+
+		if tl, ok := t["time_location"].(string); ok {
+			cfg.Transformer.TimeLocation = tl
+		}
 	}
 
 	return things.Profile{
-		ID:       pr.ID,
-		GroupID:  pr.GroupID,
-		Name:     pr.Name,
+		ID:       dbpr.ID,
+		GroupID:  dbpr.GroupID,
+		Name:     dbpr.Name,
 		Config:   cfg,
-		Metadata: things.Metadata(pr.Metadata),
+		Metadata: things.Metadata(dbpr.Metadata),
 	}, nil
 }
 

@@ -12,12 +12,11 @@ type identityRes struct {
 }
 
 type pubConfigByKeyRes struct {
-	publisherID   string
-	profileConfig domain.ProfileConfig
+	domain.PubConfigInfo
 }
 
 type configByThingRes struct {
-	config domain.ProfileConfig
+	config *domain.ProfileConfig
 }
 
 type emptyRes struct {

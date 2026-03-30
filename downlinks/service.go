@@ -335,7 +335,7 @@ func (ds *downlinksService) scheduleTasks(ctx context.Context, dls ...Downlink) 
 	return nil
 }
 
-func (ds *downlinksService) scheduleTask(d Downlink, cfg domain.ProfileConfig) error {
+func (ds *downlinksService) scheduleTask(d Downlink, cfg *domain.ProfileConfig) error {
 	task := ds.createTask(d, cfg)
 
 	if d.Scheduler.Frequency != cron.OnceFreq {
@@ -356,7 +356,7 @@ func (ds *downlinksService) unscheduleTask(d Downlink) {
 	}
 }
 
-func (ds *downlinksService) createTask(d Downlink, config domain.ProfileConfig) func() {
+func (ds *downlinksService) createTask(d Downlink, config *domain.ProfileConfig) func() {
 	return func() {
 		ctx, cancel := context.WithTimeout(context.Background(), taskTimeout)
 		defer cancel()
@@ -442,7 +442,7 @@ func (ds *downlinksService) LoadAndScheduleTasks(ctx context.Context) error {
 	return nil
 }
 
-func (ds *downlinksService) publish(config domain.ProfileConfig, thingID string, payload []byte) error {
+func (ds *downlinksService) publish(config *domain.ProfileConfig, thingID string, payload []byte) error {
 	msg := protomfx.Message{
 		Protocol: downlinkProtocol,
 		Payload:  payload,
