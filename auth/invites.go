@@ -13,9 +13,12 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// ErrInvalidInviteResponse indicates an invalid Invite response action string.
-var ErrInvalidInviteResponse = errors.New("invalid invite response action")
-var ErrGroupsDifferingOrgs = errors.New("groups belong to differing organizations")
+var (
+	// ErrInvalidInviteResponse indicates an invalid Invite response action string.
+	ErrInvalidInviteResponse = errors.New("invalid invite response action")
+	// ErrGroupsDifferingOrgs indicates that groups associated with an Org invite belong to different Orgs
+	ErrGroupsDifferingOrgs = errors.New("groups belong to differing organizations")
+)
 
 // Domain type aliases
 type (
