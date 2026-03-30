@@ -21,7 +21,7 @@ type User struct {
 	Role     string   `json:"role,omitempty"`
 }
 
-// ValidateUser returns an error if user representation is invalid.
+// Validate returns an error if user representation is invalid.
 func (u User) Validate(passRegex *regexp.Regexp) error {
 	if !email.IsEmail(u.Email) {
 		return errors.ErrMalformedEntity
