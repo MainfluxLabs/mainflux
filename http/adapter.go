@@ -12,7 +12,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/things"
 )
 
 // Service specifies coap service API.
@@ -89,7 +88,7 @@ func (as *adapterService) SendCommandToGroup(ctx context.Context, token, groupID
 	return nil
 }
 
-func (as *adapterService) SendCommandToThingByKey(ctx context.Context, key things.ThingKey, thingID string, message protomfx.Message) error {
+func (as *adapterService) SendCommandToThingByKey(ctx context.Context, key domain.ThingKey, thingID string, message protomfx.Message) error {
 	res, err := as.things.Identify(ctx, &protomfx.ThingKey{Value: key.Value, Type: key.Type})
 	if err != nil {
 		return err
@@ -102,7 +101,7 @@ func (as *adapterService) SendCommandToThingByKey(ctx context.Context, key thing
 	return as.publisher.Publish(nats.GetThingCommandsSubject(thingID, message.Subtopic), message)
 }
 
-func (as *adapterService) SendCommandToGroupByKey(ctx context.Context, key things.ThingKey, groupID string, message protomfx.Message) error {
+func (as *adapterService) SendCommandToGroupByKey(ctx context.Context, key domain.ThingKey, groupID string, message protomfx.Message) error {
 	res, err := as.things.Identify(ctx, &protomfx.ThingKey{Value: key.Value, Type: key.Type})
 	if err != nil {
 		return err
