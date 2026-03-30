@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/users"
 )
@@ -80,12 +79,8 @@ func (irm *platformInvitesRepositoryMock) RetrievePlatformInvites(ctx context.Co
 	}
 
 	return users.PlatformInvitesPage{
+		Total:   uint64(len(irm.platformInvites)),
 		Invites: invites,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  uint64(len(irm.platformInvites)),
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
 	}, nil
 }
 

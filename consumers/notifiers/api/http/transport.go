@@ -86,7 +86,7 @@ func decodeCreateNotifiers(_ context.Context, r *http.Request) (any, error) {
 
 	req := createNotifiersReq{token: apiutil.ExtractBearerToken(r), groupID: bone.GetValue(r, apiutil.IDKey)}
 	if err := json.NewDecoder(r.Body).Decode(&req.Notifiers); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -129,7 +129,7 @@ func buildPageMetadataFromBody(r *http.Request) (notifiers.PageMetadata, error) 
 
 	var pm notifiers.PageMetadata
 	if err := json.NewDecoder(r.Body).Decode(&pm); err != nil {
-		return notifiers.PageMetadata{}, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return notifiers.PageMetadata{}, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	if pm.Limit == 0 {
@@ -191,7 +191,7 @@ func decodeUpdateNotifier(_ context.Context, r *http.Request) (any, error) {
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -207,7 +207,7 @@ func decodeRemoveNotifiers(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil

@@ -13,13 +13,13 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	clientshttp "github.com/MainfluxLabs/mainflux/pkg/clients/http"
 	"github.com/MainfluxLabs/mainflux/pkg/cron"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	"github.com/MainfluxLabs/mainflux/things"
 	"golang.org/x/time/rate"
 )
 
@@ -144,7 +144,7 @@ func New(things protomfx.ThingsServiceClient, auth protomfx.AuthServiceClient, p
 }
 
 func (ds *downlinksService) CreateDownlinks(ctx context.Context, token, thingID string, downlinks ...Downlink) ([]Downlink, error) {
-	if _, err := ds.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
+	if _, err := ds.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupEditor}); err != nil {
 		return nil, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -178,7 +178,7 @@ func (ds *downlinksService) CreateDownlinks(ctx context.Context, token, thingID 
 }
 
 func (ds *downlinksService) ListDownlinksByThing(ctx context.Context, token, thingID string, pm PageMetadata) (DownlinksPage, error) {
-	if _, err := ds.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer}); err != nil {
+	if _, err := ds.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupViewer}); err != nil {
 		return DownlinksPage{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -191,7 +191,7 @@ func (ds *downlinksService) ListDownlinksByThing(ctx context.Context, token, thi
 }
 
 func (ds *downlinksService) ListDownlinksByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (DownlinksPage, error) {
-	if _, err := ds.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer}); err != nil {
+	if _, err := ds.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domain.GroupViewer}); err != nil {
 		return DownlinksPage{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -209,7 +209,7 @@ func (ds *downlinksService) ViewDownlink(ctx context.Context, token, id string) 
 		return Downlink{}, err
 	}
 
-	if _, err := ds.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: downlink.ThingID, Action: things.Viewer}); err != nil {
+	if _, err := ds.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: downlink.ThingID, Action: domain.GroupViewer}); err != nil {
 		return Downlink{}, err
 	}
 
@@ -222,7 +222,7 @@ func (ds *downlinksService) UpdateDownlink(ctx context.Context, token string, do
 		return err
 	}
 
-	if _, err := ds.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: dl.ThingID, Action: things.Editor}); err != nil {
+	if _, err := ds.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: dl.ThingID, Action: domain.GroupEditor}); err != nil {
 		return err
 	}
 
@@ -242,7 +242,7 @@ func (ds *downlinksService) RemoveDownlinks(ctx context.Context, token string, i
 		if err != nil {
 			return err
 		}
-		if _, err := ds.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: downlink.ThingID, Action: things.Editor}); err != nil {
+		if _, err := ds.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: downlink.ThingID, Action: domain.GroupEditor}); err != nil {
 			return err
 		}
 

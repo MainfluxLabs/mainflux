@@ -6,40 +6,26 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-// ErrInvalidInviteResponse indicates an invalid Invite response action string.
-var ErrInvalidInviteResponse = errors.New("invalid invite response action")
-var ErrGroupsDifferingOrgs = errors.New("groups belong to differing organizations")
+var (
+	// ErrInvalidInviteResponse indicates an invalid Invite response action string.
+	ErrInvalidInviteResponse = errors.New("invalid invite response action")
+	// ErrGroupsDifferingOrgs indicates that groups associated with an Org invite belong to different Orgs
+	ErrGroupsDifferingOrgs = errors.New("groups belong to differing organizations")
+)
 
-type OrgInvite struct {
-	ID           string
-	InviteeID    string
-	InviteeEmail string
-	InviterID    string
-	InviterEmail string
-	OrgID        string
-	OrgName      string
-	InviteeRole  string
-	GroupInvites []GroupInvite
-	CreatedAt    time.Time
-	ExpiresAt    time.Time
-	State        string
-}
-
-type OrgInvitesPage struct {
-	Invites []OrgInvite
-	Total   uint64
-}
-
-type GroupInvite struct {
-	GroupID    string `json:"group_id"`
-	MemberRole string `json:"member_role"`
-}
+// Domain type aliases
+type (
+	OrgInvite      = domain.OrgInvite
+	OrgInvitesPage = domain.OrgInvitesPage
+	GroupInvite    = domain.GroupInvite
+)
 
 const (
 	UserTypeInvitee = "invitee"

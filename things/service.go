@@ -7,18 +7,19 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
 
+// Role constants are aliases for the shared domain types.
 const (
-	Viewer = "viewer"
-	Editor = "editor"
-	Admin  = "admin"
-	Owner  = "owner"
+	Viewer = domain.GroupViewer
+	Editor = domain.GroupEditor
+	Admin  = domain.GroupAdmin
+	Owner  = domain.GroupOwner
 )
 
 var (
@@ -197,31 +198,14 @@ type Backup struct {
 	GroupMemberships []GroupMembership
 }
 
-type UserAccessReq struct {
-	Token  string
-	ID     string
-	Action string
-}
-
-type ThingAccessReq struct {
-	ThingKey
-	ID string
-}
-
-type ThingCommandReq struct {
-	PublisherID string
-	RecipientID string
-}
-
-type ThingGroupCommandReq struct {
-	PublisherID string
-	GroupID     string
-}
-
-type PubConfigInfo struct {
-	PublisherID   string
-	ProfileConfig map[string]any
-}
+// Domain type aliases
+type (
+	UserAccessReq        = domain.UserAccessReq
+	ThingAccessReq       = domain.ThingAccessReq
+	PubConfigInfo        = domain.PubConfigInfo
+	ThingCommandReq      = domain.ThingCommandReq
+	ThingGroupCommandReq = domain.ThingGroupCommandReq
+)
 
 var _ Service = (*thingsService)(nil)
 
@@ -909,7 +893,7 @@ func (ts *thingsService) ListProfilesByGroup(ctx context.Context, token, groupID
 func (ts *thingsService) isAdmin(ctx context.Context, token string) error {
 	req := &protomfx.AuthorizeReq{
 		Token:   token,
-		Subject: auth.RootSub,
+		Subject: domain.RootSub,
 	}
 
 	if _, err := ts.auth.Authorize(ctx, req); err != nil {
@@ -1011,7 +995,7 @@ func (ts *thingsService) GetGroupIDsByOrg(ctx context.Context, orgID string, tok
 		return ts.groups.RetrieveIDsByOrg(ctx, orgID)
 	}
 
-	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Viewer); err != nil {
+	if err := ts.canAccessOrg(ctx, token, orgID, domain.OrgSub, Viewer); err != nil {
 		return []string{}, err
 	}
 

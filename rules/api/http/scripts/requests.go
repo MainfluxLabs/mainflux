@@ -5,6 +5,7 @@ package scripts
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/rules"
 )
 
@@ -46,7 +47,7 @@ func (req createScriptsReq) validate() error {
 		}
 
 		if s.Script == "" {
-			return apiutil.ErrMalformedEntity
+			return errors.ErrMalformedEntity
 		}
 
 		if len(s.Script) > maxScriptSize {
@@ -130,7 +131,7 @@ func (req updateScriptReq) validate() error {
 	}
 
 	if req.Script == "" {
-		return apiutil.ErrMalformedEntity
+		return errors.ErrMalformedEntity
 	}
 
 	if len(req.Script) > maxScriptSize {

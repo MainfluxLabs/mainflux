@@ -92,7 +92,7 @@ func decodeCreateWebhooks(_ context.Context, r *http.Request) (any, error) {
 
 	req := createWebhooksReq{token: apiutil.ExtractBearerToken(r), thingID: bone.GetValue(r, apiutil.IDKey)}
 	if err := json.NewDecoder(r.Body).Decode(&req.Webhooks); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -135,7 +135,7 @@ func buildPageMetadataFromBody(r *http.Request) (webhooks.PageMetadata, error) {
 
 	var pm webhooks.PageMetadata
 	if err := json.NewDecoder(r.Body).Decode(&pm); err != nil {
-		return webhooks.PageMetadata{}, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return webhooks.PageMetadata{}, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	if pm.Limit == 0 {
@@ -228,7 +228,7 @@ func decodeUpdateWebhook(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -244,7 +244,7 @@ func decodeRemoveWebhooks(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil

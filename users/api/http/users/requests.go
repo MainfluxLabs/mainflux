@@ -173,7 +173,7 @@ func (req resetTokenReq) validate() error {
 	}
 
 	if !userPasswordRegex.MatchString(req.Password) {
-		return users.ErrPasswordFormat
+		return errors.ErrPasswordFormat
 	}
 
 	if req.ConfPass == "" {
@@ -207,7 +207,7 @@ func (req passwChangeReq) validate() error {
 	}
 
 	if !userPasswordRegex.MatchString(req.Password) {
-		return users.ErrPasswordFormat
+		return errors.ErrPasswordFormat
 	}
 
 	return nil

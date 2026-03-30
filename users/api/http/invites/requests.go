@@ -6,8 +6,8 @@ package invites
 import (
 	"regexp"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/users"
 )
 
@@ -71,11 +71,11 @@ func (req viewInviteReq) validate() error {
 
 type createPlatformInviteRequest struct {
 	token        string
-	Email        string             `json:"email,omitempty"`
-	OrgID        string             `json:"org_id"`
-	Role         string             `json:"role"`
-	GroupInvites []auth.GroupInvite `json:"group_invites"`
-	RedirectPath string             `json:"redirect_path,omitempty"`
+	Email        string               `json:"email,omitempty"`
+	OrgID        string               `json:"org_id"`
+	Role         string               `json:"role"`
+	GroupInvites []domain.GroupInvite `json:"group_invites"`
+	RedirectPath string               `json:"redirect_path,omitempty"`
 }
 
 func (req createPlatformInviteRequest) validate() error {
@@ -92,7 +92,7 @@ func (req createPlatformInviteRequest) validate() error {
 	}
 
 	if req.OrgID != "" {
-		if err := auth.ValidateInviteeRole(req.Role); err != nil {
+		if err := apiutil.ValidateOrgInviteeRole(req.Role); err != nil {
 			return err
 		}
 	}

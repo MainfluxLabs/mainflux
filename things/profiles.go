@@ -5,37 +5,18 @@ package things
 
 import (
 	"context"
+
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
-// Profile represents a Mainflux "communication group". This group contains the
-// things that can exchange messages between each other.
-type Profile struct {
-	ID       string
-	GroupID  string
-	Name     string
-	Config   map[string]any
-	Metadata map[string]any
-}
+// Domain type aliases
+type (
+	Profile      = domain.Profile
+	ProfilesPage = domain.ProfilesPage
 
-type Config struct {
-	ContentType string      `json:"content_type"`
-	Transformer Transformer `json:"transformer"`
-}
-
-type Transformer struct {
-	DataFilters  []string `json:"data_filters"`
-	DataField    string   `json:"data_field"`
-	TimeField    string   `json:"time_field"`
-	TimeFormat   string   `json:"time_format"`
-	TimeLocation string   `json:"time_location"`
-}
-
-// ProfilesPage contains page related metadata as well as list of profiles that
-// belong to this page.
-type ProfilesPage struct {
-	Total    uint64
-	Profiles []Profile
-}
+	Config      = domain.Config
+	Transformer = domain.Transformer
+)
 
 // ProfileRepository specifies a profile persistence API.
 type ProfileRepository interface {

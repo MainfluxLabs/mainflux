@@ -2,8 +2,8 @@ package auth
 
 import (
 	"context"
-	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
@@ -12,32 +12,11 @@ var (
 	ErrOrgNotEmpty = errors.New("org is not empty")
 )
 
-// OrgMetadata defines the Metadata type.
-type OrgMetadata map[string]any
-
-// Org represents the org information.
-type Org struct {
-	ID          string
-	OwnerID     string
-	Name        string
-	Description string
-	Metadata    OrgMetadata
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
-// OrgsPage contains page related metadata as well as list of orgs that
-// belong to this page.
-type OrgsPage struct {
-	Total uint64
-	Orgs  []Org
-}
-
-type User struct {
-	ID     string
-	Email  string
-	Status string
-}
+// Domain type aliases
+type (
+	Org      = domain.Org
+	OrgsPage = domain.OrgsPage
+)
 
 type Backup struct {
 	Orgs           []Org

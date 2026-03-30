@@ -430,7 +430,7 @@ func encodeError(err error) error {
 	switch {
 	case err == nil:
 		return nil
-	case errors.Contains(err, apiutil.ErrMalformedEntity),
+	case errors.Contains(err, errors.ErrMalformedEntity),
 		err == apiutil.ErrMissingThingID,
 		err == apiutil.ErrMissingProfileID,
 		err == apiutil.ErrMissingGroupID,

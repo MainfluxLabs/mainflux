@@ -5,39 +5,23 @@ package things
 
 import (
 	"context"
-	"net/http"
-	"strings"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
-// Metadata to be used for Mainflux thing or profile for customized
-// describing of particular thing or profile.
-type Metadata map[string]any
+// Domain type aliases
+type (
+	Metadata = domain.Metadata
 
-// Thing represents a Mainflux thing. Each thing is owned by one user, and
-// it is assigned with the unique identifier and (temporary) access key.
-type Thing struct {
-	ID          string
-	GroupID     string
-	ProfileID   string
-	Name        string
-	Type        string
-	Key         string
-	ExternalKey string
-	Metadata    Metadata
-}
+	Thing      = domain.Thing
+	ThingsPage = domain.ThingsPage
 
-// ThingsPage contains page related metadata as well as list of things that
-// belong to this page.
-type ThingsPage struct {
-	Total  uint64
-	Things []Thing
-}
+	ThingKey = domain.ThingKey
+)
 
 const (
-	KeyTypeInternal = "internal"
-	KeyTypeExternal = "external"
+	KeyTypeInternal = domain.KeyTypeInternal
+	KeyTypeExternal = domain.KeyTypeExternal
 
 	ThingTypeDevice     = "device"
 	ThingTypeSensor     = "sensor"
@@ -45,45 +29,6 @@ const (
 	ThingTypeController = "controller"
 	ThingTypeGateway    = "gateway"
 )
-
-// ThingKey represents a Thing authentication key and its type
-type ThingKey struct {
-	Value string `json:"key"`
-	Type  string `json:"type"`
-}
-
-func (tk ThingKey) Validate() error {
-	if tk.Type != KeyTypeExternal && tk.Type != KeyTypeInternal {
-		return apiutil.ErrInvalidThingKeyType
-	}
-
-	if tk.Value == "" {
-		return apiutil.ErrBearerKey
-	}
-
-	return nil
-}
-
-// ExtractThingKey returns the supplied thing key and its type, from the request's HTTP 'Authorization' header. If the provided key type is invalid
-// an empty instance of ThingKey is returned.
-func ExtractThingKey(r *http.Request) ThingKey {
-	header := r.Header.Get("Authorization")
-
-	switch {
-	case strings.HasPrefix(header, apiutil.ThingKeyPrefixInternal):
-		return ThingKey{
-			Type:  KeyTypeInternal,
-			Value: strings.TrimPrefix(header, apiutil.ThingKeyPrefixInternal),
-		}
-	case strings.HasPrefix(header, apiutil.ThingKeyPrefixExternal):
-		return ThingKey{
-			Type:  KeyTypeExternal,
-			Value: strings.TrimPrefix(header, apiutil.ThingKeyPrefixExternal),
-		}
-	}
-
-	return ThingKey{}
-}
 
 // ThingRepository specifies a thing persistence API.
 type ThingRepository interface {
