@@ -4,7 +4,7 @@
 package grpc
 
 import (
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 type identityRes struct {
@@ -13,11 +13,11 @@ type identityRes struct {
 
 type pubConfigByKeyRes struct {
 	publisherID   string
-	profileConfig *protomfx.Config
+	profileConfig domain.ProfileConfig
 }
 
 type configByThingRes struct {
-	config *protomfx.Config
+	config domain.ProfileConfig
 }
 
 type emptyRes struct {

@@ -162,7 +162,7 @@ func (svc *mainfluxThings) GetPubConfigByKey(context.Context, things.ThingKey) (
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) GetConfigByThing(context.Context, string) (map[string]any, error) {
+func (svc *mainfluxThings) GetConfigByThing(context.Context, string) (domain.ProfileConfig, error) {
 	panic("not implemented")
 }
 

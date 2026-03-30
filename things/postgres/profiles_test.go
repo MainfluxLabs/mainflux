@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/postgres"
@@ -334,7 +335,7 @@ func TestRetrieveProfileByThing(t *testing.T) {
 		ID:       prID,
 		GroupID:  group.ID,
 		Name:     profileName,
-		Config:   map[string]any{},
+		Config:   domain.ProfileConfig{},
 		Metadata: things.Metadata{},
 	}
 	prs, err := profileRepo.Save(context.Background(), c)

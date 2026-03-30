@@ -10,6 +10,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
@@ -369,12 +370,19 @@ func encodeIdentityResponse(_ context.Context, grpcRes any) (any, error) {
 
 func encodeGetPubConfigByKeyResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(pubConfigByKeyRes)
-	return &protomfx.PubConfigByKeyRes{PublisherID: res.publisherID, ProfileConfig: res.profileConfig}, nil
+
+	return &protomfx.PubConfigByKeyRes{
+		PublisherID:   res.publisherID,
+		ProfileConfig: protoutil.DomainConfigToProto(res.profileConfig),
+	}, nil
 }
 
 func encodeGetConfigByThingResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(configByThingRes)
-	return &protomfx.ConfigByThingRes{Config: res.config}, nil
+
+	return &protomfx.ConfigByThingRes{
+		Config: protoutil.DomainConfigToProto(res.config),
+	}, nil
 }
 
 func encodeEmptyResponse(_ context.Context, grpcRes any) (any, error) {

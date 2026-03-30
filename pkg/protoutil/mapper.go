@@ -10,6 +10,7 @@ func ProtoConfigToDomain(c *protomfx.Config) domain.ProfileConfig {
 	if c == nil {
 		return domain.ProfileConfig{}
 	}
+
 	tr := domain.Transformer{}
 	if c.Transformer != nil {
 		tr = domain.Transformer{
@@ -20,6 +21,7 @@ func ProtoConfigToDomain(c *protomfx.Config) domain.ProfileConfig {
 			TimeLocation: c.Transformer.TimeLocation,
 		}
 	}
+
 	return domain.ProfileConfig{
 		ContentType: c.ContentType,
 		Transformer: tr,
@@ -30,7 +32,7 @@ func ProtoConfigToDomain(c *protomfx.Config) domain.ProfileConfig {
 func PubConfigInfoToProto(pi domain.PubConfigInfo) *protomfx.PubConfigByKeyRes {
 	return &protomfx.PubConfigByKeyRes{
 		PublisherID:   pi.PublisherID,
-		ProfileConfig: MapToProtoConfig(pi.ProfileConfig),
+		ProfileConfig: DomainConfigToProto(pi.ProfileConfig),
 	}
 }
 
@@ -43,6 +45,7 @@ func DomainConfigToProto(c domain.ProfileConfig) *protomfx.Config {
 		TimeFormat:   c.Transformer.TimeFormat,
 		TimeLocation: c.Transformer.TimeLocation,
 	}
+
 	return &protomfx.Config{
 		ContentType: c.ContentType,
 		Transformer: tr,

@@ -3,6 +3,7 @@ package events
 import (
 	"encoding/json"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/events"
 )
 
@@ -145,7 +146,7 @@ func (cpe createProfileEvent) Encode() map[string]any {
 type updateProfileEvent struct {
 	id       string
 	name     string
-	config   map[string]any
+	config   domain.ProfileConfig
 	metadata map[string]any
 }
 
@@ -159,14 +160,12 @@ func (upe updateProfileEvent) Encode() map[string]any {
 		val["name"] = upe.name
 	}
 
-	if upe.config != nil {
-		config, err := json.Marshal(upe.config)
-		if err != nil {
-			return val
-		}
-
-		val["config"] = string(config)
+	config, err := json.Marshal(upe.config)
+	if err != nil {
+		return val
 	}
+
+	val["config"] = string(config)
 
 	if upe.metadata != nil {
 		metadata, err := json.Marshal(upe.metadata)

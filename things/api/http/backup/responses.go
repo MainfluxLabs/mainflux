@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/things/api/http/memberships"
 )
 
@@ -39,11 +40,11 @@ func (res viewThingRes) Empty() bool {
 }
 
 type backupProfile struct {
-	ID       string         `json:"id"`
-	GroupID  string         `json:"group_id,omitempty"`
-	Name     string         `json:"name,omitempty"`
-	Config   map[string]any `json:"config,omitempty"`
-	Metadata map[string]any `json:"metadata,omitempty"`
+	ID       string               `json:"id"`
+	GroupID  string               `json:"group_id,omitempty"`
+	Name     string               `json:"name,omitempty"`
+	Config   domain.ProfileConfig `json:"config,omitempty"`
+	Metadata map[string]any       `json:"metadata,omitempty"`
 }
 
 type backupGroup struct {

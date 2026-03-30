@@ -9,6 +9,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
@@ -191,7 +192,7 @@ func (client grpcClient) GetPubConfigByKey(ctx context.Context, key domain.Thing
 
 	return domain.PubConfigInfo{
 		PublisherID:   pc.publisherID,
-		ProfileConfig: protoConfigToMap(pc.profileConfig),
+		ProfileConfig: pc.profileConfig,
 	}, nil
 }
 
@@ -205,7 +206,7 @@ func (client grpcClient) GetConfigByThing(ctx context.Context, thingID string) (
 	}
 
 	c := res.(configByThingRes)
-	return protoConfigToDomain(c.config), nil
+	return c.config, nil
 }
 
 func (client grpcClient) CanUserAccessThing(ctx context.Context, ar domain.UserAccessReq) error {
@@ -506,12 +507,19 @@ func decodeIdentityResponse(_ context.Context, grpcRes any) (any, error) {
 
 func decodeGetPubConfigByKeyResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.PubConfigByKeyRes)
-	return pubConfigByKeyRes{publisherID: res.PublisherID, profileConfig: res.ProfileConfig}, nil
+
+	return pubConfigByKeyRes{
+		publisherID:   res.PublisherID,
+		profileConfig: protoutil.ProtoConfigToDomain(res.GetProfileConfig()),
+	}, nil
 }
 
 func decodeGetConfigByThingResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.ConfigByThingRes)
-	return configByThingRes{config: res.GetConfig()}, nil
+
+	return configByThingRes{
+		config: protoutil.ProtoConfigToDomain(res.GetConfig()),
+	}, nil
 }
 
 func decodeEmptyResponse(_ context.Context, _ any) (any, error) {

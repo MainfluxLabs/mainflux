@@ -11,6 +11,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	authmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -3516,7 +3517,7 @@ func TestGetConfigByThing(t *testing.T) {
 
 	profileWithConfig := things.Profile{
 		Name:   "test",
-		Config: map[string]any{"key": "value"},
+		Config: domain.ProfileConfig{},
 	}
 	prs, err := svc.CreateProfiles(context.Background(), token, grID, profileWithConfig)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))

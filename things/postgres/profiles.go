@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/gofrs/uuid"
@@ -118,7 +119,7 @@ func (pr profileRepository) RetrieveByID(ctx context.Context, id string) (things
 		return things.Profile{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
-	return toProfile(dbpr), nil
+	return toProfile(dbpr)
 }
 
 func (pr profileRepository) BackupAll(ctx context.Context) ([]things.Profile, error) {
@@ -132,7 +133,12 @@ func (pr profileRepository) BackupAll(ctx context.Context) ([]things.Profile, er
 
 	var profiles []things.Profile
 	for _, i := range items {
-		profiles = append(profiles, toProfile(i))
+		profile, err := toProfile(i)
+		if err != nil {
+			return nil, err
+		}
+
+		profiles = append(profiles, profile)
 	}
 
 	return profiles, nil
@@ -181,17 +187,20 @@ func (pr profileRepository) RetrieveByThing(ctx context.Context, thID string) (t
 	}
 	defer rows.Close()
 
-	var item things.Profile
+	var profile things.Profile
 	for rows.Next() {
 		dbpr := dbProfile{}
 		if err := rows.StructScan(&dbpr); err != nil {
 			return things.Profile{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
-		item = toProfile(dbpr)
+		profile, err = toProfile(dbpr)
+		if err != nil {
+			return things.Profile{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		}
 	}
 
-	return item, nil
+	return profile, nil
 }
 
 func (pr profileRepository) Remove(ctx context.Context, ids ...string) error {
@@ -258,7 +267,10 @@ func (pr profileRepository) retrieve(ctx context.Context, query, cquery string, 
 		if err := rows.StructScan(&dbpr); err != nil {
 			return things.ProfilesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
-		pr := toProfile(dbpr)
+		pr, err := toProfile(dbpr)
+		if err != nil {
+			return things.ProfilesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		}
 
 		items = append(items, pr)
 	}
@@ -323,23 +335,61 @@ type dbProfile struct {
 }
 
 func toDBProfile(pr things.Profile) dbProfile {
+	configMap := map[string]any{
+		"content_type": pr.Config.ContentType,
+		"transformer": map[string]any{
+			"data_filters":  pr.Config.Transformer.DataFilters,
+			"data_field":    pr.Config.Transformer.DataField,
+			"time_field":    pr.Config.Transformer.TimeField,
+			"time_format":   pr.Config.Transformer.TimeFormat,
+			"time_location": pr.Config.Transformer.TimeLocation,
+		},
+	}
+
 	return dbProfile{
 		ID:       pr.ID,
 		GroupID:  pr.GroupID,
 		Name:     pr.Name,
-		Config:   pr.Config,
+		Config:   configMap,
 		Metadata: dbJSONB(pr.Metadata),
 	}
 }
 
-func toProfile(pr dbProfile) things.Profile {
+func toProfile(pr dbProfile) (things.Profile, error) {
+	cfg := domain.ProfileConfig{}
+
+	if ct, ok := pr.Config["content_type"].(string); ok {
+		cfg.ContentType = ct
+	}
+
+	t, ok := pr.Config["transformer"].(map[string]any)
+	if !ok {
+		return things.Profile{}, dbutil.ErrMalformedEntity
+	}
+
+	if df, ok := t["data_filters"].([]string); ok {
+		cfg.Transformer.DataFilters = df
+	}
+	if df, ok := t["data_field"].(string); ok {
+		cfg.Transformer.DataField = df
+	}
+	if tf, ok := t["time_field"].(string); ok {
+		cfg.Transformer.TimeField = tf
+	}
+	if tf, ok := t["time_format"].(string); ok {
+		cfg.Transformer.TimeFormat = tf
+	}
+	if tl, ok := t["time_location"].(string); ok {
+		cfg.Transformer.TimeLocation = tl
+	}
+
 	return things.Profile{
 		ID:       pr.ID,
 		GroupID:  pr.GroupID,
 		Name:     pr.Name,
-		Config:   pr.Config,
+		Config:   cfg,
 		Metadata: things.Metadata(pr.Metadata),
-	}
+	}, nil
 }
 
 func getIDsQuery(ids []string) string {
