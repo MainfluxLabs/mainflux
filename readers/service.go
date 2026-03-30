@@ -71,7 +71,7 @@ func New(auth protomfx.AuthServiceClient, things protomfx.ThingsServiceClient, j
 func (rs *readersService) ListJSONMessages(ctx context.Context, token string, key domain.ThingKey, rpm JSONPageMetadata) (JSONMessagesPage, error) {
 	switch {
 	case rpm.Publisher != "":
-		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: domain.OrgViewer})
+		_, err := rs.thingc.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: rpm.Publisher, Action: domain.GroupViewer})
 		if err != nil {
 			return JSONMessagesPage{}, err
 		}
