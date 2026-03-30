@@ -12,10 +12,11 @@ var (
 	ErrOrgNotEmpty = errors.New("org is not empty")
 )
 
-// Org is an alias for the shared domain type.
-type Org = domain.Org
-
-type OrgsPage = domain.OrgsPage
+// Domain type aliases
+type (
+	Org      = domain.Org
+	OrgsPage = domain.OrgsPage
+)
 
 type Backup struct {
 	Orgs           []Org

@@ -8,11 +8,11 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
-// OrgMembership is an alias for the shared domain type.
-type OrgMembership = domain.OrgMembership
-
-// OrgMembershipsPage is an alias for the shared domain type.
-type OrgMembershipsPage = domain.OrgMembershipsPage
+// Domain type aliases
+type (
+	OrgMembership      = domain.OrgMembership
+	OrgMembershipsPage = domain.OrgMembershipsPage
+)
 
 var (
 	// ErrCreateOrgMembership indicates failure to create org membership.

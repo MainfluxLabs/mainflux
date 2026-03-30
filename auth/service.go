@@ -26,8 +26,10 @@ const (
 	OrgSub  = domain.OrgSub
 )
 
-// AuthzReq is an alias for the shared domain type.
-type AuthzReq = domain.AuthzReq
+// Domain type aliases
+type (
+	AuthzReq = domain.AuthzReq
+)
 
 var (
 	// ErrRetrieveMembershipsByOrg indicates that retrieving memberships by org failed.

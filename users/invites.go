@@ -13,11 +13,11 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// PlatformInvite is an alias for the shared domain type.
-type PlatformInvite = domain.PlatformInvite
-
-// PlatformInvitesPage is an alias for the shared domain type.
-type PlatformInvitesPage = domain.PlatformInvitesPage
+// Domain type aliases
+type (
+	PlatformInvite      = domain.PlatformInvite
+	PlatformInvitesPage = domain.PlatformInvitesPage
+)
 
 const (
 	UserTypeInvitee = "invitee"

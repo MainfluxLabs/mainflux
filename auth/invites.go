@@ -17,14 +17,12 @@ import (
 var ErrInvalidInviteResponse = errors.New("invalid invite response action")
 var ErrGroupsDifferingOrgs = errors.New("groups belong to differing organizations")
 
-// OrgInvite is an alias for the shared domain type.
-type OrgInvite = domain.OrgInvite
-
-// OrgInvitesPage is an alias for the shared domain type.
-type OrgInvitesPage = domain.OrgInvitesPage
-
-// GroupInvite is an alias for the shared domain type.
-type GroupInvite = domain.GroupInvite
+// Domain type aliases
+type (
+	OrgInvite      = domain.OrgInvite
+	OrgInvitesPage = domain.OrgInvitesPage
+	GroupInvite    = domain.GroupInvite
+)
 
 const (
 	UserTypeInvitee = "invitee"

@@ -31,7 +31,7 @@ const (
 	AggregationCount = "count"
 )
 
-// Type aliases referencing the canonical definitions in pkg/domain.
+// Domain type aliases
 type (
 	Message           = domain.Message
 	MessagesPage      = domain.MessagesPage

@@ -11,8 +11,6 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
-const rootSubject = "root"
-
 type Backup struct {
 	JSONMessages  JSONMessagesPage
 	SenMLMessages SenMLMessagesPage
@@ -226,7 +224,7 @@ func (rs *readersService) DeleteAllSenMLMessages(ctx context.Context, token stri
 func (rs *readersService) isAdmin(ctx context.Context, token string) error {
 	req := &protomfx.AuthorizeReq{
 		Token:   token,
-		Subject: rootSubject,
+		Subject: domain.RootSub,
 	}
 
 	if _, err := rs.authc.Authorize(ctx, req); err != nil {

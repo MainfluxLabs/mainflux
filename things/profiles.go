@@ -9,15 +9,14 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
-// Profile is an alias for the shared domain type.
-type Profile = domain.Profile
+// Domain type aliases
+type (
+	Profile      = domain.Profile
+	ProfilesPage = domain.ProfilesPage
 
-// ProfilesPage is an alias for the shared domain type.
-type ProfilesPage = domain.ProfilesPage
-
-// Config and Transformer are aliases for the shared domain types.
-type Config = domain.Config
-type Transformer = domain.Transformer
+	Config      = domain.Config
+	Transformer = domain.Transformer
+)
 
 // ProfileRepository specifies a profile persistence API.
 type ProfileRepository interface {

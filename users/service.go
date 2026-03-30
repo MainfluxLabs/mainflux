@@ -48,9 +48,6 @@ var (
 	ErrSelfRegisterDisabled = errors.New("self register disabled")
 )
 
-// UsersPage is an alias for the shared domain type.
-type UsersPage = domain.UsersPage
-
 var AllowedOrders = map[string]string{
 	"id":            "id",
 	"email":         "email",

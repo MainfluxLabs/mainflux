@@ -198,7 +198,7 @@ type Backup struct {
 	GroupMemberships []GroupMembership
 }
 
-// UserAccessReq, ThingAccessReq, PubConfigInfo, ThingCommandReq, and ThingGroupCommandReq are aliases for the shared domain types.
+// Domain type aliases
 type (
 	UserAccessReq        = domain.UserAccessReq
 	ThingAccessReq       = domain.ThingAccessReq
