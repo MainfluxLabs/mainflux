@@ -38,18 +38,17 @@ func PubConfigInfoToProto(pi domain.PubConfigInfo) *protomfx.PubConfigByKeyRes {
 
 // DomainConfigToProto converts domain Config to proto Config for use with messaging.
 func DomainConfigToProto(c domain.ProfileConfig) *protomfx.Config {
-	tr := &protomfx.Transformer{
-		DataFilters:  c.Transformer.DataFilters,
-		DataField:    c.Transformer.DataField,
-		TimeField:    c.Transformer.TimeField,
-		TimeFormat:   c.Transformer.TimeFormat,
-		TimeLocation: c.Transformer.TimeLocation,
+	cfg := &protomfx.Config{ContentType: c.ContentType}
+	if !c.IsZero() {
+		cfg.Transformer = &protomfx.Transformer{
+			DataFilters:  c.Transformer.DataFilters,
+			DataField:    c.Transformer.DataField,
+			TimeField:    c.Transformer.TimeField,
+			TimeFormat:   c.Transformer.TimeFormat,
+			TimeLocation: c.Transformer.TimeLocation,
+		}
 	}
-
-	return &protomfx.Config{
-		ContentType: c.ContentType,
-		Transformer: tr,
-	}
+	return cfg
 }
 
 func MapToProtoConfig(config map[string]any) *protomfx.Config {

@@ -34,7 +34,7 @@ type profileRes struct {
 	ID       string               `json:"id"`
 	GroupID  string               `json:"group_id,omitempty"`
 	Name     string               `json:"name,omitempty"`
-	Config   domain.ProfileConfig `json:"config,omitempty"`
+	Config   *domain.ProfileConfig `json:"config,omitempty"`
 	Metadata map[string]any       `json:"metadata,omitempty"`
 	created  bool
 }

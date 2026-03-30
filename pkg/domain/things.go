@@ -124,6 +124,19 @@ type Transformer struct {
 	TimeLocation string   `json:"time_location"`
 }
 
+// IsZero reports whether c has no meaningful config (no content type set).
+func (c ProfileConfig) IsZero() bool {
+	return c.ContentType == ""
+}
+
+// Ptr returns a pointer to c, or nil if c is the zero value.
+func (c ProfileConfig) Ptr() *ProfileConfig {
+	if c.IsZero() {
+		return nil
+	}
+	return &c
+}
+
 // GroupMembership represents a group membership.
 type GroupMembership struct {
 	GroupID  string `json:"group_id,omitempty"`

@@ -160,12 +160,13 @@ func (upe updateProfileEvent) Encode() map[string]any {
 		val["name"] = upe.name
 	}
 
-	config, err := json.Marshal(upe.config)
-	if err != nil {
-		return val
+	if !upe.config.IsZero() {
+		config, err := json.Marshal(upe.config)
+		if err != nil {
+			return val
+		}
+		val["config"] = string(config)
 	}
-
-	val["config"] = string(config)
 
 	if upe.metadata != nil {
 		metadata, err := json.Marshal(upe.metadata)
