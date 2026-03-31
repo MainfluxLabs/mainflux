@@ -124,3 +124,12 @@ other internal services to query messages by thing key.
 - `ListSenMLMessages` — returns a page of SenML messages filtered by thing key and page metadata
 
 Authentication is done via thing key (no user token required).
+
+### Consuming Services
+
+Services that query the postgres-reader gRPC API (e.g. `rules`) use the following environment variable to locate the endpoint:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `MF_POSTGRES_READER_GRPC_URL` | postgres-reader gRPC endpoint | `localhost:8184` (Docker: `postgres-reader:8184`) |
+| `MF_POSTGRES_READER_GRPC_TIMEOUT` | gRPC request timeout | `1s` |

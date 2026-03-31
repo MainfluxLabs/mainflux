@@ -165,9 +165,11 @@ The service is configured using the environment variables presented in the follo
 | `MF_RULES_CA_CERTS`           | Path to trusted CAs in PEM format                                          |                          |
 | `MF_RULES_SERVER_CERT`        | Path to server certificate in PEM format                                   |                          |
 | `MF_RULES_SERVER_KEY`         | Path to server key in PEM format                                           |                          |
-| `MF_THINGS_AUTH_GRPC_URL`     | Things service Auth gRPC URL                                               | localhost:8183           |
-| `MF_THINGS_AUTH_GRPC_TIMEOUT` | Things service Auth gRPC request timeout                                   | 1s                       |
-| `MF_RULES_ES_URL`             | Event store URL                                                            | redis://localhost:6379/0 |
+| `MF_THINGS_AUTH_GRPC_URL`         | Things service Auth gRPC URL                                               | localhost:8183           |
+| `MF_THINGS_AUTH_GRPC_TIMEOUT`     | Things service Auth gRPC request timeout                                   | 1s                       |
+| `MF_POSTGRES_READER_GRPC_URL`     | Postgres reader gRPC URL                                                   | localhost:8184           |
+| `MF_POSTGRES_READER_GRPC_TIMEOUT` | Postgres reader gRPC request timeout                                       | 1s                       |
+| `MF_RULES_ES_URL`                 | Event store URL                                                            | redis://localhost:6379/0 |
 | `MF_RULES_EVENT_CONSUMER`     | Event store consumer name                                                  | rules                    |
 | `MF_RULES_SCRIPTS_ENABLED`    | Enable Lua scripting engine                                                | false                    |
 
