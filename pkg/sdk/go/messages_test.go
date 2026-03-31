@@ -20,6 +20,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	thingID      = "513d02d2-16c1-4f23-98be-9e12f8fee898"
+	atoken       = "auth_token"
+	invalidValue = "invalid"
+	msg          = `[{"n":"current","t":-1,"v":1.6}]`
+)
+
 func newMessageService(tc protomfx.ThingsServiceClient) adapter.Service {
 	pub := mocks.NewPublisher()
 	return adapter.New(pub, tc)
@@ -32,11 +39,7 @@ func newMessageServer(svc adapter.Service) *httptest.Server {
 }
 
 func TestSendMessage(t *testing.T) {
-	profileID := "1"
-	atoken := "auth_token"
-	invalidToken := "invalid"
-	msg := `[{"n":"current","t":-1,"v":1.6}]`
-	tc := mocks.NewThingsServiceClient(map[string]things.Profile{atoken: {ID: profileID}}, nil, nil)
+	tc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{atoken: {ID: thingID}}, nil)
 	pub := newMessageService(tc)
 	ts := newMessageServer(pub)
 	defer ts.Close()
@@ -49,52 +52,44 @@ func TestSendMessage(t *testing.T) {
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 
 	cases := map[string]struct {
-		profileID string
-		msg       string
-		auth      string
-		err       error
+		msg  string
+		auth string
+		err  error
 	}{
 		"publish message": {
-			profileID: profileID,
-			msg:       msg,
-			auth:      atoken,
-			err:       nil,
+			msg:  msg,
+			auth: atoken,
+			err:  nil,
 		},
 		"publish message without authorization token": {
-			profileID: profileID,
-			msg:       msg,
-			auth:      "",
-			err:       createError(sdk.ErrFailedPublish, http.StatusUnauthorized),
+			msg:  msg,
+			auth: "",
+			err:  createError(sdk.ErrFailedPublish, http.StatusUnauthorized),
 		},
 		"publish message with invalid authorization token": {
-			profileID: profileID,
-			msg:       msg,
-			auth:      invalidToken,
-			err:       createError(sdk.ErrFailedPublish, http.StatusUnauthorized),
+			msg:  msg,
+			auth: invalidValue,
+			err:  createError(sdk.ErrFailedPublish, http.StatusUnauthorized),
 		},
 		"publish message with wrong content type": {
-			profileID: profileID,
-			msg:       "text",
-			auth:      atoken,
-			err:       nil,
+			msg:  "text",
+			auth: atoken,
+			err:  nil,
 		},
 		"publish message unable to authorize": {
-			profileID: profileID,
-			msg:       msg,
-			auth:      invalidToken,
-			err:       createError(sdk.ErrFailedPublish, http.StatusUnauthorized),
+			msg:  msg,
+			auth: invalidValue,
+			err:  createError(sdk.ErrFailedPublish, http.StatusUnauthorized),
 		},
 	}
 	for desc, tc := range cases {
-		err := mainfluxSDK.SendMessage(tc.profileID, tc.msg, things.ThingKey{Type: things.KeyTypeInternal, Value: tc.auth})
+		err := mainfluxSDK.SendMessage("/messages", tc.msg, things.ThingKey{Type: things.KeyTypeInternal, Value: tc.auth})
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", desc, tc.err, err))
 	}
 }
 
 func TestValidateContentType(t *testing.T) {
-	profileID := "1"
-	atoken := "auth_token"
-	tc := mocks.NewThingsServiceClient(map[string]things.Profile{atoken: {ID: profileID}}, nil, nil)
+	tc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{atoken: {ID: thingID}}, nil)
 	pub := newMessageService(tc)
 	ts := newMessageServer(pub)
 	defer ts.Close()

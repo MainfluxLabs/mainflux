@@ -32,18 +32,6 @@ func NewThingsServiceClient(profiles map[string]things.Profile, things map[strin
 func (svc thingsServiceMock) GetPubConfigByKey(_ context.Context, in *protomfx.ThingKey, _ ...grpc.CallOption) (*protomfx.PubConfigByKeyRes, error) {
 	key := in.GetValue()
 
-	if key == "invalid" {
-		return nil, errors.ErrAuthentication
-	}
-
-	if key == "" {
-		return nil, errors.ErrAuthentication
-	}
-
-	if key == "token" {
-		return nil, errors.ErrAuthorization
-	}
-
 	// Since there is no appropriate way to simulate internal server error,
 	// we had to use this obscure approach. ErrorToken simulates gRPC
 	// call which returns internal server error.
@@ -51,7 +39,12 @@ func (svc thingsServiceMock) GetPubConfigByKey(_ context.Context, in *protomfx.T
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
-	return &protomfx.PubConfigByKeyRes{PublisherID: svc.things[key].ID}, nil
+	th, ok := svc.things[key]
+	if !ok {
+		return nil, errors.ErrAuthentication
+	}
+
+	return &protomfx.PubConfigByKeyRes{PublisherID: th.ID}, nil
 }
 
 func (svc thingsServiceMock) GetConfigByThing(_ context.Context, _ *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ConfigByThingRes, error) {
