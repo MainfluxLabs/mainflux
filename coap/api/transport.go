@@ -28,10 +28,13 @@ import (
 )
 
 const (
-	protocol      = "coap"
-	authQuery     = "auth"
-	authTypeQuery = "type"
-	startObserve  = 0 // observe option value that indicates start of observation
+	protocol            = "coap"
+	authQuery           = "auth"
+	authTypeQuery       = "type"
+	startObserve        = 0 // observe option value that indicates start of observation
+	topicPrefixThings   = "things"
+	topicPrefixGroups   = "groups"
+	topicSuffixCommands = "commands"
 )
 
 var errBadOptions = errors.New("bad options")
@@ -90,7 +93,7 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 	case codes.GET:
 		err = handleGet(m, w.Client(), msg, key)
 	case codes.POST:
-		err = service.Publish(context.Background(), key, msg)
+		err = handlePost(m, msg, key)
 	default:
 		err = dbutil.ErrNotFound
 	}
@@ -108,6 +111,31 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 		}
 		sendResp(w, &resp)
 	}
+}
+
+func handlePost(m *mux.Message, msg protomfx.Message, key domain.ThingKey) error {
+	path, err := m.Options.Path()
+	if err != nil {
+		return errBadOptions
+	}
+
+	parts := strings.SplitN(path, "/", 4)
+	if len(parts) >= 3 && parts[2] == topicSuffixCommands {
+		id := parts[1]
+		if len(parts) == 4 {
+			if msg.Subtopic, err = messaging.NormalizeSubtopic(parts[3]); err != nil {
+				return err
+			}
+		}
+		switch parts[0] {
+		case topicPrefixThings:
+			return service.SendCommandToThing(context.Background(), key, id, msg)
+		case topicPrefixGroups:
+			return service.SendCommandToGroup(context.Background(), key, id, msg)
+		}
+	}
+
+	return service.Publish(context.Background(), key, msg)
 }
 
 func handleGet(m *mux.Message, c mux.Client, msg protomfx.Message, key domain.ThingKey) error {

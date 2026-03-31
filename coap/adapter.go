@@ -28,6 +28,12 @@ type Service interface {
 
 	// Unsubscribe method is used to stop observing resource.
 	Unsubscribe(ctx context.Context, key domain.ThingKey, subtopic, token string) error
+
+	// SendCommandToThing publishes a command to the specified thing, authorized by publisher thing key (M2M).
+	SendCommandToThing(ctx context.Context, key domain.ThingKey, thingID string, msg protomfx.Message) error
+
+	// SendCommandToGroup publishes a command to a group, authorized by publisher thing key (M2M).
+	SendCommandToGroup(ctx context.Context, key domain.ThingKey, groupID string, msg protomfx.Message) error
 }
 
 var _ Service = (*adapterService)(nil)
@@ -80,6 +86,32 @@ func (svc *adapterService) Subscribe(ctx context.Context, key domain.ThingKey, s
 	}
 
 	return svc.pubsub.Subscribe(c.Token(), subtopic, c)
+}
+
+func (svc *adapterService) SendCommandToThing(ctx context.Context, key domain.ThingKey, thingID string, msg protomfx.Message) error {
+	res, err := svc.things.Identify(ctx, &protomfx.ThingKey{Value: key.Value, Type: key.Type})
+	if err != nil {
+		return err
+	}
+
+	if _, err := svc.things.CanThingCommand(ctx, &protomfx.ThingCommandReq{PublisherID: res.GetValue(), RecipientID: thingID}); err != nil {
+		return err
+	}
+
+	return svc.pubsub.Publish(nats.GetThingCommandsSubject(thingID, msg.Subtopic), msg)
+}
+
+func (svc *adapterService) SendCommandToGroup(ctx context.Context, key domain.ThingKey, groupID string, msg protomfx.Message) error {
+	res, err := svc.things.Identify(ctx, &protomfx.ThingKey{Value: key.Value, Type: key.Type})
+	if err != nil {
+		return err
+	}
+
+	if _, err := svc.things.CanThingGroupCommand(ctx, &protomfx.ThingGroupCommandReq{PublisherID: res.GetValue(), GroupID: groupID}); err != nil {
+		return err
+	}
+
+	return svc.pubsub.Publish(nats.GetGroupCommandsSubject(groupID, msg.Subtopic), msg)
 }
 
 func (svc *adapterService) Unsubscribe(ctx context.Context, key domain.ThingKey, subtopic, token string) error {
