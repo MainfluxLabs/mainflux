@@ -7,15 +7,15 @@ provides a simple API that Mainflux services can use to send email notifications
 
 Mainflux Email Agent is configured using the following configuration parameters:
 
-| Parameter                           | Description                                                             |
-| ----------------------------------- | ----------------------------------------------------------------------- |
-| MF_EMAIL_HOST                       | Mail server host                                                        |
-| MF_EMAIL_PORT                       | Mail server port                                                        |
-| MF_EMAIL_USERNAME                   | Mail server username                                                    |
-| MF_EMAIL_PASSWORD                   | Mail server password                                                    |
-| MF_EMAIL_FROM_ADDRESS               | Email "from" address                                                    |
-| MF_EMAIL_FROM_NAME                  | Email "from" name                                                       |
-| MF_EMAIL_TEMPLATE                   | Email template for sending notification emails                          |
+| Parameter                | Description                                      |
+|--------------------------|--------------------------------------------------|
+| `MF_EMAIL_HOST`          | Mail server host                                 |
+| `MF_EMAIL_PORT`          | Mail server port                                 |
+| `MF_EMAIL_USERNAME`      | Mail server username                             |
+| `MF_EMAIL_PASSWORD`      | Mail server password                             |
+| `MF_EMAIL_FROM_ADDRESS`  | Email "from" address                             |
+| `MF_EMAIL_FROM_NAME`     | Email "from" name                                |
+| `MF_EMAIL_TEMPLATES_DIR` | Path to the directory containing email templates |
 
 There are two authentication methods supported: Basic Auth and CRAM-MD5.
 If `MF_EMAIL_USERNAME` is empty, no authentication will be used.

@@ -15,15 +15,15 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/MessageReq"
       responses:
-        "202":
+        '202':
           description: Message is accepted for processing.
-        "400":
+        '400':
           description: Message discarded due to malformed content.
-        "401":
+        '401':
           description: Missing or invalid access token provided.
-        "415":
+        '415':
           description: Invalid or missing content type.
-        "500":
+        '500':
           $ref: "#/components/responses/ServiceError"
 
   /messages/{subtopic}:
@@ -44,15 +44,15 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/MessageReq"
       responses:
-        "202":
+        '202':
           description: Message is accepted for processing.
-        "400":
+        '400':
           description: Message discarded due to malformed content.
-        "401":
+        '401':
           description: Missing or invalid access token provided.
-        "415":
+        '415':
           description: Invalid or missing content type.
-        "500":
+        '500':
           $ref: "#/components/responses/ServiceError"
 
   /health:
