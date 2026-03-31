@@ -362,51 +362,6 @@ func (client grpcClient) GetGroup(ctx context.Context, groupID string) (domain.G
 	return domain.Group{ID: gr.id, OrgID: gr.orgID, Name: gr.name}, nil
 }
 
-func protoConfigToDomain(c *protomfx.Config) domain.ProfileConfig {
-	if c == nil {
-		return domain.ProfileConfig{}
-	}
-
-	return domain.ProfileConfig{
-		ContentType: c.GetContentType(),
-		Transformer: protoTransformerToDomain(c.GetTransformer()),
-	}
-}
-
-func protoTransformerToDomain(t *protomfx.Transformer) domain.Transformer {
-	if t == nil {
-		return domain.Transformer{}
-	}
-
-	return domain.Transformer{
-		DataFilters:  t.GetDataFilters(),
-		DataField:    t.GetDataField(),
-		TimeField:    t.GetTimeField(),
-		TimeFormat:   t.GetTimeFormat(),
-		TimeLocation: t.GetTimeLocation(),
-	}
-}
-
-func protoConfigToMap(c *protomfx.Config) map[string]any {
-	if c == nil {
-		return nil
-	}
-
-	m := map[string]any{"content_type": c.GetContentType()}
-
-	if t := c.GetTransformer(); t != nil {
-		m["transformer"] = map[string]any{
-			"data_filters":  t.GetDataFilters(),
-			"data_field":    t.GetDataField(),
-			"time_field":    t.GetTimeField(),
-			"time_format":   t.GetTimeFormat(),
-			"time_location": t.GetTimeLocation(),
-		}
-	}
-
-	return m
-}
-
 func encodeGetPubConfigByKeyRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(thingKey)
 	return &protomfx.ThingKey{Value: req.value, Type: req.keyType}, nil
