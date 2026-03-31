@@ -288,7 +288,6 @@ func newService(ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, 
 		CRLPath:        cfg.crlPath,
 	}
 
-	// Generate initial CRL on startup so nginx has a valid CRL file.
 	if cfg.crlPath != "" && pkiAgent != nil {
 		if err := certs.GenerateCRLFile(context.Background(), certsRepo, pkiAgent, cfg.crlPath); err != nil {
 			logger.Error(fmt.Sprintf("Failed to generate initial CRL: %s", err))
