@@ -5,10 +5,8 @@ package grpc
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -240,33 +238,6 @@ func getGroupIDByProfileEndpoint(svc things.Service) endpoint.Endpoint {
 
 		return groupIDRes{groupID: groupID}, nil
 	}
-}
-
-func buildConfigResponse(conf map[string]any) (*protomfx.Config, error) {
-	cb, err := json.Marshal(conf)
-	if err != nil {
-		return &protomfx.Config{}, err
-	}
-
-	var config things.Config
-	if err := json.Unmarshal(cb, &config); err != nil {
-		return &protomfx.Config{}, err
-	}
-
-	transformer := &protomfx.Transformer{
-		DataFilters:  config.Transformer.DataFilters,
-		DataField:    config.Transformer.DataField,
-		TimeField:    config.Transformer.TimeField,
-		TimeFormat:   config.Transformer.TimeFormat,
-		TimeLocation: config.Transformer.TimeLocation,
-	}
-
-	profileConfig := &protomfx.Config{
-		ContentType: config.ContentType,
-		Transformer: transformer,
-	}
-
-	return profileConfig, nil
 }
 
 func getGroupIDsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
