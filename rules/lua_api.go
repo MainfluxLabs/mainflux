@@ -13,7 +13,7 @@ var luaAPISetStandard = []luaAPIFunc{luaSMTPNotify, luaAlarmCreate, luaLog}
 // Trigger a registered SMTP notifier by ID.
 // Lua signature:
 // mfx.smtp_notify(smtp_notifier_id) (bool, msg)
-// On success it returns true, nil. On failure, it returns false, <error_message>
+// On success it returns true, nil. On failure, it returns (false, <error_message>)
 var luaSMTPNotify = luaAPIFunc{
 	fun: func(env *luaEnv) lua.Function {
 		return func(ls *lua.State) int {
@@ -52,7 +52,7 @@ var luaSMTPNotify = luaAPIFunc{
 // Create an Alarm corresponding to the ID of the currently executing Lua script
 // Lua signature:
 // mfx.create_alarm()
-// On success it returns true, nil. On failure, it returns false, <error_message>
+// On success it returns true, nil. On failure, it returns (false, <error_message>)
 var luaAlarmCreate = luaAPIFunc{
 	fun: func(env *luaEnv) lua.Function {
 		return func(ls *lua.State) int {
@@ -84,7 +84,7 @@ var luaAlarmCreate = luaAPIFunc{
 // Log a string message to the environment's log buffer.
 // Lua signature:
 // mfx.log(<message>)
-// Returns true on success, and false, <error_message> on failure, usually due to exceeded log size limits per environment.
+// Returns true on success, and (false, <error_message>) on failure, usually due to exceeded log size limits per environment.
 var luaLog = luaAPIFunc{
 	fun: func(env *luaEnv) lua.Function {
 		return func(ls *lua.State) int {
