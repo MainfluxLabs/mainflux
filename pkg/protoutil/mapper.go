@@ -6,22 +6,24 @@ import (
 )
 
 // ProtoConfigToDomain converts proto Config to domain Config.
-func ProtoConfigToDomain(c *protomfx.Config) domain.Config {
+func ProtoConfigToDomain(c *protomfx.Config) *domain.ProfileConfig {
 	if c == nil {
-		return domain.Config{}
+		return nil
 	}
+
 	tr := domain.Transformer{}
 	if c.Transformer != nil {
 		tr = domain.Transformer{
-			DataFilters:  c.Transformer.DataFilters,
-			DataField:    c.Transformer.DataField,
-			TimeField:    c.Transformer.TimeField,
-			TimeFormat:   c.Transformer.TimeFormat,
-			TimeLocation: c.Transformer.TimeLocation,
+			DataFilters:  c.Transformer.GetDataFilters(),
+			DataField:    c.Transformer.GetDataField(),
+			TimeField:    c.Transformer.GetTimeField(),
+			TimeFormat:   c.Transformer.GetTimeFormat(),
+			TimeLocation: c.Transformer.GetTimeLocation(),
 		}
 	}
-	return domain.Config{
-		ContentType: c.ContentType,
+
+	return &domain.ProfileConfig{
+		ContentType: c.GetContentType(),
 		Transformer: tr,
 	}
 }
@@ -30,23 +32,28 @@ func ProtoConfigToDomain(c *protomfx.Config) domain.Config {
 func PubConfigInfoToProto(pi domain.PubConfigInfo) *protomfx.PubConfigByKeyRes {
 	return &protomfx.PubConfigByKeyRes{
 		PublisherID:   pi.PublisherID,
-		ProfileConfig: MapToProtoConfig(pi.ProfileConfig),
+		ProfileConfig: DomainConfigToProto(pi.ProfileConfig),
 	}
 }
 
 // DomainConfigToProto converts domain Config to proto Config for use with messaging.
-func DomainConfigToProto(c domain.Config) *protomfx.Config {
-	tr := &protomfx.Transformer{
-		DataFilters:  c.Transformer.DataFilters,
-		DataField:    c.Transformer.DataField,
-		TimeField:    c.Transformer.TimeField,
-		TimeFormat:   c.Transformer.TimeFormat,
-		TimeLocation: c.Transformer.TimeLocation,
+func DomainConfigToProto(c *domain.ProfileConfig) *protomfx.Config {
+	if c == nil {
+		return nil
 	}
-	return &protomfx.Config{
+
+	cfg := &protomfx.Config{
 		ContentType: c.ContentType,
-		Transformer: tr,
+		Transformer: &protomfx.Transformer{
+			DataFilters:  c.Transformer.DataFilters,
+			DataField:    c.Transformer.DataField,
+			TimeField:    c.Transformer.TimeField,
+			TimeFormat:   c.Transformer.TimeFormat,
+			TimeLocation: c.Transformer.TimeLocation,
+		},
 	}
+
+	return cfg
 }
 
 func MapToProtoConfig(config map[string]any) *protomfx.Config {

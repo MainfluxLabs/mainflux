@@ -12,6 +12,13 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
+// Status key constants for user filtering.
+const (
+	EnabledStatusKey  = "enabled"
+	DisabledStatusKey = "disabled"
+	AllStatusKey      = "all"
+)
+
 // User represents user account information.
 type User struct {
 	ID       string   `json:"id,omitempty"`
@@ -22,7 +29,7 @@ type User struct {
 	Role     string   `json:"role,omitempty"`
 }
 
-// ValidateUser returns an error if user representation is invalid.
+// Validate returns an error if user representation is invalid.
 func (u User) Validate(passRegex *regexp.Regexp) error {
 	if !email.IsEmail(u.Email) {
 		return errors.ErrMalformedEntity
@@ -53,13 +60,6 @@ type UsersPageMetadata struct {
 	State    string   `json:"state,omitempty"`
 	Metadata Metadata `json:"metadata,omitempty"`
 }
-
-// Status key constants for user filtering.
-const (
-	EnabledStatusKey  = "enabled"
-	DisabledStatusKey = "disabled"
-	AllStatusKey      = "all"
-)
 
 // PlatformInvite represents platform invite information.
 type PlatformInvite struct {

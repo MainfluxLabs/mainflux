@@ -9,7 +9,7 @@
 version: "3.7"
 
 networks:
-  mainfluxlabs-base-net:
+  docker_mainfluxlabs-base-net:
     external: true
 
 volumes:
@@ -25,7 +25,7 @@ services:
       POSTGRES_PASSWORD: ${MF_SMTP_NOTIFIER_DB_PASS}
       POSTGRES_DB: ${MF_SMTP_NOTIFIER_DB}
     networks:
-      - mainfluxlabs-base-net
+      - docker_mainfluxlabs-base-net
     volumes:
       - mainfluxlabs-smtp-notifier-db-volume:/var/lib/postgresql/data
 
@@ -46,8 +46,7 @@ services:
       MF_EMAIL_PORT: ${MF_EMAIL_PORT}
       MF_EMAIL_FROM_ADDRESS: ${MF_EMAIL_FROM_ADDRESS}
       MF_EMAIL_FROM_NAME: ${MF_EMAIL_FROM_NAME}
-      MF_EMAIL_TEMPLATE: ${MF_EMAIL_TEMPLATE}
-      MF_SMTP_NOTIFIER_TEMPLATE: ${MF_SMTP_NOTIFIER_TEMPLATE}
+      MF_EMAIL_TEMPLATES_DIR: ${MF_EMAIL_TEMPLATES_DIR}
       MF_SMTP_NOTIFIER_FROM_ADDR: ${MF_SMTP_NOTIFIER_FROM_ADDR}
       MF_SMTP_NOTIFIER_DB_HOST: smtp-notifier-db
       MF_SMTP_NOTIFIER_DB_PORT: ${MF_SMTP_NOTIFIER_DB_PORT}
@@ -56,11 +55,13 @@ services:
       MF_SMTP_NOTIFIER_DB: ${MF_SMTP_NOTIFIER_DB}
       MF_SMTP_NOTIFIER_SERVER_CERT: ${MF_SMTP_NOTIFIER_SERVER_CERT}
       MF_SMTP_NOTIFIER_SERVER_KEY: ${MF_SMTP_NOTIFIER_SERVER_KEY}
+      MF_SMTP_NOTIFIER_ES_URL: ${MF_SMTP_NOTIFIER_ES_URL}
+      MF_SMTP_NOTIFIER_EVENT_CONSUMER: ${MF_SMTP_NOTIFIER_EVENT_CONSUMER}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
     ports:
       - ${MF_SMTP_NOTIFIER_PORT}:${MF_SMTP_NOTIFIER_PORT}
     networks:
-      - mainfluxlabs-base-net
+      - docker_mainfluxlabs-base-net
     volumes:
-      - ../../templates/${MF_SMTP_NOTIFIER_TEMPLATE}:/${MF_EMAIL_TEMPLATE}
+      - ../../templates/${MF_SMTP_NOTIFIER_TEMPLATE}:${MF_EMAIL_TEMPLATES_DIR}

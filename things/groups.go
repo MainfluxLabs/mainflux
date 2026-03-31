@@ -7,11 +7,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
-// Group is an alias for the shared domain type.
-type Group = domain.Group
-
-// GroupPage is an alias for the shared domain type.
-type GroupPage = domain.GroupPage
+type (
+	Group     = domain.Group
+	GroupPage = domain.GroupPage
+)
 
 // GroupRepository specifies a group persistence API.
 type GroupRepository interface {

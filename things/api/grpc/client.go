@@ -9,6 +9,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
@@ -190,22 +191,22 @@ func (client grpcClient) GetPubConfigByKey(ctx context.Context, key domain.Thing
 	pc := res.(pubConfigByKeyRes)
 
 	return domain.PubConfigInfo{
-		PublisherID:   pc.publisherID,
-		ProfileConfig: protoConfigToMap(pc.profileConfig),
+		PublisherID:   pc.PublisherID,
+		ProfileConfig: pc.ProfileConfig,
 	}, nil
 }
 
-func (client grpcClient) GetConfigByThing(ctx context.Context, thingID string) (domain.Config, error) {
+func (client grpcClient) GetConfigByThing(ctx context.Context, thingID string) (*domain.ProfileConfig, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
 	res, err := client.getConfigByThing(ctx, thingIDReq{thingID: thingID})
 	if err != nil {
-		return domain.Config{}, err
+		return nil, err
 	}
 
 	c := res.(configByThingRes)
-	return protoConfigToDomain(c.config), nil
+	return c.config, nil
 }
 
 func (client grpcClient) CanUserAccessThing(ctx context.Context, ar domain.UserAccessReq) error {
@@ -361,12 +362,12 @@ func (client grpcClient) GetGroup(ctx context.Context, groupID string) (domain.G
 	return domain.Group{ID: gr.id, OrgID: gr.orgID, Name: gr.name}, nil
 }
 
-func protoConfigToDomain(c *protomfx.Config) domain.Config {
+func protoConfigToDomain(c *protomfx.Config) domain.ProfileConfig {
 	if c == nil {
-		return domain.Config{}
+		return domain.ProfileConfig{}
 	}
 
-	return domain.Config{
+	return domain.ProfileConfig{
 		ContentType: c.GetContentType(),
 		Transformer: protoTransformerToDomain(c.GetTransformer()),
 	}
@@ -506,12 +507,21 @@ func decodeIdentityResponse(_ context.Context, grpcRes any) (any, error) {
 
 func decodeGetPubConfigByKeyResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.PubConfigByKeyRes)
-	return pubConfigByKeyRes{publisherID: res.PublisherID, profileConfig: res.ProfileConfig}, nil
+
+	return pubConfigByKeyRes{
+		PubConfigInfo: domain.PubConfigInfo{
+			PublisherID:   res.GetPublisherID(),
+			ProfileConfig: protoutil.ProtoConfigToDomain(res.GetProfileConfig()),
+		},
+	}, nil
 }
 
 func decodeGetConfigByThingResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.ConfigByThingRes)
-	return configByThingRes{config: res.GetConfig()}, nil
+
+	return configByThingRes{
+		config: protoutil.ProtoConfigToDomain(res.GetConfig()),
+	}, nil
 }
 
 func decodeEmptyResponse(_ context.Context, _ any) (any, error) {

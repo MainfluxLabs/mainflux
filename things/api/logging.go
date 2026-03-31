@@ -11,6 +11,7 @@ import (
 	"time"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
@@ -162,7 +163,7 @@ func (lm *loggingMiddleware) RemoveThings(ctx context.Context, token string, ids
 
 func (lm *loggingMiddleware) CreateProfiles(ctx context.Context, token, grID string, profiles ...things.Profile) (saved []things.Profile, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_profiles for profiles %s took %s to complete", saved, time.Since(begin))
+		message := fmt.Sprintf("Method create_profiles for profiles %v took %s to complete", saved, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -264,7 +265,7 @@ func (lm *loggingMiddleware) GetPubConfigByKey(ctx context.Context, key things.T
 	return lm.svc.GetPubConfigByKey(ctx, key)
 }
 
-func (lm *loggingMiddleware) GetConfigByThing(ctx context.Context, thingID string) (_ map[string]any, err error) {
+func (lm *loggingMiddleware) GetConfigByThing(ctx context.Context, thingID string) (_ *domain.ProfileConfig, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method get_config_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {

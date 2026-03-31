@@ -12,18 +12,19 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// ErrInvalidInviteResponse indicates an invalid Invite response action string.
-var ErrInvalidInviteResponse = errors.New("invalid invite response action")
-var ErrGroupsDifferingOrgs = errors.New("groups belong to differing organizations")
+var (
+	// ErrInvalidInviteResponse indicates an invalid Invite response action string.
+	ErrInvalidInviteResponse = errors.New("invalid invite response action")
+	// ErrGroupsDifferingOrgs indicates that groups associated with an Org invite belong to different Orgs
+	ErrGroupsDifferingOrgs = errors.New("groups belong to differing organizations")
+)
 
-// OrgInvite is an alias for the shared domain type.
-type OrgInvite = domain.OrgInvite
-
-// OrgInvitesPage is an alias for the shared domain type.
-type OrgInvitesPage = domain.OrgInvitesPage
-
-// GroupInvite is an alias for the shared domain type.
-type GroupInvite = domain.GroupInvite
+// Domain type aliases
+type (
+	OrgInvite      = domain.OrgInvite
+	OrgInvitesPage = domain.OrgInvitesPage
+	GroupInvite    = domain.GroupInvite
+)
 
 const (
 	UserTypeInvitee = "invitee"

@@ -9,17 +9,16 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
-// Metadata is an alias for the shared domain type.
-type Metadata = domain.Metadata
+// Domain type aliases
+type (
+	Metadata = domain.Metadata
 
-// Thing and ThingsPage are aliases for the shared domain types.
-type Thing = domain.Thing
-type ThingsPage = domain.ThingsPage
+	Thing      = domain.Thing
+	ThingsPage = domain.ThingsPage
 
-// ThingKey is an alias for the shared domain type
-type ThingKey = domain.ThingKey
+	ThingKey = domain.ThingKey
+)
 
-// ThingKey and key type constants are aliases for the shared domain types.
 const (
 	KeyTypeInternal = domain.KeyTypeInternal
 	KeyTypeExternal = domain.KeyTypeExternal

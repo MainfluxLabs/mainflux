@@ -21,6 +21,9 @@ var (
 	// ErrFailedCertRevocation failed to revoke certificate
 	ErrFailedCertRevocation = errors.New("failed to revoke certificate")
 
+	// ErrNotEligibleForRenewal indicates the certificate cannot be renewed yet because it expires more than 30 days from now.
+	ErrNotEligibleForRenewal = errors.New("certificate not eligible for renewal yet")
+
 	errFailedToRemoveCertFromDB = errors.New("failed to remove cert serial from db")
 )
 
@@ -215,7 +218,7 @@ func (cs *certsService) RenewCert(ctx context.Context, token, serial string) (Ce
 	}
 
 	if time.Until(oldCert.ExpiresAt) > 30*24*time.Hour {
-		return Cert{}, errors.New("certificate not eligible for renewal yet")
+		return Cert{}, ErrNotEligibleForRenewal
 	}
 
 	// Preserve the original certificate's key type and bits during renewal.

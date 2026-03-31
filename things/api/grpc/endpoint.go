@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
@@ -24,14 +25,11 @@ func getPubConfigByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			return pubConfigByKeyRes{}, err
 		}
 
-		config, err := buildConfigResponse(pc.ProfileConfig)
-		if err != nil {
-			return pubConfigByKeyRes{}, err
-		}
-
 		res := pubConfigByKeyRes{
-			publisherID:   pc.PublisherID,
-			profileConfig: config,
+			PubConfigInfo: domain.PubConfigInfo{
+				PublisherID:   pc.PublisherID,
+				ProfileConfig: pc.ProfileConfig,
+			},
 		}
 
 		return res, nil
@@ -50,12 +48,7 @@ func getConfigByThingEndpoint(svc things.Service) endpoint.Endpoint {
 			return configByThingRes{}, err
 		}
 
-		config, err := buildConfigResponse(c)
-		if err != nil {
-			return pubConfigByKeyRes{}, err
-		}
-
-		return configByThingRes{config: config}, nil
+		return configByThingRes{config: c}, nil
 	}
 }
 

@@ -8,6 +8,20 @@ import (
 	"time"
 )
 
+// Thing key type constants.
+const (
+	KeyTypeInternal = "internal"
+	KeyTypeExternal = "external"
+)
+
+// Group role constants.
+const (
+	GroupViewer = "viewer"
+	GroupEditor = "editor"
+	GroupAdmin  = "admin"
+	GroupOwner  = "owner"
+)
+
 // Thing represents a Mainflux thing. Each thing is owned by one user, and
 // it is assigned with the unique identifier and (temporary) access key.
 type Thing struct {
@@ -28,12 +42,6 @@ type ThingsPage struct {
 	Things []Thing `json:"things"`
 }
 
-// Thing key type constants.
-const (
-	KeyTypeInternal = "internal"
-	KeyTypeExternal = "external"
-)
-
 // ThingKey represents a Thing authentication key and its type.
 type ThingKey struct {
 	Value string `json:"key"`
@@ -45,7 +53,7 @@ type Profile struct {
 	ID       string         `json:"id,omitempty"`
 	GroupID  string         `json:"group_id,omitempty"`
 	Name     string         `json:"name,omitempty"`
-	Config   map[string]any `json:"config,omitempty"`
+	Config   *ProfileConfig `json:"config,omitempty"`
 	Metadata Metadata       `json:"metadata,omitempty"`
 }
 
@@ -94,7 +102,7 @@ type OrgAccessReq struct {
 // PubConfigInfo represents publisher config from GetPubConfigByKey.
 type PubConfigInfo struct {
 	PublisherID   string
-	ProfileConfig map[string]any
+	ProfileConfig *ProfileConfig
 }
 
 // ThingCommandReq represents a request to authorize an inter-thing command.
@@ -109,8 +117,8 @@ type ThingGroupCommandReq struct {
 	GroupID     string
 }
 
-// Config represents profile configuration.
-type Config struct {
+// ProfileConfig represents profile configuration.
+type ProfileConfig struct {
 	ContentType string      `json:"content_type"`
 	Transformer Transformer `json:"transformer"`
 }
@@ -138,17 +146,9 @@ type GroupMembershipsPage struct {
 	GroupMemberships []GroupMembership `json:"group_memberships"`
 }
 
-// Group role constants.
-const (
-	GroupViewer = "viewer"
-	GroupEditor = "editor"
-	GroupAdmin  = "admin"
-	GroupOwner  = "owner"
-)
-
 type ThingsClient interface {
 	GetPubConfigByKey(ctx context.Context, key ThingKey) (PubConfigInfo, error)
-	GetConfigByThing(ctx context.Context, thingID string) (Config, error)
+	GetConfigByThing(ctx context.Context, thingID string) (*ProfileConfig, error)
 	CanUserAccessThing(ctx context.Context, ar UserAccessReq) error
 	CanUserAccessProfile(ctx context.Context, ar UserAccessReq) error
 	CanUserAccessGroup(ctx context.Context, ar UserAccessReq) error

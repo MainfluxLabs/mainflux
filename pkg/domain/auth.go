@@ -8,6 +8,35 @@ import (
 	"time"
 )
 
+// Subject type constants for authorization.
+const (
+	RootSub = "root"
+	OrgSub  = "org"
+)
+
+// Org role constants.
+const (
+	OrgAdmin  = "admin"
+	OrgOwner  = "owner"
+	OrgEditor = "editor"
+	OrgViewer = "viewer"
+)
+
+// Platform role constants.
+const (
+	// RoleRootAdmin is the super admin role.
+	RoleRootAdmin = "root"
+	// RoleAdmin is the admin role.
+	RoleAdmin = "admin"
+)
+
+// Key type constants.
+const (
+	LoginKey uint32 = iota
+	RecoveryKey
+	APIKey
+)
+
 // Identity contains ID and Email.
 type Identity struct {
 	ID    string `json:"id,omitempty"`
@@ -82,35 +111,6 @@ type GroupInvite struct {
 	GroupID    string `json:"group_id,omitempty"`
 	MemberRole string `json:"member_role,omitempty"`
 }
-
-// Subject type constants for authorization.
-const (
-	RootSub = "root"
-	OrgSub  = "org"
-)
-
-// Org role constants.
-const (
-	OrgAdmin  = "admin"
-	OrgOwner  = "owner"
-	OrgEditor = "editor"
-	OrgViewer = "viewer"
-)
-
-// Platform role constants.
-const (
-	// RoleRootAdmin is the super admin role.
-	RoleRootAdmin = "root"
-	// RoleAdmin is the admin role.
-	RoleAdmin = "admin"
-)
-
-// Key type constants.
-const (
-	LoginKey uint32 = iota
-	RecoveryKey
-	APIKey
-)
 
 // Key represents API key.
 type Key struct {

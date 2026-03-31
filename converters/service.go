@@ -104,7 +104,7 @@ func (as *adapterService) PublishJSONMessages(ctx context.Context, key string, c
 		return err
 	}
 
-	timeField := pc.ProfileConfig["transformer"].(map[string]any)["time_field"].(string)
+	timeField := pc.ProfileConfig.Transformer.TimeField
 
 	msg := protomfx.Message{
 		Protocol: protocol,

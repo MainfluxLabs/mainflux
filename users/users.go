@@ -10,11 +10,12 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
-// Metadata is an alias for the shared domain type.
-type Metadata = domain.Metadata
-
-// User is an alias for the shared domain type.
-type User = domain.User
+// Domain type aliases
+type (
+	Metadata  = domain.Metadata
+	User      = domain.User
+	UsersPage = domain.UsersPage
+)
 
 type EmailVerification struct {
 	User      User
@@ -30,9 +31,11 @@ type OAuthLoginData struct {
 }
 
 type OAuthCallbackData struct {
-	Provider string
-	Code     string
-	Verifier string
+	Provider     string
+	Code         string
+	Verifier     string
+	InviteID     string
+	RedirectPath string
 }
 
 type Identity struct {
