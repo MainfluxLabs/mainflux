@@ -232,7 +232,6 @@ func (a *agent) VerifyCert(certPEM string) (*x509.Certificate, error) {
 }
 
 func (a *agent) GenerateCRL(revokedSerials []pki.RevokedSerial) ([]byte, error) {
-	// Return a minimal valid PEM-encoded CRL for testing.
 	return []byte("-----BEGIN X509 CRL-----\n-----END X509 CRL-----\n"), nil
 }
 
