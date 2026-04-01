@@ -125,25 +125,17 @@ func handlePost(m *mux.Message, msg protomfx.Message, key domain.ThingKey) error
 	parts := strings.SplitN(path, "/", 4)
 	if len(parts) >= 3 {
 		prefix, id, suffix := parts[0], parts[1], parts[2]
-		subtopicPath := ""
 		if len(parts) == 4 {
-			subtopicPath = parts[3]
+			if msg.Subtopic, err = messaging.NormalizeSubtopic(parts[3]); err != nil {
+				return err
+			}
 		}
-		switch suffix {
-		case topicSuffixCommands:
-			if msg.Subtopic, err = messaging.NormalizeSubtopic(subtopicPath); err != nil {
-				return err
-			}
-			switch prefix {
-			case topicPrefixThings:
-				return service.SendCommandToThing(context.Background(), key, id, msg)
-			case topicPrefixGroups:
-				return service.SendCommandToGroup(context.Background(), key, id, msg)
-			}
-		case topicSuffixMessages:
-			if msg.Subtopic, err = messaging.NormalizeSubtopic(subtopicPath); err != nil {
-				return err
-			}
+		switch {
+		case prefix == topicPrefixThings && suffix == topicSuffixCommands:
+			return service.SendCommandToThing(context.Background(), key, id, msg)
+		case prefix == topicPrefixGroups && suffix == topicSuffixCommands:
+			return service.SendCommandToGroup(context.Background(), key, id, msg)
+		case prefix == topicPrefixThings && suffix == topicSuffixMessages:
 			return service.Publish(context.Background(), key, msg)
 		}
 	}
