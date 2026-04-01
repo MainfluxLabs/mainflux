@@ -185,6 +185,7 @@ var luaReaderListMessages = luaAPIFunc{
 				}
 
 				// Return ({messages}, total)
+				// Messages are returned as a Lua array (table whose keys are integers) of tables representing JSON messages
 				luautil.DeepPush(ls, page.Messages)
 				ls.PushInteger(int(page.Total))
 
@@ -206,7 +207,7 @@ var luaReaderListMessages = luaAPIFunc{
 				}
 
 				// Return ({messages}, total)
-				// Messages are returned are as Lua array (table whose keys are integers) of tables representing SenML messages
+				// Messages are returned as a Lua array (table whose keys are integers) of tables representing SenML messages
 				ls.NewTable()
 				for idx, msg := range page.Messages {
 					pushSenMLMessageToLua(ls, msg.(senml.Message))
