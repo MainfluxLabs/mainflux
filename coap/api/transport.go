@@ -35,6 +35,7 @@ const (
 	topicPrefixThings   = "things"
 	topicPrefixGroups   = "groups"
 	topicSuffixCommands = "commands"
+	topicSuffixMessages = "messages"
 )
 
 var errBadOptions = errors.New("bad options")
@@ -75,13 +76,6 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 		Options: make(message.Options, 0, 16),
 	}
 
-	msg, err := decodeMessage(m)
-	if err != nil {
-		logger.Warn(fmt.Sprintf("Error decoding message: %s", err))
-		resp.Code = codes.BadRequest
-		sendResp(w, &resp)
-		return
-	}
 	key, err := parseKey(m)
 	if err != nil {
 		logger.Warn(fmt.Sprintf("Error parsing auth: %s", err))
@@ -89,10 +83,18 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 		sendResp(w, &resp)
 		return
 	}
+
 	switch m.Code {
 	case codes.GET:
-		err = handleGet(m, w.Client(), msg, key)
+		err = handleGet(m, w.Client(), key)
 	case codes.POST:
+		msg, decErr := decodeMessage(m)
+		if decErr != nil {
+			logger.Warn(fmt.Sprintf("Error decoding message: %s", decErr))
+			resp.Code = codes.BadRequest
+			sendResp(w, &resp)
+			return
+		}
 		err = handlePost(m, msg, key)
 	default:
 		err = dbutil.ErrNotFound
@@ -119,57 +121,67 @@ func handlePost(m *mux.Message, msg protomfx.Message, key domain.ThingKey) error
 		return errBadOptions
 	}
 
+	path = strings.TrimPrefix(path, "/")
 	parts := strings.SplitN(path, "/", 4)
-	if len(parts) >= 3 && parts[2] == topicSuffixCommands {
-		id := parts[1]
+	if len(parts) >= 3 {
+		prefix, id, suffix := parts[0], parts[1], parts[2]
+		subtopicPath := ""
 		if len(parts) == 4 {
-			if msg.Subtopic, err = messaging.NormalizeSubtopic(parts[3]); err != nil {
+			subtopicPath = parts[3]
+		}
+		switch suffix {
+		case topicSuffixCommands:
+			if msg.Subtopic, err = messaging.NormalizeSubtopic(subtopicPath); err != nil {
 				return err
 			}
-		}
-		switch parts[0] {
-		case topicPrefixThings:
-			return service.SendCommandToThing(context.Background(), key, id, msg)
-		case topicPrefixGroups:
-			return service.SendCommandToGroup(context.Background(), key, id, msg)
+			switch prefix {
+			case topicPrefixThings:
+				return service.SendCommandToThing(context.Background(), key, id, msg)
+			case topicPrefixGroups:
+				return service.SendCommandToGroup(context.Background(), key, id, msg)
+			}
+		case topicSuffixMessages:
+			if msg.Subtopic, err = messaging.NormalizeSubtopic(subtopicPath); err != nil {
+				return err
+			}
+			return service.Publish(context.Background(), key, msg)
 		}
 	}
 
+	// Path is used as subtopic directly (e.g. "home/room/temperature").
+	if msg.Subtopic, err = messaging.NormalizeSubtopic(path); err != nil {
+		return err
+	}
 	return service.Publish(context.Background(), key, msg)
 }
 
-func handleGet(m *mux.Message, c mux.Client, msg protomfx.Message, key domain.ThingKey) error {
+func handleGet(m *mux.Message, c mux.Client, key domain.ThingKey) error {
 	var obs uint32
 	obs, err := m.Options.Observe()
 	if err != nil {
 		logger.Warn(fmt.Sprintf("Error reading observe option: %s", err))
 		return errBadOptions
 	}
+
+	path, err := m.Options.Path()
+	if err != nil {
+		return errBadOptions
+	}
+	subtopic, err := messaging.NormalizeSubtopic(strings.TrimPrefix(path, "/"))
+	if err != nil {
+		return err
+	}
+
 	if obs == startObserve {
 		c := coap.NewClient(c, m.Token, logger)
-		return service.Subscribe(context.Background(), key, msg.Subtopic, c)
+		return service.Subscribe(context.Background(), key, subtopic, c)
 	}
-	return service.Unsubscribe(context.Background(), key, msg.Subtopic, m.Token.String())
+	return service.Unsubscribe(context.Background(), key, subtopic, m.Token.String())
 }
 
 func decodeMessage(msg *mux.Message) (protomfx.Message, error) {
-	if msg.Options == nil {
-		return protomfx.Message{}, errBadOptions
-	}
-
-	path, err := msg.Options.Path()
-	if err != nil {
-		return protomfx.Message{}, err
-	}
-
-	subtopic, err := messaging.NormalizeSubtopic(path)
-	if err != nil {
-		return protomfx.Message{}, err
-	}
-
 	ret := protomfx.Message{
 		Protocol: protocol,
-		Subtopic: subtopic,
 		Payload:  []byte{},
 		Created:  time.Now().UnixNano(),
 	}
@@ -181,6 +193,7 @@ func decodeMessage(msg *mux.Message) (protomfx.Message, error) {
 		}
 		ret.Payload = buff
 	}
+
 	return ret, nil
 }
 
