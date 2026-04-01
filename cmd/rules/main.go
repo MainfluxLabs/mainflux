@@ -14,16 +14,17 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	readersapi "github.com/MainfluxLabs/mainflux/readers/api/grpc"
 	"github.com/MainfluxLabs/mainflux/rules"
 	"github.com/MainfluxLabs/mainflux/rules/api"
 	httpapi "github.com/MainfluxLabs/mainflux/rules/api/http"
@@ -43,64 +44,70 @@ const (
 	stopWaitTime = 5 * time.Second
 	esGroupName  = svcName
 
-	defBrokerURL         = "nats://localhost:4222"
-	defLogLevel          = "error"
-	defDBHost            = "localhost"
-	defDBPort            = "5432"
-	defDBUser            = "mainflux"
-	defDBPass            = "mainflux"
-	defDB                = svcName
-	defDBSSLMode         = "disable"
-	defDBSSLCert         = ""
-	defDBSSLKey          = ""
-	defDBSSLRootCert     = ""
-	defClientTLS         = "false"
-	defCACerts           = ""
-	defHTTPPort          = "9027"
-	defJaegerURL         = ""
-	defServerCert        = ""
-	defServerKey         = ""
-	defThingsGRPCURL     = "localhost:8183"
-	defThingsGRPCTimeout = "1s"
-	defESURL             = "redis://localhost:6379/0"
-	defESConsumerName    = svcName
-	defScriptsEnabled    = "false"
+	defBrokerURL          = "nats://localhost:4222"
+	defLogLevel           = "error"
+	defDBHost             = "localhost"
+	defDBPort             = "5432"
+	defDBUser             = "mainflux"
+	defDBPass             = "mainflux"
+	defDB                 = svcName
+	defDBSSLMode          = "disable"
+	defDBSSLCert          = ""
+	defDBSSLKey           = ""
+	defDBSSLRootCert      = ""
+	defClientTLS          = "false"
+	defCACerts            = ""
+	defHTTPPort           = "9027"
+	defJaegerURL          = ""
+	defServerCert         = ""
+	defServerKey          = ""
+	defThingsGRPCURL      = "localhost:8183"
+	defThingsGRPCTimeout  = "1s"
+	defReadersGRPCURL     = "localhost:8186"
+	defReadersGRPCTimeout = "1s"
+	defESURL              = "redis://localhost:6379/0"
+	defESConsumerName     = svcName
+	defScriptsEnabled     = "false"
 
-	envBrokerURL         = "MF_BROKER_URL"
-	envLogLevel          = "MF_RULES_LOG_LEVEL"
-	envDBHost            = "MF_RULES_DB_HOST"
-	envDBPort            = "MF_RULES_DB_PORT"
-	envDBUser            = "MF_RULES_DB_USER"
-	envDBPass            = "MF_RULES_DB_PASS"
-	envDB                = "MF_RULES_DB"
-	envDBSSLMode         = "MF_RULES_DB_SSL_MODE"
-	envDBSSLCert         = "MF_RULES_DB_SSL_CERT"
-	envDBSSLKey          = "MF_RULES_DB_SSL_KEY"
-	envDBSSLRootCert     = "MF_RULES_DB_SSL_ROOT_CERT"
-	envClientTLS         = "MF_RULES_CLIENT_TLS"
-	envCACerts           = "MF_RULES_CA_CERTS"
-	envHTTPPort          = "MF_RULES_HTTP_PORT"
-	envServerCert        = "MF_RULES_SERVER_CERT"
-	envServerKey         = "MF_RULES_SERVER_KEY"
-	envJaegerURL         = "MF_JAEGER_URL"
-	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
-	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
-	envESURL             = "MF_RULES_ES_URL"
-	envESConsumerName    = "MF_RULES_EVENT_CONSUMER"
-	envScriptsEnabled    = "MF_RULES_SCRIPTS_ENABLED"
+	envBrokerURL          = "MF_BROKER_URL"
+	envLogLevel           = "MF_RULES_LOG_LEVEL"
+	envDBHost             = "MF_RULES_DB_HOST"
+	envDBPort             = "MF_RULES_DB_PORT"
+	envDBUser             = "MF_RULES_DB_USER"
+	envDBPass             = "MF_RULES_DB_PASS"
+	envDB                 = "MF_RULES_DB"
+	envDBSSLMode          = "MF_RULES_DB_SSL_MODE"
+	envDBSSLCert          = "MF_RULES_DB_SSL_CERT"
+	envDBSSLKey           = "MF_RULES_DB_SSL_KEY"
+	envDBSSLRootCert      = "MF_RULES_DB_SSL_ROOT_CERT"
+	envClientTLS          = "MF_RULES_CLIENT_TLS"
+	envCACerts            = "MF_RULES_CA_CERTS"
+	envHTTPPort           = "MF_RULES_HTTP_PORT"
+	envServerCert         = "MF_RULES_SERVER_CERT"
+	envServerKey          = "MF_RULES_SERVER_KEY"
+	envJaegerURL          = "MF_JAEGER_URL"
+	envThingsGRPCURL      = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsGRPCTimeout  = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envReadersGRPCURL     = "MF_POSTGRES_READER_GRPC_URL"
+	envReadersGRPCTimeout = "MF_POSTGRES_READER_GRPC_TIMEOUT"
+	envESURL              = "MF_RULES_ES_URL"
+	envESConsumerName     = "MF_RULES_EVENT_CONSUMER"
+	envScriptsEnabled     = "MF_RULES_SCRIPTS_ENABLED"
 )
 
 type config struct {
-	brokerURL         string
-	logLevel          string
-	dbConfig          postgres.Config
-	httpConfig        servers.Config
-	thingsConfig      clients.Config
-	jaegerURL         string
-	thingsGRPCTimeout time.Duration
-	esURL             string
-	esConsumerName    string
-	scriptsEnabled    bool
+	brokerURL          string
+	logLevel           string
+	dbConfig           postgres.Config
+	httpConfig         servers.Config
+	thingsConfig       clients.Config
+	readersConfig      clients.Config
+	jaegerURL          string
+	thingsGRPCTimeout  time.Duration
+	readersGRPCTimeout time.Duration
+	esURL              string
+	esConsumerName     string
+	scriptsEnabled     bool
 }
 
 func main() {
@@ -136,7 +143,15 @@ func main() {
 
 	tc := thingsapi.NewClient(thConn, thingsTracer, cfg.thingsGRPCTimeout)
 
-	svc := newService(dbTracer, db, tc, ps, logger, cfg.scriptsEnabled)
+	readersConn := clientsgrpc.Connect(cfg.readersConfig, logger)
+	defer readersConn.Close()
+
+	readersTracer, readersCloser := jaeger.Init("rules_readers", cfg.jaegerURL, logger)
+	defer readersCloser.Close()
+
+	rc := readersapi.NewClient(readersConn, readersTracer, cfg.readersGRPCTimeout)
+
+	svc := newService(dbTracer, db, tc, rc, ps, logger, cfg.scriptsEnabled)
 
 	subjects := []string{nats.SubjectMessages, nats.SubjectMessagesWithSubtopic}
 	if err = consumers.Start(svcName, ps, svc, subjects...); err != nil {
@@ -179,6 +194,11 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
 
+	readersGRPCTimeout, err := time.ParseDuration(mainflux.Env(envReadersGRPCTimeout, defReadersGRPCTimeout))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envReadersGRPCTimeout, err.Error())
+	}
+
 	dbConfig := postgres.Config{
 		Host:        mainflux.Env(envDBHost, defDBHost),
 		Port:        mainflux.Env(envDBPort, defDBPort),
@@ -206,17 +226,26 @@ func loadConfig() config {
 		ClientName: clients.Things,
 	}
 
+	readersConfig := clients.Config{
+		ClientTLS:  tls,
+		CaCerts:    mainflux.Env(envCACerts, defCACerts),
+		URL:        mainflux.Env(envReadersGRPCURL, defReadersGRPCURL),
+		ClientName: clients.Readers,
+	}
+
 	return config{
-		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
-		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
-		dbConfig:          dbConfig,
-		httpConfig:        httpConfig,
-		thingsConfig:      thingsConfig,
-		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
-		thingsGRPCTimeout: thingsGRPCTimeout,
-		esURL:             mainflux.Env(envESURL, defESURL),
-		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
-		scriptsEnabled:    scriptsEnabled,
+		brokerURL:          mainflux.Env(envBrokerURL, defBrokerURL),
+		logLevel:           mainflux.Env(envLogLevel, defLogLevel),
+		dbConfig:           dbConfig,
+		httpConfig:         httpConfig,
+		thingsConfig:       thingsConfig,
+		readersConfig:      readersConfig,
+		jaegerURL:          mainflux.Env(envJaegerURL, defJaegerURL),
+		thingsGRPCTimeout:  thingsGRPCTimeout,
+		readersGRPCTimeout: readersGRPCTimeout,
+		esURL:              mainflux.Env(envESURL, defESURL),
+		esConsumerName:     mainflux.Env(envESConsumerName, defESConsumerName),
+		scriptsEnabled:     scriptsEnabled,
 	}
 }
 
@@ -246,14 +275,14 @@ func subscribeToThingsES(ctx context.Context, svc rules.Service, cfg config, log
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(dbTracer opentracing.Tracer, db *sqlx.DB, tc protomfx.ThingsServiceClient, nps messaging.PubSub, logger logger.Logger, scriptsEnabled bool) rules.Service {
+func newService(dbTracer opentracing.Tracer, db *sqlx.DB, tc domain.ThingsClient, rc domain.ReadersClient, nps messaging.PubSub, logger logger.Logger, scriptsEnabled bool) rules.Service {
 	database := dbutil.NewDatabase(db)
 
 	rulesRepo := postgres.NewRuleRepository(database)
 	rulesRepo = tracing.RuleRepositoryMiddleware(dbTracer, rulesRepo)
 
 	idProvider := uuid.New()
-	svc := rules.New(rulesRepo, tc, nps, idProvider, logger, scriptsEnabled)
+	svc := rules.New(rulesRepo, tc, rc, nps, idProvider, logger, scriptsEnabled)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

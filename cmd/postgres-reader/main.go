@@ -17,10 +17,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
+	serversgrpc "github.com/MainfluxLabs/mainflux/pkg/servers/grpc"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/MainfluxLabs/mainflux/readers/api"
@@ -41,6 +42,9 @@ const (
 
 	defLogLevel          = "error"
 	defPort              = "8180"
+	defGRPCPort          = "8186"
+	defGRPCServerCert    = ""
+	defGRPCServerKey     = ""
 	defClientTLS         = "false"
 	defCACerts           = ""
 	defDBHost            = "localhost"
@@ -60,6 +64,9 @@ const (
 
 	envLogLevel          = "MF_POSTGRES_READER_LOG_LEVEL"
 	envPort              = "MF_POSTGRES_READER_PORT"
+	envGRPCPort          = "MF_POSTGRES_READER_GRPC_PORT"
+	envGRPCServerCert    = "MF_POSTGRES_READER_GRPC_SERVER_CERT"
+	envGRPCServerKey     = "MF_POSTGRES_READER_GRPC_SERVER_KEY"
 	envClientTLS         = "MF_POSTGRES_READER_CLIENT_TLS"
 	envCACerts           = "MF_POSTGRES_READER_CA_CERTS"
 	envDBHost            = "MF_POSTGRES_READER_DB_HOST"
@@ -82,6 +89,7 @@ type config struct {
 	logLevel          string
 	dbConfig          postgres.Config
 	httpConfig        servers.Config
+	grpcConfig        servers.Config
 	authConfig        clients.Config
 	thingsConfig      clients.Config
 	jaegerURL         string
@@ -130,6 +138,13 @@ func main() {
 		return servershttp.Start(ctx, httpapi.MakeHandler(svc, postgresHttpTracer, svcName, logger), cfg.httpConfig, logger)
 	})
 
+	postgresGRPCTracer, postgresGRPCCloser := jaeger.Init("postgres_grpc", cfg.jaegerURL, logger)
+	defer postgresGRPCCloser.Close()
+
+	g.Go(func() error {
+		return serversgrpc.Start(ctx, postgresGRPCTracer, svc, cfg.grpcConfig, logger)
+	})
+
 	g.Go(func() error {
 		if sig := errors.SignalHandler(ctx); sig != nil {
 			cancel()
@@ -159,6 +174,14 @@ func loadConfig() config {
 	httpConfig := servers.Config{
 		ServerName:   svcName,
 		Port:         mainflux.Env(envPort, defPort),
+		StopWaitTime: stopWaitTime,
+	}
+
+	grpcConfig := servers.Config{
+		ServerName:   svcName,
+		Port:         mainflux.Env(envGRPCPort, defGRPCPort),
+		ServerCert:   mainflux.Env(envGRPCServerCert, defGRPCServerCert),
+		ServerKey:    mainflux.Env(envGRPCServerKey, defGRPCServerKey),
 		StopWaitTime: stopWaitTime,
 	}
 
@@ -193,6 +216,7 @@ func loadConfig() config {
 
 	return config{
 		httpConfig:        httpConfig,
+		grpcConfig:        grpcConfig,
 		thingsConfig:      thingsConfig,
 		authConfig:        authConfig,
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
@@ -212,7 +236,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, dbTracer opentracing.Tracer, ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, logger logger.Logger) readers.Service {
+func newService(db *sqlx.DB, dbTracer opentracing.Tracer, ac domain.AuthClient, tc domain.ThingsClient, logger logger.Logger) readers.Service {
 	database := dbutil.NewDatabase(db)
 
 	jsonRepo := postgres.NewJSONRepository(database)

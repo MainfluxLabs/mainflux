@@ -95,7 +95,7 @@ type Service interface {
 }
 
 type clientsService struct {
-	things     protomfx.ThingsServiceClient
+	things     domain.ThingsClient
 	clients    ClientRepository
 	idProvider uuid.IDProvider
 	publisher  messaging.Publisher
@@ -133,7 +133,7 @@ type Block struct {
 	Length uint16
 }
 
-func New(things protomfx.ThingsServiceClient, pub messaging.Publisher, clients ClientRepository, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(things domain.ThingsClient, pub messaging.Publisher, clients ClientRepository, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &clientsService{
 		things:     things,
 		publisher:  pub,
@@ -147,15 +147,15 @@ func New(things protomfx.ThingsServiceClient, pub messaging.Publisher, clients C
 }
 
 func (cs *clientsService) CreateClients(ctx context.Context, token, thingID string, clients ...Client) ([]Client, error) {
-	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupEditor}); err != nil {
+	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupEditor}); err != nil {
 		return nil, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	grID, err := cs.things.GetGroupIDByThing(ctx, &protomfx.ThingID{Value: thingID})
+	grID, err := cs.things.GetGroupIDByThing(ctx, thingID)
 	if err != nil {
 		return []Client{}, err
 	}
-	groupID := grID.GetValue()
+	groupID := grID
 
 	for i := range clients {
 		clients[i].ThingID = thingID
@@ -183,7 +183,7 @@ func (cs *clientsService) CreateClients(ctx context.Context, token, thingID stri
 }
 
 func (cs *clientsService) ListClientsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (ClientsPage, error) {
-	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupViewer}); err != nil {
+	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupViewer}); err != nil {
 		return ClientsPage{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -196,7 +196,7 @@ func (cs *clientsService) ListClientsByThing(ctx context.Context, token, thingID
 }
 
 func (cs *clientsService) ListClientsByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (ClientsPage, error) {
-	if _, err := cs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domain.GroupViewer}); err != nil {
+	if err := cs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupViewer}); err != nil {
 		return ClientsPage{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -214,7 +214,7 @@ func (cs *clientsService) ViewClient(ctx context.Context, token, id string) (Cli
 		return Client{}, err
 	}
 
-	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: client.ThingID, Action: domain.GroupViewer}); err != nil {
+	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: client.ThingID, Action: domain.GroupViewer}); err != nil {
 		return Client{}, err
 	}
 
@@ -227,7 +227,7 @@ func (cs *clientsService) UpdateClient(ctx context.Context, token string, client
 		return err
 	}
 
-	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: c.ThingID, Action: domain.GroupEditor}); err != nil {
+	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: c.ThingID, Action: domain.GroupEditor}); err != nil {
 		return err
 	}
 
@@ -249,7 +249,7 @@ func (cs *clientsService) RemoveClients(ctx context.Context, token string, ids .
 		if err != nil {
 			return err
 		}
-		if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: client.ThingID, Action: domain.GroupEditor}); err != nil {
+		if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: client.ThingID, Action: domain.GroupEditor}); err != nil {
 			return err
 		}
 
@@ -296,12 +296,12 @@ func (cs *clientsService) RemoveClientsByGroup(ctx context.Context, groupID stri
 func (cs *clientsService) RescheduleTasks(ctx context.Context, profileID string, config map[string]any) error {
 	var clients []Client
 
-	thingIDs, err := cs.things.GetThingIDsByProfile(ctx, &protomfx.ProfileID{Value: profileID})
+	thingIDs, err := cs.things.GetThingIDsByProfile(ctx, profileID)
 	if err != nil {
 		return err
 	}
 
-	for _, thingID := range thingIDs.GetIds() {
+	for _, thingID := range thingIDs {
 		page, err := cs.clients.RetrieveByThing(ctx, thingID, PageMetadata{})
 		if err != nil {
 			return err
@@ -313,7 +313,7 @@ func (cs *clientsService) RescheduleTasks(ctx context.Context, profileID string,
 		return nil
 	}
 
-	cfg := protoutil.MapToProtoConfig(config)
+	cfg := protoutil.MapConfigToProto(config)
 
 	// stop existing tasks and start new tasks with updated config
 	for _, d := range clients {
@@ -329,12 +329,12 @@ func (cs *clientsService) RescheduleTasks(ctx context.Context, profileID string,
 
 func (cs *clientsService) scheduleTasks(ctx context.Context, clients ...Client) error {
 	for _, client := range clients {
-		c, err := cs.things.GetConfigByThing(ctx, &protomfx.ThingID{Value: client.ThingID})
+		cfg, err := cs.things.GetConfigByThing(ctx, client.ThingID)
 		if err != nil {
 			return err
 		}
 
-		if err := cs.scheduleTask(client, c.GetConfig()); err != nil {
+		if err := cs.scheduleTask(client, protoutil.DomainConfigToProto(cfg)); err != nil {
 			return err
 		}
 	}

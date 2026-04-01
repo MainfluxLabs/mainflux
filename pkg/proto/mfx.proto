@@ -16,6 +16,11 @@ message Message {
     int64 created      = 6; // Unix timestamp in nanoseconds
 }
 
+service ReadersService {
+    rpc ListJSONMessages(ListJSONMessagesReq)   returns (ListJSONMessagesRes)  {}
+    rpc ListSenMLMessages(ListSenMLMessagesReq) returns (ListSenMLMessagesRes) {}
+}
+
 service ThingsService {
     rpc GetPubConfigByKey(ThingKey) returns (PubConfigByKeyRes) {}
     rpc GetConfigByThing(ThingID) returns (ConfigByThingRes){}
@@ -261,5 +266,54 @@ message Group {
     string id = 1;
     string orgID = 2;
     string name = 3;
+}
+
+message ListJSONMessagesReq {
+    ThingKey        thing_key    = 1;
+    uint64          offset       = 2;
+    uint64          limit        = 3;
+    string          subtopic     = 4;
+    string          publisher    = 5;
+    string          protocol     = 6;
+    int64           from         = 7;
+    int64           to           = 8;
+    string          filter       = 9;
+    string          agg_interval = 10;
+    uint64          agg_value    = 11;
+    string          agg_type     = 12;
+    repeated string agg_fields   = 13;
+    string          dir          = 14;
+}
+
+message ListJSONMessagesRes {
+    uint64           total    = 1;
+    repeated Message messages = 2;
+}
+
+message ListSenMLMessagesReq {
+    ThingKey        thing_key    = 1;
+    uint64          offset       = 2;
+    uint64          limit        = 3;
+    string          subtopic     = 4;
+    string          publisher    = 5;
+    string          protocol     = 6;
+    string          name         = 7;
+    double          value        = 8;
+    string          comparator   = 9;
+    bool            bool_value   = 10;
+    string          string_value = 11;
+    string          data_value   = 12;
+    int64           from         = 13;
+    int64           to           = 14;
+    string          agg_interval = 15;
+    uint64          agg_value    = 16;
+    string          agg_type     = 17;
+    repeated string agg_fields   = 18;
+    string          dir          = 19;
+}
+
+message ListSenMLMessagesRes {
+    uint64           total    = 1;
+    repeated Message messages = 2;
 }
 

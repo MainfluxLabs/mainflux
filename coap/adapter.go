@@ -15,6 +15,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 )
 
 // Service specifies CoAP service API.
@@ -33,13 +34,13 @@ type Service interface {
 var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
-	things  protomfx.ThingsServiceClient
+	things  domain.ThingsClient
 	pubsub  messaging.PubSub
 	obsLock sync.Mutex
 }
 
 // New instantiates the CoAP adapter implementation.
-func New(things protomfx.ThingsServiceClient, pubsub messaging.PubSub) Service {
+func New(things domain.ThingsClient, pubsub messaging.PubSub) Service {
 	as := &adapterService{
 		things:  things,
 		pubsub:  pubsub,
@@ -50,16 +51,12 @@ func New(things protomfx.ThingsServiceClient, pubsub messaging.PubSub) Service {
 }
 
 func (svc *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg protomfx.Message) error {
-	tk := &protomfx.ThingKey{
-		Value: key.Value,
-		Type:  key.Type,
-	}
-	pc, err := svc.things.GetPubConfigByKey(ctx, tk)
+	pc, err := svc.things.GetPubConfigByKey(ctx, key)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	if err := messaging.FormatMessage(pc, &msg); err != nil {
+	if err := messaging.FormatMessage(protoutil.PubConfigInfoToProto(pc), &msg); err != nil {
 		return err
 	}
 
@@ -71,11 +68,7 @@ func (svc *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key domain.ThingKey, subtopic string, c Client) error {
-	tk := &protomfx.ThingKey{
-		Value: key.Value,
-		Type:  key.Type,
-	}
-	if _, err := svc.things.GetPubConfigByKey(ctx, tk); err != nil {
+	if _, err := svc.things.GetPubConfigByKey(ctx, key); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -83,11 +76,7 @@ func (svc *adapterService) Subscribe(ctx context.Context, key domain.ThingKey, s
 }
 
 func (svc *adapterService) Unsubscribe(ctx context.Context, key domain.ThingKey, subtopic, token string) error {
-	tk := &protomfx.ThingKey{
-		Value: key.Value,
-		Type:  key.Type,
-	}
-	if _, err := svc.things.GetPubConfigByKey(ctx, tk); err != nil {
+	if _, err := svc.things.GetPubConfigByKey(ctx, key); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
