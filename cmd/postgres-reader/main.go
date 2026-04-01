@@ -42,7 +42,7 @@ const (
 
 	defLogLevel          = "error"
 	defPort              = "8180"
-	defGRPCPort          = "8184"
+	defGRPCPort          = "8186"
 	defGRPCServerCert    = ""
 	defGRPCServerKey     = ""
 	defClientTLS         = "false"

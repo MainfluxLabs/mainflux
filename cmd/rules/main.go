@@ -24,13 +24,13 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	readersapi "github.com/MainfluxLabs/mainflux/readers/api/grpc"
 	"github.com/MainfluxLabs/mainflux/rules"
 	"github.com/MainfluxLabs/mainflux/rules/api"
 	httpapi "github.com/MainfluxLabs/mainflux/rules/api/http"
 	"github.com/MainfluxLabs/mainflux/rules/events"
 	"github.com/MainfluxLabs/mainflux/rules/postgres"
 	"github.com/MainfluxLabs/mainflux/rules/tracing"
-	readersapi "github.com/MainfluxLabs/mainflux/readers/api/grpc"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
@@ -44,70 +44,70 @@ const (
 	stopWaitTime = 5 * time.Second
 	esGroupName  = svcName
 
-	defBrokerURL         = "nats://localhost:4222"
-	defLogLevel          = "error"
-	defDBHost            = "localhost"
-	defDBPort            = "5432"
-	defDBUser            = "mainflux"
-	defDBPass            = "mainflux"
-	defDB                = svcName
-	defDBSSLMode         = "disable"
-	defDBSSLCert         = ""
-	defDBSSLKey          = ""
-	defDBSSLRootCert     = ""
-	defClientTLS         = "false"
-	defCACerts           = ""
-	defHTTPPort          = "9027"
-	defJaegerURL         = ""
-	defServerCert        = ""
-	defServerKey         = ""
-	defThingsGRPCURL     = "localhost:8183"
-	defThingsGRPCTimeout = "1s"
-	defReadersGRPCURL    = "localhost:8184"
+	defBrokerURL          = "nats://localhost:4222"
+	defLogLevel           = "error"
+	defDBHost             = "localhost"
+	defDBPort             = "5432"
+	defDBUser             = "mainflux"
+	defDBPass             = "mainflux"
+	defDB                 = svcName
+	defDBSSLMode          = "disable"
+	defDBSSLCert          = ""
+	defDBSSLKey           = ""
+	defDBSSLRootCert      = ""
+	defClientTLS          = "false"
+	defCACerts            = ""
+	defHTTPPort           = "9027"
+	defJaegerURL          = ""
+	defServerCert         = ""
+	defServerKey          = ""
+	defThingsGRPCURL      = "localhost:8183"
+	defThingsGRPCTimeout  = "1s"
+	defReadersGRPCURL     = "localhost:8186"
 	defReadersGRPCTimeout = "1s"
-	defESURL             = "redis://localhost:6379/0"
-	defESConsumerName    = svcName
-	defScriptsEnabled    = "false"
+	defESURL              = "redis://localhost:6379/0"
+	defESConsumerName     = svcName
+	defScriptsEnabled     = "false"
 
-	envBrokerURL         = "MF_BROKER_URL"
-	envLogLevel          = "MF_RULES_LOG_LEVEL"
-	envDBHost            = "MF_RULES_DB_HOST"
-	envDBPort            = "MF_RULES_DB_PORT"
-	envDBUser            = "MF_RULES_DB_USER"
-	envDBPass            = "MF_RULES_DB_PASS"
-	envDB                = "MF_RULES_DB"
-	envDBSSLMode         = "MF_RULES_DB_SSL_MODE"
-	envDBSSLCert         = "MF_RULES_DB_SSL_CERT"
-	envDBSSLKey          = "MF_RULES_DB_SSL_KEY"
-	envDBSSLRootCert     = "MF_RULES_DB_SSL_ROOT_CERT"
-	envClientTLS         = "MF_RULES_CLIENT_TLS"
-	envCACerts           = "MF_RULES_CA_CERTS"
-	envHTTPPort          = "MF_RULES_HTTP_PORT"
-	envServerCert        = "MF_RULES_SERVER_CERT"
-	envServerKey         = "MF_RULES_SERVER_KEY"
-	envJaegerURL         = "MF_JAEGER_URL"
-	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
-	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
-	envReadersGRPCURL    = "MF_POSTGRES_READER_GRPC_URL"
+	envBrokerURL          = "MF_BROKER_URL"
+	envLogLevel           = "MF_RULES_LOG_LEVEL"
+	envDBHost             = "MF_RULES_DB_HOST"
+	envDBPort             = "MF_RULES_DB_PORT"
+	envDBUser             = "MF_RULES_DB_USER"
+	envDBPass             = "MF_RULES_DB_PASS"
+	envDB                 = "MF_RULES_DB"
+	envDBSSLMode          = "MF_RULES_DB_SSL_MODE"
+	envDBSSLCert          = "MF_RULES_DB_SSL_CERT"
+	envDBSSLKey           = "MF_RULES_DB_SSL_KEY"
+	envDBSSLRootCert      = "MF_RULES_DB_SSL_ROOT_CERT"
+	envClientTLS          = "MF_RULES_CLIENT_TLS"
+	envCACerts            = "MF_RULES_CA_CERTS"
+	envHTTPPort           = "MF_RULES_HTTP_PORT"
+	envServerCert         = "MF_RULES_SERVER_CERT"
+	envServerKey          = "MF_RULES_SERVER_KEY"
+	envJaegerURL          = "MF_JAEGER_URL"
+	envThingsGRPCURL      = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsGRPCTimeout  = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envReadersGRPCURL     = "MF_POSTGRES_READER_GRPC_URL"
 	envReadersGRPCTimeout = "MF_POSTGRES_READER_GRPC_TIMEOUT"
-	envESURL             = "MF_RULES_ES_URL"
-	envESConsumerName    = "MF_RULES_EVENT_CONSUMER"
-	envScriptsEnabled    = "MF_RULES_SCRIPTS_ENABLED"
+	envESURL              = "MF_RULES_ES_URL"
+	envESConsumerName     = "MF_RULES_EVENT_CONSUMER"
+	envScriptsEnabled     = "MF_RULES_SCRIPTS_ENABLED"
 )
 
 type config struct {
-	brokerURL         string
-	logLevel          string
-	dbConfig          postgres.Config
-	httpConfig        servers.Config
+	brokerURL          string
+	logLevel           string
+	dbConfig           postgres.Config
+	httpConfig         servers.Config
 	thingsConfig       clients.Config
 	readersConfig      clients.Config
 	jaegerURL          string
 	thingsGRPCTimeout  time.Duration
 	readersGRPCTimeout time.Duration
-	esURL             string
-	esConsumerName    string
-	scriptsEnabled    bool
+	esURL              string
+	esConsumerName     string
+	scriptsEnabled     bool
 }
 
 func main() {
