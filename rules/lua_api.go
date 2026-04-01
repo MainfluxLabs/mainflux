@@ -15,10 +15,6 @@ import (
 
 var luaAPISetStandard = []luaAPIFunc{luaSMTPNotify, luaAlarmCreate, luaLog, luaReaderListMessages}
 
-var (
-	luaErrInvalidArg = "invalid argument"
-)
-
 // Trigger a registered SMTP notifier by ID.
 // Lua signature:
 // mfx.smtp_notify(smtp_notifier_id) (bool, msg)
@@ -139,7 +135,7 @@ var luaReaderListMessages = luaAPIFunc{
 
 			// Parse second arg into a domain.ThingKey
 			if ls.TypeOf(2) != lua.TypeTable {
-				lua.ArgumentError(ls, 2, luaErrInvalidArg)
+				lua.ArgumentError(ls, 2, "expected table")
 			}
 
 			var thingKey domain.ThingKey
