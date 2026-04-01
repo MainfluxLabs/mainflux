@@ -56,7 +56,7 @@ func DomainConfigToProto(c *domain.ProfileConfig) *protomfx.Config {
 	return cfg
 }
 
-func MapToProtoConfig(config map[string]any) *protomfx.Config {
+func MapConfigToProto(config map[string]any) *protomfx.Config {
 	if config == nil {
 		return &protomfx.Config{}
 	}

@@ -305,7 +305,7 @@ func (ds *downlinksService) RescheduleTasks(ctx context.Context, profileID strin
 		return nil
 	}
 
-	protoCfg := protoutil.MapToProtoConfig(config)
+	protoCfg := protoutil.MapConfigToProto(config)
 
 	for _, d := range downlinks {
 		ds.unscheduleTask(d)

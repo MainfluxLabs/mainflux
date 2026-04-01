@@ -313,7 +313,7 @@ func (cs *clientsService) RescheduleTasks(ctx context.Context, profileID string,
 		return nil
 	}
 
-	cfg := protoutil.MapToProtoConfig(config)
+	cfg := protoutil.MapConfigToProto(config)
 
 	// stop existing tasks and start new tasks with updated config
 	for _, d := range clients {
