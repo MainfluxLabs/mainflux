@@ -22,7 +22,7 @@ import (
 
 func messagesHandshake(svc ws.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		req, err := decodeMessagesRequest(r)
+		req, err := decodeMessageRequest(r)
 		if err != nil {
 			encodeError(w, err)
 			return
@@ -76,13 +76,17 @@ func commandsHandshake(svc ws.Service, processFn func(ws.Service, cmdConnReq, <-
 	}
 }
 
-func decodeMessagesRequest(r *http.Request) (getConnByKey, error) {
+func decodeMessageRequest(r *http.Request) (getConnByKey, error) {
 	tk := extractThingKey(r)
 	if err := apiutil.ValidateThingKey(tk); err != nil {
 		return getConnByKey{}, err
 	}
 
-	subtopic, err := messaging.NormalizeSubtopic(r.RequestURI)
+	var subtopicPath string
+	if idx := strings.Index(r.URL.Path, "/messages/"); idx >= 0 {
+		subtopicPath = r.URL.Path[idx+len("/messages/"):]
+	}
+	subtopic, err := messaging.NormalizeSubtopic(subtopicPath)
 	if err != nil {
 		return getConnByKey{}, err
 	}
