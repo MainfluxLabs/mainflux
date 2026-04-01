@@ -100,7 +100,7 @@ func decodeCommandRequest(r *http.Request) (cmdConnReq, error) {
 	}
 
 	var subtopicPath string
-	if idx := strings.LastIndex(r.URL.Path, "/commands/"); idx >= 0 {
+	if idx := strings.Index(r.URL.Path, "/commands/"); idx >= 0 {
 		subtopicPath = r.URL.Path[idx+len("/commands/"):]
 	}
 	subtopic, err := messaging.NormalizeSubtopic(subtopicPath)
