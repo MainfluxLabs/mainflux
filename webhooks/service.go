@@ -8,11 +8,41 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	"github.com/MainfluxLabs/mainflux/things"
 )
+
+var AllowedOrders = map[string]string{
+	"id":   "id",
+	"name": "name",
+}
+
+// PageMetadata contains page metadata that helps navigation.
+type PageMetadata struct {
+	Total    uint64         `json:"total,omitempty"`
+	Offset   uint64         `json:"offset,omitempty"`
+	Limit    uint64         `json:"limit,omitempty"`
+	Order    string         `json:"order,omitempty"`
+	Dir      string         `json:"dir,omitempty"`
+	Name     string         `json:"name,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
+}
+
+// Validate validates the page metadata.
+func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
+	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
+	if err := common.Validate(maxLimitSize, AllowedOrders); err != nil {
+		return err
+	}
+
+	if len(pm.Name) > maxNameSize {
+		return apiutil.ErrNameSize
+	}
+
+	return nil
+}
 
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
@@ -24,11 +54,11 @@ type Service interface {
 
 	// ListWebhooksByGroup retrieves data about a subset of webhooks
 	// related to a certain group identified by the provided ID.
-	ListWebhooksByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (WebhooksPage, error)
+	ListWebhooksByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (WebhooksPage, error)
 
 	// ListWebhooksByThing retrieves data about a subset of webhooks
 	// related to a certain thing identified by the provided ID.
-	ListWebhooksByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (WebhooksPage, error)
+	ListWebhooksByThing(ctx context.Context, token, thingID string, pm PageMetadata) (WebhooksPage, error)
 
 	// ViewWebhook retrieves data about the webhook identified with the provided ID.
 	ViewWebhook(ctx context.Context, token, id string) (Webhook, error)
@@ -68,7 +98,7 @@ func New(things protomfx.ThingsServiceClient, webhooks WebhookRepository, forwar
 }
 
 func (ws *webhooksService) CreateWebhooks(ctx context.Context, token, thingID string, webhooks ...Webhook) ([]Webhook, error) {
-	_, err := ws.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor})
+	_, err := ws.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupEditor})
 	if err != nil {
 		return []Webhook{}, err
 	}
@@ -100,8 +130,8 @@ func (ws *webhooksService) CreateWebhooks(ctx context.Context, token, thingID st
 	return whs, nil
 }
 
-func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (WebhooksPage, error) {
-	_, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer})
+func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (WebhooksPage, error) {
+	_, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domain.GroupViewer})
 	if err != nil {
 		return WebhooksPage{}, err
 	}
@@ -114,8 +144,8 @@ func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token, group
 	return webhooks, nil
 }
 
-func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (WebhooksPage, error) {
-	_, err := ws.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer})
+func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token, thingID string, pm PageMetadata) (WebhooksPage, error) {
+	_, err := ws.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupViewer})
 	if err != nil {
 		return WebhooksPage{}, err
 	}
@@ -134,7 +164,7 @@ func (ws *webhooksService) ViewWebhook(ctx context.Context, token, id string) (W
 		return Webhook{}, err
 	}
 
-	if _, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: webhook.GroupID, Action: things.Viewer}); err != nil {
+	if _, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: webhook.GroupID, Action: domain.GroupViewer}); err != nil {
 		return Webhook{}, err
 	}
 
@@ -147,7 +177,7 @@ func (ws *webhooksService) UpdateWebhook(ctx context.Context, token string, webh
 		return err
 	}
 
-	if _, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: wh.GroupID, Action: things.Editor}); err != nil {
+	if _, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: wh.GroupID, Action: domain.GroupEditor}); err != nil {
 		return err
 	}
 
@@ -160,7 +190,7 @@ func (ws *webhooksService) RemoveWebhooks(ctx context.Context, token string, ids
 		if err != nil {
 			return err
 		}
-		if _, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: webhook.GroupID, Action: things.Editor}); err != nil {
+		if _, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: webhook.GroupID, Action: domain.GroupEditor}); err != nil {
 			return errors.Wrap(errors.ErrAuthorization, err)
 		}
 	}
@@ -188,7 +218,7 @@ func (ws *webhooksService) Consume(_ string, message any) error {
 		return errors.ErrMessage
 	}
 
-	whs, err := ws.webhooks.RetrieveByThing(ctx, msg.Publisher, apiutil.PageMetadata{})
+	whs, err := ws.webhooks.RetrieveByThing(ctx, msg.Publisher, PageMetadata{})
 	if err != nil {
 		return err
 	}

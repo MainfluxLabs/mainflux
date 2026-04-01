@@ -5,27 +5,17 @@ package users
 
 import (
 	"context"
-	"regexp"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/email"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
-// Metadata to be used for Mainflux thing or profile for customized
-// describing of particular thing or profile.
-type Metadata map[string]any
-
-// User represents a Mainflux user account. Each user is identified given its
-// email and password.
-type User struct {
-	ID       string
-	Email    string
-	Password string
-	Metadata Metadata
-	Status   string
-	Role     string
-}
+// Domain type aliases
+type (
+	Metadata  = domain.Metadata
+	User      = domain.User
+	UsersPage = domain.UsersPage
+)
 
 type EmailVerification struct {
 	User      User
@@ -41,28 +31,17 @@ type OAuthLoginData struct {
 }
 
 type OAuthCallbackData struct {
-	Provider string
-	Code     string
-	Verifier string
+	Provider     string
+	Code         string
+	Verifier     string
+	InviteID     string
+	RedirectPath string
 }
 
 type Identity struct {
 	UserID         string
 	Provider       string
 	ProviderUserID string
-}
-
-// Validate returns an error if user representation is invalid.
-func (u User) Validate(passRegex *regexp.Regexp) error {
-	if !email.IsEmail(u.Email) {
-		return apiutil.ErrMalformedEntity
-	}
-
-	if !passRegex.MatchString(u.Password) {
-		return ErrPasswordFormat
-	}
-
-	return nil
 }
 
 type EmailVerificationRepository interface {
@@ -95,7 +74,7 @@ type UserRepository interface {
 	RetrieveByID(ctx context.Context, id string) (User, error)
 
 	// RetrieveByIDs retrieves all users for given array of userIDs.
-	RetrieveByIDs(ctx context.Context, userIDs []string, pm PageMetadata) (UserPage, error)
+	RetrieveByIDs(ctx context.Context, userIDs []string, pm PageMetadata) (UsersPage, error)
 
 	// UpdatePassword updates password for user with given email
 	UpdatePassword(ctx context.Context, email, password string) error

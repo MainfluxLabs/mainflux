@@ -20,25 +20,9 @@ import (
 
 var _ session.Handler = (*handler)(nil)
 
-const protocol = "mqtt"
-
 const (
-	LogInfoSubscribed   = "subscribed with client_id %s to topics %s"
-	LogInfoUnsubscribed = "unsubscribed client_id %s from topics %s"
-	LogInfoConnected    = "connected with client_id %s"
-	LogInfoDisconnected = "disconnected client_id %s"
-	LogInfoPublished    = "published with client_id %s to the topic %s"
+	protocol = "mqtt"
 
-	LogErrFailedConnect            = "failed to connect: "
-	LogErrFailedSubscribe          = "failed to subscribe: "
-	LogErrFailedUnsubscribe        = "failed to unsubscribe: "
-	LogErrFailedDisconnect         = "failed to disconnect: "
-	logErrFailedParseSubtopic      = "failed to parse subtopic: "
-	logErrFailedCacheConnection    = "failed to cache connection: "
-	logErrFailedCacheDisconnection = "failed to remove connection from cache: "
-)
-
-const (
 	topicPrefixThings   = "things"
 	topicPrefixGroups   = "groups"
 	topicSuffixCommands = "commands"
@@ -46,15 +30,23 @@ const (
 )
 
 var (
-	ErrMalformedSubtopic             = errors.New("malformed subtopic")
 	ErrClientNotInitialized          = errors.New("client is not initialized")
 	ErrMissingClientID               = errors.New("missing client id")
-	ErrMissingTopicPub               = errors.New("failed to publish due to missing topic")
-	ErrMissingTopicSub               = errors.New("failed to subscribe due to missing topic")
+	ErrMissingTopic                  = errors.New("missing topic")
 	ErrUnauthorizedSubscriptionTopic = errors.New("unauthorized subscription topic")
+	ErrUnauthorizedPublishTopic      = errors.New("unauthorized publish topic")
+
+	ErrFailedConnect     = errors.New("failed to connect")
+	ErrFailedDisconnect  = errors.New("failed to disconnect")
+	ErrFailedSubscribe   = errors.New("failed to subscribe")
+	ErrFailedUnsubscribe = errors.New("failed to unsubscribe")
+
+	errFailedParseSubtopic      = errors.New("failed to parse subtopic")
+	errFailedCacheConnection    = errors.New("failed to cache connection")
+	errFailedCacheDisconnection = errors.New("failed to remove connection from cache")
 )
 
-// Event implements events.Event interface
+// handler implements session.Handler interface
 type handler struct {
 	publisher messaging.Publisher
 	things    protomfx.ThingsServiceClient
@@ -94,20 +86,73 @@ func (h *handler) AuthConnect(c *session.Client) error {
 }
 
 // AuthPublish is called on device publish,
-// prior forwarding to the MQTT broker
+// prior to forwarding to the MQTT broker
 func (h *handler) AuthPublish(c *session.Client, topic *string, _ *[]byte) error {
 	if c == nil {
 		return ErrClientNotInitialized
 	}
 
 	if topic == nil {
-		return ErrMissingTopicPub
+		return ErrMissingTopic
 	}
 
-	if _, err := h.identify(c); err != nil {
+	publisherID, err := h.identify(c)
+	if err != nil {
 		return err
 	}
 
+	return h.authorizePublish(publisherID, *topic)
+}
+
+func (h *handler) authorizePublish(publisherID, topic string) error {
+	// Reject leading-slash variants of the custom topic patterns.
+	if strings.HasPrefix(topic, "/"+topicPrefixThings+"/") || strings.HasPrefix(topic, "/"+topicPrefixGroups+"/") {
+		return errors.Wrap(ErrUnauthorizedPublishTopic, fmt.Errorf("%s (leading slash not allowed)", topic))
+	}
+
+	parts := strings.Split(topic, "/")
+	if len(parts) < 3 {
+		return nil
+	}
+
+	prefix, id, suffix := parts[0], parts[1], parts[2]
+	if id == "" {
+		return nil
+	}
+
+	// Messages are unrestricted — any authenticated thing may publish to any messages topic.
+	// Commands carry authority and require explicit authorization.
+	var err error
+	switch {
+	case prefix == topicPrefixThings && suffix == topicSuffixCommands:
+		err = h.authorizeThingCommand(publisherID, id)
+	case prefix == topicPrefixGroups && suffix == topicSuffixCommands:
+		err = h.authorizeGroupCommand(publisherID, id)
+	}
+
+	if err != nil {
+		return errors.Wrap(ErrUnauthorizedPublishTopic, fmt.Errorf("%s for publisher %s", topic, publisherID))
+	}
+	return nil
+}
+
+func (h *handler) authorizeThingCommand(publisherID, recipientID string) error {
+	if _, err := h.things.CanThingCommand(context.Background(), &protomfx.ThingCommandReq{
+		PublisherID: publisherID,
+		RecipientID: recipientID,
+	}); err != nil {
+		return errors.ErrAuthorization
+	}
+	return nil
+}
+
+func (h *handler) authorizeGroupCommand(publisherID, groupID string) error {
+	if _, err := h.things.CanThingGroupCommand(context.Background(), &protomfx.ThingGroupCommandReq{
+		PublisherID: publisherID,
+		GroupID:     groupID,
+	}); err != nil {
+		return errors.ErrAuthorization
+	}
 	return nil
 }
 
@@ -121,7 +166,7 @@ func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 	}
 
 	if topics == nil || *topics == nil {
-		return ErrMissingTopicSub
+		return ErrMissingTopic
 	}
 
 	thingID, err := h.identify(c)
@@ -146,24 +191,17 @@ func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 // Connect - after client successfully connected
 func (h *handler) Connect(c *session.Client) {
 	if c == nil {
-		h.logger.Error(LogErrFailedConnect + (ErrClientNotInitialized).Error())
+		h.logger.Error(errors.Wrap(ErrFailedConnect, ErrClientNotInitialized).Error())
 		return
 	}
 
-	h.logger.Info(fmt.Sprintf(LogInfoConnected, c.ID))
+	h.logger.Info(fmt.Sprintf("client_id %s connected", c.ID))
 }
 
 // Publish - after client successfully published
 func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	if c == nil {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, ErrClientNotInitialized).Error())
-		return
-	}
-	h.logger.Info(fmt.Sprintf(LogInfoPublished, c.ID, *topic))
-
-	subtopic, err := messaging.NormalizeSubtopic(*topic)
-	if err != nil {
-		h.logger.Error(logErrFailedParseSubtopic + err.Error())
 		return
 	}
 
@@ -174,7 +212,14 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 
 	pc, err := h.things.GetPubConfigByKey(context.Background(), tk)
 	if err != nil {
-		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, errors.ErrAuthentication).Error())
+		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
+		return
+	}
+
+	subject, subtopic, err := parseTopic(*topic, pc.GetPublisherID())
+	if err != nil {
+		h.logger.Error(errors.Wrap(errFailedParseSubtopic, err).Error())
+		return
 	}
 
 	msg := protomfx.Message{
@@ -185,70 +230,108 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 
 	if err := messaging.FormatMessage(pc, &msg); err != nil {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
+		return
 	}
 
-	if err := h.publisher.Publish(nats.GetMessagesSubject(msg.Publisher, msg.Subtopic), msg); err != nil {
+	if err := h.publisher.Publish(subject, msg); err != nil {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
+		return
 	}
+
+	h.logger.Info(fmt.Sprintf("client_id %s published to topic %s", c.ID, *topic))
+}
+
+// parseTopic parses an MQTT topic and returns the NATS subject and
+// the message subtopic (the trailing path after prefix/id/suffix).
+// Commands topics are routed to their own NATS subjects; everything else is
+// routed to the publisher's messages subject.
+func parseTopic(topic, publisherID string) (subject, subtopic string, err error) {
+	parts := strings.Split(topic, "/")
+	if len(parts) >= 3 && parts[1] != "" {
+		prefix, id, suffix := parts[0], parts[1], parts[2]
+		rest := ""
+		if len(parts) > 3 {
+			if rest, err = messaging.NormalizeSubtopic(strings.Join(parts[3:], "/")); err != nil {
+				return "", "", err
+			}
+		}
+		switch {
+		case prefix == topicPrefixThings && suffix == topicSuffixCommands:
+			return nats.GetThingCommandsSubject(id, rest), rest, nil
+		case prefix == topicPrefixGroups && suffix == topicSuffixCommands:
+			return nats.GetGroupCommandsSubject(id, rest), rest, nil
+		// Route to the topic's target thing subject, not the publisher's.
+		case prefix == topicPrefixThings && suffix == topicSuffixMessages:
+			return nats.GetMessagesSubject(id, rest), rest, nil
+		}
+	}
+
+	// Default: full normalized topic as subtopic, routed to publisher's messages subject.
+	normalizedTopic, err := messaging.NormalizeSubtopic(topic)
+	if err != nil {
+		return "", "", err
+	}
+	return nats.GetMessagesSubject(publisherID, normalizedTopic), normalizedTopic, nil
 }
 
 // Subscribe - after client successfully subscribed
 func (h *handler) Subscribe(c *session.Client, topics *[]string) {
 	if c == nil {
-		h.logger.Error(LogErrFailedSubscribe + (ErrClientNotInitialized).Error())
+		h.logger.Error(errors.Wrap(ErrFailedSubscribe, ErrClientNotInitialized).Error())
 		return
 	}
 
 	subs, err := h.getSubscriptions(c, topics)
 	if err != nil {
-		h.logger.Error(LogErrFailedSubscribe + err.Error())
+		h.logger.Error(errors.Wrap(ErrFailedSubscribe, err).Error())
 		return
 	}
 
 	for _, s := range subs {
 		if err = h.service.CreateSubscription(context.Background(), s); err != nil {
-			h.logger.Error(LogErrFailedSubscribe + err.Error())
+			h.logger.Error(errors.Wrap(ErrFailedSubscribe, err).Error())
 			return
 		}
 	}
 
-	h.logger.Info(fmt.Sprintf(LogInfoSubscribed, c.ID, strings.Join(*topics, ",")))
+	h.logger.Info(fmt.Sprintf("client_id %s subscribed to topics %s", c.ID, strings.Join(*topics, ", ")))
 }
 
 // Unsubscribe - after client unsubscribed
 func (h *handler) Unsubscribe(c *session.Client, topics *[]string) {
 	if c == nil {
-		h.logger.Error(LogErrFailedUnsubscribe + (ErrClientNotInitialized).Error())
+		h.logger.Error(errors.Wrap(ErrFailedUnsubscribe, ErrClientNotInitialized).Error())
 		return
 	}
 
 	subs, err := h.getSubscriptions(c, topics)
 	if err != nil {
-		h.logger.Error(LogErrFailedUnsubscribe + err.Error())
+		h.logger.Error(errors.Wrap(ErrFailedUnsubscribe, err).Error())
 		return
 	}
 
 	for _, s := range subs {
-		if err := h.service.RemoveSubscription(context.Background(), s); err != nil {
-			h.logger.Error(LogErrFailedUnsubscribe + (ErrClientNotInitialized).Error())
+		if err = h.service.RemoveSubscription(context.Background(), s); err != nil {
+			h.logger.Error(errors.Wrap(ErrFailedUnsubscribe, err).Error())
+			return
 		}
 	}
 
-	h.logger.Info(fmt.Sprintf(LogInfoUnsubscribed, c.ID, strings.Join(*topics, ",")))
+	h.logger.Info(fmt.Sprintf("client_id %s unsubscribed from topics %s", c.ID, strings.Join(*topics, ", ")))
 }
 
 // Disconnect - connection with broker or client lost
 func (h *handler) Disconnect(c *session.Client) {
 	if c == nil {
-		h.logger.Error(LogErrFailedDisconnect + (ErrClientNotInitialized).Error())
+		h.logger.Error(errors.Wrap(ErrFailedDisconnect, ErrClientNotInitialized).Error())
 		return
 	}
 
 	if err := h.cache.Disconnect(context.Background(), c.ID); err != nil {
-		h.logger.Error(logErrFailedCacheDisconnection + err.Error())
+		h.logger.Error(errors.Wrap(errFailedCacheDisconnection, err).Error())
 	}
 
-	h.logger.Info(fmt.Sprintf(LogInfoDisconnected, c.ID))
+	h.logger.Info(fmt.Sprintf("client_id %s disconnected", c.ID))
 }
 
 func (h *handler) identify(c *session.Client) (string, error) {
@@ -269,7 +352,7 @@ func (h *handler) identify(c *session.Client) (string, error) {
 	thingID := keyRes.GetValue()
 
 	if err := h.cache.Connect(context.Background(), c.ID, thingID); err != nil {
-		h.logger.Error(logErrFailedCacheConnection + err.Error())
+		h.logger.Error(errors.Wrap(errFailedCacheConnection, err).Error())
 	}
 
 	return thingID, nil
@@ -302,16 +385,16 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 // validateCustomTopic enforces authorization only for topics that match
 // custom patterns (things/thingID/commands, groups/groupID/commands, things/thingID/messages).
 func validateCustomTopic(topic, thingID, groupID string) error {
-	trimmed := strings.Trim(topic, "/")
-	if trimmed == "" {
+	// Reject leading-slash variants of the custom topic patterns.
+	if strings.HasPrefix(topic, "/"+topicPrefixThings+"/") || strings.HasPrefix(topic, "/"+topicPrefixGroups+"/") {
+		return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s (leading slash not allowed)", topic))
+	}
+
+	if !strings.HasPrefix(topic, topicPrefixThings+"/") && !strings.HasPrefix(topic, topicPrefixGroups+"/") {
 		return nil
 	}
 
-	if !strings.HasPrefix(trimmed, topicPrefixThings+"/") && !strings.HasPrefix(trimmed, topicPrefixGroups+"/") {
-		return nil
-	}
-
-	parts := strings.Split(trimmed, "/")
+	parts := strings.Split(topic, "/")
 	if len(parts) < 3 {
 		// Forbid multi-level wildcard at ID position, e.g. "things/#", "groups/#".
 		if len(parts) == 2 && parts[1] == "#" {
@@ -325,7 +408,6 @@ func validateCustomTopic(topic, thingID, groupID string) error {
 	case "":
 		return nil
 	case "+", "#":
-		// This catches "things/+/commands", "things/#/messages", etc.
 		return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s (wildcard not allowed)", topic))
 	}
 

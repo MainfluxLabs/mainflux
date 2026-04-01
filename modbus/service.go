@@ -14,16 +14,45 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/cron"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	"github.com/MainfluxLabs/mainflux/things"
 	gbmodbus "github.com/goburrow/modbus"
 	"golang.org/x/time/rate"
 )
+
+var AllowedOrders = map[string]string{
+	"id":   "id",
+	"name": "name",
+}
+
+// PageMetadata contains page metadata that helps navigation.
+type PageMetadata struct {
+	Total  uint64 `json:"total,omitempty"`
+	Offset uint64 `json:"offset,omitempty"`
+	Limit  uint64 `json:"limit,omitempty"`
+	Order  string `json:"order,omitempty"`
+	Dir    string `json:"dir,omitempty"`
+	Name   string `json:"name,omitempty"`
+}
+
+// Validate validates the page metadata.
+func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
+	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
+	if err := common.Validate(maxLimitSize, AllowedOrders); err != nil {
+		return err
+	}
+
+	if len(pm.Name) > maxNameSize {
+		return apiutil.ErrNameSize
+	}
+
+	return nil
+}
 
 // Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
@@ -35,11 +64,11 @@ type Service interface {
 
 	// ListClientsByThing retrieves data about a subset of clients
 	// related to a certain thing.
-	ListClientsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (ClientsPage, error)
+	ListClientsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (ClientsPage, error)
 
 	// ListClientsByGroup retrieves data about a subset of clients
 	// related to a certain group.
-	ListClientsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (ClientsPage, error)
+	ListClientsByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (ClientsPage, error)
 
 	// ViewClient retrieves data about a client identified with the provided ID.
 	ViewClient(ctx context.Context, token, id string) (Client, error)
@@ -118,7 +147,7 @@ func New(things protomfx.ThingsServiceClient, pub messaging.Publisher, clients C
 }
 
 func (cs *clientsService) CreateClients(ctx context.Context, token, thingID string, clients ...Client) ([]Client, error) {
-	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Editor}); err != nil {
+	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupEditor}); err != nil {
 		return nil, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -153,8 +182,8 @@ func (cs *clientsService) CreateClients(ctx context.Context, token, thingID stri
 	return cls, nil
 }
 
-func (cs *clientsService) ListClientsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (ClientsPage, error) {
-	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer}); err != nil {
+func (cs *clientsService) ListClientsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (ClientsPage, error) {
+	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupViewer}); err != nil {
 		return ClientsPage{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -166,8 +195,8 @@ func (cs *clientsService) ListClientsByThing(ctx context.Context, token, thingID
 	return page, nil
 }
 
-func (cs *clientsService) ListClientsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (ClientsPage, error) {
-	if _, err := cs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer}); err != nil {
+func (cs *clientsService) ListClientsByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (ClientsPage, error) {
+	if _, err := cs.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domain.GroupViewer}); err != nil {
 		return ClientsPage{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -185,7 +214,7 @@ func (cs *clientsService) ViewClient(ctx context.Context, token, id string) (Cli
 		return Client{}, err
 	}
 
-	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: client.ThingID, Action: things.Viewer}); err != nil {
+	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: client.ThingID, Action: domain.GroupViewer}); err != nil {
 		return Client{}, err
 	}
 
@@ -198,7 +227,7 @@ func (cs *clientsService) UpdateClient(ctx context.Context, token string, client
 		return err
 	}
 
-	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: c.ThingID, Action: things.Editor}); err != nil {
+	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: c.ThingID, Action: domain.GroupEditor}); err != nil {
 		return err
 	}
 
@@ -220,7 +249,7 @@ func (cs *clientsService) RemoveClients(ctx context.Context, token string, ids .
 		if err != nil {
 			return err
 		}
-		if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: client.ThingID, Action: things.Editor}); err != nil {
+		if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: client.ThingID, Action: domain.GroupEditor}); err != nil {
 			return err
 		}
 
@@ -231,7 +260,7 @@ func (cs *clientsService) RemoveClients(ctx context.Context, token string, ids .
 }
 
 func (cs *clientsService) RemoveClientsByThing(ctx context.Context, thingID string) error {
-	page, err := cs.clients.RetrieveByThing(ctx, thingID, apiutil.PageMetadata{})
+	page, err := cs.clients.RetrieveByThing(ctx, thingID, PageMetadata{})
 	if err != nil {
 		return err
 	}
@@ -248,7 +277,7 @@ func (cs *clientsService) RemoveClientsByThing(ctx context.Context, thingID stri
 }
 
 func (cs *clientsService) RemoveClientsByGroup(ctx context.Context, groupID string) error {
-	page, err := cs.clients.RetrieveByGroup(ctx, groupID, apiutil.PageMetadata{})
+	page, err := cs.clients.RetrieveByGroup(ctx, groupID, PageMetadata{})
 	if err != nil {
 		return err
 	}
@@ -273,7 +302,7 @@ func (cs *clientsService) RescheduleTasks(ctx context.Context, profileID string,
 	}
 
 	for _, thingID := range thingIDs.GetIds() {
-		page, err := cs.clients.RetrieveByThing(ctx, thingID, apiutil.PageMetadata{})
+		page, err := cs.clients.RetrieveByThing(ctx, thingID, PageMetadata{})
 		if err != nil {
 			return err
 		}

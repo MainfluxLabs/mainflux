@@ -7,23 +7,59 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
 
+// Role constants are aliases for the shared domain types.
 const (
-	Viewer = "viewer"
-	Editor = "editor"
-	Admin  = "admin"
-	Owner  = "owner"
+	Viewer = domain.GroupViewer
+	Editor = domain.GroupEditor
+	Admin  = domain.GroupAdmin
+	Owner  = domain.GroupOwner
 )
 
 var (
 	ErrProfileAssigned = errors.New("profile currently assigned to thing(s)")
 )
+
+var AllowedOrders = map[string]string{
+	"id":         "id",
+	"name":       "name",
+	"email":      "email",
+	"created_at": "created_at",
+	"updated_at": "updated_at",
+	"type":       "type",
+}
+
+// PageMetadata contains page metadata that helps navigation.
+type PageMetadata struct {
+	Total    uint64         `json:"total,omitempty"`
+	Offset   uint64         `json:"offset,omitempty"`
+	Limit    uint64         `json:"limit,omitempty"`
+	Order    string         `json:"order,omitempty"`
+	Dir      string         `json:"dir,omitempty"`
+	Name     string         `json:"name,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
+	Email    string         `json:"email,omitempty"`
+}
+
+// Validate validates the page metadata.
+func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
+	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
+	if err := common.Validate(maxLimitSize, AllowedOrders); err != nil {
+		return err
+	}
+
+	if len(pm.Name) > maxNameSize {
+		return apiutil.ErrNameSize
+	}
+
+	return nil
+}
 
 // Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
@@ -49,15 +85,15 @@ type Service interface {
 
 	// ListThings retrieves data about subset of things that belongs to the
 	// user identified by the provided key.
-	ListThings(ctx context.Context, token string, pm apiutil.PageMetadata) (ThingsPage, error)
+	ListThings(ctx context.Context, token string, pm PageMetadata) (ThingsPage, error)
 
 	// ListThingsByOrg retrieves page of things that belong to an org identified by ID.
-	ListThingsByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (ThingsPage, error)
+	ListThingsByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (ThingsPage, error)
 
 	// ListThingsByProfile retrieves data about subset of things that are
 	// connected or not connected to specified profile and belong to the user identified by
 	// the provided key.
-	ListThingsByProfile(ctx context.Context, token, prID string, pm apiutil.PageMetadata) (ThingsPage, error)
+	ListThingsByProfile(ctx context.Context, token, prID string, pm PageMetadata) (ThingsPage, error)
 
 	// RemoveThings removes the things identified with the provided IDs, that
 	// belongs to the user identified by the provided key.
@@ -77,10 +113,10 @@ type Service interface {
 
 	// ListProfiles retrieves data about subset of profiles that belongs to the
 	// user identified by the provided key.
-	ListProfiles(ctx context.Context, token string, pm apiutil.PageMetadata) (ProfilesPage, error)
+	ListProfiles(ctx context.Context, token string, pm PageMetadata) (ProfilesPage, error)
 
 	// ListProfilesByOrg retrieves page of profiles that belong to an org identified by ID.
-	ListProfilesByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (ProfilesPage, error)
+	ListProfilesByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (ProfilesPage, error)
 
 	// ViewProfileByThing retrieves data about profile that have
 	// specified thing connected or not connected to it and belong to the user identified by
@@ -112,6 +148,12 @@ type Service interface {
 
 	// CanThingAccessGroup determines whether a given thing has access to a group with a key.
 	CanThingAccessGroup(ctx context.Context, req ThingAccessReq) error
+
+	// CanThingCommand determines whether a given thing is allowed to send a command to another thing.
+	CanThingCommand(ctx context.Context, req ThingCommandReq) error
+
+	// CanThingGroupCommand determines whether a given thing may issue commands to an entire group.
+	CanThingGroupCommand(ctx context.Context, req ThingGroupCommandReq) error
 
 	// Identify returns thing ID for given thing key.
 	Identify(ctx context.Context, key ThingKey) (string, error)
@@ -156,21 +198,14 @@ type Backup struct {
 	GroupMemberships []GroupMembership
 }
 
-type UserAccessReq struct {
-	Token  string
-	ID     string
-	Action string
-}
-
-type ThingAccessReq struct {
-	ThingKey
-	ID string
-}
-
-type PubConfigInfo struct {
-	PublisherID   string
-	ProfileConfig map[string]any
-}
+// Domain type aliases
+type (
+	UserAccessReq        = domain.UserAccessReq
+	ThingAccessReq       = domain.ThingAccessReq
+	PubConfigInfo        = domain.PubConfigInfo
+	ThingCommandReq      = domain.ThingCommandReq
+	ThingGroupCommandReq = domain.ThingGroupCommandReq
+)
 
 var _ Service = (*thingsService)(nil)
 
@@ -356,7 +391,7 @@ func (ts *thingsService) ViewMetadataByKey(ctx context.Context, key ThingKey) (M
 	return thing.Metadata, nil
 }
 
-func (ts *thingsService) ListThings(ctx context.Context, token string, pm apiutil.PageMetadata) (ThingsPage, error) {
+func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMetadata) (ThingsPage, error) {
 	if err := ts.isAdmin(ctx, token); err == nil {
 		return ts.things.RetrieveAll(ctx, pm)
 	}
@@ -374,7 +409,7 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm apiuti
 	return ts.things.RetrieveByGroups(ctx, grIDs, pm)
 }
 
-func (ts *thingsService) ListThingsByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (ThingsPage, error) {
+func (ts *thingsService) ListThingsByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (ThingsPage, error) {
 	grIDs, err := ts.GetGroupIDsByOrg(ctx, orgID, token)
 	if err != nil {
 		return ThingsPage{}, err
@@ -383,7 +418,7 @@ func (ts *thingsService) ListThingsByOrg(ctx context.Context, token string, orgI
 	return ts.things.RetrieveByGroups(ctx, grIDs, pm)
 }
 
-func (ts *thingsService) ListThingsByProfile(ctx context.Context, token, prID string, pm apiutil.PageMetadata) (ThingsPage, error) {
+func (ts *thingsService) ListThingsByProfile(ctx context.Context, token, prID string, pm PageMetadata) (ThingsPage, error) {
 	ar := UserAccessReq{
 		Token:  token,
 		ID:     prID,
@@ -492,7 +527,7 @@ func (ts *thingsService) ViewProfile(ctx context.Context, token, id string) (Pro
 	return profile, nil
 }
 
-func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm apiutil.PageMetadata) (ProfilesPage, error) {
+func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm PageMetadata) (ProfilesPage, error) {
 	if err := ts.isAdmin(ctx, token); err == nil {
 		return ts.profiles.RetrieveAll(ctx, pm)
 	}
@@ -510,7 +545,7 @@ func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm apiu
 	return ts.profiles.RetrieveByGroups(ctx, grIDs, pm)
 }
 
-func (ts *thingsService) ListProfilesByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (ProfilesPage, error) {
+func (ts *thingsService) ListProfilesByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (ProfilesPage, error) {
 	grIDs, err := ts.GetGroupIDsByOrg(ctx, orgID, token)
 	if err != nil {
 		return ProfilesPage{}, err
@@ -634,6 +669,37 @@ func (ts *thingsService) CanThingAccessGroup(ctx context.Context, req ThingAcces
 	}
 
 	return nil
+}
+
+func (ts *thingsService) CanThingCommand(ctx context.Context, req ThingCommandReq) error {
+	pubGroupID, pubType, err := ts.getThingGroupAndType(ctx, req.PublisherID)
+	if err != nil {
+		return err
+	}
+
+	recGroupID, recType, err := ts.getThingGroupAndType(ctx, req.RecipientID)
+	if err != nil {
+		return err
+	}
+
+	if pubGroupID != recGroupID {
+		return errors.ErrAuthorization
+	}
+
+	return CanCommand(pubType, recType)
+}
+
+func (ts *thingsService) CanThingGroupCommand(ctx context.Context, req ThingGroupCommandReq) error {
+	pubGroupID, pubType, err := ts.getThingGroupAndType(ctx, req.PublisherID)
+	if err != nil {
+		return err
+	}
+
+	if pubGroupID != req.GroupID {
+		return errors.ErrAuthorization
+	}
+
+	return CanGroupCommand(pubType)
 }
 
 func (ts *thingsService) Identify(ctx context.Context, key ThingKey) (string, error) {
@@ -798,7 +864,7 @@ func getTimestamp() time.Time {
 	return time.Now().UTC().Round(time.Millisecond)
 }
 
-func (ts *thingsService) ListThingsByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (ThingsPage, error) {
+func (ts *thingsService) ListThingsByGroup(ctx context.Context, token string, groupID string, pm PageMetadata) (ThingsPage, error) {
 	ar := UserAccessReq{
 		Token:  token,
 		ID:     groupID,
@@ -811,7 +877,7 @@ func (ts *thingsService) ListThingsByGroup(ctx context.Context, token string, gr
 	return ts.things.RetrieveByGroups(ctx, []string{groupID}, pm)
 }
 
-func (ts *thingsService) ListProfilesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (ProfilesPage, error) {
+func (ts *thingsService) ListProfilesByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (ProfilesPage, error) {
 	ar := UserAccessReq{
 		Token:  token,
 		ID:     groupID,
@@ -827,7 +893,7 @@ func (ts *thingsService) ListProfilesByGroup(ctx context.Context, token, groupID
 func (ts *thingsService) isAdmin(ctx context.Context, token string) error {
 	req := &protomfx.AuthorizeReq{
 		Token:   token,
-		Subject: auth.RootSub,
+		Subject: domain.RootSub,
 	}
 
 	if _, err := ts.auth.Authorize(ctx, req); err != nil {
@@ -852,6 +918,33 @@ func (ts *thingsService) canAccessOrg(ctx context.Context, token, orgID, subject
 	return nil
 }
 
+func (ts *thingsService) getThingGroupAndType(ctx context.Context, thID string) (groupID, thingType string, err error) {
+	groupID, groupErr := ts.thingCache.ViewGroup(ctx, thID)
+	thingType, typeErr := ts.thingCache.ViewType(ctx, thID)
+	if groupErr == nil && typeErr == nil {
+		return groupID, thingType, nil
+	}
+
+	th, err := ts.things.RetrieveByID(ctx, thID)
+	if err != nil {
+		return "", "", err
+	}
+
+	if groupErr != nil {
+		if err := ts.thingCache.SaveGroup(ctx, th.ID, th.GroupID); err != nil {
+			return "", "", err
+		}
+	}
+
+	if typeErr != nil {
+		if err := ts.thingCache.SaveType(ctx, th.ID, th.Type); err != nil {
+			return "", "", err
+		}
+	}
+
+	return th.GroupID, th.Type, nil
+}
+
 func (ts *thingsService) getGroupIDByThing(ctx context.Context, thID string) (string, error) {
 	grID, err := ts.thingCache.ViewGroup(ctx, thID)
 	if err != nil {
@@ -867,23 +960,6 @@ func (ts *thingsService) getGroupIDByThing(ctx context.Context, thID string) (st
 	}
 
 	return grID, nil
-}
-
-func (ts *thingsService) getTypeByThing(ctx context.Context, thID string) (string, error) {
-	thType, err := ts.thingCache.ViewType(ctx, thID)
-	if err != nil {
-		th, err := ts.things.RetrieveByID(ctx, thID)
-		if err != nil {
-			return "", err
-		}
-		thType = th.Type
-
-		if err := ts.thingCache.SaveType(ctx, th.ID, th.Type); err != nil {
-			return "", err
-		}
-	}
-
-	return thType, nil
 }
 
 func (ts *thingsService) getGroupIDByProfile(ctx context.Context, prID string) (string, error) {
@@ -919,7 +995,7 @@ func (ts *thingsService) GetGroupIDsByOrg(ctx context.Context, orgID string, tok
 		return ts.groups.RetrieveIDsByOrg(ctx, orgID)
 	}
 
-	if err := ts.canAccessOrg(ctx, token, orgID, auth.OrgSub, Viewer); err != nil {
+	if err := ts.canAccessOrg(ctx, token, orgID, domain.OrgSub, Viewer); err != nil {
 		return []string{}, err
 	}
 
@@ -936,7 +1012,7 @@ func (ts *thingsService) GetThingIDsByProfile(ctx context.Context, profileID str
 		return []string{}, err
 	}
 
-	page, err := ts.things.RetrieveByProfile(ctx, profileID, apiutil.PageMetadata{})
+	page, err := ts.things.RetrieveByProfile(ctx, profileID, PageMetadata{})
 	if err != nil {
 		return []string{}, err
 	}

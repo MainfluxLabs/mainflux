@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -121,7 +120,7 @@ func (trm *thingRepositoryMock) RetrieveByID(_ context.Context, id string) (thin
 	return things.Thing{}, dbutil.ErrNotFound
 }
 
-func (trm *thingRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+func (trm *thingRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs []string, pm things.PageMetadata) (things.ThingsPage, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
@@ -167,7 +166,7 @@ func (trm *thingRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs []s
 	return page, nil
 }
 
-func (trm *thingRepositoryMock) RetrieveByProfile(_ context.Context, chID string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+func (trm *thingRepositoryMock) RetrieveByProfile(_ context.Context, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 
@@ -283,7 +282,7 @@ func (trm *thingRepositoryMock) BackupAll(_ context.Context) ([]things.Thing, er
 	return ths, nil
 }
 
-func (trm *thingRepositoryMock) RetrieveAll(_ context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+func (trm *thingRepositoryMock) RetrieveAll(_ context.Context, pm things.PageMetadata) (things.ThingsPage, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()
 

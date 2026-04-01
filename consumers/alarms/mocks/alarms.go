@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
@@ -47,7 +46,7 @@ func (arm *alarmRepositoryMock) RetrieveByID(_ context.Context, id string) (alar
 	return a, nil
 }
 
-func (arm *alarmRepositoryMock) RetrieveByThing(_ context.Context, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+func (arm *alarmRepositoryMock) RetrieveByThing(_ context.Context, thingID string, pm alarms.PageMetadata) (alarms.AlarmsPage, error) {
 	arm.mu.Lock()
 	defer arm.mu.Unlock()
 
@@ -71,7 +70,7 @@ func (arm *alarmRepositoryMock) RetrieveByThing(_ context.Context, thingID strin
 	}, nil
 }
 
-func (arm *alarmRepositoryMock) RetrieveByGroup(_ context.Context, groupID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+func (arm *alarmRepositoryMock) RetrieveByGroup(_ context.Context, groupID string, pm alarms.PageMetadata) (alarms.AlarmsPage, error) {
 	arm.mu.Lock()
 	defer arm.mu.Unlock()
 
@@ -95,7 +94,7 @@ func (arm *alarmRepositoryMock) RetrieveByGroup(_ context.Context, groupID strin
 	}, nil
 }
 
-func (arm *alarmRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs []string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+func (arm *alarmRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs []string, pm alarms.PageMetadata) (alarms.AlarmsPage, error) {
 	arm.mu.Lock()
 	defer arm.mu.Unlock()
 
@@ -164,7 +163,7 @@ func (arm *alarmRepositoryMock) RemoveByGroup(_ context.Context, groupID string)
 	return nil
 }
 
-func (arm *alarmRepositoryMock) ExportByThing(_ context.Context, thingID string, pm apiutil.PageMetadata) (alarms.AlarmsPage, error) {
+func (arm *alarmRepositoryMock) ExportByThing(_ context.Context, thingID string, pm alarms.PageMetadata) (alarms.AlarmsPage, error) {
 	arm.mu.Lock()
 	defer arm.mu.Unlock()
 

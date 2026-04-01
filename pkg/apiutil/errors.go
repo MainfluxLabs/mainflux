@@ -105,6 +105,9 @@ var (
 	// ErrMissingPublisherID indicates missing publisher ID.
 	ErrMissingPublisherID = errors.New("missing publisher ID")
 
+	// ErrMissingRecipientID indicates missing recipient ID.
+	ErrMissingRecipientID = errors.New("missing recipient ID")
+
 	// ErrMissingSerial indicates missing serial.
 	ErrMissingSerial = errors.New("missing serial")
 
@@ -153,9 +156,6 @@ var (
 	// ErrNotFoundParam indicates that the parameter was not found in the query
 	ErrNotFoundParam = errors.New("parameter not found in the query")
 
-	// ErrMalformedEntity indicates a malformed entity specification.
-	ErrMalformedEntity = errors.New("malformed entity specification")
-
 	// ErrInvalidRole indicates an invalid role.
 	ErrInvalidRole = errors.New("invalid role")
 
@@ -191,6 +191,9 @@ var (
 
 	// ErrInvalidThingType indicates an invalid or missing thing type
 	ErrInvalidThingType = errors.New("missing or invalid thing type")
+
+	// ErrMissingAuth indicates that neither a thing key nor a user token was provided.
+	ErrMissingAuth = errors.New("missing thing key or bearer token")
 
 	// ErrInvalidProvider indicates an invalid or missing provider
 	ErrInvalidProvider = errors.New("missing or invalid provider")

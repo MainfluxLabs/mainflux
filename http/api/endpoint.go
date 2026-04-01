@@ -30,6 +30,10 @@ func sendCommandToThingEndpoint(svc http.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
+		if req.thingKey.Value != "" {
+			return nil, svc.SendCommandToThingByKey(ctx, req.thingKey, req.id, req.msg)
+		}
+
 		return nil, svc.SendCommandToThing(ctx, req.token, req.id, req.msg)
 	}
 }
@@ -40,6 +44,10 @@ func sendCommandToGroupEndpoint(svc http.Service) endpoint.Endpoint {
 
 		if err := req.validate(); err != nil {
 			return nil, err
+		}
+
+		if req.thingKey.Value != "" {
+			return nil, svc.SendCommandToGroupByKey(ctx, req.thingKey, req.id, req.msg)
 		}
 
 		return nil, svc.SendCommandToGroup(ctx, req.token, req.id, req.msg)

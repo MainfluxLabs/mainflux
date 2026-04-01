@@ -11,11 +11,41 @@ import (
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	"github.com/MainfluxLabs/mainflux/things"
 )
+
+var AllowedOrders = map[string]string{
+	"id":   "id",
+	"name": "name",
+}
+
+// PageMetadata contains page metadata that helps navigation.
+type PageMetadata struct {
+	Total    uint64         `json:"total,omitempty"`
+	Offset   uint64         `json:"offset,omitempty"`
+	Limit    uint64         `json:"limit,omitempty"`
+	Order    string         `json:"order,omitempty"`
+	Dir      string         `json:"dir,omitempty"`
+	Name     string         `json:"name,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
+}
+
+// Validate validates the page metadata.
+func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
+	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
+	if err := common.Validate(maxLimitSize, AllowedOrders); err != nil {
+		return err
+	}
+
+	if len(pm.Name) > maxNameSize {
+		return apiutil.ErrNameSize
+	}
+
+	return nil
+}
 
 // Service represents a notification service.
 // All methods that accept a token parameter use it to identify and authorize
@@ -26,7 +56,7 @@ type Service interface {
 
 	// ListNotifiersByGroup retrieves data about a subset of notifiers
 	// related to a certain group, identified by the provided group ID.
-	ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (NotifiersPage, error)
+	ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm PageMetadata) (NotifiersPage, error)
 
 	// ViewNotifier retrieves data about the notifier identified with the provided ID.
 	ViewNotifier(ctx context.Context, token, id string) (Notifier, error)
@@ -96,7 +126,7 @@ func (ns *notifierService) CreateNotifiers(ctx context.Context, token, groupID s
 		}
 	}
 
-	_, err := ns.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Editor})
+	_, err := ns.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domain.GroupEditor})
 	if err != nil {
 		return []Notifier{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
@@ -118,8 +148,8 @@ func (ns *notifierService) CreateNotifiers(ctx context.Context, token, groupID s
 	return nfs, nil
 }
 
-func (ns *notifierService) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm apiutil.PageMetadata) (NotifiersPage, error) {
-	_, err := ns.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer})
+func (ns *notifierService) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm PageMetadata) (NotifiersPage, error) {
+	_, err := ns.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domain.GroupViewer})
 	if err != nil {
 		return NotifiersPage{}, err
 	}
@@ -138,7 +168,7 @@ func (ns *notifierService) ViewNotifier(ctx context.Context, token, id string) (
 		return Notifier{}, err
 	}
 
-	if _, err := ns.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: notifier.GroupID, Action: things.Viewer}); err != nil {
+	if _, err := ns.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: notifier.GroupID, Action: domain.GroupViewer}); err != nil {
 		return Notifier{}, err
 	}
 
@@ -151,7 +181,7 @@ func (ns *notifierService) UpdateNotifier(ctx context.Context, token string, not
 		return err
 	}
 
-	if _, err := ns.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: nf.GroupID, Action: things.Viewer}); err != nil {
+	if _, err := ns.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: nf.GroupID, Action: domain.GroupViewer}); err != nil {
 		return err
 	}
 
@@ -168,7 +198,7 @@ func (ns *notifierService) RemoveNotifiers(ctx context.Context, token string, id
 		if err != nil {
 			return err
 		}
-		if _, err := ns.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: notifier.GroupID, Action: things.Editor}); err != nil {
+		if _, err := ns.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: notifier.GroupID, Action: domain.GroupEditor}); err != nil {
 			return errors.Wrap(errors.ErrAuthorization, err)
 		}
 	}

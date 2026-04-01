@@ -158,7 +158,7 @@ type viewMetadataReq struct {
 }
 
 func (req viewMetadataReq) validate() error {
-	if err := req.ThingKey.Validate(); err != nil {
+	if err := apiutil.ValidateThingKey(req.ThingKey); err != nil {
 		return err
 	}
 
@@ -184,7 +184,7 @@ func (req resourceReq) validate() error {
 
 type listReq struct {
 	token        string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata things.PageMetadata
 }
 
 func (req *listReq) validate() error {
@@ -192,13 +192,13 @@ func (req *listReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type listByProfileReq struct {
 	id           string
 	token        string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata things.PageMetadata
 }
 
 func (req listByProfileReq) validate() error {
@@ -210,13 +210,13 @@ func (req listByProfileReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type listByGroupReq struct {
 	id           string
 	token        string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata things.PageMetadata
 }
 
 func (req listByGroupReq) validate() error {
@@ -228,13 +228,13 @@ func (req listByGroupReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type listByOrgReq struct {
 	id           string
 	token        string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata things.PageMetadata
 }
 
 func (req listByOrgReq) validate() error {
@@ -246,7 +246,7 @@ func (req listByOrgReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type removeThingsReq struct {
@@ -277,7 +277,7 @@ type identifyReq struct {
 }
 
 func (req identifyReq) validate() error {
-	if err := req.ThingKey.Validate(); err != nil {
+	if err := apiutil.ValidateThingKey(req.ThingKey); err != nil {
 		return err
 	}
 

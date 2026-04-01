@@ -100,7 +100,7 @@ func (ir invitesRepository) RetrievePlatformInviteByID(ctx context.Context, invi
 	return toPlatformInvite(dbI), nil
 }
 
-func (ir invitesRepository) RetrievePlatformInvites(ctx context.Context, pm users.PageMetadataInvites) (users.PlatformInvitesPage, error) {
+func (ir invitesRepository) RetrievePlatformInvites(ctx context.Context, pm users.PageMetadata) (users.PlatformInvitesPage, error) {
 	query := `
 		SELECT id, invitee_email, created_at, expires_at, state
 		FROM platform_invites %s ORDER BY %s %s %s
@@ -156,12 +156,8 @@ func (ir invitesRepository) RetrievePlatformInvites(ctx context.Context, pm user
 	}
 
 	page := users.PlatformInvitesPage{
+		Total:   total,
 		Invites: invites,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
 	}
 
 	return page, nil

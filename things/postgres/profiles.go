@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -139,7 +138,7 @@ func (pr profileRepository) BackupAll(ctx context.Context) ([]things.Profile, er
 	return profiles, nil
 }
 
-func (pr profileRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+func (pr profileRepository) RetrieveAll(ctx context.Context, pm things.PageMetadata) (things.ProfilesPage, error) {
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
@@ -217,7 +216,7 @@ func (pr profileRepository) Remove(ctx context.Context, ids ...string) error {
 	return nil
 }
 
-func (pr profileRepository) RetrieveByGroups(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+func (pr profileRepository) RetrieveByGroups(ctx context.Context, groupIDs []string, pm things.PageMetadata) (things.ProfilesPage, error) {
 	if len(groupIDs) == 0 {
 		return things.ProfilesPage{}, nil
 	}
@@ -329,7 +328,7 @@ func toDBProfile(pr things.Profile) dbProfile {
 		GroupID:  pr.GroupID,
 		Name:     pr.Name,
 		Config:   pr.Config,
-		Metadata: pr.Metadata,
+		Metadata: dbJSONB(pr.Metadata),
 	}
 }
 
@@ -339,7 +338,7 @@ func toProfile(pr dbProfile) things.Profile {
 		GroupID:  pr.GroupID,
 		Name:     pr.Name,
 		Config:   pr.Config,
-		Metadata: pr.Metadata,
+		Metadata: things.Metadata(pr.Metadata),
 	}
 }
 

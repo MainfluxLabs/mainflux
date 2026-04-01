@@ -15,13 +15,13 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/MessageReq"
       responses:
-        "202":
+        '202':
           description: Message is accepted for processing.
-        "400":
+        '400':
           description: Message discarded due to its malformed content.
-        "401":
+        '401':
           description: Missing or invalid access token provided.
-        "415":
+        '415':
           description: Message discarded due to invalid or missing content type.
         '500':
           $ref: "#/components/responses/ServiceError"
@@ -44,13 +44,13 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/MessageReq"
       responses:
-        "202":
+        '202':
           description: Message is accepted for processing.
-        "400":
+        '400':
           description: Message discarded due to its malformed content.
-        "401":
+        '401':
           description: Missing or invalid access token provided.
-        "415":
+        '415':
           description: Message discarded due to invalid or missing content type.
         '500':
           $ref: "#/components/responses/ServiceError"
@@ -64,18 +64,22 @@ paths:
         (e.g. reboot, configuration update).
       tags:
         - commands
+      security:
+        - commandAuth: []
       parameters:
         - $ref: "#/components/parameters/ThingId"
       requestBody:
         $ref: "#/components/requestBodies/CommandReq"
       responses:
-        "202":
+        '202':
           description: Command accepted for processing.
-        "400":
+        '400':
           description: Invalid command payload.
-        "401":
+        '401':
           description: Missing or invalid access token provided.
-        "500":
+        '403':
+          description: Token does not grant access to this thing.
+        '500':
           $ref: "#/components/responses/ServiceError"
 
   /things/{thingId}/commands/{subtopic}:
@@ -91,6 +95,8 @@ paths:
           - "actuators/relay1"
       tags:
         - commands
+      security:
+        - commandAuth: []
       parameters:
         - $ref: "#/components/parameters/ThingId"
         - name: subtopic
@@ -102,13 +108,15 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/CommandReq"
       responses:
-        "202":
+        '202':
           description: Command accepted for processing.
-        "400":
+        '400':
           description: Invalid command payload.
-        "401":
+        '401':
           description: Missing or invalid access token provided.
-        "500":
+        '403':
+          description: Token does not grant access to this thing.
+        '500':
           $ref: "#/components/responses/ServiceError"
 
   /groups/{groupId}/commands:
@@ -121,18 +129,22 @@ paths:
         Each thing in the group will receive the same command.
       tags:
         - commands
+      security:
+        - commandAuth: []
       parameters:
         - $ref: "#/components/parameters/GroupId"
       requestBody:
         $ref: "#/components/requestBodies/CommandReq"
       responses:
-        "202":
+        '202':
           description: Command accepted for processing.
-        "400":
+        '400':
           description: Invalid command payload.
-        "401":
+        '401':
           description: Missing or invalid access token provided.
-        "500":
+        '403':
+          description: Token does not grant access to this group.
+        '500':
           $ref: "#/components/responses/ServiceError"
 
   /groups/{groupId}/commands/{subtopic}:
@@ -149,6 +161,8 @@ paths:
           - "actuators/relay1"
       tags:
         - commands
+      security:
+        - commandAuth: []
       parameters:
         - $ref: "#/components/parameters/GroupId"
         - name: subtopic
@@ -160,13 +174,15 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/CommandReq"
       responses:
-        "202":
+        '202':
           description: Command accepted for processing.
-        "400":
+        '400':
           description: Invalid command payload.
-        "401":
+        '401':
           description: Missing or invalid access token provided.
-        "500":
+        '403':
+          description: Token does not grant access to this group.
+        '500':
           $ref: "#/components/responses/ServiceError"
 
   /health:
@@ -321,26 +337,29 @@ components:
 
   securitySchemes:
     bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: uuid
+      type: apiKey
+      in: header
+      name: Authorization
       description: |
-        * Thing access: "Authorization: Thing <thing_key>"
+        Thing key authentication using the internal key format.
+        Header value: "Thing <thing_key>"
 
-    basicAuth:
-      type: http
-      scheme: basic
-      description: |
-        * Things access: "Authorization: Basic <base64-encoded_credentials>"
-    
     externalAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        Thing key authentication using the external key format.
+        Header value: "External <external_thing_key>"
+
+    commandAuth:
       type: http
       scheme: bearer
-      bearerFormat: string
+      bearerFormat: JWT
       description: |
-        * Thing access: "Authorization: External <external_thing_key>"
+        User bearer token authentication for command endpoints.
+        Header value: "Bearer <user_token>"
 
 security:
   - bearerAuth: []
-  - basicAuth: []
   - externalAuth: []

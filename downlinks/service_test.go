@@ -12,7 +12,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/downlinks"
 	dlmocks "github.com/MainfluxLabs/mainflux/downlinks/mocks"
 	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/cron"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -121,7 +120,7 @@ func TestListDownlinksByThing(t *testing.T) {
 		desc    string
 		token   string
 		thingID string
-		pm      apiutil.PageMetadata
+		pm      downlinks.PageMetadata
 		size    uint64
 		err     error
 	}{
@@ -129,7 +128,7 @@ func TestListDownlinksByThing(t *testing.T) {
 			desc:    "list downlinks by thing with valid token",
 			token:   adminToken,
 			thingID: thingID,
-			pm:      apiutil.PageMetadata{},
+			pm:      downlinks.PageMetadata{},
 			size:    1,
 			err:     nil,
 		},
@@ -137,7 +136,7 @@ func TestListDownlinksByThing(t *testing.T) {
 			desc:    "list downlinks by thing with invalid token",
 			token:   wrongToken,
 			thingID: thingID,
-			pm:      apiutil.PageMetadata{},
+			pm:      downlinks.PageMetadata{},
 			size:    0,
 			err:     errors.ErrAuthorization,
 		},
@@ -145,7 +144,7 @@ func TestListDownlinksByThing(t *testing.T) {
 			desc:    "list downlinks by thing for wrong thing ID",
 			token:   adminToken,
 			thingID: wrongID,
-			pm:      apiutil.PageMetadata{},
+			pm:      downlinks.PageMetadata{},
 			size:    0,
 			err:     errors.ErrAuthorization,
 		},
@@ -153,7 +152,7 @@ func TestListDownlinksByThing(t *testing.T) {
 			desc:    "list downlinks by thing with limit",
 			token:   adminToken,
 			thingID: thingID,
-			pm:      apiutil.PageMetadata{Limit: 1, Offset: 0},
+			pm:      downlinks.PageMetadata{Limit: 1, Offset: 0},
 			size:    1,
 			err:     nil,
 		},
@@ -161,7 +160,7 @@ func TestListDownlinksByThing(t *testing.T) {
 			desc:    "list downlinks by thing with offset beyond available",
 			token:   adminToken,
 			thingID: thingID,
-			pm:      apiutil.PageMetadata{Limit: 1, Offset: 1},
+			pm:      downlinks.PageMetadata{Limit: 1, Offset: 1},
 			size:    0,
 			err:     nil,
 		},
@@ -186,7 +185,7 @@ func TestListDownlinksByGroup(t *testing.T) {
 		desc    string
 		token   string
 		groupID string
-		pm      apiutil.PageMetadata
+		pm      downlinks.PageMetadata
 		size    uint64
 		err     error
 	}{
@@ -194,7 +193,7 @@ func TestListDownlinksByGroup(t *testing.T) {
 			desc:    "list downlinks by group with valid token",
 			token:   adminToken,
 			groupID: groupID,
-			pm:      apiutil.PageMetadata{},
+			pm:      downlinks.PageMetadata{},
 			size:    1,
 			err:     nil,
 		},
@@ -202,7 +201,7 @@ func TestListDownlinksByGroup(t *testing.T) {
 			desc:    "list downlinks by group with invalid token",
 			token:   wrongToken,
 			groupID: groupID,
-			pm:      apiutil.PageMetadata{},
+			pm:      downlinks.PageMetadata{},
 			size:    0,
 			err:     errors.ErrAuthorization,
 		},
@@ -210,7 +209,7 @@ func TestListDownlinksByGroup(t *testing.T) {
 			desc:    "list downlinks by group for wrong group ID",
 			token:   adminToken,
 			groupID: wrongID,
-			pm:      apiutil.PageMetadata{},
+			pm:      downlinks.PageMetadata{},
 			size:    0,
 			err:     errors.ErrAuthorization,
 		},
@@ -218,7 +217,7 @@ func TestListDownlinksByGroup(t *testing.T) {
 			desc:    "list downlinks by group with limit",
 			token:   adminToken,
 			groupID: groupID,
-			pm:      apiutil.PageMetadata{Limit: 1, Offset: 0},
+			pm:      downlinks.PageMetadata{Limit: 1, Offset: 0},
 			size:    1,
 			err:     nil,
 		},
@@ -226,7 +225,7 @@ func TestListDownlinksByGroup(t *testing.T) {
 			desc:    "list downlinks by group with offset beyond available",
 			token:   adminToken,
 			groupID: groupID,
-			pm:      apiutil.PageMetadata{Limit: 1, Offset: 1},
+			pm:      downlinks.PageMetadata{Limit: 1, Offset: 1},
 			size:    0,
 			err:     nil,
 		},

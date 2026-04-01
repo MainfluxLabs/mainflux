@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/readers"
-	"github.com/MainfluxLabs/mainflux/things"
 )
 
 var _ readers.Service = (*loggingMiddleware)(nil)
@@ -30,7 +30,7 @@ func LoggingMiddleware(svc readers.Service, logger logger.Logger) readers.Servic
 	}
 }
 
-func (lm *loggingMiddleware) ListJSONMessages(ctx context.Context, token string, key things.ThingKey, rpm readers.JSONPageMetadata) (_ readers.JSONMessagesPage, err error) {
+func (lm *loggingMiddleware) ListJSONMessages(ctx context.Context, token string, key domain.ThingKey, rpm readers.JSONPageMetadata) (_ readers.JSONMessagesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_json_messages took %s to complete", time.Since(begin))
 		if err != nil {
@@ -43,7 +43,7 @@ func (lm *loggingMiddleware) ListJSONMessages(ctx context.Context, token string,
 	return lm.svc.ListJSONMessages(ctx, token, key, rpm)
 }
 
-func (lm *loggingMiddleware) ListSenMLMessages(ctx context.Context, token string, key things.ThingKey, rpm readers.SenMLPageMetadata) (_ readers.SenMLMessagesPage, err error) {
+func (lm *loggingMiddleware) ListSenMLMessages(ctx context.Context, token string, key domain.ThingKey, rpm readers.SenMLPageMetadata) (_ readers.SenMLMessagesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_senml_messages took %s to complete", time.Since(begin))
 		if err != nil {

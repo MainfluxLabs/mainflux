@@ -79,7 +79,7 @@ const (
 	envServerCert        = "MF_FILESTORE_SERVER_CERT"
 	envServerKey         = "MF_FILESTORE_SERVER_KEY"
 	envJaegerURL         = "MF_JAEGER_URL"
-	envFileStoreCert     = "MF_FILESTORE_SERVER_CERT"
+	envCACerts           = "MF_FILESTORE_CA_CERTS"
 	envClientTLS         = "MF_FILESTORE_TLS"
 	envThingsAuthURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
@@ -187,7 +187,7 @@ func loadConfig() config {
 
 	thingsConfig := clients.Config{
 		ClientTLS:  tls,
-		CaCerts:    mainflux.Env(envFileStoreCert, defCACerts),
+		CaCerts:    mainflux.Env(envCACerts, defCACerts),
 		URL:        mainflux.Env(envThingsAuthURL, defThingsAuthURL),
 		ClientName: clients.Things,
 	}

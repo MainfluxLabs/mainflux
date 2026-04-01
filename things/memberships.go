@@ -3,7 +3,7 @@ package things
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
@@ -11,17 +11,11 @@ import (
 // ErrGroupMembershipExists indicates that membership already exists.
 var ErrGroupMembershipExists = errors.New("group membership already exists")
 
-type GroupMembership struct {
-	GroupID  string
-	MemberID string
-	Email    string
-	Role     string
-}
-
-type GroupMembershipsPage struct {
-	Total            uint64
-	GroupMemberships []GroupMembership
-}
+// Domain type aliases
+type (
+	GroupMembership      = domain.GroupMembership
+	GroupMembershipsPage = domain.GroupMembershipsPage
+)
 
 // GroupMembershipsRepository specifies an interface for managing group memberships in persistence.
 type GroupMembershipsRepository interface {
@@ -32,7 +26,7 @@ type GroupMembershipsRepository interface {
 	RetrieveRole(ctx context.Context, gm GroupMembership) (string, error)
 
 	// RetrieveByGroup retrieves a paginated list of group memberships by group ID.
-	RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (GroupMembershipsPage, error)
+	RetrieveByGroup(ctx context.Context, groupID string, pm PageMetadata) (GroupMembershipsPage, error)
 
 	// BackupAll retrieves all group memberships. Used for backup.
 	BackupAll(ctx context.Context) ([]GroupMembership, error)
@@ -59,7 +53,7 @@ type GroupMemberships interface {
 	CreateGroupMembershipsInternal(ctx context.Context, gms ...GroupMembership) error
 
 	// ListGroupMemberships retrieves a paginated list of group memberships for the given group.
-	ListGroupMemberships(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (GroupMembershipsPage, error)
+	ListGroupMemberships(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembershipsPage, error)
 
 	// UpdateGroupMemberships updates roles of a specific group membership.
 	UpdateGroupMemberships(ctx context.Context, token string, gms ...GroupMembership) error
@@ -134,7 +128,7 @@ func (ts *thingsService) CreateGroupMembershipsInternal(ctx context.Context, gms
 	return nil
 }
 
-func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (GroupMembershipsPage, error) {
+func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupID string, pm PageMetadata) (GroupMembershipsPage, error) {
 	ar := UserAccessReq{
 		Token:  token,
 		ID:     groupID,

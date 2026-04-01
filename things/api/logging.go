@@ -11,7 +11,6 @@ import (
 	"time"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
@@ -109,7 +108,7 @@ func (lm *loggingMiddleware) ViewMetadataByKey(ctx context.Context, key things.T
 	return lm.svc.ViewMetadataByKey(ctx, key)
 }
 
-func (lm *loggingMiddleware) ListThings(ctx context.Context, token string, pm apiutil.PageMetadata) (_ things.ThingsPage, err error) {
+func (lm *loggingMiddleware) ListThings(ctx context.Context, token string, pm things.PageMetadata) (_ things.ThingsPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_things took %s to complete", time.Since(begin))
 		if err != nil {
@@ -122,7 +121,7 @@ func (lm *loggingMiddleware) ListThings(ctx context.Context, token string, pm ap
 	return lm.svc.ListThings(ctx, token, pm)
 }
 
-func (lm *loggingMiddleware) ListThingsByProfile(ctx context.Context, token, prID string, pm apiutil.PageMetadata) (_ things.ThingsPage, err error) {
+func (lm *loggingMiddleware) ListThingsByProfile(ctx context.Context, token, prID string, pm things.PageMetadata) (_ things.ThingsPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_things_by_profile for profile id %s took %s to complete", prID, time.Since(begin))
 		if err != nil {
@@ -135,7 +134,7 @@ func (lm *loggingMiddleware) ListThingsByProfile(ctx context.Context, token, prI
 	return lm.svc.ListThingsByProfile(ctx, token, prID, pm)
 }
 
-func (lm *loggingMiddleware) ListThingsByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (_ things.ThingsPage, err error) {
+func (lm *loggingMiddleware) ListThingsByOrg(ctx context.Context, token string, orgID string, pm things.PageMetadata) (_ things.ThingsPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_things_by_org for org id %s took %s to complete", orgID, time.Since(begin))
 		if err != nil {
@@ -200,7 +199,7 @@ func (lm *loggingMiddleware) ViewProfile(ctx context.Context, token, id string) 
 	return lm.svc.ViewProfile(ctx, token, id)
 }
 
-func (lm *loggingMiddleware) ListProfiles(ctx context.Context, token string, pm apiutil.PageMetadata) (_ things.ProfilesPage, err error) {
+func (lm *loggingMiddleware) ListProfiles(ctx context.Context, token string, pm things.PageMetadata) (_ things.ProfilesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_profiles took %s to complete", time.Since(begin))
 		if err != nil {
@@ -213,7 +212,7 @@ func (lm *loggingMiddleware) ListProfiles(ctx context.Context, token string, pm 
 	return lm.svc.ListProfiles(ctx, token, pm)
 }
 
-func (lm *loggingMiddleware) ListProfilesByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (_ things.ProfilesPage, err error) {
+func (lm *loggingMiddleware) ListProfilesByOrg(ctx context.Context, token string, orgID string, pm things.PageMetadata) (_ things.ProfilesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_profiles_by_org for org id %s took %s to complete", orgID, time.Since(begin))
 		if err != nil {
@@ -327,6 +326,32 @@ func (lm *loggingMiddleware) CanThingAccessGroup(ctx context.Context, req things
 	}(time.Now())
 
 	return lm.svc.CanThingAccessGroup(ctx, req)
+}
+
+func (lm *loggingMiddleware) CanThingCommand(ctx context.Context, req things.ThingCommandReq) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method can_thing_command for publisher id %s and recipient id %s took %s to complete", req.PublisherID, req.RecipientID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.CanThingCommand(ctx, req)
+}
+
+func (lm *loggingMiddleware) CanThingGroupCommand(ctx context.Context, req things.ThingGroupCommandReq) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method can_thing_group_command for publisher id %s and group id %s took %s to complete", req.PublisherID, req.GroupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.CanThingGroupCommand(ctx, req)
 }
 
 func (lm *loggingMiddleware) Identify(ctx context.Context, key things.ThingKey) (id string, err error) {
@@ -472,7 +497,7 @@ func (lm *loggingMiddleware) ViewGroupInternal(ctx context.Context, id string) (
 	return lm.svc.ViewGroupInternal(ctx, id)
 }
 
-func (lm *loggingMiddleware) ListGroups(ctx context.Context, token string, pm apiutil.PageMetadata) (_ things.GroupPage, err error) {
+func (lm *loggingMiddleware) ListGroups(ctx context.Context, token string, pm things.PageMetadata) (_ things.GroupPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_groups took %s to complete", time.Since(begin))
 		if err != nil {
@@ -485,7 +510,7 @@ func (lm *loggingMiddleware) ListGroups(ctx context.Context, token string, pm ap
 	return lm.svc.ListGroups(ctx, token, pm)
 }
 
-func (lm *loggingMiddleware) ListGroupsByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (_ things.GroupPage, err error) {
+func (lm *loggingMiddleware) ListGroupsByOrg(ctx context.Context, token, orgID string, pm things.PageMetadata) (_ things.GroupPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_groups_by_org for org id %s took %s to complete", orgID, time.Since(begin))
 		if err != nil {
@@ -498,7 +523,7 @@ func (lm *loggingMiddleware) ListGroupsByOrg(ctx context.Context, token, orgID s
 	return lm.svc.ListGroupsByOrg(ctx, token, orgID, pm)
 }
 
-func (lm *loggingMiddleware) ListThingsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (_ things.ThingsPage, err error) {
+func (lm *loggingMiddleware) ListThingsByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (_ things.ThingsPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_things_by_group for group id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
@@ -563,7 +588,7 @@ func (lm *loggingMiddleware) ViewGroupByProfile(ctx context.Context, token, prof
 	return lm.svc.ViewGroupByProfile(ctx, token, profileID)
 }
 
-func (lm *loggingMiddleware) ListProfilesByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (_ things.ProfilesPage, err error) {
+func (lm *loggingMiddleware) ListProfilesByGroup(ctx context.Context, token, groupID string, pm things.PageMetadata) (_ things.ProfilesPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_profiles_by_group for group id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
@@ -602,7 +627,7 @@ func (lm *loggingMiddleware) CreateGroupMembershipsInternal(ctx context.Context,
 	return lm.svc.CreateGroupMembershipsInternal(ctx, gms...)
 }
 
-func (lm *loggingMiddleware) ListGroupMemberships(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (_ things.GroupMembershipsPage, err error) {
+func (lm *loggingMiddleware) ListGroupMemberships(ctx context.Context, token, groupID string, pm things.PageMetadata) (_ things.GroupMembershipsPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_group_memberships for group id %s and email %s took %s to complete", groupID, pm.Email, time.Since(begin))
 		if err != nil {

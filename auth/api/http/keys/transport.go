@@ -62,8 +62,13 @@ func decodeListAPIKeys(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	req := listKeysReq{
-		token:        apiutil.ExtractBearerToken(r),
-		pageMetadata: pm,
+		token: apiutil.ExtractBearerToken(r),
+		pageMetadata: auth.PageMetadata{
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
+		},
 	}
 
 	return req, nil
@@ -76,7 +81,7 @@ func decodeIssue(_ context.Context, r *http.Request) (any, error) {
 
 	req := issueKeyReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil

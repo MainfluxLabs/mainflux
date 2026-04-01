@@ -2,8 +2,6 @@ package webhooks
 
 import (
 	"context"
-
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
 type Webhook struct {
@@ -28,10 +26,10 @@ type WebhookRepository interface {
 	Save(ctx context.Context, whs ...Webhook) ([]Webhook, error)
 
 	// RetrieveByGroup retrieves webhooks related to a certain group identified by a given ID.
-	RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (WebhooksPage, error)
+	RetrieveByGroup(ctx context.Context, groupID string, pm PageMetadata) (WebhooksPage, error)
 
 	// RetrieveByThing retrieves webhooks related to a certain thing identified by a given ID.
-	RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (WebhooksPage, error)
+	RetrieveByThing(ctx context.Context, thingID string, pm PageMetadata) (WebhooksPage, error)
 
 	// RetrieveByID retrieves the webhook having the provided ID.
 	RetrieveByID(ctx context.Context, id string) (Webhook, error)

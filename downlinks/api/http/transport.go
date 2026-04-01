@@ -87,14 +87,31 @@ func decodeCreateDownlinks(_ context.Context, r *http.Request) (any, error) {
 
 	req := createDownlinksReq{token: apiutil.ExtractBearerToken(r), thingID: bone.GetValue(r, idKey)}
 	if err := json.NewDecoder(r.Body).Decode(&req.Downlinks); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
 }
 
+func buildPageMetadata(r *http.Request) (downlinks.PageMetadata, error) {
+	base, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return downlinks.PageMetadata{}, err
+	}
+
+	n, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+
+	return downlinks.PageMetadata{
+		Offset: base.Offset,
+		Limit:  base.Limit,
+		Order:  base.Order,
+		Dir:    base.Dir,
+		Name:   n,
+	}, nil
+}
+
 func decodeListDownlinks(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	pm, err := buildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +126,7 @@ func decodeListDownlinks(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeListThingDownlinks(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	pm, err := buildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +156,7 @@ func decodeUpdateDownlink(_ context.Context, r *http.Request) (any, error) {
 		id:    bone.GetValue(r, idKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -155,7 +172,7 @@ func decodeRemoveDownlinks(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil

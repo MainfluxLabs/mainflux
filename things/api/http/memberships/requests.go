@@ -4,17 +4,19 @@
 package memberships
 
 import (
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
-const maxLimitSize = 200
+const (
+	maxLimitSize = 200
+	maxNameSize  = 254
+)
 
 type listGroupMembershipsReq struct {
 	token        string
 	groupID      string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata things.PageMetadata
 }
 
 func (req listGroupMembershipsReq) validate() error {
@@ -26,11 +28,7 @@ func (req listGroupMembershipsReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	if req.pageMetadata.Limit > maxLimitSize {
-		return apiutil.ErrLimitSize
-	}
-
-	return nil
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type createGroupMembershipsReq struct {
@@ -54,7 +52,7 @@ func (req createGroupMembershipsReq) validate() error {
 	}
 
 	for _, gm := range req.GroupMemberships {
-		if gm.Role != auth.Admin && gm.Role != things.Viewer && gm.Role != things.Editor {
+		if gm.Role != things.Admin && gm.Role != things.Viewer && gm.Role != things.Editor {
 			return apiutil.ErrInvalidRole
 		}
 
@@ -90,7 +88,7 @@ func (req updateGroupMembershipsReq) validate() error {
 	}
 
 	for _, gm := range req.GroupMemberships {
-		if gm.Role != auth.Admin && gm.Role != things.Viewer && gm.Role != things.Editor {
+		if gm.Role != things.Admin && gm.Role != things.Viewer && gm.Role != things.Editor {
 			return apiutil.ErrInvalidRole
 		}
 

@@ -117,37 +117,55 @@ func decodeCreateScripts(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
 }
 
 func decodeListScriptsByThing(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
 
+	name, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+
 	req := listScriptsByThingReq{
-		token:        apiutil.ExtractBearerToken(r),
-		thingID:      bone.GetValue(r, apiutil.IDKey),
-		pageMetadata: pm,
+		token:   apiutil.ExtractBearerToken(r),
+		thingID: bone.GetValue(r, apiutil.IDKey),
+		pageMetadata: rules.PageMetadata{
+			Offset: base.Offset,
+			Limit:  base.Limit,
+			Order:  base.Order,
+			Dir:    base.Dir,
+			Name:   name,
+		},
 	}
+
 	return req, nil
 }
 
 func decodeListScriptsByGroup(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
 
+	name, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+
 	req := listScriptsByGroupReq{
-		token:        apiutil.ExtractBearerToken(r),
-		groupID:      bone.GetValue(r, apiutil.IDKey),
-		pageMetadata: pm,
+		token:   apiutil.ExtractBearerToken(r),
+		groupID: bone.GetValue(r, apiutil.IDKey),
+		pageMetadata: rules.PageMetadata{
+			Offset: base.Offset,
+			Limit:  base.Limit,
+			Order:  base.Order,
+			Dir:    base.Dir,
+			Name:   name,
+		},
 	}
+
 	return req, nil
 }
 
@@ -171,7 +189,7 @@ func decodeUpdateScript(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -187,7 +205,7 @@ func decodeRemoveScripts(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -204,22 +222,29 @@ func decodeThingScripts(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
 }
 
 func decodeListScriptRunsByThing(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
+	name, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
 
 	req := listScriptRunsByThingReq{
-		token:        apiutil.ExtractBearerToken(r),
-		thingID:      bone.GetValue(r, apiutil.IDKey),
-		pageMetadata: pm,
+		token:   apiutil.ExtractBearerToken(r),
+		thingID: bone.GetValue(r, apiutil.IDKey),
+		pageMetadata: rules.PageMetadata{
+			Offset: base.Offset,
+			Limit:  base.Limit,
+			Order:  base.Order,
+			Dir:    base.Dir,
+			Name:   name,
+		},
 	}
 	return req, nil
 }
@@ -234,7 +259,7 @@ func decodeRemoveScriptRuns(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
