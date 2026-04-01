@@ -204,7 +204,7 @@ var luaReaderListMessages = luaAPIFunc{
 
 				return 2
 			default:
-				lua.ArgumentError(ls, 1, luaErrInvalidArg+": expected \"json\" or \"senml\"")
+				lua.ArgumentError(ls, 1, `expected "json" or "senml"`)
 				panic("unreachable")
 			}
 		}
