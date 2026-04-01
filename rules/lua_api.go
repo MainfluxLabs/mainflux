@@ -123,11 +123,13 @@ var luaLog = luaAPIFunc{
 // An interface to readers.ListJSONMessages and readers.ListSenMLMessages.
 // Lua signature:
 //
-//	    mfx.list_messages(<message_king>, <thing_key>, [<page_metadata>])
-//	        Where <message_kind> is one of "senml" or "json", <thing_key> is a Lua table of the following structure: { type = "external"|"internal", value = <key_value> },
-//		    and <page_metadata> is an optional Lua table representing pagination metadata and filters (see the definitions of domain.SenMLPageMetadata and readers.JSONPageMetadata).
+//		    mfx.list_messages(<message_king>, <thing_key>, [<page_metadata>])
+//		        Where <message_kind> is one of "senml" or "json", <thing_key> is a Lua table of the following structure: { type = "external"|"internal", value = <key_value> },
+//			    and <page_metadata> is an optional Lua table representing pagination metadata and filters (see the definitions of domain.SenMLPageMetadata and readers.JSONPageMetadata).
 //
-//		    On success, it returns (<messages>, <total_messages>). On failure, it returns (nil, 0, <error_message).
+//	            <thing_key> may also be nil, in which case messages from the thing associated with the currently-executing scripts are fetched.
+//
+//			    On success, it returns (<messages>, <total_messages>). On failure, it returns (nil, 0, <error_message).
 var luaReaderListMessages = luaAPIFunc{
 	fun: func(env *luaEnv) lua.Function {
 		return func(ls *lua.State) int {
