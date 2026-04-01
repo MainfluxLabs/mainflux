@@ -106,7 +106,7 @@ func TestHandshake(t *testing.T) {
 			msg:      msg,
 		},
 		{
-			desc:     "connect and send message with thingKey as query parameter",
+			desc:     "connect and send message with thing key as query parameter",
 			subtopic: "",
 			auth:     thingAuth,
 			status:   http.StatusSwitchingProtocols,
@@ -134,7 +134,7 @@ func TestHandshake(t *testing.T) {
 			msg:      msg,
 		},
 		{
-			desc:     "connect with empty thingKey",
+			desc:     "connect with empty thing key",
 			subtopic: "",
 			auth:     "",
 			status:   http.StatusUnauthorized,

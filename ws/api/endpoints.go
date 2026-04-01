@@ -77,12 +77,9 @@ func commandsHandshake(svc ws.Service, processFn func(ws.Service, cmdConnReq, <-
 }
 
 func decodeMessagesRequest(r *http.Request) (getConnByKey, error) {
-	tk, err := extractThingKey(r)
-	if err != nil {
+	tk := extractThingKey(r)
+	if err := apiutil.ValidateThingKey(tk); err != nil {
 		return getConnByKey{}, err
-	}
-	if tk.Value == "" {
-		return getConnByKey{}, apiutil.ErrMissingAuth
 	}
 
 	subtopic, err := messaging.NormalizeSubtopic(r.RequestURI)
@@ -110,11 +107,8 @@ func decodeCommandRequest(r *http.Request) (cmdConnReq, error) {
 
 	req := cmdConnReq{id: id, subtopic: subtopic}
 
-	tk, err := extractThingKey(r)
-	if err != nil {
-		return cmdConnReq{}, err
-	}
-	if tk.Value != "" {
+	tk := extractThingKey(r)
+	if apiutil.ValidateThingKey(tk) == nil {
 		req.thingKey = tk
 		return req, nil
 	}
@@ -129,19 +123,18 @@ func decodeCommandRequest(r *http.Request) (cmdConnReq, error) {
 
 // extractThingKey retrieves a ThingKey from the Authorization header,
 // falling back to the key and keyType query parameters.
-func extractThingKey(r *http.Request) (domain.ThingKey, error) {
+func extractThingKey(r *http.Request) domain.ThingKey {
 	if tk := apiutil.ExtractThingKey(r); tk.Value != "" {
-		return tk, nil
+		return tk
 	}
 
 	queryKey := bone.GetQuery(r, "key")
 	queryKeyType := bone.GetQuery(r, "keyType")
 	if len(queryKey) > 0 && len(queryKeyType) > 0 {
-		tk := domain.ThingKey{Value: queryKey[0], Type: queryKeyType[0]}
-		return tk, apiutil.ValidateThingKey(tk)
+		return domain.ThingKey{Value: queryKey[0], Type: queryKeyType[0]}
 	}
 
-	return domain.ThingKey{}, nil
+	return domain.ThingKey{}
 }
 
 // extractBearerToken retrieves a bearer token from the Authorization header,
