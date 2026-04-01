@@ -8,10 +8,10 @@ import (
 	"encoding/json"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	jsonmsg "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 	senmlmsg "github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
@@ -113,13 +113,14 @@ func encodeListJSONMessagesResponse(_ context.Context, grpcRes any) (any, error)
 	res := grpcRes.(listJSONMessagesRes)
 	msgs := make([]*protomfx.Message, 0, len(res.page.Messages))
 	for _, m := range res.page.Messages {
-		jm, ok := m.(jsonmsg.Message)
+		msgMap, ok := m.(map[string]any)
 		if !ok {
 			continue
 		}
-		pm := jm.ToProtoMessage()
-		msgs = append(msgs, &pm)
+
+		msgs = append(msgs, protoutil.JSONMapMessageToProto(msgMap))
 	}
+
 	return &protomfx.ListJSONMessagesRes{
 		Total:    res.page.Total,
 		Messages: msgs,
@@ -146,6 +147,7 @@ func encodeListSenMLMessagesResponse(_ context.Context, grpcRes any) (any, error
 			ContentType: "application/senml+json",
 		})
 	}
+
 	return &protomfx.ListSenMLMessagesRes{
 		Total:    res.page.Total,
 		Messages: msgs,

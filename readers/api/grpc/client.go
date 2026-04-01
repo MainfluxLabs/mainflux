@@ -10,7 +10,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	jsonmsg "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 	senmlmsg "github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
@@ -127,13 +127,12 @@ func decodeListJSONMessagesResponse(_ context.Context, grpcRes any) (any, error)
 	res := grpcRes.(*protomfx.ListJSONMessagesRes)
 	msgs := make([]domain.Message, 0, len(res.GetMessages()))
 	for _, pm := range res.GetMessages() {
-		msgs = append(msgs, jsonmsg.Message{
-			Created:   pm.GetCreated(),
-			Subtopic:  pm.GetSubtopic(),
-			Publisher: pm.GetPublisher(),
-			Protocol:  pm.GetProtocol(),
-			Payload:   pm.GetPayload(),
-		})
+		msgMap, err := protoutil.ProtoJSONMessageToMap(pm)
+		if err != nil {
+			return nil, err
+		}
+
+		msgs = append(msgs, msgMap)
 	}
 
 	return listJSONMessagesRes{
