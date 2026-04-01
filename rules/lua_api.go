@@ -134,16 +134,31 @@ var luaReaderListMessages = luaAPIFunc{
 			messageKind := lua.CheckString(ls, 1)
 
 			// Parse second arg into a domain.ThingKey
-			if ls.TypeOf(2) != lua.TypeTable {
-				lua.ArgumentError(ls, 2, "expected table")
-			}
-
 			var thingKey domain.ThingKey
-			ls.Field(2, "type")
-			thingKey.Type = lua.CheckString(ls, -1)
-			ls.Field(2, "value")
-			thingKey.Value = lua.CheckString(ls, -1)
-			ls.Pop(2)
+
+			switch ls.TypeOf(2) {
+			case lua.TypeTable:
+				ls.Field(2, "type")
+				thingKey.Type = lua.CheckString(ls, -1)
+				ls.Field(2, "value")
+				thingKey.Value = lua.CheckString(ls, -1)
+				ls.Pop(2)
+			case lua.TypeNil:
+				// Explicit nil passed: obtain thing key of publisher associated with the currently-executing script
+				key, err := env.service.things.GetKeyByThingID(context.Background(), env.message.Publisher)
+				if err != nil {
+					ls.PushNil()
+					ls.PushInteger(0)
+					ls.PushString(err.Error())
+					return 2
+				}
+
+				thingKey = key
+			default:
+				// TypeNone (no argument passed), or some other type
+				lua.ArgumentError(ls, 2, "expected table (thing key) or nil")
+				panic("unreachable")
+			}
 
 			if err := apiutil.ValidateThingKey(thingKey); err != nil {
 				ls.PushNil()
@@ -191,6 +206,7 @@ var luaReaderListMessages = luaAPIFunc{
 				}
 
 				// Return ({messages}, total)
+				// Messages are returned are as Lua array (table whose keys are integers) of tables representing SenML messages
 				ls.NewTable()
 				for idx, msg := range page.Messages {
 					pushSenMLMessageToLua(ls, msg.(senml.Message))
