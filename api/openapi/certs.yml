@@ -81,7 +81,7 @@ paths:
           description: Certificate not found.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /certs/{certID}/rotate:
+  /certs/{certId}/rotate:
     post:
       summary: Rotates a certificate
       description: |
@@ -90,7 +90,7 @@ paths:
       tags:
         - certs
       parameters:
-        - $ref: "#/components/parameters/CertID"
+        - $ref: "#/components/parameters/CertId"
       requestBody:
         $ref: "#/components/requestBodies/RotateCertReq"
       responses:
@@ -104,7 +104,7 @@ paths:
           description: Certificate with the given serial was not found.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /certs/{certID}/download:
+  /certs/{certId}/download:
     get:
       summary: Downloads a certificate
       description: |
@@ -114,7 +114,7 @@ paths:
       tags:
         - certs
       parameters:
-        - $ref: "#/components/parameters/CertID"
+        - $ref: "#/components/parameters/CertId"
       responses:
         '200':
           $ref: "#/components/responses/DownloadCertRes"
@@ -178,8 +178,8 @@ components:
       schema:
         type: string
       required: true
-    CertID:
-      name: certID
+    CertId:
+      name: certId
       description: Certificate identifier.
       in: path
       schema:
