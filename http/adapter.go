@@ -86,12 +86,12 @@ func (as *adapterService) SendCommandToGroup(ctx context.Context, token, groupID
 }
 
 func (as *adapterService) SendCommandToThingByKey(ctx context.Context, key domain.ThingKey, thingID string, message protomfx.Message) error {
-	publishedID, err := as.things.Identify(ctx, key)
+	publisherID, err := as.things.Identify(ctx, key)
 	if err != nil {
 		return err
 	}
 
-	if err := as.things.CanThingCommand(ctx, domain.ThingCommandReq{PublisherID: publishedID, RecipientID: thingID}); err != nil {
+	if err := as.things.CanThingCommand(ctx, domain.ThingCommandReq{PublisherID: publisherID, RecipientID: thingID}); err != nil {
 		return err
 	}
 
