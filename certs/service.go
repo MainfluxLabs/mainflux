@@ -24,8 +24,7 @@ var (
 
 	errFailedToRemoveCertFromDB = errors.New("failed to remove cert serial from db")
 
-	// ErrFailedCRLGeneration indicates failure to generate CRL file.
-	ErrFailedCRLGeneration = errors.New("failed to generate CRL")
+	errFailedCRLGeneration = errors.New("failed to generate CRL")
 )
 
 const (
@@ -168,7 +167,7 @@ func (cs *certsService) RevokeCert(ctx context.Context, token, serial string) (R
 	}
 
 	if err = cs.regenerateCRL(ctx); err != nil {
-		return revoke, errors.Wrap(ErrFailedCRLGeneration, err)
+		return revoke, errors.Wrap(errFailedCRLGeneration, err)
 	}
 
 	revoke.RevocationTime = time.Now()
