@@ -41,7 +41,7 @@ func (lm *loggingMiddleware) IssueCert(ctx context.Context, token, thingID, ttl 
 
 func (lm *loggingMiddleware) RotateCert(ctx context.Context, token, serial, thingID, ttl string, keyBits int, keyType string) (_ certs.Cert, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method rotate_cert for serial %s took %s to complete", serial, time.Since(begin))
+		message := fmt.Sprintf("Method rotate_cert for serial %s thing id %s took %s to complete", serial, thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
