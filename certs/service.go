@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/certs/pki"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
@@ -128,6 +129,10 @@ func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, tt
 		return Cert{}, err
 	}
 
+	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupEditor}); err != nil {
+		return Cert{}, errors.ErrAuthorization
+	}
+
 	thingKeyRes, err := cs.things.GetKeyByThingID(ctx, &protomfx.ThingID{Value: thingID})
 	if err != nil {
 		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
@@ -175,9 +180,13 @@ func (cs *certsService) RevokeCert(ctx context.Context, token, serial string) (R
 		return revoke, err
 	}
 
-	_, err = cs.certsRepo.RetrieveBySerial(ctx, serial)
+	cert, err := cs.certsRepo.RetrieveBySerial(ctx, serial)
 	if err != nil {
 		return revoke, errors.Wrap(ErrFailedCertRevocation, err)
+	}
+
+	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: cert.ThingID, Action: domain.GroupEditor}); err != nil {
+		return revoke, errors.ErrAuthorization
 	}
 
 	if err = cs.certsRepo.Remove(ctx, serial); err != nil {
@@ -194,6 +203,10 @@ func (cs *certsService) ListCerts(ctx context.Context, token, thingID string, of
 		return Page{}, err
 	}
 
+	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupViewer}); err != nil {
+		return Page{}, errors.ErrAuthorization
+	}
+
 	cp, err := cs.certsRepo.RetrieveByThing(ctx, thingID, offset, limit)
 	if err != nil {
 		return Page{}, err
@@ -206,6 +219,10 @@ func (cs *certsService) ListSerials(ctx context.Context, token, thingID string, 
 	_, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
 		return Page{}, err
+	}
+
+	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupViewer}); err != nil {
+		return Page{}, errors.ErrAuthorization
 	}
 
 	return cs.certsRepo.RetrieveByThing(ctx, thingID, offset, limit)
@@ -222,6 +239,10 @@ func (cs *certsService) ViewCert(ctx context.Context, token, serial string) (Cer
 		return Cert{}, err
 	}
 
+	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: cert.ThingID, Action: domain.GroupViewer}); err != nil {
+		return Cert{}, errors.ErrAuthorization
+	}
+
 	return cert, nil
 }
 
@@ -234,6 +255,10 @@ func (cs *certsService) RenewCert(ctx context.Context, token, serial string) (Ce
 	oldCert, err := cs.certsRepo.RetrieveBySerial(ctx, serial)
 	if err != nil {
 		return Cert{}, err
+	}
+
+	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: oldCert.ThingID, Action: domain.GroupEditor}); err != nil {
+		return Cert{}, errors.ErrAuthorization
 	}
 
 	if time.Until(oldCert.ExpiresAt) > 30*24*time.Hour {
@@ -264,6 +289,10 @@ func (cs *certsService) DownloadCert(ctx context.Context, token, serial string) 
 	cert, err := cs.certsRepo.RetrieveBySerial(ctx, serial)
 	if err != nil {
 		return Cert{}, err
+	}
+
+	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: cert.ThingID, Action: domain.GroupEditor}); err != nil {
+		return Cert{}, errors.ErrAuthorization
 	}
 
 	if cert.Downloaded {
