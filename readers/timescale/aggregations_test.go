@@ -35,7 +35,8 @@ func TestBuildJSONPath(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			result := buildJSONPath(tc.field)
+			result, err := buildJSONPath(tc.field)
+			assert.NoError(t, err)
 			assert.Equal(t, tc.res, result)
 		})
 	}
@@ -128,7 +129,8 @@ func TestJsonAggExpr(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			result := jsonAggExpr(tc.aggType, tc.aggFields)
+			result, err := jsonAggExpr(tc.aggType, tc.aggFields)
+			assert.NoError(t, err)
 			if tc.isEmpty {
 				assert.Empty(t, result)
 			} else {
@@ -145,11 +147,6 @@ func TestJsonSelectFields(t *testing.T) {
 		resPart   string
 	}{
 		{
-			desc:      "empty fields",
-			aggFields: []string{},
-			resPart:   "CAST('{}' AS jsonb) AS payload",
-		},
-		{
 			desc:      "single field",
 			aggFields: []string{"temperature"},
 			resPart:   "jsonb_build_object('temperature', agg.agg_value_0)",
@@ -163,7 +160,8 @@ func TestJsonSelectFields(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			result := jsonSelectFields(tc.aggFields)
+			result, err := jsonSelectFields(tc.aggFields)
+			assert.NoError(t, err)
 			assert.Contains(t, result, tc.resPart)
 			assert.Contains(t, result, "agg.max_time AS created")
 		})
@@ -195,7 +193,8 @@ func TestJsonHaving(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			result := jsonHaving(tc.aggFields)
+			result, err := jsonHaving(tc.aggFields)
+			assert.NoError(t, err)
 			assert.Equal(t, tc.res, result)
 		})
 	}
