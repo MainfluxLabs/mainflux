@@ -6,6 +6,7 @@ package timescale
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -17,6 +18,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
 )
+
+var validFieldName = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_.]*$`)
 
 const (
 	jsonTable  = "json"
@@ -46,11 +49,26 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 
 	condition := dbutil.BuildWhereClause(jsonConditions(rpm)...)
 	bucket := timeBucketExpr(rpm.AggValue, rpm.AggInterval, jsonOrder)
-	aggExpr := jsonAggExpr(rpm.AggType, rpm.AggFields)
+	aggExpr, err := jsonAggExpr(rpm.AggType, rpm.AggFields)
+
+	if err != nil {
+		return []readers.Message{}, 0, errors.Wrap(readers.ErrReadMessages, err)
+	}
+
 	if aggExpr == "" {
 		return []readers.Message{}, 0, nil
 	}
-	selectFields := jsonSelectFields(rpm.AggFields)
+
+	selectFields, err := jsonSelectFields(rpm.AggFields)
+	if err != nil {
+		return []readers.Message{}, 0, errors.Wrap(readers.ErrReadMessages, err)
+	}
+
+	having, err := jsonHaving(rpm.AggFields)
+	if err != nil {
+		return []readers.Message{}, 0, errors.Wrap(readers.ErrReadMessages, err)
+	}
+
 	dir := dbutil.GetDirQuery(rpm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 
@@ -64,14 +82,14 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
           GROUP BY bucket
           HAVING %s
           ORDER BY bucket %s) agg %s;`,
-		selectFields, bucket, aggExpr, jsonOrder, jsonTable, condition, jsonHaving(rpm.AggFields), dir, olq)
+		selectFields, bucket, aggExpr, jsonOrder, jsonTable, condition, having, dir, olq)
 
 	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM (
           SELECT %s AS bucket
           FROM %s %s
           GROUP BY bucket
           HAVING %s) counted;`,
-		bucket, jsonTable, condition, jsonHaving(rpm.AggFields))
+		bucket, jsonTable, condition, having)
 
 	return as.executeAggQuery(ctx, query, countQuery, params, jsonTable)
 }
@@ -152,7 +170,7 @@ func (as *aggregationService) executeAggQuery(ctx context.Context, query, countQ
 }
 
 func scanAggregatedMessages(rows *sqlx.Rows, table string) ([]readers.Message, error) {
-	var messages []readers.Message
+	messages := []readers.Message{}
 
 	switch table {
 	case senmlTable:
@@ -188,67 +206,77 @@ func timeBucketExpr(intervalVal uint64, intervalUnit, timeColumn string) string 
 func sqlAggFunc(aggType string) string {
 	switch aggType {
 	case readers.AggregationMax:
-		return "MAX"
+		return strings.ToUpper(readers.AggregationMax)
 	case readers.AggregationMin:
-		return "MIN"
+		return strings.ToUpper(readers.AggregationMin)
 	case readers.AggregationAvg:
-		return "AVG"
+		return strings.ToUpper(readers.AggregationAvg)
 	case readers.AggregationCount:
-		return "COUNT"
+		return strings.ToUpper(readers.AggregationCount)
 	default:
 		return ""
 	}
 }
 
-func jsonAggExpr(aggType string, aggFields []string) string {
+func jsonAggExpr(aggType string, aggFields []string) (string, error) {
 	fn := sqlAggFunc(aggType)
 	if fn == "" || len(aggFields) == 0 {
-		return ""
+		return "", nil
 	}
 
 	var exprs []string
 	for i, field := range aggFields {
-		jsonPath := buildJSONPath(field)
-		if fn == "COUNT" {
+		jsonPath, err := buildJSONPath(field)
+		if err != nil {
+			return "", err
+
+		}
+		if fn == strings.ToUpper(readers.AggregationCount) {
 			exprs = append(exprs, fmt.Sprintf("%s(%s) AS agg_value_%d", fn, jsonPath, i))
 		} else {
 			exprs = append(exprs, fmt.Sprintf("%s(CAST(%s AS FLOAT)) AS agg_value_%d", fn, jsonPath, i))
 		}
 	}
-	return strings.Join(exprs, ", ")
+	return strings.Join(exprs, ", "), nil
 }
 
-func jsonSelectFields(aggFields []string) string {
-	if len(aggFields) == 0 {
-		return "agg.max_time AS created, agg.subtopic, agg.publisher, agg.protocol, CAST('{}' AS jsonb) AS payload"
-	}
-
+func jsonSelectFields(aggFields []string) (string, error) {
 	var pairs []string
 	for i, field := range aggFields {
+		if !validFieldName.MatchString(field) {
+			return "", fmt.Errorf("invalid field name: %s", field)
+		}
 		pairs = append(pairs, fmt.Sprintf("'%s', agg.agg_value_%d", field, i))
 	}
 
 	return fmt.Sprintf(`agg.max_time AS created, agg.subtopic, agg.publisher, agg.protocol,
-          jsonb_build_object(%s) AS payload`, strings.Join(pairs, ", "))
+          jsonb_build_object(%s) AS payload`, strings.Join(pairs, ", ")), nil
 }
 
-func jsonHaving(aggFields []string) string {
+func jsonHaving(aggFields []string) (string, error) {
 	if len(aggFields) == 0 {
-		return "1=1"
+		return "1=1", nil
 	}
 
 	var conditions []string
 	for _, field := range aggFields {
-		jsonPath := buildJSONPath(field)
+		jsonPath, err := buildJSONPath(field)
+		if err != nil {
+			return "", err
+		}
 		conditions = append(conditions, fmt.Sprintf("MAX(CAST(%s AS FLOAT)) IS NOT NULL", jsonPath))
 	}
-	return strings.Join(conditions, " OR ")
+	return strings.Join(conditions, " OR "), nil
 }
 
-func buildJSONPath(field string) string {
+func buildJSONPath(field string) (string, error) {
+	if !validFieldName.MatchString(field) {
+		return "", fmt.Errorf("invalid field name: %s", field)
+	}
+
 	parts := strings.Split(field, ".")
 	if len(parts) == 1 {
-		return fmt.Sprintf("payload->>'%s'", parts[0])
+		return fmt.Sprintf("payload->>'%s'", parts[0]), nil
 	}
 
 	var path strings.Builder
@@ -260,7 +288,7 @@ func buildJSONPath(field string) string {
 			fmt.Fprintf(&path, "->'%s'", part)
 		}
 	}
-	return path.String()
+	return path.String(), nil
 }
 
 func jsonConditions(rpm readers.JSONPageMetadata) []string {
