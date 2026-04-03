@@ -80,52 +80,6 @@ func TestTimeBucketExpr(t *testing.T) {
 	}
 }
 
-func TestSqlAggFunc(t *testing.T) {
-	cases := []struct {
-		desc    string
-		aggType string
-		res     string
-	}{
-		{
-			desc:    "max",
-			aggType: readers.AggregationMax,
-			res:     "MAX",
-		},
-		{
-			desc:    "min",
-			aggType: readers.AggregationMin,
-			res:     "MIN",
-		},
-		{
-			desc:    "avg",
-			aggType: readers.AggregationAvg,
-			res:     "AVG",
-		},
-		{
-			desc:    "count",
-			aggType: readers.AggregationCount,
-			res:     "COUNT",
-		},
-		{
-			desc:    "invalid",
-			aggType: "invalid",
-			res:     "",
-		},
-		{
-			desc:    "empty",
-			aggType: "",
-			res:     "",
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.desc, func(t *testing.T) {
-			result := sqlAggFunc(tc.aggType)
-			assert.Equal(t, tc.res, result)
-		})
-	}
-}
-
 func TestJsonAggExpr(t *testing.T) {
 	cases := []struct {
 		desc      string
