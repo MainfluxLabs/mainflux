@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/MainfluxLabs/mainflux/consumers/alarms"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -22,11 +22,7 @@ type Rule struct {
 	Actions     []Action
 }
 
-type Condition struct {
-	Field      string   `json:"field"`
-	Comparator string   `json:"comparator"`
-	Threshold  *float64 `json:"threshold"`
-}
+type Condition = domain.Condition
 
 type Action struct {
 	ID   string `json:"id"`
@@ -47,8 +43,6 @@ const (
 	OperatorOR  = "OR"
 )
 
-var errInvalidObject = errors.New("invalid JSON object")
-
 func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, rule Rule) error {
 	triggered, payloads, err := processPayload(parsedPayload, rule.Conditions, rule.Operator, msg.ContentType)
 	if err != nil {
@@ -62,7 +56,7 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 	for _, action := range rule.Actions {
 		switch action.Type {
 		case ActionTypeAlarm:
-			subject := fmt.Sprintf("%s.%s.%s", subjectAlarms, alarms.AlarmOriginRule, rule.ID)
+			subject := fmt.Sprintf("%s.%s.%s", subjectAlarms, domain.AlarmOriginRule, rule.ID)
 			if err := rs.pub.PublishAlarm(subject, protomfx.Alarm{
 				ThingId:  msg.Publisher,
 				Subtopic: msg.Subtopic,
@@ -84,6 +78,20 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 	}
 
 	return nil
+}
+
+func injectConditions(payload []byte, conditions []Condition, operator string) ([]byte, error) {
+	var m map[string]any
+	if err := json.Unmarshal(payload, &m); err != nil {
+		return nil, err
+	}
+
+	m["rule"] = map[string]any{
+		"conditions": conditions,
+		"operator":   operator,
+	}
+
+	return json.Marshal(m)
 }
 
 func processPayload(payload any, conditions []Condition, operator string, contentType string) (bool, [][]byte, error) {

@@ -2,6 +2,7 @@ package alarms
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -56,6 +57,9 @@ type Service interface {
 
 	// RemoveAlarms removes alarms identified with the provided IDs.
 	RemoveAlarms(ctx context.Context, token string, id ...string) error
+
+	// UpdateAlarmStatus updates the status of the alarm identified by the provided ID.
+	UpdateAlarmStatus(ctx context.Context, token, id, status string) error
 
 	// RemoveAlarmsByThing removes alarms related to the specified thing,
 	// identified by the provided thing ID.
@@ -138,6 +142,19 @@ func (as *alarmService) ViewAlarm(ctx context.Context, token, id string) (Alarm,
 	return alarm, nil
 }
 
+func (as *alarmService) UpdateAlarmStatus(ctx context.Context, token, id, status string) error {
+	alarm, err := as.alarms.RetrieveByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if  err := as.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: alarm.ThingID, Action: domain.GroupEditor}); err != nil {
+		return errors.Wrap(errors.ErrAuthorization, err)
+	}
+
+	return as.alarms.UpdateStatus(ctx, id, status)
+}
+
 func (as *alarmService) RemoveAlarms(ctx context.Context, token string, ids ...string) error {
 	for _, id := range ids {
 		alarm, err := as.alarms.RetrieveByID(ctx, id)
@@ -191,6 +208,34 @@ func (as *alarmService) createAlarm(ctx context.Context, alarm *Alarm) error {
 
 }
 
+func extractConditions(payload map[string]any) ([]domain.Condition, string) {
+	ruleRaw, ok := payload["rule"]
+	if !ok {
+		return nil, ""
+	}
+
+	delete(payload, "rule")
+
+	ruleMap, ok := ruleRaw.(map[string]any)
+	if !ok {
+		return nil, ""
+	}
+
+	operator, _ := ruleMap["operator"].(string)
+
+	b, err := json.Marshal(ruleMap["conditions"])
+	if err != nil {
+		return nil, ""
+	}
+
+	var conditions []domain.Condition
+	if err := json.Unmarshal(b, &conditions); err != nil {
+		return nil, ""
+	}
+
+	return conditions, operator
+}
+
 func (as *alarmService) ConsumeAlarm(subject string, alarm protomfx.Alarm) error {
 	ctx := context.Background()
 
@@ -199,6 +244,8 @@ func (as *alarmService) ConsumeAlarm(subject string, alarm protomfx.Alarm) error
 		Subtopic: alarm.Subtopic,
 		Protocol: alarm.Protocol,
 		Created:  alarm.Created,
+		Level:    AlarmLevelInfo,
+		Status:   AlarmStatusActive,
 	}
 
 	subParts := strings.Split(subject, ".")
@@ -210,9 +257,9 @@ func (as *alarmService) ConsumeAlarm(subject string, alarm protomfx.Alarm) error
 	originID := subParts[2]
 
 	switch originType {
-	case AlarmOriginRule:
+	case domain.AlarmOriginRule:
 		a.RuleID = originID
-	case AlarmOriginScript:
+	case domain.AlarmOriginScript:
 		a.ScriptID = originID
 	default:
 		return fmt.Errorf("invalid subject origin type: %s", originType)

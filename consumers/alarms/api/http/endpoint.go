@@ -75,6 +75,21 @@ func viewAlarmEndpoint(svc alarms.Service) endpoint.Endpoint {
 	}
 }
 
+func updateAlarmStatusEndpoint(svc alarms.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(updateAlarmStatusReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.UpdateAlarmStatus(ctx, req.token, req.id, req.Status); err != nil {
+			return nil, err
+		}
+
+		return updateAlarmStatusRes{}, nil
+	}
+}
+
 func removeAlarmsEndpoint(svc alarms.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(removeAlarmsReq)
@@ -139,14 +154,18 @@ func buildAlarmsPageResponse(ap alarms.AlarmsPage, pm alarms.PageMetadata) Alarm
 
 func buildAlarmResponse(alarm alarms.Alarm) alarmResponse {
 	return alarmResponse{
-		ID:       alarm.ID,
-		ThingID:  alarm.ThingID,
-		GroupID:  alarm.GroupID,
-		RuleID:   alarm.RuleID,
-		ScriptID: alarm.ScriptID,
-		Subtopic: alarm.Subtopic,
-		Protocol: alarm.Protocol,
-		Payload:  alarm.Payload,
-		Created:  alarm.Created,
+		ID:         alarm.ID,
+		ThingID:    alarm.ThingID,
+		GroupID:    alarm.GroupID,
+		RuleID:     alarm.RuleID,
+		ScriptID:   alarm.ScriptID,
+		Subtopic:   alarm.Subtopic,
+		Protocol:   alarm.Protocol,
+		Payload:    alarm.Payload,
+		Conditions: alarm.Conditions,
+		Operator:   alarm.Operator,
+		Level:      alarm.Level,
+		Status:     alarm.Status,
+		Created:    alarm.Created,
 	}
 }

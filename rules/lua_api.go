@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -62,7 +61,7 @@ var luaSMTPNotify = luaAPIFunc{
 var luaAlarmCreate = luaAPIFunc{
 	fun: func(env *luaEnv) lua.Function {
 		return func(ls *lua.State) int {
-			subject := fmt.Sprintf("%s.%s.%s", subjectAlarms, alarms.AlarmOriginScript, env.script.ID)
+			subject := fmt.Sprintf("%s.%s.%s", subjectAlarms, domain.AlarmOriginScript, env.script.ID)
 			if err := env.service.pub.PublishAlarm(subject, protomfx.Alarm{
 				ThingId:  env.message.Publisher,
 				Subtopic: env.message.Subtopic,
