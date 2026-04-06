@@ -6,23 +6,22 @@ package http
 import (
 	"net/http"
 
-	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 )
 
 type alarmResponse struct {
-	ID         string             `json:"id"`
-	ThingID    string             `json:"thing_id"`
-	GroupID    string             `json:"group_id"`
-	RuleID     string             `json:"rule_id,omitempty"`
-	ScriptID   string             `json:"script_id,omitempty"`
-	Subtopic   string             `json:"subtopic"`
-	Protocol   string             `json:"protocol"`
-	Payload    map[string]any     `json:"payload"`
-	Conditions []domain.Condition `json:"conditions,omitempty"`
-	Operator   string             `json:"operator,omitempty"`
-	Level      int                `json:"level"`
-	Status     string             `json:"status"`
-	Created    int64              `json:"created"`
+	ID       string           `json:"id"`
+	ThingID  string           `json:"thing_id"`
+	GroupID  string           `json:"group_id"`
+	RuleID   string           `json:"rule_id,omitempty"`
+	ScriptID string           `json:"script_id,omitempty"`
+	Subtopic string           `json:"subtopic"`
+	Protocol string           `json:"protocol"`
+	Payload  map[string]any   `json:"payload"`
+	Rule     *alarms.RuleInfo `json:"rule,omitempty"`
+	Level    int              `json:"level"`
+	Status   string           `json:"status"`
+	Created  int64            `json:"created"`
 }
 
 type AlarmsPageRes struct {

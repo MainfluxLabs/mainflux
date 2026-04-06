@@ -8,7 +8,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
-	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/gofrs/uuid"
 	"github.com/jackc/pgerrcode"
@@ -34,8 +33,8 @@ func (ar *alarmRepository) Save(ctx context.Context, alarms ...alarms.Alarm) err
 	}
 	defer tx.Rollback()
 
-	q := `INSERT INTO alarms (id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, conditions, operator, level, status, created)
-	      VALUES (:id, :thing_id, :group_id, :rule_id, :script_id, :subtopic, :protocol, :payload, :conditions, :operator, :level, :status, :created);`
+	q := `INSERT INTO alarms (id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, rule, level, status, created)
+	      VALUES (:id, :thing_id, :group_id, :rule_id, :script_id, :subtopic, :protocol, :payload, :rule, :level, :status, :created);`
 
 	for _, alarm := range alarms {
 		dbAlarm, err := toDBAlarm(alarm)
@@ -116,7 +115,7 @@ func (ar *alarmRepository) RetrieveByThing(ctx context.Context, thingID string, 
 	thingFilter := "thing_id = :thing_id"
 	whereClause := dbutil.BuildWhereClause(thingFilter, pq)
 
-	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, conditions, operator, level, status, created
+	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, rule, level, status, created
 	                  FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
 
@@ -147,7 +146,7 @@ func (ar *alarmRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 	groupFilter := "group_id = :group_id"
 	whereClause := dbutil.BuildWhereClause(groupFilter, pq)
 
-	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, conditions, operator, level, status, created
+	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, rule, level, status, created
 	                  FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
 
@@ -239,7 +238,7 @@ func (ar *alarmRepository) ExportByThing(ctx context.Context, thingID string, pm
 	thingFilter := "thing_id = :thing_id"
 	whereClause := dbutil.BuildWhereClause(thingFilter, pq)
 
-	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, conditions, operator, level, status, created
+	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, rule, level, status, created
 	                  FROM alarms %s ORDER BY %s %s;`, whereClause, oq, dq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
 
@@ -287,19 +286,18 @@ func (ar *alarmRepository) retrieve(ctx context.Context, query, cquery string, p
 }
 
 type dbAlarm struct {
-	ID         string         `db:"id"`
-	ThingID    string         `db:"thing_id"`
-	GroupID    string         `db:"group_id"`
-	RuleID     sql.NullString `db:"rule_id"`
-	ScriptID   sql.NullString `db:"script_id"`
-	Subtopic   string         `db:"subtopic"`
-	Protocol   string         `db:"protocol"`
-	Payload    []byte         `db:"payload"`
-	Conditions []byte         `db:"conditions"`
-	Operator   string         `db:"operator"`
-	Level      int            `db:"level"`
-	Status     string         `db:"status"`
-	Created    int64          `db:"created"`
+	ID       string         `db:"id"`
+	ThingID  string         `db:"thing_id"`
+	GroupID  string         `db:"group_id"`
+	RuleID   sql.NullString `db:"rule_id"`
+	ScriptID sql.NullString `db:"script_id"`
+	Subtopic string         `db:"subtopic"`
+	Protocol string         `db:"protocol"`
+	Payload  []byte         `db:"payload"`
+	Rule     []byte         `db:"rule"`
+	Level    int            `db:"level"`
+	Status   string         `db:"status"`
+	Created  int64          `db:"created"`
 }
 
 func toDBAlarm(alarm alarms.Alarm) (dbAlarm, error) {
@@ -308,25 +306,24 @@ func toDBAlarm(alarm alarms.Alarm) (dbAlarm, error) {
 		return dbAlarm{}, err
 	}
 
-	conditions, err := json.Marshal(alarm.Conditions)
+	rule, err := json.Marshal(alarm.Rule)
 	if err != nil {
 		return dbAlarm{}, err
 	}
 
 	return dbAlarm{
-		ID:         alarm.ID,
-		ThingID:    alarm.ThingID,
-		GroupID:    alarm.GroupID,
-		RuleID:     sql.NullString{String: alarm.RuleID, Valid: alarm.RuleID != ""},
-		ScriptID:   sql.NullString{String: alarm.ScriptID, Valid: alarm.ScriptID != ""},
-		Subtopic:   alarm.Subtopic,
-		Protocol:   alarm.Protocol,
-		Payload:    payload,
-		Conditions: conditions,
-		Operator:   alarm.Operator,
-		Level:      alarm.Level,
-		Status:     alarm.Status,
-		Created:    alarm.Created,
+		ID:       alarm.ID,
+		ThingID:  alarm.ThingID,
+		GroupID:  alarm.GroupID,
+		RuleID:   sql.NullString{String: alarm.RuleID, Valid: alarm.RuleID != ""},
+		ScriptID: sql.NullString{String: alarm.ScriptID, Valid: alarm.ScriptID != ""},
+		Subtopic: alarm.Subtopic,
+		Protocol: alarm.Protocol,
+		Payload:  payload,
+		Rule:     rule,
+		Level:    alarm.Level,
+		Status:   alarm.Status,
+		Created:  alarm.Created,
 	}, nil
 }
 
@@ -336,26 +333,26 @@ func toAlarm(dbAlarm dbAlarm) (alarms.Alarm, error) {
 		return alarms.Alarm{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
 
-	var conditions []domain.Condition
-	if len(dbAlarm.Conditions) > 0 && string(dbAlarm.Conditions) != "null" {
-		if err := json.Unmarshal(dbAlarm.Conditions, &conditions); err != nil {
+	var ruleInfo *alarms.RuleInfo
+	if len(dbAlarm.Rule) > 0 && string(dbAlarm.Rule) != "null" {
+		ruleInfo = &alarms.RuleInfo{}
+		if err := json.Unmarshal(dbAlarm.Rule, ruleInfo); err != nil {
 			return alarms.Alarm{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 		}
 	}
 
 	return alarms.Alarm{
-		ID:         dbAlarm.ID,
-		ThingID:    dbAlarm.ThingID,
-		GroupID:    dbAlarm.GroupID,
-		RuleID:     dbAlarm.RuleID.String,
-		ScriptID:   dbAlarm.ScriptID.String,
-		Subtopic:   dbAlarm.Subtopic,
-		Protocol:   dbAlarm.Protocol,
-		Payload:    payload,
-		Conditions: conditions,
-		Operator:   dbAlarm.Operator,
-		Level:      dbAlarm.Level,
-		Status:     dbAlarm.Status,
-		Created:    dbAlarm.Created,
+		ID:       dbAlarm.ID,
+		ThingID:  dbAlarm.ThingID,
+		GroupID:  dbAlarm.GroupID,
+		RuleID:   dbAlarm.RuleID.String,
+		ScriptID: dbAlarm.ScriptID.String,
+		Subtopic: dbAlarm.Subtopic,
+		Protocol: dbAlarm.Protocol,
+		Payload:  payload,
+		Rule:     ruleInfo,
+		Level:    dbAlarm.Level,
+		Status:   dbAlarm.Status,
+		Created:  dbAlarm.Created,
 	}, nil
 }
