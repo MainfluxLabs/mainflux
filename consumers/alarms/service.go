@@ -148,7 +148,7 @@ func (as *alarmService) UpdateAlarmStatus(ctx context.Context, token, id, status
 		return err
 	}
 
-	if  err := as.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: alarm.ThingID, Action: domain.GroupEditor}); err != nil {
+	if err := as.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: alarm.ThingID, Action: domain.GroupEditor}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -232,22 +232,26 @@ func extractRule(payload map[string]any) *RuleInfo {
 func (as *alarmService) ConsumeAlarm(subject string, alarm protomfx.Alarm) error {
 	ctx := context.Background()
 
+	subParts := strings.Split(subject, ".")
+	if len(subParts) < 4 {
+		return errors.ErrInvalidSubject
+	}
+
+	level, ok := domain.ParseAlarmLevel(subParts[1])
+	if !ok {
+		return errors.ErrInvalidSubject
+	}
+
+	originType := subParts[2]
+	originID := subParts[3]
+
 	a := Alarm{
 		ThingID:  alarm.ThingId,
 		Subtopic: alarm.Subtopic,
 		Protocol: alarm.Protocol,
-		Created:  alarm.Created,
-		Level:    AlarmLevelInfo,
+		Level:    level,
 		Status:   AlarmStatusActive,
 	}
-
-	subParts := strings.Split(subject, ".")
-	if len(subParts) < 3 {
-		return errors.ErrInvalidSubject
-	}
-
-	originType := subParts[1]
-	originID := subParts[2]
 
 	switch originType {
 	case domain.AlarmOriginRule:

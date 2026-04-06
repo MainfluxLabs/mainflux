@@ -86,6 +86,9 @@ func (req rule) validate() error {
 				return apiutil.ErrMissingActionID
 			}
 		case rules.ActionTypeAlarm:
+			if action.Level < 1 || action.Level > 5 {
+				return apiutil.ErrInvalidAlarmLevel
+			}
 		default:
 			return apiutil.ErrInvalidActionType
 		}
