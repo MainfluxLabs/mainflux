@@ -208,32 +208,25 @@ func (as *alarmService) createAlarm(ctx context.Context, alarm *Alarm) error {
 
 }
 
-func extractConditions(payload map[string]any) ([]domain.Condition, string) {
+func extractRule(payload map[string]any) *RuleInfo {
 	ruleRaw, ok := payload["rule"]
 	if !ok {
-		return nil, ""
+		return nil
 	}
 
 	delete(payload, "rule")
 
-	ruleMap, ok := ruleRaw.(map[string]any)
-	if !ok {
-		return nil, ""
-	}
-
-	operator, _ := ruleMap["operator"].(string)
-
-	b, err := json.Marshal(ruleMap["conditions"])
+	b, err := json.Marshal(ruleRaw)
 	if err != nil {
-		return nil, ""
+		return nil
 	}
 
-	var conditions []domain.Condition
-	if err := json.Unmarshal(b, &conditions); err != nil {
-		return nil, ""
+	var rule RuleInfo
+	if err := json.Unmarshal(b, &rule); err != nil {
+		return nil
 	}
 
-	return conditions, operator
+	return &rule
 }
 
 func (as *alarmService) ConsumeAlarm(subject string, alarm protomfx.Alarm) error {

@@ -19,24 +19,29 @@ const (
 )
 
 type Alarm struct {
-	ID         string
-	ThingID    string
-	GroupID    string
-	RuleID     string
-	ScriptID   string
-	Subtopic   string
-	Protocol   string
-	Payload    map[string]any
-	Conditions []domain.Condition
-	Operator   string
-	Level      int
-	Status     string
-	Created    int64
+	ID       string
+	ThingID  string
+	GroupID  string
+	RuleID   string
+	ScriptID string
+	Subtopic string
+	Protocol string
+	Payload  map[string]any
+	Rule     *RuleInfo
+	Level    int
+	Status   string
+	Created  int64
 }
 
 type AlarmsPage struct {
 	Total  uint64
 	Alarms []Alarm
+}
+
+// RuleInfo captures the evaluation logic of the rule that triggered an alarm.
+type RuleInfo struct {
+	Conditions []domain.Condition `json:"conditions"`
+	Operator   string             `json:"operator"`
 }
 
 // AlarmRepository specifies an alarm persistence API.
