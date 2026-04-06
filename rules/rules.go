@@ -25,8 +25,9 @@ type Rule struct {
 type Condition = domain.Condition
 
 type Action struct {
-	ID   string `json:"id"`
-	Type string `json:"type"`
+	ID    string `json:"id"`
+	Type  string `json:"type"`
+	Level int    `json:"level,omitempty"`
 }
 
 type RulesPage struct {
@@ -66,7 +67,12 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 			case ActionTypeSMPP:
 				subject = fmt.Sprintf("%s.%s", subjectSMPP, action.ID)
 			case ActionTypeAlarm:
-				subject = fmt.Sprintf("%s.%s.%s", subjectAlarms, domain.AlarmOriginRule, rule.ID)
+				level, ok := domain.AlarmLevelName(action.Level)
+				if !ok {
+					return errors.ErrInvalidSubject
+				}
+				
+				subject = fmt.Sprintf("%s.%s.%s.%s", subjectAlarms, level, domain.AlarmOriginRule, rule.ID)
 				alarmPayload, err := injectConditions(payload, rule.Conditions, rule.Operator)
 				if err != nil {
 					return err

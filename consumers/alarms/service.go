@@ -245,24 +245,29 @@ func (as *alarmService) Consume(subject string, message any) error {
 		return errors.Wrap(errors.ErrInvalidPayload, err)
 	}
 
+	subParts := strings.Split(subject, ".")
+	if len(subParts) < 4 {
+		return errors.ErrInvalidSubject
+	}
+
+	level, ok := domain.ParseAlarmLevel(subParts[1])
+	if !ok {
+		return errors.ErrInvalidSubject
+	}
+
+	originType := subParts[2]
+	originID := subParts[3]
+
 	alarm := Alarm{
 		ThingID:  msg.Publisher,
 		Subtopic: msg.Subtopic,
 		Protocol: msg.Protocol,
 		Payload:  payload,
 		Rule:     extractRule(payload),
-		Level:    AlarmLevelInfo,
+		Level:    level,
 		Status:   AlarmStatusActive,
 		Created:  msg.Created,
 	}
-
-	subParts := strings.Split(subject, ".")
-	if len(subParts) < 3 {
-		return errors.ErrInvalidSubject
-	}
-
-	originType := subParts[1]
-	originID := subParts[2]
 
 	switch originType {
 	case domain.AlarmOriginRule:

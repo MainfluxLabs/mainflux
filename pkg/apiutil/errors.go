@@ -174,6 +174,9 @@ var (
 	// ErrMissingActionID indicates a missing action id
 	ErrMissingActionID = errors.New("missing action id")
 
+	// ErrInvalidAlarmLevel indicates an invalid alarm level value
+	ErrInvalidAlarmLevel = errors.New("invalid alarm level")
+
 	// ErrInvalidOperator indicates an invalid logical operator
 	ErrInvalidOperator = errors.New("missing or invalid logical operator")
 

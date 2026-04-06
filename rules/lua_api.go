@@ -51,11 +51,18 @@ var luaSMTPNotify = luaAPIFunc{
 
 // Create an Alarm corresponding to the ID of the currently executing Lua script
 // Lua signature:
-// mfx.create_alarm()
+// mfx.create_alarm(level) where level is an integer (1=info, 2=warning, 3=minor, 4=major, 5=critical)
 // On success it returns true, nil. On failure, it returns false, <error_message>
 var luaAlarmCreate = luaAPIFunc{
 	fun: func(env *luaEnv) lua.Function {
 		return func(ls *lua.State) int {
+			level, ok := ls.ToInteger(1)
+			if !ok {
+				ls.PushBoolean(false)
+				ls.PushString("level argument is required")
+				return 2
+			}
+
 			encodedPayload, err := json.Marshal(env.payload)
 			if err != nil {
 				ls.PushBoolean(false)
@@ -65,7 +72,8 @@ var luaAlarmCreate = luaAPIFunc{
 
 			msg := env.message
 			msg.Payload = encodedPayload
-			subject := fmt.Sprintf("%s.%s.%s", subjectAlarms, domain.AlarmOriginScript, env.script.ID)
+			levelName, _ := domain.AlarmLevelName(level)
+			subject := fmt.Sprintf("%s.%s.%s.%s", subjectAlarms, levelName, domain.AlarmOriginScript, env.script.ID)
 
 			if err := env.service.pubsub.Publish(subject, msg); err != nil {
 				ls.PushBoolean(false)
