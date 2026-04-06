@@ -63,6 +63,13 @@ func MakeHandler(tracer opentracing.Tracer, svc alarms.Service, logger log.Logge
 		opts...,
 	))
 
+	r.Patch("/alarms/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_alarm_status")(updateAlarmStatusEndpoint(svc)),
+		decodeUpdateAlarmStatus,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Patch("/alarms", kithttp.NewServer(
 		kitot.TraceServer(tracer, "remove_alarms")(removeAlarmsEndpoint(svc)),
 		decodeRemoveAlarms,
@@ -144,6 +151,23 @@ func decodeViewAlarm(_ context.Context, r *http.Request) (any, error) {
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}, nil
+}
+
+func decodeUpdateAlarmStatus(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := updateAlarmStatusReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, apiutil.IDKey),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	return req, nil
 }
 
 func decodeRemoveAlarms(_ context.Context, r *http.Request) (any, error) {
