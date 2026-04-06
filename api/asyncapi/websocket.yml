@@ -30,7 +30,7 @@ channels:
       summary: Publish a message
       description: Sends a message without a subtopic.
       message:
-        $ref: '#/components/messages/SenMLMsg'
+        $ref: '#/components/messages/SenMLMessage'
 
   /messages/{subtopic}:
     parameters:
@@ -40,7 +40,7 @@ channels:
       summary: Publish a message to a subtopic
       description: Sends a message to a specific subtopic. Supports nested subtopics with `/`.
       message:
-        $ref: '#/components/messages/SenMLMsg'
+        $ref: '#/components/messages/SenMLMessage'
 
   /things/{thingId}/commands:
     parameters:
@@ -52,7 +52,7 @@ channels:
         Each message sent over the socket is published as a command to the specified thing.
         Authorized by thing key (M2M) or user bearer token.
       message:
-        $ref: '#/components/messages/CommandMsg'
+        $ref: '#/components/messages/CommandMessage'
 
   /things/{thingId}/commands/{subtopic}:
     parameters:
@@ -67,7 +67,7 @@ channels:
         Supports nested subtopics with `/`.
         Authorized by thing key (M2M) or user bearer token.
       message:
-        $ref: '#/components/messages/CommandMsg'
+        $ref: '#/components/messages/CommandMessage'
 
   /groups/{groupId}/commands:
     parameters:
@@ -79,7 +79,7 @@ channels:
         Each message sent over the socket is published as a command to all things in the specified group.
         Authorized by thing key (M2M) or user bearer token.
       message:
-        $ref: '#/components/messages/CommandMsg'
+        $ref: '#/components/messages/CommandMessage'
 
   /groups/{groupId}/commands/{subtopic}:
     parameters:
@@ -94,18 +94,18 @@ channels:
         Supports nested subtopics with `/`.
         Authorized by thing key (M2M) or user bearer token.
       message:
-        $ref: '#/components/messages/CommandMsg'
+        $ref: '#/components/messages/CommandMessage'
 
 components:
   messages:
-    SenMLMsg:
+    SenMLMessage:
       title: SenML Message
       summary: Message payload in SenML or arbitrary JSON format.
       contentType: application/json
       payload: 
-        $ref: '#/components/schemas/SenMLMsg'
+        $ref: '#/components/schemas/SenMLMessage'
 
-    CommandMsg:
+    CommandMessage:
       title: Command Message
       summary: Command instruction sent to a thing or group.
       contentType: application/json
@@ -113,7 +113,7 @@ components:
         $ref: '#/components/schemas/CommandPayload'
 
   schemas:
-    SenMLMsg:
+    SenMLMessage:
       type: object
       description: Arbitrary JSON object or array. SenML format is recommended.
       example: |
