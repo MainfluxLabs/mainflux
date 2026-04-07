@@ -24,7 +24,6 @@ const (
 	jsonFormat             = "json"
 	csvFormat              = "csv"
 	timeFormatKey          = "time_format"
-	octetStreamContentType = "application/octet-stream"
 )
 
 // MakeHandler returns a HTTP handler for Alarm API endpoints.
@@ -230,7 +229,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response any) erro
 }
 
 func encodeFileResponse(_ context.Context, w http.ResponseWriter, response any) error {
-	w.Header().Set("Content-Type", octetStreamContentType)
+	w.Header().Set("Content-Type", apiutil.ContentTypeOctetStream)
 
 	if ar, ok := response.(exportFileRes); ok {
 		for k, v := range ar.Headers() {
