@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
@@ -250,20 +251,22 @@ func (as *alarmService) Consume(subject string, message any) error {
 		return errors.ErrInvalidSubject
 	}
 
-	level, ok := domain.ParseAlarmLevel(subParts[1])
-	if !ok {
-		return errors.ErrInvalidSubject
+	level, err := strconv.Atoi(subParts[1])
+	if err != nil {
+		return errors.Wrap(errors.ErrInvalidSubject, err)
 	}
 
 	originType := subParts[2]
 	originID := subParts[3]
+
+	rule := extractRule(payload)
 
 	alarm := Alarm{
 		ThingID:  msg.Publisher,
 		Subtopic: msg.Subtopic,
 		Protocol: msg.Protocol,
 		Payload:  payload,
-		Rule:     extractRule(payload),
+		Rule:     rule,
 		Level:    level,
 		Status:   AlarmStatusActive,
 		Created:  msg.Created,

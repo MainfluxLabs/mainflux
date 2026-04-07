@@ -67,12 +67,7 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 			case ActionTypeSMPP:
 				subject = fmt.Sprintf("%s.%s", subjectSMPP, action.ID)
 			case ActionTypeAlarm:
-				level, ok := domain.AlarmLevelName(action.Level)
-				if !ok {
-					return errors.ErrInvalidSubject
-				}
-				
-				subject = fmt.Sprintf("%s.%s.%s.%s", subjectAlarms, level, domain.AlarmOriginRule, rule.ID)
+				subject = fmt.Sprintf("%s.%d.%s.%s", subjectAlarms, action.Level, domain.AlarmOriginRule, rule.ID)
 				alarmPayload, err := injectConditions(payload, rule.Conditions, rule.Operator)
 				if err != nil {
 					return err

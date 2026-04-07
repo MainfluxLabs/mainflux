@@ -7,12 +7,6 @@ import (
 )
 
 const (
-	AlarmLevelInfo     = 1
-	AlarmLevelWarning  = 2
-	AlarmLevelMinor    = 3
-	AlarmLevelMajor    = 4
-	AlarmLevelCritical = 5
-
 	AlarmStatusActive  = "active"
 	AlarmStatusNoted   = "noted"
 	AlarmStatusCleared = "cleared"

@@ -72,8 +72,7 @@ var luaAlarmCreate = luaAPIFunc{
 
 			msg := env.message
 			msg.Payload = encodedPayload
-			levelName, _ := domain.AlarmLevelName(level)
-			subject := fmt.Sprintf("%s.%s.%s.%s", subjectAlarms, levelName, domain.AlarmOriginScript, env.script.ID)
+			subject := fmt.Sprintf("%s.%d.%s.%s", subjectAlarms, level, domain.AlarmOriginScript, env.script.ID)
 
 			if err := env.service.pubsub.Publish(subject, msg); err != nil {
 				ls.PushBoolean(false)

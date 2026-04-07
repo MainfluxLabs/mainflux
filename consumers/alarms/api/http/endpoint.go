@@ -154,17 +154,17 @@ func buildAlarmsPageResponse(ap alarms.AlarmsPage, pm alarms.PageMetadata) Alarm
 
 func buildAlarmResponse(alarm alarms.Alarm) alarmResponse {
 	return alarmResponse{
-		ID:         alarm.ID,
-		ThingID:    alarm.ThingID,
-		GroupID:    alarm.GroupID,
-		RuleID:     alarm.RuleID,
-		ScriptID:   alarm.ScriptID,
-		Subtopic:   alarm.Subtopic,
-		Protocol:   alarm.Protocol,
-		Payload:    alarm.Payload,
-		Rule:       alarm.Rule,
-		Level:      alarm.Level,
-		Status:     alarm.Status,
-		Created:    alarm.Created,
+		ID:       alarm.ID,
+		ThingID:  alarm.ThingID,
+		GroupID:  alarm.GroupID,
+		RuleID:   alarm.RuleID,
+		ScriptID: alarm.ScriptID,
+		Subtopic: alarm.Subtopic,
+		Protocol: alarm.Protocol,
+		Payload:  alarm.Payload,
+		Rule:     alarm.Rule,
+		Level:    alarm.Level,
+		Status:   alarm.Status,
+		Created:  alarm.Created,
 	}
 }
