@@ -177,6 +177,9 @@ var (
 	// ErrInvalidAlarmLevel indicates an invalid alarm level value
 	ErrInvalidAlarmLevel = errors.New("invalid alarm level")
 
+	// ErrInvalidAlarmStatus indicates an invalid alarm status value
+	ErrInvalidAlarmStatus = errors.New("invalid alarm status")
+
 	// ErrInvalidOperator indicates an invalid logical operator
 	ErrInvalidOperator = errors.New("missing or invalid logical operator")
 

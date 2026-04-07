@@ -102,6 +102,7 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrInvalidActionType),
 			errors.Contains(err, ErrMissingActionID),
 			errors.Contains(err, ErrInvalidAlarmLevel),
+			errors.Contains(err, ErrInvalidAlarmStatus),
 			errors.Contains(err, ErrInvalidOperator),
 			errors.Contains(err, ErrInvalidThingType),
 			errors.Contains(err, ErrMissingAuth):
