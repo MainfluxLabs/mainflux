@@ -78,16 +78,31 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 				return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
 			}
 
-			subtopic, _ := msgMap["subtopic"].(string)
-			publisher, _ := msgMap["publisher"].(string)
-			protocol, _ := msgMap["protocol"].(string)
-			createdFloat, _ := msgMap["created"].(float64)
+			subtopic, ok := msgMap["subtopic"].(string)
+			if !ok {
+				return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
+			}
+
+			publisher, ok := msgMap["publisher"].(string)
+			if !ok {
+				return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
+			}
+
+			protocol, ok := msgMap["protocol"].(string)
+			if !ok {
+				return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
+			}
+
+			created, ok := msgMap["created"].(float64)
+			if !ok {
+				return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
+			}
 
 			jsonMsg = mfjson.Message{
 				Subtopic:  subtopic,
 				Publisher: publisher,
 				Protocol:  protocol,
-				Created:   int64(createdFloat),
+				Created:   int64(created),
 			}
 
 			if payload, ok := msgMap["payload"]; ok {
@@ -257,4 +272,3 @@ func (jr *jsonRepository) buildQueryParams(rpm readers.JSONPageMetadata) map[str
 		"to":        rpm.To,
 	}
 }
-
