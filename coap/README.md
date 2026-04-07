@@ -55,10 +55,42 @@ $GOBIN/mainfluxlabs-coap
 
 ## Usage
 
-If CoAP adapter is running locally (on default 5683 port), a valid URL would be: `coap://localhost/messages?auth=<thing_auth_key>&type=<key_type>`.
-
 Since CoAP protocol does not support `Authorization` header (option) and since options have a limited size, authentication is supplied in the form of URI Query parameters:
 * `auth`
     * Thing authentication key
 * `type`
     * Type of Thing key. One of: `external`, `internal`.
+
+### Publishing messages
+
+To publish a message to a thing, optionally with a subtopic:
+
+```
+coap://localhost/things/<thing_id>/messages?auth=<thing_key>&type=<key_type>
+coap://localhost/things/<thing_id>/messages/<subtopic>?auth=<thing_key>&type=<key_type>
+```
+
+The publisher is determined by the auth key, not the path.
+
+### Sending commands
+
+To send a command to a specific thing (M2M, authorized by publisher thing key):
+
+```
+coap://localhost/things/<thing_id>/commands?auth=<thing_key>&type=<key_type>
+```
+
+To send a command to all things in a group:
+
+```
+coap://localhost/groups/<group_id>/commands?auth=<thing_key>&type=<key_type>
+```
+
+Both endpoints support an optional subtopic:
+
+```
+coap://localhost/things/<thing_id>/commands/<subtopic>?auth=<thing_key>&type=<key_type>
+coap://localhost/groups/<group_id>/commands/<subtopic>?auth=<thing_key>&type=<key_type>
+```
+
+Commands use `POST` (same as publishing messages). The publisher thing must have command permission over the target thing or group.
