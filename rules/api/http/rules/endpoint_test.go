@@ -41,7 +41,7 @@ const (
 var (
 	threshold = 30.0
 	condition = rules.Condition{Field: "temperature", Comparator: ">", Threshold: &threshold}
-	action    = rules.Action{Type: rules.ActionTypeAlarm}
+	action    = rules.Action{Type: rules.ActionTypeAlarm, Level: 1}
 )
 
 type ruleRes struct {
@@ -144,7 +144,7 @@ func TestCreateRules(t *testing.T) {
 		r := map[string]any{
 			"name":       ruleName,
 			"conditions": conds,
-			"actions":    []any{map[string]any{"type": rules.ActionTypeAlarm}},
+			"actions":    []any{map[string]any{"type": rules.ActionTypeAlarm, "level": 1}},
 		}
 		if operator != "" {
 			r["operator"] = operator
@@ -167,12 +167,12 @@ func TestCreateRules(t *testing.T) {
 			map[string]any{
 				"name":       "rule-1",
 				"conditions": []any{condTemp},
-				"actions":    []any{map[string]any{"type": rules.ActionTypeAlarm}},
+				"actions":    []any{map[string]any{"type": rules.ActionTypeAlarm, "level": 1}},
 			},
 			map[string]any{
 				"name":       "rule-2",
 				"conditions": []any{condHum},
-				"actions":    []any{map[string]any{"type": rules.ActionTypeAlarm}},
+				"actions":    []any{map[string]any{"type": rules.ActionTypeAlarm, "level": 1}},
 			},
 		},
 	})
@@ -346,6 +346,23 @@ func TestCreateRules(t *testing.T) {
 						"name":       ruleName,
 						"conditions": []any{condTemp},
 						"actions":    []any{map[string]any{"type": "unknown"}},
+					},
+				},
+			}),
+			status: http.StatusBadRequest,
+			size:   0,
+		},
+		{
+			desc:        "create rule with invalid alarm level",
+			auth:        token,
+			groupID:     groupID,
+			contentType: contentType,
+			body: toJSON(map[string]any{
+				"rules": []any{
+					map[string]any{
+						"name":       ruleName,
+						"conditions": []any{condTemp},
+						"actions":    []any{map[string]any{"type": rules.ActionTypeAlarm, "level": 0}},
 					},
 				},
 			}),
@@ -712,7 +729,7 @@ func TestUpdateRule(t *testing.T) {
 	updatedBody := toJSON(map[string]any{
 		"name":       "updated-rule",
 		"conditions": []any{map[string]any{"field": "temperature", "comparator": ">", "threshold": 35.0}},
-		"actions":    []any{map[string]any{"type": rules.ActionTypeAlarm}},
+		"actions":    []any{map[string]any{"type": rules.ActionTypeAlarm, "level": 1}},
 	})
 
 	cases := []struct {
