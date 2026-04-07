@@ -48,7 +48,7 @@ func newService() alarms.Service {
 func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 	t.Helper()
 
-	subject := fmt.Sprintf("alarms.rule.%s", ruleID)
+	subject := fmt.Sprintf("alarms.1.rule.%s", ruleID)
 	for i := range n {
 		alarm := protomfx.Alarm{
 			ThingId:  thingID,
@@ -65,7 +65,7 @@ func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 func TestConsume(t *testing.T) {
 	svc := newService()
 
-	validSubject := fmt.Sprintf("alarms.rule.%s", ruleID)
+	validSubject := fmt.Sprintf("alarms.1.rule.%s", ruleID)
 	validAlarm := protomfx.Alarm{
 		ThingId:  thingID,
 		Subtopic: subtopic,
@@ -106,6 +106,58 @@ func TestConsume(t *testing.T) {
 	for _, tc := range cases {
 		err := svc.ConsumeAlarm(tc.subject, tc.alarm)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestUpdateAlarmStatus(t *testing.T) {
+	svc := newService()
+	saveAlarms(t, svc, 1)
+
+	page, err := svc.ListAlarmsByThing(context.Background(), token, thingID, alarms.PageMetadata{Limit: 10})
+	require.Nil(t, err)
+	require.Equal(t, 1, len(page.Alarms))
+	alarmID := page.Alarms[0].ID
+
+	cases := []struct {
+		desc   string
+		token  string
+		id     string
+		status string
+		err    error
+	}{
+		{
+			desc:   "update alarm status to noted",
+			token:  token,
+			id:     alarmID,
+			status: alarms.AlarmStatusNoted,
+			err:    nil,
+		},
+		{
+			desc:   "update alarm status to cleared",
+			token:  token,
+			id:     alarmID,
+			status: alarms.AlarmStatusCleared,
+			err:    nil,
+		},
+		{
+			desc:   "update alarm status with wrong token",
+			token:  wrongValue,
+			id:     alarmID,
+			status: alarms.AlarmStatusNoted,
+			err:    errors.ErrAuthentication,
+		},
+		{
+			desc:   "update status of non-existing alarm",
+			token:  token,
+			id:     wrongValue,
+			status: alarms.AlarmStatusNoted,
+			err:    dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.UpdateAlarmStatus(context.Background(), tc.token, tc.id, tc.status)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
 }
 

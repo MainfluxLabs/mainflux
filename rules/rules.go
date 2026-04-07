@@ -81,20 +81,6 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 	return nil
 }
 
-func injectConditions(payload []byte, conditions []Condition, operator string) ([]byte, error) {
-	var m map[string]any
-	if err := json.Unmarshal(payload, &m); err != nil {
-		return nil, err
-	}
-
-	m["rule"] = map[string]any{
-		"conditions": conditions,
-		"operator":   operator,
-	}
-
-	return json.Marshal(m)
-}
-
 func processPayload(payload any, conditions []Condition, operator string, contentType string) (bool, [][]byte, error) {
 	switch data := payload.(type) {
 	case []any:

@@ -2,8 +2,8 @@ package alarms
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
@@ -208,27 +208,6 @@ func (as *alarmService) createAlarm(ctx context.Context, alarm *Alarm) error {
 
 }
 
-func extractRule(payload map[string]any) *RuleInfo {
-	ruleRaw, ok := payload["rule"]
-	if !ok {
-		return nil
-	}
-
-	delete(payload, "rule")
-
-	b, err := json.Marshal(ruleRaw)
-	if err != nil {
-		return nil
-	}
-
-	var rule RuleInfo
-	if err := json.Unmarshal(b, &rule); err != nil {
-		return nil
-	}
-
-	return &rule
-}
-
 func (as *alarmService) ConsumeAlarm(subject string, alarm protomfx.Alarm) error {
 	ctx := context.Background()
 
@@ -237,9 +216,9 @@ func (as *alarmService) ConsumeAlarm(subject string, alarm protomfx.Alarm) error
 		return errors.ErrInvalidSubject
 	}
 
-	level, ok := domain.ParseAlarmLevel(subParts[1])
-	if !ok {
-		return errors.ErrInvalidSubject
+	level, err := strconv.Atoi(subParts[1])
+	if err != nil {
+		return errors.Wrap(errors.ErrInvalidSubject, err)
 	}
 
 	originType := subParts[2]
