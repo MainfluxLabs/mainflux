@@ -78,11 +78,16 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 				return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
 			}
 
+			subtopic, _ := msgMap["subtopic"].(string)
+			publisher, _ := msgMap["publisher"].(string)
+			protocol, _ := msgMap["protocol"].(string)
+			createdFloat, _ := msgMap["created"].(float64)
+
 			jsonMsg = mfjson.Message{
-				Subtopic:  msgMap["subtopic"].(string),
-				Publisher: msgMap["publisher"].(string),
-				Protocol:  msgMap["protocol"].(string),
-				Created:   int64(msgMap["created"].(float64)),
+				Subtopic:  subtopic,
+				Publisher: publisher,
+				Protocol:  protocol,
+				Created:   int64(createdFloat),
 			}
 
 			if payload, ok := msgMap["payload"]; ok {
