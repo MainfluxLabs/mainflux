@@ -43,6 +43,8 @@ The service is configured using the environment variables from the following tab
 | `MF_BROKER_URL`                | Message broker URL                                                         | nats://localhost:4222    |
 | `MF_THINGS_AUTH_GRPC_URL`      | Things auth service gRPC URL                                               | localhost:8183           |
 | `MF_THINGS_AUTH_GRPC_TIMEOUT`  | Things auth service gRPC request timeout in seconds                        | 1s                       |
+| `MF_AUTH_GRPC_URL`             | Auth service gRPC URL                                                      | localhost:8181           |
+| `MF_AUTH_GRPC_TIMEOUT`         | Auth service gRPC request timeout                                          | 1s                       |
 | `MF_WEBHOOKS_ES_URL`           | Event store URL                                                            | redis://localhost:6379/0 |
 | `MF_WEBHOOKS_EVENT_CONSUMER`   | Event store consumer name                                                  | webhooks                 |
 

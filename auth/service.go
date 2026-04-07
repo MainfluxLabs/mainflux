@@ -10,7 +10,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
 
@@ -119,8 +118,8 @@ var _ Service = (*service)(nil)
 
 type service struct {
 	orgs           OrgRepository
-	users          protomfx.UsersServiceClient
-	things         protomfx.ThingsServiceClient
+	users          domain.UsersClient
+	things         domain.ThingsClient
 	keys           KeyRepository
 	roles          RolesRepository
 	memberships    OrgMembershipsRepository
@@ -133,7 +132,7 @@ type service struct {
 }
 
 // New instantiates the auth service implementation.
-func New(orgs OrgRepository, tc protomfx.ThingsServiceClient, uc protomfx.UsersServiceClient, keys KeyRepository, roles RolesRepository,
+func New(orgs OrgRepository, tc domain.ThingsClient, uc domain.UsersClient, keys KeyRepository, roles RolesRepository,
 	memberships OrgMembershipsRepository, invites OrgInvitesRepository, emailer Emailer, idp uuid.IDProvider, tokenizer Tokenizer, loginDuration time.Duration, inviteDuration time.Duration) Service {
 	return &service{
 		tokenizer:      tokenizer,

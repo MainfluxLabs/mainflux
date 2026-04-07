@@ -7,8 +7,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
@@ -18,7 +18,7 @@ import (
 
 const svcName = "protomfx.UsersService"
 
-var _ protomfx.UsersServiceClient = (*grpcClient)(nil)
+var _ domain.UsersClient = (*grpcClient)(nil)
 
 type grpcClient struct {
 	timeout          time.Duration
@@ -26,8 +26,8 @@ type grpcClient struct {
 	getUsersByEmails endpoint.Endpoint
 }
 
-// NewClient returns new gRPC client instance.
-func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Duration) protomfx.UsersServiceClient {
+// NewClient returns new gRPC client instance implementing domain.Client.
+func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Duration) domain.UsersClient {
 	return &grpcClient{
 		timeout: timeout,
 		getUsersByIDs: kitot.TraceClient(tracer, "get_users_by_ids")(kitgrpc.NewClient(
@@ -49,35 +49,52 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 	}
 }
 
-func (client grpcClient) GetUsersByIDs(ctx context.Context, req *protomfx.UsersByIDsReq, _ ...grpc.CallOption) (*protomfx.UsersRes, error) {
+func (client grpcClient) GetUsersByIDs(ctx context.Context, ids []string, pm domain.UsersPageMetadata) (domain.UsersPage, error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	pm := toPageMetadata(req.PageMetadata)
-	res, err := client.getUsersByIDs(ctx, getUsersByIDsReq{ids: req.GetIds(), pageMetadata: pm})
+	res, err := client.getUsersByIDs(ctx, getUsersByIDsReq{ids: ids, pageMetadata: pm})
 	if err != nil {
-		return nil, err
+		return domain.UsersPage{}, err
 	}
 
 	ir := res.(getUsersRes)
-
-	return &protomfx.UsersRes{Users: ir.users, PageMetadata: ir.pageMetadata}, nil
-
+	total := uint64(0)
+	if ir.pageMetadata != nil {
+		total = ir.pageMetadata.GetTotal()
+	}
+	return domain.UsersPage{
+		Total: total,
+		Users: protoUsersToDomain(ir.users),
+	}, nil
 }
 
-func (client grpcClient) GetUsersByEmails(ctx context.Context, req *protomfx.UsersByEmailsReq, _ ...grpc.CallOption) (*protomfx.UsersRes, error) {
+func (client grpcClient) GetUsersByEmails(ctx context.Context, emails []string) ([]domain.User, error) {
 	ctx, close := context.WithTimeout(ctx, client.timeout)
 	defer close()
 
-	res, err := client.getUsersByEmails(ctx, getUsersByEmailsReq{emails: req.GetEmails()})
+	res, err := client.getUsersByEmails(ctx, getUsersByEmailsReq{emails: emails})
 	if err != nil {
 		return nil, err
 	}
 
 	ir := res.(getUsersRes)
+	return protoUsersToDomain(ir.users), nil
+}
 
-	return &protomfx.UsersRes{Users: ir.users}, nil
-
+func protoUsersToDomain(users []*protomfx.User) []domain.User {
+	if users == nil {
+		return nil
+	}
+	out := make([]domain.User, 0, len(users))
+	for _, u := range users {
+		out = append(out, domain.User{
+			ID:     u.GetId(),
+			Email:  u.GetEmail(),
+			Status: u.GetStatus(),
+		})
+	}
+	return out
 }
 
 func encodeGetUsersByIDsRequest(_ context.Context, grpcReq any) (any, error) {
@@ -97,21 +114,7 @@ func decodeGetUsersResponse(_ context.Context, grpcRes any) (any, error) {
 	return getUsersRes{users: res.GetUsers(), pageMetadata: res.GetPageMetadata()}, nil
 }
 
-func toPageMetadata(pm *protomfx.PageMetadata) users.PageMetadata {
-	if pm == nil {
-		return users.PageMetadata{}
-	}
-	return users.PageMetadata{
-		Total:  pm.GetTotal(),
-		Offset: pm.GetOffset(),
-		Limit:  pm.GetLimit(),
-		Order:  pm.GetOrder(),
-		Dir:    pm.GetDir(),
-		Email:  pm.GetEmail(),
-	}
-}
-
-func toProtoPageMetadata(pm users.PageMetadata) protomfx.PageMetadata {
+func toProtoPageMetadata(pm domain.UsersPageMetadata) protomfx.PageMetadata {
 	return protomfx.PageMetadata{
 		Total:  pm.Total,
 		Offset: pm.Offset,

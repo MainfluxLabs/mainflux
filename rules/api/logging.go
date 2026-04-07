@@ -6,6 +6,7 @@ import (
 	"time"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/rules"
 )
 
@@ -14,16 +15,28 @@ var _ rules.Service = (*loggingMiddleware)(nil)
 type loggingMiddleware struct {
 	logger log.Logger
 	svc    rules.Service
+	auth   domain.AuthClient
 }
 
 // LoggingMiddleware adds logging facilities to the core service.
-func LoggingMiddleware(svc rules.Service, logger log.Logger) rules.Service {
-	return &loggingMiddleware{logger, svc}
+func LoggingMiddleware(svc rules.Service, logger log.Logger, auth domain.AuthClient) rules.Service {
+	return &loggingMiddleware{logger, svc, auth}
+}
+
+func (lm loggingMiddleware) identify(token string) string {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	id, err := lm.auth.Identify(ctx, token)
+	if err != nil {
+		return ""
+	}
+	return id.Email
 }
 
 func (lm loggingMiddleware) CreateRules(ctx context.Context, token, groupID string, rules ...rules.Rule) (saved []rules.Rule, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_rules for rules %v took %s to complete", saved, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method create_rules by user %s, rules %v took %s to complete", email, saved, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -36,7 +49,8 @@ func (lm loggingMiddleware) CreateRules(ctx context.Context, token, groupID stri
 
 func (lm loggingMiddleware) ListRulesByThing(ctx context.Context, token, thingID string, pm rules.PageMetadata) (_ rules.RulesPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_rules_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method list_rules_by_thing by user %s, thing id %s took %s to complete", email, thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -49,7 +63,8 @@ func (lm loggingMiddleware) ListRulesByThing(ctx context.Context, token, thingID
 
 func (lm loggingMiddleware) ListRulesByGroup(ctx context.Context, token, groupID string, pm rules.PageMetadata) (_ rules.RulesPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_rules_by_group for group id %s took %s to complete", groupID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method list_rules_by_group by user %s, group id %s took %s to complete", email, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -62,7 +77,8 @@ func (lm loggingMiddleware) ListRulesByGroup(ctx context.Context, token, groupID
 
 func (lm loggingMiddleware) ListThingIDsByRule(ctx context.Context, token, ruleID string) (_ []string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_thing_ids_by_rule for rule id %s took %s to complete", ruleID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method list_thing_ids_by_rule by user %s, rule id %s took %s to complete", email, ruleID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -75,7 +91,8 @@ func (lm loggingMiddleware) ListThingIDsByRule(ctx context.Context, token, ruleI
 
 func (lm loggingMiddleware) ViewRule(ctx context.Context, token, id string) (_ rules.Rule, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_rule for rule id %s took %s to complete", id, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method view_rule by user %s, rule id %s took %s to complete", email, id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -88,7 +105,8 @@ func (lm loggingMiddleware) ViewRule(ctx context.Context, token, id string) (_ r
 
 func (lm loggingMiddleware) UpdateRule(ctx context.Context, token string, rule rules.Rule) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_rule for rule id %s took %s to complete", rule.ID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method update_rule by user %s, rule id %s took %s to complete", email, rule.ID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -101,7 +119,8 @@ func (lm loggingMiddleware) UpdateRule(ctx context.Context, token string, rule r
 
 func (lm loggingMiddleware) RemoveRules(ctx context.Context, token string, ids ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_rules for rule ids %v took %s to complete", ids, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method remove_rules by user %s, rule ids %v took %s to complete", email, ids, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -127,7 +146,8 @@ func (lm loggingMiddleware) RemoveRulesByGroup(ctx context.Context, groupID stri
 
 func (lm loggingMiddleware) AssignRules(ctx context.Context, token, thingID string, ruleIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method assign_rules took %s to complete", time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method assign_rules by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -140,7 +160,8 @@ func (lm loggingMiddleware) AssignRules(ctx context.Context, token, thingID stri
 
 func (lm loggingMiddleware) UnassignRules(ctx context.Context, token, thingID string, ruleIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method unassign_rules for thing id %s and rule ids %v took %s to complete", thingID, ruleIDs, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method unassign_rules by user %s, thing id %s and rule ids %v took %s to complete", email, thingID, ruleIDs, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -179,7 +200,8 @@ func (lm loggingMiddleware) Consume(subject string, msg any) (err error) {
 
 func (lm loggingMiddleware) CreateScripts(ctx context.Context, token, groupID string, scripts ...rules.LuaScript) (_ []rules.LuaScript, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_scripts took %s to complete", time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method create_scripts by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -192,7 +214,8 @@ func (lm loggingMiddleware) CreateScripts(ctx context.Context, token, groupID st
 
 func (lm loggingMiddleware) ListScriptsByThing(ctx context.Context, token, thingID string, pm rules.PageMetadata) (_ rules.LuaScriptsPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_scripts_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method list_scripts_by_thing by user %s, thing id %s took %s to complete", email, thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -205,7 +228,8 @@ func (lm loggingMiddleware) ListScriptsByThing(ctx context.Context, token, thing
 
 func (lm loggingMiddleware) ListScriptsByGroup(ctx context.Context, token, groupID string, pm rules.PageMetadata) (_ rules.LuaScriptsPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_scripts_by_group for group id %s took %s to complete", groupID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method list_scripts_by_group by user %s, group id %s took %s to complete", email, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -218,7 +242,8 @@ func (lm loggingMiddleware) ListScriptsByGroup(ctx context.Context, token, group
 
 func (lm loggingMiddleware) ListThingIDsByScript(ctx context.Context, token, scriptID string) (_ []string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_thing_ids_by_script for script id %s took %s to complete", scriptID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method list_thing_ids_by_script by user %s, script id %s took %s to complete", email, scriptID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -231,7 +256,8 @@ func (lm loggingMiddleware) ListThingIDsByScript(ctx context.Context, token, scr
 
 func (lm loggingMiddleware) ViewScript(ctx context.Context, token, id string) (_ rules.LuaScript, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_script for script id %s took %s to complete", id, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method view_script by user %s, script id %s took %s to complete", email, id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -244,7 +270,8 @@ func (lm loggingMiddleware) ViewScript(ctx context.Context, token, id string) (_
 
 func (lm loggingMiddleware) UpdateScript(ctx context.Context, token string, script rules.LuaScript) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_script for script id %s took %s to complete", script.ID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method update_script by user %s, script id %s took %s to complete", email, script.ID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -257,7 +284,8 @@ func (lm loggingMiddleware) UpdateScript(ctx context.Context, token string, scri
 
 func (lm loggingMiddleware) RemoveScripts(ctx context.Context, token string, ids ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_scripts for script ids %v took %s to complete", ids, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method remove_scripts by user %s, script ids %v took %s to complete", email, ids, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -283,7 +311,8 @@ func (lm loggingMiddleware) RemoveScriptsByGroup(ctx context.Context, groupID st
 
 func (lm loggingMiddleware) AssignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method assign_scripts for thing id %s and script ids %v took %s to complete", thingID, scriptIDs, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method assign_scripts by user %s, thing id %s and script ids %v took %s to complete", email, thingID, scriptIDs, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -296,7 +325,8 @@ func (lm loggingMiddleware) AssignScripts(ctx context.Context, token, thingID st
 
 func (lm loggingMiddleware) UnassignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method unassign_scripts for thing id %s and script ids %v took %s to complete", thingID, scriptIDs, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method unassign_scripts by user %s, thing id %s and script ids %v took %s to complete", email, thingID, scriptIDs, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -322,7 +352,8 @@ func (lm loggingMiddleware) UnassignScriptsFromThing(ctx context.Context, thingI
 
 func (lm loggingMiddleware) ListScriptRunsByThing(ctx context.Context, token, thingID string, pm rules.PageMetadata) (_ rules.ScriptRunsPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_script_runs_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method list_script_runs_by_thing by user %s, thing id %s took %s to complete", email, thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -336,7 +367,8 @@ func (lm loggingMiddleware) ListScriptRunsByThing(ctx context.Context, token, th
 
 func (lm loggingMiddleware) RemoveScriptRuns(ctx context.Context, token string, ids ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_script_runs for run ids %v took %s to complete", ids, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method remove_script_runs by user %s, run ids %v took %s to complete", email, ids, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

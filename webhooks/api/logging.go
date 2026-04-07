@@ -12,6 +12,7 @@ import (
 	"time"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 )
 
@@ -20,16 +21,28 @@ var _ webhooks.Service = (*loggingMiddleware)(nil)
 type loggingMiddleware struct {
 	logger log.Logger
 	svc    webhooks.Service
+	auth   domain.AuthClient
 }
 
 // LoggingMiddleware adds logging facilities to the core service.
-func LoggingMiddleware(svc webhooks.Service, logger log.Logger) webhooks.Service {
-	return &loggingMiddleware{logger, svc}
+func LoggingMiddleware(svc webhooks.Service, logger log.Logger, auth domain.AuthClient) webhooks.Service {
+	return &loggingMiddleware{logger, svc, auth}
+}
+
+func (lm *loggingMiddleware) identify(token string) string {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	id, err := lm.auth.Identify(ctx, token)
+	if err != nil {
+		return ""
+	}
+	return id.Email
 }
 
 func (lm *loggingMiddleware) CreateWebhooks(ctx context.Context, token, thingID string, webhooks ...webhooks.Webhook) (response []webhooks.Webhook, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_webhooks for webhooks %s took %s to complete", response, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method create_webhooks by user %s, webhooks %s took %s to complete", email, response, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -42,7 +55,8 @@ func (lm *loggingMiddleware) CreateWebhooks(ctx context.Context, token, thingID 
 
 func (lm *loggingMiddleware) ListWebhooksByGroup(ctx context.Context, token, groupID string, pm webhooks.PageMetadata) (response webhooks.WebhooksPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_webhooks_by_group for id %s took %s to complete", groupID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method list_webhooks_by_group by user %s, id %s took %s to complete", email, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -55,7 +69,8 @@ func (lm *loggingMiddleware) ListWebhooksByGroup(ctx context.Context, token, gro
 
 func (lm *loggingMiddleware) ListWebhooksByThing(ctx context.Context, token, thingID string, pm webhooks.PageMetadata) (response webhooks.WebhooksPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_webhooks_by_thing for id %s took %s to complete", thingID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method list_webhooks_by_thing by user %s, id %s took %s to complete", email, thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -68,7 +83,8 @@ func (lm *loggingMiddleware) ListWebhooksByThing(ctx context.Context, token, thi
 
 func (lm *loggingMiddleware) ViewWebhook(ctx context.Context, token, id string) (response webhooks.Webhook, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_webhook for id %s took %s to complete", id, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method view_webhook by user %s, id %s took %s to complete", email, id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -81,7 +97,8 @@ func (lm *loggingMiddleware) ViewWebhook(ctx context.Context, token, id string) 
 
 func (lm *loggingMiddleware) UpdateWebhook(ctx context.Context, token string, webhook webhooks.Webhook) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_webhook for id %s took %s to complete", webhook.ID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method update_webhook by user %s, id %s took %s to complete", email, webhook.ID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -94,7 +111,8 @@ func (lm *loggingMiddleware) UpdateWebhook(ctx context.Context, token string, we
 
 func (lm *loggingMiddleware) RemoveWebhooks(ctx context.Context, token string, id ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_webhooks took %s to complete", time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method remove_webhooks by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

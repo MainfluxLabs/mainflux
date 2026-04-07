@@ -13,6 +13,7 @@ import (
 
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/uiconfigs"
 )
 
@@ -21,16 +22,28 @@ var _ uiconfigs.Service = (*loggingMiddleware)(nil)
 type loggingMiddleware struct {
 	logger log.Logger
 	svc    uiconfigs.Service
+	auth   domain.AuthClient
 }
 
 // LoggingMiddleware adds logging facilities to the core service.
-func LoggingMiddleware(svc uiconfigs.Service, logger log.Logger) uiconfigs.Service {
-	return &loggingMiddleware{logger, svc}
+func LoggingMiddleware(svc uiconfigs.Service, logger log.Logger, auth domain.AuthClient) uiconfigs.Service {
+	return &loggingMiddleware{logger, svc, auth}
+}
+
+func (lm *loggingMiddleware) identify(token string) string {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	id, err := lm.auth.Identify(ctx, token)
+	if err != nil {
+		return ""
+	}
+	return id.Email
 }
 
 func (lm *loggingMiddleware) ViewOrgConfig(ctx context.Context, token, orgID string) (response uiconfigs.OrgConfig, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_org_config for org %v took %s to complete", orgID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method view_org_config by user %s, org %v took %s to complete", email, orgID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -43,7 +56,8 @@ func (lm *loggingMiddleware) ViewOrgConfig(ctx context.Context, token, orgID str
 
 func (lm *loggingMiddleware) ListOrgsConfigs(ctx context.Context, token string, pm apiutil.PageMetadata) (response uiconfigs.OrgConfigPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_orgs_configs took %s to complete", time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method list_orgs_configs by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -56,7 +70,8 @@ func (lm *loggingMiddleware) ListOrgsConfigs(ctx context.Context, token string, 
 
 func (lm *loggingMiddleware) UpdateOrgConfig(ctx context.Context, token string, orgConfig uiconfigs.OrgConfig) (response uiconfigs.OrgConfig, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_org_config for org %v  took %s to complete", orgConfig.OrgID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method update_org_config by user %s, org %v took %s to complete", email, orgConfig.OrgID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -82,7 +97,8 @@ func (lm *loggingMiddleware) RemoveOrgConfig(ctx context.Context, orgID string) 
 
 func (lm *loggingMiddleware) BackupOrgsConfigs(ctx context.Context, token string) (response uiconfigs.OrgConfigBackup, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method backup_orgs_configs took %s to complete", time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method backup_orgs_configs by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -95,7 +111,8 @@ func (lm *loggingMiddleware) BackupOrgsConfigs(ctx context.Context, token string
 
 func (lm *loggingMiddleware) ViewThingConfig(ctx context.Context, token, thingID string) (response uiconfigs.ThingConfig, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_thing_config for thing %v took %s to complete", thingID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method view_thing_config by user %s, thing %v took %s to complete", email, thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -108,7 +125,8 @@ func (lm *loggingMiddleware) ViewThingConfig(ctx context.Context, token, thingID
 
 func (lm *loggingMiddleware) ListThingsConfigs(ctx context.Context, token string, pm apiutil.PageMetadata) (response uiconfigs.ThingConfigPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_things_configs took %s to complete", time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method list_things_configs by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -121,7 +139,8 @@ func (lm *loggingMiddleware) ListThingsConfigs(ctx context.Context, token string
 
 func (lm *loggingMiddleware) UpdateThingConfig(ctx context.Context, token string, thingConfig uiconfigs.ThingConfig) (response uiconfigs.ThingConfig, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_thing_config for thing %v took %s to complete", thingConfig.ThingID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method update_thing_config by user %s, thing %v took %s to complete", email, thingConfig.ThingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -160,7 +179,8 @@ func (lm *loggingMiddleware) RemoveThingConfigByGroup(ctx context.Context, group
 
 func (lm *loggingMiddleware) BackupThingsConfigs(ctx context.Context, token string) (response uiconfigs.ThingConfigBackup, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method backup_things_configs took %s to complete", time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method backup_things_configs by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -173,7 +193,8 @@ func (lm *loggingMiddleware) BackupThingsConfigs(ctx context.Context, token stri
 
 func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (response uiconfigs.Backup, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method backup took %s to complete", time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method backup by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -186,7 +207,8 @@ func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (response
 
 func (lm *loggingMiddleware) Restore(ctx context.Context, token string, backup uiconfigs.Backup) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method restore took %s to complete", time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method restore by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

@@ -14,6 +14,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 )
 
 const (
@@ -33,11 +34,11 @@ var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
 	publisher messaging.Publisher
-	things    protomfx.ThingsServiceClient
+	things    domain.ThingsClient
 }
 
 // New instantiates the HTTP adapter implementation.
-func New(pub messaging.Publisher, things protomfx.ThingsServiceClient) Service {
+func New(pub messaging.Publisher, things domain.ThingsClient) Service {
 	return &adapterService{
 		publisher: pub,
 		things:    things,
@@ -93,16 +94,17 @@ func (as *adapterService) PublishSenMLMessages(ctx context.Context, key string, 
 }
 
 func (as *adapterService) PublishJSONMessages(ctx context.Context, key string, csvLines [][]string) error {
-	pcr := &protomfx.ThingKey{
-		Type:  domain.KeyTypeInternal,
+	thKey := domain.ThingKey{
 		Value: key,
+		Type:  domain.KeyTypeInternal,
 	}
-	pc, err := as.things.GetPubConfigByKey(ctx, pcr)
+
+	pc, err := as.things.GetPubConfigByKey(ctx, thKey)
 	if err != nil {
 		return err
 	}
 
-	timeField := pc.GetProfileConfig().GetTransformer().GetTimeField()
+	timeField := pc.ProfileConfig.Transformer.TimeField
 
 	msg := protomfx.Message{
 		Protocol: protocol,
@@ -151,17 +153,14 @@ func (as *adapterService) PublishJSONMessages(ctx context.Context, key string, c
 }
 
 func (as *adapterService) publish(ctx context.Context, key string, msg protomfx.Message) (m protomfx.Message, err error) {
-	pcr := &protomfx.ThingKey{
-		Type:  domain.KeyTypeInternal,
-		Value: key,
-	}
+	pcr := domain.ThingKey{Type: domain.KeyTypeInternal, Value: key}
 
 	pc, err := as.things.GetPubConfigByKey(ctx, pcr)
 	if err != nil {
 		return protomfx.Message{}, err
 	}
 
-	if err := messaging.FormatMessage(pc, &msg); err != nil {
+	if err := messaging.FormatMessage(protoutil.PubConfigInfoToProto(pc), &msg); err != nil {
 		return protomfx.Message{}, err
 	}
 

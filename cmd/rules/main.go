@@ -9,18 +9,19 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
+	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -62,6 +63,8 @@ const (
 	defServerKey         = ""
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
+	defAuthGRPCURL       = "localhost:8181"
+	defAuthGRPCTimeout   = "1s"
 	defESURL             = "redis://localhost:6379/0"
 	defESConsumerName    = svcName
 	defScriptsEnabled    = "false"
@@ -85,6 +88,8 @@ const (
 	envJaegerURL         = "MF_JAEGER_URL"
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
+	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_RULES_ES_URL"
 	envESConsumerName    = "MF_RULES_EVENT_CONSUMER"
 	envScriptsEnabled    = "MF_RULES_SCRIPTS_ENABLED"
@@ -96,8 +101,10 @@ type config struct {
 	dbConfig          postgres.Config
 	httpConfig        servers.Config
 	thingsConfig      clients.Config
+	authConfig        clients.Config
 	jaegerURL         string
 	thingsGRPCTimeout time.Duration
+	authGRPCTimeout   time.Duration
 	esURL             string
 	esConsumerName    string
 	scriptsEnabled    bool
@@ -127,6 +134,14 @@ func main() {
 	thingsTracer, thingsCloser := jaeger.Init("rules_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
+	authTracer, authCloser := jaeger.Init("rules_auth", cfg.jaegerURL, logger)
+	defer authCloser.Close()
+
+	authConn := clientsgrpc.Connect(cfg.authConfig, logger)
+	defer authConn.Close()
+
+	auth := authapi.NewClient(authConn, authTracer, cfg.authGRPCTimeout)
+
 	ps, err := brokers.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
@@ -136,7 +151,7 @@ func main() {
 
 	tc := thingsapi.NewClient(thConn, thingsTracer, cfg.thingsGRPCTimeout)
 
-	svc := newService(dbTracer, db, tc, ps, logger, cfg.scriptsEnabled)
+	svc := newService(dbTracer, db, tc, ps, logger, cfg.scriptsEnabled, auth)
 
 	subjects := []string{nats.SubjectMessages, nats.SubjectMessagesWithSubtopic}
 	if err = consumers.Start(svcName, ps, svc, subjects...); err != nil {
@@ -206,14 +221,28 @@ func loadConfig() config {
 		ClientName: clients.Things,
 	}
 
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
+	}
+
+	authConfig := clients.Config{
+		ClientTLS:  tls,
+		CaCerts:    mainflux.Env(envCACerts, defCACerts),
+		URL:        mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		ClientName: clients.Auth,
+	}
+
 	return config{
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:          dbConfig,
 		httpConfig:        httpConfig,
 		thingsConfig:      thingsConfig,
+		authConfig:        authConfig,
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
+		authGRPCTimeout:   authGRPCTimeout,
 		esURL:             mainflux.Env(envESURL, defESURL),
 		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 		scriptsEnabled:    scriptsEnabled,
@@ -246,7 +275,7 @@ func subscribeToThingsES(ctx context.Context, svc rules.Service, cfg config, log
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(dbTracer opentracing.Tracer, db *sqlx.DB, tc protomfx.ThingsServiceClient, nps messaging.PubSub, logger logger.Logger, scriptsEnabled bool) rules.Service {
+func newService(dbTracer opentracing.Tracer, db *sqlx.DB, tc domain.ThingsClient, nps messaging.PubSub, logger logger.Logger, scriptsEnabled bool, ac domain.AuthClient) rules.Service {
 	database := dbutil.NewDatabase(db)
 
 	rulesRepo := postgres.NewRuleRepository(database)
@@ -254,7 +283,7 @@ func newService(dbTracer opentracing.Tracer, db *sqlx.DB, tc protomfx.ThingsServ
 
 	idProvider := uuid.New()
 	svc := rules.New(rulesRepo, tc, nps, idProvider, logger, scriptsEnabled)
-	svc = api.LoggingMiddleware(svc, logger)
+	svc = api.LoggingMiddleware(svc, logger, ac)
 	svc = api.MetricsMiddleware(
 		svc,
 		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{

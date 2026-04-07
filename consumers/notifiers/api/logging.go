@@ -12,6 +12,7 @@ import (
 
 	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 var _ notifiers.Service = (*loggingMiddleware)(nil)
@@ -19,16 +20,28 @@ var _ notifiers.Service = (*loggingMiddleware)(nil)
 type loggingMiddleware struct {
 	logger log.Logger
 	svc    notifiers.Service
+	auth   domain.AuthClient
 }
 
 // LoggingMiddleware adds logging facilities to the core service.
-func LoggingMiddleware(svc notifiers.Service, logger log.Logger) notifiers.Service {
-	return &loggingMiddleware{logger, svc}
+func LoggingMiddleware(svc notifiers.Service, logger log.Logger, auth domain.AuthClient) notifiers.Service {
+	return &loggingMiddleware{logger, svc, auth}
+}
+
+func (lm *loggingMiddleware) identify(token string) string {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	id, err := lm.auth.Identify(ctx, token)
+	if err != nil {
+		return ""
+	}
+	return id.Email
 }
 
 func (lm *loggingMiddleware) CreateNotifiers(ctx context.Context, token, groupID string, notifiers ...notifiers.Notifier) (response []notifiers.Notifier, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_notifiers for notifiers %v took %s to complete", response, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method create_notifiers by user %s, notifiers %v took %s to complete", email, response, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -41,7 +54,8 @@ func (lm *loggingMiddleware) CreateNotifiers(ctx context.Context, token, groupID
 
 func (lm *loggingMiddleware) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm notifiers.PageMetadata) (_ notifiers.NotifiersPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_notifiers_by_group for group id %s took %s to complete", groupID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method list_notifiers_by_group by user %s, group id %s took %s to complete", email, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -54,7 +68,8 @@ func (lm *loggingMiddleware) ListNotifiersByGroup(ctx context.Context, token str
 
 func (lm *loggingMiddleware) ViewNotifier(ctx context.Context, token, id string) (_ notifiers.Notifier, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_notifier for notifier id %s took %s to complete", id, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method view_notifier by user %s, notifier id %s took %s to complete", email, id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -67,7 +82,8 @@ func (lm *loggingMiddleware) ViewNotifier(ctx context.Context, token, id string)
 
 func (lm *loggingMiddleware) UpdateNotifier(ctx context.Context, token string, notifier notifiers.Notifier) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_notifier for notifier id %s took %s to complete", notifier.ID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method update_notifier by user %s, notifier id %s took %s to complete", email, notifier.ID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -80,7 +96,8 @@ func (lm *loggingMiddleware) UpdateNotifier(ctx context.Context, token string, n
 
 func (lm *loggingMiddleware) RemoveNotifiers(ctx context.Context, token string, id ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_notifiers for notifier ids %v took %s to complete", id, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method remove_notifiers by user %s, notifier ids %v took %s to complete", email, id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

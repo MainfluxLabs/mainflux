@@ -5,9 +5,8 @@ package grpc
 
 import (
 	"context"
-	"encoding/json"
 
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -24,14 +23,11 @@ func getPubConfigByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			return pubConfigByKeyRes{}, err
 		}
 
-		config, err := buildConfigResponse(pc.ProfileConfig)
-		if err != nil {
-			return pubConfigByKeyRes{}, err
-		}
-
 		res := pubConfigByKeyRes{
-			publisherID:   pc.PublisherID,
-			profileConfig: config,
+			PubConfigInfo: domain.PubConfigInfo{
+				PublisherID:   pc.PublisherID,
+				ProfileConfig: pc.ProfileConfig,
+			},
 		}
 
 		return res, nil
@@ -50,12 +46,7 @@ func getConfigByThingEndpoint(svc things.Service) endpoint.Endpoint {
 			return configByThingRes{}, err
 		}
 
-		config, err := buildConfigResponse(c)
-		if err != nil {
-			return pubConfigByKeyRes{}, err
-		}
-
-		return configByThingRes{config: config}, nil
+		return configByThingRes{config: c}, nil
 	}
 }
 
@@ -247,33 +238,6 @@ func getGroupIDByProfileEndpoint(svc things.Service) endpoint.Endpoint {
 
 		return groupIDRes{groupID: groupID}, nil
 	}
-}
-
-func buildConfigResponse(conf map[string]any) (*protomfx.Config, error) {
-	cb, err := json.Marshal(conf)
-	if err != nil {
-		return &protomfx.Config{}, err
-	}
-
-	var config things.Config
-	if err := json.Unmarshal(cb, &config); err != nil {
-		return &protomfx.Config{}, err
-	}
-
-	transformer := &protomfx.Transformer{
-		DataFilters:  config.Transformer.DataFilters,
-		DataField:    config.Transformer.DataField,
-		TimeField:    config.Transformer.TimeField,
-		TimeFormat:   config.Transformer.TimeFormat,
-		TimeLocation: config.Transformer.TimeLocation,
-	}
-
-	profileConfig := &protomfx.Config{
-		ContentType: config.ContentType,
-		Transformer: transformer,
-	}
-
-	return profileConfig, nil
 }
 
 func getGroupIDsByOrgEndpoint(svc things.Service) endpoint.Endpoint {

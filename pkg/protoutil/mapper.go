@@ -1,8 +1,60 @@
 package protoutil
 
 import (
-	"github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
+
+// ProtoConfigToDomain converts proto Config to domain Config.
+func ProtoConfigToDomain(c *protomfx.Config) *domain.ProfileConfig {
+	if c == nil {
+		return nil
+	}
+
+	tr := domain.Transformer{}
+	if c.Transformer != nil {
+		tr = domain.Transformer{
+			DataFilters:  c.Transformer.GetDataFilters(),
+			DataField:    c.Transformer.GetDataField(),
+			TimeField:    c.Transformer.GetTimeField(),
+			TimeFormat:   c.Transformer.GetTimeFormat(),
+			TimeLocation: c.Transformer.GetTimeLocation(),
+		}
+	}
+
+	return &domain.ProfileConfig{
+		ContentType: c.GetContentType(),
+		Transformer: tr,
+	}
+}
+
+// PubConfigInfoToProto converts domain PubConfigInfo to proto PubConfigByKeyRes for use with messaging.FormatMessage.
+func PubConfigInfoToProto(pi domain.PubConfigInfo) *protomfx.PubConfigByKeyRes {
+	return &protomfx.PubConfigByKeyRes{
+		PublisherID:   pi.PublisherID,
+		ProfileConfig: DomainConfigToProto(pi.ProfileConfig),
+	}
+}
+
+// DomainConfigToProto converts domain Config to proto Config for use with messaging.
+func DomainConfigToProto(c *domain.ProfileConfig) *protomfx.Config {
+	if c == nil {
+		return nil
+	}
+
+	cfg := &protomfx.Config{
+		ContentType: c.ContentType,
+		Transformer: &protomfx.Transformer{
+			DataFilters:  c.Transformer.DataFilters,
+			DataField:    c.Transformer.DataField,
+			TimeField:    c.Transformer.TimeField,
+			TimeFormat:   c.Transformer.TimeFormat,
+			TimeLocation: c.Transformer.TimeLocation,
+		},
+	}
+
+	return cfg
+}
 
 func MapToProtoConfig(config map[string]any) *protomfx.Config {
 	if config == nil {
