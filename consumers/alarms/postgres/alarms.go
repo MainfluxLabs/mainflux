@@ -85,7 +85,7 @@ func (ar *alarmRepository) UpdateStatus(ctx context.Context, id, status string) 
 }
 
 func (ar *alarmRepository) RetrieveByID(ctx context.Context, id string) (alarms.Alarm, error) {
-	q := `SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, condition, level, status, created FROM alarms WHERE id = $1;`
+	q := `SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, rule, level, status, created FROM alarms WHERE id = $1;`
 
 	var dba dbAlarm
 	if err := ar.db.QueryRowxContext(ctx, q, id).StructScan(&dba); err != nil {
@@ -175,7 +175,7 @@ func (ar *alarmRepository) RetrieveByGroups(ctx context.Context, groupIDs []stri
 	}
 
 	whereClause := dbutil.BuildWhereClause(giq, pq)
-	query := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, condition, level, status, created FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	query := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, rule, level, status, created FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
 
 	params := map[string]any{

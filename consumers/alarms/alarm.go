@@ -35,7 +35,7 @@ type AlarmsPage struct {
 // RuleInfo captures the evaluation logic of the rule that triggered an alarm.
 type RuleInfo struct {
 	Conditions []domain.Condition `json:"conditions"`
-	Operator   string             `json:"operator"`
+	Operator   string             `json:"operator,omitempty"`
 }
 
 // AlarmRepository specifies an alarm persistence API.
