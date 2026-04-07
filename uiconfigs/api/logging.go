@@ -71,7 +71,7 @@ func (lm *loggingMiddleware) ListOrgsConfigs(ctx context.Context, token string, 
 func (lm *loggingMiddleware) UpdateOrgConfig(ctx context.Context, token string, orgConfig uiconfigs.OrgConfig) (response uiconfigs.OrgConfig, err error) {
 	defer func(begin time.Time) {
 		email := lm.identify(token)
-		message := fmt.Sprintf("Method update_org_config by user %s, org %v  took %s to complete", email, orgConfig.OrgID, time.Since(begin))
+		message := fmt.Sprintf("Method update_org_config by user %s, org %v took %s to complete", email, orgConfig.OrgID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

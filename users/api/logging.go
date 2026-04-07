@@ -40,7 +40,7 @@ func (lm *loggingMiddleware) identify(token string) string {
 
 func (lm *loggingMiddleware) SelfRegister(ctx context.Context, user users.User, redirectPath string) (_ string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method self_register by user %s took %s to complete", user.Email, time.Since(begin))
+		message := fmt.Sprintf("Method self_register for user %s took %s to complete", user.Email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -68,7 +68,7 @@ func (lm *loggingMiddleware) VerifyEmail(ctx context.Context, confirmationToken 
 
 func (lm *loggingMiddleware) RegisterByInvite(ctx context.Context, user users.User, inviteID, orgInviteRedirectPath string) (_ string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method register_by_invite by user %s and invite id %s took %s to complete", user.Email, inviteID, time.Since(begin))
+		message := fmt.Sprintf("Method register_by_invite for user %s and invite id %s took %s to complete", user.Email, inviteID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -82,7 +82,7 @@ func (lm *loggingMiddleware) RegisterByInvite(ctx context.Context, user users.Us
 
 func (lm *loggingMiddleware) RegisterAdmin(ctx context.Context, user users.User) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method register_admin by user %s took %s to complete", user.Email, time.Since(begin))
+		message := fmt.Sprintf("Method register_admin for user %s took %s to complete", user.Email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -97,7 +97,7 @@ func (lm *loggingMiddleware) RegisterAdmin(ctx context.Context, user users.User)
 func (lm *loggingMiddleware) Register(ctx context.Context, token string, user users.User) (_ string, err error) {
 	defer func(begin time.Time) {
 		callerEmail := lm.identify(token)
-		message := fmt.Sprintf("Method register by user %s by user %s took %s to complete", callerEmail, user.Email, time.Since(begin))
+		message := fmt.Sprintf("Method register by user %s for user %s took %s to complete", callerEmail, user.Email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -111,7 +111,7 @@ func (lm *loggingMiddleware) Register(ctx context.Context, token string, user us
 
 func (lm *loggingMiddleware) Login(ctx context.Context, user users.User) (token string, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method login by user %s and token %s took %s to complete", user.Email, token, time.Since(begin))
+		message := fmt.Sprintf("Method login for user %s took %s to complete", user.Email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -151,7 +151,7 @@ func (lm *loggingMiddleware) OAuthCallback(ctx context.Context, data users.OAuth
 func (lm *loggingMiddleware) ViewUser(ctx context.Context, token, id string) (u users.User, err error) {
 	defer func(begin time.Time) {
 		callerEmail := lm.identify(token)
-		message := fmt.Sprintf("Method view_user by user %s, by user %s took %s to complete", callerEmail, u.Email, time.Since(begin))
+		message := fmt.Sprintf("Method view_user by user %s, for user %s took %s to complete", callerEmail, u.Email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -165,7 +165,7 @@ func (lm *loggingMiddleware) ViewUser(ctx context.Context, token, id string) (u 
 func (lm *loggingMiddleware) ViewProfile(ctx context.Context, token string) (u users.User, err error) {
 	defer func(begin time.Time) {
 		callerEmail := lm.identify(token)
-		message := fmt.Sprintf("Method view_profile by user %s, by user %s took %s to complete", callerEmail, u.Email, time.Since(begin))
+		message := fmt.Sprintf("Method view_profile by user %s, for user %s took %s to complete", callerEmail, u.Email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -219,7 +219,7 @@ func (lm *loggingMiddleware) ListUsersByEmails(ctx context.Context, emails []str
 func (lm *loggingMiddleware) UpdateUser(ctx context.Context, token string, u users.User) (err error) {
 	defer func(begin time.Time) {
 		callerEmail := lm.identify(token)
-		message := fmt.Sprintf("Method update_user by user %s, by user %s took %s to complete", callerEmail, u.Email, time.Since(begin))
+		message := fmt.Sprintf("Method update_user by user %s, for user %s took %s to complete", callerEmail, u.Email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -232,7 +232,7 @@ func (lm *loggingMiddleware) UpdateUser(ctx context.Context, token string, u use
 
 func (lm *loggingMiddleware) GenerateResetToken(ctx context.Context, email, redirectPath string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method generate_reset_token by user %s took %s to complete", email, time.Since(begin))
+		message := fmt.Sprintf("Method generate_reset_token for user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -246,7 +246,7 @@ func (lm *loggingMiddleware) GenerateResetToken(ctx context.Context, email, redi
 func (lm *loggingMiddleware) ChangePassword(ctx context.Context, token, email, password, oldPassword string) (err error) {
 	defer func(begin time.Time) {
 		callerEmail := lm.identify(token)
-		message := fmt.Sprintf("Method change_password by user %s, by user %s took %s to complete", callerEmail, email, time.Since(begin))
+		message := fmt.Sprintf("Method change_password by user %s, for user %s took %s to complete", callerEmail, email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -259,7 +259,7 @@ func (lm *loggingMiddleware) ChangePassword(ctx context.Context, token, email, p
 
 func (lm *loggingMiddleware) ResetPassword(ctx context.Context, email, password string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method reset_password by user %s took %s to complete", email, time.Since(begin))
+		message := fmt.Sprintf("Method reset_password for user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -273,7 +273,7 @@ func (lm *loggingMiddleware) ResetPassword(ctx context.Context, email, password 
 func (lm *loggingMiddleware) SendPasswordReset(ctx context.Context, redirectPath, email, token string) (err error) {
 	defer func(begin time.Time) {
 		callerEmail := lm.identify(token)
-		message := fmt.Sprintf("Method send_password_reset by user %s, by user %s took %s to complete", callerEmail, email, time.Since(begin))
+		message := fmt.Sprintf("Method send_password_reset by user %s, for user %s took %s to complete", callerEmail, email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
