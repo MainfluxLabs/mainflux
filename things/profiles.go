@@ -14,7 +14,7 @@ type (
 	Profile      = domain.Profile
 	ProfilesPage = domain.ProfilesPage
 
-	Config      = domain.Config
+	Config      = domain.ProfileConfig
 	Transformer = domain.Transformer
 )
 

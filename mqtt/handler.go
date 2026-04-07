@@ -11,10 +11,12 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt/redis/cache"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 	"github.com/MainfluxLabs/mproxy/pkg/session"
 )
 
@@ -49,14 +51,14 @@ var (
 // handler implements session.Handler interface
 type handler struct {
 	publisher messaging.Publisher
-	things    protomfx.ThingsServiceClient
+	things    domain.ThingsClient
 	service   Service
 	cache     cache.ConnectionCache
 	logger    logger.Logger
 }
 
 // NewHandler creates new Handler entity
-func NewHandler(publisher messaging.Publisher, things protomfx.ThingsServiceClient,
+func NewHandler(publisher messaging.Publisher, things domain.ThingsClient,
 	svc Service, cache cache.ConnectionCache, logger logger.Logger) session.Handler {
 	return &handler{
 		publisher: publisher,
@@ -137,7 +139,7 @@ func (h *handler) authorizePublish(publisherID, topic string) error {
 }
 
 func (h *handler) authorizeThingCommand(publisherID, recipientID string) error {
-	if _, err := h.things.CanThingCommand(context.Background(), &protomfx.ThingCommandReq{
+	if err := h.things.CanThingCommand(context.Background(), domain.ThingCommandReq{
 		PublisherID: publisherID,
 		RecipientID: recipientID,
 	}); err != nil {
@@ -147,7 +149,7 @@ func (h *handler) authorizeThingCommand(publisherID, recipientID string) error {
 }
 
 func (h *handler) authorizeGroupCommand(publisherID, groupID string) error {
-	if _, err := h.things.CanThingGroupCommand(context.Background(), &protomfx.ThingGroupCommandReq{
+	if err := h.things.CanThingGroupCommand(context.Background(), domain.ThingGroupCommandReq{
 		PublisherID: publisherID,
 		GroupID:     groupID,
 	}); err != nil {
@@ -174,13 +176,13 @@ func (h *handler) AuthSubscribe(c *session.Client, topics *[]string) error {
 		return err
 	}
 
-	groupID, err := h.things.GetGroupIDByThing(context.Background(), &protomfx.ThingID{Value: thingID})
+	groupID, err := h.things.GetGroupIDByThing(context.Background(), thingID)
 	if err != nil {
 		return err
 	}
 
 	for _, t := range *topics {
-		if err := validateCustomTopic(t, thingID, groupID.GetValue()); err != nil {
+		if err := validateCustomTopic(t, thingID, groupID); err != nil {
 			return err
 		}
 	}
@@ -205,7 +207,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		return
 	}
 
-	tk := &protomfx.ThingKey{
+	tk := domain.ThingKey{
 		Value: string(c.Password),
 		Type:  c.Username,
 	}
@@ -216,7 +218,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		return
 	}
 
-	subject, subtopic, err := parseTopic(*topic, pc.GetPublisherID())
+	subject, subtopic, err := parseTopic(*topic, pc.PublisherID)
 	if err != nil {
 		h.logger.Error(errors.Wrap(errFailedParseSubtopic, err).Error())
 		return
@@ -228,7 +230,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		Payload:  *payload,
 	}
 
-	if err := messaging.FormatMessage(pc, &msg); err != nil {
+	if err := messaging.FormatMessage(protoutil.PubConfigInfoToProto(pc), &msg); err != nil {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 		return
 	}
@@ -340,16 +342,15 @@ func (h *handler) identify(c *session.Client) (string, error) {
 		return thingID, nil
 	}
 
-	thingKeyReq := &protomfx.ThingKey{
+	thingKeyReq := domain.ThingKey{
 		Value: string(c.Password),
 		Type:  c.Username,
 	}
 
-	keyRes, err := h.things.Identify(context.Background(), thingKeyReq)
+	thingID, err := h.things.Identify(context.Background(), thingKeyReq)
 	if err != nil {
 		return "", err
 	}
-	thingID := keyRes.GetValue()
 
 	if err := h.cache.Connect(context.Background(), c.ID, thingID); err != nil {
 		h.logger.Error(errors.Wrap(errFailedCacheConnection, err).Error())
@@ -363,7 +364,7 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 	if err != nil {
 		return nil, err
 	}
-	groupID, err := h.things.GetGroupIDByThing(context.Background(), &protomfx.ThingID{Value: thingID})
+	groupID, err := h.things.GetGroupIDByThing(context.Background(), thingID)
 	if err != nil {
 		return nil, err
 	}
@@ -372,7 +373,7 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 	for _, t := range *topics {
 		sub := Subscription{
 			Topic:     t,
-			GroupID:   groupID.GetValue(),
+			GroupID:   groupID,
 			ThingID:   thingID,
 			CreatedAt: float64(time.Now().UnixNano()) / 1e9,
 		}

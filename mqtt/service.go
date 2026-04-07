@@ -5,7 +5,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/mqtt/redis/cache"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
 
@@ -29,15 +28,15 @@ type Service interface {
 }
 
 type mqttService struct {
-	auth          protomfx.AuthServiceClient
-	things        protomfx.ThingsServiceClient
+	auth          domain.AuthClient
+	things        domain.ThingsClient
 	subscriptions Repository
 	cache         cache.ConnectionCache
 	idp           uuid.IDProvider
 }
 
 // NewMqttService instantiates the MQTT service implementation.
-func NewMqttService(auth protomfx.AuthServiceClient, things protomfx.ThingsServiceClient, subscriptions Repository, cache cache.ConnectionCache, idp uuid.IDProvider) Service {
+func NewMqttService(auth domain.AuthClient, things domain.ThingsClient, subscriptions Repository, cache cache.ConnectionCache, idp uuid.IDProvider) Service {
 	return &mqttService{
 		auth:          auth,
 		things:        things,
@@ -52,7 +51,7 @@ func (ms *mqttService) CreateSubscription(ctx context.Context, sub Subscription)
 }
 
 func (ms *mqttService) ListSubscriptions(ctx context.Context, groupID, token string, pm PageMetadata) (Page, error) {
-	if _, err := ms.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domain.GroupViewer}); err != nil {
+	if err := ms.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupViewer}); err != nil {
 		return Page{}, err
 	}
 
