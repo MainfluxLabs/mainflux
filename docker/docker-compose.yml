@@ -850,8 +850,8 @@ services:
       MF_CERTS_HTTP_PORT: ${MF_CERTS_HTTP_PORT}
       MF_CERTS_SERVER_CERT: ${MF_CERTS_SERVER_CERT}
       MF_CERTS_SERVER_KEY: ${MF_CERTS_SERVER_KEY}
-      MF_CERTS_SIGN_CA_PATH: /etc/ssl/certs/ca.crt
-      MF_CERTS_SIGN_CA_KEY_PATH: /etc/ssl/certs/ca.key
+      MF_CERTS_SIGN_CA_PATH: ${MF_CERTS_SIGN_CA_PATH}
+      MF_CERTS_SIGN_CA_KEY_PATH: ${MF_CERTS_SIGN_CA_KEY_PATH}
       MF_CERTS_SIGN_HOURS_VALID: ${MF_CERTS_SIGN_HOURS_VALID}
       MF_CERTS_SIGN_RSA_BITS: ${MF_CERTS_SIGN_RSA_BITS}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
@@ -859,7 +859,7 @@ services:
       MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
       MF_THINGS_GRPC_URL: ${MF_THINGS_GRPC_URL}
       MF_THINGS_GRPC_TIMEOUT: ${MF_THINGS_GRPC_TIMEOUT}
-      MF_CERTS_CRL_PATH: /etc/ssl/certs/crl/crl.pem
+      MF_CERTS_CRL_PATH: ${MF_CERTS_CRL_PATH}
     volumes:
       - ./ssl/certs/ca.key:/etc/ssl/certs/ca.key
       - ./ssl/certs/ca.crt:/etc/ssl/certs/ca.crt
