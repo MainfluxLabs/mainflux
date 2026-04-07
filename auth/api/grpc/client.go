@@ -47,7 +47,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			"Issue",
 			encodeIssueRequest,
 			decodeIssueResponse,
-			protomfx.UserIdentity{},
+			protomfx.Token{},
 		).Endpoint()),
 		identify: kitot.TraceClient(tracer, "identify")(kitgrpc.NewClient(
 			conn,
@@ -135,8 +135,8 @@ func (client grpcClient) Issue(ctx context.Context, id, email string, keyType ui
 		return "", err
 	}
 
-	ir := res.(identityRes)
-	return ir.id, nil
+	ir := res.(issueRes)
+	return ir.value, nil
 }
 
 func encodeIssueRequest(_ context.Context, grpcReq any) (any, error) {
@@ -145,8 +145,8 @@ func encodeIssueRequest(_ context.Context, grpcReq any) (any, error) {
 }
 
 func decodeIssueResponse(_ context.Context, grpcRes any) (any, error) {
-	res := grpcRes.(*protomfx.UserIdentity)
-	return identityRes{id: res.GetId(), email: res.GetEmail()}, nil
+	res := grpcRes.(*protomfx.Token)
+	return issueRes{value: res.GetValue()}, nil
 }
 
 func (client grpcClient) Identify(ctx context.Context, token string) (domain.Identity, error) {
