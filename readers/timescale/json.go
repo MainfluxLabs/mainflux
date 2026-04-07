@@ -73,44 +73,13 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 	for _, msg := range messages {
 		jsonMsg, ok := msg.(mfjson.Message)
 		if !ok {
-			msgMap, mapOk := msg.(map[string]any)
-			if !mapOk {
-				return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
+			data, err := json.Marshal(msg)
+			if err != nil {
+				return errors.Wrap(errors.ErrSaveMessages, err)
 			}
 
-			subtopic, ok := msgMap["subtopic"].(string)
-			if !ok {
-				return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
-			}
-
-			publisher, ok := msgMap["publisher"].(string)
-			if !ok {
-				return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
-			}
-
-			protocol, ok := msgMap["protocol"].(string)
-			if !ok {
-				return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
-			}
-
-			created, ok := msgMap["created"].(float64)
-			if !ok {
-				return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
-			}
-
-			jsonMsg = mfjson.Message{
-				Subtopic:  subtopic,
-				Publisher: publisher,
-				Protocol:  protocol,
-				Created:   int64(created),
-			}
-
-			if payload, ok := msgMap["payload"]; ok {
-				payloadBytes, err := json.Marshal(payload)
-				if err != nil {
-					return errors.Wrap(errors.ErrSaveMessages, err)
-				}
-				jsonMsg.Payload = payloadBytes
+			if err := json.Unmarshal(data, &jsonMsg); err != nil {
+				return errors.Wrap(errors.ErrSaveMessages, err)
 			}
 		}
 
