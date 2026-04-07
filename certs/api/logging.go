@@ -12,6 +12,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/certs"
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 var _ certs.Service = (*loggingMiddleware)(nil)
@@ -19,16 +20,28 @@ var _ certs.Service = (*loggingMiddleware)(nil)
 type loggingMiddleware struct {
 	logger log.Logger
 	svc    certs.Service
+	auth   domain.AuthClient
 }
 
 // NewLoggingMiddleware adds logging facilities to the core service.
-func NewLoggingMiddleware(svc certs.Service, logger log.Logger) certs.Service {
-	return &loggingMiddleware{logger, svc}
+func NewLoggingMiddleware(svc certs.Service, logger log.Logger, auth domain.AuthClient) certs.Service {
+	return &loggingMiddleware{logger, svc, auth}
+}
+
+func (lm *loggingMiddleware) identify(token string) string {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	id, err := lm.auth.Identify(ctx, token)
+	if err != nil {
+		return ""
+	}
+	return id.Email
 }
 
 func (lm *loggingMiddleware) IssueCert(ctx context.Context, token, thingID, ttl string, keyBits int, keyType string) (_ certs.Cert, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method issue_cert for thing id %s took %s to complete", thingID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method issue_cert by user %s, thing id %s took %s to complete", email, thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -41,7 +54,8 @@ func (lm *loggingMiddleware) IssueCert(ctx context.Context, token, thingID, ttl 
 
 func (lm *loggingMiddleware) ListCerts(ctx context.Context, token, thingID string, offset, limit uint64) (_ certs.Page, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_certs for thing id %s took %s to complete", thingID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method list_certs by user %s, thing id %s took %s to complete", email, thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -54,7 +68,8 @@ func (lm *loggingMiddleware) ListCerts(ctx context.Context, token, thingID strin
 
 func (lm *loggingMiddleware) ListSerials(ctx context.Context, token, thingID string, offset, limit uint64) (_ certs.Page, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_serials for thing id %s took %s to complete", thingID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method list_serials by user %s, thing id %s took %s to complete", email, thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -67,7 +82,8 @@ func (lm *loggingMiddleware) ListSerials(ctx context.Context, token, thingID str
 
 func (lm *loggingMiddleware) ViewCert(ctx context.Context, token, serial string) (_ certs.Cert, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_cert for serial %s took %s to complete", serial, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method view_cert by user %s, serial %s took %s to complete", email, serial, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -80,7 +96,8 @@ func (lm *loggingMiddleware) ViewCert(ctx context.Context, token, serial string)
 
 func (lm *loggingMiddleware) RevokeCert(ctx context.Context, token, serial string) (_ certs.Revoke, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method revoke_cert for serial %s took %s to complete", serial, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method revoke_cert by user %s, serial %s took %s to complete", email, serial, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -93,7 +110,8 @@ func (lm *loggingMiddleware) RevokeCert(ctx context.Context, token, serial strin
 
 func (lm *loggingMiddleware) RenewCert(ctx context.Context, token, serial string) (_ certs.Cert, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method renew_cert for serial %s took %s to complete", serial, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method renew_cert by user %s, serial %s took %s to complete", email, serial, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

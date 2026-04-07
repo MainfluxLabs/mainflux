@@ -40,6 +40,8 @@ The service is configured using the environment variables presented in the follo
 | `MF_CONVERTERS_CA_CERTS`      | Path to trusted CAs in PEM format                                          |                       |
 | `MF_THINGS_AUTH_GRPC_URL`     | Things service Auth gRPC URL                                               | localhost:8183        |
 | `MF_THINGS_AUTH_GRPC_TIMEOUT` | Things service Auth gRPC request timeout in seconds                        | 1s                    |
+| `MF_AUTH_GRPC_URL`            | Auth service gRPC URL                                                      | localhost:8181        |
+| `MF_AUTH_GRPC_TIMEOUT`        | Auth service gRPC request timeout                                          | 1s                    |
 
 ## Deployment
 

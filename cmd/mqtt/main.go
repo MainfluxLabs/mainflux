@@ -450,7 +450,7 @@ func newService(ac domain.AuthClient, tc domain.ThingsClient, db *sqlx.DB, cache
 	subscriptions = tracing.SubscriptionRepositoryMiddleware(dbTracer, subscriptions)
 
 	svc := mqtt.NewMqttService(ac, tc, subscriptions, cache, idp)
-	svc = mqttapi.LoggingMiddleware(svc, logger)
+	svc = mqttapi.LoggingMiddleware(svc, logger, ac)
 	svc = mqttapi.MetricsMiddleware(
 		svc,
 		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{

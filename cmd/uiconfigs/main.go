@@ -267,7 +267,7 @@ func newService(ts domain.ThingsClient, ac domain.AuthClient, dbTracer opentraci
 	thingConfigsRepo = tracing.ThingConfigRepositoryMiddleware(dbTracer, thingConfigsRepo)
 	idProvider := uuid.New()
 	svc := uiconfigs.New(orgConfigsRepo, thingConfigsRepo, ts, ac, idProvider, logger)
-	svc = api.LoggingMiddleware(svc, logger)
+	svc = api.LoggingMiddleware(svc, logger, ac)
 	svc = api.MetricsMiddleware(
 		svc,
 		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{

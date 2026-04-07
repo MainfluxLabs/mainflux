@@ -426,7 +426,7 @@ func newService(ac domain.AuthClient, uc domain.UsersClient, dbTracer opentracin
 	svc := things.New(ac, uc, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider, thingsEmailer)
 
 	svc = events.NewEventStoreMiddleware(svc, esClient)
-	svc = api.LoggingMiddleware(svc, logger)
+	svc = api.LoggingMiddleware(svc, logger, ac)
 	svc = api.MetricsMiddleware(
 		svc,
 		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{

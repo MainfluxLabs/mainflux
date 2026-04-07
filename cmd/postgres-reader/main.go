@@ -222,7 +222,7 @@ func newService(db *sqlx.DB, dbTracer opentracing.Tracer, ac domain.AuthClient, 
 	senmlRepo = tracing.SenMLRepositoryMiddleware(dbTracer, senmlRepo)
 
 	svc := readers.New(ac, tc, jsonRepo, senmlRepo)
-	svc = api.LoggingMiddleware(svc, logger)
+	svc = api.LoggingMiddleware(svc, logger, ac)
 	svc = api.MetricsMiddleware(
 		svc,
 		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{

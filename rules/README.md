@@ -167,6 +167,8 @@ The service is configured using the environment variables presented in the follo
 | `MF_RULES_SERVER_KEY`         | Path to server key in PEM format                                           |                          |
 | `MF_THINGS_AUTH_GRPC_URL`     | Things service Auth gRPC URL                                               | localhost:8183           |
 | `MF_THINGS_AUTH_GRPC_TIMEOUT` | Things service Auth gRPC request timeout                                   | 1s                       |
+| `MF_AUTH_GRPC_URL`            | Auth service gRPC URL                                                      | localhost:8181           |
+| `MF_AUTH_GRPC_TIMEOUT`        | Auth service gRPC request timeout                                          | 1s                       |
 | `MF_RULES_ES_URL`             | Event store URL                                                            | redis://localhost:6379/0 |
 | `MF_RULES_EVENT_CONSUMER`     | Event store consumer name                                                  | rules                    |
 | `MF_RULES_SCRIPTS_ENABLED`    | Enable Lua scripting engine                                                | false                    |

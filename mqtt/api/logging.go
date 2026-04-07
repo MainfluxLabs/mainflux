@@ -13,6 +13,7 @@ import (
 
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 var _ mqtt.Service = (*loggingMiddleware)(nil)
@@ -20,16 +21,28 @@ var _ mqtt.Service = (*loggingMiddleware)(nil)
 type loggingMiddleware struct {
 	logger log.Logger
 	svc    mqtt.Service
+	auth   domain.AuthClient
 }
 
 // LoggingMiddleware adds logging facilities to the core service.
-func LoggingMiddleware(svc mqtt.Service, logger log.Logger) mqtt.Service {
-	return &loggingMiddleware{logger, svc}
+func LoggingMiddleware(svc mqtt.Service, logger log.Logger, auth domain.AuthClient) mqtt.Service {
+	return &loggingMiddleware{logger, svc, auth}
+}
+
+func (lm *loggingMiddleware) identify(token string) string {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	id, err := lm.auth.Identify(ctx, token)
+	if err != nil {
+		return ""
+	}
+	return id.Email
 }
 
 func (lm *loggingMiddleware) ListSubscriptions(ctx context.Context, groupID, token string, pm mqtt.PageMetadata) (_ mqtt.Page, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_subscriptions for group id %s took %s to complete", groupID, time.Since(begin))
+		email := lm.identify(token)
+		message := fmt.Sprintf("Method list_subscriptions by user %s, group id %s took %s to complete", email, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
