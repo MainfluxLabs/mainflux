@@ -128,22 +128,16 @@ components:
 
     CommandPayload:
       type: object
-      required:
-        - command
-      properties:
-        command:
-          type: string
-          description: |
-            Name of the command to be executed by the thing
-            (e.g. "reboot", "set_threshold", "start_firmware_update").
-        params:
-          type: object
-          additionalProperties: true
-          description: Command-specific parameters.
-        metadata:
-          type: object
-          additionalProperties: true
-          description: Optional metadata (request id, timestamps, etc).
+      description: Arbitrary JSON object sent as a command to a thing or group.
+      example: |
+        ### Simple command
+        ```json
+        {"command": "reboot"}
+        ```
+        ### With parameters
+        ```json
+        {"command": "set_threshold", "params": {"value": 42}, "request_id": "abc-123"}
+        ```
 
   parameters:
     subtopic:
