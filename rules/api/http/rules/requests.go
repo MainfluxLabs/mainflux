@@ -9,9 +9,11 @@ import (
 )
 
 const (
-	minLen       = 1
-	maxLimitSize = 200
-	maxNameSize  = 254
+	minLen        = 1
+	maxLimitSize  = 200
+	maxNameSize   = 254
+	minAlarmLevel = 1
+	maxAlarmLevel = 5
 )
 
 type rule struct {
@@ -86,7 +88,7 @@ func (req rule) validate() error {
 				return apiutil.ErrMissingActionID
 			}
 		case rules.ActionTypeAlarm:
-			if action.Level < 1 || action.Level > 5 {
+			if action.Level < minAlarmLevel || action.Level > maxAlarmLevel {
 				return apiutil.ErrInvalidAlarmLevel
 			}
 		default:
