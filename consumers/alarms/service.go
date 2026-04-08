@@ -259,7 +259,20 @@ func (as *alarmService) Consume(subject string, message any) error {
 	originType := subParts[2]
 	originID := subParts[3]
 
-	rule := extractRule(payload)
+	var (
+		ruleID, scriptID string
+		rule             *RuleInfo
+	)
+
+	switch originType {
+	case domain.AlarmOriginRule:
+		ruleID = originID
+		rule = extractRule(payload)
+	case domain.AlarmOriginScript:
+		scriptID = originID
+	default:
+		return fmt.Errorf("invalid subject origin type: %s", originType)
+	}
 
 	alarm := Alarm{
 		ThingID:  msg.Publisher,
@@ -267,18 +280,11 @@ func (as *alarmService) Consume(subject string, message any) error {
 		Protocol: msg.Protocol,
 		Payload:  payload,
 		Rule:     rule,
+		RuleID:   ruleID,
+		ScriptID: scriptID,
 		Level:    level,
 		Status:   AlarmStatusActive,
 		Created:  msg.Created,
-	}
-
-	switch originType {
-	case domain.AlarmOriginRule:
-		alarm.RuleID = originID
-	case domain.AlarmOriginScript:
-		alarm.ScriptID = originID
-	default:
-		return fmt.Errorf("invalid subject origin type: %s", originType)
 	}
 
 	if err := as.createAlarm(ctx, &alarm); err != nil {
