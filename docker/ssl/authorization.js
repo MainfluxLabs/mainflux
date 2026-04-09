@@ -1,5 +1,3 @@
-var clientKey = '';
-
 // Check certificate MQTTS.
 function authenticate(s) {
     if (!s.variables.ssl_client_s_dn || !s.variables.ssl_client_s_dn.length ||
@@ -23,9 +21,7 @@ function authenticate(s) {
             return;
         }
 
-        if (clientKey === '') {
-            clientKey = parseCert(s.variables.ssl_client_s_dn, 'CN');
-        }
+        var clientKey = parseCert(s.variables.ssl_client_s_dn, 'CN');
 
         var pass = parsePackage(s, data);
 
@@ -128,9 +124,7 @@ function parsePackage(s, data) {
 
 // Check certificate HTTPS and WSS.
 function setKey(r) {
-    if (clientKey === '') {
-        clientKey = parseCert(r.variables.ssl_client_s_dn, 'CN');
-    }
+    var clientKey = parseCert(r.variables.ssl_client_s_dn, 'CN');
 
     var auth = r.headersIn['Authorization'];
 
