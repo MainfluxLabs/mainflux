@@ -126,7 +126,6 @@ func downloadCertEndpoint(svc certs.Service) endpoint.Endpoint {
 			Serial:         cert.Serial,
 			ThingID:        cert.ThingID,
 		}, nil
-
 	}
 }
 
