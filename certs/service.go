@@ -133,6 +133,10 @@ func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, tt
 		return Cert{}, errors.ErrAuthorization
 	}
 
+	return cs.issueCert(ctx, thingID, ttl, keyBits, keyType)
+}
+
+func (cs *certsService) issueCert(ctx context.Context, thingID, ttl string, keyBits int, keyType string) (Cert, error) {
 	thingKeyRes, err := cs.things.GetKeyByThingID(ctx, &protomfx.ThingID{Value: thingID})
 	if err != nil {
 		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
@@ -164,37 +168,46 @@ func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, tt
 }
 
 func (cs *certsService) RotateCert(ctx context.Context, token, serial, thingID, ttl string, keyBits int, keyType string) (Cert, error) {
-	_, err := cs.RevokeCert(ctx, token, serial)
+	_, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
 		return Cert{}, err
 	}
 
-	return cs.IssueCert(ctx, token, thingID, ttl, keyBits, keyType)
+	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupEditor}); err != nil {
+		return Cert{}, errors.ErrAuthorization
+	}
+
+	if _, err := cs.revokeCert(ctx, serial); err != nil {
+		return Cert{}, err
+	}
+
+	return cs.issueCert(ctx, thingID, ttl, keyBits, keyType)
 }
 
 func (cs *certsService) RevokeCert(ctx context.Context, token, serial string) (Revoke, error) {
-	var revoke Revoke
-
 	_, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
 	if err != nil {
-		return revoke, err
+		return Revoke{}, err
 	}
 
 	cert, err := cs.certsRepo.RetrieveBySerial(ctx, serial)
 	if err != nil {
-		return revoke, errors.Wrap(ErrFailedCertRevocation, err)
+		return Revoke{}, errors.Wrap(ErrFailedCertRevocation, err)
 	}
 
 	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: cert.ThingID, Action: domain.GroupEditor}); err != nil {
-		return revoke, errors.ErrAuthorization
+		return Revoke{}, errors.ErrAuthorization
 	}
 
-	if err = cs.certsRepo.Remove(ctx, serial); err != nil {
-		return revoke, errors.Wrap(errFailedToRemoveCertFromDB, err)
+	return cs.revokeCert(ctx, serial)
+}
+
+func (cs *certsService) revokeCert(ctx context.Context, serial string) (Revoke, error) {
+	if err := cs.certsRepo.Remove(ctx, serial); err != nil {
+		return Revoke{}, errors.Wrap(errFailedToRemoveCertFromDB, err)
 	}
 
-	revoke.RevocationTime = time.Now()
-	return revoke, nil
+	return Revoke{RevocationTime: time.Now()}, nil
 }
 
 func (cs *certsService) ListCerts(ctx context.Context, token, thingID string, offset, limit uint64) (Page, error) {
@@ -277,7 +290,7 @@ func (cs *certsService) RenewCert(ctx context.Context, token, serial string) (Ce
 		keyBits = defaultRenewalKeyBits
 	}
 
-	return cs.IssueCert(ctx, token, oldCert.ThingID, defaultRenewalTTL, keyBits, keyType)
+	return cs.issueCert(ctx, oldCert.ThingID, defaultRenewalTTL, keyBits, keyType)
 }
 
 func (cs *certsService) DownloadCert(ctx context.Context, token, serial string) (Cert, error) {
