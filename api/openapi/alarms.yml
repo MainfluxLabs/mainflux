@@ -95,6 +95,28 @@ paths:
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
+    patch:
+      summary: Update alarm status.
+      description: Update the status of an alarm identified by the provided ID.
+      tags:
+        - alarms
+      parameters:
+        - $ref: "#/components/parameters/AlarmId"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateAlarmStatusReq"
+      responses:
+        '200':
+          description: Alarm status updated.
+        '400':
+          description: Failed due to malformed JSON or invalid status value.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Alarm does not exist.
+        '500':
+          $ref: "#/components/responses/ServiceError"
 
   /alarms:
     patch:
@@ -213,6 +235,20 @@ components:
         maximum: 200
 
   requestBodies:
+    UpdateAlarmStatusReq:
+      description: JSON-formatted document describing the new alarm status.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                enum: [ active, noted, cleared ]
+                example: "noted"
+            required:
+              - status
     RemoveAlarmsReq:
       description: JSON-formatted document describing the identifiers of alarms to delete.
       required: true

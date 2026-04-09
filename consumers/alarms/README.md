@@ -1,20 +1,23 @@
 # Alarms
 
-Alarms service consumes messages published by the Rules engine or Lua scripts and persists triggered alarms to a PostgreSQL database. Each alarm records which thing triggered it, which rule or script caused it, the message subtopic and protocol, and the raw payload.
+Alarms service consumes messages published by the Rules engine or Lua scripts and persists triggered alarms to a PostgreSQL database. Each alarm records which thing triggered it, which rule or script caused it, the message subtopic and protocol, the raw payload, severity level, and lifecycle status.
 
 ## Data Model
 
-| Field       | Type            | Description                                                                       |
-|-------------|-----------------|-----------------------------------------------------------------------------------|
-| `id`        | UUID            | Unique alarm identifier                                                           |
-| `thing_id`  | UUID            | ID of the thing that triggered the alarm                                          |
-| `group_id`  | UUID            | ID of the group the thing belongs to                                              |
-| `rule_id`   | UUID (optional) | ID of the rule that triggered the alarm (mutually exclusive with `script_id`)     |
-| `script_id` | UUID (optional) | ID of the Lua script that triggered the alarm (mutually exclusive with `rule_id`) |
-| `subtopic`  | string          | Message subtopic                                                                  |
-| `protocol`  | string          | Protocol used to publish the triggering message                                   |
-| `payload`   | JSON object     | Raw payload of the triggering message                                             |
-| `created`   | int64           | Unix timestamp (nanoseconds) when the alarm was created                           |
+| Field       | Type            | Description                                                                                          |
+|-------------|-----------------|------------------------------------------------------------------------------------------------------|
+| `id`        | UUID            | Unique alarm identifier                                                                              |
+| `thing_id`  | UUID            | ID of the thing that triggered the alarm                                                             |
+| `group_id`  | UUID            | ID of the group the thing belongs to                                                                 |
+| `rule_id`   | UUID (optional) | ID of the rule that triggered the alarm (mutually exclusive with `script_id`)                        |
+| `script_id` | UUID (optional) | ID of the Lua script that triggered the alarm (mutually exclusive with `rule_id`)                    |
+| `subtopic`  | string          | Message subtopic                                                                                     |
+| `protocol`  | string          | Protocol used to publish the triggering message                                                      |
+| `payload`   | JSON object     | Raw message payload (excluding rule metadata)                                                        |
+| `rule`      | JSON (optional) | Conditions and operator of the rule that triggered the alarm. Only present for rule-based alarms.    |
+| `level`     | integer         | Alarm severity: 1=info, 2=warning, 3=minor, 4=major, 5=critical                                     |
+| `status`    | string          | Alarm lifecycle status: `active`, `noted`, or `cleared`                                              |
+| `created`   | int64           | Unix timestamp (nanoseconds) when the alarm was created                                              |
 
 ## Configuration
 

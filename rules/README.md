@@ -42,12 +42,13 @@ Each condition compares a named field in the message payload against a numeric t
 
 Each action specifies what to do when a rule fires.
 
-| Field  | Description                                                                         |
-|--------|-------------------------------------------------------------------------------------|
-| `type` | Action type: `alarm`, `smtp`, or `smpp`                                             |
-| `id`   | Required for `smtp` and `smpp` types — the ID of the configured notifier to trigger |
+| Field   | Description                                                                                              |
+|---------|----------------------------------------------------------------------------------------------------------|
+| `type`  | Action type: `alarm`, `smtp`, or `smpp`                                                                  |
+| `id`    | Required for `smtp` and `smpp` types — the ID of the configured notifier to trigger                     |
+| `level` | Required for `alarm` type — severity level: 1=info, 2=warning, 3=minor, 4=major, 5=critical             |
 
-- **`alarm`** — publishes an alarm event consumed by the Alarms service
+- **`alarm`** — publishes an alarm event with the specified severity level, consumed by the Alarms service
 - **`smtp`** — triggers an SMTP email notification via the registered notifier with the given `id`
 - **`smpp`** — triggers an SMPP SMS notification via the registered notifier with the given `id`
 
@@ -83,7 +84,7 @@ Each script execution receives an isolated Lua environment. The following global
 | Function                       | Returns             | Description                                                                    |
 |--------------------------------|---------------------|--------------------------------------------------------------------------------|
 | `mfx.smtp_notify(notifier_id)` | `bool[, error_msg]` | Triggers an SMTP notification via the specified notifier. Max 2 calls per run. |
-| `mfx.create_alarm()`           | `bool[, error_msg]` | Creates an alarm event attributed to this script. Max 1 call per run.          |
+| `mfx.create_alarm(level)`      | `bool[, error_msg]` | Creates an alarm event attributed to this script. Level is an integer (1=info, 2=warning, 3=minor, 4=major, 5=critical). Max 1 call per run. |
 | `mfx.log(message)`             | `bool[, error_msg]` | Appends a message to the run log (max 256 lines, 2048 chars each).             |
 
 Available Lua standard libraries: `base`, `math`, `string`, `table`. The `print` function is disabled.
@@ -120,7 +121,7 @@ mfx.log(string.format("temp=%.1f  hum=%.1f%%  dew_point=%.1f  spread=%.1f",
 -- Condensation risk: surface is near or below dew point
 if spread <= 2.0 then
   mfx.log("Condensation risk: spread=" .. string.format("%.1f", spread) .. "°C")
-  mfx.create_alarm()
+  mfx.create_alarm(3)
   mfx.smtp_notify("654e4567-e89b-12d3-a456-426614174999")
 end
 ```
