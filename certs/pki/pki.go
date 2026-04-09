@@ -335,7 +335,12 @@ func (a *agent) GenerateCRL(revokedSerials []RevokedSerial) ([]byte, error) {
 		RevokedCertificateEntries: revokedCerts,
 	}
 
-	crlDER, err := x509.CreateRevocationList(rand.Reader, template, a.caCert, a.caKey.(crypto.Signer))
+	signer, ok := a.caKey.(crypto.Signer)
+	if !ok {
+		return nil, fmt.Errorf("CA key does not implement crypto.Signer")
+	}
+
+	crlDER, err := x509.CreateRevocationList(rand.Reader, template, a.caCert, signer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CRL: %w", err)
 	}
