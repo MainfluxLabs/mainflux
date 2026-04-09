@@ -15,6 +15,7 @@ networks:
 
 volumes:
   mainfluxlabs-certs-db-volume:
+  mainfluxlabs-crl-volume:
 
 services:
   certs-db:
@@ -66,6 +67,8 @@ services:
       MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
       MF_THINGS_GRPC_URL: ${MF_THINGS_GRPC_URL}
       MF_THINGS_GRPC_TIMEOUT: ${MF_THINGS_GRPC_TIMEOUT}
+      MF_CERTS_CRL_PATH: ${MF_CERTS_CRL_PATH}
     volumes:
       - ../../ssl/certs/ca.key:/etc/ssl/certs/ca.key
       - ../../ssl/certs/ca.crt:/etc/ssl/certs/ca.crt
+      - mainfluxlabs-crl-volume:/etc/ssl/certs/crl

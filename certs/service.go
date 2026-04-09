@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"os"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/certs/pki"
@@ -25,6 +26,8 @@ var (
 	ErrNotEligibleForRenewal = errors.New("certificate not eligible for renewal yet")
 
 	errFailedToRemoveCertFromDB = errors.New("failed to remove cert serial from db")
+
+	errFailedCRLGeneration = errors.New("failed to generate CRL")
 )
 
 const (
@@ -73,6 +76,7 @@ type Config struct {
 	SignX509Cert   *x509.Certificate
 	SignRSABits    int
 	SignHoursValid string
+	CRLPath        string
 }
 
 type certsService struct {
@@ -165,8 +169,44 @@ func (cs *certsService) RevokeCert(ctx context.Context, token, serial string) (R
 		return revoke, errors.Wrap(errFailedToRemoveCertFromDB, err)
 	}
 
+	if err = cs.regenerateCRL(ctx); err != nil {
+		return revoke, errors.Wrap(errFailedCRLGeneration, err)
+	}
+
 	revoke.RevocationTime = time.Now()
 	return revoke, nil
+}
+
+func (cs *certsService) regenerateCRL(ctx context.Context) error {
+	if cs.conf.CRLPath == "" || cs.pki == nil {
+		return nil
+	}
+	return GenerateCRLFile(ctx, cs.certsRepo, cs.pki, cs.conf.CRLPath)
+}
+
+// GenerateCRLFile generates a PEM-encoded CRL file from the current revoked
+// certificates and writes it to the given path. It is used both at startup
+// and after each revocation.
+func GenerateCRLFile(ctx context.Context, repo Repository, pkiAgent pki.Agent, crlPath string) error {
+	revokedCerts, err := repo.RetrieveRevokedCerts(ctx)
+	if err != nil {
+		return err
+	}
+
+	revokedSerials := make([]pki.RevokedSerial, len(revokedCerts))
+	for i, rc := range revokedCerts {
+		revokedSerials[i] = pki.RevokedSerial{
+			Serial:    rc.Serial,
+			RevokedAt: rc.RevokedAt,
+		}
+	}
+
+	crlPEM, err := pkiAgent.GenerateCRL(revokedSerials)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(crlPath, crlPEM, 0644)
 }
 
 func (cs *certsService) ListCerts(ctx context.Context, token, thingID string, offset, limit uint64) (Page, error) {
