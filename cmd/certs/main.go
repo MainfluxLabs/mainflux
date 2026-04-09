@@ -64,7 +64,7 @@ const (
 	defSignCAKeyPath  = "ca.key"
 	defSignHoursValid = "2048h"
 	defSignRSABits    = ""
-	defCRLPath        = "/etc/ssl/certs/crl.pem"
+	defCRLPath        = "/etc/ssl/certs/crl/crl.pem"
 
 	envPort              = "MF_CERTS_HTTP_PORT"
 	envLogLevel          = "MF_CERTS_LOG_LEVEL"
