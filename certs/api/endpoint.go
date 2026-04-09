@@ -21,15 +21,7 @@ func issueCertEndpoint(svc certs.Service) endpoint.Endpoint {
 			return issueCertRes{}, err
 		}
 
-		return issueCertRes{
-			Certificate:    res.ClientCert,
-			IssuingCA:      res.IssuingCA,
-			CAChain:        res.CAChain,
-			PrivateKey:     res.ClientKey,
-			PrivateKeyType: res.PrivateKeyType,
-			Serial:         res.Serial,
-			ExpiresAt:      res.ExpiresAt,
-		}, nil
+		return buildIssueCertRes(res), nil
 	}
 }
 
@@ -45,15 +37,7 @@ func rotateCertEndpoint(svc certs.Service) endpoint.Endpoint {
 			return issueCertRes{}, err
 		}
 
-		return issueCertRes{
-			Certificate:    res.ClientCert,
-			IssuingCA:      res.IssuingCA,
-			CAChain:        res.CAChain,
-			PrivateKey:     res.ClientKey,
-			PrivateKeyType: res.PrivateKeyType,
-			Serial:         res.Serial,
-			ExpiresAt:      res.ExpiresAt,
-		}, nil
+		return buildIssueCertRes(res), nil
 	}
 }
 
@@ -142,6 +126,7 @@ func downloadCertEndpoint(svc certs.Service) endpoint.Endpoint {
 			Serial:         cert.Serial,
 			ThingID:        cert.ThingID,
 		}, nil
+
 	}
 }
 
@@ -157,14 +142,18 @@ func renewCertEndpoint(svc certs.Service) endpoint.Endpoint {
 			return issueCertRes{}, err
 		}
 
-		return issueCertRes{
-			Certificate:    cert.ClientCert,
-			IssuingCA:      cert.IssuingCA,
-			CAChain:        cert.CAChain,
-			PrivateKey:     cert.ClientKey,
-			PrivateKeyType: cert.PrivateKeyType,
-			Serial:         cert.Serial,
-			ExpiresAt:      cert.ExpiresAt,
-		}, nil
+		return buildIssueCertRes(cert), nil
+	}
+}
+
+func buildIssueCertRes(c certs.Cert) issueCertRes {
+	return issueCertRes{
+		Certificate:    c.ClientCert,
+		IssuingCA:      c.IssuingCA,
+		CAChain:        c.CAChain,
+		PrivateKey:     c.ClientKey,
+		PrivateKeyType: c.PrivateKeyType,
+		Serial:         c.Serial,
+		ExpiresAt:      c.ExpiresAt,
 	}
 }
