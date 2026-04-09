@@ -137,8 +137,6 @@ func validateKeyParams(keyType string, keyBits int) error {
 		if keyBits != pki.ECDSAKeyBits224 && keyBits != pki.ECDSAKeyBits256 && keyBits != pki.ECDSAKeyBits384 && keyBits != pki.ECDSAKeyBits521 {
 			return apiutil.ErrMissingCertData
 		}
-	case "":
-		return apiutil.ErrMissingCertData
 	default:
 		return apiutil.ErrMissingCertData
 	}
