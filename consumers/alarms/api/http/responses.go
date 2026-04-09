@@ -5,18 +5,23 @@ package http
 
 import (
 	"net/http"
+
+	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 )
 
 type alarmResponse struct {
-	ID       string         `json:"id"`
-	ThingID  string         `json:"thing_id"`
-	GroupID  string         `json:"group_id"`
-	RuleID   string         `json:"rule_id,omitempty"`
-	ScriptID string         `json:"script_id,omitempty"`
-	Subtopic string         `json:"subtopic"`
-	Protocol string         `json:"protocol"`
-	Payload  map[string]any `json:"payload"`
-	Created  int64          `json:"created"`
+	ID       string           `json:"id"`
+	ThingID  string           `json:"thing_id"`
+	GroupID  string           `json:"group_id"`
+	RuleID   string           `json:"rule_id,omitempty"`
+	ScriptID string           `json:"script_id,omitempty"`
+	Subtopic string           `json:"subtopic"`
+	Protocol string           `json:"protocol"`
+	Payload  map[string]any   `json:"payload"`
+	Rule     *alarms.RuleInfo `json:"rule,omitempty"`
+	Level    int              `json:"level"`
+	Status   string           `json:"status"`
+	Created  int64            `json:"created"`
 }
 
 type AlarmsPageRes struct {
@@ -26,6 +31,20 @@ type AlarmsPageRes struct {
 	Order  string          `json:"order,omitempty"`
 	Dir    string          `json:"dir,omitempty"`
 	Alarms []alarmResponse `json:"alarms"`
+}
+
+type updateAlarmStatusRes struct{}
+
+func (res updateAlarmStatusRes) Code() int {
+	return http.StatusOK
+}
+
+func (res updateAlarmStatusRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res updateAlarmStatusRes) Empty() bool {
+	return true
 }
 
 type removeRes struct{}

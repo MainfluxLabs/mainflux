@@ -47,6 +47,8 @@ type alarmRes struct {
 	Subtopic string         `json:"subtopic"`
 	Protocol string         `json:"protocol"`
 	Payload  map[string]any `json:"payload"`
+	Level    int            `json:"level"`
+	Status   string         `json:"status"`
 	Created  int64          `json:"created"`
 }
 
@@ -114,8 +116,8 @@ func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 	pyd, err := json.Marshal(map[string]any{"temperature": float64(30)})
 	require.Nil(t, err)
 
-	subject := fmt.Sprintf("alarms.rule.%s", ruleID)
-	for i := 0; i < n; i++ {
+	subject := fmt.Sprintf("alarms.1.rule.%s", ruleID)
+	for i := range n {
 		msg := protomfx.Message{
 			Publisher: thingID,
 			Subtopic:  subtopic,
@@ -582,5 +584,90 @@ func TestExportAlarmsByThing(t *testing.T) {
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestUpdateAlarmStatus(t *testing.T) {
+	svc := newService()
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	saveAlarms(t, svc, 1)
+	alarmID := fmt.Sprintf("%s%012d", uuid.Prefix, 1)
+
+	cases := []struct {
+		desc        string
+		auth        string
+		id          string
+		contentType string
+		status      string
+		httpStatus  int
+	}{
+		{
+			desc:        "update alarm status to noted",
+			auth:        token,
+			id:          alarmID,
+			contentType: contentType,
+			status:      alarms.AlarmStatusNoted,
+			httpStatus:  http.StatusOK,
+		},
+		{
+			desc:        "update alarm status to cleared",
+			auth:        token,
+			id:          alarmID,
+			contentType: contentType,
+			status:      alarms.AlarmStatusCleared,
+			httpStatus:  http.StatusOK,
+		},
+		{
+			desc:        "update alarm status with invalid status",
+			auth:        token,
+			id:          alarmID,
+			contentType: contentType,
+			status:      "invalid",
+			httpStatus:  http.StatusBadRequest,
+		},
+		{
+			desc:        "update alarm status with empty token",
+			auth:        emptyValue,
+			id:          alarmID,
+			contentType: contentType,
+			status:      alarms.AlarmStatusNoted,
+			httpStatus:  http.StatusUnauthorized,
+		},
+		{
+			desc:        "update alarm status without content type",
+			auth:        token,
+			id:          alarmID,
+			contentType: emptyValue,
+			status:      alarms.AlarmStatusNoted,
+			httpStatus:  http.StatusUnsupportedMediaType,
+		},
+		{
+			desc:        "update status of non-existing alarm",
+			auth:        token,
+			id:          wrongValue,
+			contentType: contentType,
+			status:      alarms.AlarmStatusNoted,
+			httpStatus:  http.StatusNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		body := toJSON(struct {
+			Status string `json:"status"`
+		}{tc.status})
+
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPatch,
+			url:         fmt.Sprintf("%s/alarms/%s", ts.URL, tc.id),
+			token:       tc.auth,
+			contentType: tc.contentType,
+			body:        strings.NewReader(body),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
+		assert.Equal(t, tc.httpStatus, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.httpStatus, res.StatusCode))
 	}
 }

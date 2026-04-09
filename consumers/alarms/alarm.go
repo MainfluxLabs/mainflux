@@ -2,11 +2,14 @@ package alarms
 
 import (
 	"context"
+
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 const (
-	AlarmOriginRule   = "rule"
-	AlarmOriginScript = "script"
+	AlarmStatusActive  = "active"
+	AlarmStatusNoted   = "noted"
+	AlarmStatusCleared = "cleared"
 )
 
 type Alarm struct {
@@ -18,12 +21,21 @@ type Alarm struct {
 	Subtopic string
 	Protocol string
 	Payload  map[string]any
+	Rule     *RuleInfo
+	Level    int
+	Status   string
 	Created  int64
 }
 
 type AlarmsPage struct {
 	Total  uint64
 	Alarms []Alarm
+}
+
+// RuleInfo captures the evaluation logic of the rule that triggered an alarm.
+type RuleInfo struct {
+	Conditions []domain.Condition `json:"conditions"`
+	Operator   string             `json:"operator,omitempty"`
 }
 
 // AlarmRepository specifies an alarm persistence API.
@@ -57,6 +69,9 @@ type AlarmRepository interface {
 	// RemoveByGroup removes alarms related to a certain group,
 	// identified by a given group ID.
 	RemoveByGroup(ctx context.Context, groupID string) error
+
+	// UpdateStatus updates the status of an alarm identified by the provided ID.
+	UpdateStatus(ctx context.Context, id, status string) error
 
 	// ExportByThing retrieves alarms related to a certain thing,
 	// identified by a given thing ID.

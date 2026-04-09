@@ -1,6 +1,8 @@
 package http
 
 import (
+	"slices"
+
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
@@ -95,10 +97,32 @@ func (req removeAlarmsReq) validate() error {
 		return apiutil.ErrEmptyList
 	}
 
-	for _, alarmID := range req.AlarmIDs {
-		if alarmID == "" {
-			return apiutil.ErrMissingAlarmID
-		}
+	if slices.Contains(req.AlarmIDs, "") {
+		return apiutil.ErrMissingAlarmID
+	}
+
+	return nil
+}
+
+type updateAlarmStatusReq struct {
+	token  string
+	id     string
+	Status string `json:"status"`
+}
+
+func (req updateAlarmStatusReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.id == "" {
+		return apiutil.ErrMissingAlarmID
+	}
+
+	switch req.Status {
+	case alarms.AlarmStatusActive, alarms.AlarmStatusNoted, alarms.AlarmStatusCleared:
+	default:
+		return apiutil.ErrInvalidAlarmStatus
 	}
 
 	return nil

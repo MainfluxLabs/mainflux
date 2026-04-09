@@ -72,6 +72,19 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE alarms DROP CONSTRAINT IF EXISTS alarm_single_origin;`,
 				},
 			},
+			{
+				Id: "alarms_3",
+				Up: []string{
+					`ALTER TABLE alarms ADD COLUMN level  SMALLINT NOT NULL DEFAULT 1;`,
+					`ALTER TABLE alarms ADD COLUMN status VARCHAR(10) NOT NULL DEFAULT 'active';`,
+					`ALTER TABLE alarms ADD COLUMN rule   JSONB;`,
+				},
+				Down: []string{
+					`ALTER TABLE alarms DROP COLUMN IF EXISTS level;`,
+					`ALTER TABLE alarms DROP COLUMN IF EXISTS status;`,
+					`ALTER TABLE alarms DROP COLUMN IF EXISTS rule;`,
+				},
+			},
 		},
 	}
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)

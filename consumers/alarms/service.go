@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
@@ -57,6 +58,9 @@ type Service interface {
 
 	// RemoveAlarms removes alarms identified with the provided IDs.
 	RemoveAlarms(ctx context.Context, token string, id ...string) error
+
+	// UpdateAlarmStatus updates the status of the alarm identified by the provided ID.
+	UpdateAlarmStatus(ctx context.Context, token, id, status string) error
 
 	// RemoveAlarmsByThing removes alarms related to the specified thing,
 	// identified by the provided thing ID.
@@ -142,6 +146,19 @@ func (as *alarmService) ViewAlarm(ctx context.Context, token, id string) (Alarm,
 	return alarm, nil
 }
 
+func (as *alarmService) UpdateAlarmStatus(ctx context.Context, token, id, status string) error {
+	alarm, err := as.alarms.RetrieveByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if _, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: alarm.ThingID, Action: domain.GroupEditor}); err != nil {
+		return errors.Wrap(errors.ErrAuthorization, err)
+	}
+
+	return as.alarms.UpdateStatus(ctx, id, status)
+}
+
 func (as *alarmService) RemoveAlarms(ctx context.Context, token string, ids ...string) error {
 	for _, id := range ids {
 		alarm, err := as.alarms.RetrieveByID(ctx, id)
@@ -195,6 +212,27 @@ func (as *alarmService) createAlarm(ctx context.Context, alarm *Alarm) error {
 
 }
 
+func extractRule(payload map[string]any) *RuleInfo {
+	ruleRaw, ok := payload["rule"]
+	if !ok {
+		return nil
+	}
+
+	delete(payload, "rule")
+
+	b, err := json.Marshal(ruleRaw)
+	if err != nil {
+		return nil
+	}
+
+	var rule RuleInfo
+	if err := json.Unmarshal(b, &rule); err != nil {
+		return nil
+	}
+
+	return &rule
+}
+
 func (as *alarmService) Consume(subject string, message any) error {
 	ctx := context.Background()
 
@@ -208,29 +246,45 @@ func (as *alarmService) Consume(subject string, message any) error {
 		return errors.Wrap(errors.ErrInvalidPayload, err)
 	}
 
+	subParts := strings.Split(subject, ".")
+	if len(subParts) < 4 {
+		return errors.ErrInvalidSubject
+	}
+
+	level, err := strconv.Atoi(subParts[1])
+	if err != nil {
+		return errors.Wrap(errors.ErrInvalidSubject, err)
+	}
+
+	originType := subParts[2]
+	originID := subParts[3]
+
+	var (
+		ruleID, scriptID string
+		rule             *RuleInfo
+	)
+
+	switch originType {
+	case domain.AlarmOriginRule:
+		ruleID = originID
+		rule = extractRule(payload)
+	case domain.AlarmOriginScript:
+		scriptID = originID
+	default:
+		return fmt.Errorf("invalid subject origin type: %s", originType)
+	}
+
 	alarm := Alarm{
 		ThingID:  msg.Publisher,
 		Subtopic: msg.Subtopic,
 		Protocol: msg.Protocol,
 		Payload:  payload,
+		Rule:     rule,
+		RuleID:   ruleID,
+		ScriptID: scriptID,
+		Level:    level,
+		Status:   AlarmStatusActive,
 		Created:  msg.Created,
-	}
-
-	subParts := strings.Split(subject, ".")
-	if len(subParts) < 3 {
-		return errors.ErrInvalidSubject
-	}
-
-	originType := subParts[1]
-	originID := subParts[2]
-
-	switch originType {
-	case AlarmOriginRule:
-		alarm.RuleID = originID
-	case AlarmOriginScript:
-		alarm.ScriptID = originID
-	default:
-		return fmt.Errorf("invalid subject origin type: %s", originType)
 	}
 
 	if err := as.createAlarm(ctx, &alarm); err != nil {

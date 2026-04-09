@@ -39,26 +39,31 @@ const (
 )
 
 var (
-	threshold = 30.0
-	condition = rules.Condition{Field: "temperature", Comparator: ">", Threshold: &threshold}
-	action    = rules.Action{Type: rules.ActionTypeAlarm}
+	threshold1, threshold2 = 30.0, 80.0
+	condTemp               = rules.Condition{Field: "temperature", Comparator: ">", Threshold: &threshold1}
+	condHum                = rules.Condition{Field: "humidity", Comparator: "<", Threshold: &threshold2}
+	action                 = rules.Action{Type: rules.ActionTypeAlarm, Level: 1}
 )
 
-type ruleRes struct {
-	ID          string            `json:"id"`
-	GroupID     string            `json:"group_id"`
-	Name        string            `json:"name"`
+type rule struct {
+	ID          string            `json:"id,omitempty"`
+	GroupID     string            `json:"group_id,omitempty"`
+	Name        string            `json:"name,omitempty"`
 	Description string            `json:"description,omitempty"`
-	Conditions  []rules.Condition `json:"conditions"`
-	Operator    string            `json:"operator"`
-	Actions     []rules.Action    `json:"actions"`
+	Conditions  []rules.Condition `json:"conditions,omitempty"`
+	Operator    string            `json:"operator,omitempty"`
+	Actions     []rules.Action    `json:"actions,omitempty"`
+}
+
+type rulesReq struct {
+	Rules []rule `json:"rules"`
 }
 
 type rulesPageRes struct {
-	Total  uint64    `json:"total"`
-	Offset uint64    `json:"offset"`
-	Limit  uint64    `json:"limit"`
-	Rules  []ruleRes `json:"rules"`
+	Total  uint64 `json:"total"`
+	Offset uint64 `json:"offset"`
+	Limit  uint64 `json:"limit"`
+	Rules  []rule `json:"rules"`
 }
 
 type thingIDsRes struct {
@@ -125,7 +130,7 @@ func saveRules(t *testing.T, svc rules.Service, n int) []rules.Rule {
 		r := rules.Rule{
 			ID:         fmt.Sprintf("%s%012d", prefixID, i+1),
 			Name:       fmt.Sprintf("%s%012d", prefixName, i+1),
-			Conditions: []rules.Condition{condition},
+			Conditions: []rules.Condition{condTemp},
 			Actions:    []rules.Action{action},
 		}
 		rs, err := svc.CreateRules(context.Background(), token, groupID, r)
@@ -140,49 +145,16 @@ func TestCreateRules(t *testing.T) {
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	makeRuleBody := func(operator string, conds ...any) string {
-		r := map[string]any{
-			"name":       ruleName,
-			"conditions": conds,
-			"actions":    []any{map[string]any{"type": rules.ActionTypeAlarm}},
-		}
-		if operator != "" {
-			r["operator"] = operator
-		}
-		return toJSON(map[string]any{"rules": []any{r}})
-	}
-
-	condTemp := map[string]any{"field": "temperature", "comparator": ">", "threshold": 30.0}
-	condHum := map[string]any{"field": "humidity", "comparator": "<", "threshold": 80.0}
-	conditions := []any{condTemp, condHum}
-
-	ruleBody := makeRuleBody("", condTemp)
-	ruleWithANDOpBody := makeRuleBody(rules.OperatorAND, conditions...)
-	ruleWithOROpBody := makeRuleBody(rules.OperatorOR, conditions...)
-	ruleWithMissingOpBody := makeRuleBody("", conditions...)
-	ruleWithInvalidOpBody := makeRuleBody("XOR", conditions...)
-
-	multipleRulesBody := toJSON(map[string]any{
-		"rules": []any{
-			map[string]any{
-				"name":       "rule-1",
-				"conditions": []any{condTemp},
-				"actions":    []any{map[string]any{"type": rules.ActionTypeAlarm}},
-			},
-			map[string]any{
-				"name":       "rule-2",
-				"conditions": []any{condHum},
-				"actions":    []any{map[string]any{"type": rules.ActionTypeAlarm}},
-			},
-		},
-	})
+	validReq := rulesReq{Rules: []rule{
+		{Name: ruleName, Conditions: []rules.Condition{condTemp}, Actions: []rules.Action{action}},
+	}}
 
 	cases := []struct {
 		desc        string
 		auth        string
 		groupID     string
 		contentType string
-		body        string
+		body        any
 		status      int
 		size        int
 	}{
@@ -191,7 +163,7 @@ func TestCreateRules(t *testing.T) {
 			auth:        token,
 			groupID:     groupID,
 			contentType: contentType,
-			body:        ruleBody,
+			body:        validReq,
 			status:      http.StatusCreated,
 			size:        1,
 		},
@@ -200,52 +172,63 @@ func TestCreateRules(t *testing.T) {
 			auth:        token,
 			groupID:     groupID,
 			contentType: contentType,
-			body:        multipleRulesBody,
-			status:      http.StatusCreated,
-			size:        2,
+			body: rulesReq{Rules: []rule{
+				{Name: "rule-1", Conditions: []rules.Condition{condTemp}, Actions: []rules.Action{action}},
+				{Name: "rule-2", Conditions: []rules.Condition{condHum}, Actions: []rules.Action{action}},
+			}},
+			status: http.StatusCreated,
+			size:   2,
 		},
 		{
 			desc:        "create rule with multiple conditions and AND operator",
 			auth:        token,
 			groupID:     groupID,
 			contentType: contentType,
-			body:        ruleWithANDOpBody,
-			status:      http.StatusCreated,
-			size:        1,
+			body: rulesReq{Rules: []rule{
+				{Name: ruleName, Conditions: []rules.Condition{condTemp, condHum}, Operator: rules.OperatorAND, Actions: []rules.Action{action}},
+			}},
+			status: http.StatusCreated,
+			size:   1,
 		},
 		{
 			desc:        "create rule with multiple conditions and OR operator",
 			auth:        token,
 			groupID:     groupID,
 			contentType: contentType,
-			body:        ruleWithOROpBody,
-			status:      http.StatusCreated,
-			size:        1,
+			body: rulesReq{Rules: []rule{
+				{Name: ruleName, Conditions: []rules.Condition{condTemp, condHum}, Operator: rules.OperatorOR, Actions: []rules.Action{action}},
+			}},
+			status: http.StatusCreated,
+			size:   1,
 		},
 		{
 			desc:        "create rule with multiple conditions and missing operator",
 			auth:        token,
 			groupID:     groupID,
 			contentType: contentType,
-			body:        ruleWithMissingOpBody,
-			status:      http.StatusBadRequest,
-			size:        0,
+			body: rulesReq{Rules: []rule{
+				{Name: ruleName, Conditions: []rules.Condition{condTemp, condHum}, Actions: []rules.Action{action}},
+			}},
+			status: http.StatusBadRequest,
+			size:   0,
 		},
 		{
 			desc:        "create rule with multiple conditions and invalid operator",
 			auth:        token,
 			groupID:     groupID,
 			contentType: contentType,
-			body:        ruleWithInvalidOpBody,
-			status:      http.StatusBadRequest,
-			size:        0,
+			body: rulesReq{Rules: []rule{
+				{Name: ruleName, Conditions: []rules.Condition{condTemp, condHum}, Operator: "XOR", Actions: []rules.Action{action}},
+			}},
+			status: http.StatusBadRequest,
+			size:   0,
 		},
 		{
 			desc:        "create rule with empty token",
 			auth:        emptyValue,
 			groupID:     groupID,
 			contentType: contentType,
-			body:        ruleBody,
+			body:        validReq,
 			status:      http.StatusUnauthorized,
 			size:        0,
 		},
@@ -254,7 +237,7 @@ func TestCreateRules(t *testing.T) {
 			auth:        wrongValue,
 			groupID:     groupID,
 			contentType: contentType,
-			body:        ruleBody,
+			body:        validReq,
 			status:      http.StatusUnauthorized,
 			size:        0,
 		},
@@ -263,7 +246,7 @@ func TestCreateRules(t *testing.T) {
 			auth:        token,
 			groupID:     wrongValue,
 			contentType: contentType,
-			body:        ruleBody,
+			body:        validReq,
 			status:      http.StatusForbidden,
 			size:        0,
 		},
@@ -272,7 +255,7 @@ func TestCreateRules(t *testing.T) {
 			auth:        token,
 			groupID:     groupID,
 			contentType: emptyValue,
-			body:        ruleBody,
+			body:        validReq,
 			status:      http.StatusUnsupportedMediaType,
 			size:        0,
 		},
@@ -299,7 +282,7 @@ func TestCreateRules(t *testing.T) {
 			auth:        token,
 			groupID:     groupID,
 			contentType: contentType,
-			body:        toJSON(map[string]any{"rules": []any{}}),
+			body:        rulesReq{Rules: []rule{}},
 			status:      http.StatusBadRequest,
 			size:        0,
 		},
@@ -308,14 +291,9 @@ func TestCreateRules(t *testing.T) {
 			auth:        token,
 			groupID:     groupID,
 			contentType: contentType,
-			body: toJSON(map[string]any{
-				"rules": []any{
-					map[string]any{
-						"name":    ruleName,
-						"actions": []any{map[string]any{"type": rules.ActionTypeAlarm}},
-					},
-				},
-			}),
+			body: rulesReq{Rules: []rule{
+				{Name: ruleName, Actions: []rules.Action{{Type: rules.ActionTypeAlarm}}},
+			}},
 			status: http.StatusBadRequest,
 			size:   0,
 		},
@@ -324,14 +302,9 @@ func TestCreateRules(t *testing.T) {
 			auth:        token,
 			groupID:     groupID,
 			contentType: contentType,
-			body: toJSON(map[string]any{
-				"rules": []any{
-					map[string]any{
-						"name":       ruleName,
-						"conditions": []any{condTemp},
-					},
-				},
-			}),
+			body: rulesReq{Rules: []rule{
+				{Name: ruleName, Conditions: []rules.Condition{condTemp}},
+			}},
 			status: http.StatusBadRequest,
 			size:   0,
 		},
@@ -340,38 +313,47 @@ func TestCreateRules(t *testing.T) {
 			auth:        token,
 			groupID:     groupID,
 			contentType: contentType,
-			body: toJSON(map[string]any{
-				"rules": []any{
-					map[string]any{
-						"name":       ruleName,
-						"conditions": []any{condTemp},
-						"actions":    []any{map[string]any{"type": "unknown"}},
-					},
-				},
-			}),
+			body: rulesReq{Rules: []rule{
+				{Name: ruleName, Conditions: []rules.Condition{condTemp}, Actions: []rules.Action{{Type: "unknown"}}},
+			}},
+			status: http.StatusBadRequest,
+			size:   0,
+		},
+		{
+			desc:        "create rule with invalid alarm level",
+			auth:        token,
+			groupID:     groupID,
+			contentType: contentType,
+			body: rulesReq{Rules: []rule{
+				{Name: ruleName, Conditions: []rules.Condition{condTemp}, Actions: []rules.Action{{Type: rules.ActionTypeAlarm, Level: 0}}},
+			}},
 			status: http.StatusBadRequest,
 			size:   0,
 		},
 	}
 
 	for _, tc := range cases {
+		reqBody, ok := tc.body.(string)
+		if !ok {
+			reqBody = toJSON(tc.body)
+		}
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPost,
 			url:         fmt.Sprintf("%s/groups/%s/rules", ts.URL, tc.groupID),
 			contentType: tc.contentType,
 			token:       tc.auth,
-			body:        strings.NewReader(tc.body),
+			body:        strings.NewReader(reqBody),
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
 
-		var body struct {
-			Rules []ruleRes `json:"rules"`
+		var resBody struct {
+			Rules []rule `json:"rules"`
 		}
-		json.NewDecoder(res.Body).Decode(&body)
+		json.NewDecoder(res.Body).Decode(&resBody)
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.status, res.StatusCode))
-		assert.Equal(t, tc.size, len(body.Rules), fmt.Sprintf("%s: expected %d rules got %d\n", tc.desc, tc.size, len(body.Rules)))
+		assert.Equal(t, tc.size, len(resBody.Rules), fmt.Sprintf("%s: expected %d rules got %d\n", tc.desc, tc.size, len(resBody.Rules)))
 	}
 }
 
@@ -709,18 +691,19 @@ func TestUpdateRule(t *testing.T) {
 	saved := saveRules(t, svc, 1)
 	ruleID := saved[0].ID
 
-	updatedBody := toJSON(map[string]any{
-		"name":       "updated-rule",
-		"conditions": []any{map[string]any{"field": "temperature", "comparator": ">", "threshold": 35.0}},
-		"actions":    []any{map[string]any{"type": rules.ActionTypeAlarm}},
-	})
+	updThreshold := 35.0
+	updatedRule := rule{
+		Name:       "updated-rule",
+		Conditions: []rules.Condition{{Field: "temperature", Comparator: ">", Threshold: &updThreshold}},
+		Actions:    []rules.Action{action},
+	}
 
 	cases := []struct {
 		desc        string
 		auth        string
 		id          string
 		contentType string
-		body        string
+		body        any
 		status      int
 	}{
 		{
@@ -728,7 +711,7 @@ func TestUpdateRule(t *testing.T) {
 			auth:        token,
 			id:          ruleID,
 			contentType: contentType,
-			body:        updatedBody,
+			body:        updatedRule,
 			status:      http.StatusOK,
 		},
 		{
@@ -736,7 +719,7 @@ func TestUpdateRule(t *testing.T) {
 			auth:        emptyValue,
 			id:          ruleID,
 			contentType: contentType,
-			body:        updatedBody,
+			body:        updatedRule,
 			status:      http.StatusUnauthorized,
 		},
 		{
@@ -744,7 +727,7 @@ func TestUpdateRule(t *testing.T) {
 			auth:        wrongValue,
 			id:          ruleID,
 			contentType: contentType,
-			body:        updatedBody,
+			body:        updatedRule,
 			status:      http.StatusUnauthorized,
 		},
 		{
@@ -752,7 +735,7 @@ func TestUpdateRule(t *testing.T) {
 			auth:        token,
 			id:          wrongValue,
 			contentType: contentType,
-			body:        updatedBody,
+			body:        updatedRule,
 			status:      http.StatusNotFound,
 		},
 		{
@@ -760,7 +743,7 @@ func TestUpdateRule(t *testing.T) {
 			auth:        token,
 			id:          ruleID,
 			contentType: emptyValue,
-			body:        updatedBody,
+			body:        updatedRule,
 			status:      http.StatusUnsupportedMediaType,
 		},
 		{
@@ -776,22 +759,23 @@ func TestUpdateRule(t *testing.T) {
 			auth:        token,
 			id:          ruleID,
 			contentType: contentType,
-			body: toJSON(map[string]any{
-				"name":    "updated-rule",
-				"actions": []any{map[string]any{"type": rules.ActionTypeAlarm}},
-			}),
-			status: http.StatusBadRequest,
+			body:        rule{Name: "updated-rule", Actions: []rules.Action{{Type: rules.ActionTypeAlarm}}},
+			status:      http.StatusBadRequest,
 		},
 	}
 
 	for _, tc := range cases {
+		reqBody, ok := tc.body.(string)
+		if !ok {
+			reqBody = toJSON(tc.body)
+		}
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPut,
 			url:         fmt.Sprintf("%s/rules/%s", ts.URL, tc.id),
 			contentType: tc.contentType,
 			token:       tc.auth,
-			body:        strings.NewReader(tc.body),
+			body:        strings.NewReader(reqBody),
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
