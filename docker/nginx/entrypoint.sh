@@ -68,6 +68,9 @@ if [ -d "$(dirname "$CRL_FILE")" ]; then
             fi
         done
     ) &
+else
+    echo "CRL directory not mounted. Starting without CRL."
+    sed -i '/ssl_crl/d' /etc/nginx/snippets/ssl-client-active.conf
 fi
 
 exec nginx -g "daemon off;"
