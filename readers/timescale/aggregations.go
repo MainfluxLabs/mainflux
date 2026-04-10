@@ -50,7 +50,6 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 	condition := dbutil.BuildWhereClause(jsonConditions(rpm)...)
 	bucket := timeBucketExpr(rpm.AggValue, rpm.AggInterval, jsonOrder)
 	aggExpr, err := jsonAggExpr(rpm.AggType, rpm.AggFields)
-
 	if err != nil {
 		return []readers.Message{}, 0, errors.Wrap(readers.ErrReadMessages, err)
 	}
@@ -64,7 +63,7 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 		return []readers.Message{}, 0, errors.Wrap(readers.ErrReadMessages, err)
 	}
 
-	having, err := jsonHaving(rpm.AggFields)
+	having, err := jsonFilterNullFields(rpm.AggFields)
 	if err != nil {
 		return []readers.Message{}, 0, errors.Wrap(readers.ErrReadMessages, err)
 	}
@@ -253,7 +252,7 @@ func jsonSelectFields(aggFields []string) (string, error) {
           jsonb_build_object(%s) AS payload`, strings.Join(pairs, ", ")), nil
 }
 
-func jsonHaving(aggFields []string) (string, error) {
+func jsonFilterNullFields(aggFields []string) (string, error) {
 	if len(aggFields) == 0 {
 		return "1=1", nil
 	}

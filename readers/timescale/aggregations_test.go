@@ -193,7 +193,7 @@ func TestJsonHaving(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			result, err := jsonHaving(tc.aggFields)
+			result, err := jsonFilterNullFields(tc.aggFields)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.res, result)
 		})
