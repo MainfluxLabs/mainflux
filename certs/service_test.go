@@ -73,6 +73,8 @@ func newService() (certs.Service, pki.Agent, error) {
 			Key: thingKey,
 		}
 	}
+
+	ths[token] = things.Thing{ID: thingID, Key: thingKey}
 	tc := pkgmocks.NewThingsServiceClient(map[string]things.Profile{}, ths, map[string]things.Group{})
 
 	tlsCert, caCert, err := loadCertificates(caPath, caKeyPath)
@@ -138,7 +140,7 @@ func TestIssueCert(t *testing.T) {
 			ttl:     ttl,
 			keyType: keyType,
 			keyBits: keyBits,
-			err:     certs.ErrFailedCertCreation,
+			err:     errors.ErrAuthorization,
 		},
 		{
 			desc:    "issue new cert with invalid token",
