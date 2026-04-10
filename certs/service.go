@@ -130,7 +130,7 @@ func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, tt
 	}
 
 	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupEditor}); err != nil {
-		return Cert{}, errors.ErrAuthorization
+		return Cert{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
 	return cs.issueCert(ctx, thingID, ttl, keyBits, keyType)
@@ -168,11 +168,6 @@ func (cs *certsService) issueCert(ctx context.Context, thingID, ttl string, keyB
 }
 
 func (cs *certsService) RotateCert(ctx context.Context, token, serial, thingID, ttl string, keyBits int, keyType string) (Cert, error) {
-	_, err := cs.auth.Identify(ctx, &protomfx.Token{Value: token})
-	if err != nil {
-		return Cert{}, err
-	}
-
 	if _, err := cs.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupEditor}); err != nil {
 		return Cert{}, errors.ErrAuthorization
 	}
