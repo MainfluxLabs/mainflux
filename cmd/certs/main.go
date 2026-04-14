@@ -26,6 +26,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
@@ -98,12 +99,7 @@ const (
 	envSignCAKey      = "MF_CERTS_SIGN_CA_KEY_PATH"
 	envSignHoursValid = "MF_CERTS_SIGN_HOURS_VALID"
 	envSignRSABits    = "MF_CERTS_SIGN_RSA_BITS"
-	envSignCAPath        = "MF_CERTS_SIGN_CA_PATH"
-	envSignCAKey         = "MF_CERTS_SIGN_CA_KEY_PATH"
-	envSignHoursValid    = "MF_CERTS_SIGN_HOURS_VALID"
-	envSignRSABits       = "MF_CERTS_SIGN_RSA_BITS"
-	envCRLPath           = "MF_CERTS_CRL_PATH"
-
+	envCRLPath        = "MF_CERTS_CRL_PATH"
 )
 
 var (
@@ -301,8 +297,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, db *sqlx.DB, logger logger.Logger, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config, pkiAgent pki.Agent) (certs.Service, certs.Repository) {
-func newService(ac domain.AuthClient, tc domain.ThingsClient, db *sqlx.DB, logger logger.Logger, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config, pkiAgent pki.Agent) certs.Service {
+func newService(ac domain.AuthClient, tc domain.ThingsClient, db *sqlx.DB, logger logger.Logger, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config, pkiAgent pki.Agent) (certs.Service, certs.Repository) {
 	database := dbutil.NewDatabase(db)
 	certsRepo := postgres.NewRepository(database)
 

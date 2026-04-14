@@ -12,6 +12,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/logger"
 	mfcron "github.com/MainfluxLabs/mainflux/pkg/cron"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
@@ -40,14 +41,14 @@ type CertEvent struct {
 type CertScheduler struct {
 	repo      Repository
 	pki       pki.Agent
-	things    protomfx.ThingsServiceClient
+	things    domain.ThingsClient
 	publisher messaging.Publisher
 	logger    logger.Logger
 	sm        *mfcron.ScheduleManager
 }
 
 // NewCertScheduler creates a new certificate rotation scheduler.
-func NewCertScheduler(repo Repository, pkiAgent pki.Agent, things protomfx.ThingsServiceClient, pub messaging.Publisher, logger logger.Logger) *CertScheduler {
+func NewCertScheduler(repo Repository, pkiAgent pki.Agent, things domain.ThingsClient, pub messaging.Publisher, logger logger.Logger) *CertScheduler {
 	return &CertScheduler{
 		repo:      repo,
 		pki:       pkiAgent,
@@ -113,12 +114,12 @@ func (cs *CertScheduler) renewAndNotify(ctx context.Context, oldCert Cert) error
 		keyBits = defaultRenewalKeyBits
 	}
 
-	thingKeyRes, err := cs.things.GetKeyByThingID(ctx, &protomfx.ThingID{Value: oldCert.ThingID})
+	thingKey, err := cs.things.GetKeyByThingID(ctx, oldCert.ThingID)
 	if err != nil {
 		return errors.Wrap(ErrFailedCertCreation, err)
 	}
 
-	pkiCert, err := cs.pki.IssueCert(thingKeyRes.GetValue(), defaultRenewalTTL, keyType, keyBits)
+	pkiCert, err := cs.pki.IssueCert(thingKey.Value, defaultRenewalTTL, keyType, keyBits)
 	if err != nil {
 		return errors.Wrap(ErrFailedCertCreation, err)
 	}
