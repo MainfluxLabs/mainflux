@@ -1,6 +1,7 @@
 package pki
 
 import (
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -56,6 +57,16 @@ type Agent interface {
 
 	// VerifyCert validates that the certificate is valid.
 	VerifyCert(certPEM string) (*x509.Certificate, error)
+
+	// GenerateCRL creates a PEM-encoded X.509 Certificate Revocation List
+	// containing the given revoked serial numbers, signed by the CA.
+	GenerateCRL(revokedSerials []RevokedSerial) ([]byte, error)
+}
+
+// RevokedSerial holds a certificate serial number and its revocation time.
+type RevokedSerial struct {
+	Serial    string
+	RevokedAt time.Time
 }
 
 var (
@@ -298,6 +309,48 @@ func (a *agent) VerifyCert(certPEM string) (*x509.Certificate, error) {
 	}
 
 	return cert, nil
+}
+
+func (a *agent) GenerateCRL(revokedSerials []RevokedSerial) ([]byte, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	revokedCerts := make([]x509.RevocationListEntry, 0, len(revokedSerials))
+	for _, rs := range revokedSerials {
+		serial := new(big.Int)
+		if _, ok := serial.SetString(rs.Serial, 10); !ok {
+			return nil, fmt.Errorf("invalid serial number: %s", rs.Serial)
+		}
+		revokedCerts = append(revokedCerts, x509.RevocationListEntry{
+			SerialNumber:   serial,
+			RevocationTime: rs.RevokedAt,
+		})
+	}
+
+	now := time.Now()
+	template := &x509.RevocationList{
+		Number:              big.NewInt(now.UnixNano()),
+		ThisUpdate:          now,
+		NextUpdate:          now.Add(24 * time.Hour),
+		RevokedCertificateEntries: revokedCerts,
+	}
+
+	signer, ok := a.caKey.(crypto.Signer)
+	if !ok {
+		return nil, fmt.Errorf("CA key does not implement crypto.Signer")
+	}
+
+	crlDER, err := x509.CreateRevocationList(rand.Reader, template, a.caCert, signer)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create CRL: %w", err)
+	}
+
+	crlPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "X509 CRL",
+		Bytes: crlDER,
+	})
+
+	return crlPEM, nil
 }
 
 func ecdsaCurve(keyBits int) elliptic.Curve {
