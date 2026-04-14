@@ -9,6 +9,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/users"
+	"github.com/MainfluxLabs/mainflux/users/api"
 )
 
 const (
@@ -110,5 +111,5 @@ func (req listPlatformInvitesRequest) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return req.pm.Validate(maxLimitSize, maxEmailSize)
+	return api.ValidatePageMetadata(req.pm, maxLimitSize, maxEmailSize)
 }

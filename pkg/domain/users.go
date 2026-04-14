@@ -4,6 +4,7 @@
 package domain
 
 import (
+	"context"
 	"regexp"
 	"time"
 
@@ -47,6 +48,19 @@ type UsersPage struct {
 	Users []User `json:"users"`
 }
 
+// PageMetadata contains page metadata that helps navigation.
+type UsersPageMetadata struct {
+	Total    uint64   `json:"total,omitempty"`
+	Offset   uint64   `json:"offset,omitempty"`
+	Limit    uint64   `json:"limit,omitempty"`
+	Order    string   `json:"order,omitempty"`
+	Dir      string   `json:"dir,omitempty"`
+	Email    string   `json:"email,omitempty"`
+	Status   string   `json:"status,omitempty"`
+	State    string   `json:"state,omitempty"`
+	Metadata Metadata `json:"metadata,omitempty"`
+}
+
 // PlatformInvite represents platform invite information.
 type PlatformInvite struct {
 	ID           string     `json:"id,omitempty"`
@@ -61,4 +75,12 @@ type PlatformInvite struct {
 type PlatformInvitesPage struct {
 	Total   uint64           `json:"total"`
 	Invites []PlatformInvite `json:"invites"`
+}
+
+type UsersClient interface {
+	// GetUsersByIDs retrieves users by their IDs with optional pagination.
+	GetUsersByIDs(ctx context.Context, ids []string, pm UsersPageMetadata) (UsersPage, error)
+
+	// GetUsersByEmails retrieves users by their email addresses.
+	GetUsersByEmails(ctx context.Context, emails []string) ([]User, error)
 }

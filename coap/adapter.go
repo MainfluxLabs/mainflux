@@ -39,13 +39,13 @@ type Service interface {
 var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
-	things  protomfx.ThingsServiceClient
+	things  domain.ThingsClient
 	pubsub  messaging.PubSub
 	obsLock sync.Mutex
 }
 
 // New instantiates the CoAP adapter implementation.
-func New(things protomfx.ThingsServiceClient, pubsub messaging.PubSub) Service {
+func New(things domain.ThingsClient, pubsub messaging.PubSub) Service {
 	as := &adapterService{
 		things:  things,
 		pubsub:  pubsub,
@@ -56,11 +56,7 @@ func New(things protomfx.ThingsServiceClient, pubsub messaging.PubSub) Service {
 }
 
 func (svc *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg protomfx.Message) error {
-	tk := &protomfx.ThingKey{
-		Value: key.Value,
-		Type:  key.Type,
-	}
-	pc, err := svc.things.GetPubConfigByKey(ctx, tk)
+	pc, err := svc.things.GetPubConfigByKey(ctx, key)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
@@ -77,11 +73,7 @@ func (svc *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key domain.ThingKey, subtopic string, c Client) error {
-	tk := &protomfx.ThingKey{
-		Value: key.Value,
-		Type:  key.Type,
-	}
-	if _, err := svc.things.GetPubConfigByKey(ctx, tk); err != nil {
+	if _, err := svc.things.GetPubConfigByKey(ctx, key); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -89,12 +81,12 @@ func (svc *adapterService) Subscribe(ctx context.Context, key domain.ThingKey, s
 }
 
 func (svc *adapterService) SendCommandToThing(ctx context.Context, key domain.ThingKey, thingID string, msg protomfx.Message) error {
-	res, err := svc.things.Identify(ctx, &protomfx.ThingKey{Value: key.Value, Type: key.Type})
+	res, err := svc.things.Identify(ctx, key)
 	if err != nil {
 		return err
 	}
 
-	if _, err := svc.things.CanThingCommand(ctx, &protomfx.ThingCommandReq{PublisherID: res.GetValue(), RecipientID: thingID}); err != nil {
+	if err := svc.things.CanThingCommand(ctx, domain.ThingCommandReq{PublisherID: res, RecipientID: thingID}); err != nil {
 		return err
 	}
 
@@ -102,12 +94,12 @@ func (svc *adapterService) SendCommandToThing(ctx context.Context, key domain.Th
 }
 
 func (svc *adapterService) SendCommandToGroup(ctx context.Context, key domain.ThingKey, groupID string, msg protomfx.Message) error {
-	res, err := svc.things.Identify(ctx, &protomfx.ThingKey{Value: key.Value, Type: key.Type})
+	thingID, err := svc.things.Identify(ctx, key)
 	if err != nil {
 		return err
 	}
 
-	if _, err := svc.things.CanThingGroupCommand(ctx, &protomfx.ThingGroupCommandReq{PublisherID: res.GetValue(), GroupID: groupID}); err != nil {
+	if err := svc.things.CanThingGroupCommand(ctx, domain.ThingGroupCommandReq{PublisherID: thingID, GroupID: groupID}); err != nil {
 		return err
 	}
 
@@ -115,11 +107,7 @@ func (svc *adapterService) SendCommandToGroup(ctx context.Context, key domain.Th
 }
 
 func (svc *adapterService) Unsubscribe(ctx context.Context, key domain.ThingKey, subtopic, token string) error {
-	tk := &protomfx.ThingKey{
-		Value: key.Value,
-		Type:  key.Type,
-	}
-	if _, err := svc.things.GetPubConfigByKey(ctx, tk); err != nil {
+	if _, err := svc.things.GetPubConfigByKey(ctx, key); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 

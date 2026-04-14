@@ -12,8 +12,8 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/ws"
 	"github.com/MainfluxLabs/mainflux/ws/api"
@@ -36,7 +36,7 @@ var (
 	bearerAuth = apiutil.BearerPrefix + userToken
 )
 
-func newService(tc protomfx.ThingsServiceClient) (ws.Service, mocks.MockPubSub) {
+func newService(tc domain.ThingsClient) (ws.Service, mocks.MockPubSub) {
 	pubsub := mocks.NewPubSub()
 	return ws.New(tc, pubsub), pubsub
 }

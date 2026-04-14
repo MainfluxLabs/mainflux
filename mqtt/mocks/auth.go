@@ -3,13 +3,11 @@ package mocks
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-var _ protomfx.AuthServiceClient = (*authServiceMock)(nil)
+var _ domain.AuthClient = (*authServiceMock)(nil)
 
 type SubjectSet struct {
 	Object   string
@@ -21,60 +19,60 @@ type authServiceMock struct {
 	authz map[string][]SubjectSet
 }
 
-// NewAuth creates mock of auth service.
-func NewAuth(users map[string]string, authz map[string][]SubjectSet) protomfx.AuthServiceClient {
+// NewAuth creates mock of auth service client.
+func NewAuth(users map[string]string, authz map[string][]SubjectSet) domain.AuthClient {
 	return &authServiceMock{users, authz}
 }
 
-func (svc authServiceMock) Identify(_ context.Context, in *protomfx.Token, _ ...grpc.CallOption) (*protomfx.UserIdentity, error) {
-	if id, ok := svc.users[in.Value]; ok {
-		return &protomfx.UserIdentity{Id: id, Email: id}, nil
+func (svc authServiceMock) Identify(_ context.Context, token string) (domain.Identity, error) {
+	if id, ok := svc.users[token]; ok {
+		return domain.Identity{ID: id, Email: id}, nil
 	}
-	return nil, errors.ErrAuthentication
+	return domain.Identity{}, errors.ErrAuthentication
 }
 
-func (svc authServiceMock) Issue(_ context.Context, in *protomfx.IssueReq, _ ...grpc.CallOption) (*protomfx.Token, error) {
-	if id, ok := svc.users[in.GetEmail()]; ok {
-		switch in.Type {
+func (svc authServiceMock) Issue(_ context.Context, id, email string, keyType uint32) (string, error) {
+	if id, ok := svc.users[email]; ok {
+		switch keyType {
 		default:
-			return &protomfx.Token{Value: id}, nil
+			return id, nil
 		}
 	}
-	return nil, errors.ErrAuthentication
+	return "", errors.ErrAuthentication
 }
 
-func (svc authServiceMock) Authorize(_ context.Context, req *protomfx.AuthorizeReq, _ ...grpc.CallOption) (r *emptypb.Empty, err error) {
-	if req.GetToken() != "token" {
-		return &emptypb.Empty{}, errors.ErrAuthorization
+func (svc authServiceMock) Authorize(_ context.Context, ar domain.AuthzReq) error {
+	if ar.Token != "token" {
+		return errors.ErrAuthorization
 	}
 
-	return &emptypb.Empty{}, nil
+	return nil
 }
 
-func (svc authServiceMock) GetOwnerIDByOrg(context.Context, *protomfx.OrgID, ...grpc.CallOption) (*protomfx.OwnerID, error) {
+func (svc authServiceMock) GetOwnerIDByOrg(context.Context, string) (string, error) {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) AssignRole(context.Context, *protomfx.AssignRoleReq, ...grpc.CallOption) (*emptypb.Empty, error) {
+func (svc authServiceMock) AssignRole(context.Context, string, string) error {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) RetrieveRole(context.Context, *protomfx.RetrieveRoleReq, ...grpc.CallOption) (*protomfx.RetrieveRoleRes, error) {
+func (svc authServiceMock) RetrieveRole(context.Context, string) (string, error) {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) CreateDormantOrgInvite(context.Context, *protomfx.CreateDormantOrgInviteReq, ...grpc.CallOption) (*emptypb.Empty, error) {
+func (svc authServiceMock) CreateDormantOrgInvite(context.Context, string, string, string, string, []domain.GroupInvite) error {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) ActivateOrgInvite(context.Context, *protomfx.ActivateOrgInviteReq, ...grpc.CallOption) (*emptypb.Empty, error) {
+func (svc authServiceMock) ActivateOrgInvite(context.Context, string, string, string) error {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) ViewOrg(context.Context, *protomfx.ViewOrgReq, ...grpc.CallOption) (*protomfx.Org, error) {
+func (svc authServiceMock) GetDormantOrgInviteByPlatformInvite(context.Context, string) (domain.OrgInvite, error) {
 	panic("not implemented")
 }
 
-func (svc authServiceMock) GetDormantOrgInviteByPlatformInvite(context.Context, *protomfx.GetDormantOrgInviteByPlatformInviteReq, ...grpc.CallOption) (*protomfx.OrgInvite, error) {
+func (svc authServiceMock) ViewOrg(context.Context, string, string) (domain.Org, error) {
 	panic("not implemented")
 }

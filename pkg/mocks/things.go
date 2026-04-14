@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	domain "github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
@@ -20,12 +20,12 @@ type mainfluxThings struct {
 	counter  uint64
 	things   map[string]things.Thing
 	profiles map[string]things.Profile
-	auth     protomfx.AuthServiceClient
+	auth     domain.AuthClient
 }
 
 // NewThingsService returns Mainflux Things service mock.
 // Only methods used by SDK are mocked.
-func NewThingsService(things map[string]things.Thing, profiles map[string]things.Profile, auth protomfx.AuthServiceClient) things.Service {
+func NewThingsService(things map[string]things.Thing, profiles map[string]things.Profile, auth domain.AuthClient) things.Service {
 	return &mainfluxThings{
 		things:   things,
 		profiles: profiles,
@@ -162,7 +162,7 @@ func (svc *mainfluxThings) GetPubConfigByKey(context.Context, things.ThingKey) (
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) GetConfigByThing(context.Context, string) (map[string]any, error) {
+func (svc *mainfluxThings) GetConfigByThing(context.Context, string) (*domain.ProfileConfig, error) {
 	panic("not implemented")
 }
 

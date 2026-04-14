@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
@@ -21,7 +22,7 @@ var (
 	errInvalidNestedJSON = errors.New("invalid nested JSON object")
 )
 
-func TransformPayload(transformer protomfx.Transformer, msg *protomfx.Message) error {
+func TransformPayload(transformer domain.Transformer, msg *protomfx.Message) error {
 	var payload any
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
 		return errors.Wrap(ErrTransform, err)
@@ -81,7 +82,7 @@ func TransformPayload(transformer protomfx.Transformer, msg *protomfx.Message) e
 	}
 }
 
-func transformTimeField(payload any, transformer protomfx.Transformer) (int64, error) {
+func transformTimeField(payload any, transformer domain.Transformer) (int64, error) {
 	if transformer.TimeField == "" {
 		return 0, nil
 	}

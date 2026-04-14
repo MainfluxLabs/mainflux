@@ -14,8 +14,8 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -58,7 +58,7 @@ var (
 	usersList = []users.User{user, admin}
 )
 
-func newServer(jsonMessages []mfjson.Message, senmlMessaages []senml.Message, tc protomfx.ThingsServiceClient, ac protomfx.AuthServiceClient) *httptest.Server {
+func newServer(jsonMessages []mfjson.Message, senmlMessaages []senml.Message, tc domain.ThingsClient, ac domain.AuthClient) *httptest.Server {
 	logger := logger.NewMock()
 
 	jsonRepo := rmocks.NewJSONRepository("", fromJSON(jsonMessages))
@@ -95,7 +95,7 @@ func (tr testRequest) make() (*http.Response, error) {
 
 	return tr.client.Do(req)
 }
-func newAuthService() protomfx.AuthServiceClient {
+func newAuthService() domain.AuthClient {
 	return mocks.NewAuthService(admin.ID, usersList, nil)
 }
 
@@ -150,9 +150,8 @@ func TestListSenMLMessages(t *testing.T) {
 
 	authSvc := newAuthService()
 
-	token, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
+	adminToken, err := authSvc.Issue(context.Background(), admin.ID, admin.Email, 0)
 	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
-	adminToken := token.GetValue()
 
 	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
 		adminToken: {ID: pubID},
@@ -517,9 +516,8 @@ func TestListJSONMessages(t *testing.T) {
 
 	authSvc := newAuthService()
 
-	token, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
+	adminToken, err := authSvc.Issue(context.Background(), admin.ID, admin.Email, 0)
 	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
-	adminToken := token.GetValue()
 
 	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
 		adminToken: {ID: pubID},
@@ -733,9 +731,8 @@ func TestDeleteSenMLMessages(t *testing.T) {
 
 	authSvc := newAuthService()
 
-	token, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
+	adminToken, err := authSvc.Issue(context.Background(), admin.ID, admin.Email, 0)
 	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
-	adminToken := token.GetValue()
 
 	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
 		adminToken: {ID: pubID},
@@ -796,9 +793,8 @@ func TestDeleteJSONMessages(t *testing.T) {
 
 	authSvc := newAuthService()
 
-	token, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: admin.ID, Email: admin.Email})
+	adminToken, err := authSvc.Issue(context.Background(), admin.ID, admin.Email, 0)
 	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
-	adminToken := token.GetValue()
 
 	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
 		adminToken: {ID: pubID},

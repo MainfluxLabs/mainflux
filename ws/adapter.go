@@ -42,12 +42,12 @@ type Service interface {
 var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
-	things protomfx.ThingsServiceClient
+	things domain.ThingsClient
 	pubsub messaging.PubSub
 }
 
 // New instantiates the WS adapter implementation
-func New(things protomfx.ThingsServiceClient, pubsub messaging.PubSub) Service {
+func New(things domain.ThingsClient, pubsub messaging.PubSub) Service {
 	return &adapterService{
 		things: things,
 		pubsub: pubsub,
@@ -55,7 +55,7 @@ func New(things protomfx.ThingsServiceClient, pubsub messaging.PubSub) Service {
 }
 
 func (svc *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg protomfx.Message) error {
-	pc, err := svc.things.GetPubConfigByKey(ctx, &protomfx.ThingKey{Value: key.Value, Type: key.Type})
+	pc, err := svc.things.GetPubConfigByKey(ctx, domain.ThingKey{Value: key.Value, Type: key.Type})
 	if err != nil {
 		return err
 	}
@@ -72,26 +72,25 @@ func (svc *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key domain.ThingKey, subtopic string, c *Client) error {
-	res, err := svc.things.Identify(ctx, &protomfx.ThingKey{Value: key.Value, Type: key.Type})
+	thingID, err := svc.things.Identify(ctx, domain.ThingKey{Value: key.Value, Type: key.Type})
 	if err != nil {
 		return err
 	}
-	c.id = res.GetValue()
 
-	return svc.pubsub.Subscribe(c.id, subtopic, c)
+	return svc.pubsub.Subscribe(thingID, subtopic, c)
 }
 
 func (svc *adapterService) Unsubscribe(ctx context.Context, key domain.ThingKey, subtopic string) error {
-	res, err := svc.things.Identify(ctx, &protomfx.ThingKey{Value: key.Value, Type: key.Type})
+	thingID, err := svc.things.Identify(ctx, domain.ThingKey{Value: key.Value, Type: key.Type})
 	if err != nil {
 		return err
 	}
 
-	return svc.pubsub.Unsubscribe(res.GetValue(), subtopic)
+	return svc.pubsub.Unsubscribe(thingID, subtopic)
 }
 
 func (svc *adapterService) SendCommandToThing(ctx context.Context, token, thingID string, msg protomfx.Message) error {
-	if _, err := svc.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupEditor}); err != nil {
+	if err := svc.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupEditor}); err != nil {
 		return err
 	}
 
@@ -99,12 +98,12 @@ func (svc *adapterService) SendCommandToThing(ctx context.Context, token, thingI
 }
 
 func (svc *adapterService) SendCommandToThingByKey(ctx context.Context, key domain.ThingKey, thingID string, msg protomfx.Message) error {
-	res, err := svc.things.Identify(ctx, &protomfx.ThingKey{Value: key.Value, Type: key.Type})
+	senderThingID, err := svc.things.Identify(ctx, domain.ThingKey{Value: key.Value, Type: key.Type})
 	if err != nil {
 		return err
 	}
 
-	if _, err := svc.things.CanThingCommand(ctx, &protomfx.ThingCommandReq{PublisherID: res.GetValue(), RecipientID: thingID}); err != nil {
+	if err := svc.things.CanThingCommand(ctx, domain.ThingCommandReq{PublisherID: senderThingID, RecipientID: thingID}); err != nil {
 		return err
 	}
 
@@ -112,7 +111,7 @@ func (svc *adapterService) SendCommandToThingByKey(ctx context.Context, key doma
 }
 
 func (svc *adapterService) SendCommandToGroup(ctx context.Context, token, groupID string, msg protomfx.Message) error {
-	if _, err := svc.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domain.GroupEditor}); err != nil {
+	if err := svc.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupEditor}); err != nil {
 		return err
 	}
 
@@ -120,12 +119,12 @@ func (svc *adapterService) SendCommandToGroup(ctx context.Context, token, groupI
 }
 
 func (svc *adapterService) SendCommandToGroupByKey(ctx context.Context, key domain.ThingKey, groupID string, msg protomfx.Message) error {
-	res, err := svc.things.Identify(ctx, &protomfx.ThingKey{Value: key.Value, Type: key.Type})
+	thingID, err := svc.things.Identify(ctx, domain.ThingKey{Value: key.Value, Type: key.Type})
 	if err != nil {
 		return err
 	}
 
-	if _, err := svc.things.CanThingGroupCommand(ctx, &protomfx.ThingGroupCommandReq{PublisherID: res.GetValue(), GroupID: groupID}); err != nil {
+	if err := svc.things.CanThingGroupCommand(ctx, domain.ThingGroupCommandReq{PublisherID: thingID, GroupID: groupID}); err != nil {
 		return err
 	}
 

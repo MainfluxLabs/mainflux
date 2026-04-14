@@ -12,8 +12,8 @@ import (
 	adapter "github.com/MainfluxLabs/mainflux/http"
 	"github.com/MainfluxLabs/mainflux/http/api"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/opentracing/opentracing-go/mocktracer"
@@ -27,7 +27,7 @@ var (
 	msg          = `[{"n":"current","t":-1,"v":1.6}]`
 )
 
-func newMessageService(tc protomfx.ThingsServiceClient) adapter.Service {
+func newMessageService(tc domain.ThingsClient) adapter.Service {
 	pub := mocks.NewPublisher()
 	return adapter.New(pub, tc)
 }

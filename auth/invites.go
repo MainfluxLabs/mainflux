@@ -8,7 +8,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -136,9 +135,7 @@ func (svc service) CreateOrgInvite(ctx context.Context, token string, oi OrgInvi
 		return OrgInvite{}, err
 	}
 
-	muReq := protomfx.UsersByEmailsReq{Emails: []string{oi.InviteeEmail}}
-	users, err := svc.users.GetUsersByEmails(ctx, &muReq)
-
+	usr, err := svc.users.GetUsersByEmails(ctx, []string{oi.InviteeEmail})
 	if err != nil {
 		st, ok := status.FromError(err)
 		if ok {
@@ -153,7 +150,7 @@ func (svc service) CreateOrgInvite(ctx context.Context, token string, oi OrgInvi
 		return OrgInvite{}, err
 	}
 
-	inviteeID := users.Users[0].Id
+	inviteeID := usr[0].ID
 
 	_, err = svc.memberships.RetrieveRole(ctx, inviteeID, oi.OrgID)
 	if err != nil && !errors.Contains(err, dbutil.ErrNotFound) {
@@ -449,17 +446,17 @@ func (svc service) populateInviteInfo(ctx context.Context, invite *OrgInvite) er
 		userIDs = append(userIDs, invite.InviteeID)
 	}
 
-	usersRes, err := svc.users.GetUsersByIDs(ctx, &protomfx.UsersByIDsReq{Ids: userIDs})
+	page, err := svc.users.GetUsersByIDs(ctx, userIDs, domain.UsersPageMetadata{})
 	if err != nil {
 		return err
 	}
 
-	for _, user := range usersRes.GetUsers() {
-		switch user.GetId() {
+	for _, user := range page.Users {
+		switch user.ID {
 		case invite.InviterID:
-			invite.InviterEmail = user.GetEmail()
+			invite.InviterEmail = user.Email
 		case invite.InviteeID:
-			invite.InviteeEmail = user.GetEmail()
+			invite.InviteeEmail = user.Email
 		}
 	}
 
@@ -470,10 +467,7 @@ func (svc service) populateInviteInfo(ctx context.Context, invite *OrgInvite) er
 // if at least one of the Groups belongs to a different Org, and nil otherwise.
 func (svc service) groupsBelongToOrg(ctx context.Context, orgID string, groupIDs []string) error {
 	for _, groupID := range groupIDs {
-		group, err := svc.things.GetGroup(ctx, &protomfx.GetGroupReq{
-			GroupID: groupID,
-		})
-
+		group, err := svc.things.GetGroup(ctx, groupID)
 		if err != nil {
 			return err
 		}
@@ -505,19 +499,15 @@ func (svc service) acceptInvite(ctx context.Context, invite OrgInvite) error {
 
 	// Create one group membership in the things service for each group the invite was associated with
 	if len(invite.GroupInvites) > 0 {
-		grpcReq := &protomfx.CreateGroupMembershipsReq{
-			Memberships: make([]*protomfx.GroupMembership, 0, len(invite.GroupInvites)),
-		}
-
+		memberships := make([]domain.GroupMembership, 0, len(invite.GroupInvites))
 		for _, gi := range invite.GroupInvites {
-			grpcReq.Memberships = append(grpcReq.Memberships, &protomfx.GroupMembership{
-				UserID:  invite.InviteeID,
-				GroupID: gi.GroupID,
-				Role:    gi.MemberRole,
+			memberships = append(memberships, domain.GroupMembership{
+				MemberID: invite.InviteeID,
+				GroupID:  gi.GroupID,
+				Role:     gi.MemberRole,
 			})
 		}
-
-		if _, err := svc.things.CreateGroupMemberships(ctx, grpcReq); err != nil {
+		if err := svc.things.CreateGroupMemberships(ctx, memberships...); err != nil {
 			return err
 		}
 	}
@@ -547,12 +537,12 @@ func (svc service) SendOrgInviteEmail(ctx context.Context, invite OrgInvite, ema
 		groupNames = make(map[string]string, len(invite.GroupInvites))
 
 		for _, groupInvite := range invite.GroupInvites {
-			group, err := svc.things.GetGroup(context.Background(), &protomfx.GetGroupReq{GroupID: groupInvite.GroupID})
+			group, err := svc.things.GetGroup(context.Background(), groupInvite.GroupID)
 			if err != nil {
 				return err
 			}
 
-			groupNames[groupInvite.GroupID] = group.GetName()
+			groupNames[groupInvite.GroupID] = group.Name
 		}
 	}
 
