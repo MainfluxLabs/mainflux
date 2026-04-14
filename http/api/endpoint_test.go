@@ -60,7 +60,7 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func TestPublish(t *testing.T) {
-	profileID := "1"
+	thingID := "513d02d2-16c1-4f23-98be-9e12f8fee898"
 	ctSenmlJSON := "application/senml+json"
 	ctSenmlCBOR := "application/senml+cbor"
 	ctJSON := "application/json"
@@ -69,7 +69,7 @@ func TestPublish(t *testing.T) {
 	msg := `[{"n":"current","t":-1,"v":1.6}]`
 	msgJSON := `{"field1":"val1","field2":"val2"}`
 	msgCBOR := `81A3616E6763757272656E746174206176FB3FF999999999999A`
-	thingsClient := mocks.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
+	thingsClient := mocks.NewThingsServiceClient(nil, map[string]things.Thing{thingKey: {ID: thingID}}, nil)
 	svc := newService(thingsClient)
 	ts := newHTTPServer(svc)
 	defer ts.Close()

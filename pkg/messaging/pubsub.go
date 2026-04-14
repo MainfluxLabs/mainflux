@@ -24,6 +24,12 @@ var (
 	// ErrPublishMessage indicates that message publishing failed.
 	ErrPublishMessage = errors.New("failed to publish message")
 
+	// ErrFailedSubscribe indicates that subscribing to a topic failed.
+	ErrFailedSubscribe = errors.New("failed to subscribe")
+
+	// ErrFailedUnsubscribe indicates that unsubscribing from a topic failed.
+	ErrFailedUnsubscribe = errors.New("failed to unsubscribe")
+
 	// ErrConnect indicates that connection to MQTT broker failed
 	ErrConnect = errors.New("failed to connect to MQTT broker")
 

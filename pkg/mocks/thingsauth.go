@@ -28,30 +28,21 @@ func NewThingsServiceClient(profiles map[string]domain.Profile, things map[strin
 }
 
 func (svc thingsServiceMock) GetPubConfigByKey(_ context.Context, key domain.ThingKey) (domain.PubConfigInfo, error) {
-	if key.Value == "invalid" {
-		return domain.PubConfigInfo{}, errors.ErrAuthentication
-	}
-
-	if key.Value == "" {
-		return domain.PubConfigInfo{}, errors.ErrAuthentication
-	}
-
-	if key.Value == "token" {
-		return domain.PubConfigInfo{}, errors.ErrAuthorization
-	}
-
+	// Since there is no appropriate way to simulate internal server error,
+	// we had to use this obscure approach. ErrorToken simulates gRPC
+	// call which returns internal server error.
 	if key.Value == "unavailable" {
 		return domain.PubConfigInfo{}, status.Error(codes.Internal, "internal server error")
 	}
 
-	if th, ok := svc.things[key.Value]; ok {
-		return domain.PubConfigInfo{PublisherID: th.ID}, nil
+	th, ok := svc.things[key.Value]
+	if !ok {
+		return domain.PubConfigInfo{}, errors.ErrAuthentication
 	}
-	// When things map is nil/empty, use key as PublisherID (old mock behavior for tests)
-	if svc.things == nil || len(svc.things) == 0 {
-		return domain.PubConfigInfo{PublisherID: key.Value}, nil
-	}
-	return domain.PubConfigInfo{}, errors.ErrAuthentication
+
+	return domain.PubConfigInfo{
+		PublisherID: th.ID,
+	}, nil
 }
 
 func (svc thingsServiceMock) GetConfigByThing(_ context.Context, _ string) (*domain.ProfileConfig, error) {
