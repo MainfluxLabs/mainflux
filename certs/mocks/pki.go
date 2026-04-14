@@ -45,6 +45,9 @@ type Agent interface {
 
 	// VerifyCert is a mock method for Verifying Certificates of PKI Agent.
 	VerifyCert(certPEM string) (*x509.Certificate, error)
+
+	// GenerateCRL is a mock method for generating CRL of PKI Agent.
+	GenerateCRL(revokedSerials []pki.RevokedSerial) ([]byte, error)
 }
 
 type agent struct {
@@ -226,6 +229,10 @@ func (a *agent) VerifyCert(certPEM string) (*x509.Certificate, error) {
 	}
 
 	return cert, nil
+}
+
+func (a *agent) GenerateCRL(revokedSerials []pki.RevokedSerial) ([]byte, error) {
+	return []byte("-----BEGIN X509 CRL-----\n-----END X509 CRL-----\n"), nil
 }
 
 func publicKey(priv any) (any, error) {
