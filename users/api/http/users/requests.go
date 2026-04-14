@@ -9,6 +9,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
+	"github.com/MainfluxLabs/mainflux/users/api"
 )
 
 const (
@@ -125,7 +126,7 @@ func (req listUsersReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if err := req.pm.Validate(maxLimitSize, maxEmailSize); err != nil {
+	if err := api.ValidatePageMetadata(req.pm, maxLimitSize, maxEmailSize); err != nil {
 		return err
 	}
 

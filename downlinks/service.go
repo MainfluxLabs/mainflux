@@ -99,8 +99,8 @@ type Service interface {
 }
 
 type downlinksService struct {
-	things     protomfx.ThingsServiceClient
-	auth       protomfx.AuthServiceClient
+	things     domain.ThingsClient
+	auth       domain.AuthClient
 	downlinks  DownlinkRepository
 	idProvider uuid.IDProvider
 	publisher  messaging.Publisher
@@ -130,7 +130,7 @@ var (
 
 var _ Service = (*downlinksService)(nil)
 
-func New(things protomfx.ThingsServiceClient, auth protomfx.AuthServiceClient, pub messaging.Publisher, downlinks DownlinkRepository, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(things domain.ThingsClient, auth domain.AuthClient, pub messaging.Publisher, downlinks DownlinkRepository, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &downlinksService{
 		things:     things,
 		auth:       auth,
@@ -144,15 +144,14 @@ func New(things protomfx.ThingsServiceClient, auth protomfx.AuthServiceClient, p
 }
 
 func (ds *downlinksService) CreateDownlinks(ctx context.Context, token, thingID string, downlinks ...Downlink) ([]Downlink, error) {
-	if _, err := ds.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupEditor}); err != nil {
+	if err := ds.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupEditor}); err != nil {
 		return nil, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	grID, err := ds.things.GetGroupIDByThing(ctx, &protomfx.ThingID{Value: thingID})
+	groupID, err := ds.things.GetGroupIDByThing(ctx, thingID)
 	if err != nil {
 		return []Downlink{}, err
 	}
-	groupID := grID.GetValue()
 
 	for i := range downlinks {
 		downlinks[i].ThingID = thingID
@@ -178,7 +177,7 @@ func (ds *downlinksService) CreateDownlinks(ctx context.Context, token, thingID 
 }
 
 func (ds *downlinksService) ListDownlinksByThing(ctx context.Context, token, thingID string, pm PageMetadata) (DownlinksPage, error) {
-	if _, err := ds.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupViewer}); err != nil {
+	if err := ds.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupViewer}); err != nil {
 		return DownlinksPage{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -191,7 +190,7 @@ func (ds *downlinksService) ListDownlinksByThing(ctx context.Context, token, thi
 }
 
 func (ds *downlinksService) ListDownlinksByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (DownlinksPage, error) {
-	if _, err := ds.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domain.GroupViewer}); err != nil {
+	if err := ds.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupViewer}); err != nil {
 		return DownlinksPage{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -209,7 +208,7 @@ func (ds *downlinksService) ViewDownlink(ctx context.Context, token, id string) 
 		return Downlink{}, err
 	}
 
-	if _, err := ds.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: downlink.ThingID, Action: domain.GroupViewer}); err != nil {
+	if err := ds.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: downlink.ThingID, Action: domain.GroupViewer}); err != nil {
 		return Downlink{}, err
 	}
 
@@ -222,7 +221,7 @@ func (ds *downlinksService) UpdateDownlink(ctx context.Context, token string, do
 		return err
 	}
 
-	if _, err := ds.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: dl.ThingID, Action: domain.GroupEditor}); err != nil {
+	if err := ds.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: dl.ThingID, Action: domain.GroupEditor}); err != nil {
 		return err
 	}
 
@@ -242,7 +241,7 @@ func (ds *downlinksService) RemoveDownlinks(ctx context.Context, token string, i
 		if err != nil {
 			return err
 		}
-		if _, err := ds.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: downlink.ThingID, Action: domain.GroupEditor}); err != nil {
+		if err := ds.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: downlink.ThingID, Action: domain.GroupEditor}); err != nil {
 			return err
 		}
 
@@ -289,12 +288,12 @@ func (ds *downlinksService) RemoveDownlinksByGroup(ctx context.Context, groupID 
 func (ds *downlinksService) RescheduleTasks(ctx context.Context, profileID string, config map[string]any) error {
 	var downlinks []Downlink
 
-	thingIDs, err := ds.things.GetThingIDsByProfile(ctx, &protomfx.ProfileID{Value: profileID})
+	thingIDs, err := ds.things.GetThingIDsByProfile(ctx, profileID)
 	if err != nil {
 		return err
 	}
 
-	for _, thingID := range thingIDs.GetIds() {
+	for _, thingID := range thingIDs {
 		page, err := ds.downlinks.RetrieveByThing(ctx, thingID, PageMetadata{})
 		if err != nil {
 			return err
@@ -306,7 +305,7 @@ func (ds *downlinksService) RescheduleTasks(ctx context.Context, profileID strin
 		return nil
 	}
 
-	cfg := protoutil.MapToProtoConfig(config)
+	cfg := protoutil.MapToDomainConfig(config)
 
 	for _, d := range downlinks {
 		ds.unscheduleTask(d)
@@ -323,12 +322,12 @@ func (ds *downlinksService) RescheduleTasks(ctx context.Context, profileID strin
 
 func (ds *downlinksService) scheduleTasks(ctx context.Context, dls ...Downlink) error {
 	for _, d := range dls {
-		c, err := ds.things.GetConfigByThing(ctx, &protomfx.ThingID{Value: d.ThingID})
+		cfg, err := ds.things.GetConfigByThing(ctx, d.ThingID)
 		if err != nil {
 			return err
 		}
 
-		if err := ds.scheduleTask(d, c.GetConfig()); err != nil {
+		if err := ds.scheduleTask(d, cfg); err != nil {
 			return err
 		}
 	}
@@ -336,7 +335,7 @@ func (ds *downlinksService) scheduleTasks(ctx context.Context, dls ...Downlink) 
 	return nil
 }
 
-func (ds *downlinksService) scheduleTask(d Downlink, cfg *protomfx.Config) error {
+func (ds *downlinksService) scheduleTask(d Downlink, cfg *domain.ProfileConfig) error {
 	task := ds.createTask(d, cfg)
 
 	if d.Scheduler.Frequency != cron.OnceFreq {
@@ -357,7 +356,7 @@ func (ds *downlinksService) unscheduleTask(d Downlink) {
 	}
 }
 
-func (ds *downlinksService) createTask(d Downlink, config *protomfx.Config) func() {
+func (ds *downlinksService) createTask(d Downlink, config *domain.ProfileConfig) func() {
 	return func() {
 		ctx, cancel := context.WithTimeout(context.Background(), taskTimeout)
 		defer cancel()
@@ -443,13 +442,17 @@ func (ds *downlinksService) LoadAndScheduleTasks(ctx context.Context) error {
 	return nil
 }
 
-func (ds *downlinksService) publish(config *protomfx.Config, thingID string, payload []byte) error {
+func (ds *downlinksService) publish(config *domain.ProfileConfig, thingID string, payload []byte) error {
 	msg := protomfx.Message{
 		Protocol: downlinkProtocol,
 		Payload:  payload,
 	}
 
-	conn := &protomfx.PubConfigByKeyRes{PublisherID: thingID, ProfileConfig: config}
+	conn := domain.PubConfigInfo{
+		PublisherID:   thingID,
+		ProfileConfig: config,
+	}
+
 	if err := messaging.FormatMessage(conn, &msg); err != nil {
 		return err
 	}
@@ -495,12 +498,7 @@ func (ds *downlinksService) Restore(ctx context.Context, token string, dls []Dow
 }
 
 func (ds *downlinksService) isAdmin(ctx context.Context, token string) error {
-	req := &protomfx.AuthorizeReq{
-		Token:   token,
-		Subject: "root",
-	}
-
-	if _, err := ds.auth.Authorize(ctx, req); err != nil {
+	if err := ds.auth.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.RootSub}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 

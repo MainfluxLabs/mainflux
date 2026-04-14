@@ -11,8 +11,9 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/ws"
 	"github.com/MainfluxLabs/mainflux/ws/api"
@@ -22,13 +23,20 @@ import (
 )
 
 const (
-	profileID = "30315311-56ba-484d-b500-c1e08305511f"
+	protocol  = "ws"
 	thingKey  = "c02ff576-ccd5-40f6-ba5f-c85377aad529"
+	thingID   = "513d02d2-16c1-4f23-98be-9e12f8fee898"
+	groupID   = "56d9df5e-6d36-11ef-b979-0242ac120002"
+	userToken = "user-auth-token"
 )
 
-var msg = []byte(`[{"n":"current","t":-1,"v":1.6}]`)
+var (
+	msg        = []byte(`[{"n":"current","t":-1,"v":1.6}]`)
+	thingAuth  = apiutil.ThingKeyPrefixInternal + thingKey
+	bearerAuth = apiutil.BearerPrefix + userToken
+)
 
-func newService(tc protomfx.ThingsServiceClient) (ws.Service, mocks.MockPubSub) {
+func newService(tc domain.ThingsClient) (ws.Service, mocks.MockPubSub) {
 	pubsub := mocks.NewPubSub()
 	return ws.New(tc, pubsub), pubsub
 }
@@ -39,42 +47,46 @@ func newHTTPServer(svc ws.Service) *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-func handshake(tsURL, subtopic, thingKey string, addHeader bool) (*websocket.Conn, *http.Response, error) {
-	header := http.Header{}
-	if addHeader && thingKey != "" {
-		header.Set("Authorization", thingKey)
-	}
-
-	// Construct URL properly
+func messagesHandshake(tsURL, subtopic, auth string) (*websocket.Conn, *http.Response, error) {
 	u, err := url.Parse(tsURL)
 	if err != nil {
 		return nil, nil, err
 	}
-	u.Scheme = "ws"
+	u.Scheme = protocol
 	u.Path = "/messages"
 	if subtopic != "" {
 		u.Path += "/" + subtopic
 	}
 
-	if !addHeader && thingKey != "" {
-		q := u.Query()
-		q.Set("authorization", thingKey)
-		u.RawQuery = q.Encode()
+	header := http.Header{}
+	if auth != "" {
+		header.Set("Authorization", auth)
 	}
 
-	dialer := websocket.DefaultDialer
-	conn, res, err := dialer.Dial(u.String(), header)
+	return websocket.DefaultDialer.Dial(u.String(), header)
+}
 
-	// Return response even on error for inspection
+func commandsHandshake(tsURL, commandType, id, subtopic, auth string) (*websocket.Conn, *http.Response, error) {
+	u, err := url.Parse(tsURL)
 	if err != nil {
-		return nil, res, err
+		return nil, nil, err
+	}
+	u.Scheme = protocol
+	u.Path = fmt.Sprintf("/%s/%s/commands", commandType, id)
+	if subtopic != "" {
+		u.Path += "/" + subtopic
 	}
 
-	return conn, res, nil
+	header := http.Header{}
+	if auth != "" {
+		header.Set("Authorization", auth)
+	}
+
+	return websocket.DefaultDialer.Dial(u.String(), header)
 }
 
 func TestHandshake(t *testing.T) {
-	thingsClient := pkgmocks.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
+	thingsClient := pkgmocks.NewThingsServiceClient(nil, nil, nil)
 	svc, _ := newService(thingsClient)
 	ts := newHTTPServer(svc)
 	defer ts.Close()
@@ -82,92 +94,177 @@ func TestHandshake(t *testing.T) {
 	cases := []struct {
 		desc     string
 		subtopic string
-		header   bool
-		thingKey string
+		auth     string
 		status   int
-		err      error
 		msg      []byte
 	}{
 		{
 			desc:     "connect and send message",
 			subtopic: "",
-			header:   true,
-			thingKey: thingKey,
+			auth:     thingAuth,
 			status:   http.StatusSwitchingProtocols,
 			msg:      msg,
 		},
 		{
-			desc:     "connect and send message with thingKey as query parameter",
+			desc:     "connect and send message with thing key as query parameter",
 			subtopic: "",
-			header:   false,
-			thingKey: thingKey,
+			auth:     thingAuth,
 			status:   http.StatusSwitchingProtocols,
 			msg:      msg,
 		},
 		{
 			desc:     "connect and send message that cannot be published",
 			subtopic: "",
-			header:   true,
-			thingKey: thingKey,
+			auth:     thingAuth,
 			status:   http.StatusSwitchingProtocols,
 			msg:      []byte{},
 		},
 		{
 			desc:     "connect and send message to subtopic",
 			subtopic: "subtopic",
-			header:   true,
-			thingKey: thingKey,
+			auth:     thingAuth,
 			status:   http.StatusSwitchingProtocols,
 			msg:      msg,
 		},
 		{
 			desc:     "connect and send message to nested subtopic",
 			subtopic: "subtopic/nested",
-			header:   true,
-			thingKey: thingKey,
+			auth:     thingAuth,
 			status:   http.StatusSwitchingProtocols,
 			msg:      msg,
 		},
 		{
-			desc:     "connect and send message to all subtopics",
-			subtopic: ">",
-			header:   true,
-			thingKey: thingKey,
-			status:   http.StatusSwitchingProtocols,
-			msg:      msg,
-		},
-		{
-			desc:     "connect with empty thingKey",
+			desc:     "connect with empty thing key",
 			subtopic: "",
-			header:   true,
-			thingKey: "",
+			auth:     "",
 			status:   http.StatusUnauthorized,
 			msg:      []byte{},
 		},
 		{
-			desc:     "connect and send message to subtopic with invalid name",
+			desc:     "connect with invalid subtopic",
 			subtopic: "sub/a*b/topic",
-			header:   true,
-			thingKey: thingKey,
+			auth:     thingAuth,
 			status:   http.StatusBadRequest,
 			msg:      msg,
 		},
 	}
 
 	for _, tc := range cases {
-		conn, res, err := handshake(ts.URL, tc.subtopic, tc.thingKey, tc.header)
-		if err != nil {
-			return
+		conn, res, _ := messagesHandshake(ts.URL, tc.subtopic, tc.auth)
+		if res != nil {
+			assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.status, res.StatusCode))
 		}
-		defer conn.Close()
+		if conn != nil {
+			err := conn.WriteMessage(websocket.TextMessage, tc.msg)
+			assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
+			conn.Close()
+		}
+	}
+}
 
-		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code '%d' got '%d'\n", tc.desc, tc.status, res.StatusCode))
+func TestCommandsHandshake(t *testing.T) {
+	thingsClient := pkgmocks.NewThingsServiceClient(nil, map[string]things.Thing{
+		thingID: {ID: thingID, GroupID: groupID, Type: things.ThingTypeController},
+	}, map[string]things.Group{
+		groupID: {ID: groupID},
+	})
+	svc, _ := newService(thingsClient)
+	ts := newHTTPServer(svc)
+	defer ts.Close()
 
-		if tc.status == http.StatusSwitchingProtocols {
-			assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error %s\n", tc.desc, err))
+	cases := []struct {
+		desc        string
+		commandType string
+		id          string
+		subtopic    string
+		auth        string
+		status      int
+	}{
+		{
+			desc:        "connect to thing with thing key",
+			commandType: "things",
+			id:          thingID,
+			auth:        thingAuth,
+			status:      http.StatusSwitchingProtocols,
+		},
+		{
+			desc:        "connect to thing with bearer token",
+			commandType: "things",
+			id:          thingID,
+			auth:        bearerAuth,
+			status:      http.StatusSwitchingProtocols,
+		},
+		{
+			desc:        "connect to thing with thing key and subtopic",
+			commandType: "things",
+			id:          thingID,
+			subtopic:    "sub/topic",
+			auth:        thingAuth,
+			status:      http.StatusSwitchingProtocols,
+		},
+		{
+			desc:        "connect to thing without auth",
+			commandType: "things",
+			id:          thingID,
+			auth:        "",
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "connect to thing with invalid subtopic",
+			commandType: "things",
+			id:          thingID,
+			subtopic:    "sub/a*b/topic",
+			auth:        thingAuth,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "connect to group with thing key",
+			commandType: "groups",
+			id:          groupID,
+			auth:        thingAuth,
+			status:      http.StatusSwitchingProtocols,
+		},
+		{
+			desc:        "connect to group with bearer token",
+			commandType: "groups",
+			id:          groupID,
+			auth:        bearerAuth,
+			status:      http.StatusSwitchingProtocols,
+		},
+		{
+			desc:        "connect to group with thing key and subtopic",
+			commandType: "groups",
+			id:          groupID,
+			subtopic:    "sub/topic",
+			auth:        thingAuth,
+			status:      http.StatusSwitchingProtocols,
+		},
+		{
+			desc:        "connect to group without auth",
+			commandType: "groups",
+			id:          groupID,
+			auth:        "",
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "connect to group with invalid subtopic",
+			commandType: "groups",
+			id:          groupID,
+			subtopic:    "sub/a*b/topic",
+			auth:        thingAuth,
+			status:      http.StatusBadRequest,
+		},
+	}
 
-			err = conn.WriteMessage(websocket.TextMessage, tc.msg)
-			assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error %s\n", tc.desc, err))
+	for _, tc := range cases {
+		conn, res, _ := commandsHandshake(ts.URL, tc.commandType, tc.id, tc.subtopic, tc.auth)
+		if res != nil {
+			assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.status, res.StatusCode))
+		}
+		if conn != nil {
+			err := conn.WriteMessage(websocket.TextMessage, msg)
+			assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
+			conn.Close()
 		}
 	}
 }

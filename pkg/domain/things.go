@@ -4,6 +4,7 @@
 package domain
 
 import (
+	"context"
 	"time"
 )
 
@@ -52,7 +53,7 @@ type Profile struct {
 	ID       string         `json:"id,omitempty"`
 	GroupID  string         `json:"group_id,omitempty"`
 	Name     string         `json:"name,omitempty"`
-	Config   map[string]any `json:"config,omitempty"`
+	Config   *ProfileConfig `json:"config,omitempty"`
 	Metadata Metadata       `json:"metadata,omitempty"`
 }
 
@@ -101,7 +102,7 @@ type OrgAccessReq struct {
 // PubConfigInfo represents publisher config from GetPubConfigByKey.
 type PubConfigInfo struct {
 	PublisherID   string
-	ProfileConfig map[string]any
+	ProfileConfig *ProfileConfig
 }
 
 // ThingCommandReq represents a request to authorize an inter-thing command.
@@ -116,8 +117,8 @@ type ThingGroupCommandReq struct {
 	GroupID     string
 }
 
-// Config represents profile configuration.
-type Config struct {
+// ProfileConfig represents profile configuration.
+type ProfileConfig struct {
 	ContentType string      `json:"content_type"`
 	Transformer Transformer `json:"transformer"`
 }
@@ -143,4 +144,23 @@ type GroupMembership struct {
 type GroupMembershipsPage struct {
 	Total            uint64            `json:"total"`
 	GroupMemberships []GroupMembership `json:"group_memberships"`
+}
+
+type ThingsClient interface {
+	GetPubConfigByKey(ctx context.Context, key ThingKey) (PubConfigInfo, error)
+	GetConfigByThing(ctx context.Context, thingID string) (*ProfileConfig, error)
+	CanUserAccessThing(ctx context.Context, ar UserAccessReq) error
+	CanUserAccessProfile(ctx context.Context, ar UserAccessReq) error
+	CanUserAccessGroup(ctx context.Context, ar UserAccessReq) error
+	CanThingAccessGroup(ctx context.Context, ar ThingAccessReq) error
+	CanThingCommand(ctx context.Context, req ThingCommandReq) error
+	CanThingGroupCommand(ctx context.Context, req ThingGroupCommandReq) error
+	Identify(ctx context.Context, key ThingKey) (string, error)
+	GetGroupIDByThing(ctx context.Context, thingID string) (string, error)
+	GetGroupIDByProfile(ctx context.Context, profileID string) (string, error)
+	GetGroupIDsByOrg(ctx context.Context, ar OrgAccessReq) ([]string, error)
+	GetThingIDsByProfile(ctx context.Context, profileID string) ([]string, error)
+	CreateGroupMemberships(ctx context.Context, memberships ...GroupMembership) error
+	GetGroup(ctx context.Context, groupID string) (Group, error)
+	GetKeyByThingID(ctx context.Context, thingID string) (ThingKey, error)
 }

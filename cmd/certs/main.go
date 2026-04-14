@@ -23,10 +23,9 @@ import (
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	mfcron "github.com/MainfluxLabs/mainflux/pkg/cron"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
@@ -69,6 +68,7 @@ const (
 	defSignCAKeyPath  = "ca.key"
 	defSignHoursValid = "2048h"
 	defSignRSABits    = ""
+	defCRLPath        = "/etc/ssl/certs/crl/crl.pem"
 
 	envPort              = "MF_CERTS_HTTP_PORT"
 	envLogLevel          = "MF_CERTS_LOG_LEVEL"
@@ -98,6 +98,12 @@ const (
 	envSignCAKey      = "MF_CERTS_SIGN_CA_KEY_PATH"
 	envSignHoursValid = "MF_CERTS_SIGN_HOURS_VALID"
 	envSignRSABits    = "MF_CERTS_SIGN_RSA_BITS"
+	envSignCAPath        = "MF_CERTS_SIGN_CA_PATH"
+	envSignCAKey         = "MF_CERTS_SIGN_CA_KEY_PATH"
+	envSignHoursValid    = "MF_CERTS_SIGN_HOURS_VALID"
+	envSignRSABits       = "MF_CERTS_SIGN_RSA_BITS"
+	envCRLPath           = "MF_CERTS_CRL_PATH"
+
 )
 
 var (
@@ -124,6 +130,7 @@ type config struct {
 	signCAKeyPath  string
 	signRSABits    int
 	signHoursValid string
+	crlPath        string
 }
 
 func main() {
@@ -280,6 +287,7 @@ func loadConfig() config {
 		signCAPath:     mainflux.Env(envSignCAPath, defSignCAPath),
 		signHoursValid: mainflux.Env(envSignHoursValid, defSignHoursValid),
 		signRSABits:    signRSABits,
+		crlPath:        mainflux.Env(envCRLPath, defCRLPath),
 	}
 
 }
@@ -294,6 +302,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func newService(ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, db *sqlx.DB, logger logger.Logger, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config, pkiAgent pki.Agent) (certs.Service, certs.Repository) {
+func newService(ac domain.AuthClient, tc domain.ThingsClient, db *sqlx.DB, logger logger.Logger, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config, pkiAgent pki.Agent) certs.Service {
 	database := dbutil.NewDatabase(db)
 	certsRepo := postgres.NewRepository(database)
 
@@ -312,6 +321,15 @@ func newService(ac protomfx.AuthServiceClient, tc protomfx.ThingsServiceClient, 
 		SignX509Cert:   x509Cert,
 		SignHoursValid: cfg.signHoursValid,
 		SignRSABits:    cfg.signRSABits,
+		CRLPath:        cfg.crlPath,
+	}
+
+	if cfg.crlPath != "" && pkiAgent != nil {
+		if err := certs.GenerateCRLFile(context.Background(), certsRepo, pkiAgent, cfg.crlPath); err != nil {
+			logger.Error(fmt.Sprintf("Failed to generate initial CRL: %s", err))
+		} else {
+			logger.Info("Initial CRL generated successfully")
+		}
 	}
 
 	svc := certs.New(ac, tc, certsRepo, certsConfig, pkiAgent)

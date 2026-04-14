@@ -7,203 +7,190 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	domain "github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-var _ protomfx.ThingsServiceClient = (*thingsServiceMock)(nil)
+var _ domain.ThingsClient = (*thingsServiceMock)(nil)
 
 type thingsServiceMock struct {
-	profiles map[string]things.Profile
-	things   map[string]things.Thing
-	groups   map[string]things.Group
+	profiles map[string]domain.Profile
+	things   map[string]domain.Thing
+	groups   map[string]domain.Group
 }
 
 // NewThingsServiceClient returns mock implementation of things service
-func NewThingsServiceClient(profiles map[string]things.Profile, things map[string]things.Thing, groups map[string]things.Group) protomfx.ThingsServiceClient {
+func NewThingsServiceClient(profiles map[string]domain.Profile, things map[string]domain.Thing, groups map[string]domain.Group) domain.ThingsClient {
 	return &thingsServiceMock{profiles, things, groups}
 }
 
-func (svc thingsServiceMock) GetPubConfigByKey(_ context.Context, in *protomfx.ThingKey, _ ...grpc.CallOption) (*protomfx.PubConfigByKeyRes, error) {
-	key := in.GetValue()
-
-	if key == "invalid" {
-		return nil, errors.ErrAuthentication
-	}
-
-	if key == "" {
-		return nil, errors.ErrAuthentication
-	}
-
-	if key == "token" {
-		return nil, errors.ErrAuthorization
-	}
-
+func (svc thingsServiceMock) GetPubConfigByKey(_ context.Context, key domain.ThingKey) (domain.PubConfigInfo, error) {
 	// Since there is no appropriate way to simulate internal server error,
 	// we had to use this obscure approach. ErrorToken simulates gRPC
 	// call which returns internal server error.
-	if key == "unavailable" {
-		return nil, status.Error(codes.Internal, "internal server error")
+	if key.Value == "unavailable" {
+		return domain.PubConfigInfo{}, status.Error(codes.Internal, "internal server error")
 	}
 
-	return &protomfx.PubConfigByKeyRes{PublisherID: svc.things[key].ID}, nil
-}
-
-func (svc thingsServiceMock) GetConfigByThing(_ context.Context, _ *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ConfigByThingRes, error) {
-	return &protomfx.ConfigByThingRes{}, nil
-}
-
-func (svc thingsServiceMock) CanUserAccessThing(_ context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
-	th, ok := svc.things[req.GetToken()]
+	th, ok := svc.things[key.Value]
 	if !ok {
-		return &emptypb.Empty{}, errors.ErrAuthentication
+		return domain.PubConfigInfo{}, errors.ErrAuthentication
 	}
 
-	if req.GetId() == th.ID {
-		return &emptypb.Empty{}, nil
-	}
-
-	return &emptypb.Empty{}, errors.ErrAuthorization
+	return domain.PubConfigInfo{
+		PublisherID: th.ID,
+	}, nil
 }
 
-func (svc thingsServiceMock) CanUserAccessProfile(_ context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
-	gr, ok := svc.groups[req.GetToken()]
+func (svc thingsServiceMock) GetConfigByThing(_ context.Context, _ string) (*domain.ProfileConfig, error) {
+	return &domain.ProfileConfig{}, nil
+}
+
+func (svc thingsServiceMock) CanUserAccessThing(_ context.Context, req domain.UserAccessReq) error {
+	th, ok := svc.things[req.Token]
 	if !ok {
-		return &emptypb.Empty{}, errors.ErrAuthentication
+		return errors.ErrAuthentication
 	}
 
-	if pr, ok := svc.profiles[req.GetToken()]; ok {
+	if req.ID == th.ID {
+		return nil
+	}
+
+	return errors.ErrAuthorization
+}
+
+func (svc thingsServiceMock) CanUserAccessProfile(_ context.Context, req domain.UserAccessReq) error {
+	gr, ok := svc.groups[req.Token]
+	if !ok {
+		return errors.ErrAuthentication
+	}
+
+	if pr, ok := svc.profiles[req.Token]; ok {
 		if pr.GroupID == gr.ID {
-			return &emptypb.Empty{}, nil
+			return nil
 		}
 	}
 
-	return &emptypb.Empty{}, errors.ErrAuthorization
+	return errors.ErrAuthorization
 }
 
-func (svc thingsServiceMock) CanUserAccessGroup(_ context.Context, req *protomfx.UserAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
-	gr, ok := svc.groups[req.GetToken()]
+func (svc thingsServiceMock) CanUserAccessGroup(_ context.Context, req domain.UserAccessReq) error {
+	gr, ok := svc.groups[req.Token]
 	if !ok {
-		return &emptypb.Empty{}, errors.ErrAuthentication
+		return errors.ErrAuthentication
 	}
 
-	if req.GetId() == gr.ID {
-		return &emptypb.Empty{}, nil
+	if req.ID == gr.ID {
+		return nil
 	}
 
-	return &emptypb.Empty{}, errors.ErrAuthorization
+	return errors.ErrAuthorization
 }
 
-func (svc thingsServiceMock) CanThingAccessGroup(_ context.Context, req *protomfx.ThingAccessReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
-	if th, ok := svc.things[req.GetKey()]; ok {
-		if th.GroupID == req.GetId() {
-			return &emptypb.Empty{}, nil
+func (svc thingsServiceMock) CanThingAccessGroup(_ context.Context, req domain.ThingAccessReq) error {
+	if th, ok := svc.things[req.Value]; ok {
+		if th.GroupID == req.ID {
+			return nil
 		}
 	}
 
-	return &emptypb.Empty{}, errors.ErrAuthorization
+	return errors.ErrAuthorization
 }
 
-func (svc thingsServiceMock) CanThingCommand(_ context.Context, req *protomfx.ThingCommandReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
-	publisher, ok := svc.things[req.GetPublisherID()]
+func (svc thingsServiceMock) CanThingCommand(_ context.Context, req domain.ThingCommandReq) error {
+	publisher, ok := svc.things[req.PublisherID]
 	if !ok {
-		return &emptypb.Empty{}, errors.ErrAuthentication
+		return errors.ErrAuthentication
 	}
 
-	recipient, ok := svc.things[req.GetRecipientID()]
+	recipient, ok := svc.things[req.RecipientID]
 	if !ok {
-		return &emptypb.Empty{}, errors.ErrAuthentication
+		return errors.ErrAuthentication
 	}
 
 	if publisher.GroupID != recipient.GroupID {
-		return &emptypb.Empty{}, errors.ErrAuthorization
+		return errors.ErrAuthorization
 	}
 
-	if err := things.CanCommand(publisher.Type, recipient.Type); err != nil {
-		return &emptypb.Empty{}, err
-	}
-
-	return &emptypb.Empty{}, nil
+	return things.CanCommand(publisher.Type, recipient.Type)
 }
 
-func (svc thingsServiceMock) CanThingGroupCommand(_ context.Context, req *protomfx.ThingGroupCommandReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
-	publisher, ok := svc.things[req.GetPublisherID()]
+func (svc thingsServiceMock) CanThingGroupCommand(_ context.Context, req domain.ThingGroupCommandReq) error {
+	publisher, ok := svc.things[req.PublisherID]
 	if !ok {
-		return &emptypb.Empty{}, errors.ErrAuthentication
+		return errors.ErrAuthentication
 	}
 
-	if publisher.GroupID != req.GetGroupID() {
-		return &emptypb.Empty{}, errors.ErrAuthorization
+	if publisher.GroupID != req.GroupID {
+		return errors.ErrAuthorization
 	}
 
-	return &emptypb.Empty{}, things.CanGroupCommand(publisher.Type)
+	return things.CanGroupCommand(publisher.Type)
 }
 
-func (svc thingsServiceMock) Identify(_ context.Context, key *protomfx.ThingKey, _ ...grpc.CallOption) (*protomfx.ThingID, error) {
-	if th, ok := svc.things[key.GetValue()]; ok {
-		return &protomfx.ThingID{Value: th.ID}, nil
+func (svc thingsServiceMock) Identify(_ context.Context, key domain.ThingKey) (string, error) {
+	if th, ok := svc.things[key.Value]; ok {
+		return th.ID, nil
 	}
-	return nil, errors.ErrAuthentication
+	return "", errors.ErrAuthentication
 }
 
-func (svc thingsServiceMock) GetKeyByThingID(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.ThingKey, error) {
-	if th, ok := svc.things[in.GetValue()]; ok {
-		return &protomfx.ThingKey{Value: th.Key}, nil
+func (svc thingsServiceMock) GetKeyByThingID(_ context.Context, thingID string) (domain.ThingKey, error) {
+	if th, ok := svc.things[thingID]; ok {
+		return domain.ThingKey{Value: th.Key}, nil
 	}
-	return nil, dbutil.ErrNotFound
+	return domain.ThingKey{}, dbutil.ErrNotFound
 }
 
-func (svc thingsServiceMock) GetGroupIDByThing(_ context.Context, in *protomfx.ThingID, _ ...grpc.CallOption) (*protomfx.GroupID, error) {
-	if th, ok := svc.things[in.GetValue()]; ok {
-		return &protomfx.GroupID{Value: th.GroupID}, nil
+func (svc thingsServiceMock) GetGroupIDByThing(_ context.Context, thingID string) (string, error) {
+	if th, ok := svc.things[thingID]; ok {
+		return th.GroupID, nil
 	}
-	return nil, dbutil.ErrNotFound
+	return "", dbutil.ErrNotFound
 }
 
-func (svc thingsServiceMock) GetGroupIDByProfile(_ context.Context, in *protomfx.ProfileID, _ ...grpc.CallOption) (*protomfx.GroupID, error) {
-	if pr, ok := svc.profiles[in.GetValue()]; ok {
-		return &protomfx.GroupID{Value: pr.GroupID}, nil
+func (svc thingsServiceMock) GetGroupIDByProfile(_ context.Context, profileID string) (string, error) {
+	if pr, ok := svc.profiles[profileID]; ok {
+		return pr.GroupID, nil
 	}
-	return nil, dbutil.ErrNotFound
+	return "", dbutil.ErrNotFound
 }
 
-func (svc thingsServiceMock) GetGroupIDsByOrg(_ context.Context, in *protomfx.OrgAccessReq, _ ...grpc.CallOption) (*protomfx.GroupIDs, error) {
+func (svc thingsServiceMock) GetGroupIDsByOrg(_ context.Context, req domain.OrgAccessReq) ([]string, error) {
 	var ids []string
 	for _, g := range svc.groups {
-		if g.OrgID == in.GetOrgId() {
+		if g.OrgID == req.OrgID {
 			ids = append(ids, g.ID)
 		}
 	}
-	return &protomfx.GroupIDs{Ids: ids}, nil
+	return ids, nil
 }
 
-func (svc thingsServiceMock) GetThingIDsByProfile(_ context.Context, in *protomfx.ProfileID, _ ...grpc.CallOption) (*protomfx.ThingIDs, error) {
+func (svc thingsServiceMock) GetThingIDsByProfile(_ context.Context, profileID string) ([]string, error) {
 	var ids []string
 	for _, t := range svc.things {
-		if t.ProfileID == in.GetValue() {
+		if t.ProfileID == profileID {
 			ids = append(ids, t.ID)
 		}
 	}
-	return &protomfx.ThingIDs{Ids: ids}, nil
+	return ids, nil
 }
 
-func (svc thingsServiceMock) CreateGroupMemberships(_ context.Context, in *protomfx.CreateGroupMembershipsReq, _ ...grpc.CallOption) (*emptypb.Empty, error) {
-	return &emptypb.Empty{}, nil
+func (svc thingsServiceMock) CreateGroupMemberships(_ context.Context, _ ...domain.GroupMembership) error {
+	return nil
 }
 
-func (svc thingsServiceMock) GetGroup(_ context.Context, in *protomfx.GetGroupReq, _ ...grpc.CallOption) (*protomfx.Group, error) {
-	group, ok := svc.groups[in.GetGroupID()]
+func (svc thingsServiceMock) GetGroup(_ context.Context, groupID string) (domain.Group, error) {
+	group, ok := svc.groups[groupID]
 	if !ok {
-		return nil, dbutil.ErrNotFound
+		return domain.Group{}, dbutil.ErrNotFound
 	}
 
-	return &protomfx.Group{
-		Id:    group.ID,
+	return domain.Group{
+		ID:    group.ID,
 		OrgID: group.OrgID,
 		Name:  group.Name,
 	}, nil

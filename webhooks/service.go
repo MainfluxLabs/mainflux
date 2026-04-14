@@ -79,7 +79,7 @@ type Service interface {
 }
 
 type webhooksService struct {
-	things     protomfx.ThingsServiceClient
+	things     domain.ThingsClient
 	webhooks   WebhookRepository
 	forwarder  Forwarder
 	idProvider uuid.IDProvider
@@ -88,7 +88,7 @@ type webhooksService struct {
 var _ Service = (*webhooksService)(nil)
 
 // New instantiates the webhooks service implementation.
-func New(things protomfx.ThingsServiceClient, webhooks WebhookRepository, forwarder Forwarder, idp uuid.IDProvider) Service {
+func New(things domain.ThingsClient, webhooks WebhookRepository, forwarder Forwarder, idp uuid.IDProvider) Service {
 	return &webhooksService{
 		things:     things,
 		webhooks:   webhooks,
@@ -98,19 +98,19 @@ func New(things protomfx.ThingsServiceClient, webhooks WebhookRepository, forwar
 }
 
 func (ws *webhooksService) CreateWebhooks(ctx context.Context, token, thingID string, webhooks ...Webhook) ([]Webhook, error) {
-	_, err := ws.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupEditor})
+	err := ws.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupEditor})
 	if err != nil {
 		return []Webhook{}, err
 	}
 
-	grID, err := ws.things.GetGroupIDByThing(ctx, &protomfx.ThingID{Value: thingID})
+	grID, err := ws.things.GetGroupIDByThing(ctx, thingID)
 	if err != nil {
 		return []Webhook{}, err
 	}
 
 	whs := []Webhook{}
 	for _, wh := range webhooks {
-		wh.GroupID = grID.GetValue()
+		wh.GroupID = grID
 		wh.ThingID = thingID
 
 		id, err := ws.idProvider.ID()
@@ -131,7 +131,7 @@ func (ws *webhooksService) CreateWebhooks(ctx context.Context, token, thingID st
 }
 
 func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (WebhooksPage, error) {
-	_, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: domain.GroupViewer})
+	err := ws.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupViewer})
 	if err != nil {
 		return WebhooksPage{}, err
 	}
@@ -145,7 +145,7 @@ func (ws *webhooksService) ListWebhooksByGroup(ctx context.Context, token, group
 }
 
 func (ws *webhooksService) ListWebhooksByThing(ctx context.Context, token, thingID string, pm PageMetadata) (WebhooksPage, error) {
-	_, err := ws.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: domain.GroupViewer})
+	err := ws.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupViewer})
 	if err != nil {
 		return WebhooksPage{}, err
 	}
@@ -164,7 +164,7 @@ func (ws *webhooksService) ViewWebhook(ctx context.Context, token, id string) (W
 		return Webhook{}, err
 	}
 
-	if _, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: webhook.GroupID, Action: domain.GroupViewer}); err != nil {
+	if err := ws.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: webhook.GroupID, Action: domain.GroupViewer}); err != nil {
 		return Webhook{}, err
 	}
 
@@ -177,7 +177,7 @@ func (ws *webhooksService) UpdateWebhook(ctx context.Context, token string, webh
 		return err
 	}
 
-	if _, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: wh.GroupID, Action: domain.GroupEditor}); err != nil {
+	if err := ws.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: wh.GroupID, Action: domain.GroupEditor}); err != nil {
 		return err
 	}
 
@@ -190,7 +190,7 @@ func (ws *webhooksService) RemoveWebhooks(ctx context.Context, token string, ids
 		if err != nil {
 			return err
 		}
-		if _, err := ws.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: webhook.GroupID, Action: domain.GroupEditor}); err != nil {
+		if err := ws.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: webhook.GroupID, Action: domain.GroupEditor}); err != nil {
 			return errors.Wrap(errors.ErrAuthorization, err)
 		}
 	}
