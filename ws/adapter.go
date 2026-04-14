@@ -13,7 +13,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 )
 
 // Service specifies web socket service API.
@@ -65,7 +64,7 @@ func (svc *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg
 		return messaging.ErrPublishMessage
 	}
 
-	if err := messaging.FormatMessage(protoutil.PubConfigInfoToProto(pc), &msg); err != nil {
+	if err := messaging.FormatMessage(pc, &msg); err != nil {
 		return err
 	}
 
