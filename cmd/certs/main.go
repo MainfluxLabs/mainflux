@@ -297,7 +297,7 @@ func newService(ac domain.AuthClient, tc domain.ThingsClient, db *sqlx.DB, logge
 	}
 
 	svc := certs.New(ac, tc, certsRepo, certsConfig, pkiAgent)
-	svc = api.NewLoggingMiddleware(svc, logger, ac)
+	svc = api.NewLoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
 		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{

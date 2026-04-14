@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package api
 
 import (
@@ -7,7 +10,7 @@ import (
 
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/modbus"
-	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	pkgauth "github.com/MainfluxLabs/mainflux/pkg/auth"
 )
 
 var _ modbus.Service = (*loggingMiddleware)(nil)
@@ -15,22 +18,15 @@ var _ modbus.Service = (*loggingMiddleware)(nil)
 type loggingMiddleware struct {
 	logger log.Logger
 	svc    modbus.Service
-	auth   domain.AuthClient
 }
 
 // LoggingMiddleware adds logging facilities to the core service.
-func LoggingMiddleware(svc modbus.Service, logger log.Logger, auth domain.AuthClient) modbus.Service {
-	return &loggingMiddleware{logger, svc, auth}
+func LoggingMiddleware(svc modbus.Service, logger log.Logger) modbus.Service {
+	return &loggingMiddleware{logger, svc}
 }
 
 func (lm *loggingMiddleware) identify(token string) string {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	id, err := lm.auth.Identify(ctx, token)
-	if err != nil {
-		return ""
-	}
-	return id.Email
+	return pkgauth.EmailFromToken(token)
 }
 
 func (lm *loggingMiddleware) CreateClients(ctx context.Context, token, thingID string, clients ...modbus.Client) (response []modbus.Client, err error) {

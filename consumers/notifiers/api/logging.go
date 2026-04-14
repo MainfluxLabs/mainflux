@@ -12,7 +12,7 @@ import (
 
 	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	log "github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	pkgauth "github.com/MainfluxLabs/mainflux/pkg/auth"
 )
 
 var _ notifiers.Service = (*loggingMiddleware)(nil)
@@ -20,22 +20,15 @@ var _ notifiers.Service = (*loggingMiddleware)(nil)
 type loggingMiddleware struct {
 	logger log.Logger
 	svc    notifiers.Service
-	auth   domain.AuthClient
 }
 
 // LoggingMiddleware adds logging facilities to the core service.
-func LoggingMiddleware(svc notifiers.Service, logger log.Logger, auth domain.AuthClient) notifiers.Service {
-	return &loggingMiddleware{logger, svc, auth}
+func LoggingMiddleware(svc notifiers.Service, logger log.Logger) notifiers.Service {
+	return &loggingMiddleware{logger, svc}
 }
 
 func (lm *loggingMiddleware) identify(token string) string {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	id, err := lm.auth.Identify(ctx, token)
-	if err != nil {
-		return ""
-	}
-	return id.Email
+	return pkgauth.EmailFromToken(token)
 }
 
 func (lm *loggingMiddleware) CreateNotifiers(ctx context.Context, token, groupID string, notifiers ...notifiers.Notifier) (response []notifiers.Notifier, err error) {

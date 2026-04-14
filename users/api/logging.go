@@ -11,6 +11,7 @@ import (
 	"time"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
+	pkgauth "github.com/MainfluxLabs/mainflux/pkg/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/users"
 )
@@ -20,22 +21,15 @@ var _ users.Service = (*loggingMiddleware)(nil)
 type loggingMiddleware struct {
 	logger log.Logger
 	svc    users.Service
-	auth   domain.AuthClient
 }
 
 // LoggingMiddleware adds logging facilities to the core service.
-func LoggingMiddleware(svc users.Service, logger log.Logger, auth domain.AuthClient) users.Service {
-	return &loggingMiddleware{logger, svc, auth}
+func LoggingMiddleware(svc users.Service, logger log.Logger) users.Service {
+	return &loggingMiddleware{logger, svc}
 }
 
 func (lm *loggingMiddleware) identify(token string) string {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	id, err := lm.auth.Identify(ctx, token)
-	if err != nil {
-		return ""
-	}
-	return id.Email
+	return pkgauth.EmailFromToken(token)
 }
 
 func (lm *loggingMiddleware) SelfRegister(ctx context.Context, user users.User, redirectPath string) (_ string, err error) {

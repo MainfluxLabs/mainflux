@@ -12,7 +12,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/certs"
 	log "github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	pkgauth "github.com/MainfluxLabs/mainflux/pkg/auth"
 )
 
 var _ certs.Service = (*loggingMiddleware)(nil)
@@ -20,22 +20,15 @@ var _ certs.Service = (*loggingMiddleware)(nil)
 type loggingMiddleware struct {
 	logger log.Logger
 	svc    certs.Service
-	auth   domain.AuthClient
 }
 
 // NewLoggingMiddleware adds logging facilities to the core service.
-func NewLoggingMiddleware(svc certs.Service, logger log.Logger, auth domain.AuthClient) certs.Service {
-	return &loggingMiddleware{logger, svc, auth}
+func NewLoggingMiddleware(svc certs.Service, logger log.Logger) certs.Service {
+	return &loggingMiddleware{logger, svc}
 }
 
 func (lm *loggingMiddleware) identify(token string) string {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	id, err := lm.auth.Identify(ctx, token)
-	if err != nil {
-		return ""
-	}
-	return id.Email
+	return pkgauth.EmailFromToken(token)
 }
 
 func (lm *loggingMiddleware) IssueCert(ctx context.Context, token, thingID, ttl string, keyBits int, keyType string) (_ certs.Cert, err error) {

@@ -7,7 +7,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	log "github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	pkgauth "github.com/MainfluxLabs/mainflux/pkg/auth"
 )
 
 var _ alarms.Service = (*loggingMiddleware)(nil)
@@ -15,22 +15,15 @@ var _ alarms.Service = (*loggingMiddleware)(nil)
 type loggingMiddleware struct {
 	logger log.Logger
 	svc    alarms.Service
-	auth   domain.AuthClient
 }
 
 // LoggingMiddleware adds logging facilities to the core service.
-func LoggingMiddleware(svc alarms.Service, logger log.Logger, auth domain.AuthClient) alarms.Service {
-	return &loggingMiddleware{logger, svc, auth}
+func LoggingMiddleware(svc alarms.Service, logger log.Logger) alarms.Service {
+	return &loggingMiddleware{logger, svc}
 }
 
 func (lm loggingMiddleware) identify(token string) string {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	id, err := lm.auth.Identify(ctx, token)
-	if err != nil {
-		return ""
-	}
-	return id.Email
+	return pkgauth.EmailFromToken(token)
 }
 
 func (lm loggingMiddleware) ListAlarmsByGroup(ctx context.Context, token, groupID string, pm alarms.PageMetadata) (_ alarms.AlarmsPage, err error) {

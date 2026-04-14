@@ -14,7 +14,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/filestore"
 	log "github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	pkgauth "github.com/MainfluxLabs/mainflux/pkg/auth"
 )
 
 var _ filestore.Service = (*loggingMiddleware)(nil)
@@ -22,22 +22,15 @@ var _ filestore.Service = (*loggingMiddleware)(nil)
 type loggingMiddleware struct {
 	logger log.Logger
 	svc    filestore.Service
-	auth   domain.AuthClient
 }
 
 // LoggingMiddleware adds logging facilities to the core service.
-func LoggingMiddleware(svc filestore.Service, logger log.Logger, auth domain.AuthClient) filestore.Service {
-	return &loggingMiddleware{logger, svc, auth}
+func LoggingMiddleware(svc filestore.Service, logger log.Logger) filestore.Service {
+	return &loggingMiddleware{logger, svc}
 }
 
 func (lm *loggingMiddleware) identify(token string) string {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	id, err := lm.auth.Identify(ctx, token)
-	if err != nil {
-		return ""
-	}
-	return id.Email
+	return pkgauth.EmailFromToken(token)
 }
 
 func (lm *loggingMiddleware) SaveFile(ctx context.Context, file io.Reader, key string, fi filestore.FileInfo) (err error) {

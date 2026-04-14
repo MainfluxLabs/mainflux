@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
-	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/filestore"
 	"github.com/MainfluxLabs/mainflux/filestore/api"
 	httpapi "github.com/MainfluxLabs/mainflux/filestore/api/http"
@@ -53,8 +52,6 @@ const (
 	defCACerts           = ""
 	defThingsAuthURL     = "localhost:8183"
 	defThingsAuthTimeout = "1s"
-	defAuthGRPCURL       = "localhost:8181"
-	defAuthGRPCTimeout   = "1s"
 	defClientTLS         = "false"
 	defDBHost            = "localhost"
 	defDBPort            = "5432"
@@ -86,8 +83,6 @@ const (
 	envClientTLS         = "MF_FILESTORE_TLS"
 	envThingsAuthURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
-	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
-	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_FILESTORE_ES_URL"
 	envESConsumerName    = "MF_FILESTORE_EVENT_CONSUMER"
 )
@@ -96,11 +91,9 @@ type config struct {
 	logLevel          string
 	jaegerURL         string
 	thingsAuthTimeout time.Duration
-	authGRPCTimeout   time.Duration
 	dbConfig          postgres.Config
 	httpConfig        servers.Config
 	thingsConfig      clients.Config
-	authConfig        clients.Config
 	esURL             string
 	esConsumerName    string
 }
@@ -135,18 +128,10 @@ func main() {
 
 	thingsAuth := thingsapi.NewClient(thingsAuthConn, thingsTracer, cfg.thingsAuthTimeout)
 
-	authTracer, authCloser := jaeger.Init("filestore_auth", cfg.jaegerURL, logger)
-	defer authCloser.Close()
-
-	authConn := clientsgrpc.Connect(cfg.authConfig, logger)
-	defer authConn.Close()
-
-	auth := authapi.NewClient(authConn, authTracer, cfg.authGRPCTimeout)
-
 	dbTracer, dbCloser := jaeger.Init("filestore_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(thingsAuth, dbTracer, db, logger, auth)
+	svc := newService(thingsAuth, dbTracer, db, logger)
 
 	g.Go(func() error {
 		return subscribeToThingsES(ctx, svc, cfg, logger)
@@ -207,27 +192,13 @@ func loadConfig() config {
 		ClientName: clients.Things,
 	}
 
-	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
-	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
-	}
-
-	authConfig := clients.Config{
-		ClientTLS:  tls,
-		CaCerts:    mainflux.Env(envCACerts, defCACerts),
-		URL:        mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
-		ClientName: clients.Auth,
-	}
-
 	return config{
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsAuthTimeout: thingsAuthTimeout,
-		authGRPCTimeout:   authGRPCTimeout,
 		dbConfig:          dbConfig,
 		httpConfig:        httpConfig,
 		thingsConfig:      thingsConfig,
-		authConfig:        authConfig,
 		esURL:             mainflux.Env(envESURL, defESURL),
 		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 	}
@@ -259,14 +230,14 @@ func subscribeToThingsES(ctx context.Context, svc filestore.Service, cfg config,
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(thingsAuth domain.ThingsClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger, ac domain.AuthClient) filestore.Service {
+func newService(thingsAuth domain.ThingsClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) filestore.Service {
 	thRepo := postgres.NewThingsRepository(db)
 	thRepo = tracing.ThingsRepositoryMiddleware(dbTracer, thRepo)
 	grRepo := postgres.NewGroupsRepository(db)
 	grRepo = tracing.GroupsRepositoryMiddleware(dbTracer, grRepo)
 	svc := filestore.New(thingsAuth, thRepo, grRepo)
 
-	svc = api.LoggingMiddleware(svc, logger, ac)
+	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
 		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{

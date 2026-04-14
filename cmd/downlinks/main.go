@@ -280,7 +280,7 @@ func newService(ts domain.ThingsClient, ac domain.AuthClient, pub messaging.Publ
 	downlinksRepo = tracing.DownlinkRepositoryMiddleware(dbTracer, downlinksRepo)
 	idProvider := uuid.New()
 	svc := downlinks.New(ts, ac, pub, downlinksRepo, idProvider, logger)
-	svc = api.LoggingMiddleware(svc, logger, ac)
+	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
 		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{

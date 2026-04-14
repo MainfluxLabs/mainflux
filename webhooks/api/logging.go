@@ -12,7 +12,7 @@ import (
 	"time"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	pkgauth "github.com/MainfluxLabs/mainflux/pkg/auth"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 )
 
@@ -21,22 +21,15 @@ var _ webhooks.Service = (*loggingMiddleware)(nil)
 type loggingMiddleware struct {
 	logger log.Logger
 	svc    webhooks.Service
-	auth   domain.AuthClient
 }
 
 // LoggingMiddleware adds logging facilities to the core service.
-func LoggingMiddleware(svc webhooks.Service, logger log.Logger, auth domain.AuthClient) webhooks.Service {
-	return &loggingMiddleware{logger, svc, auth}
+func LoggingMiddleware(svc webhooks.Service, logger log.Logger) webhooks.Service {
+	return &loggingMiddleware{logger, svc}
 }
 
 func (lm *loggingMiddleware) identify(token string) string {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	id, err := lm.auth.Identify(ctx, token)
-	if err != nil {
-		return ""
-	}
-	return id.Email
+	return pkgauth.EmailFromToken(token)
 }
 
 func (lm *loggingMiddleware) CreateWebhooks(ctx context.Context, token, thingID string, webhooks ...webhooks.Webhook) (response []webhooks.Webhook, err error) {

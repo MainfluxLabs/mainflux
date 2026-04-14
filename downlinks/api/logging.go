@@ -13,7 +13,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/downlinks"
 	log "github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	pkgauth "github.com/MainfluxLabs/mainflux/pkg/auth"
 )
 
 var _ downlinks.Service = (*loggingMiddleware)(nil)
@@ -21,22 +21,15 @@ var _ downlinks.Service = (*loggingMiddleware)(nil)
 type loggingMiddleware struct {
 	logger log.Logger
 	svc    downlinks.Service
-	auth   domain.AuthClient
 }
 
 // LoggingMiddleware adds logging facilities to the core service.
-func LoggingMiddleware(svc downlinks.Service, logger log.Logger, auth domain.AuthClient) downlinks.Service {
-	return &loggingMiddleware{logger, svc, auth}
+func LoggingMiddleware(svc downlinks.Service, logger log.Logger) downlinks.Service {
+	return &loggingMiddleware{logger, svc}
 }
 
 func (lm *loggingMiddleware) identify(token string) string {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	id, err := lm.auth.Identify(ctx, token)
-	if err != nil {
-		return ""
-	}
-	return id.Email
+	return pkgauth.EmailFromToken(token)
 }
 
 func (lm *loggingMiddleware) CreateDownlinks(ctx context.Context, token, thingID string, downlinks ...downlinks.Downlink) (response []downlinks.Downlink, err error) {

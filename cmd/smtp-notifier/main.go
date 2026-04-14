@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
-	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers/api"
@@ -68,8 +67,6 @@ const (
 	defServerKey         = ""
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
-	defAuthGRPCURL       = "localhost:8181"
-	defAuthGRPCTimeout   = "1s"
 	defESURL             = "redis://localhost:6379/0"
 	defESConsumerName    = svcName
 
@@ -101,8 +98,6 @@ const (
 	envServerKey         = "MF_SMTP_NOTIFIER_SERVER_KEY"
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
-	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
-	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_SMTP_NOTIFIER_ES_URL"
 	envESConsumerName    = "MF_SMTP_NOTIFIER_EVENT_CONSUMER"
 
@@ -121,12 +116,10 @@ type config struct {
 	dbConfig          postgres.Config
 	httpConfig        servers.Config
 	thingsConfig      clients.Config
-	authConfig        clients.Config
 	emailConf         email.Config
 	from              string
 	jaegerURL         string
 	thingsGRPCTimeout time.Duration
-	authGRPCTimeout   time.Duration
 	esURL             string
 	esConsumerName    string
 }
@@ -162,18 +155,10 @@ func main() {
 
 	tc := thingsapi.NewClient(thConn, thingsTracer, cfg.thingsGRPCTimeout)
 
-	authTracer, authCloser := jaeger.Init("smtp_auth", cfg.jaegerURL, logger)
-	defer authCloser.Close()
-
-	authConn := clientsgrpc.Connect(cfg.authConfig, logger)
-	defer authConn.Close()
-
-	auth := authapi.NewClient(authConn, authTracer, cfg.authGRPCTimeout)
-
 	dbTracer, dbCloser := jaeger.Init("smtp_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(cfg, logger, dbTracer, db, tc, auth)
+	svc := newService(cfg, logger, dbTracer, db, tc)
 
 	if err = consumers.Start(svcName, pubSub, svc, nats.SubjectSmtp); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create SMTP notifier: %s", err))
@@ -249,18 +234,6 @@ func loadConfig() config {
 		ClientName: clients.Things,
 	}
 
-	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
-	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
-	}
-
-	authConfig := clients.Config{
-		ClientTLS:  thingsTLS,
-		CaCerts:    mainflux.Env(envThingsCACerts, defThingsCACerts),
-		URL:        mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
-		ClientName: clients.Auth,
-	}
-
 	return config{
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
@@ -268,11 +241,9 @@ func loadConfig() config {
 		dbConfig:          dbConfig,
 		httpConfig:        httpConfig,
 		thingsConfig:      thingsConfig,
-		authConfig:        authConfig,
 		from:              mainflux.Env(envFrom, defFrom),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
-		authGRPCTimeout:   authGRPCTimeout,
 		esURL:             mainflux.Env(envESURL, defESURL),
 		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 	}
@@ -305,7 +276,7 @@ func subscribeToThingsES(ctx context.Context, svc notifiers.Service, cfg config,
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(c config, logger logger.Logger, dbTracer opentracing.Tracer, db *sqlx.DB, tc domain.ThingsClient, ac domain.AuthClient) notifiers.Service {
+func newService(c config, logger logger.Logger, dbTracer opentracing.Tracer, db *sqlx.DB, tc domain.ThingsClient) notifiers.Service {
 	idp := uuid.New()
 	database := dbutil.NewDatabase(db)
 
@@ -319,7 +290,7 @@ func newService(c config, logger logger.Logger, dbTracer opentracing.Tracer, db 
 	notifierRepo := postgres.NewNotifierRepository(database)
 	notifierRepo = tracing.NotifierRepositoryMiddleware(dbTracer, notifierRepo)
 	svc := notifiers.New(idp, notifier, notifierRepo, tc)
-	svc = api.LoggingMiddleware(svc, logger, ac)
+	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
 		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
