@@ -26,6 +26,7 @@ volumes:
   mainfluxlabs-alarms-db-volume:
   mainfluxlabs-rules-db-volume:
   mainfluxlabs-certs-db-volume:
+  mainfluxlabs-crl-volume:
   mainfluxlabs-uiconfigs-db-volume:
 
 services:
@@ -54,6 +55,7 @@ services:
       - ./ssl/certs/ca.crt:/etc/ssl/certs/ca.crt
       - ./ssl/certs/mainfluxlabs-server.key:/etc/ssl/private/mainfluxlabs-server.key
       - ./ssl/dhparam.pem:/etc/ssl/certs/dhparam.pem
+      - mainfluxlabs-crl-volume:/etc/ssl/certs/crl
     ports:
       - ${MF_NGINX_HTTP_PORT}:${MF_NGINX_HTTP_PORT}
       - ${MF_NGINX_SSL_PORT}:${MF_NGINX_SSL_PORT}
@@ -875,9 +877,11 @@ services:
       MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
       MF_THINGS_GRPC_URL: ${MF_THINGS_GRPC_URL}
       MF_THINGS_GRPC_TIMEOUT: ${MF_THINGS_GRPC_TIMEOUT}
+      MF_CERTS_CRL_PATH: ${MF_CERTS_CRL_PATH}
     volumes:
       - ./ssl/certs/ca.key:/etc/ssl/certs/ca.key
       - ./ssl/certs/ca.crt:/etc/ssl/certs/ca.crt
+      - mainfluxlabs-crl-volume:/etc/ssl/certs/crl
   uiconfigs-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-uiconfigs-db

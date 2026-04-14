@@ -64,6 +64,7 @@ const (
 	defSignCAKeyPath  = "ca.key"
 	defSignHoursValid = "2048h"
 	defSignRSABits    = ""
+	defCRLPath        = "/etc/ssl/certs/crl/crl.pem"
 
 	envPort              = "MF_CERTS_HTTP_PORT"
 	envLogLevel          = "MF_CERTS_LOG_LEVEL"
@@ -90,6 +91,7 @@ const (
 	envSignCAKey         = "MF_CERTS_SIGN_CA_KEY_PATH"
 	envSignHoursValid    = "MF_CERTS_SIGN_HOURS_VALID"
 	envSignRSABits       = "MF_CERTS_SIGN_RSA_BITS"
+	envCRLPath           = "MF_CERTS_CRL_PATH"
 )
 
 var (
@@ -114,6 +116,7 @@ type config struct {
 	signCAKeyPath  string
 	signRSABits    int
 	signHoursValid string
+	crlPath        string
 }
 
 func main() {
@@ -249,6 +252,7 @@ func loadConfig() config {
 		signCAPath:     mainflux.Env(envSignCAPath, defSignCAPath),
 		signHoursValid: mainflux.Env(envSignHoursValid, defSignHoursValid),
 		signRSABits:    signRSABits,
+		crlPath:        mainflux.Env(envCRLPath, defCRLPath),
 	}
 
 }
@@ -281,6 +285,15 @@ func newService(ac domain.AuthClient, tc domain.ThingsClient, db *sqlx.DB, logge
 		SignX509Cert:   x509Cert,
 		SignHoursValid: cfg.signHoursValid,
 		SignRSABits:    cfg.signRSABits,
+		CRLPath:        cfg.crlPath,
+	}
+
+	if cfg.crlPath != "" && pkiAgent != nil {
+		if err := certs.GenerateCRLFile(context.Background(), certsRepo, pkiAgent, cfg.crlPath); err != nil {
+			logger.Error(fmt.Sprintf("Failed to generate initial CRL: %s", err))
+		} else {
+			logger.Info("Initial CRL generated successfully")
+		}
 	}
 
 	svc := certs.New(ac, tc, certsRepo, certsConfig, pkiAgent)
