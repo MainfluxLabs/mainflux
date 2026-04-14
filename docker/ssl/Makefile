@@ -3,7 +3,7 @@ O = Mainflux
 OU_CA = mainflux_ca
 OU_CRT = mainflux_crt
 EA = info@mainflux.com
-CN_CA = Mainflux-CA
+CN_CA = Mainflux_Self_Signed_CA
 CN_SRV = localhost
 CRT_FILE_NAME = thing
 
