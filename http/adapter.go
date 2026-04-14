@@ -12,7 +12,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 )
 
 // Service specifies coap service API.
@@ -50,7 +49,7 @@ func (as *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg 
 		return err
 	}
 
-	if err := messaging.FormatMessage(protoutil.PubConfigInfoToProto(pc), &msg); err != nil {
+	if err := messaging.FormatMessage(pc, &msg); err != nil {
 		return err
 	}
 
@@ -86,12 +85,12 @@ func (as *adapterService) SendCommandToGroup(ctx context.Context, token, groupID
 }
 
 func (as *adapterService) SendCommandToThingByKey(ctx context.Context, key domain.ThingKey, thingID string, message protomfx.Message) error {
-	publishedID, err := as.things.Identify(ctx, key)
+	publisherID, err := as.things.Identify(ctx, key)
 	if err != nil {
 		return err
 	}
 
-	if err := as.things.CanThingCommand(ctx, domain.ThingCommandReq{PublisherID: publishedID, RecipientID: thingID}); err != nil {
+	if err := as.things.CanThingCommand(ctx, domain.ThingCommandReq{PublisherID: publisherID, RecipientID: thingID}); err != nil {
 		return err
 	}
 

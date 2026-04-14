@@ -58,6 +58,32 @@ func (lm *loggingMiddleware) Subscribe(ctx context.Context, key domain.ThingKey,
 	return lm.svc.Subscribe(ctx, key, subtopic, c)
 }
 
+func (lm *loggingMiddleware) SendCommandToThing(ctx context.Context, key domain.ThingKey, thingID string, msg protomfx.Message) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method send_command_to_thing for thing id %s took %s to complete", thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.SendCommandToThing(ctx, key, thingID, msg)
+}
+
+func (lm *loggingMiddleware) SendCommandToGroup(ctx context.Context, key domain.ThingKey, groupID string, msg protomfx.Message) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method send_command_to_group for group id %s took %s to complete", groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.SendCommandToGroup(ctx, key, groupID, msg)
+}
+
 func (lm *loggingMiddleware) Unsubscribe(ctx context.Context, key domain.ThingKey, subtopic, token string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method unsubscribe for client token %s took %s to complete", token, time.Since(begin))

@@ -30,14 +30,6 @@ func ProtoConfigToDomain(c *protomfx.Config) *domain.ProfileConfig {
 	}
 }
 
-// PubConfigInfoToProto converts domain PubConfigInfo to proto PubConfigByKeyRes for use with messaging.FormatMessage.
-func PubConfigInfoToProto(pi domain.PubConfigInfo) *protomfx.PubConfigByKeyRes {
-	return &protomfx.PubConfigByKeyRes{
-		PublisherID:   pi.PublisherID,
-		ProfileConfig: DomainConfigToProto(pi.ProfileConfig),
-	}
-}
-
 // DomainConfigToProto converts domain Config to proto Config for use with messaging.
 func DomainConfigToProto(c *domain.ProfileConfig) *protomfx.Config {
 	if c == nil {
@@ -58,19 +50,20 @@ func DomainConfigToProto(c *domain.ProfileConfig) *protomfx.Config {
 	return cfg
 }
 
-func MapConfigToProto(config map[string]any) *protomfx.Config {
+// MapToDomainConfig converts a map to domain ProfileConfig.
+func MapToDomainConfig(config map[string]any) *domain.ProfileConfig {
 	if config == nil {
-		return &protomfx.Config{}
+		return nil
 	}
 
-	cfg := &protomfx.Config{}
+	cfg := &domain.ProfileConfig{}
 
 	if v, ok := config["content_type"].(string); ok {
 		cfg.ContentType = v
 	}
 
 	if t, ok := config["transformer"].(map[string]any); ok {
-		tr := &protomfx.Transformer{}
+		tr := domain.Transformer{}
 
 		if filters, ok := t["data_filters"].([]string); ok {
 			tr.DataFilters = filters

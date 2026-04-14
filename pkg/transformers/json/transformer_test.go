@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
@@ -34,7 +35,7 @@ var (
 	dataFilters = []string{"key1", "key2", "key3"}
 )
 
-var transformer = protomfx.Transformer{DataFilters: dataFilters, TimeField: "nanos_key", TimeFormat: timeFieldFormat, TimeLocation: timeFieldLocation}
+var transformer = domain.Transformer{DataFilters: dataFilters, TimeField: "nanos_key", TimeFormat: timeFieldFormat, TimeLocation: timeFieldLocation}
 
 func TestTransformJSON(t *testing.T) {
 	now := time.Now().UnixNano()
@@ -54,15 +55,15 @@ func TestTransformJSON(t *testing.T) {
 
 	tsMsg := msg
 	tsMsg.Payload = []byte(tsPayload)
-	tsMsgTr := protomfx.Transformer{DataFilters: dataFilters, TimeField: timeFieldName, TimeFormat: timeFieldFormat, TimeLocation: timeFieldLocation}
+	tsMsgTr := domain.Transformer{DataFilters: dataFilters, TimeField: timeFieldName, TimeFormat: timeFieldFormat, TimeLocation: timeFieldLocation}
 
 	microsMsg := msg
 	microsMsg.Payload = []byte(microsPayload)
-	microsMsgTr := protomfx.Transformer{DataFilters: dataFilters, TimeField: "custom_ts_micro_key", TimeFormat: "unix_us", TimeLocation: timeFieldLocation}
+	microsMsgTr := domain.Transformer{DataFilters: dataFilters, TimeField: "custom_ts_micro_key", TimeFormat: "unix_us", TimeLocation: timeFieldLocation}
 
 	invalidTimeField := msg
 	invalidTimeField.Payload = []byte(invalidTsPayload)
-	invalidTimeFieldTr := protomfx.Transformer{DataFilters: dataFilters, TimeField: timeFieldName, TimeFormat: timeFieldName, TimeLocation: timeFieldLocation}
+	invalidTimeFieldTr := domain.Transformer{DataFilters: dataFilters, TimeField: timeFieldName, TimeFormat: timeFieldName, TimeLocation: timeFieldLocation}
 
 	pyd := map[string]any{
 		"key1": "val1",
@@ -124,7 +125,7 @@ func TestTransformJSON(t *testing.T) {
 
 	cases := []struct {
 		desc        string
-		transformer protomfx.Transformer
+		transformer domain.Transformer
 		msg         protomfx.Message
 		msgs        []protomfx.Message
 		err         error

@@ -305,12 +305,12 @@ func (ds *downlinksService) RescheduleTasks(ctx context.Context, profileID strin
 		return nil
 	}
 
-	protoCfg := protoutil.MapConfigToProto(config)
+	cfg := protoutil.MapToDomainConfig(config)
 
 	for _, d := range downlinks {
 		ds.unscheduleTask(d)
 
-		if err := ds.scheduleTask(d, protoutil.ProtoConfigToDomain(protoCfg)); err != nil {
+		if err := ds.scheduleTask(d, cfg); err != nil {
 			return err
 		}
 	}
@@ -448,7 +448,11 @@ func (ds *downlinksService) publish(config *domain.ProfileConfig, thingID string
 		Payload:  payload,
 	}
 
-	conn := &protomfx.PubConfigByKeyRes{PublisherID: thingID, ProfileConfig: protoutil.DomainConfigToProto(config)}
+	conn := domain.PubConfigInfo{
+		PublisherID:   thingID,
+		ProfileConfig: config,
+	}
+
 	if err := messaging.FormatMessage(conn, &msg); err != nil {
 		return err
 	}

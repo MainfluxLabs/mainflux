@@ -13,3 +13,11 @@ type getConnByKey struct {
 	subtopic string
 	conn     *websocket.Conn
 }
+
+type cmdConnReq struct {
+	token    string
+	thingKey domain.ThingKey
+	id       string
+	subtopic string
+	conn     *websocket.Conn
+}

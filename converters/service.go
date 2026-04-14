@@ -14,7 +14,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 )
 
 const (
@@ -160,7 +159,7 @@ func (as *adapterService) publish(ctx context.Context, key string, msg protomfx.
 		return protomfx.Message{}, err
 	}
 
-	if err := messaging.FormatMessage(protoutil.PubConfigInfoToProto(pc), &msg); err != nil {
+	if err := messaging.FormatMessage(pc, &msg); err != nil {
 		return protomfx.Message{}, err
 	}
 

@@ -9,7 +9,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/ws"
 	"github.com/gorilla/websocket"
 )
 
@@ -50,14 +49,14 @@ func (pubsub *mockPubSub) Publish(_ string, msg protomfx.Message) error {
 
 func (pubsub *mockPubSub) Subscribe(string, string, messaging.MessageHandler) error {
 	if pubsub.fail {
-		return ws.ErrFailedSubscription
+		return messaging.ErrFailedSubscribe
 	}
 	return nil
 }
 
 func (pubsub *mockPubSub) Unsubscribe(string, string) error {
 	if pubsub.fail {
-		return ws.ErrFailedUnsubscribe
+		return messaging.ErrFailedUnsubscribe
 	}
 	return nil
 }

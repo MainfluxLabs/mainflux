@@ -4,13 +4,12 @@ Readers provide an implementation of various `message readers`. The service expo
 
 ## Implementations
 
-Three backend implementations are provided, each as its own binary:
+Two backend implementations are provided, each as its own binary:
 
 | Implementation | Binary                          | Description                                    |
 |----------------|---------------------------------|------------------------------------------------|
 | PostgreSQL     | `mainfluxlabs-postgres-reader`  | Reads SenML and JSON messages from PostgreSQL  |
 | TimescaleDB    | `mainfluxlabs-timescale-reader` | Reads SenML and JSON messages from TimescaleDB |
-| MongoDB        | `mainfluxlabs-mongodb-reader`   | Reads SenML and JSON messages from MongoDB     |
 
 ## Message Formats
 
@@ -63,9 +62,6 @@ The service is configured using the environment variables presented in the follo
 
 Uses the same environment variable names with `MF_TIMESCALE_READER_` prefix (except shared vars like `MF_THINGS_AUTH_GRPC_URL`).
 
-### MongoDB Reader
-
-Uses the same environment variable names with `MF_MONGO_READER_` prefix and MongoDB-specific connection variables (`MF_MONGO_READER_DB_ADDR`, `MF_MONGO_READER_DB_NAME`, etc.).
 
 ## Deployment
 

@@ -16,7 +16,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 	"github.com/MainfluxLabs/mproxy/pkg/session"
 )
 
@@ -230,7 +229,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		Payload:  *payload,
 	}
 
-	if err := messaging.FormatMessage(protoutil.PubConfigInfoToProto(pc), &msg); err != nil {
+	if err := messaging.FormatMessage(pc, &msg); err != nil {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 		return
 	}

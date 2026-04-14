@@ -15,7 +15,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 )
 
 // Service specifies CoAP service API.
@@ -29,6 +28,12 @@ type Service interface {
 
 	// Unsubscribe method is used to stop observing resource.
 	Unsubscribe(ctx context.Context, key domain.ThingKey, subtopic, token string) error
+
+	// SendCommandToThing publishes a command to the specified thing, authorized by publisher thing key (M2M).
+	SendCommandToThing(ctx context.Context, key domain.ThingKey, thingID string, msg protomfx.Message) error
+
+	// SendCommandToGroup publishes a command to a group, authorized by publisher thing key (M2M).
+	SendCommandToGroup(ctx context.Context, key domain.ThingKey, groupID string, msg protomfx.Message) error
 }
 
 var _ Service = (*adapterService)(nil)
@@ -56,7 +61,7 @@ func (svc *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	if err := messaging.FormatMessage(protoutil.PubConfigInfoToProto(pc), &msg); err != nil {
+	if err := messaging.FormatMessage(pc, &msg); err != nil {
 		return err
 	}
 
@@ -73,6 +78,32 @@ func (svc *adapterService) Subscribe(ctx context.Context, key domain.ThingKey, s
 	}
 
 	return svc.pubsub.Subscribe(c.Token(), subtopic, c)
+}
+
+func (svc *adapterService) SendCommandToThing(ctx context.Context, key domain.ThingKey, thingID string, msg protomfx.Message) error {
+	res, err := svc.things.Identify(ctx, key)
+	if err != nil {
+		return err
+	}
+
+	if err := svc.things.CanThingCommand(ctx, domain.ThingCommandReq{PublisherID: res, RecipientID: thingID}); err != nil {
+		return err
+	}
+
+	return svc.pubsub.Publish(nats.GetThingCommandsSubject(thingID, msg.Subtopic), msg)
+}
+
+func (svc *adapterService) SendCommandToGroup(ctx context.Context, key domain.ThingKey, groupID string, msg protomfx.Message) error {
+	thingID, err := svc.things.Identify(ctx, key)
+	if err != nil {
+		return err
+	}
+
+	if err := svc.things.CanThingGroupCommand(ctx, domain.ThingGroupCommandReq{PublisherID: thingID, GroupID: groupID}); err != nil {
+		return err
+	}
+
+	return svc.pubsub.Publish(nats.GetGroupCommandsSubject(groupID, msg.Subtopic), msg)
 }
 
 func (svc *adapterService) Unsubscribe(ctx context.Context, key domain.ThingKey, subtopic, token string) error {
