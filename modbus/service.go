@@ -313,7 +313,7 @@ func (cs *clientsService) RescheduleTasks(ctx context.Context, profileID string,
 		return nil
 	}
 
-	cfg := protoutil.MapToProtoConfig(config)
+	cfg := protoutil.MapToDomainConfig(config)
 
 	// stop existing tasks and start new tasks with updated config
 	for _, d := range clients {
@@ -334,7 +334,7 @@ func (cs *clientsService) scheduleTasks(ctx context.Context, clients ...Client) 
 			return err
 		}
 
-		if err := cs.scheduleTask(client, protoutil.DomainConfigToProto(cfg)); err != nil {
+		if err := cs.scheduleTask(client, cfg); err != nil {
 			return err
 		}
 	}
@@ -342,7 +342,7 @@ func (cs *clientsService) scheduleTasks(ctx context.Context, clients ...Client) 
 	return nil
 }
 
-func (cs *clientsService) scheduleTask(c Client, cfg *protomfx.Config) error {
+func (cs *clientsService) scheduleTask(c Client, cfg *domain.ProfileConfig) error {
 	task := cs.createTask(c, cfg)
 
 	if c.Scheduler.Frequency != cron.OnceFreq {
@@ -363,7 +363,7 @@ func (cs *clientsService) unscheduleTask(c Client) {
 	}
 }
 
-func (cs *clientsService) createTask(client Client, config *protomfx.Config) func() {
+func (cs *clientsService) createTask(client Client, config *domain.ProfileConfig) func() {
 	maxLen := getBlockMaxLen(client.FunctionCode)
 	blocks := createBlocks(client.DataFields, maxLen)
 
@@ -726,14 +726,14 @@ func (cs *clientsService) LoadAndScheduleTasks(ctx context.Context) error {
 	return nil
 }
 
-func (cs *clientsService) publish(config *protomfx.Config, thingID string, payload []byte) error {
+func (cs *clientsService) publish(config *domain.ProfileConfig, thingID string, payload []byte) error {
 	msg := protomfx.Message{
 		Protocol: modbusProtocol,
 		Payload:  payload,
 	}
 
-	conn := &protomfx.PubConfigByKeyRes{PublisherID: thingID, ProfileConfig: config}
-	if err := messaging.FormatMessage(conn, &msg); err != nil {
+	pc := domain.PubConfigInfo{PublisherID: thingID, ProfileConfig: config}
+	if err := messaging.FormatMessage(pc, &msg); err != nil {
 		return err
 	}
 

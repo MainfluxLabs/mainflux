@@ -6,22 +6,10 @@ package grpc
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-kit/kit/endpoint"
 )
-
-func domainPageMetadataToUsers(pm domain.UsersPageMetadata) users.PageMetadata {
-	return users.PageMetadata{
-		Total:  pm.Total,
-		Offset: pm.Offset,
-		Limit:  pm.Limit,
-		Email:  pm.Email,
-		Order:  pm.Order,
-		Dir:    pm.Dir,
-	}
-}
 
 func listUsersByIDsEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
@@ -30,7 +18,7 @@ func listUsersByIDsEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		up, err := svc.ListUsersByIDs(ctx, req.ids, domainPageMetadataToUsers(req.pageMetadata))
+		up, err := svc.ListUsersByIDs(ctx, req.ids, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}

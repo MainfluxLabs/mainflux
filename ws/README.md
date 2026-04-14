@@ -52,5 +52,35 @@ $GOBIN/mainfluxlabs-ws
 
 ## Usage
 
-For more information about service capabilities and its usage, please check out
-the [WebSocket paragraph](https://mainflux.readthedocs.io/en/latest/messaging/#websocket) in the Getting Started guide.
+Authentication is provided via the `Authorization` header or query parameters for browser clients that cannot set headers:
+* **Thing key**: `Authorization: Thing <thing_key>` or `?key=<key>&keyType=<type>`
+* **User bearer token**: `Authorization: Bearer <user_token>` or `?token=<user_token>`
+
+### Publishing messages
+
+Connect to `/messages` or `/messages/<subtopic>` using a thing key:
+
+```
+ws://localhost:8190/messages?key=<thing_key>&keyType=<key_type>
+ws://localhost:8190/messages/sensors/temperature?key=<thing_key>&keyType=<key_type>
+```
+
+Once connected, each message sent over the socket is published to the platform.
+
+### Sending commands
+
+Connect to `/things/<thing_id>/commands` or `/groups/<group_id>/commands` using a thing key or user bearer token:
+
+```
+ws://localhost:8190/things/<thing_id>/commands?key=<thing_key>&keyType=<key_type>
+ws://localhost:8190/groups/<group_id>/commands?token=<user_token>
+```
+
+Both endpoints support an optional subtopic:
+
+```
+ws://localhost:8190/things/<thing_id>/commands/firmware
+ws://localhost:8190/groups/<group_id>/commands/config/network
+```
+
+Once connected, each message sent over the socket is published as a command to the target thing or group.
