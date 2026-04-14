@@ -44,17 +44,19 @@ type CertScheduler struct {
 	things    domain.ThingsClient
 	publisher messaging.Publisher
 	logger    logger.Logger
+	crlPath   string
 	sm        *mfcron.ScheduleManager
 }
 
 // NewCertScheduler creates a new certificate rotation scheduler.
-func NewCertScheduler(repo Repository, pkiAgent pki.Agent, things domain.ThingsClient, pub messaging.Publisher, logger logger.Logger) *CertScheduler {
+func NewCertScheduler(repo Repository, pkiAgent pki.Agent, things domain.ThingsClient, pub messaging.Publisher, crlPath string, logger logger.Logger) *CertScheduler {
 	return &CertScheduler{
 		repo:      repo,
 		pki:       pkiAgent,
 		things:    things,
 		publisher: pub,
 		logger:    logger,
+		crlPath:   crlPath,
 		sm:        mfcron.NewScheduleManager(),
 	}
 }
@@ -142,6 +144,12 @@ func (cs *CertScheduler) renewAndNotify(ctx context.Context, oldCert Cert) error
 
 	if err := cs.repo.Remove(ctx, oldCert.Serial); err != nil {
 		cs.logger.Error(fmt.Sprintf("Failed to revoke old certificate %s after renewal: %s", oldCert.Serial, err.Error()))
+	}
+
+	if cs.crlPath != "" {
+		if err := GenerateCRLFile(ctx, cs.repo, cs.pki, cs.crlPath); err != nil {
+			cs.logger.Error(fmt.Sprintf("Failed to regenerate CRL after rotation of %s: %s", oldCert.Serial, err.Error()))
+		}
 	}
 
 	cs.logger.Info(fmt.Sprintf("Certificate rotated for thing %s: old serial %s -> new serial %s", oldCert.ThingID, oldCert.Serial, newCert.Serial))

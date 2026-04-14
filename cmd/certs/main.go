@@ -183,7 +183,7 @@ func main() {
 	}
 	defer pub.Close()
 
-	certScheduler := certs.NewCertScheduler(certsRepo, pkiAgent, tc, pub, logger)
+	certScheduler := certs.NewCertScheduler(certsRepo, pkiAgent, tc, pub, cfg.crlPath, logger)
 	schedule := mfcron.Scheduler{
 		TimeZone:  "UTC",
 		Frequency: mfcron.DailyFreq,
