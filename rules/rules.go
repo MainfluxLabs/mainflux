@@ -60,24 +60,30 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 	}
 
 	for _, action := range rule.Actions {
-		for _, payload := range payloads {
-			newMsg := msg
-			newMsg.Payload = payload
-
-			var subject string
-
-			switch action.Type {
-			case ActionTypeSMTP:
-				subject = fmt.Sprintf("%s.%s", subjectSMTP, action.ID)
-			case ActionTypeSMPP:
-				subject = fmt.Sprintf("%s.%s", subjectSMPP, action.ID)
-			case ActionTypeAlarm:
-				subject = fmt.Sprintf("%s.%s.%s", subjectAlarms, alarms.AlarmOriginRule, rule.ID)
-			default:
-				continue
+		switch action.Type {
+		case ActionTypeSMTP, ActionTypeSMPP:
+			var subjectPrefix string
+			if action.Type == ActionTypeSMTP {
+				subjectPrefix = subjectSMTP
+			} else {
+				subjectPrefix = subjectSMPP
 			}
-
-			if err := rs.pubsub.Publish(subject, *newMsg); err != nil {
+			for _, payload := range payloads {
+				newMsg := *msg
+				newMsg.Payload = payload
+				if err := rs.pub.Publish(fmt.Sprintf("%s.%s", subjectPrefix, action.ID), newMsg); err != nil {
+					return err
+				}
+			}
+		case ActionTypeAlarm:
+			subject := fmt.Sprintf("%s.%s.%s", subjectAlarms, alarms.AlarmOriginRule, rule.ID)
+			if err := rs.pub.PublishAlarm(subject, &protomfx.Alarm{
+				ThingId:  msg.Publisher,
+				Subtopic: msg.Subtopic,
+				Protocol: msg.Protocol,
+				Created:  msg.Created,
+				RuleId:   rule.ID,
+			}); err != nil {
 				return err
 			}
 		}

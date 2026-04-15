@@ -13,7 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
@@ -147,7 +147,7 @@ const (
 type rulesService struct {
 	rules          Repository
 	things         domain.ThingsClient
-	pubsub         messaging.PubSub
+	pub            nats.Publisher
 	idProvider     uuid.IDProvider
 	logger         logger.Logger
 	scriptsEnabled bool
@@ -156,11 +156,11 @@ type rulesService struct {
 var _ Service = (*rulesService)(nil)
 
 // New instantiates the rules service implementation.
-func New(rules Repository, things domain.ThingsClient, pubsub messaging.PubSub, idp uuid.IDProvider, logger logger.Logger, scriptsEnabled bool) Service {
+func New(rules Repository, things domain.ThingsClient, pub nats.Publisher, idp uuid.IDProvider, logger logger.Logger, scriptsEnabled bool) Service {
 	return &rulesService{
 		rules:          rules,
 		things:         things,
-		pubsub:         pubsub,
+		pub:            pub,
 		idProvider:     idp,
 		logger:         logger,
 		scriptsEnabled: scriptsEnabled,

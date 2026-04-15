@@ -2,14 +2,13 @@ package alarms
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
-	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
@@ -70,7 +69,7 @@ type Service interface {
 	// identified by the provided thing ID, intended for exporting.
 	ExportAlarmsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (AlarmsPage, error)
 
-	consumers.Consumer
+	nats.AlarmHandler
 }
 
 type alarmService struct {
@@ -192,25 +191,14 @@ func (as *alarmService) createAlarm(ctx context.Context, alarm *Alarm) error {
 
 }
 
-func (as *alarmService) Consume(subject string, message any) error {
+func (as *alarmService) Handle(subject string, alarm protomfx.Alarm) error {
 	ctx := context.Background()
 
-	msg, ok := message.(protomfx.Message)
-	if !ok {
-		return errors.ErrMessage
-	}
-
-	var payload map[string]any
-	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
-		return errors.Wrap(errors.ErrInvalidPayload, err)
-	}
-
-	alarm := Alarm{
-		ThingID:  msg.Publisher,
-		Subtopic: msg.Subtopic,
-		Protocol: msg.Protocol,
-		Payload:  payload,
-		Created:  msg.Created,
+	a := Alarm{
+		ThingID:  alarm.ThingId,
+		Subtopic: alarm.Subtopic,
+		Protocol: alarm.Protocol,
+		Created:  alarm.Created,
 	}
 
 	subParts := strings.Split(subject, ".")
@@ -223,16 +211,16 @@ func (as *alarmService) Consume(subject string, message any) error {
 
 	switch originType {
 	case AlarmOriginRule:
-		alarm.RuleID = originID
+		a.RuleID = originID
 	case AlarmOriginScript:
-		alarm.ScriptID = originID
+		a.ScriptID = originID
 	default:
 		return fmt.Errorf("invalid subject origin type: %s", originType)
 	}
 
-	if err := as.createAlarm(ctx, &alarm); err != nil {
-		return err
-	}
+	return as.createAlarm(ctx, &a)
+}
 
+func (as *alarmService) Cancel() error {
 	return nil
 }

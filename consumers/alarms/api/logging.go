@@ -8,6 +8,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	pkgauth "github.com/MainfluxLabs/mainflux/pkg/auth"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 var _ alarms.Service = (*loggingMiddleware)(nil)
@@ -132,9 +133,9 @@ func (lm loggingMiddleware) ExportAlarmsByThing(ctx context.Context, token, thin
 	return lm.svc.ExportAlarmsByThing(ctx, token, thingID, pm)
 }
 
-func (lm loggingMiddleware) Consume(subject string, alarm any) (err error) {
+func (lm loggingMiddleware) Handle(subject string, alarm protomfx.Alarm) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method consume took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method handle took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -142,5 +143,9 @@ func (lm loggingMiddleware) Consume(subject string, alarm any) (err error) {
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Consume(subject, alarm)
+	return lm.svc.Handle(subject, alarm)
+}
+
+func (lm loggingMiddleware) Cancel() error {
+	return nil
 }

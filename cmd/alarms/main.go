@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
-	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/consumers/alarms/api"
 	httpapi "github.com/MainfluxLabs/mainflux/consumers/alarms/api/http"
@@ -31,7 +30,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
@@ -117,7 +115,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	pubSub, err := brokers.NewPubSub(cfg.brokerURL, "", logger)
+	pubSub, err := nats.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -143,8 +141,8 @@ func main() {
 
 	svc := newService(things, dbTracer, db, logger)
 
-	if err = consumers.Start(svcName, pubSub, svc, nats.SubjectAlarms); err != nil {
-		logger.Error(fmt.Sprintf("Failed to create Alarm: %s", err))
+	if err = pubSub.SubscribeAlarms(svcName, svc); err != nil {
+		logger.Error(fmt.Sprintf("Failed to subscribe to alarms: %s", err))
 	}
 
 	g.Go(func() error {

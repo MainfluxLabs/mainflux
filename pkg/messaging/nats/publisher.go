@@ -24,17 +24,25 @@ const (
 	commandsSuffix = "commands"
 )
 
-var _ messaging.Publisher = (*publisher)(nil)
+// AlarmPublisher specifies the alarm publishing API.
+type AlarmPublisher interface {
+	PublishAlarm(subject string, alarm *protomfx.Alarm) error
+}
+
+// Publisher extends the base messaging.Publisher with alarm publishing capability.
+type Publisher interface {
+	messaging.Publisher
+	AlarmPublisher
+}
+
+var _ Publisher = (*publisher)(nil)
 
 type publisher struct {
 	conn *broker.Conn
 }
 
-// Publisher wraps messaging Publisher exposing
-// Close() method for NATS connection.
-
 // NewPublisher returns NATS message Publisher.
-func NewPublisher(url string) (messaging.Publisher, error) {
+func NewPublisher(url string) (Publisher, error) {
 	conn, err := broker.Connect(url, broker.MaxReconnects(maxReconnects))
 	if err != nil {
 		return nil, err
@@ -45,12 +53,19 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 	return ret, nil
 }
 
-func (pub *publisher) Publish(subject string, msg protomfx.Message) (err error) {
+func (pub *publisher) Publish(subject string, msg protomfx.Message) error {
 	data, err := proto.Marshal(&msg)
 	if err != nil {
 		return err
 	}
+	return pub.conn.Publish(subject, data)
+}
 
+func (pub *publisher) PublishAlarm(subject string, alarm *protomfx.Alarm) error {
+	data, err := proto.Marshal(alarm)
+	if err != nil {
+		return err
+	}
 	return pub.conn.Publish(subject, data)
 }
 

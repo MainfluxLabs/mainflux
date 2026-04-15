@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/Shopify/go-lua"
 )
 
@@ -35,7 +36,7 @@ var luaSMTPNotify = luaAPIFunc{
 			msg.Payload = encodedPayload
 			subject := fmt.Sprintf("%s.%s", subjectSMTP, notifierID)
 
-			if err := env.service.pubsub.Publish(subject, msg); err != nil {
+			if err := env.service.pub.Publish(subject, msg); err != nil {
 				ls.PushBoolean(false)
 				ls.PushString(err.Error())
 				return 2
@@ -56,18 +57,14 @@ var luaSMTPNotify = luaAPIFunc{
 var luaAlarmCreate = luaAPIFunc{
 	fun: func(env *luaEnv) lua.Function {
 		return func(ls *lua.State) int {
-			encodedPayload, err := json.Marshal(env.payload)
-			if err != nil {
-				ls.PushBoolean(false)
-				ls.PushString(err.Error())
-				return 2
-			}
-
-			msg := env.message
-			msg.Payload = encodedPayload
 			subject := fmt.Sprintf("%s.%s.%s", subjectAlarms, alarms.AlarmOriginScript, env.script.ID)
-
-			if err := env.service.pubsub.Publish(subject, msg); err != nil {
+			if err := env.service.pub.PublishAlarm(subject, &protomfx.Alarm{
+				ThingId:  env.message.Publisher,
+				Subtopic: env.message.Subtopic,
+				Protocol: env.message.Protocol,
+				Created:  env.message.Created,
+				RuleId:   env.script.ID,
+			}); err != nil {
 				ls.PushBoolean(false)
 				ls.PushString(err.Error())
 				return 2
