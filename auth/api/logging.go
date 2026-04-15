@@ -12,6 +12,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	log "github.com/MainfluxLabs/mainflux/logger"
+	pkgauth "github.com/MainfluxLabs/mainflux/pkg/auth"
 )
 
 var _ auth.Service = (*loggingMiddleware)(nil)
@@ -27,13 +28,7 @@ func LoggingMiddleware(svc auth.Service, logger log.Logger) auth.Service {
 }
 
 func (lm *loggingMiddleware) identify(token string) string {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	id, err := lm.svc.Identify(ctx, token)
-	if err != nil {
-		return ""
-	}
-	return id.Email
+	return pkgauth.EmailFromToken(token)
 }
 
 func (lm *loggingMiddleware) Issue(ctx context.Context, token string, newKey auth.Key) (key auth.Key, _ string, err error) {
