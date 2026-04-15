@@ -31,13 +31,9 @@ func LoggingMiddleware(svc readers.Service, logger logger.Logger) readers.Servic
 	}
 }
 
-func (lm *loggingMiddleware) identify(token string) string {
-	return pkgauth.EmailFromToken(token)
-}
-
 func (lm *loggingMiddleware) ListJSONMessages(ctx context.Context, token string, key domain.ThingKey, rpm readers.JSONPageMetadata) (_ readers.JSONMessagesPage, err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method list_json_messages by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -51,7 +47,7 @@ func (lm *loggingMiddleware) ListJSONMessages(ctx context.Context, token string,
 
 func (lm *loggingMiddleware) ListSenMLMessages(ctx context.Context, token string, key domain.ThingKey, rpm readers.SenMLPageMetadata) (_ readers.SenMLMessagesPage, err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method list_senml_messages by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -65,7 +61,7 @@ func (lm *loggingMiddleware) ListSenMLMessages(ctx context.Context, token string
 
 func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (_ readers.Backup, err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method backup by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -79,7 +75,7 @@ func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (_ reader
 
 func (lm *loggingMiddleware) Restore(ctx context.Context, token string, backup readers.Backup) (err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method restore by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -93,7 +89,7 @@ func (lm *loggingMiddleware) Restore(ctx context.Context, token string, backup r
 
 func (lm *loggingMiddleware) ExportJSONMessages(ctx context.Context, token string, rpm readers.JSONPageMetadata) (_ readers.JSONMessagesPage, err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method export_json_messages by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -107,7 +103,7 @@ func (lm *loggingMiddleware) ExportJSONMessages(ctx context.Context, token strin
 
 func (lm *loggingMiddleware) ExportSenMLMessages(ctx context.Context, token string, rpm readers.SenMLPageMetadata) (_ readers.SenMLMessagesPage, err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method export_senml_messages by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -121,7 +117,7 @@ func (lm *loggingMiddleware) ExportSenMLMessages(ctx context.Context, token stri
 
 func (lm *loggingMiddleware) DeleteJSONMessages(ctx context.Context, token string, rpm readers.JSONPageMetadata) (err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method delete_json_messages by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -135,7 +131,7 @@ func (lm *loggingMiddleware) DeleteJSONMessages(ctx context.Context, token strin
 
 func (lm *loggingMiddleware) DeleteSenMLMessages(ctx context.Context, token string, rpm readers.SenMLPageMetadata) (err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method delete_senml_messages by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -149,7 +145,7 @@ func (lm *loggingMiddleware) DeleteSenMLMessages(ctx context.Context, token stri
 
 func (lm *loggingMiddleware) DeleteAllJSONMessages(ctx context.Context, token string, rpm readers.JSONPageMetadata) (err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method delete_all_json_messages by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -163,7 +159,7 @@ func (lm *loggingMiddleware) DeleteAllJSONMessages(ctx context.Context, token st
 
 func (lm *loggingMiddleware) DeleteAllSenMLMessages(ctx context.Context, token string, rpm readers.SenMLPageMetadata) (err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method delete_all_senml_messages by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))

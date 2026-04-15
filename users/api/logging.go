@@ -28,10 +28,6 @@ func LoggingMiddleware(svc users.Service, logger log.Logger) users.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) identify(token string) string {
-	return pkgauth.EmailFromToken(token)
-}
-
 func (lm *loggingMiddleware) SelfRegister(ctx context.Context, user users.User, redirectPath string) (_ string, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method self_register for user %s took %s to complete", user.Email, time.Since(begin))
@@ -90,7 +86,7 @@ func (lm *loggingMiddleware) RegisterAdmin(ctx context.Context, user users.User)
 
 func (lm *loggingMiddleware) Register(ctx context.Context, token string, user users.User) (_ string, err error) {
 	defer func(begin time.Time) {
-		callerEmail := lm.identify(token)
+		callerEmail := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method register by user %s for user %s took %s to complete", callerEmail, user.Email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -144,7 +140,7 @@ func (lm *loggingMiddleware) OAuthCallback(ctx context.Context, data users.OAuth
 
 func (lm *loggingMiddleware) ViewUser(ctx context.Context, token, id string) (u users.User, err error) {
 	defer func(begin time.Time) {
-		callerEmail := lm.identify(token)
+		callerEmail := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method view_user by user %s, for user %s took %s to complete", callerEmail, u.Email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -158,7 +154,7 @@ func (lm *loggingMiddleware) ViewUser(ctx context.Context, token, id string) (u 
 
 func (lm *loggingMiddleware) ViewProfile(ctx context.Context, token string) (u users.User, err error) {
 	defer func(begin time.Time) {
-		callerEmail := lm.identify(token)
+		callerEmail := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method view_profile by user %s, for user %s took %s to complete", callerEmail, u.Email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -172,7 +168,7 @@ func (lm *loggingMiddleware) ViewProfile(ctx context.Context, token string) (u u
 
 func (lm *loggingMiddleware) ListUsers(ctx context.Context, token string, pm users.PageMetadata) (_ users.UsersPage, err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method list_users by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -212,7 +208,7 @@ func (lm *loggingMiddleware) ListUsersByEmails(ctx context.Context, emails []str
 
 func (lm *loggingMiddleware) UpdateUser(ctx context.Context, token string, u users.User) (err error) {
 	defer func(begin time.Time) {
-		callerEmail := lm.identify(token)
+		callerEmail := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method update_user by user %s, for user %s took %s to complete", callerEmail, u.Email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -239,7 +235,7 @@ func (lm *loggingMiddleware) GenerateResetToken(ctx context.Context, email, redi
 
 func (lm *loggingMiddleware) ChangePassword(ctx context.Context, token, email, password, oldPassword string) (err error) {
 	defer func(begin time.Time) {
-		callerEmail := lm.identify(token)
+		callerEmail := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method change_password by user %s, for user %s took %s to complete", callerEmail, email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -266,7 +262,7 @@ func (lm *loggingMiddleware) ResetPassword(ctx context.Context, email, password 
 
 func (lm *loggingMiddleware) SendPasswordReset(ctx context.Context, redirectPath, email, token string) (err error) {
 	defer func(begin time.Time) {
-		callerEmail := lm.identify(token)
+		callerEmail := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method send_password_reset by user %s, for user %s took %s to complete", callerEmail, email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -280,7 +276,7 @@ func (lm *loggingMiddleware) SendPasswordReset(ctx context.Context, redirectPath
 
 func (lm *loggingMiddleware) EnableUser(ctx context.Context, token string, id string) (err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method enable_user by user %s, for user id %s took %s to complete", email, id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -294,7 +290,7 @@ func (lm *loggingMiddleware) EnableUser(ctx context.Context, token string, id st
 
 func (lm *loggingMiddleware) DisableUser(ctx context.Context, token string, id string) (err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method disable_user by user %s, for user id %s took %s to complete", email, id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -308,7 +304,7 @@ func (lm *loggingMiddleware) DisableUser(ctx context.Context, token string, id s
 
 func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (users.User, []users.User, []users.Identity, error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method backup by user %s took %s to complete", email, time.Since(begin))
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
@@ -318,7 +314,7 @@ func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (users.Us
 
 func (lm *loggingMiddleware) Restore(ctx context.Context, token string, admin users.User, users []users.User, identities []users.Identity) error {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method restore by user %s took %s to complete", email, time.Since(begin))
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
@@ -328,7 +324,7 @@ func (lm *loggingMiddleware) Restore(ctx context.Context, token string, admin us
 
 func (lm *loggingMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite domain.OrgInvite) (_ users.PlatformInvite, err error) {
 	defer func(begin time.Time) {
-		callerEmail := lm.identify(token)
+		callerEmail := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method create_platform_invite by user %s, for email %s took %s to complete", callerEmail, email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -343,7 +339,7 @@ func (lm *loggingMiddleware) CreatePlatformInvite(ctx context.Context, token, re
 
 func (lm *loggingMiddleware) RevokePlatformInvite(ctx context.Context, token, inviteID string) (err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method revoke_platform_invite by user %s, for invite id %s took %s to complete", email, inviteID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -372,7 +368,7 @@ func (lm *loggingMiddleware) ViewPlatformInvite(ctx context.Context, inviteID st
 
 func (lm *loggingMiddleware) ListPlatformInvites(ctx context.Context, token string, pm users.PageMetadata) (_ users.PlatformInvitesPage, err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method list_platform_invites by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))

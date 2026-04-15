@@ -27,13 +27,9 @@ func LoggingMiddleware(svc converters.Service, logger log.Logger) converters.Ser
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) identify(token string) string {
-	return pkgauth.EmailFromToken(token)
-}
-
 func (lm *loggingMiddleware) PublishJSONMessages(ctx context.Context, token string, csvLines [][]string) (err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method publish_json_messages by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -47,7 +43,7 @@ func (lm *loggingMiddleware) PublishJSONMessages(ctx context.Context, token stri
 
 func (lm *loggingMiddleware) PublishSenMLMessages(ctx context.Context, token string, csvLines [][]string) (err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method publish_senml_messages by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))

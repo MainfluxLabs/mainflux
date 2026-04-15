@@ -22,13 +22,9 @@ func LoggingMiddleware(svc alarms.Service, logger log.Logger) alarms.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm loggingMiddleware) identify(token string) string {
-	return pkgauth.EmailFromToken(token)
-}
-
 func (lm loggingMiddleware) ListAlarmsByGroup(ctx context.Context, token, groupID string, pm alarms.PageMetadata) (_ alarms.AlarmsPage, err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method list_alarms_by_group by user %s, group id %s took %s to complete", email, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -42,7 +38,7 @@ func (lm loggingMiddleware) ListAlarmsByGroup(ctx context.Context, token, groupI
 
 func (lm loggingMiddleware) ListAlarmsByThing(ctx context.Context, token, thingID string, pm alarms.PageMetadata) (_ alarms.AlarmsPage, err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method list_alarms_by_thing by user %s, thing id %s took %s to complete", email, thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -56,7 +52,7 @@ func (lm loggingMiddleware) ListAlarmsByThing(ctx context.Context, token, thingI
 
 func (lm loggingMiddleware) ListAlarmsByOrg(ctx context.Context, token, orgID string, pm alarms.PageMetadata) (_ alarms.AlarmsPage, err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method list_alarms_by_org by user %s, org id %s took %s to complete", email, orgID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -70,7 +66,7 @@ func (lm loggingMiddleware) ListAlarmsByOrg(ctx context.Context, token, orgID st
 
 func (lm loggingMiddleware) ViewAlarm(ctx context.Context, token, id string) (_ alarms.Alarm, err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method view_alarm by user %s, alarm id %s took %s to complete", email, id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -84,7 +80,7 @@ func (lm loggingMiddleware) ViewAlarm(ctx context.Context, token, id string) (_ 
 
 func (lm loggingMiddleware) RemoveAlarms(ctx context.Context, token string, id ...string) (err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method remove_alarms by user %s, alarm id %s took %s to complete", email, id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -124,7 +120,7 @@ func (lm loggingMiddleware) RemoveAlarmsByGroup(ctx context.Context, groupID str
 
 func (lm loggingMiddleware) ExportAlarmsByThing(ctx context.Context, token, thingID string, pm alarms.PageMetadata) (_ alarms.AlarmsPage, err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method export_alarms_by_thing by user %s, thing id %s took %s to complete", email, thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))

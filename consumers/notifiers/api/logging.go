@@ -27,13 +27,9 @@ func LoggingMiddleware(svc notifiers.Service, logger log.Logger) notifiers.Servi
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) identify(token string) string {
-	return pkgauth.EmailFromToken(token)
-}
-
 func (lm *loggingMiddleware) CreateNotifiers(ctx context.Context, token, groupID string, notifiers ...notifiers.Notifier) (response []notifiers.Notifier, err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method create_notifiers by user %s, notifiers %v took %s to complete", email, response, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -47,7 +43,7 @@ func (lm *loggingMiddleware) CreateNotifiers(ctx context.Context, token, groupID
 
 func (lm *loggingMiddleware) ListNotifiersByGroup(ctx context.Context, token string, groupID string, pm notifiers.PageMetadata) (_ notifiers.NotifiersPage, err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method list_notifiers_by_group by user %s, group id %s took %s to complete", email, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -61,7 +57,7 @@ func (lm *loggingMiddleware) ListNotifiersByGroup(ctx context.Context, token str
 
 func (lm *loggingMiddleware) ViewNotifier(ctx context.Context, token, id string) (_ notifiers.Notifier, err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method view_notifier by user %s, notifier id %s took %s to complete", email, id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -75,7 +71,7 @@ func (lm *loggingMiddleware) ViewNotifier(ctx context.Context, token, id string)
 
 func (lm *loggingMiddleware) UpdateNotifier(ctx context.Context, token string, notifier notifiers.Notifier) (err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method update_notifier by user %s, notifier id %s took %s to complete", email, notifier.ID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -89,7 +85,7 @@ func (lm *loggingMiddleware) UpdateNotifier(ctx context.Context, token string, n
 
 func (lm *loggingMiddleware) RemoveNotifiers(ctx context.Context, token string, id ...string) (err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method remove_notifiers by user %s, notifier ids %v took %s to complete", email, id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))

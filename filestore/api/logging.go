@@ -29,10 +29,6 @@ func LoggingMiddleware(svc filestore.Service, logger log.Logger) filestore.Servi
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) identify(token string) string {
-	return pkgauth.EmailFromToken(token)
-}
-
 func (lm *loggingMiddleware) SaveFile(ctx context.Context, file io.Reader, key string, fi filestore.FileInfo) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method save_file took %s to complete", time.Since(begin))
@@ -113,7 +109,7 @@ func (lm *loggingMiddleware) RemoveFiles(ctx context.Context, thingID string) (e
 
 func (lm *loggingMiddleware) SaveGroupFile(ctx context.Context, file io.Reader, token, groupID string, fi filestore.FileInfo) (err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method save_group_file by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -127,7 +123,7 @@ func (lm *loggingMiddleware) SaveGroupFile(ctx context.Context, file io.Reader, 
 
 func (lm *loggingMiddleware) UpdateGroupFile(ctx context.Context, token, groupID string, fi filestore.FileInfo) (err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method update_group_file by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -141,7 +137,7 @@ func (lm *loggingMiddleware) UpdateGroupFile(ctx context.Context, token, groupID
 
 func (lm *loggingMiddleware) ViewGroupFile(ctx context.Context, token, groupID string, fi filestore.FileInfo) (data []byte, err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method view_group_file by user %s, file name %s took %s to complete", email, fi.Name, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -155,7 +151,7 @@ func (lm *loggingMiddleware) ViewGroupFile(ctx context.Context, token, groupID s
 
 func (lm *loggingMiddleware) ListGroupFiles(ctx context.Context, token, groupID string, fi filestore.FileInfo, pm filestore.PageMetadata) (files filestore.FileGroupsPage, err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method list_group_files by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -169,7 +165,7 @@ func (lm *loggingMiddleware) ListGroupFiles(ctx context.Context, token, groupID 
 
 func (lm *loggingMiddleware) RemoveGroupFile(ctx context.Context, token, groupID string, fi filestore.FileInfo) (err error) {
 	defer func(begin time.Time) {
-		email := lm.identify(token)
+		email := pkgauth.EmailFromToken(token)
 		message := fmt.Sprintf("Method remove_group_file by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
