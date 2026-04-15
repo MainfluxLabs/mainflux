@@ -40,6 +40,7 @@ const (
 	defBrokerURL         = "nats://localhost:4222"
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
+
 	envLogLevel          = "MF_CONVERTERS_LOG_LEVEL"
 	envClientTLS         = "MF_CONVERTERS_CLIENT_TLS"
 	envCACerts           = "MF_CONVERTERS_CA_CERTS"
