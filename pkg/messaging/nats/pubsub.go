@@ -91,51 +91,16 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 	}
 
 	ps.mu.Lock()
-	// Check topic
-	s, ok := ps.subscriptions[topic]
-	if ok {
-		// Check client ID
+	defer ps.mu.Unlock()
+
+	if s, ok := ps.subscriptions[topic]; ok {
 		if _, ok := s[id]; ok {
-			// Unlocking, so that Unsubscribe() can access ps.subscriptions
-			ps.mu.Unlock()
-			if err := ps.Unsubscribe(id, topic); err != nil {
+			if err := ps.unsubscribe(id, topic); err != nil {
 				return err
 			}
-
-			ps.mu.Lock()
-			// value of s can be changed while ps.mu is unlocked
-			s = ps.subscriptions[topic]
 		}
 	}
-	defer ps.mu.Unlock()
-	if s == nil {
-		s = make(map[string]subscription)
-		ps.subscriptions[topic] = s
-	}
-
-	nh := ps.natsHandler(handler)
-
-	if ps.queue != "" {
-		sub, err := ps.conn.QueueSubscribe(topic, ps.queue, nh)
-		if err != nil {
-			return err
-		}
-		s[id] = subscription{
-			Subscription: sub,
-			cancel:       handler.Cancel,
-		}
-		return nil
-	}
-	sub, err := ps.conn.Subscribe(topic, nh)
-	if err != nil {
-		return err
-	}
-	s[id] = subscription{
-		Subscription: sub,
-		cancel:       handler.Cancel,
-	}
-
-	return nil
+	return ps.subscribe(id, topic, ps.natsHandler(handler), handler.Cancel)
 }
 
 func (ps *pubsub) Unsubscribe(id, topic string) error {
@@ -145,14 +110,20 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 	if topic == "" {
 		return messaging.ErrEmptyTopic
 	}
+
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
-	// Check topic
+
+	return ps.unsubscribe(id, topic)
+}
+
+// unsubscribe removes the subscription for the given id and topic.
+// Must be called with ps.mu held.
+func (ps *pubsub) unsubscribe(id, topic string) error {
 	s, ok := ps.subscriptions[topic]
 	if !ok {
 		return messaging.ErrNotSubscribed
 	}
-	// Check topic ID
 	current, ok := s[id]
 	if !ok {
 		return messaging.ErrNotSubscribed
@@ -165,11 +136,36 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 	if err := current.Unsubscribe(); err != nil {
 		return err
 	}
-
 	delete(s, id)
 	if len(s) == 0 {
 		delete(ps.subscriptions, topic)
 	}
+	return nil
+}
+
+// subscribe registers a NATS subscription for the given id and topic.
+// Must be called with ps.mu held.
+func (ps *pubsub) subscribe(id, topic string, nh broker.MsgHandler, cancelFn func() error) error {
+	s, ok := ps.subscriptions[topic]
+	if !ok {
+		s = make(map[string]subscription)
+		ps.subscriptions[topic] = s
+	}
+
+	var (
+		sub *broker.Subscription
+		err error
+	)
+	if ps.queue != "" {
+		sub, err = ps.conn.QueueSubscribe(topic, ps.queue, nh)
+	} else {
+		sub, err = ps.conn.Subscribe(topic, nh)
+	}
+	if err != nil {
+		return err
+	}
+
+	s[id] = subscription{Subscription: sub, cancel: cancelFn}
 	return nil
 }
 
@@ -181,34 +177,14 @@ func (ps *pubsub) SubscribeAlarms(id string, handler messaging.AlarmHandler) err
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 
-	s, ok := ps.subscriptions[SubjectAlarms]
-	if !ok {
-		s = make(map[string]subscription)
-		ps.subscriptions[SubjectAlarms] = s
-	}
-
-	h := ps.natsAlarmHandler(handler)
-
-	var sub *broker.Subscription
-	var err error
-	if ps.queue != "" {
-		sub, err = ps.conn.QueueSubscribe(SubjectAlarms, ps.queue, h)
-	} else {
-		sub, err = ps.conn.Subscribe(SubjectAlarms, h)
-	}
-	if err != nil {
-		return err
-	}
-
-	s[id] = subscription{
-		Subscription: sub,
-		cancel:       handler.Cancel,
-	}
-	return nil
+	return ps.subscribe(id, SubjectAlarms, ps.natsAlarmHandler(handler), handler.Cancel)
 }
 
 func (ps *pubsub) UnsubscribeAlarms(id string) error {
-	return ps.Unsubscribe(id, SubjectAlarms)
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+
+	return ps.unsubscribe(id, SubjectAlarms)
 }
 
 func (ps *pubsub) natsAlarmHandler(h messaging.AlarmHandler) broker.MsgHandler {
