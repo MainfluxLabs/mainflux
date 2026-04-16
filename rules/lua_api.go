@@ -28,7 +28,7 @@ var luaSMTPNotify = luaAPIFunc{
 				return 1
 			}
 
-			// marshal current payload, create new protomfx Message, and publish message to ap
+			// Marshal current payload, create new protomfx Message, and publish it to the SMTP NATS subject
 			encodedPayload, err := json.Marshal(env.payload)
 			if err != nil {
 				ls.PushBoolean(false)
