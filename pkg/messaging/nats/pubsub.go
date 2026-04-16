@@ -181,6 +181,10 @@ func (ps *pubsub) SubscribeAlarms(id string, handler messaging.AlarmHandler) err
 }
 
 func (ps *pubsub) UnsubscribeAlarms(id string) error {
+	if id == "" {
+		return messaging.ErrEmptyID
+	}
+
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 
