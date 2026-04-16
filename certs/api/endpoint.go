@@ -66,6 +66,7 @@ func listSerialsByThingEndpoint(svc certs.Service) endpoint.Endpoint {
 				CertSerial: cert.Serial,
 				ThingID:    cert.ThingID,
 				ExpiresAt:  cert.ExpiresAt,
+				Downloaded: cert.Downloaded,
 			}
 			res.Certs = append(res.Certs, cr)
 		}

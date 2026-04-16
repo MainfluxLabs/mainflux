@@ -23,6 +23,7 @@ type certsRes struct {
 	ThingID    string    `json:"thing_id"`
 	CertSerial string    `json:"cert_serial"`
 	ExpiresAt  time.Time `json:"expires_at"`
+	Downloaded bool      `json:"downloaded"`
 }
 
 type issueCertRes struct {
