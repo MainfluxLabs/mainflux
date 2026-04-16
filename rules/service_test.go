@@ -34,10 +34,10 @@ const (
 func threshold(v float64) *float64 { return &v }
 
 func newService() rules.Service {
-	return newServiceWithPubSub(mocks.NewPubSub())
+	return newServiceWithPub(mocks.NewPublisher())
 }
 
-func newServiceWithPubSub(pub nats.Publisher) rules.Service {
+func newServiceWithPub(pub nats.Publisher) rules.Service {
 	ths := authmock.NewThingsServiceClient(
 		nil,
 		map[string]things.Thing{
