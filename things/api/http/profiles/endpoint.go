@@ -6,7 +6,6 @@ package profiles
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -212,7 +211,7 @@ func removeProfilesEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func buildProfilesResponse(pp things.ProfilesPage, pm apiutil.PageMetadata) profilesPageRes {
+func buildProfilesResponse(pp things.ProfilesPage, pm things.PageMetadata) profilesPageRes {
 	res := profilesPageRes{
 		pageRes: pageRes{
 			Total:  pp.Total,

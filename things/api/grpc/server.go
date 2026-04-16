@@ -10,6 +10,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
@@ -28,6 +29,8 @@ type grpcServer struct {
 	canUserAccessProfile   kitgrpc.Handler
 	canUserAccessGroup     kitgrpc.Handler
 	canThingAccessGroup    kitgrpc.Handler
+	canThingCommand        kitgrpc.Handler
+	canThingGroupCommand   kitgrpc.Handler
 	identify               kitgrpc.Handler
 	getGroupIDByThing      kitgrpc.Handler
 	getGroupIDByProfile    kitgrpc.Handler
@@ -69,6 +72,16 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 		canThingAccessGroup: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "can_thing_access_group")(canThingAccessGroupEndpoint(svc)),
 			decodeThingAccessGroupRequest,
+			encodeEmptyResponse,
+		),
+		canThingCommand: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "can_thing_command")(canThingCommandEndpoint(svc)),
+			decodeThingCommandRequest,
+			encodeEmptyResponse,
+		),
+		canThingGroupCommand: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "can_thing_group_command")(canThingGroupCommandEndpoint(svc)),
+			decodeThingGroupCommandRequest,
 			encodeEmptyResponse,
 		),
 		identify: kitgrpc.NewServer(
@@ -160,6 +173,24 @@ func (gs *grpcServer) CanUserAccessGroup(ctx context.Context, req *protomfx.User
 
 func (gs *grpcServer) CanThingAccessGroup(ctx context.Context, req *protomfx.ThingAccessReq) (*emptypb.Empty, error) {
 	_, res, err := gs.canThingAccessGroup.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*emptypb.Empty), nil
+}
+
+func (gs *grpcServer) CanThingCommand(ctx context.Context, req *protomfx.ThingCommandReq) (*emptypb.Empty, error) {
+	_, res, err := gs.canThingCommand.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*emptypb.Empty), nil
+}
+
+func (gs *grpcServer) CanThingGroupCommand(ctx context.Context, req *protomfx.ThingGroupCommandReq) (*emptypb.Empty, error) {
+	_, res, err := gs.canThingGroupCommand.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -267,6 +298,22 @@ func decodeThingAccessGroupRequest(_ context.Context, grpcReq any) (any, error) 
 	return thingAccessGroupReq{thingKey: thingKey{value: req.GetKey()}, id: req.GetId()}, nil
 }
 
+func decodeThingCommandRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.ThingCommandReq)
+	return thingCommandReq{
+		publisherID: req.GetPublisherID(),
+		recipientID: req.GetRecipientID(),
+	}, nil
+}
+
+func decodeThingGroupCommandRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.ThingGroupCommandReq)
+	return thingGroupCommandReq{
+		publisherID: req.GetPublisherID(),
+		groupID:     req.GetGroupID(),
+	}, nil
+}
+
 func decodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.ThingKey)
 	return thingKey{value: req.GetValue(), keyType: req.GetType()}, nil
@@ -323,12 +370,19 @@ func encodeIdentityResponse(_ context.Context, grpcRes any) (any, error) {
 
 func encodeGetPubConfigByKeyResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(pubConfigByKeyRes)
-	return &protomfx.PubConfigByKeyRes{PublisherID: res.publisherID, ProfileConfig: res.profileConfig}, nil
+
+	return &protomfx.PubConfigByKeyRes{
+		PublisherID:   res.PubConfigInfo.PublisherID,
+		ProfileConfig: protoutil.DomainConfigToProto(res.ProfileConfig),
+	}, nil
 }
 
 func encodeGetConfigByThingResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(configByThingRes)
-	return &protomfx.ConfigByThingRes{Config: res.config}, nil
+
+	return &protomfx.ConfigByThingRes{
+		Config: protoutil.DomainConfigToProto(res.config),
+	}, nil
 }
 
 func encodeEmptyResponse(_ context.Context, grpcRes any) (any, error) {
@@ -384,7 +438,7 @@ func encodeError(err error) error {
 	switch {
 	case err == nil:
 		return nil
-	case errors.Contains(err, apiutil.ErrMalformedEntity),
+	case errors.Contains(err, errors.ErrMalformedEntity),
 		err == apiutil.ErrMissingThingID,
 		err == apiutil.ErrMissingProfileID,
 		err == apiutil.ErrMissingGroupID,

@@ -3,7 +3,6 @@ package modbus
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/cron"
 )
 
@@ -46,7 +45,7 @@ type DataField struct {
 }
 
 type ClientsPage struct {
-	apiutil.PageMetadata
+	PageMetadata
 	Clients []Client
 }
 
@@ -59,11 +58,11 @@ type ClientRepository interface {
 
 	// RetrieveByThing retrieves clients related to
 	// a certain thing identified by a given ID.
-	RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (ClientsPage, error)
+	RetrieveByThing(ctx context.Context, thingID string, pm PageMetadata) (ClientsPage, error)
 
 	// RetrieveByGroup retrieves Modbus clients related to
 	// a certain group identified by a given ID.
-	RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (ClientsPage, error)
+	RetrieveByGroup(ctx context.Context, groupID string, pm PageMetadata) (ClientsPage, error)
 
 	// RetrieveByID retrieves a client having the provided ID.
 	RetrieveByID(ctx context.Context, id string) (Client, error)

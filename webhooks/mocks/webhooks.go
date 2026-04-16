@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/webhooks"
@@ -40,7 +39,7 @@ func (wrm *webhookRepositoryMock) Save(_ context.Context, whs ...webhooks.Webhoo
 	return whs, nil
 }
 
-func (wrm *webhookRepositoryMock) RetrieveByGroup(_ context.Context, groupID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
+func (wrm *webhookRepositoryMock) RetrieveByGroup(_ context.Context, groupID string, pm webhooks.PageMetadata) (webhooks.WebhooksPage, error) {
 	wrm.mu.Lock()
 	defer wrm.mu.Unlock()
 	var items []webhooks.Webhook
@@ -63,7 +62,7 @@ func (wrm *webhookRepositoryMock) RetrieveByGroup(_ context.Context, groupID str
 	}, nil
 }
 
-func (wrm *webhookRepositoryMock) RetrieveByThing(_ context.Context, thingID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
+func (wrm *webhookRepositoryMock) RetrieveByThing(_ context.Context, thingID string, pm webhooks.PageMetadata) (webhooks.WebhooksPage, error) {
 	wrm.mu.Lock()
 	defer wrm.mu.Unlock()
 	var items []webhooks.Webhook

@@ -201,9 +201,11 @@ func (res deleteRes) Empty() bool {
 }
 
 type oauthLoginRes struct {
-	State       string `json:"state"`
-	Verifier    string `json:"-"`
-	RedirectURL string `json:"url"`
+	State        string `json:"state"`
+	Verifier     string `json:"-"`
+	InviteID     string `json:"-"`
+	RedirectPath string `json:"-"`
+	RedirectURL  string `json:"url"`
 }
 
 func (res oauthLoginRes) Code() int {

@@ -6,7 +6,6 @@ package tracing
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/opentracing/opentracing-go"
@@ -83,7 +82,7 @@ func (trm thingRepositoryMiddleware) RetrieveByKey(ctx context.Context, key thin
 	return trm.repo.RetrieveByKey(ctx, key)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveByGroups(ctx context.Context, ids []string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+func (trm thingRepositoryMiddleware) RetrieveByGroups(ctx context.Context, ids []string, pm things.PageMetadata) (things.ThingsPage, error) {
 	span := dbutil.CreateSpan(ctx, trm.tracer, retrieveThingsByGroups)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -91,7 +90,7 @@ func (trm thingRepositoryMiddleware) RetrieveByGroups(ctx context.Context, ids [
 	return trm.repo.RetrieveByGroups(ctx, ids, pm)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveByProfile(ctx context.Context, chID string, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+func (trm thingRepositoryMiddleware) RetrieveByProfile(ctx context.Context, chID string, pm things.PageMetadata) (things.ThingsPage, error) {
 	span := dbutil.CreateSpan(ctx, trm.tracer, retrieveThingsByProfile)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -115,7 +114,7 @@ func (trm thingRepositoryMiddleware) BackupAll(ctx context.Context) ([]things.Th
 	return trm.repo.BackupAll(ctx)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ThingsPage, error) {
+func (trm thingRepositoryMiddleware) RetrieveAll(ctx context.Context, pm things.PageMetadata) (things.ThingsPage, error) {
 	span := dbutil.CreateSpan(ctx, trm.tracer, retrieveAllThings)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

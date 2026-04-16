@@ -5,40 +5,34 @@ OU_CRT = mainflux_crt
 EA = info@mainflux.com
 CN_CA = Mainflux_Self_Signed_CA
 CN_SRV = localhost
-THING_KEY = <THING_KEY> # e.g. 8f65ed04-0770-4ce4-a291-6d1bf2000f4d
 CRT_FILE_NAME = thing
 
-all: clean_certs ca server_crt
+.PHONY: all ca server_cert thing_cert clean_certs
 
-# CA name and key is "ca".
+all: clean_certs ca server_cert
+
 ca:
-	openssl req -newkey rsa:2048 -x509 -nodes -sha512 -days 1095 \
-				-keyout $(CRT_LOCATION)/ca.key -out $(CRT_LOCATION)/ca.crt -subj "/CN=$(CN_CA)/O=$(O)/OU=$(OU_CA)/emailAddress=$(EA)"
+	openssl genrsa -out $(CRT_LOCATION)/ca.key 4096
+	openssl req -new -x509 -days 3650 -key $(CRT_LOCATION)/ca.key \
+		-out $(CRT_LOCATION)/ca.crt \
+		-subj "/CN=$(CN_CA)/O=$(O)/OU=$(OU_CA)/emailAddress=$(EA)" \
+		-addext "basicConstraints=critical,CA:true" \
+		-addext "keyUsage=critical,digitalSignature,cRLSign,keyCertSign" \
+		-addext "subjectKeyIdentifier=hash" \
+		-addext "authorityKeyIdentifier=keyid:always,issuer"
+	@echo "CA certificate generated with crlSign capability."
+	@openssl x509 -in $(CRT_LOCATION)/ca.crt -noout -text | grep -A 3 "Key Usage"
 
-# Server cert and key name is "mainfluxlabs-server".
 server_cert:
-	# Create mainflux server key and CSR.
-	openssl req -new -sha256 -newkey rsa:4096 -nodes -keyout $(CRT_LOCATION)/mainfluxlabs-server.key \
-				-out $(CRT_LOCATION)/mainfluxlabs-server.csr -subj "/CN=$(CN_SRV)/O=$(O)/OU=$(OU_CRT)/emailAddress=$(EA)"
-
-	# Sign server CSR.
-	openssl x509 -req -days 1000 -in $(CRT_LOCATION)/mainfluxlabs-server.csr -CA $(CRT_LOCATION)/ca.crt -CAkey $(CRT_LOCATION)/ca.key -CAcreateserial -out $(CRT_LOCATION)/mainfluxlabs-server.crt
-
-	# Remove CSR.
+	openssl req -new -sha256 -newkey rsa:4096 -nodes \
+		-keyout $(CRT_LOCATION)/mainfluxlabs-server.key \
+		-out $(CRT_LOCATION)/mainfluxlabs-server.csr \
+		-subj "/CN=$(CN_SRV)/O=$(O)/OU=$(OU_CRT)/emailAddress=$(EA)"
+	openssl x509 -req -days 1000 \
+		-in $(CRT_LOCATION)/mainfluxlabs-server.csr \
+		-CA $(CRT_LOCATION)/ca.crt -CAkey $(CRT_LOCATION)/ca.key \
+		-CAcreateserial -out $(CRT_LOCATION)/mainfluxlabs-server.crt
 	rm $(CRT_LOCATION)/mainfluxlabs-server.csr
 
-thing_cert:
-	# Create mainflux server key and CSR.
-	openssl req -new -sha256 -newkey rsa:4096 -nodes -keyout $(CRT_LOCATION)/$(CRT_FILE_NAME).key \
-				-out $(CRT_LOCATION)/$(CRT_FILE_NAME).csr -subj "/CN=$(THING_KEY)/O=$(O)/OU=$(OU_CRT)/emailAddress=$(EA)"
-
-	# Sign client CSR.
-	openssl x509 -req -days 730 -in $(CRT_LOCATION)/$(CRT_FILE_NAME).csr -CA $(CRT_LOCATION)/ca.crt -CAkey $(CRT_LOCATION)/ca.key -CAcreateserial -out $(CRT_LOCATION)/$(CRT_FILE_NAME).crt
-
-	# Remove CSR.
-	rm $(CRT_LOCATION)/$(CRT_FILE_NAME).csr
-
 clean_certs:
-	rm -r $(CRT_LOCATION)/*.crt
-	rm -r $(CRT_LOCATION)/*.key
-	rm -r $(CRT_LOCATION)/*.srl
+	rm -f $(CRT_LOCATION)/*.crt $(CRT_LOCATION)/*.key $(CRT_LOCATION)/*.srl

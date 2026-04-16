@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 )
@@ -101,7 +100,7 @@ func (mrm *orgMembershipsRepositoryMock) RetrieveRole(_ context.Context, memberI
 	return "", dbutil.ErrNotFound
 }
 
-func (mrm *orgMembershipsRepositoryMock) RetrieveByOrg(_ context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembershipsPage, error) {
+func (mrm *orgMembershipsRepositoryMock) RetrieveByOrg(_ context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembershipsPage, error) {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 

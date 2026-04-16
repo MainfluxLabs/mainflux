@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/downlinks"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
@@ -38,7 +37,7 @@ func (drm *downlinkRepositoryMock) Save(_ context.Context, dls ...downlinks.Down
 	return dls, nil
 }
 
-func (drm *downlinkRepositoryMock) RetrieveByThing(_ context.Context, thingID string, pm apiutil.PageMetadata) (downlinks.DownlinksPage, error) {
+func (drm *downlinkRepositoryMock) RetrieveByThing(_ context.Context, thingID string, pm downlinks.PageMetadata) (downlinks.DownlinksPage, error) {
 	drm.mu.Lock()
 	defer drm.mu.Unlock()
 
@@ -58,13 +57,13 @@ func (drm *downlinkRepositoryMock) RetrieveByThing(_ context.Context, thingID st
 
 	return downlinks.DownlinksPage{
 		Downlinks: items,
-		PageMetadata: apiutil.PageMetadata{
+		PageMetadata: downlinks.PageMetadata{
 			Total: uint64(len(items)),
 		},
 	}, nil
 }
 
-func (drm *downlinkRepositoryMock) RetrieveByGroup(_ context.Context, groupID string, pm apiutil.PageMetadata) (downlinks.DownlinksPage, error) {
+func (drm *downlinkRepositoryMock) RetrieveByGroup(_ context.Context, groupID string, pm downlinks.PageMetadata) (downlinks.DownlinksPage, error) {
 	drm.mu.Lock()
 	defer drm.mu.Unlock()
 
@@ -84,7 +83,7 @@ func (drm *downlinkRepositoryMock) RetrieveByGroup(_ context.Context, groupID st
 
 	return downlinks.DownlinksPage{
 		Downlinks: items,
-		PageMetadata: apiutil.PageMetadata{
+		PageMetadata: downlinks.PageMetadata{
 			Total: uint64(len(items)),
 		},
 	}, nil

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/golang-jwt/jwt/v4"
 )
@@ -22,7 +21,7 @@ type claims struct {
 
 func (c claims) Valid() error {
 	if c.Type == nil || *c.Type > auth.APIKey || c.Issuer != issuerName {
-		return apiutil.ErrMalformedEntity
+		return errors.ErrMalformedEntity
 	}
 
 	return c.StandardClaims.Valid()

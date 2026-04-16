@@ -1,6 +1,7 @@
 package orgs
 
 import (
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
@@ -49,7 +50,7 @@ func (req updateOrgReq) validate() error {
 
 type listOrgsReq struct {
 	token        string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata auth.PageMetadata
 }
 
 func (req listOrgsReq) validate() error {
@@ -57,25 +58,7 @@ func (req listOrgsReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.pageMetadata.Limit > maxLimitSize {
-		return apiutil.ErrLimitSize
-	}
-
-	if len(req.pageMetadata.Name) > maxNameSize {
-		return apiutil.ErrNameSize
-	}
-
-	if req.pageMetadata.Order != "" &&
-		req.pageMetadata.Order != apiutil.NameOrder && req.pageMetadata.Order != apiutil.IDOrder {
-		return apiutil.ErrInvalidOrder
-	}
-
-	if req.pageMetadata.Dir != "" &&
-		req.pageMetadata.Dir != apiutil.AscDir && req.pageMetadata.Dir != apiutil.DescDir {
-		return apiutil.ErrInvalidDirection
-	}
-
-	return nil
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type orgReq struct {

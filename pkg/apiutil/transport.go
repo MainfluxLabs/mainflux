@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -32,7 +33,6 @@ const (
 	SerialKey              = "serial"
 	EmailKey               = "email"
 	PayloadKey             = "payload"
-	NameOrder              = "name"
 	IDOrder                = "id"
 	AscDir                 = "asc"
 	DescDir                = "desc"
@@ -45,15 +45,11 @@ const (
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
-	Total    uint64
-	Offset   uint64         `json:"offset,omitempty"`
-	Limit    uint64         `json:"limit,omitempty"`
-	Name     string         `json:"name,omitempty"`
-	Order    string         `json:"order,omitempty"`
-	Dir      string         `json:"dir,omitempty"`
-	Metadata map[string]any `json:"metadata,omitempty"`
-	Email    string         `json:"email,omitempty"`
-	Payload  map[string]any `json:"payload,omitempty"`
+	Total  uint64 `json:"total,omitempty"`
+	Offset uint64 `json:"offset,omitempty"`
+	Limit  uint64 `json:"limit,omitempty"`
+	Order  string `json:"order,omitempty"`
+	Dir    string `json:"dir,omitempty"`
 }
 
 // LoggingErrorEncoder is a go-kit error encoder logging decorator.
@@ -77,6 +73,7 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrMissingScriptRunID),
 			errors.Contains(err, ErrInvalidAction),
 			errors.Contains(err, ErrBearerKey),
+			errors.Contains(err, ErrMissingThingKey),
 			errors.Contains(err, ErrInvalidAuthKey),
 			errors.Contains(err, ErrInvalidIDFormat),
 			errors.Contains(err, ErrNameSize),
@@ -96,7 +93,7 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrInvalidComparator),
 			errors.Contains(err, ErrInvalidAPIKey),
 			errors.Contains(err, ErrUnsupportedContentType),
-			errors.Contains(err, ErrMalformedEntity),
+			errors.Contains(err, errors.ErrMalformedEntity),
 			errors.Contains(err, ErrInvalidRole),
 			errors.Contains(err, ErrInvalidQueryParams),
 			errors.Contains(err, ErrMissingConditionField),
@@ -104,7 +101,9 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrMissingConditionThreshold),
 			errors.Contains(err, ErrInvalidActionType),
 			errors.Contains(err, ErrMissingActionID),
-			errors.Contains(err, ErrInvalidOperator):
+			errors.Contains(err, ErrInvalidOperator),
+			errors.Contains(err, ErrInvalidThingType),
+			errors.Contains(err, ErrMissingAuth):
 			logger.Error(err.Error())
 		}
 
@@ -155,16 +154,19 @@ func EncodeGRPCError(st *status.Status, w http.ResponseWriter) {
 }
 
 func EncodeError(err error, w http.ResponseWriter) {
+	w.Header().Set("Content-Type", ContentTypeJSON)
 	switch {
 	case errors.Contains(err, errors.ErrAuthentication),
 		errors.Contains(err, ErrBearerToken),
 		errors.Contains(err, ErrBearerKey),
 		errors.Contains(err, ErrInvalidThingKeyType),
-		errors.Contains(err, ErrMissingExternalThingKey):
+		errors.Contains(err, ErrMissingExternalThingKey),
+		errors.Contains(err, ErrMissingAuth):
 		w.WriteHeader(http.StatusUnauthorized)
 	case errors.Contains(err, ErrMissingGroupID),
 		errors.Contains(err, ErrMissingOrgID),
 		errors.Contains(err, ErrMissingThingID),
+		errors.Contains(err, ErrMissingThingKey),
 		errors.Contains(err, ErrMissingProfileID),
 		errors.Contains(err, ErrMissingMemberID),
 		errors.Contains(err, ErrMissingNotifierID),
@@ -200,7 +202,7 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrInvalidQueryParams),
 		errors.Contains(err, ErrInvalidAggType),
 		errors.Contains(err, ErrNotFoundParam),
-		errors.Contains(err, ErrMalformedEntity),
+		errors.Contains(err, errors.ErrMalformedEntity),
 		errors.Contains(err, ErrInvalidRole),
 		errors.Contains(err, ErrMissingConditionField),
 		errors.Contains(err, ErrMissingConditionThreshold),
@@ -209,7 +211,8 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrInvalidOperator),
 		errors.Contains(err, ErrInvalidProvider),
 		errors.Contains(err, ErrMissingProviderCode),
-		errors.Contains(err, ErrInvalidState):
+		errors.Contains(err, ErrInvalidState),
+		errors.Contains(err, ErrInvalidThingType):
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, errors.ErrAuthorization),
 		errors.Contains(err, ErrInviteExpired),
@@ -251,10 +254,7 @@ func WriteErrorResponse(err error, w http.ResponseWriter) {
 	}
 
 	if errorMessage != "" {
-		w.Header().Set("Content-Type", ContentTypeJSON)
-		if err := json.NewEncoder(w).Encode(ErrorRes{Err: errorMessage}); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
+		json.NewEncoder(w).Encode(ErrorRes{Err: errorMessage})
 	}
 }
 
@@ -417,13 +417,22 @@ func ReadFloatQuery(r *http.Request, key string, def float64) (float64, error) {
 }
 
 func ReadStringArrayQuery(r *http.Request, key string) ([]string, error) {
-	vals := bone.GetQuery(r, key)
+	vals := r.URL.Query()[key]
 
 	if len(vals) > 10 {
 		return nil, ErrInvalidQueryParams
 	}
 
-	return vals, nil
+	decoded := make([]string, len(vals))
+	for i, v := range vals {
+		d, err := url.QueryUnescape(v)
+		if err != nil {
+			return nil, ErrInvalidQueryParams
+		}
+		decoded[i] = d
+	}
+
+	return decoded, nil
 }
 
 func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
@@ -433,11 +442,6 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 	}
 
 	l, err := ReadLimitQuery(r, LimitKey, DefLimit)
-	if err != nil {
-		return PageMetadata{}, err
-	}
-
-	n, err := ReadStringQuery(r, NameKey, "")
 	if err != nil {
 		return PageMetadata{}, err
 	}
@@ -452,30 +456,11 @@ func BuildPageMetadata(r *http.Request) (PageMetadata, error) {
 		return PageMetadata{}, err
 	}
 
-	m, err := ReadMetadataQuery(r, MetadataKey, nil)
-	if err != nil {
-		return PageMetadata{}, err
-	}
-
-	e, err := ReadStringQuery(r, EmailKey, "")
-	if err != nil {
-		return PageMetadata{}, err
-	}
-
-	p, err := ReadMetadataQuery(r, PayloadKey, nil)
-	if err != nil {
-		return PageMetadata{}, err
-	}
-
 	return PageMetadata{
-		Offset:   o,
-		Limit:    l,
-		Name:     n,
-		Order:    or,
-		Dir:      d,
-		Metadata: m,
-		Email:    e,
-		Payload:  p,
+		Offset: o,
+		Limit:  l,
+		Order:  or,
+		Dir:    d,
 	}, nil
 }
 
@@ -491,7 +476,7 @@ func BuildPageMetadataFromBody(r *http.Request) (PageMetadata, error) {
 
 	var pm PageMetadata
 	if err := json.NewDecoder(r.Body).Decode(&pm); err != nil {
-		return PageMetadata{}, errors.Wrap(ErrMalformedEntity, err)
+		return PageMetadata{}, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	if pm.Limit == 0 {
@@ -513,23 +498,20 @@ func BuildPageMetadataFromBody(r *http.Request) (PageMetadata, error) {
 	return pm, nil
 }
 
-func ValidatePageMetadata(pm PageMetadata, maxLimitSize, maxNameSize int) error {
+func (pm PageMetadata) Validate(maxLimitSize int, allowedOrders map[string]string) error {
 	if pm.Limit > uint64(maxLimitSize) {
 		return ErrLimitSize
-	}
-
-	if len(pm.Name) > maxNameSize {
-		return ErrNameSize
-	}
-
-	if pm.Order != "" &&
-		pm.Order != NameOrder && pm.Order != IDOrder {
-		return ErrInvalidOrder
 	}
 
 	if pm.Dir != "" &&
 		pm.Dir != AscDir && pm.Dir != DescDir {
 		return ErrInvalidDirection
+	}
+
+	if pm.Order != "" {
+		if _, orderValid := allowedOrders[pm.Order]; !orderValid {
+			return ErrInvalidOrder
+		}
 	}
 
 	return nil

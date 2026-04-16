@@ -16,9 +16,9 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
 	usmocks "github.com/MainfluxLabs/mainflux/users/mocks"
@@ -476,14 +476,14 @@ func TestResetPassword(t *testing.T) {
 	svc := newService()
 	authSvc := mocks.NewAuthService("", []users.User{registerUser}, nil)
 
-	resetToken, err := authSvc.Issue(context.Background(), &protomfx.IssueReq{Id: registerUser.ID, Email: registerUser.Email, Type: 2})
+	resetToken, err := authSvc.Issue(context.Background(), registerUser.ID, registerUser.Email, domain.RecoveryKey)
 	assert.Nil(t, err, fmt.Sprintf("Generating reset token expected to succeed: %s", err))
 	cases := map[string]struct {
 		token    string
 		password string
 		err      error
 	}{
-		"valid user reset password ":   {resetToken.GetValue(), registerUser.Email, nil},
+		"valid user reset password ":   {resetToken, registerUser.Email, nil},
 		"invalid user reset password ": {"", "newpassword", errors.ErrAuthentication},
 	}
 
@@ -610,14 +610,14 @@ func TestListPlatformInvites(t *testing.T) {
 
 	cases := map[string]struct {
 		token string
-		pm    users.PageMetadataInvites
+		pm    users.PageMetadata
 		size  uint64
 		err   error
 	}{
-		"list platform invites":                        {tokenAdmin, users.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n}}, n, nil},
-		"list half platform invites":                   {tokenAdmin, users.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: n / 2}}, n / 2, nil},
-		"list last platform invite":                    {tokenAdmin, users.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: 1, Offset: n - 1}}, 1, nil},
-		"list platform invites as non-root-admin user": {tokenUser, users.PageMetadataInvites{}, 0, errors.ErrAuthorization},
+		"list platform invites":                        {tokenAdmin, users.PageMetadata{Limit: n}, n, nil},
+		"list half platform invites":                   {tokenAdmin, users.PageMetadata{Limit: n / 2}, n / 2, nil},
+		"list last platform invite":                    {tokenAdmin, users.PageMetadata{Limit: 1, Offset: n - 1}, 1, nil},
+		"list platform invites as non-root-admin user": {tokenUser, users.PageMetadata{}, 0, errors.ErrAuthorization},
 	}
 
 	for desc, tc := range cases {

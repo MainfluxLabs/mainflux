@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -311,10 +310,10 @@ func TestRetrieveByIDs(t *testing.T) {
 	cases := map[string]struct {
 		size         uint64
 		ids          []string
-		pageMetadata apiutil.PageMetadata
+		pageMetadata things.PageMetadata
 	}{
 		"retrieve all groups": {
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Order:  idOrder,
@@ -324,7 +323,7 @@ func TestRetrieveByIDs(t *testing.T) {
 			ids:  ids,
 		},
 		"retrieve groups without ids": {
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Dir:    descDir,
@@ -334,7 +333,7 @@ func TestRetrieveByIDs(t *testing.T) {
 			ids:  []string{},
 		},
 		"retrieve groups with malformed ids": {
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Dir:    descDir,
@@ -345,7 +344,7 @@ func TestRetrieveByIDs(t *testing.T) {
 		},
 
 		"retrieve all groups by IDs without limit": {
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: things.PageMetadata{
 				Limit: 0,
 				Dir:   descDir,
 				Order: idOrder,
@@ -354,7 +353,7 @@ func TestRetrieveByIDs(t *testing.T) {
 			ids:  ids,
 		},
 		"retrieve subset of groups by IDs": {
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: things.PageMetadata{
 				Offset: offset,
 				Limit:  n,
 				Dir:    descDir,
@@ -364,50 +363,50 @@ func TestRetrieveByIDs(t *testing.T) {
 			ids:  ids,
 		},
 		"retrieve groups by IDs with existing name": {
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
-				Name:   "test-group-5",
 				Dir:    descDir,
 				Order:  idOrder,
+				Name:   "test-group-5",
 			},
 			size: 1,
 			ids:  ids,
 		},
 		"retrieve groups by IDs with non-existing name": {
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
-				Name:   "wrong",
 				Dir:    descDir,
 				Order:  idOrder,
+				Name:   "wrong",
 			},
 			size: 0,
 			ids:  ids,
 		},
 		"retrieve groups by IDs with existing metadata": {
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: things.PageMetadata{
 				Offset:   0,
 				Limit:    n,
-				Metadata: metadata,
 				Dir:      descDir,
 				Order:    idOrder,
+				Metadata: metadata,
 			},
 			size: metaNum,
 			ids:  ids,
 		},
 		"retrieve groups by IDs with non-existing metadata": {
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: things.PageMetadata{
 				Offset:   0,
 				Limit:    n,
-				Metadata: wrongMeta,
 				Dir:      descDir,
 				Order:    idOrder,
+				Metadata: wrongMeta,
 			},
 			ids: ids,
 		},
 		"retrieve groups by IDs sorted by name ascendant": {
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Order:  nameOrder,
@@ -417,7 +416,7 @@ func TestRetrieveByIDs(t *testing.T) {
 			ids:  ids,
 		},
 		"retrieve groups by IDs sorted by name descendent": {
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Order:  nameOrder,
@@ -447,7 +446,7 @@ func TestBackupAllGroups(t *testing.T) {
 	groupRepo := postgres.NewGroupRepository(dbMiddleware)
 
 	orgID := generateUUID(t)
-	metadata := apiutil.PageMetadata{
+	metadata := things.PageMetadata{
 		Metadata: things.Metadata{
 			"field": "value",
 		},
@@ -510,7 +509,7 @@ func createGroup(t *testing.T, dbMiddleware dbutil.Database) things.Group {
 	return groups[0]
 }
 
-func testSortGroups(t *testing.T, pm apiutil.PageMetadata, grs []things.Group) {
+func testSortGroups(t *testing.T, pm things.PageMetadata, grs []things.Group) {
 	if len(grs) < 1 {
 		return
 	}

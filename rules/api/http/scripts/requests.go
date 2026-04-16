@@ -5,6 +5,7 @@ package scripts
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/rules"
 )
 
@@ -46,7 +47,7 @@ func (req createScriptsReq) validate() error {
 		}
 
 		if s.Script == "" {
-			return apiutil.ErrMalformedEntity
+			return errors.ErrMalformedEntity
 		}
 
 		if len(s.Script) > maxScriptSize {
@@ -60,7 +61,7 @@ func (req createScriptsReq) validate() error {
 type listScriptsByThingReq struct {
 	token        string
 	thingID      string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata rules.PageMetadata
 }
 
 func (req listScriptsByThingReq) validate() error {
@@ -72,13 +73,13 @@ func (req listScriptsByThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type listScriptsByGroupReq struct {
 	token        string
 	groupID      string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata rules.PageMetadata
 }
 
 func (req listScriptsByGroupReq) validate() error {
@@ -90,7 +91,7 @@ func (req listScriptsByGroupReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type scriptReq struct {
@@ -130,7 +131,7 @@ func (req updateScriptReq) validate() error {
 	}
 
 	if req.Script == "" {
-		return apiutil.ErrMalformedEntity
+		return errors.ErrMalformedEntity
 	}
 
 	if len(req.Script) > maxScriptSize {
@@ -194,7 +195,7 @@ func (req thingScriptsReq) validate() error {
 type listScriptRunsByThingReq struct {
 	token        string
 	thingID      string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata rules.PageMetadata
 }
 
 func (req listScriptRunsByThingReq) validate() error {
@@ -206,7 +207,7 @@ func (req listScriptRunsByThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type removeScriptRunsReq struct {

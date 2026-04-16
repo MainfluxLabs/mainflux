@@ -85,14 +85,31 @@ func decodeCreateClients(_ context.Context, r *http.Request) (any, error) {
 
 	req := createClientsReq{token: apiutil.ExtractBearerToken(r), thingID: bone.GetValue(r, idKey)}
 	if err := json.NewDecoder(r.Body).Decode(&req.Clients); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
 }
 
+func buildPageMetadata(r *http.Request) (modbus.PageMetadata, error) {
+	base, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return modbus.PageMetadata{}, err
+	}
+
+	n, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+
+	return modbus.PageMetadata{
+		Offset: base.Offset,
+		Limit:  base.Limit,
+		Order:  base.Order,
+		Dir:    base.Dir,
+		Name:   n,
+	}, nil
+}
+
 func decodeListClientsByGroup(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	pm, err := buildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +124,7 @@ func decodeListClientsByGroup(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeListClientsByThing(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	pm, err := buildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +154,7 @@ func decodeUpdateClient(_ context.Context, r *http.Request) (any, error) {
 		id:    bone.GetValue(r, idKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -153,7 +170,7 @@ func decodeRemoveClients(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil

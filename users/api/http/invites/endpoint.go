@@ -6,7 +6,7 @@ package invites
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -34,7 +34,7 @@ func createPlatformInviteEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		orgInvite := auth.OrgInvite{
+		orgInvite := domain.OrgInvite{
 			OrgID:        req.OrgID,
 			InviteeRole:  req.Role,
 			GroupInvites: req.GroupInvites,
@@ -66,8 +66,8 @@ func listPlatformInvitesEndpoint(svc users.Service) endpoint.Endpoint {
 
 		response := platformInvitePageRes{
 			pageRes: pageRes{
-				Limit:  page.Limit,
-				Offset: page.Offset,
+				Limit:  req.pm.Limit,
+				Offset: req.pm.Offset,
 				Total:  page.Total,
 			},
 			Invites: []platformInviteRes{},

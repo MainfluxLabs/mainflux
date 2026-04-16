@@ -13,6 +13,7 @@ import (
 
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt"
+	pkgauth "github.com/MainfluxLabs/mainflux/pkg/auth"
 )
 
 var _ mqtt.Service = (*loggingMiddleware)(nil)
@@ -29,7 +30,8 @@ func LoggingMiddleware(svc mqtt.Service, logger log.Logger) mqtt.Service {
 
 func (lm *loggingMiddleware) ListSubscriptions(ctx context.Context, groupID, token string, pm mqtt.PageMetadata) (_ mqtt.Page, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_subscriptions for group id %s took %s to complete", groupID, time.Since(begin))
+		email := pkgauth.EmailFromToken(token)
+		message := fmt.Sprintf("Method list_subscriptions by user %s, group id %s took %s to complete", email, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

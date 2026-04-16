@@ -94,36 +94,52 @@ func decodeCreateRules(_ context.Context, r *http.Request) (any, error) {
 		groupID: bone.GetValue(r, apiutil.IDKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
 }
 
 func decodeListRulesByThing(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
 
+	name, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+
 	req := listRulesByThingReq{
-		token:        apiutil.ExtractBearerToken(r),
-		thingID:      bone.GetValue(r, apiutil.IDKey),
-		pageMetadata: pm,
+		token:   apiutil.ExtractBearerToken(r),
+		thingID: bone.GetValue(r, apiutil.IDKey),
+		pageMetadata: rules.PageMetadata{
+			Offset: base.Offset,
+			Limit:  base.Limit,
+			Order:  base.Order,
+			Dir:    base.Dir,
+			Name:   name,
+		},
 	}
+
 	return req, nil
 }
 
 func decodeListRulesByGroup(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
+	name, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
 
 	req := listRulesByGroupReq{
-		token:        apiutil.ExtractBearerToken(r),
-		groupID:      bone.GetValue(r, apiutil.IDKey),
-		pageMetadata: pm,
+		token:   apiutil.ExtractBearerToken(r),
+		groupID: bone.GetValue(r, apiutil.IDKey),
+		pageMetadata: rules.PageMetadata{
+			Offset: base.Offset,
+			Limit:  base.Limit,
+			Order:  base.Order,
+			Dir:    base.Dir,
+			Name:   name,
+		},
 	}
 
 	return req, nil
@@ -148,7 +164,7 @@ func decodeUpdateRule(_ context.Context, r *http.Request) (any, error) {
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -161,7 +177,7 @@ func decodeRemoveRules(_ context.Context, r *http.Request) (any, error) {
 
 	req := removeRulesReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -178,7 +194,7 @@ func decodeThingRules(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil

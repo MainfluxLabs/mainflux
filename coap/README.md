@@ -9,27 +9,27 @@ The service is configured using the environment variables presented in the
 following table. Note that any unset variables will be replaced with their
 default values.
 
-| Variable                       | Description                                            | Default               |
-|--------------------------------|--------------------------------------------------------|-----------------------|
-| MF_COAP_ADAPTER_PORT           | Service listening port                                 | 5683                  |
-| MF_BROKER_URL                  | Message broker instance URL                            | nats://localhost:4222 |
-| MF_COAP_ADAPTER_LOG_LEVEL      | Service log level                                      | error                 |
-| MF_COAP_ADAPTER_CLIENT_TLS     | Flag that indicates if TLS should be turned on         | false                 |
-| MF_COAP_ADAPTER_CA_CERTS       | Path to trusted CAs in PEM format                      |                       |
-| MF_COAP_ADAPTER_PING_PERIOD    | Hours between 1 and 24 to ping client with ACK message | 12                    |
-| MF_JAEGER_URL                  | Jaeger server URL                                      | localhost:6831        |
-| MF_THINGS_AUTH_GRPC_URL        | Things service Auth gRPC URL                           | localhost:8181        |
-| MF_THINGS_AUTH_GRPC_TIMEOUT    | Things service Auth gRPC request timeout in seconds    | 1s                    |
+| Variable                      | Description                                                                | Default               |
+|-------------------------------|----------------------------------------------------------------------------|-----------------------|
+| `MF_COAP_ADAPTER_PORT`        | Service listening port                                                     | 5683                  |
+| `MF_BROKER_URL`               | Message broker instance URL                                                | nats://localhost:4222 |
+| `MF_COAP_ADAPTER_LOG_LEVEL`   | Service log level                                                          | error                 |
+| `MF_COAP_ADAPTER_CLIENT_TLS`  | Flag that indicates if TLS should be turned on                             | false                 |
+| `MF_COAP_ADAPTER_CA_CERTS`    | Path to trusted CAs in PEM format                                          |                       |
+| `MF_COAP_ADAPTER_PING_PERIOD` | Hours between 1 and 24 to ping client with ACK message                     | 12                    |
+| `MF_JAEGER_URL`               | Jaeger server URL for distributed tracing. Leave empty to disable tracing. |                       |
+| `MF_THINGS_AUTH_GRPC_URL`     | Things service Auth gRPC URL                                               | localhost:8183        |
+| `MF_THINGS_AUTH_GRPC_TIMEOUT` | Things service Auth gRPC request timeout in seconds                        | 1s                    |
 
 ## Deployment
 
-The service itself is distributed as Docker container. Check the [`coap-adapter`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/docker-compose.yml#L273-L291) service section in docker-compose to see how service is deployed.
+The service itself is distributed as Docker container. Check the [`coap-adapter`](https://github.com/MainfluxLabs/mainflux/blob/master/docker/docker-compose.yml) service section in docker-compose to see how service is deployed.
 
 Running this service outside of container requires working instance of the message broker service.
 To start the service outside of the container, execute the following shell script:
 
 ```bash
-# download the latest version of the service
+# Download the latest version of the service
 git clone https://github.com/MainfluxLabs/mainflux
 
 cd mainflux
@@ -37,7 +37,7 @@ cd mainflux
 # compile the http
 make coap
 
-# copy binary to bin
+# Copy binary to bin
 make install
 
 # set the environment variables and run the service
@@ -55,10 +55,42 @@ $GOBIN/mainfluxlabs-coap
 
 ## Usage
 
-If CoAP adapter is running locally (on default 5683 port), a valid URL would be: `coap://localhost/messages?auth=<thing_auth_key>&type=<key_type>`.
-
 Since CoAP protocol does not support `Authorization` header (option) and since options have a limited size, authentication is supplied in the form of URI Query parameters:
 * `auth`
     * Thing authentication key
 * `type`
     * Type of Thing key. One of: `external`, `internal`.
+
+### Publishing messages
+
+To publish a message to a thing, optionally with a subtopic:
+
+```
+coap://localhost/things/<thing_id>/messages?auth=<thing_key>&type=<key_type>
+coap://localhost/things/<thing_id>/messages/<subtopic>?auth=<thing_key>&type=<key_type>
+```
+
+The publisher is determined by the auth key, not the path.
+
+### Sending commands
+
+To send a command to a specific thing (M2M, authorized by publisher thing key):
+
+```
+coap://localhost/things/<thing_id>/commands?auth=<thing_key>&type=<key_type>
+```
+
+To send a command to all things in a group:
+
+```
+coap://localhost/groups/<group_id>/commands?auth=<thing_key>&type=<key_type>
+```
+
+Both endpoints support an optional subtopic:
+
+```
+coap://localhost/things/<thing_id>/commands/<subtopic>?auth=<thing_key>&type=<key_type>
+coap://localhost/groups/<group_id>/commands/<subtopic>?auth=<thing_key>&type=<key_type>
+```
+
+Commands use `POST` (same as publishing messages). The publisher thing must have command permission over the target thing or group.

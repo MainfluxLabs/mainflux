@@ -351,7 +351,7 @@ func TestViewProfileByThing(t *testing.T) {
 	prID, err := mainfluxSDK.CreateProfile(pr, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	th := sdk.Thing{Name: name, ProfileID: prID}
+	th := sdk.Thing{Name: name, Type: thingTypeDevice, ProfileID: prID}
 	thID, err := mainfluxSDK.CreateThing(th, prID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 

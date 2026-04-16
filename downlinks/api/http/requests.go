@@ -107,7 +107,7 @@ func (req downlink) validate() error {
 type listThingDownlinksReq struct {
 	token        string
 	thingID      string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata downlinks.PageMetadata
 }
 
 func (req listThingDownlinksReq) validate() error {
@@ -119,13 +119,13 @@ func (req listThingDownlinksReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type listDownlinksReq struct {
 	token        string
 	groupID      string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata downlinks.PageMetadata
 }
 
 func (req listDownlinksReq) validate() error {
@@ -137,7 +137,7 @@ func (req listDownlinksReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type downlinkReq struct {

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/things"
 	grpcapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	"github.com/opentracing/opentracing-go/mocktracer"
@@ -65,7 +65,7 @@ func TestGetPubConfigByKey(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, err := cli.GetPubConfigByKey(ctx, &protomfx.ThingKey{Value: tc.key, Type: things.KeyTypeInternal})
+		_, err := cli.GetPubConfigByKey(ctx, domain.ThingKey{Value: tc.key, Type: things.KeyTypeInternal})
 		e, ok := status.FromError(err)
 		assert.True(t, ok, "OK expected to be true")
 		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", desc, tc.code, e.Code()))
@@ -130,10 +130,10 @@ func TestIdentify(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		id, err := cli.Identify(ctx, &protomfx.ThingKey{Value: tc.key, Type: tc.keyType})
+		id, err := cli.Identify(ctx, domain.ThingKey{Value: tc.key, Type: tc.keyType})
 		e, ok := status.FromError(err)
 		assert.True(t, ok, "OK expected to be true")
-		assert.Equal(t, tc.id, id.GetValue(), fmt.Sprintf("%s: expected %s got %s", desc, tc.id, id.GetValue()))
+		assert.Equal(t, tc.id, id, fmt.Sprintf("%s: expected %s got %s", desc, tc.id, id))
 		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", desc, tc.code, e.Code()))
 	}
 }

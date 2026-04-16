@@ -8,11 +8,32 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	"github.com/MainfluxLabs/mainflux/things"
 )
+
+var AllowedOrders = map[string]string{
+	"id":      "id",
+	"created": "created",
+}
+
+// PageMetadata contains page metadata that helps navigation.
+type PageMetadata struct {
+	Total   uint64         `json:"total,omitempty"`
+	Offset  uint64         `json:"offset,omitempty"`
+	Limit   uint64         `json:"limit,omitempty"`
+	Order   string         `json:"order,omitempty"`
+	Dir     string         `json:"dir,omitempty"`
+	Payload map[string]any `json:"payload,omitempty"`
+}
+
+// Validate validates the page metadata.
+func (pm PageMetadata) Validate(maxLimitSize int) error {
+	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
+	return common.Validate(maxLimitSize, AllowedOrders)
+}
 
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
@@ -21,15 +42,15 @@ import (
 type Service interface {
 	// ListAlarmsByGroup retrieves data about a subset of alarms
 	// related to a certain group, identified by the provided group ID.
-	ListAlarmsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (AlarmsPage, error)
+	ListAlarmsByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (AlarmsPage, error)
 
 	// ListAlarmsByThing retrieves data about a subset of alarms
 	// related to a certain thing, identified by the provided thing ID.
-	ListAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error)
+	ListAlarmsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (AlarmsPage, error)
 
 	// ListAlarmsByOrg retrieves data about a subset of alarms
 	// related to a certain organization, identified by the provided organization ID.
-	ListAlarmsByOrg(ctx context.Context, token, orgID string, pm apiutil.PageMetadata) (AlarmsPage, error)
+	ListAlarmsByOrg(ctx context.Context, token, orgID string, pm PageMetadata) (AlarmsPage, error)
 
 	// ViewAlarm retrieves data about the alarm identified by the provided ID.
 	ViewAlarm(ctx context.Context, token, id string) (Alarm, error)
@@ -47,20 +68,20 @@ type Service interface {
 
 	// ExportAlarmsByThing retrieves a subset of alarms related to the specified thing
 	// identified by the provided thing ID, intended for exporting.
-	ExportAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error)
+	ExportAlarmsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (AlarmsPage, error)
 
 	consumers.Consumer
 }
 
 type alarmService struct {
-	things     protomfx.ThingsServiceClient
+	things     domain.ThingsClient
 	alarms     AlarmRepository
 	idProvider uuid.IDProvider
 }
 
 var _ Service = (*alarmService)(nil)
 
-func New(things protomfx.ThingsServiceClient, alarms AlarmRepository, idp uuid.IDProvider) Service {
+func New(things domain.ThingsClient, alarms AlarmRepository, idp uuid.IDProvider) Service {
 	return &alarmService{
 		things:     things,
 		alarms:     alarms,
@@ -68,8 +89,8 @@ func New(things protomfx.ThingsServiceClient, alarms AlarmRepository, idp uuid.I
 	}
 }
 
-func (as *alarmService) ListAlarmsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
-	_, err := as.things.CanUserAccessGroup(ctx, &protomfx.UserAccessReq{Token: token, Id: groupID, Action: things.Viewer})
+func (as *alarmService) ListAlarmsByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (AlarmsPage, error) {
+	err := as.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupViewer})
 	if err != nil {
 		return AlarmsPage{}, err
 	}
@@ -82,8 +103,8 @@ func (as *alarmService) ListAlarmsByGroup(ctx context.Context, token, groupID st
 	return alarms, nil
 }
 
-func (as *alarmService) ListAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
-	_, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer})
+func (as *alarmService) ListAlarmsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (AlarmsPage, error) {
+	err := as.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupViewer})
 	if err != nil {
 		return AlarmsPage{}, err
 	}
@@ -96,16 +117,13 @@ func (as *alarmService) ListAlarmsByThing(ctx context.Context, token, thingID st
 	return alarms, nil
 }
 
-func (as *alarmService) ListAlarmsByOrg(ctx context.Context, token string, orgID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
-	res, err := as.things.GetGroupIDsByOrg(ctx, &protomfx.OrgAccessReq{
-		OrgId: orgID,
-		Token: token,
-	})
+func (as *alarmService) ListAlarmsByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (AlarmsPage, error) {
+	groupIDs, err := as.things.GetGroupIDsByOrg(ctx, domain.OrgAccessReq{OrgID: orgID, Token: token})
 	if err != nil {
 		return AlarmsPage{}, err
 	}
 
-	return as.alarms.RetrieveByGroups(ctx, res.GetIds(), pm)
+	return as.alarms.RetrieveByGroups(ctx, groupIDs, pm)
 }
 
 func (as *alarmService) ViewAlarm(ctx context.Context, token, id string) (Alarm, error) {
@@ -114,7 +132,7 @@ func (as *alarmService) ViewAlarm(ctx context.Context, token, id string) (Alarm,
 		return Alarm{}, err
 	}
 
-	if _, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: alarm.ThingID, Action: things.Viewer}); err != nil {
+	if err := as.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: alarm.ThingID, Action: domain.GroupViewer}); err != nil {
 		return Alarm{}, err
 	}
 
@@ -127,7 +145,7 @@ func (as *alarmService) RemoveAlarms(ctx context.Context, token string, ids ...s
 		if err != nil {
 			return err
 		}
-		if _, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: alarm.ThingID, Action: things.Editor}); err != nil {
+		if err := as.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: alarm.ThingID, Action: domain.GroupEditor}); err != nil {
 			return errors.Wrap(errors.ErrAuthorization, err)
 		}
 	}
@@ -143,8 +161,8 @@ func (as *alarmService) RemoveAlarmsByGroup(ctx context.Context, groupID string)
 	return as.alarms.RemoveByGroup(ctx, groupID)
 }
 
-func (as *alarmService) ExportAlarmsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (AlarmsPage, error) {
-	_, err := as.things.CanUserAccessThing(ctx, &protomfx.UserAccessReq{Token: token, Id: thingID, Action: things.Viewer})
+func (as *alarmService) ExportAlarmsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (AlarmsPage, error) {
+	err := as.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupViewer})
 	if err != nil {
 		return AlarmsPage{}, err
 	}
@@ -158,11 +176,11 @@ func (as *alarmService) ExportAlarmsByThing(ctx context.Context, token, thingID 
 }
 
 func (as *alarmService) createAlarm(ctx context.Context, alarm *Alarm) error {
-	grID, err := as.things.GetGroupIDByThing(ctx, &protomfx.ThingID{Value: alarm.ThingID})
+	grID, err := as.things.GetGroupIDByThing(ctx, alarm.ThingID)
 	if err != nil {
 		return err
 	}
-	alarm.GroupID = grID.GetValue()
+	alarm.GroupID = grID
 
 	id, err := as.idProvider.ID()
 	if err != nil {

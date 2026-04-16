@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/http"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -32,7 +32,7 @@ func MetricsMiddleware(svc http.Service, counter metrics.Counter, latency metric
 	}
 }
 
-func (mm *metricsMiddleware) Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) (err error) {
+func (mm *metricsMiddleware) Publish(ctx context.Context, key domain.ThingKey, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "publish").Add(1)
 		mm.latency.With("method", "publish").Observe(time.Since(begin).Seconds())
@@ -57,4 +57,22 @@ func (mm *metricsMiddleware) SendCommandToGroup(ctx context.Context, token, grou
 	}(time.Now())
 
 	return mm.svc.SendCommandToGroup(ctx, token, groupID, msg)
+}
+
+func (mm *metricsMiddleware) SendCommandToThingByKey(ctx context.Context, key domain.ThingKey, thingID string, msg protomfx.Message) error {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "send_command_to_thing_by_key").Add(1)
+		mm.latency.With("method", "send_command_to_thing_by_key").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.SendCommandToThingByKey(ctx, key, thingID, msg)
+}
+
+func (mm *metricsMiddleware) SendCommandToGroupByKey(ctx context.Context, key domain.ThingKey, groupID string, msg protomfx.Message) error {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "send_command_to_group_by_key").Add(1)
+		mm.latency.With("method", "send_command_to_group_by_key").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.SendCommandToGroupByKey(ctx, key, groupID, msg)
 }

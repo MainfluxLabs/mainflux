@@ -17,6 +17,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -29,36 +30,34 @@ import (
 )
 
 const (
-	contentTypeJSON        = "application/json"
-	contentTypeOctetStream = "application/octet-stream"
-	email                  = "user@example.com"
-	adminEmail             = "admin@example.com"
-	otherUserEmail         = "other_user@example.com"
-	token                  = email
-	otherToken             = otherUserEmail
-	adminToken             = adminEmail
-	wrongValue             = "wrong_value"
-	emptyValue             = ""
-	emptyJson              = "{}"
-	wrongID                = 0
-	password               = "password"
-	maxNameSize            = 1024
-	nameKey                = "name"
-	ascKey                 = "asc"
-	descKey                = "desc"
-	orgID                  = "374106f7-030e-4881-8ab0-151195c29f92"
-	orgID2                 = "374106f7-030e-4881-8ab0-151195c29f93"
-	prefix                 = "fe6b4e92-cc98-425e-b0aa-"
-	n                      = 101
-	noLimit                = -1
-	validData              = `{"limit":5,"offset":0}`
-	descData               = `{"limit":5,"offset":0,"dir":"desc","order":"name"}`
-	ascData                = `{"limit":5,"offset":0,"dir":"asc","order":"name"}`
-	invalidOrderData       = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
-	zeroLimitData          = `{"limit":0,"offset":0}`
-	invalidDirData         = `{"limit":5,"offset":0,"dir":"wrong"}`
-	invalidLimitData       = `{"limit":210,"offset":0}`
-	invalidData            = `{"limit": "invalid"}`
+	contentTypeJSON  = "application/json"
+	email            = "user@example.com"
+	adminEmail       = "admin@example.com"
+	otherUserEmail   = "other_user@example.com"
+	token            = email
+	otherToken       = otherUserEmail
+	adminToken       = adminEmail
+	wrongValue       = "wrong_value"
+	emptyValue       = ""
+	emptyJson        = "{}"
+	wrongID          = 0
+	password         = "password"
+	maxNameSize      = 1024
+	nameKey          = "name"
+	ascKey           = "asc"
+	descKey          = "desc"
+	orgID            = "374106f7-030e-4881-8ab0-151195c29f92"
+	orgID2           = "374106f7-030e-4881-8ab0-151195c29f93"
+	prefix           = "fe6b4e92-cc98-425e-b0aa-"
+	n                = 101
+	validData        = `{"limit":5,"offset":0}`
+	descData         = `{"limit":5,"offset":0,"dir":"desc","order":"name"}`
+	ascData          = `{"limit":5,"offset":0,"dir":"asc","order":"name"}`
+	invalidOrderData = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
+	zeroLimitData    = `{"limit":0,"offset":0}`
+	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
+	invalidLimitData = `{"limit":210,"offset":0}`
+	invalidData      = `{"limit": "invalid"}`
 )
 
 var (
@@ -1552,11 +1551,11 @@ func TestRemoveProfiles(t *testing.T) {
 }
 
 type profileRes struct {
-	ID       string         `json:"id"`
-	Name     string         `json:"name,omitempty"`
-	GroupID  string         `json:"group_id,omitempty"`
-	Metadata map[string]any `json:"metadata,omitempty"`
-	Config   map[string]any `json:"config,omitempty"`
+	ID       string                `json:"id"`
+	Name     string                `json:"name,omitempty"`
+	GroupID  string                `json:"group_id,omitempty"`
+	Metadata map[string]any        `json:"metadata,omitempty"`
+	Config   *domain.ProfileConfig `json:"config,omitempty"`
 }
 
 type profilesPageRes struct {

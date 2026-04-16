@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/jackc/pgerrcode"
@@ -72,7 +71,7 @@ func (kr repo) Remove(ctx context.Context, issuerID, id string) error {
 	return nil
 }
 
-func (kr repo) RetrieveAPIKeys(ctx context.Context, issuerID string, pm apiutil.PageMetadata) (auth.KeysPage, error) {
+func (kr repo) RetrieveAPIKeys(ctx context.Context, issuerID string, pm auth.PageMetadata) (auth.KeysPage, error) {
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)

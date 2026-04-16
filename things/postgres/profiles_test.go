@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/postgres"
@@ -218,10 +218,10 @@ func TestRetrieveProfilesByGroupIDs(t *testing.T) {
 
 	cases := map[string]struct {
 		size         uint64
-		pageMetadata apiutil.PageMetadata
+		pageMetadata things.PageMetadata
 	}{
 		"retrieve all profiles by group IDs": {
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Dir:    descDir,
@@ -230,7 +230,7 @@ func TestRetrieveProfilesByGroupIDs(t *testing.T) {
 			size: n,
 		},
 		"retrieve all profiles by group IDs without limit": {
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: things.PageMetadata{
 				Limit: 0,
 				Dir:   descDir,
 				Order: idOrder,
@@ -238,7 +238,7 @@ func TestRetrieveProfilesByGroupIDs(t *testing.T) {
 			size: n,
 		},
 		"retrieve subset of profiles by group IDs": {
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: things.PageMetadata{
 				Offset: offset,
 				Limit:  n,
 				Dir:    descDir,
@@ -247,46 +247,46 @@ func TestRetrieveProfilesByGroupIDs(t *testing.T) {
 			size: n - offset,
 		},
 		"retrieve profiles by group IDs with existing name": {
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
-				Name:   "test-profile-101",
 				Dir:    descDir,
 				Order:  idOrder,
+				Name:   "test-profile-101",
 			},
 			size: 1,
 		},
 		"retrieve all profiles by group IDs with non-existing name": {
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
-				Name:   "wrong",
 				Dir:    descDir,
 				Order:  idOrder,
+				Name:   "wrong",
 			},
 			size: 0,
 		},
 		"retrieve all profiles by group IDs with existing metadata": {
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: things.PageMetadata{
 				Offset:   0,
 				Limit:    n,
-				Metadata: metadata,
 				Dir:      descDir,
 				Order:    idOrder,
+				Metadata: metadata,
 			},
 			size: metaNum,
 		},
 		"retrieve all profiles by group IDs with non-existing metadata": {
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: things.PageMetadata{
 				Offset:   0,
 				Limit:    n,
-				Metadata: wrongMeta,
 				Dir:      descDir,
 				Order:    idOrder,
+				Metadata: wrongMeta,
 			},
 		},
 		"retrieve profiles by group IDs sorted by name ascendant": {
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Order:  nameOrder,
@@ -295,7 +295,7 @@ func TestRetrieveProfilesByGroupIDs(t *testing.T) {
 			size: n,
 		},
 		"retrieve profiles by group IDs sorted by name descendent": {
-			pageMetadata: apiutil.PageMetadata{
+			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
 				Order:  nameOrder,
@@ -335,8 +335,8 @@ func TestRetrieveProfileByThing(t *testing.T) {
 		ID:       prID,
 		GroupID:  group.ID,
 		Name:     profileName,
-		Config:   map[string]any{},
-		Metadata: things.Metadata{},
+		Config:   &domain.ProfileConfig{},
+		Metadata: nil,
 	}
 	prs, err := profileRepo.Save(context.Background(), c)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -492,7 +492,7 @@ func TestBackupAllProfiles(t *testing.T) {
 	}
 }
 
-func testSortProfiles(t *testing.T, pm apiutil.PageMetadata, prs []things.Profile) {
+func testSortProfiles(t *testing.T, pm things.PageMetadata, prs []things.Profile) {
 	switch pm.Order {
 	case "name":
 		current := prs[0]

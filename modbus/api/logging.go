@@ -10,7 +10,7 @@ import (
 
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/modbus"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	pkgauth "github.com/MainfluxLabs/mainflux/pkg/auth"
 )
 
 var _ modbus.Service = (*loggingMiddleware)(nil)
@@ -27,7 +27,8 @@ func LoggingMiddleware(svc modbus.Service, logger log.Logger) modbus.Service {
 
 func (lm *loggingMiddleware) CreateClients(ctx context.Context, token, thingID string, clients ...modbus.Client) (response []modbus.Client, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method create_clients for clients %v took %s to complete", response, time.Since(begin))
+		email := pkgauth.EmailFromToken(token)
+		message := fmt.Sprintf("Method create_clients by user %s, clients %v took %s to complete", email, response, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -38,9 +39,10 @@ func (lm *loggingMiddleware) CreateClients(ctx context.Context, token, thingID s
 	return lm.svc.CreateClients(ctx, token, thingID, clients...)
 }
 
-func (lm *loggingMiddleware) ListClientsByThing(ctx context.Context, token, thingID string, pm apiutil.PageMetadata) (response modbus.ClientsPage, err error) {
+func (lm *loggingMiddleware) ListClientsByThing(ctx context.Context, token, thingID string, pm modbus.PageMetadata) (response modbus.ClientsPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_clients_by_thing for id %s took %s to complete", thingID, time.Since(begin))
+		email := pkgauth.EmailFromToken(token)
+		message := fmt.Sprintf("Method list_clients_by_thing by user %s, id %s took %s to complete", email, thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -51,9 +53,10 @@ func (lm *loggingMiddleware) ListClientsByThing(ctx context.Context, token, thin
 	return lm.svc.ListClientsByThing(ctx, token, thingID, pm)
 }
 
-func (lm *loggingMiddleware) ListClientsByGroup(ctx context.Context, token, groupID string, pm apiutil.PageMetadata) (response modbus.ClientsPage, err error) {
+func (lm *loggingMiddleware) ListClientsByGroup(ctx context.Context, token, groupID string, pm modbus.PageMetadata) (response modbus.ClientsPage, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method list_clients_by_group for id %s took %s to complete", groupID, time.Since(begin))
+		email := pkgauth.EmailFromToken(token)
+		message := fmt.Sprintf("Method list_clients_by_group by user %s, id %s took %s to complete", email, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -66,7 +69,8 @@ func (lm *loggingMiddleware) ListClientsByGroup(ctx context.Context, token, grou
 
 func (lm *loggingMiddleware) ViewClient(ctx context.Context, token, id string) (response modbus.Client, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method view_client for id %s took %s to complete", id, time.Since(begin))
+		email := pkgauth.EmailFromToken(token)
+		message := fmt.Sprintf("Method view_client by user %s, id %s took %s to complete", email, id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -79,7 +83,8 @@ func (lm *loggingMiddleware) ViewClient(ctx context.Context, token, id string) (
 
 func (lm *loggingMiddleware) UpdateClient(ctx context.Context, token string, client modbus.Client) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_client for id %s took %s to complete", client.ID, time.Since(begin))
+		email := pkgauth.EmailFromToken(token)
+		message := fmt.Sprintf("Method update_client by user %s, id %s took %s to complete", email, client.ID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -92,7 +97,8 @@ func (lm *loggingMiddleware) UpdateClient(ctx context.Context, token string, cli
 
 func (lm *loggingMiddleware) RemoveClients(ctx context.Context, token string, id ...string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_clients took %s to complete", time.Since(begin))
+		email := pkgauth.EmailFromToken(token)
+		message := fmt.Sprintf("Method remove_clients by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

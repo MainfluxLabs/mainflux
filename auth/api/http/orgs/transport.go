@@ -74,8 +74,61 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	return mux
 }
 
+func buildPageMetadata(r *http.Request) (auth.PageMetadata, error) {
+	base, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return auth.PageMetadata{}, err
+	}
+
+	n, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	m, _ := apiutil.ReadMetadataQuery(r, apiutil.MetadataKey, nil)
+
+	return auth.PageMetadata{
+		Offset:   base.Offset,
+		Limit:    base.Limit,
+		Order:    base.Order,
+		Dir:      base.Dir,
+		Name:     n,
+		Metadata: m,
+	}, nil
+}
+
+func buildPageMetadataFromBody(r *http.Request) (auth.PageMetadata, error) {
+	if r.Body == nil || r.ContentLength == 0 {
+		return auth.PageMetadata{
+			Offset: apiutil.DefOffset,
+			Limit:  apiutil.DefLimit,
+			Order:  apiutil.IDOrder,
+			Dir:    apiutil.DescDir,
+		}, nil
+	}
+
+	var pm auth.PageMetadata
+	if err := json.NewDecoder(r.Body).Decode(&pm); err != nil {
+		return auth.PageMetadata{}, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	if pm.Limit == 0 {
+		pm.Limit = apiutil.DefLimit
+	}
+
+	if pm.Offset == 0 {
+		pm.Offset = apiutil.DefOffset
+	}
+
+	if pm.Order == "" {
+		pm.Order = apiutil.IDOrder
+	}
+
+	if pm.Dir == "" {
+		pm.Dir = apiutil.DescDir
+	}
+
+	return pm, nil
+}
+
 func decodeListOrgs(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	pm, err := buildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +142,7 @@ func decodeListOrgs(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeSearchOrgs(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadataFromBody(r)
+	pm, err := buildPageMetadataFromBody(r)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +162,7 @@ func decodeCreateOrgs(_ context.Context, r *http.Request) (any, error) {
 
 	req := createOrgsReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -125,7 +178,7 @@ func decodeUpdateOrg(_ context.Context, r *http.Request) (any, error) {
 		token: apiutil.ExtractBearerToken(r),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -150,7 +203,7 @@ func decodeDeleteOrgs(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil

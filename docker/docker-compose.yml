@@ -27,6 +27,7 @@ volumes:
   mainfluxlabs-alarms-db-volume:
   mainfluxlabs-rules-db-volume:
   mainfluxlabs-certs-db-volume:
+  mainfluxlabs-crl-volume:
   mainfluxlabs-uiconfigs-db-volume:
 
 services:
@@ -40,10 +41,7 @@ services:
       - mainfluxlabs-base-net
     environment:
       MF_UI_PORT: ${MF_UI_PORT}
-      MF_UI_MQTT_WS_URL: ${MF_UI_MQTT_WS_URL}
-      MF_PROXY_AUTH: ${MF_PROXY_AUTH}
-      MF_PROXY_LOGOUT_URL: ${MF_PROXY_LOGOUT_URL}
-      MF_UI_APP_PREFIX: ${MF_UI_APP_PREFIX}
+      MF_USERS_SELF_REGISTER_ENABLED: ${MF_USERS_SELF_REGISTER_ENABLED}
 
   nginx:
     image: nginx:1.20.0-alpine
@@ -58,6 +56,7 @@ services:
       - ./ssl/certs/ca.crt:/etc/ssl/certs/ca.crt
       - ./ssl/certs/mainfluxlabs-server.key:/etc/ssl/private/mainfluxlabs-server.key
       - ./ssl/dhparam.pem:/etc/ssl/certs/dhparam.pem
+      - mainfluxlabs-crl-volume:/etc/ssl/certs/crl
     ports:
       - ${MF_NGINX_HTTP_PORT}:${MF_NGINX_HTTP_PORT}
       - ${MF_NGINX_SSL_PORT}:${MF_NGINX_SSL_PORT}
@@ -680,6 +679,8 @@ services:
       MF_SMTP_NOTIFIER_SERVER_KEY: ${MF_SMTP_NOTIFIER_SERVER_KEY}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_SMTP_NOTIFIER_THINGS_TLS: ${MF_SMTP_NOTIFIER_THINGS_TLS}
+      MF_SMTP_NOTIFIER_THINGS_CA_CERTS: ${MF_SMTP_NOTIFIER_THINGS_CA_CERTS}
       MF_SMTP_NOTIFIER_ES_URL: ${MF_SMTP_NOTIFIER_ES_URL}
       MF_SMTP_NOTIFIER_EVENT_CONSUMER: ${MF_SMTP_NOTIFIER_EVENT_CONSUMER}
     ports:
@@ -724,6 +725,8 @@ services:
       MF_DOWNLINKS_SERVER_KEY: ${MF_DOWNLINKS_SERVER_KEY}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
+      MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
       MF_DOWNLINKS_ES_URL: ${MF_DOWNLINKS_ES_URL}
       MF_DOWNLINKS_EVENT_CONSUMER: ${MF_DOWNLINKS_EVENT_CONSUMER}
       MF_BROKER_URL: ${MF_NATS_URL}
@@ -754,7 +757,7 @@ services:
       - broker
     restart: on-failure
     environment:
-      MF_MODBUS_LOG_LEVEL: debug
+      MF_MODBUS_LOG_LEVEL: ${MF_MODBUS_LOG_LEVEL}
       MF_MODBUS_HTTP_PORT: ${MF_MODBUS_HTTP_PORT}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_MODBUS_DB_HOST: modbus-db
@@ -927,9 +930,11 @@ services:
       MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
       MF_THINGS_GRPC_URL: ${MF_THINGS_GRPC_URL}
       MF_THINGS_GRPC_TIMEOUT: ${MF_THINGS_GRPC_TIMEOUT}
+      MF_CERTS_CRL_PATH: ${MF_CERTS_CRL_PATH}
     volumes:
       - ./ssl/certs/ca.key:/etc/ssl/certs/ca.key
       - ./ssl/certs/ca.crt:/etc/ssl/certs/ca.crt
+      - mainfluxlabs-crl-volume:/etc/ssl/certs/crl
   uiconfigs-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-uiconfigs-db
@@ -950,7 +955,7 @@ services:
       - uiconfigs-db
     restart: on-failure
     environment:
-      MF_UI_CONFIGS_LOG_LEVEL: debug
+      MF_UI_CONFIGS_LOG_LEVEL: ${MF_UI_CONFIGS_LOG_LEVEL}
       MF_UI_CONFIGS_HTTP_PORT: ${MF_UI_CONFIGS_HTTP_PORT}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_UI_CONFIGS_DB_HOST: uiconfigs-db

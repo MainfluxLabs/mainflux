@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/coap"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -32,7 +32,7 @@ func MetricsMiddleware(svc coap.Service, counter metrics.Counter, latency metric
 	}
 }
 
-func (mm *metricsMiddleware) Publish(ctx context.Context, key things.ThingKey, msg protomfx.Message) error {
+func (mm *metricsMiddleware) Publish(ctx context.Context, key domain.ThingKey, msg protomfx.Message) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "publish").Add(1)
 		mm.latency.With("method", "publish").Observe(time.Since(begin).Seconds())
@@ -41,7 +41,7 @@ func (mm *metricsMiddleware) Publish(ctx context.Context, key things.ThingKey, m
 	return mm.svc.Publish(ctx, key, msg)
 }
 
-func (mm *metricsMiddleware) Subscribe(ctx context.Context, key things.ThingKey, subtopic string, c coap.Client) error {
+func (mm *metricsMiddleware) Subscribe(ctx context.Context, key domain.ThingKey, subtopic string, c coap.Client) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "subscribe").Add(1)
 		mm.latency.With("method", "subscribe").Observe(time.Since(begin).Seconds())
@@ -50,7 +50,25 @@ func (mm *metricsMiddleware) Subscribe(ctx context.Context, key things.ThingKey,
 	return mm.svc.Subscribe(ctx, key, subtopic, c)
 }
 
-func (mm *metricsMiddleware) Unsubscribe(ctx context.Context, key things.ThingKey, subtopic, token string) error {
+func (mm *metricsMiddleware) SendCommandToThing(ctx context.Context, key domain.ThingKey, thingID string, msg protomfx.Message) error {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "send_command_to_thing").Add(1)
+		mm.latency.With("method", "send_command_to_thing").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.SendCommandToThing(ctx, key, thingID, msg)
+}
+
+func (mm *metricsMiddleware) SendCommandToGroup(ctx context.Context, key domain.ThingKey, groupID string, msg protomfx.Message) error {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "send_command_to_group").Add(1)
+		mm.latency.With("method", "send_command_to_group").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.SendCommandToGroup(ctx, key, groupID, msg)
+}
+
+func (mm *metricsMiddleware) Unsubscribe(ctx context.Context, key domain.ThingKey, subtopic, token string) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "unsubscribe").Add(1)
 		mm.latency.With("method", "unsubscribe").Observe(time.Since(begin).Seconds())

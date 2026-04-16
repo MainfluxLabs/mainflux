@@ -6,34 +6,10 @@ info:
 
 paths:
   /groups/{groupId}/things:
-    post:
-      summary: Adds new things
-      description: |
-        Adds new things to the list of things owned by user identified using
-        the provided access token.
-      tags:
-        - things
-      parameters:
-        - $ref: "#/components/parameters/GroupId"
-      requestBody:
-        $ref: "#/components/requestBodies/CreateThingsReq"
-      responses:
-        '201':
-          $ref: "#/components/responses/CreateThingsRes"
-        '400':
-          description: Failed due to malformed JSON.
-        '401':
-          description: Missing or invalid access token provided.
-        '409':
-          description: Entity already exist.
-        '415':
-          description: Missing or invalid content type.
-        '500':
-          $ref: "#/components/responses/ServiceError"
     get:
       summary: Retrieves things by group.
       description: |
-        Retrieves an array of things that belong to the group specified by groupID.
+        Retrieves a paginated list of things that belong to the group specified by groupId.
       tags:
         - things
       parameters:
@@ -76,6 +52,22 @@ paths:
           description: A non-existent entity request.
         '422':
           description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    put:
+      summary: Bulk updates things metadata
+      description: Updates metadata for multiple things identified by their IDs.
+      tags:
+        - things
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateThingsMetadataReq"
+      responses:
+        '200':
+          $ref: "#/components/responses/ThingsRes"
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
     patch:
@@ -214,7 +206,7 @@ paths:
       summary: Updates thing info
       description: |
         Update is performed by replacing the current resource data with values
-        provided in a request payload. Note that the thing's type and ID
+        provided in a request payload. Note that the thing's ID
         cannot be changed.
       tags:
         - things
@@ -639,17 +631,43 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
   /profiles/{profileId}/things:
-    get:
-      summary: List things by profile
+    post:
+      summary: Creates new things.
       description: |
-        Retrieves list of things assigned to the specified profile with pagination
-        metadata.
+        Creates one or more new things assigned to the profile specified by profileId.
+        The authenticated user must have at least the Editor role in the group that owns the profile.
+      tags:
+        - things
+      parameters:
+        - $ref: "#/components/parameters/ProfileId"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateThingsReq"
+      responses:
+        '201':
+          $ref: "#/components/responses/CreateThingsRes"
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Missing or insufficient permissions.
+        '409':
+          description: Entity already exists.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    get:
+      summary: Retrieves things by profile.
+      description: |
+        Retrieves a paginated list of things assigned to the specified profile.
       tags:
         - things
       parameters:
         - $ref: "#/components/parameters/ProfileId"
         - $ref: "#/components/parameters/Offset"
         - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Metadata"
       responses:
         '200':
           $ref: "#/components/responses/ThingsPageRes"
@@ -882,7 +900,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/GroupId"
       requestBody:
-        $ref: "#/components/requestBodies/GroupMembershipsReq"
+        $ref: "#/components/requestBodies/CreateGroupMembershipsReq"
       responses:
         '201':
           description: Group memberships created.
@@ -922,7 +940,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/GroupId"
       requestBody:
-        $ref: "#/components/requestBodies/GroupMembershipsReq"
+        $ref: "#/components/requestBodies/UpdateGroupMembershipsReq"
       responses:
         '200':
           description: Group memberships updated.
@@ -1050,9 +1068,22 @@ components:
         name:
           type: string
           description: Free-form thing name.
+        type:
+          type: string
+          description: Thing type used to classify devices by their role and capabilities.
+          enum:
+            - device
+            - sensor
+            - actuator
+            - controller
+            - gateway
         metadata:
           type: object
           description: Arbitrary, object-encoded thing's data.
+      required:
+        - profile_id
+        - name
+        - type
     SearchThingsReqSchema:
       type: object
       properties:
@@ -1098,6 +1129,15 @@ components:
           type: string
           example: "Test"
           description: Free-form thing name.
+        type:
+          type: string
+          description: Thing type used to classify devices by their role and capabilities.
+          enum:
+            - device
+            - sensor
+            - actuator
+            - controller
+            - gateway
         key:
           type: string
           format: uuid
@@ -1122,6 +1162,7 @@ components:
         - id
         - key
         - group_id
+        - type
     BackupAndRestoreThingsSchema:
       type: array
       minItems: 0
@@ -1480,7 +1521,7 @@ components:
       required:
         - id
         - role
-    GroupMembershipsSchema:
+    CreateGroupMembershipsSchema:
       type: object
       properties:
         group_memberships:
@@ -1489,6 +1530,23 @@ components:
           uniqueItems: true
           items:
             $ref: "#/components/schemas/GroupMembershipResSchema"
+        redirect_path:
+          type: string
+          description: Redirect path to the group page for invited member.
+      required:
+        - group_memberships
+        - redirect_path
+    UpdateGroupMembershipsSchema:
+      type: object
+      properties:
+        group_memberships:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/GroupMembershipResSchema"
+      required:
+        - group_memberships
     GroupMembershipsPageSchema:
       type: object
       properties:
@@ -1649,6 +1707,15 @@ components:
               name:
                 type: string
                 description: Free-form thing name.
+              type:
+                type: string
+                description: Thing type used to classify devices by their role and capabilities.
+                enum:
+                  - device
+                  - sensor
+                  - actuator
+                  - controller
+                  - gateway
               metadata:
                 type: object
               key:
@@ -1681,6 +1748,28 @@ components:
         application/octet-stream:
           schema:
             $ref: "#/components/schemas/BackupAndRestoreThingsSchema"
+    UpdateThingsMetadataReq:
+      description: JSON-formatted document describing things with updated metadata.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              things:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - id
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                      description: Thing unique identifier.
+                    metadata:
+                      type: object
+                      description: Arbitrary, object-encoded thing data.
     RemoveThingReq:
       description: JSON-formatted document describing the identifiers of things for deleting.
       required: true
@@ -1798,13 +1887,20 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/GroupProfilesReqSchema"
-    GroupMembershipsReq:
-      description: JSON-formatted document describing group memberships request.
+    CreateGroupMembershipsReq:
+      description: JSON-formatted document describing group memberships creation request.
       required: true
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/GroupMembershipsSchema"
+            $ref: "#/components/schemas/CreateGroupMembershipsSchema"
+    UpdateGroupMembershipsReq:
+      description: JSON-formatted document describing group memberships update request.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/UpdateGroupMembershipsSchema"
     RemoveGroupMembershipsReq:
       description: JSON-formatted document describing a request to remove group memberships.
       required: true
@@ -1821,6 +1917,17 @@ components:
             $ref: "#/components/schemas/BackupAndRestoreSchema"
 
   responses:
+    ThingsRes:
+      description: Things updated.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              things:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ThingResSchema"
     CreateThingsRes:
       description: Things created.
       content:

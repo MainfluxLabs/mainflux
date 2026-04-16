@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/jackc/pgerrcode"
@@ -32,7 +31,7 @@ func NewOrgMembershipsRepo(db dbutil.Database) auth.OrgMembershipsRepository {
 	}
 }
 
-func (omr orgMembershipsRepository) RetrieveByOrg(ctx context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembershipsPage, error) {
+func (omr orgMembershipsRepository) RetrieveByOrg(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembershipsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	q := fmt.Sprintf(`SELECT member_id, org_id, created_at, updated_at, role FROM org_memberships 
 					  WHERE org_id = :org_id %s`, olq)

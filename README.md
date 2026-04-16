@@ -31,7 +31,7 @@ Data normalization is built into the platform through Profiles, which define per
 - **Certificates**: X.509 certificate issuance, renewal, and revocation with full mTLS support.
 - **Hardware Keys**: TPM and secure element support for external key management.
 - **Notifications**: Email (SMTP) and SMS (SMPP) notifier services.
-- **Data Storage**: Pluggable writers and readers for PostgreSQL, TimescaleDB, and MongoDB.
+- **Data Storage**: Pluggable writers and readers for PostgreSQL and TimescaleDB.
 - **Backup and Restore**: Full platform backup and restore capability.
 - **Observability**: Prometheus metrics, Jaeger distributed tracing, and structured logging.
 - **Event Sourcing**: Redis-based event streaming across services for real-time IoT event processing.
@@ -47,7 +47,7 @@ The following are needed to run Mainflux:
 
 Developing Mainflux will also require:
 
-- [Go](https://golang.org/dl/) (version 1.25.7)
+- [Go](https://golang.org/dl/) (version 1.25.8)
 - [Protobuf](https://github.com/protocolbuffers/protobuf) (version 3.x)
 
 ## Installation

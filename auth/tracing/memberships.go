@@ -8,7 +8,6 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/opentracing/opentracing-go"
 )
@@ -69,7 +68,7 @@ func (orm orgMembershipsRepositoryMiddleware) RetrieveRole(ctx context.Context, 
 	return orm.repo.RetrieveRole(ctx, orgID, memberID)
 }
 
-func (orm orgMembershipsRepositoryMiddleware) RetrieveByOrg(ctx context.Context, orgID string, pm apiutil.PageMetadata) (auth.OrgMembershipsPage, error) {
+func (orm orgMembershipsRepositoryMiddleware) RetrieveByOrg(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembershipsPage, error) {
 	span := dbutil.CreateSpan(ctx, orm.tracer, retrieveOrgMemberships)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

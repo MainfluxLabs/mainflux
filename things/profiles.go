@@ -6,38 +6,17 @@ package things
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
-// Profile represents a Mainflux "communication group". This group contains the
-// things that can exchange messages between each other.
-type Profile struct {
-	ID       string
-	GroupID  string
-	Name     string
-	Config   map[string]any
-	Metadata map[string]any
-}
+// Domain type aliases
+type (
+	Profile      = domain.Profile
+	ProfilesPage = domain.ProfilesPage
 
-type Config struct {
-	ContentType string      `json:"content_type"`
-	Transformer Transformer `json:"transformer"`
-}
-
-type Transformer struct {
-	DataFilters  []string `json:"data_filters"`
-	DataField    string   `json:"data_field"`
-	TimeField    string   `json:"time_field"`
-	TimeFormat   string   `json:"time_format"`
-	TimeLocation string   `json:"time_location"`
-}
-
-// ProfilesPage contains page related metadata as well as list of profiles that
-// belong to this page.
-type ProfilesPage struct {
-	Total    uint64
-	Profiles []Profile
-}
+	Config      = domain.ProfileConfig
+	Transformer = domain.Transformer
+)
 
 // ProfileRepository specifies a profile persistence API.
 type ProfileRepository interface {
@@ -65,10 +44,10 @@ type ProfileRepository interface {
 	BackupAll(ctx context.Context) ([]Profile, error)
 
 	// RetrieveAll retrieves all profiles for all users with pagination.
-	RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (ProfilesPage, error)
+	RetrieveAll(ctx context.Context, pm PageMetadata) (ProfilesPage, error)
 
 	// RetrieveByGroups retrieves the subset of profiles specified by given group ids.
-	RetrieveByGroups(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (ProfilesPage, error)
+	RetrieveByGroups(ctx context.Context, groupIDs []string, pm PageMetadata) (ProfilesPage, error)
 }
 
 // ProfileCache contains profile caching interface.

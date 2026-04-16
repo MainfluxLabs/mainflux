@@ -9,16 +9,13 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
+	"github.com/MainfluxLabs/mainflux/users/api"
 )
 
 const (
 	maxLimitSize = 200
-	maxEmailSize = 1024
 	maxNameSize  = 254
-	EmailOrder   = "email"
-	IDOrder      = "id"
-	AscDir       = "asc"
-	DescDir      = "desc"
+	maxEmailSize = 254
 )
 
 var userPasswordRegex *regexp.Regexp
@@ -45,7 +42,9 @@ func (req selfRegisterUserReq) validate() error {
 }
 
 type oauthLoginReq struct {
-	provider string
+	provider     string
+	inviteID     string
+	redirectPath string
 }
 
 func (req oauthLoginReq) validate() error {
@@ -61,6 +60,8 @@ type oauthCallbackReq struct {
 	state         string
 	originalState string
 	verifier      string
+	inviteID      string
+	redirectPath  string
 }
 
 func (req oauthCallbackReq) validate() error {
@@ -116,14 +117,8 @@ func (req viewUserReq) validate() error {
 }
 
 type listUsersReq struct {
-	token    string
-	status   string
-	offset   uint64
-	limit    uint64
-	email    string
-	metadata users.Metadata
-	order    string
-	dir      string
+	token string
+	pm    users.PageMetadata
 }
 
 func (req listUsersReq) validate() error {
@@ -131,26 +126,8 @@ func (req listUsersReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.limit > maxLimitSize {
-		return apiutil.ErrLimitSize
-	}
-
-	if len(req.email) > maxEmailSize {
-		return apiutil.ErrEmailSize
-	}
-
-	if req.order != "" && req.order != EmailOrder && req.order != IDOrder {
-		return apiutil.ErrInvalidOrder
-	}
-
-	if req.dir != "" && req.dir != AscDir && req.dir != DescDir {
-		return apiutil.ErrInvalidDirection
-	}
-
-	if req.status != users.AllStatusKey &&
-		req.status != users.EnabledStatusKey &&
-		req.status != users.DisabledStatusKey {
-		return apiutil.ErrInvalidStatus
+	if err := api.ValidatePageMetadata(req.pm, maxLimitSize, maxEmailSize); err != nil {
+		return err
 	}
 
 	return nil
@@ -197,7 +174,7 @@ func (req resetTokenReq) validate() error {
 	}
 
 	if !userPasswordRegex.MatchString(req.Password) {
-		return users.ErrPasswordFormat
+		return errors.ErrPasswordFormat
 	}
 
 	if req.ConfPass == "" {
@@ -231,7 +208,7 @@ func (req passwChangeReq) validate() error {
 	}
 
 	if !userPasswordRegex.MatchString(req.Password) {
-		return users.ErrPasswordFormat
+		return errors.ErrPasswordFormat
 	}
 
 	return nil

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
@@ -23,6 +24,12 @@ const (
 var (
 	// ErrPublishMessage indicates that message publishing failed.
 	ErrPublishMessage = errors.New("failed to publish message")
+
+	// ErrFailedSubscribe indicates that subscribing to a topic failed.
+	ErrFailedSubscribe = errors.New("failed to subscribe")
+
+	// ErrFailedUnsubscribe indicates that unsubscribing from a topic failed.
+	ErrFailedUnsubscribe = errors.New("failed to unsubscribe")
 
 	// ErrConnect indicates that connection to MQTT broker failed
 	ErrConnect = errors.New("failed to connect to MQTT broker")
@@ -125,25 +132,23 @@ func NormalizeSubtopic(topic string) (string, error) {
 	return strings.Join(filteredElems, "."), nil
 }
 
-func FormatMessage(pc *protomfx.PubConfigByKeyRes, msg *protomfx.Message) error {
+func FormatMessage(pc domain.PubConfigInfo, msg *protomfx.Message) error {
 	msg.Publisher = pc.PublisherID
 	msg.Created = time.Now().UnixNano()
 
 	if pc.ProfileConfig != nil {
 		msg.ContentType = pc.ProfileConfig.ContentType
-		if pc.ProfileConfig.Transformer != nil {
-			switch msg.ContentType {
-			case JSONContentType:
-				if err := mfjson.TransformPayload(*pc.ProfileConfig.Transformer, msg); err != nil {
-					return err
-				}
-			case SenMLContentType:
-				if err := senml.TransformPayload(msg); err != nil {
-					return err
-				}
-			default:
-				return ErrInvalidContentType
+		switch msg.ContentType {
+		case JSONContentType:
+			if err := mfjson.TransformPayload(pc.ProfileConfig.Transformer, msg); err != nil {
+				return err
 			}
+		case SenMLContentType:
+			if err := senml.TransformPayload(msg); err != nil {
+				return err
+			}
+		default:
+			return ErrInvalidContentType
 		}
 	}
 

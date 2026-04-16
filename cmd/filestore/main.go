@@ -25,10 +25,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
+	domain "github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
@@ -79,7 +79,7 @@ const (
 	envServerCert        = "MF_FILESTORE_SERVER_CERT"
 	envServerKey         = "MF_FILESTORE_SERVER_KEY"
 	envJaegerURL         = "MF_JAEGER_URL"
-	envFileStoreCert     = "MF_FILESTORE_SERVER_CERT"
+	envCACerts           = "MF_FILESTORE_CA_CERTS"
 	envClientTLS         = "MF_FILESTORE_TLS"
 	envThingsAuthURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
@@ -187,7 +187,7 @@ func loadConfig() config {
 
 	thingsConfig := clients.Config{
 		ClientTLS:  tls,
-		CaCerts:    mainflux.Env(envFileStoreCert, defCACerts),
+		CaCerts:    mainflux.Env(envCACerts, defCACerts),
 		URL:        mainflux.Env(envThingsAuthURL, defThingsAuthURL),
 		ClientName: clients.Things,
 	}
@@ -230,7 +230,7 @@ func subscribeToThingsES(ctx context.Context, svc filestore.Service, cfg config,
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(thingsAuth protomfx.ThingsServiceClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) filestore.Service {
+func newService(thingsAuth domain.ThingsClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) filestore.Service {
 	thRepo := postgres.NewThingsRepository(db)
 	thRepo = tracing.ThingsRepositoryMiddleware(dbTracer, thRepo)
 	grRepo := postgres.NewGroupsRepository(db)

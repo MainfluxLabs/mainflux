@@ -22,13 +22,15 @@ import (
 )
 
 const (
-	emailKey      = "email"
-	statusKey     = "status"
-	emailTokenKey = "token"
-	stateKey      = "state"
-	providerKey   = "provider"
-	codeKey       = "code"
-	verifierKey   = "verifier"
+	emailKey        = "email"
+	statusKey       = "status"
+	emailTokenKey   = "token"
+	stateKey        = "state"
+	providerKey     = "provider"
+	codeKey         = "code"
+	verifierKey     = "verifier"
+	inviteIDKey     = "invite_id"
+	redirectPathKey = "redirect_path"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -172,12 +174,7 @@ func decodeViewProfile(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeListUsers(_ context.Context, r *http.Request) (any, error) {
-	o, err := apiutil.ReadUintQuery(r, apiutil.OffsetKey, apiutil.DefOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := apiutil.ReadLimitQuery(r, apiutil.LimitKey, apiutil.DefLimit)
+	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -197,70 +194,73 @@ func decodeListUsers(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	or, err := apiutil.ReadStringQuery(r, apiutil.OrderKey, apiutil.IDOrder)
-	if err != nil {
-		return nil, err
-	}
-
-	d, err := apiutil.ReadStringQuery(r, apiutil.DirKey, apiutil.DescDir)
-	if err != nil {
-		return nil, err
+	pm := users.PageMetadata{
+		Offset:   base.Offset,
+		Limit:    base.Limit,
+		Order:    base.Order,
+		Dir:      base.Dir,
+		Email:    e,
+		Status:   s,
+		Metadata: m,
 	}
 
 	req := listUsersReq{
-		token:    apiutil.ExtractBearerToken(r),
-		status:   s,
-		offset:   o,
-		limit:    l,
-		email:    e,
-		metadata: m,
-		order:    or,
-		dir:      d,
+		token: apiutil.ExtractBearerToken(r),
+		pm:    pm,
 	}
 	return req, nil
 }
 
 func decodeSearchUsers(_ context.Context, r *http.Request) (any, error) {
+	pm := users.PageMetadata{
+		Offset: apiutil.DefOffset,
+		Limit:  apiutil.DefLimit,
+		Order:  apiutil.IDOrder,
+		Dir:    apiutil.DescDir,
+		Status: users.EnabledStatusKey,
+	}
+
 	req := listUsersReq{
-		token:  apiutil.ExtractBearerToken(r),
-		status: users.EnabledStatusKey,
-		offset: apiutil.DefOffset,
-		limit:  apiutil.DefLimit,
-		order:  apiutil.IDOrder,
-		dir:    apiutil.DescDir,
+		token: apiutil.ExtractBearerToken(r),
+		pm:    pm,
 	}
 
 	if r.Body == nil || r.ContentLength == 0 {
 		return req, nil
 	}
 
-	var pm users.PageMetadata
-	if err := json.NewDecoder(r.Body).Decode(&pm); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+	var upm users.PageMetadata
+	if err := json.NewDecoder(r.Body).Decode(&upm); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
-	if pm.Offset > 0 {
-		req.offset = pm.Offset
+	if upm.Offset > 0 {
+		req.pm.Offset = upm.Offset
 	}
 
-	if pm.Limit > 0 {
-		req.limit = pm.Limit
+	if upm.Limit > 0 {
+		req.pm.Limit = upm.Limit
 	}
 
-	if pm.Order != "" {
-		req.order = pm.Order
+	if upm.Order != "" {
+		req.pm.Order = upm.Order
 	}
 
-	if pm.Dir != "" {
-		req.dir = pm.Dir
+	if upm.Dir != "" {
+		req.pm.Dir = upm.Dir
 	}
 
-	if pm.Status != "" {
-		req.status = pm.Status
+	if upm.Status != "" {
+		req.pm.Status = upm.Status
 	}
 
-	req.email = pm.Email
-	req.metadata = pm.Metadata
+	if upm.Email != "" {
+		req.pm.Email = upm.Email
+	}
+
+	if upm.Metadata != nil {
+		req.pm.Metadata = upm.Metadata
+	}
 
 	return req, nil
 }
@@ -268,7 +268,7 @@ func decodeSearchUsers(_ context.Context, r *http.Request) (any, error) {
 func decodeUpdateUser(_ context.Context, r *http.Request) (any, error) {
 	req := updateUserReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -281,7 +281,7 @@ func decodeCredentials(_ context.Context, r *http.Request) (any, error) {
 
 	var user users.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 	user.Email = strings.TrimSpace(user.Email)
 	return userReq{user}, nil
@@ -294,7 +294,7 @@ func decodeRegisterUser(_ context.Context, r *http.Request) (any, error) {
 
 	var user users.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	user.Email = strings.TrimSpace(user.Email)
@@ -314,7 +314,7 @@ func decodeSelfRegisterUser(_ context.Context, r *http.Request) (any, error) {
 	req := selfRegisterUserReq{}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -322,7 +322,9 @@ func decodeSelfRegisterUser(_ context.Context, r *http.Request) (any, error) {
 
 func decodeOAuthLogin(_ context.Context, r *http.Request) (any, error) {
 	req := oauthLoginReq{
-		provider: bone.GetValue(r, providerKey),
+		provider:     bone.GetValue(r, providerKey),
+		inviteID:     r.URL.Query().Get(inviteIDKey),
+		redirectPath: r.URL.Query().Get(redirectPathKey),
 	}
 
 	return req, nil
@@ -339,12 +341,22 @@ func decodeOAuthCallback(_ context.Context, r *http.Request) (any, error) {
 		return nil, apiutil.ErrInvalidState
 	}
 
+	var inviteID, redirectPath string
+	if inviteCookie, err := r.Cookie(inviteIDKey); err == nil {
+		inviteID = inviteCookie.Value
+	}
+	if redirectCookie, err := r.Cookie(redirectPathKey); err == nil {
+		redirectPath = redirectCookie.Value
+	}
+
 	req := oauthCallbackReq{
 		provider:      bone.GetValue(r, providerKey),
 		code:          r.URL.Query().Get(codeKey),
 		state:         r.URL.Query().Get(stateKey),
 		originalState: stateCookie.Value,
 		verifier:      verifierCookie.Value,
+		inviteID:      inviteID,
+		redirectPath:  redirectPath,
 	}
 
 	return req, nil
@@ -371,7 +383,7 @@ func decodePasswordResetRequest(_ context.Context, r *http.Request) (any, error)
 	var req passwResetReq
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -384,7 +396,7 @@ func decodePasswordReset(_ context.Context, r *http.Request) (any, error) {
 
 	var req resetTokenReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -397,7 +409,7 @@ func decodePasswordChange(_ context.Context, r *http.Request) (any, error) {
 
 	req := passwChangeReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -451,26 +463,41 @@ func encodeOAuthLoginResponse(_ context.Context, w http.ResponseWriter, response
 		SameSite: http.SameSiteLaxMode,
 	})
 
+	if res.InviteID != "" {
+		http.SetCookie(w, &http.Cookie{
+			Name:     inviteIDKey,
+			Value:    res.InviteID,
+			Path:     "/users/oauth/",
+			MaxAge:   300,
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+		})
+		http.SetCookie(w, &http.Cookie{
+			Name:     redirectPathKey,
+			Value:    res.RedirectPath,
+			Path:     "/users/oauth/",
+			MaxAge:   300,
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
+
 	return json.NewEncoder(w).Encode(redirectURLRes{RedirectURL: res.RedirectURL})
 }
 
 func encodeOAuthCallbackResponse(_ context.Context, w http.ResponseWriter, response any) error {
-	http.SetCookie(w, &http.Cookie{
-		Name:     stateKey,
-		Path:     "/users/oauth/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	})
-	http.SetCookie(w, &http.Cookie{
-		Name:     verifierKey,
-		Path:     "/users/oauth/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	})
+	for _, name := range []string{stateKey, verifierKey, inviteIDKey, redirectPathKey} {
+		http.SetCookie(w, &http.Cookie{
+			Name:     name,
+			Path:     "/users/oauth/",
+			MaxAge:   -1,
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
 
 	res := response.(redirectURLRes)
 	w.Header().Set("Location", res.RedirectURL)
@@ -479,29 +506,23 @@ func encodeOAuthCallbackResponse(_ context.Context, w http.ResponseWriter, respo
 }
 
 func encodeOAuthCallbackError(ctx context.Context, err error, w http.ResponseWriter) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     stateKey,
-		Path:     "/users/oauth/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	})
-	http.SetCookie(w, &http.Cookie{
-		Name:     verifierKey,
-		Path:     "/users/oauth/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	})
+	for _, name := range []string{stateKey, verifierKey, inviteIDKey, redirectPathKey} {
+		http.SetCookie(w, &http.Cookie{
+			Name:     name,
+			Path:     "/users/oauth/",
+			MaxAge:   -1,
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
 
 	encodeError(ctx, err, w)
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
-	case errors.Contains(err, users.ErrPasswordFormat),
+	case errors.Contains(err, errors.ErrPasswordFormat),
 		errors.Contains(err, errors.ErrInvalidPassword),
 		errors.Contains(err, users.ErrEmailVerificationExpired):
 		w.WriteHeader(http.StatusBadRequest)

@@ -11,7 +11,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/auth/postgres"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -378,7 +377,7 @@ func TestRetrieveByUserID(t *testing.T) {
 
 	cases := []struct {
 		desc     string
-		pm       auth.PageMetadataInvites
+		pm       auth.PageMetadata
 		userType string
 		userID   string
 		size     int
@@ -386,7 +385,7 @@ func TestRetrieveByUserID(t *testing.T) {
 	}{
 		{
 			desc:     "retrieve all pending invites towards invitee",
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{}},
+			pm:       auth.PageMetadata{},
 			userID:   inviteeID,
 			userType: auth.UserTypeInvitee,
 			size:     m,
@@ -394,7 +393,7 @@ func TestRetrieveByUserID(t *testing.T) {
 		},
 		{
 			desc:     "retrieve 1 pending invite towards invitee",
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: 1}},
+			pm:       auth.PageMetadata{Limit: 1},
 			userID:   inviteeID,
 			userType: auth.UserTypeInvitee,
 			size:     1,
@@ -402,7 +401,7 @@ func TestRetrieveByUserID(t *testing.T) {
 		},
 		{
 			desc:     "retrieve pending invites with empty user id",
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: 1}},
+			pm:       auth.PageMetadata{Limit: 1},
 			userID:   "",
 			userType: auth.UserTypeInvitee,
 			size:     0,
@@ -410,7 +409,7 @@ func TestRetrieveByUserID(t *testing.T) {
 		},
 		{
 			desc:     "retrieve all sent invites by inviter",
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{}},
+			pm:       auth.PageMetadata{},
 			userID:   inviterID,
 			userType: auth.UserTypeInviter,
 			size:     m,
@@ -418,7 +417,7 @@ func TestRetrieveByUserID(t *testing.T) {
 		},
 		{
 			desc:     "retrieve 1 sent invite by inviter",
-			pm:       auth.PageMetadataInvites{PageMetadata: apiutil.PageMetadata{Limit: 1}},
+			pm:       auth.PageMetadata{Limit: 1},
 			userID:   inviterID,
 			userType: auth.UserTypeInviter,
 			size:     1,

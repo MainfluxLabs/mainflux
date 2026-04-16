@@ -8,9 +8,8 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	domain "github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
@@ -21,12 +20,12 @@ type mainfluxThings struct {
 	counter  uint64
 	things   map[string]things.Thing
 	profiles map[string]things.Profile
-	auth     protomfx.AuthServiceClient
+	auth     domain.AuthClient
 }
 
 // NewThingsService returns Mainflux Things service mock.
 // Only methods used by SDK are mocked.
-func NewThingsService(things map[string]things.Thing, profiles map[string]things.Profile, auth protomfx.AuthServiceClient) things.Service {
+func NewThingsService(things map[string]things.Thing, profiles map[string]things.Profile, auth domain.AuthClient) things.Service {
 	return &mainfluxThings{
 		things:   things,
 		profiles: profiles,
@@ -105,7 +104,7 @@ func (svc *mainfluxThings) ViewMetadataByKey(context.Context, things.ThingKey) (
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListThings(context.Context, string, apiutil.PageMetadata) (things.ThingsPage, error) {
+func (svc *mainfluxThings) ListThings(context.Context, string, things.PageMetadata) (things.ThingsPage, error) {
 	panic("not implemented")
 }
 
@@ -113,11 +112,11 @@ func (svc *mainfluxThings) ViewProfileByThing(context.Context, string, string) (
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListThingsByProfile(context.Context, string, string, apiutil.PageMetadata) (things.ThingsPage, error) {
+func (svc *mainfluxThings) ListThingsByProfile(context.Context, string, string, things.PageMetadata) (things.ThingsPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListThingsByOrg(context.Context, string, string, apiutil.PageMetadata) (things.ThingsPage, error) {
+func (svc *mainfluxThings) ListThingsByOrg(context.Context, string, string, things.PageMetadata) (things.ThingsPage, error) {
 	panic("not implemented")
 }
 
@@ -147,11 +146,11 @@ func (svc *mainfluxThings) UpdateProfile(context.Context, string, things.Profile
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListProfiles(context.Context, string, apiutil.PageMetadata) (things.ProfilesPage, error) {
+func (svc *mainfluxThings) ListProfiles(context.Context, string, things.PageMetadata) (things.ProfilesPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListProfilesByOrg(context.Context, string, string, apiutil.PageMetadata) (things.ProfilesPage, error) {
+func (svc *mainfluxThings) ListProfilesByOrg(context.Context, string, string, things.PageMetadata) (things.ProfilesPage, error) {
 	panic("not implemented")
 }
 
@@ -163,7 +162,7 @@ func (svc *mainfluxThings) GetPubConfigByKey(context.Context, things.ThingKey) (
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) GetConfigByThing(context.Context, string) (map[string]any, error) {
+func (svc *mainfluxThings) GetConfigByThing(context.Context, string) (*domain.ProfileConfig, error) {
 	panic("not implemented")
 }
 
@@ -180,6 +179,14 @@ func (svc *mainfluxThings) CanUserAccessGroup(context.Context, things.UserAccess
 }
 
 func (svc *mainfluxThings) CanThingAccessGroup(context.Context, things.ThingAccessReq) error {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) CanThingCommand(context.Context, things.ThingCommandReq) error {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) CanThingGroupCommand(context.Context, things.ThingGroupCommandReq) error {
 	panic("not implemented")
 }
 
@@ -203,7 +210,7 @@ func (svc *mainfluxThings) GetGroupIDsByOrg(context.Context, string, string) ([]
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListThingsByGroup(context.Context, string, string, apiutil.PageMetadata) (things.ThingsPage, error) {
+func (svc *mainfluxThings) ListThingsByGroup(context.Context, string, string, things.PageMetadata) (things.ThingsPage, error) {
 	panic("not implemented")
 }
 
@@ -211,11 +218,11 @@ func (svc *mainfluxThings) CreateGroups(context.Context, string, string, ...thin
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListGroups(context.Context, string, apiutil.PageMetadata) (things.GroupPage, error) {
+func (svc *mainfluxThings) ListGroups(context.Context, string, things.PageMetadata) (things.GroupPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListGroupsByOrg(context.Context, string, string, apiutil.PageMetadata) (things.GroupPage, error) {
+func (svc *mainfluxThings) ListGroupsByOrg(context.Context, string, string, things.PageMetadata) (things.GroupPage, error) {
 	panic("not implemented")
 }
 
@@ -247,11 +254,11 @@ func (svc *mainfluxThings) ViewGroupByProfile(context.Context, string, string) (
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListProfilesByGroup(context.Context, string, string, apiutil.PageMetadata) (things.ProfilesPage, error) {
+func (svc *mainfluxThings) ListProfilesByGroup(context.Context, string, string, things.PageMetadata) (things.ProfilesPage, error) {
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) CreateGroupMemberships(context.Context, string, ...things.GroupMembership) error {
+func (svc *mainfluxThings) CreateGroupMemberships(context.Context, string, string, ...things.GroupMembership) error {
 	panic("not implemented")
 }
 
@@ -259,7 +266,7 @@ func (svc *mainfluxThings) CreateGroupMembershipsInternal(context.Context, ...th
 	panic("not implemented")
 }
 
-func (svc *mainfluxThings) ListGroupMemberships(context.Context, string, string, apiutil.PageMetadata) (things.GroupMembershipsPage, error) {
+func (svc *mainfluxThings) ListGroupMemberships(context.Context, string, string, things.PageMetadata) (things.GroupMembershipsPage, error) {
 	panic("not implemented")
 }
 

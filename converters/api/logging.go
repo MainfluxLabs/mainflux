@@ -12,6 +12,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/converters"
 	log "github.com/MainfluxLabs/mainflux/logger"
+	pkgauth "github.com/MainfluxLabs/mainflux/pkg/auth"
 )
 
 var _ converters.Service = (*loggingMiddleware)(nil)
@@ -28,7 +29,8 @@ func LoggingMiddleware(svc converters.Service, logger log.Logger) converters.Ser
 
 func (lm *loggingMiddleware) PublishJSONMessages(ctx context.Context, token string, csvLines [][]string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method publish_json_messages took %s to complete", time.Since(begin))
+		email := pkgauth.EmailFromToken(token)
+		message := fmt.Sprintf("Method publish_json_messages by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -41,7 +43,8 @@ func (lm *loggingMiddleware) PublishJSONMessages(ctx context.Context, token stri
 
 func (lm *loggingMiddleware) PublishSenMLMessages(ctx context.Context, token string, csvLines [][]string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method publish_senml_messages took %s to complete", time.Since(begin))
+		email := pkgauth.EmailFromToken(token)
+		message := fmt.Sprintf("Method publish_senml_messages by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
