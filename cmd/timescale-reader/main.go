@@ -214,7 +214,7 @@ func newService(db *sqlx.DB, dbTracer opentracing.Tracer, ac domain.AuthClient, 
 	jsonRepo := timescale.NewJSONRepository(db)
 	jsonRepo = tracing.JSONRepositoryMiddleware(dbTracer, jsonRepo)
 
-	senmlRepo := timescale.NewSenMLRepository(database)
+	senmlRepo := timescale.NewSenMLRepository(db)
 	senmlRepo = tracing.SenMLRepositoryMiddleware(dbTracer, senmlRepo)
 
 	svc := readers.New(ac, tc, jsonRepo, senmlRepo)
