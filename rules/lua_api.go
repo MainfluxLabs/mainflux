@@ -58,7 +58,7 @@ var luaAlarmCreate = luaAPIFunc{
 	fun: func(env *luaEnv) lua.Function {
 		return func(ls *lua.State) int {
 			subject := fmt.Sprintf("%s.%s.%s", subjectAlarms, alarms.AlarmOriginScript, env.script.ID)
-			if err := env.service.pub.PublishAlarm(subject, &protomfx.Alarm{
+			if err := env.service.pub.PublishAlarm(subject, protomfx.Alarm{
 				ThingId:  env.message.Publisher,
 				Subtopic: env.message.Subtopic,
 				Protocol: env.message.Protocol,

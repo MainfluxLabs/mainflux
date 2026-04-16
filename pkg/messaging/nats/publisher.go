@@ -49,15 +49,15 @@ func NewPublisher(url string) (Publisher, error) {
 }
 
 func (pub *publisher) Publish(subject string, msg protomfx.Message) error {
-	data, err := proto.Marshal(&msg)
-	if err != nil {
-		return err
-	}
-	return pub.conn.Publish(subject, data)
+	return pub.publish(subject, &msg)
 }
 
-func (pub *publisher) PublishAlarm(subject string, alarm *protomfx.Alarm) error {
-	data, err := proto.Marshal(alarm)
+func (pub *publisher) PublishAlarm(subject string, alarm protomfx.Alarm) error {
+	return pub.publish(subject, &alarm)
+}
+
+func (pub *publisher) publish(subject string, msg proto.Message) error {
+	data, err := proto.Marshal(msg)
 	if err != nil {
 		return err
 	}

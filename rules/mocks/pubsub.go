@@ -25,14 +25,14 @@ func NewFailingPubSub() nats.Publisher {
 	return &mockPubSub{fail: true}
 }
 
-func (ps *mockPubSub) Publish(_ string, _ protomfx.Message) error {
+func (ps *mockPubSub) Publish(string, protomfx.Message) error {
 	if ps.fail {
 		return messaging.ErrPublishMessage
 	}
 	return nil
 }
 
-func (ps *mockPubSub) PublishAlarm(_ string, _ *protomfx.Alarm) error {
+func (ps *mockPubSub) PublishAlarm(string, protomfx.Alarm) error {
 	if ps.fail {
 		return messaging.ErrPublishMessage
 	}

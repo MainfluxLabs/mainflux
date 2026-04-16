@@ -34,9 +34,9 @@ func Messages(sub messaging.Subscriber, c MessageConsumer, subjects ...string) S
 }
 
 // Alarms returns a Subscription that subscribes consumer as an AlarmConsumer.
-func Alarms(alarmSub messaging.AlarmSubscriber, c AlarmConsumer) Subscription {
+func Alarms(sub messaging.AlarmSubscriber, c AlarmConsumer) Subscription {
 	return func(id string) error {
-		return alarmSub.SubscribeAlarms(id, &alarmAdapter{c})
+		return sub.SubscribeAlarms(id, &alarmAdapter{c})
 	}
 }
 

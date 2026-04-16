@@ -77,7 +77,7 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 			}
 		case ActionTypeAlarm:
 			subject := fmt.Sprintf("%s.%s.%s", subjectAlarms, alarms.AlarmOriginRule, rule.ID)
-			if err := rs.pub.PublishAlarm(subject, &protomfx.Alarm{
+			if err := rs.pub.PublishAlarm(subject, protomfx.Alarm{
 				ThingId:  msg.Publisher,
 				Subtopic: msg.Subtopic,
 				Protocol: msg.Protocol,

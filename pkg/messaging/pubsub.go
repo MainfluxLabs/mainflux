@@ -102,7 +102,7 @@ type PubSub interface {
 // AlarmPublisher specifies the alarm publishing API.
 type AlarmPublisher interface {
 	// PublishAlarm publishes an alarm to the message broker.
-	PublishAlarm(subject string, alarm *protomfx.Alarm) error
+	PublishAlarm(subject string, alarm protomfx.Alarm) error
 }
 
 // AlarmHandler represents protomfx.Alarm handler for AlarmSubscriber.
