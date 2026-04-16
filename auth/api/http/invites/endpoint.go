@@ -117,7 +117,7 @@ func listOrgInvitesByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func buildOrgInvitesPageRes(page auth.OrgInvitesPage, pm auth.PageMetadataInvites) orgInvitePageRes {
+func buildOrgInvitesPageRes(page auth.OrgInvitesPage, pm auth.PageMetadata) orgInvitePageRes {
 	response := orgInvitePageRes{
 		pageRes: pageRes{
 			Limit:  pm.Limit,

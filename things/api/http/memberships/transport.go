@@ -32,7 +32,7 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 
 	mux.Post("/groups/:id/memberships", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_group_memberships")(createGroupMembershipsEndpoint(svc)),
-		decodeGroupMemberships,
+		decodeCreateGroupMemberships,
 		encodeResponse,
 		opts...,
 	))
@@ -46,7 +46,7 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 
 	mux.Put("/groups/:id/memberships", kithttp.NewServer(
 		kitot.TraceServer(tracer, "update_group_memberships")(updateGroupMembershipsEndpoint(svc)),
-		decodeGroupMemberships,
+		decodeUpdateGroupMemberships,
 		encodeResponse,
 		opts...,
 	))
@@ -62,7 +62,7 @@ func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, l
 }
 
 func decodeListGroupMemberships(_ context.Context, r *http.Request) (any, error) {
-	pm, err := apiutil.BuildPageMetadata(r)
+	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,13 @@ func decodeListGroupMemberships(_ context.Context, r *http.Request) (any, error)
 		return nil, err
 	}
 
-	pm.Email = e
+	pm := things.PageMetadata{
+		Offset: base.Offset,
+		Limit:  base.Limit,
+		Order:  base.Order,
+		Dir:    base.Dir,
+		Email:  e,
+	}
 
 	req := listGroupMembershipsReq{
 		token:        apiutil.ExtractBearerToken(r),
@@ -83,18 +89,35 @@ func decodeListGroupMemberships(_ context.Context, r *http.Request) (any, error)
 	return req, nil
 }
 
-func decodeGroupMemberships(_ context.Context, r *http.Request) (any, error) {
+func decodeCreateGroupMemberships(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := groupMembershipsReq{
+	req := createGroupMembershipsReq{
 		token:   apiutil.ExtractBearerToken(r),
 		groupID: bone.GetValue(r, apiutil.IDKey),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeUpdateGroupMemberships(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := updateGroupMembershipsReq{
+		token:   apiutil.ExtractBearerToken(r),
+		groupID: bone.GetValue(r, apiutil.IDKey),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil
@@ -111,7 +134,7 @@ func decodeRemoveGroupMemberships(_ context.Context, r *http.Request) (any, erro
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil

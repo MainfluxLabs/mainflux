@@ -6,7 +6,6 @@ package api
 import (
 	"context"
 	"encoding/csv"
-	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -16,7 +15,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	"github.com/MainfluxLabs/mainflux/things"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -83,11 +81,11 @@ func decodeConvertCSVFile(_ context.Context, r *http.Request) (any, error) {
 
 	csvLines, readErr := csv.NewReader(file).ReadAll()
 	if readErr != nil {
-		return nil, err
+		return nil, readErr
 	}
 
 	req := convertCSVReq{
-		key:      things.ExtractThingKey(r),
+		key:      apiutil.ExtractThingKey(r),
 		csvLines: csvLines,
 	}
 
@@ -101,25 +99,11 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, _ any) error {
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
-	case errors.Contains(err, errors.ErrAuthentication),
-		err == apiutil.ErrBearerToken:
-		w.WriteHeader(http.StatusUnauthorized)
-	case errors.Contains(err, errors.ErrAuthorization):
-		w.WriteHeader(http.StatusForbidden)
-	case errors.Contains(err, apiutil.ErrUnsupportedContentType):
-		w.WriteHeader(http.StatusUnsupportedMediaType)
-	case errors.Contains(err, messaging.ErrMalformedSubtopic),
-		errors.Contains(err, apiutil.ErrMalformedEntity):
+	case errors.Contains(err, messaging.ErrMalformedSubtopic):
 		w.WriteHeader(http.StatusBadRequest)
-
 	default:
-		w.WriteHeader(http.StatusInternalServerError)
+		apiutil.EncodeError(err, w)
 	}
 
-	if errorVal, ok := err.(errors.Error); ok {
-		w.Header().Set("Content-Type", ctJSON)
-		if err := json.NewEncoder(w).Encode(apiutil.ErrorRes{Err: errorVal.Msg()}); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-	}
+	apiutil.WriteErrorResponse(err, w)
 }

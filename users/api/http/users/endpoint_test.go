@@ -21,7 +21,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
 	httpapi "github.com/MainfluxLabs/mainflux/users/api/http"
@@ -72,8 +71,8 @@ var (
 	metadata              = map[string]any{"key": "value"}
 	notFoundRes           = toJSON(apiutil.ErrorRes{Err: dbutil.ErrNotFound.Error()})
 	unauthRes             = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
-	weakPassword          = toJSON(apiutil.ErrorRes{Err: users.ErrPasswordFormat.Error()})
-	malformedRes          = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMalformedEntity.Error()})
+	weakPassword          = toJSON(apiutil.ErrorRes{Err: errors.ErrPasswordFormat.Error()})
+	malformedRes          = toJSON(apiutil.ErrorRes{Err: errors.ErrMalformedEntity.Error()})
 	unsupportedRes        = toJSON(apiutil.ErrorRes{Err: apiutil.ErrUnsupportedContentType.Error()})
 	missingTokRes         = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
 	missingEmailRes       = toJSON(apiutil.ErrorRes{Err: apiutil.ErrMissingEmail.Error()})
@@ -333,9 +332,8 @@ func TestLogin(t *testing.T) {
 		Password: validPass,
 	})
 
-	mfxTok, err := auth.Issue(context.Background(), &protomfx.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
+	token, err := auth.Issue(context.Background(), user.ID, user.Email, 0)
 	require.Nil(t, err, fmt.Sprintf("issue token for user got unexpected error: %s", err))
-	token := mfxTok.GetValue()
 	tokenData := toJSON(map[string]string{"token": token})
 
 	cases := []struct {
@@ -382,9 +380,8 @@ func TestUser(t *testing.T) {
 
 	auth := mocks.NewAuthService("", usersList, nil)
 
-	tkn, err := auth.Issue(context.Background(), &protomfx.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
+	token, err := auth.Issue(context.Background(), user.ID, user.Email, 0)
 	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
-	token := tkn.GetValue()
 
 	cases := []struct {
 		desc   string
@@ -894,10 +891,8 @@ func TestPasswordReset(t *testing.T) {
 
 	auth := mocks.NewAuthService("", usersList, nil)
 
-	tkn, err := auth.Issue(context.Background(), &protomfx.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
+	token, err := auth.Issue(context.Background(), user.ID, user.Email, 0)
 	require.Nil(t, err, fmt.Sprintf("issue user token error: %s", err))
-
-	token := tkn.GetValue()
 
 	reqData.Password = user.Password
 	reqData.ConfPass = user.Password
@@ -968,9 +963,8 @@ func TestPasswordChange(t *testing.T) {
 		OldPassw string `json:"old_password,omitempty"`
 	}{}
 
-	tkn, err := auth.Issue(context.Background(), &protomfx.IssueReq{Id: user.ID, Email: user.Email, Type: 0})
+	token, err := auth.Issue(context.Background(), user.ID, user.Email, 0)
 	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
-	token := tkn.GetValue()
 
 	reqData.Password = user.Password
 	reqData.OldPassw = user.Password

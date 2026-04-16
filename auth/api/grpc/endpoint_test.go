@@ -14,6 +14,7 @@ import (
 	grpcapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/auth/jwt"
 	"github.com/MainfluxLabs/mainflux/auth/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/opentracing/opentracing-go/mocktracer"
@@ -106,7 +107,7 @@ func TestIssue(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_, err := client.Issue(context.Background(), &protomfx.IssueReq{Id: tc.id, Email: tc.email, Type: tc.kind})
+		_, err := client.Issue(context.Background(), tc.id, tc.email, tc.kind)
 		e, ok := status.FromError(err)
 		assert.True(t, ok, "gRPC status can't be extracted from the error")
 		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code()))
@@ -130,51 +131,51 @@ func TestIdentify(t *testing.T) {
 	cases := []struct {
 		desc  string
 		token string
-		idt   protomfx.UserIdentity
+		idt   domain.Identity
 		err   error
 		code  codes.Code
 	}{
 		{
 			desc:  "identify user with user token",
 			token: loginSecret,
-			idt:   protomfx.UserIdentity{Email: email, Id: id},
+			idt:   domain.Identity{Email: email, ID: id},
 			err:   nil,
 			code:  codes.OK,
 		},
 		{
 			desc:  "identify user with recovery token",
 			token: recoverySecret,
-			idt:   protomfx.UserIdentity{Email: email, Id: id},
+			idt:   domain.Identity{Email: email, ID: id},
 			err:   nil,
 			code:  codes.OK,
 		},
 		{
 			desc:  "identify user with API token",
 			token: apiSecret,
-			idt:   protomfx.UserIdentity{Email: email, Id: id},
+			idt:   domain.Identity{Email: email, ID: id},
 			err:   nil,
 			code:  codes.OK,
 		},
 		{
 			desc:  "identify user with invalid user token",
 			token: "invalid",
-			idt:   protomfx.UserIdentity{},
+			idt:   domain.Identity{},
 			err:   status.Error(codes.Unauthenticated, "unauthenticated access"),
 			code:  codes.Unauthenticated,
 		},
 		{
 			desc:  "identify user with empty token",
 			token: "",
-			idt:   protomfx.UserIdentity{},
+			idt:   domain.Identity{},
 			err:   status.Error(codes.InvalidArgument, "received invalid token request"),
 			code:  codes.Unauthenticated,
 		},
 	}
 
 	for _, tc := range cases {
-		idt, err := client.Identify(context.Background(), &protomfx.Token{Value: tc.token})
-		if idt != nil {
-			assert.Equal(t, tc.idt, *idt, fmt.Sprintf("%s: expected %v got %v", tc.desc, tc.idt, *idt))
+		idt, err := client.Identify(context.Background(), tc.token)
+		if err == nil {
+			assert.Equal(t, tc.idt, idt, fmt.Sprintf("%s: expected %v got %v", tc.desc, tc.idt, idt))
 		}
 		e, ok := status.FromError(err)
 		assert.True(t, ok, "gRPC status can't be extracted from the error")

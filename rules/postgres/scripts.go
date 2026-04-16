@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/rules"
@@ -78,7 +77,7 @@ func (rr ruleRepository) RetrieveScriptByID(ctx context.Context, id string) (rul
 	return toLuaScript(dbs), nil
 }
 
-func (rr ruleRepository) RetrieveScriptsByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (rules.LuaScriptsPage, error) {
+func (rr ruleRepository) RetrieveScriptsByThing(ctx context.Context, thingID string, pm rules.PageMetadata) (rules.LuaScriptsPage, error) {
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
@@ -143,7 +142,7 @@ func (rr ruleRepository) RetrieveScriptsByThing(ctx context.Context, thingID str
 	return page, nil
 }
 
-func (rr ruleRepository) RetrieveScriptsByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (rules.LuaScriptsPage, error) {
+func (rr ruleRepository) RetrieveScriptsByGroup(ctx context.Context, groupID string, pm rules.PageMetadata) (rules.LuaScriptsPage, error) {
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
@@ -441,7 +440,7 @@ func (rr ruleRepository) RemoveScriptRuns(ctx context.Context, ids ...string) er
 	return nil
 }
 
-func (rr ruleRepository) RetrieveScriptRunsByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (rules.ScriptRunsPage, error) {
+func (rr ruleRepository) RetrieveScriptRunsByThing(ctx context.Context, thingID string, pm rules.PageMetadata) (rules.ScriptRunsPage, error) {
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)

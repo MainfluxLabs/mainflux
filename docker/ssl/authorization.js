@@ -1,5 +1,3 @@
-var clientKey = '';
-
 // Check certificate MQTTS.
 function authenticate(s) {
     if (!s.variables.ssl_client_s_dn || !s.variables.ssl_client_s_dn.length ||
@@ -23,9 +21,7 @@ function authenticate(s) {
             return;
         }
 
-        if (clientKey === '') {
-            clientKey = parseCert(s.variables.ssl_client_s_dn, 'CN');
-        }
+        var clientKey = parseCert(s.variables.ssl_client_s_dn, 'CN');
 
         var pass = parsePackage(s, data);
 
@@ -128,17 +124,25 @@ function parsePackage(s, data) {
 
 // Check certificate HTTPS and WSS.
 function setKey(r) {
-    if (clientKey === '') {
-        clientKey = parseCert(r.variables.ssl_client_s_dn, 'CN');
-    }
+    var clientKey = parseCert(r.variables.ssl_client_s_dn, 'CN');
 
     var auth = r.headersIn['Authorization'];
-    if (auth && auth.length && auth != clientKey) {
-        r.error('Authorization header does not match certificate');
-        return '';
+
+    // If client cert found, use it
+    if (clientKey && clientKey.length) {
+        if (auth && auth.length && auth != ('Thing ' + clientKey)) {
+            r.error('Authorization header does not match certificate');
+            return '';
+        }
+        return 'Thing ' + clientKey;
     }
 
-    return clientKey;
+    // Fall back to Authorization header when no cert
+    if (auth && auth.length) {
+        return auth;
+    }
+
+    return '';
 }
 
 function calcLen(msb, lsb) {

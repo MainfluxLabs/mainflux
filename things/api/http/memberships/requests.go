@@ -4,17 +4,19 @@
 package memberships
 
 import (
-	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
-const maxLimitSize = 200
+const (
+	maxLimitSize = 200
+	maxNameSize  = 254
+)
 
 type listGroupMembershipsReq struct {
 	token        string
 	groupID      string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata things.PageMetadata
 }
 
 func (req listGroupMembershipsReq) validate() error {
@@ -26,20 +28,17 @@ func (req listGroupMembershipsReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	if req.pageMetadata.Limit > maxLimitSize {
-		return apiutil.ErrLimitSize
-	}
-
-	return nil
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
-type groupMembershipsReq struct {
+type createGroupMembershipsReq struct {
 	token            string
 	groupID          string
 	GroupMemberships []groupMembership `json:"group_memberships"`
+	RedirectPath     string            `json:"redirect_path,omitempty"`
 }
 
-func (req groupMembershipsReq) validate() error {
+func (req createGroupMembershipsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -53,7 +52,43 @@ func (req groupMembershipsReq) validate() error {
 	}
 
 	for _, gm := range req.GroupMemberships {
-		if gm.Role != auth.Admin && gm.Role != things.Viewer && gm.Role != things.Editor {
+		if gm.Role != things.Admin && gm.Role != things.Viewer && gm.Role != things.Editor {
+			return apiutil.ErrInvalidRole
+		}
+
+		if gm.MemberID == "" {
+			return apiutil.ErrMissingMemberID
+		}
+	}
+
+	if req.RedirectPath == "" {
+		return apiutil.ErrMissingRedirectPath
+	}
+
+	return nil
+}
+
+type updateGroupMembershipsReq struct {
+	token            string
+	groupID          string
+	GroupMemberships []groupMembership `json:"group_memberships"`
+}
+
+func (req updateGroupMembershipsReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.groupID == "" {
+		return apiutil.ErrMissingGroupID
+	}
+
+	if len(req.GroupMemberships) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, gm := range req.GroupMemberships {
+		if gm.Role != things.Admin && gm.Role != things.Viewer && gm.Role != things.Editor {
 			return apiutil.ErrInvalidRole
 		}
 

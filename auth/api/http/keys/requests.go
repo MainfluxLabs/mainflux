@@ -53,7 +53,7 @@ func (req keyReq) validate() error {
 
 type listKeysReq struct {
 	token        string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata auth.PageMetadata
 }
 
 func (req listKeysReq) validate() error {

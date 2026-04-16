@@ -15,8 +15,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/http/api"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
@@ -24,7 +24,7 @@ import (
 
 const ServiceErrToken = "unavailable"
 
-func newService(tc protomfx.ThingsServiceClient) adapter.Service {
+func newService(tc domain.ThingsClient) adapter.Service {
 	pub := mocks.NewPublisher()
 	return adapter.New(pub, tc)
 }
@@ -42,7 +42,6 @@ type testRequest struct {
 	contentType string
 	token       string
 	body        io.Reader
-	basicAuth   bool
 }
 
 func (tr testRequest) make() (*http.Response, error) {
@@ -54,9 +53,6 @@ func (tr testRequest) make() (*http.Response, error) {
 	if tr.token != "" {
 		req.Header.Set("Authorization", apiutil.ThingKeyPrefixInternal+tr.token)
 	}
-	if tr.basicAuth && tr.token != "" {
-		req.SetBasicAuth("", tr.token)
-	}
 	if tr.contentType != "" {
 		req.Header.Set("Content-Type", tr.contentType)
 	}
@@ -64,7 +60,7 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func TestPublish(t *testing.T) {
-	profileID := "1"
+	thingID := "513d02d2-16c1-4f23-98be-9e12f8fee898"
 	ctSenmlJSON := "application/senml+json"
 	ctSenmlCBOR := "application/senml+cbor"
 	ctJSON := "application/json"
@@ -73,7 +69,7 @@ func TestPublish(t *testing.T) {
 	msg := `[{"n":"current","t":-1,"v":1.6}]`
 	msgJSON := `{"field1":"val1","field2":"val2"}`
 	msgCBOR := `81A3616E6763757272656E746174206176FB3FF999999999999A`
-	thingsClient := mocks.NewThingsServiceClient(map[string]things.Profile{thingKey: {ID: profileID}}, nil, nil)
+	thingsClient := mocks.NewThingsServiceClient(nil, map[string]things.Thing{thingKey: {ID: thingID}}, nil)
 	svc := newService(thingsClient)
 	ts := newHTTPServer(svc)
 	defer ts.Close()
@@ -83,7 +79,6 @@ func TestPublish(t *testing.T) {
 		contentType string
 		key         string
 		status      int
-		basicAuth   bool
 	}{
 		"publish message": {
 			msg:         msg,
@@ -109,24 +104,10 @@ func TestPublish(t *testing.T) {
 			key:         "",
 			status:      http.StatusUnauthorized,
 		},
-		"publish message with basic auth": {
-			msg:         msg,
-			contentType: ctSenmlJSON,
-			key:         thingKey,
-			basicAuth:   true,
-			status:      http.StatusAccepted,
-		},
 		"publish message with invalid key": {
 			msg:         msg,
 			contentType: ctSenmlJSON,
 			key:         invalidKey,
-			status:      http.StatusUnauthorized,
-		},
-		"publish message with invalid basic auth": {
-			msg:         msg,
-			contentType: ctSenmlJSON,
-			key:         invalidKey,
-			basicAuth:   true,
 			status:      http.StatusUnauthorized,
 		},
 		"publish message without content type": {
@@ -151,7 +132,6 @@ func TestPublish(t *testing.T) {
 			contentType: tc.contentType,
 			token:       tc.key,
 			body:        strings.NewReader(tc.msg),
-			basicAuth:   tc.basicAuth,
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", desc, err))

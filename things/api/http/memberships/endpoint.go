@@ -6,14 +6,13 @@ package memberships
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
 )
 
 func createGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(groupMembershipsReq)
+		req := request.(createGroupMembershipsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -28,7 +27,7 @@ func createGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 			gms = append(gms, gp)
 		}
 
-		if err := svc.CreateGroupMemberships(ctx, req.token, gms...); err != nil {
+		if err := svc.CreateGroupMemberships(ctx, req.token, req.RedirectPath, gms...); err != nil {
 			return nil, err
 		}
 
@@ -54,7 +53,7 @@ func listGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 
 func updateGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(groupMembershipsReq)
+		req := request.(updateGroupMembershipsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -92,7 +91,7 @@ func removeGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-func buildGroupMembershipsResponse(gpp things.GroupMembershipsPage, pm apiutil.PageMetadata) listGroupMembershipsRes {
+func buildGroupMembershipsResponse(gpp things.GroupMembershipsPage, pm things.PageMetadata) listGroupMembershipsRes {
 	res := listGroupMembershipsRes{
 		pageRes: pageRes{
 			Total:  gpp.Total,

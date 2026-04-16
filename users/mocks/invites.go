@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/users"
 )
@@ -58,7 +57,7 @@ func (irm *platformInvitesRepositoryMock) RetrievePlatformInviteByID(ctx context
 	return irm.platformInvites[inviteID], nil
 }
 
-func (irm *platformInvitesRepositoryMock) RetrievePlatformInvites(ctx context.Context, pm users.PageMetadataInvites) (users.PlatformInvitesPage, error) {
+func (irm *platformInvitesRepositoryMock) RetrievePlatformInvites(ctx context.Context, pm users.PageMetadata) (users.PlatformInvitesPage, error) {
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 
@@ -80,12 +79,8 @@ func (irm *platformInvitesRepositoryMock) RetrievePlatformInvites(ctx context.Co
 	}
 
 	return users.PlatformInvitesPage{
+		Total:   uint64(len(irm.platformInvites)),
 		Invites: invites,
-		PageMetadata: apiutil.PageMetadata{
-			Total:  uint64(len(irm.platformInvites)),
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-		},
 	}, nil
 }
 

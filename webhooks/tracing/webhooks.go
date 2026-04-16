@@ -3,7 +3,6 @@ package tracing
 import (
 	"context"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	"github.com/opentracing/opentracing-go"
@@ -46,7 +45,7 @@ func (wrm webhookRepositoryMiddleware) Save(ctx context.Context, whs ...webhooks
 	return wrm.repo.Save(ctx, whs...)
 }
 
-func (wrm webhookRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
+func (wrm webhookRepositoryMiddleware) RetrieveByGroup(ctx context.Context, groupID string, pm webhooks.PageMetadata) (webhooks.WebhooksPage, error) {
 	span := dbutil.CreateSpan(ctx, wrm.tracer, retrieveWebhooksByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
@@ -54,7 +53,7 @@ func (wrm webhookRepositoryMiddleware) RetrieveByGroup(ctx context.Context, grou
 	return wrm.repo.RetrieveByGroup(ctx, groupID, pm)
 }
 
-func (wrm webhookRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingID string, pm apiutil.PageMetadata) (webhooks.WebhooksPage, error) {
+func (wrm webhookRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingID string, pm webhooks.PageMetadata) (webhooks.WebhooksPage, error) {
 	span := dbutil.CreateSpan(ctx, wrm.tracer, retrieveWebhooksByThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

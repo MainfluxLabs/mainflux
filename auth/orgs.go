@@ -2,9 +2,8 @@ package auth
 
 import (
 	"context"
-	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
@@ -13,32 +12,11 @@ var (
 	ErrOrgNotEmpty = errors.New("org is not empty")
 )
 
-// OrgMetadata defines the Metadata type.
-type OrgMetadata map[string]any
-
-// Org represents the org information.
-type Org struct {
-	ID          string
-	OwnerID     string
-	Name        string
-	Description string
-	Metadata    OrgMetadata
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
-// OrgsPage contains page related metadata as well as list of orgs that
-// belong to this page.
-type OrgsPage struct {
-	Total uint64
-	Orgs  []Org
-}
-
-type User struct {
-	ID     string
-	Email  string
-	Status string
-}
+// Domain type aliases
+type (
+	Org      = domain.Org
+	OrgsPage = domain.OrgsPage
+)
 
 type Backup struct {
 	Orgs           []Org
@@ -58,7 +36,7 @@ type Orgs interface {
 	ViewOrg(ctx context.Context, token, id string) (Org, error)
 
 	// ListOrgs retrieves orgs.
-	ListOrgs(ctx context.Context, token string, pm apiutil.PageMetadata) (OrgsPage, error)
+	ListOrgs(ctx context.Context, token string, pm PageMetadata) (OrgsPage, error)
 
 	// RemoveOrgs removes the orgs identified with the provided IDs.
 	RemoveOrgs(ctx context.Context, token string, ids ...string) error
@@ -91,10 +69,10 @@ type OrgRepository interface {
 	BackupAll(ctx context.Context) ([]Org, error)
 
 	// RetrieveAll retrieves all orgs with pagination.
-	RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (OrgsPage, error)
+	RetrieveAll(ctx context.Context, pm PageMetadata) (OrgsPage, error)
 
 	// RetrieveByMember list of orgs that member belongs to
-	RetrieveByMember(ctx context.Context, memberID string, pm apiutil.PageMetadata) (OrgsPage, error)
+	RetrieveByMember(ctx context.Context, memberID string, pm PageMetadata) (OrgsPage, error)
 }
 
 func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, error) {
@@ -139,7 +117,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, err
 	return org, nil
 }
 
-func (svc service) ListOrgs(ctx context.Context, token string, pm apiutil.PageMetadata) (OrgsPage, error) {
+func (svc service) ListOrgs(ctx context.Context, token string, pm PageMetadata) (OrgsPage, error) {
 	if err := svc.isAdmin(ctx, token); err == nil {
 		return svc.orgs.RetrieveAll(ctx, pm)
 	}

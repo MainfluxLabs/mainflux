@@ -18,6 +18,7 @@ const (
 	idByKeyPrefix       = "id_by_key"
 	groupByThingPrefix  = "gr_by_th"
 	thingsByGroupPrefix = "ths_by_gr"
+	typeByThingPrefix   = "ty_by_th"
 )
 
 var _ things.ThingCache = (*thingCache)(nil)
@@ -113,7 +114,7 @@ func (tc *thingCache) RemoveKey(ctx context.Context, key things.ThingKey) error 
 
 	// Remove thing key from set associating thing ID with all of its keys
 	keysSetKey := keysByThingIDKey(thingID)
-	thingKeyVal := fmt.Sprintf("%s:%s", key.Type, key.Type)
+	thingKeyVal := fmt.Sprintf("%s:%s", key.Type, key.Value)
 	if err := tc.client.SRem(ctx, keysSetKey, thingKeyVal).Err(); err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
@@ -168,6 +169,31 @@ func (tc *thingCache) RemoveGroup(ctx context.Context, thingID string) error {
 	return nil
 }
 
+func (tc *thingCache) SaveType(ctx context.Context, thingID string, thingType string) error {
+	tk := typeByThingIDKey(thingID)
+	if err := tc.client.Set(ctx, tk, thingType, 0).Err(); err != nil {
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
+	}
+	return nil
+}
+
+func (tc *thingCache) ViewType(ctx context.Context, thingID string) (string, error) {
+	tk := typeByThingIDKey(thingID)
+	thingType, err := tc.client.Get(ctx, tk).Result()
+	if err != nil {
+		return "", errors.Wrap(dbutil.ErrNotFound, err)
+	}
+	return thingType, nil
+}
+
+func (tc *thingCache) RemoveType(ctx context.Context, thingID string) error {
+	tk := typeByThingIDKey(thingID)
+	if err := tc.client.Del(ctx, tk).Err(); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+	return nil
+}
+
 func idByThingKeyKey(key things.ThingKey) string {
 	return fmt.Sprintf("%s:%s:%s", idByKeyPrefix, key.Type, key.Value)
 }
@@ -182,4 +208,8 @@ func groupByThingIDKey(thingID string) string {
 
 func thingsByGroupIDKey(groupID string) string {
 	return fmt.Sprintf("%s:%s", thingsByGroupPrefix, groupID)
+}
+
+func typeByThingIDKey(thingID string) string {
+	return fmt.Sprintf("%s:%s", typeByThingPrefix, thingID)
 }

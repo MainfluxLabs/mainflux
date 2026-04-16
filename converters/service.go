@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const (
@@ -33,11 +33,11 @@ var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
 	publisher messaging.Publisher
-	things    protomfx.ThingsServiceClient
+	things    domain.ThingsClient
 }
 
 // New instantiates the HTTP adapter implementation.
-func New(pub messaging.Publisher, things protomfx.ThingsServiceClient) Service {
+func New(pub messaging.Publisher, things domain.ThingsClient) Service {
 	return &adapterService{
 		publisher: pub,
 		things:    things,
@@ -62,28 +62,30 @@ func (as *adapterService) PublishSenMLMessages(ctx context.Context, key string, 
 			if err != nil {
 				return err
 			}
-			record := map[string]any{
-				"n": n,
-				"v": v,
-				"t": t,
-			}
-			msgs = append(msgs, record)
+			msgs = append(msgs, map[string]any{"n": n, "v": v, "t": t})
 			counter++
-			if counter >= 50000 || i == len(csvLines)-1 {
+			if counter >= 50000 {
 				data, err := json.Marshal(msgs)
 				if err != nil {
 					return err
 				}
 				msg.Payload = data
-				_, err = as.publish(ctx, key, msg)
-				if err != nil {
+				if _, err = as.publish(ctx, key, msg); err != nil {
 					return err
 				}
 				counter = 0
 				msgs = []map[string]any{}
-				if i != len(csvLines)-1 {
-					time.Sleep(30 * time.Second)
-				}
+				time.Sleep(30 * time.Second)
+			}
+		}
+		if i == len(csvLines)-1 && len(msgs) > 0 {
+			data, err := json.Marshal(msgs)
+			if err != nil {
+				return err
+			}
+			msg.Payload = data
+			if _, err = as.publish(ctx, key, msg); err != nil {
+				return err
 			}
 		}
 	}
@@ -91,6 +93,18 @@ func (as *adapterService) PublishSenMLMessages(ctx context.Context, key string, 
 }
 
 func (as *adapterService) PublishJSONMessages(ctx context.Context, key string, csvLines [][]string) error {
+	thKey := domain.ThingKey{
+		Value: key,
+		Type:  domain.KeyTypeInternal,
+	}
+
+	pc, err := as.things.GetPubConfigByKey(ctx, thKey)
+	if err != nil {
+		return err
+	}
+
+	timeField := pc.ProfileConfig.Transformer.TimeField
+
 	msg := protomfx.Message{
 		Protocol: protocol,
 		Created:  time.Now().UnixNano(),
@@ -98,14 +112,15 @@ func (as *adapterService) PublishJSONMessages(ctx context.Context, key string, c
 	counter := 0
 	keys := csvLines[0][1:]
 	msgs := []map[string]any{}
-	createdIdx := slices.Index(csvLines[0], "created")
-	if createdIdx == -1 {
-		return ErrInvalidTimeField
-	}
-
+	timeFieldIdx := slices.Index(csvLines[0], timeField)
 	for i := 1; i < len(csvLines); i++ {
-		record := map[string]any{
-			"created": csvLines[i][createdIdx],
+		record := map[string]any{}
+		if timeField != "" && timeFieldIdx != -1 {
+			t, err := strconv.ParseFloat(csvLines[i][timeFieldIdx], 64)
+			if err != nil {
+				return ErrInvalidTimeField
+			}
+			record["Created"] = t
 		}
 		for j, columnName := range keys {
 			if f, err := strconv.ParseFloat(csvLines[i][j+1], 64); err == nil {
@@ -137,10 +152,7 @@ func (as *adapterService) PublishJSONMessages(ctx context.Context, key string, c
 }
 
 func (as *adapterService) publish(ctx context.Context, key string, msg protomfx.Message) (m protomfx.Message, err error) {
-	pcr := &protomfx.ThingKey{
-		Type:  things.KeyTypeInternal,
-		Value: key,
-	}
+	pcr := domain.ThingKey{Type: domain.KeyTypeInternal, Value: key}
 
 	pc, err := as.things.GetPubConfigByKey(ctx, pcr)
 	if err != nil {

@@ -9,18 +9,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/ws"
-	"github.com/go-zoo/bone"
 	"github.com/gorilla/websocket"
 )
 
-func handshake(svc ws.Service) http.HandlerFunc {
+func messagesHandshake(svc ws.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		req, err := decodeRequest(r)
+		req, err := decodeMessageRequest(r)
 		if err != nil {
 			encodeError(w, err)
 			return
@@ -42,51 +38,40 @@ func handshake(svc ws.Service) http.HandlerFunc {
 		msgs := make(chan []byte)
 
 		// Listen for messages and publish them to broker
-		go process(svc, req, msgs)
+		go processMessages(svc, req, msgs)
 		go listen(conn, msgs)
 	}
 }
 
-func decodeRequest(r *http.Request) (getConnByKey, error) {
-	authKey := things.ExtractThingKey(r)
-	if authKey.Value == "" || authKey.Type == "" {
-		queryKey := bone.GetQuery(r, "key")
-		if len(queryKey) == 0 {
-			return getConnByKey{}, errUnauthorizedAccess
+func thingCommandsHandshake(svc ws.Service) http.HandlerFunc {
+	return commandsHandshake(svc, processThingCommands)
+}
+
+func groupCommandsHandshake(svc ws.Service) http.HandlerFunc {
+	return commandsHandshake(svc, processGroupCommands)
+}
+
+func commandsHandshake(svc ws.Service, processFn func(ws.Service, cmdConnReq, <-chan []byte)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		req, err := decodeCommandRequest(r)
+		if err != nil {
+			encodeError(w, err)
+			return
 		}
-
-		queryKeyType := bone.GetQuery(r, "keyType")
-		if len(queryKeyType) == 0 {
-			return getConnByKey{}, errUnauthorizedAccess
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			logger.Warn(fmt.Sprintf("Failed to upgrade connection to websocket: %s", err.Error()))
+			return
 		}
-
-		authKey = things.ThingKey{
-			Value: queryKey[0],
-			Type:  queryKeyType[0],
-		}
+		req.conn = conn
+		msgs := make(chan []byte)
+		go processFn(svc, req, msgs)
+		go listen(conn, msgs)
 	}
-
-	if err := authKey.Validate(); err != nil {
-		return getConnByKey{}, err
-	}
-
-	req := getConnByKey{
-		ThingKey: authKey,
-	}
-
-	subtopic, err := messaging.NormalizeSubtopic(r.RequestURI)
-	if err != nil {
-		return getConnByKey{}, err
-	}
-
-	req.subtopic = subtopic
-
-	return req, nil
 }
 
 func listen(conn *websocket.Conn, msgs chan<- []byte) {
 	for {
-		// Listen for message from the client, and push them to the msgs profile
 		_, payload, err := conn.ReadMessage()
 
 		if websocket.IsUnexpectedCloseError(err) {
@@ -105,37 +90,46 @@ func listen(conn *websocket.Conn, msgs chan<- []byte) {
 	}
 }
 
-func process(svc ws.Service, req getConnByKey, msgs <-chan []byte) {
-	for msg := range msgs {
-		m := protomfx.Message{
-			Subtopic: req.subtopic,
-			Protocol: "websocket",
-			Payload:  msg,
-			Created:  time.Now().UnixNano(),
-		}
-		svc.Publish(context.Background(), req.ThingKey, m)
+func processMessages(svc ws.Service, req getConnByKey, msgs <-chan []byte) {
+	for payload := range msgs {
+		svc.Publish(context.Background(), req.ThingKey, buildMessage(req.subtopic, payload))
 	}
 	if err := svc.Unsubscribe(context.Background(), req.ThingKey, req.subtopic); err != nil {
 		req.conn.Close()
 	}
 }
 
-func encodeError(w http.ResponseWriter, err error) {
-	var statusCode int
-
-	switch err {
-	case apiutil.ErrBearerKey,
-		apiutil.ErrInvalidThingKeyType:
-		statusCode = http.StatusUnauthorized
-	case ws.ErrEmptyTopic:
-		statusCode = http.StatusBadRequest
-	case errUnauthorizedAccess:
-		statusCode = http.StatusForbidden
-	case messaging.ErrMalformedSubtopic, apiutil.ErrMalformedEntity:
-		statusCode = http.StatusBadRequest
-	default:
-		statusCode = http.StatusNotFound
+func processThingCommands(svc ws.Service, req cmdConnReq, msgs <-chan []byte) {
+	for payload := range msgs {
+		m := buildMessage(req.subtopic, payload)
+		switch {
+		case req.token != "":
+			svc.SendCommandToThing(context.Background(), req.token, req.id, m)
+		default:
+			svc.SendCommandToThingByKey(context.Background(), req.thingKey, req.id, m)
+		}
 	}
-	logger.Warn(fmt.Sprintf("Failed to authorize: %s", err.Error()))
-	w.WriteHeader(statusCode)
+	req.conn.Close()
+}
+
+func processGroupCommands(svc ws.Service, req cmdConnReq, msgs <-chan []byte) {
+	for payload := range msgs {
+		m := buildMessage(req.subtopic, payload)
+		switch {
+		case req.token != "":
+			svc.SendCommandToGroup(context.Background(), req.token, req.id, m)
+		default:
+			svc.SendCommandToGroupByKey(context.Background(), req.thingKey, req.id, m)
+		}
+	}
+	req.conn.Close()
+}
+
+func buildMessage(subtopic string, payload []byte) protomfx.Message {
+	return protomfx.Message{
+		Subtopic: subtopic,
+		Protocol: protocol,
+		Payload:  payload,
+		Created:  time.Now().UnixNano(),
+	}
 }

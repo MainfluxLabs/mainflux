@@ -110,7 +110,7 @@ func decodeOrgMembershipsRequest(_ context.Context, r *http.Request) (any, error
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	for i := range req.OrgMemberships {
@@ -119,7 +119,7 @@ func decodeOrgMembershipsRequest(_ context.Context, r *http.Request) (any, error
 		}
 
 		if req.OrgMemberships[i].Role == auth.Owner {
-			return nil, apiutil.ErrMalformedEntity
+			return nil, errors.ErrMalformedEntity
 		}
 	}
 
@@ -143,7 +143,7 @@ func decodeRemoveOrgMemberships(_ context.Context, r *http.Request) (any, error)
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(apiutil.ErrMalformedEntity, err)
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	return req, nil

@@ -23,24 +23,26 @@ import (
 )
 
 const (
-	contentType = "application/senml+json"
-	email       = "user@example.com"
-	adminEmail  = "admin@example.com"
-	otherEmail  = "other_user@example.com"
-	token       = email
-	wrongValue  = "wrong_value"
-	orgID       = "374106f7-030e-4881-8ab0-151195c29f92"
-	thingKey    = "1d7c83ea-f47c-4326-820b-55d5d4930b62"
-	wrongID     = "999"
-	badKey      = "999"
-	emptyValue  = ""
+	contentType     = "application/senml+json"
+	email           = "user@example.com"
+	adminEmail      = "admin@example.com"
+	otherEmail      = "other_user@example.com"
+	token           = email
+	wrongValue      = "wrong_value"
+	orgID           = "374106f7-030e-4881-8ab0-151195c29f92"
+	thingKey        = "1d7c83ea-f47c-4326-820b-55d5d4930b62"
+	wrongID         = "999"
+	badKey          = "999"
+	emptyValue      = ""
+	thingTypeDevice = "device"
+	thingTypeSensor = "sensor"
 )
 
 var (
 	metadata  = map[string]any{"meta": "data"}
 	metadata2 = map[string]any{"meta": "data2"}
-	th1       = sdk.Thing{GroupID: groupID, ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1", Key: thingKey, Metadata: metadata}
-	th2       = sdk.Thing{GroupID: groupID, ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2", Metadata: metadata}
+	th1       = sdk.Thing{GroupID: groupID, ID: "fe6b4e92-cc98-425e-b0aa-000000000001", Name: "test1", Type: thingTypeDevice, Key: thingKey, Metadata: metadata}
+	th2       = sdk.Thing{GroupID: groupID, ID: "fe6b4e92-cc98-425e-b0aa-000000000002", Name: "test2", Type: thingTypeSensor, Metadata: metadata}
 	profile   = sdk.Profile{ID: "fe6b4e92-cc98-425e-b0aa-000000000003", Name: "test1"}
 	group     = sdk.Group{OrgID: orgID, Name: "test_group", Metadata: metadata}
 	orgs      = []auth.Org{{ID: orgID, OwnerID: user.ID}}
@@ -155,17 +157,17 @@ func TestCreateThings(t *testing.T) {
 
 	th1.ProfileID = prID
 	th2.ProfileID = prID
-	things := []sdk.Thing{
+	ths := []sdk.Thing{
 		th1,
 		th2,
 	}
 	thsExtID := []sdk.Thing{
-		{GroupID: grID, ID: th1.ID, ProfileID: prID, Name: "1", Key: "1", Metadata: metadata},
-		{GroupID: grID, ID: th2.ID, ProfileID: prID, Name: "2", Key: "2", Metadata: metadata},
+		{GroupID: grID, ID: th1.ID, ProfileID: prID, Name: "1", Type: things.ThingTypeDevice, Key: "1", Metadata: metadata},
+		{GroupID: grID, ID: th2.ID, ProfileID: prID, Name: "2", Type: things.ThingTypeSensor, Key: "2", Metadata: metadata},
 	}
 	thsWrongExtID := []sdk.Thing{
-		{ID: "b0aa-000000000001", Name: "1", Key: "1", Metadata: metadata},
-		{ID: "b0aa-000000000002", Name: "2", Key: "2", Metadata: metadata2},
+		{ID: "b0aa-000000000001", Name: "1", Type: things.ThingTypeDevice, Key: "1", Metadata: metadata},
+		{ID: "b0aa-000000000002", Name: "2", Type: things.ThingTypeSensor, Key: "2", Metadata: metadata2},
 	}
 
 	cases := []struct {
@@ -177,10 +179,10 @@ func TestCreateThings(t *testing.T) {
 	}{
 		{
 			desc:   "create new things",
-			things: things,
+			things: ths,
 			token:  token,
 			err:    nil,
-			res:    things,
+			res:    ths,
 		},
 		{
 			desc:   "create new things with empty things",
@@ -191,14 +193,14 @@ func TestCreateThings(t *testing.T) {
 		},
 		{
 			desc:   "create new thing with empty token",
-			things: things,
+			things: ths,
 			token:  emptyValue,
 			err:    createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
 			res:    []sdk.Thing{},
 		},
 		{
 			desc:   "create new thing with invalid token",
-			things: things,
+			things: ths,
 			token:  wrongValue,
 			err:    createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
 			res:    []sdk.Thing{},
@@ -208,7 +210,7 @@ func TestCreateThings(t *testing.T) {
 			things: thsExtID,
 			token:  token,
 			err:    nil,
-			res:    things,
+			res:    ths,
 		},
 		{
 			desc:   "create new things with wrong external UUID",
@@ -362,7 +364,6 @@ func TestThings(t *testing.T) {
 		MsgContentType:  contentType,
 		TLSVerification: false,
 	}
-	var things []sdk.Thing
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
@@ -371,15 +372,17 @@ func TestThings(t *testing.T) {
 	prID, err := mainfluxSDK.CreateProfile(profile, grID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	var ths []sdk.Thing
 	for i := 1; i < 101; i++ {
 		id := fmt.Sprintf("%s%012d", prPrefix, i)
 		name := fmt.Sprintf("test-%d", i)
 		key := fmt.Sprintf("%s%012d", uuid.Prefix, i)
-		th := sdk.Thing{GroupID: grID, ID: id, ProfileID: prID, Name: name, Key: key, Metadata: metadata}
+
+		th := sdk.Thing{GroupID: grID, ID: id, ProfileID: prID, Name: name, Type: things.ThingTypeDevice, Key: key, Metadata: metadata}
 		_, err := mainfluxSDK.CreateThing(th, prID, token)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		things = append(things, th)
+		ths = append(ths, th)
 	}
 
 	cases := []struct {
@@ -400,7 +403,7 @@ func TestThings(t *testing.T) {
 			limit:    limit,
 			dir:      ascDir,
 			err:      nil,
-			response: things[0:limit],
+			response: ths[0:limit],
 			metadata: make(map[string]any),
 		},
 		{
@@ -491,6 +494,7 @@ func TestThingsByProfile(t *testing.T) {
 		th := sdk.Thing{
 			ID:        id,
 			Name:      name,
+			Type:      things.ThingTypeDevice,
 			GroupID:   grID,
 			ProfileID: prID,
 			Metadata:  metadata,
@@ -627,6 +631,7 @@ func TestUpdateThing(t *testing.T) {
 				ID:        id,
 				ProfileID: prID,
 				Name:      "test_app",
+				Type:      things.ThingTypeDevice,
 				Key:       thingKey,
 				Metadata:  metadata2,
 			},
@@ -639,6 +644,7 @@ func TestUpdateThing(t *testing.T) {
 				ID:        "0",
 				ProfileID: prID,
 				Name:      "test_device",
+				Type:      things.ThingTypeDevice,
 				Key:       thingKey,
 				Metadata:  metadata,
 			},
@@ -651,6 +657,7 @@ func TestUpdateThing(t *testing.T) {
 				ID:        emptyValue,
 				ProfileID: prID,
 				Name:      "test_device",
+				Type:      things.ThingTypeDevice,
 				Key:       thingKey,
 				Metadata:  metadata,
 			},
@@ -663,6 +670,7 @@ func TestUpdateThing(t *testing.T) {
 				ID:        id,
 				ProfileID: prID,
 				Name:      "test_app",
+				Type:      things.ThingTypeDevice,
 				Key:       thingKey,
 				Metadata:  metadata2,
 			},
@@ -675,6 +683,7 @@ func TestUpdateThing(t *testing.T) {
 				ID:        id,
 				ProfileID: prID,
 				Name:      "test_app",
+				Type:      things.ThingTypeDevice,
 				Key:       thingKey,
 				Metadata:  metadata2,
 			},
@@ -853,7 +862,7 @@ func TestIdentifyThing(t *testing.T) {
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 	mainfluxAuthSDK := sdk.NewSDK(authSdkConf)
-	th := sdk.Thing{ID: "fe6b4e92-cc98-425e-b0aa-000000007891", Name: "identify"}
+	th := sdk.Thing{ID: "fe6b4e92-cc98-425e-b0aa-000000007891", Name: "identify", Type: things.ThingTypeDevice}
 
 	grID, err := mainfluxSDK.CreateGroup(group, orgID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))

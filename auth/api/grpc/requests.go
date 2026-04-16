@@ -6,6 +6,7 @@ package grpc
 import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 type identityReq struct {
@@ -110,7 +111,7 @@ type createDormantOrgInviteReq struct {
 	token            string
 	orgID            string
 	inviteeRole      string
-	groupInvites     []auth.GroupInvite
+	groupInvites     []domain.GroupInvite
 	platformInviteID string
 }
 

@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -119,7 +118,7 @@ func (pr profileRepository) RetrieveByID(ctx context.Context, id string) (things
 		return things.Profile{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
-	return toProfile(dbpr), nil
+	return toProfile(dbpr)
 }
 
 func (pr profileRepository) BackupAll(ctx context.Context) ([]things.Profile, error) {
@@ -133,13 +132,18 @@ func (pr profileRepository) BackupAll(ctx context.Context) ([]things.Profile, er
 
 	var profiles []things.Profile
 	for _, i := range items {
-		profiles = append(profiles, toProfile(i))
+		profile, err := toProfile(i)
+		if err != nil {
+			return nil, err
+		}
+
+		profiles = append(profiles, profile)
 	}
 
 	return profiles, nil
 }
 
-func (pr profileRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+func (pr profileRepository) RetrieveAll(ctx context.Context, pm things.PageMetadata) (things.ProfilesPage, error) {
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
@@ -182,17 +186,20 @@ func (pr profileRepository) RetrieveByThing(ctx context.Context, thID string) (t
 	}
 	defer rows.Close()
 
-	var item things.Profile
+	var profile things.Profile
 	for rows.Next() {
 		dbpr := dbProfile{}
 		if err := rows.StructScan(&dbpr); err != nil {
 			return things.Profile{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
 
-		item = toProfile(dbpr)
+		profile, err = toProfile(dbpr)
+		if err != nil {
+			return things.Profile{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		}
 	}
 
-	return item, nil
+	return profile, nil
 }
 
 func (pr profileRepository) Remove(ctx context.Context, ids ...string) error {
@@ -217,7 +224,7 @@ func (pr profileRepository) Remove(ctx context.Context, ids ...string) error {
 	return nil
 }
 
-func (pr profileRepository) RetrieveByGroups(ctx context.Context, groupIDs []string, pm apiutil.PageMetadata) (things.ProfilesPage, error) {
+func (pr profileRepository) RetrieveByGroups(ctx context.Context, groupIDs []string, pm things.PageMetadata) (things.ProfilesPage, error) {
 	if len(groupIDs) == 0 {
 		return things.ProfilesPage{}, nil
 	}
@@ -259,7 +266,10 @@ func (pr profileRepository) retrieve(ctx context.Context, query, cquery string, 
 		if err := rows.StructScan(&dbpr); err != nil {
 			return things.ProfilesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
-		pr := toProfile(dbpr)
+		pr, err := toProfile(dbpr)
+		if err != nil {
+			return things.ProfilesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		}
 
 		items = append(items, pr)
 	}
@@ -285,13 +295,13 @@ type dbJSONB map[string]any
 // If error occurs on casting data then m points to empty metadata.
 func (m *dbJSONB) Scan(value any) error {
 	if value == nil {
-		m = nil
+		*m = nil
 		return nil
 	}
 
 	b, ok := value.([]byte)
 	if !ok {
-		m = &dbJSONB{}
+		*m = nil
 		return dbutil.ErrScanMetadata
 	}
 
@@ -324,23 +334,73 @@ type dbProfile struct {
 }
 
 func toDBProfile(pr things.Profile) dbProfile {
+	var config dbJSONB
+
+	if pr.Config != nil {
+		config = map[string]any{
+			"content_type": pr.Config.ContentType,
+			"transformer": map[string]any{
+				"data_filters":  pr.Config.Transformer.DataFilters,
+				"data_field":    pr.Config.Transformer.DataField,
+				"time_field":    pr.Config.Transformer.TimeField,
+				"time_format":   pr.Config.Transformer.TimeFormat,
+				"time_location": pr.Config.Transformer.TimeLocation,
+			},
+		}
+	}
+
 	return dbProfile{
 		ID:       pr.ID,
 		GroupID:  pr.GroupID,
 		Name:     pr.Name,
-		Config:   pr.Config,
-		Metadata: pr.Metadata,
+		Config:   config,
+		Metadata: dbJSONB(pr.Metadata),
 	}
 }
 
-func toProfile(pr dbProfile) things.Profile {
-	return things.Profile{
-		ID:       pr.ID,
-		GroupID:  pr.GroupID,
-		Name:     pr.Name,
-		Config:   pr.Config,
-		Metadata: pr.Metadata,
+func toProfile(dbpr dbProfile) (things.Profile, error) {
+	var cfg *things.Config
+
+	if dbpr.Config != nil {
+		cfg = &things.Config{}
+
+		if ct, ok := dbpr.Config["content_type"].(string); ok {
+			cfg.ContentType = ct
+		}
+
+		t, ok := dbpr.Config["transformer"].(map[string]any)
+		if !ok {
+			return things.Profile{}, dbutil.ErrMalformedEntity
+		}
+
+		if df, ok := t["data_filters"].([]string); ok {
+			cfg.Transformer.DataFilters = df
+		}
+
+		if df, ok := t["data_field"].(string); ok {
+			cfg.Transformer.DataField = df
+		}
+
+		if tf, ok := t["time_field"].(string); ok {
+			cfg.Transformer.TimeField = tf
+		}
+
+		if tf, ok := t["time_format"].(string); ok {
+			cfg.Transformer.TimeFormat = tf
+		}
+
+		if tl, ok := t["time_location"].(string); ok {
+			cfg.Transformer.TimeLocation = tl
+		}
 	}
+
+	return things.Profile{
+		ID:       dbpr.ID,
+		GroupID:  dbpr.GroupID,
+		Name:     dbpr.Name,
+		Config:   cfg,
+		Metadata: things.Metadata(dbpr.Metadata),
+	}, nil
 }
 
 func getIDsQuery(ids []string) string {

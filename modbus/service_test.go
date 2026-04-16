@@ -11,7 +11,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/modbus"
 	mbmocks "github.com/MainfluxLabs/mainflux/modbus/mocks"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/cron"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -121,7 +120,7 @@ func TestListClientsByThing(t *testing.T) {
 		desc    string
 		token   string
 		thingID string
-		pm      apiutil.PageMetadata
+		pm      modbus.PageMetadata
 		size    uint64
 		err     error
 	}{
@@ -129,7 +128,7 @@ func TestListClientsByThing(t *testing.T) {
 			desc:    "list clients by thing with valid token",
 			token:   token,
 			thingID: thingID,
-			pm:      apiutil.PageMetadata{},
+			pm:      modbus.PageMetadata{},
 			size:    1,
 			err:     nil,
 		},
@@ -137,7 +136,7 @@ func TestListClientsByThing(t *testing.T) {
 			desc:    "list clients by thing with invalid token",
 			token:   wrongToken,
 			thingID: thingID,
-			pm:      apiutil.PageMetadata{},
+			pm:      modbus.PageMetadata{},
 			size:    0,
 			err:     errors.ErrAuthorization,
 		},
@@ -145,7 +144,7 @@ func TestListClientsByThing(t *testing.T) {
 			desc:    "list clients by thing for wrong thing ID",
 			token:   token,
 			thingID: wrongID,
-			pm:      apiutil.PageMetadata{},
+			pm:      modbus.PageMetadata{},
 			size:    0,
 			err:     errors.ErrAuthorization,
 		},
@@ -153,7 +152,7 @@ func TestListClientsByThing(t *testing.T) {
 			desc:    "list clients by thing with limit",
 			token:   token,
 			thingID: thingID,
-			pm:      apiutil.PageMetadata{Limit: 1, Offset: 0},
+			pm:      modbus.PageMetadata{Limit: 1, Offset: 0},
 			size:    1,
 			err:     nil,
 		},
@@ -161,7 +160,7 @@ func TestListClientsByThing(t *testing.T) {
 			desc:    "list clients by thing with offset beyond available",
 			token:   token,
 			thingID: thingID,
-			pm:      apiutil.PageMetadata{Limit: 1, Offset: 1},
+			pm:      modbus.PageMetadata{Limit: 1, Offset: 1},
 			size:    0,
 			err:     nil,
 		},
@@ -186,7 +185,7 @@ func TestListClientsByGroup(t *testing.T) {
 		desc    string
 		token   string
 		groupID string
-		pm      apiutil.PageMetadata
+		pm      modbus.PageMetadata
 		size    uint64
 		err     error
 	}{
@@ -194,7 +193,7 @@ func TestListClientsByGroup(t *testing.T) {
 			desc:    "list clients by group with valid token",
 			token:   token,
 			groupID: groupID,
-			pm:      apiutil.PageMetadata{},
+			pm:      modbus.PageMetadata{},
 			size:    1,
 			err:     nil,
 		},
@@ -202,7 +201,7 @@ func TestListClientsByGroup(t *testing.T) {
 			desc:    "list clients by group with invalid token",
 			token:   wrongToken,
 			groupID: groupID,
-			pm:      apiutil.PageMetadata{},
+			pm:      modbus.PageMetadata{},
 			size:    0,
 			err:     errors.ErrAuthorization,
 		},
@@ -210,7 +209,7 @@ func TestListClientsByGroup(t *testing.T) {
 			desc:    "list clients by group for wrong group ID",
 			token:   token,
 			groupID: wrongID,
-			pm:      apiutil.PageMetadata{},
+			pm:      modbus.PageMetadata{},
 			size:    0,
 			err:     errors.ErrAuthorization,
 		},
@@ -218,7 +217,7 @@ func TestListClientsByGroup(t *testing.T) {
 			desc:    "list clients by group with limit",
 			token:   token,
 			groupID: groupID,
-			pm:      apiutil.PageMetadata{Limit: 1, Offset: 0},
+			pm:      modbus.PageMetadata{Limit: 1, Offset: 0},
 			size:    1,
 			err:     nil,
 		},
@@ -226,7 +225,7 @@ func TestListClientsByGroup(t *testing.T) {
 			desc:    "list clients by group with offset beyond available",
 			token:   token,
 			groupID: groupID,
-			pm:      apiutil.PageMetadata{Limit: 1, Offset: 1},
+			pm:      modbus.PageMetadata{Limit: 1, Offset: 1},
 			size:    0,
 			err:     nil,
 		},

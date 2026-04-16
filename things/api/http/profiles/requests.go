@@ -5,6 +5,8 @@ package profiles
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/things"
 )
 
 const (
@@ -13,10 +15,10 @@ const (
 )
 
 type createProfileReq struct {
-	Name     string         `json:"name,omitempty"`
-	ID       string         `json:"id,omitempty"`
-	Config   map[string]any `json:"config,omitempty"`
-	Metadata map[string]any `json:"metadata,omitempty"`
+	Name     string                `json:"name,omitempty"`
+	ID       string                `json:"id,omitempty"`
+	Config   *domain.ProfileConfig `json:"config,omitempty"`
+	Metadata map[string]any        `json:"metadata,omitempty"`
 }
 
 type createProfilesReq struct {
@@ -56,9 +58,9 @@ func (req createProfilesReq) validate() error {
 type updateProfileReq struct {
 	token    string
 	id       string
-	Name     string         `json:"name,omitempty"`
-	Config   map[string]any `json:"config,omitempty"`
-	Metadata map[string]any `json:"metadata,omitempty"`
+	Name     string                `json:"name,omitempty"`
+	Config   *domain.ProfileConfig `json:"config,omitempty"`
+	Metadata map[string]any        `json:"metadata,omitempty"`
 }
 
 func (req updateProfileReq) validate() error {
@@ -113,7 +115,7 @@ func (req resourceReq) validate() error {
 
 type listReq struct {
 	token        string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata things.PageMetadata
 }
 
 func (req *listReq) validate() error {
@@ -121,13 +123,13 @@ func (req *listReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type listByGroupReq struct {
 	id           string
 	token        string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata things.PageMetadata
 }
 
 func (req listByGroupReq) validate() error {
@@ -139,13 +141,13 @@ func (req listByGroupReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type listByOrgReq struct {
 	id           string
 	token        string
-	pageMetadata apiutil.PageMetadata
+	pageMetadata things.PageMetadata
 }
 
 func (req listByOrgReq) validate() error {
@@ -157,7 +159,7 @@ func (req listByOrgReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return apiutil.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
 type removeProfilesReq struct {
