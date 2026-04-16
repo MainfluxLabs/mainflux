@@ -160,7 +160,7 @@ func main() {
 
 	svc := newService(cfg, logger, dbTracer, db, tc)
 
-	if err = consumers.Start(svcName, pubSub, svc, nats.SubjectSmtp); err != nil {
+	if err = consumers.Start(svcName, consumers.Messages(pubSub, svc, nats.SubjectSmtp)); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create SMTP notifier: %s", err))
 	}
 

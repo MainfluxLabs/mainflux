@@ -56,7 +56,7 @@ type Service interface {
 	ServiceScripts
 	ServiceRules
 
-	consumers.Consumer
+	consumers.MessageConsumer
 }
 
 type ServiceScripts interface {
@@ -494,13 +494,8 @@ func (rs *rulesService) RemoveScriptRuns(ctx context.Context, token string, ids 
 	return rs.rules.RemoveScriptRuns(ctx, ids...)
 }
 
-func (rs *rulesService) Consume(_ string, message any) error {
+func (rs *rulesService) ConsumeMessage(_ string, msg protomfx.Message) error {
 	ctx := context.Background()
-
-	msg, ok := message.(protomfx.Message)
-	if !ok {
-		return errors.ErrMessage
-	}
 
 	var payload any
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {

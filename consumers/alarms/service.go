@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
@@ -69,7 +69,7 @@ type Service interface {
 	// identified by the provided thing ID, intended for exporting.
 	ExportAlarmsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (AlarmsPage, error)
 
-	nats.AlarmHandler
+	consumers.AlarmConsumer
 }
 
 type alarmService struct {
@@ -191,7 +191,7 @@ func (as *alarmService) createAlarm(ctx context.Context, alarm *Alarm) error {
 
 }
 
-func (as *alarmService) Handle(subject string, alarm protomfx.Alarm) error {
+func (as *alarmService) ConsumeAlarm(subject string, alarm protomfx.Alarm) error {
 	ctx := context.Background()
 
 	a := Alarm{
@@ -219,8 +219,4 @@ func (as *alarmService) Handle(subject string, alarm protomfx.Alarm) error {
 	}
 
 	return as.createAlarm(ctx, &a)
-}
-
-func (as *alarmService) Cancel() error {
-	return nil
 }

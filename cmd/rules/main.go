@@ -137,7 +137,7 @@ func main() {
 	svc := newService(dbTracer, db, tc, ps, logger, cfg.scriptsEnabled)
 
 	subjects := []string{nats.SubjectMessages, nats.SubjectMessagesWithSubtopic}
-	if err = consumers.Start(svcName, ps, svc, subjects...); err != nil {
+	if err = consumers.Start(svcName, consumers.Messages(ps, svc, subjects...)); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create rule engine: %s", err))
 	}
 

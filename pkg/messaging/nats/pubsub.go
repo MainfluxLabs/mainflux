@@ -36,23 +36,11 @@ const (
 	SubjectAlarms = "alarms.*.*"
 )
 
-// AlarmHandler specifies the handler for alarm messages.
-type AlarmHandler interface {
-	Handle(subject string, alarm protomfx.Alarm) error
-	Cancel() error
-}
-
-// AlarmSubscriber specifies the alarm subscription API.
-type AlarmSubscriber interface {
-	SubscribeAlarms(id string, handler AlarmHandler) error
-	UnsubscribeAlarms(id string) error
-}
-
 // PubSub extends messaging.PubSub with alarm publishing and subscribing.
 type PubSub interface {
 	messaging.PubSub
-	AlarmPublisher
-	AlarmSubscriber
+	messaging.AlarmPublisher
+	messaging.AlarmSubscriber
 }
 
 var _ PubSub = (*pubsub)(nil)
@@ -185,7 +173,7 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 	return nil
 }
 
-func (ps *pubsub) SubscribeAlarms(id string, handler AlarmHandler) error {
+func (ps *pubsub) SubscribeAlarms(id string, handler messaging.AlarmHandler) error {
 	if id == "" {
 		return messaging.ErrEmptyID
 	}
@@ -199,14 +187,14 @@ func (ps *pubsub) SubscribeAlarms(id string, handler AlarmHandler) error {
 		ps.subscriptions[SubjectAlarms] = s
 	}
 
-	nh := ps.natsAlarmHandler(handler)
+	h := ps.natsAlarmHandler(handler)
 
 	var sub *broker.Subscription
 	var err error
 	if ps.queue != "" {
-		sub, err = ps.conn.QueueSubscribe(SubjectAlarms, ps.queue, nh)
+		sub, err = ps.conn.QueueSubscribe(SubjectAlarms, ps.queue, h)
 	} else {
-		sub, err = ps.conn.Subscribe(SubjectAlarms, nh)
+		sub, err = ps.conn.Subscribe(SubjectAlarms, h)
 	}
 	if err != nil {
 		return err
@@ -223,7 +211,7 @@ func (ps *pubsub) UnsubscribeAlarms(id string) error {
 	return ps.Unsubscribe(id, SubjectAlarms)
 }
 
-func (ps *pubsub) natsAlarmHandler(h AlarmHandler) broker.MsgHandler {
+func (ps *pubsub) natsAlarmHandler(h messaging.AlarmHandler) broker.MsgHandler {
 	return func(m *broker.Msg) {
 		var alarm protomfx.Alarm
 		if err := proto.Unmarshal(m.Data, &alarm); err != nil {

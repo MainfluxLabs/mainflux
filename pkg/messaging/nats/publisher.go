@@ -24,15 +24,10 @@ const (
 	commandsSuffix = "commands"
 )
 
-// AlarmPublisher specifies the alarm publishing API.
-type AlarmPublisher interface {
-	PublishAlarm(subject string, alarm *protomfx.Alarm) error
-}
-
 // Publisher extends the base messaging.Publisher with alarm publishing capability.
 type Publisher interface {
 	messaging.Publisher
-	AlarmPublisher
+	messaging.AlarmPublisher
 }
 
 var _ Publisher = (*publisher)(nil)

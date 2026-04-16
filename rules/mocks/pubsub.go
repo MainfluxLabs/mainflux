@@ -5,23 +5,23 @@ package mocks
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	natsmsg "github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
-var _ natsmsg.Publisher = (*mockPubSub)(nil)
+var _ nats.Publisher = (*mockPubSub)(nil)
 
 type mockPubSub struct {
 	fail bool
 }
 
 // NewPubSub returns a mock Publisher that succeeds by default.
-func NewPubSub() natsmsg.Publisher {
+func NewPubSub() nats.Publisher {
 	return &mockPubSub{}
 }
 
 // NewFailingPubSub returns a mock Publisher whose Publish always fails.
-func NewFailingPubSub() natsmsg.Publisher {
+func NewFailingPubSub() nats.Publisher {
 	return &mockPubSub{fail: true}
 }
 

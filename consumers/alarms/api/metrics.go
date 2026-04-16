@@ -98,15 +98,11 @@ func (ms *metricsMiddleware) ExportAlarmsByThing(ctx context.Context, token, thi
 	return ms.svc.ExportAlarmsByThing(ctx, token, thingID, pm)
 }
 
-func (ms *metricsMiddleware) Handle(subject string, alarm protomfx.Alarm) error {
+func (ms *metricsMiddleware) ConsumeAlarm(subject string, alarm protomfx.Alarm) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "handle").Add(1)
-		ms.latency.With("method", "handle").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "consume_alarm").Add(1)
+		ms.latency.With("method", "consume_alarm").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Handle(subject, alarm)
-}
-
-func (ms *metricsMiddleware) Cancel() error {
-	return nil
+	return ms.svc.ConsumeAlarm(subject, alarm)
 }

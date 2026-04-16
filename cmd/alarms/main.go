@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
+	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/consumers/alarms/api"
 	httpapi "github.com/MainfluxLabs/mainflux/consumers/alarms/api/http"
@@ -141,7 +142,7 @@ func main() {
 
 	svc := newService(things, dbTracer, db, logger)
 
-	if err = pubSub.SubscribeAlarms(svcName, svc); err != nil {
+	if err = consumers.Start(svcName, consumers.Alarms(pubSub, svc)); err != nil {
 		logger.Error(fmt.Sprintf("Failed to subscribe to alarms: %s", err))
 	}
 

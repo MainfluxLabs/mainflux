@@ -107,7 +107,7 @@ func runConsumeTest(t *testing.T, svcName string, validContacts []string) {
 	}
 
 	for _, tc := range cases {
-		err := svc.Consume(tc.subject, tc.msg)
+		err := svc.ConsumeMessage(tc.subject, tc.msg)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

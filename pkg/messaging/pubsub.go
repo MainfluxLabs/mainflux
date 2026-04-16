@@ -99,6 +99,30 @@ type PubSub interface {
 	Subscriber
 }
 
+// AlarmPublisher specifies the alarm publishing API.
+type AlarmPublisher interface {
+	// PublishAlarm publishes an alarm to the message broker.
+	PublishAlarm(subject string, alarm *protomfx.Alarm) error
+}
+
+// AlarmHandler represents protomfx.Alarm handler for AlarmSubscriber.
+type AlarmHandler interface {
+	// Handle handles alarms passed by underlying implementation.
+	Handle(subject string, alarm protomfx.Alarm) error
+
+	// Cancel is used for cleanup during unsubscribing and it's optional.
+	Cancel() error
+}
+
+// AlarmSubscriber specifies the alarm subscription API.
+type AlarmSubscriber interface {
+	// SubscribeAlarms subscribes to the alarm stream.
+	SubscribeAlarms(id string, handler AlarmHandler) error
+
+	// UnsubscribeAlarms unsubscribes from the alarm stream.
+	UnsubscribeAlarms(id string) error
+}
+
 func NormalizeSubtopic(topic string) (string, error) {
 	if topic == "" {
 		return topic, nil
