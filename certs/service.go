@@ -254,7 +254,11 @@ func GenerateCRLFile(ctx context.Context, repo Repository, pkiAgent pki.Agent, c
 		return err
 	}
 
-	return os.WriteFile(crlPath, crlPEM, 0644)
+	if err := os.WriteFile(crlPath, crlPEM, 0644); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (cs *certsService) ListCerts(ctx context.Context, token, thingID string, offset, limit uint64) (Page, error) {

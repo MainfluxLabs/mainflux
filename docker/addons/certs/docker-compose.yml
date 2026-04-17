@@ -31,11 +31,22 @@ services:
     volumes:
       - mainfluxlabs-certs-db-volume:/var/lib/postgresql/data
 
+  # used for configuring permissions for automatic key rotation crl file
+  certs-crl-init:
+    image: busybox
+    container_name: mainfluxlabs-certs-crl-init
+    environment:
+      MF_CERTS_CRL_DIR: ${MF_CERTS_CRL_DIR}
+    command: sh -c "mkdir -p $$MF_CERTS_CRL_DIR && chown -R 65532:65532 $$MF_CERTS_CRL_DIR"
+    volumes:
+      - mainfluxlabs-crl-volume:${MF_CERTS_CRL_DIR}
+
   certs:
     image: mainfluxlabs/certs:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-certs
     depends_on:
       - certs-db
+      - certs-crl-init
     restart: on-failure
     networks:
       - docker_mainfluxlabs-base-net
@@ -71,4 +82,4 @@ services:
     volumes:
       - ../../ssl/certs/ca.key:/etc/ssl/certs/ca.key
       - ../../ssl/certs/ca.crt:/etc/ssl/certs/ca.crt
-      - mainfluxlabs-crl-volume:/etc/ssl/certs/crl
+      - mainfluxlabs-crl-volume:${MF_CERTS_CRL_DIR}
