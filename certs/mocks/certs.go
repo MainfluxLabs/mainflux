@@ -201,6 +201,10 @@ func (c *certsRepoMock) MarkDownloaded(ctx context.Context, serial string) error
 		return dbutil.ErrNotFound
 	}
 
+	if cert.Downloaded {
+		return certs.ErrCertAlreadyDownloaded
+	}
+
 	cert.Downloaded = true
 	c.certsBySerial[serial] = cert
 

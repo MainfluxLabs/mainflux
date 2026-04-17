@@ -239,6 +239,116 @@ func TestIssueCert(t *testing.T) {
 	}
 }
 
+func TestRotateCert(t *testing.T) {
+	svc, _, err := newService()
+	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
+
+	issuedCert, err := svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, keyType)
+	require.Nil(t, err, fmt.Sprintf("unexpected cert creation error: %s\n", err))
+
+	mismatchCert, err := svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, keyType)
+	require.Nil(t, err, fmt.Sprintf("unexpected cert creation error: %s\n", err))
+
+	cases := []struct {
+		desc    string
+		token   string
+		serial  string
+		thingID string
+		err     error
+	}{
+		{
+			desc:    "rotate cert with invalid token",
+			token:   wrongValue,
+			serial:  issuedCert.Serial,
+			thingID: thingID,
+			err:     errors.ErrAuthentication,
+		},
+		{
+			desc:    "rotate cert with serial/thingID mismatch",
+			token:   token,
+			serial:  mismatchCert.Serial,
+			thingID: "other-thing-id",
+			err:     errors.ErrAuthorization,
+		},
+		{
+			desc:    "rotate cert with non-existent serial",
+			token:   token,
+			serial:  wrongValue,
+			thingID: thingID,
+			err:     dbutil.ErrNotFound,
+		},
+		{
+			desc:    "rotate cert",
+			token:   token,
+			serial:  issuedCert.Serial,
+			thingID: thingID,
+			err:     nil,
+		},
+	}
+
+	for _, tc := range cases {
+		newCert, err := svc.RotateCert(context.Background(), tc.token, tc.serial, tc.thingID, ttl, keyBits, keyType)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		if err == nil {
+			assert.NotEqual(t, issuedCert.Serial, newCert.Serial, fmt.Sprintf("%s: rotated cert should have new serial", tc.desc))
+			assert.Equal(t, tc.thingID, newCert.ThingID, fmt.Sprintf("%s: thing ID mismatch", tc.desc))
+			assert.NotEmpty(t, newCert.ClientCert, fmt.Sprintf("%s: client cert should not be empty", tc.desc))
+			assert.NotEmpty(t, newCert.ClientKey, fmt.Sprintf("%s: client key should not be empty", tc.desc))
+		}
+	}
+}
+
+func TestDownloadCert(t *testing.T) {
+	svc, _, err := newService()
+	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
+
+	issuedCert, err := svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, keyType)
+	require.Nil(t, err, fmt.Sprintf("unexpected cert creation error: %s\n", err))
+
+	cases := []struct {
+		desc    string
+		token   string
+		serial  string
+		err     error
+	}{
+		{
+			desc:   "download cert",
+			token:  token,
+			serial: issuedCert.Serial,
+			err:    nil,
+		},
+		{
+			desc:   "download cert again - already downloaded",
+			token:  token,
+			serial: issuedCert.Serial,
+			err:    certs.ErrCertAlreadyDownloaded,
+		},
+		{
+			desc:   "download cert with invalid token",
+			token:  wrongValue,
+			serial: issuedCert.Serial,
+			err:    errors.ErrAuthentication,
+		},
+		{
+			desc:   "download cert with invalid serial",
+			token:  token,
+			serial: wrongValue,
+			err:    dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		cert, err := svc.DownloadCert(context.Background(), tc.token, tc.serial)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		if err == nil {
+			assert.Equal(t, issuedCert.Serial, cert.Serial, fmt.Sprintf("%s: serial mismatch", tc.desc))
+			assert.NotEmpty(t, cert.ClientCert, fmt.Sprintf("%s: client cert should not be empty", tc.desc))
+			assert.NotEmpty(t, cert.ClientKey, fmt.Sprintf("%s: client key should not be empty", tc.desc))
+			assert.True(t, cert.Downloaded, fmt.Sprintf("%s: cert should be marked downloaded", tc.desc))
+		}
+	}
+}
+
 func TestRevokeCert(t *testing.T) {
 	svc, _, err := newService()
 	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))

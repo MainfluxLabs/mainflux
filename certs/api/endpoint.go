@@ -34,7 +34,7 @@ func rotateCertEndpoint(svc certs.Service) endpoint.Endpoint {
 
 		res, err := svc.RotateCert(ctx, req.token, req.serial, req.ThingID, req.TTL, req.KeyBits, req.KeyType)
 		if err != nil {
-			return issueCertRes{}, err
+			return nil, err
 		}
 
 		return buildIssueCertRes(res), nil

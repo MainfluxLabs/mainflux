@@ -171,6 +171,19 @@ func (cs *certsService) issueCert(ctx context.Context, thingID, ttl string, keyB
 }
 
 func (cs *certsService) RotateCert(ctx context.Context, token, serial, thingID, ttl string, keyBits int, keyType string) (Cert, error) {
+	if _, err := cs.auth.Identify(ctx, token); err != nil {
+		return Cert{}, err
+	}
+
+	oldCert, err := cs.certsRepo.RetrieveBySerial(ctx, serial)
+	if err != nil {
+		return Cert{}, err
+	}
+
+	if oldCert.ThingID != thingID {
+		return Cert{}, errors.ErrAuthorization
+	}
+
 	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupEditor}); err != nil {
 		return Cert{}, errors.ErrAuthorization
 	}
@@ -340,10 +353,6 @@ func (cs *certsService) DownloadCert(ctx context.Context, token, serial string) 
 
 	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: cert.ThingID, Action: domain.GroupEditor}); err != nil {
 		return Cert{}, errors.ErrAuthorization
-	}
-
-	if cert.Downloaded {
-		return Cert{}, ErrCertAlreadyDownloaded
 	}
 
 	if err := cs.certsRepo.MarkDownloaded(ctx, serial); err != nil {

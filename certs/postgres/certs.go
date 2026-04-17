@@ -304,7 +304,7 @@ func toCert(cdb dbCert) certs.Cert {
 }
 
 func (cr certsRepository) MarkDownloaded(ctx context.Context, serial string) error {
-	q := `UPDATE certs SET downloaded = true WHERE serial = :serial`
+	q := `UPDATE certs SET downloaded = true WHERE serial = :serial AND downloaded = false`
 
 	params := map[string]any{
 		"serial": serial,
@@ -321,7 +321,7 @@ func (cr certsRepository) MarkDownloaded(ctx context.Context, serial string) err
 	}
 
 	if cnt < 1 {
-		return dbutil.ErrNotFound
+		return certs.ErrCertAlreadyDownloaded
 	}
 
 	return nil
