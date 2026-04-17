@@ -341,6 +341,10 @@ func (cs *certsService) RenewCert(ctx context.Context, token, serial string) (Ce
 		keyBits = defaultRenewalKeyBits
 	}
 
+	if _, err := cs.revokeCert(ctx, serial); err != nil {
+		return Cert{}, err
+	}
+
 	return cs.issueCert(ctx, oldCert.ThingID, defaultRenewalTTL, keyBits, keyType)
 }
 
