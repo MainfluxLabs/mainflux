@@ -95,13 +95,14 @@ func (res viewCertRes) Empty() bool {
 }
 
 type downloadCertRes struct {
-	Certificate    string   `json:"certificate"`
-	IssuingCA      string   `json:"issuing_ca"`
-	CAChain        []string `json:"ca_chain"`
-	PrivateKey     string   `json:"private_key"`
-	PrivateKeyType string   `json:"private_key_type"`
-	Serial         string   `json:"serial"`
-	ThingID        string   `json:"thing_id"`
+	Certificate    string    `json:"certificate"`
+	IssuingCA      string    `json:"issuing_ca"`
+	CAChain        []string  `json:"ca_chain"`
+	PrivateKey     string    `json:"private_key"`
+	PrivateKeyType string    `json:"private_key_type"`
+	Serial         string    `json:"serial"`
+	ThingID        string    `json:"thing_id"`
+	ExpiresAt      time.Time `json:"expires_at"`
 }
 
 func (res downloadCertRes) Code() int {

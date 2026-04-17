@@ -128,6 +128,7 @@ func downloadCertEndpoint(svc certs.Service) endpoint.Endpoint {
 			PrivateKeyType: cert.PrivateKeyType,
 			Serial:         cert.Serial,
 			ThingID:        cert.ThingID,
+			ExpiresAt:      cert.ExpiresAt,
 		}, nil
 	}
 }
