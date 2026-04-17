@@ -42,7 +42,7 @@ func (f *fakeFiler) handler() http.Handler {
 
 		key := strings.TrimLeft(r.URL.Path, "/")
 		switch r.Method {
-		case http.MethodPost:
+		case http.MethodPut:
 			b, err := io.ReadAll(r.Body)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)

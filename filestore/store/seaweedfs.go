@@ -43,7 +43,7 @@ func (s *seaweedFS) Put(ctx context.Context, key string, r io.Reader) (string, e
 		pw.CloseWithError(err)
 	}()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.objectURL(key), pr)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, s.objectURL(key), pr)
 	if err != nil {
 		return "", err
 	}
