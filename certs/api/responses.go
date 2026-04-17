@@ -42,6 +42,8 @@ type viewCertRes struct {
 	ExpiresAt   time.Time `json:"expires_at"`
 	ThingID     string    `json:"thing_id"`
 	Downloaded  bool      `json:"downloaded"`
+	KeyType     string    `json:"key_type"`
+	KeyBits     int       `json:"key_bits"`
 }
 
 func (res certsPageRes) Code() int {

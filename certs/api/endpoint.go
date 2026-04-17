@@ -92,6 +92,8 @@ func viewCertEndpoint(svc certs.Service) endpoint.Endpoint {
 			ExpiresAt:   cert.ExpiresAt,
 			ThingID:     cert.ThingID,
 			Downloaded:  cert.Downloaded,
+			KeyType:     cert.PrivateKeyType,
+			KeyBits:     cert.KeyBits,
 		}, nil
 	}
 }
