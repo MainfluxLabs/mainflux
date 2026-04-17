@@ -63,11 +63,11 @@ func (tr thingsRepository) Update(ctx context.Context, thingID string, fi filest
 
 	res, errdb := tr.db.NamedExecContext(ctx, q, dbFile)
 	if errdb != nil {
-		pgErr, ok := err.(*pgconn.PgError)
+		pgErr, ok := errdb.(*pgconn.PgError)
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, errdb)
 			}
 		}
 
@@ -245,6 +245,7 @@ type dbFileInfo struct {
 	FileFormat string  `db:"file_format"`
 	Metadata   []byte  `db:"metadata"`
 	Time       float64 `db:"time"`
+	Checksum   string  `db:"checksum"`
 }
 
 type dbThingFile struct {
@@ -287,6 +288,7 @@ func toFileInfo(dbfi dbFileInfo) (filestore.FileInfo, error) {
 		Format:   dbfi.FileFormat,
 		Metadata: metadata,
 		Time:     dbfi.Time,
+		Checksum: dbfi.Checksum,
 	}
 
 	return fileInfo, nil

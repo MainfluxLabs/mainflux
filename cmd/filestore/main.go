@@ -21,6 +21,7 @@ import (
 	httpapi "github.com/MainfluxLabs/mainflux/filestore/api/http"
 	"github.com/MainfluxLabs/mainflux/filestore/events"
 	"github.com/MainfluxLabs/mainflux/filestore/postgres"
+	"github.com/MainfluxLabs/mainflux/filestore/store"
 	"github.com/MainfluxLabs/mainflux/filestore/tracing"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
@@ -64,6 +65,16 @@ const (
 	defDBSSLRootCert     = ""
 	defESURL             = "redis://localhost:6379/0"
 	defESConsumerName    = svcName
+	defFilesPath         = "files"
+	envFilesPath         = "MF_FILESTORE_FILES_PATH"
+	defBackend           = "local"
+	envBackend           = "MF_FILESTORE_BACKEND"
+	envSeaweedURL        = "MF_FILESTORE_SEAWEED_URL"
+	defSeaweedURL        = "http://localhost:8888"
+	envSeaweedPrefix     = "MF_FILESTORE_SEAWEED_PREFIX"
+	defSeaweedPrefix     = "filestore"
+	envSeaweedTimeout    = "MF_FILESTORE_SEAWEED_TIMEOUT"
+	defSeaweedTimeout    = "30s"
 
 	envDBHost            = "MF_FILESTORE_DB_HOST"
 	envDBPort            = "MF_FILESTORE_DB_PORT"
@@ -204,6 +215,27 @@ func loadConfig() config {
 	}
 }
 
+func buildStore(logger logger.Logger) store.FileStore {
+	switch mainflux.Env(envBackend, defBackend) {
+	case "seaweedfs":
+		to, err := time.ParseDuration(mainflux.Env(envSeaweedTimeout, defSeaweedTimeout))
+		if err != nil {
+			log.Fatalf("Invalid %s: %s", envSeaweedTimeout, err)
+		}
+
+		fs, err := store.NewSeaweedFS(mainflux.Env(envSeaweedURL, defSeaweedURL), mainflux.Env(envSeaweedPrefix, defSeaweedPrefix), to)
+		if err != nil {
+			log.Fatalf("Failed to init SeaweedFS backend: %s", err)
+		}
+
+		logger.Info("Using SeaweedFS backend")
+		return fs
+	default:
+		logger.Info("Using local disk backend")
+		return store.NewLocal(mainflux.Env(envFilesPath, defFilesPath))
+	}
+}
+
 func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	db, err := postgres.Connect(dbConfig)
 	if err != nil {
@@ -235,7 +267,8 @@ func newService(thingsAuth domain.ThingsClient, dbTracer opentracing.Tracer, db 
 	thRepo = tracing.ThingsRepositoryMiddleware(dbTracer, thRepo)
 	grRepo := postgres.NewGroupsRepository(db)
 	grRepo = tracing.GroupsRepositoryMiddleware(dbTracer, grRepo)
-	svc := filestore.New(thingsAuth, thRepo, grRepo)
+	fs := buildStore(logger)
+	svc := filestore.New(thingsAuth, thRepo, grRepo, fs)
 
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(

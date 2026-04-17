@@ -4,6 +4,7 @@
 package http
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -78,6 +79,22 @@ func (res viewFileRes) Headers() map[string]string {
 }
 
 func (res viewFileRes) Empty() bool {
+	return false
+}
+
+type streamFileRes struct {
+	reader io.ReadCloser
+}
+
+func (res streamFileRes) Code() int {
+	return http.StatusOK
+}
+
+func (res streamFileRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res streamFileRes) Empty() bool {
 	return false
 }
 

@@ -6,6 +6,7 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -370,21 +371,26 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response any) erro
 func encodeViewFileResponse(_ context.Context, w http.ResponseWriter, response any) (err error) {
 	w.Header().Set("Content-Type", octetStreamContentType)
 
-	if fr, ok := response.(viewFileRes); ok {
+	switch fr := response.(type) {
+	case viewFileRes:
 		for k, v := range fr.Headers() {
 			w.Header().Set(k, v)
 		}
-
 		w.WriteHeader(fr.Code())
-
 		if fr.Empty() {
 			return nil
 		}
-
 		w.Write(fr.file)
+	case streamFileRes:
+		for k, v := range fr.Headers() {
+			w.Header().Set(k, v)
+		}
+		w.WriteHeader(fr.Code())
+		defer fr.reader.Close()
+		_, err = io.Copy(w, fr.reader)
 	}
 
-	return nil
+	return err
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
