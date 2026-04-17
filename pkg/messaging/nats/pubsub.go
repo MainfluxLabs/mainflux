@@ -156,10 +156,11 @@ func (ps *pubsub) subscribe(id, topic string, nh broker.MsgHandler, cancelFn fun
 		sub *broker.Subscription
 		err error
 	)
-	if ps.queue != "" {
-		sub, err = ps.conn.QueueSubscribe(topic, ps.queue, nh)
-	} else {
+	switch ps.queue {
+	case "":
 		sub, err = ps.conn.Subscribe(topic, nh)
+	default:
+		sub, err = ps.conn.QueueSubscribe(topic, ps.queue, nh)
 	}
 	if err != nil {
 		return err
