@@ -95,14 +95,11 @@ func buildPageMetadata(r *http.Request) (alarms.PageMetadata, error) {
 		return alarms.PageMetadata{}, err
 	}
 
-	pl, _ := apiutil.ReadMetadataQuery(r, apiutil.PayloadKey, nil)
-
 	return alarms.PageMetadata{
-		Offset:  base.Offset,
-		Limit:   base.Limit,
-		Order:   base.Order,
-		Dir:     base.Dir,
-		Payload: pl,
+		Offset: base.Offset,
+		Limit:  base.Limit,
+		Order:  base.Order,
+		Dir:    base.Dir,
 	}, nil
 }
 

@@ -17,7 +17,6 @@ type alarmResponse struct {
 	ScriptID string           `json:"script_id,omitempty"`
 	Subtopic string           `json:"subtopic"`
 	Protocol string           `json:"protocol"`
-	Payload  map[string]any   `json:"payload"`
 	Rule     *alarms.RuleInfo `json:"rule,omitempty"`
 	Level    int32            `json:"level"`
 	Status   string           `json:"status"`

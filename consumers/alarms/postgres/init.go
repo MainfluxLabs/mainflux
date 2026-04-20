@@ -78,11 +78,13 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE alarms ADD COLUMN level  SMALLINT NOT NULL DEFAULT 1;`,
 					`ALTER TABLE alarms ADD COLUMN status VARCHAR(10) NOT NULL DEFAULT 'active';`,
 					`ALTER TABLE alarms ADD COLUMN rule   JSONB;`,
+					`ALTER TABLE alarms DROP COLUMN IF EXISTS payload;`,
 				},
 				Down: []string{
 					`ALTER TABLE alarms DROP COLUMN IF EXISTS level;`,
 					`ALTER TABLE alarms DROP COLUMN IF EXISTS status;`,
 					`ALTER TABLE alarms DROP COLUMN IF EXISTS rule;`,
+					`ALTER TABLE alarms ADD COLUMN payload JSONB;`,
 				},
 			},
 		},

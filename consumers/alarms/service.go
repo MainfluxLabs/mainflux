@@ -26,7 +26,6 @@ type PageMetadata struct {
 	Limit   uint64         `json:"limit,omitempty"`
 	Order   string         `json:"order,omitempty"`
 	Dir     string         `json:"dir,omitempty"`
-	Payload map[string]any `json:"payload,omitempty"`
 }
 
 // Validate validates the page metadata.

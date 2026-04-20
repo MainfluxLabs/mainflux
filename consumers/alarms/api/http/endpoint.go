@@ -161,7 +161,6 @@ func buildAlarmResponse(alarm alarms.Alarm) alarmResponse {
 		ScriptID: alarm.ScriptID,
 		Subtopic: alarm.Subtopic,
 		Protocol: alarm.Protocol,
-		Payload:  alarm.Payload,
 		Rule:     alarm.Rule,
 		Level:    alarm.Level,
 		Status:   alarm.Status,

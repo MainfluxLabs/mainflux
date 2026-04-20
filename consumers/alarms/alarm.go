@@ -20,7 +20,6 @@ type Alarm struct {
 	ScriptID string
 	Subtopic string
 	Protocol string
-	Payload  map[string]any
 	Rule     *RuleInfo
 	Level    int32
 	Status   string

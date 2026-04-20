@@ -33,8 +33,8 @@ func (ar *alarmRepository) Save(ctx context.Context, alarms ...alarms.Alarm) err
 	}
 	defer tx.Rollback()
 
-	q := `INSERT INTO alarms (id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, rule, level, status, created)
-	      VALUES (:id, :thing_id, :group_id, :rule_id, :script_id, :subtopic, :protocol, :payload, :rule, :level, :status, :created);`
+	q := `INSERT INTO alarms (id, thing_id, group_id, rule_id, script_id, subtopic, protocol, rule, level, status, created)
+	      VALUES (:id, :thing_id, :group_id, :rule_id, :script_id, :subtopic, :protocol, :rule, :level, :status, :created);`
 
 	for _, alarm := range alarms {
 		dbAlarm, err := toDBAlarm(alarm)
@@ -85,7 +85,7 @@ func (ar *alarmRepository) UpdateStatus(ctx context.Context, id, status string) 
 }
 
 func (ar *alarmRepository) RetrieveByID(ctx context.Context, id string) (alarms.Alarm, error) {
-	q := `SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, rule, level, status, created FROM alarms WHERE id = $1;`
+	q := `SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, rule, level, status, created FROM alarms WHERE id = $1;`
 
 	var dba dbAlarm
 	if err := ar.db.QueryRowxContext(ctx, q, id).StructScan(&dba); err != nil {
@@ -107,15 +107,9 @@ func (ar *alarmRepository) RetrieveByThing(ctx context.Context, thingID string, 
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	p, pq, err := dbutil.GetPayloadQuery(pm.Payload)
-	if err != nil {
-		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-	}
+	whereClause := dbutil.BuildWhereClause("thing_id = :thing_id")
 
-	thingFilter := "thing_id = :thing_id"
-	whereClause := dbutil.BuildWhereClause(thingFilter, pq)
-
-	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, rule, level, status, created
+	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, rule, level, status, created
 	                  FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
 
@@ -123,7 +117,6 @@ func (ar *alarmRepository) RetrieveByThing(ctx context.Context, thingID string, 
 		"thing_id": thingID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
-		"payload":  p,
 	}
 
 	return ar.retrieve(ctx, q, qc, params)
@@ -138,15 +131,9 @@ func (ar *alarmRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
-	p, pq, err := dbutil.GetPayloadQuery(pm.Payload)
-	if err != nil {
-		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-	}
+	whereClause := dbutil.BuildWhereClause("group_id = :group_id")
 
-	groupFilter := "group_id = :group_id"
-	whereClause := dbutil.BuildWhereClause(groupFilter, pq)
-
-	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, rule, level, status, created
+	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, rule, level, status, created
 	                  FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
 
@@ -154,7 +141,6 @@ func (ar *alarmRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 		"group_id": groupID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
-		"payload":  p,
 	}
 
 	return ar.retrieve(ctx, q, qc, params)
@@ -169,19 +155,13 @@ func (ar *alarmRepository) RetrieveByGroups(ctx context.Context, groupIDs []stri
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	giq := dbutil.GetGroupIDsQuery(groupIDs)
-	p, pq, err := dbutil.GetPayloadQuery(pm.Payload)
-	if err != nil {
-		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-	}
-
-	whereClause := dbutil.BuildWhereClause(giq, pq)
-	query := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, rule, level, status, created FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	whereClause := dbutil.BuildWhereClause(giq)
+	query := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, rule, level, status, created FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
 
 	params := map[string]any{
 		"limit":     pm.Limit,
 		"offset":    pm.Offset,
-		"payload":   p,
 		"group_ids": groupIDs,
 	}
 
@@ -230,21 +210,14 @@ func (ar *alarmRepository) ExportByThing(ctx context.Context, thingID string, pm
 
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
-	p, pq, err := dbutil.GetPayloadQuery(pm.Payload)
-	if err != nil {
-		return alarms.AlarmsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-	}
+	whereClause := dbutil.BuildWhereClause("thing_id = :thing_id")
 
-	thingFilter := "thing_id = :thing_id"
-	whereClause := dbutil.BuildWhereClause(thingFilter, pq)
-
-	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, payload, rule, level, status, created
+	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, rule, level, status, created
 	                  FROM alarms %s ORDER BY %s %s;`, whereClause, oq, dq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
 
 	params := map[string]any{
 		"thing_id": thingID,
-		"payload":  p,
 	}
 
 	return ar.retrieve(ctx, q, qc, params)
@@ -293,7 +266,6 @@ type dbAlarm struct {
 	ScriptID sql.NullString `db:"script_id"`
 	Subtopic string         `db:"subtopic"`
 	Protocol string         `db:"protocol"`
-	Payload  []byte         `db:"payload"`
 	Rule     []byte         `db:"rule"`
 	Level    int32          `db:"level"`
 	Status   string         `db:"status"`
@@ -301,11 +273,6 @@ type dbAlarm struct {
 }
 
 func toDBAlarm(alarm alarms.Alarm) (dbAlarm, error) {
-	payload, err := json.Marshal(alarm.Payload)
-	if err != nil {
-		return dbAlarm{}, err
-	}
-
 	rule, err := json.Marshal(alarm.Rule)
 	if err != nil {
 		return dbAlarm{}, err
@@ -319,7 +286,6 @@ func toDBAlarm(alarm alarms.Alarm) (dbAlarm, error) {
 		ScriptID: sql.NullString{String: alarm.ScriptID, Valid: alarm.ScriptID != ""},
 		Subtopic: alarm.Subtopic,
 		Protocol: alarm.Protocol,
-		Payload:  payload,
 		Rule:     rule,
 		Level:    alarm.Level,
 		Status:   alarm.Status,
@@ -328,11 +294,6 @@ func toDBAlarm(alarm alarms.Alarm) (dbAlarm, error) {
 }
 
 func toAlarm(dbAlarm dbAlarm) (alarms.Alarm, error) {
-	var payload map[string]any
-	if err := json.Unmarshal(dbAlarm.Payload, &payload); err != nil {
-		return alarms.Alarm{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-	}
-
 	var ruleInfo *alarms.RuleInfo
 	if len(dbAlarm.Rule) > 0 && string(dbAlarm.Rule) != "null" {
 		ruleInfo = &alarms.RuleInfo{}
@@ -349,7 +310,6 @@ func toAlarm(dbAlarm dbAlarm) (alarms.Alarm, error) {
 		ScriptID: dbAlarm.ScriptID.String,
 		Subtopic: dbAlarm.Subtopic,
 		Protocol: dbAlarm.Protocol,
-		Payload:  payload,
 		Rule:     ruleInfo,
 		Level:    dbAlarm.Level,
 		Status:   dbAlarm.Status,
