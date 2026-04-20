@@ -53,7 +53,7 @@ func newServiceWithPub(pub nats.Publisher) rules.Service {
 	idp := uuid.NewMock()
 	log := logger.NewMock()
 
-	return rules.New(rulesRepo, ths, pub, idp, log, true)
+	return rules.New(rulesRepo, ths, authmock.NewReadersClient(), pub, idp, log, true)
 }
 
 func saveRules(t *testing.T, svc rules.Service, n int) []rules.Rule {

@@ -147,6 +147,7 @@ const (
 type rulesService struct {
 	rules          Repository
 	things         domain.ThingsClient
+	readers        domain.ReadersClient
 	pub            nats.Publisher
 	idProvider     uuid.IDProvider
 	logger         logger.Logger
@@ -156,7 +157,7 @@ type rulesService struct {
 var _ Service = (*rulesService)(nil)
 
 // New instantiates the rules service implementation.
-func New(rules Repository, things domain.ThingsClient, pub nats.Publisher, idp uuid.IDProvider, logger logger.Logger, scriptsEnabled bool) Service {
+func New(rules Repository, things domain.ThingsClient, readers domain.ReadersClient, pub nats.Publisher, idp uuid.IDProvider, logger logger.Logger, scriptsEnabled bool) Service {
 	return &rulesService{
 		rules:          rules,
 		things:         things,

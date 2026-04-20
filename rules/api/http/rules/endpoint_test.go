@@ -81,7 +81,7 @@ func newService() rules.Service {
 	idp := uuid.NewMock()
 	log := logger.NewMock()
 
-	return rules.New(rulesRepo, ths, pub, idp, log, true)
+	return rules.New(rulesRepo, ths, pkgmocks.NewReadersClient(), pub, idp, log, true)
 }
 
 func newHTTPServer(svc rules.Service) *httptest.Server {

@@ -3,6 +3,8 @@
 
 package domain
 
+import "context"
+
 // Message represents any message format.
 type Message any
 
@@ -61,4 +63,10 @@ type JSONPageMetadata struct {
 	AggType     string   `json:"agg_type,omitempty"`
 	AggFields   []string `json:"agg_fields,omitempty"`
 	Dir         string   `json:"dir,omitempty"`
+}
+
+// ReadersClient specifies the API for querying messages from the readers service via gRPC.
+type ReadersClient interface {
+	ListJSONMessages(ctx context.Context, key ThingKey, pm JSONPageMetadata) (JSONMessagesPage, error)
+	ListSenMLMessages(ctx context.Context, key ThingKey, pm SenMLPageMetadata) (SenMLMessagesPage, error)
 }
