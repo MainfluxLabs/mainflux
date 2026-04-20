@@ -26,6 +26,7 @@ const (
 	ruleID     = "5384fb1c-d0ae-4cbe-be52-c54223150fe1"
 	subtopic   = "sensors"
 	protocol   = "mqtt"
+	ruleSub    = "alarms.rule"
 )
 
 func newService() alarms.Service {
@@ -48,7 +49,6 @@ func newService() alarms.Service {
 func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 	t.Helper()
 
-	subject := fmt.Sprintf("alarms.rule.%s", ruleID)
 	for i := range n {
 		alarm := protomfx.Alarm{
 			ThingId:  thingID,
@@ -57,7 +57,7 @@ func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 			Created:  int64(1000000 + i),
 			RuleId:   ruleID,
 		}
-		err := svc.ConsumeAlarm(subject, alarm)
+		err := svc.ConsumeAlarm(ruleSub, alarm)
 		require.Nil(t, err, fmt.Sprintf("unexpected error saving alarm %d: %s", i+1, err))
 	}
 }
@@ -65,7 +65,6 @@ func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 func TestConsume(t *testing.T) {
 	svc := newService()
 
-	validSubject := fmt.Sprintf("alarms.rule.%s", ruleID)
 	validAlarm := protomfx.Alarm{
 		ThingId:  thingID,
 		Subtopic: subtopic,
@@ -85,7 +84,7 @@ func TestConsume(t *testing.T) {
 	}{
 		{
 			desc:    "consume valid alarm",
-			subject: validSubject,
+			subject: ruleSub,
 			alarm:   validAlarm,
 			err:     nil,
 		},
@@ -97,7 +96,7 @@ func TestConsume(t *testing.T) {
 		},
 		{
 			desc:    "consume alarm with unknown thing",
-			subject: validSubject,
+			subject: ruleSub,
 			alarm:   unknownThingAlarm,
 			err:     dbutil.ErrNotFound,
 		},

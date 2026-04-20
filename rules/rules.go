@@ -62,7 +62,7 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 			if err != nil {
 				return err
 			}
-			subject := fmt.Sprintf("%s.%s.%s", subjectAlarms, domain.AlarmOriginRule, rule.ID)
+			subject := fmt.Sprintf("%s.%s", subjectAlarms, domain.AlarmOriginRule)
 			if err := rs.pub.PublishAlarm(subject, protomfx.Alarm{
 				ThingId:  msg.Publisher,
 				Subtopic: msg.Subtopic,

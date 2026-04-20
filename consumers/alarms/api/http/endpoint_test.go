@@ -34,9 +34,9 @@ const (
 	thingID     = "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
 	groupID     = "574106f7-030e-4881-8ab0-151195c29f94"
 	orgID       = "7e3d5e48-b0b4-4d7b-9d6a-c81f40e30e2c"
-	ruleID      = "5384fb1c-d0ae-4cbe-be52-c54223150fe1"
 	subtopic    = "sensors"
 	protocol    = "mqtt"
+	ruleSub     = "alarms.rule"
 )
 
 type alarmRes struct {
@@ -113,7 +113,6 @@ func (tr testRequest) make() (*http.Response, error) {
 func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 	t.Helper()
 
-	subject := fmt.Sprintf("alarms.rule.%s", ruleID)
 	for i := range n {
 		msg := protomfx.Alarm{
 			ThingId:  thingID,
@@ -121,7 +120,7 @@ func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 			Protocol: protocol,
 			Created:  int64(1000000 + i),
 		}
-		err := svc.ConsumeAlarm(subject, msg)
+		err := svc.ConsumeAlarm(ruleSub, msg)
 		require.Nil(t, err, fmt.Sprintf("unexpected error saving alarm %d: %s", i+1, err))
 	}
 }

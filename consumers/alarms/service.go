@@ -212,36 +212,32 @@ func (as *alarmService) ConsumeAlarm(subject string, alarm protomfx.Alarm) error
 	ctx := context.Background()
 
 	subParts := strings.Split(subject, ".")
-	if len(subParts) < 3 {
+	if len(subParts) < 2 {
 		return errors.ErrInvalidSubject
 	}
-
 	originType := subParts[1]
-	originID := subParts[2]
-
-	var ruleInfo *RuleInfo
-	if len(alarm.RuleInfo) > 0 {
-		var ri RuleInfo
-		if err := json.Unmarshal(alarm.RuleInfo, &ri); err != nil {
-			return err
-		}
-		ruleInfo = &ri
-	}
 
 	a := Alarm{
 		ThingID:  alarm.ThingId,
 		Subtopic: alarm.Subtopic,
 		Protocol: alarm.Protocol,
-		Rule:     ruleInfo,
 		Level:    alarm.Level,
 		Status:   AlarmStatusActive,
 	}
 
+	// Temporary mapping: originID is carried in alarm.RuleId for both rules and scripts.
 	switch originType {
 	case domain.AlarmOriginRule:
-		a.RuleID = originID
+		a.RuleID = alarm.RuleId
+		if len(alarm.RuleInfo) > 0 {
+			var ri RuleInfo
+			if err := json.Unmarshal(alarm.RuleInfo, &ri); err != nil {
+				return err
+			}
+			a.Rule = &ri
+		}
 	case domain.AlarmOriginScript:
-		a.ScriptID = originID
+		a.ScriptID = alarm.RuleId
 	default:
 		return fmt.Errorf("invalid subject origin type: %s", originType)
 	}
