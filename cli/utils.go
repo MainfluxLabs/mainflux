@@ -42,11 +42,11 @@ var (
 	Dir string = ""
 	// Filter query parameter (JSON messages)
 	Filter string = ""
-	// AggInterval aggregation interval (minute, hour, day, week, month, year)
+	// AggInterval aggregation interval (microsecond, millisecond, second, minute, hour, day, week, month, year)
 	AggInterval string = ""
 	// AggValue aggregation value
 	AggValue uint = 1
-	// AggType aggregation type (min, max, avg, count)
+	// AggType aggregation type (min, max, avg, count, first)
 	AggType string = ""
 	// AggField aggregation fields (comma-separated)
 	AggField string = ""

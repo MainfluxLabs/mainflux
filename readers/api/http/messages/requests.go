@@ -286,6 +286,12 @@ func isValidAggInterval(aggInterval string, aggValue uint64) bool {
 	var maxValue uint64
 
 	switch aggInterval {
+	case "microsecond":
+		maxValue = 1000
+	case "millisecond":
+		maxValue = 1000
+	case "second":
+		maxValue = 60
 	case "minute":
 		maxValue = 60
 	case "hour":
