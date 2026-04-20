@@ -121,9 +121,12 @@ func (req *downloadReq) validate() error {
 	if req.serial == "" {
 		return apiutil.ErrMissingSerial
 	}
-	if req.token == "" && req.thingKey.Value == "" {
-		return apiutil.ErrBearerToken
+
+	err := apiutil.ValidateThingKey(req.thingKey)
+	if req.token == "" && err != nil {
+		return apiutil.ErrMissingAuth
 	}
+
 	return nil
 }
 
