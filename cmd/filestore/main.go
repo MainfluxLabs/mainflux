@@ -268,7 +268,7 @@ func newService(thingsAuth domain.ThingsClient, dbTracer opentracing.Tracer, db 
 	grRepo := postgres.NewGroupsRepository(db)
 	grRepo = tracing.GroupsRepositoryMiddleware(dbTracer, grRepo)
 	fs := buildStore(logger)
-	svc := filestore.New(thingsAuth, thRepo, grRepo, fs)
+	svc := filestore.New(thingsAuth, thRepo, grRepo, fs, logger)
 
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
