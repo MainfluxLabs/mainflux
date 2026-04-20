@@ -20,33 +20,29 @@ var (
 	errTransRollback  = errors.New("failed to rollback transaction")
 )
 
-var _ consumers.Consumer = (*postgresRepo)(nil)
+var _ consumers.MessageConsumer = (*postgresRepo)(nil)
 
 type postgresRepo struct {
 	db *sqlx.DB
 }
 
 // New returns new PostgreSQL writer.
-func New(db *sqlx.DB) consumers.Consumer {
+func New(db *sqlx.DB) consumers.MessageConsumer {
 	return &postgresRepo{db: db}
 }
 
-func (pr postgresRepo) Consume(_ string, message any) error {
-	if msg, ok := message.(protomfx.Message); ok {
-		msgs, err := messaging.SplitMessage(msg)
-		if err != nil {
-			return err
-		}
-
-		switch msg.ContentType {
-		case messaging.JSONContentType:
-			return pr.saveJSON(msgs)
-		default:
-			return pr.saveSenML(msgs)
-		}
+func (pr postgresRepo) ConsumeMessage(_ string, msg protomfx.Message) error {
+	msgs, err := messaging.SplitMessage(msg)
+	if err != nil {
+		return err
 	}
 
-	return errors.ErrMessage
+	switch msg.ContentType {
+	case messaging.JSONContentType:
+		return pr.saveJSON(msgs)
+	default:
+		return pr.saveSenML(msgs)
+	}
 }
 
 func (pr postgresRepo) saveSenML(msgs []protomfx.Message) (err error) {

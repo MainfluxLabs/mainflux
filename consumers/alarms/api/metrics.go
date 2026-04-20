@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -97,11 +98,11 @@ func (ms *metricsMiddleware) ExportAlarmsByThing(ctx context.Context, token, thi
 	return ms.svc.ExportAlarmsByThing(ctx, token, thingID, pm)
 }
 
-func (ms *metricsMiddleware) Consume(subject string, message any) error {
+func (ms *metricsMiddleware) ConsumeAlarm(subject string, alarm protomfx.Alarm) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "consume").Add(1)
-		ms.latency.With("method", "consume").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "consume_alarm").Add(1)
+		ms.latency.With("method", "consume_alarm").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Consume(subject, message)
+	return ms.svc.ConsumeAlarm(subject, alarm)
 }

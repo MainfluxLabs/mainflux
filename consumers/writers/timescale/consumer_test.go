@@ -71,7 +71,7 @@ func TestSaveSenML(t *testing.T) {
 			Created:     now + int64(i),
 		}
 
-		err = repo.Consume(subject, pm)
+		err = repo.ConsumeMessage(subject, pm)
 		assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 	}
 }
@@ -104,6 +104,6 @@ func TestSaveJSON(t *testing.T) {
 		ContentType: messaging.JSONContentType,
 	}
 
-	err = repo.Consume(subject, pm)
+	err = repo.ConsumeMessage(subject, pm)
 	assert.Nil(t, err, fmt.Sprintf("expected no error got %s", err))
 }
