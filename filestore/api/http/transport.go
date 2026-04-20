@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 	"strings"
@@ -30,6 +31,7 @@ const (
 	multiPartContentType   = "multipart/form-data"
 	octetStreamContentType = "application/octet-stream"
 	maxMemory              = 32 << 20
+	defMaxUploadBytes      = 1 << 30 // 1 GiB
 	metadataKey            = "metadata"
 	fileKey                = "file"
 	nameKey                = "name"
@@ -159,6 +161,11 @@ func decodeSaveFile(_ context.Context, r *http.Request) (any, error) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
+	if r.ContentLength > defMaxUploadBytes {
+		return nil, apiutil.ErrLimitSize
+	}
+	r.Body = http.MaxBytesReader(nil, r.Body, defMaxUploadBytes)
+
 	fip, err := getFileInfoParams(r)
 	if err != nil {
 		return nil, err
@@ -244,6 +251,11 @@ func decodeSaveGroupFile(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), multiPartContentType) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
+
+	if r.ContentLength > defMaxUploadBytes {
+		return nil, apiutil.ErrLimitSize
+	}
+	r.Body = http.MaxBytesReader(nil, r.Body, defMaxUploadBytes)
 
 	fip, err := getFileInfoParams(r)
 	if err != nil {
@@ -416,6 +428,10 @@ func getFileInfoParams(r *http.Request) (fileInfoParams, error) {
 		return fileInfoParams{}, err
 	}
 
+	if err := verifyMagicBytes(f, class, format); err != nil {
+		return fileInfoParams{}, err
+	}
+
 	metaDataReq := r.FormValue(metadataKey)
 	var metadata map[string]any
 
@@ -506,15 +522,62 @@ func getListFilesParams(r *http.Request) (listFilesParams, error) {
 	return res, nil
 }
 
+// verifyMagicBytes sniffs the first 512 bytes of f and ensures the detected
+// MIME type is plausible for the declared class/format. Binaries and pointclouds
+// get no magic-byte enforcement (arbitrary payloads).
+func verifyMagicBytes(f multipart.File, class, format string) error {
+	buf := make([]byte, 512)
+	n, err := f.Read(buf)
+	if err != nil && err != io.EOF {
+		return err
+	}
+
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
+
+	if n == 0 {
+		return nil
+	}
+
+	mime := http.DetectContentType(buf[:n])
+	if !mimeMatches(class, format, mime) {
+		return apiutil.ErrUnsupportedContentType
+	}
+	return nil
+}
+
+func mimeMatches(class, format, mime string) bool {
+	switch class {
+	case binariesClass, pointcloudsClass, bimClass:
+		return true
+	case imagesClass:
+		return strings.HasPrefix(mime, "image/")
+	case documentsClass:
+		switch format {
+		case pdfFormat:
+			return strings.HasPrefix(mime, "application/pdf")
+		case csvFormat, txtFormat:
+			return strings.HasPrefix(mime, "text/")
+		}
+		return strings.HasPrefix(mime, "application/") || strings.HasPrefix(mime, "text/")
+	}
+	return true
+}
+
 // ParseFileName returns file class and format based on file name.
+// Rejects names with path separators or traversal sequences to prevent
+// escaping the intended storage key prefix.
 func parseFileName(name string) (string, string, error) {
-	// Find the last dot in the filename
+	if name == "" || strings.ContainsAny(name, `/\`) || strings.Contains(name, "..") || strings.HasPrefix(name, ".") {
+		return "", "", apiutil.ErrInvalidQueryParams
+	}
+
 	lastDotIndex := strings.LastIndex(name, ".")
 	if lastDotIndex == -1 || lastDotIndex == len(name)-1 {
 		return "", "", apiutil.ErrInvalidQueryParams
 	}
 
-	// The format is everything after the last dot
 	format := name[lastDotIndex+1:]
 
 	var class string
