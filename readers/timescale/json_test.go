@@ -83,7 +83,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 
 	var msgs, httpMsgs []map[string]any
 	for _, m := range messages {
-		err := writer.Consume(subject, m)
+		err := writer.ConsumeMessage(subject, m)
 		assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 
 		mapped, err := toMap(m)

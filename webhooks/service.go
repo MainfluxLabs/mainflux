@@ -75,7 +75,7 @@ type Service interface {
 	// RemoveWebhooksByGroup removes webhooks related to the given group ID.
 	RemoveWebhooksByGroup(ctx context.Context, groupID string) error
 
-	consumers.Consumer
+	consumers.MessageConsumer
 }
 
 type webhooksService struct {
@@ -210,13 +210,8 @@ func (ws *webhooksService) RemoveWebhooksByGroup(ctx context.Context, groupID st
 	return ws.webhooks.RemoveByGroup(ctx, groupID)
 }
 
-func (ws *webhooksService) Consume(_ string, message any) error {
+func (ws *webhooksService) ConsumeMessage(_ string, msg protomfx.Message) error {
 	ctx := context.Background()
-
-	msg, ok := message.(protomfx.Message)
-	if !ok {
-		return errors.ErrMessage
-	}
 
 	whs, err := ws.webhooks.RetrieveByThing(ctx, msg.Publisher, PageMetadata{})
 	if err != nil {

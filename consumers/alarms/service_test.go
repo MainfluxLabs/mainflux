@@ -2,7 +2,6 @@ package alarms_test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -29,8 +28,6 @@ const (
 	protocol   = "mqtt"
 )
 
-var payload = map[string]any{"temperature": float64(30), "humidity": float64(60)}
-
 func newService() alarms.Service {
 	ths := authmock.NewThingsServiceClient(
 		nil,
@@ -51,19 +48,16 @@ func newService() alarms.Service {
 func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 	t.Helper()
 
-	pyd, err := json.Marshal(payload)
-	require.Nil(t, err)
-
 	subject := fmt.Sprintf("alarms.rule.%s", ruleID)
-	for i := 0; i < n; i++ {
-		msg := protomfx.Message{
-			Publisher: thingID,
-			Subtopic:  subtopic,
-			Protocol:  protocol,
-			Payload:   pyd,
-			Created:   int64(1000000 + i),
+	for i := range n {
+		alarm := protomfx.Alarm{
+			ThingId:  thingID,
+			Subtopic: subtopic,
+			Protocol: protocol,
+			Created:  int64(1000000 + i),
+			RuleId:   ruleID,
 		}
-		err := svc.Consume(subject, msg)
+		err := svc.ConsumeAlarm(subject, alarm)
 		require.Nil(t, err, fmt.Sprintf("unexpected error saving alarm %d: %s", i+1, err))
 	}
 }
@@ -71,64 +65,46 @@ func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 func TestConsume(t *testing.T) {
 	svc := newService()
 
-	pyd, err := json.Marshal(payload)
-	require.Nil(t, err)
-
 	validSubject := fmt.Sprintf("alarms.rule.%s", ruleID)
-	validMsg := protomfx.Message{
-		Publisher: thingID,
-		Subtopic:  subtopic,
-		Protocol:  protocol,
-		Payload:   pyd,
-		Created:   1717430400,
+	validAlarm := protomfx.Alarm{
+		ThingId:  thingID,
+		Subtopic: subtopic,
+		Protocol: protocol,
+		Created:  1717430400,
+		RuleId:   ruleID,
 	}
 
-	invalidPayloadMsg := validMsg
-	invalidPayloadMsg.Payload = []byte("invalid")
-
-	unknownThingMsg := validMsg
-	unknownThingMsg.Publisher = wrongValue
+	unknownThingAlarm := validAlarm
+	unknownThingAlarm.ThingId = wrongValue
 
 	cases := []struct {
 		desc    string
 		subject string
-		msg     any
+		alarm   protomfx.Alarm
 		err     error
 	}{
 		{
-			desc:    "consume valid message",
+			desc:    "consume valid alarm",
 			subject: validSubject,
-			msg:     validMsg,
+			alarm:   validAlarm,
 			err:     nil,
 		},
 		{
-			desc:    "consume message with invalid payload",
-			subject: validSubject,
-			msg:     invalidPayloadMsg,
-			err:     errors.ErrInvalidPayload,
-		},
-		{
-			desc:    "consume message with invalid subject",
+			desc:    "consume alarm with invalid subject",
 			subject: "invalid",
-			msg:     validMsg,
+			alarm:   validAlarm,
 			err:     errors.ErrInvalidSubject,
 		},
 		{
-			desc:    "consume message with unknown thing",
+			desc:    "consume alarm with unknown thing",
 			subject: validSubject,
-			msg:     unknownThingMsg,
+			alarm:   unknownThingAlarm,
 			err:     dbutil.ErrNotFound,
-		},
-		{
-			desc:    "consume non-message type",
-			subject: validSubject,
-			msg:     "not-a-message",
-			err:     errors.ErrMessage,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.Consume(tc.subject, tc.msg)
+		err := svc.ConsumeAlarm(tc.subject, tc.alarm)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

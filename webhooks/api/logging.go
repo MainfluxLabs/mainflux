@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"time"
 
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+
 	log "github.com/MainfluxLabs/mainflux/logger"
 	pkgauth "github.com/MainfluxLabs/mainflux/pkg/auth"
 	"github.com/MainfluxLabs/mainflux/webhooks"
@@ -138,9 +140,9 @@ func (lm *loggingMiddleware) RemoveWebhooksByGroup(ctx context.Context, groupID 
 	return lm.svc.RemoveWebhooksByGroup(ctx, groupID)
 }
 
-func (lm *loggingMiddleware) Consume(subject string, message any) (err error) {
+func (lm *loggingMiddleware) ConsumeMessage(subject string, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
-		msg := fmt.Sprintf("Method consume took %s to complete", time.Since(begin))
+		msg := fmt.Sprintf("Method consume_message took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", msg, err))
 			return
@@ -148,5 +150,5 @@ func (lm *loggingMiddleware) Consume(subject string, message any) (err error) {
 		lm.logger.Info(fmt.Sprintf("%s without errors.", msg))
 	}(time.Now())
 
-	return lm.svc.Consume(subject, message)
+	return lm.svc.ConsumeMessage(subject, msg)
 }

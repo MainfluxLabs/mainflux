@@ -9,20 +9,21 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/go-kit/kit/metrics"
 )
 
-var _ consumers.Consumer = (*metricsMiddleware)(nil)
+var _ consumers.MessageConsumer = (*metricsMiddleware)(nil)
 
 type metricsMiddleware struct {
 	counter  metrics.Counter
 	latency  metrics.Histogram
-	consumer consumers.Consumer
+	consumer consumers.MessageConsumer
 }
 
 // MetricsMiddleware returns new message repository
 // with Save method wrapped to expose metrics.
-func MetricsMiddleware(consumer consumers.Consumer, counter metrics.Counter, latency metrics.Histogram) consumers.Consumer {
+func MetricsMiddleware(consumer consumers.MessageConsumer, counter metrics.Counter, latency metrics.Histogram) consumers.MessageConsumer {
 	return &metricsMiddleware{
 		counter:  counter,
 		latency:  latency,
@@ -30,10 +31,10 @@ func MetricsMiddleware(consumer consumers.Consumer, counter metrics.Counter, lat
 	}
 }
 
-func (mm *metricsMiddleware) Consume(subject string, msgs any) error {
+func (mm *metricsMiddleware) ConsumeMessage(subject string, msg protomfx.Message) error {
 	defer func(begin time.Time) {
-		mm.counter.With("method", "consume").Add(1)
-		mm.latency.With("method", "consume").Observe(time.Since(begin).Seconds())
+		mm.counter.With("method", "consume_message").Add(1)
+		mm.latency.With("method", "consume_message").Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return mm.consumer.Consume(subject, msgs)
+	return mm.consumer.ConsumeMessage(subject, msg)
 }

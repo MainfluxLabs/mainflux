@@ -12,7 +12,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	authmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -34,10 +34,10 @@ const (
 func threshold(v float64) *float64 { return &v }
 
 func newService() rules.Service {
-	return newServiceWithPubSub(mocks.NewPubSub())
+	return newServiceWithPub(mocks.NewPublisher())
 }
 
-func newServiceWithPubSub(pubsub messaging.PubSub) rules.Service {
+func newServiceWithPub(pub nats.Publisher) rules.Service {
 	ths := authmock.NewThingsServiceClient(
 		nil,
 		map[string]things.Thing{
@@ -53,7 +53,7 @@ func newServiceWithPubSub(pubsub messaging.PubSub) rules.Service {
 	idp := uuid.NewMock()
 	log := logger.NewMock()
 
-	return rules.New(rulesRepo, ths, pubsub, idp, log, true)
+	return rules.New(rulesRepo, ths, pub, idp, log, true)
 }
 
 func saveRules(t *testing.T, svc rules.Service, n int) []rules.Rule {
@@ -95,7 +95,7 @@ func mustMarshal(t *testing.T, v any) []byte {
 	return b
 }
 
-func TestConsume(t *testing.T) {
+func TestConsumeMessage(t *testing.T) {
 	defaultConditions := []rules.Condition{
 		{Field: "temperature", Comparator: ">", Threshold: threshold(25)},
 	}
@@ -104,7 +104,7 @@ func TestConsume(t *testing.T) {
 		desc       string
 		conditions []rules.Condition
 		operator   string
-		msg        any
+		msg        protomfx.Message
 		err        error
 	}{
 		{
@@ -155,11 +155,6 @@ func TestConsume(t *testing.T) {
 				ContentType: "application/senml+json",
 			},
 			err: nil,
-		},
-		{
-			desc: "non-Message type returns error",
-			msg:  "not-a-message",
-			err:  errors.ErrMessage,
 		},
 		{
 			desc:       "unknown publisher has no assigned rules",
@@ -285,7 +280,7 @@ func TestConsume(t *testing.T) {
 			assignRules(t, svc, thingID, saved[0].ID)
 		}
 
-		err := svc.Consume(subject, tc.msg)
+		err := svc.ConsumeMessage(subject, tc.msg)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

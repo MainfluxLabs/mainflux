@@ -36,7 +36,14 @@ const (
 	SubjectAlarms = "alarms.*.*"
 )
 
-var _ messaging.PubSub = (*pubsub)(nil)
+// PubSub extends messaging.PubSub with alarm publishing and subscribing.
+type PubSub interface {
+	messaging.PubSub
+	messaging.AlarmPublisher
+	messaging.AlarmSubscriber
+}
+
+var _ PubSub = (*pubsub)(nil)
 
 type subscription struct {
 	*broker.Subscription
@@ -58,7 +65,7 @@ type pubsub struct {
 // from ordinary subscribe. For more information, please take a look
 // here: https://docs.nats.io/developing-with-nats/receiving/queues.
 // If the queue is empty, Subscribe will be used.
-func NewPubSub(url, queue string, logger log.Logger) (messaging.PubSub, error) {
+func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
 	conn, err := broker.Connect(url, broker.MaxReconnects(maxReconnects))
 	if err != nil {
 		return nil, err
@@ -84,51 +91,16 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 	}
 
 	ps.mu.Lock()
-	// Check topic
-	s, ok := ps.subscriptions[topic]
-	if ok {
-		// Check client ID
+	defer ps.mu.Unlock()
+
+	if s, ok := ps.subscriptions[topic]; ok {
 		if _, ok := s[id]; ok {
-			// Unlocking, so that Unsubscribe() can access ps.subscriptions
-			ps.mu.Unlock()
-			if err := ps.Unsubscribe(id, topic); err != nil {
+			if err := ps.unsubscribe(id, topic); err != nil {
 				return err
 			}
-
-			ps.mu.Lock()
-			// value of s can be changed while ps.mu is unlocked
-			s = ps.subscriptions[topic]
 		}
 	}
-	defer ps.mu.Unlock()
-	if s == nil {
-		s = make(map[string]subscription)
-		ps.subscriptions[topic] = s
-	}
-
-	nh := ps.natsHandler(handler)
-
-	if ps.queue != "" {
-		sub, err := ps.conn.QueueSubscribe(topic, ps.queue, nh)
-		if err != nil {
-			return err
-		}
-		s[id] = subscription{
-			Subscription: sub,
-			cancel:       handler.Cancel,
-		}
-		return nil
-	}
-	sub, err := ps.conn.Subscribe(topic, nh)
-	if err != nil {
-		return err
-	}
-	s[id] = subscription{
-		Subscription: sub,
-		cancel:       handler.Cancel,
-	}
-
-	return nil
+	return ps.subscribe(id, topic, ps.natsHandler(handler), handler.Cancel)
 }
 
 func (ps *pubsub) Unsubscribe(id, topic string) error {
@@ -138,14 +110,20 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 	if topic == "" {
 		return messaging.ErrEmptyTopic
 	}
+
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
-	// Check topic
+
+	return ps.unsubscribe(id, topic)
+}
+
+// unsubscribe removes the subscription for the given id and topic.
+// Must be called with ps.mu held.
+func (ps *pubsub) unsubscribe(id, topic string) error {
 	s, ok := ps.subscriptions[topic]
 	if !ok {
 		return messaging.ErrNotSubscribed
 	}
-	// Check topic ID
 	current, ok := s[id]
 	if !ok {
 		return messaging.ErrNotSubscribed
@@ -158,12 +136,73 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 	if err := current.Unsubscribe(); err != nil {
 		return err
 	}
-
 	delete(s, id)
 	if len(s) == 0 {
 		delete(ps.subscriptions, topic)
 	}
 	return nil
+}
+
+// subscribe registers a NATS subscription for the given id and topic.
+// Must be called with ps.mu held.
+func (ps *pubsub) subscribe(id, topic string, nh broker.MsgHandler, cancelFn func() error) error {
+	s, ok := ps.subscriptions[topic]
+	if !ok {
+		s = make(map[string]subscription)
+		ps.subscriptions[topic] = s
+	}
+
+	var (
+		sub *broker.Subscription
+		err error
+	)
+	switch ps.queue {
+	case "":
+		sub, err = ps.conn.Subscribe(topic, nh)
+	default:
+		sub, err = ps.conn.QueueSubscribe(topic, ps.queue, nh)
+	}
+	if err != nil {
+		return err
+	}
+
+	s[id] = subscription{Subscription: sub, cancel: cancelFn}
+	return nil
+}
+
+func (ps *pubsub) SubscribeAlarms(id string, handler messaging.AlarmHandler) error {
+	if id == "" {
+		return messaging.ErrEmptyID
+	}
+
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+
+	return ps.subscribe(id, SubjectAlarms, ps.natsAlarmHandler(handler), handler.Cancel)
+}
+
+func (ps *pubsub) UnsubscribeAlarms(id string) error {
+	if id == "" {
+		return messaging.ErrEmptyID
+	}
+
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+
+	return ps.unsubscribe(id, SubjectAlarms)
+}
+
+func (ps *pubsub) natsAlarmHandler(h messaging.AlarmHandler) broker.MsgHandler {
+	return func(m *broker.Msg) {
+		var alarm protomfx.Alarm
+		if err := proto.Unmarshal(m.Data, &alarm); err != nil {
+			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received alarm: %s", err))
+			return
+		}
+		if err := h.Handle(m.Subject, alarm); err != nil {
+			ps.logger.Warn(fmt.Sprintf("Failed to handle alarm: %s", err))
+		}
+	}
 }
 
 func (ps *pubsub) natsHandler(h messaging.MessageHandler) broker.MsgHandler {

@@ -146,7 +146,7 @@ func main() {
 		return subscribeToThingsES(ctx, svc, cfg, logger)
 	})
 
-	if err = consumers.Start(svcName, pubSub, svc, nats.SubjectMessages); err != nil {
+	if err = consumers.Start(svcName, consumers.Messages(pubSub, svc, nats.SubjectMessages)); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Webhook: %s", err))
 	}
 
