@@ -161,7 +161,7 @@ func TestSeaweedGet(t *testing.T) {
 			desc:     "get missing key returns error",
 			key:      "groups/missing/x.txt",
 			checksum: "",
-			errMatch: "404",
+			errMatch: "status 404",
 		},
 	}
 

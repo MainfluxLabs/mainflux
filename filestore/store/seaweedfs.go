@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,6 +15,10 @@ import (
 	"sync"
 	"time"
 )
+
+// ErrBackend is returned for any non-2xx response from the object store.
+// Concrete status + URL are logged by the caller, never surfaced.
+var ErrBackend = errors.New("object store error")
 
 type seaweedFS struct {
 	base   string
@@ -53,7 +58,7 @@ func (s *seaweedFS) Put(ctx context.Context, key string, r io.Reader) (string, e
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("seaweedfs put %s: status %d", key, resp.StatusCode)
+		return "", fmt.Errorf("%w: put status %d", ErrBackend, resp.StatusCode)
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
@@ -69,7 +74,7 @@ func (s *seaweedFS) Get(ctx context.Context, key, expectedChecksum string) (io.R
 	}
 	if resp.StatusCode != http.StatusOK {
 		resp.Body.Close()
-		return nil, fmt.Errorf("seaweedfs get %s: status %d", key, resp.StatusCode)
+		return nil, fmt.Errorf("%w: get status %d", ErrBackend, resp.StatusCode)
 	}
 	if expectedChecksum == "" {
 		return resp.Body, nil
@@ -91,7 +96,7 @@ func (s *seaweedFS) Delete(ctx context.Context, key string) error {
 	case http.StatusNoContent, http.StatusOK, http.StatusNotFound:
 		return nil
 	}
-	return fmt.Errorf("seaweedfs delete %s: status %d", key, resp.StatusCode)
+	return fmt.Errorf("%w: delete status %d", ErrBackend, resp.StatusCode)
 }
 
 func (s *seaweedFS) DeleteAll(ctx context.Context, keys []string) error {
@@ -137,5 +142,5 @@ func (s *seaweedFS) DeletePrefix(ctx context.Context, prefix string) error {
 	case http.StatusNoContent, http.StatusOK, http.StatusNotFound:
 		return nil
 	}
-	return fmt.Errorf("seaweedfs delete prefix %s: status %d", prefix, resp.StatusCode)
+	return fmt.Errorf("%w: delete prefix status %d", ErrBackend, resp.StatusCode)
 }
