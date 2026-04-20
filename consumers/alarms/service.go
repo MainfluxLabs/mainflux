@@ -2,8 +2,8 @@ package alarms
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
@@ -212,23 +212,28 @@ func (as *alarmService) ConsumeAlarm(subject string, alarm protomfx.Alarm) error
 	ctx := context.Background()
 
 	subParts := strings.Split(subject, ".")
-	if len(subParts) < 4 {
+	if len(subParts) < 3 {
 		return errors.ErrInvalidSubject
 	}
 
-	level, err := strconv.Atoi(subParts[1])
-	if err != nil {
-		return errors.Wrap(errors.ErrInvalidSubject, err)
-	}
+	originType := subParts[1]
+	originID := subParts[2]
 
-	originType := subParts[2]
-	originID := subParts[3]
+	var ruleInfo *RuleInfo
+	if len(alarm.RuleInfo) > 0 {
+		var ri RuleInfo
+		if err := json.Unmarshal(alarm.RuleInfo, &ri); err != nil {
+			return err
+		}
+		ruleInfo = &ri
+	}
 
 	a := Alarm{
 		ThingID:  alarm.ThingId,
 		Subtopic: alarm.Subtopic,
 		Protocol: alarm.Protocol,
-		Level:    level,
+		Rule:     ruleInfo,
+		Level:    alarm.Level,
 		Status:   AlarmStatusActive,
 	}
 

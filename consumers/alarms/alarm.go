@@ -22,7 +22,7 @@ type Alarm struct {
 	Protocol string
 	Payload  map[string]any
 	Rule     *RuleInfo
-	Level    int
+	Level    int32
 	Status   string
 	Created  int64
 }

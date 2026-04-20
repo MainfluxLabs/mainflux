@@ -19,7 +19,7 @@ type alarmResponse struct {
 	Protocol string           `json:"protocol"`
 	Payload  map[string]any   `json:"payload"`
 	Rule     *alarms.RuleInfo `json:"rule,omitempty"`
-	Level    int              `json:"level"`
+	Level    int32            `json:"level"`
 	Status   string           `json:"status"`
 	Created  int64            `json:"created"`
 }

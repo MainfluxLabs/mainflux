@@ -68,12 +68,13 @@ var luaAlarmCreate = luaAPIFunc{
 				return 2
 			}
 
-			subject := fmt.Sprintf("%s.%d.%s.%s", subjectAlarms, level, domain.AlarmOriginScript, env.script.ID)
+			subject := fmt.Sprintf("%s.%s.%s", subjectAlarms, domain.AlarmOriginScript, env.script.ID)
 			if err := env.service.pub.PublishAlarm(subject, protomfx.Alarm{
 				ThingId:  env.message.Publisher,
 				Subtopic: env.message.Subtopic,
 				Protocol: env.message.Protocol,
 				Created:  env.message.Created,
+				Level:    int32(level),
 				RuleId:   env.script.ID,
 			}); err != nil {
 				ls.PushBoolean(false)

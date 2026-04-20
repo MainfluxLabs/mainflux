@@ -47,7 +47,7 @@ type alarmRes struct {
 	Subtopic string         `json:"subtopic"`
 	Protocol string         `json:"protocol"`
 	Payload  map[string]any `json:"payload"`
-	Level    int            `json:"level"`
+	Level    int32          `json:"level"`
 	Status   string         `json:"status"`
 	Created  int64          `json:"created"`
 }

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
@@ -27,7 +28,7 @@ type Condition = domain.Condition
 type Action struct {
 	ID    string `json:"id"`
 	Type  string `json:"type"`
-	Level int    `json:"level,omitempty"`
+	Level int32  `json:"level,omitempty"`
 }
 
 type RulesPage struct {
@@ -57,13 +58,19 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 	for _, action := range rule.Actions {
 		switch action.Type {
 		case ActionTypeAlarm:
-			subject := fmt.Sprintf("%s.%d.%s.%s", subjectAlarms, action.Level, domain.AlarmOriginRule, rule.ID)
+			ruleInfo, err := json.Marshal(alarms.RuleInfo{Conditions: rule.Conditions, Operator: rule.Operator})
+			if err != nil {
+				return err
+			}
+			subject := fmt.Sprintf("%s.%s.%s", subjectAlarms, domain.AlarmOriginRule, rule.ID)
 			if err := rs.pub.PublishAlarm(subject, protomfx.Alarm{
 				ThingId:  msg.Publisher,
 				Subtopic: msg.Subtopic,
 				Protocol: msg.Protocol,
 				Created:  msg.Created,
+				Level:    action.Level,
 				RuleId:   rule.ID,
+				RuleInfo: ruleInfo,
 			}); err != nil {
 				return err
 			}

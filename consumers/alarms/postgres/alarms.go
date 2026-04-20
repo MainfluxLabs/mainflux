@@ -295,7 +295,7 @@ type dbAlarm struct {
 	Protocol string         `db:"protocol"`
 	Payload  []byte         `db:"payload"`
 	Rule     []byte         `db:"rule"`
-	Level    int            `db:"level"`
+	Level    int32          `db:"level"`
 	Status   string         `db:"status"`
 	Created  int64          `db:"created"`
 }
