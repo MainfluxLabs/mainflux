@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/filestore/store"
+	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
@@ -86,11 +87,11 @@ type filestoreService struct {
 	thingsRepo ThingsRepository
 	groupsRepo GroupsRepository
 	store      store.FileStore
+	logger     logger.Logger
 }
 
 var _ Service = (*filestoreService)(nil)
 
-// New instantiates the filestore service implementation.
 func New(tc domain.ThingsClient, thingsRepo ThingsRepository, groupsRepo GroupsRepository, fs store.FileStore) Service {
 	return &filestoreService{
 		things:     tc,
@@ -232,7 +233,10 @@ func (fs *filestoreService) SaveGroupFile(ctx context.Context, file io.Reader, t
 	fi.Checksum = checksum
 
 	if err := fs.groupsRepo.Save(ctx, groupID, fi); err != nil {
-		_ = fs.store.Delete(ctx, groupFileKey(groupID, fi.Name))
+		key := groupFileKey(groupID, fi.Name)
+		if delErr := fs.store.Delete(ctx, key); delErr != nil {
+			fs.logger.Error(fmt.Sprintf("orphaned object after failed DB save: key=%s err=%s", key, delErr))
+		}
 		return err
 	}
 
