@@ -18,8 +18,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
@@ -134,7 +132,7 @@ func main() {
 	thingsTracer, thingsCloser := jaeger.Init("rules_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	ps, err := brokers.NewPubSub(cfg.brokerURL, "", logger)
+	ps, err := nats.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -154,7 +152,7 @@ func main() {
 	svc := newService(dbTracer, db, tc, rc, ps, logger, cfg.scriptsEnabled)
 
 	subjects := []string{nats.SubjectMessages, nats.SubjectMessagesWithSubtopic}
-	if err = consumers.Start(svcName, ps, svc, subjects...); err != nil {
+	if err = consumers.Start(svcName, consumers.Messages(ps, svc, subjects...)); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create rule engine: %s", err))
 	}
 
@@ -275,7 +273,7 @@ func subscribeToThingsES(ctx context.Context, svc rules.Service, cfg config, log
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(dbTracer opentracing.Tracer, db *sqlx.DB, tc domain.ThingsClient, rc domain.ReadersClient, nps messaging.PubSub, logger logger.Logger, scriptsEnabled bool) rules.Service {
+func newService(dbTracer opentracing.Tracer, db *sqlx.DB, tc domain.ThingsClient, rc domain.ReadersClient, nps nats.Publisher, logger logger.Logger, scriptsEnabled bool) rules.Service {
 	database := dbutil.NewDatabase(db)
 
 	rulesRepo := postgres.NewRuleRepository(database)

@@ -21,6 +21,16 @@ service ReadersService {
     rpc ListSenMLMessages(ListSenMLMessagesReq) returns (ListSenMLMessagesRes) {}
 }
 
+message Alarm {
+    string thing_id  = 1;
+    string subtopic  = 2;
+    string protocol  = 3;
+    int64  created   = 4;
+    int32  level     = 5;
+    string rule_id   = 6;
+    bytes  rule_info = 7;
+}
+
 service ThingsService {
     rpc GetPubConfigByKey(ThingKey) returns (PubConfigByKeyRes) {}
     rpc GetConfigByThing(ThingID) returns (ConfigByThingRes){}

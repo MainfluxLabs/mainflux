@@ -13,7 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
@@ -56,7 +56,7 @@ type Service interface {
 	ServiceScripts
 	ServiceRules
 
-	consumers.Consumer
+	consumers.MessageConsumer
 }
 
 type ServiceScripts interface {
@@ -148,7 +148,7 @@ type rulesService struct {
 	rules          Repository
 	things         domain.ThingsClient
 	readers        domain.ReadersClient
-	pubsub         messaging.PubSub
+	pub            nats.Publisher
 	idProvider     uuid.IDProvider
 	logger         logger.Logger
 	scriptsEnabled bool
@@ -157,12 +157,11 @@ type rulesService struct {
 var _ Service = (*rulesService)(nil)
 
 // New instantiates the rules service implementation.
-func New(rules Repository, things domain.ThingsClient, readers domain.ReadersClient, pubsub messaging.PubSub, idp uuid.IDProvider, logger logger.Logger, scriptsEnabled bool) Service {
+func New(rules Repository, things domain.ThingsClient, readers domain.ReadersClient, pub nats.Publisher, idp uuid.IDProvider, logger logger.Logger, scriptsEnabled bool) Service {
 	return &rulesService{
 		rules:          rules,
 		things:         things,
-		readers:        readers,
-		pubsub:         pubsub,
+		pub:            pub,
 		idProvider:     idp,
 		logger:         logger,
 		scriptsEnabled: scriptsEnabled,
@@ -496,13 +495,8 @@ func (rs *rulesService) RemoveScriptRuns(ctx context.Context, token string, ids 
 	return rs.rules.RemoveScriptRuns(ctx, ids...)
 }
 
-func (rs *rulesService) Consume(_ string, message any) error {
+func (rs *rulesService) ConsumeMessage(_ string, msg protomfx.Message) error {
 	ctx := context.Background()
-
-	msg, ok := message.(protomfx.Message)
-	if !ok {
-		return errors.ErrMessage
-	}
 
 	var payload any
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {

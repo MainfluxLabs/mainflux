@@ -111,19 +111,15 @@ func (tr testRequest) make() (*http.Response, error) {
 func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 	t.Helper()
 
-	pyd, err := json.Marshal(map[string]any{"temperature": float64(30)})
-	require.Nil(t, err)
-
 	subject := fmt.Sprintf("alarms.rule.%s", ruleID)
 	for i := 0; i < n; i++ {
-		msg := protomfx.Message{
-			Publisher: thingID,
+		msg := protomfx.Alarm{
+			ThingId: thingID,
 			Subtopic:  subtopic,
 			Protocol:  protocol,
-			Payload:   pyd,
 			Created:   int64(1000000 + i),
 		}
-		err := svc.Consume(subject, msg)
+		err := svc.ConsumeAlarm(subject, msg)
 		require.Nil(t, err, fmt.Sprintf("unexpected error saving alarm %d: %s", i+1, err))
 	}
 }
