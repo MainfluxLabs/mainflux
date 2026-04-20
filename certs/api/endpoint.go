@@ -110,12 +110,12 @@ func revokeCertEndpoint(svc certs.Service) endpoint.Endpoint {
 
 func downloadCertEndpoint(svc certs.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(viewReq)
+		req := request.(downloadReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		cert, err := svc.DownloadCert(ctx, req.token, req.serial)
+		cert, err := svc.DownloadCert(ctx, req.token, req.thingKey, req.serial)
 		if err != nil {
 			return downloadCertRes{}, err
 		}

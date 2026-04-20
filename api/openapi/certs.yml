@@ -111,6 +111,14 @@ paths:
         Retrieves the full certificate data (certificate, private key, issuing CA,
         CA chain) for a given cert ID and marks it as downloaded. A certificate can
         only be downloaded once. Subsequent attempts return 403.
+
+        Supports two authentication modes:
+        * User token (`bearerAuth`) — admin/UI download on behalf of a thing.
+        * Thing key (`thingAuth`) — device self-provisioning; the thing fetches
+          its own certificate. The serial must belong to the authenticating thing.
+      security:
+        - bearerAuth: []
+        - thingAuth: []
       tags:
         - certs
       parameters:
@@ -119,9 +127,9 @@ paths:
         '200':
           $ref: "#/components/responses/DownloadCertRes"
         '401':
-          description: Missing or invalid access token provided.
+          description: Missing or invalid credentials provided.
         '403':
-          description: Certificate has already been downloaded.
+          description: Certificate has already been downloaded, or does not belong to the authenticating thing.
         '404':
           description: Certificate with the given serial was not found.
         '500':
@@ -434,6 +442,14 @@ components:
       bearerFormat: JWT
       description: |
         * Users access: "Authorization: Bearer <user_token>"
+    thingAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        Thing self-authentication for device provisioning flows.
+        * Internal key: "Authorization: Thing <thing_key>"
+        * External key: "Authorization: External <thing_key>"
 
 security:
   - bearerAuth: []

@@ -66,7 +66,8 @@ type Service interface {
 	RenewCert(ctx context.Context, token, serial string) (Cert, error)
 
 	// DownloadCert retrieves the full certificate data (key, cert, CA) and marks it as downloaded.
-	DownloadCert(ctx context.Context, token, serial string) (Cert, error)
+	// Either token (user) or thingKey (device self-provisioning) must be provided.
+	DownloadCert(ctx context.Context, token string, thingKey domain.ThingKey, serial string) (Cert, error)
 }
 
 // Config defines the service parameters
@@ -348,19 +349,28 @@ func (cs *certsService) RenewCert(ctx context.Context, token, serial string) (Ce
 	return cs.issueCert(ctx, oldCert.ThingID, defaultRenewalTTL, keyBits, keyType)
 }
 
-func (cs *certsService) DownloadCert(ctx context.Context, token, serial string) (Cert, error) {
-	_, err := cs.auth.Identify(ctx, token)
-	if err != nil {
-		return Cert{}, err
-	}
-
+func (cs *certsService) DownloadCert(ctx context.Context, token string, thingKey domain.ThingKey, serial string) (Cert, error) {
 	cert, err := cs.certsRepo.RetrieveBySerial(ctx, serial)
 	if err != nil {
 		return Cert{}, err
 	}
 
-	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: cert.ThingID, Action: domain.GroupEditor}); err != nil {
-		return Cert{}, errors.ErrAuthorization
+	switch {
+	case thingKey.Value != "":
+		thingID, err := cs.things.Identify(ctx, thingKey)
+		if err != nil {
+			return Cert{}, err
+		}
+		if thingID != cert.ThingID {
+			return Cert{}, errors.ErrAuthorization
+		}
+	default:
+		if _, err := cs.auth.Identify(ctx, token); err != nil {
+			return Cert{}, err
+		}
+		if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: cert.ThingID, Action: domain.GroupEditor}); err != nil {
+			return Cert{}, errors.ErrAuthorization
+		}
 	}
 
 	if err := cs.certsRepo.MarkDownloaded(ctx, serial); err != nil {

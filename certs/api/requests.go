@@ -6,6 +6,7 @@ package api
 import (
 	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 const maxLimitSize = 200
@@ -107,6 +108,22 @@ func (req *viewReq) validate() error {
 		return apiutil.ErrMissingSerial
 	}
 
+	return nil
+}
+
+type downloadReq struct {
+	serial   string
+	token    string
+	thingKey domain.ThingKey
+}
+
+func (req *downloadReq) validate() error {
+	if req.serial == "" {
+		return apiutil.ErrMissingSerial
+	}
+	if req.token == "" && req.thingKey.Value == "" {
+		return apiutil.ErrBearerToken
+	}
 	return nil
 }
 

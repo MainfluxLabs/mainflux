@@ -66,7 +66,7 @@ func MakeHandler(svc certs.Service, tracer opentracing.Tracer, pkiAgent pki.Agen
 
 	r.Get("/certs/:serial/download", kithttp.NewServer(
 		kitot.TraceServer(tracer, "download_cert")(downloadCertEndpoint(svc)),
-		decodeViewCert,
+		decodeDownloadCert,
 		encodeResponse,
 		opts...,
 	))
@@ -127,6 +127,16 @@ func decodeViewCert(_ context.Context, r *http.Request) (any, error) {
 	req := viewReq{
 		token:  apiutil.ExtractBearerToken(r),
 		serial: bone.GetValue(r, apiutil.SerialKey),
+	}
+
+	return req, nil
+}
+
+func decodeDownloadCert(_ context.Context, r *http.Request) (any, error) {
+	req := downloadReq{
+		token:    apiutil.ExtractBearerToken(r),
+		thingKey: apiutil.ExtractThingKey(r),
+		serial:   bone.GetValue(r, apiutil.SerialKey),
 	}
 
 	return req, nil

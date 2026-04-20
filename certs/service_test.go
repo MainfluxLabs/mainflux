@@ -22,6 +22,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/certs/mocks"
 	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -338,7 +339,7 @@ func TestDownloadCert(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		cert, err := svc.DownloadCert(context.Background(), tc.token, tc.serial)
+		cert, err := svc.DownloadCert(context.Background(), tc.token, domain.ThingKey{}, tc.serial)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		if err == nil {
 			assert.Equal(t, issuedCert.Serial, cert.Serial, fmt.Sprintf("%s: serial mismatch", tc.desc))
