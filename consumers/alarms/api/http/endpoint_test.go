@@ -113,7 +113,7 @@ func (tr testRequest) make() (*http.Response, error) {
 func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 	t.Helper()
 
-	subject := fmt.Sprintf("alarms.1.rule.%s", ruleID)
+	subject := fmt.Sprintf("alarms.rule.%s", ruleID)
 	for i := range n {
 		msg := protomfx.Alarm{
 			ThingId:  thingID,

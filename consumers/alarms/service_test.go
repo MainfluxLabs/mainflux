@@ -48,7 +48,7 @@ func newService() alarms.Service {
 func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 	t.Helper()
 
-	subject := fmt.Sprintf("alarms.1.rule.%s", ruleID)
+	subject := fmt.Sprintf("alarms.rule.%s", ruleID)
 	for i := range n {
 		alarm := protomfx.Alarm{
 			ThingId:  thingID,
@@ -65,7 +65,7 @@ func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 func TestConsume(t *testing.T) {
 	svc := newService()
 
-	validSubject := fmt.Sprintf("alarms.1.rule.%s", ruleID)
+	validSubject := fmt.Sprintf("alarms.rule.%s", ruleID)
 	validAlarm := protomfx.Alarm{
 		ThingId:  thingID,
 		Subtopic: subtopic,
