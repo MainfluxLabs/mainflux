@@ -504,8 +504,8 @@ services:
     container_name: mainfluxlabs-seaweedfs-master
     restart: on-failure
     command: "master -ip=seaweedfs-master -ip.bind=0.0.0.0 -mdir=/data"
-    ports:
-      - 9333:9333
+    expose:
+      - 9333
     networks:
       - mainfluxlabs-base-net
     volumes:
@@ -517,7 +517,9 @@ services:
     depends_on:
       - seaweedfs-master
     restart: on-failure
-    command: "volume -mserver=seaweedfs-master:9333 -ip=seaweedfs-volume -ip.bind=0.0.0.0 -dir=/data -port=8080"
+    command: "volume -mserver=seaweedfs-master:9333 -ip=seaweedfs-volume -ip.bind=0.0.0.0 -dir=/data -port=8080 -disk=hdd"
+    expose:
+      - 8080
     networks:
       - mainfluxlabs-base-net
     volumes:
@@ -530,9 +532,9 @@ services:
       - seaweedfs-master
       - seaweedfs-volume
     restart: on-failure
-    command: "filer -master=seaweedfs-master:9333 -ip=seaweedfs-filer -ip.bind=0.0.0.0 -port=8888"
-    ports:
-      - 8888:8888
+    command: "filer -master=seaweedfs-master:9333 -ip=seaweedfs-filer -ip.bind=0.0.0.0 -port=8888 -maxMB=${MF_FILESTORE_MAX_UPLOAD_MB}"
+    expose:
+      - 8888
     networks:
       - mainfluxlabs-base-net
     volumes:
