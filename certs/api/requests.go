@@ -113,7 +113,6 @@ func (req *viewReq) validate() error {
 
 type downloadReq struct {
 	serial   string
-	token    string
 	thingKey domain.ThingKey
 }
 
@@ -122,19 +121,11 @@ func (req *downloadReq) validate() error {
 		return apiutil.ErrMissingSerial
 	}
 
-	if req.token != "" {
-		return nil
-	}
-
 	if req.thingKey.Value == "" {
 		return apiutil.ErrMissingAuth
 	}
 
-	if err := apiutil.ValidateThingKey(req.thingKey); err != nil {
-		return err
-	}
-
-	return nil
+	return apiutil.ValidateThingKey(req.thingKey)
 }
 
 type revokeReq struct {

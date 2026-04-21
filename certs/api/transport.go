@@ -134,7 +134,6 @@ func decodeViewCert(_ context.Context, r *http.Request) (any, error) {
 
 func decodeDownloadCert(_ context.Context, r *http.Request) (any, error) {
 	req := downloadReq{
-		token:    apiutil.ExtractBearerToken(r),
 		thingKey: apiutil.ExtractThingKey(r),
 		serial:   bone.GetValue(r, apiutil.SerialKey),
 	}

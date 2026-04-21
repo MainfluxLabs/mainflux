@@ -115,7 +115,7 @@ func downloadCertEndpoint(svc certs.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		cert, err := svc.DownloadCert(ctx, req.token, req.thingKey, req.serial)
+		cert, err := svc.DownloadCert(ctx, req.thingKey, req.serial)
 		if err != nil {
 			return downloadCertRes{}, err
 		}

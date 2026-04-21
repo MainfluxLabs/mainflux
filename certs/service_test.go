@@ -76,6 +76,7 @@ func newService() (certs.Service, pki.Agent, error) {
 	}
 
 	ths[token] = things.Thing{ID: thingID, Key: thingKey}
+	ths[thingKey] = things.Thing{ID: thingID, Key: thingKey}
 	tc := pkgmocks.NewThingsServiceClient(map[string]things.Profile{}, ths, map[string]things.Group{})
 
 	tlsCert, caCert, err := loadCertificates(caPath, caKeyPath)
@@ -306,40 +307,43 @@ func TestDownloadCert(t *testing.T) {
 	issuedCert, err := svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, keyType)
 	require.Nil(t, err, fmt.Sprintf("unexpected cert creation error: %s\n", err))
 
+	validKey := domain.ThingKey{Value: thingKey, Type: domain.KeyTypeInternal}
+	wrongKey := domain.ThingKey{Value: wrongValue, Type: domain.KeyTypeInternal}
+
 	cases := []struct {
-		desc    string
-		token   string
-		serial  string
-		err     error
+		desc     string
+		thingKey domain.ThingKey
+		serial   string
+		err      error
 	}{
 		{
-			desc:   "download cert",
-			token:  token,
-			serial: issuedCert.Serial,
-			err:    nil,
+			desc:     "download cert",
+			thingKey: validKey,
+			serial:   issuedCert.Serial,
+			err:      nil,
 		},
 		{
-			desc:   "download cert again - already downloaded",
-			token:  token,
-			serial: issuedCert.Serial,
-			err:    certs.ErrCertAlreadyDownloaded,
+			desc:     "download cert again - already downloaded",
+			thingKey: validKey,
+			serial:   issuedCert.Serial,
+			err:      certs.ErrCertAlreadyDownloaded,
 		},
 		{
-			desc:   "download cert with invalid token",
-			token:  wrongValue,
-			serial: issuedCert.Serial,
-			err:    errors.ErrAuthentication,
+			desc:     "download cert with invalid thing key",
+			thingKey: wrongKey,
+			serial:   issuedCert.Serial,
+			err:      errors.ErrAuthentication,
 		},
 		{
-			desc:   "download cert with invalid serial",
-			token:  token,
-			serial: wrongValue,
-			err:    dbutil.ErrNotFound,
+			desc:     "download cert with invalid serial",
+			thingKey: validKey,
+			serial:   wrongValue,
+			err:      dbutil.ErrNotFound,
 		},
 	}
 
 	for _, tc := range cases {
-		cert, err := svc.DownloadCert(context.Background(), tc.token, domain.ThingKey{}, tc.serial)
+		cert, err := svc.DownloadCert(context.Background(), tc.thingKey, tc.serial)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 		if err == nil {
 			assert.Equal(t, issuedCert.Serial, cert.Serial, fmt.Sprintf("%s: serial mismatch", tc.desc))

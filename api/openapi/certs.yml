@@ -81,7 +81,7 @@ paths:
           description: Certificate not found.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /certs/{certId}/rotate:
+  /certs/{serial}/rotate:
     post:
       summary: Rotates a certificate
       description: |
@@ -90,7 +90,7 @@ paths:
       tags:
         - certs
       parameters:
-        - $ref: "#/components/parameters/CertId"
+        - $ref: "#/components/parameters/Serial"
       requestBody:
         $ref: "#/components/requestBodies/RotateCertReq"
       responses:
@@ -100,34 +100,33 @@ paths:
           description: Failed due to malformed JSON.
         '401':
           description: Missing or invalid access token provided.
+        '403':
+          description: User is not authorized to rotate this certificate, or the serial does not belong to the specified thing.
         '404':
           description: Certificate with the given serial was not found.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /certs/{certId}/download:
+  /certs/{serial}/download:
     get:
       summary: Downloads a certificate
       description: |
         Retrieves the full certificate data (certificate, private key, issuing CA,
-        CA chain) for a given cert ID and marks it as downloaded. A certificate can
+        CA chain) for a given serial and marks it as downloaded. A certificate can
         only be downloaded once. Subsequent attempts return 403.
 
-        Supports two authentication modes:
-        * User token (`bearerAuth`) — admin/UI download on behalf of a thing.
-        * Thing key (`thingAuth`) — device self-provisioning; the thing fetches
-          its own certificate. The serial must belong to the authenticating thing.
+        Authenticated via thing key (device self-provisioning); the thing fetches
+        its own certificate. The serial must belong to the authenticating thing.
       security:
-        - bearerAuth: []
         - thingAuth: []
       tags:
         - certs
       parameters:
-        - $ref: "#/components/parameters/CertId"
+        - $ref: "#/components/parameters/Serial"
       responses:
         '200':
           $ref: "#/components/responses/DownloadCertRes"
         '401':
-          description: Missing or invalid credentials provided.
+          description: Missing or invalid thing key provided.
         '403':
           description: Certificate has already been downloaded, or does not belong to the authenticating thing.
         '404':
@@ -182,13 +181,6 @@ components:
     Serial:
       name: serial
       description: Certificate serial number (hex string).
-      in: path
-      schema:
-        type: string
-      required: true
-    CertId:
-      name: certId
-      description: Certificate identifier.
       in: path
       schema:
         type: string

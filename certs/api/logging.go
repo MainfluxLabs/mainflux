@@ -112,13 +112,9 @@ func (lm *loggingMiddleware) RevokeCert(ctx context.Context, token, serial strin
 	return lm.svc.RevokeCert(ctx, token, serial)
 }
 
-func (lm *loggingMiddleware) DownloadCert(ctx context.Context, token string, thingKey domain.ThingKey, serial string) (c certs.Cert, err error) {
+func (lm *loggingMiddleware) DownloadCert(ctx context.Context, thingKey domain.ThingKey, serial string) (c certs.Cert, err error) {
 	defer func(begin time.Time) {
-		caller := fmt.Sprintf("user %s", pkgauth.EmailFromToken(token))
-		if token == "" {
-			caller = "thing key"
-		}
-		message := fmt.Sprintf("Method download_cert by %s, serial %s and thing id %s took %s to complete", caller, serial, c.ThingID, time.Since(begin))
+		message := fmt.Sprintf("Method download_cert by thing key, serial %s and thing id %s took %s to complete", serial, c.ThingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -126,7 +122,7 @@ func (lm *loggingMiddleware) DownloadCert(ctx context.Context, token string, thi
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.DownloadCert(ctx, token, thingKey, serial)
+	return lm.svc.DownloadCert(ctx, thingKey, serial)
 }
 
 func (lm *loggingMiddleware) RenewCert(ctx context.Context, token, serial string) (_ certs.Cert, err error) {
