@@ -118,6 +118,7 @@ func saveAlarms(t *testing.T, svc alarms.Service, n int) {
 			Subtopic: subtopic,
 			Protocol: protocol,
 			Created:  int64(1000000 + i),
+			Level:    int32(i % 3),
 		}
 		err := svc.ConsumeAlarm(ruleSub, msg)
 		require.Nil(t, err, fmt.Sprintf("unexpected error saving alarm %d: %s", i+1, err))
@@ -207,6 +208,27 @@ func TestListAlarmsByGroup(t *testing.T) {
 			auth:   wrongValue,
 			url:    fmt.Sprintf("%s/groups/%s/alarms?limit=%d", ts.URL, groupID, n),
 			status: http.StatusUnauthorized,
+			size:   0,
+		},
+		{
+			desc:   "list alarms by group ordered by level descending",
+			auth:   token,
+			url:    fmt.Sprintf("%s/groups/%s/alarms?limit=%d&order=level&dir=desc", ts.URL, groupID, n),
+			status: http.StatusOK,
+			size:   n,
+		},
+		{
+			desc:   "list alarms by group ordered by status ascending",
+			auth:   token,
+			url:    fmt.Sprintf("%s/groups/%s/alarms?limit=%d&order=status&dir=asc", ts.URL, groupID, n),
+			status: http.StatusOK,
+			size:   n,
+		},
+		{
+			desc:   "list alarms by group with invalid order field",
+			auth:   token,
+			url:    fmt.Sprintf("%s/groups/%s/alarms?limit=%d&order=invalid", ts.URL, groupID, n),
+			status: http.StatusBadRequest,
 			size:   0,
 		},
 	}
@@ -304,6 +326,27 @@ func TestListAlarmsByThing(t *testing.T) {
 			auth:   wrongValue,
 			url:    fmt.Sprintf("%s/things/%s/alarms?limit=%d", ts.URL, thingID, n),
 			status: http.StatusUnauthorized,
+			size:   0,
+		},
+		{
+			desc:   "list alarms by thing ordered by level descending",
+			auth:   token,
+			url:    fmt.Sprintf("%s/things/%s/alarms?limit=%d&order=level&dir=desc", ts.URL, thingID, n),
+			status: http.StatusOK,
+			size:   n,
+		},
+		{
+			desc:   "list alarms by thing ordered by status ascending",
+			auth:   token,
+			url:    fmt.Sprintf("%s/things/%s/alarms?limit=%d&order=status&dir=asc", ts.URL, thingID, n),
+			status: http.StatusOK,
+			size:   n,
+		},
+		{
+			desc:   "list alarms by thing with invalid order field",
+			auth:   token,
+			url:    fmt.Sprintf("%s/things/%s/alarms?limit=%d&order=invalid", ts.URL, thingID, n),
+			status: http.StatusBadRequest,
 			size:   0,
 		},
 	}
