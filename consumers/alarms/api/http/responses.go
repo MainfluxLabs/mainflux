@@ -6,7 +6,7 @@ package http
 import (
 	"net/http"
 
-	"github.com/MainfluxLabs/mainflux/consumers/alarms"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 type alarmResponse struct {
@@ -17,7 +17,7 @@ type alarmResponse struct {
 	ScriptID string           `json:"script_id,omitempty"`
 	Subtopic string           `json:"subtopic"`
 	Protocol string           `json:"protocol"`
-	Rule     *alarms.RuleInfo `json:"rule,omitempty"`
+	Rule     *domain.RuleInfo `json:"rule,omitempty"`
 	Level    int32            `json:"level"`
 	Status   string           `json:"status"`
 	Created  int64            `json:"created"`

@@ -231,7 +231,7 @@ func (as *alarmService) ConsumeAlarm(subject string, alarm protomfx.Alarm) error
 	case domain.AlarmOriginRule:
 		a.RuleID = alarm.RuleId
 		if len(alarm.RuleInfo) > 0 {
-			var ri RuleInfo
+			var ri domain.RuleInfo
 			if err := json.Unmarshal(alarm.RuleInfo, &ri); err != nil {
 				return err
 			}

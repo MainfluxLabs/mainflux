@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
@@ -58,7 +57,7 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 	for _, action := range rule.Actions {
 		switch action.Type {
 		case ActionTypeAlarm:
-			ruleInfo, err := json.Marshal(alarms.RuleInfo{Conditions: rule.Conditions, Operator: rule.Operator})
+			ruleInfo, err := json.Marshal(domain.RuleInfo{Conditions: rule.Conditions, Operator: rule.Operator})
 			if err != nil {
 				return err
 			}

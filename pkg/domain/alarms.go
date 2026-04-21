@@ -16,3 +16,9 @@ type Condition struct {
 	Comparator string   `json:"comparator"`
 	Threshold  *float64 `json:"threshold"`
 }
+
+// RuleInfo captures the evaluation logic of the rule that triggered an alarm.
+type RuleInfo struct {
+	Conditions []Condition `json:"conditions"`
+	Operator   string      `json:"operator,omitempty"`
+}

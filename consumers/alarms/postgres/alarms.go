@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/gofrs/uuid"
 	"github.com/jackc/pgerrcode"
@@ -294,9 +295,9 @@ func toDBAlarm(alarm alarms.Alarm) (dbAlarm, error) {
 }
 
 func toAlarm(dbAlarm dbAlarm) (alarms.Alarm, error) {
-	var ruleInfo *alarms.RuleInfo
+	var ruleInfo *domain.RuleInfo
 	if len(dbAlarm.Rule) > 0 && string(dbAlarm.Rule) != "null" {
-		ruleInfo = &alarms.RuleInfo{}
+		ruleInfo = &domain.RuleInfo{}
 		if err := json.Unmarshal(dbAlarm.Rule, ruleInfo); err != nil {
 			return alarms.Alarm{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 		}
