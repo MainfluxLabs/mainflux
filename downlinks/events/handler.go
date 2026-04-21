@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package events
 
 import (
@@ -13,37 +16,17 @@ type eventHandler struct {
 
 // NewEventHandler returns new event store handler.
 func NewEventHandler(svc downlinks.Service) events.EventHandler {
-	return &eventHandler{
-		svc: svc,
-	}
+	return &eventHandler{svc: svc}
 }
 
-func (es eventHandler) Handle(ctx context.Context, event events.Event) error {
-	msg, err := event.Encode()
-	if err != nil {
-		return err
+func (h *eventHandler) Handle(ctx context.Context, event events.Event) error {
+	switch e := event.(type) {
+	case events.ThingRemoved:
+		return h.svc.RemoveDownlinksByThing(ctx, e.ID)
+	case events.ProfileUpdated:
+		return h.svc.RescheduleTasks(ctx, e.ID, e.ConfigMap())
+	case events.GroupRemoved:
+		return h.svc.RemoveDownlinksByGroup(ctx, e.ID)
 	}
-
-	switch msg["operation"] {
-	case events.ThingRemove:
-		re := decodeRemoveEvent(msg)
-		if err := es.svc.RemoveDownlinksByThing(ctx, re.id); err != nil {
-			return err
-		}
-	case events.ProfileUpdate:
-		upe, err := decodeUpdateProfileEvent(msg)
-		if err != nil {
-			return err
-		}
-		if err := es.svc.RescheduleTasks(ctx, upe.id, upe.config); err != nil {
-			return err
-		}
-	case events.GroupRemove:
-		re := decodeRemoveEvent(msg)
-		if err := es.svc.RemoveDownlinksByGroup(ctx, re.id); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }

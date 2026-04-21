@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package events
 
 import (
@@ -13,44 +16,25 @@ type eventHandler struct {
 
 // NewEventHandler returns new event store handler.
 func NewEventHandler(svc rules.Service) events.EventHandler {
-	return &eventHandler{
-		svc: svc,
-	}
+	return &eventHandler{svc: svc}
 }
 
-func (es eventHandler) Handle(ctx context.Context, event events.Event) error {
-	msg, err := event.Encode()
-	if err != nil {
-		return err
-	}
-
-	switch msg["operation"] {
-	case events.ThingRemove:
-		re := decodeRemoveEvent(msg)
-
-		if err := es.svc.UnassignRulesByThing(ctx, re.id); err != nil {
+func (h *eventHandler) Handle(ctx context.Context, event events.Event) error {
+	switch e := event.(type) {
+	case events.ThingRemoved:
+		if err := h.svc.UnassignRulesByThing(ctx, e.ID); err != nil {
 			return err
 		}
-
-		if err := es.svc.UnassignScriptsFromThing(ctx, re.id); err != nil {
+		if err := h.svc.UnassignScriptsFromThing(ctx, e.ID); err != nil {
 			return err
 		}
-	case events.GroupRemove:
-		re := decodeRemoveEvent(msg)
-		if err := es.svc.RemoveRulesByGroup(ctx, re.id); err != nil {
+	case events.GroupRemoved:
+		if err := h.svc.RemoveRulesByGroup(ctx, e.ID); err != nil {
 			return err
 		}
-
-		if err := es.svc.RemoveScriptsByGroup(ctx, re.id); err != nil {
+		if err := h.svc.RemoveScriptsByGroup(ctx, e.ID); err != nil {
 			return err
 		}
 	}
-
 	return nil
-}
-
-func decodeRemoveEvent(event map[string]any) removeEvent {
-	return removeEvent{
-		id: events.ReadField(event, "id", ""),
-	}
 }

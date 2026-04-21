@@ -358,7 +358,7 @@ func newService(db *sqlx.DB, tc domain.ThingsClient, uc domain.UsersClient, trac
 	)
 
 	svc := auth.New(orgsRepo, tc, uc, keysRepo, rolesRepo, membsRepo, invitesRepo, authEmailer, idProvider, t, cfg.loginDuration, cfg.inviteDuration)
-	svc = rediscache.NewEventStoreMiddleware(svc, esClient)
+	svc = rediscache.NewEventStoreMiddleware(svc, esClient, logger)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

@@ -425,7 +425,7 @@ func newService(ac domain.AuthClient, uc domain.UsersClient, dbTracer opentracin
 
 	svc := things.New(ac, uc, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider, thingsEmailer)
 
-	svc = events.NewEventStoreMiddleware(svc, esClient)
+	svc = events.NewEventStoreMiddleware(svc, esClient, logger)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
