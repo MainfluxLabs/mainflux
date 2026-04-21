@@ -29,6 +29,10 @@ const (
 	AggregationAvg = "avg"
 	// AggregationCount represents the count aggregation key.
 	AggregationCount = "count"
+	// AggregationFirst represents the first-in-bucket aggregation key.
+	AggregationFirst = "first"
+	// AggregationLast represents the last-in-bucket aggregation key.
+	AggregationLast = "last"
 )
 
 // Domain type aliases
