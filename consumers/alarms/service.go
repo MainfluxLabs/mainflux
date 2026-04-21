@@ -223,7 +223,7 @@ func (as *alarmService) ConsumeAlarm(subject string, alarm protomfx.Alarm) error
 		Subtopic: alarm.Subtopic,
 		Protocol: alarm.Protocol,
 		Level:    alarm.Level,
-		Status:   AlarmStatusActive,
+		Status:   StatusActive,
 		Created:  alarm.Created,
 	}
 

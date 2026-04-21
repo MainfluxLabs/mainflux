@@ -120,7 +120,7 @@ func (req updateAlarmStatusReq) validate() error {
 	}
 
 	switch req.Status {
-	case alarms.AlarmStatusActive, alarms.AlarmStatusNoted, alarms.AlarmStatusCleared:
+	case alarms.StatusNoted, alarms.StatusCleared:
 	default:
 		return apiutil.ErrInvalidAlarmStatus
 	}

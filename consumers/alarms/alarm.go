@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	AlarmStatusActive  = "active"
-	AlarmStatusNoted   = "noted"
-	AlarmStatusCleared = "cleared"
+	StatusActive  = "active" // default status assigned on creation
+	StatusNoted   = "noted"
+	StatusCleared = "cleared"
 )
 
 type Alarm struct {

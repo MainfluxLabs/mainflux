@@ -645,7 +645,7 @@ func TestUpdateAlarmStatus(t *testing.T) {
 			auth:        token,
 			id:          alarmID,
 			contentType: contentType,
-			status:      alarms.AlarmStatusNoted,
+			status:      alarms.StatusNoted,
 			httpStatus:  http.StatusOK,
 		},
 		{
@@ -653,7 +653,7 @@ func TestUpdateAlarmStatus(t *testing.T) {
 			auth:        token,
 			id:          alarmID,
 			contentType: contentType,
-			status:      alarms.AlarmStatusCleared,
+			status:      alarms.StatusCleared,
 			httpStatus:  http.StatusOK,
 		},
 		{
@@ -665,11 +665,19 @@ func TestUpdateAlarmStatus(t *testing.T) {
 			httpStatus:  http.StatusBadRequest,
 		},
 		{
+			desc:        "update alarm status to active",
+			auth:        token,
+			id:          alarmID,
+			contentType: contentType,
+			status:      alarms.StatusActive,
+			httpStatus:  http.StatusBadRequest,
+		},
+		{
 			desc:        "update alarm status with empty token",
 			auth:        emptyValue,
 			id:          alarmID,
 			contentType: contentType,
-			status:      alarms.AlarmStatusNoted,
+			status:      alarms.StatusNoted,
 			httpStatus:  http.StatusUnauthorized,
 		},
 		{
@@ -677,7 +685,7 @@ func TestUpdateAlarmStatus(t *testing.T) {
 			auth:        token,
 			id:          alarmID,
 			contentType: emptyValue,
-			status:      alarms.AlarmStatusNoted,
+			status:      alarms.StatusNoted,
 			httpStatus:  http.StatusUnsupportedMediaType,
 		},
 		{
@@ -685,7 +693,7 @@ func TestUpdateAlarmStatus(t *testing.T) {
 			auth:        token,
 			id:          wrongValue,
 			contentType: contentType,
-			status:      alarms.AlarmStatusNoted,
+			status:      alarms.StatusNoted,
 			httpStatus:  http.StatusNotFound,
 		},
 	}
