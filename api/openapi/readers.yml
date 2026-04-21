@@ -607,7 +607,7 @@ components:
           type: string
         agg_interval:
           type: string
-          enum: [minute, hour, day, week, month, year]
+          enum: [microsecond, millisecond, second, minute, hour, day, week, month, year]
         agg_value:
           type: integer
           default: 1
@@ -663,7 +663,7 @@ components:
           description: End time in nanoseconds.
         agg_interval:
           type: string
-          enum: [minute, hour, day, week, month, year]
+          enum: [microsecond, millisecond, second, minute, hour, day, week, month, year]
         agg_value:
           type: integer
           default: 1
@@ -828,13 +828,15 @@ components:
       in: query
       schema:
         type: string
+        enum: [microsecond, millisecond, second, minute, hour, day, week, month, year]
       required: false
     AggType:
       name: agg_type
-      description: Type of aggregation to perform (e.g., sum, avg, min, max).
+      description: Type of aggregation to perform.
       in: query
       schema:
         type: string
+        enum: [min, max, avg, count]
       required: false
     AggField:
       name: agg_field
