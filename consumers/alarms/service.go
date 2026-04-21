@@ -224,6 +224,7 @@ func (as *alarmService) ConsumeAlarm(subject string, alarm protomfx.Alarm) error
 		Protocol: alarm.Protocol,
 		Level:    alarm.Level,
 		Status:   AlarmStatusActive,
+		Created:  alarm.Created,
 	}
 
 	// Temporary mapping: originID is carried in alarm.RuleId for both rules and scripts.
