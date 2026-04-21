@@ -103,18 +103,19 @@ func (es *subEventStore) Close() error {
 	return es.client.Close()
 }
 
-type redisEvent struct {
-	Data map[string]any
-}
-
-func (re redisEvent) Encode() (map[string]any, error) {
-	return re.Data, nil
-}
-
 func (es *subEventStore) handle(ctx context.Context, msgs []redis.XMessage, h EventHandler) {
 	for _, msg := range msgs {
-		event := redisEvent{
-			Data: msg.Values,
+		re := RedisEvent(msg.Values)
+
+		event := decodeEvent(re)
+		if event == nil {
+			es.logger.Warn(fmt.Sprintf("unknown redis event operation %q; acking and skipping", re.Operation()))
+			if err := es.client.XAck(ctx, es.stream, es.group, msg.ID).Err(); err != nil {
+				es.logger.Warn(fmt.Sprintf("failed to ack redis event: %s", err))
+				return
+			}
+
+			continue
 		}
 
 		if err := h.Handle(ctx, event); err != nil {

@@ -5,8 +5,10 @@ package redis
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/go-redis/redis/v8"
 )
@@ -16,14 +18,28 @@ const streamLen = 1000
 type eventStore struct {
 	auth.Service
 	client *redis.Client
+	logger logger.Logger
 }
 
 // NewEventStoreMiddleware returns wrapper around auth service that sends
 // events to event store.
-func NewEventStoreMiddleware(svc auth.Service, client *redis.Client) auth.Service {
+func NewEventStoreMiddleware(svc auth.Service, client *redis.Client, logger logger.Logger) auth.Service {
 	return eventStore{
 		Service: svc,
 		client:  client,
+		logger:  logger,
+	}
+}
+
+func (es eventStore) publish(ctx context.Context, e events.Event) {
+	vals := e.Encode()
+	record := &redis.XAddArgs{
+		Stream:       events.AuthStream,
+		MaxLenApprox: streamLen,
+		Values:       vals,
+	}
+	if err := es.client.XAdd(ctx, record).Err(); err != nil {
+		es.logger.Warn(fmt.Sprintf("failed to publish %s event: %s", vals.Operation(), err))
 	}
 }
 
@@ -33,15 +49,7 @@ func (es eventStore) CreateOrg(ctx context.Context, token string, org auth.Org) 
 		return sorg, err
 	}
 
-	event := createOrgEvent{
-		id: sorg.ID,
-	}
-	record := &redis.XAddArgs{
-		Stream:       events.AuthStream,
-		MaxLenApprox: streamLen,
-		Values:       event.Encode(),
-	}
-	es.client.XAdd(ctx, record).Err()
+	es.publish(ctx, events.OrgCreated{ID: sorg.ID})
 
 	return sorg, nil
 }
@@ -52,15 +60,7 @@ func (es eventStore) RemoveOrgs(ctx context.Context, token string, ids ...string
 			return err
 		}
 
-		event := removeOrgEvent{
-			id: id,
-		}
-		record := &redis.XAddArgs{
-			Stream:       events.AuthStream,
-			MaxLenApprox: streamLen,
-			Values:       event.Encode(),
-		}
-		es.client.XAdd(ctx, record).Err()
+		es.publish(ctx, events.OrgRemoved{ID: id})
 	}
 
 	return nil
