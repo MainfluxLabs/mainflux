@@ -268,7 +268,8 @@ func validateAggregation(aggType, aggInterval string, aggValue uint64) error {
 	}
 
 	switch aggType {
-	case readers.AggregationMin, readers.AggregationMax, readers.AggregationAvg, readers.AggregationCount:
+	case readers.AggregationMin, readers.AggregationMax, readers.AggregationAvg, readers.AggregationCount,
+		readers.AggregationFirst, readers.AggregationLast:
 		return nil
 	default:
 		return apiutil.ErrInvalidAggType

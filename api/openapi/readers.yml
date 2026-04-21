@@ -613,7 +613,7 @@ components:
           default: 1
         agg_type:
           type: string
-          enum: [min, max, avg, count]
+          enum: [min, max, avg, count, first, last]
         agg_fields:
           type: array
           items:
@@ -669,7 +669,7 @@ components:
           default: 1
         agg_type:
           type: string
-          enum: [min, max, avg, count]
+          enum: [min, max, avg, count, first, last]
         agg_fields:
           type: array
           items:
@@ -836,7 +836,7 @@ components:
       in: query
       schema:
         type: string
-        enum: [min, max, avg, count]
+        enum: [min, max, avg, count, first, last]
       required: false
     AggField:
       name: agg_field

@@ -234,9 +234,86 @@ func newAggStrategy(aggType string) aggStrategy {
 		return sqlAggFunc("AVG")
 	case readers.AggregationCount:
 		return sqlAggFunc("COUNT")
+	case readers.AggregationFirst:
+		return firstStrategy{}
+	case readers.AggregationLast:
+		return lastStrategy{}
 	default:
 		return nil
 	}
+}
+
+// firstStrategy implements aggStrategy for first-in-bucket selection.
+// It picks the earliest complete row per time bucket using array_agg ordered by time ascending.
+type firstStrategy struct{}
+
+func (s firstStrategy) aggregateExpr(qp queryParams) string {
+	col := qp.timeColumn
+	if qp.table == senmlTable {
+		return buildSenMLFirstLastExpr(col, "ASC")
+	}
+	return fmt.Sprintf(`
+		(array_agg(m.payload ORDER BY m.%s ASC))[1] AS agg_payload,
+		(array_agg(m.%s      ORDER BY m.%s ASC))[1] AS agg_time`,
+		col, col, col)
+}
+
+func (s firstStrategy) selectedFields(qp queryParams) string {
+	return firstLastSelectedFields(qp)
+}
+
+// lastStrategy implements aggStrategy for last-in-bucket selection.
+// It picks the latest complete row per time bucket using array_agg ordered by time descending.
+type lastStrategy struct{}
+
+func (s lastStrategy) aggregateExpr(qp queryParams) string {
+	col := qp.timeColumn
+	if qp.table == senmlTable {
+		return buildSenMLFirstLastExpr(col, "DESC")
+	}
+	return fmt.Sprintf(`
+		(array_agg(m.payload ORDER BY m.%s DESC))[1] AS agg_payload,
+		(array_agg(m.%s      ORDER BY m.%s DESC))[1] AS agg_time`,
+		col, col, col)
+}
+
+func (s lastStrategy) selectedFields(qp queryParams) string {
+	return firstLastSelectedFields(qp)
+}
+
+func firstLastSelectedFields(qp queryParams) string {
+	if qp.table == senmlTable {
+		return senmlFirstLastSelected()
+	}
+	if len(qp.aggFields) == 0 {
+		return `ia.agg_time AS created, ia.subtopic, ia.publisher, ia.protocol, ia.agg_payload AS payload`
+	}
+	var pairs []string
+	for _, field := range qp.aggFields {
+		pairs = append(pairs, fmt.Sprintf("'%s', ia.agg_payload->>'%s'", field, field))
+	}
+	return fmt.Sprintf(`ia.agg_time AS created, ia.subtopic, ia.publisher, ia.protocol,
+		jsonb_build_object(%s) AS payload`, strings.Join(pairs, ", "))
+}
+
+func buildSenMLFirstLastExpr(col, dir string) string {
+	order := fmt.Sprintf("ORDER BY m.%s %s", col, dir)
+	fields := []string{"name", "unit", "value", "string_value", "bool_value", "data_value", "sum", "update_time"}
+
+	lines := []string{fmt.Sprintf("(array_agg(m.%s %s))[1] AS agg_time", col, order)}
+	for _, f := range fields {
+		lines = append(lines, fmt.Sprintf("(array_agg(m.%s %s))[1] AS agg_%s", f, order, f))
+	}
+	return strings.Join(lines, ",\n\t\t")
+}
+
+func senmlFirstLastSelected() string {
+	return `ia.agg_time AS time, ia.subtopic, ia.publisher, ia.protocol,
+		ia.agg_name AS name, ia.agg_unit AS unit,
+		ia.agg_value AS value,
+		ia.agg_string_value AS string_value, ia.agg_bool_value AS bool_value,
+		ia.agg_data_value AS data_value, ia.agg_sum AS sum,
+		ia.agg_update_time AS update_time`
 }
 
 func (f sqlAggFunc) selectedFields(qp queryParams) string {
@@ -406,6 +483,10 @@ func senmlConditions(pm readers.SenMLPageMetadata) []string {
 }
 
 func buildConditionForCount(qp queryParams) string {
+	if qp.aggType == readers.AggregationFirst || qp.aggType == readers.AggregationLast {
+		return fmt.Sprintf("COUNT(m.%s) > 0", qp.timeColumn)
+	}
+
 	if len(qp.aggFields) == 0 {
 		return "1=1"
 	}
