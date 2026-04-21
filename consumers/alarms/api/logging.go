@@ -81,7 +81,8 @@ func (lm loggingMiddleware) ViewAlarm(ctx context.Context, token, id string) (_ 
 
 func (lm loggingMiddleware) UpdateAlarmStatus(ctx context.Context, token, id, status string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method update_alarm_status for alarm id %s took %s to complete", id, time.Since(begin))
+		email := pkgauth.EmailFromToken(token)
+		message := fmt.Sprintf("Method update_alarm_status by user %s, alarm id %s took %s to complete", email, id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
