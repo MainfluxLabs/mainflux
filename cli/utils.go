@@ -46,7 +46,7 @@ var (
 	AggInterval string = ""
 	// AggValue aggregation value
 	AggValue uint = 1
-	// AggType aggregation type (min, max, avg, count, first)
+	// AggType aggregation type (min, max, avg, count)
 	AggType string = ""
 	// AggField aggregation fields (comma-separated)
 	AggField string = ""
