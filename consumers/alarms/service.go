@@ -17,15 +17,17 @@ import (
 var AllowedOrders = map[string]string{
 	"id":      "id",
 	"created": "created",
+	"level":   "level",
+	"status":  "status",
 }
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
-	Total   uint64         `json:"total,omitempty"`
-	Offset  uint64         `json:"offset,omitempty"`
-	Limit   uint64         `json:"limit,omitempty"`
-	Order   string         `json:"order,omitempty"`
-	Dir     string         `json:"dir,omitempty"`
+	Total  uint64 `json:"total,omitempty"`
+	Offset uint64 `json:"offset,omitempty"`
+	Limit  uint64 `json:"limit,omitempty"`
+	Order  string `json:"order,omitempty"`
+	Dir    string `json:"dir,omitempty"`
 }
 
 // Validate validates the page metadata.
