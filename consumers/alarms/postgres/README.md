@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS alarms (
     script_id   UUID,
     subtopic    VARCHAR(254),
     protocol    TEXT,
-    payload     JSONB,
     created     BIGINT
 )
 ```

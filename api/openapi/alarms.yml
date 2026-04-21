@@ -159,13 +159,10 @@ components:
           type: string
         protocol:
           type: string
-        payload:
-          type: object
-          additionalProperties: true
         created:
           type: integer
           format: int64
-      required: [id, thing_id, group_id, subtopic, protocol, payload, created]
+      required: [id, thing_id, group_id, subtopic, protocol, created]
 
     AlarmsPageRes:
       type: object
@@ -245,7 +242,7 @@ components:
             properties:
               status:
                 type: string
-                enum: [ active, noted, cleared ]
+                enum: [ noted, cleared ]
                 example: "noted"
             required:
               - status
@@ -286,9 +283,6 @@ components:
                     script_id: "323e4567-e89b-12d3-a456-426614174000"
                     subtopic: "temperature"
                     protocol: "mqtt"
-                    payload:
-                      temperature: 85.2
-                      unit: "C"
                     created: 1706786130
                   - id: "223e4567-e89b-12d3-a456-426614174001"
                     thing_id: "112e4567-e89b-12d3-a456-426614174001"
@@ -296,9 +290,6 @@ components:
                     rule_id: "423e4567-e89b-12d3-a456-426614174001"
                     subtopic: "battery"
                     protocol: "mqtt"
-                    payload:
-                      voltage: 2.9
-                      unit: "V"
                     created: 1706789999
     AlarmRes:
       description: Alarm details retrieved.
@@ -313,9 +304,6 @@ components:
             script_id: "323e4567-e89b-12d3-a456-426614174000"
             subtopic: "temperature"
             protocol: "mqtt"
-            payload:
-              temperature: 85.2
-              unit: "C"
             created: 1706786130
     ServiceError:
       description: Unexpected server-side error occurred.
