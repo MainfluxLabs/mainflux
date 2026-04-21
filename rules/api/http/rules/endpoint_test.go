@@ -422,8 +422,7 @@ func TestListRulesByGroup(t *testing.T) {
 	defer ts.Close()
 
 	n := 10
-	saved := saveRules(t, svc, n)
-	_ = saved
+	saveRules(t, svc, n)
 
 	cases := []struct {
 		desc   string
