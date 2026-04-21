@@ -114,8 +114,11 @@ func (lm *loggingMiddleware) RevokeCert(ctx context.Context, token, serial strin
 
 func (lm *loggingMiddleware) DownloadCert(ctx context.Context, token string, thingKey domain.ThingKey, serial string) (c certs.Cert, err error) {
 	defer func(begin time.Time) {
-		email := pkgauth.EmailFromToken(token)
-		message := fmt.Sprintf("Method download_cert by user %s, serial %s and thing id %s took %s to complete", email, serial, c.ThingID, time.Since(begin))
+		caller := fmt.Sprintf("user %s", pkgauth.EmailFromToken(token))
+		if token == "" {
+			caller = "thing key"
+		}
+		message := fmt.Sprintf("Method download_cert by %s, serial %s and thing id %s took %s to complete", caller, serial, c.ThingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
