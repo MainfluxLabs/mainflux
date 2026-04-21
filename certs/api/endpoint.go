@@ -27,7 +27,7 @@ func issueCertEndpoint(svc certs.Service) endpoint.Endpoint {
 
 func rotateCertEndpoint(svc certs.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(rotateCertsReq)
+		req := request.(rotateCertReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}

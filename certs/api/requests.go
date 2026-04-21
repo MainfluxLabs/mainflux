@@ -39,7 +39,7 @@ func (req addCertsReq) validate() error {
 	return nil
 }
 
-type rotateCertsReq struct {
+type rotateCertReq struct {
 	serial  string
 	token   string
 	ThingID string `json:"thing_id"`
@@ -48,7 +48,7 @@ type rotateCertsReq struct {
 	TTL     string `json:"ttl"`
 }
 
-func (req rotateCertsReq) validate() error {
+func (req rotateCertReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

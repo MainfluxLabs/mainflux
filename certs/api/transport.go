@@ -160,7 +160,7 @@ func decodeRotateCert(_ context.Context, r *http.Request) (any, error) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := rotateCertsReq{
+	req := rotateCertReq{
 		token:  apiutil.ExtractBearerToken(r),
 		serial: bone.GetValue(r, apiutil.SerialKey),
 	}
@@ -184,6 +184,7 @@ func decodeRevokeCerts(_ context.Context, r *http.Request) (any, error) {
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
 	case errors.Contains(err, certs.ErrCertAlreadyDownloaded):
+		w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
 		w.WriteHeader(http.StatusForbidden)
 		apiutil.WriteErrorResponse(err, w)
 		return

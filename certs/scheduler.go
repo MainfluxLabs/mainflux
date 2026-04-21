@@ -143,7 +143,10 @@ func (cs *CertScheduler) renewAndNotify(ctx context.Context, oldCert Cert) error
 	}
 
 	if err := cs.repo.Remove(ctx, oldCert.Serial); err != nil {
-		cs.logger.Error(fmt.Sprintf("Failed to revoke old certificate %s after renewal: %s", oldCert.Serial, err.Error()))
+		if rbErr := cs.repo.Remove(ctx, newCert.Serial); rbErr != nil {
+			cs.logger.Error(fmt.Sprintf("Failed to revert new certificate %s after old removal error: %s", newCert.Serial, rbErr.Error()))
+		}
+		return errors.Wrap(ErrFailedCertRevocation, err)
 	}
 
 	if cs.crlPath != "" {
