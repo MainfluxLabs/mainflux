@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS alarms (
     script_id   UUID,
     subtopic    VARCHAR(254),
     protocol    TEXT,
+    rule        JSONB,
+    level       INTEGER NOT NULL DEFAULT 0,
+    status      VARCHAR(10) NOT NULL DEFAULT 'active',
     created     BIGINT
 )
 ```
