@@ -263,7 +263,7 @@ func TestRotateCert(t *testing.T) {
 			token:   wrongValue,
 			serial:  issuedCert.Serial,
 			thingID: thingID,
-			err:     errors.ErrAuthentication,
+			err:     errors.ErrAuthorization,
 		},
 		{
 			desc:    "rotate cert with serial/thingID mismatch",
@@ -368,16 +368,16 @@ func TestRevokeCert(t *testing.T) {
 		err      error
 	}{
 		{
+			desc:     "revoke cert with invalid token",
+			token:    wrongValue,
+			serialID: issuedCert.Serial,
+			err:      errors.ErrAuthorization,
+		},
+		{
 			desc:     "revoke cert",
 			token:    token,
 			serialID: issuedCert.Serial,
 			err:      nil,
-		},
-		{
-			desc:     "revoke cert with invalid token",
-			token:    wrongValue,
-			serialID: issuedCert.Serial,
-			err:      errors.ErrAuthentication,
 		},
 		{
 			desc:     "revoke cert for invalid serial id",
@@ -430,7 +430,7 @@ func TestListCerts(t *testing.T) {
 			offset:  0,
 			limit:   certNum,
 			size:    0,
-			err:     errors.ErrAuthentication,
+			err:     errors.ErrAuthorization,
 		},
 		{
 			desc:    "list half certs with valid token",
@@ -496,7 +496,7 @@ func TestListSerials(t *testing.T) {
 			offset:  0,
 			limit:   certNum,
 			size:    0,
-			err:     errors.ErrAuthentication,
+			err:     errors.ErrAuthorization,
 		},
 		{
 			desc:    "list half serials with valid token",
@@ -558,7 +558,7 @@ func TestViewCert(t *testing.T) {
 			desc:     "view cert with invalid token",
 			token:    wrongValue,
 			serialID: issuedCert.Serial,
-			err:      errors.ErrAuthentication,
+			err:      errors.ErrAuthorization,
 		},
 		{
 			desc:     "view cert with invalid serial",
@@ -599,6 +599,12 @@ func TestRenewCert(t *testing.T) {
 		err      error
 	}{
 		{
+			desc:     "renew cert with invalid token",
+			token:    wrongValue,
+			serialID: shortCert.Serial,
+			err:      errors.ErrAuthorization,
+		},
+		{
 			desc:     "renew cert within 30-day renewal window",
 			token:    token,
 			serialID: shortCert.Serial,
@@ -609,12 +615,6 @@ func TestRenewCert(t *testing.T) {
 			token:    token,
 			serialID: longCert.Serial,
 			err:      certs.ErrNotEligibleForRenewal,
-		},
-		{
-			desc:     "renew cert with invalid token",
-			token:    wrongValue,
-			serialID: shortCert.Serial,
-			err:      errors.ErrAuthentication,
 		},
 		{
 			desc:     "renew cert with invalid serial",

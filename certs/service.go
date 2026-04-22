@@ -128,11 +128,6 @@ type Cert struct {
 }
 
 func (cs *certsService) IssueCert(ctx context.Context, token, thingID string, ttl string, keyBits int, keyType string) (Cert, error) {
-	_, err := cs.auth.Identify(ctx, token)
-	if err != nil {
-		return Cert{}, err
-	}
-
 	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupEditor}); err != nil {
 		return Cert{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
