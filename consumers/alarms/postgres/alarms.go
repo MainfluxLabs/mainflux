@@ -119,12 +119,8 @@ func (ar *alarmRepository) RetrieveByThing(ctx context.Context, thingID string, 
 		"thing_id": thingID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
-	}
-	if pm.Level != 0 {
-		params["level"] = pm.Level
-	}
-	if pm.Status != "" {
-		params["status"] = pm.Status
+		"level":    pm.Level,
+		"status":   pm.Status,
 	}
 
 	return ar.retrieve(ctx, q, qc, params)
@@ -149,12 +145,8 @@ func (ar *alarmRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 		"group_id": groupID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
-	}
-	if pm.Level != 0 {
-		params["level"] = pm.Level
-	}
-	if pm.Status != "" {
-		params["status"] = pm.Status
+		"level":    pm.Level,
+		"status":   pm.Status,
 	}
 
 	return ar.retrieve(ctx, q, qc, params)
@@ -178,12 +170,8 @@ func (ar *alarmRepository) RetrieveByGroups(ctx context.Context, groupIDs []stri
 		"limit":     pm.Limit,
 		"offset":    pm.Offset,
 		"group_ids": groupIDs,
-	}
-	if pm.Level != 0 {
-		params["level"] = pm.Level
-	}
-	if pm.Status != "" {
-		params["status"] = pm.Status
+		"level":     pm.Level,
+		"status":    pm.Status,
 	}
 
 	return ar.retrieve(ctx, query, cquery, params)
