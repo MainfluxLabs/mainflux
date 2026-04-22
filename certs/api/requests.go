@@ -121,10 +121,6 @@ func (req *downloadReq) validate() error {
 		return apiutil.ErrMissingSerial
 	}
 
-	if req.thingKey.Value == "" {
-		return apiutil.ErrMissingAuth
-	}
-
 	return apiutil.ValidateThingKey(req.thingKey)
 }
 
