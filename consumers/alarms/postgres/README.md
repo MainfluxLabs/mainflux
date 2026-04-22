@@ -1,6 +1,5 @@
 # Consumers - Alarms - DB Schema
 
-
 ```sql
 CREATE TABLE IF NOT EXISTS alarms (
     id          UUID PRIMARY KEY,
@@ -10,7 +9,9 @@ CREATE TABLE IF NOT EXISTS alarms (
     script_id   UUID,
     subtopic    VARCHAR(254),
     protocol    TEXT,
-    payload     JSONB,
+    rule        JSONB,
+    level       SMALLINT NOT NULL DEFAULT 1,
+    status      VARCHAR(10) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'noted', 'cleared')),
     created     BIGINT
 )
 ```

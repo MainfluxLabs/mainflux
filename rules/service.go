@@ -140,8 +140,6 @@ const (
 	subjectAlarms = "alarms"
 	// subjectSMTP represents subject used to publish messages that trigger an SMTP notification.
 	subjectSMTP = "smtp"
-	// subjectSMPP represents subject used to publish messages that trigger an SMPP notification.
-	subjectSMPP = "smpp"
 )
 
 type rulesService struct {

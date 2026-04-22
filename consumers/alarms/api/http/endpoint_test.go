@@ -17,6 +17,7 @@ import (
 	alarmmocks "github.com/MainfluxLabs/mainflux/consumers/alarms/mocks"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -37,17 +38,20 @@ const (
 	ruleID      = "5384fb1c-d0ae-4cbe-be52-c54223150fe1"
 	subtopic    = "sensors"
 	protocol    = "mqtt"
+	ruleSub     = "alarms.rule"
 )
 
 type alarmRes struct {
-	ID       string         `json:"id"`
-	ThingID  string         `json:"thing_id"`
-	GroupID  string         `json:"group_id"`
-	RuleID   string         `json:"rule_id"`
-	Subtopic string         `json:"subtopic"`
-	Protocol string         `json:"protocol"`
-	Payload  map[string]any `json:"payload"`
-	Created  int64          `json:"created"`
+	ID       string           `json:"id"`
+	ThingID  string           `json:"thing_id"`
+	GroupID  string           `json:"group_id"`
+	RuleID   string           `json:"rule_id"`
+	Subtopic string           `json:"subtopic"`
+	Protocol string           `json:"protocol"`
+	Rule     *domain.RuleInfo `json:"rule,omitempty"`
+	Level    int32            `json:"level"`
+	Status   string           `json:"status"`
+	Created  int64            `json:"created"`
 }
 
 type alarmsPageRes struct {
@@ -108,20 +112,49 @@ func (tr testRequest) make() (*http.Response, error) {
 	return tr.client.Do(req)
 }
 
-func saveAlarms(t *testing.T, svc alarms.Service, n int) {
+func saveAlarms(t *testing.T, svc alarms.Service, n int) []alarmRes {
 	t.Helper()
 
-	subject := fmt.Sprintf("alarms.rule.%s", ruleID)
-	for i := 0; i < n; i++ {
-		msg := protomfx.Alarm{
-			ThingId: thingID,
-			Subtopic:  subtopic,
-			Protocol:  protocol,
-			Created:   int64(1000000 + i),
-		}
-		err := svc.ConsumeAlarm(subject, msg)
-		require.Nil(t, err, fmt.Sprintf("unexpected error saving alarm %d: %s", i+1, err))
+	tt, th := 25.0, 80.0
+	ri := domain.RuleInfo{
+		Conditions: []domain.Condition{
+			{Field: "temp", Comparator: ">", Threshold: &tt},
+			{Field: "hum", Comparator: ">", Threshold: &th},
+		},
+		Operator: "AND",
 	}
+	ruleInfo, err := json.Marshal(ri)
+	require.Nil(t, err)
+
+	saved := make([]alarmRes, n)
+	for i := range n {
+		a := protomfx.Alarm{
+			ThingId:  thingID,
+			Subtopic: subtopic,
+			Protocol: protocol,
+			Created:  int64(1000000 + i),
+			Level:    int32(i % 3),
+			RuleId:   ruleID,
+			RuleInfo: ruleInfo,
+		}
+		err := svc.ConsumeAlarm(ruleSub, a)
+		require.Nil(t, err, fmt.Sprintf("unexpected error saving alarm %d: %s", i+1, err))
+
+		saved[i] = alarmRes{
+			ID:       fmt.Sprintf("%s%012d", uuid.Prefix, i+1),
+			ThingID:  a.ThingId,
+			GroupID:  groupID,
+			RuleID:   a.RuleId,
+			Subtopic: a.Subtopic,
+			Protocol: a.Protocol,
+			Rule:     &ri,
+			Level:    a.Level,
+			Status:   alarms.StatusActive,
+			Created:  a.Created,
+		}
+	}
+
+	return saved
 }
 
 func TestListAlarmsByGroup(t *testing.T) {
@@ -207,6 +240,27 @@ func TestListAlarmsByGroup(t *testing.T) {
 			auth:   wrongValue,
 			url:    fmt.Sprintf("%s/groups/%s/alarms?limit=%d", ts.URL, groupID, n),
 			status: http.StatusUnauthorized,
+			size:   0,
+		},
+		{
+			desc:   "list alarms by group ordered by level descending",
+			auth:   token,
+			url:    fmt.Sprintf("%s/groups/%s/alarms?limit=%d&order=level&dir=desc", ts.URL, groupID, n),
+			status: http.StatusOK,
+			size:   n,
+		},
+		{
+			desc:   "list alarms by group ordered by status ascending",
+			auth:   token,
+			url:    fmt.Sprintf("%s/groups/%s/alarms?limit=%d&order=status&dir=asc", ts.URL, groupID, n),
+			status: http.StatusOK,
+			size:   n,
+		},
+		{
+			desc:   "list alarms by group with invalid order field",
+			auth:   token,
+			url:    fmt.Sprintf("%s/groups/%s/alarms?limit=%d&order=invalid", ts.URL, groupID, n),
+			status: http.StatusBadRequest,
 			size:   0,
 		},
 	}
@@ -306,6 +360,27 @@ func TestListAlarmsByThing(t *testing.T) {
 			status: http.StatusUnauthorized,
 			size:   0,
 		},
+		{
+			desc:   "list alarms by thing ordered by level descending",
+			auth:   token,
+			url:    fmt.Sprintf("%s/things/%s/alarms?limit=%d&order=level&dir=desc", ts.URL, thingID, n),
+			status: http.StatusOK,
+			size:   n,
+		},
+		{
+			desc:   "list alarms by thing ordered by status ascending",
+			auth:   token,
+			url:    fmt.Sprintf("%s/things/%s/alarms?limit=%d&order=status&dir=asc", ts.URL, thingID, n),
+			status: http.StatusOK,
+			size:   n,
+		},
+		{
+			desc:   "list alarms by thing with invalid order field",
+			auth:   token,
+			url:    fmt.Sprintf("%s/things/%s/alarms?limit=%d&order=invalid", ts.URL, thingID, n),
+			status: http.StatusBadRequest,
+			size:   0,
+		},
 	}
 
 	for _, tc := range cases {
@@ -392,8 +467,8 @@ func TestViewAlarm(t *testing.T) {
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	saveAlarms(t, svc, 1)
-	alarmID := fmt.Sprintf("%s%012d", uuid.Prefix, 1)
+	saved := saveAlarms(t, svc, 1)
+	expected := saved[0]
 
 	cases := []struct {
 		desc   string
@@ -404,19 +479,19 @@ func TestViewAlarm(t *testing.T) {
 		{
 			desc:   "view existing alarm",
 			auth:   token,
-			id:     alarmID,
+			id:     expected.ID,
 			status: http.StatusOK,
 		},
 		{
 			desc:   "view alarm with empty token",
 			auth:   emptyValue,
-			id:     alarmID,
+			id:     expected.ID,
 			status: http.StatusUnauthorized,
 		},
 		{
 			desc:   "view alarm with wrong token",
 			auth:   wrongValue,
-			id:     alarmID,
+			id:     expected.ID,
 			status: http.StatusUnauthorized,
 		},
 		{
@@ -443,6 +518,11 @@ func TestViewAlarm(t *testing.T) {
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.status, res.StatusCode))
+		if tc.status == http.StatusOK {
+			var got alarmRes
+			json.NewDecoder(res.Body).Decode(&got)
+			assert.Equal(t, expected, got, fmt.Sprintf("%s: expected alarm %+v got %+v\n", tc.desc, expected, got))
+		}
 	}
 }
 
@@ -451,8 +531,8 @@ func TestRemoveAlarms(t *testing.T) {
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	saveAlarms(t, svc, 1)
-	alarmID := fmt.Sprintf("%s%012d", uuid.Prefix, 1)
+	saved := saveAlarms(t, svc, 1)
+	alarmID := saved[0].ID
 
 	cases := []struct {
 		desc        string
@@ -578,5 +658,98 @@ func TestExportAlarmsByThing(t *testing.T) {
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestUpdateAlarmStatus(t *testing.T) {
+	svc := newService()
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	saved := saveAlarms(t, svc, 1)
+	alarmID := saved[0].ID
+
+	cases := []struct {
+		desc        string
+		auth        string
+		id          string
+		contentType string
+		status      string
+		httpStatus  int
+	}{
+		{
+			desc:        "update alarm status to noted",
+			auth:        token,
+			id:          alarmID,
+			contentType: contentType,
+			status:      alarms.StatusNoted,
+			httpStatus:  http.StatusOK,
+		},
+		{
+			desc:        "update alarm status to cleared",
+			auth:        token,
+			id:          alarmID,
+			contentType: contentType,
+			status:      alarms.StatusCleared,
+			httpStatus:  http.StatusOK,
+		},
+		{
+			desc:        "update alarm status with invalid status",
+			auth:        token,
+			id:          alarmID,
+			contentType: contentType,
+			status:      "invalid",
+			httpStatus:  http.StatusBadRequest,
+		},
+		{
+			desc:        "update alarm status to active",
+			auth:        token,
+			id:          alarmID,
+			contentType: contentType,
+			status:      alarms.StatusActive,
+			httpStatus:  http.StatusBadRequest,
+		},
+		{
+			desc:        "update alarm status with empty token",
+			auth:        emptyValue,
+			id:          alarmID,
+			contentType: contentType,
+			status:      alarms.StatusNoted,
+			httpStatus:  http.StatusUnauthorized,
+		},
+		{
+			desc:        "update alarm status without content type",
+			auth:        token,
+			id:          alarmID,
+			contentType: emptyValue,
+			status:      alarms.StatusNoted,
+			httpStatus:  http.StatusUnsupportedMediaType,
+		},
+		{
+			desc:        "update status of non-existing alarm",
+			auth:        token,
+			id:          wrongValue,
+			contentType: contentType,
+			status:      alarms.StatusNoted,
+			httpStatus:  http.StatusNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		body := toJSON(struct {
+			Status string `json:"status"`
+		}{tc.status})
+
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPatch,
+			url:         fmt.Sprintf("%s/alarms/%s", ts.URL, tc.id),
+			token:       tc.auth,
+			contentType: tc.contentType,
+			body:        strings.NewReader(body),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
+		assert.Equal(t, tc.httpStatus, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.httpStatus, res.StatusCode))
 	}
 }

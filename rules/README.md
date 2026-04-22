@@ -19,7 +19,7 @@ Rules and scripts are created within a group and then assigned to individual thi
 A rule evaluates a set of conditions against an incoming message payload. When all conditions are met (using AND or OR logic), the rule triggers one or more actions.
 
 | Field         | Description                                                                                                      |
-|---------------|------------------------------------------------------------------------------------------------------------------|
+| ------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `id`          | Unique rule identifier (UUID)                                                                                    |
 | `group_id`    | ID of the group the rule belongs to                                                                              |
 | `name`        | Human-readable rule name                                                                                         |
@@ -33,7 +33,7 @@ A rule evaluates a set of conditions against an incoming message payload. When a
 Each condition compares a named field in the message payload against a numeric threshold.
 
 | Field        | Description                                                                                                                                                            |
-|--------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `field`      | The payload field name to evaluate. For SenML messages, this matches the `name` key. For JSON messages, dot-notation paths are supported (e.g. `sensors.temperature`). |
 | `comparator` | Comparison operator: `==`, `>=`, `<=`, `>`, `<`                                                                                                                        |
 | `threshold`  | Numeric value to compare against                                                                                                                                       |
@@ -42,12 +42,13 @@ Each condition compares a named field in the message payload against a numeric t
 
 Each action specifies what to do when a rule fires.
 
-| Field  | Description                                                                         |
-|--------|-------------------------------------------------------------------------------------|
-| `type` | Action type: `alarm`, `smtp`, or `smpp`                                             |
-| `id`   | Required for `smtp` and `smpp` types — the ID of the configured notifier to trigger |
+| Field   | Description                                                                                 |
+| ------- | ------------------------------------------------------------------------------------------- |
+| `type`  | Action type: `alarm`, `smtp`, or `smpp`                                                     |
+| `id`    | Required for `smtp` and `smpp` types — the ID of the configured notifier to trigger         |
+| `level` | Required for `alarm` type — severity level: 1=info, 2=warning, 3=minor, 4=major, 5=critical |
 
-- **`alarm`** — publishes an alarm event consumed by the Alarms service
+- **`alarm`** — publishes an alarm event with the specified severity level, consumed by the Alarms service
 - **`smtp`** — triggers an SMTP email notification via the registered notifier with the given `id`
 - **`smpp`** — triggers an SMPP SMS notification via the registered notifier with the given `id`
 
@@ -58,7 +59,7 @@ Lua scripts provide a programmable alternative to condition-based rules. A scrip
 ### Script Fields
 
 | Field         | Description                           |
-|---------------|---------------------------------------|
+| ------------- | ------------------------------------- |
 | `id`          | Unique script identifier (UUID)       |
 | `group_id`    | ID of the group the script belongs to |
 | `name`        | Human-readable script name            |
@@ -72,7 +73,7 @@ Each script execution receives an isolated Lua environment. The following global
 #### `mfx` table
 
 | Field                      | Type   | Description                                        |
-|----------------------------|--------|----------------------------------------------------|
+| -------------------------- | ------ | -------------------------------------------------- |
 | `mfx.message.payload`      | table  | Parsed message payload (JSON object or array item) |
 | `mfx.message.subtopic`     | string | Message subtopic                                   |
 | `mfx.message.created`      | number | Message creation timestamp (Unix)                  |
@@ -81,9 +82,9 @@ Each script execution receives an isolated Lua environment. The following global
 #### `mfx` API functions
 
 | Function                       | Returns             | Description                                                                    |
-|--------------------------------|---------------------|--------------------------------------------------------------------------------|
+| ------------------------------ | ------------------- | ------------------------------------------------------------------------------ |
 | `mfx.smtp_notify(notifier_id)` | `bool[, error_msg]` | Triggers an SMTP notification via the specified notifier. Max 2 calls per run. |
-| `mfx.create_alarm()`           | `bool[, error_msg]` | Creates an alarm event attributed to this script. Max 1 call per run.          |
+| `mfx.create_alarm(level)`      | `bool[, error_msg]` | Creates an alarm for this script at the given level (1–5). Max 1 call per run. |
 | `mfx.log(message)`             | `bool[, error_msg]` | Appends a message to the run log (max 256 lines, 2048 chars each).             |
 
 Available Lua standard libraries: `base`, `math`, `string`, `table`. The `print` function is disabled.
@@ -91,7 +92,7 @@ Available Lua standard libraries: `base`, `math`, `string`, `table`. The `print`
 #### Execution Limits
 
 | Limit                 | Value       |
-|-----------------------|-------------|
+| --------------------- | ----------- |
 | Max instructions      | 1,000,000   |
 | Max log lines per run | 256         |
 | Max log line length   | 2,048 chars |
@@ -120,7 +121,7 @@ mfx.log(string.format("temp=%.1f  hum=%.1f%%  dew_point=%.1f  spread=%.1f",
 -- Condensation risk: surface is near or below dew point
 if spread <= 2.0 then
   mfx.log("Condensation risk: spread=" .. string.format("%.1f", spread) .. "°C")
-  mfx.create_alarm()
+  mfx.create_alarm(3)
   mfx.smtp_notify("654e4567-e89b-12d3-a456-426614174999")
 end
 ```
@@ -130,7 +131,7 @@ end
 Every script execution is recorded as a script run. Run records capture the outcome, logs, and any runtime error.
 
 | Field         | Description                                  |
-|---------------|----------------------------------------------|
+| ------------- | -------------------------------------------- |
 | `id`          | Unique run identifier (UUID)                 |
 | `script_id`   | ID of the script that was executed           |
 | `thing_id`    | ID of the thing that triggered the execution |
@@ -146,32 +147,32 @@ Run records are retrievable per thing and can be bulk-deleted via the API.
 
 The service is configured using the environment variables presented in the following table. Note that any unset variables will be replaced with their default values.
 
-| Variable                      | Description                                                                | Default                  |
-|-------------------------------|----------------------------------------------------------------------------|--------------------------|
-| `MF_RULES_LOG_LEVEL`          | Log level for the Rules service (debug, info, warn, error)                 | error                    |
-| `MF_BROKER_URL`               | Message broker instance URL                                                | nats://localhost:4222    |
-| `MF_RULES_HTTP_PORT`          | Rules service HTTP port                                                    | 9027                     |
-| `MF_JAEGER_URL`               | Jaeger server URL for distributed tracing. Leave empty to disable tracing. |                          |
-| `MF_RULES_DB_HOST`            | Database host address                                                      | localhost                |
-| `MF_RULES_DB_PORT`            | Database host port                                                         | 5432                     |
-| `MF_RULES_DB_USER`            | Database user                                                              | mainflux                 |
-| `MF_RULES_DB_PASS`            | Database password                                                          | mainflux                 |
-| `MF_RULES_DB`                 | Name of the database used by the service                                   | rules                    |
-| `MF_RULES_DB_SSL_MODE`        | Database connection SSL mode (disable, require, verify-ca, verify-full)    | disable                  |
-| `MF_RULES_DB_SSL_CERT`        | Path to the PEM encoded certificate file                                   |                          |
-| `MF_RULES_DB_SSL_KEY`         | Path to the PEM encoded key file                                           |                          |
-| `MF_RULES_DB_SSL_ROOT_CERT`   | Path to the PEM encoded root certificate file                              |                          |
-| `MF_RULES_CLIENT_TLS`         | Flag that indicates if TLS should be turned on                             | false                    |
-| `MF_RULES_CA_CERTS`           | Path to trusted CAs in PEM format                                          |                          |
-| `MF_RULES_SERVER_CERT`        | Path to server certificate in PEM format                                   |                          |
-| `MF_RULES_SERVER_KEY`         | Path to server key in PEM format                                           |                          |
+| Variable                          | Description                                                                | Default                  |
+| --------------------------------- | -------------------------------------------------------------------------- | ------------------------ |
+| `MF_RULES_LOG_LEVEL`              | Log level for the Rules service (debug, info, warn, error)                 | error                    |
+| `MF_BROKER_URL`                   | Message broker instance URL                                                | nats://localhost:4222    |
+| `MF_RULES_HTTP_PORT`              | Rules service HTTP port                                                    | 9027                     |
+| `MF_JAEGER_URL`                   | Jaeger server URL for distributed tracing. Leave empty to disable tracing. |                          |
+| `MF_RULES_DB_HOST`                | Database host address                                                      | localhost                |
+| `MF_RULES_DB_PORT`                | Database host port                                                         | 5432                     |
+| `MF_RULES_DB_USER`                | Database user                                                              | mainflux                 |
+| `MF_RULES_DB_PASS`                | Database password                                                          | mainflux                 |
+| `MF_RULES_DB`                     | Name of the database used by the service                                   | rules                    |
+| `MF_RULES_DB_SSL_MODE`            | Database connection SSL mode (disable, require, verify-ca, verify-full)    | disable                  |
+| `MF_RULES_DB_SSL_CERT`            | Path to the PEM encoded certificate file                                   |                          |
+| `MF_RULES_DB_SSL_KEY`             | Path to the PEM encoded key file                                           |                          |
+| `MF_RULES_DB_SSL_ROOT_CERT`       | Path to the PEM encoded root certificate file                              |                          |
+| `MF_RULES_CLIENT_TLS`             | Flag that indicates if TLS should be turned on                             | false                    |
+| `MF_RULES_CA_CERTS`               | Path to trusted CAs in PEM format                                          |                          |
+| `MF_RULES_SERVER_CERT`            | Path to server certificate in PEM format                                   |                          |
+| `MF_RULES_SERVER_KEY`             | Path to server key in PEM format                                           |                          |
 | `MF_THINGS_AUTH_GRPC_URL`         | Things service Auth gRPC URL                                               | localhost:8183           |
 | `MF_THINGS_AUTH_GRPC_TIMEOUT`     | Things service Auth gRPC request timeout                                   | 1s                       |
 | `MF_POSTGRES_READER_GRPC_URL`     | Postgres reader gRPC URL                                                   | localhost:8184           |
 | `MF_POSTGRES_READER_GRPC_TIMEOUT` | Postgres reader gRPC request timeout                                       | 1s                       |
 | `MF_RULES_ES_URL`                 | Event store URL                                                            | redis://localhost:6379/0 |
-| `MF_RULES_EVENT_CONSUMER`     | Event store consumer name                                                  | rules                    |
-| `MF_RULES_SCRIPTS_ENABLED`    | Enable Lua scripting engine                                                | false                    |
+| `MF_RULES_EVENT_CONSUMER`         | Event store consumer name                                                  | rules                    |
+| `MF_RULES_SCRIPTS_ENABLED`        | Enable Lua scripting engine                                                | false                    |
 
 ## Deployment
 

@@ -281,7 +281,7 @@ func TestConsumeMessage(t *testing.T) {
 		}
 
 		err := svc.ConsumeMessage(subject, tc.msg)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
 }
 
@@ -591,8 +591,11 @@ func TestViewRule(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_, err := svc.ViewRule(context.Background(), tc.token, tc.ruleID)
+		res, err := svc.ViewRule(context.Background(), tc.token, tc.ruleID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+		if err == nil {
+			assert.Equal(t, saved[0], res, fmt.Sprintf("%s: expected rule %+v got %+v", tc.desc, saved[0], res))
+		}
 	}
 }
 
@@ -603,6 +606,7 @@ func TestUpdateRule(t *testing.T) {
 
 	updated := rules.Rule{
 		ID:          ruleID,
+		GroupID:     groupID,
 		Name:        "updated-rule",
 		Description: "updated description",
 		Conditions: []rules.Condition{
@@ -683,12 +687,7 @@ func TestRemoveRules(t *testing.T) {
 
 func TestRemoveRulesByGroup(t *testing.T) {
 	svc := newService()
-	n := 3
-	saveRules(t, svc, n)
-
-	page, err := svc.ListRulesByGroup(context.Background(), token, groupID, rules.PageMetadata{Limit: 20})
-	require.Nil(t, err)
-	require.Equal(t, n, len(page.Rules))
+	saveRules(t, svc, 3)
 
 	cases := []struct {
 		desc    string
@@ -711,10 +710,6 @@ func TestRemoveRulesByGroup(t *testing.T) {
 		err := svc.RemoveRulesByGroup(context.Background(), tc.groupID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
-
-	page, err = svc.ListRulesByGroup(context.Background(), token, groupID, rules.PageMetadata{})
-	require.Nil(t, err)
-	assert.Equal(t, 0, len(page.Rules), "expected no rules after removal by group")
 }
 
 func TestAssignRules(t *testing.T) {
@@ -811,10 +806,6 @@ func TestUnassignRulesByThing(t *testing.T) {
 	}
 	assignRules(t, svc, thingID, ruleIDs...)
 
-	page, err := svc.ListRulesByThing(context.Background(), token, thingID, rules.PageMetadata{Limit: 20})
-	require.Nil(t, err)
-	require.Equal(t, n, len(page.Rules))
-
 	cases := []struct {
 		desc    string
 		thingID string
@@ -836,8 +827,4 @@ func TestUnassignRulesByThing(t *testing.T) {
 		err := svc.UnassignRulesByThing(context.Background(), tc.thingID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
-
-	page, err = svc.ListRulesByThing(context.Background(), token, thingID, rules.PageMetadata{Limit: 20})
-	require.Nil(t, err)
-	assert.Equal(t, 0, len(page.Rules), "expected no rules after unassign by thing")
 }

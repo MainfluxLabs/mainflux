@@ -33,7 +33,7 @@ const (
 	// SubjectSmpp represents subject used to subscribe to SMPP notifications.
 	SubjectSmpp = "smpp.*"
 	// SubjectAlarms represents subject used to subscribe to alarm triggers.
-	SubjectAlarms = "alarms.*.*"
+	SubjectAlarms = "alarms.*"
 )
 
 // PubSub extends messaging.PubSub with alarm publishing and subscribing.

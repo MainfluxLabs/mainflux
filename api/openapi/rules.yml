@@ -454,6 +454,12 @@ components:
           type: string
           enum: [ smtp, smpp, alarm ]
           example: "smtp"
+        level:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "Alarm severity level. Required for alarm actions: 1=info, 2=warning, 3=minor, 4=major, 5=critical."
+          example: 3
       required:
         - type
     RuleReqSchema:
@@ -607,7 +613,7 @@ components:
           -- Condensation risk: surface is near or below dew point
           if spread <= 2.0 then
             mfx.log("Condensation risk: spread=" .. string.format("%.1f", spread) .. "°C")
-            mfx.create_alarm()
+            mfx.create_alarm(3)
             mfx.smtp_notify("654e4567-e89b-12d3-a456-426614174999")
           end
 

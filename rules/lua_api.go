@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -57,18 +56,27 @@ var luaSMTPNotify = luaAPIFunc{
 
 // Create an Alarm corresponding to the ID of the currently executing Lua script
 // Lua signature:
-// mfx.create_alarm()
-// On success it returns true, nil. On failure, it returns (false, <error_message>)
+// mfx.create_alarm(level) where level is an integer
+// On success it returns true, nil. On failure, it returns false, <error_message>
 var luaAlarmCreate = luaAPIFunc{
 	fun: func(env *luaEnv) lua.Function {
 		return func(ls *lua.State) int {
-			subject := fmt.Sprintf("%s.%s.%s", subjectAlarms, alarms.AlarmOriginScript, env.script.ID)
+			level, ok := ls.ToInteger(1)
+			if !ok {
+				ls.PushBoolean(false)
+				ls.PushString("level argument is required")
+				return 2
+			}
+
+			subject := fmt.Sprintf("%s.%s", subjectAlarms, domain.AlarmOriginScript)
 			if err := env.service.pub.PublishAlarm(subject, protomfx.Alarm{
 				ThingId:  env.message.Publisher,
 				Subtopic: env.message.Subtopic,
 				Protocol: env.message.Protocol,
 				Created:  env.message.Created,
-				RuleId:   env.script.ID,
+				Level:    int32(level),
+				// Temporary mapping until scripts are refactored.
+				RuleId: env.script.ID,
 			}); err != nil {
 				ls.PushBoolean(false)
 				ls.PushString(err.Error())

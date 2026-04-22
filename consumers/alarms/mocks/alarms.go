@@ -123,6 +123,21 @@ func (arm *alarmRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs []s
 	}, nil
 }
 
+func (arm *alarmRepositoryMock) UpdateStatus(_ context.Context, id, status string) error {
+	arm.mu.Lock()
+	defer arm.mu.Unlock()
+
+	a, ok := arm.alarms[id]
+	if !ok {
+		return dbutil.ErrNotFound
+	}
+
+	a.Status = status
+	arm.alarms[id] = a
+
+	return nil
+}
+
 func (arm *alarmRepositoryMock) Remove(_ context.Context, ids ...string) error {
 	arm.mu.Lock()
 	defer arm.mu.Unlock()

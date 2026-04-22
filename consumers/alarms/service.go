@@ -2,6 +2,7 @@ package alarms
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -16,16 +17,17 @@ import (
 var AllowedOrders = map[string]string{
 	"id":      "id",
 	"created": "created",
+	"level":   "level",
+	"status":  "status",
 }
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
-	Total   uint64         `json:"total,omitempty"`
-	Offset  uint64         `json:"offset,omitempty"`
-	Limit   uint64         `json:"limit,omitempty"`
-	Order   string         `json:"order,omitempty"`
-	Dir     string         `json:"dir,omitempty"`
-	Payload map[string]any `json:"payload,omitempty"`
+	Total  uint64 `json:"total,omitempty"`
+	Offset uint64 `json:"offset,omitempty"`
+	Limit  uint64 `json:"limit,omitempty"`
+	Order  string `json:"order,omitempty"`
+	Dir    string `json:"dir,omitempty"`
 }
 
 // Validate validates the page metadata.
@@ -56,6 +58,9 @@ type Service interface {
 
 	// RemoveAlarms removes alarms identified with the provided IDs.
 	RemoveAlarms(ctx context.Context, token string, id ...string) error
+
+	// UpdateAlarmStatus updates the status of the alarm identified by the provided ID.
+	UpdateAlarmStatus(ctx context.Context, token, id, status string) error
 
 	// RemoveAlarmsByThing removes alarms related to the specified thing,
 	// identified by the provided thing ID.
@@ -138,6 +143,19 @@ func (as *alarmService) ViewAlarm(ctx context.Context, token, id string) (Alarm,
 	return alarm, nil
 }
 
+func (as *alarmService) UpdateAlarmStatus(ctx context.Context, token, id, status string) error {
+	alarm, err := as.alarms.RetrieveByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if err := as.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: alarm.ThingID, Action: domain.GroupEditor}); err != nil {
+		return errors.Wrap(errors.ErrAuthorization, err)
+	}
+
+	return as.alarms.UpdateStatus(ctx, id, status)
+}
+
 func (as *alarmService) RemoveAlarms(ctx context.Context, token string, ids ...string) error {
 	for _, id := range ids {
 		alarm, err := as.alarms.RetrieveByID(ctx, id)
@@ -194,26 +212,34 @@ func (as *alarmService) createAlarm(ctx context.Context, alarm *Alarm) error {
 func (as *alarmService) ConsumeAlarm(subject string, alarm protomfx.Alarm) error {
 	ctx := context.Background()
 
+	subParts := strings.Split(subject, ".")
+	if len(subParts) < 2 {
+		return errors.ErrInvalidSubject
+	}
+	originType := subParts[1]
+
 	a := Alarm{
 		ThingID:  alarm.ThingId,
 		Subtopic: alarm.Subtopic,
 		Protocol: alarm.Protocol,
+		Level:    alarm.Level,
+		Status:   StatusActive,
 		Created:  alarm.Created,
 	}
 
-	subParts := strings.Split(subject, ".")
-	if len(subParts) < 3 {
-		return errors.ErrInvalidSubject
-	}
-
-	originType := subParts[1]
-	originID := subParts[2]
-
+	// Temporary mapping: originID is carried in alarm.RuleId for both rules and scripts.
 	switch originType {
-	case AlarmOriginRule:
-		a.RuleID = originID
-	case AlarmOriginScript:
-		a.ScriptID = originID
+	case domain.AlarmOriginRule:
+		a.RuleID = alarm.RuleId
+		if len(alarm.RuleInfo) > 0 {
+			var ri domain.RuleInfo
+			if err := json.Unmarshal(alarm.RuleInfo, &ri); err != nil {
+				return err
+			}
+			a.Rule = &ri
+		}
+	case domain.AlarmOriginScript:
+		a.ScriptID = alarm.RuleId
 	default:
 		return fmt.Errorf("invalid subject origin type: %s", originType)
 	}

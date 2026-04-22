@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/MainfluxLabs/mainflux/consumers/alarms"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -22,15 +22,12 @@ type Rule struct {
 	Actions     []Action
 }
 
-type Condition struct {
-	Field      string   `json:"field"`
-	Comparator string   `json:"comparator"`
-	Threshold  *float64 `json:"threshold"`
-}
+type Condition = domain.Condition
 
 type Action struct {
-	ID   string `json:"id"`
-	Type string `json:"type"`
+	ID    string `json:"id"`
+	Type  string `json:"type"`
+	Level int32  `json:"level,omitempty"`
 }
 
 type RulesPage struct {
@@ -47,8 +44,6 @@ const (
 	OperatorOR  = "OR"
 )
 
-var errInvalidObject = errors.New("invalid JSON object")
-
 func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, rule Rule) error {
 	triggered, payloads, err := processPayload(parsedPayload, rule.Conditions, rule.Operator, msg.ContentType)
 	if err != nil {
@@ -62,13 +57,19 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 	for _, action := range rule.Actions {
 		switch action.Type {
 		case ActionTypeAlarm:
-			subject := fmt.Sprintf("%s.%s.%s", subjectAlarms, alarms.AlarmOriginRule, rule.ID)
+			ruleInfo, err := json.Marshal(domain.RuleInfo{Conditions: rule.Conditions, Operator: rule.Operator})
+			if err != nil {
+				return err
+			}
+			subject := fmt.Sprintf("%s.%s", subjectAlarms, domain.AlarmOriginRule)
 			if err := rs.pub.PublishAlarm(subject, protomfx.Alarm{
 				ThingId:  msg.Publisher,
 				Subtopic: msg.Subtopic,
 				Protocol: msg.Protocol,
 				Created:  msg.Created,
+				Level:    action.Level,
 				RuleId:   rule.ID,
+				RuleInfo: ruleInfo,
 			}); err != nil {
 				return err
 			}

@@ -14,6 +14,7 @@ const (
 	retrieveAlarmsByThing  = "retrieve_alarms_by_thing"
 	retrieveAlarmsByGroups = "retrieve_alarms_by_groups"
 	retrieveAlarmByID      = "retrieve_alarm_by_id"
+	updateAlarmStatus      = "update_alarm_status"
 	removeAlarms           = "remove_alarms"
 	removeAlarmsByThing    = "remove_alarms_by_thing"
 	removeAlarmsByGroup    = "remove_alarms_by_group"
@@ -76,6 +77,14 @@ func (arm alarmRepositoryMiddleware) RetrieveByID(ctx context.Context, id string
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return arm.repo.RetrieveByID(ctx, id)
+}
+
+func (arm alarmRepositoryMiddleware) UpdateStatus(ctx context.Context, id, status string) error {
+	span := dbutil.CreateSpan(ctx, arm.tracer, updateAlarmStatus)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return arm.repo.UpdateStatus(ctx, id, status)
 }
 
 func (arm alarmRepositoryMiddleware) Remove(ctx context.Context, ids ...string) error {

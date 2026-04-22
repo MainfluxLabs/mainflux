@@ -24,7 +24,6 @@ const (
 	jsonFormat             = "json"
 	csvFormat              = "csv"
 	timeFormatKey          = "time_format"
-	octetStreamContentType = "application/octet-stream"
 )
 
 // MakeHandler returns a HTTP handler for Alarm API endpoints.
@@ -63,6 +62,13 @@ func MakeHandler(tracer opentracing.Tracer, svc alarms.Service, logger log.Logge
 		opts...,
 	))
 
+	r.Patch("/alarms/:id", kithttp.NewServer(
+		kitot.TraceServer(tracer, "update_alarm_status")(updateAlarmStatusEndpoint(svc)),
+		decodeUpdateAlarmStatus,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Patch("/alarms", kithttp.NewServer(
 		kitot.TraceServer(tracer, "remove_alarms")(removeAlarmsEndpoint(svc)),
 		decodeRemoveAlarms,
@@ -89,14 +95,11 @@ func buildPageMetadata(r *http.Request) (alarms.PageMetadata, error) {
 		return alarms.PageMetadata{}, err
 	}
 
-	pl, _ := apiutil.ReadMetadataQuery(r, apiutil.PayloadKey, nil)
-
 	return alarms.PageMetadata{
-		Offset:  base.Offset,
-		Limit:   base.Limit,
-		Order:   base.Order,
-		Dir:     base.Dir,
-		Payload: pl,
+		Offset: base.Offset,
+		Limit:  base.Limit,
+		Order:  base.Order,
+		Dir:    base.Dir,
 	}, nil
 }
 
@@ -144,6 +147,23 @@ func decodeViewAlarm(_ context.Context, r *http.Request) (any, error) {
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}, nil
+}
+
+func decodeUpdateAlarmStatus(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := updateAlarmStatusReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, apiutil.IDKey),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	return req, nil
 }
 
 func decodeRemoveAlarms(_ context.Context, r *http.Request) (any, error) {
@@ -206,7 +226,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response any) erro
 }
 
 func encodeFileResponse(_ context.Context, w http.ResponseWriter, response any) error {
-	w.Header().Set("Content-Type", octetStreamContentType)
+	w.Header().Set("Content-Type", apiutil.ContentTypeOctetStream)
 
 	if ar, ok := response.(exportFileRes); ok {
 		for k, v := range ar.Headers() {

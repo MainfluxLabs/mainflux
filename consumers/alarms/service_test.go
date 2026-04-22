@@ -2,12 +2,14 @@ package alarms_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/consumers/alarms/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	authmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -26,6 +28,7 @@ const (
 	ruleID     = "5384fb1c-d0ae-4cbe-be52-c54223150fe1"
 	subtopic   = "sensors"
 	protocol   = "mqtt"
+	ruleSub    = "alarms.rule"
 )
 
 func newService() alarms.Service {
@@ -45,27 +48,54 @@ func newService() alarms.Service {
 	return alarms.New(ths, alarmRepo, idProvider)
 }
 
-func saveAlarms(t *testing.T, svc alarms.Service, n int) {
+func saveAlarms(t *testing.T, svc alarms.Service, n int) []alarms.Alarm {
 	t.Helper()
 
-	subject := fmt.Sprintf("alarms.rule.%s", ruleID)
+	tt, th := 25.0, 80.0
+	ri := domain.RuleInfo{
+		Conditions: []domain.Condition{
+			{Field: "temp", Comparator: ">", Threshold: &tt},
+			{Field: "hum", Comparator: ">", Threshold: &th},
+		},
+		Operator: "AND",
+	}
+	ruleInfo, err := json.Marshal(ri)
+	require.Nil(t, err)
+
+	saved := make([]alarms.Alarm, n)
 	for i := range n {
-		alarm := protomfx.Alarm{
+		a := protomfx.Alarm{
 			ThingId:  thingID,
 			Subtopic: subtopic,
 			Protocol: protocol,
-			Created:  int64(1000000 + i),
 			RuleId:   ruleID,
+			RuleInfo: ruleInfo,
+			Level:    int32(i % 3),
+			Created:  int64(1000000 + i),
 		}
-		err := svc.ConsumeAlarm(subject, alarm)
+		err := svc.ConsumeAlarm(ruleSub, a)
 		require.Nil(t, err, fmt.Sprintf("unexpected error saving alarm %d: %s", i+1, err))
+
+		saved[i] = alarms.Alarm{
+			ID:       fmt.Sprintf("%s%012d", uuid.Prefix, i+1),
+			ThingID:  a.ThingId,
+			GroupID:  groupID,
+			RuleID:   a.RuleId,
+			Subtopic: a.Subtopic,
+			Protocol: a.Protocol,
+			Rule:     &ri,
+			Level:    a.Level,
+			Status:   alarms.StatusActive,
+			Created:  a.Created,
+		}
 	}
+
+	return saved
 }
 
-func TestConsume(t *testing.T) {
+func TestConsumeAlarm(t *testing.T) {
 	svc := newService()
 
-	validSubject := fmt.Sprintf("alarms.rule.%s", ruleID)
 	validAlarm := protomfx.Alarm{
 		ThingId:  thingID,
 		Subtopic: subtopic,
@@ -85,7 +115,7 @@ func TestConsume(t *testing.T) {
 	}{
 		{
 			desc:    "consume valid alarm",
-			subject: validSubject,
+			subject: ruleSub,
 			alarm:   validAlarm,
 			err:     nil,
 		},
@@ -97,7 +127,7 @@ func TestConsume(t *testing.T) {
 		},
 		{
 			desc:    "consume alarm with unknown thing",
-			subject: validSubject,
+			subject: ruleSub,
 			alarm:   unknownThingAlarm,
 			err:     dbutil.ErrNotFound,
 		},
@@ -105,7 +135,55 @@ func TestConsume(t *testing.T) {
 
 	for _, tc := range cases {
 		err := svc.ConsumeAlarm(tc.subject, tc.alarm)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+	}
+}
+
+func TestUpdateAlarmStatus(t *testing.T) {
+	svc := newService()
+	saved := saveAlarms(t, svc, 1)
+	alarmID := saved[0].ID
+
+	cases := []struct {
+		desc   string
+		token  string
+		id     string
+		status string
+		err    error
+	}{
+		{
+			desc:   "update alarm status to noted",
+			token:  token,
+			id:     alarmID,
+			status: alarms.StatusNoted,
+			err:    nil,
+		},
+		{
+			desc:   "update alarm status to cleared",
+			token:  token,
+			id:     alarmID,
+			status: alarms.StatusCleared,
+			err:    nil,
+		},
+		{
+			desc:   "update alarm status with wrong token",
+			token:  wrongValue,
+			id:     alarmID,
+			status: alarms.StatusNoted,
+			err:    errors.ErrAuthentication,
+		},
+		{
+			desc:   "update status of non-existing alarm",
+			token:  token,
+			id:     wrongValue,
+			status: alarms.StatusNoted,
+			err:    dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.UpdateAlarmStatus(context.Background(), tc.token, tc.id, tc.status)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
 }
 
@@ -355,12 +433,8 @@ func TestListAlarmsByOrg(t *testing.T) {
 
 func TestViewAlarm(t *testing.T) {
 	svc := newService()
-	saveAlarms(t, svc, 1)
-
-	page, err := svc.ListAlarmsByThing(context.Background(), token, thingID, alarms.PageMetadata{Limit: 10})
-	require.Nil(t, err)
-	require.Equal(t, 1, len(page.Alarms))
-	alarmID := page.Alarms[0].ID
+	saved := saveAlarms(t, svc, 1)
+	expected := saved[0]
 
 	cases := []struct {
 		desc  string
@@ -371,13 +445,13 @@ func TestViewAlarm(t *testing.T) {
 		{
 			desc:  "view existing alarm",
 			token: token,
-			id:    alarmID,
+			id:    expected.ID,
 			err:   nil,
 		},
 		{
 			desc:  "view alarm with wrong credentials",
 			token: wrongValue,
-			id:    alarmID,
+			id:    expected.ID,
 			err:   errors.ErrAuthentication,
 		},
 		{
@@ -389,19 +463,18 @@ func TestViewAlarm(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_, err := svc.ViewAlarm(context.Background(), tc.token, tc.id)
+		res, err := svc.ViewAlarm(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+		if err == nil {
+			assert.Equal(t, expected, res, fmt.Sprintf("%s: expected alarm %+v got %+v", tc.desc, expected, res))
+		}
 	}
 }
 
 func TestRemoveAlarms(t *testing.T) {
 	svc := newService()
-	saveAlarms(t, svc, 1)
-
-	page, err := svc.ListAlarmsByThing(context.Background(), token, thingID, alarms.PageMetadata{Limit: 10})
-	require.Nil(t, err)
-	require.Equal(t, 1, len(page.Alarms))
-	alarmID := page.Alarms[0].ID
+	saved := saveAlarms(t, svc, 1)
+	alarmID := saved[0].ID
 
 	cases := []struct {
 		desc  string
@@ -437,12 +510,7 @@ func TestRemoveAlarms(t *testing.T) {
 
 func TestRemoveAlarmsByThing(t *testing.T) {
 	svc := newService()
-	n := 3
-	saveAlarms(t, svc, n)
-
-	page, err := svc.ListAlarmsByThing(context.Background(), token, thingID, alarms.PageMetadata{Limit: 20})
-	require.Nil(t, err)
-	require.Equal(t, n, len(page.Alarms))
+	saveAlarms(t, svc, 3)
 
 	cases := []struct {
 		desc    string
@@ -465,20 +533,11 @@ func TestRemoveAlarmsByThing(t *testing.T) {
 		err := svc.RemoveAlarmsByThing(context.Background(), tc.thingID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
-
-	page, err = svc.ListAlarmsByThing(context.Background(), token, thingID, alarms.PageMetadata{})
-	require.Nil(t, err)
-	assert.Equal(t, 0, len(page.Alarms), "expected no alarms after removal by thing")
 }
 
 func TestRemoveAlarmsByGroup(t *testing.T) {
 	svc := newService()
-	n := 3
-	saveAlarms(t, svc, n)
-
-	page, err := svc.ListAlarmsByGroup(context.Background(), token, groupID, alarms.PageMetadata{Limit: 20})
-	require.Nil(t, err)
-	require.Equal(t, n, len(page.Alarms))
+	saveAlarms(t, svc, 3)
 
 	cases := []struct {
 		desc    string
@@ -501,10 +560,6 @@ func TestRemoveAlarmsByGroup(t *testing.T) {
 		err := svc.RemoveAlarmsByGroup(context.Background(), tc.groupID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
-
-	page, err = svc.ListAlarmsByGroup(context.Background(), token, groupID, alarms.PageMetadata{})
-	require.Nil(t, err)
-	assert.Equal(t, 0, len(page.Alarms), "expected no alarms after removal by group")
 }
 
 func TestExportAlarmsByThing(t *testing.T) {

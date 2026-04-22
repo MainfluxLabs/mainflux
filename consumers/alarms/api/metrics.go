@@ -62,6 +62,15 @@ func (ms *metricsMiddleware) ViewAlarm(ctx context.Context, token, id string) (a
 	return ms.svc.ViewAlarm(ctx, token, id)
 }
 
+func (ms *metricsMiddleware) UpdateAlarmStatus(ctx context.Context, token, id, status string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "update_alarm_status").Add(1)
+		ms.latency.With("method", "update_alarm_status").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.UpdateAlarmStatus(ctx, token, id, status)
+}
+
 func (ms *metricsMiddleware) RemoveAlarms(ctx context.Context, token string, id ...string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "remove_alarms").Add(1)
