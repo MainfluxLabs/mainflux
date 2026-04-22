@@ -76,7 +76,7 @@ func migrateDB(db *sqlx.DB) error {
 				Id: "alarms_3",
 				Up: []string{
 					`ALTER TABLE alarms ADD COLUMN level  SMALLINT NOT NULL DEFAULT 1;`,
-					`ALTER TABLE alarms ADD COLUMN status VARCHAR(10) NOT NULL DEFAULT 'active';`,
+					`ALTER TABLE alarms ADD COLUMN status VARCHAR(10) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'noted', 'cleared'));`,
 					`ALTER TABLE alarms ADD COLUMN rule   JSONB;`,
 					`ALTER TABLE alarms DROP COLUMN IF EXISTS payload;`,
 				},
