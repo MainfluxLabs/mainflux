@@ -172,10 +172,6 @@ func (cs *certsService) issueCert(ctx context.Context, thingID, ttl string, keyB
 }
 
 func (cs *certsService) RotateCert(ctx context.Context, token, serial, thingID, ttl string, keyBits int, keyType string) (Cert, error) {
-	if _, err := cs.auth.Identify(ctx, token); err != nil {
-		return Cert{}, err
-	}
-
 	oldCert, err := cs.certsRepo.RetrieveBySerial(ctx, serial)
 	if err != nil {
 		return Cert{}, err
@@ -197,11 +193,6 @@ func (cs *certsService) RotateCert(ctx context.Context, token, serial, thingID, 
 }
 
 func (cs *certsService) RevokeCert(ctx context.Context, token, serial string) (Revoke, error) {
-	_, err := cs.auth.Identify(ctx, token)
-	if err != nil {
-		return Revoke{}, err
-	}
-
 	cert, err := cs.certsRepo.RetrieveBySerial(ctx, serial)
 	if err != nil {
 		return Revoke{}, errors.Wrap(ErrFailedCertRevocation, err)
@@ -263,11 +254,6 @@ func GenerateCRLFile(ctx context.Context, repo Repository, pkiAgent pki.Agent, c
 }
 
 func (cs *certsService) ListCerts(ctx context.Context, token, thingID string, offset, limit uint64) (Page, error) {
-	_, err := cs.auth.Identify(ctx, token)
-	if err != nil {
-		return Page{}, err
-	}
-
 	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupViewer}); err != nil {
 		return Page{}, errors.ErrAuthorization
 	}
@@ -281,11 +267,6 @@ func (cs *certsService) ListCerts(ctx context.Context, token, thingID string, of
 }
 
 func (cs *certsService) ListSerials(ctx context.Context, token, thingID string, offset, limit uint64) (Page, error) {
-	_, err := cs.auth.Identify(ctx, token)
-	if err != nil {
-		return Page{}, err
-	}
-
 	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupViewer}); err != nil {
 		return Page{}, errors.ErrAuthorization
 	}
@@ -294,10 +275,6 @@ func (cs *certsService) ListSerials(ctx context.Context, token, thingID string, 
 }
 
 func (cs *certsService) ViewCert(ctx context.Context, token, serial string) (Cert, error) {
-	_, err := cs.auth.Identify(ctx, token)
-	if err != nil {
-		return Cert{}, err
-	}
 
 	cert, err := cs.certsRepo.RetrieveBySerial(ctx, serial)
 	if err != nil {
@@ -312,10 +289,6 @@ func (cs *certsService) ViewCert(ctx context.Context, token, serial string) (Cer
 }
 
 func (cs *certsService) RenewCert(ctx context.Context, token, serial string) (Cert, error) {
-	_, err := cs.auth.Identify(ctx, token)
-	if err != nil {
-		return Cert{}, err
-	}
 
 	oldCert, err := cs.certsRepo.RetrieveBySerial(ctx, serial)
 	if err != nil {
