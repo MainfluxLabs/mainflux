@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS alarms (
     subtopic    VARCHAR(254),
     protocol    TEXT,
     rule        JSONB,
-    level       INTEGER NOT NULL DEFAULT 0,
+    level       SMALLINT NOT NULL DEFAULT 1,
     status      VARCHAR(10) NOT NULL DEFAULT 'active',
     created     BIGINT
 )
