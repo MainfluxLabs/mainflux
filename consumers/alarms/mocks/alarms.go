@@ -50,48 +50,28 @@ func (arm *alarmRepositoryMock) RetrieveByThing(_ context.Context, thingID strin
 	arm.mu.Lock()
 	defer arm.mu.Unlock()
 
-	var all, items []alarms.Alarm
-	first := uint64(pm.Offset) + 1
-	last := first + pm.Limit
-
+	var items []alarms.Alarm
 	for _, a := range arm.alarms {
 		if a.ThingID == thingID {
-			all = append(all, a)
-			id := uuid.ParseID(a.ID)
-			if pm.Limit == 0 || (id >= first && id < last) {
-				items = append(items, a)
-			}
+			items = append(items, a)
 		}
 	}
 
-	return alarms.AlarmsPage{
-		Total:  uint64(len(all)),
-		Alarms: items,
-	}, nil
+	return arm.retrieve(items, pm), nil
 }
 
 func (arm *alarmRepositoryMock) RetrieveByGroup(_ context.Context, groupID string, pm alarms.PageMetadata) (alarms.AlarmsPage, error) {
 	arm.mu.Lock()
 	defer arm.mu.Unlock()
 
-	var all, items []alarms.Alarm
-	first := uint64(pm.Offset) + 1
-	last := first + pm.Limit
-
+	var items []alarms.Alarm
 	for _, a := range arm.alarms {
 		if a.GroupID == groupID {
-			all = append(all, a)
-			id := uuid.ParseID(a.ID)
-			if pm.Limit == 0 || (id >= first && id < last) {
-				items = append(items, a)
-			}
+			items = append(items, a)
 		}
 	}
 
-	return alarms.AlarmsPage{
-		Total:  uint64(len(all)),
-		Alarms: items,
-	}, nil
+	return arm.retrieve(items, pm), nil
 }
 
 func (arm *alarmRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs []string, pm alarms.PageMetadata) (alarms.AlarmsPage, error) {
@@ -103,24 +83,39 @@ func (arm *alarmRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs []s
 		groupSet[id] = struct{}{}
 	}
 
+	var items []alarms.Alarm
+	for _, a := range arm.alarms {
+		if _, ok := groupSet[a.GroupID]; ok {
+			items = append(items, a)
+		}
+	}
+
+	return arm.retrieve(items, pm), nil
+}
+
+func (arm *alarmRepositoryMock) retrieve(als []alarms.Alarm, pm alarms.PageMetadata) alarms.AlarmsPage {
 	var all, items []alarms.Alarm
 	first := uint64(pm.Offset) + 1
 	last := first + pm.Limit
 
-	for _, a := range arm.alarms {
-		if _, ok := groupSet[a.GroupID]; ok {
-			all = append(all, a)
-			id := uuid.ParseID(a.ID)
-			if pm.Limit == 0 || (id >= first && id < last) {
-				items = append(items, a)
-			}
+	for _, a := range als {
+		if pm.Level != 0 && a.Level != pm.Level {
+			continue
+		}
+		if pm.Status != "" && a.Status != pm.Status {
+			continue
+		}
+		all = append(all, a)
+		id := uuid.ParseID(a.ID)
+		if pm.Limit == 0 || (id >= first && id < last) {
+			items = append(items, a)
 		}
 	}
 
 	return alarms.AlarmsPage{
 		Total:  uint64(len(all)),
 		Alarms: items,
-	}, nil
+	}
 }
 
 func (arm *alarmRepositoryMock) UpdateStatus(_ context.Context, id, status string) error {

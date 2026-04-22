@@ -14,6 +14,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
 
+const (
+	minAlarmLevel = 1
+	maxAlarmLevel = 5
+)
+
 var AllowedOrders = map[string]string{
 	"id":      "id",
 	"created": "created",
@@ -28,12 +33,30 @@ type PageMetadata struct {
 	Limit  uint64 `json:"limit,omitempty"`
 	Order  string `json:"order,omitempty"`
 	Dir    string `json:"dir,omitempty"`
+	Level  int32  `json:"level,omitempty"`
+	Status string `json:"status,omitempty"`
 }
 
 // Validate validates the page metadata.
 func (pm PageMetadata) Validate(maxLimitSize int) error {
 	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
-	return common.Validate(maxLimitSize, AllowedOrders)
+	if err := common.Validate(maxLimitSize, AllowedOrders); err != nil {
+		return err
+	}
+
+	if pm.Level != 0 && (pm.Level < minAlarmLevel || pm.Level > maxAlarmLevel) {
+		return apiutil.ErrInvalidAlarmLevel
+	}
+
+	if pm.Status != "" {
+		switch pm.Status {
+		case StatusActive, StatusNoted, StatusCleared:
+		default:
+			return apiutil.ErrInvalidAlarmStatus
+		}
+	}
+
+	return nil
 }
 
 // Service specifies an API that must be fullfiled by the domain service

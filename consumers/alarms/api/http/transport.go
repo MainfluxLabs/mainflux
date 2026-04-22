@@ -20,10 +20,12 @@ import (
 )
 
 const (
-	convertKey             = "convert"
-	jsonFormat             = "json"
-	csvFormat              = "csv"
-	timeFormatKey          = "time_format"
+	convertKey    = "convert"
+	jsonFormat    = "json"
+	csvFormat     = "csv"
+	timeFormatKey = "time_format"
+	levelKey      = "level"
+	statusKey     = "status"
 )
 
 // MakeHandler returns a HTTP handler for Alarm API endpoints.
@@ -95,12 +97,26 @@ func buildPageMetadata(r *http.Request) (alarms.PageMetadata, error) {
 		return alarms.PageMetadata{}, err
 	}
 
-	return alarms.PageMetadata{
+	l, err := apiutil.ReadIntQuery(r, levelKey, 0)
+	if err != nil {
+		return alarms.PageMetadata{}, err
+	}
+
+	s, err := apiutil.ReadStringQuery(r, statusKey, "")
+	if err != nil {
+		return alarms.PageMetadata{}, err
+	}
+
+	pm := alarms.PageMetadata{
 		Offset: base.Offset,
 		Limit:  base.Limit,
 		Order:  base.Order,
 		Dir:    base.Dir,
-	}, nil
+		Level:  int32(l),
+		Status: s,
+	}
+
+	return pm, nil
 }
 
 func decodeListAlarmsByThing(_ context.Context, r *http.Request) (any, error) {
