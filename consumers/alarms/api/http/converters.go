@@ -27,6 +27,8 @@ func ConvertToJSONFile(page alarms.AlarmsPage, timeFormat string) ([]byte, error
 			"subtopic":  a.Subtopic,
 			"protocol":  a.Protocol,
 			"rule":      a.Rule,
+			"level":     a.Level,
+			"status":    a.Status,
 		}
 
 		item["created"] = formatTimeNs(a.Created, timeFormat)
@@ -53,6 +55,8 @@ func ConvertToCSVFile(page alarms.AlarmsPage, timeFormat string) ([]byte, error)
 		"subtopic",
 		"protocol",
 		"rule",
+		"level",
+		"status",
 	}
 
 	if err := writer.Write(header); err != nil {
@@ -78,6 +82,8 @@ func ConvertToCSVFile(page alarms.AlarmsPage, timeFormat string) ([]byte, error)
 			alarm.Subtopic,
 			alarm.Protocol,
 			rule,
+			fmt.Sprintf("%d", alarm.Level),
+			alarm.Status,
 		}
 
 		if err := writer.Write(row); err != nil {
