@@ -3,3 +3,4 @@
 
 snippets/mqtt-upstream.conf
 snippets/mqtt-ws-upstream.conf
+snippets/ssl-client-active.conf
