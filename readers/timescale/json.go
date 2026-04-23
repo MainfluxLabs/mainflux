@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -20,12 +21,14 @@ import (
 var _ readers.JSONMessageRepository = (*jsonRepository)(nil)
 
 type jsonRepository struct {
-	db *sqlx.DB
+	db         dbutil.Database
+	aggregator *aggregationService
 }
 
-func NewJSONRepository(db *sqlx.DB) readers.JSONMessageRepository {
+func NewJSONRepository(db dbutil.Database) readers.JSONMessageRepository {
 	return &jsonRepository{
-		db: db,
+		db:         db,
+		aggregator: newAggregationService(db),
 	}
 }
 
@@ -52,7 +55,7 @@ func (jr *jsonRepository) Remove(ctx context.Context, rpm readers.JSONPageMetada
 	}
 
 	if _, err := jr.db.NamedExecContext(ctx, q, params); err != nil {
-		return jr.handlePgError(err, errors.ErrDeleteMessages)
+		return handlePgError(err, errors.ErrDeleteMessages)
 	}
 
 	return nil
@@ -70,24 +73,13 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 	for _, msg := range messages {
 		jsonMsg, ok := msg.(mfjson.Message)
 		if !ok {
-			msgMap, mapOk := msg.(map[string]any)
-			if !mapOk {
-				return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
+			data, err := json.Marshal(msg)
+			if err != nil {
+				return errors.Wrap(errors.ErrSaveMessages, err)
 			}
 
-			jsonMsg = mfjson.Message{
-				Subtopic:  msgMap["subtopic"].(string),
-				Publisher: msgMap["publisher"].(string),
-				Protocol:  msgMap["protocol"].(string),
-				Created:   int64(msgMap["created"].(float64)),
-			}
-
-			if payload, ok := msgMap["payload"]; ok {
-				payloadBytes, err := json.Marshal(payload)
-				if err != nil {
-					return errors.Wrap(errors.ErrSaveMessages, err)
-				}
-				jsonMsg.Payload = payloadBytes
+			if err := json.Unmarshal(data, &jsonMsg); err != nil {
+				return errors.Wrap(errors.ErrSaveMessages, err)
 			}
 		}
 
@@ -96,7 +88,7 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 			if rbErr := tx.Rollback(); rbErr != nil {
 				return errors.Wrap(errors.ErrSaveMessages, err)
 			}
-			return jr.handlePgError(err, errors.ErrSaveMessages)
+			return handlePgError(err, errors.ErrSaveMessages)
 		}
 	}
 
@@ -117,6 +109,17 @@ func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetad
 	}
 
 	params := jr.buildQueryParams(rpm)
+
+	if rpm.AggType != "" && rpm.AggInterval != "" {
+		messages, total, err := jr.aggregator.readAggregatedJSONMessages(ctx, rpm)
+		if err != nil {
+			return page, err
+		}
+		page.Messages = messages
+		page.Total = total
+
+		return page, nil
+	}
 
 	messages, err := jr.readMessages(ctx, rpm, params)
 	if err != nil {
@@ -198,9 +201,33 @@ func (jr *jsonRepository) fmtCondition(rpm readers.JSONPageMetadata) string {
 		case "to":
 			condition = fmt.Sprintf(`%s %s created <= :to`, condition, op)
 			op = "AND"
+		case "filter":
+			filterPath := buildPayloadFilterPath(rpm.Filter)
+			condition = fmt.Sprintf(`%s %s %s IS NOT NULL`, condition, op, filterPath)
+			op = "AND"
 		}
 	}
 	return condition
+}
+
+func buildPayloadFilterPath(field string) string {
+	parts := strings.Split(field, ".")
+	if len(parts) == 1 {
+		return fmt.Sprintf("payload->>'%s'", parts[0])
+	}
+
+	var path strings.Builder
+	path.WriteString("payload")
+
+	for i, part := range parts {
+		if i == len(parts)-1 {
+			path.WriteString(fmt.Sprintf("->>'%s'", part))
+		} else {
+			path.WriteString(fmt.Sprintf("->'%s'", part))
+		}
+	}
+
+	return path.String()
 }
 
 func (jr *jsonRepository) buildQueryParams(rpm readers.JSONPageMetadata) map[string]any {
@@ -213,19 +240,4 @@ func (jr *jsonRepository) buildQueryParams(rpm readers.JSONPageMetadata) map[str
 		"from":      rpm.From,
 		"to":        rpm.To,
 	}
-}
-
-func (jr *jsonRepository) handlePgError(err error, wrapErr error) error {
-	pgErr, ok := err.(*pgconn.PgError)
-	if ok {
-		switch pgErr.Code {
-		case pgerrcode.UndefinedTable:
-			return errors.Wrap(wrapErr, err)
-		case pgerrcode.InvalidTextRepresentation:
-			return errors.Wrap(wrapErr, errors.ErrInvalidMessage)
-		default:
-			return errors.Wrap(wrapErr, err)
-		}
-	}
-	return errors.Wrap(wrapErr, err)
 }
