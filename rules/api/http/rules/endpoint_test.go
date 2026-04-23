@@ -50,6 +50,7 @@ type rule struct {
 	GroupID     string            `json:"group_id,omitempty"`
 	Name        string            `json:"name,omitempty"`
 	Description string            `json:"description,omitempty"`
+	Input       rules.Input       `json:"input"`
 	Conditions  []rules.Condition `json:"conditions,omitempty"`
 	Operator    string            `json:"operator,omitempty"`
 	Actions     []rules.Action    `json:"actions,omitempty"`
@@ -130,6 +131,7 @@ func saveRules(t *testing.T, svc rules.Service, n int) []rules.Rule {
 		r := rules.Rule{
 			ID:         fmt.Sprintf("%s%012d", prefixID, i+1),
 			Name:       fmt.Sprintf("%s%012d", prefixName, i+1),
+			Input:      rules.Input{Type: rules.InputTypeMessage, ThingIDs: []string{thingID}},
 			Conditions: []rules.Condition{condTemp},
 			Actions:    []rules.Action{action},
 		}
@@ -145,8 +147,10 @@ func TestCreateRules(t *testing.T) {
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
+	validInput := rules.Input{Type: rules.InputTypeMessage, ThingIDs: []string{thingID}}
+
 	validReq := rulesReq{Rules: []rule{
-		{Name: ruleName, Conditions: []rules.Condition{condTemp}, Actions: []rules.Action{action}},
+		{Name: ruleName, Input: validInput, Conditions: []rules.Condition{condTemp}, Actions: []rules.Action{action}},
 	}}
 
 	cases := []struct {
@@ -173,8 +177,8 @@ func TestCreateRules(t *testing.T) {
 			groupID:     groupID,
 			contentType: contentType,
 			body: rulesReq{Rules: []rule{
-				{Name: "rule-1", Conditions: []rules.Condition{condTemp}, Actions: []rules.Action{action}},
-				{Name: "rule-2", Conditions: []rules.Condition{condHum}, Actions: []rules.Action{action}},
+				{Name: "rule-1", Input: validInput, Conditions: []rules.Condition{condTemp}, Actions: []rules.Action{action}},
+				{Name: "rule-2", Input: validInput, Conditions: []rules.Condition{condHum}, Actions: []rules.Action{action}},
 			}},
 			status: http.StatusCreated,
 			size:   2,
@@ -185,7 +189,7 @@ func TestCreateRules(t *testing.T) {
 			groupID:     groupID,
 			contentType: contentType,
 			body: rulesReq{Rules: []rule{
-				{Name: ruleName, Conditions: []rules.Condition{condTemp, condHum}, Operator: rules.OperatorAND, Actions: []rules.Action{action}},
+				{Name: ruleName, Input: validInput, Conditions: []rules.Condition{condTemp, condHum}, Operator: rules.OperatorAND, Actions: []rules.Action{action}},
 			}},
 			status: http.StatusCreated,
 			size:   1,
@@ -196,7 +200,7 @@ func TestCreateRules(t *testing.T) {
 			groupID:     groupID,
 			contentType: contentType,
 			body: rulesReq{Rules: []rule{
-				{Name: ruleName, Conditions: []rules.Condition{condTemp, condHum}, Operator: rules.OperatorOR, Actions: []rules.Action{action}},
+				{Name: ruleName, Input: validInput, Conditions: []rules.Condition{condTemp, condHum}, Operator: rules.OperatorOR, Actions: []rules.Action{action}},
 			}},
 			status: http.StatusCreated,
 			size:   1,
@@ -207,7 +211,7 @@ func TestCreateRules(t *testing.T) {
 			groupID:     groupID,
 			contentType: contentType,
 			body: rulesReq{Rules: []rule{
-				{Name: ruleName, Conditions: []rules.Condition{condTemp, condHum}, Actions: []rules.Action{action}},
+				{Name: ruleName, Input: validInput, Conditions: []rules.Condition{condTemp, condHum}, Actions: []rules.Action{action}},
 			}},
 			status: http.StatusBadRequest,
 			size:   0,
@@ -218,7 +222,51 @@ func TestCreateRules(t *testing.T) {
 			groupID:     groupID,
 			contentType: contentType,
 			body: rulesReq{Rules: []rule{
-				{Name: ruleName, Conditions: []rules.Condition{condTemp, condHum}, Operator: "XOR", Actions: []rules.Action{action}},
+				{Name: ruleName, Input: validInput, Conditions: []rules.Condition{condTemp, condHum}, Operator: "XOR", Actions: []rules.Action{action}},
+			}},
+			status: http.StatusBadRequest,
+			size:   0,
+		},
+		{
+			desc:        "create rule with missing input type",
+			auth:        token,
+			groupID:     groupID,
+			contentType: contentType,
+			body: rulesReq{Rules: []rule{
+				{Name: ruleName, Input: rules.Input{ThingIDs: []string{thingID}}, Conditions: []rules.Condition{condTemp}, Actions: []rules.Action{action}},
+			}},
+			status: http.StatusBadRequest,
+			size:   0,
+		},
+		{
+			desc:        "create rule with invalid input type",
+			auth:        token,
+			groupID:     groupID,
+			contentType: contentType,
+			body: rulesReq{Rules: []rule{
+				{Name: ruleName, Input: rules.Input{Type: "invalid", ThingIDs: []string{thingID}}, Conditions: []rules.Condition{condTemp}, Actions: []rules.Action{action}},
+			}},
+			status: http.StatusBadRequest,
+			size:   0,
+		},
+		{
+			desc:        "create rule with missing thing IDs",
+			auth:        token,
+			groupID:     groupID,
+			contentType: contentType,
+			body: rulesReq{Rules: []rule{
+				{Name: ruleName, Input: rules.Input{Type: rules.InputTypeMessage}, Conditions: []rules.Condition{condTemp}, Actions: []rules.Action{action}},
+			}},
+			status: http.StatusBadRequest,
+			size:   0,
+		},
+		{
+			desc:        "create rule with invalid thing ID format",
+			auth:        token,
+			groupID:     groupID,
+			contentType: contentType,
+			body: rulesReq{Rules: []rule{
+				{Name: ruleName, Input: rules.Input{Type: rules.InputTypeMessage, ThingIDs: []string{"not-a-uuid"}}, Conditions: []rules.Condition{condTemp}, Actions: []rules.Action{action}},
 			}},
 			status: http.StatusBadRequest,
 			size:   0,
@@ -292,7 +340,7 @@ func TestCreateRules(t *testing.T) {
 			groupID:     groupID,
 			contentType: contentType,
 			body: rulesReq{Rules: []rule{
-				{Name: ruleName, Actions: []rules.Action{{Type: rules.ActionTypeAlarm}}},
+				{Name: ruleName, Input: validInput, Actions: []rules.Action{{Type: rules.ActionTypeAlarm}}},
 			}},
 			status: http.StatusBadRequest,
 			size:   0,
@@ -303,7 +351,7 @@ func TestCreateRules(t *testing.T) {
 			groupID:     groupID,
 			contentType: contentType,
 			body: rulesReq{Rules: []rule{
-				{Name: ruleName, Conditions: []rules.Condition{condTemp}},
+				{Name: ruleName, Input: validInput, Conditions: []rules.Condition{condTemp}},
 			}},
 			status: http.StatusBadRequest,
 			size:   0,
@@ -314,7 +362,7 @@ func TestCreateRules(t *testing.T) {
 			groupID:     groupID,
 			contentType: contentType,
 			body: rulesReq{Rules: []rule{
-				{Name: ruleName, Conditions: []rules.Condition{condTemp}, Actions: []rules.Action{{Type: "unknown"}}},
+				{Name: ruleName, Input: validInput, Conditions: []rules.Condition{condTemp}, Actions: []rules.Action{{Type: "unknown"}}},
 			}},
 			status: http.StatusBadRequest,
 			size:   0,
@@ -325,7 +373,7 @@ func TestCreateRules(t *testing.T) {
 			groupID:     groupID,
 			contentType: contentType,
 			body: rulesReq{Rules: []rule{
-				{Name: ruleName, Conditions: []rules.Condition{condTemp}, Actions: []rules.Action{{Type: rules.ActionTypeAlarm, Level: 0}}},
+				{Name: ruleName, Input: validInput, Conditions: []rules.Condition{condTemp}, Actions: []rules.Action{{Type: rules.ActionTypeAlarm, Level: 0}}},
 			}},
 			status: http.StatusBadRequest,
 			size:   0,
@@ -547,14 +595,7 @@ func TestListRulesByThing(t *testing.T) {
 	defer ts.Close()
 
 	n := 5
-	saved := saveRules(t, svc, n)
-
-	var ruleIDs []string
-	for _, r := range saved {
-		ruleIDs = append(ruleIDs, r.ID)
-	}
-	err := svc.AssignRules(context.Background(), token, thingID, ruleIDs...)
-	require.Nil(t, err, fmt.Sprintf("unexpected error assigning rules: %s", err))
+	saveRules(t, svc, n)
 
 	cases := []struct {
 		desc   string
@@ -625,9 +666,6 @@ func TestListThingIDsByRule(t *testing.T) {
 	saved := saveRules(t, svc, 1)
 	ruleID := saved[0].ID
 
-	err := svc.AssignRules(context.Background(), token, thingID, ruleID)
-	require.Nil(t, err, fmt.Sprintf("unexpected error assigning rule: %s", err))
-
 	cases := []struct {
 		desc   string
 		auth   string
@@ -693,6 +731,7 @@ func TestUpdateRule(t *testing.T) {
 	updThreshold := 35.0
 	updatedRule := rule{
 		Name:       "updated-rule",
+		Input:      rules.Input{Type: rules.InputTypeMessage, ThingIDs: []string{thingID}},
 		Conditions: []rules.Condition{{Field: "temperature", Comparator: ">", Threshold: &updThreshold}},
 		Actions:    []rules.Action{action},
 	}
@@ -758,7 +797,7 @@ func TestUpdateRule(t *testing.T) {
 			auth:        token,
 			id:          ruleID,
 			contentType: contentType,
-			body:        rule{Name: "updated-rule", Actions: []rules.Action{{Type: rules.ActionTypeAlarm}}},
+			body:        rule{Name: "updated-rule", Input: rules.Input{Type: rules.InputTypeMessage, ThingIDs: []string{thingID}}, Actions: []rules.Action{{Type: rules.ActionTypeAlarm}}},
 			status:      http.StatusBadRequest,
 		},
 	}
@@ -853,169 +892,3 @@ func TestRemoveRules(t *testing.T) {
 	}
 }
 
-func TestAssignRules(t *testing.T) {
-	svc := newService()
-	ts := newHTTPServer(svc)
-	defer ts.Close()
-
-	saved := saveRules(t, svc, 2)
-	ruleID1 := saved[0].ID
-	ruleID2 := saved[1].ID
-
-	cases := []struct {
-		desc        string
-		auth        string
-		thingID     string
-		contentType string
-		ids         []string
-		status      int
-	}{
-		{
-			desc:        "assign rules to thing",
-			auth:        token,
-			thingID:     thingID,
-			contentType: contentType,
-			ids:         []string{ruleID1, ruleID2},
-			status:      http.StatusOK,
-		},
-		{
-			desc:        "assign rules with empty token",
-			auth:        emptyValue,
-			thingID:     thingID,
-			contentType: contentType,
-			ids:         []string{ruleID1},
-			status:      http.StatusUnauthorized,
-		},
-		{
-			desc:        "assign rules with wrong token",
-			auth:        wrongValue,
-			thingID:     thingID,
-			contentType: contentType,
-			ids:         []string{ruleID1},
-			status:      http.StatusUnauthorized,
-		},
-		{
-			desc:        "assign rules to wrong thing ID",
-			auth:        token,
-			thingID:     wrongValue,
-			contentType: contentType,
-			ids:         []string{ruleID1},
-			status:      http.StatusForbidden,
-		},
-		{
-			desc:        "assign rules without content type",
-			auth:        token,
-			thingID:     thingID,
-			contentType: emptyValue,
-			ids:         []string{ruleID1},
-			status:      http.StatusUnsupportedMediaType,
-		},
-		{
-			desc:        "assign rules with empty list",
-			auth:        token,
-			thingID:     thingID,
-			contentType: contentType,
-			ids:         []string{},
-			status:      http.StatusBadRequest,
-		},
-	}
-
-	for _, tc := range cases {
-		body := toJSON(struct {
-			RuleIDs []string `json:"rule_ids"`
-		}{tc.ids})
-
-		req := testRequest{
-			client:      ts.Client(),
-			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/things/%s/rules", ts.URL, tc.thingID),
-			token:       tc.auth,
-			contentType: tc.contentType,
-			body:        strings.NewReader(body),
-		}
-		res, err := req.make()
-		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
-		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.status, res.StatusCode))
-	}
-}
-
-func TestUnassignRules(t *testing.T) {
-	svc := newService()
-	ts := newHTTPServer(svc)
-	defer ts.Close()
-
-	saved := saveRules(t, svc, 2)
-	ruleID1 := saved[0].ID
-	ruleID2 := saved[1].ID
-
-	err := svc.AssignRules(context.Background(), token, thingID, ruleID1, ruleID2)
-	require.Nil(t, err, fmt.Sprintf("unexpected error assigning rules: %s", err))
-
-	cases := []struct {
-		desc        string
-		auth        string
-		thingID     string
-		contentType string
-		ids         []string
-		status      int
-	}{
-		{
-			desc:        "unassign rules from thing",
-			auth:        token,
-			thingID:     thingID,
-			contentType: contentType,
-			ids:         []string{ruleID1, ruleID2},
-			status:      http.StatusOK,
-		},
-		{
-			desc:        "unassign rules with empty token",
-			auth:        emptyValue,
-			thingID:     thingID,
-			contentType: contentType,
-			ids:         []string{ruleID1},
-			status:      http.StatusUnauthorized,
-		},
-		{
-			desc:        "unassign rules from wrong thing ID",
-			auth:        token,
-			thingID:     wrongValue,
-			contentType: contentType,
-			ids:         []string{ruleID1},
-			status:      http.StatusForbidden,
-		},
-		{
-			desc:        "unassign rules without content type",
-			auth:        token,
-			thingID:     thingID,
-			contentType: emptyValue,
-			ids:         []string{ruleID1},
-			status:      http.StatusUnsupportedMediaType,
-		},
-		{
-			desc:        "unassign rules with empty list",
-			auth:        token,
-			thingID:     thingID,
-			contentType: contentType,
-			ids:         []string{},
-			status:      http.StatusBadRequest,
-		},
-	}
-
-	for _, tc := range cases {
-		body := toJSON(struct {
-			RuleIDs []string `json:"rule_ids"`
-		}{tc.ids})
-
-		req := testRequest{
-			client:      ts.Client(),
-			method:      http.MethodPatch,
-			url:         fmt.Sprintf("%s/things/%s/rules", ts.URL, tc.thingID),
-			token:       tc.auth,
-			contentType: tc.contentType,
-			body:        strings.NewReader(body),
-		}
-		res, err := req.make()
-		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
-		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.status, res.StatusCode))
-	}
-}

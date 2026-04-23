@@ -64,6 +64,7 @@ func saveRules(t *testing.T, svc rules.Service, n int) []rules.Rule {
 		rs = append(rs, rules.Rule{
 			Name:        fmt.Sprintf("rule-%d", i),
 			Description: fmt.Sprintf("desc-%d", i),
+			Input:       rules.Input{Type: rules.InputTypeMessage, ThingIDs: []string{thingID}},
 			Conditions: []rules.Condition{
 				{Field: "temperature", Comparator: ">", Threshold: threshold(25)},
 			},
@@ -77,13 +78,6 @@ func saveRules(t *testing.T, svc rules.Service, n int) []rules.Rule {
 	require.Len(t, saved, n)
 
 	return saved
-}
-
-func assignRules(t *testing.T, svc rules.Service, thID string, ruleIDs ...string) {
-	t.Helper()
-
-	err := svc.AssignRules(context.Background(), token, thID, ruleIDs...)
-	require.Nil(t, err)
 }
 
 func mustMarshal(t *testing.T, v any) []byte {
@@ -153,17 +147,6 @@ func TestConsumeMessage(t *testing.T) {
 					map[string]any{"name": "temperature", "value": float64(30)},
 				}),
 				ContentType: "application/senml+json",
-			},
-			err: nil,
-		},
-		{
-			desc:       "unknown publisher has no assigned rules",
-			conditions: defaultConditions,
-			operator:   rules.OperatorAND,
-			msg: protomfx.Message{
-				Publisher:   "2c8d1c97-6121-4c49-8a85-2baffd4e9e49",
-				Payload:     mustMarshal(t, map[string]any{"temperature": float64(30)}),
-				ContentType: "application/json",
 			},
 			err: nil,
 		},
@@ -270,14 +253,14 @@ func TestConsumeMessage(t *testing.T) {
 		svc := newService()
 
 		if len(tc.conditions) > 0 {
-			saved, err := svc.CreateRules(context.Background(), token, groupID, rules.Rule{
+			_, err := svc.CreateRules(context.Background(), token, groupID, rules.Rule{
 				Name:       "test-rule",
+				Input:      rules.Input{Type: rules.InputTypeMessage, ThingIDs: []string{thingID}},
 				Conditions: tc.conditions,
 				Operator:   tc.operator,
 				Actions:    []rules.Action{{Type: rules.ActionTypeAlarm}},
 			})
 			require.Nil(t, err)
-			assignRules(t, svc, thingID, saved[0].ID)
 		}
 
 		err := svc.ConsumeMessage(subject, tc.msg)
@@ -425,13 +408,7 @@ func TestListRulesByGroup(t *testing.T) {
 func TestListRulesByThing(t *testing.T) {
 	svc := newService()
 	n := 10
-	saved := saveRules(t, svc, n)
-
-	var ruleIDs []string
-	for _, r := range saved {
-		ruleIDs = append(ruleIDs, r.ID)
-	}
-	assignRules(t, svc, thingID, ruleIDs...)
+	saveRules(t, svc, n)
 
 	cases := []struct {
 		desc         string
@@ -520,7 +497,6 @@ func TestListThingIDsByRule(t *testing.T) {
 	svc := newService()
 	saved := saveRules(t, svc, 1)
 	ruleID := saved[0].ID
-	assignRules(t, svc, thingID, ruleID)
 
 	cases := []struct {
 		desc   string
@@ -708,123 +684,6 @@ func TestRemoveRulesByGroup(t *testing.T) {
 
 	for _, tc := range cases {
 		err := svc.RemoveRulesByGroup(context.Background(), tc.groupID)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
-	}
-}
-
-func TestAssignRules(t *testing.T) {
-	svc := newService()
-	saved := saveRules(t, svc, 1)
-	ruleID := saved[0].ID
-
-	cases := []struct {
-		desc    string
-		token   string
-		thingID string
-		ruleIDs []string
-		err     error
-	}{
-		{
-			desc:    "assign rules to thing",
-			token:   token,
-			thingID: thingID,
-			ruleIDs: []string{ruleID},
-			err:     nil,
-		},
-		{
-			desc:    "assign rules with invalid token",
-			token:   wrongValue,
-			thingID: thingID,
-			ruleIDs: []string{ruleID},
-			err:     errors.ErrAuthentication,
-		},
-		{
-			desc:    "assign non-existing rule to thing",
-			token:   token,
-			thingID: thingID,
-			ruleIDs: []string{wrongValue},
-			err:     dbutil.ErrNotFound,
-		},
-	}
-
-	for _, tc := range cases {
-		err := svc.AssignRules(context.Background(), tc.token, tc.thingID, tc.ruleIDs...)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
-	}
-}
-
-func TestUnassignRules(t *testing.T) {
-	svc := newService()
-	saved := saveRules(t, svc, 1)
-	ruleID := saved[0].ID
-	assignRules(t, svc, thingID, ruleID)
-
-	cases := []struct {
-		desc    string
-		token   string
-		thingID string
-		ruleIDs []string
-		err     error
-	}{
-		{
-			desc:    "unassign rules with invalid token",
-			token:   wrongValue,
-			thingID: thingID,
-			ruleIDs: []string{ruleID},
-			err:     errors.ErrAuthentication,
-		},
-		{
-			desc:    "unassign rules from thing",
-			token:   token,
-			thingID: thingID,
-			ruleIDs: []string{ruleID},
-			err:     nil,
-		},
-		{
-			desc:    "unassign non-existing rule from thing",
-			token:   token,
-			thingID: thingID,
-			ruleIDs: []string{wrongValue},
-			err:     dbutil.ErrNotFound,
-		},
-	}
-
-	for _, tc := range cases {
-		err := svc.UnassignRules(context.Background(), tc.token, tc.thingID, tc.ruleIDs...)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
-	}
-}
-
-func TestUnassignRulesByThing(t *testing.T) {
-	svc := newService()
-	n := 3
-	saved := saveRules(t, svc, n)
-
-	var ruleIDs []string
-	for _, r := range saved {
-		ruleIDs = append(ruleIDs, r.ID)
-	}
-	assignRules(t, svc, thingID, ruleIDs...)
-
-	cases := []struct {
-		desc    string
-		thingID string
-		err     error
-	}{
-		{
-			desc:    "unassign all rules from thing",
-			thingID: thingID,
-			err:     nil,
-		},
-		{
-			desc:    "unassign rules from non-existing thing",
-			thingID: wrongValue,
-			err:     nil,
-		},
-	}
-
-	for _, tc := range cases {
-		err := svc.UnassignRulesByThing(context.Background(), tc.thingID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
 }

@@ -6,6 +6,7 @@ package rules
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/rules"
+	"github.com/gofrs/uuid"
 )
 
 const (
@@ -19,6 +20,7 @@ const (
 type rule struct {
 	Name        string            `json:"name"`
 	Description string            `json:"description,omitempty"`
+	Input       rules.Input       `json:"input"`
 	Conditions  []rules.Condition `json:"conditions"`
 	Operator    string            `json:"operator,omitempty"`
 	Actions     []rules.Action    `json:"actions"`
@@ -55,6 +57,21 @@ func (req createRulesReq) validate() error {
 func (req rule) validate() error {
 	if req.Name == "" || len(req.Name) > maxNameSize {
 		return apiutil.ErrNameSize
+	}
+
+	switch req.Input.Type {
+	case rules.InputTypeMessage, rules.InputTypeAlarm, rules.InputTypeSchedule, rules.InputTypeCommand:
+	default:
+		return apiutil.ErrInvalidInputType
+	}
+
+	if len(req.Input.ThingIDs) < minLen {
+		return apiutil.ErrEmptyList
+	}
+	for _, id := range req.Input.ThingIDs {
+		if _, err := uuid.FromString(id); err != nil {
+			return apiutil.ErrInvalidIDFormat
+		}
 	}
 
 	if len(req.Conditions) < minLen {
@@ -193,30 +210,3 @@ func (req removeRulesReq) validate() error {
 	return nil
 }
 
-type thingRulesReq struct {
-	token   string
-	thingID string
-	RuleIDs []string `json:"rule_ids"`
-}
-
-func (req thingRulesReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.thingID == "" {
-		return apiutil.ErrMissingThingID
-	}
-
-	if len(req.RuleIDs) < minLen {
-		return apiutil.ErrEmptyList
-	}
-
-	for _, ruleID := range req.RuleIDs {
-		if ruleID == "" {
-			return apiutil.ErrMissingRuleID
-		}
-	}
-
-	return nil
-}
