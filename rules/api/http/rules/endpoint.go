@@ -21,10 +21,11 @@ func createRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 		for _, rReq := range req.Rules {
 			r := rules.Rule{
 				Name:        rReq.Name,
+				Description: rReq.Description,
+				Input:       rReq.Input,
 				Conditions:  rReq.Conditions,
 				Operator:    rReq.Operator,
 				Actions:     rReq.Actions,
-				Description: rReq.Description,
 			}
 			rulesList = append(rulesList, r)
 		}
@@ -114,6 +115,7 @@ func updateRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 			ID:          req.id,
 			Name:        req.Name,
 			Description: req.Description,
+			Input:       req.Input,
 			Conditions:  req.Conditions,
 			Operator:    req.Operator,
 			Actions:     req.Actions,
@@ -142,36 +144,6 @@ func removeRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 	}
 }
 
-func assignRulesEndpoint(svc rules.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(thingRulesReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		if err := svc.AssignRules(ctx, req.token, req.thingID, req.RuleIDs...); err != nil {
-			return nil, err
-		}
-
-		return thingRulesRes{}, nil
-	}
-}
-
-func unassignRulesEndpoint(svc rules.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(thingRulesReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		if err := svc.UnassignRules(ctx, req.token, req.thingID, req.RuleIDs...); err != nil {
-			return nil, err
-		}
-
-		return thingRulesRes{}, nil
-	}
-}
-
 func buildRulesResponse(rules []rules.Rule, created bool) rulesRes {
 	res := rulesRes{Rules: []ruleResponse{}, created: created}
 
@@ -181,6 +153,7 @@ func buildRulesResponse(rules []rules.Rule, created bool) rulesRes {
 			GroupID:     r.GroupID,
 			Name:        r.Name,
 			Description: r.Description,
+			Input:       r.Input,
 			Conditions:  r.Conditions,
 			Operator:    r.Operator,
 			Actions:     r.Actions,
@@ -210,6 +183,7 @@ func buildRulesPageResponse(page rules.RulesPage, pm rules.PageMetadata) RulesPa
 			GroupID:     r.GroupID,
 			Name:        r.Name,
 			Description: r.Description,
+			Input:       r.Input,
 			Conditions:  r.Conditions,
 			Operator:    r.Operator,
 			Actions:     r.Actions,
@@ -226,6 +200,7 @@ func buildRuleResponse(rule rules.Rule, updated bool) ruleResponse {
 		GroupID:     rule.GroupID,
 		Name:        rule.Name,
 		Description: rule.Description,
+		Input:       rule.Input,
 		Conditions:  rule.Conditions,
 		Operator:    rule.Operator,
 		Actions:     rule.Actions,

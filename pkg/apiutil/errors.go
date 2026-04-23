@@ -183,6 +183,9 @@ var (
 	// ErrInvalidOperator indicates an invalid logical operator
 	ErrInvalidOperator = errors.New("missing or invalid logical operator")
 
+	// ErrInvalidInputType indicates an invalid rule input type
+	ErrInvalidInputType = errors.New("missing or invalid input type")
+
 	// ErrInviteExpired indicates that an invite has expired
 	ErrInviteExpired = errors.New("invite expired")
 

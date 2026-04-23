@@ -28,10 +28,6 @@ func (es eventHandler) Handle(ctx context.Context, event events.Event) error {
 	case events.ThingRemove:
 		re := decodeRemoveEvent(msg)
 
-		if err := es.svc.UnassignRulesByThing(ctx, re.id); err != nil {
-			return err
-		}
-
 		if err := es.svc.UnassignScriptsFromThing(ctx, re.id); err != nil {
 			return err
 		}

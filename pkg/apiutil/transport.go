@@ -104,6 +104,7 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrInvalidAlarmLevel),
 			errors.Contains(err, ErrInvalidAlarmStatus),
 			errors.Contains(err, ErrInvalidOperator),
+			errors.Contains(err, ErrInvalidInputType),
 			errors.Contains(err, ErrInvalidThingType),
 			errors.Contains(err, ErrMissingAuth):
 			logger.Error(err.Error())
@@ -216,7 +217,8 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrInvalidState),
 		errors.Contains(err, ErrInvalidThingType),
 		errors.Contains(err, ErrInvalidAlarmLevel),
-		errors.Contains(err, ErrInvalidAlarmStatus):
+		errors.Contains(err, ErrInvalidAlarmStatus),
+		errors.Contains(err, ErrInvalidInputType):
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, errors.ErrAuthorization),
 		errors.Contains(err, ErrInviteExpired),

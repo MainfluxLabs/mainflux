@@ -4,6 +4,7 @@
 package mocks
 
 import (
+	"slices"
 	"context"
 	"sync"
 
@@ -17,7 +18,6 @@ var _ rules.Repository = (*ruleRepositoryMock)(nil)
 type ruleRepositoryMock struct {
 	mu                sync.Mutex
 	rules             map[string]rules.Rule
-	assignments       map[string][]string // thingID -> []ruleID
 	scripts           map[string]rules.LuaScript
 	scriptAssignments map[string][]string // thingID -> []scriptID
 	scriptRuns        map[string]rules.ScriptRun
@@ -27,7 +27,6 @@ type ruleRepositoryMock struct {
 func NewRuleRepository() rules.Repository {
 	return &ruleRepositoryMock{
 		rules:             make(map[string]rules.Rule),
-		assignments:       make(map[string][]string),
 		scripts:           make(map[string]rules.LuaScript),
 		scriptAssignments: make(map[string][]string),
 		scriptRuns:        make(map[string]rules.ScriptRun),
@@ -61,22 +60,18 @@ func (rrm *ruleRepositoryMock) RetrieveByThing(_ context.Context, thingID string
 	rrm.mu.Lock()
 	defer rrm.mu.Unlock()
 
-	ruleIDs := rrm.assignments[thingID]
 	var all, items []rules.Rule
-
 	first := uint64(pm.Offset) + 1
 	last := first + pm.Limit
 
-	for _, rID := range ruleIDs {
-		r, ok := rrm.rules[rID]
-		if !ok {
-			continue
-		}
-		all = append(all, r)
-		id := uuid.ParseID(r.ID)
-		if pm.Limit == 0 || (id >= first && id < last) {
-			items = append(items, r)
-		}
+	for _, r := range rrm.rules {
+		if slices.Contains(r.Input.ThingIDs, thingID) {
+				all = append(all, r)
+				id := uuid.ParseID(r.ID)
+				if pm.Limit == 0 || (id >= first && id < last) {
+					items = append(items, r)
+				}
+			}
 	}
 
 	return rules.RulesPage{
@@ -107,23 +102,6 @@ func (rrm *ruleRepositoryMock) RetrieveByGroup(_ context.Context, groupID string
 		Total: uint64(len(all)),
 		Rules: items,
 	}, nil
-}
-
-func (rrm *ruleRepositoryMock) RetrieveThingIDsByRule(_ context.Context, ruleID string) ([]string, error) {
-	rrm.mu.Lock()
-	defer rrm.mu.Unlock()
-
-	var thingIDs []string
-	for thingID, rIDs := range rrm.assignments {
-		for _, rID := range rIDs {
-			if rID == ruleID {
-				thingIDs = append(thingIDs, thingID)
-				break
-			}
-		}
-	}
-
-	return thingIDs, nil
 }
 
 func (rrm *ruleRepositoryMock) Update(_ context.Context, r rules.Rule) error {
@@ -166,49 +144,3 @@ func (rrm *ruleRepositoryMock) RemoveByGroup(_ context.Context, groupID string) 
 	return nil
 }
 
-func (rrm *ruleRepositoryMock) Assign(_ context.Context, thingID string, ruleIDs ...string) error {
-	rrm.mu.Lock()
-	defer rrm.mu.Unlock()
-
-	existing := make(map[string]struct{})
-	for _, id := range rrm.assignments[thingID] {
-		existing[id] = struct{}{}
-	}
-
-	for _, id := range ruleIDs {
-		if _, ok := existing[id]; !ok {
-			rrm.assignments[thingID] = append(rrm.assignments[thingID], id)
-		}
-	}
-
-	return nil
-}
-
-func (rrm *ruleRepositoryMock) Unassign(_ context.Context, thingID string, ruleIDs ...string) error {
-	rrm.mu.Lock()
-	defer rrm.mu.Unlock()
-
-	remove := make(map[string]struct{})
-	for _, id := range ruleIDs {
-		remove[id] = struct{}{}
-	}
-
-	var remaining []string
-	for _, id := range rrm.assignments[thingID] {
-		if _, ok := remove[id]; !ok {
-			remaining = append(remaining, id)
-		}
-	}
-	rrm.assignments[thingID] = remaining
-
-	return nil
-}
-
-func (rrm *ruleRepositoryMock) UnassignByThing(_ context.Context, thingID string) error {
-	rrm.mu.Lock()
-	defer rrm.mu.Unlock()
-
-	delete(rrm.assignments, thingID)
-
-	return nil
-}
