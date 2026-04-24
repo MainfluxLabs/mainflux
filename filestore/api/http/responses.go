@@ -4,6 +4,8 @@
 package http
 
 import (
+	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -78,6 +80,27 @@ func (res viewFileRes) Headers() map[string]string {
 }
 
 func (res viewFileRes) Empty() bool {
+	return false
+}
+
+type streamFileRes struct {
+	reader io.ReadCloser
+	name   string
+}
+
+func (res streamFileRes) Code() int {
+	return http.StatusOK
+}
+
+func (res streamFileRes) Headers() map[string]string {
+	h := map[string]string{}
+	if res.name != "" {
+		h["Content-Disposition"] = fmt.Sprintf(`attachment; filename=%q`, res.name)
+	}
+	return h
+}
+
+func (res streamFileRes) Empty() bool {
 	return false
 }
 
