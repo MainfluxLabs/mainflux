@@ -165,6 +165,21 @@ func (c *certsRepoMock) RetrieveBySerial(ctx context.Context, serial string) (ce
 	return crt, nil
 }
 
+func (c *certsRepoMock) RetrieveExpiring(ctx context.Context, expiresWithin time.Duration) ([]certs.Cert, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	deadline := time.Now().Add(expiresWithin)
+	var expiring []certs.Cert
+	for _, cert := range c.certsBySerial {
+		if cert.ExpiresAt.Before(deadline) {
+			expiring = append(expiring, cert)
+		}
+	}
+
+	return expiring, nil
+}
+
 func (c *certsRepoMock) RetrieveRevokedCerts(ctx context.Context) ([]certs.RevokedCert, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -175,4 +190,32 @@ func (c *certsRepoMock) RetrieveRevokedCerts(ctx context.Context) ([]certs.Revok
 	}
 
 	return revokedCerts, nil
+}
+
+func (c *certsRepoMock) MarkDownloaded(ctx context.Context, serial string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	cert, ok := c.certsBySerial[serial]
+	if !ok {
+		return dbutil.ErrNotFound
+	}
+
+	if cert.Downloaded {
+		return certs.ErrCertAlreadyDownloaded
+	}
+
+	cert.Downloaded = true
+	c.certsBySerial[serial] = cert
+
+	if thingCerts, ok := c.certsByThing[cert.ThingID]; ok {
+		for i, tc := range thingCerts {
+			if tc.Serial == serial {
+				thingCerts[i].Downloaded = true
+				break
+			}
+		}
+	}
+
+	return nil
 }

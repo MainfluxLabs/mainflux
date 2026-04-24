@@ -13,6 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -35,6 +36,13 @@ func MakeHandler(svc certs.Service, tracer opentracing.Tracer, pkiAgent pki.Agen
 		opts...,
 	))
 
+	r.Post("/certs/:serial/rotate", kithttp.NewServer(
+		kitot.TraceServer(tracer, "rotate_cert")(rotateCertEndpoint(svc)),
+		decodeRotateCert,
+		encodeResponse,
+		opts...,
+	))
+
 	r.Get("/certs/:serial", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_cert")(viewCertEndpoint(svc)),
 		decodeViewCert,
@@ -52,6 +60,13 @@ func MakeHandler(svc certs.Service, tracer opentracing.Tracer, pkiAgent pki.Agen
 	r.Get("/things/:id/serials", kithttp.NewServer(
 		kitot.TraceServer(tracer, "list_serials")(listSerialsByThingEndpoint(svc)),
 		decodeListSerialsByThing,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Get("/certs/:serial/download", kithttp.NewServer(
+		kitot.TraceServer(tracer, "download_cert")(downloadCertEndpoint(svc)),
+		decodeDownloadCert,
 		encodeResponse,
 		opts...,
 	))
@@ -117,12 +132,38 @@ func decodeViewCert(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
+func decodeDownloadCert(_ context.Context, r *http.Request) (any, error) {
+	req := downloadReq{
+		thingKey: apiutil.ExtractThingKey(r),
+		serial:   bone.GetValue(r, apiutil.SerialKey),
+	}
+
+	return req, nil
+}
+
 func decodeCerts(_ context.Context, r *http.Request) (any, error) {
 	if r.Header.Get("Content-Type") != apiutil.ContentTypeJSON {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
 	req := addCertsReq{token: apiutil.ExtractBearerToken(r)}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+func decodeRotateCert(_ context.Context, r *http.Request) (any, error) {
+	if r.Header.Get("Content-Type") != apiutil.ContentTypeJSON {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := rotateCertReq{
+		token:  apiutil.ExtractBearerToken(r),
+		serial: bone.GetValue(r, apiutil.SerialKey),
+	}
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, err
 	}
@@ -140,6 +181,13 @@ func decodeRevokeCerts(_ context.Context, r *http.Request) (any, error) {
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
+	switch {
+	case errors.Contains(err, certs.ErrCertAlreadyDownloaded):
+		w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
+		w.WriteHeader(http.StatusForbidden)
+		apiutil.WriteErrorResponse(err, w)
+		return
+	}
 	apiutil.EncodeError(err, w)
 	apiutil.WriteErrorResponse(err, w)
 }

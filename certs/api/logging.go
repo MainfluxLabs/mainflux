@@ -13,6 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/certs"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	pkgauth "github.com/MainfluxLabs/mainflux/pkg/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 var _ certs.Service = (*loggingMiddleware)(nil)
@@ -39,6 +40,20 @@ func (lm *loggingMiddleware) IssueCert(ctx context.Context, token, thingID, ttl 
 	}(time.Now())
 
 	return lm.svc.IssueCert(ctx, token, thingID, ttl, keyBits, keyType)
+}
+
+func (lm *loggingMiddleware) RotateCert(ctx context.Context, token, serial, thingID, ttl string, keyBits int, keyType string) (_ certs.Cert, err error) {
+	defer func(begin time.Time) {
+		email := pkgauth.EmailFromToken(token)
+		message := fmt.Sprintf("Method rotate_cert by user %s, serial %s and thing id %s took %s to complete", email, serial, thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RotateCert(ctx, token, serial, thingID, ttl, keyBits, keyType)
 }
 
 func (lm *loggingMiddleware) ListCerts(ctx context.Context, token, thingID string, offset, limit uint64) (_ certs.Page, err error) {
@@ -95,6 +110,19 @@ func (lm *loggingMiddleware) RevokeCert(ctx context.Context, token, serial strin
 	}(time.Now())
 
 	return lm.svc.RevokeCert(ctx, token, serial)
+}
+
+func (lm *loggingMiddleware) DownloadCert(ctx context.Context, thingKey domain.ThingKey, serial string) (c certs.Cert, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method download_cert for serial %s and thing id %s took %s to complete", serial, c.ThingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.DownloadCert(ctx, thingKey, serial)
 }
 
 func (lm *loggingMiddleware) RenewCert(ctx context.Context, token, serial string) (_ certs.Cert, err error) {

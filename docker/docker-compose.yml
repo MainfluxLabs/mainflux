@@ -868,6 +868,8 @@ services:
       MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
       MF_THINGS_GRPC_URL: ${MF_THINGS_GRPC_URL}
       MF_THINGS_GRPC_TIMEOUT: ${MF_THINGS_GRPC_TIMEOUT}
+      MF_BROKER_URL: ${MF_BROKER_URL}
+      MF_CERTS_CHECK_TIME: ${MF_CERTS_CHECK_TIME}
       MF_CERTS_CRL_PATH: ${MF_CERTS_CRL_PATH}
     volumes:
       - ./ssl/certs/ca.key:/etc/ssl/certs/ca.key

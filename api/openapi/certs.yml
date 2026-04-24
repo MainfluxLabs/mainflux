@@ -81,6 +81,58 @@ paths:
           description: Certificate not found.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /certs/{serial}/rotate:
+    post:
+      summary: Rotates a certificate
+      description: |
+        Revokes the certificate with the given serial and issues a new one
+        for the specified thing.
+      tags:
+        - certs
+      parameters:
+        - $ref: "#/components/parameters/Serial"
+      requestBody:
+        $ref: "#/components/requestBodies/RotateCertReq"
+      responses:
+        '201':
+          $ref: "#/components/responses/IssueCertRes"
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: User is not authorized to rotate this certificate, or the serial does not belong to the specified thing.
+        '404':
+          description: Certificate with the given serial was not found.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /certs/{serial}/download:
+    get:
+      summary: Downloads a certificate
+      description: |
+        Retrieves the full certificate data (certificate, private key, issuing CA,
+        CA chain) for a given serial and marks it as downloaded. A certificate can
+        only be downloaded once. Subsequent attempts return 403.
+
+        Authenticated via thing key (device self-provisioning); the thing fetches
+        its own certificate. The serial must belong to the authenticating thing.
+      security:
+        - thingAuth: []
+      tags:
+        - certs
+      parameters:
+        - $ref: "#/components/parameters/Serial"
+      responses:
+        '200':
+          $ref: "#/components/responses/DownloadCertRes"
+        '401':
+          description: Missing or invalid thing key provided.
+        '403':
+          description: Certificate has already been downloaded, or does not belong to the authenticating thing.
+        '404':
+          description: Certificate with the given serial was not found.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /things/{thingId}/serials:
     get:
       summary: Lists certificate serials for a thing
@@ -197,7 +249,7 @@ components:
           description: Unique identifier of the thing the certificate was issued for.
         certificate:
           type: string
-          description: PEM-encoded certificate.
+          description: PEM-encoded client certificate.
         serial:
           type: string
           description: Certificate serial number (hex string).
@@ -205,11 +257,43 @@ components:
           type: string
           format: date-time
           description: Certificate expiration timestamp (RFC 3339).
+        downloaded:
+          type: boolean
+          description: Whether the certificate has been downloaded.
       required:
         - thing_id
         - certificate
         - serial
         - expires_at
+    DownloadCert:
+      type: object
+      description: Full certificate data for download.
+      properties:
+        certificate:
+          type: string
+          description: PEM-encoded client certificate.
+        issuing_ca:
+          type: string
+          description: PEM-encoded issuing CA certificate.
+        ca_chain:
+          type: array
+          items:
+            type: string
+          description: PEM-encoded CA certificate chain.
+        private_key:
+          type: string
+          description: PEM-encoded private key.
+        private_key_type:
+          type: string
+          enum: [rsa, ecdsa]
+          description: Type of private key.
+        serial:
+          type: string
+          description: Certificate serial.
+        thing_id:
+          type: string
+          format: uuid
+          description: Corresponding Mainflux Thing ID.
     SerialsPage:
       type: object
       properties:
@@ -271,6 +355,37 @@ components:
                 type: integer
                 description: Key size in bits. For RSA use 2048 or 4096; for EC use 256 or 384.
                 example: 2048
+    RotateCertReq:
+      description: |
+        Rotates a certificate by revoking the existing one and issuing a new one.
+        Provide the thing ID and new certificate parameters.
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - thing_id
+              - ttl
+              - key_bits
+              - key_type
+            properties:
+              thing_id:
+                type: string
+                format: uuid
+                description: ID of the thing to issue the new certificate for.
+              ttl:
+                type: string
+                description: Certificate validity period as a Go duration string (e.g. `8760h`).
+                example: "8760h"
+              key_type:
+                type: string
+                description: Key algorithm. Supported values are `rsa` and `ec`.
+                enum: [rsa, ec]
+                example: rsa
+              key_bits:
+                type: integer
+                description: Key size in bits. For RSA use 2048 or 4096; for EC use 256 or 384.
+                example: 2048
 
   responses:
     IssueCertRes:
@@ -285,6 +400,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ViewCert"
+    DownloadCertRes:
+      description: Full certificate data for download. Can only be retrieved once.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/DownloadCert"
     SerialsPageRes:
       description: Certificate serials page.
       content:
@@ -313,6 +434,14 @@ components:
       bearerFormat: JWT
       description: |
         * Users access: "Authorization: Bearer <user_token>"
+    thingAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        Thing self-authentication for device provisioning flows.
+        * Internal key: "Authorization: Thing <thing_key>"
+        * External key: "Authorization: External <thing_key>"
 
 security:
   - bearerAuth: []

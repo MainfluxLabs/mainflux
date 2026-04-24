@@ -22,6 +22,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/certs/mocks"
 	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -73,6 +74,9 @@ func newService() (certs.Service, pki.Agent, error) {
 			Key: thingKey,
 		}
 	}
+
+	ths[token] = things.Thing{ID: thingID, Key: thingKey}
+	ths[thingKey] = things.Thing{ID: thingID, Key: thingKey}
 	tc := pkgmocks.NewThingsServiceClient(map[string]things.Profile{}, ths, map[string]things.Group{})
 
 	tlsCert, caCert, err := loadCertificates(caPath, caKeyPath)
@@ -138,7 +142,7 @@ func TestIssueCert(t *testing.T) {
 			ttl:     ttl,
 			keyType: keyType,
 			keyBits: keyBits,
-			err:     certs.ErrFailedCertCreation,
+			err:     errors.ErrAuthorization,
 		},
 		{
 			desc:    "issue new cert with invalid token",
@@ -237,6 +241,119 @@ func TestIssueCert(t *testing.T) {
 	}
 }
 
+func TestRotateCert(t *testing.T) {
+	svc, _, err := newService()
+	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
+
+	issuedCert, err := svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, keyType)
+	require.Nil(t, err, fmt.Sprintf("unexpected cert creation error: %s\n", err))
+
+	mismatchCert, err := svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, keyType)
+	require.Nil(t, err, fmt.Sprintf("unexpected cert creation error: %s\n", err))
+
+	cases := []struct {
+		desc    string
+		token   string
+		serial  string
+		thingID string
+		err     error
+	}{
+		{
+			desc:    "rotate cert with invalid token",
+			token:   wrongValue,
+			serial:  issuedCert.Serial,
+			thingID: thingID,
+			err:     errors.ErrAuthorization,
+		},
+		{
+			desc:    "rotate cert with serial/thingID mismatch",
+			token:   token,
+			serial:  mismatchCert.Serial,
+			thingID: "other-thing-id",
+			err:     errors.ErrAuthorization,
+		},
+		{
+			desc:    "rotate cert with non-existent serial",
+			token:   token,
+			serial:  wrongValue,
+			thingID: thingID,
+			err:     dbutil.ErrNotFound,
+		},
+		{
+			desc:    "rotate cert",
+			token:   token,
+			serial:  issuedCert.Serial,
+			thingID: thingID,
+			err:     nil,
+		},
+	}
+
+	for _, tc := range cases {
+		newCert, err := svc.RotateCert(context.Background(), tc.token, tc.serial, tc.thingID, ttl, keyBits, keyType)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		if err == nil {
+			assert.NotEqual(t, issuedCert.Serial, newCert.Serial, fmt.Sprintf("%s: rotated cert should have new serial", tc.desc))
+			assert.Equal(t, tc.thingID, newCert.ThingID, fmt.Sprintf("%s: thing ID mismatch", tc.desc))
+			assert.NotEmpty(t, newCert.ClientCert, fmt.Sprintf("%s: client cert should not be empty", tc.desc))
+			assert.NotEmpty(t, newCert.ClientKey, fmt.Sprintf("%s: client key should not be empty", tc.desc))
+		}
+	}
+}
+
+func TestDownloadCert(t *testing.T) {
+	svc, _, err := newService()
+	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
+
+	issuedCert, err := svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, keyType)
+	require.Nil(t, err, fmt.Sprintf("unexpected cert creation error: %s\n", err))
+
+	validKey := domain.ThingKey{Value: thingKey, Type: domain.KeyTypeInternal}
+	wrongKey := domain.ThingKey{Value: wrongValue, Type: domain.KeyTypeInternal}
+
+	cases := []struct {
+		desc     string
+		thingKey domain.ThingKey
+		serial   string
+		err      error
+	}{
+		{
+			desc:     "download cert",
+			thingKey: validKey,
+			serial:   issuedCert.Serial,
+			err:      nil,
+		},
+		{
+			desc:     "download cert again - already downloaded",
+			thingKey: validKey,
+			serial:   issuedCert.Serial,
+			err:      certs.ErrCertAlreadyDownloaded,
+		},
+		{
+			desc:     "download cert with invalid thing key",
+			thingKey: wrongKey,
+			serial:   issuedCert.Serial,
+			err:      errors.ErrAuthentication,
+		},
+		{
+			desc:     "download cert with invalid serial",
+			thingKey: validKey,
+			serial:   wrongValue,
+			err:      dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		cert, err := svc.DownloadCert(context.Background(), tc.thingKey, tc.serial)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		if err == nil {
+			assert.Equal(t, issuedCert.Serial, cert.Serial, fmt.Sprintf("%s: serial mismatch", tc.desc))
+			assert.NotEmpty(t, cert.ClientCert, fmt.Sprintf("%s: client cert should not be empty", tc.desc))
+			assert.NotEmpty(t, cert.ClientKey, fmt.Sprintf("%s: client key should not be empty", tc.desc))
+			assert.True(t, cert.Downloaded, fmt.Sprintf("%s: cert should be marked downloaded", tc.desc))
+		}
+	}
+}
+
 func TestRevokeCert(t *testing.T) {
 	svc, _, err := newService()
 	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
@@ -251,16 +368,16 @@ func TestRevokeCert(t *testing.T) {
 		err      error
 	}{
 		{
+			desc:     "revoke cert with invalid token",
+			token:    wrongValue,
+			serialID: issuedCert.Serial,
+			err:      errors.ErrAuthorization,
+		},
+		{
 			desc:     "revoke cert",
 			token:    token,
 			serialID: issuedCert.Serial,
 			err:      nil,
-		},
-		{
-			desc:     "revoke cert with invalid token",
-			token:    wrongValue,
-			serialID: issuedCert.Serial,
-			err:      errors.ErrAuthentication,
 		},
 		{
 			desc:     "revoke cert for invalid serial id",
@@ -313,7 +430,7 @@ func TestListCerts(t *testing.T) {
 			offset:  0,
 			limit:   certNum,
 			size:    0,
-			err:     errors.ErrAuthentication,
+			err:     errors.ErrAuthorization,
 		},
 		{
 			desc:    "list half certs with valid token",
@@ -379,7 +496,7 @@ func TestListSerials(t *testing.T) {
 			offset:  0,
 			limit:   certNum,
 			size:    0,
-			err:     errors.ErrAuthentication,
+			err:     errors.ErrAuthorization,
 		},
 		{
 			desc:    "list half serials with valid token",
@@ -441,7 +558,7 @@ func TestViewCert(t *testing.T) {
 			desc:     "view cert with invalid token",
 			token:    wrongValue,
 			serialID: issuedCert.Serial,
-			err:      errors.ErrAuthentication,
+			err:      errors.ErrAuthorization,
 		},
 		{
 			desc:     "view cert with invalid serial",
@@ -482,6 +599,12 @@ func TestRenewCert(t *testing.T) {
 		err      error
 	}{
 		{
+			desc:     "renew cert with invalid token",
+			token:    wrongValue,
+			serialID: shortCert.Serial,
+			err:      errors.ErrAuthorization,
+		},
+		{
 			desc:     "renew cert within 30-day renewal window",
 			token:    token,
 			serialID: shortCert.Serial,
@@ -492,12 +615,6 @@ func TestRenewCert(t *testing.T) {
 			token:    token,
 			serialID: longCert.Serial,
 			err:      certs.ErrNotEligibleForRenewal,
-		},
-		{
-			desc:     "renew cert with invalid token",
-			token:    wrongValue,
-			serialID: shortCert.Serial,
-			err:      errors.ErrAuthentication,
 		},
 		{
 			desc:     "renew cert with invalid serial",
