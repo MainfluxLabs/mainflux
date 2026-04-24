@@ -174,19 +174,11 @@ func decodeSaveFile(maxUploadBytes int64) kithttp.DecodeRequestFunc {
 			return nil, err
 		}
 
-<<<<<<< HEAD
-	req := saveFileReq{
-		key:      apiutil.ExtractThingKey(r),
-		fileInfo: fip.fileInfo,
-		file:     fip.file,
-	}
-=======
 		req := saveFileReq{
-			key:      things.ExtractThingKey(r),
+			key:      apiutil.ExtractThingKey(r),
 			fileInfo: fip.fileInfo,
 			file:     fip.file,
 		}
->>>>>>> 78135777e (update: filestore api)
 
 		return req, nil
 	}
