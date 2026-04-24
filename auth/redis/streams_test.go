@@ -68,7 +68,7 @@ func TestCreateOrg(t *testing.T) {
 	_, ownerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	svc = redis.NewEventStoreMiddleware(svc, redisClient, logger.NewMock())
+	svc = redis.NewEventStoreMiddleware(svc, redisClient, 0, logger.NewMock())
 
 	cases := []struct {
 		desc  string
@@ -129,7 +129,7 @@ func TestRemoveOrg(t *testing.T) {
 	org, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	svc = redis.NewEventStoreMiddleware(svc, redisClient, logger.NewMock())
+	svc = redis.NewEventStoreMiddleware(svc, redisClient, 0, logger.NewMock())
 
 	cases := []struct {
 		desc  string

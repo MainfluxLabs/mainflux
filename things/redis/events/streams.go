@@ -13,21 +13,28 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-const streamLen = 1000
+const DefaultStreamMaxLen = 100000
 
 type eventStore struct {
 	things.Service
 	client *redis.Client
 	logger logger.Logger
+	maxLen int64
 }
 
 // NewEventStoreMiddleware returns wrapper around things service that sends
-// events to event store.
-func NewEventStoreMiddleware(svc things.Service, client *redis.Client, logger logger.Logger) things.Service {
+// events to event store. maxLen controls the approximate stream retention;
+// pass 0 to use DefaultStreamMaxLen.
+func NewEventStoreMiddleware(svc things.Service, client *redis.Client, maxLen int64, logger logger.Logger) things.Service {
+	if maxLen <= 0 {
+		maxLen = DefaultStreamMaxLen
+	}
+
 	return eventStore{
 		Service: svc,
 		client:  client,
 		logger:  logger,
+		maxLen:  maxLen,
 	}
 }
 
@@ -35,9 +42,10 @@ func (es eventStore) publish(ctx context.Context, e events.Event) {
 	vals := e.Encode()
 	record := &redis.XAddArgs{
 		Stream:       events.ThingsStream,
-		MaxLenApprox: streamLen,
-		Values:       vals,
+		MaxLenApprox: es.maxLen,
+		Values:       map[string]any(vals),
 	}
+
 	if err := es.client.XAdd(ctx, record).Err(); err != nil {
 		es.logger.Warn(fmt.Sprintf("failed to publish %s event: %s", vals.Operation(), err))
 	}
