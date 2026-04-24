@@ -15,6 +15,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth/jwt"
 	"github.com/MainfluxLabs/mainflux/auth/mocks"
 	"github.com/MainfluxLabs/mainflux/auth/redis"
+	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/events"
@@ -67,7 +68,7 @@ func TestCreateOrg(t *testing.T) {
 	_, ownerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	svc = redis.NewEventStoreMiddleware(svc, redisClient)
+	svc = redis.NewEventStoreMiddleware(svc, redisClient, 0, logger.NewMock())
 
 	cases := []struct {
 		desc  string
@@ -128,7 +129,7 @@ func TestRemoveOrg(t *testing.T) {
 	org, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	svc = redis.NewEventStoreMiddleware(svc, redisClient)
+	svc = redis.NewEventStoreMiddleware(svc, redisClient, 0, logger.NewMock())
 
 	cases := []struct {
 		desc  string

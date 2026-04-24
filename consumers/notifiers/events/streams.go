@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package events
 
 import (
@@ -13,30 +16,13 @@ type eventHandler struct {
 
 // NewEventHandler returns new event store handler.
 func NewEventHandler(svc notifiers.Service) events.EventHandler {
-	return &eventHandler{
-		svc: svc,
-	}
+	return &eventHandler{svc: svc}
 }
 
-func (es eventHandler) Handle(ctx context.Context, event events.Event) error {
-	msg, err := event.Encode()
-	if err != nil {
-		return err
+func (h *eventHandler) Handle(ctx context.Context, event events.Event) error {
+	switch e := event.(type) {
+	case events.GroupRemoved:
+		return h.svc.RemoveNotifiersByGroup(ctx, e.ID)
 	}
-
-	switch msg["operation"] {
-	case events.GroupRemove:
-		re := decodeRemoveGroupEvent(msg)
-		if err := es.svc.RemoveNotifiersByGroup(ctx, re.id); err != nil {
-			return err
-		}
-	}
-
 	return nil
-}
-
-func decodeRemoveGroupEvent(event map[string]any) removeGroupEvent {
-	return removeGroupEvent{
-		id: events.ReadField(event, "id", ""),
-	}
 }

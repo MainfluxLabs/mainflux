@@ -47,7 +47,6 @@ import (
 const (
 	stopWaitTime = 5 * time.Second
 	svcName      = "things"
-	esGroupName  = svcName
 
 	defLogLevel        = "error"
 	defDBHost          = "localhost"
@@ -64,6 +63,7 @@ const (
 	defCacheURL        = "redis://localhost:6379/0"
 	defESConsumerName  = svcName
 	defESURL           = "redis://localhost:6379/0"
+	defESStreamMaxLen  = "100000"
 	defHTTPPort        = "8182"
 	defAuthHTTPPort    = "8989"
 	defAuthGRPCPort    = "8183"
@@ -104,6 +104,7 @@ const (
 	envCacheURL         = "MF_THINGS_CACHE_URL"
 	envESConsumerName   = "MF_THINGS_EVENT_CONSUMER"
 	envESURL            = "MF_THINGS_ES_URL"
+	envESStreamMaxLen   = "MF_THINGS_ES_STREAM_MAXLEN"
 	envHTTPPort         = "MF_THINGS_HTTP_PORT"
 	envAuthHTTPPort     = "MF_THINGS_AUTH_HTTP_PORT"
 	envAuthGRPCPort     = "MF_THINGS_AUTH_GRPC_PORT"
@@ -142,6 +143,7 @@ type config struct {
 	cacheURL         string
 	esConsumerName   string
 	esURL            string
+	esStreamMaxLen   int64
 	standaloneEmail  string
 	standaloneToken  string
 	jaegerURL        string
@@ -247,6 +249,11 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
 	}
 
+	esStreamMaxLen, err := strconv.ParseInt(mainflux.Env(envESStreamMaxLen, defESStreamMaxLen), 10, 64)
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envESStreamMaxLen, err.Error())
+	}
+
 	dbConfig := postgres.Config{
 		Host:        mainflux.Env(envDBHost, defDBHost),
 		Port:        mainflux.Env(envDBPort, defDBPort),
@@ -319,6 +326,7 @@ func loadConfig() config {
 		cacheURL:         mainflux.Env(envCacheURL, defCacheURL),
 		esConsumerName:   mainflux.Env(envESConsumerName, defESConsumerName),
 		esURL:            mainflux.Env(envESURL, defESURL),
+		esStreamMaxLen:   esStreamMaxLen,
 		standaloneEmail:  mainflux.Env(envStandaloneEmail, defStandaloneEmail),
 		standaloneToken:  mainflux.Env(envStandaloneToken, defStandaloneToken),
 		jaegerURL:        mainflux.Env(envJaegerURL, defJaegerURL),
@@ -357,7 +365,11 @@ func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logge
 }
 
 func subscribeToAuthES(ctx context.Context, svc things.Service, cfg config, logger logger.Logger) error {
-	subscriber, err := mfevents.NewSubscriber(cfg.esURL, mfevents.AuthStream, esGroupName, cfg.esConsumerName, logger)
+	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
+		URL:    cfg.esURL,
+		Stream: mfevents.AuthStream,
+		Name:   cfg.esConsumerName,
+	}, logger)
 	if err != nil {
 		return err
 	}
@@ -425,7 +437,7 @@ func newService(ac domain.AuthClient, uc domain.UsersClient, dbTracer opentracin
 
 	svc := things.New(ac, uc, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider, thingsEmailer)
 
-	svc = events.NewEventStoreMiddleware(svc, esClient)
+	svc = events.NewEventStoreMiddleware(svc, esClient, cfg.esStreamMaxLen, logger)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

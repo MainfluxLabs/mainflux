@@ -5,6 +5,7 @@ package events
 
 import (
 	"context"
+	"fmt"
 )
 
 const (
@@ -32,15 +33,26 @@ const (
 	AuthStream   = mainfluxPrefix + "auth"
 )
 
-// Event represents an event.
-type Event interface {
-	// Encode encodes event to map.
-	Encode() (map[string]interface{}, error)
+// RedisEvent is the raw payload delivered on a Redis stream.
+type RedisEvent map[string]any
+
+// Operation returns the event's operation name, or an empty string if missing.
+func (e RedisEvent) Operation() string {
+	s, _ := e["operation"].(string)
+	return s
 }
 
-// EventHandler represents event handler for Subscriber.
+// Field returns the string value stored under key, or def if missing.
+func (e RedisEvent) Field(key, def string) string {
+	s, ok := e[key].(string)
+	if !ok {
+		return def
+	}
+	return s
+}
+
+// EventHandler reacts to a single event delivered by a Subscriber.
 type EventHandler interface {
-	// Handle handles events passed by underlying implementation.
 	Handle(ctx context.Context, event Event) error
 }
 
@@ -53,13 +65,8 @@ type Subscriber interface {
 	Close() error
 }
 
-// ReadField returns the string value stored under the given map key.
-// If the key is missing or not a string, it returns the provided default.
-func ReadField(event map[string]any, key, def string) string {
-	val, ok := event[key].(string)
-	if !ok {
-		return def
-	}
-
-	return val
+// cursorKey is the Redis key where a named subscriber stores its last
+// processed message ID for the given stream.
+func cursorKey(name, stream string) string {
+	return fmt.Sprintf("mainflux:cursor:%s:%s", name, stream)
 }
