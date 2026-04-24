@@ -510,12 +510,18 @@ services:
       - mainfluxlabs-base-net
     volumes:
       - mainfluxlabs-seaweedfs-master-volume:/data
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 9333 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   seaweedfs-volume:
     image: chrislusf/seaweedfs:3.71
     container_name: mainfluxlabs-seaweedfs-volume
     depends_on:
-      - seaweedfs-master
+      seaweedfs-master:
+        condition: service_healthy
     restart: on-failure
     command: "volume -mserver=seaweedfs-master:9333 -ip=seaweedfs-volume -ip.bind=0.0.0.0 -dir=/data -port=8080 -disk=hdd"
     expose:
@@ -524,13 +530,20 @@ services:
       - mainfluxlabs-base-net
     volumes:
       - mainfluxlabs-seaweedfs-volume-volume:/data
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 8080 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   seaweedfs-filer:
     image: chrislusf/seaweedfs:3.71
     container_name: mainfluxlabs-seaweedfs-filer
     depends_on:
-      - seaweedfs-master
-      - seaweedfs-volume
+      seaweedfs-master:
+        condition: service_healthy
+      seaweedfs-volume:
+        condition: service_healthy
     restart: on-failure
     command: "filer -master=seaweedfs-master:9333 -ip=seaweedfs-filer -ip.bind=0.0.0.0 -port=8888 -maxMB=${MF_FILESTORE_MAX_UPLOAD_MB}"
     expose:
@@ -539,17 +552,26 @@ services:
       - mainfluxlabs-base-net
     volumes:
       - mainfluxlabs-seaweedfs-filer-volume:/data
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 8888 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   filestore:
     image: ${MF_RELEASE_PREFIX}/filestore:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-filestore
     depends_on:
-      - things
-      - filestore-db
-      - seaweedfs-filer
+      things:
+        condition: service_started
+      filestore-db:
+        condition: service_started
+      seaweedfs-filer:
+        condition: service_healthy
     restart: on-failure
     environment:
       MF_FILESTORE_LOG_LEVEL: ${MF_FILESTORE_LOG_LEVEL}
+      MF_FILESTORE_MAX_UPLOAD_MB: ${MF_FILESTORE_MAX_UPLOAD_MB}
       MF_FILESTORE_DB_HOST: ${MF_FILESTORE_DB_HOST}
       MF_FILESTORE_DB_PORT: ${MF_FILESTORE_DB_PORT}
       MF_FILESTORE_DB_USER: ${MF_FILESTORE_DB_USER}
