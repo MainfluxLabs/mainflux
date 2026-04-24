@@ -93,12 +93,13 @@ type filestoreService struct {
 
 var _ Service = (*filestoreService)(nil)
 
-func New(tc domain.ThingsClient, thingsRepo ThingsRepository, groupsRepo GroupsRepository, fs store.FileStore) Service {
+func New(tc domain.ThingsClient, thingsRepo ThingsRepository, groupsRepo GroupsRepository, fs store.FileStore, log logger.Logger) Service {
 	return &filestoreService{
 		things:     tc,
 		thingsRepo: thingsRepo,
 		groupsRepo: groupsRepo,
 		store:      fs,
+		logger:     log,
 	}
 }
 
