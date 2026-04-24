@@ -5,6 +5,7 @@ package events
 
 import (
 	"context"
+	"fmt"
 )
 
 const (
@@ -62,4 +63,10 @@ type Subscriber interface {
 
 	// Close gracefully closes event subscriber's connection.
 	Close() error
+}
+
+// cursorKey is the Redis key where a named subscriber stores its last
+// processed message ID for the given stream.
+func cursorKey(name, stream string) string {
+	return fmt.Sprintf("mainflux:cursor:%s:%s", name, stream)
 }

@@ -13,21 +13,30 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-const streamLen = 1000
+// DefaultStreamMaxLen is the default approximate retention (number of
+// entries) for the auth event stream. Overridable per-deployment via the
+// MaxLen argument to NewEventStoreMiddleware.
+const DefaultStreamMaxLen = 100000
 
 type eventStore struct {
 	auth.Service
 	client *redis.Client
 	logger logger.Logger
+	maxLen int64
 }
 
 // NewEventStoreMiddleware returns wrapper around auth service that sends
-// events to event store.
-func NewEventStoreMiddleware(svc auth.Service, client *redis.Client, logger logger.Logger) auth.Service {
+// events to event store. maxLen controls the approximate stream retention;
+// pass 0 to use DefaultStreamMaxLen.
+func NewEventStoreMiddleware(svc auth.Service, client *redis.Client, maxLen int64, logger logger.Logger) auth.Service {
+	if maxLen <= 0 {
+		maxLen = DefaultStreamMaxLen
+	}
 	return eventStore{
 		Service: svc,
 		client:  client,
 		logger:  logger,
+		maxLen:  maxLen,
 	}
 }
 
@@ -35,8 +44,8 @@ func (es eventStore) publish(ctx context.Context, e events.Event) {
 	vals := e.Encode()
 	record := &redis.XAddArgs{
 		Stream:       events.AuthStream,
-		MaxLenApprox: streamLen,
-		Values:       vals,
+		MaxLenApprox: es.maxLen,
+		Values:       map[string]any(vals),
 	}
 	if err := es.client.XAdd(ctx, record).Err(); err != nil {
 		es.logger.Warn(fmt.Sprintf("failed to publish %s event: %s", vals.Operation(), err))

@@ -70,6 +70,7 @@ const (
 	defUsersClientTLS  = "false"
 	defUsersGRPCURL    = "localhost:8184"
 	defESURL           = "redis://localhost:6379/0"
+	defESStreamMaxLen  = "100000"
 
 	defEmailHost         = "localhost"
 	defEmailPort         = "25"
@@ -108,6 +109,7 @@ const (
 	envUsersCACerts    = "MF_USERS_CA_CERTS"
 	envUsersClientTLS  = "MF_USERS_CLIENT_TLS"
 	envESURL           = "MF_AUTH_ES_URL"
+	envESStreamMaxLen  = "MF_AUTH_ES_STREAM_MAXLEN"
 
 	envEmailHost         = "MF_EMAIL_HOST"
 	envEmailPort         = "MF_EMAIL_PORT"
@@ -136,6 +138,7 @@ type config struct {
 	adminEmail     string
 	host           string
 	esURL          string
+	esStreamMaxLen int64
 }
 
 func main() {
@@ -276,6 +279,11 @@ func loadConfig() config {
 		log.Fatal(err)
 	}
 
+	esStreamMaxLen, err := strconv.ParseInt(mainflux.Env(envESStreamMaxLen, defESStreamMaxLen), 10, 64)
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envESStreamMaxLen, err.Error())
+	}
+
 	return config{
 		logLevel:       mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:       dbConfig,
@@ -292,6 +300,7 @@ func loadConfig() config {
 		adminEmail:     mainflux.Env(envAdminEmail, defAdminEmail),
 		host:           mainflux.Env(envHost, defHost),
 		esURL:          mainflux.Env(envESURL, defESURL),
+		esStreamMaxLen: esStreamMaxLen,
 	}
 
 }
@@ -358,7 +367,7 @@ func newService(db *sqlx.DB, tc domain.ThingsClient, uc domain.UsersClient, trac
 	)
 
 	svc := auth.New(orgsRepo, tc, uc, keysRepo, rolesRepo, membsRepo, invitesRepo, authEmailer, idProvider, t, cfg.loginDuration, cfg.inviteDuration)
-	svc = rediscache.NewEventStoreMiddleware(svc, esClient, logger)
+	svc = rediscache.NewEventStoreMiddleware(svc, esClient, cfg.esStreamMaxLen, logger)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

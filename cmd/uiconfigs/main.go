@@ -45,7 +45,6 @@ import (
 const (
 	svcName      = "uiconfigs"
 	stopWaitTime = 5 * time.Second
-	esGroupName  = svcName
 
 	defLogLevel          = "error"
 	defDBHost            = "localhost"
@@ -243,7 +242,11 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func subscribeToES(ctx context.Context, svc uiconfigs.Service, stream string, cfg config, logger logger.Logger) error {
-	subscriber, err := mfevents.NewSubscriber(cfg.esURL, stream, esGroupName, cfg.esConsumerName, logger)
+	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
+		URL:    cfg.esURL,
+		Stream: stream,
+		Name:   cfg.esConsumerName,
+	}, logger)
 	if err != nil {
 		return err
 	}

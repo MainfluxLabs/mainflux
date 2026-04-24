@@ -48,7 +48,6 @@ import (
 const (
 	svcName      = "mqtt-adapter"
 	stopWaitTime = 5 * time.Second
-	esGroupName  = svcName
 
 	defLogLevel          = "error"
 	defMQTTPort          = "1883"
@@ -361,7 +360,11 @@ func connectToRedis(redisURL string, logger logger.Logger) *redis.Client {
 }
 
 func subscribeToThingsES(ctx context.Context, svc mqtt.Service, cfg config, logger logger.Logger) error {
-	subscriber, err := mfevents.NewSubscriber(cfg.esURL, mfevents.ThingsStream, esGroupName, cfg.esConsumerName, logger)
+	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
+		URL:    cfg.esURL,
+		Stream: mfevents.ThingsStream,
+		Name:   cfg.esConsumerName,
+	}, logger)
 	if err != nil {
 		return err
 	}
