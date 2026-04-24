@@ -130,7 +130,7 @@ func (cr certsRepository) Remove(ctx context.Context, serial string) error {
 func (cr certsRepository) RetrieveExpiring(ctx context.Context, expiresWithin time.Duration) ([]certs.Cert, error) {
 	q := `SELECT thing_id, serial, expires_at, client_cert, client_key, issuing_ca,
 	      ca_chain, private_key_type, key_bits, downloaded FROM certs
-	      WHERE expires_at <= :deadline ORDER BY expires_at`
+	      WHERE expires_at > NOW() AND expires_at <= :deadline ORDER BY expires_at`
 
 	params := map[string]any{
 		"deadline": time.Now().Add(expiresWithin),
