@@ -75,6 +75,9 @@ const (
 	defSeaweedPrefix     = "filestore"
 	envSeaweedTimeout    = "MF_FILESTORE_SEAWEED_TIMEOUT"
 	defSeaweedTimeout    = "30s"
+	envMaxUploadMB       = "MF_FILESTORE_MAX_UPLOAD_MB"
+	defMaxUploadMB       = "1024"
+	maxAllowedUploadMB   = 1 << 20
 
 	envDBHost            = "MF_FILESTORE_DB_HOST"
 	envDBPort            = "MF_FILESTORE_DB_PORT"
@@ -107,6 +110,7 @@ type config struct {
 	thingsConfig      clients.Config
 	esURL             string
 	esConsumerName    string
+	maxUploadBytes    int64
 }
 
 func main() {
@@ -149,7 +153,7 @@ func main() {
 	})
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(fileStoreTracer, svc, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(fileStoreTracer, svc, logger, cfg.maxUploadBytes), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -174,6 +178,11 @@ func loadConfig() config {
 	thingsAuthTimeout, err := time.ParseDuration(mainflux.Env(envThingsAuthTimeout, defThingsAuthTimeout))
 	if err != nil {
 		log.Fatalf("Invalid %s value: %s", envThingsAuthTimeout, err.Error())
+	}
+
+	maxUploadMB, err := strconv.ParseInt(mainflux.Env(envMaxUploadMB, defMaxUploadMB), 10, 64)
+	if err != nil || maxUploadMB <= 0 || maxUploadMB > maxAllowedUploadMB {
+		log.Fatalf("Invalid %s value: %q (must be 1..%d)", envMaxUploadMB, mainflux.Env(envMaxUploadMB, defMaxUploadMB), maxAllowedUploadMB)
 	}
 
 	dbConfig := postgres.Config{
@@ -212,6 +221,7 @@ func loadConfig() config {
 		thingsConfig:      thingsConfig,
 		esURL:             mainflux.Env(envESURL, defESURL),
 		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
+		maxUploadBytes:    maxUploadMB * 1024 * 1024,
 	}
 }
 

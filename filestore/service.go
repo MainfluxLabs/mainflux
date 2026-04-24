@@ -5,6 +5,7 @@ package filestore
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	_ "image/jpeg"
 	_ "image/png"
@@ -269,11 +270,13 @@ func (fs *filestoreService) RemoveGroupFile(ctx context.Context, token, groupID 
 		return err
 	}
 
-	if err := fs.store.Delete(ctx, groupFileKey(groupID, fi.Name)); err != nil {
+	if err := fs.groupsRepo.Remove(ctx, groupID, fi); err != nil {
 		return err
 	}
 
-	if err := fs.groupsRepo.Remove(ctx, groupID, fi); err != nil {
+	key := groupFileKey(groupID, fi.Name)
+	if err := fs.store.Delete(ctx, key); err != nil {
+		fs.logger.Error(fmt.Sprintf("orphaned object after DB remove: key=%s err=%s", key, err))
 		return err
 	}
 
@@ -315,13 +318,11 @@ func (fs *filestoreService) RemoveAllFilesByGroup(ctx context.Context, groupID s
 	}
 	wg.Wait()
 	close(errCh)
+	var errs []error
 	for e := range errCh {
-		if e != nil {
-			return e
-		}
+		errs = append(errs, e)
 	}
-
-	return nil
+	return stderrors.Join(errs...)
 }
 
 func (fs *filestoreService) ViewGroupFile(ctx context.Context, token, groupID string, fi FileInfo) (io.ReadCloser, error) {
