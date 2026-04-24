@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/filestore"
@@ -31,7 +32,6 @@ const (
 	multiPartContentType   = "multipart/form-data"
 	octetStreamContentType = "application/octet-stream"
 	maxMemory              = 32 << 20
-	defMaxUploadBytes      = 1 << 30 // 1 GiB
 	metadataKey            = "metadata"
 	fileKey                = "file"
 	nameKey                = "name"
@@ -73,10 +73,12 @@ const (
 	defOrder               = "time"
 	defOffset              = 0
 	defLimit               = 10
+	maxFileNameLen         = 255
 )
 
-// MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, logger logger.Logger) http.Handler {
+// MakeHandler returns a HTTP handler for API endpoints. maxUploadBytes bounds
+// the size of any multipart upload body; requests exceeding it are rejected.
+func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, logger logger.Logger, maxUploadBytes int64) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 	}
@@ -85,7 +87,7 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, logger logger
 
 	r.Post("/files", kithttp.NewServer(
 		kitot.TraceServer(tracer, "save_file")(saveFileEndpoint(svc)),
-		decodeSaveFile,
+		decodeSaveFile(maxUploadBytes),
 		encodeResponse,
 		opts...,
 	))
@@ -115,7 +117,7 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, logger logger
 	))
 	r.Post("/groups/:id/files", kithttp.NewServer(
 		kitot.TraceServer(tracer, "save_group_file")(saveGroupFileEndpoint(svc)),
-		decodeSaveGroupFile,
+		decodeSaveGroupFile(maxUploadBytes),
 		encodeResponse,
 		opts...,
 	))
@@ -156,28 +158,38 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, logger logger
 	return r
 }
 
-func decodeSaveFile(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), multiPartContentType) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
+func decodeSaveFile(maxUploadBytes int64) kithttp.DecodeRequestFunc {
+	return func(_ context.Context, r *http.Request) (any, error) {
+		if !strings.Contains(r.Header.Get("Content-Type"), multiPartContentType) {
+			return nil, apiutil.ErrUnsupportedContentType
+		}
 
-	if r.ContentLength > defMaxUploadBytes {
-		return nil, apiutil.ErrLimitSize
-	}
-	r.Body = http.MaxBytesReader(nil, r.Body, defMaxUploadBytes)
+		if r.ContentLength > maxUploadBytes {
+			return nil, apiutil.ErrLimitSize
+		}
+		r.Body = http.MaxBytesReader(nil, r.Body, maxUploadBytes)
 
-	fip, err := getFileInfoParams(r)
-	if err != nil {
-		return nil, err
-	}
+		fip, err := getFileInfoParams(r)
+		if err != nil {
+			return nil, err
+		}
 
+<<<<<<< HEAD
 	req := saveFileReq{
 		key:      apiutil.ExtractThingKey(r),
 		fileInfo: fip.fileInfo,
 		file:     fip.file,
 	}
+=======
+		req := saveFileReq{
+			key:      things.ExtractThingKey(r),
+			fileInfo: fip.fileInfo,
+			file:     fip.file,
+		}
+>>>>>>> 78135777e (update: filestore api)
 
-	return req, nil
+		return req, nil
+	}
 }
 
 func decodeUpdateFile(_ context.Context, r *http.Request) (any, error) {
@@ -247,29 +259,31 @@ func decodeFile(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeSaveGroupFile(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), multiPartContentType) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
+func decodeSaveGroupFile(maxUploadBytes int64) kithttp.DecodeRequestFunc {
+	return func(_ context.Context, r *http.Request) (any, error) {
+		if !strings.Contains(r.Header.Get("Content-Type"), multiPartContentType) {
+			return nil, apiutil.ErrUnsupportedContentType
+		}
 
-	if r.ContentLength > defMaxUploadBytes {
-		return nil, apiutil.ErrLimitSize
-	}
-	r.Body = http.MaxBytesReader(nil, r.Body, defMaxUploadBytes)
+		if r.ContentLength > maxUploadBytes {
+			return nil, apiutil.ErrLimitSize
+		}
+		r.Body = http.MaxBytesReader(nil, r.Body, maxUploadBytes)
 
-	fip, err := getFileInfoParams(r)
-	if err != nil {
-		return nil, err
-	}
+		fip, err := getFileInfoParams(r)
+		if err != nil {
+			return nil, err
+		}
 
-	req := saveGroupFileReq{
-		token:    apiutil.ExtractBearerToken(r),
-		groupID:  bone.GetValue(r, idKey),
-		fileInfo: fip.fileInfo,
-		file:     fip.file,
-	}
+		req := saveGroupFileReq{
+			token:    apiutil.ExtractBearerToken(r),
+			groupID:  bone.GetValue(r, idKey),
+			fileInfo: fip.fileInfo,
+			file:     fip.file,
+		}
 
-	return req, nil
+		return req, nil
+	}
 }
 
 func decodeUpdateGroupFile(_ context.Context, r *http.Request) (any, error) {
@@ -566,11 +580,23 @@ func mimeMatches(class, format, mime string) bool {
 }
 
 // ParseFileName returns file class and format based on file name.
-// Rejects names with path separators or traversal sequences to prevent
-// escaping the intended storage key prefix.
+// Rejects names with path separators, traversal sequences, control
+// characters, invalid UTF-8, or lengths beyond maxFileNameLen so that
+// downstream URL building, header emission, and DB writes are safe.
 func parseFileName(name string) (string, string, error) {
-	if name == "" || strings.ContainsAny(name, `/\`) || strings.Contains(name, "..") || strings.HasPrefix(name, ".") {
+	if name == "" || len(name) > maxFileNameLen {
 		return "", "", apiutil.ErrInvalidQueryParams
+	}
+	if strings.ContainsAny(name, `/\`) || strings.Contains(name, "..") || strings.HasPrefix(name, ".") {
+		return "", "", apiutil.ErrInvalidQueryParams
+	}
+	if !utf8.ValidString(name) {
+		return "", "", apiutil.ErrInvalidQueryParams
+	}
+	for _, r := range name {
+		if r < 0x20 || r == 0x7f {
+			return "", "", apiutil.ErrInvalidQueryParams
+		}
 	}
 
 	lastDotIndex := strings.LastIndex(name, ".")

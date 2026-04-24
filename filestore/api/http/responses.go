@@ -4,6 +4,7 @@
 package http
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 
@@ -84,6 +85,7 @@ func (res viewFileRes) Empty() bool {
 
 type streamFileRes struct {
 	reader io.ReadCloser
+	name   string
 }
 
 func (res streamFileRes) Code() int {
@@ -91,7 +93,11 @@ func (res streamFileRes) Code() int {
 }
 
 func (res streamFileRes) Headers() map[string]string {
-	return map[string]string{}
+	h := map[string]string{}
+	if res.name != "" {
+		h["Content-Disposition"] = fmt.Sprintf(`attachment; filename=%q`, res.name)
+	}
+	return h
 }
 
 func (res streamFileRes) Empty() bool {

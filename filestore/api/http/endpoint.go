@@ -184,7 +184,7 @@ func viewGroupFileEndpoint(svc filestore.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return streamFileRes{reader: rc}, nil
+		return streamFileRes{reader: rc, name: req.name}, nil
 	}
 }
 
@@ -206,7 +206,7 @@ func viewGroupFileByKeyEndpoint(svc filestore.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return streamFileRes{reader: rc}, nil
+		return streamFileRes{reader: rc, name: req.name}, nil
 	}
 }
 
