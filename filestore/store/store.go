@@ -12,6 +12,10 @@ import (
 // ErrChecksumMismatch is returned when a retrieved file's SHA256 does not match the expected value.
 var ErrChecksumMismatch = errors.New("checksum mismatch")
 
+// ErrInvalidPrefix is returned when DeletePrefix is called with a prefix that
+// would otherwise target the store root (empty or whitespace-only).
+var ErrInvalidPrefix = errors.New("invalid prefix")
+
 // FileStore is a pluggable binary-object store.
 type FileStore interface {
 	// Put streams r under key and returns the SHA256 hex checksum.

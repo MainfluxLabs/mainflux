@@ -10,7 +10,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -21,28 +24,55 @@ import (
 var ErrBackend = errors.New("object store error")
 
 type seaweedFS struct {
-	base   string
-	prefix string
-	client *http.Client
+	baseURL *url.URL
+	prefix  string
+	client  *http.Client
 }
 
-// NewSeaweedFS returns a FileStore backed by a SeaweedFS filer at url.
-// prefix is prepended to every key (e.g. "filestore").
-func NewSeaweedFS(url, prefix string, timeout time.Duration) (FileStore, error) {
+// NewSeaweedFS returns a FileStore backed by a SeaweedFS filer at rawURL.
+// prefix is prepended to every key (e.g. "filestore"). timeout bounds the
+// connect, TLS handshake, and response-header phases; the overall request
+// deadline is driven by the caller's context so body transfers of large
+// objects are not capped by a single whole-request timeout.
+func NewSeaweedFS(rawURL, prefix string, timeout time.Duration) (FileStore, error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return nil, fmt.Errorf("parse seaweedfs url: %w", err)
+	}
+	if u.Scheme == "" || u.Host == "" {
+		return nil, fmt.Errorf("invalid seaweedfs url: %q", rawURL)
+	}
+	u.Path = strings.TrimRight(u.Path, "/")
+
+	tr := &http.Transport{
+		DialContext:           (&net.Dialer{Timeout: timeout, KeepAlive: 30 * time.Second}).DialContext,
+		TLSHandshakeTimeout:   timeout,
+		ResponseHeaderTimeout: timeout,
+		ExpectContinueTimeout: 1 * time.Second,
+		IdleConnTimeout:       90 * time.Second,
+		MaxIdleConns:          50,
+		MaxIdleConnsPerHost:   10,
+	}
 	return &seaweedFS{
-		base:   strings.TrimRight(url, "/"),
-		prefix: strings.Trim(prefix, "/"),
-		client: &http.Client{Timeout: timeout},
+		baseURL: u,
+		prefix:  strings.Trim(prefix, "/"),
+		client:  &http.Client{Transport: tr},
 	}, nil
 }
 
+// objectURL returns an RFC 3986-escaped URL for key. Each path segment is
+// escaped so filenames with reserved characters (spaces, ?, #, &, etc.) do
+// not alter the URL structure.
 func (s *seaweedFS) objectURL(key string) string {
-	return fmt.Sprintf("%s/%s/%s", s.base, s.prefix, key)
+	u := *s.baseURL
+	u.Path = path.Join(u.Path, s.prefix, key)
+	return u.String()
 }
 
 func (s *seaweedFS) Put(ctx context.Context, key string, r io.Reader) (string, error) {
 	h := sha256.New()
 	pr, pw := io.Pipe()
+	defer pr.Close()
 	go func() {
 		_, err := io.Copy(pw, io.TeeReader(r, h))
 		pw.CloseWithError(err)
@@ -113,23 +143,29 @@ func (s *seaweedFS) DeleteAll(ctx context.Context, keys []string) error {
 			defer wg.Done()
 			defer func() { <-sem }()
 			if err := s.Delete(ctx, key); err != nil {
-				errCh <- err
+				errCh <- fmt.Errorf("key %s: %w", key, err)
 			}
 		}(k)
 	}
 	wg.Wait()
 	close(errCh)
+	var errs []error
 	for e := range errCh {
-		if e != nil {
-			return e
-		}
+		errs = append(errs, e)
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 func (s *seaweedFS) DeletePrefix(ctx context.Context, prefix string) error {
-	u := s.objectURL(prefix) + "/?recursive=true"
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, u, nil)
+	clean := strings.Trim(prefix, "/")
+	if clean == "" {
+		return ErrInvalidPrefix
+	}
+	u := *s.baseURL
+	u.Path = path.Join(u.Path, s.prefix, clean) + "/"
+	u.RawQuery = "recursive=true&ignoreRecursiveError=true"
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, u.String(), nil)
 	if err != nil {
 		return err
 	}

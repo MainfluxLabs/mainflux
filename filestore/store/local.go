@@ -7,10 +7,13 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
+	"fmt"
 	"hash"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -78,33 +81,37 @@ func (l *local) DeleteAll(ctx context.Context, keys []string) error {
 			defer wg.Done()
 			defer func() { <-sem }()
 			if err := l.Delete(ctx, key); err != nil {
-				errCh <- err
+				errCh <- fmt.Errorf("key %s: %w", key, err)
 			}
 		}(k)
 	}
 	wg.Wait()
 	close(errCh)
+	var errs []error
 	for e := range errCh {
-		if e != nil {
-			return e
-		}
+		errs = append(errs, e)
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 func (l *local) DeletePrefix(_ context.Context, prefix string) error {
+	if strings.Trim(prefix, "/") == "" {
+		return ErrInvalidPrefix
+	}
 	if err := os.RemoveAll(filepath.Join(l.base, prefix)); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 	return nil
 }
 
-// verifyReader wraps a ReadCloser and returns ErrChecksumMismatch at EOF
-// when the SHA256 of the streamed bytes differs from expected.
+// verifyReader wraps a ReadCloser and returns ErrChecksumMismatch when the
+// stream terminates (EOF or any other error, including truncation) and the
+// SHA256 of bytes read differs from expected.
 type verifyReader struct {
 	rc       io.ReadCloser
 	h        hash.Hash
 	expected string
+	verified bool
 }
 
 func (v *verifyReader) Read(p []byte) (int, error) {
@@ -112,7 +119,8 @@ func (v *verifyReader) Read(p []byte) (int, error) {
 	if n > 0 {
 		v.h.Write(p[:n])
 	}
-	if err == io.EOF {
+	if err != nil && !v.verified {
+		v.verified = true
 		if got := hex.EncodeToString(v.h.Sum(nil)); got != v.expected {
 			return n, ErrChecksumMismatch
 		}
