@@ -99,6 +99,15 @@ func (ms metricsMiddleware) RemoveRulesByGroup(ctx context.Context, groupID stri
 	return ms.svc.RemoveRulesByGroup(ctx, groupID)
 }
 
+func (ms metricsMiddleware) UnassignRulesFromThing(ctx context.Context, thingID string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "unassign_rules_from_thing").Add(1)
+		ms.latency.With("method", "unassign_rules_from_thing").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.UnassignRulesFromThing(ctx, thingID)
+}
+
 func (ms metricsMiddleware) ConsumeMessage(subject string, msg protomfx.Message) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "consume_message").Add(1)

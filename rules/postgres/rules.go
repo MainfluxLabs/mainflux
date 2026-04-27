@@ -237,6 +237,16 @@ func (rr ruleRepository) RemoveByGroup(ctx context.Context, groupID string) erro
 	return nil
 }
 
+func (rr ruleRepository) UnassignRulesFromThing(ctx context.Context, thingID string) error {
+	q := `DELETE FROM rules_things WHERE thing_id = :thing_id;`
+	
+	if _, err := rr.db.NamedExecContext(ctx, q, map[string]any{"thing_id": thingID}); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
 func (rr ruleRepository) retrieveRules(ctx context.Context, query, cquery string, params map[string]any) (rules.RulesPage, error) {
 	rows, err := rr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {

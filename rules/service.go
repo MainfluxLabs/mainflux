@@ -133,6 +133,9 @@ type ServiceRules interface {
 
 	// RemoveRulesByGroup removes the rules identified with the provided IDs.
 	RemoveRulesByGroup(ctx context.Context, groupID string) error
+
+	// UnassignRulesFromThing unassigns all rules from the given thing.
+	UnassignRulesFromThing(ctx context.Context, thingID string) error
 }
 
 const (
@@ -269,6 +272,10 @@ func (rs *rulesService) RemoveRules(ctx context.Context, token string, ids ...st
 
 func (rs *rulesService) RemoveRulesByGroup(ctx context.Context, groupID string) error {
 	return rs.rules.RemoveByGroup(ctx, groupID)
+}
+
+func (rs *rulesService) UnassignRulesFromThing(ctx context.Context, thingID string) error {
+	return rs.rules.UnassignRulesFromThing(ctx, thingID)
 }
 
 func (rs *rulesService) CreateScripts(ctx context.Context, token, groupID string, scripts ...LuaScript) ([]LuaScript, error) {
@@ -498,6 +505,9 @@ type RepositoryRules interface {
 	// RemoveByGroup removes rules related to a certain group,
 	// identified by a given group ID.
 	RemoveByGroup(ctx context.Context, groupID string) error
+
+	// UnassignRulesFromThing unassigns all rules from the given thing in rules_things.
+	UnassignRulesFromThing(ctx context.Context, thingID string) error
 }
 
 type RepositoryScripts interface {
