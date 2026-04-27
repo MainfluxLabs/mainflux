@@ -234,6 +234,8 @@ func newAggStrategy(aggType string) aggStrategy {
 		return sqlAggFunc("AVG")
 	case readers.AggregationCount:
 		return sqlAggFunc("COUNT")
+	case readers.AggregationSum:
+		return sqlAggFunc("SUM")
 	case readers.AggregationFirst:
 		return firstStrategy{}
 	case readers.AggregationLast:

@@ -29,6 +29,8 @@ const (
 	AggregationAvg = "avg"
 	// AggregationCount represents the count aggregation key.
 	AggregationCount = "count"
+	// AggregationSum represents the sum aggregation key.
+	AggregationSum = "sum"
 	// AggregationFirst represents the first-in-bucket aggregation key.
 	AggregationFirst = "first"
 	// AggregationLast represents the last-in-bucket aggregation key.

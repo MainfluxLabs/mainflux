@@ -235,31 +235,49 @@ func TestNewAggStrategy(t *testing.T) {
 	min := sqlAggFunc("MIN")
 	avg := sqlAggFunc("AVG")
 	count := sqlAggFunc("COUNT")
+	sum := sqlAggFunc("SUM")
+	first := firstStrategy{}
+	last := lastStrategy{}
 
 	cases := []struct {
 		desc    string
 		aggType string
-		res     *sqlAggFunc
+		res     interface{}
 	}{
 		{
 			desc:    "max",
 			aggType: readers.AggregationMax,
-			res:     &max,
+			res:     max,
 		},
 		{
 			desc:    "min",
 			aggType: readers.AggregationMin,
-			res:     &min,
+			res:     min,
 		},
 		{
 			desc:    "avg",
 			aggType: readers.AggregationAvg,
-			res:     &avg,
+			res:     avg,
 		},
 		{
 			desc:    "count",
 			aggType: readers.AggregationCount,
-			res:     &count,
+			res:     count,
+		},
+		{
+			desc:    "sum",
+			aggType: readers.AggregationSum,
+			res:     sum,
+		},
+		{
+			desc:    "first",
+			aggType: readers.AggregationFirst,
+			res:     first,
+		},
+		{
+			desc:    "last",
+			aggType: readers.AggregationLast,
+			res:     last,
 		},
 		{
 			desc:    "invalid",
@@ -280,7 +298,7 @@ func TestNewAggStrategy(t *testing.T) {
 			case tc.res == nil:
 				assert.Nil(t, result)
 			default:
-				assert.Equal(t, *tc.res, result)
+				assert.Equal(t, tc.res, result)
 			}
 		})
 	}
@@ -294,8 +312,16 @@ func TestSqlAggFuncSelectedFields(t *testing.T) {
 		resPart string
 	}{
 		{
-			desc: "senml table",
+			desc: "senml max",
 			fn:   sqlAggFunc("MAX"),
+			qp: queryParams{
+				table: senmlTable,
+			},
+			resPart: "ia.agg_value as value",
+		},
+		{
+			desc: "senml sum",
+			fn:   sqlAggFunc("SUM"),
 			qp: queryParams{
 				table: senmlTable,
 			},
@@ -355,6 +381,24 @@ func TestSqlAggFuncAggregateExpr(t *testing.T) {
 			resPart: "MAX(m.value) as agg_value",
 		},
 		{
+			desc: "senml min",
+			fn:   sqlAggFunc("MIN"),
+			qp: queryParams{
+				table:     senmlTable,
+				aggFields: []string{"value"},
+			},
+			resPart: "MIN(m.value) as agg_value",
+		},
+		{
+			desc: "senml avg",
+			fn:   sqlAggFunc("AVG"),
+			qp: queryParams{
+				table:     senmlTable,
+				aggFields: []string{"value"},
+			},
+			resPart: "AVG(m.value) as agg_value",
+		},
+		{
 			desc: "senml count",
 			fn:   sqlAggFunc("COUNT"),
 			qp: queryParams{
@@ -362,6 +406,15 @@ func TestSqlAggFuncAggregateExpr(t *testing.T) {
 				aggFields: []string{"value"},
 			},
 			resPart: "COUNT(m.value) as agg_value",
+		},
+		{
+			desc: "senml sum",
+			fn:   sqlAggFunc("SUM"),
+			qp: queryParams{
+				table:     senmlTable,
+				aggFields: []string{"value"},
+			},
+			resPart: "SUM(m.value) as agg_value",
 		},
 		{
 			desc: "json max",
@@ -373,6 +426,24 @@ func TestSqlAggFuncAggregateExpr(t *testing.T) {
 			resPart: "MAX(CAST(m.payload->>'temperature' as FLOAT)) as agg_value_0",
 		},
 		{
+			desc: "json min",
+			fn:   sqlAggFunc("MIN"),
+			qp: queryParams{
+				table:     jsonTable,
+				aggFields: []string{"temperature"},
+			},
+			resPart: "MIN(CAST(m.payload->>'temperature' as FLOAT)) as agg_value_0",
+		},
+		{
+			desc: "json avg",
+			fn:   sqlAggFunc("AVG"),
+			qp: queryParams{
+				table:     jsonTable,
+				aggFields: []string{"temperature"},
+			},
+			resPart: "AVG(CAST(m.payload->>'temperature' as FLOAT)) as agg_value_0",
+		},
+		{
 			desc: "json count",
 			fn:   sqlAggFunc("COUNT"),
 			qp: queryParams{
@@ -380,6 +451,15 @@ func TestSqlAggFuncAggregateExpr(t *testing.T) {
 				aggFields: []string{"temperature"},
 			},
 			resPart: "COUNT(m.payload->>'temperature') as agg_value_0",
+		},
+		{
+			desc: "json sum",
+			fn:   sqlAggFunc("SUM"),
+			qp: queryParams{
+				table:     jsonTable,
+				aggFields: []string{"temperature"},
+			},
+			resPart: "SUM(CAST(m.payload->>'temperature' as FLOAT)) as agg_value_0",
 		},
 	}
 
