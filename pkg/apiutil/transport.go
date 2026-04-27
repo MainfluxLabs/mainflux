@@ -33,6 +33,7 @@ const (
 	SerialKey              = "serial"
 	EmailKey               = "email"
 	PayloadKey             = "payload"
+	InputTypeKey           = "input_type"
 	IDOrder                = "id"
 	AscDir                 = "asc"
 	DescDir                = "desc"
@@ -105,6 +106,7 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrInvalidAlarmStatus),
 			errors.Contains(err, ErrInvalidOperator),
 			errors.Contains(err, ErrInvalidInputType),
+			errors.Contains(err, ErrThingIDsSize),
 			errors.Contains(err, ErrInvalidThingType),
 			errors.Contains(err, ErrMissingAuth):
 			logger.Error(err.Error())
@@ -218,7 +220,8 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrInvalidThingType),
 		errors.Contains(err, ErrInvalidAlarmLevel),
 		errors.Contains(err, ErrInvalidAlarmStatus),
-		errors.Contains(err, ErrInvalidInputType):
+		errors.Contains(err, ErrInvalidInputType),
+		errors.Contains(err, ErrThingIDsSize):
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, errors.ErrAuthorization),
 		errors.Contains(err, ErrInviteExpired),

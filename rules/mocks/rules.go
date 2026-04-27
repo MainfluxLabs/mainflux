@@ -4,8 +4,8 @@
 package mocks
 
 import (
-	"slices"
 	"context"
+	"slices"
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -65,13 +65,13 @@ func (rrm *ruleRepositoryMock) RetrieveByThing(_ context.Context, thingID string
 	last := first + pm.Limit
 
 	for _, r := range rrm.rules {
-		if slices.Contains(r.Input.ThingIDs, thingID) {
-				all = append(all, r)
-				id := uuid.ParseID(r.ID)
-				if pm.Limit == 0 || (id >= first && id < last) {
-					items = append(items, r)
-				}
+		if slices.Contains(r.Input.ThingIDs, thingID) && (pm.InputType == "" || r.Input.Type == pm.InputType) {
+			all = append(all, r)
+			id := uuid.ParseID(r.ID)
+			if pm.Limit == 0 || (id >= first && id < last) {
+				items = append(items, r)
 			}
+		}
 	}
 
 	return rules.RulesPage{
@@ -89,7 +89,7 @@ func (rrm *ruleRepositoryMock) RetrieveByGroup(_ context.Context, groupID string
 	last := first + pm.Limit
 
 	for _, r := range rrm.rules {
-		if r.GroupID == groupID {
+		if r.GroupID == groupID && (pm.InputType == "" || r.Input.Type == pm.InputType) {
 			all = append(all, r)
 			id := uuid.ParseID(r.ID)
 			if pm.Limit == 0 || (id >= first && id < last) {
@@ -143,4 +143,3 @@ func (rrm *ruleRepositoryMock) RemoveByGroup(_ context.Context, groupID string) 
 
 	return nil
 }
-

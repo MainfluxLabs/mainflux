@@ -26,12 +26,13 @@ var AllowedOrders = map[string]string{
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
-	Total  uint64 `json:"total,omitempty"`
-	Offset uint64 `json:"offset,omitempty"`
-	Limit  uint64 `json:"limit,omitempty"`
-	Order  string `json:"order,omitempty"`
-	Dir    string `json:"dir,omitempty"`
-	Name   string `json:"name,omitempty"`
+	Total     uint64 `json:"total,omitempty"`
+	Offset    uint64 `json:"offset,omitempty"`
+	Limit     uint64 `json:"limit,omitempty"`
+	Order     string `json:"order,omitempty"`
+	Dir       string `json:"dir,omitempty"`
+	Name      string `json:"name,omitempty"`
+	InputType string `json:"input_type,omitempty"`
 }
 
 // Validate validates the page metadata.
@@ -43,6 +44,14 @@ func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
 
 	if len(pm.Name) > maxNameSize {
 		return apiutil.ErrNameSize
+	}
+
+	if pm.InputType != "" {
+		switch pm.InputType {
+		case InputTypeMessage, InputTypeAlarm, InputTypeSchedule, InputTypeCommand:
+		default:
+			return apiutil.ErrInvalidInputType
+		}
 	}
 
 	return nil
@@ -432,15 +441,12 @@ func (rs *rulesService) ConsumeMessage(_ string, msg protomfx.Message) error {
 		return err
 	}
 
-	rulesPage, err := rs.rules.RetrieveByThing(ctx, msg.Publisher, PageMetadata{})
+	page, err := rs.rules.RetrieveByThing(ctx, msg.Publisher, PageMetadata{InputType: InputTypeMessage})
 	if err != nil {
 		return err
 	}
 
-	for _, rule := range rulesPage.Rules {
-		if rule.Input.Type != InputTypeMessage {
-			continue
-		}
+	for _, rule := range page.Rules {
 		if err := rs.processRule(&msg, payload, rule); err != nil {
 			rs.logger.Error(fmt.Sprintf("processing rule with id %s failed with error: %v", rule.ID, err))
 		}
@@ -459,7 +465,6 @@ func (rs *rulesService) ConsumeMessage(_ string, msg protomfx.Message) error {
 
 	return nil
 }
-
 
 type Repository interface {
 	RepositoryRules
