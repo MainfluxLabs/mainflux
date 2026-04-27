@@ -9,13 +9,14 @@ import (
 )
 
 const (
-	saveRule             = "save_rule"
-	retrieveRuleByID     = "retrieve_rule_by_id"
-	retrieveRulesByThing = "retrieve_rules_by_thing"
-	retrieveRulesByGroup = "retrieve_rules_by_group"
-	updateRule           = "update_rule"
-	removeRules          = "remove_rules"
-	removeRulesByGroup   = "remove_rules_by_group"
+	saveRule               = "save_rule"
+	retrieveRuleByID       = "retrieve_rule_by_id"
+	retrieveRulesByThing   = "retrieve_rules_by_thing"
+	retrieveRulesByGroup   = "retrieve_rules_by_group"
+	updateRule             = "update_rule"
+	removeRules            = "remove_rules"
+	removeRulesByGroup     = "remove_rules_by_group"
+	unassignRulesFromThing = "unassign_rules_from_thing"
 )
 
 var (
@@ -91,3 +92,10 @@ func (rpm ruleRepositoryMiddleware) RemoveByGroup(ctx context.Context, groupID s
 	return rpm.repo.RemoveByGroup(ctx, groupID)
 }
 
+func (rpm ruleRepositoryMiddleware) UnassignRulesFromThing(ctx context.Context, thingID string) error {
+	span := dbutil.CreateSpan(ctx, rpm.tracer, unassignRulesFromThing)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return rpm.repo.UnassignRulesFromThing(ctx, thingID)
+}
