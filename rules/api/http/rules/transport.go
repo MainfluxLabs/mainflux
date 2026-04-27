@@ -94,16 +94,18 @@ func decodeListRulesByThing(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	name, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	inputType, _ := apiutil.ReadStringQuery(r, apiutil.InputTypeKey, "")
 
 	req := listRulesByThingReq{
 		token:   apiutil.ExtractBearerToken(r),
 		thingID: bone.GetValue(r, apiutil.IDKey),
 		pageMetadata: rules.PageMetadata{
-			Offset: base.Offset,
-			Limit:  base.Limit,
-			Order:  base.Order,
-			Dir:    base.Dir,
-			Name:   name,
+			Offset:    base.Offset,
+			Limit:     base.Limit,
+			Order:     base.Order,
+			Dir:       base.Dir,
+			Name:      name,
+			InputType: inputType,
 		},
 	}
 
@@ -116,16 +118,18 @@ func decodeListRulesByGroup(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 	name, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	inputType, _ := apiutil.ReadStringQuery(r, apiutil.InputTypeKey, "")
 
 	req := listRulesByGroupReq{
 		token:   apiutil.ExtractBearerToken(r),
 		groupID: bone.GetValue(r, apiutil.IDKey),
 		pageMetadata: rules.PageMetadata{
-			Offset: base.Offset,
-			Limit:  base.Limit,
-			Order:  base.Order,
-			Dir:    base.Dir,
-			Name:   name,
+			Offset:    base.Offset,
+			Limit:     base.Limit,
+			Order:     base.Order,
+			Dir:       base.Dir,
+			Name:      name,
+			InputType: inputType,
 		},
 	}
 

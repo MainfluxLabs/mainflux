@@ -13,6 +13,7 @@ const (
 	minLen        = 1
 	maxLimitSize  = 200
 	maxNameSize   = 254
+	maxThingIDs   = 100
 	minAlarmLevel = 1
 	maxAlarmLevel = 5
 )
@@ -65,8 +66,8 @@ func (req rule) validate() error {
 		return apiutil.ErrInvalidInputType
 	}
 
-	if len(req.Input.ThingIDs) < minLen {
-		return apiutil.ErrEmptyList
+	if len(req.Input.ThingIDs) < minLen || len(req.Input.ThingIDs) > maxThingIDs {
+		return apiutil.ErrThingIDsSize
 	}
 	for _, id := range req.Input.ThingIDs {
 		if _, err := uuid.FromString(id); err != nil {
@@ -209,4 +210,3 @@ func (req removeRulesReq) validate() error {
 
 	return nil
 }
-

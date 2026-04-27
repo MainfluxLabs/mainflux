@@ -35,7 +35,11 @@ func createRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildRulesResponse(rules, true), nil
+		res := rulesRes{Rules: []ruleResponse{}, created: true}
+		for _, r := range rules {
+			res.Rules = append(res.Rules, toRuleResponse(r))
+		}
+		return res, nil
 	}
 }
 
@@ -100,7 +104,16 @@ func viewRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildRuleResponse(rule, false), nil
+		return ruleResponse{
+			ID:          rule.ID,
+			GroupID:     rule.GroupID,
+			Name:        rule.Name,
+			Description: rule.Description,
+			Input:       input{Type: rule.Input.Type, ThingIDs: rule.Input.ThingIDs},
+			Conditions:  rule.Conditions,
+			Operator:    rule.Operator,
+			Actions:     rule.Actions,
+		}, nil
 	}
 }
 
@@ -144,24 +157,17 @@ func removeRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 	}
 }
 
-func buildRulesResponse(rules []rules.Rule, created bool) rulesRes {
-	res := rulesRes{Rules: []ruleResponse{}, created: created}
-
-	for _, r := range rules {
-		rule := ruleResponse{
-			ID:          r.ID,
-			GroupID:     r.GroupID,
-			Name:        r.Name,
-			Description: r.Description,
-			Input:       r.Input,
-			Conditions:  r.Conditions,
-			Operator:    r.Operator,
-			Actions:     r.Actions,
-		}
-		res.Rules = append(res.Rules, rule)
+func toRuleResponse(r rules.Rule) ruleResponse {
+	return ruleResponse{
+		ID:          r.ID,
+		GroupID:     r.GroupID,
+		Name:        r.Name,
+		Description: r.Description,
+		Input:       input{Type: r.Input.Type},
+		Conditions:  r.Conditions,
+		Operator:    r.Operator,
+		Actions:     r.Actions,
 	}
-
-	return res
 }
 
 func buildRulesPageResponse(page rules.RulesPage, pm rules.PageMetadata) RulesPageRes {
@@ -178,32 +184,8 @@ func buildRulesPageResponse(page rules.RulesPage, pm rules.PageMetadata) RulesPa
 	}
 
 	for _, r := range page.Rules {
-		rule := ruleResponse{
-			ID:          r.ID,
-			GroupID:     r.GroupID,
-			Name:        r.Name,
-			Description: r.Description,
-			Input:       r.Input,
-			Conditions:  r.Conditions,
-			Operator:    r.Operator,
-			Actions:     r.Actions,
-		}
-		res.Rules = append(res.Rules, rule)
+		res.Rules = append(res.Rules, toRuleResponse(r))
 	}
 
 	return res
-}
-
-func buildRuleResponse(rule rules.Rule, updated bool) ruleResponse {
-	return ruleResponse{
-		ID:          rule.ID,
-		GroupID:     rule.GroupID,
-		Name:        rule.Name,
-		Description: rule.Description,
-		Input:       rule.Input,
-		Conditions:  rule.Conditions,
-		Operator:    rule.Operator,
-		Actions:     rule.Actions,
-		updated:     updated,
-	}
 }

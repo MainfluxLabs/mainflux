@@ -26,12 +26,17 @@ type pageRes struct {
 	Name   string `json:"name,omitempty"`
 }
 
+type input struct {
+	Type     string   `json:"type"`
+	ThingIDs []string `json:"thing_ids,omitempty"`
+}
+
 type ruleResponse struct {
 	ID          string            `json:"id"`
 	GroupID     string            `json:"group_id"`
 	Name        string            `json:"name"`
 	Description string            `json:"description,omitempty"`
-	Input       rules.Input       `json:"input"`
+	Input       input             `json:"input"`
 	Conditions  []rules.Condition `json:"conditions"`
 	Operator    string            `json:"operator"`
 	Actions     []rules.Action    `json:"actions"`
@@ -117,4 +122,3 @@ func (res thingIDsRes) Headers() map[string]string {
 func (res thingIDsRes) Empty() bool {
 	return false
 }
-

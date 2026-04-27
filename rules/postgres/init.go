@@ -128,16 +128,14 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				Id: "rules_6",
 				Up: []string{
-					`ALTER TABLE rules ADD COLUMN IF NOT EXISTS input JSONB NOT NULL DEFAULT '{}'::jsonb`,
-					`DROP TABLE IF EXISTS rules_things`,
+					`ALTER TABLE rules ADD COLUMN IF NOT EXISTS input_type TEXT NOT NULL DEFAULT 'message'`,
+					`CREATE INDEX IF NOT EXISTS idx_rules_group_input_type ON rules (group_id, input_type)`,
+					`CREATE INDEX IF NOT EXISTS idx_rules_things_thing_id ON rules_things (thing_id)`,
 				},
 				Down: []string{
-					`ALTER TABLE rules DROP COLUMN IF EXISTS input`,
-					`CREATE TABLE IF NOT EXISTS rules_things (
-						rule_id   UUID NOT NULL REFERENCES rules(id) ON DELETE CASCADE,
-						thing_id  UUID NOT NULL,
-						PRIMARY KEY (rule_id, thing_id)
-					)`,
+					`DROP INDEX IF EXISTS idx_rules_things_thing_id`,
+					`DROP INDEX IF EXISTS idx_rules_group_input_type`,
+					`ALTER TABLE rules DROP COLUMN IF EXISTS input_type`,
 				},
 			},
 		},
