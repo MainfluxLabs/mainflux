@@ -104,16 +104,7 @@ func viewRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return ruleResponse{
-			ID:          rule.ID,
-			GroupID:     rule.GroupID,
-			Name:        rule.Name,
-			Description: rule.Description,
-			Input:       input{Type: rule.Input.Type, ThingIDs: rule.Input.ThingIDs},
-			Conditions:  rule.Conditions,
-			Operator:    rule.Operator,
-			Actions:     rule.Actions,
-		}, nil
+		return toRuleResponse(rule), nil
 	}
 }
 
@@ -163,7 +154,7 @@ func toRuleResponse(r rules.Rule) ruleResponse {
 		GroupID:     r.GroupID,
 		Name:        r.Name,
 		Description: r.Description,
-		Input:       input{Type: r.Input.Type},
+		Input:       input{Type: r.Input.Type, ThingIDs: r.Input.ThingIDs},
 		Conditions:  r.Conditions,
 		Operator:    r.Operator,
 		Actions:     r.Actions,
