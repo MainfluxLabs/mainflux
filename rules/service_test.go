@@ -687,3 +687,30 @@ func TestRemoveRulesByGroup(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
 }
+func TestUnassignRulesFromThing(t *testing.T) {
+	svc := newService()
+	n := 3
+	saveRules(t, svc, n)
+
+	cases := []struct {
+		desc    string
+		thingID string
+		err     error
+	}{
+		{
+			desc:    "unassign all rules from thing",
+			thingID: thingID,
+			err:     nil,
+		},
+		{
+			desc:    "unassign rules from non-existing thing",
+			thingID: wrongValue,
+			err:     nil,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.UnassignRulesFromThing(context.Background(), tc.thingID)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+	}
+}
