@@ -78,7 +78,7 @@ var (
 	// ErrInvalidIDFormat indicates an invalid ID format.
 	ErrInvalidIDFormat = errors.New("invalid id format provided")
 
-	// ErrThingIDsSize indicates an invalid thing IDs size.
+	// ErrThingIDsSize indicates that the number of thing IDs is outside the allowed range.
 	ErrThingIDsSize = errors.New("invalid thing ids size")
 
 	// ErrNameSize indicates that name size exceeds the max.
