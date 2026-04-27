@@ -154,7 +154,7 @@ func toRuleResponse(r rules.Rule) ruleResponse {
 		GroupID:     r.GroupID,
 		Name:        r.Name,
 		Description: r.Description,
-		Input:       input{Type: r.Input.Type, ThingIDs: r.Input.ThingIDs},
+		Input:       r.Input,
 		Conditions:  r.Conditions,
 		Operator:    r.Operator,
 		Actions:     r.Actions,
