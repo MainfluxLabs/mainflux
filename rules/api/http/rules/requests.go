@@ -4,6 +4,8 @@
 package rules
 
 import (
+	"slices"
+
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/rules"
 	"github.com/gofrs/uuid"
@@ -47,6 +49,14 @@ func (req createRulesReq) validate() error {
 	}
 
 	for _, rule := range req.Rules {
+		if len(rule.Input.ThingIDs) < minLen || len(rule.Input.ThingIDs) > maxThingIDs {
+			return apiutil.ErrThingIDsSize
+		}
+		for _, id := range rule.Input.ThingIDs {
+			if _, err := uuid.FromString(id); err != nil {
+				return apiutil.ErrInvalidIDFormat
+			}
+		}
 		if err := rule.validate(); err != nil {
 			return err
 		}
@@ -64,15 +74,6 @@ func (req rule) validate() error {
 	case rules.InputTypeMessage, rules.InputTypeAlarm, rules.InputTypeSchedule, rules.InputTypeCommand:
 	default:
 		return apiutil.ErrInvalidInputType
-	}
-
-	if len(req.Input.ThingIDs) < minLen || len(req.Input.ThingIDs) > maxThingIDs {
-		return apiutil.ErrThingIDsSize
-	}
-	for _, id := range req.Input.ThingIDs {
-		if _, err := uuid.FromString(id); err != nil {
-			return apiutil.ErrInvalidIDFormat
-		}
 	}
 
 	if len(req.Conditions) < minLen {
@@ -188,6 +189,34 @@ func (req updateRuleReq) validate() error {
 	return req.rule.validate()
 }
 
+type ruleThingsReq struct {
+	token    string
+	ruleID   string
+	ThingIDs []string `json:"thing_ids"`
+}
+
+func (req ruleThingsReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.ruleID == "" {
+		return apiutil.ErrMissingRuleID
+	}
+
+	if len(req.ThingIDs) < minLen || len(req.ThingIDs) > maxThingIDs {
+		return apiutil.ErrThingIDsSize
+	}
+
+	for _, id := range req.ThingIDs {
+		if _, err := uuid.FromString(id); err != nil {
+			return apiutil.ErrInvalidIDFormat
+		}
+	}
+
+	return nil
+}
+
 type removeRulesReq struct {
 	token   string
 	RuleIDs []string `json:"rule_ids"`
@@ -202,10 +231,8 @@ func (req removeRulesReq) validate() error {
 		return apiutil.ErrEmptyList
 	}
 
-	for _, ruleID := range req.RuleIDs {
-		if ruleID == "" {
-			return apiutil.ErrMissingRuleID
-		}
+	if slices.Contains(req.RuleIDs, "") {
+		return apiutil.ErrMissingRuleID
 	}
 
 	return nil

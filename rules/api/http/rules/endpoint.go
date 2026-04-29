@@ -119,7 +119,7 @@ func updateRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 			ID:          req.id,
 			Name:        req.Name,
 			Description: req.Description,
-			Input:       req.Input,
+			Input:       rules.Input{Type: req.Input.Type},
 			Conditions:  req.Conditions,
 			Operator:    req.Operator,
 			Actions:     req.Actions,
@@ -130,6 +130,36 @@ func updateRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 		}
 
 		return ruleResponse{updated: true}, nil
+	}
+}
+
+func assignThingsEndpoint(svc rules.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(ruleThingsReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.AssignThings(ctx, req.token, req.ruleID, req.ThingIDs...); err != nil {
+			return nil, err
+		}
+
+		return assignRes{}, nil
+	}
+}
+
+func unassignThingsEndpoint(svc rules.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(ruleThingsReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.UnassignThings(ctx, req.token, req.ruleID, req.ThingIDs...); err != nil {
+			return nil, err
+		}
+
+		return removeRes{}, nil
 	}
 }
 

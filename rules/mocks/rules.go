@@ -133,13 +133,42 @@ func (rrm *ruleRepositoryMock) Update(_ context.Context, r rules.Rule) error {
 		return dbutil.ErrNotFound
 	}
 
-	rrm.unassignThingsFromRule(r.ID)
+	rrm.rules[r.ID] = r
 
-	for _, thingID := range r.Input.ThingIDs {
-		rrm.ruleAssignments[thingID] = append(rrm.ruleAssignments[thingID], r.ID)
+	return nil
+}
+
+func (rrm *ruleRepositoryMock) AssignThings(_ context.Context, ruleID string, thingIDs ...string) error {
+	rrm.mu.Lock()
+	defer rrm.mu.Unlock()
+
+	if _, ok := rrm.rules[ruleID]; !ok {
+		return dbutil.ErrNotFound
 	}
 
-	rrm.rules[r.ID] = r
+	for _, thingID := range thingIDs {
+		if slices.Contains(rrm.ruleAssignments[thingID], ruleID) {
+			return dbutil.ErrConflict
+		}
+		rrm.ruleAssignments[thingID] = append(rrm.ruleAssignments[thingID], ruleID)
+	}
+
+	return nil
+}
+
+func (rrm *ruleRepositoryMock) UnassignThings(_ context.Context, ruleID string, thingIDs ...string) error {
+	rrm.mu.Lock()
+	defer rrm.mu.Unlock()
+
+	for _, thingID := range thingIDs {
+		var filtered []string
+		for _, id := range rrm.ruleAssignments[thingID] {
+			if id != ruleID {
+				filtered = append(filtered, id)
+			}
+		}
+		rrm.ruleAssignments[thingID] = filtered
+	}
 
 	return nil
 }

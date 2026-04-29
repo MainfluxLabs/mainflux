@@ -62,6 +62,18 @@ func MakeHandler(svc rules.Service, mux *bone.Mux, tracer opentracing.Tracer, lo
 		encodeResponse,
 		opts...,
 	))
+	mux.Post("/rules/:id/things", kithttp.NewServer(
+		kitot.TraceServer(tracer, "assign_things")(assignThingsEndpoint(svc)),
+		decodeRuleThings,
+		encodeResponse,
+		opts...,
+	))
+	mux.Delete("/rules/:id/things", kithttp.NewServer(
+		kitot.TraceServer(tracer, "unassign_things")(unassignThingsEndpoint(svc)),
+		decodeRuleThings,
+		encodeResponse,
+		opts...,
+	))
 	mux.Patch("/rules", kithttp.NewServer(
 		kitot.TraceServer(tracer, "remove_rules")(removeRulesEndpoint(svc)),
 		decodeRemoveRules,
@@ -153,6 +165,22 @@ func decodeUpdateRule(_ context.Context, r *http.Request) (any, error) {
 	req := updateRuleReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, apiutil.IDKey),
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeRuleThings(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := ruleThingsReq{
+		token:  apiutil.ExtractBearerToken(r),
+		ruleID: bone.GetValue(r, apiutil.IDKey),
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
