@@ -5,60 +5,31 @@ package events
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/things"
-	"github.com/go-redis/redis/v8"
 )
-
-const DefaultStreamMaxLen = 100000
 
 type eventStore struct {
 	things.Service
-	client *redis.Client
-	logger logger.Logger
-	maxLen int64
+	pub events.Publisher
 }
 
-// NewEventStoreMiddleware returns wrapper around things service that sends
-// events to event store. maxLen controls the approximate stream retention;
-// pass 0 to use DefaultStreamMaxLen.
-func NewEventStoreMiddleware(svc things.Service, client *redis.Client, maxLen int64, logger logger.Logger) things.Service {
-	if maxLen <= 0 {
-		maxLen = DefaultStreamMaxLen
-	}
-
+func NewEventStoreMiddleware(svc things.Service, pub events.Publisher) things.Service {
 	return eventStore{
 		Service: svc,
-		client:  client,
-		logger:  logger,
-		maxLen:  maxLen,
+		pub:     pub,
 	}
 }
 
-func (es eventStore) publish(ctx context.Context, e events.Event) {
-	vals := e.Encode()
-	record := &redis.XAddArgs{
-		Stream:       events.ThingsStream,
-		MaxLenApprox: es.maxLen,
-		Values:       map[string]any(vals),
-	}
-
-	if err := es.client.XAdd(ctx, record).Err(); err != nil {
-		es.logger.Warn(fmt.Sprintf("failed to publish %s event: %s", vals.Operation(), err))
-	}
-}
-
-func (es eventStore) CreateThings(ctx context.Context, token, profileID string, things ...things.Thing) ([]things.Thing, error) {
-	ths, err := es.Service.CreateThings(ctx, token, profileID, things...)
+func (es eventStore) CreateThings(ctx context.Context, token, profileID string, ths ...things.Thing) ([]things.Thing, error) {
+	out, err := es.Service.CreateThings(ctx, token, profileID, ths...)
 	if err != nil {
-		return ths, err
+		return out, err
 	}
 
-	for _, th := range ths {
-		es.publish(ctx, events.ThingCreated{
+	for _, th := range out {
+		es.pub.Publish(ctx, events.ThingCreated{
 			ID:        th.ID,
 			GroupID:   th.GroupID,
 			ProfileID: th.ProfileID,
@@ -67,7 +38,7 @@ func (es eventStore) CreateThings(ctx context.Context, token, profileID string, 
 		})
 	}
 
-	return ths, nil
+	return out, nil
 }
 
 func (es eventStore) UpdateThing(ctx context.Context, token string, thing things.Thing) error {
@@ -75,7 +46,7 @@ func (es eventStore) UpdateThing(ctx context.Context, token string, thing things
 		return err
 	}
 
-	es.publish(ctx, events.ThingUpdated{
+	es.pub.Publish(ctx, events.ThingUpdated{
 		ID:        thing.ID,
 		ProfileID: thing.ProfileID,
 		Name:      thing.Name,
@@ -90,7 +61,7 @@ func (es eventStore) UpdateThingGroupAndProfile(ctx context.Context, token strin
 		return err
 	}
 
-	es.publish(ctx, events.ThingGroupAndProfileUpdated{
+	es.pub.Publish(ctx, events.ThingGroupAndProfileUpdated{
 		ID:        thing.ID,
 		ProfileID: thing.ProfileID,
 		GroupID:   thing.GroupID,
@@ -105,7 +76,7 @@ func (es eventStore) RemoveThings(ctx context.Context, token string, ids ...stri
 			return err
 		}
 
-		es.publish(ctx, events.ThingRemoved{ID: id})
+		es.pub.Publish(ctx, events.ThingRemoved{ID: id})
 	}
 
 	return nil
@@ -118,7 +89,7 @@ func (es eventStore) CreateProfiles(ctx context.Context, token, groupID string, 
 	}
 
 	for _, pr := range prs {
-		es.publish(ctx, events.ProfileCreated{
+		es.pub.Publish(ctx, events.ProfileCreated{
 			ID:       pr.ID,
 			GroupID:  pr.GroupID,
 			Name:     pr.Name,
@@ -134,7 +105,7 @@ func (es eventStore) UpdateProfile(ctx context.Context, token string, profile th
 		return err
 	}
 
-	es.publish(ctx, events.ProfileUpdated{
+	es.pub.Publish(ctx, events.ProfileUpdated{
 		ID:       profile.ID,
 		Name:     profile.Name,
 		Config:   profile.Config,
@@ -150,7 +121,7 @@ func (es eventStore) RemoveProfiles(ctx context.Context, token string, ids ...st
 			return err
 		}
 
-		es.publish(ctx, events.ProfileRemoved{ID: id})
+		es.pub.Publish(ctx, events.ProfileRemoved{ID: id})
 	}
 
 	return nil
@@ -162,7 +133,7 @@ func (es eventStore) RemoveGroups(ctx context.Context, token string, ids ...stri
 			return err
 		}
 
-		es.publish(ctx, events.GroupRemoved{ID: id})
+		es.pub.Publish(ctx, events.GroupRemoved{ID: id})
 	}
 
 	return nil
@@ -175,7 +146,7 @@ func (es eventStore) RemoveGroupsByOrg(ctx context.Context, orgID string) ([]str
 	}
 
 	for _, id := range ids {
-		es.publish(ctx, events.GroupRemoved{ID: id})
+		es.pub.Publish(ctx, events.GroupRemoved{ID: id})
 	}
 
 	return ids, nil
