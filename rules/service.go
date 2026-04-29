@@ -542,10 +542,10 @@ type RepositoryRules interface {
 	// A non-nil error is returned to indicate operation failure.
 	Update(ctx context.Context, r Rule) error
 
-	// AssignThings assigns one or more Things to a specific Rule.
+	// AssignThings assigns one or more things to a specific rule.
 	AssignThings(ctx context.Context, ruleID string, thingIDs ...string) error
 
-	// UnassignThings unassigns one or more Things from a specific Rule.
+	// UnassignThings unassigns one or more things from a specific rule.
 	UnassignThings(ctx context.Context, ruleID string, thingIDs ...string) error
 
 	// Remove removes rules having the provided IDs.
@@ -555,7 +555,7 @@ type RepositoryRules interface {
 	// identified by a given group ID.
 	RemoveByGroup(ctx context.Context, groupID string) error
 
-	// UnassignRulesFromThing unassigns all rules from the given thing in rules_things.
+	// UnassignRulesFromThing unassigns all rules from the given thing.
 	UnassignRulesFromThing(ctx context.Context, thingID string) error
 }
 
