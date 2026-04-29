@@ -88,6 +88,21 @@ func (res RulesPageRes) Empty() bool {
 	return false
 }
 
+// TODO: Consider introducing apiutil.EmptyRes with a configurable status code.
+type assignRes struct{}
+
+func (res assignRes) Code() int {
+	return http.StatusOK
+}
+
+func (res assignRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res assignRes) Empty() bool {
+	return true
+}
+
 type removeRes struct{}
 
 func (res removeRes) Code() int {

@@ -81,6 +81,24 @@ func (ms metricsMiddleware) UpdateRule(ctx context.Context, token string, rule r
 	return ms.svc.UpdateRule(ctx, token, rule)
 }
 
+func (ms metricsMiddleware) AssignThings(ctx context.Context, token, ruleID string, thingIDs ...string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "assign_things").Add(1)
+		ms.latency.With("method", "assign_things").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.AssignThings(ctx, token, ruleID, thingIDs...)
+}
+
+func (ms metricsMiddleware) UnassignThings(ctx context.Context, token, ruleID string, thingIDs ...string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "unassign_things").Add(1)
+		ms.latency.With("method", "unassign_things").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.UnassignThings(ctx, token, ruleID, thingIDs...)
+}
+
 func (ms metricsMiddleware) RemoveRules(ctx context.Context, token string, ids ...string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "remove_rules").Add(1)

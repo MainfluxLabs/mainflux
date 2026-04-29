@@ -128,6 +128,12 @@ type ServiceRules interface {
 	// UpdateRule updates the rule identified by the provided ID.
 	UpdateRule(ctx context.Context, token string, rule Rule) error
 
+	// AssignThings assigns one or more things to a specific rule.
+	AssignThings(ctx context.Context, token, ruleID string, thingIDs ...string) error
+
+	// UnassignThings unassigns one or more things from a specific rule.
+	UnassignThings(ctx context.Context, token, ruleID string, thingIDs ...string) error
+
 	// RemoveRules removes the rules identified with the provided IDs.
 	RemoveRules(ctx context.Context, token string, ids ...string) error
 
@@ -253,6 +259,43 @@ func (rs *rulesService) UpdateRule(ctx context.Context, token string, rule Rule)
 	}
 
 	return rs.rules.Update(ctx, rule)
+}
+
+func (rs *rulesService) AssignThings(ctx context.Context, token, ruleID string, thingIDs ...string) error {
+	rule, err := rs.rules.RetrieveByID(ctx, ruleID)
+	if err != nil {
+		return err
+	}
+
+	if err := rs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: rule.GroupID, Action: domain.GroupEditor}); err != nil {
+		return err
+	}
+	// TODO: replace with a single bulk gRPC call, e.g. CanUserAccessThings(ctx, groupID, thingIDs...)
+	// to avoid N round-trips to the things service.
+	for _, thingID := range thingIDs {
+		grID, err := rs.things.GetGroupIDByThing(ctx, thingID)
+		if err != nil {
+			return err
+		}
+		if grID != rule.GroupID {
+			return errors.ErrAuthorization
+		}
+	}
+
+	return rs.rules.AssignThings(ctx, ruleID, thingIDs...)
+}
+
+func (rs *rulesService) UnassignThings(ctx context.Context, token, ruleID string, thingIDs ...string) error {
+	rule, err := rs.rules.RetrieveByID(ctx, ruleID)
+	if err != nil {
+		return err
+	}
+
+	if err := rs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: rule.GroupID, Action: domain.GroupEditor}); err != nil {
+		return err
+	}
+
+	return rs.rules.UnassignThings(ctx, ruleID, thingIDs...)
 }
 
 func (rs *rulesService) RemoveRules(ctx context.Context, token string, ids ...string) error {
@@ -498,6 +541,12 @@ type RepositoryRules interface {
 	// Update performs an update to the existing rule.
 	// A non-nil error is returned to indicate operation failure.
 	Update(ctx context.Context, r Rule) error
+
+	// AssignThings assigns one or more Things to a specific Rule.
+	AssignThings(ctx context.Context, ruleID string, thingIDs ...string) error
+
+	// UnassignThings unassigns one or more Things from a specific Rule.
+	UnassignThings(ctx context.Context, ruleID string, thingIDs ...string) error
 
 	// Remove removes rules having the provided IDs.
 	Remove(ctx context.Context, ids ...string) error
