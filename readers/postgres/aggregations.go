@@ -175,7 +175,6 @@ func buildAggQuery(qp queryParams, strategy aggStrategy) string {
 			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
 				{{.ConditionForJoin}}
 			GROUP BY ti.interval_time
-			HAVING {{.HavingCondition}}
 		)
 		SELECT {{.SelectedFields}}
 		FROM interval_aggs ia
@@ -193,7 +192,6 @@ func buildAggCountQuery(qp queryParams) string {
 			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
 				{{.ConditionForJoin}}
 			GROUP BY ti.interval_time
-			HAVING {{.HavingCondition}}
 		) counted`
 
 	return renderTemplate(tmpl, qp, nil)
@@ -206,7 +204,6 @@ func renderTemplate(tmpl string, qp queryParams, strategy aggStrategy) string {
 		"Table":             qp.table,
 		"TimeJoinCondition": buildTimeJoinCondition(qp),
 		"ConditionForJoin":  qp.conditionForJoin,
-		"HavingCondition":   buildConditionForCount(qp),
 		"Dir":               dbutil.GetDirQuery(qp.dir),
 	}
 
@@ -482,30 +479,6 @@ func senmlConditions(pm readers.SenMLPageMetadata) []string {
 		conds = append(conds, "data_value = :data_value")
 	}
 	return conds
-}
-
-func buildConditionForCount(qp queryParams) string {
-	if qp.aggType == readers.AggregationFirst || qp.aggType == readers.AggregationLast {
-		return fmt.Sprintf("COUNT(m.%s) > 0", qp.timeColumn)
-	}
-
-	if len(qp.aggFields) == 0 {
-		return "1=1"
-	}
-
-	var conditions []string
-	switch qp.table {
-	case senmlTable:
-		conditions = append(conditions, "MAX(m.value) IS NOT NULL")
-	default:
-		for _, field := range qp.aggFields {
-			jsonPath := buildJSONPath(field)
-			conditions = append(conditions,
-				fmt.Sprintf("MAX(CAST(m.%s AS FLOAT)) IS NOT NULL", jsonPath))
-		}
-	}
-
-	return strings.Join(conditions, " OR ")
 }
 
 func buildJSONSelect(aggFields []string) string {
