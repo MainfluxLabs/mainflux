@@ -16,7 +16,7 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/CreateRulesReq"
       responses:
-        '201':
+        '201': 
           $ref: "#/components/responses/CreateRulesRes"
         '400':
           description: Failed due to malformed JSON.
@@ -35,6 +35,12 @@ paths:
         - rules
       parameters:
         - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Dir"
+        - $ref: "#/components/parameters/Name"
+        - $ref: "#/components/parameters/InputType"
       responses:
         '200':
           $ref: "#/components/responses/ListRulesRes"
@@ -56,6 +62,12 @@ paths:
         - rules
       parameters:
         - $ref: "#/components/parameters/ThingId"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Dir"
+        - $ref: "#/components/parameters/Name"
+        - $ref: "#/components/parameters/InputType"
       responses:
         '200':
           $ref: "#/components/responses/ListRulesRes"
@@ -67,54 +79,6 @@ paths:
           description: Failed to perform authorization over the entity.
         '422':
           description: Database can't process request.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-    post:
-      summary: Assigns rules to a thing
-      description: Assigns rules to a specific thing identified by the provided ID.
-      tags:
-        - rules
-      parameters:
-        - $ref: "#/components/parameters/ThingId"
-      requestBody:
-        $ref: "#/components/requestBodies/ThingRulesReq"
-      responses:
-        '200':
-          description: Rules assigned successfully.
-        '400':
-          description: Failed due to malformed JSON.
-        '401':
-          description: Missing or invalid access token provided.
-        '403':
-          description: Failed to perform authorization over the entity.
-        '404':
-          description: Thing or one of the rules does not exist.
-        '415':
-          description: Missing or invalid content type.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-    patch:
-      summary: Unassigns rules from a thing
-      description: Unassigns rules from a specific thing identified by the provided ID.
-      tags:
-        - rules
-      parameters:
-        - $ref: "#/components/parameters/ThingId"
-      requestBody:
-        $ref: "#/components/requestBodies/ThingRulesReq"
-      responses:
-        '200':
-          description: Rules unassigned successfully.
-        '400':
-          description: Failed due to malformed JSON.
-        '401':
-          description: Missing or invalid access token provided.
-        '403':
-          description: Failed to perform authorization over the entity.
-        '404':
-          description: Thing or one of the rules does not exist.
-        '415':
-          description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
   /rules/{ruleId}/things:
@@ -132,12 +96,54 @@ paths:
           description: Failed due to malformed query parameters.
         '401':
           description: Missing or invalid access token provided.
-        '403':
-          description: Failed to perform authorization over the entity.
         '404':
           description: Rule does not exist.
         '422':
           description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    post:
+      summary: Assigns things to a rule
+      description: Assigns one or more things to a specific rule identified by the provided ID.
+      tags:
+        - rules
+      parameters:
+        - $ref: "#/components/parameters/RuleId"
+      requestBody:
+        $ref: "#/components/requestBodies/RuleThingsReq"
+      responses:
+        '200':
+          description: Things assigned successfully.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '404':
+          description: Rule does not exist.
+        '409':
+          description: One or more things are already assigned to this rule.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    patch:
+      summary: Unassigns things from a rule
+      description: Unassigns one or more things from a specific rule identified by the provided ID.
+      tags:
+        - rules
+      parameters:
+        - $ref: "#/components/parameters/RuleId"
+      requestBody:
+        $ref: "#/components/requestBodies/RuleThingsReq"
+      responses:
+        '204':
+          description: Things unassigned successfully.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '415':
+          description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
   /rules/{ruleId}:
@@ -150,6 +156,8 @@ paths:
       responses:
         '200':
           $ref: "#/components/responses/RuleRes"
+        '400':
+          description: Failed due to malformed query parameters.
         '401':
           description: Missing or invalid access token provided.
         '404':
@@ -195,6 +203,8 @@ paths:
           description: Failed due to malformed JSON.
         '401':
           description: Missing or invalid access token provided.
+        '404':
+          description: One or more rules do not exist.
         '500':
           $ref: "#/components/responses/ServiceError"
   /groups/{groupId}/scripts:
@@ -430,6 +440,31 @@ paths:
 
 components:
   schemas:
+    Input:
+      type: object
+      description: Defines what triggers the rule evaluation.
+      properties:
+        type:
+          type: string
+          enum: [message, alarm, schedule, command]
+          example: "message"
+        thing_ids:
+          type: array
+          description: IDs of things to which this rule applies.
+          items:
+            type: string
+            format: uuid
+          example: ["123e4567-e89b-12d3-a456-426614174000"]
+      required: [type]
+    UpdateRuleInput:
+      type: object
+      description: Input configuration for rule update. Thing assignments are managed separately via the assign/unassign endpoints.
+      properties:
+        type:
+          type: string
+          enum: [message, alarm, schedule, command]
+          example: "message"
+      required: [type]
     Condition:
       type: object
       properties:
@@ -471,6 +506,8 @@ components:
         description:
           type: string
           example: "Triggers when temperature exceeds 45°C and humidity drops below 20%"
+        input:
+          $ref: "#/components/schemas/Input"
         conditions:
           type: array
           items:
@@ -478,12 +515,38 @@ components:
         operator:
           type: string
           enum: [AND, OR]
+          description: Required when more than one condition is defined.
           example: "AND"
         actions:
           type: array
           items:
             $ref: "#/components/schemas/Action"
-      required: [name, conditions, actions]
+      required: [name, input, conditions, actions]
+    UpdateRuleReqSchema:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Temperature Alert"
+        description:
+          type: string
+          example: "Triggers when temperature exceeds 50°C"
+        input:
+          $ref: "#/components/schemas/UpdateRuleInput"
+        conditions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Condition"
+        operator:
+          type: string
+          enum: [AND, OR]
+          description: Required when more than one condition is defined.
+          example: "AND"
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Action"
+      required: [name, input, conditions, actions]
     RuleResSchema:
       type: object
       properties:
@@ -499,6 +562,8 @@ components:
         description:
           type: string
           example: "Triggers when temperature exceeds 45°C and humidity drops below 20%"
+        input:
+          $ref: "#/components/schemas/Input"
         conditions:
           type: array
           items:
@@ -510,7 +575,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Action"
-      required: [ id, group_id, name, conditions, actions ]
+      required: [ id, group_id, name, input, conditions, actions ]
     ThingIDsRes:
       type: object
       properties:
@@ -530,7 +595,7 @@ components:
           type: string
           example: "Creates alarm and executes SMTP notifier on low temperature reading"
         script:
-          $ref: "#/components/schemas/ExampleScript" 
+          $ref: "#/components/schemas/ExampleScript"
       required: [name, script]
     ScriptResSchema:
       type: object
@@ -550,10 +615,9 @@ components:
           type: string
           example: "Creates alarm and executes SMTP notifier on low temperature reading"
         script:
-          $ref: "#/components/schemas/ExampleScript" 
+          $ref: "#/components/schemas/ExampleScript"
       required: [id, group_id, name, script]
     ScriptRunResSchema:
-
       type: object
       properties:
         id:
@@ -654,6 +718,56 @@ components:
         format: uuid
       example: "456e4567-e89b-12d3-a456-426614174abc"
       required: true
+    Limit:
+      name: limit
+      description: Maximum number of results to return (1–200).
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 100
+      example: 10
+    Offset:
+      name: offset
+      description: Number of results to skip.
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      example: 0
+    Order:
+      name: order
+      description: Field to sort results by.
+      in: query
+      schema:
+        type: string
+        enum: [name]
+      example: "name"
+    Dir:
+      name: dir
+      description: Sort direction. Required when order is specified.
+      in: query
+      schema:
+        type: string
+        enum: [asc, desc]
+      example: "asc"
+    Name:
+      name: name
+      description: Filter results by name (partial match).
+      in: query
+      schema:
+        type: string
+      example: "Temperature"
+    InputType:
+      name: input_type
+      description: Filter results by input type.
+      in: query
+      schema:
+        type: string
+        enum: [message, alarm, schedule, command]
+      example: "message"
 
   requestBodies:
     CreateRulesReq:
@@ -674,6 +788,10 @@ components:
             rules:
               - name: "Temperature and Humidity Alert"
                 description: "Triggers when temperature exceeds 45°C and humidity drops below 20%"
+                input:
+                  type: "message"
+                  thing_ids:
+                    - "123e4567-e89b-12d3-a456-426614174000"
                 conditions:
                   - field: "temperature"
                     comparator: ">"
@@ -686,22 +804,26 @@ components:
                   - type: "smtp"
                     id: "513e2557-e09b-42d3-s456-425614175403"
                   - type: "alarm"
+                    level: 3
     UpdateRuleReq:
-      description: JSON-formatted document describing the updated rule.
+      description: JSON-formatted document describing the updated rule. Thing assignments are not affected — use POST/PATCH /rules/{ruleId}/things instead.
       required: true
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/RuleReqSchema"
+            $ref: "#/components/schemas/UpdateRuleReqSchema"
           example:
             name: "Temperature Alert"
             description: "Triggers when temperature exceeds 50°C"
+            input:
+              type: "message"
             conditions:
               - field: "temperature"
                 comparator: ">"
                 threshold: 50
             actions:
               - type: "alarm"
+                level: 3
     RemoveRulesReq:
       description: JSON-formatted document describing the identifiers of rules for deleting.
       required: true
@@ -721,25 +843,25 @@ components:
             rule_ids:
               - "789e4567-e89b-12d3-a456-426614174abc"
               - "654e4567-e89b-12d3-a456-426614174999"
-    ThingRulesReq:
-      description: JSON-formatted document describing the rule identifiers to assign/unassign.
+    RuleThingsReq:
+      description: JSON-formatted document describing the thing identifiers to assign/unassign.
       required: true
       content:
         application/json:
           schema:
             type: object
             properties:
-              rule_ids:
+              thing_ids:
                 type: array
                 items:
                   type: string
                   format: uuid
             required:
-              - rule_ids
+              - thing_ids
           example:
-            rule_ids:
-              - "789e4567-e89b-12d3-a456-426614174abc"
-              - "654e4567-e89b-12d3-a456-426614174999"
+            thing_ids:
+              - "123e4567-e89b-12d3-a456-426614174000"
+              - "123e4567-e89b-12d3-a456-426614174001"
     CreateScriptsReq:
       description: JSON-formatted document describing the new Lua scripts.
       required: true
@@ -759,7 +881,7 @@ components:
               - name: "Low temperature notifier"
                 description: "Create alarm and send SMTP notification on low temperature."
                 script:
-                  $ref: "#/components/schemas/ExampleScript" 
+                  $ref: "#/components/schemas/ExampleScript"
     UpdateScriptReq:
       description: JSON-formatted document describing the updated Lua script.
       required: true
@@ -771,7 +893,7 @@ components:
             name: "Enhanced Temperature Transformation"
             description: "Low temperature notifier"
             script:
-              $ref: "#/components/schemas/ExampleScript" 
+              $ref: "#/components/schemas/ExampleScript"
     RemoveScriptsReq:
       description: JSON-formatted document describing the IDs of scripts for deleting.
       required: true
@@ -836,26 +958,37 @@ components:
       content:
         application/json:
           schema:
-            type: array
-            items:
-              $ref: "#/components/schemas/RuleResSchema"
+            type: object
+            properties:
+              rules:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RuleResSchema"
+            required:
+              - rules
           example:
-            - id: "84d1be5e-3511-4d15-aafa-b1bb4c20bca4"
-              group_id: "fc1e40aa-c5af-4a1d-b1e4-37f2e4bb50d1"
-              name: "Temperature and Humidity Alert"
-              description: "Triggers when temperature exceeds 45°C and humidity drops below 20%"
-              conditions:
-                - field: "temperature"
-                  comparator: ">"
-                  threshold: 45
-                - field: "humidity"
-                  comparator: "<"
-                  threshold: 20
-              operator: "AND"
-              actions:
-                - type: "smtp"
-                  id: "513e2557-e09b-42d3-s456-425614175403"
-                - type: "alarm"
+            rules:
+              - id: "84d1be5e-3511-4d15-aafa-b1bb4c20bca4"
+                group_id: "fc1e40aa-c5af-4a1d-b1e4-37f2e4bb50d1"
+                name: "Temperature and Humidity Alert"
+                description: "Triggers when temperature exceeds 45°C and humidity drops below 20%"
+                input:
+                  type: "message"
+                  thing_ids:
+                    - "123e4567-e89b-12d3-a456-426614174000"
+                conditions:
+                  - field: "temperature"
+                    comparator: ">"
+                    threshold: 45
+                  - field: "humidity"
+                    comparator: "<"
+                    threshold: 20
+                operator: "AND"
+                actions:
+                  - type: "smtp"
+                    id: "513e2557-e09b-42d3-s456-425614175403"
+                  - type: "alarm"
+                    level: 3
     RuleRes:
       description: Data retrieved.
       content:
@@ -867,6 +1000,10 @@ components:
             group_id: "321e4567-e89b-12d3-a456-426614174def"
             name: "Temperature Alert"
             description: "Triggers when temperature exceeds 45°C"
+            input:
+              type: "message"
+              thing_ids:
+                - "123e4567-e89b-12d3-a456-426614174000"
             conditions:
               - field: "temperature"
                 comparator: ">"
@@ -905,6 +1042,8 @@ components:
                 group_id: "321e4567-e89b-12d3-a456-426614174def"
                 name: "Temperature Alert"
                 description: "Triggers when temperature exceeds 45°C"
+                input:
+                  type: "message"
                 conditions:
                   - field: "temperature"
                     comparator: ">"
@@ -942,7 +1081,7 @@ components:
                 name: "Temperature Data Transformation"
                 description: "Low temperature notifier"
                 script:
-                  $ref: "#/components/schemas/ExampleScript" 
+                  $ref: "#/components/schemas/ExampleScript"
     ScriptRes:
       description: Script data retrieved.
       content:
@@ -955,7 +1094,7 @@ components:
             name: "Low temperature notifier"
             description: "Low temperature notifier"
             script:
-              $ref: "#/components/schemas/ExampleScript" 
+              $ref: "#/components/schemas/ExampleScript"
     ListScriptsRes:
       description: Scripts retrieved.
       content:
@@ -988,7 +1127,7 @@ components:
                 name: "Low temperature notifier"
                 description: "Create alarm and send SMTP notifier on low temperature value"
                 script:
-                  $ref: "#/components/schemas/ExampleScript" 
+                  $ref: "#/components/schemas/ExampleScript"
     ListScriptRunsRes:
       description: Script runs retrieved.
       content:
