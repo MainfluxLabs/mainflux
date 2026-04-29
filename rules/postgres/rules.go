@@ -92,7 +92,7 @@ func (rr ruleRepository) RetrieveByGroup(ctx context.Context, groupID string, pm
 		FROM rules %s
 		ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 
-	qc := fmt.Sprintf(`SELECT COUNT(*) FROM rules WHERE %s;`, dbutil.BuildWhereClause(gq, itq))
+	qc := fmt.Sprintf(`SELECT COUNT(*) FROM rules %s;`, dbutil.BuildWhereClause(gq, itq))
 
 	params := map[string]any{
 		"group_id":   groupID,

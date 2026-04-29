@@ -68,7 +68,7 @@ func MakeHandler(svc rules.Service, mux *bone.Mux, tracer opentracing.Tracer, lo
 		encodeResponse,
 		opts...,
 	))
-	mux.Delete("/rules/:id/things", kithttp.NewServer(
+	mux.Patch("/rules/:id/things", kithttp.NewServer(
 		kitot.TraceServer(tracer, "unassign_things")(unassignThingsEndpoint(svc)),
 		decodeRuleThings,
 		encodeResponse,

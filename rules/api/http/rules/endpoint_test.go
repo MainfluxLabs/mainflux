@@ -32,6 +32,7 @@ const (
 	emptyValue  = ""
 	contentType = "application/json"
 	thingID     = "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
+	thingID2    = "7a9b3c1d-e2f4-5678-90ab-cdef01234567"
 	groupID     = "574106f7-030e-4881-8ab0-151195c29f94"
 	ruleName    = "test-rule"
 	prefixID    = "fe6b4e92-cc98-425e-b0aa-"
@@ -75,8 +76,9 @@ func newService() rules.Service {
 	ths := pkgmocks.NewThingsServiceClient(
 		nil,
 		map[string]things.Thing{
-			token:   {ID: thingID, GroupID: groupID},
-			thingID: {ID: thingID, GroupID: groupID},
+			token:    {ID: thingID, GroupID: groupID},
+			thingID:  {ID: thingID, GroupID: groupID},
+			thingID2: {ID: thingID2, GroupID: groupID},
 		},
 		map[string]things.Group{
 			token: {ID: groupID},
@@ -731,7 +733,7 @@ func TestUpdateRule(t *testing.T) {
 	updThreshold := 35.0
 	updatedRule := rule{
 		Name:       "updated-rule",
-		Input:      rules.Input{Type: rules.InputTypeMessage, ThingIDs: []string{thingID}},
+		Input:      rules.Input{Type: rules.InputTypeMessage},
 		Conditions: []rules.Condition{{Field: "temperature", Comparator: ">", Threshold: &updThreshold}},
 		Actions:    []rules.Action{action},
 	}
@@ -797,7 +799,23 @@ func TestUpdateRule(t *testing.T) {
 			auth:        token,
 			id:          ruleID,
 			contentType: contentType,
-			body:        rule{Name: "updated-rule", Input: rules.Input{Type: rules.InputTypeMessage, ThingIDs: []string{thingID}}, Actions: []rules.Action{{Type: rules.ActionTypeAlarm}}},
+			body:        rule{Name: "updated-rule", Input: rules.Input{Type: rules.InputTypeMessage}, Actions: []rules.Action{{Type: rules.ActionTypeAlarm}}},
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update rule with missing input type",
+			auth:        token,
+			id:          ruleID,
+			contentType: contentType,
+			body:        rule{Name: "updated-rule", Input: rules.Input{}, Conditions: []rules.Condition{condTemp}, Actions: []rules.Action{action}},
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update rule with invalid input type",
+			auth:        token,
+			id:          ruleID,
+			contentType: contentType,
+			body:        rule{Name: "updated-rule", Input: rules.Input{Type: "invalid"}, Conditions: []rules.Condition{condTemp}, Actions: []rules.Action{action}},
 			status:      http.StatusBadRequest,
 		},
 	}
@@ -892,3 +910,188 @@ func TestRemoveRules(t *testing.T) {
 	}
 }
 
+func TestAssignThings(t *testing.T) {
+	svc := newService()
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	saved := saveRules(t, svc, 1)
+	ruleID := saved[0].ID
+
+	cases := []struct {
+		desc        string
+		auth        string
+		ruleID      string
+		contentType string
+		thingIDs    []string
+		status      int
+	}{
+		{
+			desc:        "assign things to existing rule",
+			auth:        token,
+			ruleID:      ruleID,
+			contentType: contentType,
+			thingIDs:    []string{thingID2},
+			status:      http.StatusOK,
+		},
+		{
+			desc:        "assign already assigned thing",
+			auth:        token,
+			ruleID:      ruleID,
+			contentType: contentType,
+			thingIDs:    []string{thingID},
+			status:      http.StatusConflict,
+		},
+		{
+			desc:        "assign things to non-existing rule",
+			auth:        token,
+			ruleID:      wrongValue,
+			contentType: contentType,
+			thingIDs:    []string{thingID},
+			status:      http.StatusNotFound,
+		},
+		{
+			desc:        "assign with invalid thing ID format",
+			auth:        token,
+			ruleID:      ruleID,
+			contentType: contentType,
+			thingIDs:    []string{"not-a-uuid"},
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "assign with empty thing IDs",
+			auth:        token,
+			ruleID:      ruleID,
+			contentType: contentType,
+			thingIDs:    []string{},
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "assign with empty token",
+			auth:        emptyValue,
+			ruleID:      ruleID,
+			contentType: contentType,
+			thingIDs:    []string{thingID},
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "assign with wrong token",
+			auth:        wrongValue,
+			ruleID:      ruleID,
+			contentType: contentType,
+			thingIDs:    []string{thingID},
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "assign without content type",
+			auth:        token,
+			ruleID:      ruleID,
+			contentType: emptyValue,
+			thingIDs:    []string{thingID},
+			status:      http.StatusUnsupportedMediaType,
+		},
+	}
+
+	for _, tc := range cases {
+		body := toJSON(struct {
+			ThingIDs []string `json:"thing_ids"`
+		}{tc.thingIDs})
+
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPost,
+			url:         fmt.Sprintf("%s/rules/%s/things", ts.URL, tc.ruleID),
+			token:       tc.auth,
+			contentType: tc.contentType,
+			body:        strings.NewReader(body),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestUnassignThings(t *testing.T) {
+	svc := newService()
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	saved := saveRules(t, svc, 1)
+	ruleID := saved[0].ID
+
+	cases := []struct {
+		desc        string
+		auth        string
+		ruleID      string
+		contentType string
+		thingIDs    []string
+		status      int
+	}{
+		{
+			desc:        "unassign things from rule",
+			auth:        token,
+			ruleID:      ruleID,
+			contentType: contentType,
+			thingIDs:    []string{thingID},
+			status:      http.StatusNoContent,
+		},
+		{
+			desc:        "unassign with invalid thing ID format",
+			auth:        token,
+			ruleID:      ruleID,
+			contentType: contentType,
+			thingIDs:    []string{"not-a-uuid"},
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "unassign with empty thing IDs",
+			auth:        token,
+			ruleID:      ruleID,
+			contentType: contentType,
+			thingIDs:    []string{},
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "unassign with empty token",
+			auth:        emptyValue,
+			ruleID:      ruleID,
+			contentType: contentType,
+			thingIDs:    []string{thingID},
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "unassign with wrong token",
+			auth:        wrongValue,
+			ruleID:      ruleID,
+			contentType: contentType,
+			thingIDs:    []string{thingID},
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "unassign without content type",
+			auth:        token,
+			ruleID:      ruleID,
+			contentType: emptyValue,
+			thingIDs:    []string{thingID},
+			status:      http.StatusUnsupportedMediaType,
+		},
+	}
+
+	for _, tc := range cases {
+		body := toJSON(struct {
+			ThingIDs []string `json:"thing_ids"`
+		}{tc.thingIDs})
+
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPatch,
+			url:         fmt.Sprintf("%s/rules/%s/things", ts.URL, tc.ruleID),
+			token:       tc.auth,
+			contentType: tc.contentType,
+			body:        strings.NewReader(body),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.status, res.StatusCode))
+	}
+}
