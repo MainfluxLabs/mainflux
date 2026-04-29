@@ -36,6 +36,15 @@ var (
 	ErrEmptyName = errors.New("subscriber name cannot be empty")
 )
 
+// Subscriber specifies event subscription API.
+type Subscriber interface {
+	// Subscribe subscribes to the event stream and consumes events.
+	Subscribe(ctx context.Context, handler EventHandler) error
+
+	// Close gracefully closes event subscriber's connection.
+	Close() error
+}
+
 // SubscriberConfig holds the parameters for creating a Subscriber.
 type SubscriberConfig struct {
 	// URL is the Redis connection URL (e.g. redis://host:6379/0).

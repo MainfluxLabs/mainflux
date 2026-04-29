@@ -56,15 +56,6 @@ type EventHandler interface {
 	Handle(ctx context.Context, event Event) error
 }
 
-// Subscriber specifies event subscription API.
-type Subscriber interface {
-	// Subscribe subscribes to the event stream and consumes events.
-	Subscribe(ctx context.Context, handler EventHandler) error
-
-	// Close gracefully closes event subscriber's connection.
-	Close() error
-}
-
 // cursorKey is the Redis key where a named subscriber stores its last
 // processed message ID for the given stream.
 func cursorKey(name, stream string) string {
