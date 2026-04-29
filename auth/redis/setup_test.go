@@ -14,7 +14,10 @@ import (
 	dockertest "github.com/ory/dockertest/v3"
 )
 
-var redisClient *redis.Client
+var (
+	redisClient *redis.Client
+	redisURL    string
+)
 
 func TestMain(m *testing.M) {
 	pool, err := dockertest.NewPool("")
@@ -28,11 +31,12 @@ func TestMain(m *testing.M) {
 	}
 
 	if err := pool.Retry(func() error {
-		redisClient = redis.NewClient(&redis.Options{
-			Addr:     fmt.Sprintf("localhost:%s", container.GetPort("6379/tcp")),
-			Password: "",
-			DB:       0,
-		})
+		redisURL = fmt.Sprintf("redis://localhost:%s/0", container.GetPort("6379/tcp"))
+		opts, err := redis.ParseURL(redisURL)
+		if err != nil {
+			return err
+		}
+		redisClient = redis.NewClient(opts)
 
 		return redisClient.Ping(context.Background()).Err()
 	}); err != nil {

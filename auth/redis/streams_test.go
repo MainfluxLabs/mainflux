@@ -44,6 +44,24 @@ var (
 	usersByIDs    = map[string]users.User{ownerID: {ID: ownerID, Email: ownerEmail}}
 )
 
+// withEventStore wraps svc in the event-store middleware backed by a fresh
+// Publisher pointed at the test Redis. The publisher is closed via
+// t.Cleanup, which drains any in-flight events before the test ends.
+func withEventStore(t *testing.T, svc auth.Service) auth.Service {
+	t.Helper()
+	pub, err := events.NewPublisher(events.PublisherConfig{
+		URL:                  redisURL,
+		Stream:               events.AuthStream,
+		BufferSize:           events.DefBufferSize,
+		DrainIntervalInitial: 10 * time.Millisecond,
+		DrainBackoffMax:      100 * time.Millisecond,
+		ShutdownDrainTimeout: 2 * time.Second,
+	}, logger.NewMock())
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = pub.Close() })
+	return redis.NewEventStoreMiddleware(svc, pub)
+}
+
 func newService() auth.Service {
 	keyRepo := mocks.NewKeyRepository()
 	idMockProvider := uuid.NewMock()
@@ -68,7 +86,7 @@ func TestCreateOrg(t *testing.T) {
 	_, ownerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	svc = redis.NewEventStoreMiddleware(svc, redisClient, 0, logger.NewMock())
+	svc = withEventStore(t, svc)
 
 	cases := []struct {
 		desc  string
@@ -129,7 +147,7 @@ func TestRemoveOrg(t *testing.T) {
 	org, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	svc = redis.NewEventStoreMiddleware(svc, redisClient, 0, logger.NewMock())
+	svc = withEventStore(t, svc)
 
 	cases := []struct {
 		desc  string

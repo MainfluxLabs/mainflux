@@ -24,6 +24,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/email"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	serversgrpc "github.com/MainfluxLabs/mainflux/pkg/servers/grpc"
@@ -32,7 +33,6 @@ import (
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	usersapi "github.com/MainfluxLabs/mainflux/users/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
 	"github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
@@ -71,6 +71,7 @@ const (
 	defUsersGRPCURL    = "localhost:8184"
 	defESURL           = "redis://localhost:6379/0"
 	defESStreamMaxLen  = "100000"
+	defESBufferSize    = "10000"
 
 	defEmailHost         = "localhost"
 	defEmailPort         = "25"
@@ -110,6 +111,7 @@ const (
 	envUsersClientTLS  = "MF_USERS_CLIENT_TLS"
 	envESURL           = "MF_AUTH_ES_URL"
 	envESStreamMaxLen  = "MF_AUTH_ES_STREAM_MAXLEN"
+	envESBufferSize    = "MF_AUTH_ES_BUFFER_SIZE"
 
 	envEmailHost         = "MF_EMAIL_HOST"
 	envEmailPort         = "MF_EMAIL_PORT"
@@ -139,6 +141,7 @@ type config struct {
 	host           string
 	esURL          string
 	esStreamMaxLen int64
+	esBufferSize   int
 }
 
 func main() {
@@ -162,7 +165,24 @@ func main() {
 	dbTracer, dbCloser := jaeger.Init("auth_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	esClient := connectToRedis(cfg.esURL, logger)
+	pub, err := mfevents.NewPublisher(mfevents.PublisherConfig{
+		URL:                  cfg.esURL,
+		Stream:               mfevents.AuthStream,
+		MaxLen:               cfg.esStreamMaxLen,
+		BufferSize:           cfg.esBufferSize,
+		DrainIntervalInitial: mfevents.DefDrainIntervalInitial,
+		DrainBackoffMax:      mfevents.DefDrainBackoffMax,
+		ShutdownDrainTimeout: mfevents.DefShutdownDrainTimeout,
+	}, logger)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to initialise event publisher: %s", err))
+		os.Exit(1)
+	}
+	defer func() {
+		if err := pub.Close(); err != nil {
+			logger.Error(fmt.Sprintf("Failed to close event publisher: %s", err))
+		}
+	}()
 
 	usrConn := clientsgrpc.Connect(cfg.usersConfig, logger)
 	defer usrConn.Close()
@@ -180,7 +200,7 @@ func main() {
 
 	tc := thingsapi.NewClient(thConn, thingsTracer, cfg.timeout)
 
-	svc := newService(db, tc, uc, dbTracer, logger, cfg, esClient)
+	svc := newService(db, tc, uc, dbTracer, logger, cfg, pub)
 
 	g.Go(func() error {
 		return servershttp.Start(ctx, httpapi.MakeHandler(svc, authHttpTracer, logger), cfg.httpConfig, logger)
@@ -284,6 +304,11 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envESStreamMaxLen, err.Error())
 	}
 
+	esBufferSize, err := strconv.Atoi(mainflux.Env(envESBufferSize, defESBufferSize))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envESBufferSize, err.Error())
+	}
+
 	return config{
 		logLevel:       mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:       dbConfig,
@@ -301,6 +326,7 @@ func loadConfig() config {
 		host:           mainflux.Env(envHost, defHost),
 		esURL:          mainflux.Env(envESURL, defESURL),
 		esStreamMaxLen: esStreamMaxLen,
+		esBufferSize:   esBufferSize,
 	}
 
 }
@@ -315,17 +341,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func connectToRedis(redisURL string, logger logger.Logger) *redis.Client {
-	opts, err := redis.ParseURL(redisURL)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to redis: %s", err))
-		os.Exit(1)
-	}
-
-	return redis.NewClient(opts)
-}
-
-func newService(db *sqlx.DB, tc domain.ThingsClient, uc domain.UsersClient, tracer opentracing.Tracer, logger logger.Logger, cfg config, esClient *redis.Client) auth.Service {
+func newService(db *sqlx.DB, tc domain.ThingsClient, uc domain.UsersClient, tracer opentracing.Tracer, logger logger.Logger, cfg config, pub mfevents.Publisher) auth.Service {
 	orgsRepo := postgres.NewOrgRepo(db)
 	orgsRepo = tracing.OrgRepositoryMiddleware(tracer, orgsRepo)
 
@@ -367,7 +383,7 @@ func newService(db *sqlx.DB, tc domain.ThingsClient, uc domain.UsersClient, trac
 	)
 
 	svc := auth.New(orgsRepo, tc, uc, keysRepo, rolesRepo, membsRepo, invitesRepo, authEmailer, idProvider, t, cfg.loginDuration, cfg.inviteDuration)
-	svc = rediscache.NewEventStoreMiddleware(svc, esClient, cfg.esStreamMaxLen, logger)
+	svc = rediscache.NewEventStoreMiddleware(svc, pub)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
