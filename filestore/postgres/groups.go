@@ -199,8 +199,16 @@ func (gr groupsRepository) Remove(ctx context.Context, groupID string, fi filest
 
 	q := `DELETE FROM groups_files WHERE group_id = :group_id AND file_class = :file_class AND file_format = :file_format AND file_name = :file_name`
 
-	if _, err := gr.db.NamedExecContext(ctx, q, dbFile); err != nil {
+	res, err := gr.db.NamedExecContext(ctx, q, dbFile)
+	if err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+	cnt, err := res.RowsAffected()
+	if err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+	if cnt == 0 {
+		return dbutil.ErrNotFound
 	}
 	return nil
 }
