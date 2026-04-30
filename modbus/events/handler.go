@@ -24,7 +24,7 @@ func (h *eventHandler) Handle(ctx context.Context, event events.Event) error {
 	case events.ThingRemoved:
 		return h.svc.RemoveClientsByThing(ctx, e.ID)
 	case events.ProfileUpdated:
-		return h.svc.RescheduleTasks(ctx, e.ID, e.ConfigMap())
+		return h.svc.RescheduleTasks(ctx, e.ID, e.Config)
 	case events.GroupRemoved:
 		return h.svc.RemoveClientsByGroup(ctx, e.ID)
 	}

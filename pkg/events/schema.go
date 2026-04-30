@@ -230,22 +230,6 @@ func (e ProfileUpdated) Encode() RedisEvent {
 	return m
 }
 
-// ConfigMap returns Config decoded as a generic map, for callers whose
-// downstream APIs take map[string]any rather than *domain.ProfileConfig.
-func (e ProfileUpdated) ConfigMap() map[string]any {
-	if e.Config == nil {
-		return nil
-	}
-	b, err := json.Marshal(e.Config)
-	if err != nil {
-		return nil
-	}
-	var m map[string]any
-	if err := json.Unmarshal(b, &m); err != nil {
-		return nil
-	}
-	return m
-}
 
 func DecodeProfileUpdated(e RedisEvent) ProfileUpdated {
 	p := ProfileUpdated{
