@@ -104,6 +104,26 @@ func NewPublisher(cfg PublisherConfig, log logger.Logger) (Publisher, error) {
 		return nil, ErrEmptyStream
 	}
 
+	if cfg.MaxLen == 0 {
+		cfg.MaxLen = DefStreamMaxLen
+	}
+
+	if cfg.BufferSize == 0 {
+		cfg.BufferSize = DefBufferSize
+	}
+
+	if cfg.DrainIntervalInitial == 0 {
+		cfg.DrainIntervalInitial = DefDrainIntervalInitial
+	}
+
+	if cfg.DrainBackoffMax == 0 {
+		cfg.DrainBackoffMax = DefDrainBackoffMax
+	}
+
+	if cfg.ShutdownDrainTimeout == 0 {
+		cfg.ShutdownDrainTimeout = DefShutdownDrainTimeout
+	}
+
 	opts, err := redis.ParseURL(cfg.URL)
 	if err != nil {
 		return nil, err
