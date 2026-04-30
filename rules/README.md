@@ -16,7 +16,7 @@ Rules and scripts are created within a group and then assigned to individual thi
 
 ## Rules
 
-A rule evaluates a set of conditions against an incoming message payload. When all conditions are met (using AND or OR logic), the rule triggers one or more actions.
+A rule evaluates a set of conditions against an incoming payload. When conditions are met according to the configured operator (AND or OR), the rule triggers one or more actions.
 
 | Field         | Description                                                                                                      |
 | ------------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -24,9 +24,19 @@ A rule evaluates a set of conditions against an incoming message payload. When a
 | `group_id`    | ID of the group the rule belongs to                                                                              |
 | `name`        | Human-readable rule name                                                                                         |
 | `description` | Optional free-form description                                                                                   |
+| `input`       | Defines what triggers rule evaluation (see below)                                                                |
 | `conditions`  | List of conditions to evaluate (see below)                                                                       |
 | `operator`    | Logical operator applied across all conditions: `AND` or `OR`. Required when more than one condition is defined. |
 | `actions`     | List of actions to trigger when conditions are met (see below)                                                   |
+
+### Input
+
+The `input` field defines what triggers rule evaluation.
+
+| Field       | Description                                                |
+| ----------- | ---------------------------------------------------------- |
+| `type`      | Trigger type: `message`, `alarm`, `schedule`, or `command` |
+| `thing_ids` | IDs of things to which this rule applies.                  |
 
 ### Conditions
 

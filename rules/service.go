@@ -26,12 +26,13 @@ var AllowedOrders = map[string]string{
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
-	Total  uint64 `json:"total,omitempty"`
-	Offset uint64 `json:"offset,omitempty"`
-	Limit  uint64 `json:"limit,omitempty"`
-	Order  string `json:"order,omitempty"`
-	Dir    string `json:"dir,omitempty"`
-	Name   string `json:"name,omitempty"`
+	Total     uint64 `json:"total,omitempty"`
+	Offset    uint64 `json:"offset,omitempty"`
+	Limit     uint64 `json:"limit,omitempty"`
+	Order     string `json:"order,omitempty"`
+	Dir       string `json:"dir,omitempty"`
+	Name      string `json:"name,omitempty"`
+	InputType string `json:"input_type,omitempty"`
 }
 
 // Validate validates the page metadata.
@@ -43,6 +44,14 @@ func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
 
 	if len(pm.Name) > maxNameSize {
 		return apiutil.ErrNameSize
+	}
+
+	if pm.InputType != "" {
+		switch pm.InputType {
+		case InputTypeMessage, InputTypeAlarm, InputTypeSchedule, InputTypeCommand:
+		default:
+			return apiutil.ErrInvalidInputType
+		}
 	}
 
 	return nil
@@ -119,20 +128,20 @@ type ServiceRules interface {
 	// UpdateRule updates the rule identified by the provided ID.
 	UpdateRule(ctx context.Context, token string, rule Rule) error
 
+	// AssignThings assigns one or more things to a specific rule.
+	AssignThings(ctx context.Context, token, ruleID string, thingIDs ...string) error
+
+	// UnassignThings unassigns one or more things from a specific rule.
+	UnassignThings(ctx context.Context, token, ruleID string, thingIDs ...string) error
+
 	// RemoveRules removes the rules identified with the provided IDs.
 	RemoveRules(ctx context.Context, token string, ids ...string) error
 
 	// RemoveRulesByGroup removes the rules identified with the provided IDs.
 	RemoveRulesByGroup(ctx context.Context, groupID string) error
 
-	// AssignRules assigns rules to a specific thing.
-	AssignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error
-
-	// UnassignRules removes rule assignments from a specific thing.
-	UnassignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error
-
-	// UnassignRulesByThing removes all rule assignments from a specific thing.
-	UnassignRulesByThing(ctx context.Context, thingID string) error
+	// UnassignRulesFromThing unassigns all rules from the given thing.
+	UnassignRulesFromThing(ctx context.Context, thingID string) error
 }
 
 const (
@@ -223,7 +232,7 @@ func (rs *rulesService) ListThingIDsByRule(ctx context.Context, token, ruleID st
 		return []string{}, err
 	}
 
-	return rs.rules.RetrieveThingIDsByRule(ctx, ruleID)
+	return rule.Input.ThingIDs, nil
 }
 
 func (rs *rulesService) ViewRule(ctx context.Context, token, id string) (Rule, error) {
@@ -252,6 +261,43 @@ func (rs *rulesService) UpdateRule(ctx context.Context, token string, rule Rule)
 	return rs.rules.Update(ctx, rule)
 }
 
+func (rs *rulesService) AssignThings(ctx context.Context, token, ruleID string, thingIDs ...string) error {
+	rule, err := rs.rules.RetrieveByID(ctx, ruleID)
+	if err != nil {
+		return err
+	}
+
+	if err := rs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: rule.GroupID, Action: domain.GroupEditor}); err != nil {
+		return err
+	}
+	// TODO: replace with a single bulk gRPC call, e.g. CanUserAccessThings(ctx, groupID, thingIDs...)
+	// to avoid N round-trips to the things service.
+	for _, thingID := range thingIDs {
+		grID, err := rs.things.GetGroupIDByThing(ctx, thingID)
+		if err != nil {
+			return err
+		}
+		if grID != rule.GroupID {
+			return errors.ErrAuthorization
+		}
+	}
+
+	return rs.rules.AssignThings(ctx, ruleID, thingIDs...)
+}
+
+func (rs *rulesService) UnassignThings(ctx context.Context, token, ruleID string, thingIDs ...string) error {
+	rule, err := rs.rules.RetrieveByID(ctx, ruleID)
+	if err != nil {
+		return err
+	}
+
+	if err := rs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: rule.GroupID, Action: domain.GroupEditor}); err != nil {
+		return err
+	}
+
+	return rs.rules.UnassignThings(ctx, ruleID, thingIDs...)
+}
+
 func (rs *rulesService) RemoveRules(ctx context.Context, token string, ids ...string) error {
 	for _, id := range ids {
 		rule, err := rs.rules.RetrieveByID(ctx, id)
@@ -271,64 +317,8 @@ func (rs *rulesService) RemoveRulesByGroup(ctx context.Context, groupID string) 
 	return rs.rules.RemoveByGroup(ctx, groupID)
 }
 
-func (rs *rulesService) AssignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error {
-	if err := rs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupEditor}); err != nil {
-		return err
-	}
-
-	grID, err := rs.things.GetGroupIDByThing(ctx, thingID)
-	if err != nil {
-		return err
-	}
-
-	for _, id := range ruleIDs {
-		rule, err := rs.rules.RetrieveByID(ctx, id)
-		if err != nil {
-			return err
-		}
-
-		if rule.GroupID != grID {
-			return errors.ErrAuthorization
-		}
-	}
-
-	if err := rs.rules.Assign(ctx, thingID, ruleIDs...); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (rs *rulesService) UnassignRules(ctx context.Context, token, thingID string, ruleIDs ...string) error {
-	if err := rs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupEditor}); err != nil {
-		return err
-	}
-
-	grID, err := rs.things.GetGroupIDByThing(ctx, thingID)
-	if err != nil {
-		return err
-	}
-
-	for _, id := range ruleIDs {
-		rule, err := rs.rules.RetrieveByID(ctx, id)
-		if err != nil {
-			return err
-		}
-
-		if rule.GroupID != grID {
-			return errors.ErrAuthorization
-		}
-	}
-
-	if err := rs.rules.Unassign(ctx, thingID, ruleIDs...); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (rs *rulesService) UnassignRulesByThing(ctx context.Context, thingID string) error {
-	return rs.rules.UnassignByThing(ctx, thingID)
+func (rs *rulesService) UnassignRulesFromThing(ctx context.Context, thingID string) error {
+	return rs.rules.UnassignRulesFromThing(ctx, thingID)
 }
 
 func (rs *rulesService) CreateScripts(ctx context.Context, token, groupID string, scripts ...LuaScript) ([]LuaScript, error) {
@@ -501,13 +491,12 @@ func (rs *rulesService) ConsumeMessage(_ string, msg protomfx.Message) error {
 		return err
 	}
 
-	rulesPage, err := rs.rules.RetrieveByThing(ctx, msg.Publisher, PageMetadata{})
+	page, err := rs.rules.RetrieveByThing(ctx, msg.Publisher, PageMetadata{InputType: InputTypeMessage})
 	if err != nil {
 		return err
 	}
 
-	// Process simple rules assigned to Publisher
-	for _, rule := range rulesPage.Rules {
+	for _, rule := range page.Rules {
 		if err := rs.processRule(&msg, payload, rule); err != nil {
 			rs.logger.Error(fmt.Sprintf("processing rule with id %s failed with error: %v", rule.ID, err))
 		}
@@ -522,7 +511,6 @@ func (rs *rulesService) ConsumeMessage(_ string, msg protomfx.Message) error {
 		return err
 	}
 
-	// Process Lua scripts assigned to Publisher
 	rs.processLuaScripts(ctx, &msg, payload, scriptsPage.Scripts...)
 
 	return nil
@@ -550,12 +538,15 @@ type RepositoryRules interface {
 	// identified by a given group ID.
 	RetrieveByGroup(ctx context.Context, groupID string, pm PageMetadata) (RulesPage, error)
 
-	// RetrieveThingIDsByRule retrieves all thing IDs that have the given rule assigned.
-	RetrieveThingIDsByRule(ctx context.Context, ruleID string) ([]string, error)
-
 	// Update performs an update to the existing rule.
 	// A non-nil error is returned to indicate operation failure.
 	Update(ctx context.Context, r Rule) error
+
+	// AssignThings assigns one or more things to a specific rule.
+	AssignThings(ctx context.Context, ruleID string, thingIDs ...string) error
+
+	// UnassignThings unassigns one or more things from a specific rule.
+	UnassignThings(ctx context.Context, ruleID string, thingIDs ...string) error
 
 	// Remove removes rules having the provided IDs.
 	Remove(ctx context.Context, ids ...string) error
@@ -564,15 +555,8 @@ type RepositoryRules interface {
 	// identified by a given group ID.
 	RemoveByGroup(ctx context.Context, groupID string) error
 
-	// Assign assigns rules to the specified thing.
-	Assign(ctx context.Context, thingID string, ruleIDs ...string) error
-
-	// Unassign removes specific rule assignments from a given thing.
-	Unassign(ctx context.Context, thingID string, ruleIDs ...string) error
-
-	// UnassignByThing removes all rule assignments for a certain thing,
-	// identified by a given thing ID.
-	UnassignByThing(ctx context.Context, thingID string) error
+	// UnassignRulesFromThing unassigns all rules from the given thing.
+	UnassignRulesFromThing(ctx context.Context, thingID string) error
 }
 
 type RepositoryScripts interface {

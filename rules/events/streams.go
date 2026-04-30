@@ -28,7 +28,7 @@ func (es eventHandler) Handle(ctx context.Context, event events.Event) error {
 	case events.ThingRemove:
 		re := decodeRemoveEvent(msg)
 
-		if err := es.svc.UnassignRulesByThing(ctx, re.id); err != nil {
+		if err := es.svc.UnassignRulesFromThing(ctx, re.id); err != nil {
 			return err
 		}
 

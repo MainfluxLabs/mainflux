@@ -108,6 +108,34 @@ func (lm loggingMiddleware) UpdateRule(ctx context.Context, token string, rule r
 	return lm.svc.UpdateRule(ctx, token, rule)
 }
 
+func (lm loggingMiddleware) AssignThings(ctx context.Context, token, ruleID string, thingIDs ...string) (err error) {
+	defer func(begin time.Time) {
+		email := pkgauth.EmailFromToken(token)
+		message := fmt.Sprintf("Method assign_things for rule id %s by user %s took %s to complete", ruleID, email, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.AssignThings(ctx, token, ruleID, thingIDs...)
+}
+
+func (lm loggingMiddleware) UnassignThings(ctx context.Context, token, ruleID string, thingIDs ...string) (err error) {
+	defer func(begin time.Time) {
+		email := pkgauth.EmailFromToken(token)
+		message := fmt.Sprintf("Method unassign_things for rule id %s by user %s took %s to complete", ruleID, email, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.UnassignThings(ctx, token, ruleID, thingIDs...)
+}
+
 func (lm loggingMiddleware) RemoveRules(ctx context.Context, token string, ids ...string) (err error) {
 	defer func(begin time.Time) {
 		email := pkgauth.EmailFromToken(token)
@@ -135,10 +163,9 @@ func (lm loggingMiddleware) RemoveRulesByGroup(ctx context.Context, groupID stri
 	return lm.svc.RemoveRulesByGroup(ctx, groupID)
 }
 
-func (lm loggingMiddleware) AssignRules(ctx context.Context, token, thingID string, ruleIDs ...string) (err error) {
+func (lm loggingMiddleware) UnassignRulesFromThing(ctx context.Context, thingID string) (err error) {
 	defer func(begin time.Time) {
-		email := pkgauth.EmailFromToken(token)
-		message := fmt.Sprintf("Method assign_rules by user %s took %s to complete", email, time.Since(begin))
+		message := fmt.Sprintf("Method unassign_rules_from_thing for thing id %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -146,34 +173,7 @@ func (lm loggingMiddleware) AssignRules(ctx context.Context, token, thingID stri
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.AssignRules(ctx, token, thingID, ruleIDs...)
-}
-
-func (lm loggingMiddleware) UnassignRules(ctx context.Context, token, thingID string, ruleIDs ...string) (err error) {
-	defer func(begin time.Time) {
-		email := pkgauth.EmailFromToken(token)
-		message := fmt.Sprintf("Method unassign_rules by user %s, thing id %s and rule ids %v took %s to complete", email, thingID, ruleIDs, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.UnassignRules(ctx, token, thingID, ruleIDs...)
-}
-
-func (lm loggingMiddleware) UnassignRulesByThing(ctx context.Context, thingID string) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method unassign_rules_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.UnassignRulesByThing(ctx, thingID)
+	return lm.svc.UnassignRulesFromThing(ctx, thingID)
 }
 
 func (lm loggingMiddleware) ConsumeMessage(subject string, msg protomfx.Message) (err error) {

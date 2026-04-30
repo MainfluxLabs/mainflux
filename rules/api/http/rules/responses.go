@@ -15,7 +15,6 @@ var (
 	_ apiutil.Response = (*ruleResponse)(nil)
 	_ apiutil.Response = (*rulesRes)(nil)
 	_ apiutil.Response = (*thingIDsRes)(nil)
-	_ apiutil.Response = (*thingRulesRes)(nil)
 )
 
 type pageRes struct {
@@ -32,6 +31,7 @@ type ruleResponse struct {
 	GroupID     string            `json:"group_id"`
 	Name        string            `json:"name"`
 	Description string            `json:"description,omitempty"`
+	Input       rules.Input       `json:"input"`
 	Conditions  []rules.Condition `json:"conditions"`
 	Operator    string            `json:"operator"`
 	Actions     []rules.Action    `json:"actions"`
@@ -88,6 +88,21 @@ func (res RulesPageRes) Empty() bool {
 	return false
 }
 
+// TODO: Consider introducing apiutil.EmptyRes with a configurable status code.
+type assignRes struct{}
+
+func (res assignRes) Code() int {
+	return http.StatusOK
+}
+
+func (res assignRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res assignRes) Empty() bool {
+	return true
+}
+
 type removeRes struct{}
 
 func (res removeRes) Code() int {
@@ -116,18 +131,4 @@ func (res thingIDsRes) Headers() map[string]string {
 
 func (res thingIDsRes) Empty() bool {
 	return false
-}
-
-type thingRulesRes struct{}
-
-func (res thingRulesRes) Code() int {
-	return http.StatusOK
-}
-
-func (res thingRulesRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res thingRulesRes) Empty() bool {
-	return true
 }

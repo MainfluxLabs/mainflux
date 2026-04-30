@@ -4,21 +4,26 @@
 package rules
 
 import (
+	"slices"
+
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/rules"
+	"github.com/gofrs/uuid"
 )
 
 const (
 	minLen        = 1
 	maxLimitSize  = 200
 	maxNameSize   = 254
+	maxThingIDs   = 100
 	minAlarmLevel = 1
 	maxAlarmLevel = 5
 )
 
-type rule struct {
+type createRule struct {
 	Name        string            `json:"name"`
 	Description string            `json:"description,omitempty"`
+	Input       rules.Input       `json:"input"`
 	Conditions  []rules.Condition `json:"conditions"`
 	Operator    string            `json:"operator,omitempty"`
 	Actions     []rules.Action    `json:"actions"`
@@ -27,7 +32,7 @@ type rule struct {
 type createRulesReq struct {
 	token   string
 	groupID string
-	Rules   []rule `json:"rules"`
+	Rules   []createRule `json:"rules"`
 }
 
 func (req createRulesReq) validate() error {
@@ -43,8 +48,8 @@ func (req createRulesReq) validate() error {
 		return apiutil.ErrEmptyList
 	}
 
-	for _, rule := range req.Rules {
-		if err := rule.validate(); err != nil {
+	for _, r := range req.Rules {
+		if err := r.validate(); err != nil {
 			return err
 		}
 	}
@@ -52,51 +57,24 @@ func (req createRulesReq) validate() error {
 	return nil
 }
 
-func (req rule) validate() error {
+func (req createRule) validate() error {
 	if req.Name == "" || len(req.Name) > maxNameSize {
 		return apiutil.ErrNameSize
 	}
 
-	if len(req.Conditions) < minLen {
-		return apiutil.ErrEmptyList
-	}
-	for _, condition := range req.Conditions {
-		if condition.Field == "" {
-			return apiutil.ErrMissingConditionField
-		}
-		if condition.Comparator == "" {
-			return apiutil.ErrMissingConditionComparator
-		}
-		if condition.Threshold == nil {
-			return apiutil.ErrMissingConditionThreshold
-		}
+	if err := validateInputType(req.Input.Type); err != nil {
+		return err
 	}
 
-	if len(req.Conditions) > minLen {
-		if req.Operator != rules.OperatorAND && req.Operator != rules.OperatorOR {
-			return apiutil.ErrInvalidOperator
-		}
+	if err := validateThingIDs(req.Input.ThingIDs); err != nil {
+		return err
 	}
 
-	if len(req.Actions) < minLen {
-		return apiutil.ErrEmptyList
-	}
-	for _, action := range req.Actions {
-		switch action.Type {
-		case rules.ActionTypeSMTP, rules.ActionTypeSMPP:
-			if action.ID == "" {
-				return apiutil.ErrMissingActionID
-			}
-		case rules.ActionTypeAlarm:
-			if action.Level < minAlarmLevel || action.Level > maxAlarmLevel {
-				return apiutil.ErrInvalidAlarmLevel
-			}
-		default:
-			return apiutil.ErrInvalidActionType
-		}
+	if err := validateConditions(req.Conditions, req.Operator); err != nil {
+		return err
 	}
 
-	return nil
+	return validateActions(req.Actions)
 }
 
 type ruleReq struct {
@@ -152,10 +130,19 @@ func (req listRulesByGroupReq) validate() error {
 	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
 }
 
+type updateRuleInput struct {
+	Type string `json:"type"`
+}
+
 type updateRuleReq struct {
-	token string
-	id    string
-	rule
+	token       string
+	id          string
+	Name        string            `json:"name"`
+	Description string            `json:"description,omitempty"`
+	Input       updateRuleInput   `json:"input"`
+	Conditions  []rules.Condition `json:"conditions"`
+	Operator    string            `json:"operator,omitempty"`
+	Actions     []rules.Action    `json:"actions"`
 }
 
 func (req updateRuleReq) validate() error {
@@ -167,7 +154,37 @@ func (req updateRuleReq) validate() error {
 		return apiutil.ErrMissingRuleID
 	}
 
-	return req.rule.validate()
+	if req.Name == "" || len(req.Name) > maxNameSize {
+		return apiutil.ErrNameSize
+	}
+
+	if err := validateInputType(req.Input.Type); err != nil {
+		return err
+	}
+
+	if err := validateConditions(req.Conditions, req.Operator); err != nil {
+		return err
+	}
+
+	return validateActions(req.Actions)
+}
+
+type ruleThingsReq struct {
+	token    string
+	ruleID   string
+	ThingIDs []string `json:"thing_ids"`
+}
+
+func (req ruleThingsReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.ruleID == "" {
+		return apiutil.ErrMissingRuleID
+	}
+
+	return validateThingIDs(req.ThingIDs)
 }
 
 type removeRulesReq struct {
@@ -184,39 +201,74 @@ func (req removeRulesReq) validate() error {
 		return apiutil.ErrEmptyList
 	}
 
-	for _, ruleID := range req.RuleIDs {
-		if ruleID == "" {
-			return apiutil.ErrMissingRuleID
-		}
+	if slices.Contains(req.RuleIDs, "") {
+		return apiutil.ErrMissingRuleID
 	}
 
 	return nil
 }
 
-type thingRulesReq struct {
-	token   string
-	thingID string
-	RuleIDs []string `json:"rule_ids"`
-}
-
-func (req thingRulesReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
+func validateThingIDs(ids []string) error {
+	if len(ids) < minLen || len(ids) > maxThingIDs {
+		return apiutil.ErrThingIDsSize
 	}
-
-	if req.thingID == "" {
-		return apiutil.ErrMissingThingID
-	}
-
-	if len(req.RuleIDs) < minLen {
-		return apiutil.ErrEmptyList
-	}
-
-	for _, ruleID := range req.RuleIDs {
-		if ruleID == "" {
-			return apiutil.ErrMissingRuleID
+	for _, id := range ids {
+		if _, err := uuid.FromString(id); err != nil {
+			return apiutil.ErrInvalidIDFormat
 		}
 	}
+	return nil
+}
 
+func validateInputType(inputType string) error {
+	switch inputType {
+	case rules.InputTypeMessage, rules.InputTypeAlarm, rules.InputTypeSchedule, rules.InputTypeCommand:
+		return nil
+	default:
+		return apiutil.ErrInvalidInputType
+	}
+}
+
+func validateConditions(conditions []rules.Condition, operator string) error {
+	if len(conditions) < minLen {
+		return apiutil.ErrEmptyList
+	}
+	for _, condition := range conditions {
+		if condition.Field == "" {
+			return apiutil.ErrMissingConditionField
+		}
+		if condition.Comparator == "" {
+			return apiutil.ErrMissingConditionComparator
+		}
+		if condition.Threshold == nil {
+			return apiutil.ErrMissingConditionThreshold
+		}
+	}
+	if len(conditions) > minLen {
+		if operator != rules.OperatorAND && operator != rules.OperatorOR {
+			return apiutil.ErrInvalidOperator
+		}
+	}
+	return nil
+}
+
+func validateActions(actions []rules.Action) error {
+	if len(actions) < minLen {
+		return apiutil.ErrEmptyList
+	}
+	for _, action := range actions {
+		switch action.Type {
+		case rules.ActionTypeSMTP, rules.ActionTypeSMPP:
+			if action.ID == "" {
+				return apiutil.ErrMissingActionID
+			}
+		case rules.ActionTypeAlarm:
+			if action.Level < minAlarmLevel || action.Level > maxAlarmLevel {
+				return apiutil.ErrInvalidAlarmLevel
+			}
+		default:
+			return apiutil.ErrInvalidActionType
+		}
+	}
 	return nil
 }
