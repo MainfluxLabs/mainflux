@@ -1,6 +1,8 @@
 # Filestore Service
 
-The Filestore service provides file storage for things and groups. File contents are written to the local filesystem, while file metadata is persisted to a database. Files can be scoped to an individual thing (authenticated with a thing key) or to a group (authenticated with a user bearer token at editor level or above).
+The Filestore service provides file storage for things and groups. File contents are written to a pluggable object store (local filesystem or SeaweedFS filer); file metadata is persisted to a database. Files can be scoped to an individual thing (authenticated with a thing key) or to a group (authenticated with a user bearer token at editor level or above).
+
+Group-file uploads compute a SHA256 checksum on ingest and store it in the database. Group-file downloads stream from the backend and verify the checksum at end-of-stream; a mismatch yields `ErrChecksumMismatch` to the caller.
 
 ## Files
 
@@ -51,6 +53,12 @@ default values.
 | `MF_THINGS_AUTH_GRPC_TIMEOUT`   | Things service Auth gRPC request timeout in seconds                        | 1s                       |
 | `MF_FILESTORE_ES_URL`           | Event store URL                                                            | redis://localhost:6379/0 |
 | `MF_FILESTORE_EVENT_CONSUMER`   | Event store consumer name                                                  | filestore                |
+| `MF_FILESTORE_BACKEND`          | Object-store backend: `local` or `seaweedfs`                               | local                    |
+| `MF_FILESTORE_FILES_PATH`       | Root directory used by the `local` backend                                 | files                    |
+| `MF_FILESTORE_SEAWEED_URL`      | SeaweedFS filer base URL (http/https)                                      | http://localhost:8888    |
+| `MF_FILESTORE_SEAWEED_PREFIX`   | Key prefix prepended to all objects on the filer                           | filestore                |
+| `MF_FILESTORE_SEAWEED_TIMEOUT`  | Per-phase HTTP timeout (dial / TLS / response-header); body not capped     | 30s                      |
+| `MF_FILESTORE_MAX_UPLOAD_MB`    | Maximum upload size, in MiB. Also passed to the filer `-maxMB` flag        | 1024                     |
 
 ## Deployment
 
