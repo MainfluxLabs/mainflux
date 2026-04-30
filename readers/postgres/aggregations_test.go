@@ -73,51 +73,6 @@ func TestBuildJSONSelect(t *testing.T) {
 	}
 }
 
-func TestBuildConditionForCount(t *testing.T) {
-	cases := []struct {
-		desc string
-		qp   queryParams
-		res  string
-	}{
-		{
-			desc: "no agg fields",
-			qp:   queryParams{},
-			res:  "1=1",
-		},
-		{
-			desc: "senml table",
-			qp: queryParams{
-				table:     senmlTable,
-				aggFields: []string{"value"},
-			},
-			res: "MAX(m.value) IS NOT NULL",
-		},
-		{
-			desc: "json table single field",
-			qp: queryParams{
-				table:     jsonTable,
-				aggFields: []string{"temperature"},
-			},
-			res: "MAX(CAST(m.payload->>'temperature' AS FLOAT)) IS NOT NULL",
-		},
-		{
-			desc: "json table multiple fields",
-			qp: queryParams{
-				table:     jsonTable,
-				aggFields: []string{"temperature", "humidity"},
-			},
-			res: "MAX(CAST(m.payload->>'temperature' AS FLOAT)) IS NOT NULL OR MAX(CAST(m.payload->>'humidity' AS FLOAT)) IS NOT NULL",
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.desc, func(t *testing.T) {
-			result := buildConditionForCount(tc.qp)
-			assert.Equal(t, tc.res, result)
-		})
-	}
-}
-
 func TestBuildTruncTimeExpression(t *testing.T) {
 	cases := []struct {
 		desc         string
@@ -630,5 +585,4 @@ func TestBuildAggCountQuery(t *testing.T) {
 	assert.Contains(t, result, "WITH time_intervals AS")
 	assert.Contains(t, result, "SELECT COUNT(*) FROM")
 	assert.Contains(t, result, "LEFT JOIN senml m ON")
-	assert.Contains(t, result, "HAVING")
 }
