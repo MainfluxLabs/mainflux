@@ -39,7 +39,10 @@ func NewSeaweedFS(rawURL, prefix string, timeout time.Duration) (FileStore, erro
 	if err != nil {
 		return nil, fmt.Errorf("parse seaweedfs url: %w", err)
 	}
-	if u.Scheme == "" || u.Host == "" {
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return nil, fmt.Errorf("invalid seaweedfs url scheme %q: want http or https", u.Scheme)
+	}
+	if u.Host == "" {
 		return nil, fmt.Errorf("invalid seaweedfs url: %q", rawURL)
 	}
 	u.Path = strings.TrimRight(u.Path, "/")
