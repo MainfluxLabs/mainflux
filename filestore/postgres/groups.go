@@ -29,8 +29,8 @@ func NewGroupsRepository(db dbutil.Database) filestore.GroupsRepository {
 }
 
 func (gr groupsRepository) Save(ctx context.Context, groupID string, fi filestore.FileInfo) error {
-	q := `INSERT INTO groups_files (file_name, file_class, file_format, group_id, time, metadata)
-		VALUES (:file_name, :file_class, :file_format, :group_id, :time, :metadata)`
+	q := `INSERT INTO groups_files (file_name, file_class, file_format, group_id, time, metadata, checksum)
+		VALUES (:file_name, :file_class, :file_format, :group_id, :time, :metadata, :checksum)`
 
 	dbFile, err := toDBFileInfoGroups(groupID, fi)
 	if err != nil {
@@ -62,11 +62,11 @@ func (gr groupsRepository) Update(ctx context.Context, groupID string, fi filest
 
 	res, errdb := gr.db.NamedExecContext(ctx, q, dbFile)
 	if errdb != nil {
-		pgErr, ok := err.(*pgconn.PgError)
+		pgErr, ok := errdb.(*pgconn.PgError)
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, errdb)
 			}
 		}
 
@@ -86,7 +86,7 @@ func (gr groupsRepository) Update(ctx context.Context, groupID string, fi filest
 }
 
 func (gr groupsRepository) Retrieve(ctx context.Context, groupID string, fi filestore.FileInfo) (filestore.FileInfo, error) {
-	q := `SELECT file_name, file_class, file_format, metadata FROM groups_files
+	q := `SELECT file_name, file_class, file_format, metadata, checksum FROM groups_files
 		WHERE group_id = $1 AND file_class = $2 AND file_format = $3 AND file_name = $4`
 
 	dbFile := dbFileInfo{}
@@ -199,8 +199,16 @@ func (gr groupsRepository) Remove(ctx context.Context, groupID string, fi filest
 
 	q := `DELETE FROM groups_files WHERE group_id = :group_id AND file_class = :file_class AND file_format = :file_format AND file_name = :file_name`
 
-	if _, err := gr.db.NamedExecContext(ctx, q, dbFile); err != nil {
+	res, err := gr.db.NamedExecContext(ctx, q, dbFile)
+	if err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+	cnt, err := res.RowsAffected()
+	if err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+	if cnt == 0 {
+		return dbutil.ErrNotFound
 	}
 	return nil
 }
@@ -239,6 +247,7 @@ func toDBFileInfoGroups(groupID string, fi filestore.FileInfo) (dbFileInfoGroups
 			FileFormat: fi.Format,
 			Metadata:   meta,
 			Time:       fi.Time,
+			Checksum:   fi.Checksum,
 		},
 		GroupID: groupID,
 	}, nil
