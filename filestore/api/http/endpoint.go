@@ -16,6 +16,7 @@ func saveFileEndpoint(svc filestore.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
+		defer req.file.Close()
 
 		err := svc.SaveFile(ctx, req.file, req.key.Value, req.fileInfo)
 		if err != nil {
@@ -118,6 +119,7 @@ func saveGroupFileEndpoint(svc filestore.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
+		defer req.file.Close()
 
 		err := svc.SaveGroupFile(ctx, req.file, req.token, req.groupID, req.fileInfo)
 		if err != nil {
