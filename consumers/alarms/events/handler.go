@@ -6,25 +6,25 @@ package events
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/pkg/events"
-	"github.com/MainfluxLabs/mainflux/webhooks"
 )
 
 type eventHandler struct {
-	svc webhooks.Service
+	svc alarms.Service
 }
 
 // NewEventHandler returns new event store handler.
-func NewEventHandler(svc webhooks.Service) events.EventHandler {
+func NewEventHandler(svc alarms.Service) events.EventHandler {
 	return &eventHandler{svc: svc}
 }
 
 func (h *eventHandler) Handle(ctx context.Context, event events.Event) error {
 	switch e := event.(type) {
 	case events.ThingRemoved:
-		return h.svc.RemoveWebhooksByThing(ctx, e.ID)
+		return h.svc.RemoveAlarmsByThing(ctx, e.ID)
 	case events.GroupRemoved:
-		return h.svc.RemoveWebhooksByGroup(ctx, e.ID)
+		return h.svc.RemoveAlarmsByGroup(ctx, e.ID)
 	}
 	return nil
 }

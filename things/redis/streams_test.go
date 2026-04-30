@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
@@ -44,6 +45,24 @@ var (
 	orgsList  = []auth.Org{{ID: "374106f7-030e-4881-8ab0-151195c29f92", OwnerID: user.ID}}
 	profile   = things.Profile{Name: "test-profile"}
 )
+
+// withEventStore wraps svc in the event-store middleware backed by a fresh
+// Publisher pointed at the test Redis. The publisher is closed via
+// t.Cleanup, which drains any in-flight events before the test ends.
+func withEventStore(t *testing.T, svc things.Service) things.Service {
+	t.Helper()
+	pub, err := mfevents.NewPublisher(mfevents.PublisherConfig{
+		URL:                  redisURL,
+		Stream:               mfevents.ThingsStream,
+		BufferSize:           mfevents.DefBufferSize,
+		DrainIntervalInitial: 10 * time.Millisecond,
+		DrainBackoffMax:      100 * time.Millisecond,
+		ShutdownDrainTimeout: 2 * time.Second,
+	}, logger.NewMock())
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = pub.Close() })
+	return events.NewEventStoreMiddleware(svc, pub)
+}
 
 func newService() things.Service {
 	auth := mocks.NewAuthService("", usersList, orgsList)
@@ -78,7 +97,7 @@ func TestCreateThings(t *testing.T) {
 		Metadata: map[string]any{"test": "test"},
 	}}
 
-	svc = events.NewEventStoreMiddleware(svc, redisClient)
+	svc = withEventStore(t, svc)
 
 	cases := []struct {
 		desc  string
@@ -151,7 +170,7 @@ func TestUpdateThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
 
-	svc = events.NewEventStoreMiddleware(svc, redisClient)
+	svc = withEventStore(t, svc)
 
 	cases := []struct {
 		desc  string
@@ -219,7 +238,7 @@ func TestViewThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
 
-	essvc := events.NewEventStoreMiddleware(svc, redisClient)
+	essvc := withEventStore(t, svc)
 	esth, eserr := essvc.ViewThing(context.Background(), token, sth.ID)
 	th, err := svc.ViewThing(context.Background(), token, sth.ID)
 	assert.Equal(t, th, esth, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", th, esth))
@@ -243,7 +262,7 @@ func TestListThings(t *testing.T) {
 	_, err = svc.CreateThings(context.Background(), token, prID, things.Thing{Name: "a"})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 
-	essvc := events.NewEventStoreMiddleware(svc, redisClient)
+	essvc := withEventStore(t, svc)
 	esths, eserr := essvc.ListThings(context.Background(), token, things.PageMetadata{Offset: 0, Limit: 10})
 	ths, err := svc.ListThings(context.Background(), token, things.PageMetadata{Offset: 0, Limit: 10})
 	assert.Equal(t, ths, esths, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", ths, esths))
@@ -268,7 +287,7 @@ func TestListThingsByProfile(t *testing.T) {
 	_, err = svc.CreateThings(context.Background(), token, pr.ID, things.Thing{Name: "a"})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 
-	essvc := events.NewEventStoreMiddleware(svc, redisClient)
+	essvc := withEventStore(t, svc)
 	esths, eserr := essvc.ListThingsByProfile(context.Background(), token, pr.ID, things.PageMetadata{Offset: 0, Limit: 10})
 	thps, err := svc.ListThingsByProfile(context.Background(), token, pr.ID, things.PageMetadata{Offset: 0, Limit: 10})
 	assert.Equal(t, thps, esths, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", thps, esths))
@@ -293,7 +312,7 @@ func TestRemoveThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
 
-	svc = events.NewEventStoreMiddleware(svc, redisClient)
+	svc = withEventStore(t, svc)
 
 	cases := []struct {
 		desc  string
@@ -347,7 +366,7 @@ func TestCreateProfiles(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService()
-	svc = events.NewEventStoreMiddleware(svc, redisClient)
+	svc = withEventStore(t, svc)
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
 
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -419,7 +438,7 @@ func TestUpdateProfile(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	spr := sprs[0]
 
-	svc = events.NewEventStoreMiddleware(svc, redisClient)
+	svc = withEventStore(t, svc)
 
 	cases := []struct {
 		desc    string
@@ -491,7 +510,7 @@ func TestViewProfile(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	spr := sprs[0]
 
-	essvc := events.NewEventStoreMiddleware(svc, redisClient)
+	essvc := withEventStore(t, svc)
 	espr, eserr := essvc.ViewProfile(context.Background(), token, spr.ID)
 	pr, err := svc.ViewProfile(context.Background(), token, spr.ID)
 	assert.Equal(t, pr, espr, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", pr, espr))
@@ -510,7 +529,7 @@ func TestListProfiles(t *testing.T) {
 	_, err = svc.CreateProfiles(context.Background(), token, gr.ID, things.Profile{Name: "a"})
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 
-	essvc := events.NewEventStoreMiddleware(svc, redisClient)
+	essvc := withEventStore(t, svc)
 	esprs, eserr := essvc.ListProfiles(context.Background(), token, things.PageMetadata{Offset: 0, Limit: 10})
 	prs, err := svc.ListProfiles(context.Background(), token, things.PageMetadata{Offset: 0, Limit: 10})
 	assert.Equal(t, prs, esprs, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", prs, esprs))
@@ -536,7 +555,7 @@ func TestListProfilesByThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	sth := sths[0]
 
-	essvc := events.NewEventStoreMiddleware(svc, redisClient)
+	essvc := withEventStore(t, svc)
 	esprs, eserr := essvc.ViewProfileByThing(context.Background(), token, sth.ID)
 	prps, err := svc.ViewProfileByThing(context.Background(), token, sth.ID)
 	assert.Equal(t, prps, esprs, fmt.Sprintf("event sourcing changed service behavior: expected %v got %v", prps, esprs))
@@ -556,7 +575,7 @@ func TestRemoveProfile(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 	spr := sprs[0]
 
-	svc = events.NewEventStoreMiddleware(svc, redisClient)
+	svc = withEventStore(t, svc)
 
 	cases := []struct {
 		desc  string

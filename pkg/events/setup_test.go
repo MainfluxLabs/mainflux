@@ -1,7 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package redis_test
+package events_test
 
 import (
 	"context"
@@ -37,7 +37,6 @@ func TestMain(m *testing.M) {
 			return err
 		}
 		redisClient = redis.NewClient(opts)
-
 		return redisClient.Ping(context.Background()).Err()
 	}); err != nil {
 		log.Fatalf("Could not connect to docker: %s", err)
