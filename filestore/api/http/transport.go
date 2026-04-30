@@ -6,6 +6,7 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -406,6 +407,8 @@ func encodeViewFileResponse(_ context.Context, w http.ResponseWriter, response a
 		w.WriteHeader(fr.Code())
 		defer fr.reader.Close()
 		_, err = io.Copy(w, fr.reader)
+	default:
+		return fmt.Errorf("unsupported view response type: %T", response)
 	}
 
 	return err
@@ -426,8 +429,8 @@ func getFileInfoParams(r *http.Request) (fileInfoParams, error) {
 	if err != nil {
 		return fileInfoParams{}, err
 	}
-	// TODO: Search why uploading large files bug if file is closed
-	// defer file.Close()
+	// Closed by the endpoint after the service finishes reading, so
+	// multipart tempfiles are released regardless of payload size.
 
 	class, format, err := parseFileName(h.Filename)
 	if err != nil {
