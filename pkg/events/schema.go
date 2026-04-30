@@ -9,13 +9,13 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
-// Event is implemented by any typed event that knows how to encode itself
-// into the wire-level RedisEvent payload.
+// Event is implemented by concrete typed events that can be encoded
+// to a type that can be transmitted by a Redis client.
 type Event interface {
 	Encode() RedisEvent
 }
 
-// decodeEvent turns a raw RedisEvent into its typed Event counterpart based
+// decodeEvent turns a raw RedisEvent into its typed Event equivalent based
 // on the operation field, or returns nil when the operation is unknown.
 func decodeEvent(re RedisEvent) Event {
 	switch re.Operation() {
@@ -40,6 +40,7 @@ func decodeEvent(re RedisEvent) Event {
 	case OrgRemove:
 		return DecodeOrgRemoved(re)
 	}
+
 	return nil
 }
 
