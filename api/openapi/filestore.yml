@@ -272,6 +272,13 @@ components:
         metadata:
           type: object
           additionalProperties: true
+        checksum:
+          type: string
+          description: |
+            Hex-encoded SHA256 of the stored object. Populated for group files
+            on save; empty string for legacy rows created before the column was
+            added.
+          example: "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
 
     FilesPageRes:
       type: object
@@ -441,7 +448,18 @@ components:
                 time: 1706789999.0
                 metadata: {}
     FileDownloadRes:
-      description: File content.
+      description: |
+        File content streamed as `application/octet-stream`. For group files,
+        the body is verified against the stored SHA256 checksum at end-of-stream
+        and a mismatch aborts the response.
+      headers:
+        Content-Disposition:
+          description: |
+            `attachment; filename="<name>"` for ASCII-only filenames.
+            Non-ASCII filenames additionally include a `filename*=UTF-8''...`
+            parameter per RFC 6266 / RFC 5987.
+          schema:
+            type: string
       content:
         application/octet-stream:
           schema:
