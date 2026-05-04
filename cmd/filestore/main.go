@@ -62,7 +62,6 @@ const (
 	defDBSSLKey          = ""
 	defDBSSLRootCert     = ""
 	defESURL             = "redis://localhost:6379/0"
-	defESConsumerName    = svcName
 
 	envDBHost            = "MF_FILESTORE_DB_HOST"
 	envDBPort            = "MF_FILESTORE_DB_PORT"
@@ -83,7 +82,6 @@ const (
 	envThingsAuthURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_FILESTORE_ES_URL"
-	envESConsumerName    = "MF_FILESTORE_EVENT_CONSUMER"
 )
 
 type config struct {
@@ -94,7 +92,6 @@ type config struct {
 	httpConfig        servers.Config
 	thingsConfig      clients.Config
 	esURL             string
-	esConsumerName    string
 }
 
 func main() {
@@ -199,7 +196,6 @@ func loadConfig() config {
 		httpConfig:        httpConfig,
 		thingsConfig:      thingsConfig,
 		esURL:             mainflux.Env(envESURL, defESURL),
-		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 	}
 }
 
@@ -216,7 +212,7 @@ func subscribeToThingsES(ctx context.Context, svc filestore.Service, cfg config,
 	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
 		URL:    cfg.esURL,
 		Stream: mfevents.ThingsStream,
-		Name:   cfg.esConsumerName,
+		Name:   svcName,
 	}, logger)
 	if err != nil {
 		return err

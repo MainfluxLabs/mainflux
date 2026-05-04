@@ -61,7 +61,6 @@ const (
 	defClientTLS       = "false"
 	defCACerts         = ""
 	defCacheURL        = "redis://localhost:6379/0"
-	defESConsumerName  = svcName
 	defESURL           = "redis://localhost:6379/0"
 	defESStreamMaxLen  = "100000"
 	defESBufferSize    = "10000"
@@ -103,7 +102,6 @@ const (
 	envClientTLS        = "MF_THINGS_CLIENT_TLS"
 	envCACerts          = "MF_THINGS_CA_CERTS"
 	envCacheURL         = "MF_THINGS_CACHE_URL"
-	envESConsumerName   = "MF_THINGS_EVENT_CONSUMER"
 	envESURL            = "MF_THINGS_ES_URL"
 	envESStreamMaxLen   = "MF_THINGS_ES_STREAM_MAXLEN"
 	envESBufferSize     = "MF_THINGS_ES_BUFFER_SIZE"
@@ -143,7 +141,6 @@ type config struct {
 	usersConfig      clients.Config
 	emailConfig      email.Config
 	cacheURL         string
-	esConsumerName   string
 	esURL            string
 	esStreamMaxLen   int64
 	esBufferSize     int
@@ -349,7 +346,6 @@ func loadConfig() config {
 		usersConfig:      usersConfig,
 		emailConfig:      emailConfig,
 		cacheURL:         mainflux.Env(envCacheURL, defCacheURL),
-		esConsumerName:   mainflux.Env(envESConsumerName, defESConsumerName),
 		esURL:            mainflux.Env(envESURL, defESURL),
 		esStreamMaxLen:   esStreamMaxLen,
 		esBufferSize:     esBufferSize,
@@ -394,7 +390,7 @@ func subscribeToAuthES(ctx context.Context, svc things.Service, cfg config, logg
 	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
 		URL:    cfg.esURL,
 		Stream: mfevents.AuthStream,
-		Name:   cfg.esConsumerName,
+		Name:   svcName,
 	}, logger)
 	if err != nil {
 		return err

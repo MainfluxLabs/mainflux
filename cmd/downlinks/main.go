@@ -71,7 +71,6 @@ const (
 	defAuthGRPCURL       = "localhost:8181"
 	defAuthGRPCTimeout   = "1s"
 	defESURL             = "redis://localhost:6379/0"
-	defESConsumerName    = svcName
 	defBrokerURL         = "nats://localhost:4222"
 
 	envLogLevel          = "MF_DOWNLINKS_LOG_LEVEL"
@@ -95,7 +94,6 @@ const (
 	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
 	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_DOWNLINKS_ES_URL"
-	envESConsumerName    = "MF_DOWNLINKS_EVENT_CONSUMER"
 	envBrokerURL         = "MF_BROKER_URL"
 )
 
@@ -109,7 +107,6 @@ type config struct {
 	thingsGRPCTimeout time.Duration
 	authGRPCTimeout   time.Duration
 	esURL             string
-	esConsumerName    string
 	brokerURL         string
 }
 
@@ -243,7 +240,6 @@ func loadConfig() config {
 		thingsGRPCTimeout: thingsAuthGRPCTimeout,
 		authGRPCTimeout:   authGRPCTimeout,
 		esURL:             mainflux.Env(envESURL, defESURL),
-		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 	}
 }
 
@@ -260,7 +256,7 @@ func subscribeToThingsES(ctx context.Context, svc downlinks.Service, cfg config,
 	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
 		URL:    cfg.esURL,
 		Stream: mfevents.ThingsStream,
-		Name:   cfg.esConsumerName,
+		Name:   svcName,
 	}, logger)
 	if err != nil {
 		return err

@@ -67,7 +67,6 @@ const (
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
 	defESURL             = "redis://localhost:6379/0"
-	defESConsumerName    = svcName
 
 	envLogLevel          = "MF_MODBUS_LOG_LEVEL"
 	envDBHost            = "MF_MODBUS_DB_HOST"
@@ -89,7 +88,6 @@ const (
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_MODBUS_ES_URL"
-	envESConsumerName    = "MF_MODBUS_EVENT_CONSUMER"
 )
 
 type config struct {
@@ -101,7 +99,6 @@ type config struct {
 	brokerURL         string
 	thingsGRPCTimeout time.Duration
 	esURL             string
-	esConsumerName    string
 }
 
 func main() {
@@ -212,7 +209,6 @@ func loadConfig() config {
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		thingsGRPCTimeout: thingsAuthGRPCTimeout,
 		esURL:             mainflux.Env(envESURL, defESURL),
-		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 	}
 }
 
@@ -229,7 +225,7 @@ func subscribeToThingsES(ctx context.Context, svc modbus.Service, cfg config, lo
 	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
 		URL:    cfg.esURL,
 		Stream: mfevents.ThingsStream,
-		Name:   cfg.esConsumerName,
+		Name:   svcName,
 	}, logger)
 	if err != nil {
 		return err

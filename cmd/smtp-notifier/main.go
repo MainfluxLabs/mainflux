@@ -67,7 +67,6 @@ const (
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
 	defESURL             = "redis://localhost:6379/0"
-	defESConsumerName    = svcName
 
 	defEmailHost         = "localhost"
 	defEmailPort         = "25"
@@ -98,7 +97,6 @@ const (
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_SMTP_NOTIFIER_ES_URL"
-	envESConsumerName    = "MF_SMTP_NOTIFIER_EVENT_CONSUMER"
 
 	envEmailHost         = "MF_EMAIL_HOST"
 	envEmailPort         = "MF_EMAIL_PORT"
@@ -120,7 +118,6 @@ type config struct {
 	jaegerURL         string
 	thingsGRPCTimeout time.Duration
 	esURL             string
-	esConsumerName    string
 }
 
 func main() {
@@ -244,7 +241,6 @@ func loadConfig() config {
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
 		esURL:             mainflux.Env(envESURL, defESURL),
-		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 	}
 
 }
@@ -262,7 +258,7 @@ func subscribeToThingsES(ctx context.Context, svc notifiers.Service, cfg config,
 	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
 		URL:    cfg.esURL,
 		Stream: mfevents.ThingsStream,
-		Name:   cfg.esConsumerName,
+		Name:   svcName,
 	}, logger)
 	if err != nil {
 		return err

@@ -67,7 +67,6 @@ const (
 	defAuthGRPCURL       = "localhost:8181"
 	defAuthGRPCTimeout   = "1s"
 	defESURL             = "redis://localhost:6379/0"
-	defESConsumerName    = svcName
 
 	envLogLevel          = "MF_UI_CONFIGS_LOG_LEVEL"
 	envDBHost            = "MF_UI_CONFIGS_DB_HOST"
@@ -90,7 +89,6 @@ const (
 	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
 	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_UI_CONFIGS_ES_URL"
-	envESConsumerName    = "MF_UI_CONFIGS_EVENT_CONSUMER"
 )
 
 type config struct {
@@ -103,7 +101,6 @@ type config struct {
 	thingsGRPCTimeout time.Duration
 	authGRPCTimeout   time.Duration
 	esURL             string
-	esConsumerName    string
 }
 
 func main() {
@@ -228,7 +225,6 @@ func loadConfig() config {
 		thingsGRPCTimeout: thingsAuthGRPCTimeout,
 		authGRPCTimeout:   authGRPCTimeout,
 		esURL:             mainflux.Env(envESURL, defESURL),
-		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 	}
 }
 
@@ -245,7 +241,7 @@ func subscribeToES(ctx context.Context, svc uiconfigs.Service, stream string, cf
 	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
 		URL:    cfg.esURL,
 		Stream: stream,
-		Name:   cfg.esConsumerName,
+		Name:   svcName,
 	}, logger)
 	if err != nil {
 		return err

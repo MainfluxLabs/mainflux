@@ -69,7 +69,6 @@ const (
 	defCACerts           = ""
 	defAuthCacheURL      = "redis://localhost:6379/0"
 	defESURL             = "redis://localhost:6379/0"
-	defESConsumerName    = svcName
 	defDBHost            = "localhost"
 	defAuthGRPCURL       = "localhost:8181"
 	defDBPort            = "5432"
@@ -104,7 +103,6 @@ const (
 	envCACerts           = "MF_MQTT_ADAPTER_CA_CERTS"
 	envAuthCacheURL      = "MF_AUTH_CACHE_URL"
 	envESURL             = "MF_MQTT_ADAPTER_ES_URL"
-	envESConsumerName    = "MF_MQTT_ADAPTER_EVENT_CONSUMER"
 	envServerCert        = "MF_MQTT_ADAPTER_SERVER_CERT"
 	envServerKey         = "MF_MQTT_ADAPTER_SERVER_KEY"
 	envDBHost            = "MF_MQTT_ADAPTER_DB_HOST"
@@ -142,7 +140,6 @@ type config struct {
 	authGRPCTimeout   time.Duration
 	dbConfig          postgres.Config
 	esURL             string
-	esConsumerName    string
 }
 
 func main() {
@@ -343,7 +340,6 @@ func loadConfig() config {
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		authCacheURL:      mainflux.Env(envAuthCacheURL, defAuthCacheURL),
 		esURL:             mainflux.Env(envESURL, defESURL),
-		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 		authGRPCTimeout:   authGRPCTimeout,
 		dbConfig:          dbConfig,
 	}
@@ -363,7 +359,7 @@ func subscribeToThingsES(ctx context.Context, svc mqtt.Service, cfg config, logg
 	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
 		URL:    cfg.esURL,
 		Stream: mfevents.ThingsStream,
-		Name:   cfg.esConsumerName,
+		Name:   svcName,
 	}, logger)
 	if err != nil {
 		return err
