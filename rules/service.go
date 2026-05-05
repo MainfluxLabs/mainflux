@@ -270,8 +270,7 @@ func (rs *rulesService) AssignThings(ctx context.Context, token, ruleID string, 
 	if err := rs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: rule.GroupID, Action: domain.GroupEditor}); err != nil {
 		return err
 	}
-	// TODO: replace with a single bulk gRPC call, e.g. CanUserAccessThings(ctx, groupID, thingIDs...)
-	// to avoid N round-trips to the things service.
+
 	for _, thingID := range thingIDs {
 		grID, err := rs.things.GetGroupIDByThing(ctx, thingID)
 		if err != nil {
