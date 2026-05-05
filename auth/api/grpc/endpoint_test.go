@@ -19,6 +19,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -126,13 +127,13 @@ func TestIssue(t *testing.T) {
 
 func TestIdentify(t *testing.T) {
 	_, userToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
-	assert.Nil(t, err, fmt.Sprintf("Issuing user key expected to succeed: %s", err))
+	require.Nil(t, err, fmt.Sprintf("Issuing user key expected to succeed: %s", err))
 
 	_, recoveryToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.RecoveryKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
-	assert.Nil(t, err, fmt.Sprintf("Issuing recovery key expected to succeed: %s", err))
+	require.Nil(t, err, fmt.Sprintf("Issuing recovery key expected to succeed: %s", err))
 
 	_, apiToken, err := svc.Issue(context.Background(), userToken, auth.Key{Type: auth.APIKey, IssuedAt: time.Now(), ExpiresAt: time.Now().Add(time.Minute), IssuerID: id, Subject: email})
-	assert.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
+	require.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
 
 	authAddr := fmt.Sprintf("localhost:%d", port)
 	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -195,19 +196,19 @@ func TestIdentify(t *testing.T) {
 
 func TestAuthorize(t *testing.T) {
 	_, userToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
-	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	_, adminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
-	assert.Nil(t, err, fmt.Sprintf("Issuing admin login key expected to succeed: %s", err))
+	require.Nil(t, err, fmt.Sprintf("Issuing admin login key expected to succeed: %s", err))
 
 	err = svc.AssignRole(context.Background(), adminID, auth.RoleAdmin)
-	assert.Nil(t, err, fmt.Sprintf("Assigning admin role expected to succeed: %s", err))
+	require.Nil(t, err, fmt.Sprintf("Assigning admin role expected to succeed: %s", err))
 
 	_, viewerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail})
-	assert.Nil(t, err, fmt.Sprintf("Issuing viewer login key expected to succeed: %s", err))
+	require.Nil(t, err, fmt.Sprintf("Issuing viewer login key expected to succeed: %s", err))
 
 	err = membersMock.Save(context.Background(), auth.OrgMembership{MemberID: viewerID, OrgID: orgID, Role: auth.Viewer})
-	assert.Nil(t, err, fmt.Sprintf("Saving org membership expected to succeed: %s", err))
+	require.Nil(t, err, fmt.Sprintf("Saving org membership expected to succeed: %s", err))
 
 	authAddr := fmt.Sprintf("localhost:%d", port)
 	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
