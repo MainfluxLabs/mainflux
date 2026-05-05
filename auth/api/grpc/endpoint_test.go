@@ -30,18 +30,28 @@ const (
 	secret         = "secret"
 	email          = "test@example.com"
 	id             = "testID"
+	orgID          = "orgID"
+	adminID        = "adminID"
+	adminEmail     = "admin@example.com"
+	viewerID       = "viewerID"
+	viewerEmail    = "viewer@example.com"
 	loginDuration  = 30 * time.Minute
 	inviteDuration = 7 * 24 * time.Hour
 )
 
-var svc auth.Service
+var (
+	svc         auth.Service
+	membersMock auth.OrgMembershipsRepository
+)
 
 func newService() auth.Service {
 	repo := mocks.NewKeyRepository()
+	roles := mocks.NewRolesRepository()
+	membersMock = mocks.NewOrgMembershipsRepository()
 	idProvider := uuid.NewMock()
 	t := jwt.New(secret)
 
-	return auth.New(nil, nil, nil, repo, nil, nil, nil, nil, idProvider, t, loginDuration, inviteDuration)
+	return auth.New(nil, nil, nil, repo, roles, membersMock, nil, nil, idProvider, t, loginDuration, inviteDuration)
 }
 
 func startGRPCServer(svc auth.Service, port int) {
@@ -115,13 +125,13 @@ func TestIssue(t *testing.T) {
 }
 
 func TestIdentify(t *testing.T) {
-	_, loginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	_, userToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	assert.Nil(t, err, fmt.Sprintf("Issuing user key expected to succeed: %s", err))
 
-	_, recoverySecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.RecoveryKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	_, recoveryToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.RecoveryKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	assert.Nil(t, err, fmt.Sprintf("Issuing recovery key expected to succeed: %s", err))
 
-	_, apiSecret, err := svc.Issue(context.Background(), loginSecret, auth.Key{Type: auth.APIKey, IssuedAt: time.Now(), ExpiresAt: time.Now().Add(time.Minute), IssuerID: id, Subject: email})
+	_, apiToken, err := svc.Issue(context.Background(), userToken, auth.Key{Type: auth.APIKey, IssuedAt: time.Now(), ExpiresAt: time.Now().Add(time.Minute), IssuerID: id, Subject: email})
 	assert.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
 
 	authAddr := fmt.Sprintf("localhost:%d", port)
@@ -137,21 +147,21 @@ func TestIdentify(t *testing.T) {
 	}{
 		{
 			desc:  "identify user with user token",
-			token: loginSecret,
+			token: userToken,
 			idt:   domain.Identity{Email: email, ID: id},
 			err:   nil,
 			code:  codes.OK,
 		},
 		{
 			desc:  "identify user with recovery token",
-			token: recoverySecret,
+			token: recoveryToken,
 			idt:   domain.Identity{Email: email, ID: id},
 			err:   nil,
 			code:  codes.OK,
 		},
 		{
 			desc:  "identify user with API token",
-			token: apiSecret,
+			token: apiToken,
 			idt:   domain.Identity{Email: email, ID: id},
 			err:   nil,
 			code:  codes.OK,
@@ -183,84 +193,82 @@ func TestIdentify(t *testing.T) {
 	}
 }
 
-/* TODO: Finish tests when the method is finished
 func TestAuthorize(t *testing.T) {
-	_, loginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
-	assert.Nil(t, err, fmt.Sprintf("Issuing user key expected to succeed: %s", err))
+	_, userToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	_, adminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
+	assert.Nil(t, err, fmt.Sprintf("Issuing admin login key expected to succeed: %s", err))
+
+	err = svc.AssignRole(context.Background(), adminID, auth.RoleAdmin)
+	assert.Nil(t, err, fmt.Sprintf("Assigning admin role expected to succeed: %s", err))
+
+	_, viewerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail})
+	assert.Nil(t, err, fmt.Sprintf("Issuing viewer login key expected to succeed: %s", err))
+
+	err = membersMock.Save(context.Background(), auth.OrgMembership{MemberID: viewerID, OrgID: orgID, Role: auth.Viewer})
+	assert.Nil(t, err, fmt.Sprintf("Saving org membership expected to succeed: %s", err))
 
 	authAddr := fmt.Sprintf("localhost:%d", port)
-	conn, _ := grpc.Dial(authAddr, grpc.WithInsecure())
-	client := grpcapi.NewClient(mocktracer.New(), conn, time.Second)
+	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
 
 	cases := []struct {
-		desc     string
-		token    string
-		subject  string
-		object   string
-		relation string
-		ar       protomfx.AuthorizeRes
-		err      error
-		code     codes.Code
+		desc string
+		ar   domain.AuthzReq
+		code codes.Code
 	}{
 		{
-			desc:     "authorize user with authorized token",
-			token:    loginSecret,
-			subject:  id,
-			object:   authoritiesObj,
-			relation: memberRelation,
-			ar:       protomfx.AuthorizeRes{Authorized: true},
-			err:      nil,
-			code:     codes.OK,
+			desc: "authorize with empty token",
+			ar:   domain.AuthzReq{Token: "", Subject: auth.RootSub},
+			code: codes.Unauthenticated,
 		},
 		{
-			desc:     "authorize user with unauthorized relation",
-			token:    loginSecret,
-			subject:  id,
-			object:   authoritiesObj,
-			relation: "unauthorizedRelation",
-			ar:       protomfx.AuthorizeRes{Authorized: false},
-			err:      nil,
-			code:     codes.PermissionDenied,
+			desc: "authorize with invalid token",
+			ar:   domain.AuthzReq{Token: "invalid", Subject: auth.RootSub},
+			code: codes.Unauthenticated,
 		},
 		{
-			desc:     "authorize user with unauthorized object",
-			token:    loginSecret,
-			subject:  id,
-			object:   "unauthorizedobject",
-			relation: memberRelation,
-			ar:       protomfx.AuthorizeRes{Authorized: false},
-			err:      nil,
-			code:     codes.PermissionDenied,
+			desc: "authorize with invalid subject",
+			ar:   domain.AuthzReq{Token: userToken, Subject: "invalid"},
+			code: codes.Internal,
 		},
 		{
-			desc:     "authorize user with unauthorized subject",
-			token:    loginSecret,
-			subject:  "unauthorizedSubject",
-			object:   authoritiesObj,
-			relation: memberRelation,
-			ar:       protomfx.AuthorizeRes{Authorized: false},
-			err:      nil,
-			code:     codes.PermissionDenied,
+			desc: "authorize with valid token, non-admin user",
+			ar:   domain.AuthzReq{Token: userToken, Subject: auth.RootSub},
+			code: codes.PermissionDenied,
 		},
 		{
-			desc:     "authorize user with invalid ACL",
-			token:    loginSecret,
-			subject:  "",
-			object:   "",
-			relation: "",
-			ar:       protomfx.AuthorizeRes{Authorized: false},
-			err:      nil,
-			code:     codes.InvalidArgument,
+			desc: "authorize with valid token, admin user",
+			ar:   domain.AuthzReq{Token: adminToken, Subject: auth.RootSub},
+			code: codes.OK,
+		},
+		{
+			desc: "authorize org member with no membership",
+			ar:   domain.AuthzReq{Token: userToken, Subject: auth.OrgSub, Object: orgID, Action: auth.Viewer},
+			code: codes.NotFound,
+		},
+		{
+			desc: "authorize org member with viewer role and viewer action",
+			ar:   domain.AuthzReq{Token: viewerToken, Subject: auth.OrgSub, Object: orgID, Action: auth.Viewer},
+			code: codes.OK,
+		},
+		{
+			desc: "authorize org member with viewer role and editor action",
+			ar:   domain.AuthzReq{Token: viewerToken, Subject: auth.OrgSub, Object: orgID, Action: auth.Editor},
+			code: codes.PermissionDenied,
+		},
+		{
+			desc: "authorize admin user via org subject",
+			ar:   domain.AuthzReq{Token: adminToken, Subject: auth.OrgSub, Object: orgID, Action: auth.Owner},
+			code: codes.OK,
 		},
 	}
-	for _, tc := range cases {
-		ar, err := client.Authorize(context.Background(), &mainflux.AuthorizeReq{Sub: tc.subject, Obj: tc.object, Act: tc.relation})
-		if ar != nil {
-			assert.Equal(t, tc.ar, *ar, fmt.Sprintf("%s: expected %v got %v", tc.desc, tc.ar, *ar))
-		}
 
+	for _, tc := range cases {
+		err := client.Authorize(context.Background(), tc.ar)
 		e, ok := status.FromError(err)
 		assert.True(t, ok, "gRPC status can't be extracted from the error")
 		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code()))
 	}
-}*/
+}
