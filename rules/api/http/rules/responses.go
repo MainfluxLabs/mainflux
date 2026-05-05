@@ -88,7 +88,6 @@ func (res RulesPageRes) Empty() bool {
 	return false
 }
 
-// TODO: Consider introducing apiutil.EmptyRes with a configurable status code.
 type assignRes struct{}
 
 func (res assignRes) Code() int {
