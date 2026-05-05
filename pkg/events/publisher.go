@@ -21,12 +21,12 @@ const (
 	// buffer channel.
 	DefBufferSize = 10000
 
-	// DefDrainIntervalInitial is the initial sleep duration between XADD retries when
+	// DefDrainInitialInterval is the initial sleep duration between XADD retries when
 	// emitting an event fails.
-	DefDrainIntervalInitial = time.Second
+	DefDrainInitialInterval = time.Second
 
-	// DefDrainBackoffMax is the maximum backoff duration between XADD retries.
-	DefDrainBackoffMax = 30 * time.Second
+	// DefDrainMaxBackoff is the maximum backoff duration between XADD retries.
+	DefDrainMaxBackoff = 30 * time.Second
 
 	// DefShutdownDrainTimeout is the maximum duration that Close() can spends trying to drain
 	// the remaining buffered events.
@@ -113,11 +113,11 @@ func NewPublisher(cfg PublisherConfig, log logger.Logger) (Publisher, error) {
 	}
 
 	if cfg.DrainIntervalInitial == 0 {
-		cfg.DrainIntervalInitial = DefDrainIntervalInitial
+		cfg.DrainIntervalInitial = DefDrainInitialInterval
 	}
 
 	if cfg.DrainBackoffMax == 0 {
-		cfg.DrainBackoffMax = DefDrainBackoffMax
+		cfg.DrainBackoffMax = DefDrainMaxBackoff
 	}
 
 	if cfg.ShutdownDrainTimeout == 0 {
