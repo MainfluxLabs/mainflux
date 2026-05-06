@@ -315,7 +315,6 @@ func insertRulesThings(ctx context.Context, tx *sqlx.Tx, ruleID string, thingIDs
 		return nil
 	}
 
-	// TODO: replace with a single bulk INSERT for better performance.
 	q := `INSERT INTO rules_things (rule_id, thing_id) VALUES (:rule_id, :thing_id);`
 
 	for _, thingID := range thingIDs {
