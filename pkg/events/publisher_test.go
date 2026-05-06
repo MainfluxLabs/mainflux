@@ -99,11 +99,11 @@ func newPublisher(t *testing.T, cfg events.PublisherConfig, fx *failingXAdd) eve
 	if cfg.BufferSize == 0 {
 		cfg.BufferSize = events.DefBufferSize
 	}
-	if cfg.DrainIntervalInitial == 0 {
-		cfg.DrainIntervalInitial = 50 * time.Millisecond
+	if cfg.DrainInitialInterval == 0 {
+		cfg.DrainInitialInterval = 50 * time.Millisecond
 	}
-	if cfg.DrainBackoffMax == 0 {
-		cfg.DrainBackoffMax = 200 * time.Millisecond
+	if cfg.DrainMaxBackoff == 0 {
+		cfg.DrainMaxBackoff = 200 * time.Millisecond
 	}
 	if cfg.ShutdownDrainTimeout == 0 {
 		cfg.ShutdownDrainTimeout = 2 * time.Second
@@ -187,8 +187,8 @@ func TestBufferAbsorbsTransientFailure(t *testing.T) {
 
 	pub := newPublisher(t, events.PublisherConfig{
 		Stream:               testStream,
-		DrainIntervalInitial: 50 * time.Millisecond,
-		DrainBackoffMax:      100 * time.Millisecond,
+		DrainInitialInterval: 50 * time.Millisecond,
+		DrainMaxBackoff:      100 * time.Millisecond,
 	}, fx)
 	defer pub.Close()
 
@@ -269,8 +269,8 @@ func TestCloseGivesUpAfterShutdownDrain(t *testing.T) {
 
 	pub := newPublisher(t, events.PublisherConfig{
 		Stream:               testStream,
-		DrainIntervalInitial: 50 * time.Millisecond,
-		DrainBackoffMax:      50 * time.Millisecond,
+		DrainInitialInterval: 50 * time.Millisecond,
+		DrainMaxBackoff:      50 * time.Millisecond,
 		ShutdownDrainTimeout: 200 * time.Millisecond,
 	}, fx)
 
@@ -320,8 +320,8 @@ func TestOrderPreservedOnTransientFailure(t *testing.T) {
 
 	pub := newPublisher(t, events.PublisherConfig{
 		Stream:               testStream,
-		DrainIntervalInitial: 30 * time.Millisecond,
-		DrainBackoffMax:      30 * time.Millisecond,
+		DrainInitialInterval: 30 * time.Millisecond,
+		DrainMaxBackoff:      30 * time.Millisecond,
 	}, fx)
 	defer pub.Close()
 

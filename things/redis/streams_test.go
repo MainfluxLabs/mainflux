@@ -55,8 +55,8 @@ func withEventStore(t *testing.T, svc things.Service) things.Service {
 		URL:                  redisURL,
 		Stream:               mfevents.ThingsStream,
 		BufferSize:           mfevents.DefBufferSize,
-		DrainIntervalInitial: 10 * time.Millisecond,
-		DrainBackoffMax:      100 * time.Millisecond,
+		DrainInitialInterval: 10 * time.Millisecond,
+		DrainMaxBackoff:      100 * time.Millisecond,
 		ShutdownDrainTimeout: 2 * time.Second,
 	}, logger.NewMock())
 	require.NoError(t, err)

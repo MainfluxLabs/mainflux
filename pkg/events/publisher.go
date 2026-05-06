@@ -61,11 +61,11 @@ type PublisherConfig struct {
 	// BufferSize is the capacity of the buffer channel holding events.
 	BufferSize int
 
-	// DrainIntervalInitial is the initial XADD retry sleep on failure.
-	DrainIntervalInitial time.Duration
+	// DrainInitialInterval is the initial XADD retry sleep on failure.
+	DrainInitialInterval time.Duration
 
-	// DrainBackoffMax caps the exponential retry backoff.
-	DrainBackoffMax time.Duration
+	// DrainMaxBackoff caps the exponential retry backoff.
+	DrainMaxBackoff time.Duration
 
 	// ShutdownDrainTimeout bounds the final drain in Close().
 	ShutdownDrainTimeout time.Duration
@@ -112,12 +112,12 @@ func NewPublisher(cfg PublisherConfig, log logger.Logger) (Publisher, error) {
 		cfg.BufferSize = DefBufferSize
 	}
 
-	if cfg.DrainIntervalInitial == 0 {
-		cfg.DrainIntervalInitial = DefDrainInitialInterval
+	if cfg.DrainInitialInterval == 0 {
+		cfg.DrainInitialInterval = DefDrainInitialInterval
 	}
 
-	if cfg.DrainBackoffMax == 0 {
-		cfg.DrainBackoffMax = DefDrainMaxBackoff
+	if cfg.DrainMaxBackoff == 0 {
+		cfg.DrainMaxBackoff = DefDrainMaxBackoff
 	}
 
 	if cfg.ShutdownDrainTimeout == 0 {
@@ -135,8 +135,8 @@ func NewPublisher(cfg PublisherConfig, log logger.Logger) (Publisher, error) {
 		xa:            client,
 		stream:        cfg.Stream,
 		maxLen:        cfg.MaxLen,
-		drainInterval: cfg.DrainIntervalInitial,
-		drainBackoff:  cfg.DrainBackoffMax,
+		drainInterval: cfg.DrainInitialInterval,
+		drainBackoff:  cfg.DrainMaxBackoff,
 		shutdownDrain: cfg.ShutdownDrainTimeout,
 		bufferCh:      make(chan RedisEvent, cfg.BufferSize),
 		logger:        log,

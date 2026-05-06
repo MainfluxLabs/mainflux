@@ -175,8 +175,8 @@ func main() {
 		Stream:               mfevents.ThingsStream,
 		MaxLen:               cfg.esStreamMaxLen,
 		BufferSize:           cfg.esBufferSize,
-		DrainIntervalInitial: mfevents.DefDrainInitialInterval,
-		DrainBackoffMax:      mfevents.DefDrainMaxBackoff,
+		DrainInitialInterval: mfevents.DefDrainInitialInterval,
+		DrainMaxBackoff:      mfevents.DefDrainMaxBackoff,
 		ShutdownDrainTimeout: mfevents.DefShutdownDrainTimeout,
 	}, logger)
 	if err != nil {

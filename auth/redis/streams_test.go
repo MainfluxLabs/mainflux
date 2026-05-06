@@ -53,8 +53,8 @@ func withEventStore(t *testing.T, svc auth.Service) auth.Service {
 		URL:                  redisURL,
 		Stream:               events.AuthStream,
 		BufferSize:           events.DefBufferSize,
-		DrainIntervalInitial: 10 * time.Millisecond,
-		DrainBackoffMax:      100 * time.Millisecond,
+		DrainInitialInterval: 10 * time.Millisecond,
+		DrainMaxBackoff:      100 * time.Millisecond,
 		ShutdownDrainTimeout: 2 * time.Second,
 	}, logger.NewMock())
 	require.NoError(t, err)
