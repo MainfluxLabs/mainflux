@@ -162,7 +162,7 @@ func (rr ruleRepository) RetrieveByID(ctx context.Context, id string) (rules.Rul
 		return rules.Rule{}, err
 	}
 
-	return toRuleThings(dbr, thingIDs)
+	return toRule(dbr, thingIDs)
 }
 
 func (rr ruleRepository) Update(ctx context.Context, r rules.Rule) error {
@@ -283,7 +283,7 @@ func (rr ruleRepository) retrieveRules(ctx context.Context, query, cquery string
 		if err = rows.StructScan(&dbr); err != nil {
 			return rules.RulesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
-		rule, err := toRule(dbr)
+		rule, err := toRule(dbr, nil)
 		if err != nil {
 			return rules.RulesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
@@ -363,16 +363,7 @@ func toDBRule(r rules.Rule) (dbRule, error) {
 	}, nil
 }
 
-func toRuleThings(dbr dbRule, thingIDs []string) (rules.Rule, error) {
-	r, err := toRule(dbr)
-	if err != nil {
-		return rules.Rule{}, err
-	}
-	r.Input.ThingIDs = thingIDs
-	return r, nil
-}
-
-func toRule(dbr dbRule) (rules.Rule, error) {
+func toRule(dbr dbRule, thingIDs []string) (rules.Rule, error) {
 	var conditions []rules.Condition
 	if err := json.Unmarshal(dbr.Conditions, &conditions); err != nil {
 		return rules.Rule{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
@@ -388,7 +379,7 @@ func toRule(dbr dbRule) (rules.Rule, error) {
 		GroupID:     dbr.GroupID,
 		Name:        dbr.Name,
 		Description: dbr.Description,
-		Input:       rules.Input{Type: dbr.InputType},
+		Input:       rules.Input{Type: dbr.InputType, ThingIDs: thingIDs},
 		Conditions:  conditions,
 		Operator:    dbr.Operator,
 		Actions:     actions,
