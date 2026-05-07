@@ -157,9 +157,9 @@ func (rr ruleRepository) RetrieveByID(ctx context.Context, id string) (rules.Rul
 		return rules.Rule{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
-	thingIDs, err := rr.fetchThingIDs(ctx, dbr.ID)
-	if err != nil {
-		return rules.Rule{}, err
+	var thingIDs []string
+	if err := rr.db.SelectContext(ctx, &thingIDs, `SELECT thing_id FROM rules_things WHERE rule_id = $1;`, dbr.ID); err != nil {
+		return rules.Rule{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	return toRule(dbr, thingIDs)
@@ -277,13 +277,28 @@ func (rr ruleRepository) retrieveRules(ctx context.Context, query, cquery string
 	}
 	defer rows.Close()
 
-	var items []rules.Rule
+	var dbRules []dbRule
 	for rows.Next() {
 		var dbr dbRule
 		if err = rows.StructScan(&dbr); err != nil {
 			return rules.RulesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
-		rule, err := toRule(dbr, nil)
+		dbRules = append(dbRules, dbr)
+	}
+
+	ruleIDs := make([]string, len(dbRules))
+	for i, dbr := range dbRules {
+		ruleIDs[i] = dbr.ID
+	}
+
+	thingIDs, err := rr.fetchThingIDsByRules(ctx, ruleIDs)
+	if err != nil {
+		return rules.RulesPage{}, err
+	}
+
+	var items []rules.Rule
+	for _, dbr := range dbRules {
+		rule, err := toRule(dbr, thingIDs[dbr.ID])
 		if err != nil {
 			return rules.RulesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
@@ -301,13 +316,26 @@ func (rr ruleRepository) retrieveRules(ctx context.Context, query, cquery string
 	}, nil
 }
 
-func (rr ruleRepository) fetchThingIDs(ctx context.Context, ruleID string) ([]string, error) {
-	q := `SELECT thing_id FROM rules_things WHERE rule_id = $1;`
-	var ids []string
-	if err := rr.db.SelectContext(ctx, &ids, q, ruleID); err != nil {
+func (rr ruleRepository) fetchThingIDsByRules(ctx context.Context, ruleIDs []string) (map[string][]string, error) {
+	result := make(map[string][]string, len(ruleIDs))
+	if len(ruleIDs) == 0 {
+		return result, nil
+	}
+
+	type ruleThing struct {
+		RuleID  string `db:"rule_id"`
+		ThingID string `db:"thing_id"`
+	}
+	var rows []ruleThing
+	if err := rr.db.SelectContext(ctx, &rows, `SELECT rule_id, thing_id FROM rules_things WHERE rule_id = ANY($1);`, ruleIDs); err != nil {
 		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
-	return ids, nil
+
+	for _, r := range rows {
+		result[r.RuleID] = append(result[r.RuleID], r.ThingID)
+	}
+
+	return result, nil
 }
 
 func insertRulesThings(ctx context.Context, tx *sqlx.Tx, ruleID string, thingIDs []string) error {

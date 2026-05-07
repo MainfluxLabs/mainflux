@@ -1044,6 +1044,8 @@ components:
                 description: "Triggers when temperature exceeds 45°C"
                 input:
                   type: "message"
+                  thing_ids:
+                    - "123e4567-e89b-12d3-a456-426614174000"
                 conditions:
                   - field: "temperature"
                     comparator: ">"

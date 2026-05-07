@@ -21,7 +21,7 @@ const (
 
 type Input struct {
 	Type     string   `json:"type"`
-	ThingIDs []string `json:"thing_ids,omitempty"`
+	ThingIDs []string `json:"thing_ids"`
 }
 
 type Rule struct {

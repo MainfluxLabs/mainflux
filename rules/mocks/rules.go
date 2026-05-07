@@ -59,15 +59,19 @@ func (rrm *ruleRepositoryMock) RetrieveByID(_ context.Context, id string) (rules
 		return rules.Rule{}, dbutil.ErrNotFound
 	}
 
+	r.Input.ThingIDs = rrm.thingIDsByRule(id)
+
+	return r, nil
+}
+
+func (rrm *ruleRepositoryMock) thingIDsByRule(ruleID string) []string {
 	var thingIDs []string
 	for thingID, ruleIDs := range rrm.ruleAssignments {
-		if slices.Contains(ruleIDs, id) {
+		if slices.Contains(ruleIDs, ruleID) {
 			thingIDs = append(thingIDs, thingID)
 		}
 	}
-	r.Input.ThingIDs = thingIDs
-
-	return r, nil
+	return thingIDs
 }
 
 func (rrm *ruleRepositoryMock) RetrieveByThing(_ context.Context, thingID string, pm rules.PageMetadata) (rules.RulesPage, error) {
@@ -88,6 +92,7 @@ func (rrm *ruleRepositoryMock) RetrieveByThing(_ context.Context, thingID string
 		if pm.InputType != "" && r.Input.Type != pm.InputType {
 			continue
 		}
+		r.Input.ThingIDs = rrm.thingIDsByRule(ruleID)
 		all = append(all, r)
 		id := uuid.ParseID(r.ID)
 		if pm.Limit == 0 || (id >= first && id < last) {
@@ -111,6 +116,7 @@ func (rrm *ruleRepositoryMock) RetrieveByGroup(_ context.Context, groupID string
 
 	for _, r := range rrm.rules {
 		if r.GroupID == groupID && (pm.InputType == "" || r.Input.Type == pm.InputType) {
+			r.Input.ThingIDs = rrm.thingIDsByRule(r.ID)
 			all = append(all, r)
 			id := uuid.ParseID(r.ID)
 			if pm.Limit == 0 || (id >= first && id < last) {
