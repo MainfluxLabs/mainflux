@@ -62,6 +62,9 @@ type JSONMessageRepository interface {
 
 	// Remove deletes the json messages within a time range.
 	Remove(ctx context.Context, rpm JSONPageMetadata) error
+
+	// RemoveByThing deletes the json messages related to a certain thing, identified by a given thing ID.
+	RemoveByThing(ctx context.Context, thingID string) error
 }
 
 type SenMLMessageRepository interface {
@@ -76,6 +79,9 @@ type SenMLMessageRepository interface {
 
 	// Remove deletes the senml messages within a time range.
 	Remove(ctx context.Context, rpm SenMLPageMetadata) error
+
+	// RemoveByThing deletes the senml messages related to a certain thing, identified by a given thing ID.
+	RemoveByThing(ctx context.Context, thingID string) error
 }
 
 // ComparatorSymbol converts a comparison operator key into its SQL symbol.
