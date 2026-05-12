@@ -48,6 +48,24 @@ func (repo *senmlRepositoryMock) Restore(ctx context.Context, messages ...reader
 	return nil
 }
 
+func (repo *senmlRepositoryMock) RemoveByThing(ctx context.Context, thingID string) error {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+
+	for profileID, messages := range repo.messages {
+		var remaining []readers.Message
+		for _, m := range messages {
+			if senmlMsg, ok := m.(senml.Message); ok && senmlMsg.Publisher == thingID {
+				continue
+			}
+			remaining = append(remaining, m)
+		}
+		repo.messages[profileID] = remaining
+	}
+
+	return nil
+}
+
 func (repo *senmlRepositoryMock) Remove(ctx context.Context, rpm readers.SenMLPageMetadata) error {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
