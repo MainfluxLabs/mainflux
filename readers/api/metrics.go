@@ -120,3 +120,12 @@ func (mm *metricsMiddleware) DeleteAllSenMLMessages(ctx context.Context, token s
 
 	return mm.svc.DeleteAllSenMLMessages(ctx, token, rpm)
 }
+
+func (mm *metricsMiddleware) RemoveMessagesByThing(ctx context.Context, thingID string) error {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "remove_messages_by_thing").Add(1)
+		mm.latency.With("method", "remove_messages_by_thing").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.RemoveMessagesByThing(ctx, thingID)
+}
