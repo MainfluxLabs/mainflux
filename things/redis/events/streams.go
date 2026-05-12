@@ -182,7 +182,10 @@ func (es eventStore) RemoveProfiles(ctx context.Context, token string, ids ...st
 
 func (es eventStore) RemoveGroups(ctx context.Context, token string, ids ...string) error {
 	for _, id := range ids {
-		thingIDs, _ := es.Service.GetThingIDsByGroup(ctx, id)
+		thingIDs, err := es.Service.GetThingIDsByGroup(ctx, id)
+		if err != nil {
+			return err
+		}
 
 		if err := es.Service.RemoveGroups(ctx, token, id); err != nil {
 			return err
@@ -211,7 +214,11 @@ func (es eventStore) RemoveGroupsByOrg(ctx context.Context, orgID string) ([]str
 
 	thingsByGroup := make(map[string][]string, len(groupIDs))
 	for _, gid := range groupIDs {
-		thingsByGroup[gid], _ = es.Service.GetThingIDsByGroup(ctx, gid)
+		tids, err := es.Service.GetThingIDsByGroup(ctx, gid)
+		if err != nil {
+			return nil, err
+		}
+		thingsByGroup[gid] = tids
 	}
 
 	ids, err := es.Service.RemoveGroupsByOrg(ctx, orgID)
