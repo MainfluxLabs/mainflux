@@ -43,6 +43,17 @@ func (sr *senmlRepository) Backup(ctx context.Context, rpm readers.SenMLPageMeta
 	return sr.readAll(ctx, backup)
 }
 
+func (sr *senmlRepository) RemoveByThing(ctx context.Context, thingID string) error {
+	q := fmt.Sprintf("DELETE FROM %s WHERE publisher = :publisher", senmlTable)
+	params := map[string]any{"publisher": thingID}
+
+	if _, err := sr.db.NamedExecContext(ctx, q, params); err != nil {
+		return sr.handlePgError(err, errors.ErrDeleteMessages)
+	}
+
+	return nil
+}
+
 func (sr *senmlRepository) Remove(ctx context.Context, rpm readers.SenMLPageMetadata) error {
 	condition := sr.fmtCondition(rpm)
 	q := fmt.Sprintf("DELETE FROM %s %s", senmlTable, condition)
