@@ -19,6 +19,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	serversgrpc "github.com/MainfluxLabs/mainflux/pkg/servers/grpc"
@@ -26,6 +27,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/MainfluxLabs/mainflux/readers/api"
 	httpapi "github.com/MainfluxLabs/mainflux/readers/api/http"
+	"github.com/MainfluxLabs/mainflux/readers/events"
 	"github.com/MainfluxLabs/mainflux/readers/postgres"
 	"github.com/MainfluxLabs/mainflux/readers/tracing"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
@@ -39,6 +41,8 @@ import (
 const (
 	svcName      = "postgres-reader"
 	stopWaitTime = 5 * time.Second
+	thingsStream = "mainflux.things"
+	esGroupName  = svcName
 
 	defLogLevel          = "error"
 	defPort              = "8180"
@@ -61,6 +65,8 @@ const (
 	defThingsGRPCTimeout = "1s"
 	defAuthGRPCURL       = "localhost:8181"
 	defAuthGRPCTimeout   = "1s"
+	defESURL             = "redis://localhost:6379/0"
+	defESConsumerName    = svcName
 
 	envLogLevel          = "MF_POSTGRES_READER_LOG_LEVEL"
 	envPort              = "MF_POSTGRES_READER_PORT"
@@ -83,6 +89,8 @@ const (
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
 	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
+	envESURL             = "MF_POSTGRES_READER_ES_URL"
+	envESConsumerName    = "MF_POSTGRES_READER_EVENT_CONSUMER"
 )
 
 type config struct {
@@ -95,6 +103,8 @@ type config struct {
 	jaegerURL         string
 	thingsGRPCTimeout time.Duration
 	authGRPCTimeout   time.Duration
+	esURL             string
+	esConsumerName    string
 }
 
 func main() {
@@ -143,6 +153,10 @@ func main() {
 
 	g.Go(func() error {
 		return serversgrpc.Start(ctx, postgresGRPCTracer, svc, cfg.grpcConfig, logger)
+	})
+
+	g.Go(func() error {
+		return subscribeToThingsES(ctx, svc, cfg, logger)
 	})
 
 	g.Go(func() error {
@@ -224,7 +238,26 @@ func loadConfig() config {
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
 		authGRPCTimeout:   authGRPCTimeout,
+		esURL:             mainflux.Env(envESURL, defESURL),
+		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 	}
+}
+
+func subscribeToThingsES(ctx context.Context, svc readers.Service, cfg config, logger logger.Logger) error {
+	subscriber, err := mfevents.NewSubscriber(cfg.esURL, thingsStream, esGroupName, cfg.esConsumerName, logger)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := subscriber.Close(); err != nil {
+			logger.Error(fmt.Sprintf("Failed to close subscriber: %s", err))
+		}
+	}()
+
+	handler := events.NewEventHandler(svc)
+
+	return subscriber.Subscribe(ctx, handler)
 }
 
 func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {

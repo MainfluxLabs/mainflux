@@ -182,12 +182,18 @@ func (es eventStore) RemoveProfiles(ctx context.Context, token string, ids ...st
 
 func (es eventStore) RemoveGroups(ctx context.Context, token string, ids ...string) error {
 	for _, id := range ids {
+		thingIDs, err := es.Service.GetThingIDsByGroup(ctx, id)
+		if err != nil {
+			return err
+		}
+
 		if err := es.Service.RemoveGroups(ctx, token, id); err != nil {
 			return err
 		}
 
 		event := removeGroupEvent{
-			id: id,
+			id:       id,
+			thingIDs: thingIDs,
 		}
 		record := &redis.XAddArgs{
 			Stream:       events.ThingsStream,
@@ -201,6 +207,20 @@ func (es eventStore) RemoveGroups(ctx context.Context, token string, ids ...stri
 }
 
 func (es eventStore) RemoveGroupsByOrg(ctx context.Context, orgID string) ([]string, error) {
+	groupIDs, err := es.Service.GetGroupIDsByOrgInternal(ctx, orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	thingsByGroup := make(map[string][]string, len(groupIDs))
+	for _, gid := range groupIDs {
+		tids, err := es.Service.GetThingIDsByGroup(ctx, gid)
+		if err != nil {
+			return nil, err
+		}
+		thingsByGroup[gid] = tids
+	}
+
 	ids, err := es.Service.RemoveGroupsByOrg(ctx, orgID)
 	if err != nil {
 		return nil, err
@@ -208,7 +228,8 @@ func (es eventStore) RemoveGroupsByOrg(ctx context.Context, orgID string) ([]str
 
 	for _, id := range ids {
 		event := removeGroupEvent{
-			id: id,
+			id:       id,
+			thingIDs: thingsByGroup[id],
 		}
 		record := &redis.XAddArgs{
 			Stream:       events.ThingsStream,

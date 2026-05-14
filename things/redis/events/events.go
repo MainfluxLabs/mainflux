@@ -2,6 +2,7 @@ package events
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/events"
@@ -192,12 +193,14 @@ func (rpe removeProfileEvent) Encode() map[string]any {
 }
 
 type removeGroupEvent struct {
-	id string
+	id       string
+	thingIDs []string
 }
 
 func (rge removeGroupEvent) Encode() map[string]any {
 	return map[string]any{
 		"id":        rge.id,
+		"thing_ids": strings.Join(rge.thingIDs, ","),
 		"operation": events.GroupRemove,
 	}
 }
