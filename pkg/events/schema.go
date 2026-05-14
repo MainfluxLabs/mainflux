@@ -5,6 +5,7 @@ package events
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
@@ -266,18 +267,27 @@ func DecodeProfileRemoved(e RedisEvent) ProfileRemoved {
 
 // GroupRemoved signals that a group has been removed.
 type GroupRemoved struct {
-	ID string
+	ID       string
+	ThingIDs []string
 }
 
 func (e GroupRemoved) Encode() RedisEvent {
-	return RedisEvent{
+	m := RedisEvent{
 		"operation": GroupRemove,
 		"id":        e.ID,
 	}
+	if len(e.ThingIDs) > 0 {
+		m["thing_ids"] = strings.Join(e.ThingIDs, ",")
+	}
+	return m
 }
 
 func DecodeGroupRemoved(e RedisEvent) GroupRemoved {
-	return GroupRemoved{ID: e.Field("id", "")}
+	g := GroupRemoved{ID: e.Field("id", "")}
+	if raw := e.Field("thing_ids", ""); raw != "" {
+		g.ThingIDs = strings.Split(raw, ",")
+	}
+	return g
 }
 
 // OrgCreated signals the creation of an organization.

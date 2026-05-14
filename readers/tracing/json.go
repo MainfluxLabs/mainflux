@@ -12,10 +12,11 @@ import (
 )
 
 const (
-	retrieveJSONMessages = "retrieve_json_messages"
-	backupJSONMessages   = "backup_json_messages"
-	restoreJSONMessages  = "restore_json_messages"
-	removeJSONMessages   = "remove_json_messages"
+	retrieveJSONMessages      = "retrieve_json_messages"
+	backupJSONMessages        = "backup_json_messages"
+	restoreJSONMessages       = "restore_json_messages"
+	removeJSONMessages        = "remove_json_messages"
+	removeJSONMessagesByThing = "remove_json_messages_by_thing"
 )
 
 var _ readers.JSONMessageRepository = (*jsonRepositoryMiddleware)(nil)
@@ -62,4 +63,12 @@ func (jrm jsonRepositoryMiddleware) Remove(ctx context.Context, rpm readers.JSON
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return jrm.repo.Remove(ctx, rpm)
+}
+
+func (jrm jsonRepositoryMiddleware) RemoveByThing(ctx context.Context, thingID string) error {
+	span := dbutil.CreateSpan(ctx, jrm.tracer, removeJSONMessagesByThing)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return jrm.repo.RemoveByThing(ctx, thingID)
 }

@@ -12,10 +12,11 @@ import (
 )
 
 const (
-	retrieveSenMLMessages = "retrieve_senml_messages"
-	backupSenMLMessages   = "backup_senml_messages"
-	restoreSenMLMessages  = "restore_senml_messages"
-	removeSenMLMessages   = "remove_senml_messages"
+	retrieveSenMLMessages      = "retrieve_senml_messages"
+	backupSenMLMessages        = "backup_senml_messages"
+	restoreSenMLMessages       = "restore_senml_messages"
+	removeSenMLMessages        = "remove_senml_messages"
+	removeSenMLMessagesByThing = "remove_senml_messages_by_thing"
 )
 
 var _ readers.SenMLMessageRepository = (*senmlRepositoryMiddleware)(nil)
@@ -62,4 +63,12 @@ func (srm senmlRepositoryMiddleware) Remove(ctx context.Context, rpm readers.Sen
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return srm.repo.Remove(ctx, rpm)
+}
+
+func (srm senmlRepositoryMiddleware) RemoveByThing(ctx context.Context, thingID string) error {
+	span := dbutil.CreateSpan(ctx, srm.tracer, removeSenMLMessagesByThing)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return srm.repo.RemoveByThing(ctx, thingID)
 }

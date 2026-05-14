@@ -18,12 +18,14 @@ import (
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/MainfluxLabs/mainflux/readers/api"
 	httpapi "github.com/MainfluxLabs/mainflux/readers/api/http"
+	"github.com/MainfluxLabs/mainflux/readers/events"
 	"github.com/MainfluxLabs/mainflux/readers/timescale"
 	"github.com/MainfluxLabs/mainflux/readers/tracing"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
@@ -56,6 +58,7 @@ const (
 	defThingsGRPCTimeout = "1s"
 	defAuthGRPCURL       = "localhost:8181"
 	defAuthGRPCTimeout   = "1s"
+	defESURL             = "redis://localhost:6379/0"
 
 	envLogLevel          = "MF_TIMESCALE_READER_LOG_LEVEL"
 	envPort              = "MF_TIMESCALE_READER_PORT"
@@ -75,6 +78,7 @@ const (
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
 	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
+	envESURL             = "MF_TIMESCALE_READER_ES_URL"
 )
 
 type config struct {
@@ -86,6 +90,7 @@ type config struct {
 	jaegerURL         string
 	thingsGRPCTimeout time.Duration
 	authGRPCTimeout   time.Duration
+	esURL             string
 }
 
 func main() {
@@ -126,6 +131,10 @@ func main() {
 
 	g.Go(func() error {
 		return servershttp.Start(ctx, httpapi.MakeHandler(svc, timescaleHttpTracer, svcName, logger), cfg.httpConfig, logger)
+	})
+
+	g.Go(func() error {
+		return subscribeToThingsES(ctx, svc, cfg, logger)
 	})
 
 	g.Go(func() error {
@@ -198,7 +207,29 @@ func loadConfig() config {
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
 		authGRPCTimeout:   authGRPCTimeout,
+		esURL:             mainflux.Env(envESURL, defESURL),
 	}
+}
+
+func subscribeToThingsES(ctx context.Context, svc readers.Service, cfg config, logger logger.Logger) error {
+	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
+		URL:    cfg.esURL,
+		Stream: mfevents.ThingsStream,
+		Name:   svcName,
+	}, logger)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := subscriber.Close(); err != nil {
+			logger.Error(fmt.Sprintf("Failed to close subscriber: %s", err))
+		}
+	}()
+
+	handler := events.NewEventHandler(svc)
+
+	return subscriber.Subscribe(ctx, handler)
 }
 
 func connectToDB(dbConfig timescale.Config, logger logger.Logger) *sqlx.DB {

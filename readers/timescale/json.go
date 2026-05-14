@@ -40,6 +40,17 @@ func (jr *jsonRepository) Backup(ctx context.Context, rpm readers.JSONPageMetada
 	return jr.readAll(ctx, backup)
 }
 
+func (jr *jsonRepository) RemoveByThing(ctx context.Context, thingID string) error {
+	q := `DELETE FROM json WHERE publisher = :publisher;`
+	params := map[string]any{"publisher": thingID}
+
+	if _, err := jr.db.NamedExecContext(ctx, q, params); err != nil {
+		return jr.handlePgError(err, errors.ErrDeleteMessages)
+	}
+
+	return nil
+}
+
 func (jr *jsonRepository) Remove(ctx context.Context, rpm readers.JSONPageMetadata) error {
 	condition := jr.fmtCondition(rpm)
 	q := fmt.Sprintf("DELETE FROM json %s", condition)
