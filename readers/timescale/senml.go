@@ -44,7 +44,7 @@ func (sr *senmlRepository) Backup(ctx context.Context, rpm readers.SenMLPageMeta
 }
 
 func (sr *senmlRepository) RemoveByThing(ctx context.Context, thingID string) error {
-	q := fmt.Sprintf("DELETE FROM %s WHERE publisher = :publisher;", senmlTable)
+	q := `DELETE FROM senml WHERE publisher = :publisher;`
 	params := map[string]any{"publisher": thingID}
 
 	if _, err := sr.db.NamedExecContext(ctx, q, params); err != nil {
