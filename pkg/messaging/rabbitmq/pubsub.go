@@ -20,7 +20,13 @@ const (
 	exchangeName       = "mainflux-exchange"
 )
 
-var _ messaging.PubSub = (*pubsub)(nil)
+// PubSub extends messaging.PubSub with command publishing capability.
+type PubSub interface {
+	messaging.PubSub
+	messaging.CommandPublisher
+}
+
+var _ PubSub = (*pubsub)(nil)
 
 type subscription struct {
 	cancel func() error
@@ -33,7 +39,7 @@ type pubsub struct {
 }
 
 // NewPubSub returns RabbitMQ message publisher/subscriber.
-func NewPubSub(url, queue string, logger log.Logger) (messaging.PubSub, error) {
+func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
 	conn, err := amqp.Dial(url)
 	if err != nil {
 		return nil, err

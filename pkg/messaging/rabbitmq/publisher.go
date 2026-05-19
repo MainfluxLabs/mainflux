@@ -13,7 +13,13 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-var _ messaging.Publisher = (*publisher)(nil)
+// Publisher extends the base messaging.Publisher with command publishing capability.
+type Publisher interface {
+	messaging.Publisher
+	messaging.CommandPublisher
+}
+
+var _ Publisher = (*publisher)(nil)
 
 type publisher struct {
 	conn *amqp.Connection
@@ -21,7 +27,7 @@ type publisher struct {
 }
 
 // NewPublisher returns RabbitMQ message Publisher.
-func NewPublisher(url string) (messaging.Publisher, error) {
+func NewPublisher(url string) (Publisher, error) {
 	conn, err := amqp.Dial(url)
 	if err != nil {
 		return nil, err
@@ -42,16 +48,23 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 }
 
 func (pub *publisher) Publish(_ string, msg protomfx.Message) error {
-	data, err := proto.Marshal(&msg)
+	return pub.publish(msg.Subtopic, &msg)
+}
+
+func (pub *publisher) PublishCommand(subject string, cmd protomfx.Command) error {
+	return pub.publish(subject, &cmd)
+}
+
+func (pub *publisher) publish(routingKey string, msg proto.Message) error {
+	data, err := proto.Marshal(msg)
 	if err != nil {
 		return err
 	}
-	subject := formatTopic(msg.Subtopic)
 
-	err = pub.ch.PublishWithContext(
+	return pub.ch.PublishWithContext(
 		context.Background(),
 		exchangeName,
-		subject,
+		formatTopic(routingKey),
 		false,
 		false,
 		amqp.Publishing{
@@ -60,12 +73,6 @@ func (pub *publisher) Publish(_ string, msg protomfx.Message) error {
 			AppId:       "mainflux-publisher",
 			Body:        data,
 		})
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (pub *publisher) Close() error {
