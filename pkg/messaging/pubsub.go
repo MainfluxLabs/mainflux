@@ -105,6 +105,12 @@ type AlarmPublisher interface {
 	PublishAlarm(subject string, alarm protomfx.Alarm) error
 }
 
+// CommandPublisher specifies the command publishing API.
+type CommandPublisher interface {
+	// PublishCommand publishes a command to the message broker.
+	PublishCommand(subject string, cmd protomfx.Command) error
+}
+
 // AlarmHandler represents protomfx.Alarm handler for AlarmSubscriber.
 type AlarmHandler interface {
 	// Handle handles alarms passed by underlying implementation.
