@@ -14,9 +14,9 @@ import (
 	mfcron "github.com/MainfluxLabs/mainflux/pkg/cron"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	mfxproto "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 const (
@@ -42,14 +42,14 @@ type CertScheduler struct {
 	repo      Repository
 	pki       pki.Agent
 	things    domain.ThingsClient
-	publisher messaging.Publisher
+	publisher brokers.Publisher
 	logger    logger.Logger
 	crlPath   string
 	sm        *mfcron.ScheduleManager
 }
 
 // NewCertScheduler creates a new certificate rotation scheduler.
-func NewCertScheduler(repo Repository, pkiAgent pki.Agent, things domain.ThingsClient, pub messaging.Publisher, crlPath string, logger logger.Logger) *CertScheduler {
+func NewCertScheduler(repo Repository, pkiAgent pki.Agent, things domain.ThingsClient, pub brokers.Publisher, crlPath string, logger logger.Logger) *CertScheduler {
 	return &CertScheduler{
 		repo:      repo,
 		pki:       pkiAgent,
@@ -176,7 +176,7 @@ func (cs *CertScheduler) publishCertEvent(cert Cert) error {
 		return err
 	}
 
-	msg := protomfx.Message{
+	cmd := mfxproto.Command{
 		Publisher:   cert.ThingID,
 		Protocol:    "certs",
 		Payload:     payload,
@@ -185,5 +185,5 @@ func (cs *CertScheduler) publishCertEvent(cert Cert) error {
 	}
 
 	subject := nats.GetThingCommandsSubject(cert.ThingID, certRotationTopic)
-	return cs.publisher.Publish(subject, msg)
+	return cs.publisher.PublishCommand(subject, cmd)
 }
