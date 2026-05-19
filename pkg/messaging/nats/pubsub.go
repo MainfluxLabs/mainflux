@@ -36,11 +36,12 @@ const (
 	SubjectAlarms = "alarms.*"
 )
 
-// PubSub extends messaging.PubSub with alarm publishing and subscribing.
+// PubSub extends messaging.PubSub with alarm and command publishing, and alarm subscribing.
 type PubSub interface {
 	messaging.PubSub
 	messaging.AlarmPublisher
 	messaging.AlarmSubscriber
+	messaging.CommandPublisher
 }
 
 var _ PubSub = (*pubsub)(nil)
