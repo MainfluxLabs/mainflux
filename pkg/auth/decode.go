@@ -4,9 +4,12 @@
 package auth
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"strings"
+
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 // EmailFromToken extracts the email (subject) from a JWT token without
@@ -27,4 +30,18 @@ func EmailFromToken(token string) string {
 		return ""
 	}
 	return claims.Subject
+}
+
+// Used as a key under which a domain.Identity type is stored in a context.Context.
+type ctxKey struct{}
+
+func WithIdentity(ctx context.Context, identity domain.Identity) context.Context {
+	return context.WithValue(ctx, ctxKey{}, identity)
+}
+
+// IdentityFromCtx returns a domain.Identity associated with the passed context.
+func IdentityFromCtx(ctx context.Context) (domain.Identity, bool) {
+	identity, ok := ctx.Value(ctxKey{}).(domain.Identity)
+
+	return identity, ok
 }
