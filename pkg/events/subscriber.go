@@ -63,8 +63,6 @@ type subEventStore struct {
 	name   string
 	cursor string
 	logger logger.Logger
-
-	cancel context.CancelFunc
 }
 
 // NewSubscriber returns a Subscriber that reads from a Redis stream using
@@ -93,10 +91,6 @@ func NewSubscriber(cfg SubscriberConfig, log logger.Logger) (Subscriber, error) 
 }
 
 func (es *subEventStore) Subscribe(ctx context.Context, handler EventHandler) error {
-	ctx, cancel := context.WithCancel(ctx)
-	es.cancel = cancel
-	defer cancel()
-
 	startID, err := es.loadCursor(ctx)
 	if err != nil {
 		return err
@@ -151,10 +145,6 @@ func (es *subEventStore) Subscribe(ctx context.Context, handler EventHandler) er
 }
 
 func (es *subEventStore) Close() error {
-	if es.cancel != nil {
-		es.cancel()
-	}
-
 	return es.client.Close()
 }
 
