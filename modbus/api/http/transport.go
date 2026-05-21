@@ -13,7 +13,10 @@ import (
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/modbus"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -28,48 +31,51 @@ const (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(tracer opentracing.Tracer, svc modbus.Service, logger log.Logger) http.Handler {
+func MakeHandler(tracer opentracing.Tracer, svc modbus.Service, ac domain.AuthClient, logger log.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
 
 	r := bone.New()
 
-	r.Post("/things/:id/clients", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_clients")(createClientsEndpoint(svc)),
+	withIdentity := authn.IdentityMiddleware(ac, logger)
+
+	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
+		e = withIdentity(e)
+		e = kitot.TraceServer(tracer, name)(e)
+		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
+	}
+
+	r.Post("/things/:id/clients", newServer(
+		"create_clients",
+		createClientsEndpoint(svc),
 		decodeCreateClients,
-		encodeResponse,
-		opts...,
 	))
-	r.Get("/things/:id/clients", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_clients_by_thing")(listClientsByThingEndpoint(svc)),
+	r.Get("/things/:id/clients", newServer(
+		"list_clients_by_thing",
+		listClientsByThingEndpoint(svc),
 		decodeListClientsByThing,
-		encodeResponse,
-		opts...,
 	))
-	r.Get("/groups/:id/clients", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_clients_by_group")(listClientsByGroupEndpoint(svc)),
+	r.Get("/groups/:id/clients", newServer(
+		"list_clients_by_group",
+		listClientsByGroupEndpoint(svc),
 		decodeListClientsByGroup,
-		encodeResponse,
-		opts...,
 	))
-	r.Get("/clients/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_client")(viewClientEndpoint(svc)),
+	r.Get("/clients/:id", newServer(
+		"view_client",
+		viewClientEndpoint(svc),
 		decodeRequest,
-		encodeResponse,
-		opts...,
 	))
-	r.Put("/clients/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_client")(updateClientEndpoint(svc)),
+	r.Put("/clients/:id", newServer(
+		"update_client",
+		updateClientEndpoint(svc),
 		decodeUpdateClient,
-		encodeResponse,
-		opts...,
 	))
-	r.Patch("/clients", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_clients")(removeClientsEndpoint(svc)),
+	r.Patch("/clients", newServer(
+		"remove_clients",
+		removeClientsEndpoint(svc),
 		decodeRemoveClients,
-		encodeResponse,
-		opts...,
 	))
 
 	r.GetFunc("/health", mainflux.Health("clients"))

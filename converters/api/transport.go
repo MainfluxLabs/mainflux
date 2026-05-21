@@ -13,8 +13,11 @@ import (
 	adapter "github.com/MainfluxLabs/mainflux/converters"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -31,25 +34,32 @@ const (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.Logger) http.Handler {
+func MakeHandler(svc adapter.Service, ac domain.AuthClient, tracer opentracing.Tracer, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
 
 	r := bone.New()
 
-	r.Post("/csv/senml", kithttp.NewServer(
-		kitot.TraceServer(tracer, "convert_csv_to_senml")(convertCSVToSenMLEndpoint(svc)),
+	withIdentity := authn.IdentityMiddleware(ac, logger)
+
+	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
+		e = withIdentity(e)
+		e = kitot.TraceServer(tracer, name)(e)
+		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
+	}
+
+	r.Post("/csv/senml", newServer(
+		"convert_csv_to_senml",
+		convertCSVToSenMLEndpoint(svc),
 		decodeConvertCSVFile,
-		encodeResponse,
-		opts...,
 	))
 
-	r.Post("/csv/json", kithttp.NewServer(
-		kitot.TraceServer(tracer, "convert_csv_to_json")(convertCSVToJSONEndpoint(svc)),
+	r.Post("/csv/json", newServer(
+		"convert_csv_to_json",
+		convertCSVToJSONEndpoint(svc),
 		decodeConvertCSVFile,
-		encodeResponse,
-		opts...,
 	))
 
 	r.GetFunc("/health", mainflux.Health("converters"))

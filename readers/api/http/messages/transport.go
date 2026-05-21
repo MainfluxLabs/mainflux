@@ -10,9 +10,12 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/readers"
+	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -43,65 +46,66 @@ const (
 	csvFormat              = "csv"
 )
 
-func MakeHandler(svc readers.Service, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
+func MakeHandler(svc readers.Service, ac domain.AuthClient, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
 
-	mux.Get("/json", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_json_messages")(listJSONMessagesEndpoint(svc)),
+	withIdentity := authn.IdentityMiddleware(ac, logger)
+
+	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
+		e = withIdentity(e)
+		e = kitot.TraceServer(tracer, name)(e)
+		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
+	}
+
+	mux.Get("/json", newServer(
+		"list_json_messages",
+		listJSONMessagesEndpoint(svc),
 		decodeListJSONMessages,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Get("/senml", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_senml_messages")(listSenMLMessagesEndpoint(svc)),
+	mux.Get("/senml", newServer(
+		"list_senml_messages",
+		listSenMLMessagesEndpoint(svc),
 		decodeListSenMLMessages,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Post("/json/search", kithttp.NewServer(
-		kitot.TraceServer(tracer, "search_json_messages")(searchJSONMessagesEndpoint(svc)),
+	mux.Post("/json/search", newServer(
+		"search_json_messages",
+		searchJSONMessagesEndpoint(svc),
 		decodeSearchJSONMessages,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Post("/senml/search", kithttp.NewServer(
-		kitot.TraceServer(tracer, "search_senml_messages")(searchSenMLMessagesEndpoint(svc)),
+	mux.Post("/senml/search", newServer(
+		"search_senml_messages",
+		searchSenMLMessagesEndpoint(svc),
 		decodeSearchSenMLMessages,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Delete("/json", kithttp.NewServer(
-		kitot.TraceServer(tracer, "delete_all_json_messages")(deleteAllJSONMessagesEndpoint(svc)),
+	mux.Delete("/json", newServer(
+		"delete_all_json_messages",
+		deleteAllJSONMessagesEndpoint(svc),
 		decodeDeleteAllJSONMessages,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Delete("/json/:publisherID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "delete_json_messages")(deleteJSONMessagesEndpoint(svc)),
+	mux.Delete("/json/:publisherID", newServer(
+		"delete_json_messages",
+		deleteJSONMessagesEndpoint(svc),
 		decodeDeleteJSONMessages,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Delete("/senml", kithttp.NewServer(
-		kitot.TraceServer(tracer, "delete_all_senml_messages")(deleteAllSenMLMessagesEndpoint(svc)),
+	mux.Delete("/senml", newServer(
+		"delete_all_senml_messages",
+		deleteAllSenMLMessagesEndpoint(svc),
 		decodeDeleteAllSenMLMessages,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Delete("/senml/:publisherID", kithttp.NewServer(
-		kitot.TraceServer(tracer, "delete_senml_messages")(deleteSenMLMessagesEndpoint(svc)),
+	mux.Delete("/senml/:publisherID", newServer(
+		"delete_senml_messages",
+		deleteSenMLMessagesEndpoint(svc),
 		decodeDeleteSenMLMessages,
-		encodeResponse,
-		opts...,
 	))
 
 	mux.Get("/json/export", kithttp.NewServer(

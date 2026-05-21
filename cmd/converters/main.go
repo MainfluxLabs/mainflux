@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
+	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	adapter "github.com/MainfluxLabs/mainflux/converters"
 	"github.com/MainfluxLabs/mainflux/converters/api"
 	"github.com/MainfluxLabs/mainflux/logger"
@@ -40,6 +41,8 @@ const (
 	defBrokerURL         = "nats://localhost:4222"
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
+	defAuthGRPCURL       = "localhost:8181"
+	defAuthGRPCTimeout   = "1s"
 
 	envLogLevel          = "MF_CONVERTERS_LOG_LEVEL"
 	envClientTLS         = "MF_CONVERTERS_CLIENT_TLS"
@@ -49,6 +52,8 @@ const (
 	envBrokerURL         = "MF_BROKER_URL"
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
+	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 )
 
 type config struct {
@@ -57,7 +62,9 @@ type config struct {
 	brokerURL         string
 	httpConfig        servers.Config
 	thingsConfig      clients.Config
+	authConfig        clients.Config
 	thingsGRPCTimeout time.Duration
+	authGRPCTimeout   time.Duration
 }
 
 func main() {
@@ -93,6 +100,15 @@ func main() {
 	defer pub.Close()
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsGRPCTimeout)
+
+	authTracer, authCloser := jaeger.Init(svcName+"_auth", cfg.jaegerURL, logger)
+	defer authCloser.Close()
+
+	authConn := clientsgrpc.Connect(cfg.authConfig, logger)
+	defer authConn.Close()
+
+	auth := authapi.NewClient(authConn, authTracer, cfg.authGRPCTimeout)
+
 	svc := adapter.New(pub, tc)
 
 	svc = api.LoggingMiddleware(svc, logger)
@@ -113,7 +129,7 @@ func main() {
 	)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, api.MakeHandler(svc, httpTracer, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, api.MakeHandler(svc, auth, httpTracer, logger), cfg.httpConfig, logger)
 	})
 	g.Go(func() error {
 		if sig := errors.SignalHandler(ctx); sig != nil {
@@ -146,6 +162,11 @@ func loadConfig() config {
 		StopWaitTime: stopWaitTime,
 	}
 
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
+	}
+
 	thingsConfig := clients.Config{
 		ClientTLS:  tls,
 		CaCerts:    mainflux.Env(envCACerts, defCACerts),
@@ -153,12 +174,21 @@ func loadConfig() config {
 		ClientName: clients.Things,
 	}
 
+	authConfig := clients.Config{
+		ClientTLS:  tls,
+		CaCerts:    mainflux.Env(envCACerts, defCACerts),
+		URL:        mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		ClientName: clients.Auth,
+	}
+
 	return config{
 		httpConfig:        httpConfig,
 		thingsConfig:      thingsConfig,
+		authConfig:        authConfig,
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
+		authGRPCTimeout:   authGRPCTimeout,
 	}
 }

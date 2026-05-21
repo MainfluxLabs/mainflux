@@ -11,9 +11,12 @@ import (
 
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/uiconfigs"
 	"github.com/MainfluxLabs/mainflux/uiconfigs/api/http/things"
+	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -21,30 +24,36 @@ import (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(tracer opentracing.Tracer, svc uiconfigs.Service, mux *bone.Mux, logger log.Logger) *bone.Mux {
+func MakeHandler(tracer opentracing.Tracer, svc uiconfigs.Service, ac domain.AuthClient, mux *bone.Mux, logger log.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
 
-	mux.Get("/orgs/:id/configs", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_org_config")(viewOrgConfigEndpoint(svc)),
+	withIdentity := authn.IdentityMiddleware(ac, logger)
+
+	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
+		e = withIdentity(e)
+		e = kitot.TraceServer(tracer, name)(e)
+		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
+	}
+
+	mux.Get("/orgs/:id/configs", newServer(
+		"view_org_config",
+		viewOrgConfigEndpoint(svc),
 		decodeViewOrgConfig,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Get("/orgs/configs", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_all_orgs_configs")(listOrgsConfigsEndpoint(svc)),
+	mux.Get("/orgs/configs", newServer(
+		"list_all_orgs_configs",
+		listOrgsConfigsEndpoint(svc),
 		decodeListOrgsConfigs,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Put("/orgs/:id/configs", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_org_config")(updateOrgConfigEndpoint(svc)),
+	mux.Put("/orgs/:id/configs", newServer(
+		"update_org_config",
+		updateOrgConfigEndpoint(svc),
 		decodeUpdateOrgConfig,
-		encodeResponse,
-		opts...,
 	))
 
 	return mux

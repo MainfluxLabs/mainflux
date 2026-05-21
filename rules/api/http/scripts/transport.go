@@ -11,9 +11,12 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/rules"
+	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -21,86 +24,84 @@ import (
 )
 
 // MakeHandler returns a HTTP handler for script API endpoints.
-func MakeHandler(svc rules.Service, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
+func MakeHandler(svc rules.Service, ac domain.AuthClient, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
 
-	mux.Post("/groups/:id/scripts", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_scripts")(createScriptsEndpoint(svc)),
+	withIdentity := authn.IdentityMiddleware(ac, logger)
+
+	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
+		e = withIdentity(e)
+		e = kitot.TraceServer(tracer, name)(e)
+		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
+	}
+
+	mux.Post("/groups/:id/scripts", newServer(
+		"create_scripts",
+		createScriptsEndpoint(svc),
 		decodeCreateScripts,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Get("/things/:id/scripts", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_scripts_by_thing")(listScriptsByThingEndpoint(svc)),
+	mux.Get("/things/:id/scripts", newServer(
+		"list_scripts_by_thing",
+		listScriptsByThingEndpoint(svc),
 		decodeListScriptsByThing,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Get("/groups/:id/scripts", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_scripts_by_group")(listScriptsByGroupEndpoint(svc)),
+	mux.Get("/groups/:id/scripts", newServer(
+		"list_scripts_by_group",
+		listScriptsByGroupEndpoint(svc),
 		decodeListScriptsByGroup,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Get("/scripts/:id/things", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_thing_ids_by_script")(listThingIDsByScriptEndpoint(svc)),
+	mux.Get("/scripts/:id/things", newServer(
+		"list_thing_ids_by_script",
+		listThingIDsByScriptEndpoint(svc),
 		decodeScriptReq,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Get("/scripts/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_script")(viewScriptEndpoint(svc)),
+	mux.Get("/scripts/:id", newServer(
+		"view_script",
+		viewScriptEndpoint(svc),
 		decodeScriptReq,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Put("/scripts/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_script")(updateScriptEndpoint(svc)),
+	mux.Put("/scripts/:id", newServer(
+		"update_script",
+		updateScriptEndpoint(svc),
 		decodeUpdateScript,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Patch("/scripts", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_scripts")(removeScriptsEndpoint(svc)),
+	mux.Patch("/scripts", newServer(
+		"remove_scripts",
+		removeScriptsEndpoint(svc),
 		decodeRemoveScripts,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Post("/things/:id/scripts", kithttp.NewServer(
-		kitot.TraceServer(tracer, "assign_scripts")(assignScriptsEndpoint(svc)),
+	mux.Post("/things/:id/scripts", newServer(
+		"assign_scripts",
+		assignScriptsEndpoint(svc),
 		decodeThingScripts,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Patch("/things/:id/scripts", kithttp.NewServer(
-		kitot.TraceServer(tracer, "unassign_scripts")(unassignScriptsEndpoint(svc)),
+	mux.Patch("/things/:id/scripts", newServer(
+		"unassign_scripts",
+		unassignScriptsEndpoint(svc),
 		decodeThingScripts,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Get("/things/:id/runs", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_script_runs_by_thing")(listScriptRunsByThingEndpoint(svc)),
+	mux.Get("/things/:id/runs", newServer(
+		"list_script_runs_by_thing",
+		listScriptRunsByThingEndpoint(svc),
 		decodeListScriptRunsByThing,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Patch("/runs", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_script_runs")(removeScriptRunsEndpoint(svc)),
+	mux.Patch("/runs", newServer(
+		"remove_script_runs",
+		removeScriptRunsEndpoint(svc),
 		decodeRemoveScriptRuns,
-		encodeResponse,
-		opts...,
 	))
 
 	return mux

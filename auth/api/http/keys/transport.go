@@ -12,7 +12,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -20,36 +23,42 @@ import (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
+func MakeHandler(svc auth.Service, ac domain.AuthClient, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
-	mux.Post("/keys", kithttp.NewServer(
-		kitot.TraceServer(tracer, "issue")(issueEndpoint(svc)),
+
+	withIdentity := authn.IdentityMiddleware(ac, logger)
+
+	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
+		e = withIdentity(e)
+		e = kitot.TraceServer(tracer, name)(e)
+		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
+	}
+
+	mux.Post("/keys", newServer(
+		"issue",
+		issueEndpoint(svc),
 		decodeIssue,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Get("/keys", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_api_keys")(listAPIKeysEndpoint(svc)),
+	mux.Get("/keys", newServer(
+		"list_api_keys",
+		listAPIKeysEndpoint(svc),
 		decodeListAPIKeys,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Get("/keys/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "retrieve")(retrieveEndpoint(svc)),
+	mux.Get("/keys/:id", newServer(
+		"retrieve",
+		retrieveEndpoint(svc),
 		decodeKeyReq,
-		encodeResponse,
-		opts...,
 	))
 
-	mux.Delete("/keys/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "revoke")(revokeEndpoint(svc)),
+	mux.Delete("/keys/:id", newServer(
+		"revoke",
+		revokeEndpoint(svc),
 		decodeKeyReq,
-		encodeResponse,
-		opts...,
 	))
 
 	return mux

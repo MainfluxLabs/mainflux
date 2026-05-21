@@ -17,6 +17,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -122,9 +123,9 @@ func newService() things.Service {
 	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider, emailerMock)
 }
 
-func newServer(svc things.Service) *httptest.Server {
+func newServer(svc things.Service, auth domain.AuthClient) *httptest.Server {
 	logger := logger.NewMock()
-	mux := httpapi.MakeHandler(svc, mocktracer.New(), logger)
+	mux := httpapi.MakeHandler(svc, auth, mocktracer.New(), logger)
 	return httptest.NewServer(mux)
 }
 
@@ -135,7 +136,7 @@ func toJSON(data any) string {
 
 func TestCreateThings(t *testing.T) {
 	svc := newService()
-	ts := newServer(svc)
+	ts := newServer(svc, mocks.NewAuthService(admin.ID, usersList, orgsList))
 	defer ts.Close()
 
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
@@ -260,7 +261,7 @@ func TestCreateThings(t *testing.T) {
 
 func TestUpdateThing(t *testing.T) {
 	svc := newService()
-	ts := newServer(svc)
+	ts := newServer(svc, mocks.NewAuthService(admin.ID, usersList, orgsList))
 	defer ts.Close()
 
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, group, group)
@@ -409,7 +410,7 @@ func TestUpdateThing(t *testing.T) {
 
 func TestUpdateThingGroupAndProfile(t *testing.T) {
 	svc := newService()
-	ts := newServer(svc)
+	ts := newServer(svc, mocks.NewAuthService(admin.ID, usersList, orgsList))
 	defer ts.Close()
 
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, group, group)
@@ -543,7 +544,7 @@ func TestUpdateThingGroupAndProfile(t *testing.T) {
 
 func TestViewThing(t *testing.T) {
 	svc := newService()
-	ts := newServer(svc)
+	ts := newServer(svc, mocks.NewAuthService(admin.ID, usersList, orgsList))
 	defer ts.Close()
 
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
@@ -629,7 +630,7 @@ func TestViewThing(t *testing.T) {
 
 func TestViewMetadataByKey(t *testing.T) {
 	svc := newService()
-	ts := newServer(svc)
+	ts := newServer(svc, mocks.NewAuthService(admin.ID, usersList, orgsList))
 	defer ts.Close()
 	idProvider := uuid.New()
 
@@ -703,7 +704,7 @@ func TestViewMetadataByKey(t *testing.T) {
 
 func TestListThings(t *testing.T) {
 	svc := newService()
-	ts := newServer(svc)
+	ts := newServer(svc, mocks.NewAuthService(admin.ID, usersList, orgsList))
 	defer ts.Close()
 
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
@@ -895,7 +896,7 @@ func TestListThings(t *testing.T) {
 
 func TestSearchThings(t *testing.T) {
 	svc := newService()
-	ts := newServer(svc)
+	ts := newServer(svc, mocks.NewAuthService(admin.ID, usersList, orgsList))
 	defer ts.Close()
 
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
@@ -1073,7 +1074,7 @@ func TestSearchThings(t *testing.T) {
 
 func TestSearchThingsByProfile(t *testing.T) {
 	svc := newService()
-	ts := newServer(svc)
+	ts := newServer(svc, mocks.NewAuthService(admin.ID, usersList, orgsList))
 	defer ts.Close()
 
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
@@ -1223,7 +1224,7 @@ func TestSearchThingsByProfile(t *testing.T) {
 
 func TestSearchThingsByGroup(t *testing.T) {
 	svc := newService()
-	ts := newServer(svc)
+	ts := newServer(svc, mocks.NewAuthService(admin.ID, usersList, orgsList))
 	defer ts.Close()
 
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
@@ -1374,7 +1375,7 @@ func TestSearchThingsByGroup(t *testing.T) {
 
 func TestSearchThingsByOrg(t *testing.T) {
 	svc := newService()
-	ts := newServer(svc)
+	ts := newServer(svc, mocks.NewAuthService(admin.ID, usersList, orgsList))
 	defer ts.Close()
 
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
@@ -1524,7 +1525,7 @@ func TestSearchThingsByOrg(t *testing.T) {
 
 func TestListThingsByProfile(t *testing.T) {
 	svc := newService()
-	ts := newServer(svc)
+	ts := newServer(svc, mocks.NewAuthService(admin.ID, usersList, orgsList))
 	defer ts.Close()
 
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
@@ -1711,7 +1712,7 @@ func TestListThingsByProfile(t *testing.T) {
 
 func TestListThingsByOrg(t *testing.T) {
 	svc := newService()
-	ts := newServer(svc)
+	ts := newServer(svc, mocks.NewAuthService(admin.ID, usersList, orgsList))
 	defer ts.Close()
 
 	grs, err := svc.CreateGroups(context.Background(), adminToken, orgID, group)
@@ -1931,7 +1932,7 @@ func TestListThingsByOrg(t *testing.T) {
 
 func TestUpdateExternalKey(t *testing.T) {
 	svc := newService()
-	ts := newServer(svc)
+	ts := newServer(svc, mocks.NewAuthService(admin.ID, usersList, orgsList))
 	defer ts.Close()
 
 	createdGroups, err := svc.CreateGroups(context.Background(), token, orgID, group)
@@ -2038,7 +2039,7 @@ func TestUpdateExternalKey(t *testing.T) {
 
 func TestRemoveExternalKey(t *testing.T) {
 	svc := newService()
-	ts := newServer(svc)
+	ts := newServer(svc, mocks.NewAuthService(admin.ID, usersList, orgsList))
 	defer ts.Close()
 
 	createdGroups, err := svc.CreateGroups(context.Background(), token, orgID, group)
@@ -2095,7 +2096,7 @@ func TestRemoveExternalKey(t *testing.T) {
 
 func TestRemoveThing(t *testing.T) {
 	svc := newService()
-	ts := newServer(svc)
+	ts := newServer(svc, mocks.NewAuthService(admin.ID, usersList, orgsList))
 	defer ts.Close()
 
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
@@ -2157,7 +2158,7 @@ func TestRemoveThing(t *testing.T) {
 
 func TestRemoveThings(t *testing.T) {
 	svc := newService()
-	ts := newServer(svc)
+	ts := newServer(svc, mocks.NewAuthService(admin.ID, usersList, orgsList))
 	defer ts.Close()
 
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
@@ -2258,7 +2259,7 @@ func TestRemoveThings(t *testing.T) {
 }
 func TestIdentify(t *testing.T) {
 	svc := newService()
-	ts := newServer(svc)
+	ts := newServer(svc, mocks.NewAuthService(admin.ID, usersList, orgsList))
 	defer ts.Close()
 
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
