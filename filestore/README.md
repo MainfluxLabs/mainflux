@@ -2,7 +2,7 @@
 
 The Filestore service provides file storage for things and groups. File contents are written to a pluggable object store (local filesystem or SeaweedFS filer); file metadata is persisted to a database. Files can be scoped to an individual thing (authenticated with a thing key) or to a group (authenticated with a user bearer token at editor level or above).
 
-Group-file uploads compute a SHA256 checksum on ingest and store it in the database. Group-file downloads stream from the backend and verify the checksum at end-of-stream; a mismatch yields `ErrChecksumMismatch` to the caller.
+Group-file uploads compute a SHA256 checksum on ingest and store it in the database. Group-file downloads stream from the backend and verify the checksum at end-of-stream. Because the body is streamed, the `200 OK` status and headers are sent before verification completes: a mismatch (or a backend read failure) cannot change the status code, so the server logs the error and aborts the connection mid-transfer. Clients must therefore treat a truncated or aborted download as a failure rather than relying solely on the status code. A download whose object is missing entirely (index row present, object gone) returns `404`.
 
 ## Files
 
