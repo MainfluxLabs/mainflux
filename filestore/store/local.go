@@ -107,11 +107,10 @@ func (l *local) DeletePrefix(_ context.Context, prefix string) error {
 	return nil
 }
 
-// verifyReader wraps a ReadCloser and returns ErrChecksumMismatch when the
-// stream terminates (EOF or any other error, including truncation) and the
-// SHA256 of bytes read differs from expected. Verification only happens once
-// the underlying reader reports an error/EOF; a caller that stops reading
-// before the end of the stream is never checked.
+// verifyReader wraps a ReadCloser and returns ErrChecksumMismatch at EOF when
+// the SHA256 of the bytes read differs from expected. A non-EOF read error is
+// passed through unchanged (the transfer itself failed, so the digest is
+// moot), and a caller that stops reading before EOF is never checked.
 type verifyReader struct {
 	rc       io.ReadCloser
 	h        hash.Hash
@@ -124,7 +123,8 @@ func (v *verifyReader) Read(p []byte) (int, error) {
 	if n > 0 {
 		v.h.Write(p[:n])
 	}
-	if err != nil && !v.verified {
+
+	if err == io.EOF && !v.verified {
 		v.verified = true
 		if got := hex.EncodeToString(v.h.Sum(nil)); got != v.expected {
 			return n, ErrChecksumMismatch
