@@ -49,6 +49,9 @@ func (l *local) Put(_ context.Context, key string, r io.Reader) (string, error) 
 func (l *local) Get(_ context.Context, key, expectedChecksum string) (io.ReadCloser, error) {
 	f, err := os.Open(filepath.Join(l.base, key))
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 
@@ -106,7 +109,9 @@ func (l *local) DeletePrefix(_ context.Context, prefix string) error {
 
 // verifyReader wraps a ReadCloser and returns ErrChecksumMismatch when the
 // stream terminates (EOF or any other error, including truncation) and the
-// SHA256 of bytes read differs from expected.
+// SHA256 of bytes read differs from expected. Verification only happens once
+// the underlying reader reports an error/EOF; a caller that stops reading
+// before the end of the stream is never checked.
 type verifyReader struct {
 	rc       io.ReadCloser
 	h        hash.Hash

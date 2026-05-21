@@ -110,6 +110,9 @@ func (s *seaweedFS) Get(ctx context.Context, key, expectedChecksum string) (io.R
 	}
 	if resp.StatusCode != http.StatusOK {
 		resp.Body.Close()
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, ErrNotFound
+		}
 		return nil, fmt.Errorf("%w: get status %d", ErrBackend, resp.StatusCode)
 	}
 	if expectedChecksum == "" {

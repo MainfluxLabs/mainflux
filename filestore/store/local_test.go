@@ -116,7 +116,7 @@ func TestLocalGet(t *testing.T) {
 			key:      "groups/missing/x.txt",
 			checksum: "",
 			want:     nil,
-			err:      os.ErrNotExist,
+			err:      store.ErrNotFound,
 		},
 	}
 

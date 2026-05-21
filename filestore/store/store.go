@@ -16,6 +16,9 @@ var ErrChecksumMismatch = errors.New("checksum mismatch")
 // would otherwise target the store root (empty or whitespace-only).
 var ErrInvalidPrefix = errors.New("invalid prefix")
 
+// ErrNotFound is returned by Get when the requested object does not exist.
+var ErrNotFound = errors.New("object not found")
+
 // FileStore is a pluggable binary-object store.
 type FileStore interface {
 	// Put streams r under key and returns the SHA256 hex checksum.
@@ -25,10 +28,10 @@ type FileStore interface {
 	// the reader returns ErrChecksumMismatch at EOF when the digest differs.
 	Get(ctx context.Context, key, expectedChecksum string) (io.ReadCloser, error)
 
-	// Delete removes key. Missing key is a no-op.
+	// Delete removes key.
 	Delete(ctx context.Context, key string) error
 
-	// DeleteAll removes each key in parallel. Missing keys are no-ops.
+	// DeleteAll removes each key in parallel.
 	DeleteAll(ctx context.Context, keys []string) error
 
 	// DeletePrefix removes all objects whose key begins with prefix.
