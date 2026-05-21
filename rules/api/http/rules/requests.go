@@ -222,7 +222,7 @@ func validateThingIDs(ids []string) error {
 
 func validateInputType(inputType string) error {
 	switch inputType {
-	case rules.InputTypeMessage, rules.InputTypeAlarm, rules.InputTypeSchedule, rules.InputTypeCommand:
+	case rules.InputTypeMessage, rules.InputTypeAlarm, rules.InputTypeCommand:
 		return nil
 	default:
 		return apiutil.ErrInvalidInputType

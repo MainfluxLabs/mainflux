@@ -15,7 +15,6 @@ import (
 const (
 	InputTypeMessage  = "message"
 	InputTypeAlarm    = "alarm"
-	InputTypeSchedule = "schedule"
 	InputTypeCommand  = "command"
 )
 

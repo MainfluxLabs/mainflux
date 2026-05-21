@@ -48,7 +48,7 @@ func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
 
 	if pm.InputType != "" {
 		switch pm.InputType {
-		case InputTypeMessage, InputTypeAlarm, InputTypeSchedule, InputTypeCommand:
+		case InputTypeMessage, InputTypeAlarm, InputTypeCommand:
 		default:
 			return apiutil.ErrInvalidInputType
 		}
