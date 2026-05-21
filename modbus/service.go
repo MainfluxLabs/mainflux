@@ -19,7 +19,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	gbmodbus "github.com/goburrow/modbus"
 	"golang.org/x/time/rate"
@@ -88,7 +87,7 @@ type Service interface {
 	RemoveClientsByGroup(ctx context.Context, groupID string) error
 
 	// RescheduleTasks reschedules all tasks for things related to the specified profile ID.
-	RescheduleTasks(ctx context.Context, profileID string, config map[string]any) error
+	RescheduleTasks(ctx context.Context, profileID string, config *domain.ProfileConfig) error
 
 	// LoadAndScheduleTasks loads schedulers and starts them to execute requests based on client configuration.
 	LoadAndScheduleTasks(ctx context.Context) error
@@ -293,7 +292,7 @@ func (cs *clientsService) RemoveClientsByGroup(ctx context.Context, groupID stri
 	return cs.clients.RemoveByGroup(ctx, groupID)
 }
 
-func (cs *clientsService) RescheduleTasks(ctx context.Context, profileID string, config map[string]any) error {
+func (cs *clientsService) RescheduleTasks(ctx context.Context, profileID string, config *domain.ProfileConfig) error {
 	var clients []Client
 
 	thingIDs, err := cs.things.GetThingIDsByProfile(ctx, profileID)
@@ -313,13 +312,11 @@ func (cs *clientsService) RescheduleTasks(ctx context.Context, profileID string,
 		return nil
 	}
 
-	cfg := protoutil.MapToDomainConfig(config)
-
 	// stop existing tasks and start new tasks with updated config
 	for _, d := range clients {
 		cs.unscheduleTask(d)
 
-		if err := cs.scheduleTask(d, cfg); err != nil {
+		if err := cs.scheduleTask(d, config); err != nil {
 			return err
 		}
 	}

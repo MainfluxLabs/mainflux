@@ -14,6 +14,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/downlinks"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	pkgauth "github.com/MainfluxLabs/mainflux/pkg/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 var _ downlinks.Service = (*loggingMiddleware)(nil)
@@ -138,7 +139,7 @@ func (lm *loggingMiddleware) RemoveDownlinksByGroup(ctx context.Context, groupID
 	return lm.svc.RemoveDownlinksByGroup(ctx, groupID)
 }
 
-func (lm *loggingMiddleware) RescheduleTasks(ctx context.Context, profileID string, config map[string]any) (err error) {
+func (lm *loggingMiddleware) RescheduleTasks(ctx context.Context, profileID string, config *domain.ProfileConfig) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method reschedule_tasks for profile %s and config %v took %s to complete", profileID, config, time.Since(begin))
 		if err != nil {

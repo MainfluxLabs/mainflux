@@ -1,3 +1,6 @@
+// Copyright (c) Mainflux
+// SPDX-License-Identifier: Apache-2.0
+
 package events
 
 import (
@@ -13,29 +16,15 @@ type eventHandler struct {
 
 // NewEventHandler returns new event store handler.
 func NewEventHandler(svc mqtt.Service) events.EventHandler {
-	return &eventHandler{
-		svc: svc,
-	}
+	return &eventHandler{svc: svc}
 }
 
-func (es eventHandler) Handle(ctx context.Context, event events.Event) error {
-	msg, err := event.Encode()
-	if err != nil {
-		return err
+func (h *eventHandler) Handle(ctx context.Context, event events.Event) error {
+	switch e := event.(type) {
+	case events.ThingRemoved:
+		return h.svc.RemoveSubscriptionsByThing(ctx, e.ID)
+	case events.GroupRemoved:
+		return h.svc.RemoveSubscriptionsByGroup(ctx, e.ID)
 	}
-
-	switch msg["operation"] {
-	case events.ThingRemove:
-		re := decodeRemoveEvent(msg)
-		if err := es.svc.RemoveSubscriptionsByThing(ctx, re.id); err != nil {
-			return err
-		}
-	case events.GroupRemove:
-		re := decodeRemoveEvent(msg)
-		if err := es.svc.RemoveSubscriptionsByGroup(ctx, re.id); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }

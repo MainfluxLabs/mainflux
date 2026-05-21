@@ -40,7 +40,6 @@ import (
 const (
 	svcName      = "rules"
 	stopWaitTime = 5 * time.Second
-	esGroupName  = svcName
 
 	defBrokerURL          = "nats://localhost:4222"
 	defLogLevel           = "error"
@@ -64,7 +63,6 @@ const (
 	defReadersGRPCURL     = "localhost:8186"
 	defReadersGRPCTimeout = "1s"
 	defESURL              = "redis://localhost:6379/0"
-	defESConsumerName     = svcName
 	defScriptsEnabled     = "false"
 
 	envBrokerURL          = "MF_BROKER_URL"
@@ -89,7 +87,6 @@ const (
 	envReadersGRPCURL     = "MF_POSTGRES_READER_GRPC_URL"
 	envReadersGRPCTimeout = "MF_POSTGRES_READER_GRPC_TIMEOUT"
 	envESURL              = "MF_RULES_ES_URL"
-	envESConsumerName     = "MF_RULES_EVENT_CONSUMER"
 	envScriptsEnabled     = "MF_RULES_SCRIPTS_ENABLED"
 )
 
@@ -104,7 +101,6 @@ type config struct {
 	thingsGRPCTimeout  time.Duration
 	readersGRPCTimeout time.Duration
 	esURL              string
-	esConsumerName     string
 	scriptsEnabled     bool
 }
 
@@ -242,7 +238,6 @@ func loadConfig() config {
 		thingsGRPCTimeout:  thingsGRPCTimeout,
 		readersGRPCTimeout: readersGRPCTimeout,
 		esURL:              mainflux.Env(envESURL, defESURL),
-		esConsumerName:     mainflux.Env(envESConsumerName, defESConsumerName),
 		scriptsEnabled:     scriptsEnabled,
 	}
 }
@@ -257,7 +252,11 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func subscribeToThingsES(ctx context.Context, svc rules.Service, cfg config, logger logger.Logger) error {
-	subscriber, err := mfevents.NewSubscriber(cfg.esURL, mfevents.ThingsStream, esGroupName, cfg.esConsumerName, logger)
+	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
+		URL:    cfg.esURL,
+		Stream: mfevents.ThingsStream,
+		Name:   svcName,
+	}, logger)
 	if err != nil {
 		return err
 	}
