@@ -16,6 +16,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/filestore/store"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
@@ -271,13 +272,16 @@ func (fs *filestoreService) RemoveGroupFile(ctx context.Context, token, groupID 
 		return err
 	}
 
-	if err := fs.groupsRepo.Remove(ctx, groupID, fi); err != nil {
+	// Delete the object before the index row. A failure here changes nothing
+	// and is safely retryable. A crash between the two steps leaves an
+	// orphaned DB row (served as 404) that a retry fully reconciles, never an
+	// orphaned object.
+	key := groupFileKey(groupID, fi.Name)
+	if err := fs.store.Delete(ctx, key); err != nil {
 		return err
 	}
 
-	key := groupFileKey(groupID, fi.Name)
-	if err := fs.store.Delete(ctx, key); err != nil {
-		fs.logger.Error(fmt.Sprintf("orphaned object after DB remove: key=%s err=%s", key, err))
+	if err := fs.groupsRepo.Remove(ctx, groupID, fi); err != nil {
 		return err
 	}
 
@@ -336,7 +340,13 @@ func (fs *filestoreService) ViewGroupFile(ctx context.Context, token, groupID st
 		return nil, err
 	}
 
-	return fs.store.Get(ctx, groupFileKey(groupID, f.Name), f.Checksum)
+	key := groupFileKey(groupID, f.Name)
+	rc, err := fs.store.Get(ctx, key, f.Checksum)
+	if err != nil {
+		return nil, fs.translateGetErr(key, err)
+	}
+
+	return rc, nil
 }
 
 func (fs *filestoreService) ViewGroupFileByKey(ctx context.Context, thingKey string, fi FileInfo) (io.ReadCloser, error) {
@@ -357,7 +367,25 @@ func (fs *filestoreService) ViewGroupFileByKey(ctx context.Context, thingKey str
 		return nil, err
 	}
 
-	return fs.store.Get(ctx, groupFileKey(grID, f.Name), f.Checksum)
+	key := groupFileKey(grID, f.Name)
+	rc, err := fs.store.Get(ctx, key, f.Checksum)
+	if err != nil {
+		return nil, fs.translateGetErr(key, err)
+	}
+
+	return rc, nil
+}
+
+// translateGetErr maps a store miss to dbutil.ErrNotFound so the API returns
+// 404 instead of 500. A missing object for an existing index row is a
+// storage/DB inconsistency, so it is logged before being flattened for the
+// caller.
+func (fs *filestoreService) translateGetErr(key string, err error) error {
+	if stderrors.Is(err, store.ErrNotFound) {
+		fs.logger.Warn(fmt.Sprintf("file index row exists but object is missing: key=%s", key))
+		return errors.Wrap(dbutil.ErrNotFound, err)
+	}
+	return err
 }
 
 // createDirectory creates directory for storing files
