@@ -96,6 +96,15 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE things_files DROP COLUMN checksum`,
 				},
 			},
+			{
+				Id: "filestore_5",
+				Up: []string{
+					`CREATE INDEX IF NOT EXISTS idx_things_files_group_id ON things_files (group_id);`,
+				},
+				Down: []string{
+					`DROP INDEX IF EXISTS idx_things_files_group_id`,
+				},
+			},
 		},
 	}
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)
