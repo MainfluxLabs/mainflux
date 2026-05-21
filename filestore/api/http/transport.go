@@ -107,7 +107,7 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, logger logger
 	r.Get("/files/:name", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_file")(viewFileEndpoint(svc)),
 		decodeFile,
-		encodeViewFileResponse,
+		encodeViewFileResponse(logger),
 		opts...,
 	))
 	r.Delete("/files/:name", kithttp.NewServer(
@@ -137,13 +137,13 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, logger logger
 	r.Get("/groups/:id/files/:name", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_group_file")(viewGroupFileEndpoint(svc)),
 		decodeGroupFile,
-		encodeViewFileResponse,
+		encodeViewFileResponse(logger),
 		opts...,
 	))
 	r.Get("/groupfiles/:name", kithttp.NewServer(
 		kitot.TraceServer(tracer, "view_group_file_by_thing")(viewGroupFileByKeyEndpoint(svc)),
 		decodeGroupFileByKey,
-		encodeViewFileResponse,
+		encodeViewFileResponse(logger),
 		opts...,
 	))
 	r.Delete("/groups/:id/files/:name", kithttp.NewServer(
@@ -153,7 +153,7 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, logger logger
 		opts...,
 	))
 
-	r.GetFunc("/health", mainflux.Health("things"))
+	r.GetFunc("/health", mainflux.Health("filestore"))
 	r.Handle("/metrics", promhttp.Handler())
 
 	return r
@@ -387,31 +387,41 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response any) erro
 	return json.NewEncoder(w).Encode(response)
 }
 
-func encodeViewFileResponse(_ context.Context, w http.ResponseWriter, response any) (err error) {
-	w.Header().Set("Content-Type", octetStreamContentType)
+func encodeViewFileResponse(logger logger.Logger) kithttp.EncodeResponseFunc {
+	return func(_ context.Context, w http.ResponseWriter, response any) error {
+		w.Header().Set("Content-Type", octetStreamContentType)
 
-	switch fr := response.(type) {
-	case viewFileRes:
-		for k, v := range fr.Headers() {
-			w.Header().Set(k, v)
-		}
-		w.WriteHeader(fr.Code())
-		if fr.Empty() {
+		switch fr := response.(type) {
+		case viewFileRes:
+			for k, v := range fr.Headers() {
+				w.Header().Set(k, v)
+			}
+			w.WriteHeader(fr.Code())
+			if fr.Empty() {
+				return nil
+			}
+			_, err := w.Write(fr.file)
+			return err
+		case streamFileRes:
+			for k, v := range fr.Headers() {
+				w.Header().Set(k, v)
+			}
+			w.WriteHeader(fr.Code())
+			defer fr.reader.Close()
+			if _, err := io.Copy(w, fr.reader); err != nil {
+				// The 200 status and headers are already on the wire, so the
+				// response cannot be switched to an error code. Log the failure
+				// (e.g. a checksum mismatch surfaced by the store at EOF) and
+				// abort the connection so the client observes a truncated
+				// transfer rather than a clean, falsely-successful download.
+				logger.Error(fmt.Sprintf("streaming file %q failed mid-transfer: %s", fr.name, err))
+				panic(http.ErrAbortHandler)
+			}
 			return nil
+		default:
+			return fmt.Errorf("unsupported view response type: %T", response)
 		}
-		w.Write(fr.file)
-	case streamFileRes:
-		for k, v := range fr.Headers() {
-			w.Header().Set(k, v)
-		}
-		w.WriteHeader(fr.Code())
-		defer fr.reader.Close()
-		_, err = io.Copy(w, fr.reader)
-	default:
-		return fmt.Errorf("unsupported view response type: %T", response)
 	}
-
-	return err
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
