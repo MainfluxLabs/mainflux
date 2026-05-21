@@ -53,6 +53,36 @@ func (repo *jsonRepositoryMock) Remove(ctx context.Context, rpm readers.JSONPage
 	return nil
 }
 
+func (repo *jsonRepositoryMock) RemoveByThing(ctx context.Context, thingID string) error {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+
+	for profileID, messages := range repo.messages {
+		var remaining []readers.Message
+		for _, m := range messages {
+			if messagePublisher(m) == thingID {
+				continue
+			}
+			remaining = append(remaining, m)
+		}
+		repo.messages[profileID] = remaining
+	}
+
+	return nil
+}
+
+func messagePublisher(m readers.Message) string {
+	switch msg := m.(type) {
+	case mfjson.Message:
+		return msg.Publisher
+	case map[string]any:
+		if pub, ok := msg["publisher"].(string); ok {
+			return pub
+		}
+	}
+	return ""
+}
+
 func (repo *jsonRepositoryMock) Restore(ctx context.Context, messages ...readers.Message) error {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()

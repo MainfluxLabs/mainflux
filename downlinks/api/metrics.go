@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/downlinks"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -104,7 +105,7 @@ func (ms *metricsMiddleware) RemoveDownlinksByGroup(ctx context.Context, groupID
 	return ms.svc.RemoveDownlinksByGroup(ctx, groupID)
 }
 
-func (ms *metricsMiddleware) RescheduleTasks(ctx context.Context, profileID string, config map[string]any) error {
+func (ms *metricsMiddleware) RescheduleTasks(ctx context.Context, profileID string, config *domain.ProfileConfig) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "reschedule_tasks").Add(1)
 		ms.latency.With("method", "reschedule_tasks").Observe(time.Since(begin).Seconds())

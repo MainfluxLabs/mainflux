@@ -388,7 +388,6 @@ func (fs *filestoreService) translateGetErr(key string, err error) error {
 	return err
 }
 
-// createDirectory creates directory for storing files
 func createFile(path, name string, file io.Reader) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		err = os.MkdirAll(path, permission)

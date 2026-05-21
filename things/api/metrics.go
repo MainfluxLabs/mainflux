@@ -497,3 +497,21 @@ func (ms *metricsMiddleware) GetThingIDsByProfile(ctx context.Context, profileID
 
 	return ms.svc.GetThingIDsByProfile(ctx, profileID)
 }
+
+func (ms *metricsMiddleware) GetThingIDsByGroup(ctx context.Context, groupID string) ([]string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "get_thing_ids_by_group").Add(1)
+		ms.latency.With("method", "get_thing_ids_by_group").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.GetThingIDsByGroup(ctx, groupID)
+}
+
+func (ms *metricsMiddleware) GetGroupIDsByOrgInternal(ctx context.Context, orgID string) ([]string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "get_group_ids_by_org_internal").Add(1)
+		ms.latency.With("method", "get_group_ids_by_org_internal").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.GetGroupIDsByOrgInternal(ctx, orgID)
+}

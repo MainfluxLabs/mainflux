@@ -741,3 +741,29 @@ func (lm *loggingMiddleware) GetThingIDsByProfile(ctx context.Context, profileID
 
 	return lm.svc.GetThingIDsByProfile(ctx, profileID)
 }
+
+func (lm *loggingMiddleware) GetThingIDsByGroup(ctx context.Context, groupID string) (_ []string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method get_thing_ids_by_group for group id %s took %s to complete", groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.GetThingIDsByGroup(ctx, groupID)
+}
+
+func (lm *loggingMiddleware) GetGroupIDsByOrgInternal(ctx context.Context, orgID string) (_ []string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method get_group_ids_by_org_internal for org id %s took %s to complete", orgID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.GetGroupIDsByOrgInternal(ctx, orgID)
+}

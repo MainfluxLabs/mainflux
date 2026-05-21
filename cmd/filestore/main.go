@@ -43,7 +43,6 @@ import (
 const (
 	svcName      = "filestore"
 	stopWaitTime = 5 * time.Second
-	esGroupName  = svcName
 
 	defLogLevel          = "error"
 	defHTTPPort          = "9024"
@@ -64,7 +63,6 @@ const (
 	defDBSSLKey          = ""
 	defDBSSLRootCert     = ""
 	defESURL             = "redis://localhost:6379/0"
-	defESConsumerName    = svcName
 	defFilesPath         = "files"
 	envFilesPath         = "MF_FILESTORE_FILES_PATH"
 	defBackend           = "local"
@@ -98,7 +96,6 @@ const (
 	envThingsAuthURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_FILESTORE_ES_URL"
-	envESConsumerName    = "MF_FILESTORE_EVENT_CONSUMER"
 )
 
 type config struct {
@@ -109,7 +106,6 @@ type config struct {
 	httpConfig        servers.Config
 	thingsConfig      clients.Config
 	esURL             string
-	esConsumerName    string
 	maxUploadBytes    int64
 }
 
@@ -220,7 +216,6 @@ func loadConfig() config {
 		httpConfig:        httpConfig,
 		thingsConfig:      thingsConfig,
 		esURL:             mainflux.Env(envESURL, defESURL),
-		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 		maxUploadBytes:    maxUploadMB * 1024 * 1024,
 	}
 }
@@ -256,7 +251,11 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func subscribeToThingsES(ctx context.Context, svc filestore.Service, cfg config, logger logger.Logger) error {
-	subscriber, err := mfevents.NewSubscriber(cfg.esURL, mfevents.ThingsStream, esGroupName, cfg.esConsumerName, logger)
+	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
+		URL:    cfg.esURL,
+		Stream: mfevents.ThingsStream,
+		Name:   svcName,
+	}, logger)
 	if err != nil {
 		return err
 	}
