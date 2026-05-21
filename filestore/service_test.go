@@ -24,12 +24,11 @@ import (
 )
 
 const (
-	token     = "tok"
-	groupID   = "group-1"
-	thingID   = "thing-1"
-	thingKey  = "thingkey-1"
-	otherGID  = "group-2"
-	otherThID = "thing-2"
+	token    = "tok"
+	groupID  = "group-1"
+	thingID  = "thing-1"
+	thingKey = "thingkey-1"
+	otherGID = "group-2"
 )
 
 func newSvc(t *testing.T) (filestore.Service, *fsmocks.GroupsRepository, *fsmocks.ThingsRepository, string) {
