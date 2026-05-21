@@ -11,6 +11,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 )
 
+var (
+	_ filestore.ThingsRepository = (*ThingsRepository)(nil)
+	_ filestore.GroupsRepository = (*GroupsRepository)(nil)
+)
+
 // ThingsRepository is an in-memory filestore.ThingsRepository for tests.
 type ThingsRepository struct {
 	mu    sync.Mutex
