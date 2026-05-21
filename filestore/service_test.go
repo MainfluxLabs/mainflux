@@ -126,7 +126,7 @@ func TestViewGroupFile(t *testing.T) {
 }
 
 func TestViewGroupFile_ChecksumMismatch(t *testing.T) {
-	svc, grRepo, _, base := newSvc(t)
+	svc, _, _, base := newSvc(t)
 
 	fi := filestore.FileInfo{Name: "a.pdf", Class: "documents", Format: "pdf"}
 	require.Nil(t, svc.SaveGroupFile(context.Background(), strings.NewReader("payload"), token, groupID, fi))
@@ -140,7 +140,6 @@ func TestViewGroupFile_ChecksumMismatch(t *testing.T) {
 
 	_, err = io.ReadAll(rc)
 	assert.True(t, errors.Is(err, store.ErrChecksumMismatch), "expected checksum mismatch, got %v", err)
-	_ = grRepo
 }
 
 func TestRemoveAllFilesByGroup(t *testing.T) {
