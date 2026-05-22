@@ -5,44 +5,58 @@ package events
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
-// Event is implemented by concrete typed events that can be encoded
-// to a type that can be transmitted by a Redis client.
-type Event interface {
-	Encode() RedisEvent
+// EventAction represents an platform action that can be encoded to a redisEvent.
+type EventAction interface {
+	Encode() redisEvent
 }
 
-// decodeEvent turns a raw RedisEvent into its typed Event equivalent based
-// on the operation field, or returns nil when the operation is unknown.
-func decodeEvent(re RedisEvent) Event {
-	switch re.Operation() {
+// Event is the type representing a platform event, composed of an action and the actor's identity.
+type Event struct {
+	Action        EventAction
+	ActorIdentity domain.Identity
+}
+
+// decodeEvent turns a raw RedisEvent into an Event.
+func decodeEvent(re redisEvent) (Event, error) {
+	var action EventAction
+
+	op := re.operation()
+
+	switch op {
 	case ThingCreate:
-		return DecodeThingCreated(re)
+		action = decodeThingCreated(re)
 	case ThingUpdate:
-		return DecodeThingUpdated(re)
+		action = decodeThingUpdated(re)
 	case ThingUpdateGroupAndProfile:
-		return DecodeThingGroupAndProfileUpdated(re)
+		action = decodeThingGroupAndProfileUpdated(re)
 	case ThingRemove:
-		return DecodeThingRemoved(re)
+		action = decodeThingRemoved(re)
 	case ProfileCreate:
-		return DecodeProfileCreated(re)
+		action = decodeProfileCreated(re)
 	case ProfileUpdate:
-		return DecodeProfileUpdated(re)
+		action = decodeProfileUpdated(re)
 	case ProfileRemove:
-		return DecodeProfileRemoved(re)
+		action = decodeProfileRemoved(re)
 	case GroupRemove:
-		return DecodeGroupRemoved(re)
+		action = decodeGroupRemoved(re)
 	case OrgCreate:
-		return DecodeOrgCreated(re)
+		action = decodeOrgCreated(re)
 	case OrgRemove:
-		return DecodeOrgRemoved(re)
+		action = decodeOrgRemoved(re)
+	default:
+		return Event{}, fmt.Errorf("unknown event operation %s", op)
 	}
 
-	return nil
+	return Event{
+		Action:        action,
+		ActorIdentity: re.actorIdentity(),
+	}, nil
 }
 
 // ThingCreated signals the creation of a thing.
@@ -54,8 +68,8 @@ type ThingCreated struct {
 	Metadata  map[string]any
 }
 
-func (e ThingCreated) Encode() RedisEvent {
-	m := RedisEvent{
+func (e ThingCreated) Encode() redisEvent {
+	m := redisEvent{
 		"operation":  ThingCreate,
 		"id":         e.ID,
 		"group_id":   e.GroupID,
@@ -72,14 +86,14 @@ func (e ThingCreated) Encode() RedisEvent {
 	return m
 }
 
-func DecodeThingCreated(e RedisEvent) ThingCreated {
+func decodeThingCreated(e redisEvent) ThingCreated {
 	t := ThingCreated{
-		ID:        e.Field("id", ""),
-		GroupID:   e.Field("group_id", ""),
-		ProfileID: e.Field("profile_id", ""),
-		Name:      e.Field("name", ""),
+		ID:        e.field("id", ""),
+		GroupID:   e.field("group_id", ""),
+		ProfileID: e.field("profile_id", ""),
+		Name:      e.field("name", ""),
 	}
-	if raw := e.Field("metadata", ""); raw != "" {
+	if raw := e.field("metadata", ""); raw != "" {
 		_ = json.Unmarshal([]byte(raw), &t.Metadata)
 	}
 	return t
@@ -93,8 +107,8 @@ type ThingUpdated struct {
 	Metadata  map[string]any
 }
 
-func (e ThingUpdated) Encode() RedisEvent {
-	m := RedisEvent{
+func (e ThingUpdated) Encode() redisEvent {
+	m := redisEvent{
 		"operation":  ThingUpdate,
 		"id":         e.ID,
 		"profile_id": e.ProfileID,
@@ -110,13 +124,13 @@ func (e ThingUpdated) Encode() RedisEvent {
 	return m
 }
 
-func DecodeThingUpdated(e RedisEvent) ThingUpdated {
+func decodeThingUpdated(e redisEvent) ThingUpdated {
 	t := ThingUpdated{
-		ID:        e.Field("id", ""),
-		ProfileID: e.Field("profile_id", ""),
-		Name:      e.Field("name", ""),
+		ID:        e.field("id", ""),
+		ProfileID: e.field("profile_id", ""),
+		Name:      e.field("name", ""),
 	}
-	if raw := e.Field("metadata", ""); raw != "" {
+	if raw := e.field("metadata", ""); raw != "" {
 		_ = json.Unmarshal([]byte(raw), &t.Metadata)
 	}
 	return t
@@ -129,8 +143,8 @@ type ThingGroupAndProfileUpdated struct {
 	GroupID   string
 }
 
-func (e ThingGroupAndProfileUpdated) Encode() RedisEvent {
-	m := RedisEvent{
+func (e ThingGroupAndProfileUpdated) Encode() redisEvent {
+	m := redisEvent{
 		"operation":  ThingUpdateGroupAndProfile,
 		"id":         e.ID,
 		"profile_id": e.ProfileID,
@@ -141,11 +155,11 @@ func (e ThingGroupAndProfileUpdated) Encode() RedisEvent {
 	return m
 }
 
-func DecodeThingGroupAndProfileUpdated(e RedisEvent) ThingGroupAndProfileUpdated {
+func decodeThingGroupAndProfileUpdated(e redisEvent) ThingGroupAndProfileUpdated {
 	return ThingGroupAndProfileUpdated{
-		ID:        e.Field("id", ""),
-		ProfileID: e.Field("profile_id", ""),
-		GroupID:   e.Field("group_id", ""),
+		ID:        e.field("id", ""),
+		ProfileID: e.field("profile_id", ""),
+		GroupID:   e.field("group_id", ""),
 	}
 }
 
@@ -154,15 +168,15 @@ type ThingRemoved struct {
 	ID string
 }
 
-func (e ThingRemoved) Encode() RedisEvent {
-	return RedisEvent{
+func (e ThingRemoved) Encode() redisEvent {
+	return redisEvent{
 		"operation": ThingRemove,
 		"id":        e.ID,
 	}
 }
 
-func DecodeThingRemoved(e RedisEvent) ThingRemoved {
-	return ThingRemoved{ID: e.Field("id", "")}
+func decodeThingRemoved(e redisEvent) ThingRemoved {
+	return ThingRemoved{ID: e.field("id", "")}
 }
 
 // ProfileCreated signals the creation of a profile.
@@ -173,8 +187,8 @@ type ProfileCreated struct {
 	Metadata map[string]any
 }
 
-func (e ProfileCreated) Encode() RedisEvent {
-	m := RedisEvent{
+func (e ProfileCreated) Encode() redisEvent {
+	m := redisEvent{
 		"operation": ProfileCreate,
 		"id":        e.ID,
 		"group_id":  e.GroupID,
@@ -190,13 +204,13 @@ func (e ProfileCreated) Encode() RedisEvent {
 	return m
 }
 
-func DecodeProfileCreated(e RedisEvent) ProfileCreated {
+func decodeProfileCreated(e redisEvent) ProfileCreated {
 	p := ProfileCreated{
-		ID:      e.Field("id", ""),
-		GroupID: e.Field("group_id", ""),
-		Name:    e.Field("name", ""),
+		ID:      e.field("id", ""),
+		GroupID: e.field("group_id", ""),
+		Name:    e.field("name", ""),
 	}
-	if raw := e.Field("metadata", ""); raw != "" {
+	if raw := e.field("metadata", ""); raw != "" {
 		_ = json.Unmarshal([]byte(raw), &p.Metadata)
 	}
 	return p
@@ -210,8 +224,8 @@ type ProfileUpdated struct {
 	Metadata map[string]any
 }
 
-func (e ProfileUpdated) Encode() RedisEvent {
-	m := RedisEvent{
+func (e ProfileUpdated) Encode() redisEvent {
+	m := redisEvent{
 		"operation": ProfileUpdate,
 		"id":        e.ID,
 	}
@@ -231,19 +245,18 @@ func (e ProfileUpdated) Encode() RedisEvent {
 	return m
 }
 
-
-func DecodeProfileUpdated(e RedisEvent) ProfileUpdated {
+func decodeProfileUpdated(e redisEvent) ProfileUpdated {
 	p := ProfileUpdated{
-		ID:   e.Field("id", ""),
-		Name: e.Field("name", ""),
+		ID:   e.field("id", ""),
+		Name: e.field("name", ""),
 	}
-	if raw := e.Field("config", ""); raw != "" {
+	if raw := e.field("config", ""); raw != "" {
 		var cfg domain.ProfileConfig
 		if err := json.Unmarshal([]byte(raw), &cfg); err == nil {
 			p.Config = &cfg
 		}
 	}
-	if raw := e.Field("metadata", ""); raw != "" {
+	if raw := e.field("metadata", ""); raw != "" {
 		_ = json.Unmarshal([]byte(raw), &p.Metadata)
 	}
 	return p
@@ -254,15 +267,15 @@ type ProfileRemoved struct {
 	ID string
 }
 
-func (e ProfileRemoved) Encode() RedisEvent {
-	return RedisEvent{
+func (e ProfileRemoved) Encode() redisEvent {
+	return redisEvent{
 		"operation": ProfileRemove,
 		"id":        e.ID,
 	}
 }
 
-func DecodeProfileRemoved(e RedisEvent) ProfileRemoved {
-	return ProfileRemoved{ID: e.Field("id", "")}
+func decodeProfileRemoved(e redisEvent) ProfileRemoved {
+	return ProfileRemoved{ID: e.field("id", "")}
 }
 
 // GroupRemoved signals that a group has been removed.
@@ -271,8 +284,8 @@ type GroupRemoved struct {
 	ThingIDs []string
 }
 
-func (e GroupRemoved) Encode() RedisEvent {
-	m := RedisEvent{
+func (e GroupRemoved) Encode() redisEvent {
+	m := redisEvent{
 		"operation": GroupRemove,
 		"id":        e.ID,
 	}
@@ -282,9 +295,9 @@ func (e GroupRemoved) Encode() RedisEvent {
 	return m
 }
 
-func DecodeGroupRemoved(e RedisEvent) GroupRemoved {
-	g := GroupRemoved{ID: e.Field("id", "")}
-	if raw := e.Field("thing_ids", ""); raw != "" {
+func decodeGroupRemoved(e redisEvent) GroupRemoved {
+	g := GroupRemoved{ID: e.field("id", "")}
+	if raw := e.field("thing_ids", ""); raw != "" {
 		g.ThingIDs = strings.Split(raw, ",")
 	}
 	return g
@@ -295,15 +308,15 @@ type OrgCreated struct {
 	ID string
 }
 
-func (e OrgCreated) Encode() RedisEvent {
-	return RedisEvent{
+func (e OrgCreated) Encode() redisEvent {
+	return redisEvent{
 		"operation": OrgCreate,
 		"id":        e.ID,
 	}
 }
 
-func DecodeOrgCreated(e RedisEvent) OrgCreated {
-	return OrgCreated{ID: e.Field("id", "")}
+func decodeOrgCreated(e redisEvent) OrgCreated {
+	return OrgCreated{ID: e.field("id", "")}
 }
 
 // OrgRemoved signals that an organization has been removed.
@@ -311,13 +324,13 @@ type OrgRemoved struct {
 	ID string
 }
 
-func (e OrgRemoved) Encode() RedisEvent {
-	return RedisEvent{
+func (e OrgRemoved) Encode() redisEvent {
+	return redisEvent{
 		"operation": OrgRemove,
 		"id":        e.ID,
 	}
 }
 
-func DecodeOrgRemoved(e RedisEvent) OrgRemoved {
-	return OrgRemoved{ID: e.Field("id", "")}
+func decodeOrgRemoved(e redisEvent) OrgRemoved {
+	return OrgRemoved{ID: e.field("id", "")}
 }

@@ -142,7 +142,7 @@ func TestFirstBootSkipsHistory(t *testing.T) {
 
 	// Pre-boot events must not have been replayed.
 	assert.Equal(t, 1, h.count())
-	got := h.received[0].(events.ThingRemoved)
+	got := h.received[0].Action.(events.ThingRemoved)
 	assert.Equal(t, "post-boot-1", got.ID)
 }
 
@@ -178,7 +178,7 @@ func TestCursorPersistsAcrossRestart(t *testing.T) {
 	}()
 
 	require.True(t, waitForCount(t, h2, 1, 2000), "expected event published while subscriber was down to be delivered on restart")
-	assert.Equal(t, "b", h2.received[0].(events.ThingRemoved).ID)
+	assert.Equal(t, "b", h2.received[0].Action.(events.ThingRemoved).ID)
 }
 
 func TestUnknownOperationIsSkipped(t *testing.T) {
@@ -206,7 +206,7 @@ func TestUnknownOperationIsSkipped(t *testing.T) {
 	// advanced past the bogus entry.
 	publishThingRemoved(t, events.ThingsStream, "after-bogus")
 	require.True(t, waitForCount(t, h, 1, 2000))
-	assert.Equal(t, "after-bogus", h.received[0].(events.ThingRemoved).ID)
+	assert.Equal(t, "after-bogus", h.received[0].Action.(events.ThingRemoved).ID)
 }
 
 func TestHandlerErrorRetriesThenSkips(t *testing.T) {
@@ -233,7 +233,7 @@ func TestHandlerErrorRetriesThenSkips(t *testing.T) {
 	// Cursor must have advanced so the next event is delivered immediately.
 	publishThingRemoved(t, events.ThingsStream, "after-fail")
 	require.True(t, waitForCount(t, h, 3, 2000), "expected subsequent event to be delivered after skip")
-	assert.Equal(t, "after-fail", h.received[2].(events.ThingRemoved).ID)
+	assert.Equal(t, "after-fail", h.received[2].Action.(events.ThingRemoved).ID)
 }
 
 func TestCursorMatchesLastDeliveredID(t *testing.T) {
