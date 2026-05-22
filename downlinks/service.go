@@ -18,7 +18,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mainflux/pkg/protoutil"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"golang.org/x/time/rate"
 )
@@ -86,7 +85,7 @@ type Service interface {
 	RemoveDownlinksByGroup(ctx context.Context, groupID string) error
 
 	// RescheduleTasks reschedules all tasks for things associated with the specified profile ID.
-	RescheduleTasks(ctx context.Context, profileID string, config map[string]any) error
+	RescheduleTasks(ctx context.Context, profileID string, config *domain.ProfileConfig) error
 
 	// LoadAndScheduleTasks loads schedulers and starts them for executing downlinks
 	LoadAndScheduleTasks(ctx context.Context) error
@@ -285,7 +284,7 @@ func (ds *downlinksService) RemoveDownlinksByGroup(ctx context.Context, groupID 
 	return ds.downlinks.RemoveByGroup(ctx, groupID)
 }
 
-func (ds *downlinksService) RescheduleTasks(ctx context.Context, profileID string, config map[string]any) error {
+func (ds *downlinksService) RescheduleTasks(ctx context.Context, profileID string, config *domain.ProfileConfig) error {
 	var downlinks []Downlink
 
 	thingIDs, err := ds.things.GetThingIDsByProfile(ctx, profileID)
@@ -305,12 +304,10 @@ func (ds *downlinksService) RescheduleTasks(ctx context.Context, profileID strin
 		return nil
 	}
 
-	cfg := protoutil.MapToDomainConfig(config)
-
 	for _, d := range downlinks {
 		ds.unscheduleTask(d)
 
-		if err := ds.scheduleTask(d, cfg); err != nil {
+		if err := ds.scheduleTask(d, config); err != nil {
 			return err
 		}
 	}

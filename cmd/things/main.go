@@ -47,7 +47,6 @@ import (
 const (
 	stopWaitTime = 5 * time.Second
 	svcName      = "things"
-	esGroupName  = svcName
 
 	defLogLevel        = "error"
 	defDBHost          = "localhost"
@@ -62,8 +61,9 @@ const (
 	defClientTLS       = "false"
 	defCACerts         = ""
 	defCacheURL        = "redis://localhost:6379/0"
-	defESConsumerName  = svcName
 	defESURL           = "redis://localhost:6379/0"
+	defESStreamMaxLen  = "100000"
+	defESBufferSize    = "10000"
 	defHTTPPort        = "8182"
 	defAuthHTTPPort    = "8989"
 	defAuthGRPCPort    = "8183"
@@ -102,8 +102,9 @@ const (
 	envClientTLS        = "MF_THINGS_CLIENT_TLS"
 	envCACerts          = "MF_THINGS_CA_CERTS"
 	envCacheURL         = "MF_THINGS_CACHE_URL"
-	envESConsumerName   = "MF_THINGS_EVENT_CONSUMER"
 	envESURL            = "MF_THINGS_ES_URL"
+	envESStreamMaxLen   = "MF_THINGS_ES_STREAM_MAXLEN"
+	envESBufferSize     = "MF_THINGS_ES_BUFFER_SIZE"
 	envHTTPPort         = "MF_THINGS_HTTP_PORT"
 	envAuthHTTPPort     = "MF_THINGS_AUTH_HTTP_PORT"
 	envAuthGRPCPort     = "MF_THINGS_AUTH_GRPC_PORT"
@@ -140,8 +141,9 @@ type config struct {
 	usersConfig      clients.Config
 	emailConfig      email.Config
 	cacheURL         string
-	esConsumerName   string
 	esURL            string
+	esStreamMaxLen   int64
+	esBufferSize     int
 	standaloneEmail  string
 	standaloneToken  string
 	jaegerURL        string
@@ -168,7 +170,24 @@ func main() {
 
 	cacheClient := connectToRedis(cfg.cacheURL, logger)
 
-	esClient := connectToRedis(cfg.esURL, logger)
+	pub, err := mfevents.NewPublisher(mfevents.PublisherConfig{
+		URL:                  cfg.esURL,
+		Stream:               mfevents.ThingsStream,
+		MaxLen:               cfg.esStreamMaxLen,
+		BufferSize:           cfg.esBufferSize,
+		DrainInitialInterval: mfevents.DefDrainInitialInterval,
+		DrainMaxBackoff:      mfevents.DefDrainMaxBackoff,
+		ShutdownDrainTimeout: mfevents.DefShutdownDrainTimeout,
+	}, logger)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to initialize event publisher: %s", err))
+		os.Exit(1)
+	}
+	defer func() {
+		if err := pub.Close(); err != nil {
+			logger.Error(fmt.Sprintf("Failed to close event publisher: %s", err))
+		}
+	}()
 
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
@@ -195,7 +214,7 @@ func main() {
 
 	users := usersapi.NewClient(usrConn, usersTracer, cfg.usersGRPCTimeout)
 
-	svc := newService(auth, users, dbTracer, cacheTracer, db, cacheClient, esClient, logger, cfg)
+	svc := newService(auth, users, dbTracer, cacheTracer, db, cacheClient, pub, logger, cfg)
 
 	g.Go(func() error {
 		return servershttp.Start(ctx, httpapi.MakeHandler(svc, thingsHttpTracer, logger), cfg.httpConfig, logger)
@@ -245,6 +264,16 @@ func loadConfig() config {
 	usersGRPCTimeout, err := time.ParseDuration(mainflux.Env(envUsersGRPCTimeout, defTimeout))
 	if err != nil {
 		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
+	}
+
+	esStreamMaxLen, err := strconv.ParseInt(mainflux.Env(envESStreamMaxLen, defESStreamMaxLen), 10, 64)
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envESStreamMaxLen, err.Error())
+	}
+
+	esBufferSize, err := strconv.Atoi(mainflux.Env(envESBufferSize, defESBufferSize))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envESBufferSize, err.Error())
 	}
 
 	dbConfig := postgres.Config{
@@ -317,8 +346,9 @@ func loadConfig() config {
 		usersConfig:      usersConfig,
 		emailConfig:      emailConfig,
 		cacheURL:         mainflux.Env(envCacheURL, defCacheURL),
-		esConsumerName:   mainflux.Env(envESConsumerName, defESConsumerName),
 		esURL:            mainflux.Env(envESURL, defESURL),
+		esStreamMaxLen:   esStreamMaxLen,
+		esBufferSize:     esBufferSize,
 		standaloneEmail:  mainflux.Env(envStandaloneEmail, defStandaloneEmail),
 		standaloneToken:  mainflux.Env(envStandaloneToken, defStandaloneToken),
 		jaegerURL:        mainflux.Env(envJaegerURL, defJaegerURL),
@@ -357,7 +387,11 @@ func createAuthClient(cfg config, tracer opentracing.Tracer, logger logger.Logge
 }
 
 func subscribeToAuthES(ctx context.Context, svc things.Service, cfg config, logger logger.Logger) error {
-	subscriber, err := mfevents.NewSubscriber(cfg.esURL, mfevents.AuthStream, esGroupName, cfg.esConsumerName, logger)
+	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
+		URL:    cfg.esURL,
+		Stream: mfevents.AuthStream,
+		Name:   svcName,
+	}, logger)
 	if err != nil {
 		return err
 	}
@@ -374,7 +408,7 @@ func subscribeToAuthES(ctx context.Context, svc things.Service, cfg config, logg
 }
 
 func newService(ac domain.AuthClient, uc domain.UsersClient, dbTracer opentracing.Tracer,
-	cacheTracer opentracing.Tracer, db *sqlx.DB, cacheClient *redis.Client, esClient *redis.Client,
+	cacheTracer opentracing.Tracer, db *sqlx.DB, cacheClient *redis.Client, pub mfevents.Publisher,
 	logger logger.Logger, cfg config) things.Service {
 
 	database := dbutil.NewDatabase(db)
@@ -425,7 +459,7 @@ func newService(ac domain.AuthClient, uc domain.UsersClient, dbTracer opentracin
 
 	svc := things.New(ac, uc, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider, thingsEmailer)
 
-	svc = events.NewEventStoreMiddleware(svc, esClient)
+	svc = events.NewEventStoreMiddleware(svc, pub)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
