@@ -37,9 +37,6 @@ const (
 	defaultRenewalTTL     = "8760h"
 	defaultRenewalKeyType = "rsa"
 	defaultRenewalKeyBits = 2048
-
-	// removeByThingBatch is the page size used when removing all certificates of a thing.
-	removeByThingBatch = 100
 )
 
 var _ Service = (*certsService)(nil)
@@ -219,39 +216,19 @@ func (cs *certsService) revokeCert(ctx context.Context, serial string) (Revoke, 
 	return Revoke{RevocationTime: time.Now()}, nil
 }
 
-func (cs *certsService) RemoveCertsByThing(ctx context.Context, thingID string) (err error) {
-	var removed bool
-
-	// Regenerate the CRL on the way out whenever at least one certificate was
-	// revoked, so that certificates removed before a mid-batch error still make
-	// it into the published CRL. A regeneration failure is only surfaced when
-	// the removal itself succeeded.
-	defer func() {
-		if !removed {
-			return
-		}
-		if crlErr := cs.regenerateCRL(ctx); crlErr != nil && err == nil {
-			err = errors.Wrap(errFailedCRLGeneration, crlErr)
-		}
-	}()
-
-	for {
-		page, retrieveErr := cs.certsRepo.RetrieveByThing(ctx, thingID, 0, removeByThingBatch)
-		if retrieveErr != nil {
-			return errors.Wrap(ErrFailedCertRevocation, retrieveErr)
-		}
-
-		if len(page.Certs) == 0 {
-			return nil
-		}
-
-		for _, cert := range page.Certs {
-			if removeErr := cs.certsRepo.Remove(ctx, cert.Serial); removeErr != nil {
-				return errors.Wrap(errFailedToRemoveCertFromDB, removeErr)
-			}
-			removed = true
-		}
+func (cs *certsService) RemoveCertsByThing(ctx context.Context, thingID string) error {
+	if err := cs.certsRepo.RemoveByThing(ctx, thingID); err != nil {
+		return errors.Wrap(ErrFailedCertRevocation, err)
 	}
+
+	// Regenerate the CRL so that the revoked certificates are published. The
+	// removal is idempotent, so a retry after a failed regeneration still
+	// reaches this point and republishes the CRL.
+	if err := cs.regenerateCRL(ctx); err != nil {
+		return errors.Wrap(errFailedCRLGeneration, err)
+	}
+
+	return nil
 }
 
 func (cs *certsService) regenerateCRL(ctx context.Context) error {
