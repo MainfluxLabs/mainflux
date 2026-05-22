@@ -16,7 +16,7 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/CreateRulesReq"
       responses:
-        '201': 
+        '201':
           $ref: "#/components/responses/CreateRulesRes"
         '400':
           description: Failed due to malformed JSON.
