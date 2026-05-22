@@ -33,10 +33,10 @@ A rule evaluates a set of conditions against an incoming payload. When condition
 
 The `input` field defines what triggers rule evaluation.
 
-| Field       | Description                                                |
-| ----------- | ---------------------------------------------------------- |
-| `type`      | Trigger type: `message`, `alarm`, `schedule`, or `command` |
-| `thing_ids` | IDs of things to which this rule applies.                  |
+| Field       | Description                                    |
+| ----------- | ---------------------------------------------- |
+| `type`      | Trigger type: `message`, `alarm`, or `command` |
+| `thing_ids` | IDs of things to which this rule applies.      |
 
 ### Conditions
 
