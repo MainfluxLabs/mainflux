@@ -132,7 +132,7 @@ func (c *certsRepoMock) RetrieveByThing(ctx context.Context, thingID string, off
 
 	thingCerts, ok := c.certsByThing[thingID]
 	if !ok {
-		return certs.Page{}, dbutil.ErrNotFound
+		return certs.Page{Certs: []certs.Cert{}}, nil
 	}
 
 	start := offset
@@ -145,8 +145,13 @@ func (c *certsRepoMock) RetrieveByThing(ctx context.Context, thingID string, off
 		end = uint64(len(thingCerts))
 	}
 
+	// Return a copy so callers don't alias (and observe mutations of) the
+	// mock's internal storage, matching the snapshot semantics of the DB repo.
+	out := make([]certs.Cert, end-start)
+	copy(out, thingCerts[start:end])
+
 	page := certs.Page{
-		Certs: thingCerts[start:end],
+		Certs: out,
 		Total: uint64(len(thingCerts)),
 	}
 
