@@ -37,6 +37,9 @@ const (
 	defaultRenewalTTL     = "8760h"
 	defaultRenewalKeyType = "rsa"
 	defaultRenewalKeyBits = 2048
+
+	// removeByThingBatch is the page size used when removing all certificates of a thing.
+	removeByThingBatch = 100
 )
 
 var _ Service = (*certsService)(nil)
@@ -68,6 +71,10 @@ type Service interface {
 	// DownloadCert retrieves the full certificate data (key, cert, CA) and marks it as downloaded.
 	// Authenticates via thingKey (device self-provisioning); serial must belong to the thing.
 	DownloadCert(ctx context.Context, thingKey domain.ThingKey, serial string) (Cert, error)
+
+	// RemoveCertsByThing revokes and removes all certificates issued for the given thing ID.
+	// It is intended for internal use in response to thing removal events.
+	RemoveCertsByThing(ctx context.Context, thingID string) error
 }
 
 // Config defines the service parameters
@@ -210,6 +217,31 @@ func (cs *certsService) revokeCert(ctx context.Context, serial string) (Revoke, 
 	}
 
 	return Revoke{RevocationTime: time.Now()}, nil
+}
+
+func (cs *certsService) RemoveCertsByThing(ctx context.Context, thingID string) error {
+	for {
+		page, err := cs.certsRepo.RetrieveByThing(ctx, thingID, 0, removeByThingBatch)
+		if err != nil {
+			return errors.Wrap(ErrFailedCertRevocation, err)
+		}
+
+		if len(page.Certs) == 0 {
+			break
+		}
+
+		for _, cert := range page.Certs {
+			if err := cs.certsRepo.Remove(ctx, cert.Serial); err != nil {
+				return errors.Wrap(errFailedToRemoveCertFromDB, err)
+			}
+		}
+	}
+
+	if err := cs.regenerateCRL(ctx); err != nil {
+		return errors.Wrap(errFailedCRLGeneration, err)
+	}
+
+	return nil
 }
 
 func (cs *certsService) regenerateCRL(ctx context.Context) error {
