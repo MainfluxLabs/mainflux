@@ -16,7 +16,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
-	mfxproto "github.com/MainfluxLabs/mainflux/pkg/proto"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 const (
@@ -176,7 +176,7 @@ func (cs *CertScheduler) publishCertEvent(cert Cert) error {
 		return err
 	}
 
-	cmd := mfxproto.Command{
+	cmd := protomfx.Command{
 		Publisher:   cert.ThingID,
 		Protocol:    "certs",
 		Payload:     payload,
