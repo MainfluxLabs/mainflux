@@ -25,8 +25,7 @@ func NewForwarder() Forwarder {
 }
 
 func (fw *forwarder) Forward(_ context.Context, msg protomfx.Message, wh Webhook) error {
-	_, err := clientshttp.SendRequest(http.MethodPost, wh.Url, msg.Payload, wh.Headers)
-	if err != nil {
+	if _, err := clientshttp.SendRequest(http.MethodPost, wh.Url, msg.Payload, wh.Headers); err != nil {
 		return errors.Wrap(errForward, err)
 	}
 
