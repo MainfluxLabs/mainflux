@@ -12,11 +12,23 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
+const (
+	InputTypeMessage  = "message"
+	InputTypeAlarm    = "alarm"
+	InputTypeCommand  = "command"
+)
+
+type Input struct {
+	Type     string   `json:"type"`
+	ThingIDs []string `json:"thing_ids"`
+}
+
 type Rule struct {
 	ID          string
 	GroupID     string
 	Name        string
 	Description string
+	Input       Input
 	Conditions  []Condition
 	Operator    string
 	Actions     []Action

@@ -68,22 +68,21 @@ func MakeHandler(svc rules.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 		updateRuleEndpoint(svc),
 		decodeUpdateRule,
 	))
+	mux.Post("/rules/:id/things", newServer(
+		"assign_things",
+		assignThingsEndpoint(svc),
+		decodeRuleThings,
+	))
+	mux.Patch("/rules/:id/things", newServer(
+		"unassign_things",
+		unassignThingsEndpoint(svc),
+		decodeRuleThings,
+	))
 	mux.Patch("/rules", newServer(
 		"remove_rules",
 		removeRulesEndpoint(svc),
 		decodeRemoveRules,
 	))
-	mux.Post("/things/:id/rules", newServer(
-		"assign_rules",
-		assignRulesEndpoint(svc),
-		decodeThingRules,
-	))
-	mux.Patch("/things/:id/rules", newServer(
-		"unassign_rules",
-		unassignRulesEndpoint(svc),
-		decodeThingRules,
-	))
-
 	return mux
 }
 
@@ -110,16 +109,18 @@ func decodeListRulesByThing(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	name, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	inputType, _ := apiutil.ReadStringQuery(r, apiutil.InputTypeKey, "")
 
 	req := listRulesByThingReq{
 		token:   apiutil.ExtractBearerToken(r),
 		thingID: bone.GetValue(r, apiutil.IDKey),
 		pageMetadata: rules.PageMetadata{
-			Offset: base.Offset,
-			Limit:  base.Limit,
-			Order:  base.Order,
-			Dir:    base.Dir,
-			Name:   name,
+			Offset:    base.Offset,
+			Limit:     base.Limit,
+			Order:     base.Order,
+			Dir:       base.Dir,
+			Name:      name,
+			InputType: inputType,
 		},
 	}
 
@@ -132,16 +133,18 @@ func decodeListRulesByGroup(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 	name, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	inputType, _ := apiutil.ReadStringQuery(r, apiutil.InputTypeKey, "")
 
 	req := listRulesByGroupReq{
 		token:   apiutil.ExtractBearerToken(r),
 		groupID: bone.GetValue(r, apiutil.IDKey),
 		pageMetadata: rules.PageMetadata{
-			Offset: base.Offset,
-			Limit:  base.Limit,
-			Order:  base.Order,
-			Dir:    base.Dir,
-			Name:   name,
+			Offset:    base.Offset,
+			Limit:     base.Limit,
+			Order:     base.Order,
+			Dir:       base.Dir,
+			Name:      name,
+			InputType: inputType,
 		},
 	}
 
@@ -173,12 +176,15 @@ func decodeUpdateRule(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeRemoveRules(_ context.Context, r *http.Request) (any, error) {
+func decodeRuleThings(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := removeRulesReq{token: apiutil.ExtractBearerToken(r)}
+	req := ruleThingsReq{
+		token:  apiutil.ExtractBearerToken(r),
+		ruleID: bone.GetValue(r, apiutil.IDKey),
+	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
@@ -186,16 +192,12 @@ func decodeRemoveRules(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeThingRules(_ context.Context, r *http.Request) (any, error) {
+func decodeRemoveRules(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := thingRulesReq{
-		token:   apiutil.ExtractBearerToken(r),
-		thingID: bone.GetValue(r, apiutil.IDKey),
-	}
-
+	req := removeRulesReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}

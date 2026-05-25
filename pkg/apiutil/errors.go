@@ -78,6 +78,9 @@ var (
 	// ErrInvalidIDFormat indicates an invalid ID format.
 	ErrInvalidIDFormat = errors.New("invalid id format provided")
 
+	// ErrThingIDsSize indicates that the number of thing IDs is outside the allowed range.
+	ErrThingIDsSize = errors.New("invalid thing ids size")
+
 	// ErrNameSize indicates that name size exceeds the max.
 	ErrNameSize = errors.New("invalid name size")
 
@@ -182,6 +185,9 @@ var (
 
 	// ErrInvalidOperator indicates an invalid logical operator
 	ErrInvalidOperator = errors.New("missing or invalid logical operator")
+
+	// ErrInvalidInputType indicates an invalid rule input type
+	ErrInvalidInputType = errors.New("missing or invalid input type")
 
 	// ErrInviteExpired indicates that an invite has expired
 	ErrInviteExpired = errors.New("invite expired")
