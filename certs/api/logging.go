@@ -138,3 +138,16 @@ func (lm *loggingMiddleware) RenewCert(ctx context.Context, token, serial string
 
 	return lm.svc.RenewCert(ctx, token, serial)
 }
+
+func (lm *loggingMiddleware) RemoveCertsByThing(ctx context.Context, thingID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_certs_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RemoveCertsByThing(ctx, thingID)
+}
