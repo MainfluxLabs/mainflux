@@ -48,9 +48,10 @@ type RulesPage struct {
 }
 
 const (
-	ActionTypeSMTP  = "smtp"
-	ActionTypeSMPP  = "smpp"
-	ActionTypeAlarm = "alarm"
+	ActionTypeSMTP    = "smtp"
+	ActionTypeSMPP    = "smpp"
+	ActionTypeAlarm   = "alarm"
+	ActionTypeWebhook = "webhook"
 
 	OperatorAND = "AND"
 	OperatorOR  = "OR"
@@ -90,6 +91,14 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 				newMsg := *msg
 				newMsg.Payload = payload
 				if err := rs.pub.Publish(fmt.Sprintf("%s.%s", action.Type, action.ID), newMsg); err != nil {
+					return err
+				}
+			}
+		case ActionTypeWebhook:
+			for _, payload := range payloads {
+				newMsg := *msg
+				newMsg.Payload = payload
+				if err := rs.pub.Publish(subjectWebhooks, newMsg); err != nil {
 					return err
 				}
 			}
