@@ -34,6 +34,8 @@ const (
 	SubjectSmpp = "smpp.*"
 	// SubjectAlarms represents subject used to subscribe to alarm triggers.
 	SubjectAlarms = "alarms.*"
+	// SubjectWebhooks represents subject used to subscribe to webhook forwarding — both rule-triggered and integration-based.
+	SubjectWebhooks = "webhooks"
 )
 
 // PubSub extends messaging.PubSub with alarm publishing and subscribing.

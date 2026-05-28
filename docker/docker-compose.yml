@@ -867,6 +867,7 @@ services:
       MF_BROKER_URL: ${MF_BROKER_URL}
       MF_CERTS_CHECK_TIME: ${MF_CERTS_CHECK_TIME}
       MF_CERTS_CRL_PATH: ${MF_CERTS_CRL_PATH}
+      MF_CERTS_ES_URL: ${MF_CERTS_ES_URL}
     volumes:
       - ./ssl/certs/ca.key:/etc/ssl/certs/ca.key
       - ./ssl/certs/ca.crt:/etc/ssl/certs/ca.crt

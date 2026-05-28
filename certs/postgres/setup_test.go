@@ -12,7 +12,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/MainfluxLabs/mainflux/readers/postgres"
+	"github.com/MainfluxLabs/mainflux/certs/postgres"
 	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
 	"github.com/jmoiron/sqlx"
 	dockertest "github.com/ory/dockertest/v3"

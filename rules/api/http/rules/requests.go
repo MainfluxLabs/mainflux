@@ -266,6 +266,7 @@ func validateActions(actions []rules.Action) error {
 			if action.Level < minAlarmLevel || action.Level > maxAlarmLevel {
 				return apiutil.ErrInvalidAlarmLevel
 			}
+		case rules.ActionTypeWebhook:
 		default:
 			return apiutil.ErrInvalidActionType
 		}

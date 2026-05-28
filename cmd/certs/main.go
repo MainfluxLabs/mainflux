@@ -16,6 +16,7 @@ import (
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/certs"
 	"github.com/MainfluxLabs/mainflux/certs/api"
+	certsevents "github.com/MainfluxLabs/mainflux/certs/events"
 	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/certs/postgres"
 	"github.com/MainfluxLabs/mainflux/logger"
@@ -25,6 +26,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
@@ -64,6 +66,7 @@ const (
 
 	defBrokerURL     = "nats://localhost:4222"
 	defCertCheckTime = "02:00"
+	defESURL         = "redis://localhost:6379/0"
 
 	defSignCAPath     = "ca.crt"
 	defSignCAKeyPath  = "ca.key"
@@ -94,6 +97,7 @@ const (
 	envThingsGRPCTimeout = "MF_THINGS_GRPC_TIMEOUT"
 	envBrokerURL         = "MF_BROKER_URL"
 	envCertCheckTime     = "MF_CERTS_CHECK_TIME"
+	envESURL             = "MF_CERTS_ES_URL"
 
 	envSignCAPath     = "MF_CERTS_SIGN_CA_PATH"
 	envSignCAKey      = "MF_CERTS_SIGN_CA_KEY_PATH"
@@ -121,6 +125,7 @@ type config struct {
 	thingsGRPCTimeout time.Duration
 	brokerURL         string
 	certCheckTime     string
+	esURL             string
 	// Sign and issue certificates without 3rd party PKI
 	signCAPath     string
 	signCAKeyPath  string
@@ -196,6 +201,10 @@ func main() {
 
 	g.Go(func() error {
 		return certScheduler.Start(ctx, schedule)
+	})
+
+	g.Go(func() error {
+		return subscribeToThingsES(ctx, svc, cfg, logger)
 	})
 
 	g.Go(func() error {
@@ -278,6 +287,7 @@ func loadConfig() config {
 
 		brokerURL:     mainflux.Env(envBrokerURL, defBrokerURL),
 		certCheckTime: mainflux.Env(envCertCheckTime, defCertCheckTime),
+		esURL:         mainflux.Env(envESURL, defESURL),
 
 		signCAKeyPath:  mainflux.Env(envSignCAKey, defSignCAKeyPath),
 		signCAPath:     mainflux.Env(envSignCAPath, defSignCAPath),
@@ -286,6 +296,27 @@ func loadConfig() config {
 		crlPath:        mainflux.Env(envCRLPath, defCRLPath),
 	}
 
+}
+
+func subscribeToThingsES(ctx context.Context, svc certs.Service, cfg config, logger logger.Logger) error {
+	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
+		URL:    cfg.esURL,
+		Stream: mfevents.ThingsStream,
+		Name:   svcName,
+	}, logger)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := subscriber.Close(); err != nil {
+			logger.Error(fmt.Sprintf("Failed to close subscriber: %s", err))
+		}
+	}()
+
+	handler := certsevents.NewEventHandler(svc)
+
+	return subscriber.Subscribe(ctx, handler)
 }
 
 func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
