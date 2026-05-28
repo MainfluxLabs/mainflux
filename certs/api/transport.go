@@ -35,52 +35,71 @@ func MakeHandler(svc certs.Service, ac domain.AuthClient, tracer opentracing.Tra
 
 	withIdentity := authn.IdentityMiddleware(ac, logger)
 
-	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
-		e = withIdentity(e)
-		e = kitot.TraceServer(tracer, name)(e)
-		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
-	}
-
-	r.Post("/certs", newServer(
-		"issue_cert",
-		issueCertEndpoint(svc),
+	r.Post("/certs", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "issue_cert"),
+			withIdentity,
+		)(issueCertEndpoint(svc)),
 		decodeCerts,
+		encodeResponse,
+		opts...,
 	))
 
-	r.Post("/certs/:serial/rotate", newServer(
-		"rotate_cert",
-		rotateCertEndpoint(svc),
+	r.Post("/certs/:serial/rotate", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "rotate_cert"),
+			withIdentity,
+		)(rotateCertEndpoint(svc)),
 		decodeRotateCert,
+		encodeResponse,
+		opts...,
 	))
 
-	r.Get("/certs/:serial", newServer(
-		"view_cert",
-		viewCertEndpoint(svc),
+	r.Get("/certs/:serial", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_cert"),
+			withIdentity,
+		)(viewCertEndpoint(svc)),
 		decodeViewCert,
+		encodeResponse,
+		opts...,
 	))
 
-	r.Delete("/certs/:serial", newServer(
-		"revoke_cert",
-		revokeCertEndpoint(svc),
+	r.Delete("/certs/:serial", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "revoke_cert"),
+			withIdentity,
+		)(revokeCertEndpoint(svc)),
 		decodeRevokeCerts,
+		encodeResponse,
+		opts...,
 	))
 
-	r.Get("/things/:id/serials", newServer(
-		"list_serials",
-		listSerialsByThingEndpoint(svc),
+	r.Get("/things/:id/serials", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_serials"),
+			withIdentity,
+		)(listSerialsByThingEndpoint(svc)),
 		decodeListSerialsByThing,
+		encodeResponse,
+		opts...,
 	))
 
-	r.Get("/certs/:serial/download", newServer(
-		"download_cert",
-		downloadCertEndpoint(svc),
+	r.Get("/certs/:serial/download", kithttp.NewServer(
+		kitot.TraceServer(tracer, "download_cert")(downloadCertEndpoint(svc)),
 		decodeDownloadCert,
+		encodeResponse,
+		opts...,
 	))
 
-	r.Put("/certs/:serial", newServer(
-		"renew_cert",
-		renewCertEndpoint(svc),
+	r.Put("/certs/:serial", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "renew_cert"),
+			withIdentity,
+		)(renewCertEndpoint(svc)),
 		decodeViewCert,
+		encodeResponse,
+		opts...,
 	))
 
 	r.Handle("/metrics", promhttp.Handler())

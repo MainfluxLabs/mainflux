@@ -41,41 +41,59 @@ func MakeHandler(tracer opentracing.Tracer, svc downlinks.Service, ac domain.Aut
 
 	withIdentity := authn.IdentityMiddleware(ac, logger)
 
-	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
-		e = withIdentity(e)
-		e = kitot.TraceServer(tracer, name)(e)
-		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
-	}
-
-	r.Post("/things/:id/downlinks", newServer(
-		"create_downlinks",
-		createDownlinksEndpoint(svc),
+	r.Post("/things/:id/downlinks", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "create_downlinks"),
+			withIdentity,
+		)(createDownlinksEndpoint(svc)),
 		decodeCreateDownlinks,
+		encodeResponse,
+		opts...,
 	))
-	r.Get("/things/:id/downlinks", newServer(
-		"list_downlinks_by_thing",
-		listDownlinksByThingEndpoint(svc),
+	r.Get("/things/:id/downlinks", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_downlinks_by_thing"),
+			withIdentity,
+		)(listDownlinksByThingEndpoint(svc)),
 		decodeListThingDownlinks,
+		encodeResponse,
+		opts...,
 	))
-	r.Get("/groups/:id/downlinks", newServer(
-		"list_downlinks_by_group",
-		listDownlinksByGroupEndpoint(svc),
+	r.Get("/groups/:id/downlinks", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_downlinks_by_group"),
+			withIdentity,
+		)(listDownlinksByGroupEndpoint(svc)),
 		decodeListDownlinks,
+		encodeResponse,
+		opts...,
 	))
-	r.Get("/downlinks/:id", newServer(
-		"view_downlink",
-		viewDownlinkEndpoint(svc),
+	r.Get("/downlinks/:id", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_downlink"),
+			withIdentity,
+		)(viewDownlinkEndpoint(svc)),
 		decodeRequest,
+		encodeResponse,
+		opts...,
 	))
-	r.Put("/downlinks/:id", newServer(
-		"update_downlink",
-		updateDownlinkEndpoint(svc),
+	r.Put("/downlinks/:id", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_downlink"),
+			withIdentity,
+		)(updateDownlinkEndpoint(svc)),
 		decodeUpdateDownlink,
+		encodeResponse,
+		opts...,
 	))
-	r.Patch("/downlinks", newServer(
-		"remove_downlinks",
-		removeDownlinksEndpoint(svc),
+	r.Patch("/downlinks", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "remove_downlinks"),
+			withIdentity,
+		)(removeDownlinksEndpoint(svc)),
 		decodeRemoveDownlinks,
+		encodeResponse,
+		opts...,
 	))
 
 	backup.MakeHandler(tracer, svc, ac, r, logger)

@@ -31,28 +31,34 @@ func MakeHandler(tracer opentracing.Tracer, svc uiconfigs.Service, ac domain.Aut
 
 	withIdentity := authn.IdentityMiddleware(ac, logger)
 
-	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
-		e = withIdentity(e)
-		e = kitot.TraceServer(tracer, name)(e)
-		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
-	}
-
-	mux.Get("/things/:id/configs", newServer(
-		"view_thing_config",
-		viewThingConfigEndpoint(svc),
+	mux.Get("/things/:id/configs", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_thing_config"),
+			withIdentity,
+		)(viewThingConfigEndpoint(svc)),
 		decodeViewThingConfig,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/things/configs", newServer(
-		"list_all_things_configs",
-		listThingsConfigsEndpoint(svc),
+	mux.Get("/things/configs", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_all_things_configs"),
+			withIdentity,
+		)(listThingsConfigsEndpoint(svc)),
 		decodeListThingsConfigs,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Put("/things/:id/configs", newServer(
-		"update_thing_config",
-		updateThingConfigEndpoint(svc),
+	mux.Put("/things/:id/configs", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_thing_config"),
+			withIdentity,
+		)(updateThingConfigEndpoint(svc)),
 		decodeUpdateThingConfig,
+		encodeResponse,
+		opts...,
 	))
 
 	return mux

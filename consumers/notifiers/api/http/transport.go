@@ -40,42 +40,60 @@ func MakeHandler(tracer opentracing.Tracer, svc notifiers.Service, ac domain.Aut
 
 	withIdentity := authn.IdentityMiddleware(ac, logger)
 
-	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
-		e = withIdentity(e)
-		e = kitot.TraceServer(tracer, name)(e)
-		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
-	}
-
-	r.Post("/groups/:id/notifiers", newServer(
-		"create_notifiers",
-		createNotifiersEndpoint(svc),
+	r.Post("/groups/:id/notifiers", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "create_notifiers"),
+			withIdentity,
+		)(createNotifiersEndpoint(svc)),
 		decodeCreateNotifiers,
+		encodeResponse,
+		opts...,
 	))
-	r.Get("/groups/:id/notifiers", newServer(
-		"list_notifiers_by_group",
-		listNotifiersByGroupEndpoint(svc),
+	r.Get("/groups/:id/notifiers", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_notifiers_by_group"),
+			withIdentity,
+		)(listNotifiersByGroupEndpoint(svc)),
 		decodeListNotifiers,
+		encodeResponse,
+		opts...,
 	))
-	r.Post("/groups/:id/notifiers/search", newServer(
-		"search_notifiers_by_group",
-		listNotifiersByGroupEndpoint(svc),
+	r.Post("/groups/:id/notifiers/search", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "search_notifiers_by_group"),
+			withIdentity,
+		)(listNotifiersByGroupEndpoint(svc)),
 		decodeSearchNotifiers,
+		encodeResponse,
+		opts...,
 	))
 
-	r.Get("/notifiers/:id", newServer(
-		"view_notifier",
-		viewNotifierEndpoint(svc),
+	r.Get("/notifiers/:id", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_notifier"),
+			withIdentity,
+		)(viewNotifierEndpoint(svc)),
 		decodeRequest,
+		encodeResponse,
+		opts...,
 	))
-	r.Put("/notifiers/:id", newServer(
-		"update_notifier",
-		updateNotifierEndpoint(svc),
+	r.Put("/notifiers/:id", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_notifier"),
+			withIdentity,
+		)(updateNotifierEndpoint(svc)),
 		decodeUpdateNotifier,
+		encodeResponse,
+		opts...,
 	))
-	r.Patch("/notifiers", newServer(
-		"remove_notifiers",
-		removeNotifiersEndpoint(svc),
+	r.Patch("/notifiers", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "remove_notifiers"),
+			withIdentity,
+		)(removeNotifiersEndpoint(svc)),
 		decodeRemoveNotifiers,
+		encodeResponse,
+		opts...,
 	))
 
 	r.GetFunc("/health", mainflux.Health("notifiers"))

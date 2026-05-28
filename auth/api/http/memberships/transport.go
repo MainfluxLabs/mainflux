@@ -33,40 +33,54 @@ func MakeHandler(svc auth.Service, ac domain.AuthClient, mux *bone.Mux, tracer o
 
 	withIdentity := authn.IdentityMiddleware(ac, logger)
 
-	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
-		e = withIdentity(e)
-		e = kitot.TraceServer(tracer, name)(e)
-		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
-	}
-
-	mux.Post("/orgs/:id/memberships", newServer(
-		"create_org_memberships",
-		createOrgMembershipsEndpoint(svc),
+	mux.Post("/orgs/:id/memberships", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "create_org_memberships"),
+			withIdentity,
+		)(createOrgMembershipsEndpoint(svc)),
 		decodeOrgMembershipsRequest,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/orgs/:orgID/members/:memberID", newServer(
-		"view_org_membership",
-		viewOrgMembershipEndpoint(svc),
+	mux.Get("/orgs/:orgID/members/:memberID", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_org_membership"),
+			withIdentity,
+		)(viewOrgMembershipEndpoint(svc)),
 		decodeOrgMembershipRequest,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/orgs/:id/memberships", newServer(
-		"list_org_memberships",
-		listOrgMembershipsEndpoint(svc),
+	mux.Get("/orgs/:id/memberships", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_org_memberships"),
+			withIdentity,
+		)(listOrgMembershipsEndpoint(svc)),
 		decodeListOrgMemberships,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Put("/orgs/:id/memberships", newServer(
-		"update_org_memberships",
-		updateOrgMembershipsEndpoint(svc),
+	mux.Put("/orgs/:id/memberships", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_org_memberships"),
+			withIdentity,
+		)(updateOrgMembershipsEndpoint(svc)),
 		decodeOrgMembershipsRequest,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Patch("/orgs/:id/memberships", newServer(
-		"remove_org_memberships",
-		removeOrgMembershipsEndpoint(svc),
+	mux.Patch("/orgs/:id/memberships", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "remove_org_memberships"),
+			withIdentity,
+		)(removeOrgMembershipsEndpoint(svc)),
 		decodeRemoveOrgMemberships,
+		encodeResponse,
+		opts...,
 	))
 
 	return mux

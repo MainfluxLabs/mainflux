@@ -31,34 +31,44 @@ func MakeHandler(svc auth.Service, ac domain.AuthClient, mux *bone.Mux, tracer o
 
 	withIdentity := authn.IdentityMiddleware(ac, logger)
 
-	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
-		e = withIdentity(e)
-		e = kitot.TraceServer(tracer, name)(e)
-		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
-	}
-
-	mux.Post("/keys", newServer(
-		"issue",
-		issueEndpoint(svc),
+	mux.Post("/keys", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "issue"),
+			withIdentity,
+		)(issueEndpoint(svc)),
 		decodeIssue,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/keys", newServer(
-		"list_api_keys",
-		listAPIKeysEndpoint(svc),
+	mux.Get("/keys", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_api_keys"),
+			withIdentity,
+		)(listAPIKeysEndpoint(svc)),
 		decodeListAPIKeys,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/keys/:id", newServer(
-		"retrieve",
-		retrieveEndpoint(svc),
+	mux.Get("/keys/:id", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "retrieve"),
+			withIdentity,
+		)(retrieveEndpoint(svc)),
 		decodeKeyReq,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Delete("/keys/:id", newServer(
-		"revoke",
-		revokeEndpoint(svc),
+	mux.Delete("/keys/:id", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "revoke"),
+			withIdentity,
+		)(revokeEndpoint(svc)),
 		decodeKeyReq,
+		encodeResponse,
+		opts...,
 	))
 
 	return mux

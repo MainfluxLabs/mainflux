@@ -33,23 +33,24 @@ func MakeHandler(tracer opentracing.Tracer, svc uiconfigs.Service, ac domain.Aut
 
 	withIdentity := authn.IdentityMiddleware(ac, logger)
 
-	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
-		e = withIdentity(e)
-		e = kitot.TraceServer(tracer, name)(e)
-		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
-	}
-
 	mux.Get("/backup", kithttp.NewServer(
-		kitot.TraceServer(tracer, "backup")(backupEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "backup"),
+			withIdentity,
+		)(backupEndpoint(svc)),
 		decodeBackupConfigs,
 		apiutil.EncodeFileResponse,
 		opts...,
 	))
 
-	mux.Post("/restore", newServer(
-		"restore",
-		restoreEndpoint(svc),
+	mux.Post("/restore", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "restore"),
+			withIdentity,
+		)(restoreEndpoint(svc)),
 		decodeRestoreConfigs,
+		encodeResponse,
+		opts...,
 	))
 
 	return mux

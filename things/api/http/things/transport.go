@@ -35,124 +35,188 @@ func MakeHandler(svc things.Service, ac domain.AuthClient, mux *bone.Mux, tracer
 
 	withIdentity := authn.IdentityMiddleware(ac, logger)
 
-	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
-		e = withIdentity(e)
-		e = kitot.TraceServer(tracer, name)(e)
-		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
-	}
-
-	mux.Post("/profiles/:id/things", newServer(
-		"create_things",
-		createThingsEndpoint(svc),
+	mux.Post("/profiles/:id/things", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "create_things"),
+			withIdentity,
+		)(createThingsEndpoint(svc)),
 		decodeCreateThings,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/things/:id", newServer(
-		"view_thing",
-		viewThingEndpoint(svc),
+	mux.Get("/things/:id", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_thing"),
+			withIdentity,
+		)(viewThingEndpoint(svc)),
 		decodeRequest,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/metadata", newServer(
-		"view_metadata_by_key",
-		viewMetadataByKeyEndpoint(svc),
+	mux.Get("/metadata", kithttp.NewServer(
+		kitot.TraceServer(tracer, "view_metadata_by_key")(viewMetadataByKeyEndpoint(svc)),
 		decodeViewMetadata,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/things", newServer(
-		"list_things",
-		listThingsEndpoint(svc),
+	mux.Get("/things", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_things"),
+			withIdentity,
+		)(listThingsEndpoint(svc)),
 		decodeList,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/profiles/:id/things", newServer(
-		"list_things_by_profile",
-		listThingsByProfileEndpoint(svc),
+	mux.Get("/profiles/:id/things", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_things_by_profile"),
+			withIdentity,
+		)(listThingsByProfileEndpoint(svc)),
 		decodeListByProfile,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/groups/:id/things", newServer(
-		"list_things_by_group",
-		listThingsByGroupEndpoint(svc),
+	mux.Get("/groups/:id/things", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_things_by_group"),
+			withIdentity,
+		)(listThingsByGroupEndpoint(svc)),
 		decodeListByGroup,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/orgs/:id/things", newServer(
-		"list_things_by_org",
-		listThingsByOrgEndpoint(svc),
+	mux.Get("/orgs/:id/things", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_things_by_org"),
+			withIdentity,
+		)(listThingsByOrgEndpoint(svc)),
 		decodeListByOrg,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Post("/things/search", newServer(
-		"search_things",
-		listThingsEndpoint(svc),
+	mux.Post("/things/search", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "search_things"),
+			withIdentity,
+		)(listThingsEndpoint(svc)),
 		decodeSearch,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Post("/profiles/:id/things/search", newServer(
-		"search_things_by_profile",
-		listThingsByProfileEndpoint(svc),
+	mux.Post("/profiles/:id/things/search", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "search_things_by_profile"),
+			withIdentity,
+		)(listThingsByProfileEndpoint(svc)),
 		decodeSearchByProfile,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Post("/groups/:id/things/search", newServer(
-		"search_things_by_group",
-		listThingsByGroupEndpoint(svc),
+	mux.Post("/groups/:id/things/search", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "search_things_by_group"),
+			withIdentity,
+		)(listThingsByGroupEndpoint(svc)),
 		decodeSearchByGroup,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Post("/orgs/:id/things/search", newServer(
-		"search_things_by_org",
-		listThingsByOrgEndpoint(svc),
+	mux.Post("/orgs/:id/things/search", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "search_things_by_org"),
+			withIdentity,
+		)(listThingsByOrgEndpoint(svc)),
 		decodeSearchByOrg,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Put("/things/:id", newServer(
-		"update_thing",
-		updateThingEndpoint(svc),
+	mux.Put("/things/:id", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_thing"),
+			withIdentity,
+		)(updateThingEndpoint(svc)),
 		decodeUpdateThing,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Patch("/things/:id", newServer(
-		"update_thing_group_and_profile",
-		updateThingGroupAndProfileEndpoint(svc),
+	mux.Patch("/things/:id", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_thing_group_and_profile"),
+			withIdentity,
+		)(updateThingGroupAndProfileEndpoint(svc)),
 		decodeUpdateThingGroupAndProfile,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Put("/things", newServer(
-		"update_things_metadata",
-		updateThingsMetadataEndpoint(svc),
+	mux.Put("/things", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_things_metadata"),
+			withIdentity,
+		)(updateThingsMetadataEndpoint(svc)),
 		decodeUpdateThingsMetadata,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Delete("/things/:id", newServer(
-		"remove_thing",
-		removeThingEndpoint(svc),
+	mux.Delete("/things/:id", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "remove_thing"),
+			withIdentity,
+		)(removeThingEndpoint(svc)),
 		decodeRequest,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Patch("/things", newServer(
-		"remove_things",
-		removeThingsEndpoint(svc),
+	mux.Patch("/things", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "remove_things"),
+			withIdentity,
+		)(removeThingsEndpoint(svc)),
 		decodeRemoveThings,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Patch("/things/:id/external-key", newServer(
-		"update_external_key",
-		updateExternalKeyEndpoint(svc),
+	mux.Patch("/things/:id/external-key", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_external_key"),
+			withIdentity,
+		)(updateExternalKeyEndpoint(svc)),
 		decodeUpdateExternalKey,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Delete("/things/:id/external-key", newServer(
-		"remove_external_key",
-		removeExternalKeyEndpoint(svc),
+	mux.Delete("/things/:id/external-key", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "remove_external_key"),
+			withIdentity,
+		)(removeExternalKeyEndpoint(svc)),
 		decodeRemoveExternalKey,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Post("/identify", newServer(
-		"identify",
-		identifyEndpoint(svc),
+	mux.Post("/identify", kithttp.NewServer(
+		kitot.TraceServer(tracer, "identify")(identifyEndpoint(svc)),
 		decodeIdentify,
+		encodeResponse,
+		opts...,
 	))
 
 	mux.GetFunc("/health", mainflux.Health("things"))

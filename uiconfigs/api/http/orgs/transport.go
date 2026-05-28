@@ -32,28 +32,34 @@ func MakeHandler(tracer opentracing.Tracer, svc uiconfigs.Service, ac domain.Aut
 
 	withIdentity := authn.IdentityMiddleware(ac, logger)
 
-	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
-		e = withIdentity(e)
-		e = kitot.TraceServer(tracer, name)(e)
-		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
-	}
-
-	mux.Get("/orgs/:id/configs", newServer(
-		"view_org_config",
-		viewOrgConfigEndpoint(svc),
+	mux.Get("/orgs/:id/configs", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_org_config"),
+			withIdentity,
+		)(viewOrgConfigEndpoint(svc)),
 		decodeViewOrgConfig,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/orgs/configs", newServer(
-		"list_all_orgs_configs",
-		listOrgsConfigsEndpoint(svc),
+	mux.Get("/orgs/configs", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_all_orgs_configs"),
+			withIdentity,
+		)(listOrgsConfigsEndpoint(svc)),
 		decodeListOrgsConfigs,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Put("/orgs/:id/configs", newServer(
-		"update_org_config",
-		updateOrgConfigEndpoint(svc),
+	mux.Put("/orgs/:id/configs", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_org_config"),
+			withIdentity,
+		)(updateOrgConfigEndpoint(svc)),
 		decodeUpdateOrgConfig,
+		encodeResponse,
+		opts...,
 	))
 
 	return mux

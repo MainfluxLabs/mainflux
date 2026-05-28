@@ -49,82 +49,109 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 
 	withIdentity := authn.IdentityMiddleware(ac, logger)
 
-	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
-		e = withIdentity(e)
-		e = kitot.TraceServer(tracer, name)(e)
-		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
-	}
-
-	mux.Post("/users", newServer(
-		"register",
-		registrationEndpoint(svc),
+	mux.Post("/users", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "register"),
+			withIdentity,
+		)(registrationEndpoint(svc)),
 		decodeRegisterUser,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Post("/register", newServer(
-		"self_register",
-		selfRegistrationEndpoint(svc),
+	mux.Post("/register", kithttp.NewServer(
+		kitot.TraceServer(tracer, "self_register")(selfRegistrationEndpoint(svc)),
 		decodeSelfRegisterUser,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Post("/register/verify", newServer(
-		"verify_email",
-		verifyEmailEndpoint(svc),
+	mux.Post("/register/verify", kithttp.NewServer(
+		kitot.TraceServer(tracer, "verify_email")(verifyEmailEndpoint(svc)),
 		decodeVerifyEmail,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/users/profile", newServer(
-		"view_profile",
-		viewProfileEndpoint(svc),
+	mux.Get("/users/profile", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_profile"),
+			withIdentity,
+		)(viewProfileEndpoint(svc)),
 		decodeViewProfile,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/users/:id", newServer(
-		"view_user",
-		viewUserEndpoint(svc),
+	mux.Get("/users/:id", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_user"),
+			withIdentity,
+		)(viewUserEndpoint(svc)),
 		decodeViewUser,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/users", newServer(
-		"list_users",
-		listUsersEndpoint(svc),
+	mux.Get("/users", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_users"),
+			withIdentity,
+		)(listUsersEndpoint(svc)),
 		decodeListUsers,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Post("/users/search", newServer(
-		"search_users",
-		listUsersEndpoint(svc),
+	mux.Post("/users/search", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "search_users"),
+			withIdentity,
+		)(listUsersEndpoint(svc)),
 		decodeSearchUsers,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Put("/users", newServer(
-		"update_user",
-		updateUserEndpoint(svc),
+	mux.Put("/users", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_user"),
+			withIdentity,
+		)(updateUserEndpoint(svc)),
 		decodeUpdateUser,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Post("/password/reset-request", newServer(
-		"res-req",
-		passwordResetRequestEndpoint(svc),
+	mux.Post("/password/reset-request", kithttp.NewServer(
+		kitot.TraceServer(tracer, "res-req")(passwordResetRequestEndpoint(svc)),
 		decodePasswordResetRequest,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Put("/password/reset", newServer(
-		"reset",
-		passwordResetEndpoint(svc),
+	mux.Put("/password/reset", kithttp.NewServer(
+		kitot.TraceServer(tracer, "reset")(passwordResetEndpoint(svc)),
 		decodePasswordReset,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Patch("/password", newServer(
-		"reset",
-		passwordChangeEndpoint(svc),
+	mux.Patch("/password", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "reset"),
+			withIdentity,
+		)(passwordChangeEndpoint(svc)),
 		decodePasswordChange,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Post("/tokens", newServer(
-		"login",
-		loginEndpoint(svc),
+	mux.Post("/tokens", kithttp.NewServer(
+		kitot.TraceServer(tracer, "login")(loginEndpoint(svc)),
 		decodeCredentials,
+		encodeResponse,
+		opts...,
 	))
 
 	mux.Get("/users/oauth/:provider", kithttp.NewServer(
@@ -141,16 +168,24 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 		callbackOpts...,
 	))
 
-	mux.Post("/users/:id/enable", newServer(
-		"enable_user",
-		enableUserEndpoint(svc),
+	mux.Post("/users/:id/enable", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "enable_user"),
+			withIdentity,
+		)(enableUserEndpoint(svc)),
 		decodeChangeUserStatus,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Post("/users/:id/disable", newServer(
-		"disable_user",
-		disableUserEndpoint(svc),
+	mux.Post("/users/:id/disable", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "disable_user"),
+			withIdentity,
+		)(disableUserEndpoint(svc)),
 		decodeChangeUserStatus,
+		encodeResponse,
+		opts...,
 	))
 
 	return mux

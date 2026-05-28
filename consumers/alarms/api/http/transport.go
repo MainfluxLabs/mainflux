@@ -42,59 +42,74 @@ func MakeHandler(tracer opentracing.Tracer, svc alarms.Service, ac domain.AuthCl
 
 	withIdentity := authn.IdentityMiddleware(ac, logger)
 
-	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc, encodeFunc kithttp.EncodeResponseFunc) *kithttp.Server {
-		e = withIdentity(e)
-		e = kitot.TraceServer(tracer, name)(e)
-		return kithttp.NewServer(e, decodeFunc, encodeFunc, opts...)
-	}
-
-	r.Get("/things/:id/alarms", newServer(
-		"list_alarms_by_thing",
-		listAlarmsByThingEndpoint(svc),
+	r.Get("/things/:id/alarms", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_alarms_by_thing"),
+			withIdentity,
+		)(listAlarmsByThingEndpoint(svc)),
 		decodeListAlarmsByThing,
 		encodeResponse,
+		opts...,
 	))
 
-	r.Get("/groups/:id/alarms", newServer(
-		"list_alarms_by_group",
-		listAlarmsByGroupEndpoint(svc),
+	r.Get("/groups/:id/alarms", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_alarms_by_group"),
+			withIdentity,
+		)(listAlarmsByGroupEndpoint(svc)),
 		decodeListGroupAlarms,
 		encodeResponse,
+		opts...,
 	))
 
-	r.Get("/orgs/:id/alarms", newServer(
-		"list_alarms_by_org",
-		listAlarmsByOrgEndpoint(svc),
+	r.Get("/orgs/:id/alarms", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_alarms_by_org"),
+			withIdentity,
+		)(listAlarmsByOrgEndpoint(svc)),
 		decodeListAlarmsByOrg,
 		encodeResponse,
+		opts...,
 	))
 
-	r.Get("/alarms/:id", newServer(
-		"view_alarm",
-		viewAlarmEndpoint(svc),
+	r.Get("/alarms/:id", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_alarm"),
+			withIdentity,
+		)(viewAlarmEndpoint(svc)),
 		decodeViewAlarm,
 		encodeResponse,
+		opts...,
 	))
 
-	r.Patch("/alarms/:id", newServer(
-		"update_alarm_status",
-		updateAlarmStatusEndpoint(svc),
+	r.Patch("/alarms/:id", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_alarm_status"),
+			withIdentity,
+		)(updateAlarmStatusEndpoint(svc)),
 		decodeUpdateAlarmStatus,
 		encodeResponse,
+		opts...,
 	))
 
-	r.Patch("/alarms", newServer(
-		"remove_alarms",
-		removeAlarmsEndpoint(svc),
+	r.Patch("/alarms", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "remove_alarms"),
+			withIdentity,
+		)(removeAlarmsEndpoint(svc)),
 		decodeRemoveAlarms,
 		encodeResponse,
+		opts...,
 	))
 
-	r.Get("/things/:id/alarms/export", newServer(
-		"export_alarms_by_thing",
-		exportAlarmsByThingEndpoint(svc),
+	r.Get("/things/:id/alarms/export", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "export_alarms_by_thing"),
+			withIdentity,
+		)(exportAlarmsByThingEndpoint(svc)),
 		decodeExportAlarmsByThing,
 		encodeFileResponse,
+		opts...,
 	))
 
 	r.GetFunc("/health", mainflux.Health("alarms"))

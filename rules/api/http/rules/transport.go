@@ -32,56 +32,86 @@ func MakeHandler(svc rules.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 
 	withIdentity := authn.IdentityMiddleware(ac, logger)
 
-	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
-		e = withIdentity(e)
-		e = kitot.TraceServer(tracer, name)(e)
-		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
-	}
-
-	mux.Post("/groups/:id/rules", newServer(
-		"create_rules",
-		createRulesEndpoint(svc),
+	mux.Post("/groups/:id/rules", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "create_rules"),
+			withIdentity,
+		)(createRulesEndpoint(svc)),
 		decodeCreateRules,
+		encodeResponse,
+		opts...,
 	))
-	mux.Get("/rules/:id", newServer(
-		"view_rule",
-		viewRuleEndpoint(svc),
+	mux.Get("/rules/:id", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_rule"),
+			withIdentity,
+		)(viewRuleEndpoint(svc)),
 		decodeRuleReq,
+		encodeResponse,
+		opts...,
 	))
-	mux.Get("/things/:id/rules", newServer(
-		"list_rules_by_thing",
-		listRulesByThingEndpoint(svc),
+	mux.Get("/things/:id/rules", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_rules_by_thing"),
+			withIdentity,
+		)(listRulesByThingEndpoint(svc)),
 		decodeListRulesByThing,
+		encodeResponse,
+		opts...,
 	))
-	mux.Get("/groups/:id/rules", newServer(
-		"list_rules_by_group",
-		listRulesByGroupEndpoint(svc),
+	mux.Get("/groups/:id/rules", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_rules_by_group"),
+			withIdentity,
+		)(listRulesByGroupEndpoint(svc)),
 		decodeListRulesByGroup,
+		encodeResponse,
+		opts...,
 	))
-	mux.Get("/rules/:id/things", newServer(
-		"list_thing_ids_by_rule",
-		listThingIDsByRuleEndpoint(svc),
+	mux.Get("/rules/:id/things", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_thing_ids_by_rule"),
+			withIdentity,
+		)(listThingIDsByRuleEndpoint(svc)),
 		decodeRuleReq,
+		encodeResponse,
+		opts...,
 	))
-	mux.Put("/rules/:id", newServer(
-		"update_rule",
-		updateRuleEndpoint(svc),
+	mux.Put("/rules/:id", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_rule"),
+			withIdentity,
+		)(updateRuleEndpoint(svc)),
 		decodeUpdateRule,
+		encodeResponse,
+		opts...,
 	))
-	mux.Post("/rules/:id/things", newServer(
-		"assign_things",
-		assignThingsEndpoint(svc),
+	mux.Post("/rules/:id/things", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "assign_things"),
+			withIdentity,
+		)(assignThingsEndpoint(svc)),
 		decodeRuleThings,
+		encodeResponse,
+		opts...,
 	))
-	mux.Patch("/rules/:id/things", newServer(
-		"unassign_things",
-		unassignThingsEndpoint(svc),
+	mux.Patch("/rules/:id/things", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "unassign_things"),
+			withIdentity,
+		)(unassignThingsEndpoint(svc)),
 		decodeRuleThings,
+		encodeResponse,
+		opts...,
 	))
-	mux.Patch("/rules", newServer(
-		"remove_rules",
-		removeRulesEndpoint(svc),
+	mux.Patch("/rules", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "remove_rules"),
+			withIdentity,
+		)(removeRulesEndpoint(svc)),
 		decodeRemoveRules,
+		encodeResponse,
+		opts...,
 	))
 	return mux
 }

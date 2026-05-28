@@ -33,22 +33,24 @@ func MakeHandler(svc things.Service, ac domain.AuthClient, mux *bone.Mux, tracer
 
 	withIdentity := authn.IdentityMiddleware(ac, logger)
 
-	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
-		e = withIdentity(e)
-		e = kitot.TraceServer(tracer, name)(e)
-		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
-	}
-
-	mux.Get("/backup", newServer(
-		"backup",
-		backupEndpoint(svc),
+	mux.Get("/backup", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "backup"),
+			withIdentity,
+		)(backupEndpoint(svc)),
 		decodeBackup,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Post("/restore", newServer(
-		"restore",
-		restoreEndpoint(svc),
+	mux.Post("/restore", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "restore"),
+			withIdentity,
+		)(restoreEndpoint(svc)),
 		decodeRestore,
+		encodeResponse,
+		opts...,
 	))
 
 	return mux

@@ -36,51 +36,77 @@ func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service, ac domain.Auth
 
 	withIdentity := authn.IdentityMiddleware(ac, logger)
 
-	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
-		e = withIdentity(e)
-		e = kitot.TraceServer(tracer, name)(e)
-		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
-	}
-
-	r.Post("/things/:id/webhooks", newServer(
-		"create_webhooks",
-		createWebhooksEndpoint(svc),
+	r.Post("/things/:id/webhooks", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "create_webhooks"),
+			withIdentity,
+		)(createWebhooksEndpoint(svc)),
 		decodeCreateWebhooks,
+		encodeResponse,
+		opts...,
 	))
-	r.Get("/things/:id/webhooks", newServer(
-		"list_webhooks_by_thing",
-		listWebhooksByThingEndpoint(svc),
+	r.Get("/things/:id/webhooks", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_webhooks_by_thing"),
+			withIdentity,
+		)(listWebhooksByThingEndpoint(svc)),
 		decodeListThingWebhooks,
+		encodeResponse,
+		opts...,
 	))
-	r.Get("/groups/:id/webhooks", newServer(
-		"list_webhooks_by_group",
-		listWebhooksByGroupEndpoint(svc),
+	r.Get("/groups/:id/webhooks", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_webhooks_by_group"),
+			withIdentity,
+		)(listWebhooksByGroupEndpoint(svc)),
 		decodeListGroupWebhooks,
+		encodeResponse,
+		opts...,
 	))
-	r.Post("/things/:id/webhooks/search", newServer(
-		"search_webhooks_by_thing",
-		listWebhooksByThingEndpoint(svc),
+	r.Post("/things/:id/webhooks/search", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "search_webhooks_by_thing"),
+			withIdentity,
+		)(listWebhooksByThingEndpoint(svc)),
 		decodeSearchThingWebhooks,
+		encodeResponse,
+		opts...,
 	))
-	r.Post("/groups/:id/webhooks/search", newServer(
-		"search_webhooks_by_group",
-		listWebhooksByGroupEndpoint(svc),
+	r.Post("/groups/:id/webhooks/search", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "search_webhooks_by_group"),
+			withIdentity,
+		)(listWebhooksByGroupEndpoint(svc)),
 		decodeSearchGroupWebhooks,
+		encodeResponse,
+		opts...,
 	))
-	r.Get("/webhooks/:id", newServer(
-		"view_webhook",
-		viewWebhookEndpoint(svc),
+	r.Get("/webhooks/:id", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_webhook"),
+			withIdentity,
+		)(viewWebhookEndpoint(svc)),
 		decodeRequest,
+		encodeResponse,
+		opts...,
 	))
-	r.Put("/webhooks/:id", newServer(
-		"update_webhook",
-		updateWebhookEndpoint(svc),
+	r.Put("/webhooks/:id", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_webhook"),
+			withIdentity,
+		)(updateWebhookEndpoint(svc)),
 		decodeUpdateWebhook,
+		encodeResponse,
+		opts...,
 	))
-	r.Patch("/webhooks", newServer(
-		"remove_webhooks",
-		removeWebhooksEndpoint(svc),
+	r.Patch("/webhooks", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "remove_webhooks"),
+			withIdentity,
+		)(removeWebhooksEndpoint(svc)),
 		decodeRemoveWebhooks,
+		encodeResponse,
+		opts...,
 	))
 
 	r.GetFunc("/health", mainflux.Health("webhooks"))

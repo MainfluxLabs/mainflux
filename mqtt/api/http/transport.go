@@ -33,16 +33,14 @@ func MakeHandler(tracer opentracing.Tracer, svc mqtt.Service, ac domain.AuthClie
 
 	withIdentity := authn.IdentityMiddleware(ac, logger)
 
-	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
-		e = withIdentity(e)
-		e = kitot.TraceServer(tracer, name)(e)
-		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
-	}
-
-	r.Get("/groups/:id/subscriptions", newServer(
-		"list_subscriptions",
-		listSubscriptionsEndpoint(svc),
+	r.Get("/groups/:id/subscriptions", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_subscriptions"),
+			withIdentity,
+		)(listSubscriptionsEndpoint(svc)),
 		decodeListSubscriptions,
+		encodeResponse,
+		opts...,
 	))
 
 	r.GetFunc("/health", mainflux.Health("mqtt"))

@@ -32,76 +32,114 @@ func MakeHandler(svc rules.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 
 	withIdentity := authn.IdentityMiddleware(ac, logger)
 
-	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
-		e = withIdentity(e)
-		e = kitot.TraceServer(tracer, name)(e)
-		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
-	}
-
-	mux.Post("/groups/:id/scripts", newServer(
-		"create_scripts",
-		createScriptsEndpoint(svc),
+	mux.Post("/groups/:id/scripts", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "create_scripts"),
+			withIdentity,
+		)(createScriptsEndpoint(svc)),
 		decodeCreateScripts,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/things/:id/scripts", newServer(
-		"list_scripts_by_thing",
-		listScriptsByThingEndpoint(svc),
+	mux.Get("/things/:id/scripts", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_scripts_by_thing"),
+			withIdentity,
+		)(listScriptsByThingEndpoint(svc)),
 		decodeListScriptsByThing,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/groups/:id/scripts", newServer(
-		"list_scripts_by_group",
-		listScriptsByGroupEndpoint(svc),
+	mux.Get("/groups/:id/scripts", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_scripts_by_group"),
+			withIdentity,
+		)(listScriptsByGroupEndpoint(svc)),
 		decodeListScriptsByGroup,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/scripts/:id/things", newServer(
-		"list_thing_ids_by_script",
-		listThingIDsByScriptEndpoint(svc),
+	mux.Get("/scripts/:id/things", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_thing_ids_by_script"),
+			withIdentity,
+		)(listThingIDsByScriptEndpoint(svc)),
 		decodeScriptReq,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/scripts/:id", newServer(
-		"view_script",
-		viewScriptEndpoint(svc),
+	mux.Get("/scripts/:id", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_script"),
+			withIdentity,
+		)(viewScriptEndpoint(svc)),
 		decodeScriptReq,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Put("/scripts/:id", newServer(
-		"update_script",
-		updateScriptEndpoint(svc),
+	mux.Put("/scripts/:id", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_script"),
+			withIdentity,
+		)(updateScriptEndpoint(svc)),
 		decodeUpdateScript,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Patch("/scripts", newServer(
-		"remove_scripts",
-		removeScriptsEndpoint(svc),
+	mux.Patch("/scripts", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "remove_scripts"),
+			withIdentity,
+		)(removeScriptsEndpoint(svc)),
 		decodeRemoveScripts,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Post("/things/:id/scripts", newServer(
-		"assign_scripts",
-		assignScriptsEndpoint(svc),
+	mux.Post("/things/:id/scripts", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "assign_scripts"),
+			withIdentity,
+		)(assignScriptsEndpoint(svc)),
 		decodeThingScripts,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Patch("/things/:id/scripts", newServer(
-		"unassign_scripts",
-		unassignScriptsEndpoint(svc),
+	mux.Patch("/things/:id/scripts", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "unassign_scripts"),
+			withIdentity,
+		)(unassignScriptsEndpoint(svc)),
 		decodeThingScripts,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/things/:id/runs", newServer(
-		"list_script_runs_by_thing",
-		listScriptRunsByThingEndpoint(svc),
+	mux.Get("/things/:id/runs", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_script_runs_by_thing"),
+			withIdentity,
+		)(listScriptRunsByThingEndpoint(svc)),
 		decodeListScriptRunsByThing,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Patch("/runs", newServer(
-		"remove_script_runs",
-		removeScriptRunsEndpoint(svc),
+	mux.Patch("/runs", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "remove_script_runs"),
+			withIdentity,
+		)(removeScriptRunsEndpoint(svc)),
 		decodeRemoveScriptRuns,
+		encodeResponse,
+		opts...,
 	))
 
 	return mux

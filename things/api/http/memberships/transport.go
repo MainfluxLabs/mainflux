@@ -36,34 +36,44 @@ func MakeHandler(svc things.Service, ac domain.AuthClient, mux *bone.Mux, tracer
 
 	withIdentity := authn.IdentityMiddleware(ac, logger)
 
-	newServer := func(name string, e endpoint.Endpoint, decodeFunc kithttp.DecodeRequestFunc) *kithttp.Server {
-		e = withIdentity(e)
-		e = kitot.TraceServer(tracer, name)(e)
-		return kithttp.NewServer(e, decodeFunc, encodeResponse, opts...)
-	}
-
-	mux.Post("/groups/:id/memberships", newServer(
-		"create_group_memberships",
-		createGroupMembershipsEndpoint(svc),
+	mux.Post("/groups/:id/memberships", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "create_group_memberships"),
+			withIdentity,
+		)(createGroupMembershipsEndpoint(svc)),
 		decodeCreateGroupMemberships,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Get("/groups/:id/memberships", newServer(
-		"list_group_memberships",
-		listGroupMembershipsEndpoint(svc),
+	mux.Get("/groups/:id/memberships", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_group_memberships"),
+			withIdentity,
+		)(listGroupMembershipsEndpoint(svc)),
 		decodeListGroupMemberships,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Put("/groups/:id/memberships", newServer(
-		"update_group_memberships",
-		updateGroupMembershipsEndpoint(svc),
+	mux.Put("/groups/:id/memberships", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_group_memberships"),
+			withIdentity,
+		)(updateGroupMembershipsEndpoint(svc)),
 		decodeUpdateGroupMemberships,
+		encodeResponse,
+		opts...,
 	))
 
-	mux.Patch("/groups/:id/memberships", newServer(
-		"remove_group_memberships",
-		removeGroupMembershipsEndpoint(svc),
+	mux.Patch("/groups/:id/memberships", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "remove_group_memberships"),
+			withIdentity,
+		)(removeGroupMembershipsEndpoint(svc)),
 		decodeRemoveGroupMemberships,
+		encodeResponse,
+		opts...,
 	))
 
 	return mux
