@@ -163,8 +163,10 @@ func (as *adapterService) publish(ctx context.Context, key string, msg protomfx.
 		return protomfx.Message{}, err
 	}
 
-	if err := as.publisher.Publish(nats.GetMessagesSubject(msg.Publisher, msg.Subtopic), msg); err != nil {
-		return protomfx.Message{}, err
+	if pc.ProfileConfig != nil && pc.ProfileConfig.WriteEnabled {
+		if err := as.publisher.Publish(nats.GetMessagesSubject(msg.Publisher, msg.Subtopic), msg); err != nil {
+			return protomfx.Message{}, err
+		}
 	}
 
 	return m, nil

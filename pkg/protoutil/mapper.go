@@ -25,8 +25,11 @@ func ProtoConfigToDomain(c *protomfx.Config) *domain.ProfileConfig {
 	}
 
 	return &domain.ProfileConfig{
-		ContentType: c.GetContentType(),
-		Transformer: tr,
+		ContentType:    c.GetContentType(),
+		Transformer:    tr,
+		WriteEnabled:   c.GetWriteEnabled(),
+		WebhookEnabled: c.GetWebhookEnabled(),
+		RuleEnabled:    c.GetRuleEnabled(),
 	}
 }
 
@@ -45,6 +48,9 @@ func DomainConfigToProto(c *domain.ProfileConfig) *protomfx.Config {
 			TimeFormat:   c.Transformer.TimeFormat,
 			TimeLocation: c.Transformer.TimeLocation,
 		},
+		WriteEnabled:   c.WriteEnabled,
+		WebhookEnabled: c.WebhookEnabled,
+		RuleEnabled:    c.RuleEnabled,
 	}
 
 	return cfg
@@ -83,6 +89,10 @@ func MapToDomainConfig(config map[string]any) *domain.ProfileConfig {
 
 		cfg.Transformer = tr
 	}
+
+	cfg.WriteEnabled, _ = config["write_enabled"].(bool)
+	cfg.WebhookEnabled, _ = config["webhook_enabled"].(bool)
+	cfg.RuleEnabled, _ = config["rule_enabled"].(bool)
 
 	return cfg
 }

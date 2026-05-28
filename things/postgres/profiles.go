@@ -346,6 +346,9 @@ func toDBProfile(pr things.Profile) dbProfile {
 				"time_format":   pr.Config.Transformer.TimeFormat,
 				"time_location": pr.Config.Transformer.TimeLocation,
 			},
+			"write_enabled":   pr.Config.WriteEnabled,
+			"webhook_enabled": pr.Config.WebhookEnabled,
+			"rule_enabled":    pr.Config.RuleEnabled,
 		}
 	}
 
@@ -391,6 +394,18 @@ func toProfile(dbpr dbProfile) (things.Profile, error) {
 
 		if tl, ok := t["time_location"].(string); ok {
 			cfg.Transformer.TimeLocation = tl
+		}
+
+		if we, ok := dbpr.Config["write_enabled"].(bool); ok {
+			cfg.WriteEnabled = we
+		}
+
+		if we, ok := dbpr.Config["webhook_enabled"].(bool); ok {
+			cfg.WebhookEnabled = we
+		}
+
+		if re, ok := dbpr.Config["rule_enabled"].(bool); ok {
+			cfg.RuleEnabled = re
 		}
 	}
 

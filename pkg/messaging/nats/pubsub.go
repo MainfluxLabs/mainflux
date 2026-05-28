@@ -36,6 +36,8 @@ const (
 	SubjectAlarms = "alarms.*"
 	// SubjectWebhooks represents subject used to subscribe to webhook forwarding — both rule-triggered and integration-based.
 	SubjectWebhooks = "webhooks"
+	// SubjectRules represents subject used to route messages to the rules service.
+	SubjectRules = "rules"
 )
 
 // PubSub extends messaging.PubSub with alarm publishing and subscribing.

@@ -81,6 +81,9 @@ message PubConfigByKeyRes {
 message Config {
     string contentType      = 1;
     Transformer transformer = 2;
+    bool writeEnabled       = 3;
+    bool webhookEnabled     = 4;
+    bool ruleEnabled        = 5;
 }
 
 message ConfigByThingRes{
