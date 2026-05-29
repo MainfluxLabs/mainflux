@@ -398,6 +398,9 @@ func toProfile(dbpr dbProfile) (things.Profile, error) {
 
 		if we, ok := dbpr.Config["write_enabled"].(bool); ok {
 			cfg.WriteEnabled = we
+		} else {
+			// absent key means legacy record with no explicit setting; default to true
+			cfg.WriteEnabled = true
 		}
 
 		if we, ok := dbpr.Config["webhook_enabled"].(bool); ok {
