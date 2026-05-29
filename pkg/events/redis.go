@@ -32,8 +32,8 @@ const (
 	OrgCreate = orgPrefix + "create"
 	OrgRemove = orgPrefix + "remove"
 
-	actorIdentityUserID = "actor_identity_user_id"
-	actorIdentityEmail  = "actor_identity_email"
+	actorIdentityUserID = "_actor_user_id"
+	actorIdentityEmail  = "_actor_user_email"
 
 	ThingsStream = mainfluxPrefix + "things"
 	AuthStream   = mainfluxPrefix + "auth"
