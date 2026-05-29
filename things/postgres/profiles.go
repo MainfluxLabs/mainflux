@@ -396,19 +396,23 @@ func toProfile(dbpr dbProfile) (things.Profile, error) {
 			cfg.Transformer.TimeLocation = tl
 		}
 
+		// All three flags default to true for legacy records that predate this field.
 		if we, ok := dbpr.Config["write_enabled"].(bool); ok {
 			cfg.WriteEnabled = we
 		} else {
-			// absent key means legacy record with no explicit setting; default to true
 			cfg.WriteEnabled = true
 		}
 
 		if we, ok := dbpr.Config["webhook_enabled"].(bool); ok {
 			cfg.WebhookEnabled = we
+		} else {
+			cfg.WebhookEnabled = true
 		}
 
 		if re, ok := dbpr.Config["rule_enabled"].(bool); ok {
 			cfg.RuleEnabled = re
+		} else {
+			cfg.RuleEnabled = true
 		}
 	}
 
