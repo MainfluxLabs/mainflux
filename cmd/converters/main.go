@@ -89,7 +89,7 @@ func main() {
 	httpTracer, closer := jaeger.Init(svcName, cfg.jaegerURL, logger)
 	defer closer.Close()
 
-	thingsTracer, thingsCloser := jaeger.Init(svcName+"_things", cfg.jaegerURL, logger)
+	thingsTracer, thingsCloser := jaeger.Init("converters_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
 	pub, err := brokers.NewPublisher(cfg.brokerURL)
@@ -101,7 +101,7 @@ func main() {
 
 	tc := thingsapi.NewClient(conn, thingsTracer, cfg.thingsGRPCTimeout)
 
-	authTracer, authCloser := jaeger.Init(svcName+"_auth", cfg.jaegerURL, logger)
+	authTracer, authCloser := jaeger.Init("converters_auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
 
 	authConn := clientsgrpc.Connect(cfg.authConfig, logger)
