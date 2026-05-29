@@ -1260,11 +1260,11 @@ components:
         config:
           type: object
           description: Object-encoded profile config data.
-          additionalProperties:
-            type: string
           example:
             content_type: "application/json"
-            write: true
+            write_enabled: true
+            webhook_enabled: false
+            rule_enabled: true
             transformer:
               data_filters: [ "temperature", "humidity" ]
               data_field: "payload.data"

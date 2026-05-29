@@ -67,6 +67,9 @@ The `config` object controls how messages published by things on this profile ar
 | `transformer.time_field`    | Field name containing the message timestamp                     |
 | `transformer.time_format`   | Format string for parsing the timestamp field                   |
 | `transformer.time_location` | Timezone for timestamp normalization                            |
+| `write_enabled`             | Publish messages to the storage (writers) topic                 |
+| `webhook_enabled`           | Forward messages to configured webhooks                         |
+| `rule_enabled`              | Forward messages to the rules engine                            |
 
 A profile cannot be deleted while things are assigned to it.
 
