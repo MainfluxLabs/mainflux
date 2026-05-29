@@ -11,7 +11,6 @@ import (
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/auth"
 	api "github.com/MainfluxLabs/mainflux/auth/api"
-	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	httpapi "github.com/MainfluxLabs/mainflux/auth/api/http"
 	"github.com/MainfluxLabs/mainflux/auth/emailer"
 	"github.com/MainfluxLabs/mainflux/auth/jwt"
@@ -64,7 +63,6 @@ const (
 	defInviteDuration  = "168h"
 	defAdminEmail      = ""
 	defTimeout         = "1s"
-	defAuthGRPCURL     = "localhost:8181"
 	defThingsGRPCURL   = "localhost:8183"
 	defThingsCACerts   = ""
 	defThingsClientTLS = "false"
@@ -105,7 +103,6 @@ const (
 	envLoginDuration   = "MF_AUTH_LOGIN_TOKEN_DURATION"
 	envInviteDuration  = "MF_INVITE_DURATION"
 	envAdminEmail      = "MF_USERS_ADMIN_EMAIL"
-	envAuthGRPCURL     = "MF_AUTH_GRPC_URL"
 	envThingsGRPCURL   = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsCACerts   = "MF_THINGS_CA_CERTS"
 	envThingsClientTLS = "MF_THINGS_CLIENT_TLS"
@@ -132,7 +129,6 @@ type config struct {
 	dbConfig       postgres.Config
 	httpConfig     servers.Config
 	grpcConfig     servers.Config
-	authConfig     clients.Config
 	thingsConfig   clients.Config
 	usersConfig    clients.Config
 	emailConfig    email.Config
@@ -204,18 +200,10 @@ func main() {
 
 	tc := thingsapi.NewClient(thConn, thingsTracer, cfg.timeout)
 
-	authConn := clientsgrpc.Connect(cfg.authConfig, logger)
-	defer authConn.Close()
-
-	authClientTracer, authClientCloser := jaeger.Init("auth_client", cfg.jaegerURL, logger)
-	defer authClientCloser.Close()
-
-	ac := authapi.NewClient(authConn, authClientTracer, cfg.timeout)
-
 	svc := newService(db, tc, uc, dbTracer, logger, cfg, pub)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(svc, ac, authHttpTracer, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(svc, svc, authHttpTracer, logger), cfg.httpConfig, logger)
 	})
 	g.Go(func() error {
 		return serversgrpc.Start(ctx, authGrpcTracer, svc, cfg.grpcConfig, logger)
@@ -272,11 +260,6 @@ func loadConfig() config {
 		log.Fatalf("Invalid value passed for %s\n", envThingsClientTLS)
 	}
 
-	authConfig := clients.Config{
-		URL:        mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
-		ClientName: clients.Auth,
-	}
-
 	thingsConfig := clients.Config{
 		ClientTLS:  thingsClientTLS,
 		CaCerts:    mainflux.Env(envThingsCACerts, defThingsCACerts),
@@ -331,7 +314,6 @@ func loadConfig() config {
 		dbConfig:       dbConfig,
 		httpConfig:     httpConfig,
 		grpcConfig:     grpcConfig,
-		authConfig:     authConfig,
 		thingsConfig:   thingsConfig,
 		usersConfig:    usersConfig,
 		emailConfig:    emailConfig,

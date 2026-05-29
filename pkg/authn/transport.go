@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -23,12 +23,12 @@ func HTTPTokenToContext(ctx context.Context, req *http.Request) context.Context 
 
 // IdentityMiddleware returns a go-kit endpoint Middleware that attaches a domain.Identity associated with the authentication
 // token of the current request to the current context.
-func IdentityMiddleware(auth domain.AuthClient, log logger.Logger) endpoint.Middleware {
+func IdentityMiddleware(authn auth.Authn, log logger.Logger) endpoint.Middleware {
 	return func(next endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, request any) (any, error) {
 			token, _ := ctx.Value(tokenCtxKey{}).(string)
 			if token != "" {
-				identity, err := auth.Identify(ctx, token)
+				identity, err := authn.Identify(ctx, token)
 				if err != nil {
 					log.Warn(fmt.Sprintf("error decoding token to identity: %v", err))
 					return next(ctx, request)
