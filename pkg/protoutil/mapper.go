@@ -56,47 +56,6 @@ func DomainConfigToProto(c *domain.ProfileConfig) *protomfx.Config {
 	return cfg
 }
 
-// MapToDomainConfig converts a map to domain ProfileConfig.
-func MapToDomainConfig(config map[string]any) *domain.ProfileConfig {
-	if config == nil {
-		return nil
-	}
-
-	cfg := &domain.ProfileConfig{}
-
-	if v, ok := config["content_type"].(string); ok {
-		cfg.ContentType = v
-	}
-
-	if t, ok := config["transformer"].(map[string]any); ok {
-		tr := domain.Transformer{}
-
-		if filters, ok := t["data_filters"].([]string); ok {
-			tr.DataFilters = filters
-		}
-		if df, ok := t["data_field"].(string); ok {
-			tr.DataField = df
-		}
-		if tf, ok := t["time_field"].(string); ok {
-			tr.TimeField = tf
-		}
-		if tf, ok := t["time_format"].(string); ok {
-			tr.TimeFormat = tf
-		}
-		if tl, ok := t["time_location"].(string); ok {
-			tr.TimeLocation = tl
-		}
-
-		cfg.Transformer = tr
-	}
-
-	cfg.WriteEnabled, _ = config["write_enabled"].(bool)
-	cfg.WebhookEnabled, _ = config["webhook_enabled"].(bool)
-	cfg.RuleEnabled, _ = config["rule_enabled"].(bool)
-
-	return cfg
-}
-
 // Map a map[string]any representing a JSON message to a *protomfx.Message.
 func JSONMapMessageToProto(msg map[string]any) *protomfx.Message {
 	if len(msg) == 0 {
