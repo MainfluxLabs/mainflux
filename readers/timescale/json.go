@@ -48,7 +48,7 @@ func (jr *jsonRepository) RemoveByThing(ctx context.Context, thingID string) err
 	params := map[string]any{"publisher": thingID}
 
 	if _, err := jr.db.NamedExecContext(ctx, q, params); err != nil {
-		return jr.handlePgError(err, errors.ErrDeleteMessages)
+		return handlePgError(err, errors.ErrDeleteMessages)
 	}
 
 	return nil

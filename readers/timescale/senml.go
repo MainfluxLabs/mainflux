@@ -48,7 +48,7 @@ func (sr *senmlRepository) RemoveByThing(ctx context.Context, thingID string) er
 	params := map[string]any{"publisher": thingID}
 
 	if _, err := sr.db.NamedExecContext(ctx, q, params); err != nil {
-		return sr.handlePgError(err, errors.ErrDeleteMessages)
+		return handlePgError(err, errors.ErrDeleteMessages)
 	}
 
 	return nil
