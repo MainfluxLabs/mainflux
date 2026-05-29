@@ -71,6 +71,8 @@ The `config` object controls how messages published by things on this profile ar
 | `webhook_enabled`           | Forward messages to configured webhooks                         |
 | `rule_enabled`              | Forward messages to the rules engine                            |
 
+`write_enabled`, `webhook_enabled`, and `rule_enabled` are dispatcher flags that control where messages are delivered. They are independent of each other and default to `false` if not set.
+
 A profile cannot be deleted while things are assigned to it.
 
 ## Groups
