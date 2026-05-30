@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/MainfluxLabs/mainflux/pkg/authn"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
@@ -69,18 +68,6 @@ func (e redisEvent) field(key, def string) string {
 		return def
 	}
 	return s
-}
-
-// attachActorIdentity extends the RedisEvent with the information from a domain.Identity assocaited with the
-// passed context, if it exists.
-func (e redisEvent) attachActorIdentity(ctx context.Context) {
-	identity, ok := authn.IdentityFromCtx(ctx)
-	if !ok {
-		return
-	}
-
-	e[actorIdentityUserID] = identity.ID
-	e[actorIdentityEmail] = identity.Email
 }
 
 // EventHandler reacts to a single event delivered by a Subscriber.

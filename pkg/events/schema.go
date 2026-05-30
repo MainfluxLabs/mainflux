@@ -11,15 +11,32 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
-// EventAction represents an platform action that can be encoded to a redisEvent.
+// EventAction represents an action occurring on the platform.
 type EventAction interface {
-	Encode() redisEvent
+	// Encode returns a map representation of the event action.
+	Encode() map[string]any
+
+	// Operation returns the string representation of the event action operation.
+	Operation() string
 }
 
 // Event is the type representing a platform event, composed of an action and the actor's identity.
 type Event struct {
 	Action        EventAction
 	ActorIdentity domain.Identity
+}
+
+// Encode turns an Event into a redisEvent
+func (e Event) Encode() redisEvent {
+	re := redisEvent(e.Action.Encode())
+	re["operation"] = e.Action.Operation()
+
+	if e.ActorIdentity.ID != "" {
+		re[actorIdentityUserID] = e.ActorIdentity.ID
+		re[actorIdentityEmail] = e.ActorIdentity.Email
+	}
+
+	return re
 }
 
 // decodeEvent turns a raw RedisEvent into an Event.
@@ -68,9 +85,8 @@ type ThingCreated struct {
 	Metadata  map[string]any
 }
 
-func (e ThingCreated) Encode() redisEvent {
-	m := redisEvent{
-		"operation":  ThingCreate,
+func (e ThingCreated) Encode() map[string]any {
+	m := map[string]any{
 		"id":         e.ID,
 		"group_id":   e.GroupID,
 		"profile_id": e.ProfileID,
@@ -84,6 +100,10 @@ func (e ThingCreated) Encode() redisEvent {
 		}
 	}
 	return m
+}
+
+func (e ThingCreated) Operation() string {
+	return ThingCreate
 }
 
 func decodeThingCreated(e redisEvent) ThingCreated {
@@ -107,9 +127,12 @@ type ThingUpdated struct {
 	Metadata  map[string]any
 }
 
-func (e ThingUpdated) Encode() redisEvent {
-	m := redisEvent{
-		"operation":  ThingUpdate,
+func (e ThingUpdated) Operation() string {
+	return ThingUpdate
+}
+
+func (e ThingUpdated) Encode() map[string]any {
+	m := map[string]any{
 		"id":         e.ID,
 		"profile_id": e.ProfileID,
 	}
@@ -143,9 +166,12 @@ type ThingGroupAndProfileUpdated struct {
 	GroupID   string
 }
 
-func (e ThingGroupAndProfileUpdated) Encode() redisEvent {
-	m := redisEvent{
-		"operation":  ThingUpdateGroupAndProfile,
+func (e ThingGroupAndProfileUpdated) Operation() string {
+	return ThingUpdateGroupAndProfile
+}
+
+func (e ThingGroupAndProfileUpdated) Encode() map[string]any {
+	m := map[string]any{
 		"id":         e.ID,
 		"profile_id": e.ProfileID,
 	}
@@ -168,10 +194,13 @@ type ThingRemoved struct {
 	ID string
 }
 
-func (e ThingRemoved) Encode() redisEvent {
+func (e ThingRemoved) Operation() string {
+	return ThingRemove
+}
+
+func (e ThingRemoved) Encode() map[string]any {
 	return redisEvent{
-		"operation": ThingRemove,
-		"id":        e.ID,
+		"id": e.ID,
 	}
 }
 
@@ -187,11 +216,14 @@ type ProfileCreated struct {
 	Metadata map[string]any
 }
 
-func (e ProfileCreated) Encode() redisEvent {
+func (e ProfileCreated) Operation() string {
+	return ProfileCreate
+}
+
+func (e ProfileCreated) Encode() map[string]any {
 	m := redisEvent{
-		"operation": ProfileCreate,
-		"id":        e.ID,
-		"group_id":  e.GroupID,
+		"id":       e.ID,
+		"group_id": e.GroupID,
 	}
 	if e.Name != "" {
 		m["name"] = e.Name
@@ -224,10 +256,13 @@ type ProfileUpdated struct {
 	Metadata map[string]any
 }
 
-func (e ProfileUpdated) Encode() redisEvent {
+func (e ProfileUpdated) Operation() string {
+	return ProfileUpdate
+}
+
+func (e ProfileUpdated) Encode() map[string]any {
 	m := redisEvent{
-		"operation": ProfileUpdate,
-		"id":        e.ID,
+		"id": e.ID,
 	}
 	if e.Name != "" {
 		m["name"] = e.Name
@@ -267,10 +302,13 @@ type ProfileRemoved struct {
 	ID string
 }
 
-func (e ProfileRemoved) Encode() redisEvent {
+func (e ProfileRemoved) Operation() string {
+	return ProfileRemove
+}
+
+func (e ProfileRemoved) Encode() map[string]any {
 	return redisEvent{
-		"operation": ProfileRemove,
-		"id":        e.ID,
+		"id": e.ID,
 	}
 }
 
@@ -284,10 +322,13 @@ type GroupRemoved struct {
 	ThingIDs []string
 }
 
-func (e GroupRemoved) Encode() redisEvent {
+func (e GroupRemoved) Operation() string {
+	return GroupRemove
+}
+
+func (e GroupRemoved) Encode() map[string]any {
 	m := redisEvent{
-		"operation": GroupRemove,
-		"id":        e.ID,
+		"id": e.ID,
 	}
 	if len(e.ThingIDs) > 0 {
 		m["thing_ids"] = strings.Join(e.ThingIDs, ",")
@@ -308,10 +349,13 @@ type OrgCreated struct {
 	ID string
 }
 
-func (e OrgCreated) Encode() redisEvent {
+func (e OrgCreated) Operation() string {
+	return OrgCreate
+}
+
+func (e OrgCreated) Encode() map[string]any {
 	return redisEvent{
-		"operation": OrgCreate,
-		"id":        e.ID,
+		"id": e.ID,
 	}
 }
 
@@ -324,10 +368,13 @@ type OrgRemoved struct {
 	ID string
 }
 
-func (e OrgRemoved) Encode() redisEvent {
+func (e OrgRemoved) Operation() string {
+	return OrgRemove
+}
+
+func (e OrgRemoved) Encode() map[string]any {
 	return redisEvent{
-		"operation": OrgRemove,
-		"id":        e.ID,
+		"id": e.ID,
 	}
 }
 

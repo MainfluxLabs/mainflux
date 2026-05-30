@@ -75,7 +75,7 @@ func publishThingRemoved(t *testing.T, stream, id string) {
 	t.Helper()
 	err := redisClient.XAdd(context.Background(), &r.XAddArgs{
 		Stream: stream,
-		Values: map[string]any(events.ThingRemoved{ID: id}.Encode()),
+		Values: map[string]any(events.Event{Action: events.ThingRemoved{ID: id}}.Encode()),
 	}).Err()
 	require.NoError(t, err, "publishing event")
 }

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -149,8 +150,15 @@ func NewPublisher(cfg PublisherConfig, log logger.Logger) (Publisher, error) {
 }
 
 func (p *publisher) Publish(ctx context.Context, e EventAction) {
-	re := e.Encode()
-	re.attachActorIdentity(ctx)
+	event := Event{
+		Action: e,
+	}
+
+	if actorIdentity, ok := authn.IdentityFromCtx(ctx); ok {
+		event.ActorIdentity = actorIdentity
+	}
+
+	re := event.Encode()
 
 	// Attempt to enqueue the encoded event onto the buffer channel. If we succeed, simply return.
 	select {
