@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/modbus"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -101,7 +102,7 @@ func (ms *metricsMiddleware) RemoveClientsByGroup(ctx context.Context, groupID s
 	return ms.svc.RemoveClientsByGroup(ctx, groupID)
 }
 
-func (ms *metricsMiddleware) RescheduleTasks(ctx context.Context, profileID string, config map[string]any) error {
+func (ms *metricsMiddleware) RescheduleTasks(ctx context.Context, profileID string, config *domain.ProfileConfig) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "reschedule_tasks").Add(1)
 		ms.latency.With("method", "reschedule_tasks").Observe(time.Since(begin).Seconds())

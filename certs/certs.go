@@ -31,12 +31,21 @@ type Repository interface {
 	// Remove removes certificate from DB for a given serial
 	Remove(ctx context.Context, serial string) error
 
+	// RemoveByThing revokes and removes all certificates of a given thing ID in a single transaction
+	RemoveByThing(ctx context.Context, thingID string) error
+
 	// RetrieveByThing retrieves issued certificates for a given thing ID
 	RetrieveByThing(ctx context.Context, thingID string, offset, limit uint64) (Page, error)
 
 	// RetrieveBySerial retrieves a certificate for a given serial
 	RetrieveBySerial(ctx context.Context, serial string) (Cert, error)
 
+	// RetrieveExpiring retrieves certificates that expire within the given duration.
+	RetrieveExpiring(ctx context.Context, expiresWithin time.Duration) ([]Cert, error)
+
 	// RetrieveRevokedCerts retrieves all revoked certificates
 	RetrieveRevokedCerts(ctx context.Context) ([]RevokedCert, error)
+
+	// MarkDownloaded marks a certificate as downloaded
+	MarkDownloaded(ctx context.Context, serial string) error
 }

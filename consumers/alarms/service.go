@@ -14,25 +14,49 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
 
+const (
+	minAlarmLevel = 1
+	maxAlarmLevel = 5
+)
+
 var AllowedOrders = map[string]string{
 	"id":      "id",
 	"created": "created",
+	"level":   "level",
+	"status":  "status",
 }
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
-	Total   uint64         `json:"total,omitempty"`
-	Offset  uint64         `json:"offset,omitempty"`
-	Limit   uint64         `json:"limit,omitempty"`
-	Order   string         `json:"order,omitempty"`
-	Dir     string         `json:"dir,omitempty"`
-	Payload map[string]any `json:"payload,omitempty"`
+	Total  uint64 `json:"total,omitempty"`
+	Offset uint64 `json:"offset,omitempty"`
+	Limit  uint64 `json:"limit,omitempty"`
+	Order  string `json:"order,omitempty"`
+	Dir    string `json:"dir,omitempty"`
+	Level  int32  `json:"level,omitempty"`
+	Status string `json:"status,omitempty"`
 }
 
 // Validate validates the page metadata.
 func (pm PageMetadata) Validate(maxLimitSize int) error {
 	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
-	return common.Validate(maxLimitSize, AllowedOrders)
+	if err := common.Validate(maxLimitSize, AllowedOrders); err != nil {
+		return err
+	}
+
+	if pm.Level != 0 && (pm.Level < minAlarmLevel || pm.Level > maxAlarmLevel) {
+		return apiutil.ErrInvalidAlarmLevel
+	}
+
+	if pm.Status != "" {
+		switch pm.Status {
+		case StatusActive, StatusNoted, StatusCleared:
+		default:
+			return apiutil.ErrInvalidAlarmStatus
+		}
+	}
+
+	return nil
 }
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -58,6 +82,9 @@ type Service interface {
 	// RemoveAlarms removes alarms identified with the provided IDs.
 	RemoveAlarms(ctx context.Context, token string, id ...string) error
 
+	// UpdateAlarmStatus updates the status of the alarm identified by the provided ID.
+	UpdateAlarmStatus(ctx context.Context, token, id, status string) error
+
 	// RemoveAlarmsByThing removes alarms related to the specified thing,
 	// identified by the provided thing ID.
 	RemoveAlarmsByThing(ctx context.Context, thingID string) error
@@ -70,7 +97,7 @@ type Service interface {
 	// identified by the provided thing ID, intended for exporting.
 	ExportAlarmsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (AlarmsPage, error)
 
-	consumers.Consumer
+	consumers.AlarmConsumer
 }
 
 type alarmService struct {
@@ -139,6 +166,19 @@ func (as *alarmService) ViewAlarm(ctx context.Context, token, id string) (Alarm,
 	return alarm, nil
 }
 
+func (as *alarmService) UpdateAlarmStatus(ctx context.Context, token, id, status string) error {
+	alarm, err := as.alarms.RetrieveByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if err := as.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: alarm.ThingID, Action: domain.GroupEditor}); err != nil {
+		return errors.Wrap(errors.ErrAuthorization, err)
+	}
+
+	return as.alarms.UpdateStatus(ctx, id, status)
+}
+
 func (as *alarmService) RemoveAlarms(ctx context.Context, token string, ids ...string) error {
 	for _, id := range ids {
 		alarm, err := as.alarms.RetrieveByID(ctx, id)
@@ -192,47 +232,40 @@ func (as *alarmService) createAlarm(ctx context.Context, alarm *Alarm) error {
 
 }
 
-func (as *alarmService) Consume(subject string, message any) error {
+func (as *alarmService) ConsumeAlarm(subject string, alarm protomfx.Alarm) error {
 	ctx := context.Background()
 
-	msg, ok := message.(protomfx.Message)
-	if !ok {
-		return errors.ErrMessage
-	}
-
-	var payload map[string]any
-	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
-		return errors.Wrap(errors.ErrInvalidPayload, err)
-	}
-
-	alarm := Alarm{
-		ThingID:  msg.Publisher,
-		Subtopic: msg.Subtopic,
-		Protocol: msg.Protocol,
-		Payload:  payload,
-		Created:  msg.Created,
-	}
-
 	subParts := strings.Split(subject, ".")
-	if len(subParts) < 3 {
+	if len(subParts) < 2 {
 		return errors.ErrInvalidSubject
 	}
-
 	originType := subParts[1]
-	originID := subParts[2]
 
+	a := Alarm{
+		ThingID:  alarm.ThingId,
+		Subtopic: alarm.Subtopic,
+		Protocol: alarm.Protocol,
+		Level:    alarm.Level,
+		Status:   StatusActive,
+		Created:  alarm.Created,
+	}
+
+	// Temporary mapping: originID is carried in alarm.RuleId for both rules and scripts.
 	switch originType {
-	case AlarmOriginRule:
-		alarm.RuleID = originID
-	case AlarmOriginScript:
-		alarm.ScriptID = originID
+	case domain.AlarmOriginRule:
+		a.RuleID = alarm.RuleId
+		if len(alarm.RuleInfo) > 0 {
+			var ri domain.RuleInfo
+			if err := json.Unmarshal(alarm.RuleInfo, &ri); err != nil {
+				return err
+			}
+			a.Rule = &ri
+		}
+	case domain.AlarmOriginScript:
+		a.ScriptID = alarm.RuleId
 	default:
 		return fmt.Errorf("invalid subject origin type: %s", originType)
 	}
 
-	if err := as.createAlarm(ctx, &alarm); err != nil {
-		return err
-	}
-
-	return nil
+	return as.createAlarm(ctx, &a)
 }

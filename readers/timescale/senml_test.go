@@ -120,7 +120,7 @@ func TestListSenMLMessages(t *testing.T) {
 			Payload:     payload,
 		}
 
-		err = writer.Consume(subject, pm)
+		err = writer.ConsumeMessage(subject, pm)
 		assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 	}
 

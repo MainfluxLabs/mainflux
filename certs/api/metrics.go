@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/certs"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -37,6 +38,15 @@ func (ms *metricsMiddleware) IssueCert(ctx context.Context, token, thingID strin
 	}(time.Now())
 
 	return ms.svc.IssueCert(ctx, token, thingID, ttl, keyBits, keyType)
+}
+
+func (ms *metricsMiddleware) RotateCert(ctx context.Context, token, serial, thingID, ttl string, keyBits int, keyType string) (certs.Cert, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "rotate_cert").Add(1)
+		ms.latency.With("method", "rotate_cert").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RotateCert(ctx, token, serial, thingID, ttl, keyBits, keyType)
 }
 
 func (ms *metricsMiddleware) ListCerts(ctx context.Context, token, thingID string, offset, limit uint64) (certs.Page, error) {
@@ -75,6 +85,15 @@ func (ms *metricsMiddleware) RevokeCert(ctx context.Context, token, serial strin
 	return ms.svc.RevokeCert(ctx, token, serial)
 }
 
+func (ms *metricsMiddleware) DownloadCert(ctx context.Context, thingKey domain.ThingKey, serial string) (certs.Cert, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "download_cert").Add(1)
+		ms.latency.With("method", "download_cert").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.DownloadCert(ctx, thingKey, serial)
+}
+
 func (ms *metricsMiddleware) RenewCert(ctx context.Context, token, serial string) (certs.Cert, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "renew_cert").Add(1)
@@ -82,4 +101,13 @@ func (ms *metricsMiddleware) RenewCert(ctx context.Context, token, serial string
 	}(time.Now())
 
 	return ms.svc.RenewCert(ctx, token, serial)
+}
+
+func (ms *metricsMiddleware) RemoveCertsByThing(ctx context.Context, thingID string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "remove_certs_by_thing").Add(1)
+		ms.latency.With("method", "remove_certs_by_thing").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RemoveCertsByThing(ctx, thingID)
 }

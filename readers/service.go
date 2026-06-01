@@ -47,6 +47,9 @@ type Service interface {
 
 	// DeleteAllSenMLMessages deletes the senml messages within a time range, requires admin privileges.
 	DeleteAllSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) error
+
+	// RemoveMessagesByThing removes all messages related to the specified thing, identified by the provided thing ID.
+	RemoveMessagesByThing(ctx context.Context, thingID string) error
 }
 
 type readersService struct {
@@ -218,6 +221,14 @@ func (rs *readersService) DeleteAllSenMLMessages(ctx context.Context, token stri
 	}
 
 	return rs.senml.Remove(ctx, rpm)
+}
+
+func (rs *readersService) RemoveMessagesByThing(ctx context.Context, thingID string) error {
+	if err := rs.json.RemoveByThing(ctx, thingID); err != nil {
+		return err
+	}
+
+	return rs.senml.RemoveByThing(ctx, thingID)
 }
 
 func (rs *readersService) isAdmin(ctx context.Context, token string) error {

@@ -1,20 +1,22 @@
 # Alarms
 
-Alarms service consumes messages published by the Rules engine or Lua scripts and persists triggered alarms to a PostgreSQL database. Each alarm records which thing triggered it, which rule or script caused it, the message subtopic and protocol, and the raw payload.
+Alarms service consumes messages published by the Rules engine or Lua scripts and persists triggered alarms to a PostgreSQL database. Each alarm records which thing triggered it, which rule or script caused it, the message subtopic and protocol, severity level, and lifecycle status.
 
 ## Data Model
 
-| Field       | Type            | Description                                                                       |
-|-------------|-----------------|-----------------------------------------------------------------------------------|
-| `id`        | UUID            | Unique alarm identifier                                                           |
-| `thing_id`  | UUID            | ID of the thing that triggered the alarm                                          |
-| `group_id`  | UUID            | ID of the group the thing belongs to                                              |
-| `rule_id`   | UUID (optional) | ID of the rule that triggered the alarm (mutually exclusive with `script_id`)     |
-| `script_id` | UUID (optional) | ID of the Lua script that triggered the alarm (mutually exclusive with `rule_id`) |
-| `subtopic`  | string          | Message subtopic                                                                  |
-| `protocol`  | string          | Protocol used to publish the triggering message                                   |
-| `payload`   | JSON object     | Raw payload of the triggering message                                             |
-| `created`   | int64           | Unix timestamp (nanoseconds) when the alarm was created                           |
+| Field       | Type            | Description                                                                                       |
+| ----------- | --------------- | ------------------------------------------------------------------------------------------------- |
+| `id`        | UUID            | Unique alarm identifier                                                                           |
+| `thing_id`  | UUID            | ID of the thing that triggered the alarm                                                          |
+| `group_id`  | UUID            | ID of the group the thing belongs to                                                              |
+| `rule_id`   | UUID (optional) | ID of the rule that triggered the alarm (mutually exclusive with `script_id`)                     |
+| `script_id` | UUID (optional) | ID of the Lua script that triggered the alarm (mutually exclusive with `rule_id`)                 |
+| `subtopic`  | string          | Message subtopic                                                                                  |
+| `protocol`  | string          | Protocol used to publish the triggering message                                                   |
+| `rule`      | JSON (optional) | Conditions and operator of the rule that triggered the alarm. Only present for rule-based alarms. |
+| `level`     | integer         | Alarm severity: 1=info, 2=warning, 3=minor, 4=major, 5=critical                                   |
+| `status`    | string          | Alarm lifecycle status: `active` (default, set on creation), `noted`, or `cleared`                |
+| `created`   | int64           | Unix timestamp (nanoseconds) when the alarm was created                                           |
 
 ## Configuration
 
@@ -23,7 +25,7 @@ following table. Note that any unset variables will be replaced with their
 default values.
 
 | Variable                      | Description                                                                | Default                  |
-|-------------------------------|----------------------------------------------------------------------------|--------------------------|
+| ----------------------------- | -------------------------------------------------------------------------- | ------------------------ |
 | `MF_ALARMS_LOG_LEVEL`         | Log level for the Alarms service (debug, info, warn, error)                | error                    |
 | `MF_BROKER_URL`               | Message broker instance URL                                                | nats://localhost:4222    |
 | `MF_ALARMS_HTTP_PORT`         | Alarms service HTTP port                                                   | 9026                     |
@@ -81,4 +83,3 @@ $GOBIN/mainfluxlabs-alarms
 ## Usage
 
 Starting the service will begin consuming alarm messages from the message broker and persisting them to the database. For more information about service capabilities and its usage, please check out the [API documentation](https://mainfluxlabs.github.io/docs/swagger/).
-

@@ -44,7 +44,6 @@ import (
 const (
 	svcName      = "smpp-notifier"
 	stopWaitTime = 5 * time.Second
-	esGroupName  = svcName
 
 	defLogLevel          = "error"
 	defFrom              = ""
@@ -67,7 +66,6 @@ const (
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
 	defESURL             = "redis://localhost:6379/0"
-	defESConsumerName    = svcName
 
 	defAddress    = ""
 	defUsername   = ""
@@ -99,7 +97,6 @@ const (
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_SMPP_NOTIFIER_ES_URL"
-	envESConsumerName    = "MF_SMPP_NOTIFIER_EVENT_CONSUMER"
 
 	envAddress    = "MF_SMPP_ADDRESS"
 	envUsername   = "MF_SMPP_USERNAME"
@@ -122,7 +119,6 @@ type config struct {
 	jaegerURL         string
 	thingsGRPCTimeout time.Duration
 	esURL             string
-	esConsumerName    string
 }
 
 func main() {
@@ -161,7 +157,7 @@ func main() {
 
 	svc := newService(cfg, logger, dbTracer, db, tc)
 
-	if err = consumers.Start(svcName, pubSub, svc, nats.SubjectSmpp); err != nil {
+	if err = consumers.Start(svcName, consumers.Messages(pubSub, svc, nats.SubjectSmpp)); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create SMPP notifier: %s", err))
 	}
 
@@ -264,7 +260,6 @@ func loadConfig() config {
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
 		esURL:             mainflux.Env(envESURL, defESURL),
-		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 	}
 
 }
@@ -279,7 +274,11 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func subscribeToThingsES(ctx context.Context, svc notifiers.Service, cfg config, logger logger.Logger) error {
-	subscriber, err := mfevents.NewSubscriber(cfg.esURL, mfevents.ThingsStream, esGroupName, cfg.esConsumerName, logger)
+	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
+		URL:    cfg.esURL,
+		Stream: mfevents.ThingsStream,
+		Name:   svcName,
+	}, logger)
 	if err != nil {
 		return err
 	}

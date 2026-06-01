@@ -8,38 +8,60 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
-// Consumer specifies message consuming API.
-type Consumer interface {
-	// Consume method is used to consumed received messages.
-	// A non-nil error is returned to indicate operation failure.
-	Consume(subject string, messages any) error
+// MessageConsumer specifies an API for consuming protomfx.Message.
+type MessageConsumer interface {
+	ConsumeMessage(subject string, msg protomfx.Message) error
 }
 
-// Start method starts consuming messages received from Message broker.
-func Start(id string, sub messaging.Subscriber, consumer Consumer, subjects ...string) error {
-	for _, subject := range subjects {
-		if err := sub.Subscribe(id, subject, handle(consumer)); err != nil {
+// AlarmConsumer specifies an API for consuming protomfx.Alarm.
+type AlarmConsumer interface {
+	ConsumeAlarm(subject string, alarm protomfx.Alarm) error
+}
+
+// Subscription is a self-contained function that registers a consumer for a given id.
+type Subscription func(id string) error
+
+// Messages returns a Subscription that subscribes consumer to the given subjects as a MessageConsumer.
+func Messages(sub messaging.Subscriber, c MessageConsumer, subjects ...string) Subscription {
+	return func(id string) error {
+		for _, subject := range subjects {
+			if err := sub.Subscribe(id, subject, &messageAdapter{c}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+// Alarms returns a Subscription that subscribes consumer as an AlarmConsumer.
+func Alarms(sub messaging.AlarmSubscriber, c AlarmConsumer) Subscription {
+	return func(id string) error {
+		return sub.SubscribeAlarms(id, &alarmAdapter{c})
+	}
+}
+
+// Start wires all provided subscriptions for the given id.
+func Start(id string, subs ...Subscription) error {
+	for _, s := range subs {
+		if err := s(id); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
-func handle(c Consumer) handleFunc {
-	return func(subject string, msg protomfx.Message) error {
-		m := any(msg)
+type messageAdapter struct{ c MessageConsumer }
 
-		return c.Consume(subject, m)
-	}
+func (a *messageAdapter) Handle(subject string, msg protomfx.Message) error {
+	return a.c.ConsumeMessage(subject, msg)
 }
 
-type handleFunc func(subject string, msg protomfx.Message) error
+func (a *messageAdapter) Cancel() error { return nil }
 
-func (h handleFunc) Handle(subject string, msg protomfx.Message) error {
-	return h(subject, msg)
+type alarmAdapter struct{ c AlarmConsumer }
+
+func (a *alarmAdapter) Handle(subject string, alarm protomfx.Alarm) error {
+	return a.c.ConsumeAlarm(subject, alarm)
 }
 
-func (h handleFunc) Cancel() error {
-	return nil
-}
+func (a *alarmAdapter) Cancel() error { return nil }

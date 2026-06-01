@@ -10,6 +10,8 @@ import (
 	"context"
 	"time"
 
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+
 	"github.com/MainfluxLabs/mainflux/webhooks"
 	"github.com/go-kit/kit/metrics"
 )
@@ -104,11 +106,11 @@ func (ms *metricsMiddleware) RemoveWebhooksByGroup(ctx context.Context, groupID 
 	return ms.svc.RemoveWebhooksByGroup(ctx, groupID)
 }
 
-func (ms *metricsMiddleware) Consume(subject string, message any) error {
+func (ms *metricsMiddleware) ConsumeMessage(subject string, msg protomfx.Message) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "consume").Add(1)
-		ms.latency.With("method", "consume").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "consume_message").Add(1)
+		ms.latency.With("method", "consume_message").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Consume(subject, message)
+	return ms.svc.ConsumeMessage(subject, msg)
 }

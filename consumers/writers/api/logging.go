@@ -11,26 +11,27 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	log "github.com/MainfluxLabs/mainflux/logger"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
-var _ consumers.Consumer = (*loggingMiddleware)(nil)
+var _ consumers.MessageConsumer = (*loggingMiddleware)(nil)
 
 type loggingMiddleware struct {
 	logger   log.Logger
-	consumer consumers.Consumer
+	consumer consumers.MessageConsumer
 }
 
 // LoggingMiddleware adds logging facilities to the adapter.
-func LoggingMiddleware(consumer consumers.Consumer, logger log.Logger) consumers.Consumer {
+func LoggingMiddleware(consumer consumers.MessageConsumer, logger log.Logger) consumers.MessageConsumer {
 	return &loggingMiddleware{
 		logger:   logger,
 		consumer: consumer,
 	}
 }
 
-func (lm *loggingMiddleware) Consume(subject string, msgs any) (err error) {
+func (lm *loggingMiddleware) ConsumeMessage(subject string, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method consume took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method consume_message took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -38,5 +39,5 @@ func (lm *loggingMiddleware) Consume(subject string, msgs any) (err error) {
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.consumer.Consume(subject, msgs)
+	return lm.consumer.ConsumeMessage(subject, msg)
 }

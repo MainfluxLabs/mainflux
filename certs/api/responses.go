@@ -23,6 +23,7 @@ type certsRes struct {
 	ThingID    string    `json:"thing_id"`
 	CertSerial string    `json:"cert_serial"`
 	ExpiresAt  time.Time `json:"expires_at"`
+	Downloaded bool      `json:"downloaded"`
 }
 
 type issueCertRes struct {
@@ -40,6 +41,9 @@ type viewCertRes struct {
 	Serial      string    `json:"serial"`
 	ExpiresAt   time.Time `json:"expires_at"`
 	ThingID     string    `json:"thing_id"`
+	Downloaded  bool      `json:"downloaded"`
+	KeyType     string    `json:"key_type"`
+	KeyBits     int       `json:"key_bits"`
 }
 
 func (res certsPageRes) Code() int {
@@ -87,5 +91,28 @@ func (res viewCertRes) Headers() map[string]string {
 }
 
 func (res viewCertRes) Empty() bool {
+	return false
+}
+
+type downloadCertRes struct {
+	Certificate    string    `json:"certificate"`
+	IssuingCA      string    `json:"issuing_ca"`
+	CAChain        []string  `json:"ca_chain"`
+	PrivateKey     string    `json:"private_key"`
+	PrivateKeyType string    `json:"private_key_type"`
+	Serial         string    `json:"serial"`
+	ThingID        string    `json:"thing_id"`
+	ExpiresAt      time.Time `json:"expires_at"`
+}
+
+func (res downloadCertRes) Code() int {
+	return http.StatusOK
+}
+
+func (res downloadCertRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res downloadCertRes) Empty() bool {
 	return false
 }

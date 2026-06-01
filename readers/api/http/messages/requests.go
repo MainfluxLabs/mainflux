@@ -268,7 +268,8 @@ func validateAggregation(aggType, aggInterval string, aggValue uint64) error {
 	}
 
 	switch aggType {
-	case readers.AggregationMin, readers.AggregationMax, readers.AggregationAvg, readers.AggregationCount:
+	case readers.AggregationMin, readers.AggregationMax, readers.AggregationAvg, readers.AggregationCount,
+		readers.AggregationSum, readers.AggregationFirst, readers.AggregationLast:
 		return nil
 	default:
 		return apiutil.ErrInvalidAggType
@@ -286,6 +287,12 @@ func isValidAggInterval(aggInterval string, aggValue uint64) bool {
 	var maxValue uint64
 
 	switch aggInterval {
+	case "microsecond":
+		maxValue = 1000
+	case "millisecond":
+		maxValue = 1000
+	case "second":
+		maxValue = 60
 	case "minute":
 		maxValue = 60
 	case "hour":

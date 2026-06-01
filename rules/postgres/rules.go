@@ -11,6 +11,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/rules"
 	"github.com/gofrs/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jmoiron/sqlx"
 
 	"github.com/jackc/pgerrcode"
 )
@@ -35,7 +36,8 @@ func (rr ruleRepository) Save(ctx context.Context, rls ...rules.Rule) ([]rules.R
 	}
 	defer tx.Rollback()
 
-	q := `INSERT INTO rules (id, group_id, name, description, conditions, operator, actions) VALUES (:id, :group_id, :name, :description, :conditions, :operator, :actions);`
+	rq := `INSERT INTO rules (id, group_id, name, description, input_type, conditions, operator, actions)
+		VALUES (:id, :group_id, :name, :description, :input_type, :conditions, :operator, :actions);`
 
 	for _, rule := range rls {
 		dbr, err := toDBRule(rule)
@@ -43,7 +45,7 @@ func (rr ruleRepository) Save(ctx context.Context, rls ...rules.Rule) ([]rules.R
 			return []rules.Rule{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 
-		if _, err := tx.NamedExecContext(ctx, q, dbr); err != nil {
+		if _, err := tx.NamedExecContext(ctx, rq, dbr); err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
 				switch pgErr.Code {
@@ -55,7 +57,10 @@ func (rr ruleRepository) Save(ctx context.Context, rls ...rules.Rule) ([]rules.R
 					return []rules.Rule{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 				}
 			}
+			return []rules.Rule{}, errors.Wrap(dbutil.ErrCreateEntity, err)
+		}
 
+		if err := insertRulesThings(ctx, tx, rule.ID, rule.Input.ThingIDs); err != nil {
 			return []rules.Rule{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 	}
@@ -63,6 +68,7 @@ func (rr ruleRepository) Save(ctx context.Context, rls ...rules.Rule) ([]rules.R
 	if err = tx.Commit(); err != nil {
 		return []rules.Rule{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
+
 	return rls, nil
 }
 
@@ -76,16 +82,24 @@ func (rr ruleRepository) RetrieveByGroup(ctx context.Context, groupID string, pm
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	whereClause := dbutil.BuildWhereClause(gq, nq)
+	itq := ""
+	if pm.InputType != "" {
+		itq = "input_type = :input_type"
+	}
+	whereClause := dbutil.BuildWhereClause(gq, nq, itq)
 
-	q := fmt.Sprintf(`SELECT id, group_id, name, description, conditions, operator, actions FROM rules %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
-	qc := fmt.Sprintf(`SELECT COUNT(*) FROM rules WHERE %s;`, gq)
+	q := fmt.Sprintf(`SELECT id, group_id, name, description, input_type, conditions, operator, actions
+		FROM rules %s
+		ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+
+	qc := fmt.Sprintf(`SELECT COUNT(*) FROM rules %s;`, dbutil.BuildWhereClause(gq, itq))
 
 	params := map[string]any{
-		"group_id": groupID,
-		"name":     name,
-		"limit":    pm.Limit,
-		"offset":   pm.Offset,
+		"group_id":   groupID,
+		"name":       name,
+		"input_type": pm.InputType,
+		"limit":      pm.Limit,
+		"offset":     pm.Offset,
 	}
 
 	return rr.retrieveRules(ctx, q, qc, params)
@@ -99,90 +113,85 @@ func (rr ruleRepository) RetrieveByThing(ctx context.Context, thingID string, pm
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	tq := "rt.thing_id = :thing_id"
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	whereClause := dbutil.BuildWhereClause(tq, nq)
 
-	q := fmt.Sprintf(`
-		SELECT r.id, r.group_id, r.name, r.description, r.conditions, r.operator, r.actions
-		FROM rules r
-		INNER JOIN rules_things rt ON r.id = rt.rule_id
-		%s
-		ORDER BY %s %s
-		%s;`,
-		whereClause, oq, dq, olq)
+	tq := "rt.thing_id = :thing_id"
+	itq := ""
+	if pm.InputType != "" {
+		itq = "r.input_type = :input_type"
+	}
 
-	qc := fmt.Sprintf(`
-		SELECT COUNT(*)
-		FROM rules r
-		INNER JOIN rules_things rt ON r.id = rt.rule_id
-		%s;`, whereClause)
+	joinClause := "JOIN rules_things rt ON rt.rule_id = r.id"
+	whereClause := dbutil.BuildWhereClause(tq, nq, itq)
+	countClause := dbutil.BuildWhereClause(tq, itq)
+
+	q := fmt.Sprintf(`SELECT r.id, r.group_id, r.name, r.description,
+		r.input_type, r.conditions, r.operator, r.actions
+		FROM rules r %s %s
+		ORDER BY r.%s %s %s;`, joinClause, whereClause, oq, dq, olq)
+
+	qc := fmt.Sprintf(`SELECT COUNT(*) FROM rules r %s %s;`, joinClause, countClause)
 
 	params := map[string]any{
-		"thing_id": thingID,
-		"name":     name,
-		"limit":    pm.Limit,
-		"offset":   pm.Offset,
+		"thing_id":   thingID,
+		"name":       name,
+		"input_type": pm.InputType,
+		"limit":      pm.Limit,
+		"offset":     pm.Offset,
 	}
 
 	return rr.retrieveRules(ctx, q, qc, params)
 }
 
 func (rr ruleRepository) RetrieveByID(ctx context.Context, id string) (rules.Rule, error) {
-	q := `SELECT id, group_id, name, description, conditions, operator, actions FROM rules WHERE id = $1;`
+	q := `SELECT id, group_id, name, description, input_type, conditions, operator, actions
+		FROM rules
+		WHERE id = $1;`
 
 	var dbr dbRule
 	if err := rr.db.QueryRowxContext(ctx, q, id).StructScan(&dbr); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
-		//  If there is no result or ID is in an invalid format, return ErrNotFound.
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
 			return rules.Rule{}, errors.Wrap(dbutil.ErrNotFound, err)
 		}
 		return rules.Rule{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
-	return toRule(dbr)
-}
-
-func (rr ruleRepository) RetrieveThingIDsByRule(ctx context.Context, ruleID string) ([]string, error) {
-	q := `SELECT thing_id FROM rules_things WHERE rule_id = $1;`
-
-	thingIDs := []string{}
-	if err := rr.db.SelectContext(ctx, &thingIDs, q, ruleID); err != nil {
-		return nil, err
+	var thingIDs []string
+	if err := rr.db.SelectContext(ctx, &thingIDs, `SELECT thing_id FROM rules_things WHERE rule_id = $1;`, dbr.ID); err != nil {
+		return rules.Rule{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
-	return thingIDs, nil
+	return toRule(dbr, thingIDs)
 }
 
 func (rr ruleRepository) Update(ctx context.Context, r rules.Rule) error {
-	q := `UPDATE rules SET name = :name, description = :description, conditions = :conditions, operator = :operator, actions = :actions WHERE id = :id;`
+	uq := `UPDATE rules 
+		SET name = :name, description = :description, input_type = :input_type,
+		conditions = :conditions, operator = :operator, actions = :actions
+		WHERE id = :id;`
 
 	dbr, err := toDBRule(r)
 	if err != nil {
 		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
-	res, errdb := rr.db.NamedExecContext(ctx, q, dbr)
-	if errdb != nil {
-		pgErr, ok := errdb.(*pgconn.PgError)
+	res, err := rr.db.NamedExecContext(ctx, uq, dbr)
+	if err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
 			switch pgErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(dbutil.ErrMalformedEntity, errdb)
-			case pgerrcode.StringDataRightTruncationDataException:
+			case pgerrcode.InvalidTextRepresentation, pgerrcode.StringDataRightTruncationDataException:
 				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
-
-		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
-	cnt, errdb := res.RowsAffected()
-	if errdb != nil {
-		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
+	cnt, err := res.RowsAffected()
+	if err != nil {
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
-
 	if cnt == 0 {
 		return dbutil.ErrNotFound
 	}
@@ -214,67 +223,48 @@ func (rr ruleRepository) RemoveByGroup(ctx context.Context, groupID string) erro
 	return nil
 }
 
-func (rr ruleRepository) Assign(ctx context.Context, thingID string, ruleIDs ...string) error {
+func (rr ruleRepository) UnassignRulesFromThing(ctx context.Context, thingID string) error {
+	q := `DELETE FROM rules_things WHERE thing_id = :thing_id;`
+
+	if _, err := rr.db.NamedExecContext(ctx, q, map[string]any{"thing_id": thingID}); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
+func (rr ruleRepository) AssignThings(ctx context.Context, ruleID string, thingIDs ...string) error {
 	tx, err := rr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 	defer tx.Rollback()
 
-	q := `INSERT INTO rules_things (rule_id, thing_id) VALUES (:rule_id, :thing_id);`
-
-	for _, ruleID := range ruleIDs {
-		params := map[string]any{
-			"rule_id":  ruleID,
-			"thing_id": thingID,
+	if err := insertRulesThings(ctx, tx, ruleID, thingIDs); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok && pgErr.Code == pgerrcode.UniqueViolation {
+			return errors.Wrap(dbutil.ErrConflict, err)
 		}
-
-		if _, err := tx.NamedExecContext(ctx, q, params); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					continue
-				}
-			}
-			return errors.Wrap(dbutil.ErrCreateEntity, err)
-		}
-
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err = tx.Commit(); err != nil {
 		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	return nil
 }
 
-func (rr ruleRepository) Unassign(ctx context.Context, thingID string, ruleIDs ...string) error {
+func (rr ruleRepository) UnassignThings(ctx context.Context, ruleID string, thingIDs ...string) error {
 	q := `DELETE FROM rules_things WHERE rule_id = :rule_id AND thing_id = :thing_id;`
 
-	for _, ruleID := range ruleIDs {
-		params := map[string]any{
+	for _, thingID := range thingIDs {
+		if _, err := rr.db.NamedExecContext(ctx, q, map[string]any{
 			"rule_id":  ruleID,
 			"thing_id": thingID,
-		}
-		if _, err := rr.db.NamedExecContext(ctx, q, params); err != nil {
+		}); err != nil {
 			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
-	}
-
-	return nil
-}
-
-func (rr ruleRepository) UnassignByThing(ctx context.Context, thingID string) error {
-	q := `DELETE FROM rules_things WHERE thing_id = :thing_id;`
-
-	params := map[string]any{
-		"thing_id": thingID,
-	}
-	if _, err := rr.db.NamedExecContext(ctx, q, params); err != nil {
-		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil
@@ -287,18 +277,31 @@ func (rr ruleRepository) retrieveRules(ctx context.Context, query, cquery string
 	}
 	defer rows.Close()
 
-	var items []rules.Rule
+	var dbRules []dbRule
 	for rows.Next() {
 		var dbr dbRule
 		if err = rows.StructScan(&dbr); err != nil {
 			return rules.RulesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
+		dbRules = append(dbRules, dbr)
+	}
 
-		rule, err := toRule(dbr)
+	ruleIDs := make([]string, len(dbRules))
+	for i, dbr := range dbRules {
+		ruleIDs[i] = dbr.ID
+	}
+
+	thingIDs, err := rr.fetchThingIDsByRules(ctx, ruleIDs)
+	if err != nil {
+		return rules.RulesPage{}, err
+	}
+
+	var items []rules.Rule
+	for _, dbr := range dbRules {
+		rule, err := toRule(dbr, thingIDs[dbr.ID])
 		if err != nil {
 			return rules.RulesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
-
 		items = append(items, rule)
 	}
 
@@ -307,12 +310,51 @@ func (rr ruleRepository) retrieveRules(ctx context.Context, query, cquery string
 		return rules.RulesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
-	page := rules.RulesPage{
+	return rules.RulesPage{
 		Rules: items,
 		Total: total,
+	}, nil
+}
+
+func (rr ruleRepository) fetchThingIDsByRules(ctx context.Context, ruleIDs []string) (map[string][]string, error) {
+	result := make(map[string][]string, len(ruleIDs))
+	if len(ruleIDs) == 0 {
+		return result, nil
 	}
 
-	return page, nil
+	type ruleThing struct {
+		RuleID  string `db:"rule_id"`
+		ThingID string `db:"thing_id"`
+	}
+	var rows []ruleThing
+	if err := rr.db.SelectContext(ctx, &rows, `SELECT rule_id, thing_id FROM rules_things WHERE rule_id = ANY($1);`, ruleIDs); err != nil {
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	for _, r := range rows {
+		result[r.RuleID] = append(result[r.RuleID], r.ThingID)
+	}
+
+	return result, nil
+}
+
+func insertRulesThings(ctx context.Context, tx *sqlx.Tx, ruleID string, thingIDs []string) error {
+	if len(thingIDs) == 0 {
+		return nil
+	}
+
+	q := `INSERT INTO rules_things (rule_id, thing_id) VALUES (:rule_id, :thing_id);`
+
+	for _, thingID := range thingIDs {
+		if _, err := tx.NamedExecContext(ctx, q, map[string]any{
+			"rule_id":  ruleID,
+			"thing_id": thingID,
+		}); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 type dbRule struct {
@@ -320,6 +362,7 @@ type dbRule struct {
 	GroupID     string `db:"group_id"`
 	Name        string `db:"name"`
 	Description string `db:"description"`
+	InputType   string `db:"input_type"`
 	Conditions  []byte `db:"conditions"`
 	Operator    string `db:"operator"`
 	Actions     []byte `db:"actions"`
@@ -341,13 +384,14 @@ func toDBRule(r rules.Rule) (dbRule, error) {
 		GroupID:     r.GroupID,
 		Name:        r.Name,
 		Description: r.Description,
+		InputType:   r.Input.Type,
 		Conditions:  conditions,
 		Operator:    r.Operator,
 		Actions:     actions,
 	}, nil
 }
 
-func toRule(dbr dbRule) (rules.Rule, error) {
+func toRule(dbr dbRule, thingIDs []string) (rules.Rule, error) {
 	var conditions []rules.Condition
 	if err := json.Unmarshal(dbr.Conditions, &conditions); err != nil {
 		return rules.Rule{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
@@ -363,6 +407,7 @@ func toRule(dbr dbRule) (rules.Rule, error) {
 		GroupID:     dbr.GroupID,
 		Name:        dbr.Name,
 		Description: dbr.Description,
+		Input:       rules.Input{Type: dbr.InputType, ThingIDs: thingIDs},
 		Conditions:  conditions,
 		Operator:    dbr.Operator,
 		Actions:     actions,

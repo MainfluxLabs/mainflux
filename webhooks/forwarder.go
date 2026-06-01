@@ -2,7 +2,6 @@ package webhooks
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 
 	clientshttp "github.com/MainfluxLabs/mainflux/pkg/clients/http"
@@ -26,13 +25,7 @@ func NewForwarder() Forwarder {
 }
 
 func (fw *forwarder) Forward(_ context.Context, msg protomfx.Message, wh Webhook) error {
-	body, err := json.Marshal(msg.Payload)
-	if err != nil {
-		return err
-	}
-
-	_, err = clientshttp.SendRequest(http.MethodPost, wh.Url, body, wh.Headers)
-	if err != nil {
+	if _, err := clientshttp.SendRequest(http.MethodPost, wh.Url, msg.Payload, wh.Headers); err != nil {
 		return errors.Wrap(errForward, err)
 	}
 

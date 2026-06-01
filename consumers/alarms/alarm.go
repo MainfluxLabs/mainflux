@@ -2,11 +2,14 @@ package alarms
 
 import (
 	"context"
+
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 const (
-	AlarmOriginRule   = "rule"
-	AlarmOriginScript = "script"
+	StatusActive  = "active" // default status assigned on creation
+	StatusNoted   = "noted"
+	StatusCleared = "cleared"
 )
 
 type Alarm struct {
@@ -17,7 +20,9 @@ type Alarm struct {
 	ScriptID string
 	Subtopic string
 	Protocol string
-	Payload  map[string]any
+	Rule     *domain.RuleInfo
+	Level    int32
+	Status   string
 	Created  int64
 }
 
@@ -57,6 +62,9 @@ type AlarmRepository interface {
 	// RemoveByGroup removes alarms related to a certain group,
 	// identified by a given group ID.
 	RemoveByGroup(ctx context.Context, groupID string) error
+
+	// UpdateStatus updates the status of an alarm identified by the provided ID.
+	UpdateStatus(ctx context.Context, id, status string) error
 
 	// ExportByThing retrieves alarms related to a certain thing,
 	// identified by a given thing ID.

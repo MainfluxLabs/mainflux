@@ -71,7 +71,7 @@ type Service interface {
 	// identified by the provided group ID.
 	RemoveNotifiersByGroup(ctx context.Context, groupID string) error
 
-	consumers.Consumer
+	consumers.MessageConsumer
 }
 
 var _ Service = (*notifierService)(nil)
@@ -93,13 +93,8 @@ func New(idp uuid.IDProvider, sender Sender, notifierRepo NotifierRepository, th
 	}
 }
 
-func (ns *notifierService) Consume(subject string, message any) error {
+func (ns *notifierService) ConsumeMessage(subject string, msg protomfx.Message) error {
 	ctx := context.Background()
-
-	msg, ok := message.(protomfx.Message)
-	if !ok {
-		return errors.ErrMessage
-	}
 
 	parts := strings.Split(subject, ".")
 	if len(parts) < 2 {

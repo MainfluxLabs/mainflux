@@ -4,10 +4,11 @@
 package clients
 
 const (
-	Things = "things"
-	Auth   = "auth"
-	Users  = "users"
-	Rules  = "rules"
+	Things  = "things"
+	Auth    = "auth"
+	Users   = "users"
+	Rules   = "rules"
+	Readers = "readers"
 )
 
 type Config struct {

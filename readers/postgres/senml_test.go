@@ -125,7 +125,7 @@ func TestListSenMLMessages(t *testing.T) {
 			Payload:     payload,
 		}
 
-		err = writer.Consume(subject, pm)
+		err = writer.ConsumeMessage(subject, pm)
 		assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 	}
 
@@ -436,7 +436,7 @@ func TestSenMLAggregation(t *testing.T) {
 		payload, err := json.Marshal(msg)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		err = writer.Consume(subject, protomfx.Message{
+		err = writer.ConsumeMessage(subject, protomfx.Message{
 			Publisher:   pubID,
 			Protocol:    mqttProt,
 			ContentType: senml.JSON,
@@ -555,7 +555,7 @@ func TestDeleteSenMLMessages(t *testing.T) {
 			Payload:     payload,
 		}
 
-		err = writer.Consume(subject, pm)
+		err = writer.ConsumeMessage(subject, pm)
 		assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 	}
 
@@ -657,7 +657,7 @@ func TestDeleteSenMLMessages(t *testing.T) {
 				Payload:     payload,
 			}
 
-			err = writer.Consume(subject, pm)
+			err = writer.ConsumeMessage(subject, pm)
 			require.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
 		}
 

@@ -502,7 +502,7 @@ func TestConsume(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.Consume(subject, tc.msg)
+		err := svc.ConsumeMessage(subject, tc.msg)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

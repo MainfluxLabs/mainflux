@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"time"
 
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+
 	notifiers "github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	pkgauth "github.com/MainfluxLabs/mainflux/pkg/auth"
@@ -110,9 +112,9 @@ func (lm *loggingMiddleware) RemoveNotifiersByGroup(ctx context.Context, groupID
 	return lm.svc.RemoveNotifiersByGroup(ctx, groupID)
 }
 
-func (lm *loggingMiddleware) Consume(subject string, msg any) (err error) {
+func (lm *loggingMiddleware) ConsumeMessage(subject string, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method consume took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method consume_message took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -120,5 +122,5 @@ func (lm *loggingMiddleware) Consume(subject string, msg any) (err error) {
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Consume(subject, msg)
+	return lm.svc.ConsumeMessage(subject, msg)
 }

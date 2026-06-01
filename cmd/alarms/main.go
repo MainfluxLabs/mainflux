@@ -31,7 +31,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
@@ -48,7 +47,6 @@ import (
 const (
 	svcName      = "alarms"
 	stopWaitTime = 5 * time.Second
-	esGroupName  = svcName
 
 	defBrokerURL         = "nats://localhost:4222"
 	defLogLevel          = "error"
@@ -70,7 +68,6 @@ const (
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
 	defESURL             = "redis://localhost:6379/0"
-	defESConsumerName    = svcName
 
 	envBrokerURL         = "MF_BROKER_URL"
 	envLogLevel          = "MF_ALARMS_LOG_LEVEL"
@@ -92,7 +89,6 @@ const (
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_ALARMS_ES_URL"
-	envESConsumerName    = "MF_ALARMS_EVENT_CONSUMER"
 )
 
 type config struct {
@@ -104,7 +100,6 @@ type config struct {
 	jaegerURL         string
 	thingsGRPCTimeout time.Duration
 	esURL             string
-	esConsumerName    string
 }
 
 func main() {
@@ -117,7 +112,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	pubSub, err := brokers.NewPubSub(cfg.brokerURL, "", logger)
+	pubSub, err := nats.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -143,8 +138,8 @@ func main() {
 
 	svc := newService(things, dbTracer, db, logger)
 
-	if err = consumers.Start(svcName, pubSub, svc, nats.SubjectAlarms); err != nil {
-		logger.Error(fmt.Sprintf("Failed to create Alarm: %s", err))
+	if err = consumers.Start(svcName, consumers.Alarms(pubSub, svc)); err != nil {
+		logger.Error(fmt.Sprintf("Failed to subscribe to alarms: %s", err))
 	}
 
 	g.Go(func() error {
@@ -215,7 +210,6 @@ func loadConfig() config {
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsAuthGRPCTimeout,
 		esURL:             mainflux.Env(envESURL, defESURL),
-		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 	}
 }
 
@@ -229,7 +223,11 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func subscribeToThingsES(ctx context.Context, svc alarms.Service, cfg config, logger logger.Logger) error {
-	subscriber, err := mfevents.NewSubscriber(cfg.esURL, mfevents.ThingsStream, esGroupName, cfg.esConsumerName, logger)
+	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
+		URL:    cfg.esURL,
+		Stream: mfevents.ThingsStream,
+		Name:   svcName,
+	}, logger)
 	if err != nil {
 		return err
 	}

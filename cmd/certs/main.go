@@ -16,15 +16,19 @@ import (
 	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/certs"
 	"github.com/MainfluxLabs/mainflux/certs/api"
+	certsevents "github.com/MainfluxLabs/mainflux/certs/events"
 	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/certs/postgres"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
+	mfcron "github.com/MainfluxLabs/mainflux/pkg/cron"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
@@ -60,6 +64,10 @@ const (
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
 
+	defBrokerURL     = "nats://localhost:4222"
+	defCertCheckTime = "02:00"
+	defESURL         = "redis://localhost:6379/0"
+
 	defSignCAPath     = "ca.crt"
 	defSignCAKeyPath  = "ca.key"
 	defSignHoursValid = "2048h"
@@ -87,11 +95,15 @@ const (
 	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envThingsGRPCURL     = "MF_THINGS_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_GRPC_TIMEOUT"
-	envSignCAPath        = "MF_CERTS_SIGN_CA_PATH"
-	envSignCAKey         = "MF_CERTS_SIGN_CA_KEY_PATH"
-	envSignHoursValid    = "MF_CERTS_SIGN_HOURS_VALID"
-	envSignRSABits       = "MF_CERTS_SIGN_RSA_BITS"
-	envCRLPath           = "MF_CERTS_CRL_PATH"
+	envBrokerURL         = "MF_BROKER_URL"
+	envCertCheckTime     = "MF_CERTS_CHECK_TIME"
+	envESURL             = "MF_CERTS_ES_URL"
+
+	envSignCAPath     = "MF_CERTS_SIGN_CA_PATH"
+	envSignCAKey      = "MF_CERTS_SIGN_CA_KEY_PATH"
+	envSignHoursValid = "MF_CERTS_SIGN_HOURS_VALID"
+	envSignRSABits    = "MF_CERTS_SIGN_RSA_BITS"
+	envCRLPath        = "MF_CERTS_CRL_PATH"
 )
 
 var (
@@ -111,6 +123,9 @@ type config struct {
 	jaegerURL         string
 	authGRPCTimeout   time.Duration
 	thingsGRPCTimeout time.Duration
+	brokerURL         string
+	certCheckTime     string
+	esURL             string
 	// Sign and issue certificates without 3rd party PKI
 	signCAPath     string
 	signCAKeyPath  string
@@ -164,10 +179,32 @@ func main() {
 
 	tc := thingsapi.NewClient(thingsConn, thingsTracer, cfg.thingsGRPCTimeout)
 
-	svc := newService(auth, tc, db, logger, tlsCert, caCert, cfg, pkiAgent)
+	svc, certsRepo := newService(auth, tc, db, logger, tlsCert, caCert, cfg, pkiAgent)
+
+	pub, err := brokers.NewPublisher(cfg.brokerURL)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
+		os.Exit(1)
+	}
+	defer pub.Close()
+
+	certScheduler := certs.NewCertScheduler(certsRepo, pkiAgent, tc, pub, cfg.crlPath, logger)
+	schedule := mfcron.Scheduler{
+		TimeZone:  "UTC",
+		Frequency: mfcron.DailyFreq,
+		DayTime:   cfg.certCheckTime,
+	}
 
 	g.Go(func() error {
 		return servershttp.Start(ctx, api.MakeHandler(svc, certsHttpTracer, pkiAgent, logger), cfg.httpConfig, logger)
+	})
+
+	g.Go(func() error {
+		return certScheduler.Start(ctx, schedule)
+	})
+
+	g.Go(func() error {
+		return subscribeToThingsES(ctx, svc, cfg, logger)
 	})
 
 	g.Go(func() error {
@@ -248,6 +285,10 @@ func loadConfig() config {
 		authGRPCTimeout:   authGRPCTimeout,
 		thingsGRPCTimeout: thingsGRPCTimeout,
 
+		brokerURL:     mainflux.Env(envBrokerURL, defBrokerURL),
+		certCheckTime: mainflux.Env(envCertCheckTime, defCertCheckTime),
+		esURL:         mainflux.Env(envESURL, defESURL),
+
 		signCAKeyPath:  mainflux.Env(envSignCAKey, defSignCAKeyPath),
 		signCAPath:     mainflux.Env(envSignCAPath, defSignCAPath),
 		signHoursValid: mainflux.Env(envSignHoursValid, defSignHoursValid),
@@ -255,6 +296,27 @@ func loadConfig() config {
 		crlPath:        mainflux.Env(envCRLPath, defCRLPath),
 	}
 
+}
+
+func subscribeToThingsES(ctx context.Context, svc certs.Service, cfg config, logger logger.Logger) error {
+	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
+		URL:    cfg.esURL,
+		Stream: mfevents.ThingsStream,
+		Name:   svcName,
+	}, logger)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := subscriber.Close(); err != nil {
+			logger.Error(fmt.Sprintf("Failed to close subscriber: %s", err))
+		}
+	}()
+
+	handler := certsevents.NewEventHandler(svc)
+
+	return subscriber.Subscribe(ctx, handler)
 }
 
 func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
@@ -266,7 +328,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(ac domain.AuthClient, tc domain.ThingsClient, db *sqlx.DB, logger logger.Logger, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config, pkiAgent pki.Agent) certs.Service {
+func newService(ac domain.AuthClient, tc domain.ThingsClient, db *sqlx.DB, logger logger.Logger, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config, pkiAgent pki.Agent) (certs.Service, certs.Repository) {
 	database := dbutil.NewDatabase(db)
 	certsRepo := postgres.NewRepository(database)
 
@@ -313,7 +375,7 @@ func newService(ac domain.AuthClient, tc domain.ThingsClient, db *sqlx.DB, logge
 			Help:      "Total duration of requests in microseconds.",
 		}, []string{"method"}),
 	)
-	return svc
+	return svc, certsRepo
 }
 
 func loadCertificates(conf config) (tls.Certificate, *x509.Certificate, error) {

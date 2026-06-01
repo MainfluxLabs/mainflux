@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -61,6 +62,15 @@ func (ms *metricsMiddleware) ViewAlarm(ctx context.Context, token, id string) (a
 	return ms.svc.ViewAlarm(ctx, token, id)
 }
 
+func (ms *metricsMiddleware) UpdateAlarmStatus(ctx context.Context, token, id, status string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "update_alarm_status").Add(1)
+		ms.latency.With("method", "update_alarm_status").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.UpdateAlarmStatus(ctx, token, id, status)
+}
+
 func (ms *metricsMiddleware) RemoveAlarms(ctx context.Context, token string, id ...string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "remove_alarms").Add(1)
@@ -97,11 +107,11 @@ func (ms *metricsMiddleware) ExportAlarmsByThing(ctx context.Context, token, thi
 	return ms.svc.ExportAlarmsByThing(ctx, token, thingID, pm)
 }
 
-func (ms *metricsMiddleware) Consume(subject string, message any) error {
+func (ms *metricsMiddleware) ConsumeAlarm(subject string, alarm protomfx.Alarm) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "consume").Add(1)
-		ms.latency.With("method", "consume").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "consume_alarm").Add(1)
+		ms.latency.With("method", "consume_alarm").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Consume(subject, message)
+	return ms.svc.ConsumeAlarm(subject, alarm)
 }

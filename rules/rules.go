@@ -6,31 +6,40 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/MainfluxLabs/mainflux/consumers/alarms"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
+
+const (
+	InputTypeMessage  = "message"
+	InputTypeAlarm    = "alarm"
+	InputTypeCommand  = "command"
+)
+
+type Input struct {
+	Type     string   `json:"type"`
+	ThingIDs []string `json:"thing_ids"`
+}
 
 type Rule struct {
 	ID          string
 	GroupID     string
 	Name        string
 	Description string
+	Input       Input
 	Conditions  []Condition
 	Operator    string
 	Actions     []Action
 }
 
-type Condition struct {
-	Field      string   `json:"field"`
-	Comparator string   `json:"comparator"`
-	Threshold  *float64 `json:"threshold"`
-}
+type Condition = domain.Condition
 
 type Action struct {
-	ID   string `json:"id"`
-	Type string `json:"type"`
+	ID    string `json:"id"`
+	Type  string `json:"type"`
+	Level int32  `json:"level,omitempty"`
 }
 
 type RulesPage struct {
@@ -47,8 +56,6 @@ const (
 	OperatorOR  = "OR"
 )
 
-var errInvalidObject = errors.New("invalid JSON object")
-
 func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, rule Rule) error {
 	triggered, payloads, err := processPayload(parsedPayload, rule.Conditions, rule.Operator, msg.ContentType)
 	if err != nil {
@@ -60,25 +67,31 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 	}
 
 	for _, action := range rule.Actions {
-		for _, payload := range payloads {
-			newMsg := msg
-			newMsg.Payload = payload
-
-			var subject string
-
-			switch action.Type {
-			case ActionTypeSMTP:
-				subject = fmt.Sprintf("%s.%s", subjectSMTP, action.ID)
-			case ActionTypeSMPP:
-				subject = fmt.Sprintf("%s.%s", subjectSMPP, action.ID)
-			case ActionTypeAlarm:
-				subject = fmt.Sprintf("%s.%s.%s", subjectAlarms, alarms.AlarmOriginRule, rule.ID)
-			default:
-				continue
-			}
-
-			if err := rs.pubsub.Publish(subject, *newMsg); err != nil {
+		switch action.Type {
+		case ActionTypeAlarm:
+			ruleInfo, err := json.Marshal(domain.RuleInfo{Conditions: rule.Conditions, Operator: rule.Operator})
+			if err != nil {
 				return err
+			}
+			subject := fmt.Sprintf("%s.%s", subjectAlarms, domain.AlarmOriginRule)
+			if err := rs.pub.PublishAlarm(subject, protomfx.Alarm{
+				ThingId:  msg.Publisher,
+				Subtopic: msg.Subtopic,
+				Protocol: msg.Protocol,
+				Created:  msg.Created,
+				Level:    action.Level,
+				RuleId:   rule.ID,
+				RuleInfo: ruleInfo,
+			}); err != nil {
+				return err
+			}
+		case ActionTypeSMTP, ActionTypeSMPP:
+			for _, payload := range payloads {
+				newMsg := *msg
+				newMsg.Payload = payload
+				if err := rs.pub.Publish(fmt.Sprintf("%s.%s", action.Type, action.ID), newMsg); err != nil {
+					return err
+				}
 			}
 		}
 	}

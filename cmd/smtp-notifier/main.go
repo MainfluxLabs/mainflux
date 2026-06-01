@@ -45,7 +45,6 @@ import (
 const (
 	svcName      = "smtp-notifier"
 	stopWaitTime = 5 * time.Second
-	esGroupName  = svcName
 
 	defLogLevel          = "error"
 	defFrom              = ""
@@ -68,7 +67,6 @@ const (
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
 	defESURL             = "redis://localhost:6379/0"
-	defESConsumerName    = svcName
 
 	defEmailHost         = "localhost"
 	defEmailPort         = "25"
@@ -99,7 +97,6 @@ const (
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_SMTP_NOTIFIER_ES_URL"
-	envESConsumerName    = "MF_SMTP_NOTIFIER_EVENT_CONSUMER"
 
 	envEmailHost         = "MF_EMAIL_HOST"
 	envEmailPort         = "MF_EMAIL_PORT"
@@ -121,7 +118,6 @@ type config struct {
 	jaegerURL         string
 	thingsGRPCTimeout time.Duration
 	esURL             string
-	esConsumerName    string
 }
 
 func main() {
@@ -160,7 +156,7 @@ func main() {
 
 	svc := newService(cfg, logger, dbTracer, db, tc)
 
-	if err = consumers.Start(svcName, pubSub, svc, nats.SubjectSmtp); err != nil {
+	if err = consumers.Start(svcName, consumers.Messages(pubSub, svc, nats.SubjectSmtp)); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create SMTP notifier: %s", err))
 	}
 
@@ -245,7 +241,6 @@ func loadConfig() config {
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
 		esURL:             mainflux.Env(envESURL, defESURL),
-		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 	}
 
 }
@@ -260,7 +255,11 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func subscribeToThingsES(ctx context.Context, svc notifiers.Service, cfg config, logger logger.Logger) error {
-	subscriber, err := mfevents.NewSubscriber(cfg.esURL, mfevents.ThingsStream, esGroupName, cfg.esConsumerName, logger)
+	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
+		URL:    cfg.esURL,
+		Stream: mfevents.ThingsStream,
+		Name:   svcName,
+	}, logger)
 	if err != nil {
 		return err
 	}

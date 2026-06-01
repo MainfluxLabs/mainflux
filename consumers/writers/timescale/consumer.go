@@ -20,33 +20,29 @@ var (
 	errTransRollback  = errors.New("failed to rollback transaction")
 )
 
-var _ consumers.Consumer = (*timescaleRepo)(nil)
+var _ consumers.MessageConsumer = (*timescaleRepo)(nil)
 
 type timescaleRepo struct {
 	db *sqlx.DB
 }
 
 // New returns new TimescaleSQL writer.
-func New(db *sqlx.DB) consumers.Consumer {
+func New(db *sqlx.DB) consumers.MessageConsumer {
 	return &timescaleRepo{db: db}
 }
 
-func (tr timescaleRepo) Consume(_ string, message any) error {
-	if msg, ok := message.(protomfx.Message); ok {
-		msgs, err := messaging.SplitMessage(msg)
-		if err != nil {
-			return err
-		}
-
-		switch msg.ContentType {
-		case messaging.JSONContentType:
-			return tr.saveJSON(msgs)
-		default:
-			return tr.saveSenML(msgs)
-		}
+func (tr timescaleRepo) ConsumeMessage(_ string, msg protomfx.Message) error {
+	msgs, err := messaging.SplitMessage(msg)
+	if err != nil {
+		return err
 	}
 
-	return errors.ErrMessage
+	switch msg.ContentType {
+	case messaging.JSONContentType:
+		return tr.saveJSON(msgs)
+	default:
+		return tr.saveSenML(msgs)
+	}
 }
 
 func (tr timescaleRepo) saveSenML(msgs []protomfx.Message) (err error) {

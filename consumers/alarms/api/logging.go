@@ -8,6 +8,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	pkgauth "github.com/MainfluxLabs/mainflux/pkg/auth"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
 var _ alarms.Service = (*loggingMiddleware)(nil)
@@ -78,6 +79,20 @@ func (lm loggingMiddleware) ViewAlarm(ctx context.Context, token, id string) (_ 
 	return lm.svc.ViewAlarm(ctx, token, id)
 }
 
+func (lm loggingMiddleware) UpdateAlarmStatus(ctx context.Context, token, id, status string) (err error) {
+	defer func(begin time.Time) {
+		email := pkgauth.EmailFromToken(token)
+		message := fmt.Sprintf("Method update_alarm_status by user %s, alarm id %s took %s to complete", email, id, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.UpdateAlarmStatus(ctx, token, id, status)
+}
+
 func (lm loggingMiddleware) RemoveAlarms(ctx context.Context, token string, id ...string) (err error) {
 	defer func(begin time.Time) {
 		email := pkgauth.EmailFromToken(token)
@@ -132,9 +147,9 @@ func (lm loggingMiddleware) ExportAlarmsByThing(ctx context.Context, token, thin
 	return lm.svc.ExportAlarmsByThing(ctx, token, thingID, pm)
 }
 
-func (lm loggingMiddleware) Consume(subject string, alarm any) (err error) {
+func (lm loggingMiddleware) ConsumeAlarm(subject string, alarm protomfx.Alarm) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method consume took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method consume_alarm took %s to complete", time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -142,5 +157,5 @@ func (lm loggingMiddleware) Consume(subject string, alarm any) (err error) {
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Consume(subject, alarm)
+	return lm.svc.ConsumeAlarm(subject, alarm)
 }

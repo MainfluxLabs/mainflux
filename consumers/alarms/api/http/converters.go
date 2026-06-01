@@ -26,7 +26,9 @@ func ConvertToJSONFile(page alarms.AlarmsPage, timeFormat string) ([]byte, error
 			"script_id": a.ScriptID,
 			"subtopic":  a.Subtopic,
 			"protocol":  a.Protocol,
-			"payload":   a.Payload,
+			"rule":      a.Rule,
+			"level":     a.Level,
+			"status":    a.Status,
 		}
 
 		item["created"] = formatTimeNs(a.Created, timeFormat)
@@ -44,28 +46,6 @@ func ConvertToCSVFile(page alarms.AlarmsPage, timeFormat string) ([]byte, error)
 		return []byte{}, nil
 	}
 
-	flattened := make([]map[string]any, len(page.Alarms))
-	payload := []string{}
-	added := map[string]bool{}
-
-	for i, alarm := range page.Alarms {
-		p := alarm.Payload
-		if p == nil {
-			flattened[i] = map[string]any{}
-			continue
-		}
-
-		flat := Flatten(p, "")
-		flattened[i] = flat
-
-		for k := range flat {
-			if !added[k] {
-				added[k] = true
-				payload = append(payload, k)
-			}
-		}
-	}
-
 	header := []string{
 		"created",
 		"thing_id",
@@ -74,34 +54,36 @@ func ConvertToCSVFile(page alarms.AlarmsPage, timeFormat string) ([]byte, error)
 		"script_id",
 		"subtopic",
 		"protocol",
+		"rule",
+		"level",
+		"status",
 	}
-
-	header = append(header, payload...)
 
 	if err := writer.Write(header); err != nil {
 		return nil, err
 	}
 
-	for i, alarm := range page.Alarms {
-		created := formatTimeNs(alarm.Created, timeFormat)
+	for _, alarm := range page.Alarms {
+		rule := ""
+		if alarm.Rule != nil {
+			b, err := json.Marshal(alarm.Rule)
+			if err != nil {
+				return nil, err
+			}
+			rule = string(b)
+		}
 
 		row := []string{
-			created,
+			formatTimeNs(alarm.Created, timeFormat),
 			alarm.ThingID,
 			alarm.GroupID,
 			alarm.RuleID,
+			alarm.ScriptID,
 			alarm.Subtopic,
 			alarm.Protocol,
-		}
-
-		flat := flattened[i]
-		for _, key := range payload {
-			val := flat[key]
-			if val == nil {
-				row = append(row, "")
-			} else {
-				row = append(row, fmt.Sprint(val))
-			}
+			rule,
+			fmt.Sprintf("%d", alarm.Level),
+			alarm.Status,
 		}
 
 		if err := writer.Write(row); err != nil {
@@ -120,35 +102,3 @@ func formatTimeNs(ns int64, timeFormat string) string {
 	return fmt.Sprintf("%v", ns)
 }
 
-func Flatten(m map[string]any, prefix string) map[string]any {
-	result := make(map[string]any)
-	for k, v := range m {
-		key := k
-		if prefix != "" {
-			key = prefix + "." + k
-		}
-		switch child := v.(type) {
-		case map[string]any:
-			nested := Flatten(child, key)
-			for nk, nv := range nested {
-				result[nk] = nv
-			}
-		case []any:
-			for i, elem := range child {
-				indexKey := fmt.Sprintf("%s.%d", key, i)
-				switch elemTyped := elem.(type) {
-				case map[string]any:
-					nested := Flatten(elemTyped, indexKey)
-					for nk, nv := range nested {
-						result[nk] = nv
-					}
-				default:
-					result[indexKey] = elemTyped
-				}
-			}
-		default:
-			result[key] = v
-		}
-	}
-	return result
-}
