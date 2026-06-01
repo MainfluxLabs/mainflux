@@ -16,6 +16,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
@@ -242,7 +243,9 @@ func connectToDB(dbConfig timescale.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func newService(db *sqlx.DB, dbTracer opentracing.Tracer, ac domain.AuthClient, tc domain.ThingsClient, logger logger.Logger) readers.Service {
-	jsonRepo := timescale.NewJSONRepository(db)
+	database := dbutil.NewDatabase(db)
+
+	jsonRepo := timescale.NewJSONRepository(database)
 	jsonRepo = tracing.JSONRepositoryMiddleware(dbTracer, jsonRepo)
 
 	senmlRepo := timescale.NewSenMLRepository(db)
