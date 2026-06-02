@@ -397,21 +397,18 @@ func toProfile(dbpr dbProfile) (things.Profile, error) {
 		}
 
 		// All three flags default to true for legacy records that predate this field.
-		if we, ok := dbpr.Config["write_enabled"].(bool); ok {
-			cfg.WriteEnabled = we
-		} else {
+		cfg.WriteEnabled, ok = dbpr.Config["write_enabled"].(bool)
+		if !ok {
 			cfg.WriteEnabled = true
 		}
 
-		if we, ok := dbpr.Config["webhook_enabled"].(bool); ok {
-			cfg.WebhookEnabled = we
-		} else {
+		cfg.WebhookEnabled, ok = dbpr.Config["webhook_enabled"].(bool)
+		if !ok {
 			cfg.WebhookEnabled = true
 		}
 
-		if re, ok := dbpr.Config["rule_enabled"].(bool); ok {
-			cfg.RuleEnabled = re
-		} else {
+		cfg.RuleEnabled, ok = dbpr.Config["rule_enabled"].(bool)
+		if !ok {
 			cfg.RuleEnabled = true
 		}
 	}
