@@ -13,25 +13,6 @@ import (
 	broker "github.com/nats-io/nats.go"
 )
 
-// GetPublishSubjects returns the NATS subjects a message should be published to
-// based on the dispatcher flags in the profile config.
-func GetPublishSubjects(thingID, subtopic string, pc *domain.ProfileConfig) []string {
-	if pc == nil {
-		return nil
-	}
-	var subjects []string
-	if pc.WriteEnabled {
-		subjects = append(subjects, GetMessagesSubject(thingID, subtopic))
-	}
-	if pc.WebhookEnabled {
-		subjects = append(subjects, SubjectWebhooks)
-	}
-	if pc.RuleEnabled {
-		subjects = append(subjects, SubjectRules)
-	}
-	return subjects
-}
-
 const (
 	// A maximum number of reconnect attempts before NATS connection closes permanently.
 	// Value -1 represents an unlimited number of reconnect retries, i.e. the client
@@ -107,4 +88,25 @@ func createSubject(entity, id, suffix, subtopic string) string {
 		subject = fmt.Sprintf("%s.%s", subject, subtopic)
 	}
 	return subject
+}
+
+// GetPublishSubjects returns the NATS subjects a message should be published to
+// based on the dispatcher flags in the profile config.
+func GetPublishSubjects(thingID, subtopic string, pc *domain.ProfileConfig) []string {
+	if pc == nil {
+		return nil
+	}
+
+	var subjects []string
+	if pc.WriteEnabled {
+		subjects = append(subjects, GetMessagesSubject(thingID, subtopic))
+	}
+	if pc.WebhookEnabled {
+		subjects = append(subjects, SubjectWebhooks)
+	}
+	if pc.RuleEnabled {
+		subjects = append(subjects, SubjectRules)
+	}
+
+	return subjects
 }
