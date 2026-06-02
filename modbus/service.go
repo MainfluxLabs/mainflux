@@ -734,11 +734,9 @@ func (cs *clientsService) publish(config *domain.ProfileConfig, thingID string, 
 		return err
 	}
 
-	if pc.ProfileConfig != nil {
-		for _, subject := range nats.GetPublishSubjects(msg.Publisher, msg.Subtopic, *pc.ProfileConfig) {
-			if err := cs.publisher.Publish(subject, msg); err != nil {
-				return err
-			}
+	for _, subject := range nats.GetPublishSubjects(msg.Publisher, msg.Subtopic, pc.ProfileConfig) {
+		if err := cs.publisher.Publish(subject, msg); err != nil {
+			return err
 		}
 	}
 

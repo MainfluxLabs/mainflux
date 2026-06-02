@@ -235,20 +235,33 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	}
 
 	if isCmd {
-		if err := h.publisher.Publish(subject, msg); err != nil {
+		if err := h.publishCommand(subject, msg); err != nil {
 			h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 			return
 		}
-	} else if pc.ProfileConfig != nil {
-		for _, s := range nats.GetPublishSubjects(msg.Publisher, msg.Subtopic, *pc.ProfileConfig) {
-			if err := h.publisher.Publish(s, msg); err != nil {
-				h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
-				return
-			}
-		}
+		h.logger.Info(fmt.Sprintf("client_id %s published command to topic %s", c.ID, *topic))
+		return
 	}
 
-	h.logger.Info(fmt.Sprintf("client_id %s published to topic %s", c.ID, *topic))
+	if err := h.publishMessage(pc, msg); err != nil {
+		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
+		return
+	}
+
+	h.logger.Info(fmt.Sprintf("client_id %s published message to topic %s", c.ID, *topic))
+}
+
+func (h *handler) publishCommand(subject string, msg protomfx.Message) error {
+	return h.publisher.Publish(subject, msg)
+}
+
+func (h *handler) publishMessage(pc domain.PubConfigInfo, msg protomfx.Message) error {
+	for _, s := range nats.GetPublishSubjects(msg.Publisher, msg.Subtopic, pc.ProfileConfig) {
+		if err := h.publisher.Publish(s, msg); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // parseTopic parses an MQTT topic and returns the NATS subject and

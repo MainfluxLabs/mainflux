@@ -15,7 +15,10 @@ import (
 
 // GetPublishSubjects returns the NATS subjects a message should be published to
 // based on the dispatcher flags in the profile config.
-func GetPublishSubjects(thingID, subtopic string, pc domain.ProfileConfig) []string {
+func GetPublishSubjects(thingID, subtopic string, pc *domain.ProfileConfig) []string {
+	if pc == nil {
+		return nil
+	}
 	var subjects []string
 	if pc.WriteEnabled {
 		subjects = append(subjects, GetMessagesSubject(thingID, subtopic))

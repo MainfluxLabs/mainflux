@@ -53,11 +53,9 @@ func (as *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg 
 		return err
 	}
 
-	if pc.ProfileConfig != nil {
-		for _, subject := range nats.GetPublishSubjects(msg.Publisher, msg.Subtopic, *pc.ProfileConfig) {
-			if err := as.publisher.Publish(subject, msg); err != nil {
-				return err
-			}
+	for _, subject := range nats.GetPublishSubjects(msg.Publisher, msg.Subtopic, pc.ProfileConfig) {
+		if err := as.publisher.Publish(subject, msg); err != nil {
+			return err
 		}
 	}
 
