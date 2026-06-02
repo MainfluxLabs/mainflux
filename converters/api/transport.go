@@ -23,8 +23,6 @@ import (
 )
 
 const (
-	protocol             = "http"
-	ctJSON               = "application/json"
 	maxMemory            = 32 << 20
 	fileKey              = "file"
 	multiPartContentType = "multipart/form-data"
