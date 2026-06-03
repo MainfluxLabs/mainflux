@@ -31,8 +31,8 @@ const (
 	OrgCreate = orgPrefix + "create"
 	OrgRemove = orgPrefix + "remove"
 
-	actorIdentityUserID = "_actor_user_id"
-	actorIdentityEmail  = "_actor_user_email"
+	jwtIdentityUserID    = "jwt_identity_user_id"
+	jwtIdentityUserEmail = "jwt_identity_user_email"
 
 	ThingsStream = mainfluxPrefix + "things"
 	AuthStream   = mainfluxPrefix + "auth"
@@ -46,16 +46,16 @@ func (e redisEvent) operation() string {
 	return e.field("operation", "")
 }
 
-// actorIdentity returns the identity of the actor that initiated the event.
-func (e redisEvent) actorIdentity() domain.Identity {
+// jwtUserIdentity returns the identity of the user that initiated the event.
+func (e redisEvent) jwtUserIdentity() domain.Identity {
 	var identity domain.Identity
 
-	if actorUserID, ok := e[actorIdentityUserID]; ok {
-		identity.ID, _ = actorUserID.(string)
+	if jwtUserID, ok := e[jwtIdentityUserID]; ok {
+		identity.ID, _ = jwtUserID.(string)
 	}
 
-	if actorUserEmail, ok := e[actorIdentityEmail]; ok {
-		identity.Email, _ = actorUserEmail.(string)
+	if jwtUserEmail, ok := e[jwtIdentityUserEmail]; ok {
+		identity.Email, _ = jwtUserEmail.(string)
 	}
 
 	return identity

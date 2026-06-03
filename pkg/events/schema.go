@@ -20,10 +20,11 @@ type EventAction interface {
 	Operation() string
 }
 
-// Event is the type representing a platform event, composed of an action and the actor's identity.
+// Event is the type representing a platform event, composed of an action and the identity
+// of the user who initiated the event.
 type Event struct {
-	Action        EventAction
-	ActorIdentity domain.Identity
+	Action          EventAction
+	JWTUserIdentity domain.Identity
 }
 
 // Encode turns an Event into a redisEvent
@@ -31,9 +32,9 @@ func (e Event) Encode() redisEvent {
 	re := redisEvent(e.Action.Encode())
 	re["operation"] = e.Action.Operation()
 
-	if e.ActorIdentity.ID != "" {
-		re[actorIdentityUserID] = e.ActorIdentity.ID
-		re[actorIdentityEmail] = e.ActorIdentity.Email
+	if e.JWTUserIdentity.ID != "" {
+		re[jwtIdentityUserID] = e.JWTUserIdentity.ID
+		re[jwtIdentityUserEmail] = e.JWTUserIdentity.Email
 	}
 
 	return re
@@ -71,8 +72,8 @@ func decodeEvent(re redisEvent) (Event, error) {
 	}
 
 	return Event{
-		Action:        action,
-		ActorIdentity: re.actorIdentity(),
+		Action:          action,
+		JWTUserIdentity: re.jwtUserIdentity(),
 	}, nil
 }
 

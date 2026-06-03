@@ -154,8 +154,8 @@ func (p *publisher) Publish(ctx context.Context, e EventAction) {
 		Action: e,
 	}
 
-	if actorIdentity, ok := authn.IdentityFromCtx(ctx); ok {
-		event.ActorIdentity = actorIdentity
+	if jwtUserIdentity, ok := authn.IdentityFromCtx(ctx); ok {
+		event.JWTUserIdentity = jwtUserIdentity
 	}
 
 	re := event.Encode()
