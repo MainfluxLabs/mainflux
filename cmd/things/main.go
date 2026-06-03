@@ -217,11 +217,11 @@ func main() {
 	svc := newService(auth, users, dbTracer, cacheTracer, db, cacheClient, pub, logger, cfg)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(svc, thingsHttpTracer, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(svc, auth, thingsHttpTracer, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(svc, thingsHttpTracer, logger), cfg.authHttpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(svc, auth, thingsHttpTracer, logger), cfg.authHttpConfig, logger)
 	})
 
 	g.Go(func() error {

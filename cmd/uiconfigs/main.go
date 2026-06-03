@@ -149,7 +149,7 @@ func main() {
 	})
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(uiTracer, svc, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(uiTracer, svc, auth, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {

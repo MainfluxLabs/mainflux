@@ -20,6 +20,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth/mocks"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
@@ -74,7 +75,7 @@ func newService() auth.Service {
 
 func newServer(svc auth.Service) *httptest.Server {
 	logger := logger.NewMock()
-	mux := httpapi.MakeHandler(svc, mocktracer.New(), logger)
+	mux := httpapi.MakeHandler(svc, pkgmocks.NewAuthService("", nil, nil), mocktracer.New(), logger)
 	return httptest.NewServer(mux)
 }
 

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
+	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
@@ -62,6 +63,8 @@ const (
 	defThingsGRPCTimeout  = "1s"
 	defReadersGRPCURL     = "localhost:8186"
 	defReadersGRPCTimeout = "1s"
+	defAuthGRPCURL        = "localhost:8181"
+	defAuthGRPCTimeout    = "1s"
 	defESURL              = "redis://localhost:6379/0"
 	defScriptsEnabled     = "false"
 
@@ -86,6 +89,8 @@ const (
 	envThingsGRPCTimeout  = "MF_THINGS_AUTH_GRPC_TIMEOUT"
 	envReadersGRPCURL     = "MF_POSTGRES_READER_GRPC_URL"
 	envReadersGRPCTimeout = "MF_POSTGRES_READER_GRPC_TIMEOUT"
+	envAuthGRPCURL        = "MF_AUTH_GRPC_URL"
+	envAuthGRPCTimeout    = "MF_AUTH_GRPC_TIMEOUT"
 	envESURL              = "MF_RULES_ES_URL"
 	envScriptsEnabled     = "MF_RULES_SCRIPTS_ENABLED"
 )
@@ -97,9 +102,11 @@ type config struct {
 	httpConfig         servers.Config
 	thingsConfig       clients.Config
 	readersConfig      clients.Config
+	authConfig         clients.Config
 	jaegerURL          string
 	thingsGRPCTimeout  time.Duration
 	readersGRPCTimeout time.Duration
+	authGRPCTimeout    time.Duration
 	esURL              string
 	scriptsEnabled     bool
 }
@@ -145,6 +152,14 @@ func main() {
 
 	rc := readersapi.NewClient(readersConn, readersTracer, cfg.readersGRPCTimeout)
 
+	authTracer, authCloser := jaeger.Init("rules_auth", cfg.jaegerURL, logger)
+	defer authCloser.Close()
+
+	authConn := clientsgrpc.Connect(cfg.authConfig, logger)
+	defer authConn.Close()
+
+	auth := authapi.NewClient(authConn, authTracer, cfg.authGRPCTimeout)
+
 	svc := newService(dbTracer, db, tc, rc, ps, logger, cfg.scriptsEnabled)
 
 	subjects := []string{nats.SubjectMessages, nats.SubjectMessagesWithSubtopic}
@@ -153,7 +168,7 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(rulesHttpTracer, svc, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(rulesHttpTracer, svc, auth, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -193,6 +208,11 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envReadersGRPCTimeout, err.Error())
 	}
 
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
+	}
+
 	dbConfig := postgres.Config{
 		Host:        mainflux.Env(envDBHost, defDBHost),
 		Port:        mainflux.Env(envDBPort, defDBPort),
@@ -227,6 +247,13 @@ func loadConfig() config {
 		ClientName: clients.Readers,
 	}
 
+	authConfig := clients.Config{
+		ClientTLS:  tls,
+		CaCerts:    mainflux.Env(envCACerts, defCACerts),
+		URL:        mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		ClientName: clients.Auth,
+	}
+
 	return config{
 		brokerURL:          mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:           mainflux.Env(envLogLevel, defLogLevel),
@@ -234,9 +261,11 @@ func loadConfig() config {
 		httpConfig:         httpConfig,
 		thingsConfig:       thingsConfig,
 		readersConfig:      readersConfig,
+		authConfig:         authConfig,
 		jaegerURL:          mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout:  thingsGRPCTimeout,
 		readersGRPCTimeout: readersGRPCTimeout,
+		authGRPCTimeout:    authGRPCTimeout,
 		esURL:              mainflux.Env(envESURL, defESURL),
 		scriptsEnabled:     scriptsEnabled,
 	}

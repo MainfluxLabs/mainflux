@@ -61,7 +61,8 @@ var (
 
 func newHTTPServer(svc webhooks.Service) *httptest.Server {
 	logger := logger.NewMock()
-	mux := httpapi.MakeHandler(mocktracer.New(), svc, logger)
+	ac := mocks.NewAuthService("", nil, nil)
+	mux := httpapi.MakeHandler(mocktracer.New(), svc, ac, logger)
 	return httptest.NewServer(mux)
 }
 
