@@ -158,13 +158,10 @@ func (es *subEventStore) handleBatch(ctx context.Context, msgs []redis.XMessage,
 			return lastID
 		}
 
-		re := RedisEvent(msg.Values)
-		event := decodeEvent(re)
-		if event == nil {
-			es.logger.Warn(fmt.Sprintf(
-				"unknown operation %q in stream %q (id=%s); skipping",
-				re.Operation(), es.stream, msg.ID,
-			))
+		re := redisEvent(msg.Values)
+		event, err := decodeEvent(re)
+		if err != nil {
+			es.logger.Warn(fmt.Sprintf("error prcessing event (id=%s) in stream %q: %s", msg.ID, es.stream, err.Error()))
 			lastID = msg.ID
 			continue
 		}
@@ -172,7 +169,7 @@ func (es *subEventStore) handleBatch(ctx context.Context, msgs []redis.XMessage,
 		if err := es.dispatch(ctx, h, event); err != nil {
 			es.logger.Warn(fmt.Sprintf(
 				"giving up on event %s (operation=%s) after retries: %s",
-				msg.ID, re.Operation(), err,
+				msg.ID, re.operation(), err,
 			))
 		}
 		lastID = msg.ID

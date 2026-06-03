@@ -6,6 +6,8 @@ package events
 import (
 	"context"
 	"fmt"
+
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 const (
@@ -29,21 +31,38 @@ const (
 	OrgCreate = orgPrefix + "create"
 	OrgRemove = orgPrefix + "remove"
 
+	actorIdentityUserID = "_actor_user_id"
+	actorIdentityEmail  = "_actor_user_email"
+
 	ThingsStream = mainfluxPrefix + "things"
 	AuthStream   = mainfluxPrefix + "auth"
 )
 
-// RedisEvent is the raw payload delivered on a Redis stream.
-type RedisEvent map[string]any
+// redisEvent is the raw payload delivered on a Redis stream.
+type redisEvent map[string]any
 
-// Operation returns the event's operation name, or an empty string if missing.
-func (e RedisEvent) Operation() string {
-	s, _ := e["operation"].(string)
-	return s
+// operation returns the event's operation name, or an empty string if missing.
+func (e redisEvent) operation() string {
+	return e.field("operation", "")
 }
 
-// Field returns the string value stored under key, or def if missing.
-func (e RedisEvent) Field(key, def string) string {
+// actorIdentity returns the identity of the actor that initiated the event.
+func (e redisEvent) actorIdentity() domain.Identity {
+	var identity domain.Identity
+
+	if actorUserID, ok := e[actorIdentityUserID]; ok {
+		identity.ID, _ = actorUserID.(string)
+	}
+
+	if actorUserEmail, ok := e[actorIdentityEmail]; ok {
+		identity.Email, _ = actorUserEmail.(string)
+	}
+
+	return identity
+}
+
+// field returns the string value stored under key, or def if missing.
+func (e redisEvent) field(key, def string) string {
 	s, ok := e[key].(string)
 	if !ok {
 		return def

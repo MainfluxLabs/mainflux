@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -44,7 +45,7 @@ type Publisher interface {
 	// channel. It's asynchronous, meaning that it doesn't block the caller
 	// and as such returns no errors. If the underlying event buffer is full,
 	// the oldest queued event is dropped to make space.
-	Publish(ctx context.Context, e Event)
+	Publish(ctx context.Context, e EventAction)
 
 	// Close stops the event drainer goroutine, attempts a final drain,
 	// and closes the underlying Redis client.
@@ -89,7 +90,7 @@ type publisher struct {
 	drainBackoff  time.Duration
 	shutdownDrain time.Duration
 
-	bufferCh chan RedisEvent
+	bufferCh chan redisEvent
 	logger   logger.Logger
 
 	stopCh    chan struct{}
@@ -138,7 +139,7 @@ func NewPublisher(cfg PublisherConfig, log logger.Logger) (Publisher, error) {
 		drainInterval: cfg.DrainInitialInterval,
 		drainBackoff:  cfg.DrainMaxBackoff,
 		shutdownDrain: cfg.ShutdownDrainTimeout,
-		bufferCh:      make(chan RedisEvent, cfg.BufferSize),
+		bufferCh:      make(chan redisEvent, cfg.BufferSize),
 		logger:        log,
 		stopCh:        make(chan struct{}),
 		doneCh:        make(chan struct{}),
@@ -148,8 +149,16 @@ func NewPublisher(cfg PublisherConfig, log logger.Logger) (Publisher, error) {
 	return p, nil
 }
 
-func (p *publisher) Publish(_ context.Context, e Event) {
-	re := e.Encode()
+func (p *publisher) Publish(ctx context.Context, e EventAction) {
+	event := Event{
+		Action: e,
+	}
+
+	if actorIdentity, ok := authn.IdentityFromCtx(ctx); ok {
+		event.ActorIdentity = actorIdentity
+	}
+
+	re := event.Encode()
 
 	// Attempt to enqueue the encoded event onto the buffer channel. If we succeed, simply return.
 	select {
@@ -179,7 +188,7 @@ func (p *publisher) Publish(_ context.Context, e Event) {
 		// buffer. Simply drop the incoming event and log.
 		p.logger.Warn(fmt.Sprintf(
 			"event publisher buffer full for stream %q; dropping incoming %s event",
-			p.stream, re.Operation(),
+			p.stream, re.operation(),
 		))
 	}
 }
@@ -219,7 +228,7 @@ func (p *publisher) runDrainer() {
 // finalDrain is the last pass that attempts to emit all remaining queued events in the buffer (including the passed pendingEvent)
 // after the Publisher has been signalled to stop from the outside, all the while respecting the maximum p.shutdownDrain time.
 // Events that aren't emitted in time are dropped and lost.
-func (p *publisher) finalDrain(pendingEvent *RedisEvent) {
+func (p *publisher) finalDrain(pendingEvent *redisEvent) {
 	stop := make(chan struct{})
 	timer := time.AfterFunc(p.shutdownDrain, func() { close(stop) })
 	defer timer.Stop()
@@ -250,7 +259,7 @@ func (p *publisher) finalDrain(pendingEvent *RedisEvent) {
 // emit attempts to XADD a specific event repeatedly until success or
 // until signalled to stop via the passed stop channel.
 // returns true on successful delivery, and false if signalled to stop in the midst of a retry attempt.
-func (p *publisher) emit(ev RedisEvent, stop <-chan struct{}) bool {
+func (p *publisher) emit(ev redisEvent, stop <-chan struct{}) bool {
 	backoff := p.drainInterval
 
 	for {
@@ -268,7 +277,7 @@ func (p *publisher) emit(ev RedisEvent, stop <-chan struct{}) bool {
 
 		p.logger.Warn(fmt.Sprintf(
 			"failed to publish %s event to stream %q: %s",
-			ev.Operation(), p.stream, err,
+			ev.operation(), p.stream, err,
 		))
 
 		// We failed to emit the event to Redis - retry after sleeping for the backoff time,
