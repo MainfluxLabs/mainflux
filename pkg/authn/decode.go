@@ -1,7 +1,7 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package auth
+package authn
 
 import (
 	"encoding/base64"
