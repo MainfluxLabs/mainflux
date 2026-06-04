@@ -234,7 +234,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		return
 	}
 
-	if isCommandTopic(*topic) {
+	if isCommandSubject(subject) {
 		if err := h.publishCommand(subject, msg); err != nil {
 			h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 			return
@@ -265,22 +265,24 @@ func (h *handler) publishMessage(pc domain.PubConfigInfo, msg protomfx.Message) 
 }
 
 func parseTopic(topic, publisherID string) (subject, subtopic string, err error) {
-	parts := strings.Split(topic, "/")
-	if isStructuredTopic(parts) {
+	parts := strings.SplitN(topic, "/", 4)
+	if len(parts) >= 3 {
 		prefix, id, suffix := parts[0], parts[1], parts[2]
-		var rest string
-		if len(parts) > 3 {
-			if rest, err = messaging.NormalizeSubtopic(strings.Join(parts[3:], "/")); err != nil {
-				return "", "", err
+		if id != "" {
+			var subtopic string
+			if len(parts) > 3 {
+				if subtopic, err = messaging.NormalizeSubtopic(parts[3]); err != nil {
+					return "", "", err
+				}
 			}
-		}
-		switch {
-		case prefix == topicPrefixThings && suffix == topicSuffixCommands:
-			return nats.GetThingCommandsSubject(id, rest), rest, nil
-		case prefix == topicPrefixGroups && suffix == topicSuffixCommands:
-			return nats.GetGroupCommandsSubject(id, rest), rest, nil
-		case prefix == topicPrefixThings && suffix == topicSuffixMessages:
-			return nats.GetMessagesSubject(id, rest), rest, nil
+			switch {
+			case prefix == topicPrefixThings && suffix == topicSuffixCommands:
+				return nats.GetThingCommandsSubject(id, subtopic), subtopic, nil
+			case prefix == topicPrefixGroups && suffix == topicSuffixCommands:
+				return nats.GetGroupCommandsSubject(id, subtopic), subtopic, nil
+			case prefix == topicPrefixThings && suffix == topicSuffixMessages:
+				return nats.GetMessagesSubject(id, subtopic), subtopic, nil
+			}
 		}
 	}
 
@@ -292,22 +294,13 @@ func parseTopic(topic, publisherID string) (subject, subtopic string, err error)
 	return nats.GetMessagesSubject(publisherID, normalizedTopic), normalizedTopic, nil
 }
 
-func isCommandTopic(topic string) bool {
-	parts := strings.SplitN(topic, "/", 4)
-	if !isStructuredTopic(parts) {
+func isCommandSubject(subject string) bool {
+	parts := strings.SplitN(subject, ".", 4)
+	if len(parts) < 3 {
 		return false
 	}
 	suffix := parts[2]
 	return suffix == topicSuffixCommands
-}
-
-// isStructuredTopic reports whether parts match the prefix/id/suffix pattern (e.g. things/<id>/commands).
-func isStructuredTopic(parts []string) bool {
-	if len(parts) < 3 {
-		return false
-	}
-	id := parts[1]
-	return id != ""
 }
 
 // Subscribe - after client successfully subscribed
