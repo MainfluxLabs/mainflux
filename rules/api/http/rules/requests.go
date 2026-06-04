@@ -237,8 +237,10 @@ func validateConditions(conditions []rules.Condition, operator string) error {
 		if condition.Field == "" {
 			return apiutil.ErrMissingConditionField
 		}
-		if condition.Comparator == "" {
-			return apiutil.ErrMissingConditionComparator
+		switch condition.Comparator {
+		case rules.ComparatorEQ, rules.ComparatorGT, rules.ComparatorLT, rules.ComparatorGTE, rules.ComparatorLTE:
+		default:
+			return apiutil.ErrInvalidConditionComparator
 		}
 		if condition.Threshold == nil {
 			return apiutil.ErrMissingConditionThreshold

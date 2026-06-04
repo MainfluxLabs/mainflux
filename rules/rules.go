@@ -55,6 +55,12 @@ const (
 
 	OperatorAND = "AND"
 	OperatorOR  = "OR"
+
+	ComparatorEQ  = "=="
+	ComparatorGTE = ">="
+	ComparatorLTE = "<="
+	ComparatorGT  = ">"
+	ComparatorLT  = "<"
 )
 
 func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, rule Rule) error {
@@ -208,15 +214,15 @@ func checkConditionsMet(payloadMap map[string]any, conditions []Condition, opera
 
 func isConditionMet(comparator string, val1, val2 float64) bool {
 	switch comparator {
-	case "==":
+	case ComparatorEQ:
 		return val1 == val2
-	case ">=":
+	case ComparatorGTE:
 		return val1 >= val2
-	case "<=":
+	case ComparatorLTE:
 		return val1 <= val2
-	case ">":
+	case ComparatorGT:
 		return val1 > val2
-	case "<":
+	case ComparatorLT:
 		return val1 < val2
 	default:
 		return false
