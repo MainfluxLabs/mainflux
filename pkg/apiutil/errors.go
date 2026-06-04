@@ -165,7 +165,7 @@ var (
 	// ErrMissingConditionField indicates a missing condition field
 	ErrMissingConditionField = errors.New("missing condition field")
 
-	// ErrInvalidConditionComparator indicates an invalid condition operator
+	// ErrInvalidConditionComparator indicates an invalid condition comparator
 	ErrInvalidConditionComparator = errors.New("invalid condition comparator")
 
 	// ErrMissingConditionThreshold indicates a missing condition threshold
