@@ -454,8 +454,10 @@ func (ds *downlinksService) publish(config *domain.ProfileConfig, thingID string
 		return err
 	}
 
-	if err := ds.publisher.Publish(nats.GetMessagesSubject(msg.Publisher, msg.Subtopic), msg); err != nil {
-		return err
+	for _, subject := range nats.GetPublishSubjects(msg.Publisher, msg.Subtopic, config) {
+		if err := ds.publisher.Publish(subject, msg); err != nil {
+			return err
+		}
 	}
 
 	return nil
