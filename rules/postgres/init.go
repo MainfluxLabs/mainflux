@@ -138,6 +138,15 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE rules DROP COLUMN IF EXISTS input_type`,
 				},
 			},
+			{
+				Id: "rules_7",
+				Up: []string{
+					`ALTER TABLE rules ADD COLUMN IF NOT EXISTS input_config JSONB NOT NULL DEFAULT '{}'`,
+				},
+				Down: []string{
+					`ALTER TABLE rules DROP COLUMN IF EXISTS input_config`,
+				},
+			},
 		},
 	}
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)

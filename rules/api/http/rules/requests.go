@@ -131,7 +131,8 @@ func (req listRulesByGroupReq) validate() error {
 }
 
 type updateRuleInput struct {
-	Type string `json:"type"`
+	Type   string            `json:"type"`
+	Config rules.InputConfig `json:"config,omitempty"`
 }
 
 type updateRuleReq struct {

@@ -119,7 +119,7 @@ func updateRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 			ID:          req.id,
 			Name:        req.Name,
 			Description: req.Description,
-			Input:       rules.Input{Type: req.Input.Type},
+			Input:       rules.Input{Type: req.Input.Type, Config: req.Input.Config},
 			Conditions:  req.Conditions,
 			Operator:    req.Operator,
 			Actions:     req.Actions,
