@@ -293,13 +293,21 @@ func parseTopic(topic, publisherID string) (subject, subtopic string, err error)
 }
 
 func isCommandTopic(topic string) bool {
-	parts := strings.Split(topic, "/")
-	return isStructuredTopic(parts) && parts[2] == topicSuffixCommands
+	parts := strings.SplitN(topic, "/", 4)
+	if !isStructuredTopic(parts) {
+		return false
+	}
+	suffix := parts[2]
+	return suffix == topicSuffixCommands
 }
 
 // isStructuredTopic reports whether parts match the prefix/id/suffix pattern (e.g. things/<id>/commands).
 func isStructuredTopic(parts []string) bool {
-	return len(parts) >= 3 && parts[1] != ""
+	if len(parts) < 3 {
+		return false
+	}
+	id := parts[1]
+	return id != ""
 }
 
 // Subscribe - after client successfully subscribed
