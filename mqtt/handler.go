@@ -266,32 +266,41 @@ func (h *handler) publishMessage(pc domain.PubConfigInfo, msg protomfx.Message) 
 
 func parseTopic(topic, publisherID string) (subject, subtopic string, err error) {
 	parts := strings.SplitN(topic, "/", 4)
-	if len(parts) >= 3 {
-		prefix, id, suffix := parts[0], parts[1], parts[2]
-		if id != "" {
-			var subtopic string
-			if len(parts) > 3 {
-				if subtopic, err = messaging.NormalizeSubtopic(parts[3]); err != nil {
-					return "", "", err
-				}
-			}
-			switch {
-			case prefix == topicPrefixThings && suffix == topicSuffixCommands:
-				return nats.GetThingCommandsSubject(id, subtopic), subtopic, nil
-			case prefix == topicPrefixGroups && suffix == topicSuffixCommands:
-				return nats.GetGroupCommandsSubject(id, subtopic), subtopic, nil
-			case prefix == topicPrefixThings && suffix == topicSuffixMessages:
-				return nats.GetMessagesSubject(id, subtopic), subtopic, nil
-			}
+	if len(parts) < 3 {
+		return defaultTopicRoute(topic, publisherID)
+	}
+
+	prefix, id, suffix := parts[0], parts[1], parts[2]
+	if id == "" {
+		return defaultTopicRoute(topic, publisherID)
+	}
+
+	if len(parts) > 3 {
+		if subtopic, err = messaging.NormalizeSubtopic(parts[3]); err != nil {
+			return "", "", err
 		}
 	}
 
-	// Default: full normalized topic as subtopic, routed to publisher's messages subject.
-	normalizedTopic, err := messaging.NormalizeSubtopic(topic)
+	switch {
+	case prefix == topicPrefixThings && suffix == topicSuffixCommands:
+		return nats.GetThingCommandsSubject(id, subtopic), subtopic, nil
+	case prefix == topicPrefixGroups && suffix == topicSuffixCommands:
+		return nats.GetGroupCommandsSubject(id, subtopic), subtopic, nil
+	case prefix == topicPrefixThings && suffix == topicSuffixMessages:
+		return nats.GetMessagesSubject(id, subtopic), subtopic, nil
+	}
+
+	return defaultTopicRoute(topic, publisherID)
+}
+
+// defaultTopicRoute normalizes the full topic as the subtopic and routes it
+// to the publisher's own messages subject.
+func defaultTopicRoute(topic, publisherID string) (string, string, error) {
+	subtopic, err := messaging.NormalizeSubtopic(topic)
 	if err != nil {
 		return "", "", err
 	}
-	return nats.GetMessagesSubject(publisherID, normalizedTopic), normalizedTopic, nil
+	return nats.GetMessagesSubject(publisherID, subtopic), subtopic, nil
 }
 
 func isCommandSubject(subject string) bool {
