@@ -14,7 +14,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/downlinks/api/http/backup"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -28,51 +31,72 @@ const (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(tracer opentracing.Tracer, svc downlinks.Service, logger log.Logger) http.Handler {
+func MakeHandler(tracer opentracing.Tracer, svc downlinks.Service, ac domain.AuthClient, logger log.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
 
 	r := bone.New()
 
+	withIdentity := authn.IdentityMiddleware(ac, logger)
+
 	r.Post("/things/:id/downlinks", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_downlinks")(createDownlinksEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "create_downlinks"),
+			withIdentity,
+		)(createDownlinksEndpoint(svc)),
 		decodeCreateDownlinks,
 		encodeResponse,
 		opts...,
 	))
 	r.Get("/things/:id/downlinks", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_downlinks_by_thing")(listDownlinksByThingEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_downlinks_by_thing"),
+			withIdentity,
+		)(listDownlinksByThingEndpoint(svc)),
 		decodeListThingDownlinks,
 		encodeResponse,
 		opts...,
 	))
 	r.Get("/groups/:id/downlinks", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_downlinks_by_group")(listDownlinksByGroupEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_downlinks_by_group"),
+			withIdentity,
+		)(listDownlinksByGroupEndpoint(svc)),
 		decodeListDownlinks,
 		encodeResponse,
 		opts...,
 	))
 	r.Get("/downlinks/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_downlink")(viewDownlinkEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_downlink"),
+			withIdentity,
+		)(viewDownlinkEndpoint(svc)),
 		decodeRequest,
 		encodeResponse,
 		opts...,
 	))
 	r.Put("/downlinks/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_downlink")(updateDownlinkEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_downlink"),
+			withIdentity,
+		)(updateDownlinkEndpoint(svc)),
 		decodeUpdateDownlink,
 		encodeResponse,
 		opts...,
 	))
 	r.Patch("/downlinks", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_downlinks")(removeDownlinksEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "remove_downlinks"),
+			withIdentity,
+		)(removeDownlinksEndpoint(svc)),
 		decodeRemoveDownlinks,
 		encodeResponse,
 		opts...,
 	))
 
-	backup.MakeHandler(tracer, svc, r, logger)
+	backup.MakeHandler(tracer, svc, ac, r, logger)
 
 	r.GetFunc("/health", mainflux.Health("downlinks"))
 	r.Handle("/metrics", promhttp.Handler())

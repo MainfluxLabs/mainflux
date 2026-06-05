@@ -14,6 +14,7 @@ import (
 	_ "time/tzdata"
 
 	"github.com/MainfluxLabs/mainflux"
+	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/modbus"
 	"github.com/MainfluxLabs/mainflux/modbus/api"
 	"github.com/MainfluxLabs/mainflux/modbus/events"
@@ -66,6 +67,8 @@ const (
 	defServerKey         = ""
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
+	defAuthGRPCURL       = "localhost:8181"
+	defAuthGRPCTimeout   = "1s"
 	defESURL             = "redis://localhost:6379/0"
 
 	envLogLevel          = "MF_MODBUS_LOG_LEVEL"
@@ -87,6 +90,8 @@ const (
 	envBrokerURL         = "MF_BROKER_URL"
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
+	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_MODBUS_ES_URL"
 )
 
@@ -95,9 +100,11 @@ type config struct {
 	dbConfig          postgres.Config
 	httpConfig        servers.Config
 	thingsConfig      clients.Config
+	authConfig        clients.Config
 	jaegerURL         string
 	brokerURL         string
 	thingsGRPCTimeout time.Duration
+	authGRPCTimeout   time.Duration
 	esURL             string
 }
 
@@ -122,6 +129,14 @@ func main() {
 
 	things := thingsapi.NewClient(thingsConn, thingsTracer, cfg.thingsGRPCTimeout)
 
+	authTracer, authCloser := jaeger.Init("modbus_auth", cfg.jaegerURL, logger)
+	defer authCloser.Close()
+
+	authConn := clientsgrpc.Connect(cfg.authConfig, logger)
+	defer authConn.Close()
+
+	auth := authapi.NewClient(authConn, authTracer, cfg.authGRPCTimeout)
+
 	dbTracer, dbCloser := jaeger.Init("modbus_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
@@ -142,7 +157,7 @@ func main() {
 	})
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(modbusTracer, svc, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(modbusTracer, svc, auth, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -193,6 +208,11 @@ func loadConfig() config {
 		StopWaitTime: stopWaitTime,
 	}
 
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
+	}
+
 	thingsConfig := clients.Config{
 		ClientTLS:  tls,
 		CaCerts:    mainflux.Env(envCACerts, defCACerts),
@@ -200,14 +220,23 @@ func loadConfig() config {
 		ClientName: clients.Things,
 	}
 
+	authConfig := clients.Config{
+		ClientTLS:  tls,
+		CaCerts:    mainflux.Env(envCACerts, defCACerts),
+		URL:        mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		ClientName: clients.Auth,
+	}
+
 	return config{
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:          dbConfig,
 		httpConfig:        httpConfig,
 		thingsConfig:      thingsConfig,
+		authConfig:        authConfig,
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		thingsGRPCTimeout: thingsAuthGRPCTimeout,
+		authGRPCTimeout:   authGRPCTimeout,
 		esURL:             mainflux.Env(envESURL, defESURL),
 	}
 }

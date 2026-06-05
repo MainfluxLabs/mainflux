@@ -249,7 +249,7 @@ func main() {
 	})
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, mqttapihttp.MakeHandler(mqttTracer, svc, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, mqttapihttp.MakeHandler(mqttTracer, svc, usersAuth, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {

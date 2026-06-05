@@ -100,7 +100,7 @@ func newService() things.Service {
 
 func newServer(svc things.Service) *httptest.Server {
 	logger := logger.NewMock()
-	mux := httpapi.MakeHandler(svc, mocktracer.New(), logger)
+	mux := httpapi.MakeHandler(svc, mocks.NewAuthService(admin.ID, usersList, orgsList), mocktracer.New(), logger)
 	return httptest.NewServer(mux)
 }
 

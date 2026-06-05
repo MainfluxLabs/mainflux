@@ -11,9 +11,12 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
+	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -23,12 +26,15 @@ import (
 const stateKey = "state"
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc users.Service, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger, passwordRegex *regexp.Regexp) *bone.Mux {
+func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger, passwordRegex *regexp.Regexp) *bone.Mux {
 	userPasswordRegex = passwordRegex
 
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
+
+	withIdentity := authn.IdentityMiddleware(ac, logger)
 
 	mux.Post("/register/invite/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "register_by_invite")(inviteRegistrationEndpoint(svc)),
@@ -38,14 +44,20 @@ func MakeHandler(svc users.Service, mux *bone.Mux, tracer opentracing.Tracer, lo
 	))
 
 	mux.Post("/invites", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_platform_invite")(createPlatformInviteEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "create_platform_invite"),
+			withIdentity,
+		)(createPlatformInviteEndpoint(svc)),
 		decodeCreatePlatformInviteRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/invites", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_platform_invites")(listPlatformInvitesEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_platform_invites"),
+			withIdentity,
+		)(listPlatformInvitesEndpoint(svc)),
 		decodeListPlatformInvitesRequest,
 		encodeResponse,
 		opts...,
@@ -59,7 +71,10 @@ func MakeHandler(svc users.Service, mux *bone.Mux, tracer opentracing.Tracer, lo
 	))
 
 	mux.Delete("/invites/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "revoke_platform_invite")(revokePlatformInviteEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "revoke_platform_invite"),
+			withIdentity,
+		)(revokePlatformInviteEndpoint(svc)),
 		decodeInviteRequest,
 		encodeResponse,
 		opts...,

@@ -15,8 +15,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/filestore"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -73,12 +76,15 @@ const (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, logger logger.Logger) http.Handler {
+func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.AuthClient, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
 
 	r := bone.New()
+
+	withIdentity := authn.IdentityMiddleware(ac, logger)
 
 	r.Post("/files", kithttp.NewServer(
 		kitot.TraceServer(tracer, "save_file")(saveFileEndpoint(svc)),
@@ -111,25 +117,37 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, logger logger
 		opts...,
 	))
 	r.Post("/groups/:id/files", kithttp.NewServer(
-		kitot.TraceServer(tracer, "save_group_file")(saveGroupFileEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "save_group_file"),
+			withIdentity,
+		)(saveGroupFileEndpoint(svc)),
 		decodeSaveGroupFile,
 		encodeResponse,
 		opts...,
 	))
 	r.Put("/groups/:id/files/:name", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_group_file")(updateGroupFileEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_group_file"),
+			withIdentity,
+		)(updateGroupFileEndpoint(svc)),
 		decodeUpdateGroupFile,
 		encodeResponse,
 		opts...,
 	))
 	r.Get("/groups/:id/files", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_group_files")(listGroupFilesEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_group_files"),
+			withIdentity,
+		)(listGroupFilesEndpoint(svc)),
 		decodeListGroupFiles,
 		encodeResponse,
 		opts...,
 	))
 	r.Get("/groups/:id/files/:name", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_group_file")(viewGroupFileEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_group_file"),
+			withIdentity,
+		)(viewGroupFileEndpoint(svc)),
 		decodeGroupFile,
 		encodeViewFileResponse,
 		opts...,
@@ -141,7 +159,10 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, logger logger
 		opts...,
 	))
 	r.Delete("/groups/:id/files/:name", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_group_file")(removeGroupFileEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "remove_group_file"),
+			withIdentity,
+		)(removeGroupFileEndpoint(svc)),
 		decodeGroupFile,
 		encodeResponse,
 		opts...,

@@ -196,7 +196,7 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, api.MakeHandler(svc, certsHttpTracer, pkiAgent, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, api.MakeHandler(svc, auth, certsHttpTracer, pkiAgent, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {

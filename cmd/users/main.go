@@ -199,7 +199,7 @@ func main() {
 	svc := newService(db, dbTracer, auth, cfg, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(svc, usersHttpTracer, logger, cfg.passRegex), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(svc, auth, usersHttpTracer, logger, cfg.passRegex), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {

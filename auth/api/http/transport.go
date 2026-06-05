@@ -19,13 +19,13 @@ import (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc auth.Service, tracer opentracing.Tracer, logger logger.Logger) http.Handler {
+func MakeHandler(svc auth.Service, ac auth.Authn, tracer opentracing.Tracer, logger logger.Logger) http.Handler {
 	mux := bone.New()
-	mux = orgs.MakeHandler(svc, mux, tracer, logger)
-	mux = keys.MakeHandler(svc, mux, tracer, logger)
-	mux = memberships.MakeHandler(svc, mux, tracer, logger)
-	mux = invites.MakeHandler(svc, mux, tracer, logger)
-	mux = backup.MakeHandler(svc, mux, tracer, logger)
+	mux = orgs.MakeHandler(svc, ac, mux, tracer, logger)
+	mux = keys.MakeHandler(svc, ac, mux, tracer, logger)
+	mux = memberships.MakeHandler(svc, ac, mux, tracer, logger)
+	mux = invites.MakeHandler(svc, ac, mux, tracer, logger)
+	mux = backup.MakeHandler(svc, ac, mux, tracer, logger)
 
 	mux.GetFunc("/health", mainflux.Health("auth"))
 	mux.Handle("/metrics", promhttp.Handler())
