@@ -13,14 +13,22 @@ import (
 )
 
 const (
-	InputTypeMessage  = "message"
-	InputTypeAlarm    = "alarm"
-	InputTypeCommand  = "command"
+	InputTypeMessage = "message"
+	InputTypeAlarm   = "alarm"
+	InputTypeCommand = "command"
 )
 
+type InputConfig map[string]any
+
+func (c InputConfig) Subtopic() string {
+	s, _ := c["subtopic"].(string)
+	return s
+}
+
 type Input struct {
-	Type     string   `json:"type"`
-	ThingIDs []string `json:"thing_ids"`
+	Type     string      `json:"type"`
+	ThingIDs []string    `json:"thing_ids"`
+	Config   InputConfig `json:"config,omitempty"`
 }
 
 type Rule struct {

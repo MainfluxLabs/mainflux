@@ -148,7 +148,7 @@ const (
 	// subjectAlarms represents subject used to publish messages that trigger an alarm.
 	subjectAlarms = "alarms"
 	// subjectSMTP represents subject used to publish messages that trigger an SMTP notification.
-	subjectSMTP     = "smtp"
+	subjectSMTP = "smtp"
 	// subjectWebhooks represents subject used to publish messages that trigger webhook forwarding.
 	subjectWebhooks = "webhooks"
 )
@@ -498,6 +498,9 @@ func (rs *rulesService) ConsumeMessage(_ string, msg protomfx.Message) error {
 	}
 
 	for _, rule := range page.Rules {
+		if sub := rule.Input.Config.Subtopic(); sub != "" && sub != msg.Subtopic {
+			continue
+		}
 		if err := rs.processRule(&msg, payload, rule); err != nil {
 			rs.logger.Error(fmt.Sprintf("processing rule with id %s failed with error: %v", rule.ID, err))
 		}
