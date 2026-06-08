@@ -21,9 +21,6 @@ const (
 type InputConfig map[string]any
 
 func (c InputConfig) Subtopic() string {
-	if c == nil {
-		return ""
-	}
 	s, _ := c["subtopic"].(string)
 	return s
 }
