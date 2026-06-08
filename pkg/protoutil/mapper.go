@@ -25,8 +25,11 @@ func ProtoConfigToDomain(c *protomfx.Config) *domain.ProfileConfig {
 	}
 
 	return &domain.ProfileConfig{
-		ContentType: c.GetContentType(),
-		Transformer: tr,
+		ContentType:    c.GetContentType(),
+		Transformer:    tr,
+		WriteEnabled:   c.GetWriteEnabled(),
+		WebhookEnabled: c.GetWebhookEnabled(),
+		RuleEnabled:    c.GetRuleEnabled(),
 	}
 }
 
@@ -45,43 +48,9 @@ func DomainConfigToProto(c *domain.ProfileConfig) *protomfx.Config {
 			TimeFormat:   c.Transformer.TimeFormat,
 			TimeLocation: c.Transformer.TimeLocation,
 		},
-	}
-
-	return cfg
-}
-
-// MapToDomainConfig converts a map to domain ProfileConfig.
-func MapToDomainConfig(config map[string]any) *domain.ProfileConfig {
-	if config == nil {
-		return nil
-	}
-
-	cfg := &domain.ProfileConfig{}
-
-	if v, ok := config["content_type"].(string); ok {
-		cfg.ContentType = v
-	}
-
-	if t, ok := config["transformer"].(map[string]any); ok {
-		tr := domain.Transformer{}
-
-		if filters, ok := t["data_filters"].([]string); ok {
-			tr.DataFilters = filters
-		}
-		if df, ok := t["data_field"].(string); ok {
-			tr.DataField = df
-		}
-		if tf, ok := t["time_field"].(string); ok {
-			tr.TimeField = tf
-		}
-		if tf, ok := t["time_format"].(string); ok {
-			tr.TimeFormat = tf
-		}
-		if tl, ok := t["time_location"].(string); ok {
-			tr.TimeLocation = tl
-		}
-
-		cfg.Transformer = tr
+		WriteEnabled:   c.WriteEnabled,
+		WebhookEnabled: c.WebhookEnabled,
+		RuleEnabled:    c.RuleEnabled,
 	}
 
 	return cfg

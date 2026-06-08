@@ -13,6 +13,8 @@ import (
 	adapter "github.com/MainfluxLabs/mainflux/converters"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
@@ -23,17 +25,16 @@ import (
 )
 
 const (
-	protocol             = "http"
-	ctJSON               = "application/json"
 	maxMemory            = 32 << 20
 	fileKey              = "file"
 	multiPartContentType = "multipart/form-data"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc adapter.Service, tracer opentracing.Tracer, logger logger.Logger) http.Handler {
+func MakeHandler(svc adapter.Service, ac domain.AuthClient, tracer opentracing.Tracer, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
 
 	r := bone.New()

@@ -12,9 +12,12 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
+	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -34,17 +37,23 @@ const (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc users.Service, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger, passwordRegex *regexp.Regexp) *bone.Mux {
+func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger, passwordRegex *regexp.Regexp) *bone.Mux {
 	userPasswordRegex = passwordRegex
 
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
 	callbackOpts := append([]kithttp.ServerOption{}, opts...)
 	callbackOpts = append(callbackOpts, kithttp.ServerErrorEncoder(encodeOAuthCallbackError))
 
+	withIdentity := authn.IdentityMiddleware(ac, logger)
+
 	mux.Post("/users", kithttp.NewServer(
-		kitot.TraceServer(tracer, "register")(registrationEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "register"),
+			withIdentity,
+		)(registrationEndpoint(svc)),
 		decodeRegisterUser,
 		encodeResponse,
 		opts...,
@@ -65,35 +74,50 @@ func MakeHandler(svc users.Service, mux *bone.Mux, tracer opentracing.Tracer, lo
 	))
 
 	mux.Get("/users/profile", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_profile")(viewProfileEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_profile"),
+			withIdentity,
+		)(viewProfileEndpoint(svc)),
 		decodeViewProfile,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/users/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_user")(viewUserEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_user"),
+			withIdentity,
+		)(viewUserEndpoint(svc)),
 		decodeViewUser,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/users", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_users")(listUsersEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_users"),
+			withIdentity,
+		)(listUsersEndpoint(svc)),
 		decodeListUsers,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/users/search", kithttp.NewServer(
-		kitot.TraceServer(tracer, "search_users")(listUsersEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "search_users"),
+			withIdentity,
+		)(listUsersEndpoint(svc)),
 		decodeSearchUsers,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Put("/users", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_user")(updateUserEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_user"),
+			withIdentity,
+		)(updateUserEndpoint(svc)),
 		decodeUpdateUser,
 		encodeResponse,
 		opts...,
@@ -114,7 +138,10 @@ func MakeHandler(svc users.Service, mux *bone.Mux, tracer opentracing.Tracer, lo
 	))
 
 	mux.Patch("/password", kithttp.NewServer(
-		kitot.TraceServer(tracer, "reset")(passwordChangeEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "reset"),
+			withIdentity,
+		)(passwordChangeEndpoint(svc)),
 		decodePasswordChange,
 		encodeResponse,
 		opts...,
@@ -142,14 +169,20 @@ func MakeHandler(svc users.Service, mux *bone.Mux, tracer opentracing.Tracer, lo
 	))
 
 	mux.Post("/users/:id/enable", kithttp.NewServer(
-		kitot.TraceServer(tracer, "enable_user")(enableUserEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "enable_user"),
+			withIdentity,
+		)(enableUserEndpoint(svc)),
 		decodeChangeUserStatus,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/users/:id/disable", kithttp.NewServer(
-		kitot.TraceServer(tracer, "disable_user")(disableUserEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "disable_user"),
+			withIdentity,
+		)(disableUserEndpoint(svc)),
 		decodeChangeUserStatus,
 		encodeResponse,
 		opts...,

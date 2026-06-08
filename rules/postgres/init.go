@@ -125,6 +125,19 @@ func migrateDB(db *sqlx.DB) error {
 					`DROP INDEX IF EXISTS idx_lua_script_runs_script_id;`,
 				},
 			},
+			{
+				Id: "rules_6",
+				Up: []string{
+					`ALTER TABLE rules ADD COLUMN IF NOT EXISTS input_type TEXT NOT NULL DEFAULT 'message'`,
+					`CREATE INDEX IF NOT EXISTS idx_rules_group_input_type ON rules (group_id, input_type)`,
+					`CREATE INDEX IF NOT EXISTS idx_rules_things_thing_id ON rules_things (thing_id)`,
+				},
+				Down: []string{
+					`DROP INDEX IF EXISTS idx_rules_things_thing_id`,
+					`DROP INDEX IF EXISTS idx_rules_group_input_type`,
+					`ALTER TABLE rules DROP COLUMN IF EXISTS input_type`,
+				},
+			},
 		},
 	}
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)

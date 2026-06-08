@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
+	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers/api"
@@ -44,7 +45,6 @@ import (
 const (
 	svcName      = "smpp-notifier"
 	stopWaitTime = 5 * time.Second
-	esGroupName  = svcName
 
 	defLogLevel          = "error"
 	defFrom              = ""
@@ -66,8 +66,9 @@ const (
 	defServerKey         = ""
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
+	defAuthGRPCURL       = "localhost:8181"
+	defAuthGRPCTimeout   = "1s"
 	defESURL             = "redis://localhost:6379/0"
-	defESConsumerName    = svcName
 
 	defAddress    = ""
 	defUsername   = ""
@@ -98,8 +99,9 @@ const (
 	envServerKey         = "MF_SMPP_NOTIFIER_SERVER_KEY"
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
+	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_SMPP_NOTIFIER_ES_URL"
-	envESConsumerName    = "MF_SMPP_NOTIFIER_EVENT_CONSUMER"
 
 	envAddress    = "MF_SMPP_ADDRESS"
 	envUsername   = "MF_SMPP_USERNAME"
@@ -117,12 +119,13 @@ type config struct {
 	dbConfig          postgres.Config
 	httpConfig        servers.Config
 	thingsConfig      clients.Config
+	authConfig        clients.Config
 	smppConf          mfsmpp.Config
 	from              string
 	jaegerURL         string
 	thingsGRPCTimeout time.Duration
+	authGRPCTimeout   time.Duration
 	esURL             string
-	esConsumerName    string
 }
 
 func main() {
@@ -156,6 +159,14 @@ func main() {
 
 	tc := thingsapi.NewClient(thConn, thingsTracer, cfg.thingsGRPCTimeout)
 
+	authTracer, authCloser := jaeger.Init("smpp_auth", cfg.jaegerURL, logger)
+	defer authCloser.Close()
+
+	authConn := clientsgrpc.Connect(cfg.authConfig, logger)
+	defer authConn.Close()
+
+	auth := authapi.NewClient(authConn, authTracer, cfg.authGRPCTimeout)
+
 	dbTracer, dbCloser := jaeger.Init("smpp_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
@@ -166,7 +177,7 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(notifiersTracer, svc, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(notifiersTracer, svc, auth, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -246,11 +257,23 @@ func loadConfig() config {
 		StopWaitTime: stopWaitTime,
 	}
 
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
+	}
+
 	thingsConfig := clients.Config{
 		ClientTLS:  thingsTLS,
 		CaCerts:    mainflux.Env(envThingsCACerts, defThingsCACerts),
 		URL:        mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 		ClientName: clients.Things,
+	}
+
+	authConfig := clients.Config{
+		ClientTLS:  thingsTLS,
+		CaCerts:    mainflux.Env(envThingsCACerts, defThingsCACerts),
+		URL:        mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		ClientName: clients.Auth,
 	}
 
 	return config{
@@ -260,11 +283,12 @@ func loadConfig() config {
 		dbConfig:          dbConfig,
 		httpConfig:        httpConfig,
 		thingsConfig:      thingsConfig,
+		authConfig:        authConfig,
 		from:              mainflux.Env(envFrom, defFrom),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
+		authGRPCTimeout:   authGRPCTimeout,
 		esURL:             mainflux.Env(envESURL, defESURL),
-		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 	}
 
 }
@@ -279,7 +303,11 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func subscribeToThingsES(ctx context.Context, svc notifiers.Service, cfg config, logger logger.Logger) error {
-	subscriber, err := mfevents.NewSubscriber(cfg.esURL, mfevents.ThingsStream, esGroupName, cfg.esConsumerName, logger)
+	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
+		URL:    cfg.esURL,
+		Stream: mfevents.ThingsStream,
+		Name:   svcName,
+	}, logger)
 	if err != nil {
 		return err
 	}

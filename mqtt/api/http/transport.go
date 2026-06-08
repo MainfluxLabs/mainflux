@@ -12,6 +12,9 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -20,15 +23,21 @@ import (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(tracer opentracing.Tracer, svc mqtt.Service, logger logger.Logger) http.Handler {
+func MakeHandler(tracer opentracing.Tracer, svc mqtt.Service, ac domain.AuthClient, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
 
 	r := bone.New()
 
+	withIdentity := authn.IdentityMiddleware(ac, logger)
+
 	r.Get("/groups/:id/subscriptions", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_subscriptions")(listSubscriptionsEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_subscriptions"),
+			withIdentity,
+		)(listSubscriptionsEndpoint(svc)),
 		decodeListSubscriptions,
 		encodeResponse,
 		opts...,

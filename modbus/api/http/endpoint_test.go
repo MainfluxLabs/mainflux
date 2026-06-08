@@ -141,7 +141,8 @@ func newService() modbus.Service {
 }
 
 func newHTTPServer(svc modbus.Service) *httptest.Server {
-	mux := httpapi.MakeHandler(mocktracer.New(), svc, logger.NewMock())
+	ac := pkgmocks.NewAuthService("", nil, nil)
+	mux := httpapi.MakeHandler(mocktracer.New(), svc, ac, logger.NewMock())
 	return httptest.NewServer(mux)
 }
 

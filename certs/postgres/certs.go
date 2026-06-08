@@ -127,6 +127,34 @@ func (cr certsRepository) Remove(ctx context.Context, serial string) error {
 	return nil
 }
 
+func (cr certsRepository) RemoveByThing(ctx context.Context, thingID string) error {
+	tx, err := cr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+	defer tx.Rollback()
+
+	params := map[string]any{"thing_id": thingID}
+
+	revoke := `INSERT INTO revoked_certs (serial, thing_id, revoked_at)
+	           SELECT serial, thing_id, NOW() FROM certs WHERE thing_id = :thing_id
+	           ON CONFLICT (serial) DO NOTHING`
+	if _, err := tx.NamedExecContext(ctx, revoke, params); err != nil {
+		return cr.handlePgError(err, dbutil.ErrRemoveEntity)
+	}
+
+	del := `DELETE FROM certs WHERE thing_id = :thing_id`
+	if _, err := tx.NamedExecContext(ctx, del, params); err != nil {
+		return cr.handlePgError(err, dbutil.ErrRemoveEntity)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
 func (cr certsRepository) RetrieveExpiring(ctx context.Context, expiresWithin time.Duration) ([]certs.Cert, error) {
 	q := `SELECT thing_id, serial, expires_at, client_cert, client_key, issuing_ca,
 	      ca_chain, private_key_type, key_bits, downloaded FROM certs

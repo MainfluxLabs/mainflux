@@ -177,11 +177,10 @@ func (cs *CertScheduler) publishCertEvent(cert Cert) error {
 	}
 
 	cmd := protomfx.Command{
-		Publisher:   cert.ThingID,
-		Protocol:    "certs",
-		Payload:     payload,
-		ContentType: "application/json",
-		Created:     time.Now().UnixNano(),
+		Publisher: cert.ThingID,
+		Protocol:  "certs",
+		Payload:   payload,
+		Created:   time.Now().UnixNano(),
 	}
 
 	subject := nats.GetThingCommandsSubject(cert.ThingID, certRotationTopic)

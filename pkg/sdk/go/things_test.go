@@ -65,13 +65,13 @@ func newThingsService() things.Service {
 
 func newThingsServer(svc things.Service) *httptest.Server {
 	logger := logger.NewMock()
-	mux := httpapi.MakeHandler(svc, mocktracer.New(), logger)
+	mux := httpapi.MakeHandler(svc, mocks.NewAuthService("", usersList, orgs), mocktracer.New(), logger)
 	return httptest.NewServer(mux)
 }
 
 func newAuthServer(svc things.Service) *httptest.Server {
 	logger := logger.NewMock()
-	mux := httpapi.MakeHandler(svc, mocktracer.New(), logger)
+	mux := httpapi.MakeHandler(svc, mocks.NewAuthService("", usersList, orgs), mocktracer.New(), logger)
 	return httptest.NewServer(mux)
 }
 

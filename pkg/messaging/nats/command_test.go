@@ -30,16 +30,17 @@ func TestPublishCommand(t *testing.T) {
 		Publisher:   thingID,
 		Protocol:    "certs",
 		Payload:     []byte(`{"thing_id":"x","action":"rotate"}`),
-		ContentType: "application/json",
+		RecipientID: thingID,
 	}
 	err = cp.PublishCommand(subject, cmd)
 	require.Nil(t, err, fmt.Sprintf("PublishCommand failed: %s", err))
 
 	got := <-msgChan
 	// Command and Message share the gogo-protobuf wire layout; the existing
-	// subscriber decodes into Message. Confirm the fields survive the round-trip.
+	// subscriber decodes into Message. Command.RecipientID and Message.ContentType
+	// occupy the same field (4), so the recipient lands in got.ContentType on decode.
 	assert.Equal(t, cmd.Publisher, got.Publisher)
 	assert.Equal(t, cmd.Protocol, got.Protocol)
-	assert.Equal(t, cmd.ContentType, got.ContentType)
+	assert.Equal(t, cmd.RecipientID, got.ContentType)
 	assert.Equal(t, cmd.Payload, got.Payload)
 }

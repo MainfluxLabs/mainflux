@@ -396,6 +396,55 @@ func TestRevokeCert(t *testing.T) {
 	}
 }
 
+func TestRemoveCertsByThing(t *testing.T) {
+	svc, _, err := newService()
+	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
+
+	for i := 0; i < certNum; i++ {
+		_, err = svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, keyType)
+		require.Nil(t, err, fmt.Sprintf("unexpected cert creation error: %s\n", err))
+	}
+
+	page, err := svc.ListCerts(context.Background(), token, thingID, 0, certNum)
+	require.Nil(t, err, fmt.Sprintf("unexpected list error: %s\n", err))
+	require.Equal(t, certNum, len(page.Certs), "expected all issued certs to be listed before removal")
+
+	cases := []struct {
+		desc      string
+		thingID   string
+		wantCerts int
+		err       error
+	}{
+		{
+			desc:      "remove all certs of a thing",
+			thingID:   thingID,
+			wantCerts: 0,
+			err:       nil,
+		},
+		{
+			desc:      "remove certs of a thing with no certs is a no-op",
+			thingID:   thingID,
+			wantCerts: 0,
+			err:       nil,
+		},
+		{
+			desc:      "remove certs of an unknown thing is a no-op",
+			thingID:   "unknown-thing",
+			wantCerts: 0,
+			err:       nil,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.RemoveCertsByThing(context.Background(), tc.thingID)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.err, err))
+
+		page, lErr := svc.ListCerts(context.Background(), token, thingID, 0, certNum)
+		require.Nil(t, lErr, fmt.Sprintf("%s: unexpected list error: %s\n", tc.desc, lErr))
+		assert.Equal(t, tc.wantCerts, len(page.Certs), fmt.Sprintf("%s: expected %d certs remaining got %d\n", tc.desc, tc.wantCerts, len(page.Certs)))
+	}
+}
+
 func TestListCerts(t *testing.T) {
 	svc, _, err := newService()
 	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))

@@ -39,8 +39,6 @@ import (
 const (
 	svcName      = "timescaledb-reader"
 	stopWaitTime = 5 * time.Second
-	thingsStream = "mainflux.things"
-	esGroupName  = svcName
 
 	defLogLevel          = "error"
 	defPort              = "8911"
@@ -61,7 +59,6 @@ const (
 	defAuthGRPCURL       = "localhost:8181"
 	defAuthGRPCTimeout   = "1s"
 	defESURL             = "redis://localhost:6379/0"
-	defESConsumerName    = svcName
 
 	envLogLevel          = "MF_TIMESCALE_READER_LOG_LEVEL"
 	envPort              = "MF_TIMESCALE_READER_PORT"
@@ -82,7 +79,6 @@ const (
 	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
 	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_TIMESCALE_READER_ES_URL"
-	envESConsumerName    = "MF_TIMESCALE_READER_EVENT_CONSUMER"
 )
 
 type config struct {
@@ -95,7 +91,6 @@ type config struct {
 	thingsGRPCTimeout time.Duration
 	authGRPCTimeout   time.Duration
 	esURL             string
-	esConsumerName    string
 }
 
 func main() {
@@ -135,7 +130,7 @@ func main() {
 	svc := newService(db, dbTracer, auth, tc, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(svc, timescaleHttpTracer, svcName, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(svc, auth, timescaleHttpTracer, svcName, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -213,12 +208,15 @@ func loadConfig() config {
 		thingsGRPCTimeout: thingsGRPCTimeout,
 		authGRPCTimeout:   authGRPCTimeout,
 		esURL:             mainflux.Env(envESURL, defESURL),
-		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 	}
 }
 
 func subscribeToThingsES(ctx context.Context, svc readers.Service, cfg config, logger logger.Logger) error {
-	subscriber, err := mfevents.NewSubscriber(cfg.esURL, thingsStream, esGroupName, cfg.esConsumerName, logger)
+	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
+		URL:    cfg.esURL,
+		Stream: mfevents.ThingsStream,
+		Name:   svcName,
+	}, logger)
 	if err != nil {
 		return err
 	}

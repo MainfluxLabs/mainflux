@@ -20,7 +20,7 @@ message Command {
     string publisher   = 1;
     string subtopic    = 2;
     bytes payload      = 3;
-    string contentType = 4;
+    string recipientID = 4;
     string protocol    = 5;
     int64 created      = 6; // Unix timestamp in nanoseconds
 }
@@ -90,6 +90,9 @@ message PubConfigByKeyRes {
 message Config {
     string contentType      = 1;
     Transformer transformer = 2;
+    bool writeEnabled       = 3;
+    bool webhookEnabled     = 4;
+    bool ruleEnabled        = 5;
 }
 
 message ConfigByThingRes{

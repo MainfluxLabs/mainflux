@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux"
+	authapi "github.com/MainfluxLabs/mainflux/auth/api/grpc"
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	"github.com/MainfluxLabs/mainflux/consumers/alarms/api"
@@ -47,7 +48,6 @@ import (
 const (
 	svcName      = "alarms"
 	stopWaitTime = 5 * time.Second
-	esGroupName  = svcName
 
 	defBrokerURL         = "nats://localhost:4222"
 	defLogLevel          = "error"
@@ -68,8 +68,9 @@ const (
 	defServerKey         = ""
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
+	defAuthGRPCURL       = "localhost:8181"
+	defAuthGRPCTimeout   = "1s"
 	defESURL             = "redis://localhost:6379/0"
-	defESConsumerName    = svcName
 
 	envBrokerURL         = "MF_BROKER_URL"
 	envLogLevel          = "MF_ALARMS_LOG_LEVEL"
@@ -90,8 +91,9 @@ const (
 	envJaegerURL         = "MF_JAEGER_URL"
 	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
+	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_ALARMS_ES_URL"
-	envESConsumerName    = "MF_ALARMS_EVENT_CONSUMER"
 )
 
 type config struct {
@@ -100,10 +102,11 @@ type config struct {
 	dbConfig          postgres.Config
 	httpConfig        servers.Config
 	thingsConfig      clients.Config
+	authConfig        clients.Config
 	jaegerURL         string
 	thingsGRPCTimeout time.Duration
+	authGRPCTimeout   time.Duration
 	esURL             string
-	esConsumerName    string
 }
 
 func main() {
@@ -137,6 +140,14 @@ func main() {
 
 	things := thingsapi.NewClient(thingsConn, thingsTracer, cfg.thingsGRPCTimeout)
 
+	authTracer, authCloser := jaeger.Init("alarms_auth", cfg.jaegerURL, logger)
+	defer authCloser.Close()
+
+	authConn := clientsgrpc.Connect(cfg.authConfig, logger)
+	defer authConn.Close()
+
+	auth := authapi.NewClient(authConn, authTracer, cfg.authGRPCTimeout)
+
 	dbTracer, dbCloser := jaeger.Init("alarms_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
@@ -147,7 +158,7 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(alarmsTracer, svc, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(alarmsTracer, svc, auth, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -198,11 +209,23 @@ func loadConfig() config {
 		StopWaitTime: stopWaitTime,
 	}
 
+	authGRPCTimeout, err := time.ParseDuration(mainflux.Env(envAuthGRPCTimeout, defAuthGRPCTimeout))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
+	}
+
 	thingsConfig := clients.Config{
 		ClientTLS:  tls,
 		CaCerts:    mainflux.Env(envCACerts, defCACerts),
 		URL:        mainflux.Env(envThingsGRPCURL, defThingsGRPCURL),
 		ClientName: clients.Things,
+	}
+
+	authConfig := clients.Config{
+		ClientTLS:  tls,
+		CaCerts:    mainflux.Env(envCACerts, defCACerts),
+		URL:        mainflux.Env(envAuthGRPCURL, defAuthGRPCURL),
+		ClientName: clients.Auth,
 	}
 
 	return config{
@@ -211,10 +234,11 @@ func loadConfig() config {
 		dbConfig:          dbConfig,
 		httpConfig:        httpConfig,
 		thingsConfig:      thingsConfig,
+		authConfig:        authConfig,
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsAuthGRPCTimeout,
+		authGRPCTimeout:   authGRPCTimeout,
 		esURL:             mainflux.Env(envESURL, defESURL),
-		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 	}
 }
 
@@ -228,7 +252,11 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func subscribeToThingsES(ctx context.Context, svc alarms.Service, cfg config, logger logger.Logger) error {
-	subscriber, err := mfevents.NewSubscriber(cfg.esURL, mfevents.ThingsStream, esGroupName, cfg.esConsumerName, logger)
+	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
+		URL:    cfg.esURL,
+		Stream: mfevents.ThingsStream,
+		Name:   svcName,
+	}, logger)
 	if err != nil {
 		return err
 	}

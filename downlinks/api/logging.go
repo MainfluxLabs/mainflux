@@ -13,7 +13,8 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/downlinks"
 	log "github.com/MainfluxLabs/mainflux/logger"
-	pkgauth "github.com/MainfluxLabs/mainflux/pkg/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 var _ downlinks.Service = (*loggingMiddleware)(nil)
@@ -30,7 +31,7 @@ func LoggingMiddleware(svc downlinks.Service, logger log.Logger) downlinks.Servi
 
 func (lm *loggingMiddleware) CreateDownlinks(ctx context.Context, token, thingID string, downlinks ...downlinks.Downlink) (response []downlinks.Downlink, err error) {
 	defer func(begin time.Time) {
-		email := pkgauth.EmailFromToken(token)
+		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method create_downlinks by user %s, downlinks %v took %s to complete", email, response, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -44,7 +45,7 @@ func (lm *loggingMiddleware) CreateDownlinks(ctx context.Context, token, thingID
 
 func (lm *loggingMiddleware) ListDownlinksByThing(ctx context.Context, token, thingID string, pm downlinks.PageMetadata) (response downlinks.DownlinksPage, err error) {
 	defer func(begin time.Time) {
-		email := pkgauth.EmailFromToken(token)
+		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method list_downlinks_by_thing by user %s, id %s took %s to complete", email, thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -58,7 +59,7 @@ func (lm *loggingMiddleware) ListDownlinksByThing(ctx context.Context, token, th
 
 func (lm *loggingMiddleware) ListDownlinksByGroup(ctx context.Context, token, groupID string, pm downlinks.PageMetadata) (response downlinks.DownlinksPage, err error) {
 	defer func(begin time.Time) {
-		email := pkgauth.EmailFromToken(token)
+		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method list_downlinks_by_group by user %s, id %s took %s to complete", email, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -72,7 +73,7 @@ func (lm *loggingMiddleware) ListDownlinksByGroup(ctx context.Context, token, gr
 
 func (lm *loggingMiddleware) ViewDownlink(ctx context.Context, token, id string) (response downlinks.Downlink, err error) {
 	defer func(begin time.Time) {
-		email := pkgauth.EmailFromToken(token)
+		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method view_downlink by user %s, id %s took %s to complete", email, id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -86,7 +87,7 @@ func (lm *loggingMiddleware) ViewDownlink(ctx context.Context, token, id string)
 
 func (lm *loggingMiddleware) UpdateDownlink(ctx context.Context, token string, downlink downlinks.Downlink) (err error) {
 	defer func(begin time.Time) {
-		email := pkgauth.EmailFromToken(token)
+		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method update_downlink by user %s, id %s took %s to complete", email, downlink.ID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -100,7 +101,7 @@ func (lm *loggingMiddleware) UpdateDownlink(ctx context.Context, token string, d
 
 func (lm *loggingMiddleware) RemoveDownlinks(ctx context.Context, token string, id ...string) (err error) {
 	defer func(begin time.Time) {
-		email := pkgauth.EmailFromToken(token)
+		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method remove_downlinks by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -138,7 +139,7 @@ func (lm *loggingMiddleware) RemoveDownlinksByGroup(ctx context.Context, groupID
 	return lm.svc.RemoveDownlinksByGroup(ctx, groupID)
 }
 
-func (lm *loggingMiddleware) RescheduleTasks(ctx context.Context, profileID string, config map[string]any) (err error) {
+func (lm *loggingMiddleware) RescheduleTasks(ctx context.Context, profileID string, config *domain.ProfileConfig) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method reschedule_tasks for profile %s and config %v took %s to complete", profileID, config, time.Since(begin))
 		if err != nil {
@@ -166,7 +167,7 @@ func (lm *loggingMiddleware) LoadAndScheduleTasks(ctx context.Context) (err erro
 
 func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (response []downlinks.Downlink, err error) {
 	defer func(begin time.Time) {
-		email := pkgauth.EmailFromToken(token)
+		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method backup by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -180,7 +181,7 @@ func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (response
 
 func (lm *loggingMiddleware) Restore(ctx context.Context, token string, dls []downlinks.Downlink) (err error) {
 	defer func(begin time.Time) {
-		email := pkgauth.EmailFromToken(token)
+		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method restore by user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))

@@ -48,7 +48,6 @@ import (
 const (
 	svcName      = "mqtt-adapter"
 	stopWaitTime = 5 * time.Second
-	esGroupName  = svcName
 
 	defLogLevel          = "error"
 	defMQTTPort          = "1883"
@@ -70,7 +69,6 @@ const (
 	defCACerts           = ""
 	defAuthCacheURL      = "redis://localhost:6379/0"
 	defESURL             = "redis://localhost:6379/0"
-	defESConsumerName    = svcName
 	defDBHost            = "localhost"
 	defAuthGRPCURL       = "localhost:8181"
 	defDBPort            = "5432"
@@ -105,7 +103,6 @@ const (
 	envCACerts           = "MF_MQTT_ADAPTER_CA_CERTS"
 	envAuthCacheURL      = "MF_AUTH_CACHE_URL"
 	envESURL             = "MF_MQTT_ADAPTER_ES_URL"
-	envESConsumerName    = "MF_MQTT_ADAPTER_EVENT_CONSUMER"
 	envServerCert        = "MF_MQTT_ADAPTER_SERVER_CERT"
 	envServerKey         = "MF_MQTT_ADAPTER_SERVER_KEY"
 	envDBHost            = "MF_MQTT_ADAPTER_DB_HOST"
@@ -143,7 +140,6 @@ type config struct {
 	authGRPCTimeout   time.Duration
 	dbConfig          postgres.Config
 	esURL             string
-	esConsumerName    string
 }
 
 func main() {
@@ -253,7 +249,7 @@ func main() {
 	})
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, mqttapihttp.MakeHandler(mqttTracer, svc, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, mqttapihttp.MakeHandler(mqttTracer, svc, usersAuth, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -344,7 +340,6 @@ func loadConfig() config {
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		authCacheURL:      mainflux.Env(envAuthCacheURL, defAuthCacheURL),
 		esURL:             mainflux.Env(envESURL, defESURL),
-		esConsumerName:    mainflux.Env(envESConsumerName, defESConsumerName),
 		authGRPCTimeout:   authGRPCTimeout,
 		dbConfig:          dbConfig,
 	}
@@ -361,7 +356,11 @@ func connectToRedis(redisURL string, logger logger.Logger) *redis.Client {
 }
 
 func subscribeToThingsES(ctx context.Context, svc mqtt.Service, cfg config, logger logger.Logger) error {
-	subscriber, err := mfevents.NewSubscriber(cfg.esURL, mfevents.ThingsStream, esGroupName, cfg.esConsumerName, logger)
+	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
+		URL:    cfg.esURL,
+		Stream: mfevents.ThingsStream,
+		Name:   svcName,
+	}, logger)
 	if err != nil {
 		return err
 	}

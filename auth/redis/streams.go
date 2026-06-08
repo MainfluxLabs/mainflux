@@ -8,22 +8,17 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/events"
-	"github.com/go-redis/redis/v8"
 )
-
-const streamLen = 1000
 
 type eventStore struct {
 	auth.Service
-	client *redis.Client
+	pub events.Publisher
 }
 
-// NewEventStoreMiddleware returns wrapper around auth service that sends
-// events to event store.
-func NewEventStoreMiddleware(svc auth.Service, client *redis.Client) auth.Service {
+func NewEventStoreMiddleware(svc auth.Service, pub events.Publisher) auth.Service {
 	return eventStore{
 		Service: svc,
-		client:  client,
+		pub:     pub,
 	}
 }
 
@@ -33,15 +28,7 @@ func (es eventStore) CreateOrg(ctx context.Context, token string, org auth.Org) 
 		return sorg, err
 	}
 
-	event := createOrgEvent{
-		id: sorg.ID,
-	}
-	record := &redis.XAddArgs{
-		Stream:       events.AuthStream,
-		MaxLenApprox: streamLen,
-		Values:       event.Encode(),
-	}
-	es.client.XAdd(ctx, record).Err()
+	es.pub.Publish(ctx, events.OrgCreated{ID: sorg.ID})
 
 	return sorg, nil
 }
@@ -52,15 +39,7 @@ func (es eventStore) RemoveOrgs(ctx context.Context, token string, ids ...string
 			return err
 		}
 
-		event := removeOrgEvent{
-			id: id,
-		}
-		record := &redis.XAddArgs{
-			Stream:       events.AuthStream,
-			MaxLenApprox: streamLen,
-			Values:       event.Encode(),
-		}
-		es.client.XAdd(ctx, record).Err()
+		es.pub.Publish(ctx, events.OrgRemoved{ID: id})
 	}
 
 	return nil

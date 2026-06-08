@@ -16,6 +16,7 @@ const (
 	retrieveAllCerts      = "retrieve_all_certs"
 	saveCert              = "save_cert"
 	removeCert            = "remove_cert"
+	removeCertsByThing    = "remove_certs_by_thing"
 	retrieveExpiringCerts = "retrieve_expiring_certs"
 	retrieveRevokedCerts  = "retrieve_revoked_certs"
 	retrieveCertByThing   = "retrieve_cert_by_thing"
@@ -59,6 +60,14 @@ func (crm certsRepositoryMiddleware) Remove(ctx context.Context, serialID string
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return crm.repo.Remove(ctx, serialID)
+}
+
+func (crm certsRepositoryMiddleware) RemoveByThing(ctx context.Context, thingID string) error {
+	span := dbutil.CreateSpan(ctx, crm.tracer, removeCertsByThing)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return crm.repo.RemoveByThing(ctx, thingID)
 }
 
 func (crm certsRepositoryMiddleware) RetrieveExpiring(ctx context.Context, expiresWithin time.Duration) ([]certs.Cert, error) {

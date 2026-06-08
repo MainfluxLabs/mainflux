@@ -9,8 +9,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -18,54 +20,79 @@ import (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
+func MakeHandler(svc auth.Service, ac auth.Authn, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
+
+	withIdentity := authn.IdentityMiddleware(ac, logger)
+
 	mux.Post("/orgs", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_orgs")(createOrgsEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "create_orgs"),
+			withIdentity,
+		)(createOrgsEndpoint(svc)),
 		decodeCreateOrgs,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/orgs/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_org")(viewOrgEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_org"),
+			withIdentity,
+		)(viewOrgEndpoint(svc)),
 		decodeOrgRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Put("/orgs/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_org")(updateOrgEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_org"),
+			withIdentity,
+		)(updateOrgEndpoint(svc)),
 		decodeUpdateOrg,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/orgs/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "delete_org")(deleteOrgEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "delete_org"),
+			withIdentity,
+		)(deleteOrgEndpoint(svc)),
 		decodeOrgRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Patch("/orgs", kithttp.NewServer(
-		kitot.TraceServer(tracer, "delete_orgs")(deleteOrgsEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "delete_orgs"),
+			withIdentity,
+		)(deleteOrgsEndpoint(svc)),
 		decodeDeleteOrgs,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/orgs", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_orgs")(listOrgsEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_orgs"),
+			withIdentity,
+		)(listOrgsEndpoint(svc)),
 		decodeListOrgs,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/orgs/search", kithttp.NewServer(
-		kitot.TraceServer(tracer, "search_orgs")(listOrgsEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "search_orgs"),
+			withIdentity,
+		)(listOrgsEndpoint(svc)),
 		decodeSearchOrgs,
 		encodeResponse,
 		opts...,

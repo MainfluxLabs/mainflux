@@ -6,6 +6,7 @@ package nats
 import (
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/gogo/protobuf/proto"
@@ -92,4 +93,25 @@ func createSubject(entity, id, suffix, subtopic string) string {
 		subject = fmt.Sprintf("%s.%s", subject, subtopic)
 	}
 	return subject
+}
+
+// GetPublishSubjects returns the NATS subjects a message should be published to
+// based on the dispatcher flags in the profile config.
+func GetPublishSubjects(thingID, subtopic string, pc *domain.ProfileConfig) []string {
+	if pc == nil {
+		return nil
+	}
+
+	var subjects []string
+	if pc.WriteEnabled {
+		subjects = append(subjects, GetMessagesSubject(thingID, subtopic))
+	}
+	if pc.WebhookEnabled {
+		subjects = append(subjects, SubjectWebhooks)
+	}
+	if pc.RuleEnabled {
+		subjects = append(subjects, SubjectRules)
+	}
+
+	return subjects
 }
