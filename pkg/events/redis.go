@@ -50,13 +50,8 @@ func (e redisEvent) operation() string {
 func (e redisEvent) jwtUserIdentity() domain.Identity {
 	var identity domain.Identity
 
-	if jwtUserID, ok := e[jwtIdentityUserID]; ok {
-		identity.ID, _ = jwtUserID.(string)
-	}
-
-	if jwtUserEmail, ok := e[jwtIdentityUserEmail]; ok {
-		identity.Email, _ = jwtUserEmail.(string)
-	}
+	identity.ID, _ = e[jwtIdentityUserID].(string)
+	identity.Email, _ = e[jwtIdentityUserEmail].(string)
 
 	return identity
 }
