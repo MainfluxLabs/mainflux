@@ -14,7 +14,7 @@ import (
 	mfcron "github.com/MainfluxLabs/mainflux/pkg/cron"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
@@ -42,14 +42,14 @@ type CertScheduler struct {
 	repo      Repository
 	pki       pki.Agent
 	things    domain.ThingsClient
-	publisher brokers.Publisher
+	publisher messaging.CommandPublisher
 	logger    logger.Logger
 	crlPath   string
 	sm        *mfcron.ScheduleManager
 }
 
 // NewCertScheduler creates a new certificate rotation scheduler.
-func NewCertScheduler(repo Repository, pkiAgent pki.Agent, things domain.ThingsClient, pub brokers.Publisher, crlPath string, logger logger.Logger) *CertScheduler {
+func NewCertScheduler(repo Repository, pkiAgent pki.Agent, things domain.ThingsClient, pub messaging.CommandPublisher, crlPath string, logger logger.Logger) *CertScheduler {
 	return &CertScheduler{
 		repo:      repo,
 		pki:       pkiAgent,

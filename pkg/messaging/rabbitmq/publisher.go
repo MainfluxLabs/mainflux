@@ -13,13 +13,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-// Publisher extends the base messaging.Publisher with command publishing capability.
-type Publisher interface {
-	messaging.Publisher
-	messaging.CommandPublisher
-}
-
-var _ Publisher = (*publisher)(nil)
+var _ messaging.Publisher = (*publisher)(nil)
 
 type publisher struct {
 	conn *amqp.Connection
@@ -27,7 +21,7 @@ type publisher struct {
 }
 
 // NewPublisher returns RabbitMQ message Publisher.
-func NewPublisher(url string) (Publisher, error) {
+func NewPublisher(url string) (messaging.Publisher, error) {
 	conn, err := amqp.Dial(url)
 	if err != nil {
 		return nil, err
@@ -48,15 +42,7 @@ func NewPublisher(url string) (Publisher, error) {
 }
 
 func (pub *publisher) Publish(_ string, msg protomfx.Message) error {
-	return pub.publish(msg.Subtopic, &msg)
-}
-
-func (pub *publisher) PublishCommand(subject string, cmd protomfx.Command) error {
-	return pub.publish(subject, &cmd)
-}
-
-func (pub *publisher) publish(routingKey string, msg proto.Message) error {
-	data, err := proto.Marshal(msg)
+	data, err := proto.Marshal(&msg)
 	if err != nil {
 		return err
 	}
@@ -64,7 +50,7 @@ func (pub *publisher) publish(routingKey string, msg proto.Message) error {
 	return pub.ch.PublishWithContext(
 		context.Background(),
 		exchangeName,
-		formatTopic(routingKey),
+		formatTopic(msg.Subtopic),
 		false,
 		false,
 		amqp.Publishing{
