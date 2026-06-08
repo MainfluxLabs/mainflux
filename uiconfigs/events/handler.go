@@ -20,7 +20,7 @@ func NewEventHandler(svc uiconfigs.Service) events.EventHandler {
 }
 
 func (h *eventHandler) Handle(ctx context.Context, event events.Event) error {
-	switch e := event.(type) {
+	switch e := event.Action.(type) {
 	case events.ThingRemoved:
 		return h.svc.RemoveThingConfig(ctx, e.ID)
 	case events.OrgRemoved:
