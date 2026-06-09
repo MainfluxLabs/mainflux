@@ -5,7 +5,7 @@ MF_DOCKER_IMAGE_NAME_PREFIX ?= mainfluxlabs
 BUILD_DIR = build
 SERVICES = users things http coap ws postgres-writer postgres-reader timescale-writer timescale-reader cli \
 	auth mqtt certs smtp-notifier smpp-notifier alarms rules filestore downlinks modbus \
-	uiconfigs converters webhooks
+	uiconfigs converters webhooks audit
 DOCKERS = $(addprefix docker_,$(SERVICES))
 DOCKERS_DEV = $(addprefix docker_dev_,$(SERVICES))
 CGO_ENABLED ?= 0
