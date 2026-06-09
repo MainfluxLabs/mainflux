@@ -39,7 +39,32 @@ func Connect(cfg Config) (*sqlx.DB, error) {
 
 func migrateDB(db *sqlx.DB) error {
 	migrations := &migrate.MemoryMigrationSource{
-		Migrations: []*migrate.Migration{},
+		Migrations: []*migrate.Migration{
+			{
+				Id: "audit_1",
+				Up: []string{
+					`CREATE TABLE IF NOT EXISTS events (
+						id               UUID PRIMARY KEY,
+						occurred_at      TIMESTAMPTZ NOT NULL,
+						operation        VARCHAR(64) NOT NULL,
+						actor_user_id    UUID,
+						actor_user_email VARCHAR(254),
+						data             JSONB NOT NULL DEFAULT '{}'::jsonb
+					)`,
+					`CREATE INDEX IF NOT EXISTS events_occurred_at_idx ON events (occurred_at DESC)`,
+					`CREATE INDEX IF NOT EXISTS events_actor_occurred_idx ON events (actor_user_id, occurred_at DESC)`,
+					`CREATE INDEX IF NOT EXISTS events_op_occurred_idx ON events (operation, occurred_at DESC)`,
+					`CREATE INDEX IF NOT EXISTS events_data_gin ON events USING GIN (data)`,
+				},
+				Down: []string{
+					`DROP INDEX IF EXISTS events_data_gin`,
+					`DROP INDEX IF EXISTS events_op_occurred_idx`,
+					`DROP INDEX IF EXISTS events_actor_occurred_idx`,
+					`DROP INDEX IF EXISTS events_occurred_at_idx`,
+					`DROP TABLE IF EXISTS events`,
+				},
+			},
+		},
 	}
 
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)
