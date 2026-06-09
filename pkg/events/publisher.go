@@ -151,7 +151,8 @@ func NewPublisher(cfg PublisherConfig, log logger.Logger) (Publisher, error) {
 
 func (p *publisher) Publish(ctx context.Context, e EventAction) {
 	event := Event{
-		Action: e,
+		Action:     e,
+		OccurredAt: time.Now().UTC(),
 	}
 
 	if jwtUserIdentity, ok := authn.IdentityFromCtx(ctx); ok {

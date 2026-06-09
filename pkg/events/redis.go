@@ -6,6 +6,7 @@ package events
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
@@ -34,6 +35,8 @@ const (
 	jwtIdentityUserID    = "jwt_identity_user_id"
 	jwtIdentityUserEmail = "jwt_identity_user_email"
 
+	occurredAt = "occurred_at"
+
 	ThingsStream = mainfluxPrefix + "things"
 	AuthStream   = mainfluxPrefix + "auth"
 )
@@ -54,6 +57,19 @@ func (e redisEvent) jwtUserIdentity() domain.Identity {
 	identity.Email, _ = e[jwtIdentityUserEmail].(string)
 
 	return identity
+}
+
+// occurredAt returns the time at which the event occurred, or the zero time if missing or unparseable.
+func (e redisEvent) occurredAt() time.Time {
+	raw, ok := e[occurredAt].(string)
+	if !ok {
+		return time.Time{}
+	}
+	t, err := time.Parse(time.RFC3339Nano, raw)
+	if err != nil {
+		return time.Time{}
+	}
+	return t
 }
 
 // field returns the string value stored under key, or def if missing.

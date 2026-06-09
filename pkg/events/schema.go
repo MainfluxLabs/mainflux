@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
@@ -25,6 +26,7 @@ type EventAction interface {
 type Event struct {
 	Action          EventAction
 	JWTUserIdentity domain.Identity
+	OccurredAt      time.Time
 }
 
 // Encode turns an Event into a redisEvent
@@ -35,6 +37,10 @@ func (e Event) Encode() redisEvent {
 	if e.JWTUserIdentity.ID != "" {
 		re[jwtIdentityUserID] = e.JWTUserIdentity.ID
 		re[jwtIdentityUserEmail] = e.JWTUserIdentity.Email
+	}
+
+	if !e.OccurredAt.IsZero() {
+		re[occurredAt] = e.OccurredAt.UTC().Format(time.RFC3339Nano)
 	}
 
 	return re
@@ -74,6 +80,7 @@ func decodeEvent(re redisEvent) (Event, error) {
 	return Event{
 		Action:          action,
 		JWTUserIdentity: re.jwtUserIdentity(),
+		OccurredAt:      re.occurredAt(),
 	}, nil
 }
 
