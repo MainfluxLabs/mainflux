@@ -40,7 +40,7 @@ const (
 	SubjectRules = "rules"
 )
 
-// PubSub extends messaging.PubSub with alarm and command publishing, and alarm/command subscribing.
+// PubSub extends messaging.PubSub with alarm/command publishing, and alarm/command subscribing.
 type PubSub interface {
 	messaging.PubSub
 	messaging.AlarmPublisher
