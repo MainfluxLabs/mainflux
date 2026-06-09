@@ -15,7 +15,7 @@ volumes:
   mainfluxlabs-es-redis-volume:
   mainfluxlabs-mqtt-broker-volume:
   mainfluxlabs-mqtt-db-volume:
-  mainfluxlabs-postgres-volume:
+  mainfluxlabs-timescale-volume:
   mainfluxlabs-filestore-db-volume:
   mainfluxlabs-filestore-volume:
   mainfluxlabs-seaweedfs-master-volume:
@@ -420,72 +420,70 @@ services:
     networks:
       - mainfluxlabs-base-net
 
-  ## POSTGRES DB
-  postgres:
-    image: postgres:13.3-alpine
-    container_name: mainfluxlabs-postgres
+  ## TIMESCALE DB
+  timescale:
+    image: timescale/timescaledb:2.15.3-pg16
+    container_name: mainfluxlabs-timescale
     restart: on-failure
     environment:
-      POSTGRES_USER: ${MF_POSTGRES_WRITER_DB_USER}
-      POSTGRES_PASSWORD: ${MF_POSTGRES_WRITER_DB_PASS}
-      POSTGRES_DB: ${MF_POSTGRES_WRITER_DB}
+      POSTGRES_USER: ${MF_TIMESCALE_WRITER_DB_USER}
+      POSTGRES_PASSWORD: ${MF_TIMESCALE_WRITER_DB_PASS}
+      POSTGRES_DB: ${MF_TIMESCALE_WRITER_DB}
     networks:
       - mainfluxlabs-base-net
     volumes:
-      - mainfluxlabs-postgres-volume:/var/lib/postgresql/data
+      - mainfluxlabs-timescale-volume:/var/lib/postgresql/data
 
-  postgres-writer:
-    image: ${MF_RELEASE_PREFIX}/postgres-writer:${MF_RELEASE_TAG}
-    container_name: mainfluxlabs-postgres-writer
+  timescale-writer:
+    image: ${MF_RELEASE_PREFIX}/timescale-writer:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-timescale-writer
     depends_on:
-      - postgres
+      - timescale
     restart: on-failure
     environment:
       MF_BROKER_URL: ${MF_BROKER_URL}
-      MF_POSTGRES_WRITER_LOG_LEVEL: ${MF_POSTGRES_WRITER_LOG_LEVEL}
-      MF_POSTGRES_WRITER_PORT: ${MF_POSTGRES_WRITER_PORT}
-      MF_POSTGRES_WRITER_DB_HOST: postgres
-      MF_POSTGRES_WRITER_DB_PORT: ${MF_POSTGRES_WRITER_DB_PORT}
-      MF_POSTGRES_WRITER_DB_USER: ${MF_POSTGRES_WRITER_DB_USER}
-      MF_POSTGRES_WRITER_DB_PASS: ${MF_POSTGRES_WRITER_DB_PASS}
-      MF_POSTGRES_WRITER_DB: ${MF_POSTGRES_WRITER_DB}
-      MF_POSTGRES_WRITER_DB_SSL_MODE: ${MF_POSTGRES_WRITER_DB_SSL_MODE}
-      MF_POSTGRES_WRITER_DB_SSL_CERT: ${MF_POSTGRES_WRITER_DB_SSL_CERT}
-      MF_POSTGRES_WRITER_DB_SSL_KEY: ${MF_POSTGRES_WRITER_DB_SSL_KEY}
-      MF_POSTGRES_WRITER_DB_SSL_ROOT_CERT: ${MF_POSTGRES_WRITER_DB_SSL_ROOT_CERT}
+      MF_TIMESCALE_WRITER_LOG_LEVEL: ${MF_TIMESCALE_WRITER_LOG_LEVEL}
+      MF_TIMESCALE_WRITER_PORT: ${MF_TIMESCALE_WRITER_PORT}
+      MF_TIMESCALE_WRITER_DB_HOST: timescale
+      MF_TIMESCALE_WRITER_DB_PORT: ${MF_TIMESCALE_WRITER_DB_PORT}
+      MF_TIMESCALE_WRITER_DB_USER: ${MF_TIMESCALE_WRITER_DB_USER}
+      MF_TIMESCALE_WRITER_DB_PASS: ${MF_TIMESCALE_WRITER_DB_PASS}
+      MF_TIMESCALE_WRITER_DB: ${MF_TIMESCALE_WRITER_DB}
+      MF_TIMESCALE_WRITER_DB_SSL_MODE: ${MF_TIMESCALE_WRITER_DB_SSL_MODE}
+      MF_TIMESCALE_WRITER_DB_SSL_CERT: ${MF_TIMESCALE_WRITER_DB_SSL_CERT}
+      MF_TIMESCALE_WRITER_DB_SSL_KEY: ${MF_TIMESCALE_WRITER_DB_SSL_KEY}
+      MF_TIMESCALE_WRITER_DB_SSL_ROOT_CERT: ${MF_TIMESCALE_WRITER_DB_SSL_ROOT_CERT}
     ports:
-      - ${MF_POSTGRES_WRITER_PORT}:${MF_POSTGRES_WRITER_PORT}
+      - ${MF_TIMESCALE_WRITER_PORT}:${MF_TIMESCALE_WRITER_PORT}
     networks:
       - mainfluxlabs-base-net
 
-  postgres-reader:
-    image: ${MF_RELEASE_PREFIX}/postgres-reader:${MF_RELEASE_TAG}
-    container_name: mainfluxlabs-postgres-reader
+  timescale-reader:
+    image: ${MF_RELEASE_PREFIX}/timescale-reader:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-timescale-reader
     restart: on-failure
     environment:
-      MF_POSTGRES_READER_LOG_LEVEL: ${MF_POSTGRES_READER_LOG_LEVEL}
-      MF_POSTGRES_READER_PORT: ${MF_POSTGRES_READER_PORT}
-      MF_POSTGRES_READER_CLIENT_TLS: ${MF_POSTGRES_READER_CLIENT_TLS}
-      MF_POSTGRES_READER_CA_CERTS: ${MF_POSTGRES_READER_CA_CERTS}
-      MF_POSTGRES_READER_DB_HOST: postgres
-      MF_POSTGRES_READER_DB_PORT: ${MF_POSTGRES_READER_DB_PORT}
-      MF_POSTGRES_READER_DB_USER: ${MF_POSTGRES_READER_DB_USER}
-      MF_POSTGRES_READER_DB_PASS: ${MF_POSTGRES_READER_DB_PASS}
-      MF_POSTGRES_READER_DB: ${MF_POSTGRES_READER_DB}
-      MF_POSTGRES_READER_DB_SSL_MODE: ${MF_POSTGRES_READER_DB_SSL_MODE}
-      MF_POSTGRES_READER_DB_SSL_CERT: ${MF_POSTGRES_READER_DB_SSL_CERT}
-      MF_POSTGRES_READER_DB_SSL_KEY: ${MF_POSTGRES_READER_DB_SSL_KEY}
-      MF_POSTGRES_READER_DB_SSL_ROOT_CERT: ${MF_POSTGRES_READER_DB_SSL_ROOT_CERT}
-      MF_POSTGRES_READER_GRPC_PORT: ${MF_POSTGRES_READER_GRPC_PORT}
+      MF_TIMESCALE_READER_LOG_LEVEL: ${MF_TIMESCALE_READER_LOG_LEVEL}
+      MF_TIMESCALE_READER_PORT: ${MF_TIMESCALE_READER_PORT}
+      MF_TIMESCALE_READER_CLIENT_TLS: ${MF_TIMESCALE_READER_CLIENT_TLS}
+      MF_TIMESCALE_READER_CA_CERTS: ${MF_TIMESCALE_READER_CA_CERTS}
+      MF_TIMESCALE_READER_DB_HOST: timescale
+      MF_TIMESCALE_READER_DB_PORT: ${MF_TIMESCALE_READER_DB_PORT}
+      MF_TIMESCALE_READER_DB_USER: ${MF_TIMESCALE_READER_DB_USER}
+      MF_TIMESCALE_READER_DB_PASS: ${MF_TIMESCALE_READER_DB_PASS}
+      MF_TIMESCALE_READER_DB: ${MF_TIMESCALE_READER_DB}
+      MF_TIMESCALE_READER_DB_SSL_MODE: ${MF_TIMESCALE_READER_DB_SSL_MODE}
+      MF_TIMESCALE_READER_DB_SSL_CERT: ${MF_TIMESCALE_READER_DB_SSL_CERT}
+      MF_TIMESCALE_READER_DB_SSL_KEY: ${MF_TIMESCALE_READER_DB_SSL_KEY}
+      MF_TIMESCALE_READER_DB_SSL_ROOT_CERT: ${MF_TIMESCALE_READER_DB_SSL_ROOT_CERT}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
       MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
-      MF_AUTH_GRPC_TIMEOUT : ${MF_AUTH_GRPC_TIMEOUT}
-      MF_POSTGRES_READER_ES_URL: ${MF_POSTGRES_READER_ES_URL}
+      MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
+      MF_TIMESCALE_READER_ES_URL: ${MF_TIMESCALE_READER_ES_URL}
     ports:
-      - ${MF_POSTGRES_READER_PORT}:${MF_POSTGRES_READER_PORT}
-      - ${MF_POSTGRES_READER_GRPC_PORT}:${MF_POSTGRES_READER_GRPC_PORT}
+      - ${MF_TIMESCALE_READER_PORT}:${MF_TIMESCALE_READER_PORT}
     networks:
       - mainfluxlabs-base-net
 
@@ -862,7 +860,6 @@ services:
     depends_on:
       - things
       - rules-db
-      - postgres-reader
     restart: on-failure
     environment:
       MF_RULES_LOG_LEVEL: ${MF_RULES_LOG_LEVEL}
@@ -939,6 +936,7 @@ services:
       MF_BROKER_URL: ${MF_BROKER_URL}
       MF_CERTS_CHECK_TIME: ${MF_CERTS_CHECK_TIME}
       MF_CERTS_CRL_PATH: ${MF_CERTS_CRL_PATH}
+      MF_CERTS_ES_URL: ${MF_CERTS_ES_URL}
     volumes:
       - ./ssl/certs/ca.key:/etc/ssl/certs/ca.key
       - ./ssl/certs/ca.crt:/etc/ssl/certs/ca.crt

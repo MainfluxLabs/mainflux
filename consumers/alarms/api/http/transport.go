@@ -10,8 +10,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/consumers/alarms"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -29,57 +32,81 @@ const (
 )
 
 // MakeHandler returns a HTTP handler for Alarm API endpoints.
-func MakeHandler(tracer opentracing.Tracer, svc alarms.Service, logger log.Logger) http.Handler {
+func MakeHandler(tracer opentracing.Tracer, svc alarms.Service, ac domain.AuthClient, logger log.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
 
 	r := bone.New()
 
+	withIdentity := authn.IdentityMiddleware(ac, logger)
+
 	r.Get("/things/:id/alarms", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_alarms_by_thing")(listAlarmsByThingEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_alarms_by_thing"),
+			withIdentity,
+		)(listAlarmsByThingEndpoint(svc)),
 		decodeListAlarmsByThing,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/groups/:id/alarms", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_alarms_by_group")(listAlarmsByGroupEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_alarms_by_group"),
+			withIdentity,
+		)(listAlarmsByGroupEndpoint(svc)),
 		decodeListGroupAlarms,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/orgs/:id/alarms", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_alarms_by_org")(listAlarmsByOrgEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_alarms_by_org"),
+			withIdentity,
+		)(listAlarmsByOrgEndpoint(svc)),
 		decodeListAlarmsByOrg,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/alarms/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_alarm")(viewAlarmEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_alarm"),
+			withIdentity,
+		)(viewAlarmEndpoint(svc)),
 		decodeViewAlarm,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Patch("/alarms/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_alarm_status")(updateAlarmStatusEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_alarm_status"),
+			withIdentity,
+		)(updateAlarmStatusEndpoint(svc)),
 		decodeUpdateAlarmStatus,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Patch("/alarms", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_alarms")(removeAlarmsEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "remove_alarms"),
+			withIdentity,
+		)(removeAlarmsEndpoint(svc)),
 		decodeRemoveAlarms,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/things/:id/alarms/export", kithttp.NewServer(
-		kitot.TraceServer(tracer, "export_alarms_by_thing")(exportAlarmsByThingEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "export_alarms_by_thing"),
+			withIdentity,
+		)(exportAlarmsByThingEndpoint(svc)),
 		decodeExportAlarmsByThing,
 		encodeFileResponse,
 		opts...,

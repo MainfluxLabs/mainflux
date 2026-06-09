@@ -31,6 +31,9 @@ type Repository interface {
 	// Remove removes certificate from DB for a given serial
 	Remove(ctx context.Context, serial string) error
 
+	// RemoveByThing revokes and removes all certificates of a given thing ID in a single transaction
+	RemoveByThing(ctx context.Context, thingID string) error
+
 	// RetrieveByThing retrieves issued certificates for a given thing ID
 	RetrieveByThing(ctx context.Context, thingID string, offset, limit uint64) (Page, error)
 

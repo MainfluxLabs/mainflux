@@ -1,12 +1,15 @@
 // Copyright (c) Mainflux
 // SPDX-License-Identifier: Apache-2.0
 
-package auth
+package authn
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"strings"
+
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 // EmailFromToken extracts the email (subject) from a JWT token without
@@ -27,4 +30,17 @@ func EmailFromToken(token string) string {
 		return ""
 	}
 	return claims.Subject
+}
+
+// Used as a key under which a domain.Identity type is stored in a Context.
+type identityCtxKey struct{}
+
+// Used as a key under which an auth token string is stored in a Context.
+type tokenCtxKey struct{}
+
+// IdentityFromCtx extracts a domain.Identity associated with the passed Context, if it exists.
+func IdentityFromCtx(ctx context.Context) (domain.Identity, bool) {
+	identity, ok := ctx.Value(identityCtxKey{}).(domain.Identity)
+
+	return identity, ok
 }

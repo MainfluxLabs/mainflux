@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux"
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/rules"
 	httprules "github.com/MainfluxLabs/mainflux/rules/api/http/rules"
 	httpscripts "github.com/MainfluxLabs/mainflux/rules/api/http/scripts"
@@ -17,10 +18,10 @@ import (
 )
 
 // MakeHandler returns a HTTP handler for Rule API endpoints.
-func MakeHandler(tracer opentracing.Tracer, svc rules.Service, logger log.Logger) http.Handler {
+func MakeHandler(tracer opentracing.Tracer, svc rules.Service, ac domain.AuthClient, logger log.Logger) http.Handler {
 	mux := bone.New()
-	mux = httprules.MakeHandler(svc, mux, tracer, logger)
-	mux = httpscripts.MakeHandler(svc, mux, tracer, logger)
+	mux = httprules.MakeHandler(svc, ac, mux, tracer, logger)
+	mux = httpscripts.MakeHandler(svc, ac, mux, tracer, logger)
 
 	mux.GetFunc("/health", mainflux.Health("rules"))
 	mux.Handle("/metrics", promhttp.Handler())

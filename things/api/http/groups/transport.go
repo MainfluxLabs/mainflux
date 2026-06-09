@@ -11,10 +11,13 @@ import (
 
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
+	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -22,83 +25,119 @@ import (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc things.Service, mux *bone.Mux, tracer opentracing.Tracer, logger log.Logger) *bone.Mux {
+func MakeHandler(svc things.Service, ac domain.AuthClient, mux *bone.Mux, tracer opentracing.Tracer, logger log.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
 
+	withIdentity := authn.IdentityMiddleware(ac, logger)
+
 	mux.Post("/orgs/:id/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_groups")(createGroupsEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "create_groups"),
+			withIdentity,
+		)(createGroupsEndpoint(svc)),
 		decodeCreateGroups,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/groups/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_group")(viewGroupEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_group"),
+			withIdentity,
+		)(viewGroupEndpoint(svc)),
 		decodeRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/things/:id/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_group_by_thing")(viewGroupByThingEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_group_by_thing"),
+			withIdentity,
+		)(viewGroupByThingEndpoint(svc)),
 		decodeViewByThing,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/profiles/:id/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_group_by_profile")(viewGroupByProfileEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_group_by_profile"),
+			withIdentity,
+		)(viewGroupByProfileEndpoint(svc)),
 		decodeViewByProfile,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_groups")(listGroupsEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_groups"),
+			withIdentity,
+		)(listGroupsEndpoint(svc)),
 		decodeList,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/orgs/:id/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_groups_by_org")(listGroupsByOrgEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_groups_by_org"),
+			withIdentity,
+		)(listGroupsByOrgEndpoint(svc)),
 		decodeListByOrg,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/groups/search", kithttp.NewServer(
-		kitot.TraceServer(tracer, "search_groups")(listGroupsEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "search_groups"),
+			withIdentity,
+		)(listGroupsEndpoint(svc)),
 		decodeSearch,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/orgs/:id/groups/search", kithttp.NewServer(
-		kitot.TraceServer(tracer, "search_groups_by_org")(listGroupsByOrgEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "search_groups_by_org"),
+			withIdentity,
+		)(listGroupsByOrgEndpoint(svc)),
 		decodeSearchByOrg,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Put("/groups/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_group")(updateGroupEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_group"),
+			withIdentity,
+		)(updateGroupEndpoint(svc)),
 		decodeUpdateGroup,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/groups/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_group")(removeGroupEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "remove_group"),
+			withIdentity,
+		)(removeGroupEndpoint(svc)),
 		decodeRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Patch("/groups", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_groups")(removeGroupsEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "remove_groups"),
+			withIdentity,
+		)(removeGroupsEndpoint(svc)),
 		decodeRemoveGroups,
 		encodeResponse,
 		opts...,

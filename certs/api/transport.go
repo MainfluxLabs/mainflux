@@ -13,7 +13,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -22,43 +25,61 @@ import (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc certs.Service, tracer opentracing.Tracer, pkiAgent pki.Agent, logger logger.Logger) http.Handler {
+func MakeHandler(svc certs.Service, ac domain.AuthClient, tracer opentracing.Tracer, pkiAgent pki.Agent, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
 
 	r := bone.New()
 
+	withIdentity := authn.IdentityMiddleware(ac, logger)
+
 	r.Post("/certs", kithttp.NewServer(
-		kitot.TraceServer(tracer, "issue_cert")(issueCertEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "issue_cert"),
+			withIdentity,
+		)(issueCertEndpoint(svc)),
 		decodeCerts,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Post("/certs/:serial/rotate", kithttp.NewServer(
-		kitot.TraceServer(tracer, "rotate_cert")(rotateCertEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "rotate_cert"),
+			withIdentity,
+		)(rotateCertEndpoint(svc)),
 		decodeRotateCert,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/certs/:serial", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_cert")(viewCertEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_cert"),
+			withIdentity,
+		)(viewCertEndpoint(svc)),
 		decodeViewCert,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Delete("/certs/:serial", kithttp.NewServer(
-		kitot.TraceServer(tracer, "revoke_cert")(revokeCertEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "revoke_cert"),
+			withIdentity,
+		)(revokeCertEndpoint(svc)),
 		decodeRevokeCerts,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/things/:id/serials", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_serials")(listSerialsByThingEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_serials"),
+			withIdentity,
+		)(listSerialsByThingEndpoint(svc)),
 		decodeListSerialsByThing,
 		encodeResponse,
 		opts...,
@@ -72,7 +93,10 @@ func MakeHandler(svc certs.Service, tracer opentracing.Tracer, pkiAgent pki.Agen
 	))
 
 	r.Put("/certs/:serial", kithttp.NewServer(
-		kitot.TraceServer(tracer, "renew_cert")(renewCertEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "renew_cert"),
+			withIdentity,
+		)(renewCertEndpoint(svc)),
 		decodeViewCert,
 		encodeResponse,
 		opts...,

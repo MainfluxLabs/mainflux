@@ -203,7 +203,7 @@ func main() {
 	svc := newService(db, tc, uc, dbTracer, logger, cfg, pub)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(svc, authHttpTracer, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(svc, svc, authHttpTracer, logger), cfg.httpConfig, logger)
 	})
 	g.Go(func() error {
 		return serversgrpc.Start(ctx, authGrpcTracer, svc, cfg.grpcConfig, logger)

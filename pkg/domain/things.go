@@ -119,8 +119,11 @@ type ThingGroupCommandReq struct {
 
 // ProfileConfig represents profile configuration.
 type ProfileConfig struct {
-	ContentType string      `json:"content_type"`
-	Transformer Transformer `json:"transformer"`
+	ContentType    string      `json:"content_type"`
+	Transformer    Transformer `json:"transformer"`
+	WriteEnabled   bool        `json:"write_enabled"`
+	WebhookEnabled bool        `json:"webhook_enabled"`
+	RuleEnabled    bool        `json:"rule_enabled"`
 }
 
 // Transformer represents message transformation config.

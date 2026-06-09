@@ -20,9 +20,9 @@ func NewEventHandler(svc rules.Service) events.EventHandler {
 }
 
 func (h *eventHandler) Handle(ctx context.Context, event events.Event) error {
-	switch e := event.(type) {
+	switch e := event.Action.(type) {
 	case events.ThingRemoved:
-		if err := h.svc.UnassignRulesByThing(ctx, e.ID); err != nil {
+		if err := h.svc.UnassignRulesFromThing(ctx, e.ID); err != nil {
 			return err
 		}
 		if err := h.svc.UnassignScriptsFromThing(ctx, e.ID); err != nil {

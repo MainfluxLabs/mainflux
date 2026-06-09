@@ -20,7 +20,7 @@ func NewEventHandler(svc webhooks.Service) events.EventHandler {
 }
 
 func (h *eventHandler) Handle(ctx context.Context, event events.Event) error {
-	switch e := event.(type) {
+	switch e := event.Action.(type) {
 	case events.ThingRemoved:
 		return h.svc.RemoveWebhooksByThing(ctx, e.ID)
 	case events.GroupRemoved:

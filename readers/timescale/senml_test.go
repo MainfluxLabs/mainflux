@@ -15,7 +15,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/readers"
-	treader "github.com/MainfluxLabs/mainflux/readers/postgres"
+	treader "github.com/MainfluxLabs/mainflux/readers/timescale"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

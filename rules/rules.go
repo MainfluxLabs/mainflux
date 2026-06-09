@@ -12,11 +12,31 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
+const (
+	InputTypeMessage = "message"
+	InputTypeAlarm   = "alarm"
+	InputTypeCommand = "command"
+)
+
+type InputConfig map[string]any
+
+func (c InputConfig) Subtopic() string {
+	s, _ := c["subtopic"].(string)
+	return s
+}
+
+type Input struct {
+	Type     string      `json:"type"`
+	ThingIDs []string    `json:"thing_ids"`
+	Config   InputConfig `json:"config,omitempty"`
+}
+
 type Rule struct {
 	ID          string
 	GroupID     string
 	Name        string
 	Description string
+	Input       Input
 	Conditions  []Condition
 	Operator    string
 	Actions     []Action
@@ -36,12 +56,19 @@ type RulesPage struct {
 }
 
 const (
-	ActionTypeSMTP  = "smtp"
-	ActionTypeSMPP  = "smpp"
-	ActionTypeAlarm = "alarm"
+	ActionTypeSMTP    = "smtp"
+	ActionTypeSMPP    = "smpp"
+	ActionTypeAlarm   = "alarm"
+	ActionTypeWebhook = "webhook"
 
 	OperatorAND = "AND"
 	OperatorOR  = "OR"
+
+	ComparatorEQ  = "=="
+	ComparatorGTE = ">="
+	ComparatorLTE = "<="
+	ComparatorGT  = ">"
+	ComparatorLT  = "<"
 )
 
 func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, rule Rule) error {
@@ -78,6 +105,14 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 				newMsg := *msg
 				newMsg.Payload = payload
 				if err := rs.pub.Publish(fmt.Sprintf("%s.%s", action.Type, action.ID), newMsg); err != nil {
+					return err
+				}
+			}
+		case ActionTypeWebhook:
+			for _, payload := range payloads {
+				newMsg := *msg
+				newMsg.Payload = payload
+				if err := rs.pub.Publish(subjectWebhooks, newMsg); err != nil {
 					return err
 				}
 			}
@@ -187,15 +222,15 @@ func checkConditionsMet(payloadMap map[string]any, conditions []Condition, opera
 
 func isConditionMet(comparator string, val1, val2 float64) bool {
 	switch comparator {
-	case "==":
+	case ComparatorEQ:
 		return val1 == val2
-	case ">=":
+	case ComparatorGTE:
 		return val1 >= val2
-	case "<=":
+	case ComparatorLTE:
 		return val1 <= val2
-	case ">":
+	case ComparatorGT:
 		return val1 > val2
-	case "<":
+	case ComparatorLT:
 		return val1 < val2
 	default:
 		return false

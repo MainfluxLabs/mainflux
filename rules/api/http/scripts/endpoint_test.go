@@ -96,7 +96,8 @@ func newService() rules.Service {
 
 func newHTTPServer(svc rules.Service) *httptest.Server {
 	log := logger.NewMock()
-	mux := httpapi.MakeHandler(mocktracer.New(), svc, log)
+	ac := pkgmocks.NewAuthService("", nil, nil)
+	mux := httpapi.MakeHandler(mocktracer.New(), svc, ac, log)
 	return httptest.NewServer(mux)
 }
 
