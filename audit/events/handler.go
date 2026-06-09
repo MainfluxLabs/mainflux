@@ -19,5 +19,5 @@ func NewEventHandler(svc audit.Service) events.EventHandler {
 }
 
 func (h *eventHandler) Handle(ctx context.Context, event events.Event) error {
-	return nil
+	return h.svc.RecordEvent(ctx, event)
 }

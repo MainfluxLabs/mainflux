@@ -73,3 +73,24 @@ func New(events EventRepository, auth domain.AuthClient, things domain.ThingsCli
 		idp:    idp,
 	}
 }
+
+func (s *auditService) RecordEvent(ctx context.Context, e events.Event) error {
+	id, err := s.idp.ID()
+	if err != nil {
+		return errors.Wrap(errRecordEvent, err)
+	}
+
+	occurredAt := e.OccurredAt
+	if occurredAt.IsZero() {
+		occurredAt = time.Now().UTC()
+	}
+
+	return s.events.SaveEvent(ctx, Event{
+		ID:             id,
+		OccurredAt:     occurredAt,
+		Operation:      e.Action.Operation(),
+		ActorUserID:    e.JWTUserIdentity.ID,
+		ActorUserEmail: e.JWTUserIdentity.Email,
+		Data:           e.Action.Encode(),
+	})
+}

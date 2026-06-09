@@ -6,7 +6,11 @@
 package api
 
 import (
+	"context"
+	"time"
+
 	"github.com/MainfluxLabs/mainflux/audit"
+	"github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -24,4 +28,13 @@ func MetricsMiddleware(svc audit.Service, counter metrics.Counter, latency metri
 		latency: latency,
 		svc:     svc,
 	}
+}
+
+func (mm *metricsMiddleware) RecordEvent(ctx context.Context, e events.Event) error {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "record_event").Add(1)
+		mm.latency.With("method", "record_event").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.RecordEvent(ctx, e)
 }
