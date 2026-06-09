@@ -8,12 +8,9 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
-
-var errRecordEvent = errors.New("failed to record event")
 
 var AllowedOrders = map[string]string{
 	"id":               "id",
@@ -53,6 +50,7 @@ type EventRepository interface {
 }
 
 type Service interface {
+	// RecordEvent persists a single event to the database.
 	RecordEvent(ctx context.Context, e events.Event) error
 }
 
@@ -77,7 +75,7 @@ func New(events EventRepository, auth domain.AuthClient, things domain.ThingsCli
 func (s *auditService) RecordEvent(ctx context.Context, e events.Event) error {
 	id, err := s.idp.ID()
 	if err != nil {
-		return errors.Wrap(errRecordEvent, err)
+		return err
 	}
 
 	occurredAt := e.OccurredAt
