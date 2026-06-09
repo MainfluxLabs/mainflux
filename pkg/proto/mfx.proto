@@ -20,7 +20,7 @@ message Command {
     string publisher   = 1;
     string subtopic    = 2;
     bytes payload      = 3;
-    string recipient_id = 4;
+    string recipientID = 4;
     string protocol    = 5;
     int64 created      = 6; // Unix timestamp in nanoseconds
 }
