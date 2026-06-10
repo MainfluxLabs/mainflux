@@ -12,12 +12,14 @@ import (
 )
 
 const (
+	// Event prefixes
 	thingPrefix    = "thing."
 	profilePrefix  = "profile."
 	groupPrefix    = "group."
 	orgPrefix      = "org."
 	mainfluxPrefix = "mainflux."
 
+	// Event operation strings
 	ThingCreate                = thingPrefix + "create"
 	ThingUpdate                = thingPrefix + "update"
 	ThingUpdateGroupAndProfile = thingPrefix + "update_group_and_profile"
@@ -32,11 +34,16 @@ const (
 	OrgCreate = orgPrefix + "create"
 	OrgRemove = orgPrefix + "remove"
 
+	// General redis event map fields
 	jwtIdentityUserID    = "jwt_identity_user_id"
 	jwtIdentityUserEmail = "jwt_identity_user_email"
 
 	occurredAt = "occurred_at"
 
+	evOrgID   = "e_org_id"
+	evGroupID = "e_group_id"
+
+	// Redis event streams
 	ThingsStream = mainfluxPrefix + "things"
 	AuthStream   = mainfluxPrefix + "auth"
 )

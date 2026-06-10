@@ -21,12 +21,17 @@ type EventAction interface {
 	Operation() string
 }
 
-// Event is the type representing a platform event, composed of an action and the identity
-// of the user who initiated the event.
+// Event is the type representing a platform event.
 type Event struct {
-	Action          EventAction
+	// The specific EventAction that occurred.
+	Action EventAction
+	// The identity of the user whose action trigerred the event.
 	JWTUserIdentity domain.Identity
-	OccurredAt      time.Time
+	// The ID of the organization to which the event belongs. May be empty.
+	OrgID string
+	// The ID of the group to which the event belongs. May be empty.
+	GroupID    string
+	OccurredAt time.Time
 }
 
 // Encode turns an Event into a redisEvent
@@ -42,6 +47,9 @@ func (e Event) Encode() redisEvent {
 	if !e.OccurredAt.IsZero() {
 		re[occurredAt] = e.OccurredAt.UTC().Format(time.RFC3339Nano)
 	}
+
+	re[evOrgID] = e.GroupID
+	re[evGroupID] = e.OrgID
 
 	return re
 }
@@ -81,6 +89,8 @@ func decodeEvent(re redisEvent) (Event, error) {
 		Action:          action,
 		JWTUserIdentity: re.jwtUserIdentity(),
 		OccurredAt:      re.occurredAt(),
+		OrgID:           re.field(evOrgID, ""),
+		GroupID:         re.field(evGroupID, ""),
 	}, nil
 }
 
