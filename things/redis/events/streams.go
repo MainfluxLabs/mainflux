@@ -29,12 +29,14 @@ func (es eventStore) CreateThings(ctx context.Context, token, profileID string, 
 	}
 
 	for _, th := range out {
-		es.pub.Publish(ctx, events.ThingCreated{
-			ID:        th.ID,
-			GroupID:   th.GroupID,
-			ProfileID: th.ProfileID,
-			Name:      th.Name,
-			Metadata:  th.Metadata,
+		es.pub.Publish(ctx, events.Event{
+			Action: events.ThingCreated{
+				ID:        th.ID,
+				GroupID:   th.GroupID,
+				ProfileID: th.ProfileID,
+				Name:      th.Name,
+				Metadata:  th.Metadata,
+			},
 		})
 	}
 
@@ -46,11 +48,13 @@ func (es eventStore) UpdateThing(ctx context.Context, token string, thing things
 		return err
 	}
 
-	es.pub.Publish(ctx, events.ThingUpdated{
-		ID:        thing.ID,
-		ProfileID: thing.ProfileID,
-		Name:      thing.Name,
-		Metadata:  thing.Metadata,
+	es.pub.Publish(ctx, events.Event{
+		Action: events.ThingUpdated{
+			ID:        thing.ID,
+			ProfileID: thing.ProfileID,
+			Name:      thing.Name,
+			Metadata:  thing.Metadata,
+		},
 	})
 
 	return nil
@@ -61,10 +65,12 @@ func (es eventStore) UpdateThingGroupAndProfile(ctx context.Context, token strin
 		return err
 	}
 
-	es.pub.Publish(ctx, events.ThingGroupAndProfileUpdated{
-		ID:        thing.ID,
-		ProfileID: thing.ProfileID,
-		GroupID:   thing.GroupID,
+	es.pub.Publish(ctx, events.Event{
+		Action: events.ThingGroupAndProfileUpdated{
+			ID:        thing.ID,
+			ProfileID: thing.ProfileID,
+			GroupID:   thing.GroupID,
+		},
 	})
 
 	return nil
@@ -76,7 +82,9 @@ func (es eventStore) RemoveThings(ctx context.Context, token string, ids ...stri
 			return err
 		}
 
-		es.pub.Publish(ctx, events.ThingRemoved{ID: id})
+		es.pub.Publish(ctx, events.Event{
+			Action: events.ThingRemoved{ID: id},
+		})
 	}
 
 	return nil
@@ -89,11 +97,13 @@ func (es eventStore) CreateProfiles(ctx context.Context, token, groupID string, 
 	}
 
 	for _, pr := range prs {
-		es.pub.Publish(ctx, events.ProfileCreated{
-			ID:       pr.ID,
-			GroupID:  pr.GroupID,
-			Name:     pr.Name,
-			Metadata: pr.Metadata,
+		es.pub.Publish(ctx, events.Event{
+			Action: events.ProfileCreated{
+				ID:       pr.ID,
+				GroupID:  pr.GroupID,
+				Name:     pr.Name,
+				Metadata: pr.Metadata,
+			},
 		})
 	}
 
@@ -105,11 +115,13 @@ func (es eventStore) UpdateProfile(ctx context.Context, token string, profile th
 		return err
 	}
 
-	es.pub.Publish(ctx, events.ProfileUpdated{
-		ID:       profile.ID,
-		Name:     profile.Name,
-		Config:   profile.Config,
-		Metadata: profile.Metadata,
+	es.pub.Publish(ctx, events.Event{
+		Action: events.ProfileUpdated{
+			ID:       profile.ID,
+			Name:     profile.Name,
+			Config:   profile.Config,
+			Metadata: profile.Metadata,
+		},
 	})
 
 	return nil
@@ -121,7 +133,9 @@ func (es eventStore) RemoveProfiles(ctx context.Context, token string, ids ...st
 			return err
 		}
 
-		es.pub.Publish(ctx, events.ProfileRemoved{ID: id})
+		es.pub.Publish(ctx, events.Event{
+			Action: events.ProfileRemoved{ID: id},
+		})
 	}
 
 	return nil
@@ -138,7 +152,9 @@ func (es eventStore) RemoveGroups(ctx context.Context, token string, ids ...stri
 			return err
 		}
 
-		es.pub.Publish(ctx, events.GroupRemoved{ID: id, ThingIDs: thingIDs})
+		es.pub.Publish(ctx, events.Event{
+			Action: events.GroupRemoved{ID: id, ThingIDs: thingIDs},
+		})
 	}
 
 	return nil
@@ -165,7 +181,9 @@ func (es eventStore) RemoveGroupsByOrg(ctx context.Context, orgID string) ([]str
 	}
 
 	for _, id := range ids {
-		es.pub.Publish(ctx, events.GroupRemoved{ID: id, ThingIDs: thingsByGroup[id]})
+		es.pub.Publish(ctx, events.Event{
+			Action: events.GroupRemoved{ID: id, ThingIDs: thingsByGroup[id]},
+		})
 	}
 
 	return ids, nil

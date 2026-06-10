@@ -45,7 +45,7 @@ type Publisher interface {
 	// channel. It's asynchronous, meaning that it doesn't block the caller
 	// and as such returns no errors. If the underlying event buffer is full,
 	// the oldest queued event is dropped to make space.
-	Publish(ctx context.Context, e EventAction)
+	Publish(ctx context.Context, e Event)
 
 	// Close stops the event drainer goroutine, attempts a final drain,
 	// and closes the underlying Redis client.
@@ -149,17 +149,16 @@ func NewPublisher(cfg PublisherConfig, log logger.Logger) (Publisher, error) {
 	return p, nil
 }
 
-func (p *publisher) Publish(ctx context.Context, e EventAction) {
-	event := Event{
-		Action:     e,
-		OccurredAt: time.Now().UTC(),
+func (p *publisher) Publish(ctx context.Context, e Event) {
+	if e.OccurredAt.IsZero() {
+		e.OccurredAt = time.Now().UTC()
 	}
 
 	if jwtUserIdentity, ok := authn.IdentityFromCtx(ctx); ok {
-		event.JWTUserIdentity = jwtUserIdentity
+		e.JWTUserIdentity = jwtUserIdentity
 	}
 
-	re := event.Encode()
+	re := e.Encode()
 
 	// Attempt to enqueue the encoded event onto the buffer channel. If we succeed, simply return.
 	select {
