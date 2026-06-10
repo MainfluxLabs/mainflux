@@ -65,11 +65,9 @@ func (m *eventRepositoryMock) RetrieveEvents(_ context.Context, pm audit.PageMet
 	sortEvents(matched, pm.Order, pm.Dir)
 	matched = paginate(matched, pm.Offset, pm.Limit)
 
-	out := pm
-	out.Total = total
 	return audit.EventsPage{
-		PageMetadata: out,
-		Events:       matched,
+		Total:  total,
+		Events: matched,
 	}, nil
 }
 

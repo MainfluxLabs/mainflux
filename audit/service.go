@@ -33,8 +33,8 @@ type Event struct {
 }
 
 type EventsPage struct {
-	PageMetadata
-	Events []Event
+	Total  uint64  `json:"total"`
+	Events []Event `json:"events"`
 }
 
 type PageMetadata struct {

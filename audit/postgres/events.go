@@ -106,12 +106,9 @@ func (r *eventRepository) RetrieveEvents(ctx context.Context, pm audit.PageMetad
 		return audit.EventsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
-	out := pm
-	out.Total = total
-
 	return audit.EventsPage{
-		PageMetadata: out,
-		Events:       items,
+		Total:  total,
+		Events: items,
 	}, nil
 }
 
