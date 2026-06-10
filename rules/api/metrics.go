@@ -135,6 +135,15 @@ func (ms metricsMiddleware) ConsumeMessage(subject string, msg protomfx.Message)
 	return ms.svc.ConsumeMessage(subject, msg)
 }
 
+func (ms metricsMiddleware) ConsumeAlarm(subject string, alarm protomfx.Alarm) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "consume_alarm").Add(1)
+		ms.latency.With("method", "consume_alarm").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ConsumeAlarm(subject, alarm)
+}
+
 func (ms metricsMiddleware) CreateScripts(ctx context.Context, token, groupID string, scripts ...rules.LuaScript) ([]rules.LuaScript, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_scripts").Add(1)

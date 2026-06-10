@@ -66,6 +66,7 @@ type Service interface {
 	ServiceRules
 
 	consumers.MessageConsumer
+	consumers.AlarmConsumer
 }
 
 type ServiceScripts interface {
@@ -516,6 +517,65 @@ func (rs *rulesService) ConsumeMessage(_ string, msg protomfx.Message) error {
 	}
 
 	rs.processLuaScripts(ctx, &msg, payload, scriptsPage.Scripts...)
+
+	return nil
+}
+
+func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
+	ctx := context.Background()
+
+	page, err := rs.rules.RetrieveByThing(ctx, alarm.ThingId, PageMetadata{InputType: InputTypeAlarm})
+	if err != nil {
+		return err
+	}
+
+	body := map[string]any{
+		"input_type": InputTypeAlarm,
+		"level":      alarm.Level,
+		"rule_id":    alarm.RuleId,
+	}
+	if len(alarm.RuleInfo) > 0 {
+		body["rule_info"] = json.RawMessage(alarm.RuleInfo)
+	}
+
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+
+	msg := protomfx.Message{
+		Publisher: alarm.ThingId,
+		Subtopic:  alarm.Subtopic,
+		Protocol:  alarm.Protocol,
+		Created:   alarm.Created,
+		Payload:   payload,
+	}
+
+	for _, rule := range page.Rules {
+		if sub := rule.Input.Config.Subtopic(); sub != "" && sub != alarm.Subtopic {
+			continue
+		}
+		if level := rule.Input.Config.Level(); level != 0 {
+			if !isConditionMet(rule.Input.Config.LevelComparator(), float64(alarm.Level), float64(level)) {
+				continue
+			}
+		}
+
+		for _, action := range rule.Actions {
+			var subject string
+			switch action.Type {
+			case ActionTypeSMTP, ActionTypeSMPP:
+				subject = fmt.Sprintf("%s.%s", action.Type, action.ID)
+			case ActionTypeWebhook:
+				subject = subjectWebhooks
+			default:
+				continue
+			}
+			if err := rs.pub.Publish(subject, msg); err != nil {
+				rs.logger.Error(fmt.Sprintf("processing alarm rule with id %s failed with error: %v", rule.ID, err))
+			}
+		}
+	}
 
 	return nil
 }

@@ -70,11 +70,18 @@ func (req createRule) validate() error {
 		return err
 	}
 
-	if err := validateConditions(req.Conditions, req.Operator); err != nil {
-		return err
+	switch req.Input.Type {
+	case rules.InputTypeAlarm:
+		if err := validateInputConfig(req.Input.Config); err != nil {
+			return err
+		}
+	default:
+		if err := validateConditions(req.Conditions, req.Operator); err != nil {
+			return err
+		}
 	}
 
-	return validateActions(req.Actions)
+	return validateActions(req.Input.Type, req.Actions)
 }
 
 type ruleReq struct {
@@ -163,11 +170,18 @@ func (req updateRuleReq) validate() error {
 		return err
 	}
 
-	if err := validateConditions(req.Conditions, req.Operator); err != nil {
-		return err
+	switch req.Input.Type {
+	case rules.InputTypeAlarm:
+		if err := validateInputConfig(req.Input.Config); err != nil {
+			return err
+		}
+	default:
+		if err := validateConditions(req.Conditions, req.Operator); err != nil {
+			return err
+		}
 	}
 
-	return validateActions(req.Actions)
+	return validateActions(req.Input.Type, req.Actions)
 }
 
 type ruleThingsReq struct {
@@ -230,6 +244,22 @@ func validateInputType(inputType string) error {
 	}
 }
 
+func validateInputConfig(config rules.InputConfig) error {
+	if comp, ok := config["level_comparator"]; ok {
+		s, ok := comp.(string)
+		if !ok {
+			return apiutil.ErrInvalidConditionComparator
+		}
+		switch s {
+		case rules.ComparatorEQ, rules.ComparatorGT, rules.ComparatorLT, rules.ComparatorGTE, rules.ComparatorLTE:
+		default:
+			return apiutil.ErrInvalidConditionComparator
+		}
+	}
+
+	return nil
+}
+
 func validateConditions(conditions []rules.Condition, operator string) error {
 	if len(conditions) < minLen {
 		return apiutil.ErrEmptyList
@@ -255,7 +285,7 @@ func validateConditions(conditions []rules.Condition, operator string) error {
 	return nil
 }
 
-func validateActions(actions []rules.Action) error {
+func validateActions(inputType string, actions []rules.Action) error {
 	if len(actions) < minLen {
 		return apiutil.ErrEmptyList
 	}
@@ -266,6 +296,9 @@ func validateActions(actions []rules.Action) error {
 				return apiutil.ErrMissingActionID
 			}
 		case rules.ActionTypeAlarm:
+			if inputType == rules.InputTypeAlarm {
+				return apiutil.ErrInvalidActionType
+			}
 			if action.Level < minAlarmLevel || action.Level > maxAlarmLevel {
 				return apiutil.ErrInvalidAlarmLevel
 			}
