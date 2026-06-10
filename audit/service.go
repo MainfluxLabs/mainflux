@@ -23,14 +23,13 @@ var AllowedOrders = map[string]string{
 }
 
 type Event struct {
-	ID             string
-	OccurredAt     time.Time
-	Operation      string
-	ActorUserID    string
-	ActorUserEmail string
-	OrgID          string
-	GroupID        string
-	Data           map[string]any
+	ID         string
+	OccurredAt time.Time
+	Operation  string
+	Actor      domain.Identity
+	OrgID      string
+	GroupID    string
+	Data       map[string]any
 }
 
 type EventsPage struct {
@@ -97,13 +96,12 @@ func (s *auditService) RecordEvent(ctx context.Context, e events.Event) error {
 	}
 
 	return s.events.SaveEvent(ctx, Event{
-		ID:             id,
-		OccurredAt:     occurredAt,
-		Operation:      e.Action.Operation(),
-		ActorUserID:    e.JWTUserIdentity.ID,
-		ActorUserEmail: e.JWTUserIdentity.Email,
-		OrgID:          e.OrgID,
-		GroupID:        e.GroupID,
-		Data:           e.Action.Encode(),
+		ID:         id,
+		OccurredAt: occurredAt,
+		Operation:  e.Action.Operation(),
+		Actor:      e.JWTUserIdentity,
+		OrgID:      e.OrgID,
+		GroupID:    e.GroupID,
+		Data:       e.Action.Encode(),
 	})
 }

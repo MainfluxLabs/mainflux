@@ -43,7 +43,7 @@ func (m *eventRepositoryMock) RetrieveEvents(_ context.Context, pm audit.PageMet
 
 	matched := make([]audit.Event, 0, len(m.events))
 	for _, e := range m.events {
-		if pm.Email != "" && e.ActorUserEmail != pm.Email {
+		if pm.Email != "" && e.Actor.Email != pm.Email {
 			continue
 		}
 		if pm.Operation != "" && e.Operation != pm.Operation {
@@ -124,7 +124,7 @@ func sortEvents(events []audit.Event, order, dir string) {
 		case "operation":
 			a, b = events[i].Operation, events[j].Operation
 		case "actor_user_email":
-			a, b = events[i].ActorUserEmail, events[j].ActorUserEmail
+			a, b = events[i].Actor.Email, events[j].Actor.Email
 		case "org_id":
 			a, b = events[i].OrgID, events[j].OrgID
 		case "group_id":

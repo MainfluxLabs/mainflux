@@ -12,6 +12,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/audit"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -180,8 +181,8 @@ func toDBEvent(e audit.Event) (dbEvent, error) {
 		ID:             e.ID,
 		OccurredAt:     e.OccurredAt,
 		Operation:      e.Operation,
-		ActorUserID:    nullableString(e.ActorUserID),
-		ActorUserEmail: nullableString(e.ActorUserEmail),
+		ActorUserID:    nullableString(e.Actor.ID),
+		ActorUserEmail: nullableString(e.Actor.Email),
 		OrgID:          nullableString(e.OrgID),
 		GroupID:        nullableString(e.GroupID),
 		Data:           data,
@@ -197,14 +198,16 @@ func toEvent(d dbEvent) (audit.Event, error) {
 	}
 
 	return audit.Event{
-		ID:             d.ID,
-		OccurredAt:     d.OccurredAt,
-		Operation:      d.Operation,
-		ActorUserID:    d.ActorUserID.String,
-		ActorUserEmail: d.ActorUserEmail.String,
-		OrgID:          d.OrgID.String,
-		GroupID:        d.GroupID.String,
-		Data:           data,
+		ID:         d.ID,
+		OccurredAt: d.OccurredAt,
+		Operation:  d.Operation,
+		Actor: domain.Identity{
+			ID:    d.ActorUserID.String,
+			Email: d.ActorUserEmail.String,
+		},
+		OrgID:   d.OrgID.String,
+		GroupID: d.GroupID.String,
+		Data:    data,
 	}, nil
 }
 
