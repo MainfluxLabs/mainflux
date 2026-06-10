@@ -49,6 +49,8 @@ func migrateDB(db *sqlx.DB) error {
 						operation        VARCHAR(64) NOT NULL,
 						actor_user_id    UUID,
 						actor_user_email VARCHAR(254),
+						org_id           UUID,
+						group_id         UUID,
 						data             JSONB NOT NULL DEFAULT '{}'::jsonb
 					)`,
 					`CREATE INDEX IF NOT EXISTS events_occurred_at_idx ON events (occurred_at DESC)`,

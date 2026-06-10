@@ -18,6 +18,8 @@ var AllowedOrders = map[string]string{
 	"occurred_at":      "occurred_at",
 	"operation":        "operation",
 	"actor_user_email": "actor_user_email",
+	"org_id":           "org_id",
+	"group_id":         "group_id",
 }
 
 type Event struct {
@@ -26,6 +28,8 @@ type Event struct {
 	Operation      string
 	ActorUserID    string
 	ActorUserEmail string
+	OrgID          string
+	GroupID        string
 	Data           map[string]any
 }
 
@@ -42,6 +46,8 @@ type PageMetadata struct {
 	Dir       string         `json:"dir,omitempty"`
 	Email     string         `json:"email,omitempty"`
 	Operation string         `json:"operation,omitempty"`
+	OrgID     string         `json:"org_id,omitempty"`
+	GroupID   string         `json:"group_id,omitempty"`
 	Data      map[string]any `json:"data,omitempty"`
 }
 
@@ -96,6 +102,8 @@ func (s *auditService) RecordEvent(ctx context.Context, e events.Event) error {
 		Operation:      e.Action.Operation(),
 		ActorUserID:    e.JWTUserIdentity.ID,
 		ActorUserEmail: e.JWTUserIdentity.Email,
+		OrgID:          e.OrgID,
+		GroupID:        e.GroupID,
 		Data:           e.Action.Encode(),
 	})
 }

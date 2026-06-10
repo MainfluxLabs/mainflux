@@ -49,6 +49,12 @@ func (m *eventRepositoryMock) RetrieveEvents(_ context.Context, pm audit.PageMet
 		if pm.Operation != "" && e.Operation != pm.Operation {
 			continue
 		}
+		if pm.OrgID != "" && e.OrgID != pm.OrgID {
+			continue
+		}
+		if pm.GroupID != "" && e.GroupID != pm.GroupID {
+			continue
+		}
 		if !containsJSON(e.Data, pm.Data) {
 			continue
 		}
@@ -119,6 +125,10 @@ func sortEvents(events []audit.Event, order, dir string) {
 			a, b = events[i].Operation, events[j].Operation
 		case "actor_user_email":
 			a, b = events[i].ActorUserEmail, events[j].ActorUserEmail
+		case "org_id":
+			a, b = events[i].OrgID, events[j].OrgID
+		case "group_id":
+			a, b = events[i].GroupID, events[j].GroupID
 		case "id":
 			a, b = events[i].ID, events[j].ID
 		default:
