@@ -61,16 +61,16 @@ func (r *eventRepository) RetrieveEventsByOrg(ctx context.Context, orgID string,
 		return audit.EventsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
-	where := dbutil.BuildWhereClause(emailQ, opQ, orgQ, groupQ, dataQ)
+	whereClause := dbutil.BuildWhereClause(emailQ, opQ, orgQ, groupQ, dataQ)
 	order := dbutil.GetOrderQuery(pm.Order)
 	dir := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
 	query := fmt.Sprintf(
 		`SELECT id, occurred_at, operation, actor_user_id, actor_user_email, org_id, group_id, data FROM events %s ORDER BY %s %s %s`,
-		where, order, dir, olq,
+		whereClause, order, dir, olq,
 	)
-	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM events %s`, where)
+	queryCount := fmt.Sprintf(`SELECT COUNT(*) FROM events %s`, whereClause)
 
 	params := map[string]any{
 		"email":     emailVal,
@@ -101,7 +101,7 @@ func (r *eventRepository) RetrieveEventsByOrg(ctx context.Context, orgID string,
 		items = append(items, ev)
 	}
 
-	total, err := dbutil.Total(ctx, r.db, cquery, params)
+	total, err := dbutil.Total(ctx, r.db, queryCount, params)
 	if err != nil {
 		return audit.EventsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}

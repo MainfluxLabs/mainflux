@@ -38,3 +38,12 @@ func (mm *metricsMiddleware) RecordEvent(ctx context.Context, e events.Event) er
 
 	return mm.svc.RecordEvent(ctx, e)
 }
+
+func (mm *metricsMiddleware) ListEventsByOrg(ctx context.Context, token string, orgID string, pm audit.PageMetadata) (audit.EventsPage, error) {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "list_events_by_org").Add(1)
+		mm.latency.With("method", "list_events_by_org").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.ListEventsByOrg(ctx, token, orgID, pm)
+}

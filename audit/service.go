@@ -63,6 +63,10 @@ type EventRepository interface {
 type Service interface {
 	// RecordEvent persists a single event to the database.
 	RecordEvent(ctx context.Context, e events.Event) error
+
+	// ListEventsByOrg retrieves a list of audit events occurred in a specific organization denoted by its ID.
+	// The user authenicated by `token` must possess "admin" or higher privileges within the target organization.
+	ListEventsByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (EventsPage, error)
 }
 
 var _ Service = (*auditService)(nil)
@@ -103,4 +107,18 @@ func (s *auditService) RecordEvent(ctx context.Context, e events.Event) error {
 		GroupID:    e.GroupID,
 		Data:       e.Action.Encode(),
 	})
+}
+
+func (svc auditService) ListEventsByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (EventsPage, error) {
+	// Ensure that the authenticated user has admin (or higher) privileges within the target Orgnization
+	if err := svc.auth.Authorize(ctx, domain.AuthzReq{
+		Token:   token,
+		Object:  orgID,
+		Subject: domain.OrgSub,
+		Action:  domain.OrgAdmin,
+	}); err != nil {
+		return EventsPage{}, err
+	}
+
+	return svc.events.RetrieveEventsByOrg(ctx, orgID, pm)
 }
