@@ -4,25 +4,127 @@
 package http
 
 import (
+	"context"
+	"encoding/json"
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/audit"
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/go-kit/kit/endpoint"
+	kitot "github.com/go-kit/kit/tracing/opentracing"
+	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
 	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+const (
+	operationKey = "operation"
+	groupIDKey   = "group_id"
+	dataKey      = "data"
+)
+
 func MakeHandler(svc audit.Service, ac domain.AuthClient, tracer opentracing.Tracer, logger log.Logger) http.Handler {
-	_ = svc
-	_ = ac
-	_ = tracer
-	_ = logger
+	opts := []kithttp.ServerOption{
+		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
+	}
+
+	withIdentity := authn.IdentityMiddleware(ac, logger)
 
 	mux := bone.New()
+
+	mux.Get("/orgs/:id/events", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_events_by_org"),
+			withIdentity,
+		)(listEventsByOrgEndpoint(svc)),
+		decodeListByOrg,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.GetFunc("/health", mainflux.Health("audit"))
 	mux.Handle("/metrics", promhttp.Handler())
 	return mux
+}
+
+func decodeListByOrg(_ context.Context, r *http.Request) (any, error) {
+	pm, err := buildPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listEventsByOrgReq{
+		orgID:        bone.GetValue(r, apiutil.IDKey),
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm,
+	}
+
+	return req, nil
+}
+
+func buildPageMetadata(r *http.Request) (audit.PageMetadata, error) {
+	base, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return audit.PageMetadata{}, err
+	}
+
+	email, err := apiutil.ReadStringQuery(r, apiutil.EmailKey, "")
+	if err != nil {
+		return audit.PageMetadata{}, err
+	}
+
+	operation, err := apiutil.ReadStringQuery(r, operationKey, "")
+	if err != nil {
+		return audit.PageMetadata{}, err
+	}
+
+	groupID, err := apiutil.ReadStringQuery(r, groupIDKey, "")
+	if err != nil {
+		return audit.PageMetadata{}, err
+	}
+
+	data, err := apiutil.ReadMetadataQuery(r, dataKey, nil)
+	if err != nil {
+		return audit.PageMetadata{}, err
+	}
+
+	return audit.PageMetadata{
+		Offset:    base.Offset,
+		Limit:     base.Limit,
+		Order:     base.Order,
+		Dir:       base.Dir,
+		Email:     email,
+		Operation: operation,
+		GroupID:   groupID,
+		Data:      data,
+	}, nil
+}
+
+func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
+	w.Header().Set("Content-Type", apiutil.ContentTypeJSON)
+
+	if ar, ok := response.(apiutil.Response); ok {
+		for k, v := range ar.Headers() {
+			w.Header().Set(k, v)
+		}
+
+		w.WriteHeader(ar.Code())
+
+		if ar.Empty() {
+			return nil
+		}
+	}
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+func encodeError(_ context.Context, err error, w http.ResponseWriter) {
+	apiutil.EncodeError(err, w)
+	apiutil.WriteErrorResponse(err, w)
 }
