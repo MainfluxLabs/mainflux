@@ -28,6 +28,11 @@ func (es eventStore) CreateThings(ctx context.Context, token, profileID string, 
 		return out, err
 	}
 
+	group, err := es.Service.ViewGroup(ctx, token, out[0].GroupID)
+	if err != nil {
+		return out, err
+	}
+
 	for _, th := range out {
 		es.pub.Publish(ctx, events.Event{
 			Action: events.ThingCreated{
@@ -37,7 +42,8 @@ func (es eventStore) CreateThings(ctx context.Context, token, profileID string, 
 				Name:      th.Name,
 				Metadata:  th.Metadata,
 			},
-			GroupID: th.GroupID,
+			GroupID: group.ID,
+			OrgID:   group.OrgID,
 		})
 	}
 
@@ -46,6 +52,11 @@ func (es eventStore) CreateThings(ctx context.Context, token, profileID string, 
 
 func (es eventStore) UpdateThing(ctx context.Context, token string, thing things.Thing) error {
 	groupID, err := es.Service.GetGroupIDByThing(ctx, thing.ID)
+	if err != nil {
+		return err
+	}
+
+	group, err := es.Service.ViewGroup(ctx, token, groupID)
 	if err != nil {
 		return err
 	}
@@ -62,6 +73,7 @@ func (es eventStore) UpdateThing(ctx context.Context, token string, thing things
 			Metadata:  thing.Metadata,
 		},
 		GroupID: groupID,
+		OrgID:   group.OrgID,
 	})
 
 	return nil
@@ -70,6 +82,11 @@ func (es eventStore) UpdateThing(ctx context.Context, token string, thing things
 func (es eventStore) UpdateThingGroupAndProfile(ctx context.Context, token string, thing things.Thing) error {
 	// Get Thing's current Group ID
 	prevGroupID, err := es.Service.GetGroupIDByThing(ctx, thing.ID)
+	if err != nil {
+		return err
+	}
+
+	prevGroup, err := es.Service.ViewGroup(ctx, token, prevGroupID)
 	if err != nil {
 		return err
 	}
@@ -85,6 +102,7 @@ func (es eventStore) UpdateThingGroupAndProfile(ctx context.Context, token strin
 			GroupID:   thing.GroupID,
 		},
 		GroupID: prevGroupID,
+		OrgID:   prevGroup.OrgID,
 	})
 
 	return nil
@@ -97,6 +115,11 @@ func (es eventStore) RemoveThings(ctx context.Context, token string, ids ...stri
 			return err
 		}
 
+		group, err := es.Service.ViewGroup(ctx, token, groupID)
+		if err != nil {
+			return err
+		}
+
 		if err := es.Service.RemoveThings(ctx, token, id); err != nil {
 			return err
 		}
@@ -104,6 +127,7 @@ func (es eventStore) RemoveThings(ctx context.Context, token string, ids ...stri
 		es.pub.Publish(ctx, events.Event{
 			Action:  events.ThingRemoved{ID: id},
 			GroupID: groupID,
+			OrgID:   group.OrgID,
 		})
 	}
 
@@ -112,6 +136,11 @@ func (es eventStore) RemoveThings(ctx context.Context, token string, ids ...stri
 
 func (es eventStore) CreateProfiles(ctx context.Context, token, groupID string, profiles ...things.Profile) ([]things.Profile, error) {
 	prs, err := es.Service.CreateProfiles(ctx, token, groupID, profiles...)
+	if err != nil {
+		return prs, err
+	}
+
+	group, err := es.Service.ViewGroup(ctx, token, groupID)
 	if err != nil {
 		return prs, err
 	}
@@ -125,6 +154,7 @@ func (es eventStore) CreateProfiles(ctx context.Context, token, groupID string, 
 				Metadata: pr.Metadata,
 			},
 			GroupID: pr.GroupID,
+			OrgID:   group.OrgID,
 		})
 	}
 
@@ -136,6 +166,11 @@ func (es eventStore) UpdateProfile(ctx context.Context, token string, profile th
 		return err
 	}
 
+	group, err := es.Service.ViewGroup(ctx, token, profile.GroupID)
+	if err != nil {
+		return err
+	}
+
 	es.pub.Publish(ctx, events.Event{
 		Action: events.ProfileUpdated{
 			ID:       profile.ID,
@@ -144,6 +179,7 @@ func (es eventStore) UpdateProfile(ctx context.Context, token string, profile th
 			Metadata: profile.Metadata,
 		},
 		GroupID: profile.GroupID,
+		OrgID:   group.OrgID,
 	})
 
 	return nil
@@ -156,6 +192,11 @@ func (es eventStore) RemoveProfiles(ctx context.Context, token string, ids ...st
 			return err
 		}
 
+		group, err := es.Service.ViewGroup(ctx, token, groupID)
+		if err != nil {
+			return err
+		}
+
 		if err := es.Service.RemoveProfiles(ctx, token, id); err != nil {
 			return err
 		}
@@ -163,6 +204,7 @@ func (es eventStore) RemoveProfiles(ctx context.Context, token string, ids ...st
 		es.pub.Publish(ctx, events.Event{
 			Action:  events.ProfileRemoved{ID: id},
 			GroupID: groupID,
+			OrgID:   group.OrgID,
 		})
 	}
 
