@@ -45,7 +45,6 @@ type PageMetadata struct {
 	Dir       string         `json:"dir,omitempty"`
 	Email     string         `json:"email,omitempty"`
 	Operation string         `json:"operation,omitempty"`
-	OrgID     string         `json:"org_id,omitempty"`
 	GroupID   string         `json:"group_id,omitempty"`
 	Data      map[string]any `json:"data,omitempty"`
 }
@@ -58,7 +57,7 @@ func (pm PageMetadata) Validate(maxLimitSize int) error {
 
 type EventRepository interface {
 	SaveEvent(ctx context.Context, e Event) error
-	RetrieveEvents(ctx context.Context, pm PageMetadata) (EventsPage, error)
+	RetrieveEventsByOrg(ctx context.Context, orgID string, pm PageMetadata) (EventsPage, error)
 }
 
 type Service interface {

@@ -51,10 +51,10 @@ func (r *eventRepository) SaveEvent(ctx context.Context, e audit.Event) error {
 	return nil
 }
 
-func (r *eventRepository) RetrieveEvents(ctx context.Context, pm audit.PageMetadata) (audit.EventsPage, error) {
+func (r *eventRepository) RetrieveEventsByOrg(ctx context.Context, orgID string, pm audit.PageMetadata) (audit.EventsPage, error) {
 	emailQ, emailVal := emailQuery(pm.Email)
 	opQ, opVal := operationQuery(pm.Operation)
-	orgQ, orgVal := orgQuery(pm.OrgID)
+	orgQ, orgVal := orgQuery(orgID)
 	groupQ, groupVal := groupQuery(pm.GroupID)
 	dataQ, dataVal, err := dataQuery(pm.Data)
 	if err != nil {
