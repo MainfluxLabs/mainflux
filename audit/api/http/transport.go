@@ -41,6 +41,16 @@ func MakeHandler(svc audit.Service, ac domain.AuthClient, tracer opentracing.Tra
 
 	mux := bone.New()
 
+	mux.Get("/events", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_events"),
+			withIdentity,
+		)(listEventsEndpoint(svc)),
+		decodeList,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Get("/orgs/:id/events", kithttp.NewServer(
 		endpoint.Chain(
 			kitot.TraceServer(tracer, "list_events_by_org"),
@@ -54,6 +64,20 @@ func MakeHandler(svc audit.Service, ac domain.AuthClient, tracer opentracing.Tra
 	mux.GetFunc("/health", mainflux.Health("audit"))
 	mux.Handle("/metrics", promhttp.Handler())
 	return mux
+}
+
+func decodeList(_ context.Context, r *http.Request) (any, error) {
+	pm, err := buildPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listEventsReq{
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm,
+	}
+
+	return req, nil
 }
 
 func decodeListByOrg(_ context.Context, r *http.Request) (any, error) {

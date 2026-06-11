@@ -10,6 +10,19 @@ import (
 
 const maxLimitSize = 200
 
+type listEventsReq struct {
+	token        string
+	pageMetadata audit.PageMetadata
+}
+
+func (req listEventsReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	return req.pageMetadata.Validate(maxLimitSize)
+}
+
 type listEventsByOrgReq struct {
 	orgID        string
 	token        string

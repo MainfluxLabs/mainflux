@@ -53,3 +53,17 @@ func (lm *loggingMiddleware) ListEventsByOrg(ctx context.Context, token string, 
 
 	return lm.svc.ListEventsByOrg(ctx, token, orgID, pm)
 }
+
+func (lm *loggingMiddleware) ListEvents(ctx context.Context, token string, pm audit.PageMetadata) (page audit.EventsPage, err error) {
+	defer func(begin time.Time) {
+		email := authn.EmailFromToken(token)
+		message := fmt.Sprintf("Method list_events by user %s took %s to complete", email, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListEvents(ctx, token, pm)
+}

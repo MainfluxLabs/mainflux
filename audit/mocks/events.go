@@ -37,7 +37,15 @@ func (m *eventRepositoryMock) SaveEvent(_ context.Context, e audit.Event) error 
 	return nil
 }
 
+func (m *eventRepositoryMock) RetrieveEvents(_ context.Context, pm audit.PageMetadata) (audit.EventsPage, error) {
+	return m.retrieve("", pm)
+}
+
 func (m *eventRepositoryMock) RetrieveEventsByOrg(_ context.Context, orgID string, pm audit.PageMetadata) (audit.EventsPage, error) {
+	return m.retrieve(orgID, pm)
+}
+
+func (m *eventRepositoryMock) retrieve(orgID string, pm audit.PageMetadata) (audit.EventsPage, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

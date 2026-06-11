@@ -10,6 +10,22 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
+func listEventsEndpoint(svc audit.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(listEventsReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		page, err := svc.ListEvents(ctx, req.token, req.pageMetadata)
+		if err != nil {
+			return nil, err
+		}
+
+		return buildEventsResponse(page, req.pageMetadata), nil
+	}
+}
+
 func listEventsByOrgEndpoint(svc audit.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listEventsByOrgReq)

@@ -59,12 +59,17 @@ func (pm PageMetadata) Validate(maxLimitSize int) error {
 
 type EventRepository interface {
 	SaveEvent(ctx context.Context, e Event) error
+	RetrieveEvents(ctx context.Context, pm PageMetadata) (EventsPage, error)
 	RetrieveEventsByOrg(ctx context.Context, orgID string, pm PageMetadata) (EventsPage, error)
 }
 
 type Service interface {
 	// RecordEvent persists a single event to the database.
 	RecordEvent(ctx context.Context, e events.Event) error
+
+	// ListEvents retrieves a list of audit events across all organizations.
+	// The user authenticated by `token` must be a platform (root) admin.
+	ListEvents(ctx context.Context, token string, pm PageMetadata) (EventsPage, error)
 
 	// ListEventsByOrg retrieves a list of audit events occurred in a specific organization denoted by its ID.
 	// The user authenicated by `token` must possess "admin" or higher privileges within the target organization.
@@ -109,6 +114,18 @@ func (s *auditService) RecordEvent(ctx context.Context, e events.Event) error {
 		GroupID:    e.GroupID,
 		Data:       e.Action.Encode(),
 	})
+}
+
+func (svc auditService) ListEvents(ctx context.Context, token string, pm PageMetadata) (EventsPage, error) {
+	// Only platform (root) administrators may inspect events across all organizations.
+	if err := svc.auth.Authorize(ctx, domain.AuthzReq{
+		Token:   token,
+		Subject: domain.RootSub,
+	}); err != nil {
+		return EventsPage{}, err
+	}
+
+	return svc.events.RetrieveEvents(ctx, pm)
 }
 
 func (svc auditService) ListEventsByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (EventsPage, error) {

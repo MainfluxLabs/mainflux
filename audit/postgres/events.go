@@ -29,7 +29,7 @@ func NewEventRepository(db dbutil.Database) audit.EventRepository {
 }
 
 func (r *eventRepository) SaveEvent(ctx context.Context, e audit.Event) error {
-	q := `INSERT INTO events (id, occurred_at, operation, actor_user_id, actor_user_email, org_id, group_id, data)
+	query := `INSERT INTO events (id, occurred_at, operation, actor_user_id, actor_user_email, org_id, group_id, data)
 	      VALUES (:id, :occurred_at, :operation, :actor_user_id, :actor_user_email, :org_id, :group_id, :data)`
 
 	dbe, err := toDBEvent(e)
@@ -37,7 +37,7 @@ func (r *eventRepository) SaveEvent(ctx context.Context, e audit.Event) error {
 		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
-	if _, err := r.db.NamedExecContext(ctx, q, dbe); err != nil {
+	if _, err := r.db.NamedExecContext(ctx, query, dbe); err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation, pgerrcode.StringDataRightTruncationDataException:
@@ -51,13 +51,25 @@ func (r *eventRepository) SaveEvent(ctx context.Context, e audit.Event) error {
 	return nil
 }
 
+func (r *eventRepository) RetrieveEvents(ctx context.Context, pm audit.PageMetadata) (audit.EventsPage, error) {
+	return r.retrieve(ctx, "", pm)
+}
+
 func (r *eventRepository) RetrieveEventsByOrg(ctx context.Context, orgID string, pm audit.PageMetadata) (audit.EventsPage, error) {
+	return r.retrieve(ctx, orgID, pm)
+}
+
+// retrieve lists events, optionally constrained to a single organization. An empty
+// orgID omits the organization filter, returning events across all organizations
+// (including those not tied to any organization).
+func (r *eventRepository) retrieve(ctx context.Context, orgID string, pm audit.PageMetadata) (audit.EventsPage, error) {
 	emailQ, emailVal := emailQuery(pm.Email)
 	opQ, opVal := operationQuery(pm.Operation)
 	orgQ, orgVal := orgQuery(orgID)
 	groupQ, groupVal := groupQuery(pm.GroupID)
 	fromQ, fromVal := occurredFromQuery(pm.From)
 	toQ, toVal := occurredToQuery(pm.To)
+
 	dataQ, dataVal, err := dataQuery(pm.Data)
 	if err != nil {
 		return audit.EventsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
