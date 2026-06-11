@@ -55,6 +55,12 @@ func (m *eventRepositoryMock) RetrieveEventsByOrg(_ context.Context, orgID strin
 		if pm.GroupID != "" && e.GroupID != pm.GroupID {
 			continue
 		}
+		if !pm.From.IsZero() && e.OccurredAt.Before(pm.From) {
+			continue
+		}
+		if !pm.To.IsZero() && e.OccurredAt.After(pm.To) {
+			continue
+		}
 		if !containsJSON(e.Data, pm.Data) {
 			continue
 		}

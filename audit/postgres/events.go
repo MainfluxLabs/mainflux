@@ -56,12 +56,14 @@ func (r *eventRepository) RetrieveEventsByOrg(ctx context.Context, orgID string,
 	opQ, opVal := operationQuery(pm.Operation)
 	orgQ, orgVal := orgQuery(orgID)
 	groupQ, groupVal := groupQuery(pm.GroupID)
+	fromQ, fromVal := occurredFromQuery(pm.From)
+	toQ, toVal := occurredToQuery(pm.To)
 	dataQ, dataVal, err := dataQuery(pm.Data)
 	if err != nil {
 		return audit.EventsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
-	whereClause := dbutil.BuildWhereClause(emailQ, opQ, orgQ, groupQ, dataQ)
+	whereClause := dbutil.BuildWhereClause(emailQ, opQ, orgQ, groupQ, fromQ, toQ, dataQ)
 	order := dbutil.GetOrderQuery(pm.Order)
 	dir := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
@@ -77,6 +79,8 @@ func (r *eventRepository) RetrieveEventsByOrg(ctx context.Context, orgID string,
 		"operation": opVal,
 		"org_id":    orgVal,
 		"group_id":  groupVal,
+		"from":      fromVal,
+		"to":        toVal,
 		"data":      dataVal,
 		"limit":     pm.Limit,
 		"offset":    pm.Offset,
@@ -138,6 +142,20 @@ func groupQuery(groupID string) (string, string) {
 		return "", ""
 	}
 	return "group_id = :group_id", groupID
+}
+
+func occurredFromQuery(from time.Time) (string, time.Time) {
+	if from.IsZero() {
+		return "", time.Time{}
+	}
+	return "occurred_at >= :from", from
+}
+
+func occurredToQuery(to time.Time) (string, time.Time) {
+	if to.IsZero() {
+		return "", time.Time{}
+	}
+	return "occurred_at <= :to", to
 }
 
 func dataQuery(m map[string]any) (string, []byte, error) {

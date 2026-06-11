@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/audit"
@@ -26,6 +27,8 @@ const (
 	operationKey = "operation"
 	groupIDKey   = "group_id"
 	dataKey      = "data"
+	fromKey      = "from"
+	toKey        = "to"
 )
 
 func MakeHandler(svc audit.Service, ac domain.AuthClient, tracer opentracing.Tracer, logger log.Logger) http.Handler {
@@ -94,7 +97,17 @@ func buildPageMetadata(r *http.Request) (audit.PageMetadata, error) {
 		return audit.PageMetadata{}, err
 	}
 
-	return audit.PageMetadata{
+	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	if err != nil {
+		return audit.PageMetadata{}, err
+	}
+
+	to, err := apiutil.ReadIntQuery(r, toKey, 0)
+	if err != nil {
+		return audit.PageMetadata{}, err
+	}
+
+	pm := audit.PageMetadata{
 		Offset:    base.Offset,
 		Limit:     base.Limit,
 		Order:     base.Order,
@@ -103,7 +116,16 @@ func buildPageMetadata(r *http.Request) (audit.PageMetadata, error) {
 		Operation: operation,
 		GroupID:   groupID,
 		Data:      data,
-	}, nil
+	}
+
+	if from != 0 {
+		pm.From = time.Unix(from, 0).UTC()
+	}
+	if to != 0 {
+		pm.To = time.Unix(to, 0).UTC()
+	}
+
+	return pm, nil
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {

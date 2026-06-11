@@ -47,6 +47,8 @@ type PageMetadata struct {
 	Operation string         `json:"operation,omitempty"`
 	GroupID   string         `json:"group_id,omitempty"`
 	Data      map[string]any `json:"data,omitempty"`
+	From      time.Time      `json:"from,omitzero"`
+	To        time.Time      `json:"to,omitzero"`
 }
 
 func (pm PageMetadata) Validate(maxLimitSize int) error {
