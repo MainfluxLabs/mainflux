@@ -58,8 +58,13 @@ func (pm PageMetadata) Validate(maxLimitSize int) error {
 }
 
 type EventRepository interface {
+	// SaveEvent persists a single event to the database
 	SaveEvent(ctx context.Context, e Event) error
+
+	// RetrieveEvents retrieves events from the database
 	RetrieveEvents(ctx context.Context, pm PageMetadata) (EventsPage, error)
+
+	// RetrieveEventsByOrg retrieves events belonging to a specific organization from the database
 	RetrieveEventsByOrg(ctx context.Context, orgID string, pm PageMetadata) (EventsPage, error)
 }
 
