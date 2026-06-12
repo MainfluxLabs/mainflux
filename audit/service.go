@@ -122,7 +122,7 @@ func (s *auditService) RecordEvent(ctx context.Context, e events.Event) error {
 }
 
 func (svc auditService) ListEvents(ctx context.Context, token string, pm PageMetadata) (EventsPage, error) {
-	// Only platform (root) administrators may inspect events across all organizations.
+	// Ensure that the authenticated user is the platform (root) admin
 	if err := svc.auth.Authorize(ctx, domain.AuthzReq{
 		Token:   token,
 		Subject: domain.RootSub,
