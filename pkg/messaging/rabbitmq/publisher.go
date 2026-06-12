@@ -46,12 +46,11 @@ func (pub *publisher) Publish(_ string, msg protomfx.Message) error {
 	if err != nil {
 		return err
 	}
-	subject := formatTopic(msg.Subtopic)
 
-	err = pub.ch.PublishWithContext(
+	return pub.ch.PublishWithContext(
 		context.Background(),
 		exchangeName,
-		subject,
+		formatTopic(msg.Subtopic),
 		false,
 		false,
 		amqp.Publishing{
@@ -60,12 +59,6 @@ func (pub *publisher) Publish(_ string, msg protomfx.Message) error {
 			AppId:       "mainflux-publisher",
 			Body:        data,
 		})
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (pub *publisher) Close() error {

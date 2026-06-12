@@ -189,6 +189,19 @@ func (lm loggingMiddleware) ConsumeMessage(subject string, msg protomfx.Message)
 	return lm.svc.ConsumeMessage(subject, msg)
 }
 
+func (lm loggingMiddleware) ConsumeAlarm(subject string, alarm protomfx.Alarm) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method consume_alarm took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ConsumeAlarm(subject, alarm)
+}
+
 func (lm loggingMiddleware) CreateScripts(ctx context.Context, token, groupID string, scripts ...rules.LuaScript) (_ []rules.LuaScript, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)

@@ -455,6 +455,12 @@ components:
             type: string
             format: uuid
           example: ["123e4567-e89b-12d3-a456-426614174000"]
+        config:
+          type: object
+          description: Optional input-type-specific configuration.
+          additionalProperties: true
+          example:
+            subtopic: "sensors.room1"
       required: [type]
     UpdateRuleInput:
       type: object
@@ -464,6 +470,12 @@ components:
           type: string
           enum: [message, alarm, command]
           example: "message"
+        config:
+          type: object
+          description: Optional input-type-specific configuration.
+          additionalProperties: true
+          example:
+            subtopic: "sensors.room1"
       required: [type]
     Condition:
       type: object

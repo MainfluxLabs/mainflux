@@ -25,10 +25,11 @@ const (
 	commandsSuffix = "commands"
 )
 
-// Publisher extends the base messaging.Publisher with alarm publishing capability.
+// Publisher extends the base messaging.Publisher with alarm and command publishing capabilities.
 type Publisher interface {
 	messaging.Publisher
 	messaging.AlarmPublisher
+	messaging.CommandPublisher
 }
 
 var _ Publisher = (*publisher)(nil)
@@ -55,6 +56,10 @@ func (pub *publisher) Publish(subject string, msg protomfx.Message) error {
 
 func (pub *publisher) PublishAlarm(subject string, alarm protomfx.Alarm) error {
 	return pub.publish(subject, &alarm)
+}
+
+func (pub *publisher) PublishCommand(subject string, cmd protomfx.Command) error {
+	return pub.publish(subject, &cmd)
 }
 
 func (pub *publisher) publish(subject string, msg proto.Message) error {

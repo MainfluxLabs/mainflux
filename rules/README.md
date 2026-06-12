@@ -33,10 +33,19 @@ A rule evaluates a set of conditions against an incoming payload. When condition
 
 The `input` field defines what triggers rule evaluation.
 
-| Field       | Description                                    |
-| ----------- | ---------------------------------------------- |
-| `type`      | Trigger type: `message`, `alarm`, or `command` |
-| `thing_ids` | IDs of things to which this rule applies.      |
+| Field       | Description                                       |
+| ----------- | ------------------------------------------------- |
+| `type`      | Trigger type: `message`, `alarm`, or `command`    |
+| `thing_ids` | IDs of things to which this rule applies          |
+| `config`    | Optional input-type-specific settings (see below) |
+
+### Input Config
+
+The `config` field holds optional, input-type-specific settings.
+
+| Field      | Description                                                                                  |
+| ---------- | -------------------------------------------------------------------------------------------- |
+| `subtopic` | Filters messages by subtopic (e.g. `sensors.room1`). If omitted, all messages are evaluated. |
 
 ### Conditions
 

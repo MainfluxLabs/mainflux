@@ -28,7 +28,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
@@ -181,7 +181,7 @@ func main() {
 
 	svc, certsRepo := newService(auth, tc, db, logger, tlsCert, caCert, cfg, pkiAgent)
 
-	pub, err := brokers.NewPublisher(cfg.brokerURL)
+	pub, err := nats.NewPublisher(cfg.brokerURL)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)

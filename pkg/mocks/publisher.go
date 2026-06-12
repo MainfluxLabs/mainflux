@@ -19,6 +19,10 @@ func (pub mockPublisher) Publish(_ string, msg protomfx.Message) error {
 	return nil
 }
 
+func (pub mockPublisher) PublishCommand(_ string, cmd protomfx.Command) error {
+	return nil
+}
+
 func (pub mockPublisher) Close() error {
 	return nil
 }
