@@ -13,6 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -555,10 +556,14 @@ func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
 		if sub := rule.Input.Config.Subtopic(); sub != "" && sub != alarm.Subtopic {
 			continue
 		}
-		if level := rule.Input.Config.Level(); level != 0 {
-			if !isConditionMet(rule.Input.Config.LevelComparator(), float64(alarm.Level), float64(level)) {
-				continue
-			}
+
+		triggered, err := processPayload(body, rule.Conditions, rule.Operator, messaging.JSONContentType)
+		if err != nil {
+			rs.logger.Error(fmt.Sprintf("evaluating alarm rule with id %s failed with error: %v", rule.ID, err))
+			continue
+		}
+		if !triggered {
+			continue
 		}
 
 		for _, action := range rule.Actions {

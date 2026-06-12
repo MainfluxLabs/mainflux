@@ -25,16 +25,6 @@ func (c InputConfig) Subtopic() string {
 	return s
 }
 
-func (c InputConfig) Level() int32 {
-	v, _ := c["level"].(float64)
-	return int32(v)
-}
-
-func (c InputConfig) LevelComparator() string {
-	s, _ := c["level_comparator"].(string)
-	return s
-}
-
 type Input struct {
 	Type     string      `json:"type"`
 	ThingIDs []string    `json:"thing_ids"`
@@ -167,6 +157,8 @@ func checkConditionsMet(payloadMap map[string]any, conditions []Condition, opera
 		case float64:
 			payloadValue = v
 		case int:
+			payloadValue = float64(v)
+		case int32:
 			payloadValue = float64(v)
 		case int64:
 			payloadValue = float64(v)

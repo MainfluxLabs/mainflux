@@ -70,15 +70,8 @@ func (req createRule) validate() error {
 		return err
 	}
 
-	switch req.Input.Type {
-	case rules.InputTypeAlarm:
-		if err := validateInputConfig(req.Input.Config); err != nil {
-			return err
-		}
-	default:
-		if err := validateConditions(req.Conditions, req.Operator); err != nil {
-			return err
-		}
+	if err := validateConditions(req.Conditions, req.Operator); err != nil {
+		return err
 	}
 
 	return validateActions(req.Input.Type, req.Actions)
@@ -170,15 +163,8 @@ func (req updateRuleReq) validate() error {
 		return err
 	}
 
-	switch req.Input.Type {
-	case rules.InputTypeAlarm:
-		if err := validateInputConfig(req.Input.Config); err != nil {
-			return err
-		}
-	default:
-		if err := validateConditions(req.Conditions, req.Operator); err != nil {
-			return err
-		}
+	if err := validateConditions(req.Conditions, req.Operator); err != nil {
+		return err
 	}
 
 	return validateActions(req.Input.Type, req.Actions)
@@ -242,22 +228,6 @@ func validateInputType(inputType string) error {
 	default:
 		return apiutil.ErrInvalidInputType
 	}
-}
-
-func validateInputConfig(config rules.InputConfig) error {
-	if comp, ok := config["level_comparator"]; ok {
-		s, ok := comp.(string)
-		if !ok {
-			return apiutil.ErrInvalidConditionComparator
-		}
-		switch s {
-		case rules.ComparatorEQ, rules.ComparatorGT, rules.ComparatorLT, rules.ComparatorGTE, rules.ComparatorLTE:
-		default:
-			return apiutil.ErrInvalidConditionComparator
-		}
-	}
-
-	return nil
 }
 
 func validateConditions(conditions []rules.Condition, operator string) error {
