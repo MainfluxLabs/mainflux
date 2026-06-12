@@ -101,8 +101,10 @@ func TestCreateOrg(t *testing.T) {
 			token: ownerToken,
 			err:   nil,
 			event: map[string]any{
-				"id":        "123e4567-e89b-12d3-a456-000000000001",
-				"operation": events.OrgCreate,
+				"id":         "123e4567-e89b-12d3-a456-000000000001",
+				"operation":  events.OrgCreate,
+				"e_org_id":   "123e4567-e89b-12d3-a456-000000000001",
+				"e_group_id": "",
 			},
 		},
 		{
@@ -130,6 +132,9 @@ func TestCreateOrg(t *testing.T) {
 			msg := streams[0].Messages[0]
 			event = msg.Values
 			lastID = msg.ID
+
+			assert.NotEmpty(t, event["occurred_at"], oc.desc)
+			delete(event, "occurred_at")
 		}
 
 		assert.Equal(t, oc.event, event, fmt.Sprintf("%s: expected %v got %v\n", oc.desc, oc.event, event))
@@ -162,8 +167,10 @@ func TestRemoveOrg(t *testing.T) {
 			token: ownerToken,
 			err:   nil,
 			event: map[string]any{
-				"id":        org.ID,
-				"operation": events.OrgRemove,
+				"id":         org.ID,
+				"operation":  events.OrgRemove,
+				"e_org_id":   org.ID,
+				"e_group_id": "",
 			},
 		},
 		{
@@ -191,6 +198,9 @@ func TestRemoveOrg(t *testing.T) {
 			msg := streams[0].Messages[0]
 			event = msg.Values
 			lastID = msg.ID
+
+			assert.NotEmpty(t, event["occurred_at"], oc.desc)
+			delete(event, "occurred_at")
 		}
 
 		assert.Equal(t, oc.event, event, fmt.Sprintf("%s: expected %v got %v\n", oc.desc, oc.event, event))
