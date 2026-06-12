@@ -52,7 +52,7 @@ const (
 	defDBSSLCert       = ""
 	defDBSSLKey        = ""
 	defDBSSLRootCert   = ""
-	defHTTPPort        = "9029"
+	defHTTPPort        = "9030"
 	defServerCert      = ""
 	defServerKey       = ""
 	defJaegerURL       = ""

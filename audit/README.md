@@ -18,7 +18,7 @@ The service is configured using the environment variables presented in the follo
 | `MF_AUDIT_DB_SSL_CERT`         | Path to the PEM encoded certificate file                                    |                          |
 | `MF_AUDIT_DB_SSL_KEY`          | Path to the PEM encoded key file                                            |                          |
 | `MF_AUDIT_DB_SSL_ROOT_CERT`    | Path to the PEM encoded root certificate file                               |                          |
-| `MF_AUDIT_HTTP_PORT`           | Audit service HTTP port                                                     | 9029                     |
+| `MF_AUDIT_HTTP_PORT`           | Audit service HTTP port                                                     | 9030                     |
 | `MF_AUDIT_SERVER_CERT`         | Path to server certificate in PEM format                                    |                          |
 | `MF_AUDIT_SERVER_KEY`          | Path to server key in PEM format                                            |                          |
 | `MF_AUDIT_ES_URL`              | Event store (Redis) URL the service subscribes to                           | redis://localhost:6379/0 |
@@ -44,7 +44,7 @@ Or build and run the binary directly:
 
 ```bash
 make audit
-MF_AUDIT_HTTP_PORT=9029 \
+MF_AUDIT_HTTP_PORT=9030 \
 MF_AUDIT_ES_URL=redis://localhost:6379/0 \
 MF_AUTH_GRPC_URL=localhost:8181 \
 MF_THINGS_AUTH_GRPC_URL=localhost:8183 \
