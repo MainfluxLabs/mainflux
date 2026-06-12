@@ -74,7 +74,7 @@ func (req createRule) validate() error {
 		return err
 	}
 
-	return validateActions(req.Actions)
+	return validateActions(req.Input.Type, req.Actions)
 }
 
 type ruleReq struct {
@@ -167,7 +167,7 @@ func (req updateRuleReq) validate() error {
 		return err
 	}
 
-	return validateActions(req.Actions)
+	return validateActions(req.Input.Type, req.Actions)
 }
 
 type ruleThingsReq struct {
@@ -255,7 +255,7 @@ func validateConditions(conditions []rules.Condition, operator string) error {
 	return nil
 }
 
-func validateActions(actions []rules.Action) error {
+func validateActions(inputType string, actions []rules.Action) error {
 	if len(actions) < minLen {
 		return apiutil.ErrEmptyList
 	}
@@ -266,6 +266,9 @@ func validateActions(actions []rules.Action) error {
 				return apiutil.ErrMissingActionID
 			}
 		case rules.ActionTypeAlarm:
+			if inputType == rules.InputTypeAlarm {
+				return apiutil.ErrInvalidActionType
+			}
 			if action.Level < minAlarmLevel || action.Level > maxAlarmLevel {
 				return apiutil.ErrInvalidAlarmLevel
 			}
