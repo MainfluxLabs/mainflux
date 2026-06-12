@@ -48,8 +48,8 @@ func (e Event) Encode() redisEvent {
 		re[occurredAt] = e.OccurredAt.UTC().Format(time.RFC3339Nano)
 	}
 
-	re[evOrgID] = e.GroupID
-	re[evGroupID] = e.OrgID
+	re[evOrgID] = e.OrgID
+	re[evGroupID] = e.GroupID
 
 	return re
 }
