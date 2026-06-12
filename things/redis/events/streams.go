@@ -166,7 +166,12 @@ func (es eventStore) UpdateProfile(ctx context.Context, token string, profile th
 		return err
 	}
 
-	group, err := es.Service.ViewGroup(ctx, token, profile.GroupID)
+	groupID, err := es.Service.GetGroupIDByProfile(ctx, profile.ID)
+	if err != nil {
+		return err
+	}
+
+	group, err := es.Service.ViewGroup(ctx, token, groupID)
 	if err != nil {
 		return err
 	}
@@ -178,7 +183,7 @@ func (es eventStore) UpdateProfile(ctx context.Context, token string, profile th
 			Config:   profile.Config,
 			Metadata: profile.Metadata,
 		},
-		GroupID: profile.GroupID,
+		GroupID: groupID,
 		OrgID:   group.OrgID,
 	})
 
