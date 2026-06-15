@@ -16,7 +16,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
-	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
@@ -131,7 +130,7 @@ func main() {
 	svc := newService(db, dbTracer, auth, tc, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(svc, timescaleHttpTracer, svcName, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(svc, auth, timescaleHttpTracer, svcName, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -243,9 +242,7 @@ func connectToDB(dbConfig timescale.Config, logger logger.Logger) *sqlx.DB {
 }
 
 func newService(db *sqlx.DB, dbTracer opentracing.Tracer, ac domain.AuthClient, tc domain.ThingsClient, logger logger.Logger) readers.Service {
-	database := dbutil.NewDatabase(db)
-
-	jsonRepo := timescale.NewJSONRepository(database)
+	jsonRepo := timescale.NewJSONRepository(db)
 	jsonRepo = tracing.JSONRepositoryMiddleware(dbTracer, jsonRepo)
 
 	senmlRepo := timescale.NewSenMLRepository(db)

@@ -9,7 +9,9 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -21,55 +23,79 @@ const (
 	stateKey          = "state"
 )
 
-func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
+func MakeHandler(svc auth.Service, ac auth.Authn, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
 
+	withIdentity := authn.IdentityMiddleware(ac, logger)
+
 	mux.Post("/orgs/:id/invites", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_org_invite")(createOrgInviteEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "create_org_invite"),
+			withIdentity,
+		)(createOrgInviteEndpoint(svc)),
 		decodeCreateOrgInviteRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/orgs/:id/invites", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_org_invites_by_org")(listOrgInvitesByOrgEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_org_invites_by_org"),
+			withIdentity,
+		)(listOrgInvitesByOrgEndpoint(svc)),
 		decodeListOrgInvitesByOrgRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/invites/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_org_invite")(viewOrgInviteEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_org_invite"),
+			withIdentity,
+		)(viewOrgInviteEndpoint(svc)),
 		decodeInviteRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/invites/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "revoke_org_invite")(revokeOrgInviteEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "revoke_org_invite"),
+			withIdentity,
+		)(revokeOrgInviteEndpoint(svc)),
 		decodeInviteRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/invites/:id/:action", kithttp.NewServer(
-		kitot.TraceServer(tracer, "respond_org_invite")(respondOrgInviteEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "respond_org_invite"),
+			withIdentity,
+		)(respondOrgInviteEndpoint(svc)),
 		decodeRespondOrgInviteRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/users/:id/invites/received", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_org_invites_by_invitee")(listOrgInvitesByUserEndpoint(svc, auth.UserTypeInvitee)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_org_invites_by_invitee"),
+			withIdentity,
+		)(listOrgInvitesByUserEndpoint(svc, auth.UserTypeInvitee)),
 		decodeListOrgInvitesByUserRequest,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/users/:id/invites/sent", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_org_invites_by_inviter")(listOrgInvitesByUserEndpoint(svc, auth.UserTypeInviter)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_org_invites_by_inviter"),
+			withIdentity,
+		)(listOrgInvitesByUserEndpoint(svc, auth.UserTypeInviter)),
 		decodeListOrgInvitesByUserRequest,
 		encodeResponse,
 		opts...,

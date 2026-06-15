@@ -42,14 +42,14 @@ type CertScheduler struct {
 	repo      Repository
 	pki       pki.Agent
 	things    domain.ThingsClient
-	publisher messaging.Publisher
+	publisher messaging.CommandPublisher
 	logger    logger.Logger
 	crlPath   string
 	sm        *mfcron.ScheduleManager
 }
 
 // NewCertScheduler creates a new certificate rotation scheduler.
-func NewCertScheduler(repo Repository, pkiAgent pki.Agent, things domain.ThingsClient, pub messaging.Publisher, crlPath string, logger logger.Logger) *CertScheduler {
+func NewCertScheduler(repo Repository, pkiAgent pki.Agent, things domain.ThingsClient, pub messaging.CommandPublisher, crlPath string, logger logger.Logger) *CertScheduler {
 	return &CertScheduler{
 		repo:      repo,
 		pki:       pkiAgent,
@@ -176,14 +176,13 @@ func (cs *CertScheduler) publishCertEvent(cert Cert) error {
 		return err
 	}
 
-	msg := protomfx.Message{
-		Publisher:   cert.ThingID,
-		Protocol:    "certs",
-		Payload:     payload,
-		ContentType: "application/json",
-		Created:     time.Now().UnixNano(),
+	cmd := protomfx.Command{
+		Publisher: cert.ThingID,
+		Protocol:  "certs",
+		Payload:   payload,
+		Created:   time.Now().UnixNano(),
 	}
 
 	subject := nats.GetThingCommandsSubject(cert.ThingID, certRotationTopic)
-	return cs.publisher.Publish(subject, msg)
+	return cs.publisher.PublishCommand(subject, cmd)
 }

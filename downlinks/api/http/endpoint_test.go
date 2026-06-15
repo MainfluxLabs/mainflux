@@ -135,7 +135,8 @@ func newService() downlinks.Service {
 }
 
 func newHTTPServer(svc downlinks.Service) *httptest.Server {
-	mux := httpapi.MakeHandler(mocktracer.New(), svc, logger.NewMock())
+	ac := pkgmocks.NewAuthService(adminUser.ID, usersList, nil)
+	mux := httpapi.MakeHandler(mocktracer.New(), svc, ac, logger.NewMock())
 	return httptest.NewServer(mux)
 }
 

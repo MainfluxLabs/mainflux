@@ -13,8 +13,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	log "github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -27,47 +30,67 @@ const (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(tracer opentracing.Tracer, svc notifiers.Service, logger log.Logger) http.Handler {
-
+func MakeHandler(tracer opentracing.Tracer, svc notifiers.Service, ac domain.AuthClient, logger log.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
 
 	r := bone.New()
 
+	withIdentity := authn.IdentityMiddleware(ac, logger)
+
 	r.Post("/groups/:id/notifiers", kithttp.NewServer(
-		kitot.TraceServer(tracer, "create_notifiers")(createNotifiersEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "create_notifiers"),
+			withIdentity,
+		)(createNotifiersEndpoint(svc)),
 		decodeCreateNotifiers,
 		encodeResponse,
 		opts...,
 	))
 	r.Get("/groups/:id/notifiers", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_notifiers_by_group")(listNotifiersByGroupEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_notifiers_by_group"),
+			withIdentity,
+		)(listNotifiersByGroupEndpoint(svc)),
 		decodeListNotifiers,
 		encodeResponse,
 		opts...,
 	))
 	r.Post("/groups/:id/notifiers/search", kithttp.NewServer(
-		kitot.TraceServer(tracer, "search_notifiers_by_group")(listNotifiersByGroupEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "search_notifiers_by_group"),
+			withIdentity,
+		)(listNotifiersByGroupEndpoint(svc)),
 		decodeSearchNotifiers,
 		encodeResponse,
 		opts...,
 	))
 
 	r.Get("/notifiers/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "view_notifier")(viewNotifierEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "view_notifier"),
+			withIdentity,
+		)(viewNotifierEndpoint(svc)),
 		decodeRequest,
 		encodeResponse,
 		opts...,
 	))
 	r.Put("/notifiers/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "update_notifier")(updateNotifierEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "update_notifier"),
+			withIdentity,
+		)(updateNotifierEndpoint(svc)),
 		decodeUpdateNotifier,
 		encodeResponse,
 		opts...,
 	))
 	r.Patch("/notifiers", kithttp.NewServer(
-		kitot.TraceServer(tracer, "remove_notifiers")(removeNotifiersEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "remove_notifiers"),
+			withIdentity,
+		)(removeNotifiersEndpoint(svc)),
 		decodeRemoveNotifiers,
 		encodeResponse,
 		opts...,

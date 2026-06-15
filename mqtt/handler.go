@@ -234,45 +234,82 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		return
 	}
 
-	if err := h.publisher.Publish(subject, msg); err != nil {
+	if isCommandSubject(subject) {
+		if err := h.publishCommand(subject, msg); err != nil {
+			h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
+			return
+		}
+		h.logger.Info(fmt.Sprintf("client_id %s published command to topic %s", c.ID, *topic))
+		return
+	}
+
+	if err := h.publishMessage(pc, msg); err != nil {
 		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
 		return
 	}
 
-	h.logger.Info(fmt.Sprintf("client_id %s published to topic %s", c.ID, *topic))
+	h.logger.Info(fmt.Sprintf("client_id %s published message to topic %s", c.ID, *topic))
 }
 
-// parseTopic parses an MQTT topic and returns the NATS subject and
-// the message subtopic (the trailing path after prefix/id/suffix).
-// Commands topics are routed to their own NATS subjects; everything else is
-// routed to the publisher's messages subject.
-func parseTopic(topic, publisherID string) (subject, subtopic string, err error) {
-	parts := strings.Split(topic, "/")
-	if len(parts) >= 3 && parts[1] != "" {
-		prefix, id, suffix := parts[0], parts[1], parts[2]
-		rest := ""
-		if len(parts) > 3 {
-			if rest, err = messaging.NormalizeSubtopic(strings.Join(parts[3:], "/")); err != nil {
-				return "", "", err
-			}
+func (h *handler) publishCommand(subject string, msg protomfx.Message) error {
+	return h.publisher.Publish(subject, msg)
+}
+
+func (h *handler) publishMessage(pc domain.PubConfigInfo, msg protomfx.Message) error {
+	for _, s := range nats.GetPublishSubjects(msg.Publisher, msg.Subtopic, pc.ProfileConfig) {
+		if err := h.publisher.Publish(s, msg); err != nil {
+			return err
 		}
-		switch {
-		case prefix == topicPrefixThings && suffix == topicSuffixCommands:
-			return nats.GetThingCommandsSubject(id, rest), rest, nil
-		case prefix == topicPrefixGroups && suffix == topicSuffixCommands:
-			return nats.GetGroupCommandsSubject(id, rest), rest, nil
-		// Route to the topic's target thing subject, not the publisher's.
-		case prefix == topicPrefixThings && suffix == topicSuffixMessages:
-			return nats.GetMessagesSubject(id, rest), rest, nil
+	}
+	return nil
+}
+
+func parseTopic(topic, publisherID string) (subject, subtopic string, err error) {
+	parts := strings.SplitN(topic, "/", 4)
+	if len(parts) < 3 {
+		return defaultTopicRoute(topic, publisherID)
+	}
+
+	prefix, id, suffix := parts[0], parts[1], parts[2]
+	if id == "" {
+		return defaultTopicRoute(topic, publisherID)
+	}
+
+	if len(parts) > 3 {
+		if subtopic, err = messaging.NormalizeSubtopic(parts[3]); err != nil {
+			return "", "", err
 		}
 	}
 
-	// Default: full normalized topic as subtopic, routed to publisher's messages subject.
-	normalizedTopic, err := messaging.NormalizeSubtopic(topic)
+	switch {
+	case prefix == topicPrefixThings && suffix == topicSuffixCommands:
+		return nats.GetThingCommandsSubject(id, subtopic), subtopic, nil
+	case prefix == topicPrefixGroups && suffix == topicSuffixCommands:
+		return nats.GetGroupCommandsSubject(id, subtopic), subtopic, nil
+	case prefix == topicPrefixThings && suffix == topicSuffixMessages:
+		return nats.GetMessagesSubject(id, subtopic), subtopic, nil
+	}
+
+	return defaultTopicRoute(topic, publisherID)
+}
+
+// defaultTopicRoute normalizes the full topic as the subtopic and routes it
+// to the publisher's own messages subject.
+func defaultTopicRoute(topic, publisherID string) (string, string, error) {
+	subtopic, err := messaging.NormalizeSubtopic(topic)
 	if err != nil {
 		return "", "", err
 	}
-	return nats.GetMessagesSubject(publisherID, normalizedTopic), normalizedTopic, nil
+	return nats.GetMessagesSubject(publisherID, subtopic), subtopic, nil
+}
+
+func isCommandSubject(subject string) bool {
+	parts := strings.SplitN(subject, ".", 4)
+	if len(parts) < 3 {
+		return false
+	}
+	suffix := parts[2]
+	return suffix == topicSuffixCommands
 }
 
 // Subscribe - after client successfully subscribed

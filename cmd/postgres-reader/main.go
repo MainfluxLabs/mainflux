@@ -140,7 +140,7 @@ func main() {
 	svc := newService(db, dbTracer, auth, tc, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(svc, postgresHttpTracer, svcName, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(svc, auth, postgresHttpTracer, svcName, logger), cfg.httpConfig, logger)
 	})
 
 	postgresGRPCTracer, postgresGRPCCloser := jaeger.Init("postgres_grpc", cfg.jaegerURL, logger)

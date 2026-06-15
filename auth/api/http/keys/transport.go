@@ -12,7 +12,9 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -20,33 +22,49 @@ import (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
+func MakeHandler(svc auth.Service, ac auth.Authn, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
+
+	withIdentity := authn.IdentityMiddleware(ac, logger)
+
 	mux.Post("/keys", kithttp.NewServer(
-		kitot.TraceServer(tracer, "issue")(issueEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "issue"),
+			withIdentity,
+		)(issueEndpoint(svc)),
 		decodeIssue,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/keys", kithttp.NewServer(
-		kitot.TraceServer(tracer, "list_api_keys")(listAPIKeysEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_api_keys"),
+			withIdentity,
+		)(listAPIKeysEndpoint(svc)),
 		decodeListAPIKeys,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Get("/keys/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "retrieve")(retrieveEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "retrieve"),
+			withIdentity,
+		)(retrieveEndpoint(svc)),
 		decodeKeyReq,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Delete("/keys/:id", kithttp.NewServer(
-		kitot.TraceServer(tracer, "revoke")(revokeEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "revoke"),
+			withIdentity,
+		)(revokeEndpoint(svc)),
 		decodeKeyReq,
 		encodeResponse,
 		opts...,

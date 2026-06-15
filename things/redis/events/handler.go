@@ -20,7 +20,7 @@ func NewEventHandler(svc things.Service) events.EventHandler {
 }
 
 func (h *eventHandler) Handle(ctx context.Context, event events.Event) error {
-	switch e := event.(type) {
+	switch e := event.Action.(type) {
 	case events.OrgRemoved:
 		if _, err := h.svc.RemoveGroupsByOrg(ctx, e.ID); err != nil {
 			return err

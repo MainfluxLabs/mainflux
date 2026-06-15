@@ -13,6 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -66,6 +67,7 @@ type Service interface {
 	ServiceRules
 
 	consumers.MessageConsumer
+	consumers.AlarmConsumer
 }
 
 type ServiceScripts interface {
@@ -148,7 +150,7 @@ const (
 	// subjectAlarms represents subject used to publish messages that trigger an alarm.
 	subjectAlarms = "alarms"
 	// subjectSMTP represents subject used to publish messages that trigger an SMTP notification.
-	subjectSMTP     = "smtp"
+	subjectSMTP = "smtp"
 	// subjectWebhooks represents subject used to publish messages that trigger webhook forwarding.
 	subjectWebhooks = "webhooks"
 )
@@ -498,6 +500,9 @@ func (rs *rulesService) ConsumeMessage(_ string, msg protomfx.Message) error {
 	}
 
 	for _, rule := range page.Rules {
+		if sub := rule.Input.Config.Subtopic(); sub != "" && sub != msg.Subtopic {
+			continue
+		}
 		if err := rs.processRule(&msg, payload, rule); err != nil {
 			rs.logger.Error(fmt.Sprintf("processing rule with id %s failed with error: %v", rule.ID, err))
 		}
@@ -513,6 +518,69 @@ func (rs *rulesService) ConsumeMessage(_ string, msg protomfx.Message) error {
 	}
 
 	rs.processLuaScripts(ctx, &msg, payload, scriptsPage.Scripts...)
+
+	return nil
+}
+
+func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
+	ctx := context.Background()
+
+	page, err := rs.rules.RetrieveByThing(ctx, alarm.ThingId, PageMetadata{InputType: InputTypeAlarm})
+	if err != nil {
+		return err
+	}
+
+	body := map[string]any{
+		"input_type": InputTypeAlarm,
+		"level":      alarm.Level,
+		"rule_id":    alarm.RuleId,
+	}
+	if len(alarm.RuleInfo) > 0 {
+		body["rule_info"] = json.RawMessage(alarm.RuleInfo)
+	}
+
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+
+	msg := protomfx.Message{
+		Publisher: alarm.ThingId,
+		Subtopic:  alarm.Subtopic,
+		Protocol:  alarm.Protocol,
+		Created:   alarm.Created,
+		Payload:   payload,
+	}
+
+	for _, rule := range page.Rules {
+		if sub := rule.Input.Config.Subtopic(); sub != "" && sub != alarm.Subtopic {
+			continue
+		}
+
+		triggered, err := processPayload(body, rule.Conditions, rule.Operator, messaging.JSONContentType)
+		if err != nil {
+			rs.logger.Error(fmt.Sprintf("evaluating alarm rule with id %s failed with error: %v", rule.ID, err))
+			continue
+		}
+		if !triggered {
+			continue
+		}
+
+		for _, action := range rule.Actions {
+			var subject string
+			switch action.Type {
+			case ActionTypeSMTP, ActionTypeSMPP:
+				subject = fmt.Sprintf("%s.%s", action.Type, action.ID)
+			case ActionTypeWebhook:
+				subject = subjectWebhooks
+			default:
+				continue
+			}
+			if err := rs.pub.Publish(subject, msg); err != nil {
+				rs.logger.Error(fmt.Sprintf("processing alarm rule with id %s failed with error: %v", rule.ID, err))
+			}
+		}
+	}
 
 	return nil
 }

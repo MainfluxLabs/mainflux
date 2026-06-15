@@ -36,13 +36,17 @@ const (
 	SubjectAlarms = "alarms.*"
 	// SubjectWebhooks represents subject used to subscribe to webhook forwarding — both rule-triggered and integration-based.
 	SubjectWebhooks = "webhooks"
+	// SubjectRules represents subject used to route messages to the rules service.
+	SubjectRules = "rules"
 )
 
-// PubSub extends messaging.PubSub with alarm publishing and subscribing.
+// PubSub extends messaging.PubSub with alarm/command publishing, and alarm/command subscribing.
 type PubSub interface {
 	messaging.PubSub
 	messaging.AlarmPublisher
 	messaging.AlarmSubscriber
+	messaging.CommandPublisher
+	messaging.CommandSubscriber
 }
 
 var _ PubSub = (*pubsub)(nil)
@@ -194,6 +198,41 @@ func (ps *pubsub) UnsubscribeAlarms(id string) error {
 	return ps.unsubscribe(id, SubjectAlarms)
 }
 
+func (ps *pubsub) SubscribeCommands(id, topic string, handler messaging.CommandHandler) error {
+	if id == "" {
+		return messaging.ErrEmptyID
+	}
+	if topic == "" {
+		return messaging.ErrEmptyTopic
+	}
+
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+
+	if s, ok := ps.subscriptions[topic]; ok {
+		if _, ok := s[id]; ok {
+			if err := ps.unsubscribe(id, topic); err != nil {
+				return err
+			}
+		}
+	}
+	return ps.subscribe(id, topic, ps.natsCommandHandler(handler), handler.Cancel)
+}
+
+func (ps *pubsub) UnsubscribeCommands(id, topic string) error {
+	if id == "" {
+		return messaging.ErrEmptyID
+	}
+	if topic == "" {
+		return messaging.ErrEmptyTopic
+	}
+
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+
+	return ps.unsubscribe(id, topic)
+}
+
 func (ps *pubsub) natsAlarmHandler(h messaging.AlarmHandler) broker.MsgHandler {
 	return func(m *broker.Msg) {
 		var alarm protomfx.Alarm
@@ -203,6 +242,19 @@ func (ps *pubsub) natsAlarmHandler(h messaging.AlarmHandler) broker.MsgHandler {
 		}
 		if err := h.Handle(m.Subject, alarm); err != nil {
 			ps.logger.Warn(fmt.Sprintf("Failed to handle alarm: %s", err))
+		}
+	}
+}
+
+func (ps *pubsub) natsCommandHandler(h messaging.CommandHandler) broker.MsgHandler {
+	return func(m *broker.Msg) {
+		var cmd protomfx.Command
+		if err := proto.Unmarshal(m.Data, &cmd); err != nil {
+			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received command: %s", err))
+			return
+		}
+		if err := h.Handle(m.Subject, cmd); err != nil {
+			ps.logger.Warn(fmt.Sprintf("Failed to handle command: %s", err))
 		}
 	}
 }

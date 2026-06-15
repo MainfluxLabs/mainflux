@@ -20,7 +20,7 @@ func NewEventHandler(svc downlinks.Service) events.EventHandler {
 }
 
 func (h *eventHandler) Handle(ctx context.Context, event events.Event) error {
-	switch e := event.(type) {
+	switch e := event.Action.(type) {
 	case events.ThingRemoved:
 		return h.svc.RemoveDownlinksByThing(ctx, e.ID)
 	case events.ProfileUpdated:

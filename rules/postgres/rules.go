@@ -36,8 +36,8 @@ func (rr ruleRepository) Save(ctx context.Context, rls ...rules.Rule) ([]rules.R
 	}
 	defer tx.Rollback()
 
-	rq := `INSERT INTO rules (id, group_id, name, description, input_type, conditions, operator, actions)
-		VALUES (:id, :group_id, :name, :description, :input_type, :conditions, :operator, :actions);`
+	rq := `INSERT INTO rules (id, group_id, name, description, input_type, input_config, conditions, operator, actions)
+		VALUES (:id, :group_id, :name, :description, :input_type, :input_config, :conditions, :operator, :actions);`
 
 	for _, rule := range rls {
 		dbr, err := toDBRule(rule)
@@ -88,7 +88,7 @@ func (rr ruleRepository) RetrieveByGroup(ctx context.Context, groupID string, pm
 	}
 	whereClause := dbutil.BuildWhereClause(gq, nq, itq)
 
-	q := fmt.Sprintf(`SELECT id, group_id, name, description, input_type, conditions, operator, actions
+	q := fmt.Sprintf(`SELECT id, group_id, name, description, input_type, input_config, conditions, operator, actions
 		FROM rules %s
 		ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 
@@ -126,9 +126,9 @@ func (rr ruleRepository) RetrieveByThing(ctx context.Context, thingID string, pm
 	countClause := dbutil.BuildWhereClause(tq, itq)
 
 	q := fmt.Sprintf(`SELECT r.id, r.group_id, r.name, r.description,
-		r.input_type, r.conditions, r.operator, r.actions
+		r.input_type, r.input_config, r.conditions, r.operator, r.actions
 		FROM rules r %s %s
-		ORDER BY r.%s %s %s;`, joinClause, whereClause, oq, dq, olq)
+		ORDER BY %s %s %s;`, joinClause, whereClause, oq, dq, olq)
 
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM rules r %s %s;`, joinClause, countClause)
 
@@ -144,7 +144,7 @@ func (rr ruleRepository) RetrieveByThing(ctx context.Context, thingID string, pm
 }
 
 func (rr ruleRepository) RetrieveByID(ctx context.Context, id string) (rules.Rule, error) {
-	q := `SELECT id, group_id, name, description, input_type, conditions, operator, actions
+	q := `SELECT id, group_id, name, description, input_type, input_config, conditions, operator, actions
 		FROM rules
 		WHERE id = $1;`
 
@@ -166,9 +166,9 @@ func (rr ruleRepository) RetrieveByID(ctx context.Context, id string) (rules.Rul
 }
 
 func (rr ruleRepository) Update(ctx context.Context, r rules.Rule) error {
-	uq := `UPDATE rules 
+	uq := `UPDATE rules
 		SET name = :name, description = :description, input_type = :input_type,
-		conditions = :conditions, operator = :operator, actions = :actions
+		input_config = :input_config, conditions = :conditions, operator = :operator, actions = :actions
 		WHERE id = :id;`
 
 	dbr, err := toDBRule(r)
@@ -363,12 +363,22 @@ type dbRule struct {
 	Name        string `db:"name"`
 	Description string `db:"description"`
 	InputType   string `db:"input_type"`
+	InputConfig []byte `db:"input_config"`
 	Conditions  []byte `db:"conditions"`
 	Operator    string `db:"operator"`
 	Actions     []byte `db:"actions"`
 }
 
 func toDBRule(r rules.Rule) (dbRule, error) {
+	inputConfig := []byte("{}")
+	if len(r.Input.Config) > 0 {
+		b, err := json.Marshal(r.Input.Config)
+		if err != nil {
+			return dbRule{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+		}
+		inputConfig = b
+	}
+
 	conditions, err := json.Marshal(r.Conditions)
 	if err != nil {
 		return dbRule{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
@@ -385,6 +395,7 @@ func toDBRule(r rules.Rule) (dbRule, error) {
 		Name:        r.Name,
 		Description: r.Description,
 		InputType:   r.Input.Type,
+		InputConfig: inputConfig,
 		Conditions:  conditions,
 		Operator:    r.Operator,
 		Actions:     actions,
@@ -402,12 +413,17 @@ func toRule(dbr dbRule, thingIDs []string) (rules.Rule, error) {
 		return rules.Rule{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
 
+	var inputConfig rules.InputConfig
+	if err := json.Unmarshal(dbr.InputConfig, &inputConfig); err != nil {
+		return rules.Rule{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+	}
+
 	return rules.Rule{
 		ID:          dbr.ID,
 		GroupID:     dbr.GroupID,
 		Name:        dbr.Name,
 		Description: dbr.Description,
-		Input:       rules.Input{Type: dbr.InputType, ThingIDs: thingIDs},
+		Input:       rules.Input{Type: dbr.InputType, ThingIDs: thingIDs, Config: inputConfig},
 		Conditions:  conditions,
 		Operator:    dbr.Operator,
 		Actions:     actions,

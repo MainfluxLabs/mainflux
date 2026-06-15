@@ -39,6 +39,13 @@ func (ps *mockPublisher) PublishAlarm(string, protomfx.Alarm) error {
 	return nil
 }
 
+func (ps *mockPublisher) PublishCommand(string, protomfx.Command) error {
+	if ps.fail {
+		return messaging.ErrPublishMessage
+	}
+	return nil
+}
+
 func (ps *mockPublisher) Close() error {
 	return nil
 }

@@ -8,8 +8,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -17,20 +19,29 @@ import (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
+func MakeHandler(svc auth.Service, ac auth.Authn, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
+		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
 
+	withIdentity := authn.IdentityMiddleware(ac, logger)
+
 	mux.Get("/backup", kithttp.NewServer(
-		kitot.TraceServer(tracer, "backup")(backupEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "backup"),
+			withIdentity,
+		)(backupEndpoint(svc)),
 		decodeBackup,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/restore", kithttp.NewServer(
-		kitot.TraceServer(tracer, "restore")(restoreEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "restore"),
+			withIdentity,
+		)(restoreEndpoint(svc)),
 		decodeRestore,
 		encodeResponse,
 		opts...,

@@ -13,14 +13,22 @@ import (
 )
 
 const (
-	InputTypeMessage  = "message"
-	InputTypeAlarm    = "alarm"
-	InputTypeCommand  = "command"
+	InputTypeMessage = "message"
+	InputTypeAlarm   = "alarm"
+	InputTypeCommand = "command"
 )
 
+type InputConfig map[string]any
+
+func (c InputConfig) Subtopic() string {
+	s, _ := c["subtopic"].(string)
+	return s
+}
+
 type Input struct {
-	Type     string   `json:"type"`
-	ThingIDs []string `json:"thing_ids"`
+	Type     string      `json:"type"`
+	ThingIDs []string    `json:"thing_ids"`
+	Config   InputConfig `json:"config,omitempty"`
 }
 
 type Rule struct {
@@ -55,14 +63,19 @@ const (
 
 	OperatorAND = "AND"
 	OperatorOR  = "OR"
+
+	ComparatorEQ  = "=="
+	ComparatorGTE = ">="
+	ComparatorLTE = "<="
+	ComparatorGT  = ">"
+	ComparatorLT  = "<"
 )
 
 func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, rule Rule) error {
-	triggered, payloads, err := processPayload(parsedPayload, rule.Conditions, rule.Operator, msg.ContentType)
+	triggered, err := processPayload(parsedPayload, rule.Conditions, rule.Operator, msg.ContentType)
 	if err != nil {
 		return err
 	}
-
 	if !triggered {
 		return nil
 	}
@@ -74,8 +87,7 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 			if err != nil {
 				return err
 			}
-			subject := fmt.Sprintf("%s.%s", subjectAlarms, domain.AlarmOriginRule)
-			if err := rs.pub.PublishAlarm(subject, protomfx.Alarm{
+			if err := rs.pub.PublishAlarm(fmt.Sprintf("%s.%s", subjectAlarms, domain.AlarmOriginRule), protomfx.Alarm{
 				ThingId:  msg.Publisher,
 				Subtopic: msg.Subtopic,
 				Protocol: msg.Protocol,
@@ -87,20 +99,12 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 				return err
 			}
 		case ActionTypeSMTP, ActionTypeSMPP:
-			for _, payload := range payloads {
-				newMsg := *msg
-				newMsg.Payload = payload
-				if err := rs.pub.Publish(fmt.Sprintf("%s.%s", action.Type, action.ID), newMsg); err != nil {
-					return err
-				}
+			if err := rs.pub.Publish(fmt.Sprintf("%s.%s", action.Type, action.ID), *msg); err != nil {
+				return err
 			}
 		case ActionTypeWebhook:
-			for _, payload := range payloads {
-				newMsg := *msg
-				newMsg.Payload = payload
-				if err := rs.pub.Publish(subjectWebhooks, newMsg); err != nil {
-					return err
-				}
+			if err := rs.pub.Publish(subjectWebhooks, *msg); err != nil {
+				return err
 			}
 		}
 	}
@@ -108,48 +112,27 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 	return nil
 }
 
-func processPayload(payload any, conditions []Condition, operator string, contentType string) (bool, [][]byte, error) {
+func processPayload(payload any, conditions []Condition, operator string, contentType string) (bool, error) {
 	switch data := payload.(type) {
 	case []any:
-		var triggerPayloads [][]byte
 		for _, item := range data {
 			obj, ok := item.(map[string]any)
 			if !ok {
 				continue
 			}
-
 			triggered, err := checkConditionsMet(obj, conditions, operator, contentType)
 			if err != nil {
-				return false, nil, err
+				return false, err
 			}
-
 			if triggered {
-				extractedPayload, err := json.Marshal(obj)
-				if err != nil {
-					return false, nil, err
-				}
-				triggerPayloads = append(triggerPayloads, extractedPayload)
+				return true, nil
 			}
 		}
-
-		return len(triggerPayloads) > 0, triggerPayloads, nil
+		return false, nil
 	case map[string]any:
-		triggered, err := checkConditionsMet(data, conditions, operator, contentType)
-		if err != nil {
-			return false, nil, err
-		}
-
-		if triggered {
-			extractedPayload, err := json.Marshal(data)
-			if err != nil {
-				return false, nil, err
-			}
-			return true, [][]byte{extractedPayload}, nil
-		}
-
-		return false, nil, nil
+		return checkConditionsMet(data, conditions, operator, contentType)
 	default:
-		return false, nil, errors.ErrInvalidPayload
+		return false, errors.ErrInvalidPayload
 	}
 }
 
@@ -174,6 +157,8 @@ func checkConditionsMet(payloadMap map[string]any, conditions []Condition, opera
 		case float64:
 			payloadValue = v
 		case int:
+			payloadValue = float64(v)
+		case int32:
 			payloadValue = float64(v)
 		case int64:
 			payloadValue = float64(v)
@@ -208,15 +193,15 @@ func checkConditionsMet(payloadMap map[string]any, conditions []Condition, opera
 
 func isConditionMet(comparator string, val1, val2 float64) bool {
 	switch comparator {
-	case "==":
+	case ComparatorEQ:
 		return val1 == val2
-	case ">=":
+	case ComparatorGTE:
 		return val1 >= val2
-	case "<=":
+	case ComparatorLTE:
 		return val1 <= val2
-	case ">":
+	case ComparatorGT:
 		return val1 > val2
-	case "<":
+	case ComparatorLT:
 		return val1 < val2
 	default:
 		return false

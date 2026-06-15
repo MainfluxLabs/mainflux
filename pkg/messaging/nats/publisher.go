@@ -6,6 +6,7 @@ package nats
 import (
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/gogo/protobuf/proto"
@@ -24,10 +25,11 @@ const (
 	commandsSuffix = "commands"
 )
 
-// Publisher extends the base messaging.Publisher with alarm publishing capability.
+// Publisher extends the base messaging.Publisher with alarm and command publishing capabilities.
 type Publisher interface {
 	messaging.Publisher
 	messaging.AlarmPublisher
+	messaging.CommandPublisher
 }
 
 var _ Publisher = (*publisher)(nil)
@@ -54,6 +56,10 @@ func (pub *publisher) Publish(subject string, msg protomfx.Message) error {
 
 func (pub *publisher) PublishAlarm(subject string, alarm protomfx.Alarm) error {
 	return pub.publish(subject, &alarm)
+}
+
+func (pub *publisher) PublishCommand(subject string, cmd protomfx.Command) error {
+	return pub.publish(subject, &cmd)
 }
 
 func (pub *publisher) publish(subject string, msg proto.Message) error {
@@ -87,4 +93,25 @@ func createSubject(entity, id, suffix, subtopic string) string {
 		subject = fmt.Sprintf("%s.%s", subject, subtopic)
 	}
 	return subject
+}
+
+// GetPublishSubjects returns the NATS subjects a message should be published to
+// based on the dispatcher flags in the profile config.
+func GetPublishSubjects(thingID, subtopic string, pc *domain.ProfileConfig) []string {
+	if pc == nil {
+		return nil
+	}
+
+	var subjects []string
+	if pc.WriteEnabled {
+		subjects = append(subjects, GetMessagesSubject(thingID, subtopic))
+	}
+	if pc.WebhookEnabled {
+		subjects = append(subjects, SubjectWebhooks)
+	}
+	if pc.RuleEnabled {
+		subjects = append(subjects, SubjectRules)
+	}
+
+	return subjects
 }
