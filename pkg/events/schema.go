@@ -25,7 +25,7 @@ type EventAction interface {
 type Event struct {
 	// The specific EventAction that occurred.
 	Action EventAction
-	// The identity of the user whose action trigerred the event.
+	// The identity of the user whose action triggered the event.
 	JWTUserIdentity domain.Identity
 	// The ID of the organization to which the event belongs. May be empty.
 	OrgID string

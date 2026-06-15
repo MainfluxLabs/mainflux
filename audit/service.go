@@ -77,7 +77,7 @@ type Service interface {
 	ListEvents(ctx context.Context, token string, pm PageMetadata) (EventsPage, error)
 
 	// ListEventsByOrg retrieves a list of audit events occurred in a specific organization denoted by its ID.
-	// The user authenicated by `token` must possess "admin" or higher privileges within the target organization.
+	// The user authenticated by `token` must possess "admin" or higher privileges within the target organization.
 	ListEventsByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (EventsPage, error)
 }
 
@@ -134,7 +134,7 @@ func (svc auditService) ListEvents(ctx context.Context, token string, pm PageMet
 }
 
 func (svc auditService) ListEventsByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (EventsPage, error) {
-	// Ensure that the authenticated user has admin (or higher) privileges within the target Orgnization
+	// Ensure that the authenticated user has admin (or higher) privileges within the target Organization
 	if err := svc.auth.Authorize(ctx, domain.AuthzReq{
 		Token:   token,
 		Object:  orgID,
