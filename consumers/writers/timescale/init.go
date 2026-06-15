@@ -63,7 +63,7 @@ func migrateDB(db *sqlx.DB) error {
 						update_time   FLOAT,
 						PRIMARY KEY   (time, publisher, subtopic, name)
 					);
-					SELECT create_hypertable('senml', 'time', create_default_indexes => FALSE, chunk_time_interval => 86400000, if_not_exists => TRUE);`,
+					SELECT create_hypertable('senml', 'time', create_default_indexes => FALSE, chunk_time_interval => 86400000000000, if_not_exists => TRUE);`,
 					`CREATE TABLE IF NOT EXISTS json (
 						created       BIGINT NOT NULL,
 						subtopic      VARCHAR(254),
@@ -72,7 +72,7 @@ func migrateDB(db *sqlx.DB) error {
 						payload       JSONB,
 						PRIMARY KEY   (created, publisher, subtopic)
 					);
-					SELECT create_hypertable('json', 'created', create_default_indexes => FALSE, chunk_time_interval => 86400000, if_not_exists => TRUE);`,
+					SELECT create_hypertable('json', 'created', create_default_indexes => FALSE, chunk_time_interval => 86400000000000, if_not_exists => TRUE);`,
 					`CREATE INDEX IF NOT EXISTS idx_json_created ON json(created DESC)`,
 					`CREATE INDEX IF NOT EXISTS idx_json_publisher_created ON json(publisher, created DESC)`,
 					`CREATE INDEX IF NOT EXISTS idx_senml_publisher_time ON senml(publisher, time DESC)`,
@@ -80,6 +80,17 @@ func migrateDB(db *sqlx.DB) error {
 				Down: []string{
 					"DROP TABLE senml",
 					"DROP TABLE json",
+				},
+			},
+			{
+				Id: "messages_2",
+				Up: []string{
+					`SELECT set_chunk_time_interval('json',  86400000000000)`,
+					`SELECT set_chunk_time_interval('senml', 86400000000000)`,
+				},
+				Down: []string{
+					`SELECT set_chunk_time_interval('json',  86400000)`,
+					`SELECT set_chunk_time_interval('senml', 86400000)`,
 				},
 			},
 		},
