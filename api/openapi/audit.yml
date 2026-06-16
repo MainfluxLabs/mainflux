@@ -21,7 +21,6 @@ paths:
         - $ref: "#/components/parameters/Dir"
         - $ref: "#/components/parameters/Email"
         - $ref: "#/components/parameters/Operation"
-        - $ref: "#/components/parameters/GroupId"
         - $ref: "#/components/parameters/Data"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
@@ -56,7 +55,6 @@ paths:
         - $ref: "#/components/parameters/Dir"
         - $ref: "#/components/parameters/Email"
         - $ref: "#/components/parameters/Operation"
-        - $ref: "#/components/parameters/GroupId"
         - $ref: "#/components/parameters/Data"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
@@ -65,6 +63,42 @@ paths:
           $ref: "#/components/responses/ListEventsRes"
         '400':
           description: Failed due to malformed query parameters or missing organization ID.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Failed due to non-existing resource.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /groups/{groupId}/events:
+    get:
+      summary: List audit events by group
+      description: >-
+        Retrieves a list of audit events that occurred within a specific group.
+        The caller must have admin (or higher) privileges within the target
+        group.
+      tags:
+        - audit
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Dir"
+        - $ref: "#/components/parameters/Email"
+        - $ref: "#/components/parameters/Operation"
+        - $ref: "#/components/parameters/Data"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListEventsRes"
+        '400':
+          description: Failed due to malformed query parameters or missing group ID.
         '401':
           description: Missing or invalid access token provided.
         '403':
@@ -205,10 +239,10 @@ components:
       schema:
         type: string
     GroupId:
-      name: group_id
-      in: query
-      required: false
-      description: Filter events by the group they belong to.
+      name: groupId
+      in: path
+      required: true
+      description: Unique group identifier whose events are retrieved.
       schema:
         type: string
         format: uuid

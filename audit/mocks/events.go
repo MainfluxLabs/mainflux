@@ -38,14 +38,18 @@ func (m *eventRepositoryMock) SaveEvent(_ context.Context, e audit.Event) error 
 }
 
 func (m *eventRepositoryMock) RetrieveEvents(_ context.Context, pm audit.PageMetadata) (audit.EventsPage, error) {
-	return m.retrieve("", pm)
+	return m.retrieve("", "", pm)
 }
 
 func (m *eventRepositoryMock) RetrieveEventsByOrg(_ context.Context, orgID string, pm audit.PageMetadata) (audit.EventsPage, error) {
-	return m.retrieve(orgID, pm)
+	return m.retrieve(orgID, "", pm)
 }
 
-func (m *eventRepositoryMock) retrieve(orgID string, pm audit.PageMetadata) (audit.EventsPage, error) {
+func (m *eventRepositoryMock) RetrieveEventsByGroup(_ context.Context, groupID string, pm audit.PageMetadata) (audit.EventsPage, error) {
+	return m.retrieve("", groupID, pm)
+}
+
+func (m *eventRepositoryMock) retrieve(orgID, groupID string, pm audit.PageMetadata) (audit.EventsPage, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -60,7 +64,7 @@ func (m *eventRepositoryMock) retrieve(orgID string, pm audit.PageMetadata) (aud
 		if orgID != "" && e.OrgID != orgID {
 			continue
 		}
-		if pm.GroupID != "" && e.GroupID != pm.GroupID {
+		if groupID != "" && e.GroupID != groupID {
 			continue
 		}
 		if !pm.From.IsZero() && e.OccurredAt.Before(pm.From) {

@@ -45,7 +45,6 @@ type PageMetadata struct {
 	Dir       string         `json:"dir,omitempty"`
 	Email     string         `json:"email,omitempty"`
 	Operation string         `json:"operation,omitempty"`
-	GroupID   string         `json:"group_id,omitempty"`
 	Data      map[string]any `json:"data,omitempty"`
 	From      time.Time      `json:"from,omitzero"`
 	To        time.Time      `json:"to,omitzero"`
@@ -66,6 +65,9 @@ type EventRepository interface {
 
 	// RetrieveEventsByOrg retrieves events belonging to a specific organization from the database
 	RetrieveEventsByOrg(ctx context.Context, orgID string, pm PageMetadata) (EventsPage, error)
+
+	// RetrieveEventsByGroup retrieves events belonging to a specific group from the database
+	RetrieveEventsByGroup(ctx context.Context, groupID string, pm PageMetadata) (EventsPage, error)
 }
 
 type Service interface {
@@ -79,6 +81,10 @@ type Service interface {
 	// ListEventsByOrg retrieves a list of audit events occurred in a specific organization denoted by its ID.
 	// The user authenticated by `token` must possess "admin" or higher privileges within the target organization.
 	ListEventsByOrg(ctx context.Context, token string, orgID string, pm PageMetadata) (EventsPage, error)
+
+	// ListEventsByGroup retrieves a list of audit events occurred in a specific group denoted by its ID.
+	// The user authenticated by `token` must possess "admin" or higher privileges within the target group.
+	ListEventsByGroup(ctx context.Context, token string, groupID string, pm PageMetadata) (EventsPage, error)
 }
 
 var _ Service = (*auditService)(nil)
@@ -145,4 +151,17 @@ func (svc auditService) ListEventsByOrg(ctx context.Context, token string, orgID
 	}
 
 	return svc.events.RetrieveEventsByOrg(ctx, orgID, pm)
+}
+
+func (svc auditService) ListEventsByGroup(ctx context.Context, token string, groupID string, pm PageMetadata) (EventsPage, error) {
+	// Ensure that the authenticated user has admin (or higher) privileges within the target Group
+	if err := svc.things.CanUserAccessGroup(ctx, domain.UserAccessReq{
+		Token:  token,
+		ID:     groupID,
+		Action: domain.GroupAdmin,
+	}); err != nil {
+		return EventsPage{}, err
+	}
+
+	return svc.events.RetrieveEventsByGroup(ctx, groupID, pm)
 }

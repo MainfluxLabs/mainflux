@@ -40,3 +40,21 @@ func (req listEventsByOrgReq) validate() error {
 
 	return req.pageMetadata.Validate(maxLimitSize)
 }
+
+type listEventsByGroupReq struct {
+	groupID      string
+	token        string
+	pageMetadata audit.PageMetadata
+}
+
+func (req listEventsByGroupReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.groupID == "" {
+		return apiutil.ErrMissingGroupID
+	}
+
+	return req.pageMetadata.Validate(maxLimitSize)
+}

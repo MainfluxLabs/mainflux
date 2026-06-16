@@ -12,9 +12,10 @@ import (
 )
 
 const (
-	saveEvent           = "save_event"
-	retrieveEvents      = "retrieve_events"
-	retrieveEventsByOrg = "retrieve_events_by_org"
+	saveEvent             = "save_event"
+	retrieveEvents        = "retrieve_events"
+	retrieveEventsByOrg   = "retrieve_events_by_org"
+	retrieveEventsByGroup = "retrieve_events_by_group"
 )
 
 var _ audit.EventRepository = (*eventRepositoryMiddleware)(nil)
@@ -50,4 +51,11 @@ func (m *eventRepositoryMiddleware) RetrieveEventsByOrg(ctx context.Context, org
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	return m.repo.RetrieveEventsByOrg(ctx, orgID, pm)
+}
+
+func (m *eventRepositoryMiddleware) RetrieveEventsByGroup(ctx context.Context, groupID string, pm audit.PageMetadata) (audit.EventsPage, error) {
+	span := dbutil.CreateSpan(ctx, m.tracer, retrieveEventsByGroup)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+	return m.repo.RetrieveEventsByGroup(ctx, groupID, pm)
 }

@@ -25,7 +25,6 @@ import (
 
 const (
 	operationKey = "operation"
-	groupIDKey   = "group_id"
 	dataKey      = "data"
 	fromKey      = "from"
 	toKey        = "to"
@@ -57,6 +56,16 @@ func MakeHandler(svc audit.Service, ac domain.AuthClient, tracer opentracing.Tra
 			withIdentity,
 		)(listEventsByOrgEndpoint(svc)),
 		decodeListByOrg,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Get("/groups/:id/events", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_events_by_group"),
+			withIdentity,
+		)(listEventsByGroupEndpoint(svc)),
+		decodeListByGroup,
 		encodeResponse,
 		opts...,
 	))
@@ -95,6 +104,21 @@ func decodeListByOrg(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
+func decodeListByGroup(_ context.Context, r *http.Request) (any, error) {
+	pm, err := buildPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listEventsByGroupReq{
+		groupID:      bone.GetValue(r, apiutil.IDKey),
+		token:        apiutil.ExtractBearerToken(r),
+		pageMetadata: pm,
+	}
+
+	return req, nil
+}
+
 func buildPageMetadata(r *http.Request) (audit.PageMetadata, error) {
 	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
@@ -107,11 +131,6 @@ func buildPageMetadata(r *http.Request) (audit.PageMetadata, error) {
 	}
 
 	operation, err := apiutil.ReadStringQuery(r, operationKey, "")
-	if err != nil {
-		return audit.PageMetadata{}, err
-	}
-
-	groupID, err := apiutil.ReadStringQuery(r, groupIDKey, "")
 	if err != nil {
 		return audit.PageMetadata{}, err
 	}
@@ -138,7 +157,6 @@ func buildPageMetadata(r *http.Request) (audit.PageMetadata, error) {
 		Dir:       base.Dir,
 		Email:     email,
 		Operation: operation,
-		GroupID:   groupID,
 		Data:      data,
 	}
 

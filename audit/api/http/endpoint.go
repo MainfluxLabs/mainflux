@@ -42,6 +42,22 @@ func listEventsByOrgEndpoint(svc audit.Service) endpoint.Endpoint {
 	}
 }
 
+func listEventsByGroupEndpoint(svc audit.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(listEventsByGroupReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		page, err := svc.ListEventsByGroup(ctx, req.token, req.groupID, req.pageMetadata)
+		if err != nil {
+			return nil, err
+		}
+
+		return buildEventsResponse(page, req.pageMetadata), nil
+	}
+}
+
 func buildEventsResponse(ep audit.EventsPage, pm audit.PageMetadata) eventsPageRes {
 	res := eventsPageRes{
 		pageRes: pageRes{

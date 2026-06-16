@@ -48,6 +48,15 @@ func (mm *metricsMiddleware) ListEventsByOrg(ctx context.Context, token string, 
 	return mm.svc.ListEventsByOrg(ctx, token, orgID, pm)
 }
 
+func (mm *metricsMiddleware) ListEventsByGroup(ctx context.Context, token string, groupID string, pm audit.PageMetadata) (audit.EventsPage, error) {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "list_events_by_group").Add(1)
+		mm.latency.With("method", "list_events_by_group").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.ListEventsByGroup(ctx, token, groupID, pm)
+}
+
 func (mm *metricsMiddleware) ListEvents(ctx context.Context, token string, pm audit.PageMetadata) (audit.EventsPage, error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "list_events").Add(1)

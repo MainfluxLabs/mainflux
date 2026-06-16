@@ -52,21 +52,26 @@ func (r *eventRepository) SaveEvent(ctx context.Context, e audit.Event) error {
 }
 
 func (r *eventRepository) RetrieveEvents(ctx context.Context, pm audit.PageMetadata) (audit.EventsPage, error) {
-	return r.retrieve(ctx, "", pm)
+	return r.retrieve(ctx, "", "", pm)
 }
 
 func (r *eventRepository) RetrieveEventsByOrg(ctx context.Context, orgID string, pm audit.PageMetadata) (audit.EventsPage, error) {
-	return r.retrieve(ctx, orgID, pm)
+	return r.retrieve(ctx, orgID, "", pm)
 }
 
-// retrieve lists events, optionally constrained to a single organization. An empty
-// orgID omits the organization filter, returning events across all organizations
-// (including those not tied to any organization).
-func (r *eventRepository) retrieve(ctx context.Context, orgID string, pm audit.PageMetadata) (audit.EventsPage, error) {
+func (r *eventRepository) RetrieveEventsByGroup(ctx context.Context, groupID string, pm audit.PageMetadata) (audit.EventsPage, error) {
+	return r.retrieve(ctx, "", groupID, pm)
+}
+
+// retrieve lists events, optionally constrained to a single organization and/or group.
+// An empty orgID omits the organization filter and an empty groupID omits the group
+// filter, returning events across all organizations and groups (including those not
+// tied to any organization or group).
+func (r *eventRepository) retrieve(ctx context.Context, orgID, groupID string, pm audit.PageMetadata) (audit.EventsPage, error) {
 	emailQ, emailVal := emailQuery(pm.Email)
 	opQ, opVal := operationQuery(pm.Operation)
 	orgQ, orgVal := orgQuery(orgID)
-	groupQ, groupVal := groupQuery(pm.GroupID)
+	groupQ, groupVal := groupQuery(groupID)
 	fromQ, fromVal := occurredFromQuery(pm.From)
 	toQ, toVal := occurredToQuery(pm.To)
 
