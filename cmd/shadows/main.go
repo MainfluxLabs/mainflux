@@ -22,15 +22,21 @@ import (
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/shadows"
+	"github.com/MainfluxLabs/mainflux/shadows/api"
 	httpapi "github.com/MainfluxLabs/mainflux/shadows/api/http"
+	"github.com/MainfluxLabs/mainflux/shadows/events"
 	"github.com/MainfluxLabs/mainflux/shadows/postgres"
+	"github.com/MainfluxLabs/mainflux/shadows/tracing"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
+	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
+	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -59,6 +65,7 @@ const (
 	defAuthGRPCURL       = "localhost:8181"
 	defAuthGRPCTimeout   = "1s"
 	defBrokerURL         = "nats://localhost:4222"
+	defESURL             = "redis://localhost:6379/0"
 
 	envLogLevel          = "MF_SHADOWS_LOG_LEVEL"
 	envDBHost            = "MF_SHADOWS_DB_HOST"
@@ -81,6 +88,7 @@ const (
 	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
 	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envBrokerURL         = "MF_BROKER_URL"
+	envESURL             = "MF_SHADOWS_ES_URL"
 )
 
 type config struct {
@@ -93,6 +101,7 @@ type config struct {
 	thingsGRPCTimeout time.Duration
 	authGRPCTimeout   time.Duration
 	brokerURL         string
+	esURL             string
 }
 
 func main() {
@@ -124,6 +133,9 @@ func main() {
 
 	auth := authapi.NewClient(authConn, authTracer, cfg.authGRPCTimeout)
 
+	dbTracer, dbCloser := jaeger.Init("shadows_db", cfg.jaegerURL, logger)
+	defer dbCloser.Close()
+
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
@@ -137,13 +149,35 @@ func main() {
 	defer pubSub.Close()
 
 	repo := postgres.NewShadowRepository(dbutil.NewDatabase(db))
+	repo = tracing.ShadowRepositoryMiddleware(dbTracer, repo)
+
 	svc := shadows.New(things, repo, pubSub, logger)
+	svc = api.LoggingMiddleware(svc, logger)
+	svc = api.MetricsMiddleware(
+		svc,
+		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: "shadows",
+			Subsystem: "api",
+			Name:      "request_count",
+			Help:      "Number of requests received.",
+		}, []string{"method"}),
+		kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
+			Namespace: "shadows",
+			Subsystem: "api",
+			Name:      "request_latency_microseconds",
+			Help:      "Total duration of requests in microseconds.",
+		}, []string{"method"}),
+	)
 
 	subjects := []string{nats.SubjectMessages, nats.SubjectMessagesWithSubtopic}
 	if err := consumers.Start(svcName, consumers.Messages(pubSub, svc, subjects...)); err != nil {
 		logger.Error(fmt.Sprintf("Failed to subscribe to message broker: %s", err))
 		os.Exit(1)
 	}
+
+	g.Go(func() error {
+		return subscribeToThingsES(ctx, svc, cfg, logger)
+	})
 
 	g.Go(func() error {
 		return servershttp.Start(ctx, httpapi.MakeHandler(shadowsTracer, svc, auth, logger), cfg.httpConfig, logger)
@@ -222,7 +256,27 @@ func loadConfig() config {
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
 		thingsGRPCTimeout: thingsGRPCTimeout,
 		authGRPCTimeout:   authGRPCTimeout,
+		esURL:             mainflux.Env(envESURL, defESURL),
 	}
+}
+
+func subscribeToThingsES(ctx context.Context, svc shadows.Service, cfg config, logger logger.Logger) error {
+	subscriber, err := mfevents.NewSubscriber(mfevents.SubscriberConfig{
+		URL:    cfg.esURL,
+		Stream: mfevents.ThingsStream,
+		Name:   svcName,
+	}, logger)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := subscriber.Close(); err != nil {
+			logger.Error(fmt.Sprintf("Failed to close subscriber: %s", err))
+		}
+	}()
+
+	return subscriber.Subscribe(ctx, events.NewEventHandler(svc))
 }
 
 func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
