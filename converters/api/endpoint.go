@@ -17,9 +17,8 @@ func convertCSVToJSONEndpoint(svc converters.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.PublishJSONMessages(ctx, req.key.Value, req.csvLines); err != nil {
-			return nil, err
-		}
+		// Publish async to avoid blocking past the gateway timeout on large files.
+		go func() { _ = svc.PublishJSONMessages(context.Background(), req.key.Value, req.csvLines) }()
 
 		return nil, nil
 	}
@@ -32,9 +31,8 @@ func convertCSVToSenMLEndpoint(svc converters.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.PublishSenMLMessages(ctx, req.key.Value, req.csvLines); err != nil {
-			return nil, err
-		}
+		// Publish async to avoid blocking past the gateway timeout on large files.
+		go func() { _ = svc.PublishSenMLMessages(context.Background(), req.key.Value, req.csvLines) }()
 
 		return nil, nil
 	}
