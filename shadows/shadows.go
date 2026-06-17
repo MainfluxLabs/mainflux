@@ -9,14 +9,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
-var (
-	// ErrShadowNotFound indicates that a shadow does not exist for the thing.
-	ErrShadowNotFound = errors.New("shadow not found")
-
-	// ErrVersionConflict indicates that the supplied version does not match
-	// the current version of the stored shadow (optimistic locking).
-	ErrVersionConflict = errors.New("shadow version conflict")
-)
+// ErrShadowNotFound indicates that a shadow does not exist for the thing.
+var ErrShadowNotFound = errors.New("shadow not found")
 
 // State is a free-form set of key/value pairs describing device state.
 // A nil value for a key signals that the key should be deleted.
@@ -24,12 +18,12 @@ type State map[string]any
 
 // Shadow is the persisted state document for a single thing. Exactly one
 // shadow exists per thing. Delta is not stored; it is derived from Desired
-// and Reported via ComputeDelta.
+// and Reported via computeDelta and populated by the service on read.
 type Shadow struct {
 	ThingID   string
 	Desired   State
 	Reported  State
-	Metadata  map[string]any
+	Delta     State
 	Version   uint64
 	Timestamp int64
 }

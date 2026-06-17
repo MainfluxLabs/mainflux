@@ -44,7 +44,6 @@ func migrateDB(db *sqlx.DB) error {
 						thing_id   UUID PRIMARY KEY,
 						desired    JSONB  NOT NULL DEFAULT '{}',
 						reported   JSONB  NOT NULL DEFAULT '{}',
-						metadata   JSONB  NOT NULL DEFAULT '{}',
 						version    BIGINT NOT NULL DEFAULT 0,
 						updated_at BIGINT NOT NULL
 					)`,

@@ -32,12 +32,11 @@ func (sr shadowRepository) Upsert(ctx context.Context, shadow shadows.Shadow) (s
 		return shadows.Shadow{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
-	q := `INSERT INTO shadows (thing_id, desired, reported, metadata, version, updated_at)
-	      VALUES (:thing_id, :desired, :reported, :metadata, 1, :updated_at)
+	q := `INSERT INTO shadows (thing_id, desired, reported, version, updated_at)
+	      VALUES (:thing_id, :desired, :reported, 1, :updated_at)
 	      ON CONFLICT (thing_id) DO UPDATE SET
 	          desired    = EXCLUDED.desired,
 	          reported   = EXCLUDED.reported,
-	          metadata   = EXCLUDED.metadata,
 	          version    = shadows.version + 1,
 	          updated_at = EXCLUDED.updated_at
 	      RETURNING version;`
@@ -67,7 +66,7 @@ func (sr shadowRepository) Upsert(ctx context.Context, shadow shadows.Shadow) (s
 }
 
 func (sr shadowRepository) RetrieveByThing(ctx context.Context, thingID string) (shadows.Shadow, error) {
-	q := `SELECT thing_id, desired, reported, metadata, version, updated_at
+	q := `SELECT thing_id, desired, reported, version, updated_at
 	      FROM shadows WHERE thing_id = $1;`
 
 	dbSh := dbShadow{}
@@ -91,7 +90,7 @@ func (sr shadowRepository) Remove(ctx context.Context, thingID string) error {
 }
 
 func (sr shadowRepository) RetrieveAll(ctx context.Context) ([]shadows.Shadow, error) {
-	q := `SELECT thing_id, desired, reported, metadata, version, updated_at FROM shadows;`
+	q := `SELECT thing_id, desired, reported, version, updated_at FROM shadows;`
 
 	var items []dbShadow
 	if err := sr.db.SelectContext(ctx, &items, q); err != nil {
@@ -114,7 +113,6 @@ type dbShadow struct {
 	ThingID   string `db:"thing_id"`
 	Desired   []byte `db:"desired"`
 	Reported  []byte `db:"reported"`
-	Metadata  []byte `db:"metadata"`
 	Version   uint64 `db:"version"`
 	UpdatedAt int64  `db:"updated_at"`
 }
@@ -137,16 +135,10 @@ func toDBShadow(sh shadows.Shadow) (dbShadow, error) {
 		return dbShadow{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
 
-	metadata, err := marshalState(sh.Metadata)
-	if err != nil {
-		return dbShadow{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-	}
-
 	return dbShadow{
 		ThingID:   sh.ThingID,
 		Desired:   desired,
 		Reported:  reported,
-		Metadata:  metadata,
 		Version:   sh.Version,
 		UpdatedAt: sh.Timestamp,
 	}, nil
@@ -163,16 +155,10 @@ func toShadow(dbSh dbShadow) (shadows.Shadow, error) {
 		return shadows.Shadow{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
 
-	var metadata map[string]any
-	if err := json.Unmarshal(dbSh.Metadata, &metadata); err != nil {
-		return shadows.Shadow{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-	}
-
 	return shadows.Shadow{
 		ThingID:   dbSh.ThingID,
 		Desired:   desired,
 		Reported:  reported,
-		Metadata:  metadata,
 		Version:   dbSh.Version,
 		Timestamp: dbSh.UpdatedAt,
 	}, nil
