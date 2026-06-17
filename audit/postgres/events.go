@@ -52,25 +52,72 @@ func (r *eventRepository) SaveEvent(ctx context.Context, e audit.Event) error {
 }
 
 func (r *eventRepository) RetrieveEvents(ctx context.Context, pm audit.PageMetadata) (audit.EventsPage, error) {
-	return r.retrieve(ctx, "", "", pm)
+	emailQ, emailVal := emailQuery(pm.Email)
+	opQ, opVal := operationQuery(pm.Operation)
+	fromQ, fromVal := occurredFromQuery(pm.From)
+	toQ, toVal := occurredToQuery(pm.To)
+
+	dataQ, dataVal, err := dataQuery(pm.Data)
+	if err != nil {
+		return audit.EventsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	whereClause := dbutil.BuildWhereClause(emailQ, opQ, fromQ, toQ, dataQ)
+	query := fmt.Sprintf(
+		`SELECT id, occurred_at, operation, actor_user_id, actor_user_email, org_id, group_id, data FROM events %s ORDER BY %s %s %s`,
+		whereClause, dbutil.GetOrderQuery(pm.Order), dbutil.GetDirQuery(pm.Dir), dbutil.GetOffsetLimitQuery(pm.Limit),
+	)
+	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM events %s`, whereClause)
+
+	params := map[string]any{
+		"email":     emailVal,
+		"operation": opVal,
+		"from":      fromVal,
+		"to":        toVal,
+		"data":      dataVal,
+		"limit":     pm.Limit,
+		"offset":    pm.Offset,
+	}
+
+	return r.retrieve(ctx, query, cquery, params)
 }
 
 func (r *eventRepository) RetrieveEventsByOrg(ctx context.Context, orgID string, pm audit.PageMetadata) (audit.EventsPage, error) {
-	return r.retrieve(ctx, orgID, "", pm)
-}
-
-func (r *eventRepository) RetrieveEventsByGroup(ctx context.Context, groupID string, pm audit.PageMetadata) (audit.EventsPage, error) {
-	return r.retrieve(ctx, "", groupID, pm)
-}
-
-// retrieve lists events, optionally constrained to a single organization and/or group.
-// An empty orgID omits the organization filter and an empty groupID omits the group
-// filter, returning events across all organizations and groups (including those not
-// tied to any organization or group).
-func (r *eventRepository) retrieve(ctx context.Context, orgID, groupID string, pm audit.PageMetadata) (audit.EventsPage, error) {
 	emailQ, emailVal := emailQuery(pm.Email)
 	opQ, opVal := operationQuery(pm.Operation)
 	orgQ, orgVal := orgQuery(orgID)
+	fromQ, fromVal := occurredFromQuery(pm.From)
+	toQ, toVal := occurredToQuery(pm.To)
+
+	dataQ, dataVal, err := dataQuery(pm.Data)
+	if err != nil {
+		return audit.EventsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	whereClause := dbutil.BuildWhereClause(emailQ, opQ, orgQ, fromQ, toQ, dataQ)
+	query := fmt.Sprintf(
+		`SELECT id, occurred_at, operation, actor_user_id, actor_user_email, org_id, group_id, data FROM events %s ORDER BY %s %s %s`,
+		whereClause, dbutil.GetOrderQuery(pm.Order), dbutil.GetDirQuery(pm.Dir), dbutil.GetOffsetLimitQuery(pm.Limit),
+	)
+	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM events %s`, whereClause)
+
+	params := map[string]any{
+		"email":     emailVal,
+		"operation": opVal,
+		"org_id":    orgVal,
+		"from":      fromVal,
+		"to":        toVal,
+		"data":      dataVal,
+		"limit":     pm.Limit,
+		"offset":    pm.Offset,
+	}
+
+	return r.retrieve(ctx, query, cquery, params)
+}
+
+func (r *eventRepository) RetrieveEventsByGroup(ctx context.Context, groupID string, pm audit.PageMetadata) (audit.EventsPage, error) {
+	emailQ, emailVal := emailQuery(pm.Email)
+	opQ, opVal := operationQuery(pm.Operation)
 	groupQ, groupVal := groupQuery(groupID)
 	fromQ, fromVal := occurredFromQuery(pm.From)
 	toQ, toVal := occurredToQuery(pm.To)
@@ -80,21 +127,16 @@ func (r *eventRepository) retrieve(ctx context.Context, orgID, groupID string, p
 		return audit.EventsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
-	whereClause := dbutil.BuildWhereClause(emailQ, opQ, orgQ, groupQ, fromQ, toQ, dataQ)
-	order := dbutil.GetOrderQuery(pm.Order)
-	dir := dbutil.GetDirQuery(pm.Dir)
-	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-
+	whereClause := dbutil.BuildWhereClause(emailQ, opQ, groupQ, fromQ, toQ, dataQ)
 	query := fmt.Sprintf(
 		`SELECT id, occurred_at, operation, actor_user_id, actor_user_email, org_id, group_id, data FROM events %s ORDER BY %s %s %s`,
-		whereClause, order, dir, olq,
+		whereClause, dbutil.GetOrderQuery(pm.Order), dbutil.GetDirQuery(pm.Dir), dbutil.GetOffsetLimitQuery(pm.Limit),
 	)
-	queryCount := fmt.Sprintf(`SELECT COUNT(*) FROM events %s`, whereClause)
+	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM events %s`, whereClause)
 
 	params := map[string]any{
 		"email":     emailVal,
 		"operation": opVal,
-		"org_id":    orgVal,
 		"group_id":  groupVal,
 		"from":      fromVal,
 		"to":        toVal,
@@ -103,6 +145,10 @@ func (r *eventRepository) retrieve(ctx context.Context, orgID, groupID string, p
 		"offset":    pm.Offset,
 	}
 
+	return r.retrieve(ctx, query, cquery, params)
+}
+
+func (r *eventRepository) retrieve(ctx context.Context, query, cquery string, params map[string]any) (audit.EventsPage, error) {
 	rows, err := r.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return audit.EventsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
@@ -122,7 +168,7 @@ func (r *eventRepository) retrieve(ctx context.Context, orgID, groupID string, p
 		items = append(items, ev)
 	}
 
-	total, err := dbutil.Total(ctx, r.db, queryCount, params)
+	total, err := dbutil.Total(ctx, r.db, cquery, params)
 	if err != nil {
 		return audit.EventsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
