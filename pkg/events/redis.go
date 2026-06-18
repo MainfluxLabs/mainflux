@@ -40,8 +40,8 @@ const (
 
 	occurredAt = "occurred_at"
 
-	evOrgID   = "e_org_id"
-	evGroupID = "e_group_id"
+	evtOrgID   = "evt_org_id"
+	evtGroupID = "evt_group_id"
 
 	// Redis event streams
 	ThingsStream = mainfluxPrefix + "things"

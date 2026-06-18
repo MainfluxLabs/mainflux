@@ -48,8 +48,8 @@ func (e Event) Encode() redisEvent {
 		re[occurredAt] = e.OccurredAt.UTC().Format(time.RFC3339Nano)
 	}
 
-	re[evOrgID] = e.OrgID
-	re[evGroupID] = e.GroupID
+	re[evtOrgID] = e.OrgID
+	re[evtGroupID] = e.GroupID
 
 	return re
 }
@@ -89,8 +89,8 @@ func decodeEvent(re redisEvent) (Event, error) {
 		Action:          action,
 		JWTUserIdentity: re.jwtUserIdentity(),
 		OccurredAt:      re.occurredAt(),
-		OrgID:           re.field(evOrgID, ""),
-		GroupID:         re.field(evGroupID, ""),
+		OrgID:           re.field(evtOrgID, ""),
+		GroupID:         re.field(evtGroupID, ""),
 	}, nil
 }
 
