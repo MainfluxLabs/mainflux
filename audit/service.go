@@ -38,16 +38,16 @@ type EventsPage struct {
 }
 
 type PageMetadata struct {
-	Total     uint64         `json:"total,omitempty"`
-	Offset    uint64         `json:"offset,omitempty"`
-	Limit     uint64         `json:"limit,omitempty"`
-	Order     string         `json:"order,omitempty"`
-	Dir       string         `json:"dir,omitempty"`
-	Email     string         `json:"email,omitempty"`
-	Operation string         `json:"operation,omitempty"`
-	Data      map[string]any `json:"data,omitempty"`
-	From      time.Time      `json:"from,omitzero"`
-	To        time.Time      `json:"to,omitzero"`
+	Total      uint64         `json:"total,omitempty"`
+	Offset     uint64         `json:"offset,omitempty"`
+	Limit      uint64         `json:"limit,omitempty"`
+	Order      string         `json:"order,omitempty"`
+	Dir        string         `json:"dir,omitempty"`
+	Email      string         `json:"email,omitempty"`
+	Operation  string         `json:"operation,omitempty"`
+	ActionData map[string]any `json:"action_data,omitempty"`
+	From       time.Time      `json:"from,omitzero"`
+	To         time.Time      `json:"to,omitzero"`
 }
 
 func (pm PageMetadata) Validate(maxLimitSize int) error {

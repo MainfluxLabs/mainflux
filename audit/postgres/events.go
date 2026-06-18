@@ -57,7 +57,7 @@ func (r *eventRepository) RetrieveEvents(ctx context.Context, pm audit.PageMetad
 	fromQ, fromVal := occurredFromQuery(pm.From)
 	toQ, toVal := occurredToQuery(pm.To)
 
-	dataQ, dataVal, err := dataQuery(pm.Data)
+	dataQ, dataVal, err := dataQuery(pm.ActionData)
 	if err != nil {
 		return audit.EventsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
@@ -89,7 +89,7 @@ func (r *eventRepository) RetrieveEventsByOrg(ctx context.Context, orgID string,
 	fromQ, fromVal := occurredFromQuery(pm.From)
 	toQ, toVal := occurredToQuery(pm.To)
 
-	dataQ, dataVal, err := dataQuery(pm.Data)
+	dataQ, dataVal, err := dataQuery(pm.ActionData)
 	if err != nil {
 		return audit.EventsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
@@ -122,7 +122,7 @@ func (r *eventRepository) RetrieveEventsByGroup(ctx context.Context, groupID str
 	fromQ, fromVal := occurredFromQuery(pm.From)
 	toQ, toVal := occurredToQuery(pm.To)
 
-	dataQ, dataVal, err := dataQuery(pm.Data)
+	dataQ, dataVal, err := dataQuery(pm.ActionData)
 	if err != nil {
 		return audit.EventsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
