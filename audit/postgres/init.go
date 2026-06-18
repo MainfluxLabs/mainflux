@@ -51,15 +51,15 @@ func migrateDB(db *sqlx.DB) error {
 						actor_email      VARCHAR(254),
 						org_id           UUID,
 						group_id         UUID,
-						data             JSONB NOT NULL DEFAULT '{}'::jsonb
+						action_data      JSONB NOT NULL DEFAULT '{}'::jsonb
 					)`,
 					`CREATE INDEX IF NOT EXISTS events_occurred_at_idx ON events (occurred_at DESC)`,
 					`CREATE INDEX IF NOT EXISTS events_actor_occurred_idx ON events (actor_id, occurred_at DESC)`,
 					`CREATE INDEX IF NOT EXISTS events_op_occurred_idx ON events (operation, occurred_at DESC)`,
-					`CREATE INDEX IF NOT EXISTS events_data_gin ON events USING GIN (data)`,
+					`CREATE INDEX IF NOT EXISTS events_action_data_gin ON events USING GIN (action_data)`,
 				},
 				Down: []string{
-					`DROP INDEX IF EXISTS events_data_gin`,
+					`DROP INDEX IF EXISTS events_action_data_gin`,
 					`DROP INDEX IF EXISTS events_op_occurred_idx`,
 					`DROP INDEX IF EXISTS events_actor_occurred_idx`,
 					`DROP INDEX IF EXISTS events_occurred_at_idx`,

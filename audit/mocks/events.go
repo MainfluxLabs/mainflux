@@ -73,7 +73,7 @@ func (m *eventRepositoryMock) retrieve(orgID, groupID string, pm audit.PageMetad
 		if !pm.To.IsZero() && e.OccurredAt.After(pm.To) {
 			continue
 		}
-		if !containsJSON(e.Data, pm.Data) {
+		if !containsJSON(e.ActionData, pm.Data) {
 			continue
 		}
 		matched = append(matched, e)

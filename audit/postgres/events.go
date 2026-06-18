@@ -29,8 +29,8 @@ func NewEventRepository(db dbutil.Database) audit.EventRepository {
 }
 
 func (r *eventRepository) SaveEvent(ctx context.Context, e audit.Event) error {
-	query := `INSERT INTO events (id, occurred_at, operation, actor_id, actor_email, org_id, group_id, data)
-	      VALUES (:id, :occurred_at, :operation, :actor_id, :actor_email, :org_id, :group_id, :data)`
+	query := `INSERT INTO events (id, occurred_at, operation, actor_id, actor_email, org_id, group_id, action_data)
+	      VALUES (:id, :occurred_at, :operation, :actor_id, :actor_email, :org_id, :group_id, :action_data)`
 
 	dbe, err := toDBEvent(e)
 	if err != nil {
@@ -64,19 +64,19 @@ func (r *eventRepository) RetrieveEvents(ctx context.Context, pm audit.PageMetad
 
 	whereClause := dbutil.BuildWhereClause(emailQ, opQ, fromQ, toQ, dataQ)
 	query := fmt.Sprintf(
-		`SELECT id, occurred_at, operation, actor_id, actor_email, org_id, group_id, data FROM events %s ORDER BY %s %s %s`,
+		`SELECT id, occurred_at, operation, actor_id, actor_email, org_id, group_id, action_data FROM events %s ORDER BY %s %s %s`,
 		whereClause, dbutil.GetOrderQuery(pm.Order), dbutil.GetDirQuery(pm.Dir), dbutil.GetOffsetLimitQuery(pm.Limit),
 	)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM events %s`, whereClause)
 
 	params := map[string]any{
-		"email":     emailVal,
-		"operation": opVal,
-		"from":      fromVal,
-		"to":        toVal,
-		"data":      dataVal,
-		"limit":     pm.Limit,
-		"offset":    pm.Offset,
+		"email":       emailVal,
+		"operation":   opVal,
+		"from":        fromVal,
+		"to":          toVal,
+		"action_data": dataVal,
+		"limit":       pm.Limit,
+		"offset":      pm.Offset,
 	}
 
 	return r.retrieve(ctx, query, cquery, params)
@@ -96,20 +96,20 @@ func (r *eventRepository) RetrieveEventsByOrg(ctx context.Context, orgID string,
 
 	whereClause := dbutil.BuildWhereClause(emailQ, opQ, orgQ, fromQ, toQ, dataQ)
 	query := fmt.Sprintf(
-		`SELECT id, occurred_at, operation, actor_id, actor_email, org_id, group_id, data FROM events %s ORDER BY %s %s %s`,
+		`SELECT id, occurred_at, operation, actor_id, actor_email, org_id, group_id, action_data FROM events %s ORDER BY %s %s %s`,
 		whereClause, dbutil.GetOrderQuery(pm.Order), dbutil.GetDirQuery(pm.Dir), dbutil.GetOffsetLimitQuery(pm.Limit),
 	)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM events %s`, whereClause)
 
 	params := map[string]any{
-		"email":     emailVal,
-		"operation": opVal,
-		"org_id":    orgVal,
-		"from":      fromVal,
-		"to":        toVal,
-		"data":      dataVal,
-		"limit":     pm.Limit,
-		"offset":    pm.Offset,
+		"email":       emailVal,
+		"operation":   opVal,
+		"org_id":      orgVal,
+		"from":        fromVal,
+		"to":          toVal,
+		"action_data": dataVal,
+		"limit":       pm.Limit,
+		"offset":      pm.Offset,
 	}
 
 	return r.retrieve(ctx, query, cquery, params)
@@ -129,20 +129,20 @@ func (r *eventRepository) RetrieveEventsByGroup(ctx context.Context, groupID str
 
 	whereClause := dbutil.BuildWhereClause(emailQ, opQ, groupQ, fromQ, toQ, dataQ)
 	query := fmt.Sprintf(
-		`SELECT id, occurred_at, operation, actor_id, actor_email, org_id, group_id, data FROM events %s ORDER BY %s %s %s`,
+		`SELECT id, occurred_at, operation, actor_id, actor_email, org_id, group_id, action_data FROM events %s ORDER BY %s %s %s`,
 		whereClause, dbutil.GetOrderQuery(pm.Order), dbutil.GetDirQuery(pm.Dir), dbutil.GetOffsetLimitQuery(pm.Limit),
 	)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM events %s`, whereClause)
 
 	params := map[string]any{
-		"email":     emailVal,
-		"operation": opVal,
-		"group_id":  groupVal,
-		"from":      fromVal,
-		"to":        toVal,
-		"data":      dataVal,
-		"limit":     pm.Limit,
-		"offset":    pm.Offset,
+		"email":       emailVal,
+		"operation":   opVal,
+		"group_id":    groupVal,
+		"from":        fromVal,
+		"to":          toVal,
+		"action_data": dataVal,
+		"limit":       pm.Limit,
+		"offset":      pm.Offset,
 	}
 
 	return r.retrieve(ctx, query, cquery, params)
@@ -229,7 +229,7 @@ func dataQuery(m map[string]any) (string, []byte, error) {
 	if err != nil {
 		return "", nil, err
 	}
-	return "data @> :data", b, nil
+	return "action_data @> :action_data", b, nil
 }
 
 type dbEvent struct {
@@ -240,13 +240,13 @@ type dbEvent struct {
 	ActorEmail sql.NullString `db:"actor_email"`
 	OrgID      sql.NullString `db:"org_id"`
 	GroupID    sql.NullString `db:"group_id"`
-	Data       []byte         `db:"data"`
+	ActionData []byte         `db:"action_data"`
 }
 
 func toDBEvent(e audit.Event) (dbEvent, error) {
 	var data []byte
-	if e.Data != nil {
-		b, err := json.Marshal(e.Data)
+	if e.ActionData != nil {
+		b, err := json.Marshal(e.ActionData)
 		if err != nil {
 			return dbEvent{}, err
 		}
@@ -263,14 +263,14 @@ func toDBEvent(e audit.Event) (dbEvent, error) {
 		ActorEmail: nullableString(e.Actor.Email),
 		OrgID:      nullableString(e.OrgID),
 		GroupID:    nullableString(e.GroupID),
-		Data:       data,
+		ActionData: data,
 	}, nil
 }
 
 func toEvent(d dbEvent) (audit.Event, error) {
 	var data map[string]any
-	if len(d.Data) > 0 {
-		if err := json.Unmarshal(d.Data, &data); err != nil {
+	if len(d.ActionData) > 0 {
+		if err := json.Unmarshal(d.ActionData, &data); err != nil {
 			return audit.Event{}, err
 		}
 	}
@@ -283,9 +283,9 @@ func toEvent(d dbEvent) (audit.Event, error) {
 			ID:    d.ActorID.String,
 			Email: d.ActorEmail.String,
 		},
-		OrgID:   d.OrgID.String,
-		GroupID: d.GroupID.String,
-		Data:    data,
+		OrgID:      d.OrgID.String,
+		GroupID:    d.GroupID.String,
+		ActionData: data,
 	}, nil
 }
 

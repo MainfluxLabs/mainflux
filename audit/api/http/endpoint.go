@@ -78,7 +78,7 @@ func buildEventsResponse(ep audit.EventsPage, pm audit.PageMetadata) eventsPageR
 			Actor:      e.Actor,
 			OrgID:      e.OrgID,
 			GroupID:    e.GroupID,
-			Data:       e.Data,
+			Data:       e.ActionData,
 		})
 	}
 

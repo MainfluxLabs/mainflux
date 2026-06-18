@@ -29,7 +29,7 @@ type Event struct {
 	Actor      domain.Identity
 	OrgID      string
 	GroupID    string
-	Data       map[string]any
+	ActionData map[string]any
 }
 
 type EventsPage struct {
@@ -123,7 +123,7 @@ func (s *auditService) RecordEvent(ctx context.Context, e events.Event) error {
 		Actor:      e.JWTUserIdentity,
 		OrgID:      e.OrgID,
 		GroupID:    e.GroupID,
-		Data:       e.Action.Encode(),
+		ActionData: e.Action.Encode(),
 	})
 }
 
