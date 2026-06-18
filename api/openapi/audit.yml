@@ -21,7 +21,7 @@ paths:
         - $ref: "#/components/parameters/Dir"
         - $ref: "#/components/parameters/Email"
         - $ref: "#/components/parameters/Operation"
-        - $ref: "#/components/parameters/Data"
+        - $ref: "#/components/parameters/ActionData"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
       responses:
@@ -55,7 +55,7 @@ paths:
         - $ref: "#/components/parameters/Dir"
         - $ref: "#/components/parameters/Email"
         - $ref: "#/components/parameters/Operation"
-        - $ref: "#/components/parameters/Data"
+        - $ref: "#/components/parameters/ActionData"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
       responses:
@@ -91,7 +91,7 @@ paths:
         - $ref: "#/components/parameters/Dir"
         - $ref: "#/components/parameters/Email"
         - $ref: "#/components/parameters/Operation"
-        - $ref: "#/components/parameters/Data"
+        - $ref: "#/components/parameters/ActionData"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
       responses:
@@ -150,11 +150,11 @@ components:
           type: string
           format: uuid
           description: Group the event belongs to. Absent for events not tied to any group.
-        data:
+        action_data:
           type: object
           additionalProperties: {}
           description: Operation-specific payload describing the event. Always present.
-      required: [id, occurred_at, operation, actor, data]
+      required: [id, occurred_at, operation, actor, action_data]
 
     EventsPageRes:
       type: object
@@ -246,13 +246,13 @@ components:
       schema:
         type: string
         format: uuid
-    Data:
-      name: data
+    ActionData:
+      name: action_data
       in: query
       required: false
       description: >-
-        Filter events by the contents of their data payload. The value is a
-        URL-encoded JSON object; events whose data contains all of the supplied
+        Filter events by the contents of their action_data payload. The value is a
+        URL-encoded JSON object; events whose action_data contains all of the supplied
         key/value pairs (JSONB containment) are returned.
       schema:
         type: object
@@ -297,7 +297,7 @@ components:
                       email: "user@example.com"
                     org_id: "374106f7-030e-4881-8ab0-151195c29f92"
                     group_id: "211e4567-e89b-12d3-a456-426614174000"
-                    data:
+                    action_data:
                       id: "111e4567-e89b-12d3-a456-426614174000"
                       name: "sensor-1"
                       profile_id: "311e4567-e89b-12d3-a456-426614174000"
@@ -308,7 +308,7 @@ components:
                       id: "674106f7-030e-4881-8ab0-151195c29f95"
                       email: "owner@example.com"
                     org_id: "374106f7-030e-4881-8ab0-151195c29f92"
-                    data:
+                    action_data:
                       id: "374106f7-030e-4881-8ab0-151195c29f92"
     ServiceError:
       description: Unexpected server-side error occurred.
