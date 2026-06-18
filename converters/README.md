@@ -1,6 +1,6 @@
 # Converters Service
 
-The Converters service accepts CSV file uploads and publishes the parsed rows as SenML or JSON messages to the platform on behalf of a thing. It is designed for bulk historical data ingestion — common in migration scenarios or periodic batch uploads from data-logging devices.
+The Converters service accepts CSV and JSON file uploads and publishes the parsed records as SenML or JSON messages to the platform on behalf of a thing. It is designed for bulk historical data ingestion —  common in migration scenarios or periodic batch uploads from data-logging devices.
 
 The service authenticates the request using the thing's internal key and publishes messages to NATS using the same subject scheme as live messages, so the data flows through the normal consumer pipeline.
 
@@ -25,6 +25,46 @@ Each data row produces one SenML record per measurement column with fields `n` (
 | Data rows | Values are parsed as floating-point numbers where possible; otherwise kept as strings.                                                 |
 
 Each data row produces one JSON object keyed by column name.
+
+## JSON Formats
+
+### SenML (`POST /json/senml`)
+
+Input is a JSON array of objects. Each object must contain a `t` key (Unix timestamp as a floating-point number) and one or more measurement keys with numeric values.
+
+| Key | Type    | Description                             |
+|-----|---------|-----------------------------------------|
+| `t` | float64 | Unix timestamp                          |
+| `*` | float64 | Measurement name → floating-point value |
+
+Each object produces one SenML record per measurement key with fields `n` (name), `v` (value), and `t` (timestamp).
+
+Example file (`readings.json`):
+
+```json
+[
+  {"t": 1709635200.0, "voltage": 120.1, "current": 1.2},
+  {"t": 1709635260.0, "voltage": 119.8, "current": 1.3}
+]
+```
+
+### JSON (`POST /json/json`)
+
+Input is a JSON array of objects. The key configured as the time field in the thing's profile transformer is parsed as a numeric Unix timestamp and stored as `Created` in the payload. All other keys are included as-is.
+
+| Key             | Type   | Description                                           |
+|-----------------|--------|-------------------------------------------------------|
+| `<time_field>`  | float64 | Becomes `Created` in the published payload           |
+| `*`             | any    | Other fields passed through unchanged                 |
+
+Example file (`events.json`), assuming `time_field` is set to `time` in the profile transformer config:
+
+```json
+[
+  {"time": 1709635200.0, "temperature": 21.5, "humidity": 60, "status": "ok"},
+  {"time": 1709635260.0, "temperature": 22.1, "humidity": 58, "status": "ok"}
+]
+```
 
 ## Configuration
 
@@ -87,6 +127,16 @@ curl -X POST http://localhost/converters/csv/senml \
 curl -X POST http://localhost/converters/csv/json \
   -H "Authorization: Thing <thing_key>" \
   -F "file=@/path/to/data.csv"
+
+# Convert and publish a JSON file as SenML messages
+curl -X POST http://localhost/converters/json/senml \
+  -H "Authorization: Thing <thing_key>" \
+  -F "file=@/path/to/data.json"
+
+# Convert and publish a JSON file as JSON messages
+curl -X POST http://localhost/converters/json/json \
+  -H "Authorization: Thing <thing_key>" \
+  -F "file=@/path/to/data.json"
 ```
 
 For the full HTTP API reference, see the [OpenAPI specification](https://mainfluxlabs.github.io/docs/swagger/).

@@ -6,6 +6,8 @@ package api
 import (
 	"context"
 	"encoding/csv"
+	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 
@@ -53,6 +55,20 @@ func MakeHandler(svc adapter.Service, ac domain.AuthClient, tracer opentracing.T
 		opts...,
 	))
 
+	r.Post("/json/senml", kithttp.NewServer(
+		kitot.TraceServer(tracer, "convert_json_to_senml")(convertJSONToSenMLEndpoint(svc)),
+		decodeConvertJSONFile,
+		encodeResponse,
+		opts...,
+	))
+
+	r.Post("/json/json", kithttp.NewServer(
+		kitot.TraceServer(tracer, "convert_json_to_json")(convertJSONToJSONEndpoint(svc)),
+		decodeConvertJSONFile,
+		encodeResponse,
+		opts...,
+	))
+
 	r.GetFunc("/health", mainflux.Health("converters"))
 	r.Handle("/metrics", promhttp.Handler())
 
@@ -88,6 +104,39 @@ func decodeConvertCSVFile(_ context.Context, r *http.Request) (any, error) {
 	req := convertCSVReq{
 		key:      apiutil.ExtractThingKey(r),
 		csvLines: csvLines,
+	}
+
+	return req, nil
+}
+
+func decodeConvertJSONFile(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), multiPartContentType) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	err := r.ParseMultipartForm(maxMemory)
+	if err != nil {
+		return nil, err
+	}
+
+	file, _, err := r.FormFile(fileKey)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	var records []map[string]any
+	if err := json.Unmarshal(data, &records); err != nil {
+		return nil, err
+	}
+
+	req := convertJSONReq{
+		key:     apiutil.ExtractThingKey(r),
+		records: records,
 	}
 
 	return req, nil

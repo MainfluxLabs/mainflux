@@ -1,8 +1,8 @@
 openapi: 3.0.1
 info:
   title: Mainflux converters service
-  description: HTTP API for converting CSV files into SenML or JSON messages and publishing them to the platform.
-  version: 1.0.0
+  description: HTTP API for converting CSV or JSON files into SenML or JSON messages and publishing them to the platform.
+  version: 1.1.0
 
 paths:
   /csv/senml:
@@ -63,6 +63,68 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
 
+  /json/senml:
+    post:
+      summary: Convert JSON to SenML messages
+      description: |
+        Parses the uploaded JSON file and publishes its records as SenML entries.
+
+        **JSON format:**
+        - A JSON array of objects.
+        - Each object must contain a `t` key with a Unix timestamp as a floating-point number.
+        - All other keys are treated as measurement names; their values must be floating-point numbers.
+
+        Each object produces one SenML record per measurement key with fields `n` (name), `v` (value), and `t` (timestamp).
+
+        Large files are processed in batches of 50,000 records with a 30-second pause between batches.
+      tags:
+        - converters
+      requestBody:
+        $ref: "#/components/requestBodies/ConvertJSONReq"
+      responses:
+        '202':
+          description: JSON accepted and messages published.
+        '400':
+          description: Failed due to malformed JSON or missing/invalid `t` field.
+        '401':
+          description: Missing or invalid Thing key provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '415':
+          description: Missing or invalid content type. Must be multipart/form-data.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /json/json:
+    post:
+      summary: Convert JSON to JSON messages
+      description: |
+        Parses the uploaded JSON file and publishes its records as JSON messages.
+
+        **JSON format:**
+        - A JSON array of objects.
+        - The key configured as the time field in the thing's profile transformer is parsed as a Unix timestamp (float) and stored as `Created` in the payload.
+        - All other keys are included as-is; numeric values remain numbers, strings remain strings.
+
+        Large files are processed in batches of 50,000 records with a 30-second pause between batches.
+      tags:
+        - converters
+      requestBody:
+        $ref: "#/components/requestBodies/ConvertJSONReq"
+      responses:
+        '202':
+          description: JSON accepted and messages published.
+        '400':
+          description: Failed due to malformed JSON or invalid time field value.
+        '401':
+          description: Missing or invalid Thing key provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '415':
+          description: Missing or invalid content type. Must be multipart/form-data.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
 components:
   requestBodies:
     ConvertCSVReq:
@@ -77,6 +139,21 @@ components:
                 type: string
                 format: binary
                 description: CSV file to be converted.
+            required:
+              - file
+
+    ConvertJSONReq:
+      description: JSON file to convert and publish.
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              file:
+                type: string
+                format: binary
+                description: JSON file to be converted.
             required:
               - file
 

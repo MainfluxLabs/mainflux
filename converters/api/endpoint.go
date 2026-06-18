@@ -17,7 +17,37 @@ func convertCSVToJSONEndpoint(svc converters.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.PublishJSONMessages(ctx, req.key.Value, req.csvLines); err != nil {
+		if err := svc.PublishJSONMessagesFromCSV(ctx, req.key.Value, req.csvLines); err != nil {
+			return nil, err
+		}
+
+		return nil, nil
+	}
+}
+
+func convertJSONToSenMLEndpoint(svc converters.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(convertJSONReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.PublishSenMLMessagesFromJSON(ctx, req.key.Value, req.records); err != nil {
+			return nil, err
+		}
+
+		return nil, nil
+	}
+}
+
+func convertJSONToJSONEndpoint(svc converters.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(convertJSONReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.PublishJSONMessagesFromJSON(ctx, req.key.Value, req.records); err != nil {
 			return nil, err
 		}
 
@@ -32,7 +62,7 @@ func convertCSVToSenMLEndpoint(svc converters.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.PublishSenMLMessages(ctx, req.key.Value, req.csvLines); err != nil {
+		if err := svc.PublishSenMLMessagesFromCSV(ctx, req.key.Value, req.csvLines); err != nil {
 			return nil, err
 		}
 

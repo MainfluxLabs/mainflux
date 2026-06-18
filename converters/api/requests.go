@@ -24,3 +24,20 @@ func (req convertCSVReq) validate() error {
 
 	return nil
 }
+
+type convertJSONReq struct {
+	records []map[string]any
+	key     domain.ThingKey
+}
+
+func (req convertJSONReq) validate() error {
+	if req.key.Value == "" {
+		return apiutil.ErrBearerKey
+	}
+
+	if len(req.records) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	return nil
+}
