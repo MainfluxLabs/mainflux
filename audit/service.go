@@ -71,7 +71,7 @@ type EventRepository interface {
 }
 
 type Service interface {
-	// RecordEvent records a single event to the database.
+	// RecordEvent records a single event.
 	RecordEvent(ctx context.Context, e events.Event) error
 
 	// ListEvents retrieves a list of audit events across all organizations.
