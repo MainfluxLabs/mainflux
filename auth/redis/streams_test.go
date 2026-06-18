@@ -101,10 +101,10 @@ func TestCreateOrg(t *testing.T) {
 			token: ownerToken,
 			err:   nil,
 			event: map[string]any{
-				"id":         "123e4567-e89b-12d3-a456-000000000001",
-				"operation":  events.OrgCreate,
-				"e_org_id":   "123e4567-e89b-12d3-a456-000000000001",
-				"e_group_id": "",
+				"id":           "123e4567-e89b-12d3-a456-000000000001",
+				"operation":    events.OrgCreate,
+				"evt_org_id":   "123e4567-e89b-12d3-a456-000000000001",
+				"evt_group_id": "",
 			},
 		},
 		{
@@ -167,10 +167,10 @@ func TestRemoveOrg(t *testing.T) {
 			token: ownerToken,
 			err:   nil,
 			event: map[string]any{
-				"id":         org.ID,
-				"operation":  events.OrgRemove,
-				"e_org_id":   org.ID,
-				"e_group_id": "",
+				"id":           org.ID,
+				"operation":    events.OrgRemove,
+				"evt_org_id":   org.ID,
+				"evt_group_id": "",
 			},
 		},
 		{
