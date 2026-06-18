@@ -28,7 +28,7 @@ type eventRes struct {
 	Actor      domain.Identity `json:"actor"`
 	OrgID      string          `json:"org_id,omitempty"`
 	GroupID    string          `json:"group_id,omitempty"`
-	Data       map[string]any  `json:"data,omitempty"`
+	ActionData map[string]any  `json:"action_data,omitempty"`
 }
 
 type eventsPageRes struct {
