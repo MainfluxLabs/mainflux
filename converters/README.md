@@ -1,6 +1,6 @@
 # Converters Service
 
-The Converters service accepts CSV and JSON file uploads and publishes the parsed records as SenML or JSON messages to the platform on behalf of a thing. It is designed for bulk historical data ingestion —  common in migration scenarios or periodic batch uploads from data-logging devices.
+The Converters service accepts CSV and JSON file uploads and publishes the parsed records as SenML or JSON messages to the platform on behalf of a thing. It is designed for bulk historical data ingestion — common in migration scenarios or periodic batch uploads from data-logging devices.
 
 The service authenticates the request using the thing's internal key and publishes messages to NATS using the same subject scheme as live messages, so the data flows through the normal consumer pipeline.
 

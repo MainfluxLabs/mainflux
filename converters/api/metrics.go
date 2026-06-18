@@ -30,24 +30,6 @@ func MetricsMiddleware(svc converters.Service, counter metrics.Counter, latency 
 	}
 }
 
-func (mm *metricsMiddleware) PublishSenMLMessagesFromJSON(ctx context.Context, token string, records []map[string]any) (err error) {
-	defer func(begin time.Time) {
-		mm.counter.With("method", "publish_senml_messages_from_json").Add(1)
-		mm.latency.With("method", "publish_senml_messages_from_json").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return mm.svc.PublishSenMLMessagesFromJSON(ctx, token, records)
-}
-
-func (mm *metricsMiddleware) PublishJSONMessagesFromJSON(ctx context.Context, token string, records []map[string]any) (err error) {
-	defer func(begin time.Time) {
-		mm.counter.With("method", "publish_json_messages_from_json").Add(1)
-		mm.latency.With("method", "publish_json_messages_from_json").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return mm.svc.PublishJSONMessagesFromJSON(ctx, token, records)
-}
-
 func (mm *metricsMiddleware) PublishJSONMessagesFromCSV(ctx context.Context, token string, csvLines [][]string) (err error) {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "publish_json_messages_from_csv").Add(1)
@@ -64,4 +46,22 @@ func (mm *metricsMiddleware) PublishSenMLMessagesFromCSV(ctx context.Context, to
 	}(time.Now())
 
 	return mm.svc.PublishSenMLMessagesFromCSV(ctx, token, csvLines)
+}
+
+func (mm *metricsMiddleware) PublishJSONMessagesFromJSON(ctx context.Context, token string, records []map[string]any) (err error) {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "publish_json_messages_from_json").Add(1)
+		mm.latency.With("method", "publish_json_messages_from_json").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.PublishJSONMessagesFromJSON(ctx, token, records)
+}
+
+func (mm *metricsMiddleware) PublishSenMLMessagesFromJSON(ctx context.Context, token string, records []map[string]any) (err error) {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "publish_senml_messages_from_json").Add(1)
+		mm.latency.With("method", "publish_senml_messages_from_json").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.PublishSenMLMessagesFromJSON(ctx, token, records)
 }

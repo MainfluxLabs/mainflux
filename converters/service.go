@@ -258,7 +258,6 @@ func (as *adapterService) PublishJSONMessagesFromJSON(ctx context.Context, key s
 	counter := 0
 	msgs := []map[string]any{}
 	for i, inputRecord := range records {
-		// Auto-unwrap reader-exported Format A: {"payload":{...},"created":...,...}
 		source := inputRecord
 		var outerTimestamp float64
 		if pld, ok := inputRecord["payload"].(map[string]any); ok {

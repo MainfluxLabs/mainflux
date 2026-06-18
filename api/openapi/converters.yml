@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: Mainflux converters service
   description: HTTP API for converting CSV or JSON files into SenML or JSON messages and publishing them to the platform.
-  version: 1.1.0
+  version: 1.0.0
 
 paths:
   /csv/senml:

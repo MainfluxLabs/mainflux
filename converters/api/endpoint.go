@@ -19,6 +19,7 @@ func convertCSVToJSONEndpoint(svc converters.Service) endpoint.Endpoint {
 
 		// Publish async to avoid blocking past the gateway timeout on large files.
 		go func() { _ = svc.PublishJSONMessagesFromCSV(context.Background(), req.key.Value, req.csvLines) }()
+
 		return nil, nil
 	}
 }
