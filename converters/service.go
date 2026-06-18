@@ -18,6 +18,9 @@ import (
 
 const (
 	protocol = "http"
+
+	maxBatchBytes = 1 << 20 // 1MB
+	batchDelay    = 1 * time.Second
 )
 
 // ErrInvalidTimeField represents an invalid timestamp.
@@ -60,9 +63,9 @@ func (as *adapterService) PublishSenMLMessagesFromCSV(ctx context.Context, key s
 		Protocol: protocol,
 		Created:  time.Now().UnixNano(),
 	}
-	counter := 0
 	keys := csvLines[0][1:]
 	msgs := []map[string]any{}
+	size := 0
 	for i := 1; i < len(csvLines); i++ {
 		t, err := strconv.ParseFloat(csvLines[i][0], 64)
 		if err != nil {
@@ -73,9 +76,14 @@ func (as *adapterService) PublishSenMLMessagesFromCSV(ctx context.Context, key s
 			if err != nil {
 				return err
 			}
-			msgs = append(msgs, map[string]any{"n": n, "v": v, "t": t})
-			counter++
-			if counter >= 50000 {
+			rec := map[string]any{"n": n, "v": v, "t": t}
+			recData, err := json.Marshal(rec)
+			if err != nil {
+				return err
+			}
+			msgs = append(msgs, rec)
+			size += len(recData)
+			if size >= maxBatchBytes {
 				data, err := json.Marshal(msgs)
 				if err != nil {
 					return err
@@ -84,20 +92,20 @@ func (as *adapterService) PublishSenMLMessagesFromCSV(ctx context.Context, key s
 				if _, err = as.publish(ctx, key, msg); err != nil {
 					return err
 				}
-				counter = 0
 				msgs = []map[string]any{}
-				time.Sleep(30 * time.Second)
+				size = 0
+				time.Sleep(batchDelay)
 			}
 		}
-		if i == len(csvLines)-1 && len(msgs) > 0 {
-			data, err := json.Marshal(msgs)
-			if err != nil {
-				return err
-			}
-			msg.Payload = data
-			if _, err = as.publish(ctx, key, msg); err != nil {
-				return err
-			}
+	}
+	if len(msgs) > 0 {
+		data, err := json.Marshal(msgs)
+		if err != nil {
+			return err
+		}
+		msg.Payload = data
+		if _, err := as.publish(ctx, key, msg); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -120,9 +128,9 @@ func (as *adapterService) PublishJSONMessagesFromCSV(ctx context.Context, key st
 		Protocol: protocol,
 		Created:  time.Now().UnixNano(),
 	}
-	counter := 0
 	keys := csvLines[0][1:]
 	msgs := []map[string]any{}
+	size := 0
 	timeFieldIdx := slices.Index(csvLines[0], timeField)
 	for i := 1; i < len(csvLines); i++ {
 		record := map[string]any{}
@@ -143,23 +151,34 @@ func (as *adapterService) PublishJSONMessagesFromCSV(ctx context.Context, key st
 				record[columnName] = csvLines[i][j+1]
 			}
 		}
+		recData, err := json.Marshal(record)
+		if err != nil {
+			return err
+		}
 		msgs = append(msgs, record)
-		counter++
-		if counter == 50000 || i == len(csvLines)-1 {
+		size += len(recData)
+		if size >= maxBatchBytes {
 			data, err := json.Marshal(msgs)
 			if err != nil {
 				return err
 			}
 			msg.Payload = data
-			_, err = as.publish(ctx, key, msg)
-			if err != nil {
+			if _, err = as.publish(ctx, key, msg); err != nil {
 				return err
 			}
-			counter = 0
 			msgs = []map[string]any{}
-			if i != len(csvLines)-1 {
-				time.Sleep(30 * time.Second)
-			}
+			size = 0
+			time.Sleep(batchDelay)
+		}
+	}
+	if len(msgs) > 0 {
+		data, err := json.Marshal(msgs)
+		if err != nil {
+			return err
+		}
+		msg.Payload = data
+		if _, err := as.publish(ctx, key, msg); err != nil {
+			return err
 		}
 	}
 	return nil
