@@ -57,7 +57,7 @@ func (pm PageMetadata) Validate(maxLimitSize int) error {
 }
 
 type EventRepository interface {
-	// SaveEvent saves a single event to the database.
+	// SaveEvent persists a single event to the database.
 	SaveEvent(ctx context.Context, e Event) error
 
 	// RetrieveEvents retrieves events from the database
@@ -71,7 +71,7 @@ type EventRepository interface {
 }
 
 type Service interface {
-	// RecordEvent persists a single event to the database.
+	// RecordEvent records a single event to the database.
 	RecordEvent(ctx context.Context, e events.Event) error
 
 	// ListEvents retrieves a list of audit events across all organizations.
