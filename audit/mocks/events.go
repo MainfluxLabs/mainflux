@@ -139,7 +139,7 @@ func sortEvents(events []audit.Event, order, dir string) {
 		switch order {
 		case "operation":
 			a, b = events[i].Operation, events[j].Operation
-		case "actor_user_email":
+		case "actor_email":
 			a, b = events[i].Actor.Email, events[j].Actor.Email
 		case "org_id":
 			a, b = events[i].OrgID, events[j].OrgID

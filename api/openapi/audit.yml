@@ -214,7 +214,7 @@ components:
       description: Field to sort results by.
       schema:
         type: string
-        enum: [id, occurred_at, operation, actor_user_email, org_id, group_id]
+        enum: [id, occurred_at, operation, actor_email, org_id, group_id]
     Dir:
       name: dir
       in: query

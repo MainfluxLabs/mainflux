@@ -14,12 +14,12 @@ import (
 )
 
 var AllowedOrders = map[string]string{
-	"id":               "id",
-	"occurred_at":      "occurred_at",
-	"operation":        "operation",
-	"actor_user_email": "actor_user_email",
-	"org_id":           "org_id",
-	"group_id":         "group_id",
+	"id":          "id",
+	"occurred_at": "occurred_at",
+	"operation":   "operation",
+	"actor_email": "actor_email",
+	"org_id":      "org_id",
+	"group_id":    "group_id",
 }
 
 type Event struct {
