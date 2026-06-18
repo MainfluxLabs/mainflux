@@ -24,7 +24,6 @@ type stateRes struct {
 type shadowResponse struct {
 	ThingID   string   `json:"thing_id"`
 	State     stateRes `json:"state"`
-	Version   uint64   `json:"version"`
 	Timestamp int64    `json:"timestamp"`
 }
 
@@ -62,7 +61,6 @@ func buildShadowResponse(sh shadows.Shadow) shadowResponse {
 			Reported: sh.Reported,
 			Delta:    sh.Delta,
 		},
-		Version:   sh.Version,
 		Timestamp: sh.Timestamp,
 	}
 }

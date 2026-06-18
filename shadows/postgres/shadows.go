@@ -32,17 +32,14 @@ func (sr shadowRepository) Upsert(ctx context.Context, shadow shadows.Shadow) (s
 		return shadows.Shadow{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
-	q := `INSERT INTO shadows (thing_id, desired, reported, version, updated_at)
-	      VALUES (:thing_id, :desired, :reported, 1, :updated_at)
+	q := `INSERT INTO shadows (thing_id, desired, reported, updated_at)
+	      VALUES (:thing_id, :desired, :reported, :updated_at)
 	      ON CONFLICT (thing_id) DO UPDATE SET
 	          desired    = EXCLUDED.desired,
 	          reported   = EXCLUDED.reported,
-	          version    = shadows.version + 1,
-	          updated_at = EXCLUDED.updated_at
-	      RETURNING version;`
+	          updated_at = EXCLUDED.updated_at;`
 
-	rows, err := sr.db.NamedQueryContext(ctx, q, dbSh)
-	if err != nil {
+	if _, err := sr.db.NamedExecContext(ctx, q, dbSh); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
 			switch pgErr.Code {
@@ -54,19 +51,12 @@ func (sr shadowRepository) Upsert(ctx context.Context, shadow shadows.Shadow) (s
 		}
 		return shadows.Shadow{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
-	defer rows.Close()
-
-	if rows.Next() {
-		if err := rows.Scan(&shadow.Version); err != nil {
-			return shadows.Shadow{}, errors.Wrap(dbutil.ErrCreateEntity, err)
-		}
-	}
 
 	return shadow, nil
 }
 
 func (sr shadowRepository) RetrieveByThing(ctx context.Context, thingID string) (shadows.Shadow, error) {
-	q := `SELECT thing_id, desired, reported, version, updated_at
+	q := `SELECT thing_id, desired, reported, updated_at
 	      FROM shadows WHERE thing_id = $1;`
 
 	dbSh := dbShadow{}
@@ -90,7 +80,7 @@ func (sr shadowRepository) Remove(ctx context.Context, thingID string) error {
 }
 
 func (sr shadowRepository) RetrieveAll(ctx context.Context) ([]shadows.Shadow, error) {
-	q := `SELECT thing_id, desired, reported, version, updated_at FROM shadows;`
+	q := `SELECT thing_id, desired, reported, updated_at FROM shadows;`
 
 	var items []dbShadow
 	if err := sr.db.SelectContext(ctx, &items, q); err != nil {
@@ -113,7 +103,6 @@ type dbShadow struct {
 	ThingID   string `db:"thing_id"`
 	Desired   []byte `db:"desired"`
 	Reported  []byte `db:"reported"`
-	Version   uint64 `db:"version"`
 	UpdatedAt int64  `db:"updated_at"`
 }
 
@@ -139,7 +128,6 @@ func toDBShadow(sh shadows.Shadow) (dbShadow, error) {
 		ThingID:   sh.ThingID,
 		Desired:   desired,
 		Reported:  reported,
-		Version:   sh.Version,
 		UpdatedAt: sh.Timestamp,
 	}, nil
 }
@@ -159,7 +147,6 @@ func toShadow(dbSh dbShadow) (shadows.Shadow, error) {
 		ThingID:   dbSh.ThingID,
 		Desired:   desired,
 		Reported:  reported,
-		Version:   dbSh.Version,
 		Timestamp: dbSh.UpdatedAt,
 	}, nil
 }

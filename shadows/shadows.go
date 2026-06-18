@@ -24,14 +24,13 @@ type Shadow struct {
 	Desired   State
 	Reported  State
 	Delta     State
-	Version   uint64
 	Timestamp int64
 }
 
 // ShadowRepository specifies the persistence API for shadows.
 type ShadowRepository interface {
 	// Upsert creates or replaces the shadow for a thing and returns the
-	// stored document (with the incremented version).
+	// stored document.
 	Upsert(ctx context.Context, shadow Shadow) (Shadow, error)
 
 	// RetrieveByThing returns the shadow for the given thing ID, or
