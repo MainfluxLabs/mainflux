@@ -258,10 +258,13 @@ func (as *adapterService) PublishJSONMessagesFromJSON(ctx context.Context, key s
 	counter := 0
 	msgs := []map[string]any{}
 	for i, inputRecord := range records {
+		// Auto-unwrap reader-exported Format A: {"payload":{...},"created":...,...}
 		source := inputRecord
+		unwrapped := false
 		var outerTimestamp float64
 		if pld, ok := inputRecord["payload"].(map[string]any); ok {
 			source = pld
+			unwrapped = true
 			// Prefer the outer timeField value (numeric); fall back to outer "created".
 			if timeField != "" {
 				outerTimestamp, _ = inputRecord[timeField].(float64)
@@ -277,7 +280,9 @@ func (as *adapterService) PublishJSONMessagesFromJSON(ctx context.Context, key s
 		}
 
 		for k, v := range source {
-			if reservedFields[k] {
+			// For flat records strip envelope fields; for unwrapped Format A the
+			// outer envelope is already excluded - inner fields are sensor data.
+			if !unwrapped && reservedFields[k] {
 				continue
 			}
 			if timeField != "" && k == timeField {
