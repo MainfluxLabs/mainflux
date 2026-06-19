@@ -26,8 +26,8 @@ const (
 // Service specifies the API offered by the shadows service. All methods that
 // accept a token use it to identify and authorize the user.
 type Service interface {
-	// UpdateDesiredState merges the provided desired state into the thing's shadow,
-	// stores it, pushes the resulting delta to the device, and returns the
+	// UpdateDesiredState replaces the thing's desired state with the provided
+	// document, pushes the resulting delta to the device, and returns the
 	// updated shadow.
 	UpdateDesiredState(ctx context.Context, token, thingID string, desired State) (Shadow, error)
 
@@ -73,11 +73,9 @@ func (ss *shadowsService) UpdateDesiredState(ctx context.Context, token, thingID
 		return Shadow{}, err
 	}
 
-	merged, _ := mergeState(current.Desired, desired)
-
 	stored, err := ss.shadows.Upsert(ctx, Shadow{
 		ThingID:   thingID,
-		Desired:   merged,
+		Desired:   desired,
 		Reported:  current.Reported,
 		Timestamp: time.Now().Unix(),
 	})
@@ -86,7 +84,7 @@ func (ss *shadowsService) UpdateDesiredState(ctx context.Context, token, thingID
 	}
 
 	stored.Delta = computeDelta(stored.Desired, stored.Reported)
-	if err := ss.pushDelta(thingID, stored.Delta); err != nil {
+	if err := ss.publishDelta(thingID, stored.Delta); err != nil {
 		ss.logger.Warn(fmt.Sprintf("failed to push delta to thing %s: %s", thingID, err))
 	}
 
@@ -154,7 +152,7 @@ func (ss *shadowsService) ConsumeMessage(_ string, msg protomfx.Message) error {
 	}
 
 	if delta := computeDelta(stored.Desired, stored.Reported); len(delta) > 0 {
-		if err := ss.pushDelta(thingID, delta); err != nil {
+		if err := ss.publishDelta(thingID, delta); err != nil {
 			ss.logger.Warn(fmt.Sprintf("failed to push delta to thing %s: %s", thingID, err))
 		}
 	}
@@ -174,9 +172,9 @@ func (ss *shadowsService) loadOrEmpty(ctx context.Context, thingID string) (Shad
 	return current, nil
 }
 
-// pushDelta publishes the delta to the thing's command channel. An empty delta
-// is not published.
-func (ss *shadowsService) pushDelta(thingID string, delta State) error {
+// publishDelta publishes the delta to the thing's command subject.
+//	An empty delta is not published.
+func (ss *shadowsService) publishDelta(thingID string, delta State) error {
 	if len(delta) == 0 {
 		return nil
 	}
