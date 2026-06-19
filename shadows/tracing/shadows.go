@@ -12,7 +12,6 @@ const (
 	upsertShadow          = "upsert_shadow"
 	retrieveShadowByThing = "retrieve_shadow_by_thing"
 	removeShadow          = "remove_shadow"
-	retrieveAllShadows    = "retrieve_all_shadows"
 )
 
 var _ shadows.ShadowRepository = (*shadowRepositoryMiddleware)(nil)
@@ -52,12 +51,4 @@ func (srm shadowRepositoryMiddleware) Remove(ctx context.Context, thingID string
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return srm.repo.Remove(ctx, thingID)
-}
-
-func (srm shadowRepositoryMiddleware) RetrieveAll(ctx context.Context) ([]shadows.Shadow, error) {
-	span := dbutil.CreateSpan(ctx, srm.tracer, retrieveAllShadows)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return srm.repo.RetrieveAll(ctx)
 }

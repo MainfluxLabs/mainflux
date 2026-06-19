@@ -68,7 +68,7 @@ func (ss *shadowsService) UpdateDesiredState(ctx context.Context, token, thingID
 		return Shadow{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	current, err := ss.loadOrEmpty(ctx, thingID)
+	current, err := ss.shadows.RetrieveByThing(ctx, thingID)
 	if err != nil {
 		return Shadow{}, err
 	}
@@ -131,7 +131,7 @@ func (ss *shadowsService) ConsumeMessage(_ string, msg protomfx.Message) error {
 	}
 
 	ctx := context.Background()
-	current, err := ss.loadOrEmpty(ctx, thingID)
+	current, err := ss.shadows.RetrieveByThing(ctx, thingID)
 	if err != nil {
 		return err
 	}
@@ -160,20 +160,8 @@ func (ss *shadowsService) ConsumeMessage(_ string, msg protomfx.Message) error {
 	return nil
 }
 
-// loadOrEmpty returns the stored shadow, or an empty one if none exists yet.
-func (ss *shadowsService) loadOrEmpty(ctx context.Context, thingID string) (Shadow, error) {
-	current, err := ss.shadows.RetrieveByThing(ctx, thingID)
-	if err != nil {
-		if errors.Contains(err, ErrShadowNotFound) {
-			return Shadow{ThingID: thingID}, nil
-		}
-		return Shadow{}, err
-	}
-	return current, nil
-}
-
 // publishDelta publishes the delta to the thing's command subject.
-//	An empty delta is not published.
+// An empty delta is not published.
 func (ss *shadowsService) publishDelta(thingID string, delta State) error {
 	if len(delta) == 0 {
 		return nil

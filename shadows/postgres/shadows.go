@@ -62,8 +62,10 @@ func (sr shadowRepository) RetrieveByThing(ctx context.Context, thingID string) 
 	dbSh := dbShadow{}
 	if err := sr.db.QueryRowxContext(ctx, q, thingID).StructScan(&dbSh); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
+		// A thing's shadow always exists conceptually: a missing row
+		// reads back as an empty shadow rather than an error.
 		if err == sql.ErrNoRows || (ok && pgerrcode.InvalidTextRepresentation == pgErr.Code) {
-			return shadows.Shadow{}, errors.Wrap(shadows.ErrShadowNotFound, err)
+			return shadows.Shadow{ThingID: thingID}, nil
 		}
 		return shadows.Shadow{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
@@ -77,26 +79,6 @@ func (sr shadowRepository) Remove(ctx context.Context, thingID string) error {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 	return nil
-}
-
-func (sr shadowRepository) RetrieveAll(ctx context.Context) ([]shadows.Shadow, error) {
-	q := `SELECT thing_id, desired, reported, updated_at FROM shadows;`
-
-	var items []dbShadow
-	if err := sr.db.SelectContext(ctx, &items, q); err != nil {
-		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-	}
-
-	shs := make([]shadows.Shadow, 0, len(items))
-	for _, i := range items {
-		sh, err := toShadow(i)
-		if err != nil {
-			return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-		}
-		shs = append(shs, sh)
-	}
-
-	return shs, nil
 }
 
 type dbShadow struct {

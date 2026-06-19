@@ -113,12 +113,6 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response any) erro
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
-	switch {
-	case errors.Contains(err, shadows.ErrShadowNotFound):
-		w.WriteHeader(http.StatusNotFound)
-	default:
-		apiutil.EncodeError(err, w)
-	}
-
+	apiutil.EncodeError(err, w)
 	apiutil.WriteErrorResponse(err, w)
 }
