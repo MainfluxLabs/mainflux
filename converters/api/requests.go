@@ -11,6 +11,7 @@ import (
 type convertCSVReq struct {
 	csvLines [][]string
 	key      domain.ThingKey
+	to       string // "senml" or "json"
 }
 
 func (req convertCSVReq) validate() error {
@@ -22,12 +23,17 @@ func (req convertCSVReq) validate() error {
 		return apiutil.ErrEmptyList
 	}
 
+	if req.to != "senml" && req.to != "json" {
+		return apiutil.ErrInvalidQueryParams
+	}
+
 	return nil
 }
 
 type convertJSONReq struct {
 	records []map[string]any
 	key     domain.ThingKey
+	to      string // "senml" or "json"
 }
 
 func (req convertJSONReq) validate() error {
@@ -37,6 +43,10 @@ func (req convertJSONReq) validate() error {
 
 	if len(req.records) == 0 {
 		return apiutil.ErrEmptyList
+	}
+
+	if req.to != "senml" && req.to != "json" {
+		return apiutil.ErrInvalidQueryParams
 	}
 
 	return nil

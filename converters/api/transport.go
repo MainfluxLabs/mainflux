@@ -41,29 +41,15 @@ func MakeHandler(svc adapter.Service, ac domain.AuthClient, tracer opentracing.T
 
 	r := bone.New()
 
-	r.Post("/csv/senml", kithttp.NewServer(
-		kitot.TraceServer(tracer, "convert_csv_to_senml")(convertCSVToSenMLEndpoint(svc)),
+	r.Post("/csv/convert", kithttp.NewServer(
+		kitot.TraceServer(tracer, "convert_csv")(convertCSVEndpoint(svc)),
 		decodeConvertCSVFile,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Post("/csv/json", kithttp.NewServer(
-		kitot.TraceServer(tracer, "convert_csv_to_json")(convertCSVToJSONEndpoint(svc)),
-		decodeConvertCSVFile,
-		encodeResponse,
-		opts...,
-	))
-
-	r.Post("/json/senml", kithttp.NewServer(
-		kitot.TraceServer(tracer, "convert_json_to_senml")(convertJSONToSenMLEndpoint(svc)),
-		decodeConvertJSONFile,
-		encodeResponse,
-		opts...,
-	))
-
-	r.Post("/json/json", kithttp.NewServer(
-		kitot.TraceServer(tracer, "convert_json_to_json")(convertJSONToJSONEndpoint(svc)),
+	r.Post("/json/convert", kithttp.NewServer(
+		kitot.TraceServer(tracer, "convert_json")(convertJSONEndpoint(svc)),
 		decodeConvertJSONFile,
 		encodeResponse,
 		opts...,
@@ -104,6 +90,7 @@ func decodeConvertCSVFile(_ context.Context, r *http.Request) (any, error) {
 	req := convertCSVReq{
 		key:      apiutil.ExtractThingKey(r),
 		csvLines: csvLines,
+		to:       r.URL.Query().Get("to"),
 	}
 
 	return req, nil
@@ -137,6 +124,7 @@ func decodeConvertJSONFile(_ context.Context, r *http.Request) (any, error) {
 	req := convertJSONReq{
 		key:     apiutil.ExtractThingKey(r),
 		records: records,
+		to:      r.URL.Query().Get("to"),
 	}
 
 	return req, nil

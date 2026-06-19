@@ -8,7 +8,7 @@ Large files are processed in batches of 50,000 records. A 30-second pause is ins
 
 ## CSV Formats
 
-### SenML (`POST /csv/senml`)
+### SenML (`POST /csv/convert?to=senml`)
 
 | Row       | First column                                   | Remaining columns                 |
 |-----------|------------------------------------------------|-----------------------------------|
@@ -17,7 +17,7 @@ Large files are processed in batches of 50,000 records. A 30-second pause is ins
 
 Each data row produces one SenML record per measurement column with fields `n` (name), `v` (value), and `t` (timestamp).
 
-### JSON (`POST /csv/json`)
+### JSON (`POST /csv/convert?to=json`)
 
 | Row       | Content                                                                                                                                |
 |-----------|----------------------------------------------------------------------------------------------------------------------------------------|
@@ -28,7 +28,7 @@ Each data row produces one JSON object keyed by column name.
 
 ## JSON Formats
 
-### SenML (`POST /json/senml`)
+### SenML (`POST /json/convert?to=senml`)
 
 Input is a JSON array of objects. Each object must contain a `t` key (Unix timestamp as a floating-point number) and one or more measurement keys with numeric values.
 
@@ -48,7 +48,7 @@ Example file (`readings.json`):
 ]
 ```
 
-### JSON (`POST /json/json`)
+### JSON (`POST /json/convert?to=json`)
 
 Input is a JSON array of objects. The key configured as the time field in the thing's profile transformer is parsed as a numeric Unix timestamp and stored as `Created` in the payload. All other keys are included as-is.
 
@@ -119,22 +119,22 @@ Requests must use `Content-Type: multipart/form-data`. The maximum accepted file
 
 ```bash
 # Convert and publish a CSV file as SenML messages
-curl -X POST http://localhost/converters/csv/senml \
+curl -X POST "http://localhost/converters/csv/convert?to=senml" \
   -H "Authorization: Thing <thing_key>" \
   -F "file=@/path/to/data.csv"
 
 # Convert and publish a CSV file as JSON messages
-curl -X POST http://localhost/converters/csv/json \
+curl -X POST "http://localhost/converters/csv/convert?to=json" \
   -H "Authorization: Thing <thing_key>" \
   -F "file=@/path/to/data.csv"
 
 # Convert and publish a JSON file as SenML messages
-curl -X POST http://localhost/converters/json/senml \
+curl -X POST "http://localhost/converters/json/convert?to=senml" \
   -H "Authorization: Thing <thing_key>" \
   -F "file=@/path/to/data.json"
 
 # Convert and publish a JSON file as JSON messages
-curl -X POST http://localhost/converters/json/json \
+curl -X POST "http://localhost/converters/json/convert?to=json" \
   -H "Authorization: Thing <thing_key>" \
   -F "file=@/path/to/data.json"
 ```
