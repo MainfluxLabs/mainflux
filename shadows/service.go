@@ -18,10 +18,9 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
-const (
-	shadowProtocol = "shadow"
-	shadowSubtopic = "shadow"
-)
+// shadowSubtopic routes shadow commands on the thing command channel
+// (things.<id>.commands.shadow).
+const shadowSubtopic = "shadow"
 
 // Service specifies the API offered by the shadows service. All methods that
 // accept a token use it to identify and authorize the user.
@@ -175,7 +174,7 @@ func (ss *shadowsService) publishDelta(thingID string, delta State) error {
 	cmd := protomfx.Command{
 		Publisher: thingID,
 		Subtopic:  shadowSubtopic,
-		Protocol:  shadowProtocol,
+		Protocol:  "shadows",
 		Payload:   payload,
 		Created:   time.Now().UnixNano(),
 	}
