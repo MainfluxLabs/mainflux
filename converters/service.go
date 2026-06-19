@@ -63,52 +63,69 @@ func (as *adapterService) PublishSenMLMessagesFromCSV(ctx context.Context, key s
 		Protocol: protocol,
 		Created:  time.Now().UnixNano(),
 	}
-	keys := csvLines[0][1:]
+	headers := csvLines[0]
 	msgs := []map[string]any{}
 	size := 0
-	for i := 1; i < len(csvLines); i++ {
-		t, err := strconv.ParseFloat(csvLines[i][0], 64)
-		if err != nil {
-			return ErrInvalidTimeField
+
+	flush := func() error {
+		if len(msgs) == 0 {
+			return nil
 		}
-		for j, n := range keys {
-			v, err := strconv.ParseFloat(csvLines[i][j+1], 64)
-			if err != nil {
-				return err
-			}
-			rec := map[string]any{"n": n, "v": v, "t": t}
-			recData, err := json.Marshal(rec)
-			if err != nil {
-				return err
-			}
-			msgs = append(msgs, rec)
-			size += len(recData)
-			if size >= maxBatchBytes {
-				data, err := json.Marshal(msgs)
-				if err != nil {
-					return err
-				}
-				msg.Payload = data
-				if _, err = as.publish(ctx, key, msg); err != nil {
-					return err
-				}
-				msgs = []map[string]any{}
-				size = 0
-				time.Sleep(batchDelay)
-			}
-		}
-	}
-	if len(msgs) > 0 {
 		data, err := json.Marshal(msgs)
 		if err != nil {
 			return err
 		}
 		msg.Payload = data
-		if _, err := as.publish(ctx, key, msg); err != nil {
+		if _, err = as.publish(ctx, key, msg); err != nil {
 			return err
 		}
+		msgs = []map[string]any{}
+		size = 0
+		return nil
 	}
-	return nil
+
+	for i := 1; i < len(csvLines); i++ {
+		row := csvLines[i]
+		record := map[string]any{}
+		for j, col := range headers {
+			if j >= len(row) || row[j] == "" {
+				continue
+			}
+			val := row[j]
+			switch col {
+			case "t", "time", "v", "value", "s", "sum":
+				if f, err := strconv.ParseFloat(val, 64); err == nil {
+					record[col] = f
+				}
+			case "vb", "bool_value":
+				if b, err := strconv.ParseBool(val); err == nil {
+					record[col] = b
+				}
+			case "n", "name", "vs", "string_value", "vd", "data_value", "u", "unit":
+				record[col] = val
+			}
+		}
+		entries, err := toSenMLEntries(record)
+		if err != nil {
+			return err
+		}
+		for _, entry := range entries {
+			entryData, err := json.Marshal(entry)
+			if err != nil {
+				return err
+			}
+			msgs = append(msgs, entry)
+			size += len(entryData)
+			if size >= maxBatchBytes {
+				if err := flush(); err != nil {
+					return err
+				}
+				time.Sleep(batchDelay)
+			}
+		}
+	}
+
+	return flush()
 }
 
 func (as *adapterService) PublishJSONMessagesFromCSV(ctx context.Context, key string, csvLines [][]string) error {
