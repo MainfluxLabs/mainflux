@@ -308,7 +308,7 @@ func toSenMLEntries(record map[string]any) ([]map[string]any, error) {
 		}
 		v, ok := val.(float64)
 		if !ok {
-			return nil, ErrInvalidTimeField
+			continue // non-numeric fields have no SenML representation in multi-measurement mode
 		}
 		entries = append(entries, map[string]any{"n": k, "v": v, "t": t})
 	}

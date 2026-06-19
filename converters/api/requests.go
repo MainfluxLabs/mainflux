@@ -8,10 +8,15 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
+const (
+	toSenML = "senml"
+	toJSON  = "json"
+)
+
 type convertCSVReq struct {
 	csvLines [][]string
 	key      domain.ThingKey
-	to       string // "senml" or "json"
+	to       string
 }
 
 func (req convertCSVReq) validate() error {
@@ -23,7 +28,7 @@ func (req convertCSVReq) validate() error {
 		return apiutil.ErrEmptyList
 	}
 
-	if req.to != "senml" && req.to != "json" {
+	if req.to != toSenML && req.to != toJSON {
 		return apiutil.ErrInvalidQueryParams
 	}
 
@@ -33,7 +38,7 @@ func (req convertCSVReq) validate() error {
 type convertJSONReq struct {
 	records []map[string]any
 	key     domain.ThingKey
-	to      string // "senml" or "json"
+	to      string
 }
 
 func (req convertJSONReq) validate() error {
@@ -45,7 +50,7 @@ func (req convertJSONReq) validate() error {
 		return apiutil.ErrEmptyList
 	}
 
-	if req.to != "senml" && req.to != "json" {
+	if req.to != toSenML && req.to != toJSON {
 		return apiutil.ErrInvalidQueryParams
 	}
 

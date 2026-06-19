@@ -18,7 +18,7 @@ func convertCSVEndpoint(svc converters.Service) endpoint.Endpoint {
 		}
 
 		switch req.to {
-		case "senml":
+		case toSenML:
 			// Publish async to avoid blocking past the gateway timeout on large files.
 			go func() { _ = svc.PublishSenMLMessagesFromCSV(context.Background(), req.key.Value, req.csvLines) }()
 		default:
@@ -37,7 +37,7 @@ func convertJSONEndpoint(svc converters.Service) endpoint.Endpoint {
 		}
 
 		switch req.to {
-		case "senml":
+		case toSenML:
 			// Publish async to avoid blocking past the gateway timeout on large files.
 			go func() { _ = svc.PublishSenMLMessagesFromJSON(context.Background(), req.key.Value, req.records) }()
 		default:
