@@ -189,53 +189,113 @@ func (as *adapterService) PublishSenMLMessagesFromJSON(ctx context.Context, key 
 		Protocol: protocol,
 		Created:  time.Now().UnixNano(),
 	}
-	counter := 0
 	msgs := []map[string]any{}
-	for i, record := range records {
-		tVal, ok := record["t"]
-		if !ok {
-			return ErrInvalidTimeField
+	size := 0
+
+	flush := func() error {
+		if len(msgs) == 0 {
+			return nil
 		}
-		t, ok := tVal.(float64)
-		if !ok {
-			return ErrInvalidTimeField
+		data, err := json.Marshal(msgs)
+		if err != nil {
+			return err
 		}
-		for n, val := range record {
-			if n == "t" {
-				continue
-			}
-			v, ok := val.(float64)
-			if !ok {
-				return ErrInvalidTimeField
-			}
-			msgs = append(msgs, map[string]any{"n": n, "v": v, "t": t})
-			counter++
-			if counter >= 50000 {
-				data, err := json.Marshal(msgs)
-				if err != nil {
-					return err
-				}
-				msg.Payload = data
-				if _, err = as.publish(ctx, key, msg); err != nil {
-					return err
-				}
-				counter = 0
-				msgs = []map[string]any{}
-				time.Sleep(30 * time.Second)
-			}
+		msg.Payload = data
+		if _, err = as.publish(ctx, key, msg); err != nil {
+			return err
 		}
-		if i == len(records)-1 && len(msgs) > 0 {
-			data, err := json.Marshal(msgs)
+		msgs = []map[string]any{}
+		size = 0
+		return nil
+	}
+
+	for _, record := range records {
+		entries, err := toSenMLEntries(record)
+		if err != nil {
+			return err
+		}
+		for _, entry := range entries {
+			entryData, err := json.Marshal(entry)
 			if err != nil {
 				return err
 			}
-			msg.Payload = data
-			if _, err = as.publish(ctx, key, msg); err != nil {
-				return err
+			msgs = append(msgs, entry)
+			size += len(entryData)
+			if size >= maxBatchBytes {
+				if err := flush(); err != nil {
+					return err
+				}
+				time.Sleep(batchDelay)
 			}
 		}
 	}
-	return nil
+
+	return flush()
+}
+
+// toSenMLEntries converts one input record into SenML measurement entries.
+// Accepts both standard SenML keys (t, n, v, vs, vd, vb, u, s) and
+// reader-export aliases (time, name, value, string_value, data_value, bool_value, unit, sum).
+func toSenMLEntries(record map[string]any) ([]map[string]any, error) {
+	var t float64
+	if v, ok := record["t"].(float64); ok {
+		t = v
+	} else if v, ok := record["time"].(float64); ok {
+		t = v / 1e9 // reader export is nanoseconds; SenML t field is seconds
+	} else {
+		return nil, ErrInvalidTimeField
+	}
+
+	n, _ := record["n"].(string)
+	if n == "" {
+		n, _ = record["name"].(string)
+	}
+
+	if n != "" {
+		entry := map[string]any{"n": n, "t": t}
+		for k, v := range record {
+			switch k {
+			case "v", "value":
+				if f, ok := v.(float64); ok {
+					entry["v"] = f
+				}
+			case "vs", "string_value":
+				if s, ok := v.(string); ok {
+					entry["vs"] = s
+				}
+			case "vd", "data_value":
+				if s, ok := v.(string); ok {
+					entry["vd"] = s
+				}
+			case "vb", "bool_value":
+				if b, ok := v.(bool); ok {
+					entry["vb"] = b
+				}
+			case "u", "unit":
+				if s, ok := v.(string); ok {
+					entry["u"] = s
+				}
+			case "s", "sum":
+				if f, ok := v.(float64); ok {
+					entry["s"] = f
+				}
+			}
+		}
+		return []map[string]any{entry}, nil
+	}
+
+	var entries []map[string]any
+	for k, val := range record {
+		if k == "t" || k == "time" {
+			continue
+		}
+		v, ok := val.(float64)
+		if !ok {
+			return nil, ErrInvalidTimeField
+		}
+		entries = append(entries, map[string]any{"n": k, "v": v, "t": t})
+	}
+	return entries, nil
 }
 
 func (as *adapterService) PublishJSONMessagesFromJSON(ctx context.Context, key string, records []map[string]any) error {
