@@ -128,7 +128,7 @@ func (rr ruleRepository) RetrieveByThing(ctx context.Context, thingID string, pm
 	q := fmt.Sprintf(`SELECT r.id, r.group_id, r.name, r.description,
 		r.input_type, r.input_config, r.conditions, r.operator, r.actions
 		FROM rules r %s %s
-		ORDER BY r.%s %s %s;`, joinClause, whereClause, oq, dq, olq)
+		ORDER BY %s %s %s;`, joinClause, whereClause, oq, dq, olq)
 
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM rules r %s %s;`, joinClause, countClause)
 

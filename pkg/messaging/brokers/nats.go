@@ -24,7 +24,6 @@ func NewPublisher(url string) (messaging.Publisher, error) {
 		return nil, err
 	}
 	return pb, nil
-
 }
 
 func NewPubSub(url, queue string, logger logger.Logger) (messaging.PubSub, error) {

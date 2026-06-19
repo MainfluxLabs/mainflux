@@ -105,6 +105,12 @@ type AlarmPublisher interface {
 	PublishAlarm(subject string, alarm protomfx.Alarm) error
 }
 
+// CommandPublisher specifies the command publishing API.
+type CommandPublisher interface {
+	// PublishCommand publishes a command to the message broker.
+	PublishCommand(subject string, cmd protomfx.Command) error
+}
+
 // AlarmHandler represents protomfx.Alarm handler for AlarmSubscriber.
 type AlarmHandler interface {
 	// Handle handles alarms passed by underlying implementation.
@@ -121,6 +127,24 @@ type AlarmSubscriber interface {
 
 	// UnsubscribeAlarms unsubscribes from the alarm stream.
 	UnsubscribeAlarms(id string) error
+}
+
+// CommandHandler represents protomfx.Command handler for CommandSubscriber.
+type CommandHandler interface {
+	// Handle handles commands passed by underlying implementation.
+	Handle(subject string, cmd protomfx.Command) error
+
+	// Cancel is used for cleanup during unsubscribing and it's optional.
+	Cancel() error
+}
+
+// CommandSubscriber specifies the command subscription API.
+type CommandSubscriber interface {
+	// SubscribeCommands subscribes to the command stream for the given topic.
+	SubscribeCommands(id, topic string, handler CommandHandler) error
+
+	// UnsubscribeCommands unsubscribes from the command stream for the given topic.
+	UnsubscribeCommands(id, topic string) error
 }
 
 func NormalizeSubtopic(topic string) (string, error) {
