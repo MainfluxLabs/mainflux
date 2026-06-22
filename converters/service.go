@@ -32,7 +32,6 @@ var reservedFields = map[string]bool{
 	"publisher": true,
 	"subtopic":  true,
 	"created":   true,
-	"Created":   true,
 }
 
 // Service specifies coap service API.
@@ -103,6 +102,12 @@ func (as *adapterService) PublishSenMLMessagesFromCSV(ctx context.Context, key s
 				}
 			case "n", "name", "vs", "string_value", "vd", "data_value", "u", "unit":
 				record[col] = val
+			case "protocol":
+				if val != "" {
+					msg.Protocol = val
+				}
+			case "subtopic":
+				msg.Subtopic = val
 			}
 		}
 		entries, err := toSenMLEntries(record)
@@ -160,6 +165,14 @@ func (as *adapterService) PublishJSONMessagesFromCSV(ctx context.Context, key st
 		}
 		for j, columnName := range keys {
 			if reservedFields[columnName] {
+				switch columnName {
+				case "protocol":
+					if val := csvLines[i][j+1]; val != "" {
+						msg.Protocol = val
+					}
+				case "subtopic":
+					msg.Subtopic = csvLines[i][j+1]
+				}
 				continue
 			}
 			if f, err := strconv.ParseFloat(csvLines[i][j+1], 64); err == nil {
@@ -227,6 +240,12 @@ func (as *adapterService) PublishSenMLMessagesFromJSON(ctx context.Context, key 
 	}
 
 	for _, record := range records {
+		if s, ok := record["protocol"].(string); ok && s != "" {
+			msg.Protocol = s
+		}
+		if s, ok := record["subtopic"].(string); ok {
+			msg.Subtopic = s
+		}
 		entries, err := toSenMLEntries(record)
 		if err != nil {
 			return err
@@ -349,6 +368,13 @@ func (as *adapterService) PublishJSONMessagesFromJSON(ctx context.Context, key s
 			if outerTimestamp == 0 {
 				outerTimestamp, _ = inputRecord["created"].(float64)
 			}
+			// Preserve envelope fields from the outer record into the message.
+			if s, ok := inputRecord["protocol"].(string); ok && s != "" {
+				msg.Protocol = s
+			}
+			if s, ok := inputRecord["subtopic"].(string); ok {
+				msg.Subtopic = s
+			}
 		}
 
 		record := map[string]any{}
@@ -357,9 +383,24 @@ func (as *adapterService) PublishJSONMessagesFromJSON(ctx context.Context, key s
 		}
 
 		for k, v := range source {
-			// For flat records strip envelope fields; for unwrapped Format A the
-			// outer envelope is already excluded - inner fields are sensor data.
+			// For flat records, envelope fields are lifted into the message rather
+			// than stored in the payload. For unwrapped Format A the outer envelope
+			// is already handled above; inner fields are sensor data.
 			if !unwrapped && reservedFields[k] {
+				switch k {
+				case "protocol":
+					if s, ok := v.(string); ok && s != "" {
+						msg.Protocol = s
+					}
+				case "subtopic":
+					if s, ok := v.(string); ok {
+						msg.Subtopic = s
+					}
+				case "created":
+					if t, ok := v.(float64); ok && t != 0 {
+						record["Created"] = t
+					}
+				}
 				continue
 			}
 			if timeField != "" && k == timeField {
