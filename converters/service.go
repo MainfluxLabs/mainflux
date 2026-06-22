@@ -58,6 +58,12 @@ func New(pub messaging.Publisher, things domain.ThingsClient) Service {
 }
 
 func (as *adapterService) PublishSenMLMessagesFromCSV(ctx context.Context, key string, csvLines [][]string) error {
+	thKey := domain.ThingKey{Value: key, Type: domain.KeyTypeInternal}
+	pc, err := as.things.GetPubConfigByKey(ctx, thKey)
+	if err != nil {
+		return err
+	}
+
 	msg := protomfx.Message{
 		Protocol: protocol,
 		Created:  time.Now().UnixNano(),
@@ -75,7 +81,7 @@ func (as *adapterService) PublishSenMLMessagesFromCSV(ctx context.Context, key s
 			return err
 		}
 		msg.Payload = data
-		if _, err = as.publish(ctx, key, msg); err != nil {
+		if err := as.publish(msg, pc); err != nil {
 			return err
 		}
 		msgs = []map[string]any{}
@@ -193,7 +199,7 @@ func (as *adapterService) PublishJSONMessagesFromCSV(ctx context.Context, key st
 				return err
 			}
 			msg.Payload = data
-			if _, err = as.publish(ctx, key, msg); err != nil {
+			if err := as.publish(msg, pc); err != nil {
 				return err
 			}
 			msgs = []map[string]any{}
@@ -207,7 +213,7 @@ func (as *adapterService) PublishJSONMessagesFromCSV(ctx context.Context, key st
 			return err
 		}
 		msg.Payload = data
-		if _, err := as.publish(ctx, key, msg); err != nil {
+		if err := as.publish(msg, pc); err != nil {
 			return err
 		}
 	}
@@ -215,6 +221,12 @@ func (as *adapterService) PublishJSONMessagesFromCSV(ctx context.Context, key st
 }
 
 func (as *adapterService) PublishSenMLMessagesFromJSON(ctx context.Context, key string, records []map[string]any) error {
+	thKey := domain.ThingKey{Value: key, Type: domain.KeyTypeInternal}
+	pc, err := as.things.GetPubConfigByKey(ctx, thKey)
+	if err != nil {
+		return err
+	}
+
 	msg := protomfx.Message{
 		Protocol: protocol,
 		Created:  time.Now().UnixNano(),
@@ -231,7 +243,7 @@ func (as *adapterService) PublishSenMLMessagesFromJSON(ctx context.Context, key 
 			return err
 		}
 		msg.Payload = data
-		if _, err = as.publish(ctx, key, msg); err != nil {
+		if err := as.publish(msg, pc); err != nil {
 			return err
 		}
 		msgs = []map[string]any{}
@@ -418,8 +430,7 @@ func (as *adapterService) PublishJSONMessagesFromJSON(ctx context.Context, key s
 				return err
 			}
 			msg.Payload = data
-			_, err = as.publish(ctx, key, msg)
-			if err != nil {
+			if err := as.publish(msg, pc); err != nil {
 				return err
 			}
 			counter = 0
@@ -432,23 +443,16 @@ func (as *adapterService) PublishJSONMessagesFromJSON(ctx context.Context, key s
 	return nil
 }
 
-func (as *adapterService) publish(ctx context.Context, key string, msg protomfx.Message) (m protomfx.Message, err error) {
-	pcr := domain.ThingKey{Type: domain.KeyTypeInternal, Value: key}
-
-	pc, err := as.things.GetPubConfigByKey(ctx, pcr)
-	if err != nil {
-		return protomfx.Message{}, err
-	}
-
+func (as *adapterService) publish(msg protomfx.Message, pc domain.PubConfigInfo) error {
 	if err := messaging.FormatMessage(pc, &msg); err != nil {
-		return protomfx.Message{}, err
+		return err
 	}
 
 	for _, subject := range nats.GetPublishSubjects(msg.Publisher, msg.Subtopic, pc.ProfileConfig) {
 		if err := as.publisher.Publish(subject, msg); err != nil {
-			return protomfx.Message{}, err
+			return err
 		}
 	}
 
-	return m, nil
+	return nil
 }

@@ -61,12 +61,6 @@ func MakeHandler(svc adapter.Service, ac domain.AuthClient, tracer opentracing.T
 	return r
 }
 
-type SenmlRec struct {
-	Name  string `json:"n"`
-	Time  string `json:"t"`
-	Value string `json:"v"`
-}
-
 func decodeConvertCSVFile(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), multiPartContentType) {
 		return nil, apiutil.ErrUnsupportedContentType
@@ -81,6 +75,7 @@ func decodeConvertCSVFile(_ context.Context, r *http.Request) (any, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
 
 	csvLines, readErr := csv.NewReader(file).ReadAll()
 	if readErr != nil {
@@ -110,6 +105,7 @@ func decodeConvertJSONFile(_ context.Context, r *http.Request) (any, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
