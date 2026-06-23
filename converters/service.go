@@ -373,10 +373,14 @@ func parseJSONRecord(inputRecord map[string]any, timeField string, msg *protomfx
 		// Format A — unwrap outer envelope, prefer timeField over "created".
 		var ts float64
 		if timeField != "" {
-			ts, _ = inputRecord[timeField].(float64)
+			if t, ok := inputRecord[timeField].(float64); ok {
+				ts = t
+			}
 		}
 		if ts == 0 {
-			ts, _ = inputRecord["created"].(float64)
+			if t, ok := inputRecord["created"].(float64); ok {
+				ts = t
+			}
 		}
 		if ts != 0 {
 			record["Created"] = ts
@@ -429,27 +433,26 @@ func (as *adapterService) publishMsgs(ctx context.Context, key string, msgs []ma
 		return err
 	}
 	msg.Payload = data
-	_, err = as.publish(ctx, key, msg)
-	return err
+	return as.publish(ctx, key, msg)
 }
 
-func (as *adapterService) publish(ctx context.Context, key string, msg protomfx.Message) (m protomfx.Message, err error) {
+func (as *adapterService) publish(ctx context.Context, key string, msg protomfx.Message) error {
 	pcr := domain.ThingKey{Type: domain.KeyTypeInternal, Value: key}
 
 	pc, err := as.things.GetPubConfigByKey(ctx, pcr)
 	if err != nil {
-		return protomfx.Message{}, err
+		return err
 	}
 
 	if err := messaging.FormatMessage(pc, &msg); err != nil {
-		return protomfx.Message{}, err
+		return err
 	}
 
 	for _, subject := range nats.GetPublishSubjects(msg.Publisher, msg.Subtopic, pc.ProfileConfig) {
 		if err := as.publisher.Publish(subject, msg); err != nil {
-			return protomfx.Message{}, err
+			return err
 		}
 	}
 
-	return m, nil
+	return nil
 }
