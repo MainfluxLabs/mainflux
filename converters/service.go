@@ -351,9 +351,9 @@ func (as *adapterService) PublishJSONMessagesFromJSON(ctx context.Context, key s
 		Protocol: protocol,
 		Created:  time.Now().UnixNano(),
 	}
-	counter := 0
 	msgs := []map[string]any{}
-	for i, inputRecord := range records {
+	size := 0
+	for _, inputRecord := range records {
 		// Auto-unwrap reader-exported Format A: {"payload":{...},"created":...,...}
 		source := inputRecord
 		unwrapped := false
@@ -410,23 +410,34 @@ func (as *adapterService) PublishJSONMessagesFromJSON(ctx context.Context, key s
 			}
 			record[k] = v
 		}
+		recData, err := json.Marshal(record)
+		if err != nil {
+			return err
+		}
 		msgs = append(msgs, record)
-		counter++
-		if counter == 50000 || i == len(records)-1 {
+		size += len(recData)
+		if size >= maxBatchBytes {
 			data, err := json.Marshal(msgs)
 			if err != nil {
 				return err
 			}
 			msg.Payload = data
-			_, err = as.publish(ctx, key, msg)
-			if err != nil {
+			if _, err = as.publish(ctx, key, msg); err != nil {
 				return err
 			}
-			counter = 0
 			msgs = []map[string]any{}
-			if i != len(records)-1 {
-				time.Sleep(30 * time.Second)
-			}
+			size = 0
+			time.Sleep(batchDelay)
+		}
+	}
+	if len(msgs) > 0 {
+		data, err := json.Marshal(msgs)
+		if err != nil {
+			return err
+		}
+		msg.Payload = data
+		if _, err := as.publish(ctx, key, msg); err != nil {
+			return err
 		}
 	}
 	return nil
