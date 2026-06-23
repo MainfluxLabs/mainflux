@@ -315,11 +315,11 @@ func toSenMLEntries(record map[string]any) ([]map[string]any, error) {
 					entry["v"] = f
 				}
 			case "vs", "string_value":
-				if s, ok := v.(string); ok {
+				if s, ok := v.(string); ok && s != "" {
 					entry["vs"] = s
 				}
 			case "vd", "data_value":
-				if s, ok := v.(string); ok {
+				if s, ok := v.(string); ok && s != "" {
 					entry["vd"] = s
 				}
 			case "vb", "bool_value":
