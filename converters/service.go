@@ -301,9 +301,14 @@ func toSenMLEntries(record map[string]any) ([]map[string]any, error) {
 		return nil, ErrInvalidTimeField
 	}
 
-	n, _ := record["n"].(string)
+	n := ""
+	if s, ok := record["n"].(string); ok {
+		n = s
+	}
 	if n == "" {
-		n, _ = record["name"].(string)
+		if s, ok := record["name"].(string); ok {
+			n = s
+		}
 	}
 
 	if n != "" {
