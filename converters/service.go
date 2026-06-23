@@ -70,12 +70,7 @@ func (as *adapterService) PublishSenMLMessagesFromCSV(ctx context.Context, key s
 		if len(msgs) == 0 {
 			return nil
 		}
-		data, err := json.Marshal(msgs)
-		if err != nil {
-			return err
-		}
-		msg.Payload = data
-		if _, err = as.publish(ctx, key, msg); err != nil {
+		if err := as.publishMsgs(ctx, key, msgs, msg); err != nil {
 			return err
 		}
 		msgs = []map[string]any{}
@@ -188,12 +183,7 @@ func (as *adapterService) PublishJSONMessagesFromCSV(ctx context.Context, key st
 		msgs = append(msgs, record)
 		size += len(recData)
 		if size >= maxBatchBytes {
-			data, err := json.Marshal(msgs)
-			if err != nil {
-				return err
-			}
-			msg.Payload = data
-			if _, err = as.publish(ctx, key, msg); err != nil {
+			if err := as.publishMsgs(ctx, key, msgs, msg); err != nil {
 				return err
 			}
 			msgs = []map[string]any{}
@@ -202,12 +192,7 @@ func (as *adapterService) PublishJSONMessagesFromCSV(ctx context.Context, key st
 		}
 	}
 	if len(msgs) > 0 {
-		data, err := json.Marshal(msgs)
-		if err != nil {
-			return err
-		}
-		msg.Payload = data
-		if _, err := as.publish(ctx, key, msg); err != nil {
+		if err := as.publishMsgs(ctx, key, msgs, msg); err != nil {
 			return err
 		}
 	}
@@ -226,12 +211,7 @@ func (as *adapterService) PublishSenMLMessagesFromJSON(ctx context.Context, key 
 		if len(msgs) == 0 {
 			return nil
 		}
-		data, err := json.Marshal(msgs)
-		if err != nil {
-			return err
-		}
-		msg.Payload = data
-		if _, err = as.publish(ctx, key, msg); err != nil {
+		if err := as.publishMsgs(ctx, key, msgs, msg); err != nil {
 			return err
 		}
 		msgs = []map[string]any{}
@@ -240,12 +220,7 @@ func (as *adapterService) PublishSenMLMessagesFromJSON(ctx context.Context, key 
 	}
 
 	for _, record := range records {
-		if s, ok := record["protocol"].(string); ok && s != "" {
-			msg.Protocol = s
-		}
-		if s, ok := record["subtopic"].(string); ok {
-			msg.Subtopic = s
-		}
+		applyEnvelopeFields(&msg, record)
 		entries, err := toSenMLEntries(record)
 		if err != nil {
 			return err
@@ -267,6 +242,50 @@ func (as *adapterService) PublishSenMLMessagesFromJSON(ctx context.Context, key 
 	}
 
 	return flush()
+}
+
+func (as *adapterService) PublishJSONMessagesFromJSON(ctx context.Context, key string, records []map[string]any) error {
+	thKey := domain.ThingKey{
+		Value: key,
+		Type:  domain.KeyTypeInternal,
+	}
+
+	pc, err := as.things.GetPubConfigByKey(ctx, thKey)
+	if err != nil {
+		return err
+	}
+
+	timeField := pc.ProfileConfig.Transformer.TimeField
+
+	msg := protomfx.Message{
+		Protocol: protocol,
+		Created:  time.Now().UnixNano(),
+	}
+	msgs := []map[string]any{}
+	size := 0
+	for _, inputRecord := range records {
+		record := parseJSONRecord(inputRecord, timeField, &msg)
+		recData, err := json.Marshal(record)
+		if err != nil {
+			return err
+		}
+		msgs = append(msgs, record)
+		size += len(recData)
+		if size >= maxBatchBytes {
+			if err := as.publishMsgs(ctx, key, msgs, msg); err != nil {
+				return err
+			}
+			msgs = []map[string]any{}
+			size = 0
+			time.Sleep(batchDelay)
+		}
+	}
+	if len(msgs) > 0 {
+		if err := as.publishMsgs(ctx, key, msgs, msg); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // toSenMLEntries converts one input record into SenML measurement entries.
@@ -334,75 +353,36 @@ func toSenMLEntries(record map[string]any) ([]map[string]any, error) {
 	return entries, nil
 }
 
-func (as *adapterService) PublishJSONMessagesFromJSON(ctx context.Context, key string, records []map[string]any) error {
-	thKey := domain.ThingKey{
-		Value: key,
-		Type:  domain.KeyTypeInternal,
+// applyEnvelopeFields sets msg.Protocol and msg.Subtopic from a source map.
+func applyEnvelopeFields(msg *protomfx.Message, src map[string]any) {
+	if s, ok := src["protocol"].(string); ok && s != "" {
+		msg.Protocol = s
 	}
-
-	pc, err := as.things.GetPubConfigByKey(ctx, thKey)
-	if err != nil {
-		return err
+	if s, ok := src["subtopic"].(string); ok {
+		msg.Subtopic = s
 	}
+}
 
-	timeField := pc.ProfileConfig.Transformer.TimeField
+// parseJSONRecord converts one input record into a payload record and updates
+// msg.Protocol / msg.Subtopic from envelope fields. Handles both Format A
+// (reader-exported {"payload":{...},"created":...}) and flat records.
+func parseJSONRecord(inputRecord map[string]any, timeField string, msg *protomfx.Message) map[string]any {
+	record := map[string]any{}
 
-	msg := protomfx.Message{
-		Protocol: protocol,
-		Created:  time.Now().UnixNano(),
-	}
-	msgs := []map[string]any{}
-	size := 0
-	for _, inputRecord := range records {
-		// Auto-unwrap reader-exported Format A: {"payload":{...},"created":...,...}
-		source := inputRecord
-		unwrapped := false
-		var outerTimestamp float64
-		if pld, ok := inputRecord["payload"].(map[string]any); ok {
-			source = pld
-			unwrapped = true
-			// Prefer the outer timeField value (numeric); fall back to outer "created".
-			if timeField != "" {
-				outerTimestamp, _ = inputRecord[timeField].(float64)
-			}
-			if outerTimestamp == 0 {
-				outerTimestamp, _ = inputRecord["created"].(float64)
-			}
-			// Preserve envelope fields from the outer record into the message.
-			if s, ok := inputRecord["protocol"].(string); ok && s != "" {
-				msg.Protocol = s
-			}
-			if s, ok := inputRecord["subtopic"].(string); ok {
-				msg.Subtopic = s
-			}
+	if pld, ok := inputRecord["payload"].(map[string]any); ok {
+		// Format A — unwrap outer envelope, prefer timeField over "created".
+		var ts float64
+		if timeField != "" {
+			ts, _ = inputRecord[timeField].(float64)
 		}
-
-		record := map[string]any{}
-		if outerTimestamp != 0 {
-			record["Created"] = outerTimestamp
+		if ts == 0 {
+			ts, _ = inputRecord["created"].(float64)
 		}
-
-		for k, v := range source {
-			// For flat records, envelope fields are lifted into the message rather
-			// than stored in the payload. For unwrapped Format A the outer envelope
-			// is already handled above; inner fields are sensor data.
-			if !unwrapped && reservedFields[k] {
-				switch k {
-				case "protocol":
-					if s, ok := v.(string); ok && s != "" {
-						msg.Protocol = s
-					}
-				case "subtopic":
-					if s, ok := v.(string); ok {
-						msg.Subtopic = s
-					}
-				case "created":
-					if t, ok := v.(float64); ok && t != 0 {
-						record["Created"] = t
-					}
-				}
-				continue
-			}
+		if ts != 0 {
+			record["Created"] = ts
+		}
+		applyEnvelopeFields(msg, inputRecord)
+		for k, v := range pld {
 			if timeField != "" && k == timeField {
 				if t, ok := v.(float64); ok {
 					record["Created"] = t
@@ -410,37 +390,47 @@ func (as *adapterService) PublishJSONMessagesFromJSON(ctx context.Context, key s
 			}
 			record[k] = v
 		}
-		recData, err := json.Marshal(record)
-		if err != nil {
-			return err
-		}
-		msgs = append(msgs, record)
-		size += len(recData)
-		if size >= maxBatchBytes {
-			data, err := json.Marshal(msgs)
-			if err != nil {
-				return err
-			}
-			msg.Payload = data
-			if _, err = as.publish(ctx, key, msg); err != nil {
-				return err
-			}
-			msgs = []map[string]any{}
-			size = 0
-			time.Sleep(batchDelay)
-		}
+		return record
 	}
-	if len(msgs) > 0 {
-		data, err := json.Marshal(msgs)
-		if err != nil {
-			return err
+
+	// Flat record — lift envelope fields into msg, store the rest in record.
+	for k, v := range inputRecord {
+		if reservedFields[k] {
+			switch k {
+			case "protocol":
+				if s, ok := v.(string); ok && s != "" {
+					msg.Protocol = s
+				}
+			case "subtopic":
+				if s, ok := v.(string); ok {
+					msg.Subtopic = s
+				}
+			case "created":
+				if t, ok := v.(float64); ok && t != 0 {
+					record["Created"] = t
+				}
+			}
+			continue
 		}
-		msg.Payload = data
-		if _, err := as.publish(ctx, key, msg); err != nil {
-			return err
+		if timeField != "" && k == timeField {
+			if t, ok := v.(float64); ok {
+				record["Created"] = t
+			}
 		}
+		record[k] = v
 	}
-	return nil
+	return record
+}
+
+// publishMsgs marshals a batch of records, sets msg.Payload, and publishes.
+func (as *adapterService) publishMsgs(ctx context.Context, key string, msgs []map[string]any, msg protomfx.Message) error {
+	data, err := json.Marshal(msgs)
+	if err != nil {
+		return err
+	}
+	msg.Payload = data
+	_, err = as.publish(ctx, key, msg)
+	return err
 }
 
 func (as *adapterService) publish(ctx context.Context, key string, msg protomfx.Message) (m protomfx.Message, err error) {
