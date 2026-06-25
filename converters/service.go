@@ -264,7 +264,10 @@ func (as *adapterService) PublishJSONMessagesFromJSON(ctx context.Context, key s
 	msgs := []map[string]any{}
 	size := 0
 	for _, inputRecord := range records {
-		record := parseJSONRecord(inputRecord, timeField, &msg)
+		record, err := parseJSONRecord(inputRecord, timeField, &msg)
+		if err != nil {
+			return err
+		}
 		recData, err := json.Marshal(record)
 		if err != nil {
 			return err
@@ -371,19 +374,27 @@ func applyEnvelopeFields(msg *protomfx.Message, src map[string]any) {
 // parseJSONRecord converts one input record into a payload record and updates
 // msg.Protocol / msg.Subtopic from envelope fields. Handles both Format A
 // (reader-exported {"payload":{...},"created":...}) and flat records.
-func parseJSONRecord(inputRecord map[string]any, timeField string, msg *protomfx.Message) map[string]any {
+func parseJSONRecord(inputRecord map[string]any, timeField string, msg *protomfx.Message) (map[string]any, error) {
 	record := map[string]any{}
 
 	if pld, ok := inputRecord["payload"].(map[string]any); ok {
 		// Format A — unwrap outer envelope, prefer timeField over "created".
 		var ts float64
 		if timeField != "" {
-			if t, ok := inputRecord[timeField].(float64); ok {
+			if v, exists := inputRecord[timeField]; exists {
+				t, ok := v.(float64)
+				if !ok {
+					return nil, ErrInvalidTimeField
+				}
 				ts = t
 			}
 		}
 		if ts == 0 {
-			if t, ok := inputRecord["created"].(float64); ok {
+			if v, exists := inputRecord["created"]; exists {
+				t, ok := v.(float64)
+				if !ok {
+					return nil, ErrInvalidTimeField
+				}
 				ts = t
 			}
 		}
@@ -393,13 +404,15 @@ func parseJSONRecord(inputRecord map[string]any, timeField string, msg *protomfx
 		applyEnvelopeFields(msg, inputRecord)
 		for k, v := range pld {
 			if timeField != "" && k == timeField {
-				if t, ok := v.(float64); ok {
-					record["Created"] = t
+				t, ok := v.(float64)
+				if !ok {
+					return nil, ErrInvalidTimeField
 				}
+				record["Created"] = t
 			}
 			record[k] = v
 		}
-		return record
+		return record, nil
 	}
 
 	// Flat record — lift envelope fields into msg, store the rest in record.
@@ -415,20 +428,26 @@ func parseJSONRecord(inputRecord map[string]any, timeField string, msg *protomfx
 					msg.Subtopic = s
 				}
 			case "created":
-				if t, ok := v.(float64); ok && t != 0 {
+				t, ok := v.(float64)
+				if !ok {
+					return nil, ErrInvalidTimeField
+				}
+				if t != 0 {
 					record["Created"] = t
 				}
 			}
 			continue
 		}
 		if timeField != "" && k == timeField {
-			if t, ok := v.(float64); ok {
-				record["Created"] = t
+			t, ok := v.(float64)
+			if !ok {
+				return nil, ErrInvalidTimeField
 			}
+			record["Created"] = t
 		}
 		record[k] = v
 	}
-	return record
+	return record, nil
 }
 
 // publishMsgs marshals a batch of records, sets msg.Payload, and publishes.
