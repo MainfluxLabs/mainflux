@@ -112,12 +112,14 @@ func TestCreateThings(t *testing.T) {
 			key:  token,
 			err:  nil,
 			event: map[string]any{
-				"id":         "123e4567-e89b-12d3-a456-000000000003",
-				"name":       "a",
-				"group_id":   grID,
-				"profile_id": prID,
-				"metadata":   "{\"test\":\"test\"}",
-				"operation":  mfevents.ThingCreate,
+				"id":           "123e4567-e89b-12d3-a456-000000000003",
+				"name":         "a",
+				"group_id":     grID,
+				"profile_id":   prID,
+				"metadata":     "{\"test\":\"test\"}",
+				"operation":    mfevents.ThingCreate,
+				"evt_org_id":   orgID,
+				"evt_group_id": grID,
 			},
 		},
 		{
@@ -145,6 +147,9 @@ func TestCreateThings(t *testing.T) {
 			msg := streams[0].Messages[0]
 			event = msg.Values
 			lastID = msg.ID
+
+			assert.NotEmpty(t, event["occurred_at"], tc.desc)
+			delete(event, "occurred_at")
 		}
 
 		assert.Equal(t, tc.event, event, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event))
@@ -190,11 +195,13 @@ func TestUpdateThing(t *testing.T) {
 			key: token,
 			err: nil,
 			event: map[string]any{
-				"id":         sth.ID,
-				"profile_id": sth.ProfileID,
-				"name":       "a",
-				"metadata":   "{\"test\":\"test\"}",
-				"operation":  mfevents.ThingUpdate,
+				"id":           sth.ID,
+				"profile_id":   sth.ProfileID,
+				"name":         "a",
+				"metadata":     "{\"test\":\"test\"}",
+				"operation":    mfevents.ThingUpdate,
+				"evt_org_id":   orgID,
+				"evt_group_id": grID,
 			},
 		},
 	}
@@ -214,6 +221,9 @@ func TestUpdateThing(t *testing.T) {
 			msg := streams[0].Messages[0]
 			event = msg.Values
 			lastID = msg.ID
+
+			assert.NotEmpty(t, event["occurred_at"], tc.desc)
+			delete(event, "occurred_at")
 		}
 
 		assert.Equal(t, tc.event, event, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event))
@@ -327,8 +337,10 @@ func TestRemoveThing(t *testing.T) {
 			key:  token,
 			err:  nil,
 			event: map[string]any{
-				"id":        sth.ID,
-				"operation": mfevents.ThingRemove,
+				"id":           sth.ID,
+				"operation":    mfevents.ThingRemove,
+				"evt_org_id":   orgID,
+				"evt_group_id": grID,
 			},
 		},
 		{
@@ -356,6 +368,9 @@ func TestRemoveThing(t *testing.T) {
 			msg := streams[0].Messages[0]
 			event = msg.Values
 			lastID = msg.ID
+
+			assert.NotEmpty(t, event["occurred_at"], tc.desc)
+			delete(event, "occurred_at")
 		}
 
 		assert.Equal(t, tc.event, event, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event))
@@ -387,11 +402,13 @@ func TestCreateProfiles(t *testing.T) {
 			groupID: gr.ID,
 			err:     nil,
 			event: map[string]any{
-				"id":        "123e4567-e89b-12d3-a456-000000000002",
-				"name":      "a",
-				"metadata":  "{\"test\":\"test\"}",
-				"group_id":  gr.ID,
-				"operation": mfevents.ProfileCreate,
+				"id":           "123e4567-e89b-12d3-a456-000000000002",
+				"name":         "a",
+				"metadata":     "{\"test\":\"test\"}",
+				"group_id":     gr.ID,
+				"operation":    mfevents.ProfileCreate,
+				"evt_org_id":   orgID,
+				"evt_group_id": gr.ID,
 			},
 		},
 		{
@@ -420,6 +437,9 @@ func TestCreateProfiles(t *testing.T) {
 			msg := streams[0].Messages[0]
 			event = msg.Values
 			lastID = msg.ID
+
+			assert.NotEmpty(t, event["occurred_at"], tc.desc)
+			delete(event, "occurred_at")
 		}
 
 		assert.Equal(t, tc.event, event, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event))
@@ -457,10 +477,12 @@ func TestUpdateProfile(t *testing.T) {
 			key: token,
 			err: nil,
 			event: map[string]any{
-				"id":        spr.ID,
-				"name":      "b",
-				"metadata":  "{\"test\":\"test\"}",
-				"operation": mfevents.ProfileUpdate,
+				"id":           spr.ID,
+				"name":         "b",
+				"metadata":     "{\"test\":\"test\"}",
+				"operation":    mfevents.ProfileUpdate,
+				"evt_org_id":   orgID,
+				"evt_group_id": gr.ID,
 			},
 		},
 		{
@@ -491,6 +513,9 @@ func TestUpdateProfile(t *testing.T) {
 			msg := streams[0].Messages[0]
 			event = msg.Values
 			lastID = msg.ID
+
+			assert.NotEmpty(t, event["occurred_at"], tc.desc)
+			delete(event, "occurred_at")
 		}
 
 		assert.Equal(t, tc.event, event, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event))
@@ -590,8 +615,10 @@ func TestRemoveProfile(t *testing.T) {
 			key:  token,
 			err:  nil,
 			event: map[string]any{
-				"id":        spr.ID,
-				"operation": mfevents.ProfileRemove,
+				"id":           spr.ID,
+				"operation":    mfevents.ProfileRemove,
+				"evt_org_id":   orgID,
+				"evt_group_id": gr.ID,
 			},
 		},
 		{
@@ -619,6 +646,9 @@ func TestRemoveProfile(t *testing.T) {
 			msg := streams[0].Messages[0]
 			event = msg.Values
 			lastID = msg.ID
+
+			assert.NotEmpty(t, event["occurred_at"], tc.desc)
+			delete(event, "occurred_at")
 		}
 
 		assert.Equal(t, tc.event, event, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event))

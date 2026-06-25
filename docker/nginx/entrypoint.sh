@@ -30,7 +30,8 @@ envsubst '
     ${MF_RULES_HTTP_PORT}
     ${MF_CERTS_HTTP_PORT}
     ${MF_MODBUS_HTTP_PORT}
-    ${MF_UI_CONFIGS_HTTP_PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+    ${MF_UI_CONFIGS_HTTP_PORT}
+    ${MF_AUDIT_HTTP_PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
 
 # CRL support: if the CRL directory is mounted, wait for the initial CRL file
