@@ -41,14 +41,14 @@ func MakeHandler(svc adapter.Service, ac domain.AuthClient, tracer opentracing.T
 
 	r := bone.New()
 
-	r.Post("/csv/convert", kithttp.NewServer(
+	r.Post("/csv", kithttp.NewServer(
 		kitot.TraceServer(tracer, "convert_csv")(convertCSVEndpoint(svc)),
 		decodeConvertCSVFile,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Post("/json/convert", kithttp.NewServer(
+	r.Post("/json", kithttp.NewServer(
 		kitot.TraceServer(tracer, "convert_json")(convertJSONEndpoint(svc)),
 		decodeConvertJSONFile,
 		encodeResponse,
