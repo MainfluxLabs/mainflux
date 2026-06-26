@@ -10,29 +10,37 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
-func convertCSVToJSONEndpoint(svc converters.Service) endpoint.Endpoint {
+func convertCSVEndpoint(svc converters.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(convertCSVReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		// Publish async to avoid blocking past the gateway timeout on large files.
-		go func() { _ = svc.PublishJSONMessages(context.Background(), req.key.Value, req.csvLines) }()
+		switch req.to {
+		case toSenML:
+			go func() { _ = svc.PublishSenMLMessagesFromCSV(context.Background(), req.key.Value, req.csvLines) }()
+		case toJSON:
+			go func() { _ = svc.PublishJSONMessagesFromCSV(context.Background(), req.key.Value, req.csvLines) }()
+		}
 
 		return nil, nil
 	}
 }
 
-func convertCSVToSenMLEndpoint(svc converters.Service) endpoint.Endpoint {
+func convertJSONEndpoint(svc converters.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(convertCSVReq)
+		req := request.(convertJSONReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		// Publish async to avoid blocking past the gateway timeout on large files.
-		go func() { _ = svc.PublishSenMLMessages(context.Background(), req.key.Value, req.csvLines) }()
+		switch req.to {
+		case toSenML:
+			go func() { _ = svc.PublishSenMLMessagesFromJSON(context.Background(), req.key.Value, req.records) }()
+		case toJSON:
+			go func() { _ = svc.PublishJSONMessagesFromJSON(context.Background(), req.key.Value, req.records) }()
+		}
 
 		return nil, nil
 	}
