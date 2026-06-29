@@ -289,22 +289,22 @@ func decodeListScriptRunsByThing(_ context.Context, r *http.Request) (any, error
 	if err != nil {
 		return nil, err
 	}
-	fromNs, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	fromMs, err := apiutil.ReadIntQuery(r, fromKey, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	toNs, err := apiutil.ReadIntQuery(r, toKey, 0)
+	toMs, err := apiutil.ReadIntQuery(r, toKey, 0)
 	if err != nil {
 		return nil, err
 	}
 
 	var from, to time.Time
-	if fromNs > 0 {
-		from = time.Unix(0, fromNs)
+	if fromMs > 0 {
+		from = time.UnixMilli(fromMs)
 	}
-	if toNs > 0 {
-		to = time.Unix(0, toNs)
+	if toMs > 0 {
+		to = time.UnixMilli(toMs)
 	}
 
 	req := listScriptRunsByThingReq{

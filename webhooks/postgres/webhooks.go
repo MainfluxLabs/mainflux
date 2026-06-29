@@ -76,7 +76,7 @@ func (wr webhookRepository) RetrieveByGroup(ctx context.Context, groupID string,
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	urlq, urlVal := dbutil.GetLikeQuery("url", pm.URL)
+	urlq, url := dbutil.GetLikeQuery("url", pm.URL)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return webhooks.WebhooksPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
@@ -89,7 +89,7 @@ func (wr webhookRepository) RetrieveByGroup(ctx context.Context, groupID string,
 	params := map[string]any{
 		"group_id": groupID,
 		"name":     name,
-		"url":      urlVal,
+		"url":      url,
 		"metadata": m,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
@@ -108,7 +108,7 @@ func (wr webhookRepository) RetrieveByThing(ctx context.Context, thingID string,
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	urlq, urlVal := dbutil.GetLikeQuery("url", pm.URL)
+	urlq, url := dbutil.GetLikeQuery("url", pm.URL)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return webhooks.WebhooksPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
@@ -121,7 +121,7 @@ func (wr webhookRepository) RetrieveByThing(ctx context.Context, thingID string,
 	params := map[string]any{
 		"thing_id": thingID,
 		"name":     name,
-		"url":      urlVal,
+		"url":      url,
 		"metadata": m,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,

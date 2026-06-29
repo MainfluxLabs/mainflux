@@ -78,7 +78,7 @@ func (dr downlinkRepository) RetrieveByThing(ctx context.Context, thingID string
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	urlq, urlVal := dbutil.GetLikeQuery("url", pm.URL)
+	urlq, url := dbutil.GetLikeQuery("url", pm.URL)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
 	filters := []string{"thing_id = :thing_id"}
@@ -105,7 +105,7 @@ func (dr downlinkRepository) RetrieveByThing(ctx context.Context, thingID string
 	params := map[string]any{
 		"name":      name,
 		"thing_id":  thingID,
-		"url":       urlVal,
+		"url":       url,
 		"method":    pm.Method,
 		"frequency": pm.Frequency,
 		"limit":     pm.Limit,
@@ -123,7 +123,7 @@ func (dr downlinkRepository) RetrieveByGroup(ctx context.Context, groupID string
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	urlq, urlVal := dbutil.GetLikeQuery("url", pm.URL)
+	urlq, url := dbutil.GetLikeQuery("url", pm.URL)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
 	filters := []string{"group_id = :group_id"}
@@ -150,7 +150,7 @@ func (dr downlinkRepository) RetrieveByGroup(ctx context.Context, groupID string
 	params := map[string]any{
 		"name":      name,
 		"group_id":  groupID,
-		"url":       urlVal,
+		"url":       url,
 		"method":    pm.Method,
 		"frequency": pm.Frequency,
 		"limit":     pm.Limit,

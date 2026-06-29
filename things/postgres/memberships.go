@@ -77,15 +77,10 @@ func (mr groupMembershipsRepository) RetrieveRole(ctx context.Context, gm things
 
 func (mr groupMembershipsRepository) RetrieveByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupMembershipsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	rq, role := dbutil.GetEqualQuery("role", pm.Role)
-
-	baseCondition := "group_id = :group_id"
-	whereClause := dbutil.BuildWhereClause(baseCondition, rq)
-	q := fmt.Sprintf(`SELECT member_id, role FROM group_memberships %s %s;`, whereClause, olq)
+	q := fmt.Sprintf(`SELECT member_id, role FROM group_memberships WHERE group_id = :group_id %s;`, olq)
 
 	params := map[string]any{
 		"group_id": groupID,
-		"role":     role,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
 	}
@@ -107,7 +102,7 @@ func (mr groupMembershipsRepository) RetrieveByGroup(ctx context.Context, groupI
 		items = append(items, gm)
 	}
 
-	cq := fmt.Sprintf(`SELECT COUNT(*) FROM group_memberships %s;`, whereClause)
+	cq := `SELECT COUNT(*) FROM group_memberships WHERE group_id = :group_id;`
 
 	total, err := dbutil.Total(ctx, mr.db, cq, params)
 	if err != nil {

@@ -39,7 +39,7 @@ type PageMetadata struct {
 	Name      string `json:"name,omitempty"`
 	IPAddress string `json:"ip_address,omitempty"`
 	Port      string `json:"port,omitempty"`
-	SlaveID   string `json:"slave_id,omitempty"`
+	SlaveID   int64  `json:"slave_id,omitempty"`
 	Frequency string `json:"frequency,omitempty"`
 }
 

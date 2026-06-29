@@ -133,7 +133,7 @@ func (tr thingRepository) RetrieveByGroups(ctx context.Context, groupIDs []strin
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	giq := dbutil.GetGroupIDsQuery(groupIDs)
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	tq, thingType := dbutil.GetEqualQuery("type", pm.Type)
+	tq := typeQuery(pm.Type)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return things.ThingsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
@@ -145,7 +145,7 @@ func (tr thingRepository) RetrieveByGroups(ctx context.Context, groupIDs []strin
 
 	params := map[string]any{
 		"name":     name,
-		"type":     thingType,
+		"type":     pm.Type,
 		"metadata": m,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
@@ -181,7 +181,7 @@ func (tr thingRepository) RetrieveAll(ctx context.Context, pm things.PageMetadat
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
-	tq, thingType := dbutil.GetEqualQuery("type", pm.Type)
+	tq := typeQuery(pm.Type)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return things.ThingsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
@@ -193,7 +193,7 @@ func (tr thingRepository) RetrieveAll(ctx context.Context, pm things.PageMetadat
 
 	params := map[string]any{
 		"name":     name,
-		"type":     thingType,
+		"type":     pm.Type,
 		"metadata": m,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
@@ -459,4 +459,11 @@ func toThing(dbth dbThing) (things.Thing, error) {
 		ExternalKey: dbth.ExternalKey.String,
 		Metadata:    metadata,
 	}, nil
+}
+
+func typeQuery(thingType string) string {
+	if thingType == "" {
+		return ""
+	}
+	return "type = :type"
 }

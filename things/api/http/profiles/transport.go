@@ -217,9 +217,20 @@ func buildPageMetadata(r *http.Request) (things.PageMetadata, error) {
 		return things.PageMetadata{}, err
 	}
 
-	n, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
-	m, _ := apiutil.ReadMetadataQuery(r, apiutil.MetadataKey, nil)
-	ct, _ := apiutil.ReadStringQuery(r, "content_type", "")
+	n, err := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	if err != nil {
+		return things.PageMetadata{}, err
+	}
+
+	m, err := apiutil.ReadMetadataQuery(r, apiutil.MetadataKey, nil)
+	if err != nil {
+		return things.PageMetadata{}, err
+	}
+
+	ct, err := apiutil.ReadStringQuery(r, "content_type", "")
+	if err != nil {
+		return things.PageMetadata{}, err
+	}
 
 	return things.PageMetadata{
 		Offset:      base.Offset,

@@ -140,7 +140,7 @@ func buildPageMetadata(r *http.Request) (modbus.PageMetadata, error) {
 		return modbus.PageMetadata{}, err
 	}
 
-	s, err := apiutil.ReadStringQuery(r, slaveIDKey, "")
+	slaveID, err := apiutil.ReadIntQuery(r, slaveIDKey, -1)
 	if err != nil {
 		return modbus.PageMetadata{}, err
 	}
@@ -158,7 +158,7 @@ func buildPageMetadata(r *http.Request) (modbus.PageMetadata, error) {
 		Name:      n,
 		IPAddress: ip,
 		Port:      p,
-		SlaveID:   s,
+		SlaveID:   slaveID,
 		Frequency: f,
 	}, nil
 }

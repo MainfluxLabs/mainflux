@@ -110,7 +110,8 @@ func (ar *alarmRepository) RetrieveByThing(ctx context.Context, thingID string, 
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
-	whereClause := dbutil.BuildWhereClause("thing_id = :thing_id", levelQuery(pm.Level), statusQuery(pm.Status), protocolQuery(pm.Protocol), subtopicQuery(pm.Subtopic), timeRangeQuery(pm.From, pm.To))
+	sq, subtopic := dbutil.GetLikeQuery("subtopic", pm.Subtopic)
+	whereClause := dbutil.BuildWhereClause("thing_id = :thing_id", levelQuery(pm.Level), statusQuery(pm.Status), protocolQuery(pm.Protocol), sq, timeRangeQuery(pm.From, pm.To))
 
 	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, rule, level, status, created
 	                  FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
@@ -123,7 +124,7 @@ func (ar *alarmRepository) RetrieveByThing(ctx context.Context, thingID string, 
 		"level":    pm.Level,
 		"status":   pm.Status,
 		"protocol": pm.Protocol,
-		"subtopic": fmt.Sprintf("%%%s%%", strings.ToLower(pm.Subtopic)),
+		"subtopic": subtopic,
 		"from":     pm.From,
 		"to":       pm.To,
 	}
@@ -140,7 +141,8 @@ func (ar *alarmRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
-	whereClause := dbutil.BuildWhereClause("group_id = :group_id", levelQuery(pm.Level), statusQuery(pm.Status), protocolQuery(pm.Protocol), subtopicQuery(pm.Subtopic), timeRangeQuery(pm.From, pm.To))
+	sq, subtopic := dbutil.GetLikeQuery("subtopic", pm.Subtopic)
+	whereClause := dbutil.BuildWhereClause("group_id = :group_id", levelQuery(pm.Level), statusQuery(pm.Status), protocolQuery(pm.Protocol), sq, timeRangeQuery(pm.From, pm.To))
 
 	q := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, rule, level, status, created
 	                  FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
@@ -153,7 +155,7 @@ func (ar *alarmRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 		"level":    pm.Level,
 		"status":   pm.Status,
 		"protocol": pm.Protocol,
-		"subtopic": fmt.Sprintf("%%%s%%", strings.ToLower(pm.Subtopic)),
+		"subtopic": subtopic,
 		"from":     pm.From,
 		"to":       pm.To,
 	}
@@ -170,7 +172,8 @@ func (ar *alarmRepository) RetrieveByGroups(ctx context.Context, groupIDs []stri
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
-	whereClause := dbutil.BuildWhereClause(dbutil.GetGroupIDsQuery(groupIDs), levelQuery(pm.Level), statusQuery(pm.Status), protocolQuery(pm.Protocol), subtopicQuery(pm.Subtopic), timeRangeQuery(pm.From, pm.To))
+	sq, subtopic := dbutil.GetLikeQuery("subtopic", pm.Subtopic)
+	whereClause := dbutil.BuildWhereClause(dbutil.GetGroupIDsQuery(groupIDs), levelQuery(pm.Level), statusQuery(pm.Status), protocolQuery(pm.Protocol), sq, timeRangeQuery(pm.From, pm.To))
 
 	query := fmt.Sprintf(`SELECT id, thing_id, group_id, rule_id, script_id, subtopic, protocol, rule, level, status, created FROM alarms %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM alarms %s;`, whereClause)
@@ -182,7 +185,7 @@ func (ar *alarmRepository) RetrieveByGroups(ctx context.Context, groupIDs []stri
 		"level":     pm.Level,
 		"status":    pm.Status,
 		"protocol":  pm.Protocol,
-		"subtopic":  fmt.Sprintf("%%%s%%", strings.ToLower(pm.Subtopic)),
+		"subtopic":  subtopic,
 		"from":      pm.From,
 		"to":        pm.To,
 	}
@@ -360,12 +363,6 @@ func protocolQuery(protocol string) string {
 	return "protocol = :protocol"
 }
 
-func subtopicQuery(subtopic string) string {
-	if subtopic == "" {
-		return ""
-	}
-	return "LOWER(subtopic) LIKE :subtopic"
-}
 
 func timeRangeQuery(from, to int64) string {
 	var parts []string

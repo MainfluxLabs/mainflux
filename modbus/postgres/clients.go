@@ -125,8 +125,8 @@ func (cr clientRepository) RetrieveByThing(ctx context.Context, thingID string, 
 	if pm.Port != "" {
 		filters = append(filters, "port = :port")
 	}
-	if pm.SlaveID != "" {
-		filters = append(filters, "CAST(slave_id AS text) = :slave_id")
+	if pm.SlaveID >= 0 {
+		filters = append(filters, "slave_id = :slave_id")
 	}
 	if pm.Frequency != "" {
 		filters = append(filters, "scheduler->>'frequency' = :frequency")
@@ -175,8 +175,8 @@ func (cr clientRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 	if pm.Port != "" {
 		filters = append(filters, "port = :port")
 	}
-	if pm.SlaveID != "" {
-		filters = append(filters, "CAST(slave_id AS text) = :slave_id")
+	if pm.SlaveID >= 0 {
+		filters = append(filters, "slave_id = :slave_id")
 	}
 	if pm.Frequency != "" {
 		filters = append(filters, "scheduler->>'frequency' = :frequency")
