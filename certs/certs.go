@@ -14,6 +14,15 @@ type Page struct {
 	Certs []Cert
 }
 
+// PageMetadata contains pagination and filter parameters for listing certs.
+type PageMetadata struct {
+	Offset        uint64
+	Limit         uint64
+	Serial        string
+	ExpiresBefore time.Time
+	ExpiresAfter  time.Time
+}
+
 type RevokedCert struct {
 	Serial    string    `db:"serial"`
 	ThingID   string    `db:"thing_id"`
@@ -35,7 +44,7 @@ type Repository interface {
 	RemoveByThing(ctx context.Context, thingID string) error
 
 	// RetrieveByThing retrieves issued certificates for a given thing ID
-	RetrieveByThing(ctx context.Context, thingID string, offset, limit uint64) (Page, error)
+	RetrieveByThing(ctx context.Context, thingID string, pm PageMetadata) (Page, error)
 
 	// RetrieveBySerial retrieves a certificate for a given serial
 	RetrieveBySerial(ctx context.Context, serial string) (Cert, error)

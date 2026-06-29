@@ -405,7 +405,7 @@ func TestRemoveCertsByThing(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected cert creation error: %s\n", err))
 	}
 
-	page, err := svc.ListCerts(context.Background(), token, thingID, 0, certNum)
+	page, err := svc.ListCerts(context.Background(), token, thingID, certs.PageMetadata{Limit: certNum})
 	require.Nil(t, err, fmt.Sprintf("unexpected list error: %s\n", err))
 	require.Equal(t, certNum, len(page.Certs), "expected all issued certs to be listed before removal")
 
@@ -439,7 +439,7 @@ func TestRemoveCertsByThing(t *testing.T) {
 		err := svc.RemoveCertsByThing(context.Background(), tc.thingID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.err, err))
 
-		page, lErr := svc.ListCerts(context.Background(), token, thingID, 0, certNum)
+		page, lErr := svc.ListCerts(context.Background(), token, thingID, certs.PageMetadata{Limit: certNum})
 		require.Nil(t, lErr, fmt.Sprintf("%s: unexpected list error: %s\n", tc.desc, lErr))
 		assert.Equal(t, tc.wantCerts, len(page.Certs), fmt.Sprintf("%s: expected %d certs remaining got %d\n", tc.desc, tc.wantCerts, len(page.Certs)))
 	}
@@ -502,7 +502,7 @@ func TestListCerts(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		page, err := svc.ListCerts(context.Background(), tc.token, tc.thingID, tc.offset, tc.limit)
+		page, err := svc.ListCerts(context.Background(), tc.token, tc.thingID, certs.PageMetadata{Offset: tc.offset, Limit: tc.limit})
 		size := uint64(len(page.Certs))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected %d got %d\n", tc.desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
@@ -568,7 +568,7 @@ func TestListSerials(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		page, err := svc.ListSerials(context.Background(), tc.token, tc.thingID, tc.offset, tc.limit)
+		page, err := svc.ListSerials(context.Background(), tc.token, tc.thingID, certs.PageMetadata{Offset: tc.offset, Limit: tc.limit})
 		size := uint64(len(page.Certs))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected %d got %d\n", tc.desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))

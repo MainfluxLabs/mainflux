@@ -4,6 +4,8 @@
 package api
 
 import (
+	"time"
+
 	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
@@ -73,10 +75,13 @@ func (req rotateCertReq) validate() error {
 }
 
 type listReq struct {
-	thingID string
-	token   string
-	offset  uint64
-	limit   uint64
+	thingID       string
+	token         string
+	offset        uint64
+	limit         uint64
+	serial        string
+	expiresBefore time.Time
+	expiresAfter  time.Time
 }
 
 func (req *listReq) validate() error {

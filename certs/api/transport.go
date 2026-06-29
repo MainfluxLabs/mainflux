@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/certs"
@@ -22,6 +23,12 @@ import (
 	"github.com/go-zoo/bone"
 	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+)
+
+const (
+	serialKey        = "serial"
+	expiresBeforeKey = "expires_before"
+	expiresAfterKey  = "expires_after"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -137,11 +144,43 @@ func decodeListSerialsByThing(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
+	s, err := apiutil.ReadStringQuery(r, serialKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	ebStr, err := apiutil.ReadStringQuery(r, expiresBeforeKey, "")
+	if err != nil {
+		return nil, err
+	}
+	var eb time.Time
+	if ebStr != "" {
+		eb, err = time.Parse(time.RFC3339, ebStr)
+		if err != nil {
+			return nil, apiutil.ErrInvalidQueryParams
+		}
+	}
+
+	eaStr, err := apiutil.ReadStringQuery(r, expiresAfterKey, "")
+	if err != nil {
+		return nil, err
+	}
+	var ea time.Time
+	if eaStr != "" {
+		ea, err = time.Parse(time.RFC3339, eaStr)
+		if err != nil {
+			return nil, apiutil.ErrInvalidQueryParams
+		}
+	}
+
 	req := listReq{
-		token:   apiutil.ExtractBearerToken(r),
-		thingID: bone.GetValue(r, apiutil.IDKey),
-		limit:   l,
-		offset:  o,
+		token:         apiutil.ExtractBearerToken(r),
+		thingID:       bone.GetValue(r, apiutil.IDKey),
+		limit:         l,
+		offset:        o,
+		serial:        s,
+		expiresBefore: eb,
+		expiresAfter:  ea,
 	}
 
 	return req, nil

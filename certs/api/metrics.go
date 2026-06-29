@@ -49,22 +49,22 @@ func (ms *metricsMiddleware) RotateCert(ctx context.Context, token, serial, thin
 	return ms.svc.RotateCert(ctx, token, serial, thingID, ttl, keyBits, keyType)
 }
 
-func (ms *metricsMiddleware) ListCerts(ctx context.Context, token, thingID string, offset, limit uint64) (certs.Page, error) {
+func (ms *metricsMiddleware) ListCerts(ctx context.Context, token, thingID string, pm certs.PageMetadata) (certs.Page, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_certs").Add(1)
 		ms.latency.With("method", "list_certs").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListCerts(ctx, token, thingID, offset, limit)
+	return ms.svc.ListCerts(ctx, token, thingID, pm)
 }
 
-func (ms *metricsMiddleware) ListSerials(ctx context.Context, token, thingID string, offset, limit uint64) (certs.Page, error) {
+func (ms *metricsMiddleware) ListSerials(ctx context.Context, token, thingID string, pm certs.PageMetadata) (certs.Page, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_serials").Add(1)
 		ms.latency.With("method", "list_serials").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListSerials(ctx, token, thingID, offset, limit)
+	return ms.svc.ListSerials(ctx, token, thingID, pm)
 }
 
 func (ms *metricsMiddleware) ViewCert(ctx context.Context, token, serial string) (certs.Cert, error) {

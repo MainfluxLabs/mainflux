@@ -86,12 +86,12 @@ func (crm certsRepositoryMiddleware) RetrieveRevokedCerts(ctx context.Context) (
 	return crm.repo.RetrieveRevokedCerts(ctx)
 }
 
-func (crm certsRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingID string, offset, limit uint64) (certs.Page, error) {
+func (crm certsRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingID string, pm certs.PageMetadata) (certs.Page, error) {
 	span := dbutil.CreateSpan(ctx, crm.tracer, retrieveCertByThing)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return crm.repo.RetrieveByThing(ctx, thingID, offset, limit)
+	return crm.repo.RetrieveByThing(ctx, thingID, pm)
 }
 
 func (crm certsRepositoryMiddleware) RetrieveBySerial(ctx context.Context, serialID string) (certs.Cert, error) {
