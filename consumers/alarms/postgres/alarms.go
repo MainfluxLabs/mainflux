@@ -363,14 +363,13 @@ func protocolQuery(protocol string) string {
 	return "protocol = :protocol"
 }
 
-
 func timeRangeQuery(from, to int64) string {
 	var parts []string
 	if from > 0 {
 		parts = append(parts, "created >= :from")
 	}
 	if to > 0 {
-		parts = append(parts, "created <= :to")
+		parts = append(parts, "created < :to")
 	}
 	if len(parts) == 0 {
 		return ""

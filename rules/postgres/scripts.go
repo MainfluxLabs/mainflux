@@ -457,7 +457,7 @@ func (rr ruleRepository) RetrieveScriptRunsByThing(ctx context.Context, thingID 
 	}
 	toQuery := ""
 	if !pm.To.IsZero() {
-		toQuery = "started_at <= :to"
+		toQuery = "started_at < :to"
 	}
 
 	whereClause := dbutil.BuildWhereClause(thingQuery, statusQuery, fromQuery, toQuery)
