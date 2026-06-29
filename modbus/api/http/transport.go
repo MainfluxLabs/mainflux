@@ -28,6 +28,10 @@ const (
 	contentTypeJSON = "application/json"
 	idKey           = "id"
 	ctKey           = "Content-Type"
+	ipAddressKey    = "ip_address"
+	portKey         = "port"
+	slaveIDKey      = "slave_id"
+	frequencyKey    = "frequency"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -121,14 +125,41 @@ func buildPageMetadata(r *http.Request) (modbus.PageMetadata, error) {
 		return modbus.PageMetadata{}, err
 	}
 
-	n, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	n, err := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	if err != nil {
+		return modbus.PageMetadata{}, err
+	}
+
+	ip, err := apiutil.ReadStringQuery(r, ipAddressKey, "")
+	if err != nil {
+		return modbus.PageMetadata{}, err
+	}
+
+	p, err := apiutil.ReadStringQuery(r, portKey, "")
+	if err != nil {
+		return modbus.PageMetadata{}, err
+	}
+
+	s, err := apiutil.ReadStringQuery(r, slaveIDKey, "")
+	if err != nil {
+		return modbus.PageMetadata{}, err
+	}
+
+	f, err := apiutil.ReadStringQuery(r, frequencyKey, "")
+	if err != nil {
+		return modbus.PageMetadata{}, err
+	}
 
 	return modbus.PageMetadata{
-		Offset: base.Offset,
-		Limit:  base.Limit,
-		Order:  base.Order,
-		Dir:    base.Dir,
-		Name:   n,
+		Offset:    base.Offset,
+		Limit:     base.Limit,
+		Order:     base.Order,
+		Dir:       base.Dir,
+		Name:      n,
+		IPAddress: ip,
+		Port:      p,
+		SlaveID:   s,
+		Frequency: f,
 	}, nil
 }
 

@@ -119,21 +119,37 @@ func (cr clientRepository) RetrieveByThing(ctx context.Context, thingID string, 
 	if nq != "" {
 		filters = append(filters, nq)
 	}
+	if pm.IPAddress != "" {
+		filters = append(filters, "ip_address = :ip_address")
+	}
+	if pm.Port != "" {
+		filters = append(filters, "port = :port")
+	}
+	if pm.SlaveID != "" {
+		filters = append(filters, "CAST(slave_id AS text) = :slave_id")
+	}
+	if pm.Frequency != "" {
+		filters = append(filters, "scheduler->>'frequency' = :frequency")
+	}
 
 	whereClause := dbutil.BuildWhereClause(filters...)
-	query := fmt.Sprintf(`SELECT id, group_id, thing_id, name, ip_address, port, slave_id, function_code, 
+	query := fmt.Sprintf(`SELECT id, group_id, thing_id, name, ip_address, port, slave_id, function_code,
           scheduler, data_fields, metadata
           FROM clients %s
           ORDER BY %s %s %s`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM clients %s`, whereClause)
 
 	params := map[string]any{
-		"name":     name,
-		"thing_id": thingID,
-		"limit":    pm.Limit,
-		"offset":   pm.Offset,
-		"order":    pm.Order,
-		"dir":      pm.Dir,
+		"name":       name,
+		"thing_id":   thingID,
+		"ip_address": pm.IPAddress,
+		"port":       pm.Port,
+		"slave_id":   pm.SlaveID,
+		"frequency":  pm.Frequency,
+		"limit":      pm.Limit,
+		"offset":     pm.Offset,
+		"order":      pm.Order,
+		"dir":        pm.Dir,
 	}
 
 	return cr.retrieve(ctx, query, cquery, params)
@@ -153,21 +169,37 @@ func (cr clientRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 	if nq != "" {
 		filters = append(filters, nq)
 	}
+	if pm.IPAddress != "" {
+		filters = append(filters, "ip_address = :ip_address")
+	}
+	if pm.Port != "" {
+		filters = append(filters, "port = :port")
+	}
+	if pm.SlaveID != "" {
+		filters = append(filters, "CAST(slave_id AS text) = :slave_id")
+	}
+	if pm.Frequency != "" {
+		filters = append(filters, "scheduler->>'frequency' = :frequency")
+	}
 
 	whereClause := dbutil.BuildWhereClause(filters...)
-	query := fmt.Sprintf(`SELECT id, group_id, thing_id, name, ip_address, port, slave_id, function_code, 
+	query := fmt.Sprintf(`SELECT id, group_id, thing_id, name, ip_address, port, slave_id, function_code,
           scheduler, data_fields, metadata
           FROM clients %s
           ORDER BY %s %s %s`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM clients %s`, whereClause)
 
 	params := map[string]any{
-		"name":     name,
-		"group_id": groupID,
-		"limit":    pm.Limit,
-		"offset":   pm.Offset,
-		"order":    pm.Order,
-		"dir":      pm.Dir,
+		"name":       name,
+		"group_id":   groupID,
+		"ip_address": pm.IPAddress,
+		"port":       pm.Port,
+		"slave_id":   pm.SlaveID,
+		"frequency":  pm.Frequency,
+		"limit":      pm.Limit,
+		"offset":     pm.Offset,
+		"order":      pm.Order,
+		"dir":        pm.Dir,
 	}
 
 	return cr.retrieve(ctx, query, cquery, params)
