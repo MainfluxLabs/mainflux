@@ -78,25 +78,38 @@ func (dr downlinkRepository) RetrieveByThing(ctx context.Context, thingID string
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	nq, name := dbutil.GetNameQuery(pm.Name)
+	urlq, urlVal := dbutil.GetLikeQuery("url", pm.URL)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
 	filters := []string{"thing_id = :thing_id"}
 	if nq != "" {
 		filters = append(filters, nq)
 	}
+	if urlq != "" {
+		filters = append(filters, urlq)
+	}
+	if pm.Method != "" {
+		filters = append(filters, "method = :method")
+	}
+	if pm.Frequency != "" {
+		filters = append(filters, "scheduler->>'frequency' = :frequency")
+	}
 
 	whereClause := dbutil.BuildWhereClause(filters...)
-	query := fmt.Sprintf(`SELECT id, thing_id, group_id, name, url, method, payload, headers, 
+	query := fmt.Sprintf(`SELECT id, thing_id, group_id, name, url, method, payload, headers,
     	  scheduler, time_filter, metadata
           FROM downlinks %s
           ORDER BY %s %s %s`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM downlinks %s`, whereClause)
 
 	params := map[string]any{
-		"name":     name,
-		"thing_id": thingID,
-		"limit":    pm.Limit,
-		"offset":   pm.Offset,
+		"name":      name,
+		"thing_id":  thingID,
+		"url":       urlVal,
+		"method":    pm.Method,
+		"frequency": pm.Frequency,
+		"limit":     pm.Limit,
+		"offset":    pm.Offset,
 	}
 
 	return dr.retrieve(ctx, query, cquery, params)
@@ -110,25 +123,38 @@ func (dr downlinkRepository) RetrieveByGroup(ctx context.Context, groupID string
 	oq := dbutil.GetOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	nq, name := dbutil.GetNameQuery(pm.Name)
+	urlq, urlVal := dbutil.GetLikeQuery("url", pm.URL)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
 	filters := []string{"group_id = :group_id"}
 	if nq != "" {
 		filters = append(filters, nq)
 	}
+	if urlq != "" {
+		filters = append(filters, urlq)
+	}
+	if pm.Method != "" {
+		filters = append(filters, "method = :method")
+	}
+	if pm.Frequency != "" {
+		filters = append(filters, "scheduler->>'frequency' = :frequency")
+	}
 
 	whereClause := dbutil.BuildWhereClause(filters...)
-	query := fmt.Sprintf(`SELECT id, thing_id, group_id, name, url, method, payload, headers, 
+	query := fmt.Sprintf(`SELECT id, thing_id, group_id, name, url, method, payload, headers,
     	  scheduler, time_filter, metadata
           FROM downlinks %s
           ORDER BY %s %s %s`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM downlinks %s`, whereClause)
 
 	params := map[string]any{
-		"name":     name,
-		"group_id": groupID,
-		"limit":    pm.Limit,
-		"offset":   pm.Offset,
+		"name":      name,
+		"group_id":  groupID,
+		"url":       urlVal,
+		"method":    pm.Method,
+		"frequency": pm.Frequency,
+		"limit":     pm.Limit,
+		"offset":    pm.Offset,
 	}
 
 	return dr.retrieve(ctx, query, cquery, params)
