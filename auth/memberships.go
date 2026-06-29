@@ -145,6 +145,23 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 		}, nil
 	}
 
+	if pm.Role != "" {
+		var filtered []OrgMembership
+		for _, m := range memberships {
+			if m.Role == pm.Role {
+				filtered = append(filtered, m)
+			}
+		}
+		memberships = filtered
+	}
+
+	if len(memberships) == 0 {
+		return OrgMembershipsPage{
+			OrgMemberships: []OrgMembership{},
+			Total:          0,
+		}, nil
+	}
+
 	memberIDs := make([]string, 0, len(memberships))
 	membershipByMemberID := make(map[string]OrgMembership, len(memberships))
 	for _, m := range memberships {

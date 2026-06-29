@@ -21,6 +21,7 @@ const (
 	orgIDKey  = "orgID"
 	memberKey = "memberID"
 	emailKey  = "email"
+	roleKey   = "role"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -111,10 +112,16 @@ func decodeListOrgMemberships(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
+	ro, err := apiutil.ReadStringQuery(r, roleKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	req := listOrgMembershipsReq{
 		token:  apiutil.ExtractBearerToken(r),
 		orgID:  bone.GetValue(r, apiutil.IDKey),
 		email:  e,
+		role:   ro,
 		offset: o,
 		limit:  l,
 		order:  or,
