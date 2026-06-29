@@ -9,6 +9,7 @@ networks:
 
 volumes:
   mainfluxlabs-auth-db-volume:
+  mainfluxlabs-audit-db-volume:
   mainfluxlabs-users-db-volume:
   mainfluxlabs-things-db-volume:
   mainfluxlabs-auth-redis-volume:
@@ -144,6 +145,49 @@ services:
     volumes:
       - ./templates/base.tmpl:/base.tmpl
       - ./templates/auth/org_invite.tmpl:/org_invite.tmpl
+
+  ## AUDIT SERVICE
+  audit-db:
+    image: postgres:13.3-alpine
+    container_name: mainfluxlabs-audit-db
+    restart: on-failure
+    environment:
+      POSTGRES_USER: ${MF_AUDIT_DB_USER}
+      POSTGRES_PASSWORD: ${MF_AUDIT_DB_PASS}
+      POSTGRES_DB: ${MF_AUDIT_DB}
+    networks:
+      - mainfluxlabs-base-net
+    volumes:
+      - mainfluxlabs-audit-db-volume:/var/lib/postgresql/data
+
+  audit:
+    image: ${MF_RELEASE_PREFIX}/audit:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-audit
+    depends_on:
+      - audit-db
+      - auth
+      - things
+      - es-redis
+    restart: on-failure
+    environment:
+      MF_AUDIT_LOG_LEVEL: ${MF_AUDIT_LOG_LEVEL}
+      MF_AUDIT_DB_HOST: audit-db
+      MF_AUDIT_DB_PORT: ${MF_AUDIT_DB_PORT}
+      MF_AUDIT_DB_USER: ${MF_AUDIT_DB_USER}
+      MF_AUDIT_DB_PASS: ${MF_AUDIT_DB_PASS}
+      MF_AUDIT_DB: ${MF_AUDIT_DB}
+      MF_AUDIT_HTTP_PORT: ${MF_AUDIT_HTTP_PORT}
+      MF_AUDIT_ES_URL: ${MF_AUDIT_ES_URL}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
+      MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
+      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+      MF_THINGS_CA_CERTS: ${MF_THINGS_CA_CERTS}
+      MF_THINGS_CLIENT_TLS: ${MF_THINGS_CLIENT_TLS}
+    ports:
+      - ${MF_AUDIT_HTTP_PORT}:${MF_AUDIT_HTTP_PORT}
+    networks:
+      - mainfluxlabs-base-net
 
   users-db:
     image: postgres:13.3-alpine

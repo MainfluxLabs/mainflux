@@ -130,7 +130,9 @@ func swapXAdder(t *testing.T, pub events.Publisher, fx *failingXAdd) {
 // publishOne builds a deterministic event with a given id.
 func publishOne(t *testing.T, pub events.Publisher, id string) {
 	t.Helper()
-	pub.Publish(context.Background(), events.ThingRemoved{ID: id})
+	pub.Publish(context.Background(), events.Event{
+		Action: events.ThingRemoved{ID: id},
+	})
 }
 
 func streamLen(t *testing.T, stream string) int64 {

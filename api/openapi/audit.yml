@@ -1,0 +1,330 @@
+openapi: 3.0.1
+info:
+  title: Mainflux audit service
+  description: HTTP API for retrieving platform audit events.
+  version: 1.0.0
+
+paths:
+  /events:
+    get:
+      summary: List all audit events
+      description: >-
+        Retrieves a list of audit events across all organizations, including
+        events that are not tied to any organization. Restricted to platform
+        (root) administrators.
+      tags:
+        - audit
+      parameters:
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Dir"
+        - $ref: "#/components/parameters/Email"
+        - $ref: "#/components/parameters/Operation"
+        - $ref: "#/components/parameters/ActionData"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListEventsRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Caller is not a platform administrator.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /orgs/{orgId}/events:
+    get:
+      summary: List audit events by organization
+      description: >-
+        Retrieves a list of audit events that occurred within a specific
+        organization. The caller must have admin (or higher) privileges within
+        the target organization.
+      tags:
+        - audit
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Dir"
+        - $ref: "#/components/parameters/Email"
+        - $ref: "#/components/parameters/Operation"
+        - $ref: "#/components/parameters/ActionData"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListEventsRes"
+        '400':
+          description: Failed due to malformed query parameters or missing organization ID.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Failed due to non-existing resource.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /groups/{groupId}/events:
+    get:
+      summary: List audit events by group
+      description: >-
+        Retrieves a list of audit events that occurred within a specific group.
+        The caller must have admin (or higher) privileges within the target
+        group.
+      tags:
+        - audit
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Dir"
+        - $ref: "#/components/parameters/Email"
+        - $ref: "#/components/parameters/Operation"
+        - $ref: "#/components/parameters/ActionData"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListEventsRes"
+        '400':
+          description: Failed due to malformed query parameters or missing group ID.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Failed due to non-existing resource.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+components:
+  schemas:
+    Actor:
+      type: object
+      description: Identity of the user whose action triggered the event.
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier of the acting user.
+        email:
+          type: string
+          format: email
+          description: Email address of the acting user.
+
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique audit event identifier.
+        occurred_at:
+          type: string
+          format: date-time
+          description: Time at which the recorded action occurred (RFC 3339).
+        operation:
+          type: string
+          description: Operation that triggered the event (e.g. thing.create).
+          example: "thing.create"
+        actor:
+          $ref: "#/components/schemas/Actor"
+        org_id:
+          type: string
+          format: uuid
+          description: Organization the event belongs to. Absent for events not tied to any organization.
+        group_id:
+          type: string
+          format: uuid
+          description: Group the event belongs to. Absent for events not tied to any group.
+        action_data:
+          type: object
+          additionalProperties: {}
+          description: Operation-specific payload describing the event. Always present.
+      required: [id, occurred_at, operation, actor, action_data]
+
+    EventsPageRes:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of events matching the query.
+        offset:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 200
+        order:
+          type: string
+        dir:
+          type: string
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/Event"
+      required: [total, offset, limit, events]
+
+  parameters:
+    OrgId:
+      name: orgId
+      in: path
+      required: true
+      description: Unique organization identifier whose events are retrieved.
+      schema:
+        type: string
+        format: uuid
+    Offset:
+      name: offset
+      in: query
+      required: false
+      description: Number of items to skip during retrieval.
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: Maximum number of items returned in one page.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 10
+    Order:
+      name: order
+      in: query
+      required: false
+      description: Field to sort results by.
+      schema:
+        type: string
+        enum: [id, occurred_at, operation, actor_email, org_id, group_id]
+    Dir:
+      name: dir
+      in: query
+      required: false
+      description: Sort direction.
+      schema:
+        type: string
+        enum: [asc, desc]
+    Email:
+      name: email
+      in: query
+      required: false
+      description: Filter events by the email address of the acting user.
+      schema:
+        type: string
+        format: email
+    Operation:
+      name: operation
+      in: query
+      required: false
+      description: Filter events by operation (e.g. thing.create).
+      schema:
+        type: string
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      description: Unique group identifier whose events are retrieved.
+      schema:
+        type: string
+        format: uuid
+    ActionData:
+      name: action_data
+      in: query
+      required: false
+      description: >-
+        Filter events by the contents of their action_data payload. The value is a
+        URL-encoded JSON object; events whose action_data contains all of the supplied
+        key/value pairs (JSONB containment) are returned.
+      schema:
+        type: object
+        additionalProperties: {}
+    From:
+      name: from
+      in: query
+      required: false
+      description: Lower bound (inclusive) of the event occurrence time, as a Unix timestamp in seconds.
+      schema:
+        type: integer
+        format: int64
+    To:
+      name: to
+      in: query
+      required: false
+      description: Upper bound (inclusive) of the event occurrence time, as a Unix timestamp in seconds.
+      schema:
+        type: integer
+        format: int64
+
+  responses:
+    ListEventsRes:
+      description: Events retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/EventsPageRes"
+          examples:
+            example1:
+              summary: Example response with two events
+              value:
+                total: 2
+                offset: 0
+                limit: 10
+                events:
+                  - id: "123e4567-e89b-12d3-a456-426614174000"
+                    occurred_at: "2026-06-12T14:22:17.357447Z"
+                    operation: "thing.create"
+                    actor:
+                      id: "574106f7-030e-4881-8ab0-151195c29f94"
+                      email: "user@example.com"
+                    org_id: "374106f7-030e-4881-8ab0-151195c29f92"
+                    group_id: "211e4567-e89b-12d3-a456-426614174000"
+                    action_data:
+                      id: "111e4567-e89b-12d3-a456-426614174000"
+                      name: "sensor-1"
+                      profile_id: "311e4567-e89b-12d3-a456-426614174000"
+                  - id: "223e4567-e89b-12d3-a456-426614174001"
+                    occurred_at: "2026-06-12T14:23:59.387463Z"
+                    operation: "org.create"
+                    actor:
+                      id: "674106f7-030e-4881-8ab0-151195c29f95"
+                      email: "owner@example.com"
+                    org_id: "374106f7-030e-4881-8ab0-151195c29f92"
+                    action_data:
+                      id: "374106f7-030e-4881-8ab0-151195c29f92"
+    ServiceError:
+      description: Unexpected server-side error occurred.
+      content:
+        application/json:
+          schema:
+            type: string
+            format: byte
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        * Users access: "Authorization: Bearer <user_token>"
+
+security:
+  - bearerAuth: []

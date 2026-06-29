@@ -28,7 +28,10 @@ func (es eventStore) CreateOrg(ctx context.Context, token string, org auth.Org) 
 		return sorg, err
 	}
 
-	es.pub.Publish(ctx, events.OrgCreated{ID: sorg.ID})
+	es.pub.Publish(ctx, events.Event{
+		Action: events.OrgCreated{ID: sorg.ID},
+		OrgID:  sorg.ID,
+	})
 
 	return sorg, nil
 }
@@ -39,7 +42,10 @@ func (es eventStore) RemoveOrgs(ctx context.Context, token string, ids ...string
 			return err
 		}
 
-		es.pub.Publish(ctx, events.OrgRemoved{ID: id})
+		es.pub.Publish(ctx, events.Event{
+			Action: events.OrgRemoved{ID: id},
+			OrgID:  id,
+		})
 	}
 
 	return nil

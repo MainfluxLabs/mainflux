@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
@@ -20,11 +21,17 @@ type EventAction interface {
 	Operation() string
 }
 
-// Event is the type representing a platform event, composed of an action and the identity
-// of the user who initiated the event.
+// Event is the type representing a platform event.
 type Event struct {
-	Action          EventAction
+	// The specific EventAction that occurred.
+	Action EventAction
+	// The identity of the user whose action triggered the event.
 	JWTUserIdentity domain.Identity
+	// The ID of the organization to which the event belongs. May be empty.
+	OrgID string
+	// The ID of the group to which the event belongs. May be empty.
+	GroupID    string
+	OccurredAt time.Time
 }
 
 // Encode turns an Event into a redisEvent
@@ -36,6 +43,13 @@ func (e Event) Encode() redisEvent {
 		re[jwtIdentityUserID] = e.JWTUserIdentity.ID
 		re[jwtIdentityUserEmail] = e.JWTUserIdentity.Email
 	}
+
+	if !e.OccurredAt.IsZero() {
+		re[occurredAt] = e.OccurredAt.UTC().Format(time.RFC3339Nano)
+	}
+
+	re[evtOrgID] = e.OrgID
+	re[evtGroupID] = e.GroupID
 
 	return re
 }
@@ -74,6 +88,9 @@ func decodeEvent(re redisEvent) (Event, error) {
 	return Event{
 		Action:          action,
 		JWTUserIdentity: re.jwtUserIdentity(),
+		OccurredAt:      re.occurredAt(),
+		OrgID:           re.field(evtOrgID, ""),
+		GroupID:         re.field(evtGroupID, ""),
 	}, nil
 }
 

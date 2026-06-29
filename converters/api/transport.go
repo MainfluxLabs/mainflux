@@ -6,6 +6,8 @@ package api
 import (
 	"context"
 	"encoding/csv"
+	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 
@@ -39,16 +41,16 @@ func MakeHandler(svc adapter.Service, ac domain.AuthClient, tracer opentracing.T
 
 	r := bone.New()
 
-	r.Post("/csv/senml", kithttp.NewServer(
-		kitot.TraceServer(tracer, "convert_csv_to_senml")(convertCSVToSenMLEndpoint(svc)),
+	r.Post("/csv", kithttp.NewServer(
+		kitot.TraceServer(tracer, "convert_csv")(convertCSVEndpoint(svc)),
 		decodeConvertCSVFile,
 		encodeResponse,
 		opts...,
 	))
 
-	r.Post("/csv/json", kithttp.NewServer(
-		kitot.TraceServer(tracer, "convert_csv_to_json")(convertCSVToJSONEndpoint(svc)),
-		decodeConvertCSVFile,
+	r.Post("/json", kithttp.NewServer(
+		kitot.TraceServer(tracer, "convert_json")(convertJSONEndpoint(svc)),
+		decodeConvertJSONFile,
 		encodeResponse,
 		opts...,
 	))
@@ -57,12 +59,6 @@ func MakeHandler(svc adapter.Service, ac domain.AuthClient, tracer opentracing.T
 	r.Handle("/metrics", promhttp.Handler())
 
 	return r
-}
-
-type SenmlRec struct {
-	Name  string `json:"n"`
-	Time  string `json:"t"`
-	Value string `json:"v"`
 }
 
 func decodeConvertCSVFile(_ context.Context, r *http.Request) (any, error) {
@@ -79,6 +75,7 @@ func decodeConvertCSVFile(_ context.Context, r *http.Request) (any, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
 
 	csvLines, readErr := csv.NewReader(file).ReadAll()
 	if readErr != nil {
@@ -88,6 +85,42 @@ func decodeConvertCSVFile(_ context.Context, r *http.Request) (any, error) {
 	req := convertCSVReq{
 		key:      apiutil.ExtractThingKey(r),
 		csvLines: csvLines,
+		to:       r.URL.Query().Get("to"),
+	}
+
+	return req, nil
+}
+
+func decodeConvertJSONFile(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), multiPartContentType) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	err := r.ParseMultipartForm(maxMemory)
+	if err != nil {
+		return nil, err
+	}
+
+	file, _, err := r.FormFile(fileKey)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	var records []map[string]any
+	if err := json.Unmarshal(data, &records); err != nil {
+		return nil, err
+	}
+
+	req := convertJSONReq{
+		key:     apiutil.ExtractThingKey(r),
+		records: records,
+		to:      r.URL.Query().Get("to"),
 	}
 
 	return req, nil

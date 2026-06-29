@@ -1,30 +1,40 @@
 openapi: 3.0.1
 info:
   title: Mainflux converters service
-  description: HTTP API for converting CSV files into SenML or JSON messages and publishing them to the platform.
+  description: HTTP API for converting CSV or JSON files into SenML or JSON messages and publishing them to the platform.
   version: 1.0.0
 
 paths:
-  /csv/senml:
+  /csv:
     post:
-      summary: Convert CSV to SenML messages
+      summary: Convert CSV file to SenML or JSON messages
       description: |
-        Parses the uploaded CSV file and publishes its rows as SenML records.
+        Parses the uploaded CSV file and publishes its rows as SenML or JSON records, depending on the `to` query parameter.
 
-        **CSV format:**
-        - Row 1 (header): first column is ignored (timestamp column), remaining columns are measurement names.
-        - Row 2+ (data): first column is a Unix timestamp as a floating-point number, remaining columns are floating-point measurement values.
+        **CSV → SenML (`?to=senml`):**
+        - Row 1 (header): `name`, `time`, `value`, `string_value`, `bool_value`, `data_value`, `unit`, `sum` columns (reader-export format). Envelope columns (`subtopic`, `publisher`, `protocol`, `update_time`) are ignored.
+        - Each data row produces one SenML record. The `time` column is treated as nanoseconds and converted to seconds.
 
-        Large files are processed in batches of 50,000 records with a 30-second pause between batches.
+        **CSV → JSON (`?to=json`):**
+        - Row 1 (header): column names. The column matching the thing's profile transformer `time_field` is parsed as a timestamp. Envelope columns are skipped.
+        - Each data row produces one JSON object keyed by column name.
       tags:
         - converters
+      parameters:
+        - name: to
+          in: query
+          required: true
+          description: Output format — `senml` or `json`.
+          schema:
+            type: string
+            enum: [senml, json]
       requestBody:
         $ref: "#/components/requestBodies/ConvertCSVReq"
       responses:
         '202':
-          description: CSV accepted and messages published.
+          description: CSV accepted and messages are being published.
         '400':
-          description: Failed due to malformed CSV (fewer than 2 columns, or invalid timestamp value).
+          description: Failed due to malformed CSV, invalid timestamp, or missing/invalid `to` parameter.
         '401':
           description: Missing or invalid Thing key provided.
         '403':
@@ -34,26 +44,35 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
 
-  /csv/json:
+  /json:
     post:
-      summary: Convert CSV to JSON messages
+      summary: Convert JSON file to SenML or JSON messages
       description: |
-        Parses the uploaded CSV file and publishes its rows as JSON records.
+        Parses the uploaded JSON file (array of objects) and publishes its records as SenML or JSON messages, depending on the `to` query parameter.
 
-        **CSV format:**
-        - Row 1 (header): must include a `created` column; remaining columns are field names.
-        - Row 2+ (data): values are automatically parsed as floating-point numbers where possible, otherwise kept as strings.
+        **JSON → SenML (`?to=senml`):**
+        - Each object must have a `t` (seconds) or `time` (nanoseconds) key and either a `name`/`n` key for named measurements or multiple numeric fields for multi-measurement records.
 
-        Large files are processed in batches of 50,000 records with a 30-second pause between batches.
+        **JSON → JSON (`?to=json`):**
+        - Reader-exported Format A objects (`{"payload": {...}, "created": ..., ...}`) are automatically unwrapped — the inner `payload` object becomes the record.
+        - The key configured as `time_field` in the profile transformer is stored as `Created`. Envelope fields are stripped.
       tags:
         - converters
+      parameters:
+        - name: to
+          in: query
+          required: true
+          description: Output format — `senml` or `json`.
+          schema:
+            type: string
+            enum: [senml, json]
       requestBody:
-        $ref: "#/components/requestBodies/ConvertCSVReq"
+        $ref: "#/components/requestBodies/ConvertJSONReq"
       responses:
         '202':
-          description: CSV accepted and messages published.
+          description: JSON accepted and messages are being published.
         '400':
-          description: Failed due to malformed CSV (fewer than 2 columns, or missing "created" column).
+          description: Failed due to malformed JSON, invalid time field, or missing/invalid `to` parameter.
         '401':
           description: Missing or invalid Thing key provided.
         '403':
@@ -77,6 +96,21 @@ components:
                 type: string
                 format: binary
                 description: CSV file to be converted.
+            required:
+              - file
+
+    ConvertJSONReq:
+      description: JSON file to convert and publish.
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              file:
+                type: string
+                format: binary
+                description: JSON file to be converted.
             required:
               - file
 
