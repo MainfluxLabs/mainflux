@@ -76,11 +76,12 @@ func (wr webhookRepository) RetrieveByGroup(ctx context.Context, groupID string,
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
+	urlq, urlVal := dbutil.GetLikeQuery("url", pm.URL)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return webhooks.WebhooksPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
-	whereClause := dbutil.BuildWhereClause(gq, nq, mq)
+	whereClause := dbutil.BuildWhereClause(gq, nq, urlq, mq)
 
 	q := fmt.Sprintf(`SELECT id, thing_id, group_id, name, url, headers, metadata FROM webhooks %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM webhooks %s;`, whereClause)
@@ -88,6 +89,7 @@ func (wr webhookRepository) RetrieveByGroup(ctx context.Context, groupID string,
 	params := map[string]any{
 		"group_id": groupID,
 		"name":     name,
+		"url":      urlVal,
 		"metadata": m,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
@@ -106,11 +108,12 @@ func (wr webhookRepository) RetrieveByThing(ctx context.Context, thingID string,
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
+	urlq, urlVal := dbutil.GetLikeQuery("url", pm.URL)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return webhooks.WebhooksPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
-	whereClause := dbutil.BuildWhereClause(tq, nq, mq)
+	whereClause := dbutil.BuildWhereClause(tq, nq, urlq, mq)
 
 	q := fmt.Sprintf(`SELECT id, thing_id, group_id, name, url, headers, metadata FROM webhooks %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM webhooks %s;`, whereClause)
@@ -118,6 +121,7 @@ func (wr webhookRepository) RetrieveByThing(ctx context.Context, thingID string,
 	params := map[string]any{
 		"thing_id": thingID,
 		"name":     name,
+		"url":      urlVal,
 		"metadata": m,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,

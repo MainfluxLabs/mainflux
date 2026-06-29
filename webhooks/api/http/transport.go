@@ -25,6 +25,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+const urlKey = "url"
+
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(tracer opentracing.Tracer, svc webhooks.Service, ac domain.AuthClient, logger log.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
@@ -140,8 +142,20 @@ func buildPageMetadata(r *http.Request) (webhooks.PageMetadata, error) {
 		return webhooks.PageMetadata{}, err
 	}
 
-	n, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
-	m, _ := apiutil.ReadMetadataQuery(r, apiutil.MetadataKey, nil)
+	n, err := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	if err != nil {
+		return webhooks.PageMetadata{}, err
+	}
+
+	m, err := apiutil.ReadMetadataQuery(r, apiutil.MetadataKey, nil)
+	if err != nil {
+		return webhooks.PageMetadata{}, err
+	}
+
+	u, err := apiutil.ReadStringQuery(r, urlKey, "")
+	if err != nil {
+		return webhooks.PageMetadata{}, err
+	}
 
 	return webhooks.PageMetadata{
 		Offset:   base.Offset,
@@ -150,6 +164,7 @@ func buildPageMetadata(r *http.Request) (webhooks.PageMetadata, error) {
 		Dir:      base.Dir,
 		Name:     n,
 		Metadata: m,
+		URL:      u,
 	}, nil
 }
 
