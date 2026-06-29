@@ -138,13 +138,6 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 		return OrgMembershipsPage{}, errors.Wrap(ErrRetrieveMembershipsByOrg, err)
 	}
 
-	if len(memberships) == 0 {
-		return OrgMembershipsPage{
-			OrgMemberships: []OrgMembership{},
-			Total:          0,
-		}, nil
-	}
-
 	if pm.Role != "" {
 		var filtered []OrgMembership
 		for _, m := range memberships {
