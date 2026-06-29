@@ -447,7 +447,20 @@ func (rr ruleRepository) RetrieveScriptRunsByThing(ctx context.Context, thingID 
 
 	thingQuery := "thing_id = :thing_id"
 
-	whereClause := dbutil.BuildWhereClause(thingQuery)
+	statusQuery := ""
+	if pm.Status != "" {
+		statusQuery = "status = :status"
+	}
+	fromQuery := ""
+	if !pm.From.IsZero() {
+		fromQuery = "started_at >= :from"
+	}
+	toQuery := ""
+	if !pm.To.IsZero() {
+		toQuery = "started_at <= :to"
+	}
+
+	whereClause := dbutil.BuildWhereClause(thingQuery, statusQuery, fromQuery, toQuery)
 
 	query := `
 		SELECT id, script_id, thing_id, logs, started_at, finished_at, status, error
@@ -463,6 +476,9 @@ func (rr ruleRepository) RetrieveScriptRunsByThing(ctx context.Context, thingID 
 		"thing_id": thingID,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
+		"status":   pm.Status,
+		"from":     pm.From,
+		"to":       pm.To,
 	}
 
 	rows, err := rr.db.NamedQueryContext(ctx, query, params)

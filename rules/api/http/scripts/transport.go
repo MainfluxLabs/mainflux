@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -21,6 +22,12 @@ import (
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
 	"github.com/opentracing/opentracing-go"
+)
+
+const (
+	statusKey = "status"
+	fromKey   = "from"
+	toKey     = "to"
 )
 
 // MakeHandler returns a HTTP handler for script API endpoints.
@@ -272,7 +279,33 @@ func decodeListScriptRunsByThing(_ context.Context, r *http.Request) (any, error
 	if err != nil {
 		return nil, err
 	}
-	name, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+
+	name, err := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	status, err := apiutil.ReadStringQuery(r, statusKey, "")
+	if err != nil {
+		return nil, err
+	}
+	fromNs, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	toNs, err := apiutil.ReadIntQuery(r, toKey, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	var from, to time.Time
+	if fromNs > 0 {
+		from = time.Unix(0, fromNs)
+	}
+	if toNs > 0 {
+		to = time.Unix(0, toNs)
+	}
 
 	req := listScriptRunsByThingReq{
 		token:   apiutil.ExtractBearerToken(r),
@@ -283,6 +316,9 @@ func decodeListScriptRunsByThing(_ context.Context, r *http.Request) (any, error
 			Order:  base.Order,
 			Dir:    base.Dir,
 			Name:   name,
+			Status: status,
+			From:   from,
+			To:     to,
 		},
 	}
 	return req, nil
