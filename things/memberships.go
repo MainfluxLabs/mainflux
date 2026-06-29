@@ -144,6 +144,23 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 		}, nil
 	}
 
+	if pm.Role != "" {
+		var filtered []GroupMembership
+		for _, m := range memberships {
+			if m.Role == pm.Role {
+				filtered = append(filtered, m)
+			}
+		}
+		memberships = filtered
+	}
+
+	if len(memberships) == 0 {
+		return GroupMembershipsPage{
+			GroupMemberships: []GroupMembership{},
+			Total:            0,
+		}, nil
+	}
+
 	memberIDs := make([]string, 0, len(memberships))
 	membershipByMemberID := make(map[string]GroupMembership, len(memberships))
 	for _, m := range memberships {
