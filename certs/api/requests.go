@@ -75,13 +75,13 @@ func (req rotateCertReq) validate() error {
 }
 
 type listReq struct {
-	thingID       string
-	token         string
-	offset        uint64
-	limit         uint64
-	serial        string
-	expiresBefore time.Time
-	expiresAfter  time.Time
+	thingID string
+	token   string
+	offset  uint64
+	limit   uint64
+	serial  string
+	to      time.Time
+	from    time.Time
 }
 
 func (req *listReq) validate() error {

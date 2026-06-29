@@ -16,11 +16,11 @@ type Page struct {
 
 // PageMetadata contains pagination and filter parameters for listing certs.
 type PageMetadata struct {
-	Offset        uint64
-	Limit         uint64
-	Serial        string
-	ExpiresBefore time.Time
-	ExpiresAfter  time.Time
+	Offset uint64
+	Limit  uint64
+	Serial string
+	To     time.Time
+	From   time.Time
 }
 
 type RevokedCert struct {

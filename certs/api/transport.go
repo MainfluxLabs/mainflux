@@ -26,9 +26,9 @@ import (
 )
 
 const (
-	serialKey        = "serial"
-	expiresBeforeKey = "expires_before"
-	expiresAfterKey  = "expires_after"
+	serialKey = "serial"
+	toKey     = "to"
+	fromKey   = "from"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -149,38 +149,38 @@ func decodeListSerialsByThing(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	ebStr, err := apiutil.ReadStringQuery(r, expiresBeforeKey, "")
+	tStr, err := apiutil.ReadStringQuery(r, toKey, "")
 	if err != nil {
 		return nil, err
 	}
-	var eb time.Time
-	if ebStr != "" {
-		eb, err = time.Parse(time.RFC3339, ebStr)
+	var to time.Time
+	if tStr != "" {
+		to, err = time.Parse(time.RFC3339, tStr)
 		if err != nil {
 			return nil, apiutil.ErrInvalidQueryParams
 		}
 	}
 
-	eaStr, err := apiutil.ReadStringQuery(r, expiresAfterKey, "")
+	fStr, err := apiutil.ReadStringQuery(r, fromKey, "")
 	if err != nil {
 		return nil, err
 	}
-	var ea time.Time
-	if eaStr != "" {
-		ea, err = time.Parse(time.RFC3339, eaStr)
+	var from time.Time
+	if fStr != "" {
+		from, err = time.Parse(time.RFC3339, fStr)
 		if err != nil {
 			return nil, apiutil.ErrInvalidQueryParams
 		}
 	}
 
 	req := listReq{
-		token:         apiutil.ExtractBearerToken(r),
-		thingID:       bone.GetValue(r, apiutil.IDKey),
-		limit:         l,
-		offset:        o,
-		serial:        s,
-		expiresBefore: eb,
-		expiresAfter:  ea,
+		token:   apiutil.ExtractBearerToken(r),
+		thingID: bone.GetValue(r, apiutil.IDKey),
+		limit:   l,
+		offset:  o,
+		serial:  s,
+		to:      to,
+		from:    from,
 	}
 
 	return req, nil
