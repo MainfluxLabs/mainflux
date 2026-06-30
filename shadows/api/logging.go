@@ -32,7 +32,7 @@ func LoggingMiddleware(svc shadows.Service, logger log.Logger) shadows.Service {
 func (lm *loggingMiddleware) UpdateDesiredState(ctx context.Context, token, thingID string, desired shadows.State) (response shadows.Shadow, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
-		message := fmt.Sprintf("Method update_desired_state by user %s, thing %s took %s to complete", email, thingID, time.Since(begin))
+		message := fmt.Sprintf("Method update_desired_state by user %s, thing id %s took %s to complete", email, thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -46,7 +46,7 @@ func (lm *loggingMiddleware) UpdateDesiredState(ctx context.Context, token, thin
 func (lm *loggingMiddleware) ViewShadow(ctx context.Context, token, thingID string) (response shadows.Shadow, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
-		message := fmt.Sprintf("Method view_shadow by user %s, thing %s took %s to complete", email, thingID, time.Since(begin))
+		message := fmt.Sprintf("Method view_shadow by user %s, thing id %s took %s to complete", email, thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -60,7 +60,7 @@ func (lm *loggingMiddleware) ViewShadow(ctx context.Context, token, thingID stri
 func (lm *loggingMiddleware) RemoveShadow(ctx context.Context, token, thingID string) (err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
-		message := fmt.Sprintf("Method remove_shadow by user %s, thing %s took %s to complete", email, thingID, time.Since(begin))
+		message := fmt.Sprintf("Method remove_shadow by user %s, thing id %s took %s to complete", email, thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
