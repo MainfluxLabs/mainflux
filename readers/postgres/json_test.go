@@ -332,7 +332,7 @@ func TestDeleteJSONMessages(t *testing.T) {
 			pageMeta: readers.JSONPageMetadata{
 				Publisher: id1,
 				From:      int64(created + 20),
-				To:        int64(created + 50),
+				To:        int64(created + 51),
 			},
 			expectedCount: 31,
 			description:   "should delete JSON messages within time range",
