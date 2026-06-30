@@ -6,7 +6,6 @@ package timescale
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -19,7 +18,12 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-var validFieldName = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_.]*$`)
+func escapeFieldName(field string) (string, error) {
+	if field == "" || strings.ContainsRune(field, 0) {
+		return "", fmt.Errorf("invalid field name: %s", field)
+	}
+	return strings.ReplaceAll(field, "'", "''"), nil
+}
 
 const (
 	jsonTable  = "json"
@@ -71,7 +75,7 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 	dir := dbutil.GetDirQuery(rpm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 
-	query := fmt.Sprintf(`SELECT %s FROM (
+	query := fmt.Sprintf(`SELECT %s, COUNT(*) OVER() AS total_count FROM (
           SELECT %s AS bucket, %s,
                   MAX(%s) AS max_time,
                   MAX(CAST(subtopic AS text)) AS subtopic,
@@ -83,14 +87,7 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
           ORDER BY bucket %s) agg %s;`,
 		selectFields, bucket, aggExpr, jsonOrder, jsonTable, condition, having, dir, olq)
 
-	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM (
-          SELECT %s AS bucket
-          FROM %s %s
-          GROUP BY bucket
-          HAVING %s) counted;`,
-		bucket, jsonTable, condition, having)
-
-	return as.executeAggQuery(ctx, query, countQuery, params, jsonTable)
+	return as.executeAggQuery(ctx, query, params, jsonTable)
 }
 
 func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) ([]readers.Message, uint64, error) {
@@ -124,24 +121,18 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
           '' AS name, '' AS unit,
           %s(value) AS value,
           CAST(NULL AS text) AS string_value, CAST(NULL AS bool) AS bool_value, CAST(NULL AS text) AS data_value,
-          CAST(NULL AS float) AS sum, MAX(update_time) AS update_time
+          CAST(NULL AS float) AS sum, MAX(update_time) AS update_time,
+          COUNT(*) OVER() AS total_count
           FROM %s %s
           GROUP BY %s
           HAVING MAX(value) IS NOT NULL
           ORDER BY %s %s %s;`,
 		aggFunc, senmlTable, condition, bucket, bucket, dir, olq)
 
-	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM (
-          SELECT %s AS bucket
-          FROM %s %s
-          GROUP BY bucket
-          HAVING MAX(value) IS NOT NULL) counted;`,
-		bucket, senmlTable, condition)
-
-	return as.executeAggQuery(ctx, query, countQuery, params, senmlTable)
+	return as.executeAggQuery(ctx, query, params, senmlTable)
 }
 
-func (as *aggregationService) executeAggQuery(ctx context.Context, query, countQuery string, params map[string]any, table string) ([]readers.Message, uint64, error) {
+func (as *aggregationService) executeAggQuery(ctx context.Context, query string, params map[string]any, table string) ([]readers.Message, uint64, error) {
 	rows, err := as.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
@@ -155,46 +146,49 @@ func (as *aggregationService) executeAggQuery(ctx context.Context, query, countQ
 	}
 	defer rows.Close()
 
-	messages, err := scanAggregatedMessages(rows, table)
-	if err != nil {
-		return []readers.Message{}, 0, err
-	}
-
-	total, err := dbutil.Total(ctx, as.db, countQuery, params)
-	if err != nil {
-		return []readers.Message{}, 0, err
-	}
-
-	return messages, total, nil
+	return scanAggregatedMessages(rows, table)
 }
 
-func scanAggregatedMessages(rows *sqlx.Rows, table string) ([]readers.Message, error) {
+type aggJSONRow struct {
+	json.Message
+	Total uint64 `db:"total_count"`
+}
+
+type aggSenMLRow struct {
+	senml.Message
+	Total uint64 `db:"total_count"`
+}
+
+func scanAggregatedMessages(rows *sqlx.Rows, table string) ([]readers.Message, uint64, error) {
 	messages := []readers.Message{}
+	total := uint64(0)
 
 	switch table {
 	case senmlTable:
 		for rows.Next() {
-			msg := senml.Message{}
-			if err := rows.StructScan(&msg); err != nil {
-				return nil, errors.Wrap(readers.ErrReadMessages, err)
+			row := aggSenMLRow{}
+			if err := rows.StructScan(&row); err != nil {
+				return nil, 0, errors.Wrap(readers.ErrReadMessages, err)
 			}
-			messages = append(messages, msg)
+			total = row.Total
+			messages = append(messages, row.Message)
 		}
 	default:
 		for rows.Next() {
-			msg := json.Message{}
-			if err := rows.StructScan(&msg); err != nil {
-				return nil, errors.Wrap(readers.ErrReadMessages, err)
+			row := aggJSONRow{}
+			if err := rows.StructScan(&row); err != nil {
+				return nil, 0, errors.Wrap(readers.ErrReadMessages, err)
 			}
-			m, err := msg.ToMap()
+			total = row.Total
+			m, err := row.Message.ToMap()
 			if err != nil {
-				return nil, errors.Wrap(readers.ErrReadMessages, err)
+				return nil, 0, errors.Wrap(readers.ErrReadMessages, err)
 			}
 			messages = append(messages, m)
 		}
 	}
 
-	return messages, nil
+	return messages, total, nil
 }
 
 func timeBucketExpr(intervalVal uint64, intervalUnit, timeColumn string) string {
@@ -242,10 +236,11 @@ func jsonAggExpr(aggType string, aggFields []string) (string, error) {
 func jsonSelectFields(aggFields []string) (string, error) {
 	var pairs []string
 	for i, field := range aggFields {
-		if !validFieldName.MatchString(field) {
-			return "", fmt.Errorf("invalid field name: %s", field)
+		escaped, err := escapeFieldName(field)
+		if err != nil {
+			return "", err
 		}
-		pairs = append(pairs, fmt.Sprintf("'%s', agg.agg_value_%d", field, i))
+		pairs = append(pairs, fmt.Sprintf("'%s', agg.agg_value_%d", escaped, i))
 	}
 
 	return fmt.Sprintf(`agg.max_time AS created, agg.subtopic, agg.publisher, agg.protocol,
@@ -269,22 +264,24 @@ func jsonFilterNullFields(aggFields []string) (string, error) {
 }
 
 func buildJSONPath(field string) (string, error) {
-	if !validFieldName.MatchString(field) {
-		return "", fmt.Errorf("invalid field name: %s", field)
+	if _, err := escapeFieldName(field); err != nil {
+		return "", err
 	}
 
 	parts := strings.Split(field, ".")
 	if len(parts) == 1 {
-		return fmt.Sprintf("payload->>'%s'", parts[0]), nil
+		escaped, _ := escapeFieldName(parts[0])
+		return fmt.Sprintf("payload->>'%s'", escaped), nil
 	}
 
 	var path strings.Builder
 	path.WriteString("payload")
 	for i, part := range parts {
+		escaped, _ := escapeFieldName(part)
 		if i == len(parts)-1 {
-			fmt.Fprintf(&path, "->>'%s'", part)
+			fmt.Fprintf(&path, "->>'%s'", escaped)
 		} else {
-			fmt.Fprintf(&path, "->'%s'", part)
+			fmt.Fprintf(&path, "->'%s'", escaped)
 		}
 	}
 	return path.String(), nil
