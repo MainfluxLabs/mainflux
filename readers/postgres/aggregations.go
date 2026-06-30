@@ -451,7 +451,7 @@ func baseConditions(subtopic, publisher, protocol string, from, to int64, timeCo
 		conds = append(conds, fmt.Sprintf("%s >= :from", timeColumn))
 	}
 	if to != 0 {
-		conds = append(conds, fmt.Sprintf("%s < :to", timeColumn))
+		conds = append(conds, fmt.Sprintf("%s <= :to", timeColumn))
 	}
 	return conds
 }
