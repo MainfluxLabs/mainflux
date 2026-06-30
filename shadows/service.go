@@ -18,16 +18,15 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
-// shadowSubtopic routes shadow commands on the thing command channel
+// shadowSubtopic routes shadow commands on the thing's command subject
 // (things.<id>.commands.shadow).
 const shadowSubtopic = "shadow"
 
 // Service specifies the API offered by the shadows service. All methods that
 // accept a token use it to identify and authorize the user.
 type Service interface {
-	// UpdateDesiredState replaces the thing's desired state with the provided
-	// document, pushes the resulting delta to the device, and returns the
-	// updated shadow.
+	// UpdateDesiredState replaces the thing's desired state, pushes the
+	// resulting delta to the device, and returns the updated shadow.
 	UpdateDesiredState(ctx context.Context, token, thingID string, desired State) (Shadow, error)
 
 	// ViewShadow returns the thing's shadow with its delta populated.
@@ -36,8 +35,7 @@ type Service interface {
 	// RemoveShadow removes the thing's shadow.
 	RemoveShadow(ctx context.Context, token, thingID string) error
 
-	// RemoveByThing removes the shadow for the given thing without an auth
-	// check. It is driven by thing-deleted events, not user requests.
+	// RemoveByThing removes the shadow for the given thing without an auth check.
 	RemoveByThing(ctx context.Context, thingID string) error
 
 	consumers.MessageConsumer
@@ -117,23 +115,17 @@ func (ss *shadowsService) RemoveByThing(ctx context.Context, thingID string) err
 	return ss.shadows.Remove(ctx, thingID)
 }
 
-// ConsumeMessage merges a thing's telemetry into its reported state. A no-op
-// report is not persisted, but any still-pending delta is re-published on every
-// report — this is what delivers pending commands when a device reconnects,
-// even if the state it reports is unchanged.
+// ConsumeMessage merges a thing's telemetry into reported (skipping no-op
+// writes) and re-publishes any pending delta, so a reconnecting device
+// receives missed commands.
 func (ss *shadowsService) ConsumeMessage(_ string, msg protomfx.Message) error {
-	thingID := msg.Publisher
-	if thingID == "" {
-		return nil
-	}
-
 	patch, ok := decodeState(msg)
 	if !ok || len(patch) == 0 {
 		return nil
 	}
 
 	ctx := context.Background()
-	current, err := ss.shadows.RetrieveByThing(ctx, thingID)
+	current, err := ss.shadows.RetrieveByThing(ctx, msg.Publisher)
 	if err != nil {
 		return err
 	}
@@ -141,7 +133,7 @@ func (ss *shadowsService) ConsumeMessage(_ string, msg protomfx.Message) error {
 	merged, changed := mergeState(current.Reported, patch)
 	if changed {
 		s := Shadow{
-			ThingID:    thingID,
+			ThingID:    msg.Publisher,
 			Desired:    current.Desired,
 			Reported:   merged,
 			ReportedAt: time.Now().Unix(),
@@ -154,8 +146,8 @@ func (ss *shadowsService) ConsumeMessage(_ string, msg protomfx.Message) error {
 	}
 
 	if delta := computeDelta(current.Desired, merged); len(delta) > 0 {
-		if err := ss.publish(thingID, delta); err != nil {
-			ss.logger.Warn(fmt.Sprintf("failed to push delta to thing %s: %s", thingID, err))
+		if err := ss.publish(msg.Publisher, delta); err != nil {
+			ss.logger.Warn(fmt.Sprintf("failed to push delta to thing %s: %s", msg.Publisher, err))
 		}
 	}
 

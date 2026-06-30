@@ -10,17 +10,16 @@ import (
 )
 
 // State is a free-form set of key/value pairs describing device state.
-// A nil value for a key signals that the key should be deleted.
 type State map[string]any
 
-// Shadow is the persisted state document for a single thing. Exactly one
-// shadow exists per thing. Delta is not stored; it is derived from Desired
-// and Reported via computeDelta and populated by the service on read.
+// Shadow is the persisted state of a single thing.
+// Delta is derived from Desired and Reported and populated
+// by the service on read.
 type Shadow struct {
-	ThingID  string
-	Desired  State
-	Reported State
-	Delta    State
+	ThingID    string
+	Desired    State
+	Reported   State
+	Delta      State
 	ReportedAt int64
 	UpdatedAt  int64
 }
@@ -28,11 +27,10 @@ type Shadow struct {
 // ShadowRepository specifies the persistence API for shadows.
 type ShadowRepository interface {
 	// Upsert creates or replaces the shadow for a thing and returns the
-	// stored document.
+	// stored shadow.
 	Upsert(ctx context.Context, shadow Shadow) (Shadow, error)
 
-	// RetrieveByThing returns the shadow for the given thing ID, or an empty
-	// shadow if none exists yet.
+	// RetrieveByThing returns the shadow for the given thing ID.
 	RetrieveByThing(ctx context.Context, thingID string) (Shadow, error)
 
 	// Remove deletes the shadow for the given thing ID.
