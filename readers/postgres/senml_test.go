@@ -334,7 +334,7 @@ func TestListSenMLMessages(t *testing.T) {
 		"read messages with to": {
 			pageMeta: readers.SenMLPageMetadata{
 				Limit: noLimit,
-				To:    messages[20].Time + 1,
+				To:    messages[20].Time,
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -347,7 +347,7 @@ func TestListSenMLMessages(t *testing.T) {
 			pageMeta: readers.SenMLPageMetadata{
 				Limit: noLimit,
 				From:  messages[5].Time,
-				To:    messages[0].Time + 1,
+				To:    messages[0].Time,
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -597,7 +597,7 @@ func TestDeleteSenMLMessages(t *testing.T) {
 			pageMeta: readers.SenMLPageMetadata{
 				Publisher: pubID,
 				From:      0,
-				To:        messages[20].Time + 1,
+				To:        messages[20].Time,
 			},
 			expectedCount: 65,
 			description:   "should delete messages to specific time",
@@ -606,7 +606,7 @@ func TestDeleteSenMLMessages(t *testing.T) {
 			pageMeta: readers.SenMLPageMetadata{
 				Publisher: pubID,
 				From:      messages[50].Time,
-				To:        messages[20].Time + 1,
+				To:        messages[20].Time,
 			},
 			expectedCount: 25,
 			description:   "should delete messages within time range",
@@ -626,12 +626,12 @@ func TestDeleteSenMLMessages(t *testing.T) {
 		_ = reader.Remove(context.Background(), readers.SenMLPageMetadata{
 			Publisher: pubID,
 			From:      0,
-			To:        now + 1,
+			To:        now,
 		})
 		_ = reader.Remove(context.Background(), readers.SenMLPageMetadata{
 			Publisher: pubID2,
 			From:      0,
-			To:        now + 1,
+			To:        now,
 		})
 
 		for _, m := range messages {
