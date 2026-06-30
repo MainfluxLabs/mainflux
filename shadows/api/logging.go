@@ -73,7 +73,7 @@ func (lm *loggingMiddleware) RemoveShadow(ctx context.Context, token, thingID st
 
 func (lm *loggingMiddleware) RemoveByThing(ctx context.Context, thingID string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_by_thing for thing %s took %s to complete", thingID, time.Since(begin))
+		message := fmt.Sprintf("Method remove_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -86,7 +86,7 @@ func (lm *loggingMiddleware) RemoveByThing(ctx context.Context, thingID string) 
 
 func (lm *loggingMiddleware) ConsumeMessage(subject string, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method consume_message for thing %s took %s to complete", msg.Publisher, time.Since(begin))
+		message := fmt.Sprintf("Method consume_message for thing id %s took %s to complete", msg.Publisher, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
