@@ -73,17 +73,18 @@ func (ss *shadowsService) UpdateDesiredState(ctx context.Context, token, thingID
 	}
 
 	stored, err := ss.shadows.Upsert(ctx, Shadow{
-		ThingID:   thingID,
-		Desired:   desired,
-		Reported:  current.Reported,
-		Timestamp: time.Now().Unix(),
+		ThingID:    thingID,
+		Desired:    desired,
+		Reported:   current.Reported,
+		ReportedAt: current.ReportedAt,
+		UpdatedAt:  time.Now().Unix(),
 	})
 	if err != nil {
 		return Shadow{}, err
 	}
 
 	stored.Delta = computeDelta(stored.Desired, stored.Reported)
-	if err := ss.publishDelta(thingID, stored.Delta); err != nil {
+	if err := ss.publish(thingID, stored.Delta); err != nil {
 		ss.logger.Warn(fmt.Sprintf("failed to push delta to thing %s: %s", thingID, err))
 	}
 
@@ -116,8 +117,10 @@ func (ss *shadowsService) RemoveByThing(ctx context.Context, thingID string) err
 	return ss.shadows.Remove(ctx, thingID)
 }
 
-// ConsumeMessage merges a thing's telemetry into its reported state. It skips
-// no-op updates entirely, and re-publishes the delta only when one remains
+// ConsumeMessage merges a thing's telemetry into its reported state. A no-op
+// report is not persisted, but any still-pending delta is re-published on every
+// report — this is what delivers pending commands when a device reconnects,
+// even if the state it reports is unchanged.
 func (ss *shadowsService) ConsumeMessage(_ string, msg protomfx.Message) error {
 	thingID := msg.Publisher
 	if thingID == "" {
@@ -136,22 +139,22 @@ func (ss *shadowsService) ConsumeMessage(_ string, msg protomfx.Message) error {
 	}
 
 	merged, changed := mergeState(current.Reported, patch)
-	if !changed {
-		return nil
+	if changed {
+		s := Shadow{
+			ThingID:    thingID,
+			Desired:    current.Desired,
+			Reported:   merged,
+			ReportedAt: time.Now().Unix(),
+			UpdatedAt:  current.UpdatedAt,
+		}
+
+		if _, err := ss.shadows.Upsert(ctx, s); err != nil {
+			return err
+		}
 	}
 
-	stored, err := ss.shadows.Upsert(ctx, Shadow{
-		ThingID:   thingID,
-		Desired:   current.Desired,
-		Reported:  merged,
-		Timestamp: time.Now().Unix(),
-	})
-	if err != nil {
-		return err
-	}
-
-	if delta := computeDelta(stored.Desired, stored.Reported); len(delta) > 0 {
-		if err := ss.publishDelta(thingID, delta); err != nil {
+	if delta := computeDelta(current.Desired, merged); len(delta) > 0 {
+		if err := ss.publish(thingID, delta); err != nil {
 			ss.logger.Warn(fmt.Sprintf("failed to push delta to thing %s: %s", thingID, err))
 		}
 	}
@@ -159,9 +162,9 @@ func (ss *shadowsService) ConsumeMessage(_ string, msg protomfx.Message) error {
 	return nil
 }
 
-// publishDelta publishes the delta to the thing's command subject.
+// publish publishes the delta to the thing's command subject.
 // An empty delta is not published.
-func (ss *shadowsService) publishDelta(thingID string, delta State) error {
+func (ss *shadowsService) publish(thingID string, delta State) error {
 	if len(delta) == 0 {
 		return nil
 	}

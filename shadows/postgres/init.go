@@ -41,10 +41,11 @@ func migrateDB(db *sqlx.DB) error {
 				Id: "shadows_1",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS shadows (
-						thing_id   UUID PRIMARY KEY,
-						desired    JSONB  NOT NULL DEFAULT '{}',
-						reported   JSONB  NOT NULL DEFAULT '{}',
-						updated_at BIGINT NOT NULL
+						thing_id    UUID PRIMARY KEY,
+						desired     JSONB  NOT NULL DEFAULT '{}',
+						reported    JSONB  NOT NULL DEFAULT '{}',
+						reported_at BIGINT NOT NULL DEFAULT 0,
+						updated_at  BIGINT NOT NULL DEFAULT 0
 					)`,
 				},
 				Down: []string{"DROP TABLE shadows"},

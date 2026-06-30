@@ -17,11 +17,12 @@ type State map[string]any
 // shadow exists per thing. Delta is not stored; it is derived from Desired
 // and Reported via computeDelta and populated by the service on read.
 type Shadow struct {
-	ThingID   string
-	Desired   State
-	Reported  State
-	Delta     State
-	Timestamp int64
+	ThingID  string
+	Desired  State
+	Reported State
+	Delta    State
+	ReportedAt int64
+	UpdatedAt  int64
 }
 
 // ShadowRepository specifies the persistence API for shadows.
