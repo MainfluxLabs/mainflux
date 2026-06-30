@@ -18,9 +18,11 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
@@ -33,6 +35,7 @@ import (
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
+	"github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/errgroup"
 )
@@ -136,8 +139,6 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	// NATS PubSub provides both the Subscriber used to consume telemetry and
-	// the CommandPublisher used to push deltas to things.
 	pubSub, err := nats.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
@@ -145,26 +146,7 @@ func main() {
 	}
 	defer pubSub.Close()
 
-	repo := postgres.NewShadowRepository(dbutil.NewDatabase(db))
-	repo = tracing.ShadowRepositoryMiddleware(dbTracer, repo)
-
-	svc := shadows.New(things, repo, pubSub, logger)
-	svc = api.LoggingMiddleware(svc, logger)
-	svc = api.MetricsMiddleware(
-		svc,
-		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
-			Namespace: "shadows",
-			Subsystem: "api",
-			Name:      "request_count",
-			Help:      "Number of requests received.",
-		}, []string{"method"}),
-		kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
-			Namespace: "shadows",
-			Subsystem: "api",
-			Name:      "request_latency_microseconds",
-			Help:      "Total duration of requests in microseconds.",
-		}, []string{"method"}),
-	)
+	svc := newService(things, pubSub, dbTracer, db, logger)
 
 	subjects := []string{nats.SubjectMessages, nats.SubjectMessagesWithSubtopic}
 	if err := consumers.Start(svcName, consumers.Messages(pubSub, svc, subjects...)); err != nil {
@@ -274,6 +256,31 @@ func subscribeToThingsES(ctx context.Context, svc shadows.Service, cfg config, l
 	}()
 
 	return subscriber.Subscribe(ctx, events.NewEventHandler(svc))
+}
+
+func newService(things domain.ThingsClient, pub messaging.CommandPublisher, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) shadows.Service {
+	repo := postgres.NewShadowRepository(dbutil.NewDatabase(db))
+	repo = tracing.ShadowRepositoryMiddleware(dbTracer, repo)
+
+	svc := shadows.New(things, repo, pub, logger)
+	svc = api.LoggingMiddleware(svc, logger)
+	svc = api.MetricsMiddleware(
+		svc,
+		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: "shadows",
+			Subsystem: "api",
+			Name:      "request_count",
+			Help:      "Number of requests received.",
+		}, []string{"method"}),
+		kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
+			Namespace: "shadows",
+			Subsystem: "api",
+			Name:      "request_latency_microseconds",
+			Help:      "Total duration of requests in microseconds.",
+		}, []string{"method"}),
+	)
+
+	return svc
 }
 
 func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
