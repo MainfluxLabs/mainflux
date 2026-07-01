@@ -31,6 +31,21 @@ func TestBuildJSONPath(t *testing.T) {
 			field: "data.sensor.readings.temperature",
 			res:   "payload->'data'->'sensor'->'readings'->>'temperature'",
 		},
+		{
+			desc:  "field with spaces, brackets and percent",
+			field: "Ambient T [%]",
+			res:   "payload->>'Ambient T [%]'",
+		},
+		{
+			desc:  "field with parentheses",
+			field: "Sensor MC A (38mm) [%]",
+			res:   "payload->>'Sensor MC A (38mm) [%]'",
+		},
+		{
+			desc:  "field with single quote is escaped",
+			field: "bob's field",
+			res:   "payload->>'bob''s field'",
+		},
 	}
 
 	for _, tc := range cases {
