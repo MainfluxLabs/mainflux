@@ -6,6 +6,7 @@ package http
 import (
 	"context"
 	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -450,18 +451,29 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	apiutil.WriteErrorResponse(err, w)
 }
 
+// mapUploadErr converts an http.MaxBytesReader overflow into ErrLimitSize.
+// MaxBytesReader fires when a chunked or otherwise unknown-length body exceeds
+// the upload limit and so slips past the early Content-Length check; without
+// this mapping the *http.MaxBytesError falls through EncodeError to a 500
+// instead of a client-side size error.
+func mapUploadErr(err error) error {
+	var maxErr *http.MaxBytesError
+	if stderrors.As(err, &maxErr) {
+		return apiutil.ErrLimitSize
+	}
+	return err
+}
+
 func getFileInfoParams(r *http.Request) (fileInfoParams, error) {
 	err := r.ParseMultipartForm(maxMemory)
 	if err != nil {
-		return fileInfoParams{}, err
+		return fileInfoParams{}, mapUploadErr(err)
 	}
 
 	f, h, err := r.FormFile(fileKey)
 	if err != nil {
-		return fileInfoParams{}, err
+		return fileInfoParams{}, mapUploadErr(err)
 	}
-	// Closed by the endpoint after the service finishes reading, so
-	// multipart tempfiles are released regardless of payload size.
 
 	class, format, err := parseFileName(h.Filename)
 	if err != nil {
