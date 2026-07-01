@@ -363,7 +363,7 @@ func (fs *filestoreService) ViewGroupFileByKey(ctx context.Context, thingKey str
 	if err != nil {
 		return nil, err
 	}
-	if err := fs.things.CanThingAccessGroup(ctx, domain.ThingAccessReq{ThingKey: domain.ThingKey{Value: thingKey}, ID: grID}); err != nil {
+	if err := fs.things.CanThingAccessGroup(ctx, domain.ThingAccessReq{ThingKey: domain.ThingKey{Type: domain.KeyTypeInternal, Value: thingKey}, ID: grID}); err != nil {
 		return nil, err
 	}
 
