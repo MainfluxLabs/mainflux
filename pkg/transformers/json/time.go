@@ -9,12 +9,22 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 var errUnsupportedFormat = errors.New("unsupported time format")
 
 const baseISO8601Format = "2006-01-02T15:04:05"
+
+// ParseTimestamp parses v using the transformer's time_format and time_location and returns nanoseconds.
+func ParseTimestamp(tr domain.Transformer, v any) (int64, error) {
+	t, err := parseTimestamp(tr.TimeFormat, v, tr.TimeLocation)
+	if err != nil {
+		return 0, err
+	}
+	return t.UnixNano(), nil
+}
 
 func parseTimestamp(format string, timestamp any, location string) (time.Time, error) {
 	switch format {
