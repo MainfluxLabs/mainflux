@@ -18,6 +18,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	fromIndex = 20
+	toIndex   = 50
+)
+
 func TestListJSONMessages(t *testing.T) {
 	reader := preader.NewJSONRepository(db)
 	writer := pwriter.New(db)
@@ -331,10 +336,10 @@ func TestDeleteJSONMessages(t *testing.T) {
 		"delete JSON messages with time range": {
 			pageMeta: readers.JSONPageMetadata{
 				Publisher: id1,
-				From:      int64(created + 20),
-				To:        int64(created + 50),
+				From:      int64(created + fromIndex),
+				To:        int64(created + toIndex + 1),
 			},
-			expectedCount: 31,
+			expectedCount: uint64(toIndex - fromIndex + 1),
 			description:   "should delete JSON messages within time range",
 		},
 	}

@@ -229,7 +229,7 @@ func TestBaseConditions(t *testing.T) {
 				"publisher = :publisher",
 				"protocol = :protocol",
 				"time >= :from",
-				"time <= :to",
+				"time < :to",
 			},
 		},
 		{

@@ -134,7 +134,7 @@ func (jr *jsonRepository) fmtCondition(rpm readers.JSONPageMetadata) string {
 			condition = fmt.Sprintf(`%s %s created >= :from`, condition, op)
 			op = "AND"
 		case "to":
-			condition = fmt.Sprintf(`%s %s created <= :to`, condition, op)
+			condition = fmt.Sprintf(`%s %s created < :to`, condition, op)
 			op = "AND"
 		case "filter":
 			filterPath := buildPayloadFilterPath(rpm.Filter)
