@@ -6,7 +6,6 @@ package shadows
 import (
 	"context"
 	"maps"
-	"reflect"
 )
 
 // State is a free-form set of key/value pairs describing device state.
@@ -37,6 +36,37 @@ type ShadowRepository interface {
 	Remove(ctx context.Context, thingID string) error
 }
 
+// equalState reports whether two JSON-shaped shadow values are deeply equal.
+func equalState(a, b any) bool {
+	switch av := a.(type) {
+	case map[string]any:
+		bv, ok := b.(map[string]any)
+		if !ok || len(av) != len(bv) {
+			return false
+		}
+		for k, v := range av {
+			w, ok := bv[k]
+			if !ok || !equalState(v, w) {
+				return false
+			}
+		}
+		return true
+	case []any:
+		bv, ok := b.([]any)
+		if !ok || len(av) != len(bv) {
+			return false
+		}
+		for i := range av {
+			if !equalState(av[i], bv[i]) {
+				return false
+			}
+		}
+		return true
+	default:
+		return a == b
+	}
+}
+
 // computeDelta returns the subset of desired that the reported state has not
 // yet matched: keys present in desired whose value differs from, or is absent
 // in, reported. Keys present only in reported are not part of the delta. The
@@ -45,7 +75,7 @@ func computeDelta(desired, reported State) State {
 	var delta State
 	for k, dv := range desired {
 		rv, ok := reported[k]
-		if ok && reflect.DeepEqual(dv, rv) {
+		if ok && equalState(dv, rv) {
 			continue
 		}
 		if delta == nil {
@@ -72,7 +102,7 @@ func mergeState(base, patch State) (merged State, changed bool) {
 			}
 			continue
 		}
-		if cur, ok := merged[k]; !ok || !reflect.DeepEqual(cur, v) {
+		if cur, ok := merged[k]; !ok || !equalState(cur, v) {
 			merged[k] = v
 			changed = true
 		}
