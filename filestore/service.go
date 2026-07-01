@@ -229,6 +229,13 @@ func (fs *filestoreService) SaveGroupFile(ctx context.Context, file io.Reader, t
 		return err
 	}
 
+	switch _, err := fs.groupsRepo.Retrieve(ctx, groupID, fi); {
+	case err == nil:
+		return dbutil.ErrConflict
+	case !errors.Contains(err, dbutil.ErrNotFound):
+		return err
+	}
+
 	checksum, err := fs.store.Put(ctx, groupFileKey(groupID, fi.Name), file)
 	if err != nil {
 		return err
@@ -236,9 +243,11 @@ func (fs *filestoreService) SaveGroupFile(ctx context.Context, file io.Reader, t
 	fi.Checksum = checksum
 
 	if err := fs.groupsRepo.Save(ctx, groupID, fi); err != nil {
-		key := groupFileKey(groupID, fi.Name)
-		if delErr := fs.store.Delete(ctx, key); delErr != nil {
-			fs.logger.Error(fmt.Sprintf("orphaned object after failed DB save: key=%s err=%s", key, delErr))
+		if !errors.Contains(err, dbutil.ErrConflict) {
+			key := groupFileKey(groupID, fi.Name)
+			if delErr := fs.store.Delete(ctx, key); delErr != nil {
+				fs.logger.Error(fmt.Sprintf("orphaned object after failed DB save: key=%s err=%s", key, delErr))
+			}
 		}
 		return err
 	}
@@ -272,10 +281,6 @@ func (fs *filestoreService) RemoveGroupFile(ctx context.Context, token, groupID 
 		return err
 	}
 
-	// Delete the object before the index row. A failure here changes nothing
-	// and is safely retryable. A crash between the two steps leaves an
-	// orphaned DB row (served as 404) that a retry fully reconciles, never an
-	// orphaned object.
 	key := groupFileKey(groupID, fi.Name)
 	if err := fs.store.Delete(ctx, key); err != nil {
 		return err

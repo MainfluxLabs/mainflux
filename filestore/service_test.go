@@ -17,6 +17,7 @@ import (
 	fsmocks "github.com/MainfluxLabs/mainflux/filestore/mocks"
 	"github.com/MainfluxLabs/mainflux/filestore/store"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/stretchr/testify/assert"
@@ -89,6 +90,26 @@ func TestSaveGroupFile_OrphanCleanup(t *testing.T) {
 	_, statErr := os.Stat(filepath.Join(base, "groups", groupID, "bad.pdf"))
 	assert.True(t, os.IsNotExist(statErr), "orphaned object not cleaned")
 	assert.Equal(t, 0, grRepo.Len())
+}
+
+func TestSaveGroupFile_DuplicatePreservesExisting(t *testing.T) {
+	svc, grRepo, _, _ := newSvc(t)
+
+	fi := filestore.FileInfo{Name: "a.pdf", Class: "documents", Format: "pdf"}
+	require.Nil(t, svc.SaveGroupFile(context.Background(), strings.NewReader("original"), token, groupID, fi))
+
+	err := svc.SaveGroupFile(context.Background(), strings.NewReader("different"), token, groupID, fi)
+	assert.True(t, errors.Is(err, dbutil.ErrConflict), "expected conflict, got %v", err)
+
+	assert.Equal(t, 1, grRepo.Len())
+
+	rc, err := svc.ViewGroupFile(context.Background(), token, groupID, fi)
+	require.Nil(t, err)
+	defer rc.Close()
+
+	data, err := io.ReadAll(rc)
+	require.Nil(t, err)
+	assert.Equal(t, []byte("original"), data)
 }
 
 func TestRemoveGroupFile(t *testing.T) {
@@ -172,13 +193,11 @@ func TestViewGroupFileByKey_ACL(t *testing.T) {
 	fi := filestore.FileInfo{Name: "a.pdf", Class: "documents", Format: "pdf"}
 	require.Nil(t, svc.SaveGroupFile(context.Background(), strings.NewReader("payload"), token, groupID, fi))
 
-	// Thing in same group: allowed.
 	rc, err := svc.ViewGroupFileByKey(context.Background(), thingKey, fi)
 	require.Nil(t, err, "thing in group must access group file")
 	rc.Close()
 }
 
-// Smoke assertion: ErrChecksumMismatch actually surfaces through the service.
 func TestChecksumMismatchPropagates(t *testing.T) {
 	svc, _, _, base := newSvc(t)
 
