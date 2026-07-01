@@ -13,10 +13,13 @@ import (
 func saveFileEndpoint(svc filestore.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(saveFileReq)
+		if req.file != nil {
+			defer req.file.Close()
+		}
+
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
-		defer req.file.Close()
 
 		err := svc.SaveFile(ctx, req.file, req.key.Value, req.fileInfo)
 		if err != nil {
