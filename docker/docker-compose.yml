@@ -23,6 +23,7 @@ volumes:
   mainfluxlabs-smtp-notifier-db-volume:
   mainfluxlabs-smpp-notifier-db-volume:
   mainfluxlabs-downlinks-db-volume:
+  mainfluxlabs-shadows-db-volume:
   mainfluxlabs-modbus-db-volume:
   mainfluxlabs-alarms-db-volume:
   mainfluxlabs-rules-db-volume:
@@ -714,6 +715,49 @@ services:
       MF_BROKER_URL: ${MF_NATS_URL}
     ports:
       - ${MF_DOWNLINKS_HTTP_PORT}:${MF_DOWNLINKS_HTTP_PORT}
+    networks:
+      - mainfluxlabs-base-net
+
+  shadows-db:
+    image: postgres:13.3-alpine
+    container_name: mainfluxlabs-shadows-db
+    restart: on-failure
+    environment:
+      POSTGRES_USER: ${MF_SHADOWS_DB_USER}
+      POSTGRES_PASSWORD: ${MF_SHADOWS_DB_PASS}
+      POSTGRES_DB: ${MF_SHADOWS_DB}
+    networks:
+      - mainfluxlabs-base-net
+    volumes:
+      - mainfluxlabs-shadows-db-volume:/var/lib/postgresql/data
+
+  shadows:
+    image: ${MF_RELEASE_PREFIX}/shadows:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-shadows
+    depends_on:
+      - things
+      - shadows-db
+      - broker
+    restart: on-failure
+    environment:
+      MF_SHADOWS_LOG_LEVEL: ${MF_SHADOWS_LOG_LEVEL}
+      MF_SHADOWS_HTTP_PORT: ${MF_SHADOWS_HTTP_PORT}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_SHADOWS_DB_HOST: shadows-db
+      MF_SHADOWS_DB_PORT: ${MF_SHADOWS_DB_PORT}
+      MF_SHADOWS_DB_USER: ${MF_SHADOWS_DB_USER}
+      MF_SHADOWS_DB_PASS: ${MF_SHADOWS_DB_PASS}
+      MF_SHADOWS_DB: ${MF_SHADOWS_DB}
+      MF_SHADOWS_SERVER_CERT: ${MF_SHADOWS_SERVER_CERT}
+      MF_SHADOWS_SERVER_KEY: ${MF_SHADOWS_SERVER_KEY}
+      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+      MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
+      MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
+      MF_SHADOWS_ES_URL: ${MF_SHADOWS_ES_URL}
+      MF_BROKER_URL: ${MF_NATS_URL}
+    ports:
+      - ${MF_SHADOWS_HTTP_PORT}:${MF_SHADOWS_HTTP_PORT}
     networks:
       - mainfluxlabs-base-net
 
