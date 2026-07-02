@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/MainfluxLabs/mainflux"
@@ -631,10 +632,9 @@ func parseFileName(name string) (string, string, error) {
 	if !utf8.ValidString(name) {
 		return "", "", apiutil.ErrInvalidQueryParams
 	}
-	for _, r := range name {
-		if r < 0x20 || r == 0x7f {
-			return "", "", apiutil.ErrInvalidQueryParams
-		}
+
+	if strings.ContainsFunc(name, unicode.IsControl) {
+		return "", "", apiutil.ErrInvalidQueryParams
 	}
 
 	lastDotIndex := strings.LastIndex(name, ".")
