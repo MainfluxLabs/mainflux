@@ -1,0 +1,180 @@
+openapi: 3.0.1
+info:
+  title: Mainflux shadows service
+  description: HTTP API for managing device shadows — the last reported and desired state of a thing.
+  version: 1.0.0
+
+paths:
+  /things/{thingId}/shadows:
+    get:
+      summary: View a thing's shadow
+      description: Retrieves the shadow of the thing identified by the provided ID, with its delta populated.
+      tags:
+        - shadows
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      responses:
+        "200":
+          $ref: "#/components/responses/ShadowRes"
+        "400":
+          description: Failed due to malformed request.
+        "401":
+          description: Missing or invalid access token provided.
+        "403":
+          description: Failed to perform authorization over the entity.
+        "422":
+          description: Database can't process request.
+        "500":
+          $ref: "#/components/responses/ServiceError"
+    put:
+      summary: Update a thing's desired state
+      description: >-
+        Replaces the thing's desired state with the provided state, recomputes the delta between the
+        desired and last reported state, and pushes that delta to the device as a command. Returns the
+        updated shadow.
+      tags:
+        - shadows
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateDesiredStateReq"
+      responses:
+        "200":
+          $ref: "#/components/responses/ShadowRes"
+        "400":
+          description: Failed due to malformed JSON.
+        "401":
+          description: Missing or invalid access token provided.
+        "403":
+          description: Failed to perform authorization over the entity.
+        "415":
+          description: Missing or invalid content type.
+        "500":
+          $ref: "#/components/responses/ServiceError"
+    delete:
+      summary: Remove a thing's shadow
+      description: Removes the shadow of the thing identified by the provided ID.
+      tags:
+        - shadows
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      responses:
+        "204":
+          description: Shadow removed.
+        "401":
+          description: Missing or invalid access token provided.
+        "403":
+          description: Failed to perform authorization over the entity.
+        "500":
+          $ref: "#/components/responses/ServiceError"
+
+components:
+  schemas:
+    State:
+      type: object
+      description: Free-form set of key/value pairs describing device state.
+      additionalProperties: true
+      example:
+        temperature: 21.5
+        led: "on"
+
+    ShadowRes:
+      type: object
+      properties:
+        thing_id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        state:
+          type: object
+          properties:
+            desired:
+              $ref: "#/components/schemas/State"
+            reported:
+              $ref: "#/components/schemas/State"
+            delta:
+              allOf:
+                - $ref: "#/components/schemas/State"
+              description: >-
+                Subset of the desired state that the reported state has not yet matched.
+                Omitted when desired and reported already agree.
+          required: [desired, reported]
+        reported_at:
+          type: integer
+          format: int64
+          description: Unix timestamp (seconds) of the last reported-state update.
+          example: 1719763200
+        updated_at:
+          type: integer
+          format: int64
+          description: Unix timestamp (seconds) of the last desired-state update.
+          example: 1719763200
+      required: [thing_id, state, reported_at, updated_at]
+
+  parameters:
+    ThingId:
+      name: thingId
+      in: path
+      required: true
+      description: Unique thing identifier.
+      schema:
+        type: string
+        format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174000"
+
+  requestBodies:
+    UpdateDesiredStateReq:
+      description: JSON object describing the thing's desired state.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              desired:
+                $ref: "#/components/schemas/State"
+            required: [desired]
+          example:
+            desired:
+              temperature: 22
+              led: "off"
+
+  responses:
+    ShadowRes:
+      description: Shadow retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ShadowRes"
+          example:
+            thing_id: "123e4567-e89b-12d3-a456-426614174000"
+            state:
+              desired:
+                temperature: 22
+                led: "off"
+              reported:
+                temperature: 21.5
+                led: "on"
+              delta:
+                temperature: 22
+                led: "off"
+            reported_at: 1719763200
+            updated_at: 1719763260
+    ServiceError:
+      description: Unexpected server-side error occurred.
+      content:
+        application/json:
+          schema:
+            type: string
+            format: byte
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        * Users access: "Authorization: Bearer <user_token>"
+
+security:
+  - bearerAuth: []
