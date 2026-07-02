@@ -262,10 +262,8 @@ func buildStore(logger logger.Logger) store.FileStore {
 			log.Fatalf("Failed to init SeaweedFS backend: %s", err)
 		}
 
-		logger.Info("Using SeaweedFS backend")
 		return fs
 	default:
-		logger.Info("Using local disk backend")
 		return store.NewLocal(mainflux.Env(envFilesPath, defFilesPath))
 	}
 }
