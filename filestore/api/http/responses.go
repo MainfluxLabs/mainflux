@@ -4,7 +4,12 @@
 package http
 
 import (
+	"fmt"
+	"io"
 	"net/http"
+	"net/url"
+	"strings"
+	"unicode"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
@@ -78,6 +83,52 @@ func (res viewFileRes) Headers() map[string]string {
 }
 
 func (res viewFileRes) Empty() bool {
+	return false
+}
+
+type streamFileRes struct {
+	reader io.ReadCloser
+	name   string
+}
+
+func (res streamFileRes) Code() int {
+	return http.StatusOK
+}
+
+func (res streamFileRes) Headers() map[string]string {
+	h := map[string]string{}
+	if res.name != "" {
+		h["Content-Disposition"] = contentDisposition(res.name)
+	}
+	return h
+}
+
+// contentDisposition builds an RFC 6266 attachment header. ASCII names are
+// emitted with a quoted filename; non-ASCII names additionally include a
+// filename* parameter per RFC 5987 so UTF-8 is conveyed faithfully.
+func contentDisposition(name string) string {
+	if isASCII(name) {
+		return fmt.Sprintf(`attachment; filename=%q`, name)
+	}
+	ascii := strings.Map(func(r rune) rune {
+		if r > unicode.MaxASCII {
+			return '_'
+		}
+		return r
+	}, name)
+	return fmt.Sprintf(`attachment; filename=%q; filename*=UTF-8''%s`, ascii, url.PathEscape(name))
+}
+
+func isASCII(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] > unicode.MaxASCII {
+			return false
+		}
+	}
+	return true
+}
+
+func (res streamFileRes) Empty() bool {
 	return false
 }
 

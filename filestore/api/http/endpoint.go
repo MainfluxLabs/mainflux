@@ -13,6 +13,10 @@ import (
 func saveFileEndpoint(svc filestore.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(saveFileReq)
+		if req.file != nil {
+			defer req.file.Close()
+		}
+
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -118,6 +122,7 @@ func saveGroupFileEndpoint(svc filestore.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
+		defer req.file.Close()
 
 		err := svc.SaveGroupFile(ctx, req.file, req.token, req.groupID, req.fileInfo)
 		if err != nil {
@@ -179,16 +184,12 @@ func viewGroupFileEndpoint(svc filestore.Service) endpoint.Endpoint {
 			Format: req.format,
 		}
 
-		f, err := svc.ViewGroupFile(ctx, req.token, req.groupID, fi)
+		rc, err := svc.ViewGroupFile(ctx, req.token, req.groupID, fi)
 		if err != nil {
 			return nil, err
 		}
 
-		res := viewFileRes{
-			file: f,
-		}
-
-		return res, nil
+		return streamFileRes{reader: rc, name: req.name}, nil
 	}
 }
 
@@ -205,16 +206,12 @@ func viewGroupFileByKeyEndpoint(svc filestore.Service) endpoint.Endpoint {
 			Format: req.format,
 		}
 
-		f, err := svc.ViewGroupFileByKey(ctx, req.key.Value, fi)
+		rc, err := svc.ViewGroupFileByKey(ctx, req.key.Value, fi)
 		if err != nil {
 			return nil, err
 		}
 
-		res := viewFileRes{
-			file: f,
-		}
-
-		return res, nil
+		return streamFileRes{reader: rc, name: req.name}, nil
 	}
 }
 
@@ -251,6 +248,7 @@ func buildListFilesResponse(pm filestore.PageMetadata, files []filestore.FileInf
 		},
 		FilesInfo: []fileInfo{},
 	}
+
 	for _, file := range files {
 		f := fileInfo{
 			Name:     file.Name,
