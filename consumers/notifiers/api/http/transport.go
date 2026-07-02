@@ -26,7 +26,8 @@ import (
 )
 
 const (
-	nameKey = "name"
+	nameKey    = "name"
+	contactKey = "contact"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -127,8 +128,20 @@ func buildPageMetadata(r *http.Request) (notifiers.PageMetadata, error) {
 		return notifiers.PageMetadata{}, err
 	}
 
-	n, _ := apiutil.ReadStringQuery(r, nameKey, "")
-	m, _ := apiutil.ReadMetadataQuery(r, apiutil.MetadataKey, nil)
+	n, err := apiutil.ReadStringQuery(r, nameKey, "")
+	if err != nil {
+		return notifiers.PageMetadata{}, err
+	}
+
+	m, err := apiutil.ReadMetadataQuery(r, apiutil.MetadataKey, nil)
+	if err != nil {
+		return notifiers.PageMetadata{}, err
+	}
+
+	c, err := apiutil.ReadStringQuery(r, contactKey, "")
+	if err != nil {
+		return notifiers.PageMetadata{}, err
+	}
 
 	return notifiers.PageMetadata{
 		Offset:   base.Offset,
@@ -137,6 +150,7 @@ func buildPageMetadata(r *http.Request) (notifiers.PageMetadata, error) {
 		Dir:      base.Dir,
 		Name:     n,
 		Metadata: m,
+		Contact:  c,
 	}, nil
 }
 

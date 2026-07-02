@@ -56,7 +56,7 @@ func (lm *loggingMiddleware) RotateCert(ctx context.Context, token, serial, thin
 	return lm.svc.RotateCert(ctx, token, serial, thingID, ttl, keyBits, keyType)
 }
 
-func (lm *loggingMiddleware) ListCerts(ctx context.Context, token, thingID string, offset, limit uint64) (_ certs.Page, err error) {
+func (lm *loggingMiddleware) ListCerts(ctx context.Context, token, thingID string, pm certs.PageMetadata) (_ certs.Page, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method list_certs by user %s, thing id %s took %s to complete", email, thingID, time.Since(begin))
@@ -67,10 +67,10 @@ func (lm *loggingMiddleware) ListCerts(ctx context.Context, token, thingID strin
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListCerts(ctx, token, thingID, offset, limit)
+	return lm.svc.ListCerts(ctx, token, thingID, pm)
 }
 
-func (lm *loggingMiddleware) ListSerials(ctx context.Context, token, thingID string, offset, limit uint64) (_ certs.Page, err error) {
+func (lm *loggingMiddleware) ListSerials(ctx context.Context, token, thingID string, pm certs.PageMetadata) (_ certs.Page, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method list_serials by user %s, thing id %s took %s to complete", email, thingID, time.Since(begin))
@@ -81,7 +81,7 @@ func (lm *loggingMiddleware) ListSerials(ctx context.Context, token, thingID str
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListSerials(ctx, token, thingID, offset, limit)
+	return lm.svc.ListSerials(ctx, token, thingID, pm)
 }
 
 func (lm *loggingMiddleware) ViewCert(ctx context.Context, token, serial string) (_ certs.Cert, err error) {

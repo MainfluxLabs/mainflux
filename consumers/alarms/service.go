@@ -28,13 +28,17 @@ var AllowedOrders = map[string]string{
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
-	Total  uint64 `json:"total,omitempty"`
-	Offset uint64 `json:"offset,omitempty"`
-	Limit  uint64 `json:"limit,omitempty"`
-	Order  string `json:"order,omitempty"`
-	Dir    string `json:"dir,omitempty"`
-	Level  int32  `json:"level,omitempty"`
-	Status string `json:"status,omitempty"`
+	Total    uint64 `json:"total,omitempty"`
+	Offset   uint64 `json:"offset,omitempty"`
+	Limit    uint64 `json:"limit,omitempty"`
+	Order    string `json:"order,omitempty"`
+	Dir      string `json:"dir,omitempty"`
+	Level    int32  `json:"level,omitempty"`
+	Status   string `json:"status,omitempty"`
+	Protocol string `json:"protocol,omitempty"`
+	Subtopic string `json:"subtopic,omitempty"`
+	From     int64  `json:"from,omitempty"`
+	To       int64  `json:"to,omitempty"`
 }
 
 // Validate validates the page metadata.

@@ -58,6 +58,7 @@ func listOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 			Order:  req.order,
 			Dir:    req.dir,
 			Email:  req.email,
+			Role:   req.role,
 		}
 
 		page, err := svc.ListOrgMemberships(ctx, req.token, req.orgID, pm)

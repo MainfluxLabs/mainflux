@@ -138,44 +138,52 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 		return OrgMembershipsPage{}, errors.Wrap(ErrRetrieveMembershipsByOrg, err)
 	}
 
-	if len(memberships) == 0 {
-		return OrgMembershipsPage{
-			OrgMemberships: []OrgMembership{},
-			Total:          0,
-		}, nil
-	}
-
-	memberIDs := make([]string, 0, len(memberships))
-	membershipByMemberID := make(map[string]OrgMembership, len(memberships))
-	for _, m := range memberships {
-		memberIDs = append(memberIDs, m.MemberID)
-		membershipByMemberID[m.MemberID] = m
-	}
-
-	userPM := domain.UsersPageMetadata{
-		Email:  pm.Email,
-		Order:  pm.Order,
-		Dir:    pm.Dir,
-		Limit:  pm.Limit,
-		Offset: pm.Offset,
-	}
-
-	page, err := svc.users.GetUsersByIDs(ctx, memberIDs, userPM)
-	if err != nil {
-		return OrgMembershipsPage{}, err
-	}
-
-	var oms []OrgMembership
-	for _, u := range page.Users {
-		if m, ok := membershipByMemberID[u.ID]; ok {
-			m.Email = u.Email
-			oms = append(oms, m)
+	if pm.Role != "" {
+		var filtered []OrgMembership
+		for _, m := range memberships {
+			if m.Role == pm.Role {
+				filtered = append(filtered, m)
+			}
 		}
+		memberships = filtered
+	}
+
+	oms := []OrgMembership{}
+	total := uint64(0)
+
+	if len(memberships) > 0 {
+		memberIDs := make([]string, 0, len(memberships))
+		membershipByMemberID := make(map[string]OrgMembership, len(memberships))
+		for _, m := range memberships {
+			memberIDs = append(memberIDs, m.MemberID)
+			membershipByMemberID[m.MemberID] = m
+		}
+
+		userPM := domain.UsersPageMetadata{
+			Email:  pm.Email,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
+			Limit:  pm.Limit,
+			Offset: pm.Offset,
+		}
+
+		page, err := svc.users.GetUsersByIDs(ctx, memberIDs, userPM)
+		if err != nil {
+			return OrgMembershipsPage{}, err
+		}
+
+		for _, u := range page.Users {
+			if m, ok := membershipByMemberID[u.ID]; ok {
+				m.Email = u.Email
+				oms = append(oms, m)
+			}
+		}
+		total = page.Total
 	}
 
 	return OrgMembershipsPage{
 		OrgMemberships: oms,
-		Total:          page.Total,
+		Total:          total,
 	}, nil
 }
 

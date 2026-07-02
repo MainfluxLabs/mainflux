@@ -28,6 +28,7 @@ type PageMetadata struct {
 	Dir      string         `json:"dir,omitempty"`
 	Name     string         `json:"name,omitempty"`
 	Metadata map[string]any `json:"metadata,omitempty"`
+	URL      string         `json:"url,omitempty"`
 }
 
 // Validate validates the page metadata.

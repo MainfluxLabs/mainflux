@@ -67,6 +67,7 @@ type PageMetadata struct {
 	Name     string         `json:"name,omitempty"`
 	Metadata map[string]any `json:"metadata,omitempty"`
 	Email    string         `json:"email,omitempty"`
+	Role     string         `json:"role,omitempty"`
 }
 
 // Validate validates the page metadata.

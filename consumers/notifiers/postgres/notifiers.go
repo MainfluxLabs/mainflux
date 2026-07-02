@@ -75,13 +75,14 @@ func (nr notifierRepository) RetrieveByGroup(ctx context.Context, groupID string
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
+	cq, contact := dbutil.GetLikeQuery("contacts", pm.Contact)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return notifiers.NotifiersPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	groupFilter := "group_id = :group_id"
-	whereClause := dbutil.BuildWhereClause(groupFilter, nq, mq)
+	whereClause := dbutil.BuildWhereClause(groupFilter, nq, cq, mq)
 
 	q := fmt.Sprintf(`SELECT id, group_id, name, contacts, metadata FROM notifiers %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	qc := fmt.Sprintf(`SELECT COUNT(*) FROM notifiers %s;`, whereClause)
@@ -91,6 +92,7 @@ func (nr notifierRepository) RetrieveByGroup(ctx context.Context, groupID string
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
 		"name":     name,
+		"contacts": contact,
 		"metadata": m,
 	}
 

@@ -26,8 +26,11 @@ import (
 )
 
 const (
-	contentType = "application/json"
-	idKey       = "id"
+	contentType  = "application/json"
+	idKey        = "id"
+	methodKey    = "method"
+	urlKey       = "url"
+	frequencyKey = "frequency"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -123,14 +126,35 @@ func buildPageMetadata(r *http.Request) (downlinks.PageMetadata, error) {
 		return downlinks.PageMetadata{}, err
 	}
 
-	n, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	n, err := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	if err != nil {
+		return downlinks.PageMetadata{}, err
+	}
+
+	m, err := apiutil.ReadStringQuery(r, methodKey, "")
+	if err != nil {
+		return downlinks.PageMetadata{}, err
+	}
+
+	u, err := apiutil.ReadStringQuery(r, urlKey, "")
+	if err != nil {
+		return downlinks.PageMetadata{}, err
+	}
+
+	f, err := apiutil.ReadStringQuery(r, frequencyKey, "")
+	if err != nil {
+		return downlinks.PageMetadata{}, err
+	}
 
 	return downlinks.PageMetadata{
-		Offset: base.Offset,
-		Limit:  base.Limit,
-		Order:  base.Order,
-		Dir:    base.Dir,
-		Name:   n,
+		Offset:    base.Offset,
+		Limit:     base.Limit,
+		Order:     base.Order,
+		Dir:       base.Dir,
+		Name:      n,
+		Method:    m,
+		URL:       u,
+		Frequency: f,
 	}, nil
 }
 

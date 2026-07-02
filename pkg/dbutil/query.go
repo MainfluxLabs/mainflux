@@ -81,6 +81,16 @@ func GetOffsetLimitQuery(limit uint64) string {
 	return ""
 }
 
+
+// GetLikeQuery returns a case-insensitive LIKE condition using a named parameter.
+// Returns ("", "") if value is empty.
+func GetLikeQuery(field, value string) (string, string) {
+	if value == "" {
+		return "", ""
+	}
+	return fmt.Sprintf("LOWER(%s) LIKE :%s", field, field), fmt.Sprintf("%%%s%%", strings.ToLower(value))
+}
+
 func GetGroupIDsQuery(ids []string) string {
 	if len(ids) == 0 {
 		return ""

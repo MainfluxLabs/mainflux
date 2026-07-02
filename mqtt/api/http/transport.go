@@ -22,6 +22,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+const topicKey = "topic"
+
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(tracer opentracing.Tracer, svc mqtt.Service, ac domain.AuthClient, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
@@ -60,12 +62,18 @@ func decodeListSubscriptions(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
+	t, err := apiutil.ReadStringQuery(r, topicKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	return listSubscriptionsReq{
 		groupID: bone.GetValue(r, apiutil.IDKey),
 		token:   apiutil.ExtractBearerToken(r),
 		pageMetadata: mqtt.PageMetadata{
 			Offset: o,
 			Limit:  l,
+			Topic:  t,
 		},
 	}, nil
 }
