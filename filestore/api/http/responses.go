@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"unicode"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
@@ -110,7 +111,7 @@ func contentDisposition(name string) string {
 		return fmt.Sprintf(`attachment; filename=%q`, name)
 	}
 	ascii := strings.Map(func(r rune) rune {
-		if r > 0x7f {
+		if r > unicode.MaxASCII {
 			return '_'
 		}
 		return r
@@ -120,7 +121,7 @@ func contentDisposition(name string) string {
 
 func isASCII(s string) bool {
 	for i := 0; i < len(s); i++ {
-		if s[i] > 0x7f {
+		if s[i] > unicode.MaxASCII {
 			return false
 		}
 	}
