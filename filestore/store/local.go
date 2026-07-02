@@ -74,9 +74,11 @@ func (l *local) DeleteAll(ctx context.Context, keys []string) error {
 	if len(keys) == 0 {
 		return nil
 	}
+
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, 8)
 	errCh := make(chan error, len(keys))
+
 	for _, k := range keys {
 		wg.Add(1)
 		sem <- struct{}{}
@@ -90,10 +92,12 @@ func (l *local) DeleteAll(ctx context.Context, keys []string) error {
 	}
 	wg.Wait()
 	close(errCh)
+
 	var errs []error
 	for e := range errCh {
 		errs = append(errs, e)
 	}
+
 	return errors.Join(errs...)
 }
 
@@ -101,9 +105,11 @@ func (l *local) DeletePrefix(_ context.Context, prefix string) error {
 	if strings.Trim(prefix, "/") == "" {
 		return ErrInvalidPrefix
 	}
+
 	if err := os.RemoveAll(filepath.Join(l.base, prefix)); err != nil && !os.IsNotExist(err) {
 		return err
 	}
+
 	return nil
 }
 
@@ -130,6 +136,7 @@ func (v *verifyReader) Read(p []byte) (int, error) {
 			return n, ErrChecksumMismatch
 		}
 	}
+
 	return n, err
 }
 
