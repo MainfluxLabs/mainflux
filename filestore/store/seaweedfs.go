@@ -78,6 +78,7 @@ func (s *seaweedFS) objectURL(key string) string {
 func (s *seaweedFS) Put(ctx context.Context, key string, r io.Reader) (string, error) {
 	h := sha256.New()
 	pr, pw := io.Pipe()
+
 	defer pr.Close()
 	go func() {
 		_, err := io.Copy(pw, io.TeeReader(r, h))
@@ -88,14 +89,17 @@ func (s *seaweedFS) Put(ctx context.Context, key string, r io.Reader) (string, e
 	if err != nil {
 		return "", err
 	}
+
 	resp, err := s.client.Do(req)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("%w: put status %d", ErrBackend, resp.StatusCode)
 	}
+
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
@@ -104,10 +108,12 @@ func (s *seaweedFS) Get(ctx context.Context, key, expectedChecksum string) (io.R
 	if err != nil {
 		return nil, err
 	}
+
 	resp, err := s.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
+
 	if resp.StatusCode != http.StatusOK {
 		resp.Body.Close()
 		if resp.StatusCode == http.StatusNotFound {
@@ -115,9 +121,11 @@ func (s *seaweedFS) Get(ctx context.Context, key, expectedChecksum string) (io.R
 		}
 		return nil, fmt.Errorf("%w: get status %d", ErrBackend, resp.StatusCode)
 	}
+
 	if expectedChecksum == "" {
 		return resp.Body, nil
 	}
+
 	return &verifyReader{rc: resp.Body, h: sha256.New(), expected: expectedChecksum}, nil
 }
 
@@ -126,15 +134,18 @@ func (s *seaweedFS) Delete(ctx context.Context, key string) error {
 	if err != nil {
 		return err
 	}
+
 	resp, err := s.client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
+
 	switch resp.StatusCode {
 	case http.StatusNoContent, http.StatusOK, http.StatusNotFound:
 		return nil
 	}
+
 	return fmt.Errorf("%w: delete status %d", ErrBackend, resp.StatusCode)
 }
 
@@ -142,6 +153,7 @@ func (s *seaweedFS) DeleteAll(ctx context.Context, keys []string) error {
 	if len(keys) == 0 {
 		return nil
 	}
+
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, 8)
 	errCh := make(chan error, len(keys))
@@ -156,12 +168,14 @@ func (s *seaweedFS) DeleteAll(ctx context.Context, keys []string) error {
 			}
 		}(k)
 	}
+
 	wg.Wait()
 	close(errCh)
 	var errs []error
 	for e := range errCh {
 		errs = append(errs, e)
 	}
+
 	return errors.Join(errs...)
 }
 
