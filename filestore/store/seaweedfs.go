@@ -184,6 +184,7 @@ func (s *seaweedFS) DeletePrefix(ctx context.Context, prefix string) error {
 	if clean == "" {
 		return ErrInvalidPrefix
 	}
+
 	u := *s.baseURL
 	u.Path = path.Join(u.Path, s.prefix, clean) + "/"
 	u.RawQuery = "recursive=true&ignoreRecursiveError=true"
@@ -192,14 +193,17 @@ func (s *seaweedFS) DeletePrefix(ctx context.Context, prefix string) error {
 	if err != nil {
 		return err
 	}
+
 	resp, err := s.client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
+
 	switch resp.StatusCode {
 	case http.StatusNoContent, http.StatusOK, http.StatusNotFound:
 		return nil
 	}
+
 	return fmt.Errorf("%w: delete prefix status %d", ErrBackend, resp.StatusCode)
 }
