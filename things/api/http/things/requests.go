@@ -6,6 +6,7 @@ package things
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
+	"github.com/MainfluxLabs/mainflux/things/api"
 )
 
 const (
@@ -192,7 +193,7 @@ func (req *listReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
 }
 
 type listByProfileReq struct {
@@ -210,7 +211,7 @@ func (req listByProfileReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
 }
 
 type listByGroupReq struct {
@@ -228,7 +229,7 @@ func (req listByGroupReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
 }
 
 type listByOrgReq struct {
@@ -246,7 +247,7 @@ func (req listByOrgReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
 }
 
 type removeThingsReq struct {
