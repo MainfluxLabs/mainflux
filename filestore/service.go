@@ -7,8 +7,6 @@ import (
 	"context"
 	stderrors "errors"
 	"fmt"
-	_ "image/jpeg"
-	_ "image/png"
 	"io"
 	"path/filepath"
 	"sync"
