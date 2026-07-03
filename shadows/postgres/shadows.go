@@ -43,11 +43,8 @@ func (sr shadowRepository) Upsert(ctx context.Context, shadow shadows.Shadow) (s
 	if _, err := sr.db.NamedExecContext(ctx, q, dbSh); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
-			switch pgErr.Code {
-			case pgerrcode.InvalidTextRepresentation:
+			if pgErr.Code == pgerrcode.InvalidTextRepresentation {
 				return shadows.Shadow{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-			case pgerrcode.UniqueViolation:
-				return shadows.Shadow{}, errors.Wrap(dbutil.ErrConflict, err)
 			}
 		}
 		return shadows.Shadow{}, errors.Wrap(dbutil.ErrCreateEntity, err)
