@@ -82,15 +82,18 @@ func (l *local) DeleteAll(ctx context.Context, keys []string) error {
 	for _, k := range keys {
 		wg.Add(1)
 		sem <- struct{}{}
+
 		go func(key string) {
 			defer wg.Done()
 			defer func() { <-sem }()
+
 			if err := l.Delete(ctx, key); err != nil {
 				errCh <- fmt.Errorf("key %s: %w", key, err)
 			}
 		}(k)
 	}
 	wg.Wait()
+
 	close(errCh)
 
 	var errs []error
