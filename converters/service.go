@@ -153,28 +153,31 @@ func (as *adapterService) PublishJSONMessagesFromCSV(ctx context.Context, key st
 	for i := 1; i < len(csvLines); i++ {
 		record := map[string]any{}
 		if tr.TimeField != "" && timeFieldIdx != -1 {
-			ns, err := jsontransformer.ParseTimestamp(tr, csvLines[i][timeFieldIdx])
+			raw := csvLines[i][timeFieldIdx]
+			ns, err := jsontransformer.ParseTimestamp(tr, raw)
 			if err != nil {
 				return ErrInvalidTimeField
 			}
 			record["Created"] = float64(ns)
 		}
 		for j, columnName := range keys {
+			val := csvLines[i][j+1]
+			if val == "" {
+				continue
+			}
 			if reservedFields[columnName] {
 				switch columnName {
 				case "protocol":
-					if val := csvLines[i][j+1]; val != "" {
-						msg.Protocol = val
-					}
+					msg.Protocol = val
 				case "subtopic":
-					msg.Subtopic = csvLines[i][j+1]
+					msg.Subtopic = val
 				}
 				continue
 			}
-			if f, err := strconv.ParseFloat(csvLines[i][j+1], 64); err == nil {
+			if f, err := strconv.ParseFloat(val, 64); err == nil {
 				record[columnName] = f
 			} else {
-				record[columnName] = csvLines[i][j+1]
+				record[columnName] = val
 			}
 		}
 		recData, err := json.Marshal(record)
