@@ -10,7 +10,6 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
-	"os"
 	"path/filepath"
 	"sync"
 
@@ -22,10 +21,8 @@ import (
 )
 
 const (
-	filesPath  = "files"
 	groupsPath = "groups"
 	thingsPath = "things"
-	permission = 0755
 )
 
 // Service specifies an API that must be fulfilled by the domain service
@@ -112,6 +109,10 @@ func thingFileDirKey(thingID string) string {
 	return filepath.Join(thingsPath, thingID)
 }
 
+func thingFileKey(thingID, name string) string {
+	return filepath.Join(thingsPath, thingID, name)
+}
+
 func (fs *filestoreService) SaveFile(ctx context.Context, file io.Reader, key string, fi FileInfo) error {
 	thID, err := fs.identify(ctx, key)
 	if err != nil {
@@ -123,12 +124,20 @@ func (fs *filestoreService) SaveFile(ctx context.Context, file io.Reader, key st
 		return err
 	}
 
-	path := filepath.Join(filesPath, thingsPath, thID)
-	if err := createFile(path, fi.Name, file); err != nil {
+	objKey := thingFileKey(thID, fi.Name)
+	checksum, err := fs.store.Put(ctx, objKey, file)
+	if err != nil {
 		return err
 	}
 
+	fi.Checksum = checksum
+
 	if err = fs.thingsRepo.Save(ctx, thID, grID, fi); err != nil {
+		if !errors.Contains(err, dbutil.ErrConflict) {
+			if delErr := fs.store.Delete(ctx, objKey); delErr != nil {
+				fs.logger.Error(fmt.Sprintf("orphaned object after failed DB save: key=%s err=%s", objKey, delErr))
+			}
+		}
 		return err
 	}
 
@@ -169,23 +178,12 @@ func (fs *filestoreService) RemoveFile(ctx context.Context, key string, fi FileI
 		return err
 	}
 
-	path := filepath.Join(filesPath, thingsPath, thID, fi.Name)
-	if err := os.Remove(path); err != nil {
+	if err := fs.store.Delete(ctx, thingFileKey(thID, fi.Name)); err != nil {
 		return err
 	}
 
 	if err := fs.thingsRepo.Remove(ctx, thID, fi); err != nil {
 		return err
-	}
-
-	directories := []string{thingsPath, thID}
-	for i := len(directories) - 1; i >= 0; i-- {
-		path := filepath.Join(directories[:i+1]...)
-		if isDirEmpty(path) {
-			if err := os.RemoveAll(path); err != nil {
-				return err
-			}
-		}
 	}
 
 	return nil
@@ -196,8 +194,7 @@ func (fs *filestoreService) RemoveFiles(ctx context.Context, thingID string) err
 		return err
 	}
 
-	dirPath := filepath.Join(filesPath, thingsPath, thingID)
-	if err := os.RemoveAll(dirPath); err != nil {
+	if err := fs.store.DeletePrefix(ctx, thingFileDirKey(thingID)); err != nil {
 		return err
 	}
 
@@ -215,13 +212,14 @@ func (fs *filestoreService) ViewFile(ctx context.Context, key string, fi FileInf
 		return nil, err
 	}
 
-	filePath := filepath.Join(filesPath, thingsPath, thID, f.Name)
-	fileBytes, err := os.ReadFile(filePath)
+	objKey := thingFileKey(thID, f.Name)
+	rc, err := fs.store.Get(ctx, objKey, f.Checksum)
 	if err != nil {
-		return nil, err
+		return nil, fs.translateGetErr(objKey, err)
 	}
+	defer rc.Close()
 
-	return fileBytes, nil
+	return io.ReadAll(rc)
 }
 
 func (fs *filestoreService) SaveGroupFile(ctx context.Context, file io.Reader, token, groupID string, fi FileInfo) error {
@@ -393,27 +391,6 @@ func (fs *filestoreService) translateGetErr(key string, err error) error {
 	return err
 }
 
-func createFile(path, name string, file io.Reader) error {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		err = os.MkdirAll(path, permission)
-		if err != nil {
-			return err
-		}
-	}
-
-	tmpfile, err := os.Create(filepath.Join(path, name))
-	if err != nil {
-		return err
-	}
-	defer tmpfile.Close()
-
-	if _, err := io.Copy(tmpfile, file); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (fs *filestoreService) identify(ctx context.Context, thingKey string) (string, error) {
 	thingID, err := fs.things.Identify(ctx, domain.ThingKey{Type: domain.KeyTypeInternal, Value: thingKey})
 	if err != nil {
@@ -421,17 +398,4 @@ func (fs *filestoreService) identify(ctx context.Context, thingKey string) (stri
 	}
 
 	return thingID, nil
-}
-
-// isDirEmpty checks if directory is empty
-func isDirEmpty(path string) bool {
-	f, err := os.Open(path)
-	if err != nil {
-		return false
-	}
-	defer f.Close()
-
-	_, err = f.Readdirnames(1)
-
-	return err == io.EOF
 }
