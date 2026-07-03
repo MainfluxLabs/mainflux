@@ -29,6 +29,25 @@ var (
 	ErrInvalidFilterValue    = errors.New("invalid time filter value")
 )
 
+var allowedOrders = map[string]string{
+	"id":   "id",
+	"name": "name",
+}
+
+// validatePageMetadata validates the downlinks page metadata.
+func validatePageMetadata(pm downlinks.PageMetadata) error {
+	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
+	if err := common.Validate(maxLimitSize, allowedOrders); err != nil {
+		return err
+	}
+
+	if len(pm.Name) > maxNameSize {
+		return apiutil.ErrNameSize
+	}
+
+	return nil
+}
+
 type downlink struct {
 	Name       string               `json:"name"`
 	Url        string               `json:"url"`
@@ -119,7 +138,7 @@ func (req listThingDownlinksReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
+	return validatePageMetadata(req.pageMetadata)
 }
 
 type listDownlinksReq struct {
@@ -137,7 +156,7 @@ func (req listDownlinksReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
+	return validatePageMetadata(req.pageMetadata)
 }
 
 type downlinkReq struct {
