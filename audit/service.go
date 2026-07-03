@@ -7,20 +7,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
-
-var AllowedOrders = map[string]string{
-	"id":          "id",
-	"occurred_at": "occurred_at",
-	"operation":   "operation",
-	"actor_email": "actor_email",
-	"org_id":      "org_id",
-	"group_id":    "group_id",
-}
 
 type Event struct {
 	ID         string
@@ -48,12 +38,6 @@ type PageMetadata struct {
 	ActionData map[string]any `json:"action_data,omitempty"`
 	From       time.Time      `json:"from,omitzero"`
 	To         time.Time      `json:"to,omitzero"`
-}
-
-func (pm PageMetadata) Validate(maxLimitSize int) error {
-	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
-
-	return common.Validate(maxLimitSize, AllowedOrders)
 }
 
 type EventRepository interface {

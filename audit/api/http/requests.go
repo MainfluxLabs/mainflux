@@ -10,6 +10,22 @@ import (
 
 const maxLimitSize = 200
 
+var allowedOrders = map[string]string{
+	"id":          "id",
+	"occurred_at": "occurred_at",
+	"operation":   "operation",
+	"actor_email": "actor_email",
+	"org_id":      "org_id",
+	"group_id":    "group_id",
+}
+
+// validatePageMetadata validates the audit page metadata.
+func validatePageMetadata(pm audit.PageMetadata) error {
+	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
+
+	return common.Validate(maxLimitSize, allowedOrders)
+}
+
 type listEventsReq struct {
 	token        string
 	pageMetadata audit.PageMetadata
@@ -20,7 +36,7 @@ func (req listEventsReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize)
+	return validatePageMetadata(req.pageMetadata)
 }
 
 type listEventsByOrgReq struct {
@@ -38,7 +54,7 @@ func (req listEventsByOrgReq) validate() error {
 		return apiutil.ErrMissingOrgID
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize)
+	return validatePageMetadata(req.pageMetadata)
 }
 
 type listEventsByGroupReq struct {
@@ -56,5 +72,5 @@ func (req listEventsByGroupReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize)
+	return validatePageMetadata(req.pageMetadata)
 }
