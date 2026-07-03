@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/rules"
+	"github.com/MainfluxLabs/mainflux/rules/api"
 	"github.com/gofrs/uuid"
 )
 
@@ -109,7 +110,7 @@ func (req listRulesByThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
 }
 
 type listRulesByGroupReq struct {
@@ -127,7 +128,7 @@ func (req listRulesByGroupReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
 }
 
 type updateRuleInput struct {
