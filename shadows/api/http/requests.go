@@ -24,7 +24,7 @@ func (req updateDesiredStateReq) validate() error {
 	}
 
 	if len(req.Desired) == 0 {
-		return apiutil.ErrEmptyList
+		return apiutil.ErrEmptyState
 	}
 
 	return nil
