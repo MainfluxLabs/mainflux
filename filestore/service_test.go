@@ -198,6 +198,76 @@ func TestViewGroupFileByKey_ACL(t *testing.T) {
 	rc.Close()
 }
 
+func TestSaveFile(t *testing.T) {
+	svc, _, thRepo, base := newSvc(t)
+
+	fi := filestore.FileInfo{Name: "x.bin", Class: "binaries", Format: "bin"}
+	err := svc.SaveFile(context.Background(), strings.NewReader("hello"), thingKey, fi)
+	assert.Nil(t, err, "save failed")
+
+	// Object written to store under things/<id>/<name>.
+	got, statErr := os.Stat(filepath.Join(base, "things", thingID, fi.Name))
+	assert.Nil(t, statErr, "file missing on backend")
+	assert.Equal(t, int64(5), got.Size())
+
+	// Checksum from store.Put persisted to the index row.
+	stored, err := thRepo.Retrieve(context.Background(), thingID, fi)
+	require.Nil(t, err)
+	assert.NotEmpty(t, stored.Checksum, "checksum not persisted")
+}
+
+func TestViewFile(t *testing.T) {
+	svc, _, _, _ := newSvc(t)
+
+	fi := filestore.FileInfo{Name: "x.bin", Class: "binaries", Format: "bin"}
+	require.Nil(t, svc.SaveFile(context.Background(), strings.NewReader("payload"), thingKey, fi))
+
+	data, err := svc.ViewFile(context.Background(), thingKey, fi)
+	require.Nil(t, err)
+	assert.Equal(t, []byte("payload"), data)
+}
+
+func TestViewFile_ChecksumMismatch(t *testing.T) {
+	svc, _, _, base := newSvc(t)
+
+	fi := filestore.FileInfo{Name: "x.bin", Class: "binaries", Format: "bin"}
+	require.Nil(t, svc.SaveFile(context.Background(), strings.NewReader("payload"), thingKey, fi))
+
+	// Corrupt bytes on disk; index still has checksum of original.
+	require.Nil(t, os.WriteFile(filepath.Join(base, "things", thingID, fi.Name), []byte("tampered"), 0o644))
+
+	_, err := svc.ViewFile(context.Background(), thingKey, fi)
+	assert.True(t, errors.Is(err, store.ErrChecksumMismatch), "expected checksum mismatch, got %v", err)
+}
+
+func TestRemoveFile(t *testing.T) {
+	svc, _, _, base := newSvc(t)
+
+	fi := filestore.FileInfo{Name: "x.bin", Class: "binaries", Format: "bin"}
+	require.Nil(t, svc.SaveFile(context.Background(), strings.NewReader("hello"), thingKey, fi))
+
+	err := svc.RemoveFile(context.Background(), thingKey, fi)
+	assert.Nil(t, err, "remove failed")
+
+	_, statErr := os.Stat(filepath.Join(base, "things", thingID, fi.Name))
+	assert.True(t, os.IsNotExist(statErr), "object still present after remove")
+}
+
+func TestRemoveFiles(t *testing.T) {
+	svc, _, _, base := newSvc(t)
+
+	for _, n := range []string{"a.bin", "b.bin"} {
+		require.Nil(t, svc.SaveFile(context.Background(), strings.NewReader("x"), thingKey,
+			filestore.FileInfo{Name: n, Class: "binaries", Format: "bin"}))
+	}
+
+	err := svc.RemoveFiles(context.Background(), thingID)
+	assert.Nil(t, err, "remove all failed")
+
+	_, statErr := os.Stat(filepath.Join(base, "things", thingID))
+	assert.True(t, os.IsNotExist(statErr), "thing prefix not cleared")
+}
+
 func TestChecksumMismatchPropagates(t *testing.T) {
 	svc, _, _, base := newSvc(t)
 
