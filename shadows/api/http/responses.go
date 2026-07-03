@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	_ apiutil.Response = (*shadowResponse)(nil)
+	_ apiutil.Response = (*shadowRes)(nil)
 	_ apiutil.Response = (*removeRes)(nil)
 )
 
@@ -21,22 +21,22 @@ type stateRes struct {
 	Delta    shadows.State `json:"delta,omitempty"`
 }
 
-type shadowResponse struct {
+type shadowRes struct {
 	ThingID    string   `json:"thing_id"`
 	State      stateRes `json:"state"`
 	ReportedAt int64    `json:"reported_at"`
 	UpdatedAt  int64    `json:"updated_at"`
 }
 
-func (res shadowResponse) Code() int {
+func (res shadowRes) Code() int {
 	return http.StatusOK
 }
 
-func (res shadowResponse) Headers() map[string]string {
+func (res shadowRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res shadowResponse) Empty() bool {
+func (res shadowRes) Empty() bool {
 	return false
 }
 
@@ -54,8 +54,8 @@ func (res removeRes) Empty() bool {
 	return true
 }
 
-func buildShadowResponse(sh shadows.Shadow) shadowResponse {
-	return shadowResponse{
+func buildShadowResponse(sh shadows.Shadow) shadowRes {
+	return shadowRes{
 		ThingID: sh.ThingID,
 		State: stateRes{
 			Desired:  sh.Desired,
