@@ -82,27 +82,13 @@ func migrateDB(db *sqlx.DB) error {
 				Id: "filestore_3",
 				Up: []string{
 					`ALTER TABLE groups_files ADD COLUMN checksum TEXT NOT NULL DEFAULT '';`,
-				},
-				Down: []string{
-					`ALTER TABLE groups_files DROP COLUMN checksum`,
-				},
-			},
-			{
-				Id: "filestore_4",
-				Up: []string{
 					`ALTER TABLE things_files ADD COLUMN checksum TEXT NOT NULL DEFAULT '';`,
-				},
-				Down: []string{
-					`ALTER TABLE things_files DROP COLUMN checksum`,
-				},
-			},
-			{
-				Id: "filestore_5",
-				Up: []string{
 					`CREATE INDEX IF NOT EXISTS idx_things_files_group_id ON things_files (group_id);`,
 				},
 				Down: []string{
 					`DROP INDEX IF EXISTS idx_things_files_group_id`,
+					`ALTER TABLE things_files DROP COLUMN checksum`,
+					`ALTER TABLE groups_files DROP COLUMN checksum`,
 				},
 			},
 		},
