@@ -7,6 +7,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/rules"
+	"github.com/MainfluxLabs/mainflux/rules/api"
 )
 
 const (
@@ -73,7 +74,7 @@ func (req listScriptsByThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
 }
 
 type listScriptsByGroupReq struct {
@@ -91,7 +92,7 @@ func (req listScriptsByGroupReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
 }
 
 type scriptReq struct {
@@ -207,7 +208,7 @@ func (req listScriptRunsByThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
 }
 
 type removeScriptRunsReq struct {

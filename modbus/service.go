@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/cron"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -23,11 +22,6 @@ import (
 	gbmodbus "github.com/goburrow/modbus"
 	"golang.org/x/time/rate"
 )
-
-var AllowedOrders = map[string]string{
-	"id":   "id",
-	"name": "name",
-}
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
@@ -43,19 +37,6 @@ type PageMetadata struct {
 	Frequency string `json:"frequency,omitempty"`
 }
 
-// Validate validates the page metadata.
-func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
-	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
-	if err := common.Validate(maxLimitSize, AllowedOrders); err != nil {
-		return err
-	}
-
-	if len(pm.Name) > maxNameSize {
-		return apiutil.ErrNameSize
-	}
-
-	return nil
-}
 
 // Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).

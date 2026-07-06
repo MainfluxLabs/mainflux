@@ -9,18 +9,12 @@ import (
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
-
-var AllowedOrders = map[string]string{
-	"id":   "id",
-	"name": "name",
-}
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
@@ -32,20 +26,6 @@ type PageMetadata struct {
 	Name     string         `json:"name,omitempty"`
 	Metadata map[string]any `json:"metadata,omitempty"`
 	Contact  string         `json:"contact,omitempty"`
-}
-
-// Validate validates the page metadata.
-func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
-	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
-	if err := common.Validate(maxLimitSize, AllowedOrders); err != nil {
-		return err
-	}
-
-	if len(pm.Name) > maxNameSize {
-		return apiutil.ErrNameSize
-	}
-
-	return nil
 }
 
 // Service represents a notification service.

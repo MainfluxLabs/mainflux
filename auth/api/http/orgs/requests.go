@@ -2,6 +2,7 @@ package orgs
 
 import (
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/auth/api"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
@@ -58,7 +59,7 @@ func (req listOrgsReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
 }
 
 type orgReq struct {

@@ -11,7 +11,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
@@ -19,12 +18,6 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
-
-var AllowedOrders = map[string]string{
-	"id":      "id",
-	"name":    "name",
-	"rule_id": "rule_id",
-}
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
@@ -40,27 +33,6 @@ type PageMetadata struct {
 	To        time.Time `json:"to,omitempty"`
 }
 
-// Validate validates the page metadata.
-func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
-	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
-	if err := common.Validate(maxLimitSize, AllowedOrders); err != nil {
-		return err
-	}
-
-	if len(pm.Name) > maxNameSize {
-		return apiutil.ErrNameSize
-	}
-
-	if pm.InputType != "" {
-		switch pm.InputType {
-		case InputTypeMessage, InputTypeAlarm, InputTypeCommand:
-		default:
-			return apiutil.ErrInvalidInputType
-		}
-	}
-
-	return nil
-}
 
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).

@@ -8,9 +8,40 @@ import (
 )
 
 const (
-	minLen       = 1
-	maxLimitSize = 200
+	minLen        = 1
+	maxLimitSize  = 200
+	minAlarmLevel = 1
+	maxAlarmLevel = 5
 )
+
+var allowedOrders = map[string]string{
+	"id":      "id",
+	"created": "created",
+	"level":   "level",
+	"status":  "status",
+}
+
+// validatePageMetadata validates the alarms page metadata.
+func validatePageMetadata(pm alarms.PageMetadata) error {
+	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
+	if err := common.Validate(maxLimitSize, allowedOrders); err != nil {
+		return err
+	}
+
+	if pm.Level != 0 && (pm.Level < minAlarmLevel || pm.Level > maxAlarmLevel) {
+		return apiutil.ErrInvalidAlarmLevel
+	}
+
+	if pm.Status != "" {
+		switch pm.Status {
+		case alarms.StatusActive, alarms.StatusNoted, alarms.StatusCleared:
+		default:
+			return apiutil.ErrInvalidAlarmStatus
+		}
+	}
+
+	return nil
+}
 
 type alarmReq struct {
 	token string
@@ -44,7 +75,7 @@ func (req listAlarmsByGroupReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize)
+	return validatePageMetadata(req.pageMetadata)
 }
 
 type listAlarmsByThingReq struct {
@@ -62,7 +93,7 @@ func (req listAlarmsByThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize)
+	return validatePageMetadata(req.pageMetadata)
 }
 
 type listAlarmsByOrgReq struct {
@@ -80,7 +111,7 @@ func (req listAlarmsByOrgReq) validate() error {
 		return apiutil.ErrMissingOrgID
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize)
+	return validatePageMetadata(req.pageMetadata)
 }
 
 type removeAlarmsReq struct {
@@ -149,5 +180,5 @@ func (req exportAlarmsByThingReq) validate() error {
 		return apiutil.ErrInvalidQueryParams
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize)
+	return validatePageMetadata(req.pageMetadata)
 }
