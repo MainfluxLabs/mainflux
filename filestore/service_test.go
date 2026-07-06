@@ -216,6 +216,20 @@ func TestSaveFile(t *testing.T) {
 	assert.NotEmpty(t, stored.Checksum, "checksum not persisted")
 }
 
+func TestSaveFile_DuplicatePreservesExisting(t *testing.T) {
+	svc, _, _, base := newSvc(t)
+
+	fi := filestore.FileInfo{Name: "x.bin", Class: "binaries", Format: "bin"}
+	require.Nil(t, svc.SaveFile(context.Background(), strings.NewReader("original"), thingKey, fi))
+
+	err := svc.SaveFile(context.Background(), strings.NewReader("different"), thingKey, fi)
+	assert.True(t, errors.Is(err, dbutil.ErrConflict), "expected conflict, got %v", err)
+
+	data, statErr := os.ReadFile(filepath.Join(base, "things", thingID, fi.Name))
+	require.Nil(t, statErr)
+	assert.Equal(t, []byte("original"), data)
+}
+
 func TestViewFile(t *testing.T) {
 	svc, _, _, _ := newSvc(t)
 

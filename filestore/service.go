@@ -122,6 +122,13 @@ func (fs *filestoreService) SaveFile(ctx context.Context, file io.Reader, key st
 		return err
 	}
 
+	switch _, err := fs.thingsRepo.Retrieve(ctx, thID, fi); {
+	case err == nil:
+		return dbutil.ErrConflict
+	case !errors.Contains(err, dbutil.ErrNotFound):
+		return err
+	}
+
 	objKey := thingFileKey(thID, fi.Name)
 	checksum, err := fs.store.Put(ctx, objKey, file)
 	if err != nil {
