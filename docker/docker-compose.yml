@@ -29,6 +29,7 @@ volumes:
   mainfluxlabs-certs-db-volume:
   mainfluxlabs-crl-volume:
   mainfluxlabs-uiconfigs-db-volume:
+  mainfluxlabs-broker-volume:
 
 services:
   ui:
