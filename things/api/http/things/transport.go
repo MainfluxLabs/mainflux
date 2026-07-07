@@ -26,6 +26,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+const typeKey = "type"
+
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc things.Service, ac domain.AuthClient, mux *bone.Mux, tracer opentracing.Tracer, logger log.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
@@ -298,8 +300,20 @@ func buildPageMetadata(r *http.Request) (things.PageMetadata, error) {
 		return things.PageMetadata{}, err
 	}
 
-	n, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
-	m, _ := apiutil.ReadMetadataQuery(r, apiutil.MetadataKey, nil)
+	n, err := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
+	if err != nil {
+		return things.PageMetadata{}, err
+	}
+
+	m, err := apiutil.ReadMetadataQuery(r, apiutil.MetadataKey, nil)
+	if err != nil {
+		return things.PageMetadata{}, err
+	}
+
+	t, err := apiutil.ReadStringQuery(r, typeKey, "")
+	if err != nil {
+		return things.PageMetadata{}, err
+	}
 
 	return things.PageMetadata{
 		Offset:   base.Offset,
@@ -308,6 +322,7 @@ func buildPageMetadata(r *http.Request) (things.PageMetadata, error) {
 		Dir:      base.Dir,
 		Name:     n,
 		Metadata: m,
+		Type:     t,
 	}, nil
 }
 

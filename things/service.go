@@ -7,7 +7,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -25,40 +24,21 @@ var (
 	ErrProfileAssigned = errors.New("profile currently assigned to thing(s)")
 )
 
-var AllowedOrders = map[string]string{
-	"id":         "id",
-	"name":       "name",
-	"email":      "email",
-	"created_at": "created_at",
-	"updated_at": "updated_at",
-	"type":       "type",
-}
-
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
-	Total    uint64         `json:"total,omitempty"`
-	Offset   uint64         `json:"offset,omitempty"`
-	Limit    uint64         `json:"limit,omitempty"`
-	Order    string         `json:"order,omitempty"`
-	Dir      string         `json:"dir,omitempty"`
-	Name     string         `json:"name,omitempty"`
-	Metadata map[string]any `json:"metadata,omitempty"`
-	Email    string         `json:"email,omitempty"`
+	Total       uint64         `json:"total,omitempty"`
+	Offset      uint64         `json:"offset,omitempty"`
+	Limit       uint64         `json:"limit,omitempty"`
+	Order       string         `json:"order,omitempty"`
+	Dir         string         `json:"dir,omitempty"`
+	Name        string         `json:"name,omitempty"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
+	Email       string         `json:"email,omitempty"`
+	Type        string         `json:"type,omitempty"`
+	ContentType string         `json:"content_type,omitempty"`
+	Role        string         `json:"role,omitempty"`
 }
 
-// Validate validates the page metadata.
-func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
-	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
-	if err := common.Validate(maxLimitSize, AllowedOrders); err != nil {
-		return err
-	}
-
-	if len(pm.Name) > maxNameSize {
-		return apiutil.ErrNameSize
-	}
-
-	return nil
-}
 
 // Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).

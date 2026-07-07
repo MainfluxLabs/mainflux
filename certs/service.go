@@ -51,10 +51,10 @@ type Service interface {
 	RotateCert(ctx context.Context, token, serial, thingID, ttl string, keyBits int, keyType string) (Cert, error)
 
 	// ListCerts lists certificates issued for a given thing ID.
-	ListCerts(ctx context.Context, token, thingID string, offset, limit uint64) (Page, error)
+	ListCerts(ctx context.Context, token, thingID string, pm PageMetadata) (Page, error)
 
 	// ListSerials lists certificate serial numbers issued for a given thing ID.
-	ListSerials(ctx context.Context, token, thingID string, offset, limit uint64) (Page, error)
+	ListSerials(ctx context.Context, token, thingID string, pm PageMetadata) (Page, error)
 
 	// ViewCert retrieves the certificate issued for a given serial ID.
 	ViewCert(ctx context.Context, token, serial string) (Cert, error)
@@ -267,12 +267,12 @@ func GenerateCRLFile(ctx context.Context, repo Repository, pkiAgent pki.Agent, c
 	return nil
 }
 
-func (cs *certsService) ListCerts(ctx context.Context, token, thingID string, offset, limit uint64) (Page, error) {
+func (cs *certsService) ListCerts(ctx context.Context, token, thingID string, pm PageMetadata) (Page, error) {
 	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupViewer}); err != nil {
 		return Page{}, errors.ErrAuthorization
 	}
 
-	cp, err := cs.certsRepo.RetrieveByThing(ctx, thingID, offset, limit)
+	cp, err := cs.certsRepo.RetrieveByThing(ctx, thingID, pm)
 	if err != nil {
 		return Page{}, err
 	}
@@ -280,12 +280,12 @@ func (cs *certsService) ListCerts(ctx context.Context, token, thingID string, of
 	return cp, nil
 }
 
-func (cs *certsService) ListSerials(ctx context.Context, token, thingID string, offset, limit uint64) (Page, error) {
+func (cs *certsService) ListSerials(ctx context.Context, token, thingID string, pm PageMetadata) (Page, error) {
 	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupViewer}); err != nil {
 		return Page{}, errors.ErrAuthorization
 	}
 
-	return cs.certsRepo.RetrieveByThing(ctx, thingID, offset, limit)
+	return cs.certsRepo.RetrieveByThing(ctx, thingID, pm)
 }
 
 func (cs *certsService) ViewCert(ctx context.Context, token, serial string) (Cert, error) {

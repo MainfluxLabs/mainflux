@@ -14,6 +14,25 @@ const (
 	maxNameSize  = 254
 )
 
+var allowedOrders = map[string]string{
+	"id":   "id",
+	"name": "name",
+}
+
+// validatePageMetadata validates the notifiers page metadata.
+func validatePageMetadata(pm notifiers.PageMetadata) error {
+	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
+	if err := common.Validate(maxLimitSize, allowedOrders); err != nil {
+		return err
+	}
+
+	if len(pm.Name) > maxNameSize {
+		return apiutil.ErrNameSize
+	}
+
+	return nil
+}
+
 type notifierReq struct {
 	token string
 	id    string
@@ -44,7 +63,7 @@ func (req listNotifiersReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
+	return validatePageMetadata(req.pageMetadata)
 }
 
 type createNotifierReq struct {

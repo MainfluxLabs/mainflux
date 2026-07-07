@@ -22,6 +22,25 @@ var (
 	ErrMissingWebhookID = errors.New("missing webhook id")
 )
 
+var allowedOrders = map[string]string{
+	"id":   "id",
+	"name": "name",
+}
+
+// validatePageMetadata validates the webhooks page metadata.
+func validatePageMetadata(pm webhooks.PageMetadata) error {
+	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
+	if err := common.Validate(maxLimitSize, allowedOrders); err != nil {
+		return err
+	}
+
+	if len(pm.Name) > maxNameSize {
+		return apiutil.ErrNameSize
+	}
+
+	return nil
+}
+
 type createWebhookReq struct {
 	ID       string            `json:"id,omitempty"`
 	Name     string            `json:"name"`
@@ -101,7 +120,7 @@ func (req listWebhooksByGroupReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
+	return validatePageMetadata(req.pageMetadata)
 }
 
 type listWebhooksByThingReq struct {
@@ -119,7 +138,7 @@ func (req listWebhooksByThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
+	return validatePageMetadata(req.pageMetadata)
 }
 
 type updateWebhookReq struct {

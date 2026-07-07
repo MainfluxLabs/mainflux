@@ -153,15 +153,21 @@ func (pr profileRepository) RetrieveAll(ctx context.Context, pm things.PageMetad
 		return things.ProfilesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
-	whereClause := dbutil.BuildWhereClause(nq, mq)
+	ctq := ""
+	if pm.ContentType != "" {
+		ctq = "config->>'content_type' = :content_type"
+	}
+
+	whereClause := dbutil.BuildWhereClause(nq, ctq, mq)
 	query := fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM profiles %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM profiles %s;`, whereClause)
 
 	params := map[string]any{
-		"name":     name,
-		"metadata": m,
-		"limit":    pm.Limit,
-		"offset":   pm.Offset,
+		"name":         name,
+		"content_type": pm.ContentType,
+		"metadata":     m,
+		"limit":        pm.Limit,
+		"offset":       pm.Offset,
 	}
 
 	return pr.retrieve(ctx, query, cquery, params)
@@ -239,15 +245,21 @@ func (pr profileRepository) RetrieveByGroups(ctx context.Context, groupIDs []str
 		return things.ProfilesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
-	whereClause := dbutil.BuildWhereClause(giq, nq, mq)
+	ctq := ""
+	if pm.ContentType != "" {
+		ctq = "config->>'content_type' = :content_type"
+	}
+
+	whereClause := dbutil.BuildWhereClause(giq, nq, ctq, mq)
 	query := fmt.Sprintf(`SELECT id, group_id, name, metadata, config FROM profiles %s ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM profiles %s;`, whereClause)
 
 	params := map[string]any{
-		"name":     name,
-		"metadata": m,
-		"limit":    pm.Limit,
-		"offset":   pm.Offset,
+		"name":         name,
+		"content_type": pm.ContentType,
+		"metadata":     m,
+		"limit":        pm.Limit,
+		"offset":       pm.Offset,
 	}
 
 	return pr.retrieve(ctx, query, cquery, params)

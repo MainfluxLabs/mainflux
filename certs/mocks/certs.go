@@ -139,11 +139,11 @@ func (c *certsRepoMock) Remove(ctx context.Context, serial string) error {
 	return nil
 }
 
-func (c *certsRepoMock) RetrieveByThing(ctx context.Context, thingID string, offset, limit uint64) (certs.Page, error) {
+func (c *certsRepoMock) RetrieveByThing(ctx context.Context, thingID string, pm certs.PageMetadata) (certs.Page, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if limit <= 0 {
+	if pm.Limit <= 0 {
 		return certs.Page{}, nil
 	}
 
@@ -152,15 +152,8 @@ func (c *certsRepoMock) RetrieveByThing(ctx context.Context, thingID string, off
 		return certs.Page{Certs: []certs.Cert{}}, nil
 	}
 
-	start := offset
-	if start > uint64(len(thingCerts)) {
-		start = uint64(len(thingCerts))
-	}
-
-	end := start + limit
-	if end > uint64(len(thingCerts)) {
-		end = uint64(len(thingCerts))
-	}
+	start := min(pm.Offset, uint64(len(thingCerts)))
+	end := min(start+pm.Limit, uint64(len(thingCerts)))
 
 	// Return a copy so callers don't alias (and observe mutations of) the
 	// mock's internal storage, matching the snapshot semantics of the DB repo.

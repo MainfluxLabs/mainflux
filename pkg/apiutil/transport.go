@@ -354,7 +354,7 @@ func ReadLimitQuery(r *http.Request, key string, def uint64) (uint64, error) {
 
 // ReadStringQuery reads the value of string http query parameters for a given key
 func ReadStringQuery(r *http.Request, key string, def string) (string, error) {
-	vals := bone.GetQuery(r, key)
+	vals := r.URL.Query()[key]
 	if len(vals) > 1 {
 		return "", ErrInvalidQueryParams
 	}

@@ -4,6 +4,7 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/csv"
 	"encoding/json"
@@ -31,6 +32,8 @@ const (
 	fileKey              = "file"
 	multiPartContentType = "multipart/form-data"
 )
+
+var utf8BOM = []byte{0xef, 0xbb, 0xbf}
 
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc adapter.Service, ac domain.AuthClient, tracer opentracing.Tracer, logger logger.Logger) http.Handler {
@@ -77,7 +80,13 @@ func decodeConvertCSVFile(_ context.Context, r *http.Request) (any, error) {
 	}
 	defer file.Close()
 
-	csvLines, readErr := csv.NewReader(file).ReadAll()
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+	data = bytes.TrimPrefix(data, utf8BOM)
+
+	csvLines, readErr := csv.NewReader(bytes.NewReader(data)).ReadAll()
 	if readErr != nil {
 		return nil, readErr
 	}

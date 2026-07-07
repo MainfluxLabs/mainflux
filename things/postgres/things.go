@@ -133,17 +133,19 @@ func (tr thingRepository) RetrieveByGroups(ctx context.Context, groupIDs []strin
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	giq := dbutil.GetGroupIDsQuery(groupIDs)
 	nq, name := dbutil.GetNameQuery(pm.Name)
+	tq := typeQuery(pm.Type)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return things.ThingsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
-	whereClause := dbutil.BuildWhereClause(giq, nq, mq)
+	whereClause := dbutil.BuildWhereClause(giq, nq, tq, mq)
 	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, type, key, external_key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
 
 	params := map[string]any{
 		"name":     name,
+		"type":     pm.Type,
 		"metadata": m,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
@@ -179,17 +181,19 @@ func (tr thingRepository) RetrieveAll(ctx context.Context, pm things.PageMetadat
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
+	tq := typeQuery(pm.Type)
 	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
 	if err != nil {
 		return things.ThingsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
-	whereClause := dbutil.BuildWhereClause(nq, mq)
+	whereClause := dbutil.BuildWhereClause(nq, tq, mq)
 	query := fmt.Sprintf(`SELECT id, group_id, profile_id, name, type, key, external_key, metadata FROM things %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM things %s;`, whereClause)
 
 	params := map[string]any{
 		"name":     name,
+		"type":     pm.Type,
 		"metadata": m,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
@@ -455,4 +459,11 @@ func toThing(dbth dbThing) (things.Thing, error) {
 		ExternalKey: dbth.ExternalKey.String,
 		Metadata:    metadata,
 	}, nil
+}
+
+func typeQuery(thingType string) string {
+	if thingType == "" {
+		return ""
+	}
+	return "type = :type"
 }

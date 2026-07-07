@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	clientshttp "github.com/MainfluxLabs/mainflux/pkg/clients/http"
 	"github.com/MainfluxLabs/mainflux/pkg/cron"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
@@ -22,34 +21,19 @@ import (
 	"golang.org/x/time/rate"
 )
 
-var AllowedOrders = map[string]string{
-	"id":   "id",
-	"name": "name",
-}
-
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
-	Total  uint64 `json:"total,omitempty"`
-	Offset uint64 `json:"offset,omitempty"`
-	Limit  uint64 `json:"limit,omitempty"`
-	Order  string `json:"order,omitempty"`
-	Dir    string `json:"dir,omitempty"`
-	Name   string `json:"name,omitempty"`
+	Total     uint64 `json:"total,omitempty"`
+	Offset    uint64 `json:"offset,omitempty"`
+	Limit     uint64 `json:"limit,omitempty"`
+	Order     string `json:"order,omitempty"`
+	Dir       string `json:"dir,omitempty"`
+	Name      string `json:"name,omitempty"`
+	Method    string `json:"method,omitempty"`
+	URL       string `json:"url,omitempty"`
+	Frequency string `json:"frequency,omitempty"`
 }
 
-// Validate validates the page metadata.
-func (pm PageMetadata) Validate(maxLimitSize, maxNameSize int) error {
-	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
-	if err := common.Validate(maxLimitSize, AllowedOrders); err != nil {
-		return err
-	}
-
-	if len(pm.Name) > maxNameSize {
-		return apiutil.ErrNameSize
-	}
-
-	return nil
-}
 
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).

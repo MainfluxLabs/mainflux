@@ -7,56 +7,25 @@ import (
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
 
-const (
-	minAlarmLevel = 1
-	maxAlarmLevel = 5
-)
-
-var AllowedOrders = map[string]string{
-	"id":      "id",
-	"created": "created",
-	"level":   "level",
-	"status":  "status",
-}
-
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
-	Total  uint64 `json:"total,omitempty"`
-	Offset uint64 `json:"offset,omitempty"`
-	Limit  uint64 `json:"limit,omitempty"`
-	Order  string `json:"order,omitempty"`
-	Dir    string `json:"dir,omitempty"`
-	Level  int32  `json:"level,omitempty"`
-	Status string `json:"status,omitempty"`
-}
-
-// Validate validates the page metadata.
-func (pm PageMetadata) Validate(maxLimitSize int) error {
-	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
-	if err := common.Validate(maxLimitSize, AllowedOrders); err != nil {
-		return err
-	}
-
-	if pm.Level != 0 && (pm.Level < minAlarmLevel || pm.Level > maxAlarmLevel) {
-		return apiutil.ErrInvalidAlarmLevel
-	}
-
-	if pm.Status != "" {
-		switch pm.Status {
-		case StatusActive, StatusNoted, StatusCleared:
-		default:
-			return apiutil.ErrInvalidAlarmStatus
-		}
-	}
-
-	return nil
+	Total    uint64 `json:"total,omitempty"`
+	Offset   uint64 `json:"offset,omitempty"`
+	Limit    uint64 `json:"limit,omitempty"`
+	Order    string `json:"order,omitempty"`
+	Dir      string `json:"dir,omitempty"`
+	Level    int32  `json:"level,omitempty"`
+	Status   string `json:"status,omitempty"`
+	Protocol string `json:"protocol,omitempty"`
+	Subtopic string `json:"subtopic,omitempty"`
+	From     int64  `json:"from,omitempty"`
+	To       int64  `json:"to,omitempty"`
 }
 
 // Service specifies an API that must be fullfiled by the domain service

@@ -2,6 +2,7 @@ package invites
 
 import (
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/auth/api"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
@@ -104,7 +105,7 @@ func (req listOrgInvitesByUserReq) validate() error {
 		return apiutil.ErrMissingUserID
 	}
 
-	return req.pm.Validate(maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pm, maxLimitSize, maxNameSize)
 }
 
 type listOrgInvitesByOrgReq struct {
@@ -122,5 +123,5 @@ func (req listOrgInvitesByOrgReq) validate() error {
 		return apiutil.ErrMissingOrgID
 	}
 
-	return req.pm.Validate(maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pm, maxLimitSize, maxNameSize)
 }

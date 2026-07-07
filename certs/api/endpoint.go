@@ -48,7 +48,15 @@ func listSerialsByThingEndpoint(svc certs.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.ListSerials(ctx, req.token, req.thingID, req.offset, req.limit)
+		pm := certs.PageMetadata{
+			Offset: req.offset,
+			Limit:  req.limit,
+			Serial: req.serial,
+			To:     req.to,
+			From:   req.from,
+		}
+
+		page, err := svc.ListSerials(ctx, req.token, req.thingID, pm)
 		if err != nil {
 			return certsPageRes{}, err
 		}

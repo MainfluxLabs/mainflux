@@ -329,7 +329,7 @@ func TestListSenMLMessages(t *testing.T) {
 		"read senml messages with to": {
 			pageMeta: readers.SenMLPageMetadata{
 				Limit: noLimit,
-				To:    messages[20].Time,
+				To:    messages[20].Time + 1,
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -342,7 +342,7 @@ func TestListSenMLMessages(t *testing.T) {
 			pageMeta: readers.SenMLPageMetadata{
 				Limit: noLimit,
 				From:  messages[5].Time,
-				To:    messages[0].Time,
+				To:    messages[0].Time + 1,
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{

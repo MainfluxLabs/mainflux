@@ -14,6 +14,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	jsontransformer "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 )
 
 const (
@@ -139,7 +140,7 @@ func (as *adapterService) PublishJSONMessagesFromCSV(ctx context.Context, key st
 		return err
 	}
 
-	timeField := pc.ProfileConfig.Transformer.TimeField
+	tr := pc.ProfileConfig.Transformer
 
 	msg := protomfx.Message{
 		Protocol: protocol,
@@ -148,32 +149,35 @@ func (as *adapterService) PublishJSONMessagesFromCSV(ctx context.Context, key st
 	keys := csvLines[0][1:]
 	msgs := []map[string]any{}
 	size := 0
-	timeFieldIdx := slices.Index(csvLines[0], timeField)
+	timeFieldIdx := slices.Index(csvLines[0], tr.TimeField)
 	for i := 1; i < len(csvLines); i++ {
 		record := map[string]any{}
-		if timeField != "" && timeFieldIdx != -1 {
-			t, err := strconv.ParseFloat(csvLines[i][timeFieldIdx], 64)
+		if tr.TimeField != "" && timeFieldIdx != -1 {
+			raw := csvLines[i][timeFieldIdx]
+			ns, err := jsontransformer.ParseTimestamp(tr, raw)
 			if err != nil {
 				return ErrInvalidTimeField
 			}
-			record["Created"] = t
+			record["Created"] = float64(ns)
 		}
 		for j, columnName := range keys {
+			val := csvLines[i][j+1]
+			if val == "" {
+				continue
+			}
 			if reservedFields[columnName] {
 				switch columnName {
 				case "protocol":
-					if val := csvLines[i][j+1]; val != "" {
-						msg.Protocol = val
-					}
+					msg.Protocol = val
 				case "subtopic":
-					msg.Subtopic = csvLines[i][j+1]
+					msg.Subtopic = val
 				}
 				continue
 			}
-			if f, err := strconv.ParseFloat(csvLines[i][j+1], 64); err == nil {
+			if f, err := strconv.ParseFloat(val, 64); err == nil {
 				record[columnName] = f
 			} else {
-				record[columnName] = csvLines[i][j+1]
+				record[columnName] = val
 			}
 		}
 		recData, err := json.Marshal(record)
@@ -255,7 +259,7 @@ func (as *adapterService) PublishJSONMessagesFromJSON(ctx context.Context, key s
 		return err
 	}
 
-	timeField := pc.ProfileConfig.Transformer.TimeField
+	tr := pc.ProfileConfig.Transformer
 
 	msg := protomfx.Message{
 		Protocol: protocol,
@@ -264,7 +268,7 @@ func (as *adapterService) PublishJSONMessagesFromJSON(ctx context.Context, key s
 	msgs := []map[string]any{}
 	size := 0
 	for _, inputRecord := range records {
-		record, err := parseJSONRecord(inputRecord, timeField, &msg)
+		record, err := parseJSONRecord(inputRecord, tr, &msg)
 		if err != nil {
 			return err
 		}
@@ -374,26 +378,34 @@ func applyEnvelopeFields(msg *protomfx.Message, src map[string]any) {
 // parseJSONRecord converts one input record into a payload record and updates
 // msg.Protocol / msg.Subtopic from envelope fields. Handles both Format A
 // (reader-exported {"payload":{...},"created":...}) and flat records.
-func parseJSONRecord(inputRecord map[string]any, timeField string, msg *protomfx.Message) (map[string]any, error) {
+func parseJSONRecord(inputRecord map[string]any, tr domain.Transformer, msg *protomfx.Message) (map[string]any, error) {
 	record := map[string]any{}
+
+	parseTS := func(v any) (float64, error) {
+		ns, err := jsontransformer.ParseTimestamp(tr, v)
+		if err != nil {
+			return 0, ErrInvalidTimeField
+		}
+		return float64(ns), nil
+	}
 
 	if pld, ok := inputRecord["payload"].(map[string]any); ok {
 		// Format A — unwrap outer envelope, prefer timeField over "created".
 		var ts float64
-		if timeField != "" {
-			if v, exists := inputRecord[timeField]; exists {
-				t, ok := v.(float64)
-				if !ok {
-					return nil, ErrInvalidTimeField
+		if tr.TimeField != "" {
+			if v, exists := inputRecord[tr.TimeField]; exists {
+				t, err := parseTS(v)
+				if err != nil {
+					return nil, err
 				}
 				ts = t
 			}
 		}
 		if ts == 0 {
 			if v, exists := inputRecord["created"]; exists {
-				t, ok := v.(float64)
-				if !ok {
-					return nil, ErrInvalidTimeField
+				t, err := parseTS(v)
+				if err != nil {
+					return nil, err
 				}
 				ts = t
 			}
@@ -403,10 +415,10 @@ func parseJSONRecord(inputRecord map[string]any, timeField string, msg *protomfx
 		}
 		applyEnvelopeFields(msg, inputRecord)
 		for k, v := range pld {
-			if timeField != "" && k == timeField {
-				t, ok := v.(float64)
-				if !ok {
-					return nil, ErrInvalidTimeField
+			if tr.TimeField != "" && k == tr.TimeField {
+				t, err := parseTS(v)
+				if err != nil {
+					return nil, err
 				}
 				record["Created"] = t
 			}
@@ -428,9 +440,9 @@ func parseJSONRecord(inputRecord map[string]any, timeField string, msg *protomfx
 					msg.Subtopic = s
 				}
 			case "created":
-				t, ok := v.(float64)
-				if !ok {
-					return nil, ErrInvalidTimeField
+				t, err := parseTS(v)
+				if err != nil {
+					return nil, err
 				}
 				if t != 0 {
 					record["Created"] = t
@@ -438,10 +450,10 @@ func parseJSONRecord(inputRecord map[string]any, timeField string, msg *protomfx
 			}
 			continue
 		}
-		if timeField != "" && k == timeField {
-			t, ok := v.(float64)
-			if !ok {
-				return nil, ErrInvalidTimeField
+		if tr.TimeField != "" && k == tr.TimeField {
+			t, err := parseTS(v)
+			if err != nil {
+				return nil, err
 			}
 			record["Created"] = t
 		}

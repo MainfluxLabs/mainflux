@@ -21,6 +21,7 @@ type PageMetadata struct {
 	Offset uint64
 	Total  uint64
 	Limit  uint64
+	Topic  string
 }
 
 type Repository interface {

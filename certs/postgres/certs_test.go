@@ -42,7 +42,7 @@ func TestRemoveByThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected RemoveByThing error: %s", err))
 
 	// The thing's certs are gone.
-	page, err := repo.RetrieveByThing(ctx, thingID, 0, 10)
+	page, err := repo.RetrieveByThing(ctx, thingID, certs.PageMetadata{Limit: 10})
 	require.Nil(t, err, fmt.Sprintf("unexpected retrieve error: %s", err))
 	assert.Equal(t, uint64(0), page.Total, "expected the thing's certs to be removed")
 
@@ -52,7 +52,7 @@ func TestRemoveByThing(t *testing.T) {
 	assert.Equal(t, 3, len(revoked), "expected removed certs to be recorded as revoked")
 
 	// Another thing's certs are untouched.
-	page, err = repo.RetrieveByThing(ctx, otherThing, 0, 10)
+	page, err = repo.RetrieveByThing(ctx, otherThing, certs.PageMetadata{Limit: 10})
 	require.Nil(t, err, fmt.Sprintf("unexpected retrieve error: %s", err))
 	assert.Equal(t, uint64(1), page.Total, "expected other thing's certs to remain")
 

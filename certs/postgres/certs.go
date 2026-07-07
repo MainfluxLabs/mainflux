@@ -207,15 +207,21 @@ func (cr certsRepository) RetrieveRevokedCerts(ctx context.Context) ([]certs.Rev
 	return revokedCerts, nil
 }
 
-func (cr certsRepository) RetrieveByThing(ctx context.Context, thingID string, offset, limit uint64) (certs.Page, error) {
-	q := `SELECT thing_id, serial, expires_at, client_cert, client_key, issuing_ca,
+func (cr certsRepository) RetrieveByThing(ctx context.Context, thingID string, pm certs.PageMetadata) (certs.Page, error) {
+	sq, serialVal := dbutil.GetLikeQuery("serial", pm.Serial)
+	whereClause := dbutil.BuildWhereClause("thing_id = :thing_id", sq, timeRangeQuery(pm.From, pm.To))
+
+	q := fmt.Sprintf(`SELECT thing_id, serial, expires_at, client_cert, client_key, issuing_ca,
 	      ca_chain, private_key_type, key_bits, downloaded FROM certs
-	      WHERE thing_id = :thing_id ORDER BY expires_at LIMIT :limit OFFSET :offset;`
+	      %s ORDER BY expires_at LIMIT :limit OFFSET :offset;`, whereClause)
 
 	params := map[string]any{
 		"thing_id": thingID,
-		"limit":    limit,
-		"offset":   offset,
+		"serial":   serialVal,
+		"from":     pm.From,
+		"to":       pm.To,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
 	}
 
 	rows, err := cr.db.NamedQueryContext(ctx, q, params)
@@ -233,8 +239,8 @@ func (cr certsRepository) RetrieveByThing(ctx context.Context, thingID string, o
 		certificates = append(certificates, toCert(dbcrt))
 	}
 
-	q = `SELECT COUNT(*) FROM certs WHERE thing_id = :thing_id`
-	total, err := dbutil.Total(ctx, cr.db, q, params)
+	qc := fmt.Sprintf(`SELECT COUNT(*) FROM certs %s`, whereClause)
+	total, err := dbutil.Total(ctx, cr.db, qc, params)
 	if err != nil {
 		return certs.Page{}, cr.handlePgError(err, dbutil.ErrRetrieveEntity)
 	}
@@ -353,6 +359,17 @@ func (cr certsRepository) MarkDownloaded(ctx context.Context, serial string) err
 	}
 
 	return nil
+}
+
+func timeRangeQuery(from, to time.Time) string {
+	var parts []string
+	if !from.IsZero() {
+		parts = append(parts, "expires_at >= :from")
+	}
+	if !to.IsZero() {
+		parts = append(parts, "expires_at < :to")
+	}
+	return strings.Join(parts, " AND ")
 }
 
 type StringArray []string

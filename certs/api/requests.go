@@ -4,6 +4,8 @@
 package api
 
 import (
+	"time"
+
 	"github.com/MainfluxLabs/mainflux/certs/pki"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
@@ -77,6 +79,9 @@ type listReq struct {
 	token   string
 	offset  uint64
 	limit   uint64
+	serial  string
+	to      time.Time
+	from    time.Time
 }
 
 func (req *listReq) validate() error {

@@ -29,6 +29,25 @@ var (
 	ErrInvalidByteOrder    = errors.New("invalid byte order")
 )
 
+var allowedOrders = map[string]string{
+	"id":   "id",
+	"name": "name",
+}
+
+// validatePageMetadata validates the modbus page metadata.
+func validatePageMetadata(pm modbus.PageMetadata) error {
+	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
+	if err := common.Validate(maxLimitSize, allowedOrders); err != nil {
+		return err
+	}
+
+	if len(pm.Name) > maxNameSize {
+		return apiutil.ErrNameSize
+	}
+
+	return nil
+}
+
 type field struct {
 	Name      string  `json:"name"`
 	Type      string  `json:"type"`
@@ -150,7 +169,7 @@ func (req listClientsByThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
+	return validatePageMetadata(req.pageMetadata)
 }
 
 type listClientsByGroupReq struct {
@@ -168,7 +187,7 @@ func (req listClientsByGroupReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	return req.pageMetadata.Validate(maxLimitSize, maxNameSize)
+	return validatePageMetadata(req.pageMetadata)
 }
 
 type viewClientReq struct {

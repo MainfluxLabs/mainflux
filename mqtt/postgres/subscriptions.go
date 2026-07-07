@@ -48,14 +48,13 @@ func (mr *mqttRepository) Save(ctx context.Context, sub mqtt.Subscription) error
 
 func (mr *mqttRepository) RetrieveByGroup(ctx context.Context, pm mqtt.PageMetadata, groupID string) (mqtt.Page, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
+	tq, topic := dbutil.GetLikeQuery("topic", pm.Topic)
+	whereClause := dbutil.BuildWhereClause("group_id = :group_id", tq)
 
-	q := fmt.Sprintf(`SELECT topic, group_id, thing_id, created_at 
-					  FROM subscriptions 
-					  WHERE group_id = :group_id 
-					  ORDER BY created_at 
-					  %s;`, olq)
+	q := fmt.Sprintf(`SELECT topic, group_id, thing_id, created_at FROM subscriptions %s ORDER BY created_at %s;`, whereClause, olq)
 	params := map[string]any{
 		"group_id": groupID,
+		"topic":    topic,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
 	}
@@ -75,7 +74,7 @@ func (mr *mqttRepository) RetrieveByGroup(ctx context.Context, pm mqtt.PageMetad
 		items = append(items, fromDBSub(item))
 	}
 
-	cq := `SELECT COUNT(*) FROM subscriptions WHERE group_id = :group_id;`
+	cq := fmt.Sprintf(`SELECT COUNT(*) FROM subscriptions %s`, whereClause)
 	total, err := dbutil.Total(ctx, mr.db, cq, params)
 	if err != nil {
 		return mqtt.Page{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)

@@ -25,6 +25,7 @@ import (
 
 const (
 	emailKey = "email"
+	roleKey  = "role"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -90,12 +91,18 @@ func decodeListGroupMemberships(_ context.Context, r *http.Request) (any, error)
 		return nil, err
 	}
 
+	role, err := apiutil.ReadStringQuery(r, roleKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	pm := things.PageMetadata{
 		Offset: base.Offset,
 		Limit:  base.Limit,
 		Order:  base.Order,
 		Dir:    base.Dir,
 		Email:  e,
+		Role:   role,
 	}
 
 	req := listGroupMembershipsReq{
