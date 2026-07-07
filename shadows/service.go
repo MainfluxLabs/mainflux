@@ -65,18 +65,7 @@ func (ss *shadowsService) UpdateDesiredState(ctx context.Context, token, thingID
 		return Shadow{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	current, err := ss.shadows.RetrieveByThing(ctx, thingID)
-	if err != nil {
-		return Shadow{}, err
-	}
-
-	stored, err := ss.shadows.Upsert(ctx, Shadow{
-		ThingID:    thingID,
-		Desired:    desired,
-		Reported:   current.Reported,
-		ReportedAt: current.ReportedAt,
-		UpdatedAt:  time.Now().Unix(),
-	})
+	stored, err := ss.shadows.UpsertDesiredState(ctx, thingID, desired, time.Now().Unix())
 	if err != nil {
 		return Shadow{}, err
 	}
@@ -132,15 +121,7 @@ func (ss *shadowsService) ConsumeMessage(_ string, msg protomfx.Message) error {
 
 	merged, changed := mergeState(current.Reported, patch)
 	if changed {
-		s := Shadow{
-			ThingID:    msg.Publisher,
-			Desired:    current.Desired,
-			Reported:   merged,
-			ReportedAt: time.Now().Unix(),
-			UpdatedAt:  current.UpdatedAt,
-		}
-
-		if _, err := ss.shadows.Upsert(ctx, s); err != nil {
+		if err := ss.shadows.UpsertReportedState(ctx, msg.Publisher, merged, time.Now().Unix()); err != nil {
 			return err
 		}
 	}

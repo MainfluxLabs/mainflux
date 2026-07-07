@@ -24,12 +24,28 @@ func NewShadowRepository() shadows.ShadowRepository {
 	}
 }
 
-func (srm *shadowRepositoryMock) Upsert(_ context.Context, sh shadows.Shadow) (shadows.Shadow, error) {
+func (srm *shadowRepositoryMock) UpsertDesiredState(_ context.Context, thingID string, desired shadows.State, updatedAt int64) (shadows.Shadow, error) {
 	srm.mu.Lock()
 	defer srm.mu.Unlock()
 
-	srm.shadows[sh.ThingID] = sh
+	sh := srm.shadows[thingID]
+	sh.ThingID = thingID
+	sh.Desired = desired
+	sh.UpdatedAt = updatedAt
+	srm.shadows[thingID] = sh
 	return sh, nil
+}
+
+func (srm *shadowRepositoryMock) UpsertReportedState(_ context.Context, thingID string, reported shadows.State, reportedAt int64) error {
+	srm.mu.Lock()
+	defer srm.mu.Unlock()
+
+	sh := srm.shadows[thingID]
+	sh.ThingID = thingID
+	sh.Reported = reported
+	sh.ReportedAt = reportedAt
+	srm.shadows[thingID] = sh
+	return nil
 }
 
 func (srm *shadowRepositoryMock) RetrieveByThing(_ context.Context, thingID string) (shadows.Shadow, error) {

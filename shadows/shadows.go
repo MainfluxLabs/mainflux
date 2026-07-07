@@ -25,9 +25,11 @@ type Shadow struct {
 
 // ShadowRepository specifies the persistence API for shadows.
 type ShadowRepository interface {
-	// Upsert creates or replaces the shadow for a thing and returns the
-	// stored shadow.
-	Upsert(ctx context.Context, shadow Shadow) (Shadow, error)
+	// UpsertDesiredState sets the thing's desired state.
+	UpsertDesiredState(ctx context.Context, thingID string, desired State, updatedAt int64) (Shadow, error)
+
+	// UpsertReportedState sets the thing's reported state.
+	UpsertReportedState(ctx context.Context, thingID string, reported State, reportedAt int64) error
 
 	// RetrieveByThing returns the shadow for the given thing ID.
 	RetrieveByThing(ctx context.Context, thingID string) (Shadow, error)

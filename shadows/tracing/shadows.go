@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	upsertShadow          = "upsert_shadow"
+	upsertDesiredState    = "upsert_desired_state"
+	upsertReportedState   = "upsert_reported_state"
 	retrieveShadowByThing = "retrieve_shadow_by_thing"
 	removeShadow          = "remove_shadow"
 )
@@ -29,12 +30,20 @@ func ShadowRepositoryMiddleware(tracer opentracing.Tracer, repo shadows.ShadowRe
 	}
 }
 
-func (srm shadowRepositoryMiddleware) Upsert(ctx context.Context, shadow shadows.Shadow) (shadows.Shadow, error) {
-	span := dbutil.CreateSpan(ctx, srm.tracer, upsertShadow)
+func (srm shadowRepositoryMiddleware) UpsertDesiredState(ctx context.Context, thingID string, desired shadows.State, updatedAt int64) (shadows.Shadow, error) {
+	span := dbutil.CreateSpan(ctx, srm.tracer, upsertDesiredState)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return srm.repo.Upsert(ctx, shadow)
+	return srm.repo.UpsertDesiredState(ctx, thingID, desired, updatedAt)
+}
+
+func (srm shadowRepositoryMiddleware) UpsertReportedState(ctx context.Context, thingID string, reported shadows.State, reportedAt int64) error {
+	span := dbutil.CreateSpan(ctx, srm.tracer, upsertReportedState)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return srm.repo.UpsertReportedState(ctx, thingID, reported, reportedAt)
 }
 
 func (srm shadowRepositoryMiddleware) RetrieveByThing(ctx context.Context, thingID string) (shadows.Shadow, error) {
