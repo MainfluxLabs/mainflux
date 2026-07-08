@@ -23,6 +23,12 @@ func (h *eventHandler) Handle(ctx context.Context, event events.Event) error {
 	switch e := event.Action.(type) {
 	case events.ThingRemoved:
 		return h.svc.RemoveByThing(ctx, e.ID)
+	case events.GroupRemoved:
+		for _, thingID := range e.ThingIDs {
+			if err := h.svc.RemoveByThing(ctx, thingID); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
