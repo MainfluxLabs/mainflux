@@ -27,7 +27,7 @@ func ValidatePageMetadata(pm rules.PageMetadata, maxLimitSize, maxNameSize int) 
 
 	if pm.InputType != "" {
 		switch pm.InputType {
-		case rules.InputTypeMessage, rules.InputTypeAlarm, rules.InputTypeCommand:
+		case rules.InputTypeMessage, rules.InputTypeAlarm:
 		default:
 			return apiutil.ErrInvalidInputType
 		}

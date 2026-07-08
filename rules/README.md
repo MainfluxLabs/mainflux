@@ -35,7 +35,7 @@ The `input` field defines what triggers rule evaluation.
 
 | Field       | Description                                       |
 | ----------- | ------------------------------------------------- |
-| `type`      | Trigger type: `message`, `alarm`, or `command`    |
+| `type`      | Trigger type: `message` or `alarm`                |
 | `thing_ids` | IDs of things to which this rule applies          |
 | `config`    | Optional input-type-specific settings (see below) |
 
