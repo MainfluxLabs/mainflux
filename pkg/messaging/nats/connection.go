@@ -44,14 +44,16 @@ func connect(url string) (*broker.Conn, broker.JetStreamContext, error) {
 }
 
 func ensureStream(js broker.JetStreamContext) error {
-	switch _, err := js.StreamInfo(streamName); {
-	case err == nil:
+	_, err := js.StreamInfo(streamName)
+	if err == nil {
 		return nil
-	case !errors.Is(err, broker.ErrStreamNotFound):
+	}
+
+	if !errors.Is(err, broker.ErrStreamNotFound) {
 		return err
 	}
 
-	_, err := js.AddStream(&broker.StreamConfig{
+	_, err = js.AddStream(&broker.StreamConfig{
 		Name:     streamName,
 		Subjects: streamSubjects,
 		Storage:  broker.FileStorage,
@@ -68,7 +70,8 @@ func durableName(queue, id, topic string) string {
 	if queue != "" {
 		base = queue
 	}
-	return sanitizeDurable(base + "_" + topic)
+
+	return durableReplacer.Replace(base + "_" + topic)
 }
 
 var durableReplacer = strings.NewReplacer(
@@ -79,7 +82,3 @@ var durableReplacer = strings.NewReplacer(
 	"/", "_",
 	"\\", "_",
 )
-
-func sanitizeDurable(s string) string {
-	return durableReplacer.Replace(s)
-}
