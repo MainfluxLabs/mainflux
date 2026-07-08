@@ -15,7 +15,6 @@ import (
 const (
 	InputTypeMessage = "message"
 	InputTypeAlarm   = "alarm"
-	InputTypeCommand = "command"
 )
 
 type InputConfig map[string]any

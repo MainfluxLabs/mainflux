@@ -446,7 +446,7 @@ components:
       properties:
         type:
           type: string
-          enum: [message, alarm, command]
+          enum: [message, alarm]
           example: "message"
         thing_ids:
           type: array
@@ -468,7 +468,7 @@ components:
       properties:
         type:
           type: string
-          enum: [message, alarm, command]
+          enum: [message, alarm]
           example: "message"
         config:
           type: object
@@ -778,7 +778,7 @@ components:
       in: query
       schema:
         type: string
-        enum: [message, alarm, command]
+        enum: [message, alarm]
       example: "message"
 
   requestBodies:
