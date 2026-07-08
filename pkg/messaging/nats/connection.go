@@ -59,9 +59,10 @@ func ensureStream(js broker.JetStreamContext) error {
 		Storage:  broker.FileStorage,
 	})
 
-	if err != nil && strings.Contains(err.Error(), "already in use") {
+	if err != nil && errors.Is(err, broker.ErrStreamNameAlreadyInUse) {
 		return nil
 	}
+
 	return err
 }
 
