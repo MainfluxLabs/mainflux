@@ -5,7 +5,9 @@ package scripts
 
 import (
 	"context"
+	"net/http"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/rules"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -136,7 +138,7 @@ func removeScriptsEndpoint(svc rules.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return removeRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
 
@@ -151,7 +153,7 @@ func assignScriptsEndpoint(svc rules.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return thingScriptsRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusOK}, nil
 	}
 }
 
@@ -166,7 +168,7 @@ func unassignScriptsEndpoint(svc rules.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return thingScriptsRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusOK}, nil
 	}
 }
 
@@ -197,7 +199,7 @@ func removeScriptRunsEndpoint(svc rules.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return removeRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
 

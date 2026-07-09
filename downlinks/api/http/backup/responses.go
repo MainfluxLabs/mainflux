@@ -11,7 +11,6 @@ import (
 
 var (
 	_ apiutil.Response = (*backupResponse)(nil)
-	_ apiutil.Response = (*restoreRes)(nil)
 )
 
 type backupResponse struct {
@@ -66,18 +65,4 @@ type timeFilterRes struct {
 	Forecast   bool   `json:"forecast,omitempty"`
 	Interval   string `json:"interval,omitempty"`
 	Value      uint   `json:"value,omitempty"`
-}
-
-type restoreRes struct{}
-
-func (res restoreRes) Code() int {
-	return http.StatusCreated
-}
-
-func (res restoreRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res restoreRes) Empty() bool {
-	return true
 }

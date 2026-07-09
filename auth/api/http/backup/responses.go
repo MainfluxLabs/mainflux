@@ -9,7 +9,6 @@ import (
 
 var (
 	_ apiutil.Response = (*backupRes)(nil)
-	_ apiutil.Response = (*restoreRes)(nil)
 )
 
 type viewOrgRes struct {
@@ -57,18 +56,4 @@ func (res backupRes) Headers() map[string]string {
 
 func (res backupRes) Empty() bool {
 	return false
-}
-
-type restoreRes struct{}
-
-func (res restoreRes) Code() int {
-	return http.StatusCreated
-}
-
-func (res restoreRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res restoreRes) Empty() bool {
-	return true
 }

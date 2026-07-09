@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/downlinks"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -44,7 +45,7 @@ func restoreEndpoint(svc downlinks.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return restoreRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusCreated}, nil
 	}
 }
 

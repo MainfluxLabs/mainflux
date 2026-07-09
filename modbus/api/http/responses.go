@@ -10,7 +10,6 @@ import (
 var (
 	_ apiutil.Response = (*clientResponse)(nil)
 	_ apiutil.Response = (*clientsRes)(nil)
-	_ apiutil.Response = (*removeRes)(nil)
 )
 
 type pageRes struct {
@@ -68,20 +67,6 @@ func (res clientsRes) Headers() map[string]string {
 
 func (res clientsRes) Empty() bool {
 	return false
-}
-
-type removeRes struct{}
-
-func (res removeRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res removeRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res removeRes) Empty() bool {
-	return true
 }
 
 type clientsPageRes struct {

@@ -5,7 +5,9 @@ package profiles
 
 import (
 	"context"
+	"net/http"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -191,7 +193,7 @@ func removeProfileEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return removeRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
 
@@ -207,7 +209,7 @@ func removeProfilesEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return removeRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
 

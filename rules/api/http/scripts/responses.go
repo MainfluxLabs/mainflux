@@ -11,9 +11,7 @@ import (
 )
 
 var (
-	_ apiutil.Response = (*removeRes)(nil)
 	_ apiutil.Response = (*thingIDsRes)(nil)
-	_ apiutil.Response = (*thingScriptsRes)(nil)
 	_ apiutil.Response = (*scriptRes)(nil)
 	_ apiutil.Response = (*scriptsRes)(nil)
 	_ apiutil.Response = (*scriptsPageRes)(nil)
@@ -30,20 +28,6 @@ type pageRes struct {
 	Name   string `json:"name,omitempty"`
 }
 
-type removeRes struct{}
-
-func (res removeRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res removeRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res removeRes) Empty() bool {
-	return true
-}
-
 type thingIDsRes struct {
 	ThingIDs []string `json:"thing_ids"`
 }
@@ -58,20 +42,6 @@ func (res thingIDsRes) Headers() map[string]string {
 
 func (res thingIDsRes) Empty() bool {
 	return false
-}
-
-type thingScriptsRes struct{}
-
-func (res thingScriptsRes) Code() int {
-	return http.StatusOK
-}
-
-func (res thingScriptsRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res thingScriptsRes) Empty() bool {
-	return true
 }
 
 type scriptRes struct {

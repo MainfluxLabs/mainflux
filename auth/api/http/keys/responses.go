@@ -12,7 +12,6 @@ import (
 
 var (
 	_ apiutil.Response = (*issueKeyRes)(nil)
-	_ apiutil.Response = (*revokeKeyRes)(nil)
 )
 
 type issueKeyRes struct {
@@ -78,19 +77,4 @@ func (res keysPageRes) Headers() map[string]string {
 
 func (res keysPageRes) Empty() bool {
 	return false
-}
-
-type revokeKeyRes struct {
-}
-
-func (res revokeKeyRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res revokeKeyRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res revokeKeyRes) Empty() bool {
-	return true
 }

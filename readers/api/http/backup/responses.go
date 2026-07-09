@@ -6,27 +6,7 @@ package backup
 import (
 	"encoding/json"
 	"net/http"
-
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
-
-var (
-	_ apiutil.Response = (*restoreRes)(nil)
-)
-
-type restoreRes struct{}
-
-func (res restoreRes) Code() int {
-	return http.StatusCreated
-}
-
-func (res restoreRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res restoreRes) Empty() bool {
-	return true
-}
 
 type backupRes struct {
 	JSONMessages  json.RawMessage `json:"json_messages"`

@@ -2,8 +2,10 @@ package memberships
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -18,7 +20,7 @@ func createOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return createRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusOK}, nil
 	}
 }
 
@@ -81,7 +83,7 @@ func updateOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return createRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusOK}, nil
 	}
 }
 
@@ -96,7 +98,7 @@ func removeOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return removeRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
 

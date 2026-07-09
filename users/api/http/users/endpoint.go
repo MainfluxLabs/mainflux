@@ -5,7 +5,9 @@ package users
 
 import (
 	"context"
+	"net/http"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -14,15 +16,15 @@ func selfRegistrationEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(selfRegisterUserReq)
 		if err := req.validate(); err != nil {
-			return selfRegisterRes{}, err
+			return apiutil.EmptyRes{StatusCode: http.StatusCreated}, err
 		}
 
 		_, err := svc.SelfRegister(ctx, req.User, req.RedirectPath)
 		if err != nil {
-			return selfRegisterRes{}, err
+			return apiutil.EmptyRes{StatusCode: http.StatusCreated}, err
 		}
 
-		return selfRegisterRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusCreated}, nil
 	}
 }
 
@@ -167,7 +169,7 @@ func updateUserEndpoint(svc users.Service) endpoint.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		return updateUserRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusOK}, nil
 	}
 }
 
@@ -253,7 +255,7 @@ func enableUserEndpoint(svc users.Service) endpoint.Endpoint {
 		if err := svc.EnableUser(ctx, req.token, req.id); err != nil {
 			return nil, err
 		}
-		return deleteRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
 
@@ -266,7 +268,7 @@ func disableUserEndpoint(svc users.Service) endpoint.Endpoint {
 		if err := svc.DisableUser(ctx, req.token, req.id); err != nil {
 			return nil, err
 		}
-		return deleteRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
 

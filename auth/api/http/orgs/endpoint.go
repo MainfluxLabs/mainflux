@@ -2,8 +2,10 @@ package orgs
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -89,7 +91,7 @@ func deleteOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return deleteRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
 
@@ -104,7 +106,7 @@ func deleteOrgsEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return deleteRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
 

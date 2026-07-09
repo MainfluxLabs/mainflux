@@ -16,7 +16,6 @@ var (
 	_ apiutil.Response = (*viewUserRes)(nil)
 	_ apiutil.Response = (*passwChangeRes)(nil)
 	_ apiutil.Response = (*createUserRes)(nil)
-	_ apiutil.Response = (*deleteRes)(nil)
 )
 
 // MailSent message response when link is sent
@@ -30,20 +29,6 @@ type pageRes struct {
 	Dir    string `json:"dir,omitempty"`
 	Email  string `json:"email,omitempty"`
 	Status string `json:"status,omitempty"`
-}
-
-type selfRegisterRes struct{}
-
-func (res selfRegisterRes) Code() int {
-	return http.StatusCreated
-}
-
-func (res selfRegisterRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res selfRegisterRes) Empty() bool {
-	return true
 }
 
 type createUserRes struct {
@@ -103,20 +88,6 @@ func (res redirectURLRes) Headers() map[string]string {
 
 func (res redirectURLRes) Empty() bool {
 	return res.RedirectURL == ""
-}
-
-type updateUserRes struct{}
-
-func (res updateUserRes) Code() int {
-	return http.StatusOK
-}
-
-func (res updateUserRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res updateUserRes) Empty() bool {
-	return true
 }
 
 type viewUserRes struct {
@@ -184,20 +155,6 @@ func (res passwChangeRes) Headers() map[string]string {
 
 func (res passwChangeRes) Empty() bool {
 	return false
-}
-
-type deleteRes struct{}
-
-func (res deleteRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res deleteRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res deleteRes) Empty() bool {
-	return true
 }
 
 type oauthLoginRes struct {

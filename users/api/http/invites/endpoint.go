@@ -5,7 +5,9 @@ package invites
 
 import (
 	"context"
+	"net/http"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/go-kit/kit/endpoint"
@@ -109,7 +111,7 @@ func revokePlatformInviteEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return revokePlatformInviteRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
 

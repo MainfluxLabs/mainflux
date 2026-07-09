@@ -5,9 +5,11 @@ package keys
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -87,7 +89,7 @@ func revokeEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return revokeKeyRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
 
