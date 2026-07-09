@@ -22,6 +22,23 @@ type ErrorRes struct {
 	Err string `json:"error"`
 }
 
+// EmptyRes is a reusable Response with no body and a configurable status code.
+type EmptyRes struct {
+	StatusCode int
+}
+
+func (res EmptyRes) Code() int {
+	return res.StatusCode
+}
+
+func (res EmptyRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res EmptyRes) Empty() bool {
+	return true
+}
+
 type ViewFileRes struct {
 	File     []byte
 	FileName string

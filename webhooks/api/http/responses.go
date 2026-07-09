@@ -12,8 +12,6 @@ import (
 var (
 	_ apiutil.Response = (*webhookResponse)(nil)
 	_ apiutil.Response = (*webhooksRes)(nil)
-	_ apiutil.Response = (*removeRes)(nil)
-	_ apiutil.Response = (*removeRes)(nil)
 )
 
 type pageRes struct {
@@ -67,20 +65,6 @@ func (res webhooksRes) Headers() map[string]string {
 
 func (res webhooksRes) Empty() bool {
 	return false
-}
-
-type removeRes struct{}
-
-func (res removeRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res removeRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res removeRes) Empty() bool {
-	return true
 }
 
 type WebhooksPageRes struct {

@@ -5,7 +5,9 @@ package rules
 
 import (
 	"context"
+	"net/http"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/rules"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -144,7 +146,7 @@ func assignThingsEndpoint(svc rules.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return assignRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusOK}, nil
 	}
 }
 
@@ -159,7 +161,7 @@ func unassignThingsEndpoint(svc rules.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return removeRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
 
@@ -174,7 +176,7 @@ func removeRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return removeRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
 

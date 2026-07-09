@@ -5,7 +5,9 @@ package things
 
 import (
 	"context"
+	"net/http"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -261,7 +263,7 @@ func removeThingEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return removeRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
 
@@ -277,7 +279,7 @@ func removeThingsEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return removeRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
 
@@ -312,7 +314,7 @@ func updateExternalKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return updateExternalKeyRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusCreated}, nil
 	}
 }
 
@@ -327,7 +329,7 @@ func removeExternalKeyEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return removeRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
 

@@ -113,17 +113,3 @@ type platformInvitePageRes struct {
 	pageRes
 	Invites []platformInviteRes `json:"invites"`
 }
-
-type revokePlatformInviteRes struct{}
-
-func (res revokePlatformInviteRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res revokePlatformInviteRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res revokePlatformInviteRes) Empty() bool {
-	return true
-}

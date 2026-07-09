@@ -9,8 +9,6 @@ import (
 
 var (
 	_ apiutil.Response = (*orgMembershipPageRes)(nil)
-	_ apiutil.Response = (*createRes)(nil)
-	_ apiutil.Response = (*removeRes)(nil)
 )
 
 type viewOrgMembershipRes struct {
@@ -58,32 +56,4 @@ type pageRes struct {
 	Email  string `json:"email,omitempty"`
 	Order  string `json:"order,omitempty"`
 	Dir    string `json:"dir,omitempty"`
-}
-
-type createRes struct{}
-
-func (res createRes) Code() int {
-	return http.StatusOK
-}
-
-func (res createRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res createRes) Empty() bool {
-	return true
-}
-
-type removeRes struct{}
-
-func (res removeRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res removeRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res removeRes) Empty() bool {
-	return true
 }

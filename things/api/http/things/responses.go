@@ -13,22 +13,7 @@ var (
 	_ apiutil.Response = (*viewThingRes)(nil)
 	_ apiutil.Response = (*thingsPageRes)(nil)
 	_ apiutil.Response = (*ThingsPageRes)(nil)
-	_ apiutil.Response = (*removeRes)(nil)
 )
-
-type removeRes struct{}
-
-func (res removeRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res removeRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res removeRes) Empty() bool {
-	return true
-}
 
 type thingRes struct {
 	ID          string         `json:"id"`
@@ -159,19 +144,4 @@ func (res identityRes) Headers() map[string]string {
 
 func (res identityRes) Empty() bool {
 	return false
-}
-
-type updateExternalKeyRes struct {
-}
-
-func (res updateExternalKeyRes) Code() int {
-	return http.StatusCreated
-}
-
-func (res updateExternalKeyRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res updateExternalKeyRes) Empty() bool {
-	return true
 }

@@ -13,29 +13,14 @@ import (
 var (
 	_ apiutil.Response = (*profilesPageRes)(nil)
 	_ apiutil.Response = (*profilesRes)(nil)
-	_ apiutil.Response = (*removeRes)(nil)
 )
 
-type removeRes struct{}
-
-func (res removeRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res removeRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res removeRes) Empty() bool {
-	return true
-}
-
 type profileRes struct {
-	ID       string               `json:"id"`
-	GroupID  string               `json:"group_id,omitempty"`
-	Name     string               `json:"name,omitempty"`
+	ID       string                `json:"id"`
+	GroupID  string                `json:"group_id,omitempty"`
+	Name     string                `json:"name,omitempty"`
 	Config   *domain.ProfileConfig `json:"config,omitempty"`
-	Metadata map[string]any       `json:"metadata,omitempty"`
+	Metadata map[string]any        `json:"metadata,omitempty"`
 	created  bool
 }
 

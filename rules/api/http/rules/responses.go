@@ -11,7 +11,6 @@ import (
 )
 
 var (
-	_ apiutil.Response = (*removeRes)(nil)
 	_ apiutil.Response = (*ruleResponse)(nil)
 	_ apiutil.Response = (*rulesRes)(nil)
 	_ apiutil.Response = (*thingIDsRes)(nil)
@@ -86,34 +85,6 @@ func (res RulesPageRes) Headers() map[string]string {
 
 func (res RulesPageRes) Empty() bool {
 	return false
-}
-
-type assignRes struct{}
-
-func (res assignRes) Code() int {
-	return http.StatusOK
-}
-
-func (res assignRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res assignRes) Empty() bool {
-	return true
-}
-
-type removeRes struct{}
-
-func (res removeRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res removeRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res removeRes) Empty() bool {
-	return true
 }
 
 type thingIDsRes struct {

@@ -32,34 +32,6 @@ type AlarmsPageRes struct {
 	Alarms []alarmResponse `json:"alarms"`
 }
 
-type updateAlarmStatusRes struct{}
-
-func (res updateAlarmStatusRes) Code() int {
-	return http.StatusOK
-}
-
-func (res updateAlarmStatusRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res updateAlarmStatusRes) Empty() bool {
-	return true
-}
-
-type removeRes struct{}
-
-func (res removeRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res removeRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res removeRes) Empty() bool {
-	return true
-}
-
 type exportFileRes struct {
 	file []byte
 }

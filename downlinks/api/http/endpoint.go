@@ -5,8 +5,10 @@ package http
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/downlinks"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/cron"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -136,7 +138,7 @@ func removeDownlinksEndpoint(svc downlinks.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return removeRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
 

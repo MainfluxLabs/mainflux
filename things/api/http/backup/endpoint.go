@@ -5,7 +5,9 @@ package backup
 
 import (
 	"context"
+	"net/http"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/api/http/memberships"
 	"github.com/go-kit/kit/endpoint"
@@ -40,7 +42,7 @@ func restoreEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return restoreRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusCreated}, nil
 	}
 }
 

@@ -11,7 +11,6 @@ import (
 var (
 	_ apiutil.Response = (*downlinkResponse)(nil)
 	_ apiutil.Response = (*downlinksRes)(nil)
-	_ apiutil.Response = (*removeRes)(nil)
 )
 
 type pageRes struct {
@@ -66,20 +65,6 @@ func (res downlinksRes) Headers() map[string]string {
 
 func (res downlinksRes) Empty() bool {
 	return false
-}
-
-type removeRes struct{}
-
-func (res removeRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res removeRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res removeRes) Empty() bool {
-	return true
 }
 
 type downlinksPageRes struct {
