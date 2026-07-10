@@ -12,8 +12,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/mproxy/session"
 	"github.com/MainfluxLabs/mainflux/things"
-	"github.com/MainfluxLabs/mproxy/pkg/session"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,9 +29,9 @@ const (
 )
 
 var (
-	topic        = "/messages"
-	payload      = []byte("[{'n':'test-name', 'v': 1.2}]")
-	topics       = []string{topic}
+	topic   = "/messages"
+	payload = []byte("[{'n':'test-name', 'v': 1.2}]")
+	topics  = []string{topic}
 	//Test log messages for cases the handler does not provide a return value.
 	logBuffer     = bytes.Buffer{}
 	sessionClient = session.Client{

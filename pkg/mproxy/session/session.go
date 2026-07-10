@@ -4,9 +4,9 @@ import (
 	"crypto/x509"
 	"net"
 
+	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/eclipse/paho.mqtt.golang/packets"
-	"github.com/MainfluxLabs/mproxy/pkg/errors"
-	"github.com/MainfluxLabs/mproxy/logger"
 )
 
 const (

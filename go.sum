@@ -50,8 +50,6 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/HdrHistogram/hdrhistogram-go v1.1.2 h1:5IcZpTvzydCQeHzK4Ef/D5rrSqwxob0t8PQPMybUNFM=
 github.com/HdrHistogram/hdrhistogram-go v1.1.2/go.mod h1:yDgFjdqOqDEKOvasDdhWNXYg9BVp4O+o5f6V/ehm6Oo=
-github.com/MainfluxLabs/mproxy v0.2.4 h1:gwyNJOTyfMJu5kLUf1gcJvKezREBahVXVCG8eafQGiI=
-github.com/MainfluxLabs/mproxy v0.2.4/go.mod h1:Nc1vPX0cdwGVchQ7LqfMy+esSkopRVuUoK9eAMOQ3fk=
 github.com/MainfluxLabs/senml v1.0.5 h1:5FnfQM3zecsuwxaZzue63+kK1kqgVCl4HFSxQzHyhnk=
 github.com/MainfluxLabs/senml v1.0.5/go.mod h1:FDEMPGFXHK/o/xwVIou8i6RONuAEEHFv9q6szyCBtrA=
 github.com/Masterminds/goutils v1.1.0/go.mod h1:8cTjp+g8YejhMuvIA5y2vz3BpJxksy863GQaJW2MFNU=
