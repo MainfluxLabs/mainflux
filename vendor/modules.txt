@@ -8,14 +8,6 @@ dario.cat/mergo
 ## explicit
 github.com/Azure/go-ansiterm
 github.com/Azure/go-ansiterm/winterm
-# github.com/MainfluxLabs/mproxy v0.2.4
-## explicit; go 1.25.8
-github.com/MainfluxLabs/mproxy/logger
-github.com/MainfluxLabs/mproxy/pkg/errors
-github.com/MainfluxLabs/mproxy/pkg/mqtt
-github.com/MainfluxLabs/mproxy/pkg/session
-github.com/MainfluxLabs/mproxy/pkg/tls
-github.com/MainfluxLabs/mproxy/pkg/websocket
 # github.com/MainfluxLabs/senml v1.0.5
 ## explicit; go 1.18
 github.com/MainfluxLabs/senml
@@ -112,7 +104,6 @@ github.com/go-gorp/gorp/v3
 # github.com/go-kit/kit v0.13.0
 ## explicit; go 1.17
 github.com/go-kit/kit/endpoint
-github.com/go-kit/kit/log
 github.com/go-kit/kit/metrics
 github.com/go-kit/kit/metrics/internal/lv
 github.com/go-kit/kit/metrics/prometheus
