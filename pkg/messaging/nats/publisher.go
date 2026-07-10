@@ -36,17 +36,21 @@ var _ Publisher = (*publisher)(nil)
 
 type publisher struct {
 	conn *broker.Conn
+	js   broker.JetStreamContext
 }
 
 // NewPublisher returns NATS message Publisher.
 func NewPublisher(url string) (Publisher, error) {
-	conn, err := broker.Connect(url, broker.MaxReconnects(maxReconnects))
+	conn, js, err := connect(url)
 	if err != nil {
 		return nil, err
 	}
+
 	ret := &publisher{
 		conn: conn,
+		js:   js,
 	}
+
 	return ret, nil
 }
 
@@ -67,7 +71,9 @@ func (pub *publisher) publish(subject string, msg proto.Message) error {
 	if err != nil {
 		return err
 	}
-	return pub.conn.Publish(subject, data)
+
+	_, err = pub.js.Publish(subject, data)
+	return err
 }
 
 func (pub *publisher) Close() error {

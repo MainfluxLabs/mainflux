@@ -18,7 +18,7 @@ const (
 	subtopic         = "engine"
 	clientID         = "9b7b1b3f-b1b0-46a8-a717-b8213f9eda3b"
 	senmlContentType = "application/senml+json"
-	senmlFormat      = "senml"
+	topicPrefix      = "things." + clientID
 	messagesSuffix   = "messages"
 )
 
@@ -29,7 +29,7 @@ var (
 )
 
 func TestPublisher(t *testing.T) {
-	format := senmlFormat + "." + messagesSuffix
+	format := topicPrefix + "." + messagesSuffix
 	err := pubsub.Subscribe(clientID, format, handler{})
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	err = pubsub.Subscribe(clientID, fmt.Sprintf("%s.%s", format, subtopic), handler{})
@@ -82,7 +82,7 @@ func TestPubsub(t *testing.T) {
 	}{
 		{
 			desc:         "Subscribe to a topic with an ID",
-			topic:        fmt.Sprintf("%s.%s", senmlFormat, messagesSuffix),
+			topic:        fmt.Sprintf("%s.%s", topicPrefix, messagesSuffix),
 			clientID:     "clientid1",
 			errorMessage: nil,
 			pubsub:       true,
@@ -90,7 +90,7 @@ func TestPubsub(t *testing.T) {
 		},
 		{
 			desc:         "Subscribe to the same topic with a different ID",
-			topic:        fmt.Sprintf("%s.%s", senmlFormat, messagesSuffix),
+			topic:        fmt.Sprintf("%s.%s", topicPrefix, messagesSuffix),
 			clientID:     "clientid2",
 			errorMessage: nil,
 			pubsub:       true,
@@ -98,7 +98,7 @@ func TestPubsub(t *testing.T) {
 		},
 		{
 			desc:         "Subscribe to an already subscribed topic with an ID",
-			topic:        fmt.Sprintf("%s.%s", senmlFormat, messagesSuffix),
+			topic:        fmt.Sprintf("%s.%s", topicPrefix, messagesSuffix),
 			clientID:     "clientid1",
 			errorMessage: nil,
 			pubsub:       true,
@@ -106,7 +106,7 @@ func TestPubsub(t *testing.T) {
 		},
 		{
 			desc:         "Unsubscribe from a topic with an ID",
-			topic:        fmt.Sprintf("%s.%s", senmlFormat, messagesSuffix),
+			topic:        fmt.Sprintf("%s.%s", topicPrefix, messagesSuffix),
 			clientID:     "clientid1",
 			errorMessage: nil,
 			pubsub:       false,
@@ -122,7 +122,7 @@ func TestPubsub(t *testing.T) {
 		},
 		{
 			desc:         "Unsubscribe from the same topic with a different ID",
-			topic:        fmt.Sprintf("%s.%s", senmlFormat, messagesSuffix),
+			topic:        fmt.Sprintf("%s.%s", topicPrefix, messagesSuffix),
 			clientID:     "clientidd2",
 			errorMessage: messaging.ErrNotSubscribed,
 			pubsub:       false,
@@ -130,7 +130,7 @@ func TestPubsub(t *testing.T) {
 		},
 		{
 			desc:         "Unsubscribe from the same topic with a different ID not subscribed",
-			topic:        fmt.Sprintf("%s.%s", senmlFormat, messagesSuffix),
+			topic:        fmt.Sprintf("%s.%s", topicPrefix, messagesSuffix),
 			clientID:     "clientidd3",
 			errorMessage: messaging.ErrNotSubscribed,
 			pubsub:       false,
@@ -138,7 +138,7 @@ func TestPubsub(t *testing.T) {
 		},
 		{
 			desc:         "Unsubscribe from an already unsubscribed topic with an ID",
-			topic:        fmt.Sprintf("%s.%s", senmlFormat, messagesSuffix),
+			topic:        fmt.Sprintf("%s.%s", topicPrefix, messagesSuffix),
 			clientID:     "clientid1",
 			errorMessage: messaging.ErrNotSubscribed,
 			pubsub:       false,
@@ -146,7 +146,7 @@ func TestPubsub(t *testing.T) {
 		},
 		{
 			desc:         "Subscribe to a topic with a subtopic with an ID",
-			topic:        fmt.Sprintf("%s.%s.%s", senmlFormat, messagesSuffix, subtopic),
+			topic:        fmt.Sprintf("%s.%s.%s", topicPrefix, messagesSuffix, subtopic),
 			clientID:     "clientidd1",
 			errorMessage: nil,
 			pubsub:       true,
@@ -154,7 +154,7 @@ func TestPubsub(t *testing.T) {
 		},
 		{
 			desc:         "Subscribe to an already subscribed topic with a subtopic with an ID",
-			topic:        fmt.Sprintf("%s.%s.%s", senmlFormat, messagesSuffix, subtopic),
+			topic:        fmt.Sprintf("%s.%s.%s", topicPrefix, messagesSuffix, subtopic),
 			clientID:     "clientidd1",
 			errorMessage: nil,
 			pubsub:       true,
@@ -162,7 +162,7 @@ func TestPubsub(t *testing.T) {
 		},
 		{
 			desc:         "Unsubscribe from a topic with a subtopic with an ID",
-			topic:        fmt.Sprintf("%s.%s.%s", senmlFormat, messagesSuffix, subtopic),
+			topic:        fmt.Sprintf("%s.%s.%s", topicPrefix, messagesSuffix, subtopic),
 			clientID:     "clientidd1",
 			errorMessage: nil,
 			pubsub:       false,
@@ -170,7 +170,7 @@ func TestPubsub(t *testing.T) {
 		},
 		{
 			desc:         "Unsubscribe from an already unsubscribed topic with a subtopic with an ID",
-			topic:        fmt.Sprintf("%s.%s.%s", senmlFormat, messagesSuffix, subtopic),
+			topic:        fmt.Sprintf("%s.%s.%s", topicPrefix, messagesSuffix, subtopic),
 			clientID:     "clientid1",
 			errorMessage: messaging.ErrNotSubscribed,
 			pubsub:       false,
@@ -194,7 +194,7 @@ func TestPubsub(t *testing.T) {
 		},
 		{
 			desc:         "Subscribe to a topic with empty id",
-			topic:        fmt.Sprintf("%s.%s", senmlFormat, messagesSuffix),
+			topic:        fmt.Sprintf("%s.%s", topicPrefix, messagesSuffix),
 			clientID:     "",
 			errorMessage: messaging.ErrEmptyID,
 			pubsub:       true,
@@ -202,7 +202,7 @@ func TestPubsub(t *testing.T) {
 		},
 		{
 			desc:         "Unsubscribe from a topic with empty id",
-			topic:        fmt.Sprintf("%s.%s", senmlFormat, messagesSuffix),
+			topic:        fmt.Sprintf("%s.%s", topicPrefix, messagesSuffix),
 			clientID:     "",
 			errorMessage: messaging.ErrEmptyID,
 			pubsub:       false,
@@ -210,7 +210,7 @@ func TestPubsub(t *testing.T) {
 		},
 		{
 			desc:         "Subscribe to another topic with an ID",
-			topic:        fmt.Sprintf("%s.%s", senmlFormat, messagesSuffix+"1"),
+			topic:        fmt.Sprintf("%s.%s", topicPrefix, messagesSuffix+"1"),
 			clientID:     "clientid3",
 			errorMessage: nil,
 			pubsub:       true,
@@ -218,7 +218,7 @@ func TestPubsub(t *testing.T) {
 		},
 		{
 			desc:         "Subscribe to another already subscribed topic with an ID with Unsubscribe failing",
-			topic:        fmt.Sprintf("%s.%s", senmlFormat, messagesSuffix+"1"),
+			topic:        fmt.Sprintf("%s.%s", topicPrefix, messagesSuffix+"1"),
 			clientID:     "clientid3",
 			errorMessage: errFailed,
 			pubsub:       true,
@@ -226,7 +226,7 @@ func TestPubsub(t *testing.T) {
 		},
 		{
 			desc:         "Subscribe to a new topic with an ID",
-			topic:        fmt.Sprintf("%s.%s", senmlFormat, messagesSuffix+"2"),
+			topic:        fmt.Sprintf("%s.%s", topicPrefix, messagesSuffix+"2"),
 			clientID:     "clientid4",
 			errorMessage: nil,
 			pubsub:       true,
@@ -234,7 +234,7 @@ func TestPubsub(t *testing.T) {
 		},
 		{
 			desc:         "Unsubscribe from a topic with an ID with failing handler",
-			topic:        fmt.Sprintf("%s.%s", senmlFormat, messagesSuffix+"2"),
+			topic:        fmt.Sprintf("%s.%s", topicPrefix, messagesSuffix+"2"),
 			clientID:     "clientid4",
 			errorMessage: errFailed,
 			pubsub:       false,

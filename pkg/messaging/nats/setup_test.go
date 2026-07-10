@@ -28,7 +28,11 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not connect to docker: %s", err)
 	}
 
-	container, err := pool.Run("nats", "1.3.0", []string{})
+	container, err := pool.RunWithOptions(&dockertest.RunOptions{
+		Repository: "nats",
+		Tag:        "2.10-alpine",
+		Cmd:        []string{"-js"},
+	})
 	if err != nil {
 		log.Fatalf("Could not start container: %s", err)
 	}

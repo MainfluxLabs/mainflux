@@ -135,7 +135,7 @@ func main() {
 	thingsTracer, thingsCloser := jaeger.Init("rules_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	ps, err := nats.NewPubSub(cfg.brokerURL, "", logger)
+	ps, err := nats.NewPubSub(cfg.brokerURL, svcName, logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
