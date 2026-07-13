@@ -119,7 +119,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	pubSub, err := nats.NewPubSub(cfg.brokerURL, "", logger)
+	pubSub, err := nats.NewPubSub(cfg.brokerURL, svcName, logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)

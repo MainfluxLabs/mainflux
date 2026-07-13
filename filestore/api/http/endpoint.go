@@ -5,8 +5,10 @@ package http
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/filestore"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -112,7 +114,7 @@ func removeFileEndpoint(svc filestore.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return removeRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
 
@@ -233,7 +235,7 @@ func removeGroupFileEndpoint(svc filestore.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return removeRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
 

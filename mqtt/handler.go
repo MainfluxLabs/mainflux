@@ -15,8 +15,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
+	"github.com/MainfluxLabs/mainflux/pkg/mproxy/session"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/MainfluxLabs/mproxy/pkg/session"
 )
 
 var _ session.Handler = (*handler)(nil)

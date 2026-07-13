@@ -131,17 +131,3 @@ func isASCII(s string) bool {
 func (res streamFileRes) Empty() bool {
 	return false
 }
-
-type removeRes struct{}
-
-func (res removeRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res removeRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res removeRes) Empty() bool {
-	return true
-}

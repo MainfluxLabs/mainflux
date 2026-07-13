@@ -3,7 +3,6 @@ module github.com/MainfluxLabs/mainflux
 go 1.25.8
 
 require (
-	github.com/MainfluxLabs/mproxy v0.2.4
 	github.com/MainfluxLabs/senml v1.0.5
 	github.com/Shopify/go-lua v0.0.0-20250718183320-1e37f32ad7d0
 	github.com/Shopify/goluago v0.0.0-20240527182001-ec4ec6c26eab

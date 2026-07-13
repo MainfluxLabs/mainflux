@@ -35,20 +35,6 @@ func (res createOrgInviteRes) Empty() bool {
 	return true
 }
 
-type revokeOrgInviteRes struct{}
-
-func (res revokeOrgInviteRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res revokeOrgInviteRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res revokeOrgInviteRes) Empty() bool {
-	return true
-}
-
 type respondOrgInviteRes struct {
 	accept bool
 }

@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/uiconfigs"
@@ -45,7 +46,7 @@ func restoreEndpoint(svc uiconfigs.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return restoreRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusCreated}, nil
 	}
 }
 

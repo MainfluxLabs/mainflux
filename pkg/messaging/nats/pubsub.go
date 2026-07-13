@@ -16,6 +16,10 @@ import (
 )
 
 const (
+	// SubjectThings represents the wildcard subject covering all thing subjects.
+	SubjectThings = "things.>"
+	// SubjectGroups represents the wildcard subject covering all group subjects.
+	SubjectGroups = "groups.>"
 	// SubjectMessages represents subject used to subscribe to the global message stream.
 	SubjectMessages = "things.*.messages"
 	// SubjectMessagesWithSubtopic represents subject used to subscribe to the global message stream with subtopic.
@@ -72,7 +76,7 @@ type pubsub struct {
 // here: https://docs.nats.io/developing-with-nats/receiving/queues.
 // If the queue is empty, Subscribe will be used.
 func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
-	conn, err := broker.Connect(url, broker.MaxReconnects(maxReconnects))
+	conn, js, err := connect(url)
 	if err != nil {
 		return nil, err
 	}
@@ -80,11 +84,13 @@ func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
 	ret := &pubsub{
 		publisher: publisher{
 			conn: conn,
+			js:   js,
 		},
 		queue:         queue,
 		logger:        logger,
 		subscriptions: make(map[string]map[string]subscription),
 	}
+
 	return ret, nil
 }
 
@@ -162,11 +168,12 @@ func (ps *pubsub) subscribe(id, topic string, nh broker.MsgHandler, cancelFn fun
 		sub *broker.Subscription
 		err error
 	)
+	durable := durableName(ps.queue, id, topic)
 	switch ps.queue {
 	case "":
-		sub, err = ps.conn.Subscribe(topic, nh)
+		sub, err = ps.js.Subscribe(topic, nh, broker.Durable(durable), broker.DeliverAll())
 	default:
-		sub, err = ps.conn.QueueSubscribe(topic, ps.queue, nh)
+		sub, err = ps.js.QueueSubscribe(topic, ps.queue, nh, broker.Durable(durable), broker.DeliverAll())
 	}
 	if err != nil {
 		return err

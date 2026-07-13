@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net"
 
-	"github.com/MainfluxLabs/mproxy/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 var (

@@ -13,22 +13,7 @@ import (
 var (
 	_ apiutil.Response = (*viewGroupRes)(nil)
 	_ apiutil.Response = (*groupsRes)(nil)
-	_ apiutil.Response = (*removeRes)(nil)
 )
-
-type removeRes struct{}
-
-func (res removeRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res removeRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res removeRes) Empty() bool {
-	return true
-}
 
 type pageRes struct {
 	Total  uint64 `json:"total"`

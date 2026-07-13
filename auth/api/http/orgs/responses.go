@@ -10,7 +10,6 @@ import (
 
 var (
 	_ apiutil.Response = (*orgRes)(nil)
-	_ apiutil.Response = (*deleteRes)(nil)
 )
 
 type viewOrgRes struct {
@@ -86,18 +85,4 @@ func (res orgsPageRes) Headers() map[string]string {
 
 func (res orgsPageRes) Empty() bool {
 	return false
-}
-
-type deleteRes struct{}
-
-func (res deleteRes) Code() int {
-	return http.StatusNoContent
-}
-
-func (res deleteRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res deleteRes) Empty() bool {
-	return true
 }

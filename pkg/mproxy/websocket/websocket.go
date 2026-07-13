@@ -7,9 +7,9 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/MainfluxLabs/mproxy/logger"
-	"github.com/MainfluxLabs/mproxy/pkg/session"
-	mptls "github.com/MainfluxLabs/mproxy/pkg/tls"
+	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/mproxy/session"
+	mptls "github.com/MainfluxLabs/mainflux/pkg/mproxy/tls"
 	"github.com/gorilla/websocket"
 )
 

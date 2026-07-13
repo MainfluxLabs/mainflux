@@ -5,6 +5,7 @@ package things
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/uiconfigs"
@@ -61,7 +62,7 @@ func updateThingConfigEndpoint(svc uiconfigs.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return createRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusOK}, nil
 	}
 }
 

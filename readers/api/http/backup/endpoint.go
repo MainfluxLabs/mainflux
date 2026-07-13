@@ -5,7 +5,9 @@ package backup
 
 import (
 	"context"
+	"net/http"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/MainfluxLabs/mainflux/readers/api/http/messages"
@@ -55,7 +57,7 @@ func restoreEndpoint(svc readers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return restoreRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusCreated}, nil
 	}
 }
 
