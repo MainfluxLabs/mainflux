@@ -54,7 +54,11 @@ func (srm *shadowRepositoryMock) RetrieveByThing(_ context.Context, thingID stri
 
 	sh, ok := srm.shadows[thingID]
 	if !ok {
-		return shadows.Shadow{ThingID: thingID}, nil
+		return shadows.Shadow{
+			ThingID:  thingID,
+			Desired:  shadows.State{},
+			Reported: shadows.State{},
+		}, nil
 	}
 
 	return sh, nil

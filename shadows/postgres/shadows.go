@@ -96,7 +96,11 @@ func (sr shadowRepository) RetrieveByThing(ctx context.Context, thingID string) 
 		// A thing's shadow always exists conceptually: a missing row
 		// reads back as an empty shadow rather than an error.
 		if err == sql.ErrNoRows || (ok && pgerrcode.InvalidTextRepresentation == pgErr.Code) {
-			return shadows.Shadow{ThingID: thingID}, nil
+			return shadows.Shadow{
+				ThingID:  thingID,
+				Desired:  shadows.State{},
+				Reported: shadows.State{},
+			}, nil
 		}
 		return shadows.Shadow{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
