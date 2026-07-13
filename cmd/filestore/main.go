@@ -249,7 +249,7 @@ func loadConfig() config {
 	}
 }
 
-func buildStore(logger logger.Logger) store.FileStore {
+func buildStore() store.FileStore {
 	switch mainflux.Env(envBackend, defBackend) {
 	case "seaweedfs":
 		to, err := time.ParseDuration(mainflux.Env(envSeaweedTimeout, defSeaweedTimeout))
@@ -303,7 +303,7 @@ func newService(thingsAuth domain.ThingsClient, dbTracer opentracing.Tracer, db 
 	thRepo = tracing.ThingsRepositoryMiddleware(dbTracer, thRepo)
 	grRepo := postgres.NewGroupsRepository(db)
 	grRepo = tracing.GroupsRepositoryMiddleware(dbTracer, grRepo)
-	fs := buildStore(logger)
+	fs := buildStore()
 	svc := filestore.New(thingsAuth, thRepo, grRepo, fs, logger)
 
 	svc = api.LoggingMiddleware(svc, logger)
