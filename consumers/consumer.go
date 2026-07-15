@@ -18,50 +18,33 @@ type AlarmConsumer interface {
 	ConsumeAlarm(subject string, alarm protomfx.Alarm) error
 }
 
-// Subscription is a self-contained function that registers a consumer for a given id.
-type Subscription func(id string) error
-
-// Messages returns a Subscription that subscribes consumer to the given subjects as a MessageConsumer.
-func Messages(sub messaging.Subscriber, c MessageConsumer, subjects ...string) Subscription {
-	return func(id string) error {
-		for _, subject := range subjects {
-			if err := sub.Subscribe(id, subject, &messageAdapter{c}); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-}
-
-// Alarms returns a Subscription that subscribes consumer as an AlarmConsumer.
-func Alarms(sub messaging.AlarmSubscriber, c AlarmConsumer) Subscription {
-	return func(id string) error {
-		return sub.SubscribeAlarms(id, &alarmAdapter{c})
-	}
-}
-
-// Start wires all provided subscriptions for the given id.
-func Start(id string, subs ...Subscription) error {
-	for _, s := range subs {
-		if err := s(id); err != nil {
+// Messages subscribes c to the given subjects as a MessageConsumer.
+func Messages(id string, sub messaging.Subscriber, c MessageConsumer, subjects ...string) error {
+	for _, subject := range subjects {
+		if err := sub.Subscribe(id, subject, messageHandler{c}); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-type messageAdapter struct{ c MessageConsumer }
-
-func (a *messageAdapter) Handle(subject string, msg protomfx.Message) error {
-	return a.c.ConsumeMessage(subject, msg)
+// Alarms subscribes c as an AlarmConsumer.
+func Alarms(id string, sub messaging.AlarmSubscriber, c AlarmConsumer) error {
+	return sub.SubscribeAlarms(id, alarmHandler{c})
 }
 
-func (a *messageAdapter) Cancel() error { return nil }
+type messageHandler struct{ c MessageConsumer }
 
-type alarmAdapter struct{ c AlarmConsumer }
-
-func (a *alarmAdapter) Handle(subject string, alarm protomfx.Alarm) error {
-	return a.c.ConsumeAlarm(subject, alarm)
+func (h messageHandler) Handle(subject string, msg protomfx.Message) error {
+	return h.c.ConsumeMessage(subject, msg)
 }
 
-func (a *alarmAdapter) Cancel() error { return nil }
+func (h messageHandler) Cancel() error { return nil }
+
+type alarmHandler struct{ c AlarmConsumer }
+
+func (h alarmHandler) Handle(subject string, alarm protomfx.Alarm) error {
+	return h.c.ConsumeAlarm(subject, alarm)
+}
+
+func (h alarmHandler) Cancel() error { return nil }

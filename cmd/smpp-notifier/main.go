@@ -172,7 +172,7 @@ func main() {
 
 	svc := newService(cfg, logger, dbTracer, db, tc)
 
-	if err = consumers.Start(svcName, consumers.Messages(pubSub, svc, nats.SubjectSmpp)); err != nil {
+	if err = consumers.Messages(svcName, pubSub, svc, nats.SubjectSmpp); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create SMPP notifier: %s", err))
 	}
 
