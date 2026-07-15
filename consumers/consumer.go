@@ -18,7 +18,7 @@ type AlarmConsumer interface {
 	ConsumeAlarm(subject string, alarm protomfx.Alarm) error
 }
 
-// Messages subscribes c to the given subjects as a MessageConsumer.
+// Messages subscribes the given MessageConsumer to the given subjects.
 func Messages(id string, sub messaging.Subscriber, c MessageConsumer, subjects ...string) error {
 	for _, subject := range subjects {
 		if err := sub.Subscribe(id, subject, messageHandler{c}); err != nil {
@@ -28,7 +28,7 @@ func Messages(id string, sub messaging.Subscriber, c MessageConsumer, subjects .
 	return nil
 }
 
-// Alarms subscribes c as an AlarmConsumer.
+// Alarms subscribes the given AlarmConsumer to alarms.
 func Alarms(id string, sub messaging.AlarmSubscriber, c AlarmConsumer) error {
 	return sub.SubscribeAlarms(id, alarmHandler{c})
 }
