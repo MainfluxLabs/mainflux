@@ -29,8 +29,8 @@ const (
 	topicSuffixCommands = "commands"
 	topicSuffixMessages = "messages"
 
-	typeCommand = "command"
-	typeMessage = "message"
+	kindMessage = "message"
+	kindCommand = "command"
 )
 
 var (
@@ -220,7 +220,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 }
 
 // publishToBus routes a client's topic and payload onto the internal message bus,
-// returning "command" or "message" to describe what was published.
+// reporting the kind of what was published.
 func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) (string, error) {
 	tk := domain.ThingKey{
 		Value: string(c.Password),
@@ -251,14 +251,14 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 		if err := h.publishCommand(subject, msg); err != nil {
 			return "", errors.Wrap(messaging.ErrPublishMessage, err)
 		}
-		return typeCommand, nil
+		return kindCommand, nil
 	}
 
 	if err := h.publishMessage(pc, msg); err != nil {
 		return "", errors.Wrap(messaging.ErrPublishMessage, err)
 	}
 
-	return typeMessage, nil
+	return kindMessage, nil
 }
 
 func (h *handler) publishCommand(subject string, msg protomfx.Message) error {
