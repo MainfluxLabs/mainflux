@@ -28,6 +28,9 @@ const (
 	topicPrefixGroups   = "groups"
 	topicSuffixCommands = "commands"
 	topicSuffixMessages = "messages"
+
+	typeCommand = "command"
+	typeMessage = "message"
 )
 
 var (
@@ -207,22 +210,17 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		return
 	}
 
-	subject, err := h.publishToBus(c, *topic, *payload)
+	kind, err := h.publishToBus(c, *topic, *payload)
 	if err != nil {
 		h.logger.Error(err.Error())
 		return
-	}
-
-	kind := "message"
-	if isCommandSubject(subject) {
-		kind = "command"
 	}
 
 	h.logger.Info(fmt.Sprintf("client_id %s published %s to topic %s", c.ID, kind, *topic))
 }
 
 // publishToBus routes a client's topic and payload onto the internal message bus,
-// returning the subject it was published to.
+// returning "command" or "message" to describe what was published.
 func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) (string, error) {
 	tk := domain.ThingKey{
 		Value: string(c.Password),
@@ -253,14 +251,14 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 		if err := h.publishCommand(subject, msg); err != nil {
 			return "", errors.Wrap(messaging.ErrPublishMessage, err)
 		}
-		return subject, nil
+		return typeCommand, nil
 	}
 
 	if err := h.publishMessage(pc, msg); err != nil {
 		return "", errors.Wrap(messaging.ErrPublishMessage, err)
 	}
 
-	return subject, nil
+	return typeMessage, nil
 }
 
 func (h *handler) publishCommand(subject string, msg protomfx.Message) error {
