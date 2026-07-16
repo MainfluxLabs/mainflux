@@ -195,13 +195,6 @@ func main() {
 		}
 	}
 
-	np, err := brokers.NewPublisher(cfg.brokerURL)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
-		os.Exit(1)
-	}
-	defer np.Close()
-
 	ac := connectToRedis(cfg.authCacheURL, logger)
 	defer ac.Close()
 
@@ -232,7 +225,7 @@ func main() {
 	svc := newService(usersAuth, tc, db, cc, dbTracer, logger)
 
 	// Event handler for MQTT hooks
-	h := mqtt.NewHandler(np, tc, svc, cc, logger)
+	h := mqtt.NewHandler(nps, tc, svc, cc, logger)
 
 	g.Go(func() error {
 		return subscribeToThingsES(ctx, svc, cfg, logger)
