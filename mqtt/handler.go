@@ -45,6 +45,7 @@ var (
 	errFailedParseSubtopic      = errors.New("failed to parse subtopic")
 	errFailedCacheConnection    = errors.New("failed to cache connection")
 	errFailedCacheDisconnection = errors.New("failed to remove connection from cache")
+	errFailedPublishWill        = errors.New("failed to publish will message")
 )
 
 // handler implements session.Handler interface
@@ -206,6 +207,23 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		return
 	}
 
+	subject, err := h.publishToBus(c, *topic, *payload)
+	if err != nil {
+		h.logger.Error(err.Error())
+		return
+	}
+
+	kind := "message"
+	if isCommandSubject(subject) {
+		kind = "command"
+	}
+
+	h.logger.Info(fmt.Sprintf("client_id %s published %s to topic %s", c.ID, kind, *topic))
+}
+
+// publishToBus routes a client's topic and payload onto the internal message bus,
+// returning the subject it was published to.
+func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) (string, error) {
 	tk := domain.ThingKey{
 		Value: string(c.Password),
 		Type:  c.Username,
@@ -213,42 +231,36 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 
 	pc, err := h.things.GetPubConfigByKey(context.Background(), tk)
 	if err != nil {
-		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
-		return
+		return "", errors.Wrap(messaging.ErrPublishMessage, err)
 	}
 
-	subject, subtopic, err := parseTopic(*topic, pc.PublisherID)
+	subject, subtopic, err := parseTopic(topic, pc.PublisherID)
 	if err != nil {
-		h.logger.Error(errors.Wrap(errFailedParseSubtopic, err).Error())
-		return
+		return "", errors.Wrap(errFailedParseSubtopic, err)
 	}
 
 	msg := protomfx.Message{
 		Protocol: protocol,
 		Subtopic: subtopic,
-		Payload:  *payload,
+		Payload:  payload,
 	}
 
 	if err := messaging.FormatMessage(pc, &msg); err != nil {
-		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
-		return
+		return "", errors.Wrap(messaging.ErrPublishMessage, err)
 	}
 
 	if isCommandSubject(subject) {
 		if err := h.publishCommand(subject, msg); err != nil {
-			h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
-			return
+			return "", errors.Wrap(messaging.ErrPublishMessage, err)
 		}
-		h.logger.Info(fmt.Sprintf("client_id %s published command to topic %s", c.ID, *topic))
-		return
+		return subject, nil
 	}
 
 	if err := h.publishMessage(pc, msg); err != nil {
-		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
-		return
+		return "", errors.Wrap(messaging.ErrPublishMessage, err)
 	}
 
-	h.logger.Info(fmt.Sprintf("client_id %s published message to topic %s", c.ID, *topic))
+	return subject, nil
 }
 
 func (h *handler) publishCommand(subject string, msg protomfx.Message) error {
@@ -365,11 +377,28 @@ func (h *handler) Disconnect(c *session.Client) {
 		return
 	}
 
+	// The broker publishes the Will to MQTT subscribers itself, but that publish never
+	// transits the proxy, so it would otherwise never reach the internal bus and the
+	// writers, rules and webhooks would never see it. Mirror it here.
+	if c.WillFlag && !c.CleanDisconnect {
+		h.publishWill(c)
+	}
+
 	if err := h.cache.Disconnect(context.Background(), c.ID); err != nil {
 		h.logger.Error(errors.Wrap(errFailedCacheDisconnection, err).Error())
 	}
 
 	h.logger.Info(fmt.Sprintf("client_id %s disconnected", c.ID))
+}
+
+// publishWill mirrors a client's Last Will onto the internal bus.
+func (h *handler) publishWill(c *session.Client) {
+	if _, err := h.publishToBus(c, c.WillTopic, c.WillMessage); err != nil {
+		h.logger.Error(errors.Wrap(errFailedPublishWill, err).Error())
+		return
+	}
+
+	h.logger.Info(fmt.Sprintf("client_id %s will published to topic %s", c.ID, c.WillTopic))
 }
 
 func (h *handler) identify(c *session.Client) (string, error) {
