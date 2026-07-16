@@ -420,6 +420,57 @@ func TestDisconnect(t *testing.T) {
 	}
 }
 
+func TestDisconnectPublishesWill(t *testing.T) {
+	handler := newHandler()
+
+	willTopic := "things/" + thingID + "/messages"
+	willClient := func(cleanDisconnect bool) *session.Client {
+		return &session.Client{
+			ID:              clientID,
+			Username:        things.KeyTypeInternal,
+			Password:        []byte(password),
+			WillFlag:        true,
+			WillTopic:       willTopic,
+			WillMessage:     payload,
+			CleanDisconnect: cleanDisconnect,
+		}
+	}
+
+	cases := []struct {
+		desc          string
+		client        *session.Client
+		publishesWill bool
+	}{
+		{
+			desc:          "abnormal disconnect publishes the will",
+			client:        willClient(false),
+			publishesWill: true,
+		},
+		{
+			desc:          "clean disconnect does not publish the will",
+			client:        willClient(true),
+			publishesWill: false,
+		},
+		{
+			desc:          "disconnect without a will publishes nothing",
+			client:        &sessionClient,
+			publishesWill: false,
+		},
+	}
+
+	for _, tc := range cases {
+		logBuffer.Reset()
+		handler.Disconnect(tc.client)
+
+		logMsg := fmt.Sprintf("client_id %s will published to topic %s", clientID, willTopic)
+		if tc.publishesWill {
+			assert.Contains(t, logBuffer.String(), logMsg, tc.desc)
+			continue
+		}
+		assert.NotContains(t, logBuffer.String(), "will published", tc.desc)
+	}
+}
+
 func newHandler() session.Handler {
 	logger, err := logger.New(&logBuffer, "debug")
 	if err != nil {
