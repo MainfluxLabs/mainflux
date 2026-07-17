@@ -13,9 +13,9 @@ import (
 
 // Forwarder specifies MQTT forwarder interface API.
 type Forwarder interface {
-	// Forward subscribes to the Subscriber and
-	// publishes messages using provided Publisher.
-	Forward(id string, sub messaging.Subscriber, pub messaging.Publisher) error
+	// Forward subscribes to the CommandSubscriber and
+	// publishes commands using provided CommandPublisher.
+	Forward(id string, sub messaging.CommandSubscriber, pub messaging.CommandPublisher) error
 }
 
 type forwarder struct {
@@ -31,9 +31,9 @@ func NewForwarder(topics []string, logger log.Logger) Forwarder {
 	}
 }
 
-func (f forwarder) Forward(id string, sub messaging.Subscriber, pub messaging.Publisher) error {
+func (f forwarder) Forward(id string, sub messaging.CommandSubscriber, pub messaging.CommandPublisher) error {
 	for _, topic := range f.topics {
-		if err := sub.Subscribe(id, topic, handle(pub, f.logger)); err != nil {
+		if err := sub.SubscribeCommands(id, topic, handle(pub, f.logger)); err != nil {
 			return err
 		}
 	}
@@ -41,15 +41,15 @@ func (f forwarder) Forward(id string, sub messaging.Subscriber, pub messaging.Pu
 	return nil
 }
 
-func handle(pub messaging.Publisher, logger log.Logger) handleFunc {
-	return func(subject string, msg protomfx.Message) error {
-		if msg.Protocol == protocol {
+func handle(pub messaging.CommandPublisher, logger log.Logger) handleFunc {
+	return func(subject string, cmd protomfx.Command) error {
+		if cmd.Protocol == protocol {
 			return nil
 		}
 
 		go func() {
-			if err := pub.Publish(subject, msg); err != nil {
-				logger.Warn(fmt.Sprintf("Failed to forward message: %s", err))
+			if err := pub.PublishCommand(subject, cmd); err != nil {
+				logger.Warn(fmt.Sprintf("Failed to forward command: %s", err))
 			}
 		}()
 
@@ -57,10 +57,10 @@ func handle(pub messaging.Publisher, logger log.Logger) handleFunc {
 	}
 }
 
-type handleFunc func(subject string, msg protomfx.Message) error
+type handleFunc func(subject string, cmd protomfx.Command) error
 
-func (h handleFunc) Handle(subject string, msg protomfx.Message) error {
-	return h(subject, msg)
+func (h handleFunc) Handle(subject string, cmd protomfx.Command) error {
+	return h(subject, cmd)
 }
 
 func (h handleFunc) Cancel() error {
