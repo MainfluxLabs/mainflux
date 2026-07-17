@@ -145,7 +145,7 @@ func decodeSendCommandToThing(_ context.Context, r *http.Request) (any, error) {
 
 	req := cmdReq{
 		id: id,
-		msg: protomfx.Message{
+		cmd: protomfx.Command{
 			Subtopic: subtopic,
 			Protocol: protocol,
 			Payload:  payload,
@@ -183,7 +183,7 @@ func decodeSendCommandByGroup(_ context.Context, r *http.Request) (any, error) {
 
 	req := cmdReq{
 		id: id,
-		msg: protomfx.Message{
+		cmd: protomfx.Command{
 			Subtopic: subtopic,
 			Protocol: protocol,
 			Payload:  payload,
