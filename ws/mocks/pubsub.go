@@ -8,16 +8,23 @@ import (
 	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/gorilla/websocket"
 )
 
-var _ messaging.PubSub = (*mockPubSub)(nil)
+var _ nats.PubSub = (*mockPubSub)(nil)
 
 type MockPubSub interface {
 	Publish(string, protomfx.Message) error
 	Subscribe(string, string, messaging.MessageHandler) error
 	Unsubscribe(string, string) error
+	PublishAlarm(string, protomfx.Alarm) error
+	SubscribeAlarms(string, messaging.AlarmHandler) error
+	UnsubscribeAlarms(string) error
+	PublishCommand(string, protomfx.Command) error
+	SubscribeCommands(string, string, messaging.CommandHandler) error
+	UnsubscribeCommands(string, string) error
 	SetFail(bool)
 	SetConn(*websocket.Conn)
 	Close() error
@@ -55,6 +62,48 @@ func (pubsub *mockPubSub) Subscribe(string, string, messaging.MessageHandler) er
 }
 
 func (pubsub *mockPubSub) Unsubscribe(string, string) error {
+	if pubsub.fail {
+		return messaging.ErrFailedUnsubscribe
+	}
+	return nil
+}
+
+func (pubsub *mockPubSub) PublishAlarm(string, protomfx.Alarm) error {
+	if pubsub.fail {
+		return messaging.ErrPublishMessage
+	}
+	return nil
+}
+
+func (pubsub *mockPubSub) SubscribeAlarms(string, messaging.AlarmHandler) error {
+	if pubsub.fail {
+		return messaging.ErrFailedSubscribe
+	}
+	return nil
+}
+
+func (pubsub *mockPubSub) UnsubscribeAlarms(string) error {
+	if pubsub.fail {
+		return messaging.ErrFailedUnsubscribe
+	}
+	return nil
+}
+
+func (pubsub *mockPubSub) PublishCommand(string, protomfx.Command) error {
+	if pubsub.fail {
+		return messaging.ErrPublishMessage
+	}
+	return nil
+}
+
+func (pubsub *mockPubSub) SubscribeCommands(string, string, messaging.CommandHandler) error {
+	if pubsub.fail {
+		return messaging.ErrFailedSubscribe
+	}
+	return nil
+}
+
+func (pubsub *mockPubSub) UnsubscribeCommands(string, string) error {
 	if pubsub.fail {
 		return messaging.ErrFailedUnsubscribe
 	}

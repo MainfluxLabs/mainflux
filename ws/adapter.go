@@ -27,27 +27,27 @@ type Service interface {
 	Unsubscribe(ctx context.Context, key domain.ThingKey, subtopic string) error
 
 	// SendCommandToThing publishes a command to the specified thing, authorized by user token.
-	SendCommandToThing(ctx context.Context, token, thingID string, msg protomfx.Message) error
+	SendCommandToThing(ctx context.Context, token, thingID string, cmd protomfx.Command) error
 
 	// SendCommandToThingByKey publishes a command to the specified thing, authorized by publisher thing key (M2M).
-	SendCommandToThingByKey(ctx context.Context, key domain.ThingKey, thingID string, msg protomfx.Message) error
+	SendCommandToThingByKey(ctx context.Context, key domain.ThingKey, thingID string, cmd protomfx.Command) error
 
 	// SendCommandToGroup publishes a command to things that belong to a specified group, authorized by user token.
-	SendCommandToGroup(ctx context.Context, token, groupID string, msg protomfx.Message) error
+	SendCommandToGroup(ctx context.Context, token, groupID string, cmd protomfx.Command) error
 
 	// SendCommandToGroupByKey publishes a command to a group, authorized by publisher thing key (M2M).
-	SendCommandToGroupByKey(ctx context.Context, key domain.ThingKey, groupID string, msg protomfx.Message) error
+	SendCommandToGroupByKey(ctx context.Context, key domain.ThingKey, groupID string, cmd protomfx.Command) error
 }
 
 var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
 	things domain.ThingsClient
-	pubsub messaging.PubSub
+	pubsub nats.PubSub
 }
 
 // New instantiates the WS adapter implementation
-func New(things domain.ThingsClient, pubsub messaging.PubSub) Service {
+func New(things domain.ThingsClient, pubsub nats.PubSub) Service {
 	return &adapterService{
 		things: things,
 		pubsub: pubsub,
@@ -94,15 +94,16 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, key domain.ThingKey,
 	return svc.pubsub.Unsubscribe(thingID, subtopic)
 }
 
-func (svc *adapterService) SendCommandToThing(ctx context.Context, token, thingID string, msg protomfx.Message) error {
+func (svc *adapterService) SendCommandToThing(ctx context.Context, token, thingID string, cmd protomfx.Command) error {
 	if err := svc.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupEditor}); err != nil {
 		return err
 	}
 
-	return svc.pubsub.Publish(nats.GetThingCommandsSubject(thingID, msg.Subtopic), msg)
+	cmd.RecipientID = thingID
+	return svc.pubsub.PublishCommand(nats.GetThingCommandsSubject(thingID, cmd.Subtopic), cmd)
 }
 
-func (svc *adapterService) SendCommandToThingByKey(ctx context.Context, key domain.ThingKey, thingID string, msg protomfx.Message) error {
+func (svc *adapterService) SendCommandToThingByKey(ctx context.Context, key domain.ThingKey, thingID string, cmd protomfx.Command) error {
 	senderThingID, err := svc.things.Identify(ctx, domain.ThingKey{Value: key.Value, Type: key.Type})
 	if err != nil {
 		return err
@@ -112,18 +113,20 @@ func (svc *adapterService) SendCommandToThingByKey(ctx context.Context, key doma
 		return err
 	}
 
-	return svc.pubsub.Publish(nats.GetThingCommandsSubject(thingID, msg.Subtopic), msg)
+	cmd.Publisher = senderThingID
+	cmd.RecipientID = thingID
+	return svc.pubsub.PublishCommand(nats.GetThingCommandsSubject(thingID, cmd.Subtopic), cmd)
 }
 
-func (svc *adapterService) SendCommandToGroup(ctx context.Context, token, groupID string, msg protomfx.Message) error {
+func (svc *adapterService) SendCommandToGroup(ctx context.Context, token, groupID string, cmd protomfx.Command) error {
 	if err := svc.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupEditor}); err != nil {
 		return err
 	}
 
-	return svc.pubsub.Publish(nats.GetGroupCommandsSubject(groupID, msg.Subtopic), msg)
+	return svc.pubsub.PublishCommand(nats.GetGroupCommandsSubject(groupID, cmd.Subtopic), cmd)
 }
 
-func (svc *adapterService) SendCommandToGroupByKey(ctx context.Context, key domain.ThingKey, groupID string, msg protomfx.Message) error {
+func (svc *adapterService) SendCommandToGroupByKey(ctx context.Context, key domain.ThingKey, groupID string, cmd protomfx.Command) error {
 	thingID, err := svc.things.Identify(ctx, domain.ThingKey{Value: key.Value, Type: key.Type})
 	if err != nil {
 		return err
@@ -133,5 +136,6 @@ func (svc *adapterService) SendCommandToGroupByKey(ctx context.Context, key doma
 		return err
 	}
 
-	return svc.pubsub.Publish(nats.GetGroupCommandsSubject(groupID, msg.Subtopic), msg)
+	cmd.Publisher = thingID
+	return svc.pubsub.PublishCommand(nats.GetGroupCommandsSubject(groupID, cmd.Subtopic), cmd)
 }

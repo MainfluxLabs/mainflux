@@ -101,12 +101,12 @@ func processMessages(svc ws.Service, req getConnByKey, msgs <-chan []byte) {
 
 func processThingCommands(svc ws.Service, req cmdConnReq, msgs <-chan []byte) {
 	for payload := range msgs {
-		m := buildMessage(req.subtopic, payload)
+		c := buildCommand(req.subtopic, payload)
 		switch {
 		case req.token != "":
-			svc.SendCommandToThing(context.Background(), req.token, req.id, m)
+			svc.SendCommandToThing(context.Background(), req.token, req.id, c)
 		default:
-			svc.SendCommandToThingByKey(context.Background(), req.thingKey, req.id, m)
+			svc.SendCommandToThingByKey(context.Background(), req.thingKey, req.id, c)
 		}
 	}
 	req.conn.Close()
@@ -114,12 +114,12 @@ func processThingCommands(svc ws.Service, req cmdConnReq, msgs <-chan []byte) {
 
 func processGroupCommands(svc ws.Service, req cmdConnReq, msgs <-chan []byte) {
 	for payload := range msgs {
-		m := buildMessage(req.subtopic, payload)
+		c := buildCommand(req.subtopic, payload)
 		switch {
 		case req.token != "":
-			svc.SendCommandToGroup(context.Background(), req.token, req.id, m)
+			svc.SendCommandToGroup(context.Background(), req.token, req.id, c)
 		default:
-			svc.SendCommandToGroupByKey(context.Background(), req.thingKey, req.id, m)
+			svc.SendCommandToGroupByKey(context.Background(), req.thingKey, req.id, c)
 		}
 	}
 	req.conn.Close()
@@ -127,6 +127,15 @@ func processGroupCommands(svc ws.Service, req cmdConnReq, msgs <-chan []byte) {
 
 func buildMessage(subtopic string, payload []byte) protomfx.Message {
 	return protomfx.Message{
+		Subtopic: subtopic,
+		Protocol: protocol,
+		Payload:  payload,
+		Created:  time.Now().UnixNano(),
+	}
+}
+
+func buildCommand(subtopic string, payload []byte) protomfx.Command {
+	return protomfx.Command{
 		Subtopic: subtopic,
 		Protocol: protocol,
 		Payload:  payload,

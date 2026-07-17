@@ -22,8 +22,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	adapter "github.com/MainfluxLabs/mainflux/ws"
 	"github.com/MainfluxLabs/mainflux/ws/api"
@@ -80,7 +79,7 @@ func main() {
 
 	tc := thingsapi.NewClient(tConn, thingsTracer, cfg.thingsGRPCTimeout)
 
-	nps, err := brokers.NewPubSub(cfg.brokerURL, "", logger)
+	nps, err := nats.NewPubSub(cfg.brokerURL, "", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -135,7 +134,7 @@ func loadConfig() config {
 	}
 }
 
-func newService(tc domain.ThingsClient, nps messaging.PubSub, logger logger.Logger) adapter.Service {
+func newService(tc domain.ThingsClient, nps nats.PubSub, logger logger.Logger) adapter.Service {
 	svc := adapter.New(tc, nps)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
