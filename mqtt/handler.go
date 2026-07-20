@@ -208,7 +208,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	}
 
 	if err := h.publishToBus(c, *topic, *payload); err != nil {
-		h.logger.Error(err.Error())
+		h.logger.Error(fmt.Sprintf("client_id %s failed to publish to topic %s: %s", c.ID, *topic, err))
 		return
 	}
 
