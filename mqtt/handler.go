@@ -45,7 +45,6 @@ var (
 	errFailedParseSubtopic      = errors.New("failed to parse subtopic")
 	errFailedCacheConnection    = errors.New("failed to cache connection")
 	errFailedCacheDisconnection = errors.New("failed to remove connection from cache")
-	errFailedPublishWill        = errors.New("failed to publish will message")
 )
 
 // handler implements session.Handler interface
@@ -380,7 +379,7 @@ func (h *handler) Disconnect(c *session.Client) {
 	}
 
 	if err := h.publishToBus(c, c.WillTopic, c.WillMessage); err != nil {
-		h.logger.Error(errors.Wrap(errFailedPublishWill, err).Error())
+		h.logger.Error(fmt.Sprintf("client_id %s failed to publish will to topic %s: %s", c.ID, c.WillTopic, err))
 		return
 	}
 
