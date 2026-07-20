@@ -28,9 +28,6 @@ const (
 	topicPrefixGroups   = "groups"
 	topicSuffixCommands = "commands"
 	topicSuffixMessages = "messages"
-
-	kindMessage = "message"
-	kindCommand = "command"
 )
 
 var (
@@ -210,18 +207,15 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		return
 	}
 
-	kind, err := h.publishToBus(c, *topic, *payload)
-	if err != nil {
+	if err := h.publishToBus(c, *topic, *payload); err != nil {
 		h.logger.Error(err.Error())
 		return
 	}
 
-	h.logger.Info(fmt.Sprintf("client_id %s published %s to topic %s", c.ID, kind, *topic))
+	h.logger.Info(fmt.Sprintf("client_id %s published to topic %s", c.ID, *topic))
 }
 
-// publishToBus routes a client's topic and payload onto the internal message bus,
-// reporting the kind of what was published.
-func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) (string, error) {
+func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) error {
 	tk := domain.ThingKey{
 		Value: string(c.Password),
 		Type:  c.Username,
@@ -229,12 +223,12 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 
 	pc, err := h.things.GetPubConfigByKey(context.Background(), tk)
 	if err != nil {
-		return "", errors.Wrap(messaging.ErrPublishMessage, err)
+		return errors.Wrap(messaging.ErrPublishMessage, err)
 	}
 
 	subject, subtopic, err := parseTopic(topic, pc.PublisherID)
 	if err != nil {
-		return "", errors.Wrap(errFailedParseSubtopic, err)
+		return errors.Wrap(errFailedParseSubtopic, err)
 	}
 
 	msg := protomfx.Message{
@@ -244,21 +238,21 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 	}
 
 	if err := messaging.FormatMessage(pc, &msg); err != nil {
-		return "", errors.Wrap(messaging.ErrPublishMessage, err)
+		return errors.Wrap(messaging.ErrPublishMessage, err)
 	}
 
 	if isCommandSubject(subject) {
 		if err := h.publishCommand(subject, msg); err != nil {
-			return "", errors.Wrap(messaging.ErrPublishMessage, err)
+			return errors.Wrap(messaging.ErrPublishMessage, err)
 		}
-		return kindCommand, nil
+		return nil
 	}
 
 	if err := h.publishMessage(pc, msg); err != nil {
-		return "", errors.Wrap(messaging.ErrPublishMessage, err)
+		return errors.Wrap(messaging.ErrPublishMessage, err)
 	}
 
-	return kindMessage, nil
+	return nil
 }
 
 func (h *handler) publishCommand(subject string, msg protomfx.Message) error {
@@ -385,7 +379,7 @@ func (h *handler) Disconnect(c *session.Client) {
 		return
 	}
 
-	if _, err := h.publishToBus(c, c.WillTopic, c.WillMessage); err != nil {
+	if err := h.publishToBus(c, c.WillTopic, c.WillMessage); err != nil {
 		h.logger.Error(errors.Wrap(errFailedPublishWill, err).Error())
 		return
 	}
