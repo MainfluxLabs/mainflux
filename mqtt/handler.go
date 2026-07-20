@@ -375,22 +375,16 @@ func (h *handler) Disconnect(c *session.Client) {
 		return
 	}
 
-	// The broker publishes the Will to MQTT subscribers itself, but that publish never
-	// transits the proxy, so it would otherwise never reach the internal bus and the
-	// writers, rules and webhooks would never see it. Mirror it here.
-	if c.WillFlag && !c.CleanDisconnect {
-		h.publishWill(c)
-	}
-
 	if err := h.cache.Disconnect(context.Background(), c.ID); err != nil {
 		h.logger.Error(errors.Wrap(errFailedCacheDisconnection, err).Error())
 	}
 
 	h.logger.Info(fmt.Sprintf("client_id %s disconnected", c.ID))
-}
 
-// publishWill mirrors a client's Last Will onto the internal bus.
-func (h *handler) publishWill(c *session.Client) {
+	if !c.WillFlag || c.CleanDisconnect {
+		return
+	}
+
 	if _, err := h.publishToBus(c, c.WillTopic, c.WillMessage); err != nil {
 		h.logger.Error(errors.Wrap(errFailedPublishWill, err).Error())
 		return
