@@ -442,7 +442,7 @@ func TestDisconnectPublishesWill(t *testing.T) {
 		publishesWill bool
 	}{
 		{
-			desc:          "abnormal disconnect publishes the will",
+			desc:          "unexpected disconnect publishes the will",
 			client:        willClient(false),
 			publishesWill: true,
 		},
