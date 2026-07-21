@@ -17,14 +17,15 @@ import (
 )
 
 const (
-	thingID      = "513d02d2-16c1-4f23-98be-9e12f8fee898"
-	groupID      = "9e12f8fe-e89b-a456-12d3-513d02d21212"
-	recipientID  = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
-	otherThingID = "11111111-2222-3333-4444-555555555555"
-	otherGroupID = "66666666-7777-8888-9999-000000000000"
-	clientID     = "ffffffff-eeee-dddd-cccc-bbbbbbbbbbbb"
-	password     = "cccccccc-dddd-eeee-ffff-aaaaaaaaaaaa"
-	subtopic     = "test-subtopic"
+	thingID          = "513d02d2-16c1-4f23-98be-9e12f8fee898"
+	groupID          = "9e12f8fe-e89b-a456-12d3-513d02d21212"
+	recipientID      = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+	otherThingID     = "11111111-2222-3333-4444-555555555555"
+	otherGroupID     = "66666666-7777-8888-9999-000000000000"
+	clientID         = "ffffffff-eeee-dddd-cccc-bbbbbbbbbbbb"
+	password         = "cccccccc-dddd-eeee-ffff-aaaaaaaaaaaa"
+	subtopic         = "test-subtopic"
+	logFailedPublish = "failed to publish to topic"
 )
 
 var (
@@ -297,14 +298,14 @@ func TestPublish(t *testing.T) {
 			client:  &sessionClient,
 			topic:   malformedSubtopics,
 			payload: payload,
-			logMsg:  "failed to publish to topic",
+			logMsg:  logFailedPublish,
 		},
 		{
 			desc:    "publish with subtopic containing wrong character",
 			client:  &sessionClient,
 			topic:   wrongCharSubtopics,
 			payload: payload,
-			logMsg:  "failed to publish to topic",
+			logMsg:  logFailedPublish,
 		},
 		{
 			desc:    "publish with subtopic",
