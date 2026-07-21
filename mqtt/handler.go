@@ -206,6 +206,15 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 		return
 	}
 
+	if err := h.publishToBus(c, *topic, *payload); err != nil {
+		h.logger.Error(fmt.Sprintf("client_id %s failed to publish to topic %s: %s", c.ID, *topic, err))
+		return
+	}
+
+	h.logger.Info(fmt.Sprintf("client_id %s published to topic %s", c.ID, *topic))
+}
+
+func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) error {
 	tk := domain.ThingKey{
 		Value: string(c.Password),
 		Type:  c.Username,
@@ -213,42 +222,36 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 
 	pc, err := h.things.GetPubConfigByKey(context.Background(), tk)
 	if err != nil {
-		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
-		return
+		return err
 	}
 
-	subject, subtopic, err := parseTopic(*topic, pc.PublisherID)
+	subject, subtopic, err := parseTopic(topic, pc.PublisherID)
 	if err != nil {
-		h.logger.Error(errors.Wrap(errFailedParseSubtopic, err).Error())
-		return
+		return errors.Wrap(errFailedParseSubtopic, err)
 	}
 
 	msg := protomfx.Message{
 		Protocol: protocol,
 		Subtopic: subtopic,
-		Payload:  *payload,
+		Payload:  payload,
 	}
 
 	if err := messaging.FormatMessage(pc, &msg); err != nil {
-		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
-		return
+		return err
 	}
 
 	if isCommandSubject(subject) {
 		if err := h.publishCommand(subject, msg); err != nil {
-			h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
-			return
+			return err
 		}
-		h.logger.Info(fmt.Sprintf("client_id %s published command to topic %s", c.ID, *topic))
-		return
+		return nil
 	}
 
 	if err := h.publishMessage(pc, msg); err != nil {
-		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
-		return
+		return err
 	}
 
-	h.logger.Info(fmt.Sprintf("client_id %s published message to topic %s", c.ID, *topic))
+	return nil
 }
 
 func (h *handler) publishCommand(subject string, msg protomfx.Message) error {
@@ -370,6 +373,17 @@ func (h *handler) Disconnect(c *session.Client) {
 	}
 
 	h.logger.Info(fmt.Sprintf("client_id %s disconnected", c.ID))
+
+	if !c.WillFlag || c.CleanDisconnect {
+		return
+	}
+
+	if err := h.publishToBus(c, c.WillTopic, c.WillMessage); err != nil {
+		h.logger.Error(fmt.Sprintf("client_id %s failed to publish will to topic %s: %s", c.ID, c.WillTopic, err))
+		return
+	}
+
+	h.logger.Info(fmt.Sprintf("client_id %s published will message to topic %s", c.ID, c.WillTopic))
 }
 
 func (h *handler) identify(c *session.Client) (string, error) {

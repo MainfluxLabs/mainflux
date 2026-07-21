@@ -10,7 +10,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	"github.com/MainfluxLabs/mainflux/mqtt/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/mproxy/session"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -18,14 +17,15 @@ import (
 )
 
 const (
-	thingID      = "513d02d2-16c1-4f23-98be-9e12f8fee898"
-	groupID      = "9e12f8fe-e89b-a456-12d3-513d02d21212"
-	recipientID  = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
-	otherThingID = "11111111-2222-3333-4444-555555555555"
-	otherGroupID = "66666666-7777-8888-9999-000000000000"
-	clientID     = "ffffffff-eeee-dddd-cccc-bbbbbbbbbbbb"
-	password     = "cccccccc-dddd-eeee-ffff-aaaaaaaaaaaa"
-	subtopic     = "test-subtopic"
+	thingID          = "513d02d2-16c1-4f23-98be-9e12f8fee898"
+	groupID          = "9e12f8fe-e89b-a456-12d3-513d02d21212"
+	recipientID      = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+	otherThingID     = "11111111-2222-3333-4444-555555555555"
+	otherGroupID     = "66666666-7777-8888-9999-000000000000"
+	clientID         = "ffffffff-eeee-dddd-cccc-bbbbbbbbbbbb"
+	password         = "cccccccc-dddd-eeee-ffff-aaaaaaaaaaaa"
+	subtopic         = "test-subtopic"
+	logFailedPublish = "failed to publish to topic"
 )
 
 var (
@@ -298,14 +298,14 @@ func TestPublish(t *testing.T) {
 			client:  &sessionClient,
 			topic:   malformedSubtopics,
 			payload: payload,
-			logMsg:  messaging.ErrMalformedSubtopic.Error(),
+			logMsg:  logFailedPublish,
 		},
 		{
 			desc:    "publish with subtopic containing wrong character",
 			client:  &sessionClient,
 			topic:   wrongCharSubtopics,
 			payload: payload,
-			logMsg:  messaging.ErrMalformedSubtopic.Error(),
+			logMsg:  logFailedPublish,
 		},
 		{
 			desc:    "publish with subtopic",
@@ -417,6 +417,57 @@ func TestDisconnect(t *testing.T) {
 	for _, tc := range cases {
 		handler.Disconnect(tc.client)
 		assert.Contains(t, logBuffer.String(), tc.logMsg)
+	}
+}
+
+func TestDisconnectPublishesWill(t *testing.T) {
+	handler := newHandler()
+
+	willTopic := "things/" + thingID + "/messages"
+	willClient := func(cleanDisconnect bool) *session.Client {
+		return &session.Client{
+			ID:              clientID,
+			Username:        things.KeyTypeInternal,
+			Password:        []byte(password),
+			WillFlag:        true,
+			WillTopic:       willTopic,
+			WillMessage:     payload,
+			CleanDisconnect: cleanDisconnect,
+		}
+	}
+
+	cases := []struct {
+		desc          string
+		client        *session.Client
+		publishesWill bool
+	}{
+		{
+			desc:          "unexpected disconnect publishes the will",
+			client:        willClient(false),
+			publishesWill: true,
+		},
+		{
+			desc:          "clean disconnect does not publish the will",
+			client:        willClient(true),
+			publishesWill: false,
+		},
+		{
+			desc:          "disconnect without a will publishes nothing",
+			client:        &sessionClient,
+			publishesWill: false,
+		},
+	}
+
+	for _, tc := range cases {
+		logBuffer.Reset()
+		handler.Disconnect(tc.client)
+
+		logMsg := fmt.Sprintf("client_id %s published will message to topic %s", clientID, willTopic)
+		if tc.publishesWill {
+			assert.Contains(t, logBuffer.String(), logMsg, tc.desc)
+			continue
+		}
+		assert.NotContains(t, logBuffer.String(), "published will message", tc.desc)
 	}
 }
 
