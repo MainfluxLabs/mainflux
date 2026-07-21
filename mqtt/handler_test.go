@@ -10,7 +10,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	"github.com/MainfluxLabs/mainflux/mqtt/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/mproxy/session"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -298,14 +297,14 @@ func TestPublish(t *testing.T) {
 			client:  &sessionClient,
 			topic:   malformedSubtopics,
 			payload: payload,
-			logMsg:  messaging.ErrMalformedSubtopic.Error(),
+			logMsg:  "failed to publish to topic",
 		},
 		{
 			desc:    "publish with subtopic containing wrong character",
 			client:  &sessionClient,
 			topic:   wrongCharSubtopics,
 			payload: payload,
-			logMsg:  messaging.ErrMalformedSubtopic.Error(),
+			logMsg:  "failed to publish to topic",
 		},
 		{
 			desc:    "publish with subtopic",
