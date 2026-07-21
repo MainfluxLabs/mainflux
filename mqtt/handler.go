@@ -383,7 +383,7 @@ func (h *handler) Disconnect(c *session.Client) {
 		return
 	}
 
-	h.logger.Info(fmt.Sprintf("client_id %s will published to topic %s", c.ID, c.WillTopic))
+	h.logger.Info(fmt.Sprintf("client_id %s published will message to topic %s", c.ID, c.WillTopic))
 }
 
 func (h *handler) identify(c *session.Client) (string, error) {
