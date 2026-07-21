@@ -462,12 +462,12 @@ func TestDisconnectPublishesWill(t *testing.T) {
 		logBuffer.Reset()
 		handler.Disconnect(tc.client)
 
-		logMsg := fmt.Sprintf("client_id %s will published to topic %s", clientID, willTopic)
+		logMsg := fmt.Sprintf("client_id %s published will message to topic %s", clientID, willTopic)
 		if tc.publishesWill {
 			assert.Contains(t, logBuffer.String(), logMsg, tc.desc)
 			continue
 		}
-		assert.NotContains(t, logBuffer.String(), "will published", tc.desc)
+		assert.NotContains(t, logBuffer.String(), "published will message", tc.desc)
 	}
 }
 
