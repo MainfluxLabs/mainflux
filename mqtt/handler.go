@@ -207,7 +207,7 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	}
 
 	if err := h.publishToBus(c, *topic, *payload); err != nil {
-		h.logger.Error(fmt.Sprintf("client_id %s failed to publish to topic %s", c.ID, *topic))
+		h.logger.Error(fmt.Sprintf("client_id %s failed to publish to topic %s: %s", c.ID, *topic, err))
 		return
 	}
 
@@ -222,7 +222,7 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 
 	pc, err := h.things.GetPubConfigByKey(context.Background(), tk)
 	if err != nil {
-		return errors.Wrap(messaging.ErrPublishMessage, err)
+		return err
 	}
 
 	subject, subtopic, err := parseTopic(topic, pc.PublisherID)
@@ -237,18 +237,18 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 	}
 
 	if err := messaging.FormatMessage(pc, &msg); err != nil {
-		return errors.Wrap(messaging.ErrPublishMessage, err)
+		return err
 	}
 
 	if isCommandSubject(subject) {
 		if err := h.publishCommand(subject, msg); err != nil {
-			return errors.Wrap(messaging.ErrPublishMessage, err)
+			return err
 		}
 		return nil
 	}
 
 	if err := h.publishMessage(pc, msg); err != nil {
-		return errors.Wrap(messaging.ErrPublishMessage, err)
+		return err
 	}
 
 	return nil
