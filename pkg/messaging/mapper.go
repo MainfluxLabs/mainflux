@@ -37,43 +37,19 @@ func FormatMessage(pc domain.PubConfigInfo, msg *protomfx.Message) error {
 }
 
 func ToJSONMessage(message protomfx.Message) mfjson.Message {
-	created := message.Created
-	var payload map[string]any
-
-	if len(message.Payload) > 0 {
-		if err := json.Unmarshal(message.Payload, &payload); err == nil {
-			if payloadCreated, ok := payload["Created"].(float64); ok {
-				created = int64(payloadCreated)
-				delete(payload, "Created")
-
-				message.Payload, _ = json.Marshal(payload)
-			}
-		}
-	}
+	created, payload := extractCreated(message.Payload, message.Created)
 
 	return mfjson.Message{
 		Created:   created,
 		Subtopic:  message.Subtopic,
 		Publisher: message.Publisher,
 		Protocol:  message.Protocol,
-		Payload:   message.Payload,
+		Payload:   payload,
 	}
 }
 
 func ToJSONCommand(cmd protomfx.Command) mfjson.Command {
-	created := cmd.Created
-	var payload map[string]any
-
-	if len(cmd.Payload) > 0 {
-		if err := json.Unmarshal(cmd.Payload, &payload); err == nil {
-			if payloadCreated, ok := payload["Created"].(float64); ok {
-				created = int64(payloadCreated)
-				delete(payload, "Created")
-
-				cmd.Payload, _ = json.Marshal(payload)
-			}
-		}
-	}
+	created, payload := extractCreated(cmd.Payload, cmd.Created)
 
 	return mfjson.Command{
 		Created:     created,
@@ -81,8 +57,29 @@ func ToJSONCommand(cmd protomfx.Command) mfjson.Command {
 		Publisher:   cmd.Publisher,
 		RecipientID: cmd.RecipientID,
 		Protocol:    cmd.Protocol,
-		Payload:     cmd.Payload,
+		Payload:     payload,
 	}
+}
+
+// extractCreated unwraps a "Created" field embedded in the payload itself,
+// preferring it over the proto-level Created timestamp. Shared by
+// ToJSONMessage and ToJSONCommand — MQTT wire delivery only ever needs to
+// serialize protomfx.Message and protomfx.Command, a closed, known pair.
+func extractCreated(payload []byte, created int64) (int64, []byte) {
+	var p map[string]any
+
+	if len(payload) > 0 {
+		if err := json.Unmarshal(payload, &p); err == nil {
+			if payloadCreated, ok := p["Created"].(float64); ok {
+				created = int64(payloadCreated)
+				delete(p, "Created")
+
+				payload, _ = json.Marshal(p)
+			}
+		}
+	}
+
+	return created, payload
 }
 
 func ToSenMLMessage(message protomfx.Message) (senml.Message, error) {
