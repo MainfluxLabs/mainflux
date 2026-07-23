@@ -64,16 +64,17 @@ func ToJSONCommand(cmd protomfx.Command) mfjson.Command {
 // extractCreated unwraps a "Created" field embedded in the payload itself,
 // preferring it over the proto-level Created timestamp.
 func extractCreated(payload []byte, created int64) (int64, []byte) {
+	if len(payload) == 0 {
+		return created, payload
+	}
+
 	var p map[string]any
+	if err := json.Unmarshal(payload, &p); err == nil {
+		if payloadCreated, ok := p["Created"].(float64); ok {
+			created = int64(payloadCreated)
+			delete(p, "Created")
 
-	if len(payload) > 0 {
-		if err := json.Unmarshal(payload, &p); err == nil {
-			if payloadCreated, ok := p["Created"].(float64); ok {
-				created = int64(payloadCreated)
-				delete(p, "Created")
-
-				payload, _ = json.Marshal(p)
-			}
+			payload, _ = json.Marshal(p)
 		}
 	}
 
