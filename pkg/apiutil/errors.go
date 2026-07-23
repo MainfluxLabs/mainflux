@@ -105,6 +105,9 @@ var (
 	// ErrEmptyList indicates that entity data is empty.
 	ErrEmptyList = errors.New("empty list provided")
 
+	// ErrEmptyState indicates that the provided state object is empty.
+	ErrEmptyState = errors.New("empty state provided")
+
 	// ErrMissingPublisherID indicates missing publisher ID.
 	ErrMissingPublisherID = errors.New("missing publisher ID")
 
