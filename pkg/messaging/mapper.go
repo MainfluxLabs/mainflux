@@ -62,9 +62,7 @@ func ToJSONCommand(cmd protomfx.Command) mfjson.Command {
 }
 
 // extractCreated unwraps a "Created" field embedded in the payload itself,
-// preferring it over the proto-level Created timestamp. Shared by
-// ToJSONMessage and ToJSONCommand — MQTT wire delivery only ever needs to
-// serialize protomfx.Message and protomfx.Command, a closed, known pair.
+// preferring it over the proto-level Created timestamp.
 func extractCreated(payload []byte, created int64) (int64, []byte) {
 	var p map[string]any
 
