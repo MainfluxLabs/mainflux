@@ -149,7 +149,7 @@ func main() {
 	svc := newService(things, pubSub, dbTracer, db, logger)
 
 	subjects := []string{nats.SubjectMessages, nats.SubjectMessagesWithSubtopic}
-	if err := consumers.Start(svcName, consumers.Messages(pubSub, svc, subjects...)); err != nil {
+	if err := consumers.Messages(svcName, pubSub, svc, subjects...); err != nil {
 		logger.Error(fmt.Sprintf("Failed to subscribe to message broker: %s", err))
 		os.Exit(1)
 	}
