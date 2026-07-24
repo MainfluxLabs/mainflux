@@ -133,11 +133,11 @@ func handlePost(m *mux.Message, payload []byte, key domain.ThingKey) error {
 		}
 		switch {
 		case prefix == topicPrefixThings && suffix == topicSuffixCommands:
-			return service.SendCommandToThing(context.Background(), key, id, newCommand(subtopic, payload))
+			return service.SendCommandToThing(context.Background(), key, id, buildCommand(subtopic, payload))
 		case prefix == topicPrefixGroups && suffix == topicSuffixCommands:
-			return service.SendCommandToGroup(context.Background(), key, id, newCommand(subtopic, payload))
+			return service.SendCommandToGroup(context.Background(), key, id, buildCommand(subtopic, payload))
 		case prefix == topicPrefixThings && suffix == topicSuffixMessages:
-			return service.Publish(context.Background(), key, newMessage(subtopic, payload))
+			return service.Publish(context.Background(), key, buildMessage(subtopic, payload))
 		}
 	}
 
@@ -146,7 +146,7 @@ func handlePost(m *mux.Message, payload []byte, key domain.ThingKey) error {
 	if err != nil {
 		return err
 	}
-	return service.Publish(context.Background(), key, newMessage(subtopic, payload))
+	return service.Publish(context.Background(), key, buildMessage(subtopic, payload))
 }
 
 func handleGet(m *mux.Message, c mux.Client, key domain.ThingKey) error {
@@ -173,7 +173,7 @@ func handleGet(m *mux.Message, c mux.Client, key domain.ThingKey) error {
 	return service.Unsubscribe(context.Background(), key, subtopic, m.Token.String())
 }
 
-func newMessage(subtopic string, payload []byte) protomfx.Message {
+func buildMessage(subtopic string, payload []byte) protomfx.Message {
 	return protomfx.Message{
 		Protocol: protocol,
 		Subtopic: subtopic,
@@ -182,7 +182,7 @@ func newMessage(subtopic string, payload []byte) protomfx.Message {
 	}
 }
 
-func newCommand(subtopic string, payload []byte) protomfx.Command {
+func buildCommand(subtopic string, payload []byte) protomfx.Command {
 	return protomfx.Command{
 		Protocol: protocol,
 		Subtopic: subtopic,
