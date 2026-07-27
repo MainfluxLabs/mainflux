@@ -18,7 +18,6 @@ const (
 	updateOrgMemberships    = "update_org_memberships"
 	retrieveOrgMemberships  = "retrieve_org_memberships"
 	backupAllOrgMemberships = "backup_all_org_memberships"
-	backupOrgMemberships    = "backup_org_memberships"
 )
 
 var _ auth.OrgMembershipsRepository = (*orgMembershipsRepositoryMiddleware)(nil)
@@ -82,12 +81,4 @@ func (orm orgMembershipsRepositoryMiddleware) BackupAll(ctx context.Context) ([]
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return orm.repo.BackupAll(ctx)
-}
-
-func (orm orgMembershipsRepositoryMiddleware) BackupByOrg(ctx context.Context, orgID string) ([]auth.OrgMembership, error) {
-	span := dbutil.CreateSpan(ctx, orm.tracer, backupOrgMemberships)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return orm.repo.BackupByOrg(ctx, orgID)
 }

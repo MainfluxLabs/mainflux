@@ -42,9 +42,6 @@ type OrgMembershipsRepository interface {
 
 	// BackupAll retrieves all memberships.
 	BackupAll(ctx context.Context) ([]OrgMembership, error)
-
-	// BackupByOrg retrieves all memberships by org ID.
-	BackupByOrg(ctx context.Context, orgID string) ([]OrgMembership, error)
 }
 
 // OrgMemberships specify an API that must be fulfilled by the domain service
@@ -133,20 +130,11 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 		return OrgMembershipsPage{}, err
 	}
 
-	memberships, err := svc.memberships.BackupByOrg(ctx, orgID)
+	mp, err := svc.memberships.RetrieveByOrg(ctx, orgID, PageMetadata{Role: pm.Role})
 	if err != nil {
 		return OrgMembershipsPage{}, errors.Wrap(ErrRetrieveMembershipsByOrg, err)
 	}
-
-	if pm.Role != "" {
-		var filtered []OrgMembership
-		for _, m := range memberships {
-			if m.Role == pm.Role {
-				filtered = append(filtered, m)
-			}
-		}
-		memberships = filtered
-	}
+	memberships := mp.OrgMemberships
 
 	oms := []OrgMembership{}
 	total := uint64(0)

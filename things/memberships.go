@@ -30,9 +30,6 @@ type GroupMembershipsRepository interface {
 	// BackupAll retrieves all group memberships. Used for backup.
 	BackupAll(ctx context.Context) ([]GroupMembership, error)
 
-	// BackupByGroup retrieves all group memberships by group ID. This is used for backup.
-	BackupByGroup(ctx context.Context, groupID string) ([]GroupMembership, error)
-
 	// RetrieveGroupIDsByMember retrieves IDs of groups where the member belongs.
 	RetrieveGroupIDsByMember(ctx context.Context, memberID string) ([]string, error)
 
@@ -132,20 +129,11 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 		return GroupMembershipsPage{}, err
 	}
 
-	memberships, err := ts.groupMemberships.BackupByGroup(ctx, groupID)
+	gmp, err := ts.groupMemberships.RetrieveByGroup(ctx, groupID, PageMetadata{Role: pm.Role})
 	if err != nil {
 		return GroupMembershipsPage{}, err
 	}
-
-	if pm.Role != "" {
-		var filtered []GroupMembership
-		for _, m := range memberships {
-			if m.Role == pm.Role {
-				filtered = append(filtered, m)
-			}
-		}
-		memberships = filtered
-	}
+	memberships := gmp.GroupMemberships
 
 	gms := []GroupMembership{}
 	total := uint64(0)
