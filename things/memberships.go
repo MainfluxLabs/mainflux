@@ -134,43 +134,41 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 		return GroupMembershipsPage{}, err
 	}
 	memberships := gmp.GroupMemberships
+	if len(memberships) == 0 {
+		return GroupMembershipsPage{GroupMemberships: []GroupMembership{}}, nil
+	}
+
+	memberIDs := make([]string, 0, len(memberships))
+	membershipByMemberID := make(map[string]GroupMembership, len(memberships))
+	for _, m := range memberships {
+		memberIDs = append(memberIDs, m.MemberID)
+		membershipByMemberID[m.MemberID] = m
+	}
+
+	userPM := domain.UsersPageMetadata{
+		Email:  pm.Email,
+		Order:  pm.Order,
+		Dir:    pm.Dir,
+		Limit:  pm.Limit,
+		Offset: pm.Offset,
+	}
+
+	page, err := ts.users.GetUsersByIDs(ctx, memberIDs, userPM)
+	if err != nil {
+		return GroupMembershipsPage{}, err
+	}
 
 	gms := []GroupMembership{}
-	total := uint64(0)
-
-	if len(memberships) > 0 {
-		memberIDs := make([]string, 0, len(memberships))
-		membershipByMemberID := make(map[string]GroupMembership, len(memberships))
-		for _, m := range memberships {
-			memberIDs = append(memberIDs, m.MemberID)
-			membershipByMemberID[m.MemberID] = m
+	for _, u := range page.Users {
+		if m, ok := membershipByMemberID[u.ID]; ok {
+			m.Email = u.Email
+			gms = append(gms, m)
 		}
-
-		userPM := domain.UsersPageMetadata{
-			Email:  pm.Email,
-			Order:  pm.Order,
-			Dir:    pm.Dir,
-			Limit:  pm.Limit,
-			Offset: pm.Offset,
-		}
-
-		page, err := ts.users.GetUsersByIDs(ctx, memberIDs, userPM)
-		if err != nil {
-			return GroupMembershipsPage{}, err
-		}
-
-		for _, u := range page.Users {
-			if m, ok := membershipByMemberID[u.ID]; ok {
-				m.Email = u.Email
-				gms = append(gms, m)
-			}
-		}
-		total = page.Total
 	}
 
 	return GroupMembershipsPage{
 		GroupMemberships: gms,
-		Total:            total,
+		Total:            page.Total,
 	}, nil
 }
 
