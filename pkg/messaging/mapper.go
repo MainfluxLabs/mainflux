@@ -5,6 +5,7 @@ package messaging
 
 import (
 	"encoding/json"
+	"hash/fnv"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
@@ -34,6 +35,14 @@ func FormatMessage(pc domain.PubConfigInfo, msg *protomfx.Message) error {
 	}
 
 	return nil
+}
+
+// PayloadHash hashes a message payload, letting writers dedupe an exact
+// repeat while still storing distinct content at the same key.
+func PayloadHash(payload []byte) int32 {
+	h := fnv.New32a()
+	h.Write(payload)
+	return int32(h.Sum32())
 }
 
 func ToJSONMessage(message protomfx.Message) mfjson.Message {

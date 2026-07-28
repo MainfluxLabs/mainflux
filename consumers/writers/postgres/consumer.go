@@ -5,7 +5,6 @@ package postgres
 
 import (
 	"context"
-	"hash/fnv"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -99,14 +98,6 @@ type jsonRow struct {
 	PayloadHash int32 `db:"payload_hash"`
 }
 
-// jsonPayloadHash hashes the payload, letting the unique index dedupe exact
-// repeats while still storing distinct content at the same timestamp.
-func jsonPayloadHash(msg mfjson.Message) int32 {
-	h := fnv.New32a()
-	h.Write(msg.Payload)
-	return int32(h.Sum32())
-}
-
 func (pr postgresRepo) saveJSON(msgs []protomfx.Message) error {
 	q := `INSERT INTO json (created, subtopic, publisher, protocol, payload, payload_hash)
           VALUES (:created, :subtopic, :publisher, :protocol, :payload, :payload_hash)
@@ -132,7 +123,7 @@ func (pr postgresRepo) saveJSON(msgs []protomfx.Message) error {
 	for _, msg := range msgs {
 		dbmsg := messaging.ToJSONMessage(msg)
 
-		row := jsonRow{Message: dbmsg, PayloadHash: jsonPayloadHash(dbmsg)}
+		row := jsonRow{Message: dbmsg, PayloadHash: messaging.PayloadHash(dbmsg.Payload)}
 		if _, err := tx.NamedExec(q, row); err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
