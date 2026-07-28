@@ -133,7 +133,6 @@ func (tr timescaleRepo) saveJSON(msgs []protomfx.Message) error {
 		dbmsg := messaging.ToJSONMessage(msg)
 
 		row := jsonRow{Message: dbmsg, PayloadHash: jsonPayloadHash(dbmsg)}
-
 		if _, err := tx.NamedExec(q, row); err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
