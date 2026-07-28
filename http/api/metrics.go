@@ -41,38 +41,38 @@ func (mm *metricsMiddleware) Publish(ctx context.Context, key domain.ThingKey, m
 	return mm.svc.Publish(ctx, key, msg)
 }
 
-func (mm *metricsMiddleware) SendCommandToThing(ctx context.Context, token, thingID string, msg protomfx.Message) error {
+func (mm *metricsMiddleware) SendCommandToThing(ctx context.Context, token, thingID string, cmd protomfx.Command) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "send_command_to_thing").Add(1)
 		mm.latency.With("method", "send_command_to_thing").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.SendCommandToThing(ctx, token, thingID, msg)
+	return mm.svc.SendCommandToThing(ctx, token, thingID, cmd)
 }
 
-func (mm *metricsMiddleware) SendCommandToGroup(ctx context.Context, token, groupID string, msg protomfx.Message) error {
+func (mm *metricsMiddleware) SendCommandToGroup(ctx context.Context, token, groupID string, cmd protomfx.Command) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "send_command_to_group").Add(1)
 		mm.latency.With("method", "send_command_to_group").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.SendCommandToGroup(ctx, token, groupID, msg)
+	return mm.svc.SendCommandToGroup(ctx, token, groupID, cmd)
 }
 
-func (mm *metricsMiddleware) SendCommandToThingByKey(ctx context.Context, key domain.ThingKey, thingID string, msg protomfx.Message) error {
+func (mm *metricsMiddleware) SendCommandToThingByKey(ctx context.Context, key domain.ThingKey, thingID string, cmd protomfx.Command) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "send_command_to_thing_by_key").Add(1)
 		mm.latency.With("method", "send_command_to_thing_by_key").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.SendCommandToThingByKey(ctx, key, thingID, msg)
+	return mm.svc.SendCommandToThingByKey(ctx, key, thingID, cmd)
 }
 
-func (mm *metricsMiddleware) SendCommandToGroupByKey(ctx context.Context, key domain.ThingKey, groupID string, msg protomfx.Message) error {
+func (mm *metricsMiddleware) SendCommandToGroupByKey(ctx context.Context, key domain.ThingKey, groupID string, cmd protomfx.Command) error {
 	defer func(begin time.Time) {
 		mm.counter.With("method", "send_command_to_group_by_key").Add(1)
 		mm.latency.With("method", "send_command_to_group_by_key").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return mm.svc.SendCommandToGroupByKey(ctx, key, groupID, msg)
+	return mm.svc.SendCommandToGroupByKey(ctx, key, groupID, cmd)
 }

@@ -49,7 +49,7 @@ var (
 
 // handler implements session.Handler interface
 type handler struct {
-	publisher messaging.Publisher
+	publisher nats.Publisher
 	things    domain.ThingsClient
 	service   Service
 	cache     cache.ConnectionCache
@@ -57,7 +57,7 @@ type handler struct {
 }
 
 // NewHandler creates new Handler entity
-func NewHandler(publisher messaging.Publisher, things domain.ThingsClient,
+func NewHandler(publisher nats.Publisher, things domain.ThingsClient,
 	svc Service, cache cache.ConnectionCache, logger logger.Logger) session.Handler {
 	return &handler{
 		publisher: publisher,
@@ -255,7 +255,26 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 }
 
 func (h *handler) publishCommand(subject string, msg protomfx.Message) error {
-	return h.publisher.Publish(subject, msg)
+	cmd := protomfx.Command{
+		Publisher:   msg.Publisher,
+		Subtopic:    msg.Subtopic,
+		Payload:     msg.Payload,
+		RecipientID: extractRecipient(subject),
+		Protocol:    msg.Protocol,
+		Created:     msg.Created,
+	}
+	return h.publisher.PublishCommand(subject, cmd)
+}
+
+// extractRecipient extracts the recipient thing ID from a
+// "things.<id>.commands[.subtopic]" subject. Group-targeted commands
+// ("groups.<id>.commands[.subtopic]") have no single recipient thing.
+func extractRecipient(subject string) string {
+	parts := strings.SplitN(subject, ".", 3)
+	if len(parts) < 2 || parts[0] != topicPrefixThings {
+		return ""
+	}
+	return parts[1]
 }
 
 func (h *handler) publishMessage(pc domain.PubConfigInfo, msg protomfx.Message) error {

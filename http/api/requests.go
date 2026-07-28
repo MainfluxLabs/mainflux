@@ -26,7 +26,7 @@ type cmdReq struct {
 	token    string
 	thingKey domain.ThingKey
 	id       string
-	msg      protomfx.Message
+	cmd      protomfx.Command
 }
 
 type thingCommandReq struct {

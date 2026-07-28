@@ -13,7 +13,13 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-var _ messaging.Publisher = (*publisher)(nil)
+// Publisher extends the base messaging.Publisher with command publishing capabilities.
+type Publisher interface {
+	messaging.Publisher
+	messaging.CommandPublisher
+}
+
+var _ Publisher = (*publisher)(nil)
 
 type publisher struct {
 	client  mqtt.Client
@@ -21,7 +27,7 @@ type publisher struct {
 }
 
 // NewPublisher returns a new MQTT message publisher.
-func NewPublisher(address string, timeout time.Duration) (messaging.Publisher, error) {
+func NewPublisher(address string, timeout time.Duration) (Publisher, error) {
 	client, err := newClient(address, "mqtt-publisher", timeout)
 	if err != nil {
 		return nil, err
@@ -35,11 +41,25 @@ func NewPublisher(address string, timeout time.Duration) (messaging.Publisher, e
 }
 
 func (pub publisher) Publish(subject string, msg protomfx.Message) error {
-	topic := strings.ReplaceAll(subject, ".", "/")
 	payload, err := json.Marshal(messaging.ToJSONMessage(msg))
 	if err != nil {
 		return err
 	}
+
+	return pub.publish(subject, payload)
+}
+
+func (pub publisher) PublishCommand(subject string, cmd protomfx.Command) error {
+	payload, err := json.Marshal(messaging.ToJSONCommand(cmd))
+	if err != nil {
+		return err
+	}
+
+	return pub.publish(subject, payload)
+}
+
+func (pub publisher) publish(subject string, payload []byte) error {
+	topic := strings.ReplaceAll(subject, ".", "/")
 
 	token := pub.client.Publish(topic, qos, false, payload)
 	if !token.WaitTimeout(pub.timeout) {

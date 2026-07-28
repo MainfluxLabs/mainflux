@@ -88,14 +88,14 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 	case codes.GET:
 		err = handleGet(m, w.Client(), key)
 	case codes.POST:
-		msg, decErr := decodeMessage(m)
+		payload, decErr := readPayload(m)
 		if decErr != nil {
 			logger.Warn(fmt.Sprintf("Error decoding message: %s", decErr))
 			resp.Code = codes.BadRequest
 			sendResp(w, &resp)
 			return
 		}
-		err = handlePost(m, msg, key)
+		err = handlePost(m, payload, key)
 	default:
 		err = dbutil.ErrNotFound
 	}
@@ -115,7 +115,7 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 	}
 }
 
-func handlePost(m *mux.Message, msg protomfx.Message, key domain.ThingKey) error {
+func handlePost(m *mux.Message, payload []byte, key domain.ThingKey) error {
 	path, err := m.Options.Path()
 	if err != nil {
 		return errBadOptions
@@ -125,26 +125,28 @@ func handlePost(m *mux.Message, msg protomfx.Message, key domain.ThingKey) error
 	parts := strings.SplitN(path, "/", 4)
 	if len(parts) >= 3 {
 		prefix, id, suffix := parts[0], parts[1], parts[2]
+		var subtopic string
 		if len(parts) == 4 {
-			if msg.Subtopic, err = messaging.NormalizeSubtopic(parts[3]); err != nil {
+			if subtopic, err = messaging.NormalizeSubtopic(parts[3]); err != nil {
 				return err
 			}
 		}
 		switch {
 		case prefix == topicPrefixThings && suffix == topicSuffixCommands:
-			return service.SendCommandToThing(context.Background(), key, id, msg)
+			return service.SendCommandToThing(context.Background(), key, id, buildCommand(subtopic, payload))
 		case prefix == topicPrefixGroups && suffix == topicSuffixCommands:
-			return service.SendCommandToGroup(context.Background(), key, id, msg)
+			return service.SendCommandToGroup(context.Background(), key, id, buildCommand(subtopic, payload))
 		case prefix == topicPrefixThings && suffix == topicSuffixMessages:
-			return service.Publish(context.Background(), key, msg)
+			return service.Publish(context.Background(), key, buildMessage(subtopic, payload))
 		}
 	}
 
 	// Path is used as subtopic directly (e.g. "home/room/temperature").
-	if msg.Subtopic, err = messaging.NormalizeSubtopic(path); err != nil {
+	subtopic, err := messaging.NormalizeSubtopic(path)
+	if err != nil {
 		return err
 	}
-	return service.Publish(context.Background(), key, msg)
+	return service.Publish(context.Background(), key, buildMessage(subtopic, payload))
 }
 
 func handleGet(m *mux.Message, c mux.Client, key domain.ThingKey) error {
@@ -171,22 +173,29 @@ func handleGet(m *mux.Message, c mux.Client, key domain.ThingKey) error {
 	return service.Unsubscribe(context.Background(), key, subtopic, m.Token.String())
 }
 
-func decodeMessage(msg *mux.Message) (protomfx.Message, error) {
-	ret := protomfx.Message{
+func buildMessage(subtopic string, payload []byte) protomfx.Message {
+	return protomfx.Message{
 		Protocol: protocol,
-		Payload:  []byte{},
+		Subtopic: subtopic,
+		Payload:  payload,
 		Created:  time.Now().UnixNano(),
 	}
+}
 
-	if msg.Body != nil {
-		buff, err := io.ReadAll(msg.Body)
-		if err != nil {
-			return ret, err
-		}
-		ret.Payload = buff
+func buildCommand(subtopic string, payload []byte) protomfx.Command {
+	return protomfx.Command{
+		Protocol: protocol,
+		Subtopic: subtopic,
+		Payload:  payload,
+		Created:  time.Now().UnixNano(),
 	}
+}
 
-	return ret, nil
+func readPayload(msg *mux.Message) ([]byte, error) {
+	if msg.Body == nil {
+		return []byte{}, nil
+	}
+	return io.ReadAll(msg.Body)
 }
 
 func parseKey(msg *mux.Message) (domain.ThingKey, error) {

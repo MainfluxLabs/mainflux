@@ -26,7 +26,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	mqttpub "github.com/MainfluxLabs/mainflux/pkg/messaging/mqtt"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	mp "github.com/MainfluxLabs/mainflux/pkg/mproxy/mqtt"
@@ -170,7 +169,7 @@ func main() {
 	tConn := clientsgrpc.Connect(cfg.thingsConfig, logger)
 	defer tConn.Close()
 
-	nps, err := brokers.NewPubSub(cfg.brokerURL, "mqtt", logger)
+	nps, err := nats.NewPubSub(cfg.brokerURL, "mqtt", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)

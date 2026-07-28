@@ -19,7 +19,7 @@ import (
 	clientsgrpc "github.com/MainfluxLabs/mainflux/pkg/clients/grpc"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
@@ -79,7 +79,7 @@ func main() {
 	thingsTracer, thingsCloser := jaeger.Init("http_things", cfg.jaegerURL, logger)
 	defer thingsCloser.Close()
 
-	pub, err := brokers.NewPublisher(cfg.brokerURL)
+	pub, err := nats.NewPublisher(cfg.brokerURL)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
