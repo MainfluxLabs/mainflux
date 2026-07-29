@@ -154,7 +154,7 @@ func (jr *jsonRepository) readMessages(ctx context.Context, rpm readers.JSONPage
 	dq := dbutil.GetDirQuery(rpm.Dir)
 	condition := jr.fmtCondition(rpm)
 
-	q := fmt.Sprintf(`SELECT * FROM json %s ORDER BY created %s %s;`, condition, dq, olq)
+	q := fmt.Sprintf(`SELECT created, subtopic, publisher, protocol, payload FROM json %s ORDER BY created %s %s;`, condition, dq, olq)
 	rows, err := jr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
