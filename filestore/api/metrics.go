@@ -105,7 +105,7 @@ func (ms *metricsMiddleware) UpdateGroupFile(ctx context.Context, token, groupID
 	return ms.svc.UpdateGroupFile(ctx, token, groupID, fi)
 }
 
-func (ms *metricsMiddleware) ViewGroupFile(ctx context.Context, token, groupID string, fi filestore.FileInfo) ([]byte, error) {
+func (ms *metricsMiddleware) ViewGroupFile(ctx context.Context, token, groupID string, fi filestore.FileInfo) (io.ReadCloser, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_group_file").Add(1)
 		ms.latency.With("method", "view_group_file").Observe(time.Since(begin).Seconds())
@@ -141,7 +141,7 @@ func (ms *metricsMiddleware) RemoveAllFilesByGroup(ctx context.Context, groupID 
 	return ms.svc.RemoveAllFilesByGroup(ctx, groupID)
 }
 
-func (ms *metricsMiddleware) ViewGroupFileByKey(ctx context.Context, thingKey string, fi filestore.FileInfo) ([]byte, error) {
+func (ms *metricsMiddleware) ViewGroupFileByKey(ctx context.Context, thingKey string, fi filestore.FileInfo) (io.ReadCloser, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_group_file_by_key").Add(1)
 		ms.latency.With("method", "view_group_file_by_key").Observe(time.Since(begin).Seconds())

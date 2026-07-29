@@ -29,8 +29,8 @@ func NewThingsRepository(db dbutil.Database) filestore.ThingsRepository {
 }
 
 func (tr thingsRepository) Save(ctx context.Context, thingID, groupID string, fi filestore.FileInfo) error {
-	q := `INSERT INTO things_files (file_name, file_class, file_format, thing_id, time, metadata, group_id)
-		VALUES (:file_name, :file_class, :file_format, :thing_id, :time, :metadata, :group_id)`
+	q := `INSERT INTO things_files (file_name, file_class, file_format, thing_id, time, metadata, group_id, checksum)
+		VALUES (:file_name, :file_class, :file_format, :thing_id, :time, :metadata, :group_id, :checksum)`
 
 	dbFile, err := toDBThingFile(thingID, fi)
 	if err != nil {
@@ -63,11 +63,11 @@ func (tr thingsRepository) Update(ctx context.Context, thingID string, fi filest
 
 	res, errdb := tr.db.NamedExecContext(ctx, q, dbFile)
 	if errdb != nil {
-		pgErr, ok := err.(*pgconn.PgError)
+		pgErr, ok := errdb.(*pgconn.PgError)
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, errdb)
 			}
 		}
 
@@ -87,7 +87,7 @@ func (tr thingsRepository) Update(ctx context.Context, thingID string, fi filest
 }
 
 func (tr thingsRepository) Retrieve(ctx context.Context, thingID string, fi filestore.FileInfo) (filestore.FileInfo, error) {
-	q := `SELECT file_name, file_class, file_format, metadata FROM things_files
+	q := `SELECT file_name, file_class, file_format, metadata, checksum FROM things_files
 		WHERE thing_id = $1 AND file_class = $2 AND file_format = $3 AND file_name = $4`
 
 	dbFile := dbFileInfo{}
@@ -245,6 +245,7 @@ type dbFileInfo struct {
 	FileFormat string  `db:"file_format"`
 	Metadata   []byte  `db:"metadata"`
 	Time       float64 `db:"time"`
+	Checksum   string  `db:"checksum"`
 }
 
 type dbThingFile struct {
@@ -270,6 +271,7 @@ func toDBThingFile(thingID string, fi filestore.FileInfo) (dbThingFile, error) {
 			FileFormat: fi.Format,
 			Metadata:   meta,
 			Time:       fi.Time,
+			Checksum:   fi.Checksum,
 		},
 		ThingID: thingID,
 	}, nil
@@ -287,6 +289,7 @@ func toFileInfo(dbfi dbFileInfo) (filestore.FileInfo, error) {
 		Format:   dbfi.FileFormat,
 		Metadata: metadata,
 		Time:     dbfi.Time,
+		Checksum: dbfi.Checksum,
 	}
 
 	return fileInfo, nil

@@ -5,21 +5,22 @@ package filestore
 
 import (
 	"context"
-	_ "image/jpeg"
-	_ "image/png"
+	stderrors "errors"
+	"fmt"
 	"io"
-	"os"
 	"path/filepath"
+	"sync"
 
+	"github.com/MainfluxLabs/mainflux/filestore/store"
+	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 const (
-	filesPath  = "files"
 	groupsPath = "groups"
 	thingsPath = "things"
-	permission = 0755
 )
 
 // Service specifies an API that must be fulfilled by the domain service
@@ -42,8 +43,8 @@ type Service interface {
 	SaveGroupFile(ctx context.Context, file io.Reader, token, groupID string, fi FileInfo) error
 	// UpdateGroupFile updates group file from filestore
 	UpdateGroupFile(ctx context.Context, token, groupID string, fi FileInfo) error
-	// ViewGroupFile views group file from filestore
-	ViewGroupFile(ctx context.Context, token, groupID string, fi FileInfo) ([]byte, error)
+	// ViewGroupFile streams group file from filestore. Caller must Close.
+	ViewGroupFile(ctx context.Context, token, groupID string, fi FileInfo) (io.ReadCloser, error)
 	// ListGroupFiles retrieves files from filestore by group
 	ListGroupFiles(ctx context.Context, token, groupID string, fi FileInfo, pm PageMetadata) (FileGroupsPage, error)
 	// RemoveGroupFile removes group file from filestore
@@ -53,8 +54,8 @@ type Service interface {
 	// all files belonging to things related to the given group
 	RemoveAllFilesByGroup(ctx context.Context, groupID string) error
 
-	// ViewGroupFileByKey views group file from filestore using Thing Key
-	ViewGroupFileByKey(ctx context.Context, thingKey string, fi FileInfo) ([]byte, error)
+	// ViewGroupFileByKey streams group file using Thing Key. Caller must Close.
+	ViewGroupFileByKey(ctx context.Context, thingKey string, fi FileInfo) (io.ReadCloser, error)
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -75,23 +76,39 @@ type FileInfo struct {
 	Format   string         `json:"format"`
 	Metadata map[string]any `json:"metadata,omitempty"`
 	Time     float64        `json:"time,omitempty"`
+	Checksum string         `json:"checksum,omitempty"`
 }
 
 type filestoreService struct {
 	things     domain.ThingsClient
 	thingsRepo ThingsRepository
 	groupsRepo GroupsRepository
+	store      store.FileStore
+	logger     logger.Logger
 }
 
 var _ Service = (*filestoreService)(nil)
 
-// New instantiates the filestore service implementation.
-func New(tc domain.ThingsClient, thingsRepo ThingsRepository, groupsRepo GroupsRepository) Service {
+func New(tc domain.ThingsClient, thingsRepo ThingsRepository, groupsRepo GroupsRepository, fs store.FileStore, log logger.Logger) Service {
 	return &filestoreService{
 		things:     tc,
 		thingsRepo: thingsRepo,
 		groupsRepo: groupsRepo,
+		store:      fs,
+		logger:     log,
 	}
+}
+
+func groupFileKey(groupID, name string) string {
+	return filepath.Join(groupsPath, groupID, name)
+}
+
+func thingFileDirKey(thingID string) string {
+	return filepath.Join(thingsPath, thingID)
+}
+
+func thingFileKey(thingID, name string) string {
+	return filepath.Join(thingsPath, thingID, name)
 }
 
 func (fs *filestoreService) SaveFile(ctx context.Context, file io.Reader, key string, fi FileInfo) error {
@@ -105,12 +122,27 @@ func (fs *filestoreService) SaveFile(ctx context.Context, file io.Reader, key st
 		return err
 	}
 
-	path := filepath.Join(filesPath, thingsPath, thID)
-	if err := createFile(path, fi.Name, file); err != nil {
+	switch _, err := fs.thingsRepo.Retrieve(ctx, thID, fi); {
+	case err == nil:
+		return dbutil.ErrConflict
+	case !errors.Contains(err, dbutil.ErrNotFound):
 		return err
 	}
 
+	objKey := thingFileKey(thID, fi.Name)
+	checksum, err := fs.store.Put(ctx, objKey, file)
+	if err != nil {
+		return err
+	}
+
+	fi.Checksum = checksum
+
 	if err = fs.thingsRepo.Save(ctx, thID, grID, fi); err != nil {
+		if !errors.Contains(err, dbutil.ErrConflict) {
+			if delErr := fs.store.Delete(ctx, objKey); delErr != nil {
+				fs.logger.Error(fmt.Sprintf("orphaned object after failed DB save: key=%s err=%s", objKey, delErr))
+			}
+		}
 		return err
 	}
 
@@ -151,23 +183,12 @@ func (fs *filestoreService) RemoveFile(ctx context.Context, key string, fi FileI
 		return err
 	}
 
-	path := filepath.Join(filesPath, thingsPath, thID, fi.Name)
-	if err := os.Remove(path); err != nil {
+	if err := fs.store.Delete(ctx, thingFileKey(thID, fi.Name)); err != nil {
 		return err
 	}
 
 	if err := fs.thingsRepo.Remove(ctx, thID, fi); err != nil {
 		return err
-	}
-
-	directories := []string{thingsPath, thID}
-	for i := len(directories) - 1; i >= 0; i-- {
-		path := filepath.Join(directories[:i+1]...)
-		if isDirEmpty(path) {
-			if err := os.RemoveAll(path); err != nil {
-				return err
-			}
-		}
 	}
 
 	return nil
@@ -178,8 +199,7 @@ func (fs *filestoreService) RemoveFiles(ctx context.Context, thingID string) err
 		return err
 	}
 
-	dirPath := filepath.Join(filesPath, thingsPath, thingID)
-	if err := os.RemoveAll(dirPath); err != nil {
+	if err := fs.store.DeletePrefix(ctx, thingFileDirKey(thingID)); err != nil {
 		return err
 	}
 
@@ -197,13 +217,14 @@ func (fs *filestoreService) ViewFile(ctx context.Context, key string, fi FileInf
 		return nil, err
 	}
 
-	filePath := filepath.Join(filesPath, thingsPath, thID, f.Name)
-	fileBytes, err := os.ReadFile(filePath)
+	objKey := thingFileKey(thID, f.Name)
+	rc, err := fs.store.Get(ctx, objKey, f.Checksum)
 	if err != nil {
-		return nil, err
+		return nil, fs.translateGetErr(objKey, err)
 	}
+	defer rc.Close()
 
-	return fileBytes, nil
+	return io.ReadAll(rc)
 }
 
 func (fs *filestoreService) SaveGroupFile(ctx context.Context, file io.Reader, token, groupID string, fi FileInfo) error {
@@ -211,12 +232,26 @@ func (fs *filestoreService) SaveGroupFile(ctx context.Context, file io.Reader, t
 		return err
 	}
 
-	path := filepath.Join(filesPath, groupsPath, groupID)
-	if err := createFile(path, fi.Name, file); err != nil {
+	switch _, err := fs.groupsRepo.Retrieve(ctx, groupID, fi); {
+	case err == nil:
+		return dbutil.ErrConflict
+	case !errors.Contains(err, dbutil.ErrNotFound):
 		return err
 	}
 
+	checksum, err := fs.store.Put(ctx, groupFileKey(groupID, fi.Name), file)
+	if err != nil {
+		return err
+	}
+	fi.Checksum = checksum
+
 	if err := fs.groupsRepo.Save(ctx, groupID, fi); err != nil {
+		if !errors.Contains(err, dbutil.ErrConflict) {
+			key := groupFileKey(groupID, fi.Name)
+			if delErr := fs.store.Delete(ctx, key); delErr != nil {
+				fs.logger.Error(fmt.Sprintf("orphaned object after failed DB save: key=%s err=%s", key, delErr))
+			}
+		}
 		return err
 	}
 
@@ -249,8 +284,8 @@ func (fs *filestoreService) RemoveGroupFile(ctx context.Context, token, groupID 
 		return err
 	}
 
-	path := filepath.Join(filesPath, groupsPath, groupID, fi.Name)
-	if err := os.Remove(path); err != nil {
+	key := groupFileKey(groupID, fi.Name)
+	if err := fs.store.Delete(ctx, key); err != nil {
 		return err
 	}
 
@@ -258,31 +293,18 @@ func (fs *filestoreService) RemoveGroupFile(ctx context.Context, token, groupID 
 		return err
 	}
 
-	directories := []string{groupsPath, groupID}
-	for i := len(directories) - 1; i >= 0; i-- {
-		path := filepath.Join(directories[:i+1]...)
-		if isDirEmpty(path) {
-			if err := os.RemoveAll(path); err != nil {
-				return err
-			}
-		}
-	}
-
 	return nil
 }
 
 func (fs *filestoreService) RemoveAllFilesByGroup(ctx context.Context, groupID string) error {
-	// Remove group files
 	if err := fs.groupsRepo.RemoveByGroup(ctx, groupID); err != nil {
 		return err
 	}
 
-	gp := filepath.Join(filesPath, groupsPath, groupID)
-	if err := os.RemoveAll(gp); err != nil {
+	if err := fs.store.DeletePrefix(ctx, filepath.Join(groupsPath, groupID)); err != nil {
 		return err
 	}
 
-	// Remove all files belonging to things related to the group
 	thingIDs, err := fs.thingsRepo.RetrieveThingIDsByGroup(ctx, groupID)
 	if err != nil {
 		return err
@@ -292,19 +314,31 @@ func (fs *filestoreService) RemoveAllFilesByGroup(ctx context.Context, groupID s
 		return err
 	}
 
-	// File removal is done sequentially to keep the operation simple
-	// Parallel deletion can be added later if needed
+	const workers = 8
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, workers)
+	errCh := make(chan error, len(thingIDs))
 	for _, thingID := range thingIDs {
-		tp := filepath.Join(filesPath, thingsPath, thingID)
-		if err := os.RemoveAll(tp); err != nil {
-			return err
-		}
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(id string) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			if err := fs.store.DeletePrefix(ctx, thingFileDirKey(id)); err != nil {
+				errCh <- fmt.Errorf("thing %s: %w", id, err)
+			}
+		}(thingID)
 	}
-
-	return nil
+	wg.Wait()
+	close(errCh)
+	var errs []error
+	for e := range errCh {
+		errs = append(errs, e)
+	}
+	return stderrors.Join(errs...)
 }
 
-func (fs *filestoreService) ViewGroupFile(ctx context.Context, token, groupID string, fi FileInfo) ([]byte, error) {
+func (fs *filestoreService) ViewGroupFile(ctx context.Context, token, groupID string, fi FileInfo) (io.ReadCloser, error) {
 	if err := fs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupViewer}); err != nil {
 		return nil, err
 	}
@@ -314,16 +348,16 @@ func (fs *filestoreService) ViewGroupFile(ctx context.Context, token, groupID st
 		return nil, err
 	}
 
-	filePath := filepath.Join(filesPath, groupsPath, groupID, f.Name)
-	fileBytes, err := os.ReadFile(filePath)
+	key := groupFileKey(groupID, f.Name)
+	rc, err := fs.store.Get(ctx, key, f.Checksum)
 	if err != nil {
-		return nil, err
+		return nil, fs.translateGetErr(key, err)
 	}
 
-	return fileBytes, nil
+	return rc, nil
 }
 
-func (fs *filestoreService) ViewGroupFileByKey(ctx context.Context, thingKey string, fi FileInfo) ([]byte, error) {
+func (fs *filestoreService) ViewGroupFileByKey(ctx context.Context, thingKey string, fi FileInfo) (io.ReadCloser, error) {
 	thID, err := fs.identify(ctx, thingKey)
 	if err != nil {
 		return nil, err
@@ -332,41 +366,34 @@ func (fs *filestoreService) ViewGroupFileByKey(ctx context.Context, thingKey str
 	if err != nil {
 		return nil, err
 	}
+	if err := fs.things.CanThingAccessGroup(ctx, domain.ThingAccessReq{ThingKey: domain.ThingKey{Type: domain.KeyTypeInternal, Value: thingKey}, ID: grID}); err != nil {
+		return nil, err
+	}
 
 	f, err := fs.groupsRepo.Retrieve(ctx, grID, fi)
 	if err != nil {
 		return nil, err
 	}
 
-	filePath := filepath.Join(filesPath, groupsPath, grID, f.Name)
-	fileBytes, err := os.ReadFile(filePath)
+	key := groupFileKey(grID, f.Name)
+	rc, err := fs.store.Get(ctx, key, f.Checksum)
 	if err != nil {
-		return nil, err
+		return nil, fs.translateGetErr(key, err)
 	}
 
-	return fileBytes, nil
+	return rc, nil
 }
 
-// createDirectory creates directory for storing files
-func createFile(path, name string, file io.Reader) error {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		err = os.MkdirAll(path, permission)
-		if err != nil {
-			return err
-		}
+// translateGetErr maps a store miss to dbutil.ErrNotFound so the API returns
+// 404 instead of 500. A missing object for an existing index row is a
+// storage/DB inconsistency, so it is logged before being flattened for the
+// caller.
+func (fs *filestoreService) translateGetErr(key string, err error) error {
+	if stderrors.Is(err, store.ErrNotFound) {
+		fs.logger.Warn(fmt.Sprintf("file index row exists but object is missing: key=%s", key))
+		return errors.Wrap(dbutil.ErrNotFound, err)
 	}
-
-	tmpfile, err := os.Create(filepath.Join(path, name))
-	if err != nil {
-		return err
-	}
-	defer tmpfile.Close()
-
-	if _, err := io.Copy(tmpfile, file); err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (fs *filestoreService) identify(ctx context.Context, thingKey string) (string, error) {
@@ -376,17 +403,4 @@ func (fs *filestoreService) identify(ctx context.Context, thingKey string) (stri
 	}
 
 	return thingID, nil
-}
-
-// isDirEmpty checks if directory is empty
-func isDirEmpty(path string) bool {
-	f, err := os.Open(path)
-	if err != nil {
-		return false
-	}
-	defer f.Close()
-
-	_, err = f.Readdirnames(1)
-
-	return err == io.EOF
 }
