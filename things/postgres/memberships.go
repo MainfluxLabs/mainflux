@@ -36,7 +36,7 @@ func (mr groupMembershipsRepository) Save(ctx context.Context, gms ...things.Gro
 
 	for _, g := range gms {
 		dbgm := toDBGroupMembership(g)
-		if _, err := mr.db.NamedExecContext(ctx, q, dbgm); err != nil {
+		if _, err := tx.NamedExecContext(ctx, q, dbgm); err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
 				switch pgErr.Code {
