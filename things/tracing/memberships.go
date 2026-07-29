@@ -18,7 +18,6 @@ const (
 	removeGroupMemberships     = "remove_group_memberships"
 	retrieveMembershipsByGroup = "retrieve_memberships_by_group"
 	backupAllGroupMemberships  = "backup_all_group_memberships"
-	backupGroupMemberhips      = "backup_group_memberhips"
 )
 
 var _ things.GroupMembershipsRepository = (*groupMembershipsRepositoryMiddleware)(nil)
@@ -74,14 +73,6 @@ func (gmr groupMembershipsRepositoryMiddleware) BackupAll(ctx context.Context) (
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return gmr.repo.BackupAll(ctx)
-}
-
-func (gmr groupMembershipsRepositoryMiddleware) BackupByGroup(ctx context.Context, groupID string) ([]things.GroupMembership, error) {
-	span := dbutil.CreateSpan(ctx, gmr.tracer, backupGroupMemberhips)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return gmr.repo.BackupByGroup(ctx, groupID)
 }
 
 func (gmr groupMembershipsRepositoryMiddleware) Update(ctx context.Context, gms ...things.GroupMembership) error {

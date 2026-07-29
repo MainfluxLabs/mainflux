@@ -51,7 +51,12 @@ func (gmr *groupMembershipsRepositoryMock) RetrieveByGroup(_ context.Context, gr
 	gmr.mu.Lock()
 	defer gmr.mu.Unlock()
 
-	memberships := gmr.groupMemberships[groupID]
+	var memberships []things.GroupMembership
+	for _, m := range gmr.groupMemberships[groupID] {
+		if pm.Role == "" || m.Role == pm.Role {
+			memberships = append(memberships, m)
+		}
+	}
 
 	sortedMemberships := mocks.SortItems(pm.Order, pm.Dir, memberships, func(i int) (string, string) {
 		return memberships[i].Email, memberships[i].MemberID
@@ -60,7 +65,7 @@ func (gmr *groupMembershipsRepositoryMock) RetrieveByGroup(_ context.Context, gr
 	var gms []things.GroupMembership
 	i := uint64(0)
 	for _, m := range sortedMemberships {
-		if i >= pm.Offset && i < pm.Offset+pm.Limit {
+		if i >= pm.Offset && (pm.Limit == 0 || i < pm.Offset+pm.Limit) {
 			gms = append(gms, m)
 		}
 		i++
@@ -68,7 +73,7 @@ func (gmr *groupMembershipsRepositoryMock) RetrieveByGroup(_ context.Context, gr
 
 	return things.GroupMembershipsPage{
 		GroupMemberships: gms,
-		Total:            uint64(len(gmr.groupMemberships[groupID])),
+		Total:            uint64(len(memberships)),
 	}, nil
 
 }
@@ -100,22 +105,6 @@ func (gmr *groupMembershipsRepositoryMock) BackupAll(_ context.Context) ([]thing
 	}
 
 	return gms, nil
-}
-
-func (mrm *groupMembershipsRepositoryMock) BackupByGroup(_ context.Context, groupID string) ([]things.GroupMembership, error) {
-	mrm.mu.Lock()
-	defer mrm.mu.Unlock()
-
-	var mbrs []things.GroupMembership
-	for _, groupMbs := range mrm.groupMemberships {
-		for _, mb := range groupMbs {
-			if mb.GroupID == groupID {
-				mbrs = append(mbrs, mb)
-			}
-		}
-	}
-
-	return mbrs, nil
 }
 
 func (gmr *groupMembershipsRepositoryMock) Update(_ context.Context, gms ...things.GroupMembership) error {

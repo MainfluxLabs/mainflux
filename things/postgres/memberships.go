@@ -77,10 +77,12 @@ func (mr groupMembershipsRepository) RetrieveRole(ctx context.Context, gm things
 
 func (mr groupMembershipsRepository) RetrieveByGroup(ctx context.Context, groupID string, pm things.PageMetadata) (things.GroupMembershipsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	q := fmt.Sprintf(`SELECT member_id, role FROM group_memberships WHERE group_id = :group_id %s;`, olq)
+	whereClause := dbutil.BuildWhereClause("group_id = :group_id", roleQuery(pm.Role))
+	q := fmt.Sprintf(`SELECT member_id, role FROM group_memberships %s %s;`, whereClause, olq)
 
 	params := map[string]any{
 		"group_id": groupID,
+		"role":     pm.Role,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
 	}
@@ -102,7 +104,7 @@ func (mr groupMembershipsRepository) RetrieveByGroup(ctx context.Context, groupI
 		items = append(items, gm)
 	}
 
-	cq := `SELECT COUNT(*) FROM group_memberships WHERE group_id = :group_id;`
+	cq := fmt.Sprintf(`SELECT COUNT(*) FROM group_memberships %s;`, whereClause)
 
 	total, err := dbutil.Total(ctx, mr.db, cq, params)
 	if err != nil {
@@ -121,31 +123,6 @@ func (mr groupMembershipsRepository) BackupAll(ctx context.Context) ([]things.Gr
 	q := `SELECT member_id, group_id, role FROM group_memberships;`
 
 	rows, err := mr.db.NamedQueryContext(ctx, q, map[string]any{})
-	if err != nil {
-		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
-
-	var items []things.GroupMembership
-	for rows.Next() {
-		dbgm := dbGroupMembership{}
-		if err := rows.StructScan(&dbgm); err != nil {
-			return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-		}
-
-		gm := toGroupMemberships(dbgm)
-		items = append(items, gm)
-	}
-
-	return items, nil
-}
-
-func (mr groupMembershipsRepository) BackupByGroup(ctx context.Context, groupID string) ([]things.GroupMembership, error) {
-	q := `SELECT member_id, group_id, role FROM group_memberships WHERE group_id = :group_id;`
-
-	rows, err := mr.db.NamedQueryContext(ctx, q, map[string]any{
-		"group_id": groupID,
-	})
 	if err != nil {
 		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
@@ -224,6 +201,14 @@ func (mr groupMembershipsRepository) Update(ctx context.Context, gms ...things.G
 	}
 
 	return nil
+}
+
+func roleQuery(role string) string {
+	if role == "" {
+		return ""
+	}
+
+	return "role = :role"
 }
 
 type dbGroupMembership struct {
