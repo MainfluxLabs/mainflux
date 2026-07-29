@@ -4,6 +4,7 @@
 package mocks
 
 import (
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -40,6 +41,27 @@ func (ps *mockPublisher) PublishAlarm(string, protomfx.Alarm) error {
 }
 
 func (ps *mockPublisher) PublishCommand(string, protomfx.Command) error {
+	if ps.fail {
+		return messaging.ErrPublishMessage
+	}
+	return nil
+}
+
+func (ps *mockPublisher) PublishNotification(string, protomfx.Notification) error {
+	if ps.fail {
+		return messaging.ErrPublishMessage
+	}
+	return nil
+}
+
+func (ps *mockPublisher) PublishWebhook(string, protomfx.Webhook) error {
+	if ps.fail {
+		return messaging.ErrPublishMessage
+	}
+	return nil
+}
+
+func (ps *mockPublisher) PublishAll(protomfx.Message, *domain.ProfileConfig) error {
 	if ps.fail {
 		return messaging.ErrPublishMessage
 	}

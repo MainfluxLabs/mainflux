@@ -56,20 +56,20 @@ func TestConsume(t *testing.T) {
 	runConsumeTest(t, svcSmpp, validPhones)
 }
 
-func createTestMessages(notifier notifiers.Notifier, actionType string, invalidContacts []string, invalidID string) (validSubject string, validMsg protomfx.Message, invalidSubject string, invalidMsg protomfx.Message) {
+func createTestMessages(notifier notifiers.Notifier, actionType string, invalidContacts []string, invalidID string) (validSubject string, validMsg protomfx.Notification, invalidSubject string, invalidMsg protomfx.Notification) {
 	invalidNotifier := notifier
 	invalidNotifier.ID = invalidID
 	invalidNotifier.Contacts = invalidContacts
 
-	return fmt.Sprintf("%s.%s", actionType, notifier.ID), protomfx.Message{},
-		fmt.Sprintf("%s.%s", actionType, invalidNotifier.ID), protomfx.Message{}
+	return fmt.Sprintf("%s.%s", actionType, notifier.ID), protomfx.Notification{},
+		fmt.Sprintf("%s.%s", actionType, invalidNotifier.ID), protomfx.Notification{}
 }
 
 func runConsumeTest(t *testing.T, svcName string, validContacts []string) {
 	t.Helper()
 	svc := newService()
 	var subject, invalidSubject string
-	var msg, invalidMsg protomfx.Message
+	var msg, invalidMsg protomfx.Notification
 
 	validNotifier := notifiers.Notifier{
 		Name:     notifierName,
@@ -90,7 +90,7 @@ func runConsumeTest(t *testing.T, svcName string, validContacts []string) {
 	cases := []struct {
 		desc    string
 		subject string
-		msg     protomfx.Message
+		msg     protomfx.Notification
 		err     error
 	}{
 		{
@@ -107,7 +107,7 @@ func runConsumeTest(t *testing.T, svcName string, validContacts []string) {
 	}
 
 	for _, tc := range cases {
-		err := svc.ConsumeMessage(tc.subject, tc.msg)
+		err := svc.ConsumeNotification(tc.subject, tc.msg)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
