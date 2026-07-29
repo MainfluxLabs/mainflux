@@ -31,8 +31,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -143,7 +142,7 @@ func main() {
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
-	pub, err := brokers.NewPublisher(cfg.brokerURL)
+	pub, err := nats.NewPublisher(cfg.brokerURL)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -271,7 +270,7 @@ func subscribeToThingsES(ctx context.Context, svc modbus.Service, cfg config, lo
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(ts domain.ThingsClient, pub messaging.Publisher, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) modbus.Service {
+func newService(ts domain.ThingsClient, pub nats.Publisher, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) modbus.Service {
 	database := dbutil.NewDatabase(db)
 	clientsRepo := postgres.NewClientRepository(database)
 	clientsRepo = tracing.ClientRepositoryMiddleware(dbTracer, clientsRepo)
