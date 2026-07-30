@@ -27,6 +27,14 @@ func (pub mockPublisher) PublishCommand(_ string, cmd protomfx.Command) error {
 	return nil
 }
 
+func (pub mockPublisher) PublishNotification(_ string, notification protomfx.Notification) error {
+	return nil
+}
+
+func (pub mockPublisher) PublishWebhook(_ string, webhook protomfx.Webhook) error {
+	return nil
+}
+
 func (pub mockPublisher) Close() error {
 	return nil
 }

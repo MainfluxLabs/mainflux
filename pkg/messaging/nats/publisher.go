@@ -25,11 +25,13 @@ const (
 	commandsSuffix = "commands"
 )
 
-// Publisher extends the base messaging.Publisher with alarm and command publishing capabilities.
+// Publisher extends the base messaging.Publisher with alarm, command, notification and webhook publishing capabilities.
 type Publisher interface {
 	messaging.Publisher
 	messaging.AlarmPublisher
 	messaging.CommandPublisher
+	messaging.NotificationPublisher
+	messaging.WebhookPublisher
 }
 
 var _ Publisher = (*publisher)(nil)
@@ -64,6 +66,14 @@ func (pub *publisher) PublishAlarm(subject string, alarm protomfx.Alarm) error {
 
 func (pub *publisher) PublishCommand(subject string, cmd protomfx.Command) error {
 	return pub.publish(subject, &cmd)
+}
+
+func (pub *publisher) PublishNotification(subject string, notification protomfx.Notification) error {
+	return pub.publish(subject, &notification)
+}
+
+func (pub *publisher) PublishWebhook(subject string, webhook protomfx.Webhook) error {
+	return pub.publish(subject, &webhook)
 }
 
 func (pub *publisher) publish(subject string, msg proto.Message) error {

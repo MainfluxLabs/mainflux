@@ -25,6 +25,12 @@ type MockPubSub interface {
 	PublishCommand(string, protomfx.Command) error
 	SubscribeCommands(string, string, messaging.CommandHandler) error
 	UnsubscribeCommands(string, string) error
+	PublishNotification(string, protomfx.Notification) error
+	SubscribeNotifications(string, string, messaging.NotificationHandler) error
+	UnsubscribeNotifications(string, string) error
+	PublishWebhook(string, protomfx.Webhook) error
+	SubscribeWebhooks(string, messaging.WebhookHandler) error
+	UnsubscribeWebhooks(string) error
 	SetFail(bool)
 	SetConn(*websocket.Conn)
 	Close() error
@@ -104,6 +110,48 @@ func (pubsub *mockPubSub) SubscribeCommands(string, string, messaging.CommandHan
 }
 
 func (pubsub *mockPubSub) UnsubscribeCommands(string, string) error {
+	if pubsub.fail {
+		return messaging.ErrFailedUnsubscribe
+	}
+	return nil
+}
+
+func (pubsub *mockPubSub) PublishNotification(string, protomfx.Notification) error {
+	if pubsub.fail {
+		return messaging.ErrPublishMessage
+	}
+	return nil
+}
+
+func (pubsub *mockPubSub) SubscribeNotifications(string, string, messaging.NotificationHandler) error {
+	if pubsub.fail {
+		return messaging.ErrFailedSubscribe
+	}
+	return nil
+}
+
+func (pubsub *mockPubSub) UnsubscribeNotifications(string, string) error {
+	if pubsub.fail {
+		return messaging.ErrFailedUnsubscribe
+	}
+	return nil
+}
+
+func (pubsub *mockPubSub) PublishWebhook(string, protomfx.Webhook) error {
+	if pubsub.fail {
+		return messaging.ErrPublishMessage
+	}
+	return nil
+}
+
+func (pubsub *mockPubSub) SubscribeWebhooks(string, messaging.WebhookHandler) error {
+	if pubsub.fail {
+		return messaging.ErrFailedSubscribe
+	}
+	return nil
+}
+
+func (pubsub *mockPubSub) UnsubscribeWebhooks(string) error {
 	if pubsub.fail {
 		return messaging.ErrFailedUnsubscribe
 	}
