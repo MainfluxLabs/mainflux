@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -31,6 +32,7 @@ type MockPubSub interface {
 	PublishWebhook(string, protomfx.Webhook) error
 	SubscribeWebhooks(string, messaging.WebhookHandler) error
 	UnsubscribeWebhooks(string) error
+	PublishAll(protomfx.Message, *domain.ProfileConfig) error
 	SetFail(bool)
 	SetConn(*websocket.Conn)
 	Close() error
@@ -154,6 +156,13 @@ func (pubsub *mockPubSub) SubscribeWebhooks(string, messaging.WebhookHandler) er
 func (pubsub *mockPubSub) UnsubscribeWebhooks(string) error {
 	if pubsub.fail {
 		return messaging.ErrFailedUnsubscribe
+	}
+	return nil
+}
+
+func (pubsub *mockPubSub) PublishAll(protomfx.Message, *domain.ProfileConfig) error {
+	if pubsub.fail {
+		return messaging.ErrPublishMessage
 	}
 	return nil
 }

@@ -86,7 +86,7 @@ type downlinksService struct {
 	auth       domain.AuthClient
 	downlinks  DownlinkRepository
 	idProvider uuid.IDProvider
-	publisher  messaging.Publisher
+	publisher  nats.Publisher
 	logger     logger.Logger
 	scheduler  *cron.ScheduleManager
 	limiters   map[string]*rate.Limiter
@@ -113,7 +113,7 @@ var (
 
 var _ Service = (*downlinksService)(nil)
 
-func New(things domain.ThingsClient, auth domain.AuthClient, pub messaging.Publisher, downlinks DownlinkRepository, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(things domain.ThingsClient, auth domain.AuthClient, pub nats.Publisher, downlinks DownlinkRepository, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &downlinksService{
 		things:     things,
 		auth:       auth,
@@ -438,13 +438,7 @@ func (ds *downlinksService) publish(config *domain.ProfileConfig, thingID string
 		return err
 	}
 
-	for _, subject := range nats.GetPublishSubjects(msg.Publisher, msg.Subtopic, config) {
-		if err := ds.publisher.Publish(subject, msg); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return ds.publisher.PublishAll(msg, config)
 }
 
 func (ds *downlinksService) getLimiter(baseURL string) *rate.Limiter {

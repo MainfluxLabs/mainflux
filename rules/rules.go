@@ -98,11 +98,23 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 				return err
 			}
 		case ActionTypeSMTP, ActionTypeSMPP:
-			if err := rs.pub.Publish(fmt.Sprintf("%s.%s", action.Type, action.ID), *msg); err != nil {
+			notification := protomfx.Notification{
+				ThingId:  msg.Publisher,
+				Subtopic: msg.Subtopic,
+				Protocol: msg.Protocol,
+				Payload:  msg.Payload,
+				Created:  msg.Created,
+			}
+			if err := rs.pub.PublishNotification(fmt.Sprintf("%s.%s", action.Type, action.ID), notification); err != nil {
 				return err
 			}
 		case ActionTypeWebhook:
-			if err := rs.pub.Publish(subjectWebhooks, *msg); err != nil {
+			webhook := protomfx.Webhook{
+				ThingId: msg.Publisher,
+				Payload: msg.Payload,
+				Created: msg.Created,
+			}
+			if err := rs.pub.PublishWebhook(subjectWebhooks, webhook); err != nil {
 				return err
 			}
 		}

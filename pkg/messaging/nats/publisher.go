@@ -32,6 +32,9 @@ type Publisher interface {
 	messaging.CommandPublisher
 	messaging.NotificationPublisher
 	messaging.WebhookPublisher
+
+	// PublishAll publishes msg to every subject enabled by the dispatcher flags in pc.
+	PublishAll(msg protomfx.Message, pc *domain.ProfileConfig) error
 }
 
 var _ Publisher = (*publisher)(nil)
@@ -111,23 +114,32 @@ func createSubject(entity, id, suffix, subtopic string) string {
 	return subject
 }
 
-// GetPublishSubjects returns the NATS subjects a message should be published to
-// based on the dispatcher flags in the profile config.
-func GetPublishSubjects(thingID, subtopic string, pc *domain.ProfileConfig) []string {
+// PublishAll publishes msg to every subject enabled by pc's dispatcher flags.
+func (pub *publisher) PublishAll(msg protomfx.Message, pc *domain.ProfileConfig) error {
 	if pc == nil {
 		return nil
 	}
 
-	var subjects []string
 	if pc.WriteEnabled {
-		subjects = append(subjects, GetMessagesSubject(thingID, subtopic))
-	}
-	if pc.WebhookEnabled {
-		subjects = append(subjects, SubjectWebhooks)
+		if err := pub.Publish(GetMessagesSubject(msg.Publisher, msg.Subtopic), msg); err != nil {
+			return err
+		}
 	}
 	if pc.RuleEnabled {
-		subjects = append(subjects, SubjectRules)
+		if err := pub.Publish(SubjectRules, msg); err != nil {
+			return err
+		}
+	}
+	if pc.WebhookEnabled {
+		webhook := protomfx.Webhook{
+			ThingId: msg.Publisher,
+			Payload: msg.Payload,
+			Created: msg.Created,
+		}
+		if err := pub.PublishWebhook(SubjectWebhooks, webhook); err != nil {
+			return err
+		}
 	}
 
-	return subjects
+	return nil
 }

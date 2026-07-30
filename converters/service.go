@@ -46,12 +46,12 @@ type Service interface {
 var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
-	publisher messaging.Publisher
+	publisher nats.Publisher
 	things    domain.ThingsClient
 }
 
 // New instantiates the HTTP adapter implementation.
-func New(pub messaging.Publisher, things domain.ThingsClient) Service {
+func New(pub nats.Publisher, things domain.ThingsClient) Service {
 	return &adapterService{
 		publisher: pub,
 		things:    things,
@@ -484,11 +484,5 @@ func (as *adapterService) publish(ctx context.Context, key string, msg protomfx.
 		return err
 	}
 
-	for _, subject := range nats.GetPublishSubjects(msg.Publisher, msg.Subtopic, pc.ProfileConfig) {
-		if err := as.publisher.Publish(subject, msg); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return as.publisher.PublishAll(msg, pc.ProfileConfig)
 }

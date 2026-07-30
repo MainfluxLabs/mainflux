@@ -543,16 +543,29 @@ func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
 		}
 
 		for _, action := range rule.Actions {
-			var subject string
+			var err error
 			switch action.Type {
 			case ActionTypeSMTP, ActionTypeSMPP:
-				subject = fmt.Sprintf("%s.%s", action.Type, action.ID)
+				subject := fmt.Sprintf("%s.%s", action.Type, action.ID)
+				notification := protomfx.Notification{
+					ThingId:  msg.Publisher,
+					Subtopic: msg.Subtopic,
+					Protocol: msg.Protocol,
+					Payload:  msg.Payload,
+					Created:  msg.Created,
+				}
+				err = rs.pub.PublishNotification(subject, notification)
 			case ActionTypeWebhook:
-				subject = subjectWebhooks
+				webhook := protomfx.Webhook{
+					ThingId: msg.Publisher,
+					Payload: msg.Payload,
+					Created: msg.Created,
+				}
+				err = rs.pub.PublishWebhook(subjectWebhooks, webhook)
 			default:
 				continue
 			}
-			if err := rs.pub.Publish(subject, msg); err != nil {
+			if err != nil {
 				rs.logger.Error(fmt.Sprintf("processing alarm rule with id %s failed with error: %v", rule.ID, err))
 			}
 		}

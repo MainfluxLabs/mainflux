@@ -4,6 +4,7 @@
 package mocks
 
 import (
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
@@ -32,6 +33,10 @@ func (pub mockPublisher) PublishNotification(_ string, notification protomfx.Not
 }
 
 func (pub mockPublisher) PublishWebhook(_ string, webhook protomfx.Webhook) error {
+	return nil
+}
+
+func (pub mockPublisher) PublishAll(_ protomfx.Message, _ *domain.ProfileConfig) error {
 	return nil
 }
 

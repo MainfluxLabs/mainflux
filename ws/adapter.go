@@ -68,12 +68,7 @@ func (svc *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg
 		return err
 	}
 
-	for _, subject := range nats.GetPublishSubjects(msg.Publisher, msg.Subtopic, pc.ProfileConfig) {
-		if err := svc.pubsub.Publish(subject, msg); err != nil {
-			return err
-		}
-	}
-	return nil
+	return svc.pubsub.PublishAll(msg, pc.ProfileConfig)
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key domain.ThingKey, subtopic string, c *Client) error {

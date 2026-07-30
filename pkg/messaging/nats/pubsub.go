@@ -10,6 +10,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	broker "github.com/nats-io/nats.go"
@@ -55,6 +56,9 @@ type PubSub interface {
 	messaging.NotificationSubscriber
 	messaging.WebhookPublisher
 	messaging.WebhookSubscriber
+
+	// PublishAll publishes msg to every subject enabled by the dispatcher flags in pc.
+	PublishAll(msg protomfx.Message, pc *domain.ProfileConfig) error
 }
 
 var _ PubSub = (*pubsub)(nil)

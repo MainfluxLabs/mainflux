@@ -53,13 +53,7 @@ func (as *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg 
 		return err
 	}
 
-	for _, subject := range nats.GetPublishSubjects(msg.Publisher, msg.Subtopic, pc.ProfileConfig) {
-		if err := as.publisher.Publish(subject, msg); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return as.publisher.PublishAll(msg, pc.ProfileConfig)
 }
 
 func (as *adapterService) SendCommandToThing(ctx context.Context, token, thingID string, cmd protomfx.Command) error {
