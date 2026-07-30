@@ -53,7 +53,7 @@ func (as *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg 
 		return err
 	}
 
-	return as.publisher.PublishAll(msg, pc.ProfileConfig)
+	return as.publisher.PublishByFlags(msg, pc.ProfileConfig)
 }
 
 func (as *adapterService) SendCommandToThing(ctx context.Context, token, thingID string, cmd protomfx.Command) error {

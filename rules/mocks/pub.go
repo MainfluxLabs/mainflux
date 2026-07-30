@@ -61,7 +61,7 @@ func (ps *mockPublisher) PublishWebhook(string, protomfx.Webhook) error {
 	return nil
 }
 
-func (ps *mockPublisher) PublishAll(protomfx.Message, *domain.ProfileConfig) error {
+func (ps *mockPublisher) PublishByFlags(protomfx.Message, *domain.ProfileConfig) error {
 	if ps.fail {
 		return messaging.ErrPublishMessage
 	}

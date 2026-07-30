@@ -33,8 +33,8 @@ type Publisher interface {
 	messaging.NotificationPublisher
 	messaging.WebhookPublisher
 
-	// PublishAll publishes msg to every subject enabled by the dispatcher flags in pc.
-	PublishAll(msg protomfx.Message, pc *domain.ProfileConfig) error
+	// PublishByFlags publishes msg to every subject enabled by the dispatcher flags in pc.
+	PublishByFlags(msg protomfx.Message, pc *domain.ProfileConfig) error
 }
 
 var _ Publisher = (*publisher)(nil)
@@ -114,8 +114,8 @@ func createSubject(entity, id, suffix, subtopic string) string {
 	return subject
 }
 
-// PublishAll publishes msg to every subject enabled by pc's dispatcher flags.
-func (pub *publisher) PublishAll(msg protomfx.Message, pc *domain.ProfileConfig) error {
+// PublishByFlags publishes msg to every subject enabled by pc's dispatcher flags.
+func (pub *publisher) PublishByFlags(msg protomfx.Message, pc *domain.ProfileConfig) error {
 	if pc == nil {
 		return nil
 	}

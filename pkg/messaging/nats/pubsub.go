@@ -57,8 +57,8 @@ type PubSub interface {
 	messaging.WebhookPublisher
 	messaging.WebhookSubscriber
 
-	// PublishAll publishes msg to every subject enabled by the dispatcher flags in pc.
-	PublishAll(msg protomfx.Message, pc *domain.ProfileConfig) error
+	// PublishByFlags publishes msg to every subject enabled by the dispatcher flags in pc.
+	PublishByFlags(msg protomfx.Message, pc *domain.ProfileConfig) error
 }
 
 var _ PubSub = (*pubsub)(nil)

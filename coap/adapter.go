@@ -65,7 +65,7 @@ func (svc *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg
 		return err
 	}
 
-	return svc.pubsub.PublishAll(msg, pc.ProfileConfig)
+	return svc.pubsub.PublishByFlags(msg, pc.ProfileConfig)
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key domain.ThingKey, subtopic string, c Client) error {

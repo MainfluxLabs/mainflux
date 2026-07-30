@@ -36,7 +36,7 @@ func (pub mockPublisher) PublishWebhook(_ string, webhook protomfx.Webhook) erro
 	return nil
 }
 
-func (pub mockPublisher) PublishAll(_ protomfx.Message, _ *domain.ProfileConfig) error {
+func (pub mockPublisher) PublishByFlags(_ protomfx.Message, _ *domain.ProfileConfig) error {
 	return nil
 }
 

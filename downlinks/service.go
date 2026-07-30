@@ -438,7 +438,7 @@ func (ds *downlinksService) publish(config *domain.ProfileConfig, thingID string
 		return err
 	}
 
-	return ds.publisher.PublishAll(msg, config)
+	return ds.publisher.PublishByFlags(msg, config)
 }
 
 func (ds *downlinksService) getLimiter(baseURL string) *rate.Limiter {

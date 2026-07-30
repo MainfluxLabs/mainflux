@@ -32,7 +32,7 @@ type MockPubSub interface {
 	PublishWebhook(string, protomfx.Webhook) error
 	SubscribeWebhooks(string, messaging.WebhookHandler) error
 	UnsubscribeWebhooks(string) error
-	PublishAll(protomfx.Message, *domain.ProfileConfig) error
+	PublishByFlags(protomfx.Message, *domain.ProfileConfig) error
 	SetFail(bool)
 	SetConn(*websocket.Conn)
 	Close() error
@@ -160,7 +160,7 @@ func (pubsub *mockPubSub) UnsubscribeWebhooks(string) error {
 	return nil
 }
 
-func (pubsub *mockPubSub) PublishAll(protomfx.Message, *domain.ProfileConfig) error {
+func (pubsub *mockPubSub) PublishByFlags(protomfx.Message, *domain.ProfileConfig) error {
 	if pubsub.fail {
 		return messaging.ErrPublishMessage
 	}
