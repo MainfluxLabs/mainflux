@@ -21,6 +21,12 @@ type Notifier struct {
 	Metadata map[string]any
 }
 
+// NotifierOrderFields maps API-facing order keys to SQL column expressions for the notifiers table.
+var NotifierOrderFields = map[string]string{
+	"id":   "id",
+	"name": "LOWER(name)",
+}
+
 type NotifiersPage struct {
 	Total     uint64
 	Notifiers []Notifier

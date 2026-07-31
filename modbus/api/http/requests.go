@@ -29,15 +29,10 @@ var (
 	ErrInvalidByteOrder    = errors.New("invalid byte order")
 )
 
-var allowedOrders = map[string]string{
-	"id":   "id",
-	"name": "name",
-}
-
 // validatePageMetadata validates the modbus page metadata.
 func validatePageMetadata(pm modbus.PageMetadata) error {
 	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
-	if err := common.Validate(maxLimitSize, allowedOrders); err != nil {
+	if err := common.Validate(maxLimitSize, modbus.ClientOrderFields); err != nil {
 		return err
 	}
 

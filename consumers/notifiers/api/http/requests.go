@@ -14,15 +14,10 @@ const (
 	maxNameSize  = 254
 )
 
-var allowedOrders = map[string]string{
-	"id":   "id",
-	"name": "name",
-}
-
 // validatePageMetadata validates the notifiers page metadata.
 func validatePageMetadata(pm notifiers.PageMetadata) error {
 	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
-	if err := common.Validate(maxLimitSize, allowedOrders); err != nil {
+	if err := common.Validate(maxLimitSize, notifiers.NotifierOrderFields); err != nil {
 		return err
 	}
 

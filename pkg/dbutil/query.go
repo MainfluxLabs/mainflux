@@ -51,17 +51,15 @@ func GetPayloadQuery(m map[string]any) (mb []byte, mq string, err error) {
 	return mb, mq, nil
 }
 
-func GetOrderQuery(order string) string {
-	switch order {
-	case "name":
-		return "LOWER(name)"
-	case "email":
-		return "LOWER(email)"
-	case "":
-		return "id"
-	default:
-		return order
+// GetOrderQuery resolves order against fields, which maps API-facing order
+// keys to real SQL column expressions (with LOWER() baked in where needed).
+// Falls back to "id" for anything not in fields, so this is safe even if a
+// caller forgets to validate order upstream.
+func GetOrderQuery(order string, fields map[string]string) string {
+	if col, ok := fields[order]; ok {
+		return col
 	}
+	return "id"
 }
 
 func GetDirQuery(dir string) string {

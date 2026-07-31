@@ -19,6 +19,16 @@ var (
 	ErrGroupsDifferingOrgs = errors.New("groups belong to differing organizations")
 )
 
+// OrgInviteOrderFields maps API-facing order keys to SQL column expressions for the org_invites table.
+var OrgInviteOrderFields = map[string]string{
+	"id":         "id",
+	"invitee_id": "invitee_id",
+	"inviter_id": "inviter_id",
+	"org_id":     "org_id",
+	"state":      "state",
+	"created_at": "created_at",
+}
+
 // Domain type aliases
 type (
 	OrgInvite      = domain.OrgInvite

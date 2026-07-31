@@ -110,7 +110,7 @@ func (req *listReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, things.GroupOrderFields)
 }
 
 type listByOrgReq struct {
@@ -128,7 +128,7 @@ func (req listByOrgReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, things.GroupOrderFields)
 }
 
 type updateGroupReq struct {

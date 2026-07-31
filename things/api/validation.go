@@ -8,17 +8,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/things"
 )
 
-var allowedOrders = map[string]string{
-	"id":         "id",
-	"name":       "name",
-	"email":      "email",
-	"created_at": "created_at",
-	"updated_at": "updated_at",
-	"type":       "type",
-}
-
-// ValidatePageMetadata validates the things page metadata.
-func ValidatePageMetadata(pm things.PageMetadata, maxLimitSize, maxNameSize int) error {
+// ValidatePageMetadata validates the things page metadata against the specified allowed orders map.
+func ValidatePageMetadata(pm things.PageMetadata, maxLimitSize, maxNameSize int, allowedOrders map[string]string) error {
 	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
 	if err := common.Validate(maxLimitSize, allowedOrders); err != nil {
 		return err

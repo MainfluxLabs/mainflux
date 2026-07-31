@@ -65,7 +65,7 @@ func (r *eventRepository) RetrieveEvents(ctx context.Context, pm audit.PageMetad
 	whereClause := dbutil.BuildWhereClause(actorEmailQ, opQ, fromQ, toQ, dataQ)
 	query := fmt.Sprintf(
 		`SELECT id, occurred_at, operation, actor_id, actor_email, org_id, group_id, action_data FROM events %s ORDER BY %s %s %s`,
-		whereClause, dbutil.GetOrderQuery(pm.Order), dbutil.GetDirQuery(pm.Dir), dbutil.GetOffsetLimitQuery(pm.Limit),
+		whereClause, dbutil.GetOrderQuery(pm.Order, audit.EventOrderFields), dbutil.GetDirQuery(pm.Dir), dbutil.GetOffsetLimitQuery(pm.Limit),
 	)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM events %s`, whereClause)
 
@@ -97,7 +97,7 @@ func (r *eventRepository) RetrieveEventsByOrg(ctx context.Context, orgID string,
 	whereClause := dbutil.BuildWhereClause(actorEmailQ, opQ, orgQ, fromQ, toQ, dataQ)
 	query := fmt.Sprintf(
 		`SELECT id, occurred_at, operation, actor_id, actor_email, org_id, group_id, action_data FROM events %s ORDER BY %s %s %s`,
-		whereClause, dbutil.GetOrderQuery(pm.Order), dbutil.GetDirQuery(pm.Dir), dbutil.GetOffsetLimitQuery(pm.Limit),
+		whereClause, dbutil.GetOrderQuery(pm.Order, audit.EventOrderFields), dbutil.GetDirQuery(pm.Dir), dbutil.GetOffsetLimitQuery(pm.Limit),
 	)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM events %s`, whereClause)
 
@@ -130,7 +130,7 @@ func (r *eventRepository) RetrieveEventsByGroup(ctx context.Context, groupID str
 	whereClause := dbutil.BuildWhereClause(actorEmailQ, opQ, groupQ, fromQ, toQ, dataQ)
 	query := fmt.Sprintf(
 		`SELECT id, occurred_at, operation, actor_id, actor_email, org_id, group_id, action_data FROM events %s ORDER BY %s %s %s`,
-		whereClause, dbutil.GetOrderQuery(pm.Order), dbutil.GetDirQuery(pm.Dir), dbutil.GetOffsetLimitQuery(pm.Limit),
+		whereClause, dbutil.GetOrderQuery(pm.Order, audit.EventOrderFields), dbutil.GetDirQuery(pm.Dir), dbutil.GetOffsetLimitQuery(pm.Limit),
 	)
 	cquery := fmt.Sprintf(`SELECT COUNT(*) FROM events %s`, whereClause)
 

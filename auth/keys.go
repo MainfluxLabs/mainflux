@@ -22,6 +22,12 @@ var (
 	ErrAPIKeyExpired = errors.New("use of expired API key")
 )
 
+// KeyOrderFields maps API-facing order keys to SQL column expressions for the keys table.
+var KeyOrderFields = map[string]string{
+	"id":        "id",
+	"issued_at": "issued_at",
+}
+
 // Domain type aliases
 type (
 	Key      = domain.Key
