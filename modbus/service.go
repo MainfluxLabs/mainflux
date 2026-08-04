@@ -82,7 +82,7 @@ type clientsService struct {
 	things     domain.ThingsClient
 	clients    ClientRepository
 	idProvider uuid.IDProvider
-	publisher  messaging.Publisher
+	publisher  nats.Publisher
 	logger     logger.Logger
 	scheduler  *cron.ScheduleManager
 	limiters   map[string]*rate.Limiter
@@ -117,7 +117,7 @@ type Block struct {
 	Length uint16
 }
 
-func New(things domain.ThingsClient, pub messaging.Publisher, clients ClientRepository, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(things domain.ThingsClient, pub nats.Publisher, clients ClientRepository, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &clientsService{
 		things:     things,
 		publisher:  pub,
@@ -719,13 +719,7 @@ func (cs *clientsService) publish(config *domain.ProfileConfig, thingID string, 
 		return err
 	}
 
-	for _, subject := range nats.GetPublishSubjects(msg.Publisher, msg.Subtopic, pc.ProfileConfig) {
-		if err := cs.publisher.Publish(subject, msg); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return cs.publisher.PublishByFlags(msg, pc.ProfileConfig)
 }
 
 func (cs *clientsService) getLimiter(key string) *rate.Limiter {

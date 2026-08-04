@@ -10,6 +10,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	broker "github.com/nats-io/nats.go"
@@ -44,13 +45,20 @@ const (
 	SubjectRules = "rules"
 )
 
-// PubSub extends messaging.PubSub with alarm/command publishing, and alarm/command subscribing.
+// PubSub extends messaging.PubSub with alarm/command/notification/webhook publishing and subscribing.
 type PubSub interface {
 	messaging.PubSub
 	messaging.AlarmPublisher
 	messaging.AlarmSubscriber
 	messaging.CommandPublisher
 	messaging.CommandSubscriber
+	messaging.NotificationPublisher
+	messaging.NotificationSubscriber
+	messaging.WebhookPublisher
+	messaging.WebhookSubscriber
+
+	// PublishByFlags publishes msg to every subject enabled by the dispatcher flags in pc.
+	PublishByFlags(msg protomfx.Message, pc *domain.ProfileConfig) error
 }
 
 var _ PubSub = (*pubsub)(nil)
@@ -262,6 +270,89 @@ func (ps *pubsub) natsCommandHandler(h messaging.CommandHandler) broker.MsgHandl
 		}
 		if err := h.Handle(m.Subject, cmd); err != nil {
 			ps.logger.Warn(fmt.Sprintf("Failed to handle command: %s", err))
+		}
+	}
+}
+
+func (ps *pubsub) SubscribeNotifications(id, topic string, handler messaging.NotificationHandler) error {
+	if id == "" {
+		return messaging.ErrEmptyID
+	}
+	if topic == "" {
+		return messaging.ErrEmptyTopic
+	}
+
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+
+	if s, ok := ps.subscriptions[topic]; ok {
+		if _, ok := s[id]; ok {
+			if err := ps.unsubscribe(id, topic); err != nil {
+				return err
+			}
+		}
+	}
+	return ps.subscribe(id, topic, ps.natsNotificationHandler(handler), handler.Cancel)
+}
+
+func (ps *pubsub) UnsubscribeNotifications(id, topic string) error {
+	if id == "" {
+		return messaging.ErrEmptyID
+	}
+	if topic == "" {
+		return messaging.ErrEmptyTopic
+	}
+
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+
+	return ps.unsubscribe(id, topic)
+}
+
+func (ps *pubsub) SubscribeWebhooks(id string, handler messaging.WebhookHandler) error {
+	if id == "" {
+		return messaging.ErrEmptyID
+	}
+
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+
+	return ps.subscribe(id, SubjectWebhooks, ps.natsWebhookHandler(handler), handler.Cancel)
+}
+
+func (ps *pubsub) UnsubscribeWebhooks(id string) error {
+	if id == "" {
+		return messaging.ErrEmptyID
+	}
+
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+
+	return ps.unsubscribe(id, SubjectWebhooks)
+}
+
+func (ps *pubsub) natsNotificationHandler(h messaging.NotificationHandler) broker.MsgHandler {
+	return func(m *broker.Msg) {
+		var notification protomfx.Notification
+		if err := proto.Unmarshal(m.Data, &notification); err != nil {
+			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received notification: %s", err))
+			return
+		}
+		if err := h.Handle(m.Subject, notification); err != nil {
+			ps.logger.Warn(fmt.Sprintf("Failed to handle notification: %s", err))
+		}
+	}
+}
+
+func (ps *pubsub) natsWebhookHandler(h messaging.WebhookHandler) broker.MsgHandler {
+	return func(m *broker.Msg) {
+		var webhook protomfx.Webhook
+		if err := proto.Unmarshal(m.Data, &webhook); err != nil {
+			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received webhook: %s", err))
+			return
+		}
+		if err := h.Handle(m.Subject, webhook); err != nil {
+			ps.logger.Warn(fmt.Sprintf("Failed to handle webhook: %s", err))
 		}
 	}
 }

@@ -29,7 +29,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
@@ -138,7 +137,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	pubSub, err := brokers.NewPubSub(cfg.brokerURL, svcName, logger)
+	pubSub, err := nats.NewPubSub(cfg.brokerURL, svcName, logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -172,7 +171,7 @@ func main() {
 
 	svc := newService(cfg, logger, dbTracer, db, tc)
 
-	if err = consumers.Messages(svcName, pubSub, svc, nats.SubjectSmpp); err != nil {
+	if err = consumers.Notifications(svcName, pubSub, svc, nats.SubjectSmpp); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create SMPP notifier: %s", err))
 	}
 

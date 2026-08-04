@@ -142,6 +142,54 @@ type CommandSubscriber interface {
 	UnsubscribeCommands(id, topic string) error
 }
 
+// NotificationPublisher specifies the notification publishing API.
+type NotificationPublisher interface {
+	// PublishNotification publishes a notification to the message broker.
+	PublishNotification(subject string, notification protomfx.Notification) error
+}
+
+// NotificationHandler represents protomfx.Notification handler for NotificationSubscriber.
+type NotificationHandler interface {
+	// Handle handles notifications passed by underlying implementation.
+	Handle(subject string, notification protomfx.Notification) error
+
+	// Cancel is used for cleanup during unsubscribing and it's optional.
+	Cancel() error
+}
+
+// NotificationSubscriber specifies the notification subscription API.
+type NotificationSubscriber interface {
+	// SubscribeNotifications subscribes to the notification stream for the given topic.
+	SubscribeNotifications(id, topic string, handler NotificationHandler) error
+
+	// UnsubscribeNotifications unsubscribes from the notification stream for the given topic.
+	UnsubscribeNotifications(id, topic string) error
+}
+
+// WebhookPublisher specifies the webhook publishing API.
+type WebhookPublisher interface {
+	// PublishWebhook publishes a webhook message to the message broker.
+	PublishWebhook(subject string, webhook protomfx.Webhook) error
+}
+
+// WebhookHandler represents protomfx.Webhook handler for WebhookSubscriber.
+type WebhookHandler interface {
+	// Handle handles webhook messages passed by underlying implementation.
+	Handle(subject string, webhook protomfx.Webhook) error
+
+	// Cancel is used for cleanup during unsubscribing and it's optional.
+	Cancel() error
+}
+
+// WebhookSubscriber specifies the webhook subscription API.
+type WebhookSubscriber interface {
+	// SubscribeWebhooks subscribes to the webhook stream.
+	SubscribeWebhooks(id string, handler WebhookHandler) error
+
+	// UnsubscribeWebhooks unsubscribes from the webhook stream.
+	UnsubscribeWebhooks(id string) error
+}
+
 func NormalizeSubtopic(topic string) (string, error) {
 	if topic == "" {
 		return topic, nil

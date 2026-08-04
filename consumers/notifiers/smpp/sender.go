@@ -50,7 +50,7 @@ func New(cfg Config, from string) notifiers.Sender {
 	return ret
 }
 
-func (n *sender) Send(to []string, msg protomfx.Message) error {
+func (n *sender) Send(to []string, notification protomfx.Notification) error {
 	send := &smpp.ShortMessage{
 		Src:           n.from,
 		DstList:       to,
@@ -59,7 +59,7 @@ func (n *sender) Send(to []string, msg protomfx.Message) error {
 		DestAddrTON:   n.destAddrTON,
 		SourceAddrNPI: n.sourceAddrNPI,
 		DestAddrNPI:   n.destAddrNPI,
-		Text:          pdutext.Raw(msg.Payload),
+		Text:          pdutext.Raw(notification.Payload),
 		Register:      pdufield.NoDeliveryReceipt,
 	}
 	_, err := n.transmitter.Submit(send)

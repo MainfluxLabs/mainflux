@@ -484,25 +484,25 @@ func TestConsume(t *testing.T) {
 	payload, err := json.Marshal(pyd)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	msg := protomfx.Message{
-		Publisher: whs[0].ThingID,
-		Payload:   payload,
+	wh := protomfx.Webhook{
+		ThingId: whs[0].ThingID,
+		Payload: payload,
 	}
 
 	cases := []struct {
 		desc string
-		msg  protomfx.Message
+		wh   protomfx.Webhook
 		err  error
 	}{
 		{
 			desc: "forward message",
-			msg:  msg,
+			wh:   wh,
 			err:  nil,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.ConsumeMessage(subject, tc.msg)
+		err := svc.ConsumeWebhook(subject, tc.wh)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

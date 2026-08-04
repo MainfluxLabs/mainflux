@@ -25,11 +25,16 @@ const (
 	commandsSuffix = "commands"
 )
 
-// Publisher extends the base messaging.Publisher with alarm and command publishing capabilities.
+// Publisher extends the base messaging.Publisher with alarm, command, notification and webhook publishing capabilities.
 type Publisher interface {
 	messaging.Publisher
 	messaging.AlarmPublisher
 	messaging.CommandPublisher
+	messaging.NotificationPublisher
+	messaging.WebhookPublisher
+
+	// PublishByFlags publishes msg to every subject enabled by the dispatcher flags in pc.
+	PublishByFlags(msg protomfx.Message, pc *domain.ProfileConfig) error
 }
 
 var _ Publisher = (*publisher)(nil)
@@ -64,6 +69,14 @@ func (pub *publisher) PublishAlarm(subject string, alarm protomfx.Alarm) error {
 
 func (pub *publisher) PublishCommand(subject string, cmd protomfx.Command) error {
 	return pub.publish(subject, &cmd)
+}
+
+func (pub *publisher) PublishNotification(subject string, notification protomfx.Notification) error {
+	return pub.publish(subject, &notification)
+}
+
+func (pub *publisher) PublishWebhook(subject string, webhook protomfx.Webhook) error {
+	return pub.publish(subject, &webhook)
 }
 
 func (pub *publisher) publish(subject string, msg proto.Message) error {
@@ -101,23 +114,32 @@ func createSubject(entity, id, suffix, subtopic string) string {
 	return subject
 }
 
-// GetPublishSubjects returns the NATS subjects a message should be published to
-// based on the dispatcher flags in the profile config.
-func GetPublishSubjects(thingID, subtopic string, pc *domain.ProfileConfig) []string {
+// PublishByFlags publishes msg to every subject enabled by pc's dispatcher flags.
+func (pub *publisher) PublishByFlags(msg protomfx.Message, pc *domain.ProfileConfig) error {
 	if pc == nil {
 		return nil
 	}
 
-	var subjects []string
 	if pc.WriteEnabled {
-		subjects = append(subjects, GetMessagesSubject(thingID, subtopic))
-	}
-	if pc.WebhookEnabled {
-		subjects = append(subjects, SubjectWebhooks)
+		if err := pub.Publish(GetMessagesSubject(msg.Publisher, msg.Subtopic), msg); err != nil {
+			return err
+		}
 	}
 	if pc.RuleEnabled {
-		subjects = append(subjects, SubjectRules)
+		if err := pub.Publish(SubjectRules, msg); err != nil {
+			return err
+		}
+	}
+	if pc.WebhookEnabled {
+		webhook := protomfx.Webhook{
+			ThingId: msg.Publisher,
+			Payload: msg.Payload,
+			Created: msg.Created,
+		}
+		if err := pub.PublishWebhook(SubjectWebhooks, webhook); err != nil {
+			return err
+		}
 	}
 
-	return subjects
+	return nil
 }

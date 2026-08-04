@@ -40,6 +40,20 @@ message Alarm {
     bytes  rule_info = 7;
 }
 
+message Notification {
+    string thing_id  = 1;
+    string subtopic  = 2;
+    string protocol  = 3;
+    bytes  payload   = 4;
+    int64  created   = 5;
+}
+
+message Webhook {
+    string thing_id  = 1;
+    bytes  payload   = 2;
+    int64  created   = 3;
+}
+
 service ThingsService {
     rpc GetPubConfigByKey(ThingKey) returns (PubConfigByKeyRes) {}
     rpc GetConfigByThing(ThingID) returns (ConfigByThingRes){}

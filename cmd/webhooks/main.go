@@ -26,7 +26,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
@@ -119,7 +118,7 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	pubSub, err := brokers.NewPubSub(cfg.brokerURL, svcName, logger)
+	pubSub, err := nats.NewPubSub(cfg.brokerURL, svcName, logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -157,7 +156,7 @@ func main() {
 		return subscribeToThingsES(ctx, svc, cfg, logger)
 	})
 
-	if err = consumers.Messages(svcName, pubSub, svc, nats.SubjectWebhooks); err != nil {
+	if err = consumers.Webhooks(svcName, pubSub, svc); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Webhook: %s", err))
 	}
 

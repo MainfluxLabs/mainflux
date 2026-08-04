@@ -247,11 +247,7 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 		return nil
 	}
 
-	if err := h.publishMessage(pc, msg); err != nil {
-		return err
-	}
-
-	return nil
+	return h.publisher.PublishByFlags(msg, pc.ProfileConfig)
 }
 
 func (h *handler) publishCommand(subject string, msg protomfx.Message) error {
@@ -275,15 +271,6 @@ func extractRecipient(subject string) string {
 		return ""
 	}
 	return parts[1]
-}
-
-func (h *handler) publishMessage(pc domain.PubConfigInfo, msg protomfx.Message) error {
-	for _, s := range nats.GetPublishSubjects(msg.Publisher, msg.Subtopic, pc.ProfileConfig) {
-		if err := h.publisher.Publish(s, msg); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func parseTopic(topic, publisherID string) (subject, subtopic string, err error) {
