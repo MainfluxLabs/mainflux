@@ -31,6 +31,14 @@ type AlarmsPage struct {
 	Alarms []Alarm
 }
 
+// AlarmOrderFields maps API-facing order keys to SQL column expressions for the alarms table.
+var AlarmOrderFields = map[string]string{
+	"id":      "id",
+	"created": "created",
+	"level":   "level",
+	"status":  "status",
+}
+
 // AlarmRepository specifies an alarm persistence API.
 type AlarmRepository interface {
 	// Save persists multiple alarms. Alarms are saved using a transaction.

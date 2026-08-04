@@ -5,8 +5,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
-// Validate validates the page metadata.
-func ValidatePageMetadata(pm domain.UsersPageMetadata, maxLimitSize, maxEmailSize int) error {
+// ValidatePageMetadata validates the page metadata against the specified allowed orders map.
+func ValidatePageMetadata(pm domain.UsersPageMetadata, maxLimitSize, maxEmailSize int, allowedOrders map[string]string) error {
 	if len(pm.Email) > maxEmailSize {
 		return apiutil.ErrEmailSize
 	}
@@ -21,12 +21,4 @@ func ValidatePageMetadata(pm domain.UsersPageMetadata, maxLimitSize, maxEmailSiz
 
 	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
 	return common.Validate(maxLimitSize, allowedOrders)
-}
-
-var allowedOrders = map[string]string{
-	"id":            "id",
-	"email":         "email",
-	"invitee_email": "invitee_email",
-	"state":         "state",
-	"created_at":    "created_at",
 }

@@ -7,6 +7,7 @@ import (
 	"regexp"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/MainfluxLabs/mainflux/users/api"
@@ -126,7 +127,7 @@ func (req listUsersReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if err := api.ValidatePageMetadata(req.pm, maxLimitSize, maxEmailSize); err != nil {
+	if err := api.ValidatePageMetadata(req.pm, maxLimitSize, maxEmailSize, domain.UserOrderFields); err != nil {
 		return err
 	}
 

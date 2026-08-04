@@ -22,15 +22,10 @@ var (
 	ErrMissingWebhookID = errors.New("missing webhook id")
 )
 
-var allowedOrders = map[string]string{
-	"id":   "id",
-	"name": "name",
-}
-
 // validatePageMetadata validates the webhooks page metadata.
 func validatePageMetadata(pm webhooks.PageMetadata) error {
 	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
-	if err := common.Validate(maxLimitSize, allowedOrders); err != nil {
+	if err := common.Validate(maxLimitSize, webhooks.WebhookOrderFields); err != nil {
 		return err
 	}
 

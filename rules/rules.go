@@ -257,3 +257,9 @@ func findParam(payload map[string]any, param string) any {
 	}
 	return val
 }
+
+// RuleOrderFields maps API-facing order keys to SQL column expressions for the rules table.
+var RuleOrderFields = map[string]string{
+	"id":   "id",
+	"name": "LOWER(name)",
+}

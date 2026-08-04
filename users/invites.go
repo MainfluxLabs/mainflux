@@ -18,6 +18,14 @@ type (
 	PlatformInvitesPage = domain.PlatformInvitesPage
 )
 
+// PlatformInviteOrderFields maps API-facing order keys to SQL column expressions for the platform_invites table.
+var PlatformInviteOrderFields = map[string]string{
+	"id":            "id",
+	"invitee_email": "LOWER(invitee_email)",
+	"state":         "state",
+	"created_at":    "created_at",
+}
+
 const (
 	UserTypeInvitee = "invitee"
 	UserTypeInviter = "inviter"

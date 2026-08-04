@@ -78,7 +78,7 @@ func (rr ruleRepository) RetrieveScriptByID(ctx context.Context, id string) (rul
 }
 
 func (rr ruleRepository) RetrieveScriptsByThing(ctx context.Context, thingID string, pm rules.PageMetadata) (rules.LuaScriptsPage, error) {
-	oq := dbutil.GetOrderQuery(pm.Order)
+	oq := dbutil.GetOrderQuery(pm.Order, rules.RuleOrderFields)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
@@ -143,7 +143,7 @@ func (rr ruleRepository) RetrieveScriptsByThing(ctx context.Context, thingID str
 }
 
 func (rr ruleRepository) RetrieveScriptsByGroup(ctx context.Context, groupID string, pm rules.PageMetadata) (rules.LuaScriptsPage, error) {
-	oq := dbutil.GetOrderQuery(pm.Order)
+	oq := dbutil.GetOrderQuery(pm.Order, rules.RuleOrderFields)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
@@ -441,7 +441,7 @@ func (rr ruleRepository) RemoveScriptRuns(ctx context.Context, ids ...string) er
 }
 
 func (rr ruleRepository) RetrieveScriptRunsByThing(ctx context.Context, thingID string, pm rules.PageMetadata) (rules.ScriptRunsPage, error) {
-	oq := dbutil.GetOrderQuery(pm.Order)
+	oq := dbutil.GetOrderQuery(pm.Order, rules.RuleOrderFields)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 

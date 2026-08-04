@@ -12,6 +12,14 @@ var (
 	ErrOrgNotEmpty = errors.New("org is not empty")
 )
 
+// OrgOrderFields maps API-facing order keys to SQL column expressions for the orgs table.
+var OrgOrderFields = map[string]string{
+	"id":         "id",
+	"name":       "LOWER(name)",
+	"created_at": "created_at",
+	"updated_at": "updated_at",
+}
+
 // Domain type aliases
 type (
 	Org      = domain.Org

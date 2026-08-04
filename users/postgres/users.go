@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/jackc/pgerrcode"
@@ -144,7 +145,7 @@ func (ur userRepository) RetrieveByIDs(ctx context.Context, userIDs []string, pm
 	}
 
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	oq := dbutil.GetOrderQuery(pm.Order)
+	oq := dbutil.GetOrderQuery(pm.Order, domain.UserOrderFields)
 	dq := dbutil.GetDirQuery(pm.Dir)
 
 	mp, mq, err := dbutil.GetMetadataQuery(pm.Metadata)

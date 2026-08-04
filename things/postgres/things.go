@@ -128,7 +128,7 @@ func (tr thingRepository) RetrieveByGroups(ctx context.Context, groupIDs []strin
 		return things.ThingsPage{}, nil
 	}
 
-	oq := dbutil.GetOrderQuery(pm.Order)
+	oq := dbutil.GetOrderQuery(pm.Order, things.ThingOrderFields)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	giq := dbutil.GetGroupIDsQuery(groupIDs)
@@ -177,7 +177,7 @@ func (tr thingRepository) BackupAll(ctx context.Context) ([]things.Thing, error)
 }
 
 func (tr thingRepository) RetrieveAll(ctx context.Context, pm things.PageMetadata) (things.ThingsPage, error) {
-	oq := dbutil.GetOrderQuery(pm.Order)
+	oq := dbutil.GetOrderQuery(pm.Order, things.ThingOrderFields)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
@@ -203,7 +203,7 @@ func (tr thingRepository) RetrieveAll(ctx context.Context, pm things.PageMetadat
 }
 
 func (tr thingRepository) RetrieveByProfile(ctx context.Context, prID string, pm things.PageMetadata) (things.ThingsPage, error) {
-	oq := dbutil.GetOrderQuery(pm.Order)
+	oq := dbutil.GetOrderQuery(pm.Order, things.ThingOrderFields)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 

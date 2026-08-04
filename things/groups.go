@@ -12,6 +12,14 @@ type (
 	GroupPage = domain.GroupPage
 )
 
+// GroupOrderFields maps API-facing order keys to SQL column expressions for the groups table.
+var GroupOrderFields = map[string]string{
+	"id":         "id",
+	"name":       "LOWER(name)",
+	"created_at": "created_at",
+	"updated_at": "updated_at",
+}
+
 // GroupRepository specifies a group persistence API.
 type GroupRepository interface {
 	// Save persists groups.

@@ -19,6 +19,13 @@ type (
 	ThingKey = domain.ThingKey
 )
 
+// ThingOrderFields maps API-facing order keys to SQL column expressions for the things table.
+var ThingOrderFields = map[string]string{
+	"id":   "id",
+	"name": "LOWER(name)",
+	"type": "type",
+}
+
 const (
 	KeyTypeInternal = domain.KeyTypeInternal
 	KeyTypeExternal = domain.KeyTypeExternal

@@ -22,6 +22,16 @@ type Event struct {
 	ActionData map[string]any
 }
 
+// EventOrderFields maps API-facing order keys to SQL column expressions for the events table.
+var EventOrderFields = map[string]string{
+	"id":          "id",
+	"occurred_at": "occurred_at",
+	"operation":   "operation",
+	"actor_email": "LOWER(actor_email)",
+	"org_id":      "org_id",
+	"group_id":    "group_id",
+}
+
 type EventsPage struct {
 	Total  uint64  `json:"total"`
 	Events []Event `json:"events"`
